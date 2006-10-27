@@ -8,5 +8,5 @@ noinst_DATA = doxygen
 
 CLEANFILES = 
 
-doxygen: 
+doc: 
 	doxygen Doxyfile
