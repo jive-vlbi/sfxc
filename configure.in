@@ -44,4 +44,6 @@ dnl Checks for header files.
 
 AC_OUTPUT(Makefile
 src/Makefile
+doc/Makefile
+doc/html/Makefile
 )
