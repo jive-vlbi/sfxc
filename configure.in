@@ -1,0 +1,47 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(src/sfxc.cc, 0.0.1)
+AC_CONFIG_AUX_DIR(config)
+AM_CONFIG_HEADER(config.h)
+AM_INIT_AUTOMAKE(sfxc, 0.0.1)
+
+dnl Checks for programs.
+AC_PROG_CXX
+AC_PROG_CPP
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+
+AC_LANG_CPLUSPLUS
+
+LIBS="$LIBS -lfftw3 -lm"
+
+
+AC_CHECK_HEADERS(fftw3.h,,AC_MSG_ERROR([fftw3.h header not found.]))
+
+dnl Checks for libraries.
+
+AC_MSG_CHECKING(for the fftw library)
+AC_TRY_LINK([
+#include <fftw3.h>
+],[
+int n=256;
+fftw_plan plan;
+fftw_complex in[n], out[n];
+/* plan a 1d forward DFT: */
+plan = fftw_plan_dft_1d(n, in, out, FFTW_FORWARD, FFTW_PATIENT);
+//   Initialize in[] with some data. . .
+fftw_execute(plan); // compute DFT
+//   Write some new data to in[] . . .
+fftw_execute(plan); // reuse plan
+],AC_MSG_RESULT(yes),AC_MSG_ERROR([
+Unable to link to fftw3 library. If you
+just installed it: try running ldconfig
+as root]))
+
+
+dnl Checks for header files.
+
+
+AC_OUTPUT(Makefile
+src/Makefile
+)
