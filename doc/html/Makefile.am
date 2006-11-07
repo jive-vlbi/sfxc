@@ -1,1 +1,1 @@
-CLEANFILES = *.html *.css *.gif 
+CLEANFILES = doxygen.png *.html *.css *.gif 

@@ -1,6 +1,6 @@
 EXTRA_DIST = 
 
-AM_CPPFLAGS = -I../include 
+AM_CPPFLAGS = -I../include
 AM_CXXFLAGS = 
 
 noinst_PROGRAMS = sfxc

@@ -6,19 +6,18 @@ AM_INIT_AUTOMAKE(sfxc, 0.0.1)
 
 dnl Checks for programs.
 AC_PROG_CXX
-AC_PROG_CPP
+#AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
-AC_LANG_CPLUSPLUS
-
-LIBS="$LIBS -lfftw3 -lm"
-
-
-AC_CHECK_HEADERS(fftw3.h,,AC_MSG_ERROR([fftw3.h header not found.]))
+#AC_LANG_CPLUSPLUS
 
 dnl Checks for libraries.
+
+dnl --- fftw3 ---
+LIBS="$LIBS -lfftw3 -lm"
+AC_CHECK_HEADERS(fftw3.h,,AC_MSG_ERROR([fftw3.h header not found.]))
 
 AC_MSG_CHECKING(for the fftw library)
 AC_TRY_LINK([
@@ -37,10 +36,6 @@ fftw_execute(plan); // reuse plan
 Unable to link to fftw3 library. If you
 just installed it: try running ldconfig
 as root]))
-
-
-dnl Checks for header files.
-
 
 AC_OUTPUT(Makefile
 src/Makefile
