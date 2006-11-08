@@ -31,7 +31,6 @@ class Input_reader {
       \pre There is another header on the input.
   **/
   virtual Mk4header header() = 0;
-  
 };
 
 #endif // INPUT_READER_H
