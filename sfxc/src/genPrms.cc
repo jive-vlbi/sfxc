@@ -41,7 +41,7 @@ Last change: 20060912
 using namespace std;
 
 //constants
-#include "constVars.h"
+#include "constPrms.h"
 
 //the class definitions and function definitions
 #include "runPrms.h"
@@ -104,7 +104,7 @@ INT64 GenP::get_usStart() {
 
 INT64 GenP::get_usStop() {
 
-  usStop = dsp;                 //days
+  usStop = dsp;                //days
   usStop = hsp +   24* usStop; //hours
   usStop = msp +   60* usStop; //minutes
   usStop = ssp +   60* usStop; //minutes
@@ -241,6 +241,15 @@ int GenP::parse_ctrlFile(char *ctrlFile)
       }
     }
 
+    if (sscanf(line,"%s %s %s %s\n",key,val,val1,val2) == 4){
+      if (!strcmp(key,"DELCOLS")) {
+        retval = retval + str2int(val,cde);
+        retval = retval + str2int(val1,mde);
+        retval = retval + str2int(val2,rde);
+      }  
+    }
+
+
   }//end while loop
 
   // close control file
@@ -281,6 +290,13 @@ int GenP::check_params()
   tStart=dst*24*3600+hst*3600+mst*60+sst;
   tStop =dsp*24*3600+hsp*3600+msp*60+ssp;
   sec2proc=tStop-tStart;
+
+  if (!filter) {
+    bwfl = bwin;
+    startf = 0;
+    deltaf = 0;
+    ovrfl = 1;
+  }
   
   if ( RunPrms.get_messagelvl() > 0) {
     //display general parameters

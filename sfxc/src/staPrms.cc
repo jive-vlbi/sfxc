@@ -3,7 +3,7 @@ Class function definitions for station specific data
 
 Author     : RHJ Oerlemans
 StartDate  : 20060913
-Last change: 20060913
+Last change: 20061027
 
 */
 
@@ -45,7 +45,7 @@ Last change: 20060913
 using namespace std;
 
 //the class definitions and function definitions
-#include "constVars.h"
+#include "constPrms.h"
 #include "runPrms.h"
 #include "staPrms.h"
 #include "genFunctions.h"
@@ -76,6 +76,8 @@ char* StaP::get_modpat()     { return modpat; }
 char* StaP::get_delaytable() { return delaytable; }
 char* StaP::get_phasetable() { return phasetable; }
 int   StaP::get_loobs()      { return loobs;}
+int*  StaP::get_signBS()     { return signBS;}
+int*  StaP::get_magnBS()     { return magnBS;}
 
 
 
@@ -161,7 +163,7 @@ int StaP::parse_ctrlFile(char *ctrlFile, int staNr)
   //open control file
   ctrlP = fopen(ctrlFile,"r");
 
-  //contruct station keyword
+  //construct station keyword
   sprintf(staKW,"ST%.4d",staNr);
   
   while (1) {
@@ -326,6 +328,14 @@ int StaP::check_params()
     cout << endl;
 
          
+    cout << endl <<
+      "Delaytable           = " << delaytable << endl <<
+      "Phasetable           = " << phasetable << endl <<
+      "Local oscilator      = " << loobs << endl;
+    cout << endl;
+   
+    cout << "Mk4 tape bit shift numbers:" << endl;
+    
     cout << "SIGN " << hs;
     for (j=0; j < fo; j++) cout <<  " " << signBS[j];
     cout << endl;
@@ -334,12 +344,27 @@ int StaP::check_params()
     for (j=0; j < fo; j++) cout <<  " " << magnBS[j];
     cout << endl;
 
-    cout << endl <<
-      "Delaytable           = " << delaytable << endl <<
-      "Phasetable           = " << phasetable << endl <<
-      "Local oscilator      = " << loobs << endl;
+  }
+
+  //mk4 to mk5 bit shift numbers
+  //recalculation because on tape 36 tracks and track 0,1,34,35 not used on disk
+  hs = hs - 1;
+  hm = hm - 1;
+  for (j=0; j < fo; j++) {
+    signBS[j] = signBS[j] - 2 + 32*hs;
+    magnBS[j] = magnBS[j] - 2 + 32*hm;
+  }
+  
+  if (RunPrms.get_messagelvl() > 0) {
+    cout << "Converted to Mk5 disk bit shift numbers:" << endl;
+    
+    cout << "SIGN " << hs;
+    for (j=0; j < fo; j++) cout <<  " " << signBS[j];
     cout << endl;
-   
+
+    cout << "MAGN " << hm;
+    for (j=0; j < fo; j++) cout <<  " " << magnBS[j];
+    cout << endl;
   }
 
   //check control parameters and show faulty ones

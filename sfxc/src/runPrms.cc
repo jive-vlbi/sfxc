@@ -46,7 +46,7 @@ using namespace std;
 
 
 //constants
-#include "constVars.h"
+#include "constPrms.h"
 
 //the class definitions and function definitions
 #include "runPrms.h"
@@ -114,6 +114,7 @@ int RunP::parse_ctrlFile(char *ctrlFile)
     }
 
   }//end while loop
+
 
   // close control file
   fclose(ctrlP);
