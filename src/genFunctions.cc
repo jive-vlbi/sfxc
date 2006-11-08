@@ -126,4 +126,39 @@ int str2int(char *val, int& sval)
 }
 
 
+//*****************************************************************************
+//  irbit2: random seeding
+//  See Numerical Recipes
+//  primitive polynomial mod 2 of order n produces 2^n - 1 random bits
+//*****************************************************************************
+int irbit2(UINT32 *iseed){
+  #define IB1 1
+  //  #define IB2 2
+  #define IB4 8
+  //  #define IB5 16
+  #define IB6 32 
+  //  #define IB18 131072
+  #define IB30 536870912
+  #define MASK (IB1+IB4+IB6)
+ 
+    
+  if (*iseed & IB30) {
+    *iseed=((*iseed ^ MASK) << 1) | IB1;
+    return 1;
+  } else {
+    *iseed <<= 1;
+    return 0;
+  }
+  #undef MASK
+  #undef IB30
+  //  #undef IB18
+  #undef IB6
+  //  #undef IB5
+  #undef IB4
+  //  #undef IB2
+  #undef IB1
+}
+
+
+
 

@@ -3,7 +3,7 @@ Functions for input data handling
 
 Author     : RHJ Oerlemans
 StartDate  : 20061005
-Last change: 20061005
+Last change: 20061027
 
 */
 
@@ -41,7 +41,7 @@ using namespace std;
 #include "gen_defines.h"
 
 //constants
-#include "constVars.h"
+#include "constPrms.h"
 
 //class and function definitions
 #include "runPrms.h"
@@ -53,10 +53,22 @@ using namespace std;
 //global variables
 extern RunP  RunPrms;
 extern GenP  GenPrms;
+extern StaP  StaPrms[NstationsMax];
+extern UINT32 seed;
+extern INT64 sliceStartByte[NstationsMax][NcoresMax];
+extern INT64 sliceStopByte [NstationsMax][NcoresMax];
+extern INT64 sliceStartTime [NcoresMax];
+extern INT64 sliceStopTime  [NcoresMax];
+extern INT64 sliceTime;
+
 
 //*****************************************************************************
 //function prototypes only used in this source, not public
 //*****************************************************************************
+
+int FindHeaderMk4(int sn, INT64 offset, int& jsynch, INT64& usTime);
+
+int checkStoptime(int sn, INT64 StartByte);
 
 int read64datafile(
   //input
@@ -110,8 +122,7 @@ int fms(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
 //- Ncores dBytes have to be found which is the length in
 //  bytes to be processed by a core
 //*****************************************************************************
-int FindOffsets(StaP StaPrms[], INT64 sliceStartByte[][NcoresMax],
-  INT64 sliceStopByte[][NcoresMax])
+int FindOffsets(void)
 {
   
   int   retval = 0, i, j, sn, NrStations, cn, Ncores;
@@ -121,6 +132,7 @@ int FindOffsets(StaP StaPrms[], INT64 sliceStartByte[][NcoresMax],
   INT64 StartByte[NstationsMax], offSynch[NstationsMax];
   INT64 NFrames[NstationsMax], FrPcore[NstationsMax];
   INT64 deltaBytes[NstationsMax];
+  INT64 dus;
 
   NrStations = GenPrms.get_nstations();
   Ncores = RunPrms.get_ncores();
@@ -129,7 +141,7 @@ int FindOffsets(StaP StaPrms[], INT64 sliceStartByte[][NcoresMax],
   //return usTime and jsynch for requested byte offset
   for (sn=0; sn<NrStations; sn++) {
     if (StaPrms[sn].get_datatype() == Mk4) {
-      FindHeaderMk4(StaPrms, sn, StaPrms[sn].get_boff(), jsynch[sn], usTime[sn]);
+      FindHeaderMk4(sn, StaPrms[sn].get_boff(), jsynch[sn], usTime[sn]);
     }
     if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0) askContinue();
   }
@@ -142,17 +154,19 @@ int FindOffsets(StaP StaPrms[], INT64 sliceStartByte[][NcoresMax],
       if (StaPrms[sn].get_nhs() == 1) {
         offBytes[sn] = offFrames[sn] * frameMk4 * 4;
         offSynch[sn] = (jsynch[sn] -64) *4;
-      } else {
+       } else {
         offBytes[sn] = offFrames[sn] * frameMk4 * 8;
         offSynch[sn] = (jsynch[sn] -64) *8;
       }
       StartByte[sn] = StaPrms[sn].get_boff() + offBytes[sn] + offSynch[sn];
-      cout << "usTime    =" << usTime[sn] << endl;
-      cout << "offTime   =" << offTime[sn] << endl;
-      cout << "offFrames =" << offFrames[sn] << endl;
-      cout << "offBytes  =" << offBytes[sn] << endl;
-      cout << "offSynch  =" << offSynch[sn] << endl;
-      cout << "StartByte =" << StartByte[sn] << endl;
+      if (RunPrms.get_messagelvl()>1) {
+        cout << "usTime    =" << usTime[sn]    << endl;
+        cout << "offTime   =" << offTime[sn]   << endl;
+        cout << "offFrames =" << offFrames[sn] << endl;
+        cout << "offBytes  =" << offBytes[sn]  << endl;
+        cout << "offSynch  =" << offSynch[sn]  << endl;
+        cout << "StartByte =" << StartByte[sn] << endl;
+      }
     }
   }
   
@@ -160,7 +174,7 @@ int FindOffsets(StaP StaPrms[], INT64 sliceStartByte[][NcoresMax],
   if ( RunPrms.get_messagelvl()> 0) {
     for (sn=0; sn<NrStations; sn++) {
       if (StaPrms[sn].get_datatype() == Mk4) {
-        FindHeaderMk4(StaPrms, sn, StartByte[sn], jsynch[sn], usTime[sn]);
+        FindHeaderMk4(sn, StartByte[sn], jsynch[sn], usTime[sn]);
       }
       if ( RunPrms.get_interactive() ) askContinue();
     }
@@ -170,7 +184,7 @@ int FindOffsets(StaP StaPrms[], INT64 sliceStartByte[][NcoresMax],
   //if not reset usLatest 
   for (sn=0; sn<NrStations; sn++) {
     if (StaPrms[sn].get_datatype() == Mk4) {
-      checkStoptime(StaPrms, sn, StartByte[sn]);
+      checkStoptime(sn, StartByte[sn]);
     }
   }
 
@@ -181,37 +195,159 @@ int FindOffsets(StaP StaPrms[], INT64 sliceStartByte[][NcoresMax],
       (GenPrms.get_usLatest() - GenPrms.get_usEarliest()) * StaPrms[sn].get_tbr()/frameMk4;
       //Frames to be processed per core
       FrPcore[sn] = NFrames[sn]/Ncores;
-      cout << "FrPcore[" << sn << "]=" << FrPcore[sn] <<endl;
+      if (RunPrms.get_messagelvl()> 1)
+        cout << "FrPcore[" << sn << "]=" << FrPcore[sn] <<endl;
       //delta
       if (StaPrms[sn].get_nhs() == 1) {    
         deltaBytes[sn] = FrPcore[sn]*frameMk4*4;
       } else {
         deltaBytes[sn] = FrPcore[sn]*frameMk4*8;
       }
-      cout << "deltaBytes[" << sn << "]=" << deltaBytes[sn] <<endl;
+      if (RunPrms.get_messagelvl()> 1)
+        cout << "deltaBytes[" << sn << "]=" << deltaBytes[sn] <<endl;
     }
   }
   
   
   //for all core and all stations set offsets
   for (sn=0; sn<NrStations; sn++) {
-    cout << "station=" << sn <<" start stop: ";
+    if (RunPrms.get_messagelvl()> 1)
+      cout << "station=" << sn <<" start stop: ";
     for (cn=0; cn<Ncores; cn++) {
       sliceStartByte[sn][cn] = StartByte[sn] + cn*deltaBytes[sn];
       sliceStopByte[sn][cn]  = sliceStartByte[sn][cn] + deltaBytes[sn];
-      cout << sliceStartByte[sn][cn] << " " << sliceStopByte[sn][cn] << "   ";
+      if (RunPrms.get_messagelvl()> 1)
+        cout << sliceStartByte[sn][cn] << " " << sliceStopByte[sn][cn] << "   ";
     }
     cout << endl;
   }
+  
+  if (RunPrms.get_messagelvl()> 1)
+    cout << "Slice start and stop times per core" << endl;
+  sliceTime = (GenPrms.get_usLatest()-GenPrms.get_usEarliest() )/ (Ncores*1);
+  for (cn=0; cn<Ncores; cn++) {
+    sliceStartTime[cn] = GenPrms.get_usEarliest()/1 + sliceTime*cn;
+    dus = GenPrms.get_dst()* 24;
+    dus = dus * 3600;
+    dus = dus * 1000000;
+    sliceStartTime[cn] = sliceStartTime[cn] - dus;
+    sliceStopTime[cn] = sliceStartTime[cn] + sliceTime;
+    if (RunPrms.get_messagelvl()> 1)
+      cout << sliceStartTime[cn] << " " << sliceStopTime[cn] << endl;
+  }    
   return retval;
   
 }
 
 
 //*****************************************************************************
+//fill Mk4frame if frame counter at end of array
+//*****************************************************************************
+int fill_Mk4frame(int sn, int inFile, double *Mk4frame,
+  double *signST, double *magnST, INT64 *Nsamp)
+{
+  INT64 readstatus=0;
+  INT32 r32block[frameMk4];  //32 bit buffer samples of 32 track data
+  INT64 r64block[frameMk4];  //64 bit buffer samples of 64 track data
+  
+  int retval=0;
+  int ifo, jhdr;
+  int nhs, fo;
+  char sign, magn;
+  int sg, mg;
+  double smplTBL[2][2];
+  UINT64 jbuf;
+  //work variables
+  INT32 work32;
+  INT64 work64;
+
+  //initialise lookup table
+  smplTBL[0][0]=-7.0;
+  smplTBL[0][1]=-2.0;
+  smplTBL[1][0]= 2.0;
+  smplTBL[1][1]= 7.0;
+  
+  nhs = StaPrms[sn].get_nhs();
+  fo  = StaPrms[sn].get_fo();
+
+  //extracting for 2 headstacks
+  if(nhs==2) {
+    readstatus=read(inFile,r64block,8*frameMk4);
+    if (readstatus < 0) {
+      //error when reading
+      return readstatus;
+    }
+    jhdr = 0;
+    for(jbuf=0; jbuf<(frameMk4); jbuf++) {
+      work64=r64block[jbuf];
+      for(ifo=0; ifo<fo; ifo++) {
+        //get sign and magnitude bit for all channels
+        sign = (work64 >>  StaPrms[sn].get_signBS()[ifo] ) & 0x1;
+        magn = (work64 >>  StaPrms[sn].get_magnBS()[ifo] ) & 0x1;
+        //Replace Header with Random Pattern,
+        if(StaPrms[sn].get_rndhdr()) {
+          if( jhdr < fo*hdrMk4 ) {
+            sign=(char)irbit2(&seed);
+          }
+          jhdr++;
+          //reset at end of frame
+          if (jhdr == fo*frameMk4) jhdr=0;
+        }
+        sg=sign;//from char to int
+        mg=magn;//from char to int
+        //convert sign and magnitude into a double using the lookup table
+        Mk4frame[jbuf*fo+ifo] = smplTBL[sg][mg];
+        //sample statistics
+        signST[sn]=signST[sn]+sg;
+        magnST[sn]=magnST[sn]+mg;
+        Nsamp[sn] =Nsamp[sn]+1;
+      }
+    }
+  }
+
+  //extracting for 1 headstack
+  if(nhs==1) {
+    readstatus=read(inFile,r32block,4*frameMk4);
+    if (readstatus < 0) {
+      //error when reading
+      return readstatus;
+    }
+    jhdr = 0;
+    for(jbuf=0; jbuf<(frameMk4); jbuf++) {
+      work32=r32block[jbuf];
+      for(ifo=0; ifo<fo; ifo++) {
+        //get sign and magnitude bit for all channels
+        sign = (work32 >>  StaPrms[sn].get_signBS()[ifo] ) & 0x1;
+        magn = (work32 >>  StaPrms[sn].get_magnBS()[ifo] ) & 0x1;
+        //Replace Header with Random Pattern,
+        if(StaPrms[sn].get_rndhdr()) {
+          if( jhdr < fo*hdrMk4 ) {
+            sign=(char)irbit2(&seed);
+          }
+          jhdr++;
+          //reset at end of frame
+          if (jhdr == fo*frameMk4) jhdr=0;
+        }
+        sg=sign;//from char to int
+        mg=magn;//from char to int
+        //convert sign and magnitude into a double using the lookup table
+        Mk4frame[jbuf*fo+ifo] = smplTBL[sg][mg];
+        //sample statistics
+        signST[sn]=signST[sn]+sg;
+        magnST[sn]=magnST[sn]+mg;
+        Nsamp[sn] =Nsamp[sn]+1;
+      }
+    }
+  }
+    
+  return readstatus;
+}
+
+
+//*****************************************************************************
 //check if the stop time is in the data file reset usLatest if necessary
 //*****************************************************************************
-int checkStoptime(StaP StaPrms[], int sn, INT64 StartByte) {
+int checkStoptime(int sn, INT64 StartByte) {
 
   int retval=0;
   INT64 deltaTime, deltaFrames, deltaBytes, StopByte;
@@ -256,12 +392,11 @@ int checkStoptime(StaP StaPrms[], int sn, INT64 StartByte) {
 // find the header in the Mk4 type file after offset bytes and
 // reset usEarliest in GemPrms if necessary
 // input : sn      station number
-//         StaPrms station parameters
 //         offset  in bytes from where to start reading the file
 // output: usTime  header time in us for requested offset
 //         jsynch
 //*****************************************************************************
-int FindHeaderMk4(StaP StaPrms[], int sn, INT64 offset, int& jsynch, INT64& usTime)
+int FindHeaderMk4(int sn, INT64 offset, int& jsynch, INT64& usTime)
 {
 
   int retval = 0;
@@ -311,7 +446,7 @@ int FindHeaderMk4(StaP StaPrms[], int sn, INT64 offset, int& jsynch, INT64& usTi
     }
   }
 
-  //print track statistic on stdout
+  //print track statistics on stdout
   if (RunPrms.get_messagelvl()> 0)
     printTrackstats(tracks, nhs);
   
@@ -625,7 +760,7 @@ void timeComps(char tracks[][frameMk4*nfrms],int jsynch,int synchtrack,int headS
   int *hh, int *mm, int *ss, int *ms, int *us,
   INT64 *TOTusec)
 {
-  // calculating TOT for headstack 0
+  // calculating TOT for headstack 
   *Head = fHead(tracks,synchtrack,jsynch,headS*32);
   *year = fyear(tracks,synchtrack,jsynch,headS*32);
   *day  = fday (tracks,synchtrack,jsynch,headS*32);
@@ -640,7 +775,7 @@ void timeComps(char tracks[][frameMk4*nfrms],int jsynch,int synchtrack,int headS
   //WARNING: do not try equation above this line.
   //ohterwise large integers will not be calculated correctly
   //Use next lines to calculate
-  *TOTusec = *day;                 //days
+  *TOTusec = *day;                   //days
   *TOTusec = *hh +   24* (*TOTusec); //hours
   *TOTusec = *mm +   60* (*TOTusec); //minutes
   *TOTusec = *ss +   60* (*TOTusec); //minutes
@@ -816,5 +951,130 @@ int fms(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
     tracks[syntrk+headS][jsync+32+51]
   )*1;
 }
+
+
+//*****************************************************************************
+//return delta time in delay table in usec
+//*****************************************************************************
+INT64 Delaydt(char *DelayTableName)
+{
+    char   sB[256];
+    double tdel0, tdel1;
+    char   *sep = " ";
+    FILE   *fp;
+
+    fp = fopen(DelayTableName, "r");
+    if (fp) {
+        rewind(fp);
+        fgets (sB,256,fp);
+        tdel0 = atof(strtok(sB,sep));
+        fgets (sB,256,fp);
+        tdel1 = atof(strtok(sB,sep));
+        fclose(fp);
+        return (tdel1 - tdel0)*1000000;//delta time in delay table in usec
+    } else {
+        cerr << "File " << DelayTableName << " could not be opened" << endl;
+        (void) exit(E_FILEACCESS);
+    }
+}
+
+
+
+//*****************************************************************************
+//read from the delay table:
+//  tdel: time stamps for delay model values
+//  cdel: correlator delay model
+//  mdel: tangential motion corrections
+//  rdel: spacecraft geocentric delay
+//*****************************************************************************
+int ReadDelayTable(char *DelayTableName, INT64 tableStartTime,
+    int Ndr, int Cde, int Mde, int Rde,
+    INT64 *tdel, double *cdel, double *mdel, double *rdel, double *fdel)
+{
+    int    retval = 0;
+    char   sB[256];
+    FILE   *fp;
+    int    jdr;
+    char   *sep = " ";
+
+    fp = fopen(DelayTableName, "r");
+    if (fp) {
+        rewind(fp);
+        //look for start point in delay table
+        while ( tdel[0] != tableStartTime  )
+        {
+            fgets(sB,256,fp);
+            tdel[0] = atof(strtok(sB,sep))*1000000;
+            cdel[0] = atof(strtok((char*)0,sep)) / 1000000.0;
+            mdel[0] = atof(strtok((char*)0,sep)) / 1000000.0;
+            rdel[0] = atof(strtok((char*)0,sep)) / 1000000.0;
+            fdel[0] = Cde*cdel[0]+Mde*mdel[0]+Rde*rdel[0];
+        }
+
+        if ( tdel[0] == tableStartTime ) {
+            //start point found in DelayTable read rest of Ndr lines
+            jdr=1;
+            while( fgets(sB,256,fp)  &&  jdr<Ndr) {
+                tdel[jdr] = atof(strtok(sB,sep))*1000000;
+                cdel[jdr] = atof(strtok((char*)0,sep)) / 1000000.0;
+                mdel[jdr] = atof(strtok((char*)0,sep)) / 1000000.0;
+                rdel[jdr] = atof(strtok((char*)0,sep)) / 1000000.0;
+                fdel[jdr] = Cde*cdel[jdr]+Mde*mdel[jdr]+Rde*rdel[jdr];
+                jdr++;
+            }
+            if (jdr != Ndr) {
+                cerr << "No end point found in delay table " << 
+                DelayTableName << endl;
+                (void) exit(E_FILE_DATA);
+            }
+        } else {
+            cerr << "No start point found in delay table " <<
+            DelayTableName << endl;
+            (void) exit(E_FILE_DATA);
+        }
+        fclose(fp);
+    } else {
+        cerr << "File " << DelayTableName << " could not be opened." << endl;
+        (void) exit(E_FILEACCESS);
+    }
+    return retval;
+}
+
+
+//*****************************************************************************
+//parabolic interpolation, used in geoDelayPhase
+//*****************************************************************************
+double  ParInteRp(double Time, double StartTime, double *Y, double dT, INT64 cpMax)
+{
+    double a,b,c; //parabola coefficients
+    double cf, d_interp;
+    int    cp;
+
+    //look for nearest point in Y
+    Time=Time-StartTime;
+    cp=floor(Time/dT+0.5);
+    if (cp > cpMax-1) {
+      cerr << "cp in ParInteRp out of range. cpMax=" << cpMax << endl;
+      exit(0);
+    }
+    //determine fraction
+    cf=Time-cp*dT;
+    
+    if (cp == 0) {
+        cp = cp + 1;
+        cf = -dT + cf;
+    }
+    //Y[cp] is shifted to Time=0
+    c = Y[cp];
+    a = (Y[cp-1] + Y[cp+1] -2*Y[cp]) / (2*dT*dT);
+    b = (a*dT*dT + Y[cp] - Y[cp-1]) / dT;
+
+    //calculate parabolic interpolation.
+    //Use cf instead of Time, because Y[cp] is shifted to Time=0
+    d_interp = a*cf*cf + b*cf + c;
+    return d_interp;
+
+}
+
 
 

@@ -16,3 +16,5 @@ int getFloatVal(char *key, char *val, char *skey, float& sval);
 
 int str2int(char *val, int& sval);
 
+int irbit2(UINT32 *iseed);
+

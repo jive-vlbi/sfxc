@@ -1,5 +1,5 @@
 /*
-Source       sfxc.cc
+Source       sfxc01.cc
 Title        software FX correlator
 Author       RHJ Oerlemans
 Started      20060901
@@ -7,9 +7,9 @@ Last change  20060912
 
 
 Description
-sfxc correlates the single channel data from N stations recorded on linux
+sfxc01 correlates the single channel data from N stations recorded on linux
 type harddisks. It can run on a multiprocessor machine or cluster.
-When sfxc runs on M processors the data from each station is divided into
+When sfxc01 runs on M processors the data from each station is divided into
 M chunks of equal length. All chunks from N stations but in the same
 time interval are processed on a separate processor. After the correlation
 of the time chunks the separate output files can be concatenated.
@@ -39,7 +39,7 @@ chunk 3 | data   | data   | data   | data   | ---> CORE_3 --->|CorProduct 3|
 Input files:
 
 control file.
--Contains all relevant information to run sfxc
+-Contains all relevant information to run sfxc01
 -ascii file with keyword-value pairs. File is parsed
 
 data files,
@@ -58,8 +58,8 @@ log file
 correlator file(s)
 
 Usage:
-sfxc  control_file [ro ml nc i] or
-sfxct control_file [ro ml nc i]
+sfxc01  control_file [ro ml nc i] or
+sfxc01t control_file [ro ml nc i]
 command line options between [] are optional:
   ro: run option ro=[r0|r1] default=1, complete
   ml: message level ml=[m0|m1|m2]. default=0 no messages except for errors
@@ -91,7 +91,7 @@ using namespace std;
 #include <unistd.h>
 
 //constants
-#include "constVars.h"
+#include "constPrms.h"
 
 //class and function definitions
 #include "runPrms.h"
@@ -107,6 +107,18 @@ using namespace std;
 RunP RunPrms;
 //declaration and default settings general parameters
 GenP GenPrms;
+//station parameters class, declaration and default settings
+StaP StaPrms[NstationsMax];
+// used for randomising numbers for Headers in Mk4 file
+UINT32 seed;
+//PI
+double PI=4.0*atan(1.0);
+//declarations for offsets
+INT64 sliceStartByte[NstationsMax][NcoresMax];
+INT64 sliceStopByte [NstationsMax][NcoresMax];
+INT64 sliceStartTime [NcoresMax];
+INT64 sliceStopTime  [NcoresMax];
+INT64 sliceTime;
 
 
 int main(int argc, char *argv[])
@@ -116,11 +128,13 @@ int main(int argc, char *argv[])
   char   ctrlFile[lineLength]; // control file name
   int    i, j, Nstations, Ncores, core;
   
+  // seed the random number generator (global variable!)
+  seed = (UINT32) time((time_t *)NULL);
 
   //check usage
   if(argc != 2 ) {
-    cout << "USAGE: sfxc  ctrlFile  or \n"
-         << "       sfxct ctrlFile  \n\n";
+    cout << "USAGE: sfxc01  ctrlFile  or \n"
+         << "       sfxc01t ctrlFile  \n\n";
     return -1;
   }
   
@@ -163,9 +177,8 @@ int main(int argc, char *argv[])
 
   //get the number of stations
   Nstations = GenPrms.get_nstations();
-  //station parameters class, declaration and default settings
-  StaP StaPrms[NstationsMax];
-
+cout << "Nstations=" << Nstations << endl;
+  
   //parse the control file for all station parameters
   for (i=0; i<Nstations; i++)
     if (StaPrms[i].parse_ctrlFile(ctrlFile,i) != 0 ) {
@@ -182,15 +195,15 @@ int main(int argc, char *argv[])
     if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0) askContinue();
   }  
 
-  INT64  sliceStartByte[NstationsMax][NcoresMax]; //in bytes
-  INT64  sliceStopByte[NstationsMax][NcoresMax]; //frames per core for each station
   //Find Offsets
-  FindOffsets(StaPrms, sliceStartByte, sliceStopByte);
+  FindOffsets();
 
-  //Process data
-  //LATER MULTIPLE CORE PROCESSING, FOR TIME BEING ONLY ONE CORE
-  core=0; 
-  CorrelateBufs(StaPrms, sliceStartByte, sliceStopByte, core);
+  if ( RunPrms.get_runoption() == 1) {
+    //Process data
+    //LATER MULTIPLE CORE PROCESSING, FOR TIME BEING ONLY ONE CORE
+    core=0; 
+    CorrelateBufs(core);
+  }
 
 }
 

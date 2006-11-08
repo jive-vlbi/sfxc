@@ -84,6 +84,8 @@ class StaP
     char* get_delaytable();
     char* get_phasetable();
     int   get_loobs();
+    int*  get_signBS(); //bit shift parameters for sign
+    int*  get_magnBS(); //bit shift parameters for magn
 
 };
 
