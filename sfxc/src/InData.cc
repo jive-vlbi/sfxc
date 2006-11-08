@@ -30,6 +30,7 @@ Last change: 20061027
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <math.h>
 using namespace std;
 
 //includes for system calls
