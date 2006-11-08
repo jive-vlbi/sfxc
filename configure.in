@@ -6,14 +6,18 @@ AM_INIT_AUTOMAKE(sfxc, 0.0.1)
 
 dnl Checks for programs.
 AC_PROG_CXX
-#AC_PROG_CPP
+AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
-#AC_LANG_CPLUSPLUS
+AC_LANG_CPLUSPLUS
 
+dnl Checks for sizes of types:
+
+AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(long long)
 
 dnl Checks for libraries.
 
@@ -39,8 +43,9 @@ Unable to link to fftw3 library. If you
 just installed it: try running ldconfig
 as root]))
 
+
 AC_OUTPUT(Makefile
-src/Makefile
-doc/Makefile
-doc/html/Makefile
-)
+          src/Makefile
+          doc/Makefile
+          doc/html/Makefile
+         )
