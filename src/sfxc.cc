@@ -18,7 +18,7 @@ The diagram below shows how the data from 4 stations is processed
 simultaneously on 3 processors. After the correlation the 3 correlator
 product files are concatenated into one data file.
 
-        | ST0001 | ST0002 | ST0003 | ST0004 |
+ ST0001 | ST0002 | ST0003 | ST0004 |
 --------+--------+--------+--------+--------+                 +------------+
 chunk 1 | data   | data   | data   | data   | ---> CORE_1 --->|CorProduct 1|
 --------+--------+--------+--------+--------+                 +------------+
@@ -91,6 +91,13 @@ using namespace std;
 #include <fcntl.h>
 #include <unistd.h>
 
+//includes for mpi
+//undef have to be before include <mpi.h>
+#undef SEEK_SET
+#undef SEEK_END
+#undef SEEK_CUR
+#include <mpi.h>
+
 //constants
 #include "constPrms.h"
 
@@ -127,24 +134,43 @@ int main(int argc, char *argv[])
 
   //declarations
   char   ctrlFile[lineLength]; // control file name
-  int    i, j, Nstations, Ncores, core;
+  int    i, Nstations;
   
+  int status, numtasks, rank;
+
   // seed the random number generator (global variable!)
   seed = (UINT32) time((time_t *)NULL);
 
+  //do the mpi initialisation
+  status = MPI_Init(&argc,&argv);
+  if (status != MPI_SUCCESS) {
+    cout << "Error starting MPI program. Terminating.\n";
+    MPI_Abort(MPI_COMM_WORLD, status);
+  }
+  // get the number of tasks set at commandline
+  MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
+  // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+
+  if(numtasks > 4) //entered at the command line
+  {
+    cout << "number of tasks is larger than 4, program aborted\n";
+    return -1;
+  }
+/*
   //check usage
   if(argc != 2 ) {
     cout << "USAGE: sfxc01  ctrlFile  or \n"
          << "       sfxc01t ctrlFile  \n\n";
     return -1;
   }
-  
+*/  
   //set the control file name
   strcpy(ctrlFile,argv[1]);
 
   //parse control file for run parameters
   if (RunPrms.parse_ctrlFile(ctrlFile) != 0) {
-    cout << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
+    cerr << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
     return -1;
   }
   
@@ -178,7 +204,6 @@ int main(int argc, char *argv[])
 
   //get the number of stations
   Nstations = GenPrms.get_nstations();
-cout << "Nstations=" << Nstations << endl;
   
   //parse the control file for all station parameters
   for (i=0; i<Nstations; i++)
@@ -197,14 +222,20 @@ cout << "Nstations=" << Nstations << endl;
   }  
 
   //Find Offsets
-  FindOffsets();
+  FindOffsets(numtasks);
 
   if ( RunPrms.get_runoption() == 1) {
     //Process data
-    //LATER MULTIPLE CORE PROCESSING, FOR TIME BEING ONLY ONE CORE
-    core=0; 
-    CorrelateBufs(core);
+    //MULTIPLE CORE PROCESSING
+    cout << "correlation on core " << rank << " started" << endl;
+    CorrelateBufs(rank);
+    cout << "correlation on core " << rank << " finished" << endl;
   }
+
+  //close the mpi stuff
+  MPI_Finalize();
+
+  return 1;
 
 }
 
