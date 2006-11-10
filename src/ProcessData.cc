@@ -257,7 +257,7 @@ int CorrelateBufs(int core)
   strcpy(outFile,GenPrms.get_corfile());
   sprintf(coreStr,"%.2d",core);
   strcat(outFile,coreStr);
-cout << "outfile=" << outfile << endl;
+  cout << "outfile=" << outFile << endl;
   outP = fopen64(outFile,"wb");
 
   //open the input files
