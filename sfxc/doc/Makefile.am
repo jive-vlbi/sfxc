@@ -4,7 +4,7 @@ SUBDIRS = html
 
 dist_noinst_DATA= Doxyfile main_doc doc_footer
 
-noinst_DATA = doc
+noinst_DATA =
 
 CLEANFILES = 
 
