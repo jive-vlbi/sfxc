@@ -1,6 +1,6 @@
 #include "gen_defines.h"
 
-int FindOffsets(void);
+int FindOffsets(int Ncores);
 
 int fill_Mk4frame(int sn, int inFile, double *Mk4frame,
   double *signST, double *magnST, INT64 *Nsamp);

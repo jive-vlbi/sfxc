@@ -25,12 +25,12 @@ Last change: 20061027
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 //c++ includes
 #include <iostream>
 #include <iomanip>
 #include <string>
-#include <math.h>
 using namespace std;
 
 //includes for system calls
@@ -123,10 +123,10 @@ int fms(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
 //- Ncores dBytes have to be found which is the length in
 //  bytes to be processed by a core
 //*****************************************************************************
-int FindOffsets(void)
+int FindOffsets(int Ncores)
 {
   
-  int   retval = 0, i, j, sn, NrStations, cn, Ncores;
+  int   retval = 0, i, j, sn, NrStations, cn;
   int   jsynch[NstationsMax];
   INT64 usTime[NstationsMax], offTime[NstationsMax];
   INT64 offFrames[NstationsMax], offBytes[NstationsMax];
@@ -136,7 +136,7 @@ int FindOffsets(void)
   INT64 dus;
 
   NrStations = GenPrms.get_nstations();
-  Ncores = RunPrms.get_ncores();
+//  Ncores = RunPrms.get_ncores();
   
   //find first headers in data files, reset usEarliest if necessary,
   //return usTime and jsynch for requested byte offset
