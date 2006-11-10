@@ -128,6 +128,7 @@ int CorrelateBufs(int core)
   double **cdel, **mdel, **rdel, **fdel; //arrays for delay tables
   INT64 *delaydt, **tdel, ndel; // time in delay table in usec and number of delay lines
   FILE *outP; //output result file
+  char outFile[256], coreStr[5];
 
 
   //declarations for fftw in delay correction
@@ -253,7 +254,11 @@ int CorrelateBufs(int core)
   }
 
   //open the output file
-  outP = fopen64(GenPrms.get_corfile(),"wb");
+  strcpy(outFile,GenPrms.get_corfile());
+  sprintf(coreStr,"%.2d",core);
+  strcat(outFile,coreStr);
+cout << "outfile=" << outfile << endl;
+  outP = fopen64(outFile,"wb");
 
   //open the input files
   //initialise file pointers in Bytes and set file pointers
