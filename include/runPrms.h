@@ -1,11 +1,11 @@
-/*
+/**
 Class definitions for Run Parameters
 
 Author     : RHJ Oerlemans
 StartDate  : 12-09-2006
-Last change: 12-09-2006
+Last change: 10-11-2006
 
-*/
+**/
 
 
 class RunP
