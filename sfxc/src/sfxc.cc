@@ -3,7 +3,7 @@ Source       sfxc01.cc
 Title        software FX correlator
 Author       RHJ Oerlemans
 Started      20060901
-Last change  20060912
+Last change  20061110
 
 
 Description
