@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
   char   ctrlFile[lineLength]; // control file name
   int    i, Nstations;
   
-  int status, numtasks, rank;
+  int numtasks=1;
 
   // seed the random number generator (global variable!)
   seed = (UINT32) time((time_t *)NULL);
@@ -206,8 +206,14 @@ int main(int argc, char *argv[])
   //Find Offsets
   FindOffsets(numtasks);
 
-  CorrelateBufs(0);
-
+  if ( RunPrms.get_runoption() == 1) {
+    //Process data
+    //MULTIPLE CORE PROCESSING
+    int rank=0;
+    cout << "correlation on core " << rank << " started" << endl;
+    CorrelateBufs(rank);
+    cout << "correlation on core " << rank << " finished" << endl;
+  }
   return 1;
 
 }
