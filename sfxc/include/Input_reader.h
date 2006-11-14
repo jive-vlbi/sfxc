@@ -1,3 +1,12 @@
+/*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+*/
+
 #ifndef INPUT_READER_H
 #define INPUT_READER_H
 

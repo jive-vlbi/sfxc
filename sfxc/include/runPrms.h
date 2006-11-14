@@ -1,9 +1,16 @@
 /**
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
 Class definitions for Run Parameters
 
 Author     : RHJ Oerlemans
-StartDate  : 12-09-2006
-Last change: 10-11-2006
+StartDate  : 20060912
+Last change: 20061114
 
 **/
 
@@ -17,7 +24,6 @@ class RunP
     int  messagelvl;      //message level
     int  interactive;     //run interactive or automatically
     int  runoption;       //run option, default 1=complete
-    int  ncores;          //number of computational cores, default 1
     
         
   public:
@@ -35,7 +41,6 @@ class RunP
     int get_messagelvl();
     int get_interactive();
     int get_runoption();
-    int get_ncores();   
 
 };
 

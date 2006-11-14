@@ -1,9 +1,16 @@
 /*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
 Class definitions for Station Parameters
 
 Author     : RHJ Oerlemans
-StartDate  : 12-09-2006
-Last change: 12-09-2006
+StartDate  : 20060912
+Last change: 20061114
 
 */
 
