@@ -1,9 +1,16 @@
 /*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
 General purpose functions
 
 Author     : RHJ Oerlemans
-StartDate  : 04-08-2006
-Last change: 04-08-2006
+StartDate  : 20060841
+Last change: 20061114
 
 */
 
@@ -33,13 +40,13 @@ void askContinue(void)
 {
   char repl[2]; // user reply character
   
-  printf("\nEnter c to continue, any other character to stop: ");
+  cout << "\nEnter c to continue, any other character to stop: ";
   scanf("%s",repl);
   if (strcmp(repl,"c")!=0) {
-    printf("Application stopped by user!\n");
+    cout << "Application stopped by user!\n";
     exit(0);
   }
-  printf("\n");
+  cout << endl;
 }
 
 

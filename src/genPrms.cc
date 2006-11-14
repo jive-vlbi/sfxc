@@ -1,4 +1,11 @@
 /*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
 Class function definitions for general parameters
 
 Author     : RHJ Oerlemans

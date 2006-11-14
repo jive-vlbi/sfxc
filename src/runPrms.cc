@@ -1,9 +1,16 @@
 /*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
 Class function definitions for runparameters
 
 Author     : RHJ Oerlemans
-StartDate  : 12-09-2006
-Last change: 12-09-2006
+StartDate  : 20060912
+Last change: 20061114
 
 */
 
@@ -61,7 +68,6 @@ using namespace std;
 int RunP::get_messagelvl()  { return messagelvl; }
 int RunP::get_interactive() { return interactive; }
 int RunP::get_runoption()   { return runoption; }
-int RunP::get_ncores()      { return ncores; }
 
 
 
@@ -71,7 +77,6 @@ RunP::RunP()
   messagelvl  = 0; //only error and abort messages
   interactive = 0; //run automatically
   runoption   = 1; //run program complete
-  ncores      = 1; //use one core
 }
 
 
@@ -109,7 +114,6 @@ int RunP::parse_ctrlFile(char *ctrlFile)
       retval = retval + getLongVal(key,val,"MESSAGELVL",messagelvl);
       retval = retval + getLongVal(key,val,"INTERACTIVE",interactive);
       retval = retval + getLongVal(key,val,"RUNOPTION",runoption);
-      retval = retval + getLongVal(key,val,"NCORES",ncores);
       
     }
 
@@ -135,13 +139,12 @@ int RunP::check_params()
 
   int retval = 0;
   //display run parameters
-  if (messagelvl != 0) {
+  if (messagelvl > 0) {
     cout <<
     endl <<
     "Message level        = " << messagelvl << endl <<
     "Interactive          = " << interactive << endl <<
     "Run option           = " << runoption << endl <<
-    "Nr of cores          = " << ncores <<
     endl;
   }
 
@@ -168,12 +171,6 @@ int RunP::check_params()
     "ERROR: Run option = " << runoption << endl <<
     "- 0: calculate only offsets\n" <<
     "- 1: run complete program";
-    retval=-1;
-  }
-
-  if ( ncores < 1 ) {
-    cerr <<
-    "ERROR: Number of cores = " << ncores << ". It should be a positive integer.\n";
     retval=-1;
   }
 
