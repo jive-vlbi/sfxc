@@ -1,9 +1,16 @@
 /*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
 Class function definitions for station specific data
 
 Author     : RHJ Oerlemans
 StartDate  : 20060913
-Last change: 20061027
+Last change: 20061114
 
 */
 

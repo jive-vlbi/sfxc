@@ -1,9 +1,16 @@
 /*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
 Functions for input data handling
 
 Author     : RHJ Oerlemans
 StartDate  : 20061005
-Last change: 20061027
+Last change: 20061114
 
 */
 
@@ -123,7 +130,7 @@ int fms(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
 //- Ncores dBytes have to be found which is the length in
 //  bytes to be processed by a core
 //*****************************************************************************
-int FindOffsets(int Ncores)
+int FindOffsets(int numtasks)
 {
   
   int   retval = 0, i, j, sn, NrStations, cn;
@@ -136,7 +143,6 @@ int FindOffsets(int Ncores)
   INT64 dus;
 
   NrStations = GenPrms.get_nstations();
-//  Ncores = RunPrms.get_ncores();
   
   //find first headers in data files, reset usEarliest if necessary,
   //return usTime and jsynch for requested byte offset
@@ -144,7 +150,8 @@ int FindOffsets(int Ncores)
     if (StaPrms[sn].get_datatype() == Mk4) {
       FindHeaderMk4(sn, StaPrms[sn].get_boff(), jsynch[sn], usTime[sn]);
     }
-    if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0) askContinue();
+    if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks > 1)
+      askContinue();
   }
   
   //calculate start offsets in bytes for all data files
@@ -177,7 +184,8 @@ int FindOffsets(int Ncores)
       if (StaPrms[sn].get_datatype() == Mk4) {
         FindHeaderMk4(sn, StartByte[sn], jsynch[sn], usTime[sn]);
       }
-      if ( RunPrms.get_interactive() ) askContinue();
+      if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks > 1)
+        askContinue();
     }
   }
 
@@ -195,7 +203,7 @@ int FindOffsets(int Ncores)
       NFrames[sn] =
       (GenPrms.get_usLatest() - GenPrms.get_usEarliest()) * StaPrms[sn].get_tbr()/frameMk4;
       //Frames to be processed per core
-      FrPcore[sn] = NFrames[sn]/Ncores;
+      FrPcore[sn] = NFrames[sn]/numtasks;
       if (RunPrms.get_messagelvl()> 1)
         cout << "FrPcore[" << sn << "]=" << FrPcore[sn] <<endl;
       //delta
@@ -214,19 +222,19 @@ int FindOffsets(int Ncores)
   for (sn=0; sn<NrStations; sn++) {
     if (RunPrms.get_messagelvl()> 1)
       cout << "station=" << sn <<" start stop: ";
-    for (cn=0; cn<Ncores; cn++) {
+    for (cn=0; cn<numtasks; cn++) {
       sliceStartByte[sn][cn] = StartByte[sn] + cn*deltaBytes[sn];
       sliceStopByte[sn][cn]  = sliceStartByte[sn][cn] + deltaBytes[sn];
       if (RunPrms.get_messagelvl()> 1)
         cout << sliceStartByte[sn][cn] << " " << sliceStopByte[sn][cn] << "   ";
     }
-    cout << endl;
+    if (RunPrms.get_messagelvl()> 1) cout << endl;
   }
   
   if (RunPrms.get_messagelvl()> 1)
     cout << "Slice start and stop times per core" << endl;
-  sliceTime = (GenPrms.get_usLatest()-GenPrms.get_usEarliest() )/ (Ncores*1);
-  for (cn=0; cn<Ncores; cn++) {
+  sliceTime = (GenPrms.get_usLatest()-GenPrms.get_usEarliest() )/ (numtasks*1);
+  for (cn=0; cn<numtasks; cn++) {
     sliceStartTime[cn] = GenPrms.get_usEarliest()/1 + sliceTime*cn;
     dus = GenPrms.get_dst()* 24;
     dus = dus * 3600;

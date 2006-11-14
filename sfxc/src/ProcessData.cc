@@ -1,4 +1,11 @@
 /*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
 Functions for processing the recorded data
 - extract data from file
 - optional filtering (not implemented yet)
@@ -7,7 +14,7 @@ Functions for processing the recorded data
 
 Author     : RHJ Oerlemans
 StartDate  : 20061005
-Last change: 20061027
+Last change: 20061114
 
 */
 
@@ -238,10 +245,12 @@ int CorrelateBufs(int core)
     //determine intervals in delay tables
     delaydt[sn] = Delaydt(StaPrms[sn].get_delaytable());
     ndel = sliceTime/delaydt[sn]+1;//nr of delay lines
-    cout << "delaydt=" << delaydt[sn] << endl;
-    cout << "sliceTime=" << sliceTime << endl;
-    cout << "ndel=" << ndel << endl;
-    cout << "sliceStartTime=" << sliceStartTime[core] << endl;
+    if (RunPrms.get_messagelvl()> 1){
+      cout << "delaydt=" << delaydt[sn] << endl;
+      cout << "sliceTime=" << sliceTime << endl;
+      cout << "ndel=" << ndel << endl;
+      cout << "sliceStartTime=" << sliceStartTime[core] << endl;
+    }
     tdel[sn]= new INT64[ndel];
     cdel[sn]= new double[ndel];
     mdel[sn]= new double[ndel];
@@ -257,7 +266,6 @@ int CorrelateBufs(int core)
   strcpy(outFile,GenPrms.get_corfile());
   sprintf(coreStr,"%.2d",core);
   strcat(outFile,coreStr);
-  cout << "outfile=" << outFile << endl;
   outP = fopen64(outFile,"wb");
 
   //open the input files
