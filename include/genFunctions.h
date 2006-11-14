@@ -1,9 +1,16 @@
 /*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
 General function definitions
 
 Author     : RHJ Oerlemans
-StartDate  : 04-08-2006
-Last change: 04-08-2006
+StartDate  : 20060804
+Last change: 20060804
 
 */
 void askContinue(void);

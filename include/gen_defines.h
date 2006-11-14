@@ -1,4 +1,11 @@
 /*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
 general defines
 */
 

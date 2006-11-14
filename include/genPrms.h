@@ -1,9 +1,16 @@
 /*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
 Class definitions for general parameters
 
 Author     : RHJ Oerlemans
 StartDate  : 20060912
-Last change: 20060912
+Last change: 20061114
 
 */
 
