@@ -14,7 +14,7 @@ Last change: 20061114
 
 */
 
-#include "gen_defines.h"
+#include <types.h>
 
 class GenP
 {

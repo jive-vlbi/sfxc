@@ -13,6 +13,9 @@ StartDate  : 20060804
 Last change: 20060804
 
 */
+
+#include <types.h>
+
 void askContinue(void);
 
 int getLongVal(char *key, char *val, char *skey, int& sval);

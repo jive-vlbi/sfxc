@@ -14,25 +14,27 @@ Last change: 20061114
 
 */
 
-//these defines have to be the first in source file
-#define _LARGEFILE_SOURCE
-#define _LARGEFILE64_SOURCE
+// //these defines have to be the first in source file
+// #define _LARGEFILE_SOURCE
+// #define _LARGEFILE64_SOURCE
 
-//enable define on 32 bit CPU, disable on 64 bit CPU
-#define THIRTYTWO
+// //enable define on 32 bit CPU, disable on 64 bit CPU
+// #define THIRTYTWO
 
-//32 bit machine define,
-//use open, lseek, off_t in stead off open64, lseek64, off64_t
-#ifdef THIRTYTWO
-#define _FILE_OFFSET_BITS 64
-#endif
+// //32 bit machine define,
+// //use open, lseek, off_t in stead off open64, lseek64, off64_t
+// #ifdef THIRTYTWO
+// #define _FILE_OFFSET_BITS 64
+// #endif
 
+#include <types.h>
 
 //standard c includes
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 
 //c++ includes
 #include <iostream>
@@ -64,9 +66,9 @@ extern GenP  GenPrms;
 extern StaP  StaPrms[NstationsMax];
 extern UINT32 seed;
 extern INT64 sliceStartByte[NstationsMax][NcoresMax];
-extern INT64 sliceStopByte [NstationsMax][NcoresMax];
+// extern INT64 sliceStopByte [NstationsMax][NcoresMax];
 extern INT64 sliceStartTime [NcoresMax];
-extern INT64 sliceStopTime  [NcoresMax];
+// extern INT64 sliceStopTime  [NcoresMax];
 extern INT64 sliceTime;
 
 
@@ -74,19 +76,22 @@ extern INT64 sliceTime;
 //function prototypes only used in this source, not public
 //*****************************************************************************
 
-int FindHeaderMk4(int sn, INT64 offset, int& jsynch, INT64& usTime);
+// NGHK: station was sn
+int FindHeaderMk4(Input_reader &reader, int station,
+                  INT64 offset, int& jsynch, INT64& usTime);
 
-int checkStoptime(int sn, INT64 StartByte);
+// Not possible if the data is streamed:
+// int checkStoptime(int sn, INT64 StartByte);
 
 int read64datafile(
   //input
-  int dataP, 
+  Input_reader & reader,
   //output
   char tracks[][frameMk4*nfrms]);
 
 int read32datafile(
   //input
-  int dataP, 
+  Input_reader &reader,
   //output
   char tracks[][frameMk4*nfrms]);
 
@@ -130,7 +135,8 @@ int fms(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
 //- Ncores dBytes have to be found which is the length in
 //  bytes to be processed by a core
 //*****************************************************************************
-int FindOffsets(int numtasks)
+int FindOffsets(std::vector<Input_reader *> input_readers,
+                int numtasks)
 {
   
   int   retval = 0, i, j, sn, NrStations, tn;
@@ -148,7 +154,10 @@ int FindOffsets(int numtasks)
   //return usTime and jsynch for requested byte offset
   for (sn=0; sn<NrStations; sn++) {
     if (StaPrms[sn].get_datatype() == Mk4) {
-      FindHeaderMk4(sn, StaPrms[sn].get_boff(), jsynch[sn], usTime[sn]);
+      FindHeaderMk4(*input_readers[sn],
+                    sn, 
+                    StaPrms[sn].get_boff(), 
+                    jsynch[sn], usTime[sn]);
     }
     if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks > 1)
       askContinue();
@@ -177,25 +186,27 @@ int FindOffsets(int numtasks)
       }
     }
   }
-  
+
+  // NGHK: COMMENTED IF:
   //find headers for StartByte in data files, only done for monitoring
-  if ( RunPrms.get_messagelvl()> 0) {
-    for (sn=0; sn<NrStations; sn++) {
-      if (StaPrms[sn].get_datatype() == Mk4) {
-        FindHeaderMk4(sn, StartByte[sn], jsynch[sn], usTime[sn]);
-      }
-      if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks > 1)
-        askContinue();
-    }
-  }
+//   if ( RunPrms.get_messagelvl()> 0) {
+//     for (sn=0; sn<NrStations; sn++) {
+//       if (StaPrms[sn].get_datatype() == Mk4) {
+//         FindHeaderMk4(*input_readers[sn], sn, 
+//                       StartByte[sn], jsynch[sn], usTime[sn]);
+//       }
+//       if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks > 1)
+//         askContinue();
+//     }
+//   }
 
   //for all stations check if requested stoptime is in the data file
   //if not reset usLatest 
-  for (sn=0; sn<NrStations; sn++) {
-    if (StaPrms[sn].get_datatype() == Mk4) {
-      checkStoptime(sn, StartByte[sn]);
-    }
-  }
+//   for (sn=0; sn<NrStations; sn++) {
+//     if (StaPrms[sn].get_datatype() == Mk4) {
+//       checkStoptime(sn, StartByte[sn]);
+//     }
+//   }
 
   for (sn=0; sn<NrStations; sn++) {
     if (StaPrms[sn].get_datatype() == Mk4) {
@@ -224,9 +235,9 @@ int FindOffsets(int numtasks)
       cout << "station=" << sn <<" start stop: ";
     for (tn=0; tn<numtasks; tn++) {
       sliceStartByte[sn][tn] = StartByte[sn] + tn*deltaBytes[sn];
-      sliceStopByte[sn][tn]  = sliceStartByte[sn][tn] + deltaBytes[sn];
-      if (RunPrms.get_messagelvl()> 1)
-        cout << sliceStartByte[sn][tn] << " " << sliceStopByte[sn][tn] << "   ";
+//       sliceStopByte[sn][tn]  = sliceStartByte[sn][tn] + deltaBytes[sn];
+//       if (RunPrms.get_messagelvl()> 1)
+//         cout << sliceStartByte[sn][tn] << " " << sliceStopByte[sn][tn] << "   ";
     }
     if (RunPrms.get_messagelvl()> 1) cout << endl;
   }
@@ -240,9 +251,9 @@ int FindOffsets(int numtasks)
     dus = dus * 3600;
     dus = dus * 1000000;
     sliceStartTime[tn] = sliceStartTime[tn] - dus;
-    sliceStopTime[tn] = sliceStartTime[tn] + sliceTime;
-    if (RunPrms.get_messagelvl()> 1)
-      cout << sliceStartTime[tn] << " " << sliceStopTime[tn] << endl;
+//     sliceStopTime[tn] = sliceStartTime[tn] + sliceTime;
+//     if (RunPrms.get_messagelvl()> 1)
+//       cout << sliceStartTime[tn] << " " << sliceStopTime[tn] << endl;
   }    
   return retval;
   
@@ -252,7 +263,7 @@ int FindOffsets(int numtasks)
 //*****************************************************************************
 //fill Mk4frame if frame counter at end of array
 //*****************************************************************************
-int fill_Mk4frame(int sn, int inFile, double *Mk4frame,
+int fill_Mk4frame(int sn, Input_reader &reader, double *Mk4frame,
   double *signST, double *magnST, INT64 *Nsamp)
 {
   INT64 readstatus=0;
@@ -281,7 +292,13 @@ int fill_Mk4frame(int sn, int inFile, double *Mk4frame,
 
   //extracting for 2 headstacks
   if(nhs==2) {
-    readstatus=read(inFile,r64block,8*frameMk4);
+//     readstatus=read(inFile,r64block,8*frameMk4);
+    readstatus = reader.get_bytes(8*frameMk4, (char*)r64block);
+    if (readstatus < 0) {
+      //error when reading
+      return readstatus;
+    }
+    readstatus = reader.move_forward(8*frameMk4);
     if (readstatus < 0) {
       //error when reading
       return readstatus;
@@ -316,7 +333,13 @@ int fill_Mk4frame(int sn, int inFile, double *Mk4frame,
 
   //extracting for 1 headstack
   if(nhs==1) {
-    readstatus=read(inFile,r32block,4*frameMk4);
+    //readstatus=read(inFile,r32block,4*frameMk4);
+    readstatus = reader.get_bytes(4*frameMk4, (char*)r32block);
+    if (readstatus < 0) {
+      //error when reading
+      return readstatus;
+    }
+    readstatus = reader.move_forward(4*frameMk4);
     if (readstatus < 0) {
       //error when reading
       return readstatus;
@@ -353,47 +376,47 @@ int fill_Mk4frame(int sn, int inFile, double *Mk4frame,
 }
 
 
-//*****************************************************************************
-//check if the stop time is in the data file reset usLatest if necessary
-//*****************************************************************************
-int checkStoptime(int sn, INT64 StartByte) {
+// //*****************************************************************************
+// //check if the stop time is in the data file reset usLatest if necessary
+// //*****************************************************************************
+// int checkStoptime(int sn, INT64 StartByte) {
 
-  int retval=0;
-  INT64 deltaTime, deltaFrames, deltaBytes, StopByte;
-  struct stat dataFile;
+//   int retval=0;
+//   INT64 deltaTime, deltaFrames, deltaBytes, StopByte;
+//   struct stat dataFile;
 
-  deltaTime = GenPrms.get_usLatest() - GenPrms.get_usEarliest();
-  deltaFrames = deltaTime * StaPrms[sn].get_tbr()/frameMk4;
-  if ( StaPrms[sn].get_nhs() == 1)
-    deltaBytes = deltaFrames*frameMk4*4;
-  else
-    deltaBytes = deltaFrames*frameMk4*8;
+//   deltaTime = GenPrms.get_usLatest() - GenPrms.get_usEarliest();
+//   deltaFrames = deltaTime * StaPrms[sn].get_tbr()/frameMk4;
+//   if ( StaPrms[sn].get_nhs() == 1)
+//     deltaBytes = deltaFrames*frameMk4*4;
+//   else
+//     deltaBytes = deltaFrames*frameMk4*8;
         
-  StopByte = StartByte + deltaBytes;
-  //StopByte should be smaller than file length
-  stat(StaPrms[sn].get_mk4file(),&dataFile);
-  if (StopByte > dataFile.st_size) {
-    //recalculate the StopByte
-    StopByte = dataFile.st_size;
-    deltaBytes = StopByte - StartByte;
-    //deltaBytes should be an integer nr of frames
-    if ( StaPrms[sn].get_nhs() == 1){
-      deltaFrames = deltaBytes/(frameMk4*4);
-    } else {
-      deltaFrames = deltaBytes/(frameMk4*8);
-    }
-    deltaTime = deltaFrames/StaPrms[sn].get_tbr()*frameMk4;
-    //reset latest possible stop time
-    GenPrms.set_usLatest(GenPrms.get_usEarliest() + deltaTime);
-    if( RunPrms.get_messagelvl()> 0)
-      cout << endl <<
-      "WARNING: Requested stop time is later than latest time in data file.\n" <<
-      "         Stop time is reset to earlier possible value.\n\n";
-  }
+//   StopByte = StartByte + deltaBytes;
+//   //StopByte should be smaller than file length
+//   stat(StaPrms[sn].get_mk4file(),&dataFile);
+//   if (StopByte > dataFile.st_size) {
+//     //recalculate the StopByte
+//     StopByte = dataFile.st_size;
+//     deltaBytes = StopByte - StartByte;
+//     //deltaBytes should be an integer nr of frames
+//     if ( StaPrms[sn].get_nhs() == 1){
+//       deltaFrames = deltaBytes/(frameMk4*4);
+//     } else {
+//       deltaFrames = deltaBytes/(frameMk4*8);
+//     }
+//     deltaTime = deltaFrames/StaPrms[sn].get_tbr()*frameMk4;
+//     //reset latest possible stop time
+//     GenPrms.set_usLatest(GenPrms.get_usEarliest() + deltaTime);
+//     if( RunPrms.get_messagelvl()> 0)
+//       cout << endl <<
+//       "WARNING: Requested stop time is later than latest time in data file.\n" <<
+//       "         Stop time is reset to earlier possible value.\n\n";
+//   }
   
-  return retval;
+//   return retval;
   
-}
+// }
 
 
 
@@ -405,12 +428,13 @@ int checkStoptime(int sn, INT64 StartByte) {
 // output: usTime  header time in us for requested offset
 //         jsynch
 //*****************************************************************************
-int FindHeaderMk4(int sn, INT64 offset, int& jsynch, INT64& usTime)
+int FindHeaderMk4(Input_reader &reader, int sn, 
+                  INT64 offset, int& jsynch, INT64& usTime)
 {
 
   int retval = 0;
   
-  int dataP;
+  //  int dataP;
   //buffer for unpacked tracks, NTRACKS tracks, NFRMS Mk4 frames long
   char  tracks[trksMax][frameMk4*nfrms];
   char  hdrmap[strLength];
@@ -427,29 +451,29 @@ int FindHeaderMk4(int sn, INT64 offset, int& jsynch, INT64& usTime)
   INT64 TOTusec0, TOTusec1, usStart; //in micru seconds
   
   //open the data file
-  dataP = open(StaPrms[sn].get_mk4file(),O_RDONLY,0);
+  //dataP = open(StaPrms[sn].get_mk4file(),O_RDONLY,0);
   
   if (RunPrms.get_messagelvl()> 0) {
     cout << "For station " << StaPrms[sn].get_stname() << endl;
-    cout << "Look for header in data file: " << StaPrms[sn].get_mk4file() << endl;
+//     cout << "Look for header in data file: " << StaPrms[sn].get_mk4file() << endl;
   }  
   
-  offsetstatus=lseek(dataP,offset,SEEK_SET);
-  if (offsetstatus != offset) {
-    cerr << "Could not go to requested offset position! " <<  offset << endl;
-    cerr << "Offsetstatus = " << offsetstatus << endl;
-    return -1;
-  }
+//   offsetstatus=lseek(dataP,offset,SEEK_SET);
+//   if (offsetstatus != offset) {
+//     cerr << "Could not go to requested offset position! " <<  offset << endl;
+//     cerr << "Offsetstatus = " << offsetstatus << endl;
+//     return -1;
+//   }
   
   //read and unpack scanfile data into tracks
   nhs = StaPrms[sn].get_nhs();
   if (nhs==1) {
-    if (read32datafile(dataP, tracks) != 0) {
+    if (read32datafile(reader, tracks) != 0) {
       cerr << "Error in read32datafile.\n";
       return -1;
     }
   } else {
-    if (read64datafile(dataP, tracks) != 0) {
+    if (read64datafile(reader, tracks) != 0) {
       cerr << "Error in read64datafile.\n";
       return -1;
     }
@@ -518,7 +542,7 @@ int FindHeaderMk4(int sn, INT64 offset, int& jsynch, INT64& usTime)
 
 
   //close the data file
-  close(dataP);
+//   close(dataP);
                                        
   return retval;
   
@@ -531,7 +555,7 @@ int FindHeaderMk4(int sn, INT64 offset, int& jsynch, INT64& usTime)
 //*****************************************************************************
 int read64datafile(
   //input
-  int dataP, 
+  Input_reader & reader,
   //output
   char tracks[][frameMk4*nfrms])
 {
@@ -543,7 +567,8 @@ int read64datafile(
   INT64 rblock[frameMk4*nfrms], work;
   //read from data file into [frameMk4*nfrms] nr of blocks,
   //[EIGHT*frameMk4*nfrms] nr of bytes
-  readstatus=read(dataP, rblock, 8*frameMk4*nfrms);
+  // read(dataP, rblock, 8*frameMk4*nfrms);
+  readstatus= reader.get_bytes(8*frameMk4*nfrms, (char *)rblock);
   if( (readstatus =! 8*frameMk4*nfrms ) )
     return -1;
   
@@ -564,7 +589,7 @@ int read64datafile(
 //*****************************************************************************
 int read32datafile(
   //input
-  int dataP, 
+  Input_reader &reader,                   
   //output
   char tracks[][frameMk4*nfrms])
 {
@@ -576,7 +601,8 @@ int read32datafile(
   INT32 rblock[frameMk4*nfrms], work;
   //read from data file into [frameMk4*nfrms] nr of blocks,
   //[FOUR*frameMk4*nfrms] nr of bytes
-  readstatus=read(dataP, rblock, 4*frameMk4*nfrms);
+  readstatus= reader.get_bytes(4*frameMk4*nfrms, (char *)rblock);
+//   readstatus=read(dataP, rblock, 4*frameMk4*nfrms);
   if( (readstatus =! 4*frameMk4*nfrms) )
     return -1;
   

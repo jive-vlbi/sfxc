@@ -85,6 +85,8 @@ Find Offsets
 Process data
 */
 
+#include <types.h>
+
 //standard c includes
 #include <stdio.h>
 #include <stdlib.h>
@@ -120,6 +122,7 @@ using namespace std;
 #include "InData.h"
 #include "ProcessData.h"
 
+#include <Input_reader_file.h>
 
 //global variables
 //declaration and default settings run parameters
@@ -228,13 +231,20 @@ int main(int argc, char *argv[])
       askContinue();
   }  
 
+  // NGHK: Has to be a pointer or a reference, 
+  //       since Input_reader is an abstract class
+  std::vector<Input_reader *> input_readers;
+  for (int i=0; i<Nstations; i++) {
+    input_readers.push_back(new Input_reader_file(StaPrms[i].get_mk4file()));
+  }
+
   //Find Offsets
-  FindOffsets(numtasks);
+  FindOffsets(input_readers, numtasks);
 
   if ( RunPrms.get_runoption() == 1) {
     //Process data
     //MULTIPLE CORE PROCESSING
-    CorrelateBufs(rank);
+    CorrelateBufs(rank, input_readers);
   }
 
   //close the mpi stuff

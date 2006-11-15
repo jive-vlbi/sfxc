@@ -18,19 +18,20 @@ Last change: 20061114
 
 */
 
-//these defines have to be the first in source file
-#define _LARGEFILE_SOURCE
-#define _LARGEFILE64_SOURCE
+// //these defines have to be the first in source file
+// #define _LARGEFILE_SOURCE
+// #define _LARGEFILE64_SOURCE
 
-//enable define on 32 bit CPU, disable on 64 bit CPU
-#define THIRTYTWO
+// //enable define on 32 bit CPU, disable on 64 bit CPU
+// #define THIRTYTWO
 
-//32 bit machine define,
-//use open, lseek, off_t in stead off open64, lseek64, off64_t
-#ifdef THIRTYTWO
-#define _FILE_OFFSET_BITS 64
-#endif
+// //32 bit machine define,
+// //use open, lseek, off_t in stead off open64, lseek64, off64_t
+// #ifdef THIRTYTWO
+// #define _FILE_OFFSET_BITS 64
+// #endif
 
+#include <types.h>
 
 //standard c includes
 #include <stdio.h>
@@ -73,16 +74,16 @@ extern GenP  GenPrms;
 extern StaP  StaPrms[NstationsMax];
 extern double PI;
 extern INT64 sliceStartByte[NstationsMax][NcoresMax];
-extern INT64 sliceStopByte [NstationsMax][NcoresMax];
+// extern INT64 sliceStopByte [NstationsMax][NcoresMax];
 extern INT64 sliceStartTime [NcoresMax];
-extern INT64 sliceStopTime  [NcoresMax];
+// extern INT64 sliceStopTime  [NcoresMax];
 extern INT64 sliceTime;
 
 
 //***************************************************************************
 //prototypes for local functions
 //***************************************************************************
-int fill_Bufs(int *inFile,
+int fill_Bufs(std::vector<Input_reader *> &readers,
   double **Bufs, double **dcBufPrev, int BufSize,
   double **Mk4frame, INT64 *FL, INT64 *FC,
   double *signST, double *magnST, INT64 *Nsamp,
@@ -97,14 +98,14 @@ int fetch_invecs(INT64& BufPtr, int nstations, int n2fft,
 //***************************************************************************
 // fill the buffers with pre-correlation data and correlate
 //***************************************************************************
-int CorrelateBufs(int rank)
+int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
 {
   //declarations
   int i,j,l;
   int nstations, sn, sno; //nr of stations and station counters
   int n2fft; //FFT length in correlation
   int pad; //padding with zeros for invecs
-  int *inFile; //file descriptor input file
+//   int *inFile; //file descriptor input file
   INT64 Nsamp2Avg; //nr of samples to average the correlation
   INT64 Nsegm2Avg; //nr of fourier segments to average the correlation
   INT64 segm; //segment number in for loop
@@ -143,7 +144,7 @@ int CorrelateBufs(int rank)
   fftw_plan    planFW, planBW;//plans for forward and backward fft 
   int lsegm; //fourier length of a segment in the pre-correlation
 
-cout << "correlation process " << rank << " started" << endl;
+  cout << "correlation process " << rank << " started" << endl;
   
   //initialisations and allocations  
   nstations = GenPrms.get_nstations();
@@ -156,7 +157,7 @@ cout << "correlation process " << rank << " started" << endl;
   TenPct    = Nsegm2Avg/10;
   SR=2.0*GenPrms.get_bwfl()*GenPrms.get_ovrfl();//sample rate
   tbs=1.0/SR; //time between samples in seconds
-  BufSize   = BufTime * (SR/1000000.0);
+  BufSize   = (int)(BufTime * (SR/1000000.0));
   Nf = lsegm/2+1;
   dfr = 1.0/(lsegm*tbs);
   fs = new double[Nf];
@@ -175,7 +176,7 @@ cout << "correlation process " << rank << " started" << endl;
   }
     
   norms = new float[nbslns];
-  inFile = new int[nstations];
+  //inFile = new int[nstations];
   BytePtr = new INT64[nstations];
   signST = new double[nstations];
   magnST = new double[nstations];
@@ -280,12 +281,13 @@ cout << "correlation process " << rank << " started" << endl;
   //open the input files
   //initialise file pointers in Bytes and set file pointers
   for (sn=0; sn<nstations; sn++) {
-    inFile[sn]=open(StaPrms[sn].get_mk4file(),O_RDONLY,0);
+    //inFile[sn]=open(StaPrms[sn].get_mk4file(),O_RDONLY,0);
     BytePtr[sn] = sliceStartByte[sn][rank];
-    statusPtr=lseek(inFile[sn],BytePtr[sn],SEEK_SET);
+    statusPtr = readers[sn]->move_forward(BytePtr[sn]);
     if (statusPtr != BytePtr[sn]){
-      cerr << "Could not go the requested file position for file: "<<
-        StaPrms[sn].get_mk4file() << endl;
+      cerr << "Could not go the requested file position for file: "
+	   // << StaPrms[sn].get_mk4file() 
+	   << endl;
       return -1;
     }
   }
@@ -296,7 +298,8 @@ cout << "correlation process " << rank << " started" << endl;
     for (i=0; i<2*BufSize; i++) {
       if (FC[sn] == FL[sn]) {
         //fill Mk4frame if frame counter at end of array
-        fill_Mk4frame(sn, inFile[sn], Mk4frame[sn], signST, magnST, Nsamp);
+        fill_Mk4frame(sn, *readers[sn], Mk4frame[sn], 
+		      signST, magnST, Nsamp);
         FC[sn] = 0;
       }
       //fill remaining of dcBufs with data from Mk4
@@ -343,7 +346,7 @@ cout << "correlation process " << rank << " started" << endl;
       //read data from data files, do pre-correlation, 
       //and put results in Bufs. 
       if ( (BufPtr+n2fft)>BufSize ) {
-        fill_Bufs(inFile,
+        fill_Bufs(readers,
           Bufs,dcBufPrev,BufSize,
           Mk4frame,FL,FC,signST,magnST,Nsamp,
           sls,spls,planFW,planBW,
@@ -438,14 +441,17 @@ cout << "correlation process " << rank << " started" << endl;
     }
 
     //determine position of file read pointer 
-    BytePtr[0] = lseek(inFile[0], 0, SEEK_CUR);
-    if (RunPrms.get_messagelvl()> 0)
-      cout <<
-        "BytePtr[0]            =" << BytePtr[0] << endl <<
-        "sliceStopByte[0]["<< rank <<"]=" << sliceStopByte[0][rank] << endl <<
-        "timePtr=" << timePtr << endl;
-    //break from while loop at end of time slice
-    if (BytePtr[0] >= sliceStopByte[0][rank]) break;
+//     BytePtr[0] = lseek(inFile[0], 0, SEEK_CUR);
+//     if (RunPrms.get_messagelvl()> 0)
+//       cout <<
+//         "BytePtr[0]            =" << BytePtr[0] << endl <<
+//         //"sliceStopByte[0]["<< rank <<"]=" << sliceStopByte[0][rank] << endl <<
+//         "timePtr=" << timePtr << endl;
+//     //break from while loop at end of time slice
+
+    // NGHK: CHANGE THIS:
+    if (loop >= 3) break;
+//     if (BytePtr[0] >= sliceStopByte[0][rank]) break;
     
   } // End while loop for processing from startbyte until stopbyte
   
@@ -454,16 +460,13 @@ cout << "correlation process " << rank << " started" << endl;
   //close output file
 
   //close the input files
-  for (sn=0; sn<nstations; sn++){
-    close(inFile[sn]);
-  }
+//   for (sn=0; sn<nstations; sn++){
+//     close(inFile[sn]);
+//   }
   //close the output result file
   fclose(outP);
   
   //free allocated memory   
-    
-
-
   for (sn=0; sn<nstations; sn++){
     delete [] fdel[sn];
     delete [] rdel[sn];
@@ -517,7 +520,7 @@ cout << "correlation process " << rank << " started" << endl;
   delete [] magnST;
   delete [] signST;
   delete [] BytePtr;
-  delete [] inFile;
+  //delete [] inFile;
   delete [] norms;
   
   delete [] fs;
@@ -534,7 +537,7 @@ cout << "correlation process " << rank << " started" << endl;
 //read data from data files delay correction, and put results in Bufs.
 //remember data in dcBufPrev
 //***************************************************************************
-int fill_Bufs(int *inFile,
+int fill_Bufs(std::vector<Input_reader *> &readers,
   double **Bufs, double **dcBufPrev, int BufSize,
   double **Mk4frame, INT64 *FL, INT64 *FC,
   double *signST, double *magnST, INT64 *Nsamp,
@@ -584,7 +587,7 @@ int fill_Bufs(int *inFile,
     for (i=2*BufSize; i<3*BufSize; i++) {
      if (FC[sn] == FL[sn]) {
         //fill Mk4frame if frame counter at end of array
-        fill_Mk4frame(sn, inFile[sn], Mk4frame[sn], signST, magnST, Nsamp);
+       fill_Mk4frame(sn, *readers[sn], Mk4frame[sn], signST, magnST, Nsamp);
         FC[sn] = 0;
       }
       //fill remaining of dcBufs with data from Mk4file
@@ -604,7 +607,7 @@ int fill_Bufs(int *inFile,
         exit(0);
       }      
       //address shift due to time delay for the  current segment
-      jshift = floor(Cdel/tbs+0.5);
+      jshift = (long long int)floor(Cdel/tbs+0.5);
       //fill the complex sls array
       for (jl=0; jl<lsegm; jl++){
         sls[jl][0] = dcBufs[sn][2*BufSize+jshift+jl+jsegm*lsegm];
