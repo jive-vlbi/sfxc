@@ -13,8 +13,8 @@ Started      20060901
 Last change  20061114
 
 TODO: add doxygen style comments in *.cc and *.h
-TODO: add cvs keywords in *.cc and *.h
 TODO: review message levels in *.cc and *.h
+TODO: compiler at huygens generates more warning, check and try to fic this
 
 Description
 sfxc correlates the single channel data from N stations recorded on linux
@@ -66,7 +66,7 @@ phase table files
 -TODO the use of this table is not implemented yet
 
 Output:
--log file.  TODO: wirting of log file not implemented
+-log file.  TODO: writing of log file not implemented
 -correlator file(s), one per time slice. TODO: concatenate into one output file
 
 Usage:
@@ -177,12 +177,12 @@ int main(int argc, char *argv[])
     cerr << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
     return -1;
   }
-  
+
   //show version information and control file info
-  if (RunPrms.get_messagelvl()> 0)
+  if (RunPrms.get_messagelvl() > 0)
     cout << "\nSource " << __FILE__ << " compiled at: "
          << __DATE__ << " " <<__TIME__ << "\n\n"
-         << "Control file name "  <<  ctrlFile << "\n";
+         << "Control file name "  <<  ctrlFile << "\n\n";
   
   //check control parameters, optionally show them
   if (RunPrms.check_params() != 0) {
@@ -234,9 +234,7 @@ int main(int argc, char *argv[])
   if ( RunPrms.get_runoption() == 1) {
     //Process data
     //MULTIPLE CORE PROCESSING
-    cout << "correlation on core " << rank << " started" << endl;
     CorrelateBufs(rank);
-    cout << "correlation on core " << rank << " finished" << endl;
   }
 
   //close the mpi stuff

@@ -133,7 +133,7 @@ int fms(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
 int FindOffsets(int numtasks)
 {
   
-  int   retval = 0, i, j, sn, NrStations, cn;
+  int   retval = 0, i, j, sn, NrStations, tn;
   int   jsynch[NstationsMax];
   INT64 usTime[NstationsMax], offTime[NstationsMax];
   INT64 offFrames[NstationsMax], offBytes[NstationsMax];
@@ -222,11 +222,11 @@ int FindOffsets(int numtasks)
   for (sn=0; sn<NrStations; sn++) {
     if (RunPrms.get_messagelvl()> 1)
       cout << "station=" << sn <<" start stop: ";
-    for (cn=0; cn<numtasks; cn++) {
-      sliceStartByte[sn][cn] = StartByte[sn] + cn*deltaBytes[sn];
-      sliceStopByte[sn][cn]  = sliceStartByte[sn][cn] + deltaBytes[sn];
+    for (tn=0; tn<numtasks; tn++) {
+      sliceStartByte[sn][tn] = StartByte[sn] + tn*deltaBytes[sn];
+      sliceStopByte[sn][tn]  = sliceStartByte[sn][tn] + deltaBytes[sn];
       if (RunPrms.get_messagelvl()> 1)
-        cout << sliceStartByte[sn][cn] << " " << sliceStopByte[sn][cn] << "   ";
+        cout << sliceStartByte[sn][tn] << " " << sliceStopByte[sn][tn] << "   ";
     }
     if (RunPrms.get_messagelvl()> 1) cout << endl;
   }
@@ -234,15 +234,15 @@ int FindOffsets(int numtasks)
   if (RunPrms.get_messagelvl()> 1)
     cout << "Slice start and stop times per core" << endl;
   sliceTime = (GenPrms.get_usLatest()-GenPrms.get_usEarliest() )/ (numtasks*1);
-  for (cn=0; cn<numtasks; cn++) {
-    sliceStartTime[cn] = GenPrms.get_usEarliest()/1 + sliceTime*cn;
-    dus = GenPrms.get_dst()* 24;
+  for (tn=0; tn<numtasks; tn++) {
+    sliceStartTime[tn] = GenPrms.get_usEarliest()/1 + sliceTime*tn;
+    dus = GenPrms.get_dst()* 24; //dus = day in micro seconds
     dus = dus * 3600;
     dus = dus * 1000000;
-    sliceStartTime[cn] = sliceStartTime[cn] - dus;
-    sliceStopTime[cn] = sliceStartTime[cn] + sliceTime;
+    sliceStartTime[tn] = sliceStartTime[tn] - dus;
+    sliceStopTime[tn] = sliceStartTime[tn] + sliceTime;
     if (RunPrms.get_messagelvl()> 1)
-      cout << sliceStartTime[cn] << " " << sliceStopTime[cn] << endl;
+      cout << sliceStartTime[tn] << " " << sliceStopTime[tn] << endl;
   }    
   return retval;
   
@@ -996,7 +996,7 @@ INT64 Delaydt(char *DelayTableName)
 //  mdel: tangential motion corrections
 //  rdel: spacecraft geocentric delay
 //*****************************************************************************
-int ReadDelayTable(char *DelayTableName, INT64 tableStartTime,
+int ReadDelayTable(char *DelayTableName, INT64& tableStartTime, INT64 delaydt,
     int Ndr, int Cde, int Mde, int Rde,
     INT64 *tdel, double *cdel, double *mdel, double *rdel, double *fdel)
 {
@@ -1009,8 +1009,14 @@ int ReadDelayTable(char *DelayTableName, INT64 tableStartTime,
     fp = fopen(DelayTableName, "r");
     if (fp) {
         rewind(fp);
+        fgets(sB,256,fp);
+        tdel[0] = atof(strtok(sB,sep))*1000000;
+        cdel[0] = atof(strtok((char*)0,sep)) / 1000000.0;
+        mdel[0] = atof(strtok((char*)0,sep)) / 1000000.0;
+        rdel[0] = atof(strtok((char*)0,sep)) / 1000000.0;
+        fdel[0] = Cde*cdel[0]+Mde*mdel[0]+Rde*rdel[0];
         //look for start point in delay table
-        while ( tdel[0] != tableStartTime  )
+        while ( tableStartTime - tdel[0] >= delaydt  )
         {
             fgets(sB,256,fp);
             tdel[0] = atof(strtok(sB,sep))*1000000;
@@ -1020,7 +1026,8 @@ int ReadDelayTable(char *DelayTableName, INT64 tableStartTime,
             fdel[0] = Cde*cdel[0]+Mde*mdel[0]+Rde*rdel[0];
         }
 
-        if ( tdel[0] == tableStartTime ) {
+        if ( tableStartTime - tdel[0] < delaydt) {
+            if (tableStartTime != tdel[0] ) tableStartTime = tdel[0];
             //start point found in DelayTable read rest of Ndr lines
             jdr=1;
             while( fgets(sB,256,fp)  &&  jdr<Ndr) {
