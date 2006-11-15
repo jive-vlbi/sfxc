@@ -16,7 +16,7 @@ int fill_Mk4frame(int sn, int inFile, double *Mk4frame,
 
 INT64 Delaydt(char *DelayTableName);
 
-int ReadDelayTable(char *DelayTableName, INT64 tableStartTime,
+int ReadDelayTable(char *DelayTableName, INT64& tableStartTime, INT64 delaydt,
     int Ndr, int Cde, int Mde, int Rde,
     INT64 *tdel, double *cdel, double *mdel, double *rdel, double *fdel);
 
