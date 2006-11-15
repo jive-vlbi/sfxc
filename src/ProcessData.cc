@@ -88,7 +88,7 @@ int fill_Bufs(int *inFile,
   double *signST, double *magnST, INT64 *Nsamp,
   fftw_complex *sls, fftw_complex *spls, fftw_plan& planFW, fftw_plan& planBW,
   double tbs, double *fs, int Nf, double& timePtr,
-  INT64 *delaydt, double **cdel, double **fdel, INT64 ndel, int core);
+  INT64 *delaydt, double **cdel, double **fdel, INT64 ndel, int rank);
 
 int fetch_invecs(INT64& BufPtr, int nstations, int n2fft,
   double **invecs, double **Bufs);
@@ -97,7 +97,7 @@ int fetch_invecs(INT64& BufPtr, int nstations, int n2fft,
 //***************************************************************************
 // fill the buffers with pre-correlation data and correlate
 //***************************************************************************
-int CorrelateBufs(int core)
+int CorrelateBufs(int rank)
 {
   //declarations
   int i,j,l;
@@ -143,6 +143,8 @@ int CorrelateBufs(int core)
   fftw_plan    planFW, planBW;//plans for forward and backward fft 
   int lsegm; //fourier length of a segment in the pre-correlation
 
+cout << "correlation process " << rank << " started" << endl;
+  
   //initialisations and allocations  
   nstations = GenPrms.get_nstations();
   nbslns    = nstations*(nstations-1)/2 + nstations; //cross + auto 
@@ -197,6 +199,7 @@ int CorrelateBufs(int core)
   Mk4frame = new double *[nstations];
   FL = new INT64 [nstations];
   FC = new INT64 [nstations];
+
   for (sn=0; sn<nstations; sn++){
     FL[sn] = frameMk4*StaPrms[sn].get_fo();
     FC[sn] = FL[sn];
@@ -241,15 +244,17 @@ int CorrelateBufs(int core)
   mdel    = new double*[nstations];
   rdel    = new double*[nstations];
   fdel    = new double*[nstations];
+
   for (sn=0; sn<nstations; sn++) {
     //determine intervals in delay tables
     delaydt[sn] = Delaydt(StaPrms[sn].get_delaytable());
-    ndel = sliceTime/delaydt[sn]+1;//nr of delay lines
+    ndel = sliceTime/delaydt[sn]+3;//nr of delay lines
     if (RunPrms.get_messagelvl()> 1){
-      cout << "delaydt=" << delaydt[sn] << endl;
-      cout << "sliceTime=" << sliceTime << endl;
-      cout << "ndel=" << ndel << endl;
-      cout << "sliceStartTime=" << sliceStartTime[core] << endl;
+      cout << rank << " " << sn << " delaydt=" << delaydt[sn] << endl;
+      cout << rank << " " << sn << " sliceTime=" << sliceTime << endl;
+      cout << rank << " " << sn << " ndel=" << ndel << endl;
+      cout << rank << " " << sn << " B sliceStartTime=" << sliceStartTime[rank] << endl;
+      cout << rank << " " << sn << " delay table=" << StaPrms[sn].get_delaytable() << endl;
     }
     tdel[sn]= new INT64[ndel];
     cdel[sn]= new double[ndel];
@@ -257,14 +262,18 @@ int CorrelateBufs(int core)
     rdel[sn]= new double[ndel];
     fdel[sn]= new double[ndel];
     tdel[sn][0] = 0;
-    ReadDelayTable(StaPrms[sn].get_delaytable(), sliceStartTime[core],
+    
+    ReadDelayTable(StaPrms[sn].get_delaytable(), sliceStartTime[rank], delaydt[sn],
       ndel, GenPrms.get_cde(), GenPrms.get_mde(), GenPrms.get_rde(),
       tdel[sn], cdel[sn], mdel[sn], rdel[sn], fdel[sn]);
+      
+//    cout << rank << " " << sn << " A sliceStartTime=" << sliceStartTime[rank] << endl;
+      
   }
 
   //open the output file
   strcpy(outFile,GenPrms.get_corfile());
-  sprintf(coreStr,"%.2d",core);
+  sprintf(coreStr,"%.2d",rank);
   strcat(outFile,coreStr);
   outP = fopen64(outFile,"wb");
 
@@ -272,7 +281,7 @@ int CorrelateBufs(int core)
   //initialise file pointers in Bytes and set file pointers
   for (sn=0; sn<nstations; sn++) {
     inFile[sn]=open(StaPrms[sn].get_mk4file(),O_RDONLY,0);
-    BytePtr[sn] = sliceStartByte[sn][core];
+    BytePtr[sn] = sliceStartByte[sn][rank];
     statusPtr=lseek(inFile[sn],BytePtr[sn],SEEK_SET);
     if (statusPtr != BytePtr[sn]){
       cerr << "Could not go the requested file position for file: "<<
@@ -299,7 +308,7 @@ int CorrelateBufs(int core)
 
   
   //loop initializations
-  timePtr = sliceStartTime[core];
+  timePtr = sliceStartTime[rank];
   BufPtr = BufSize;
   loop=0;
   if (RunPrms.get_messagelvl()> 0)
@@ -339,7 +348,7 @@ int CorrelateBufs(int core)
           Mk4frame,FL,FC,signST,magnST,Nsamp,
           sls,spls,planFW,planBW,
           tbs,fs,Nf,timePtr,
-          delaydt,cdel,fdel,ndel,core);
+          delaydt,cdel,fdel,ndel,rank);
         timePtr=timePtr+BufTime;
         BufPtr=0;
       }
@@ -379,8 +388,9 @@ int CorrelateBufs(int core)
         }
       }
       
-      if (segm%TenPct == 0)
-        cout << "segm=" << segm << endl;
+      if (RunPrms.get_messagelvl()> 0)
+        if (segm%TenPct == 0)
+          cout << "segm=" << segm << endl;
       
     }
 
@@ -432,10 +442,10 @@ int CorrelateBufs(int core)
     if (RunPrms.get_messagelvl()> 0)
       cout <<
         "BytePtr[0]            =" << BytePtr[0] << endl <<
-        "sliceStopByte[0]["<< core <<"]=" << sliceStopByte[0][core] << endl <<
+        "sliceStopByte[0]["<< rank <<"]=" << sliceStopByte[0][rank] << endl <<
         "timePtr=" << timePtr << endl;
     //break from while loop at end of time slice
-    if (BytePtr[0] >= sliceStopByte[0][core]) break;
+    if (BytePtr[0] >= sliceStopByte[0][rank]) break;
     
   } // End while loop for processing from startbyte until stopbyte
   
@@ -451,18 +461,51 @@ int CorrelateBufs(int core)
   fclose(outP);
   
   //free allocated memory   
-  delete [] norms;
-  delete [] inFile;
-  delete [] BytePtr;
-  delete [] signST;
-  delete [] magnST;
-  delete [] Nsamp;
-  delete [] sls;
-  delete [] spls;
-  delete [] fs;
+    
+
+
+  for (sn=0; sn<nstations; sn++){
+    delete [] fdel[sn];
+    delete [] rdel[sn];
+    delete [] mdel[sn];
+    delete [] cdel[sn];
+    delete [] tdel[sn];
+  }
+  delete [] fdel;
+  delete [] rdel;
+  delete [] mdel;
+  delete [] cdel;
+  delete [] tdel;
+  delete [] delaydt;
+  
   fftw_destroy_plan(planFW);
   fftw_destroy_plan(planBW);
-    
+  delete [] spls;
+  delete [] sls;
+
+  for (sn=0; sn<nstations; sn++)
+    fftw_destroy_plan(fwd_plans[sn]);
+
+  delete [] fwd_plans;
+  
+  for (j=0; j<nbslns; j++)
+    delete [] accxps[j];
+  delete [] accxps;
+  
+  for (sn=0; sn<nstations; sn++)
+    delete [] xps[sn];
+  delete [] xps;
+  
+  for (sn=0; sn<nstations; sn++)
+    delete [] Mk4frame[sn];
+  delete [] Mk4frame;  
+  delete [] FL;
+  delete [] FC;
+
+  for (sn=0; sn<nstations; sn++)
+    delete [] invecs[sn];
+  delete [] invecs;
+  
   for (sn=0; sn<nstations; sn++){
     delete [] Bufs[sn];
     delete [] dcBufPrev[sn];
@@ -470,42 +513,16 @@ int CorrelateBufs(int core)
   delete [] Bufs;
   delete [] dcBufPrev;
   
-  for (sn=0; sn<nstations; sn++)
-    delete [] invecs[sn];
-  delete [] invecs;
+  delete [] Nsamp;
+  delete [] magnST;
+  delete [] signST;
+  delete [] BytePtr;
+  delete [] inFile;
+  delete [] norms;
   
-  delete [] FL;
-  delete [] FC;
-  for (sn=0; sn<nstations; sn++)
-    delete [] Mk4frame[sn];
-  delete [] Mk4frame;  
-
+  delete [] fs;
   
-  for (sn=0; sn<nstations; sn++)
-    delete [] xps[sn];
-  delete [] xps;
-  
-  for (j=0; j<nbslns; j++)
-    delete [] accxps[j];
-  delete [] accxps;
-  
-  //destroy fftw plans
-  for (sn=0; sn<nstations; sn++)
-    fftw_destroy_plan(fwd_plans[sn]);
-
-  delete [] delaydt;
-  for (sn=0; sn<nstations; sn++){
-    delete [] tdel[sn];
-    delete [] cdel[sn];
-    delete [] mdel[sn];
-    delete [] rdel[sn];
-    delete [] fdel[sn];
-  }
-  delete [] tdel;
-  delete [] cdel;
-  delete [] mdel;
-  delete [] rdel;
-  delete [] fdel;
+  cout << "correlation process " << rank << " finished" << endl;
   
   return 1;
 
@@ -523,7 +540,7 @@ int fill_Bufs(int *inFile,
   double *signST, double *magnST, INT64 *Nsamp,
   fftw_complex *sls, fftw_complex *spls, fftw_plan& planFW, fftw_plan& planBW,
   double tbs, double *fs, int Nf, double& timePtr,
-  INT64 *delaydt, double **cdel, double **fdel, INT64 ndel, int core)
+  INT64 *delaydt, double **cdel, double **fdel, INT64 ndel, int rank)
 {
   //declarations
   int retval = 0;
@@ -578,8 +595,10 @@ int fill_Bufs(int *inFile,
     //apply delay and phase corrections for all segments
     //in other words process data in dcBufs, output in Bufs
     for (jsegm=0; jsegm<Nsegm2DC; jsegm++) {
-      Time = timePtr + jsegm*lsegm*tbs*1000000.; //in usec    
-      Cdel = ParInteRp(Time, sliceStartTime[core], cdel[sn], delaydt[sn], ndel);
+      Time = timePtr + jsegm*lsegm*tbs*1000000.; //in usec
+      Cdel = 0.0;
+//TODO calculation of Cdel causes runtime errors when TimeToProcess%numtasks!=0
+//      Cdel = ParInteRp(Time, sliceStartTime[rank], cdel[sn], delaydt[sn], ndel);
       if (Cdel>0.0) {
         cerr << "Cdel > 0.0 in fill_Bufs." << endl;
         exit(0);
@@ -607,7 +626,9 @@ int fill_Bufs(int *inFile,
       //calculate the fract bit phase corrections and
       //apply them and pi/2 also
       Time = timePtr + jsegm*lsegm*tbs*1000000.+lsegm/2*tbs*1000000.;
-      Cdel = ParInteRp(Time, sliceStartTime[core], cdel[sn], delaydt[sn], ndel);
+      Cdel = 0.0;    
+//TODO calculation of Cdel causes runtime errors when TimeToProcess%numtasks!=0
+//      Cdel = ParInteRp(Time, sliceStartTime[rank], cdel[sn], delaydt[sn], ndel);
       if (Cdel>0.0) {
         cerr << "Cdel > 0.0 in fill_Bufs." << endl;
         exit(0);
@@ -631,13 +652,15 @@ int fill_Bufs(int *inFile,
       for (jl=0;jl<lsegm;jl++)
       {
         Time = timePtr + jsegm*lsegm*tbs*1000000. + jl*tbs*1000000.;
-        Fdel = ParInteRp(Time, sliceStartTime[core], fdel[sn], delaydt[sn], ndel);
-//check with Sergei if Fdel has to be negative
+        Fdel = 0.0;
+//TODO calculation of Fdel causes runtime errors when TimeToProcess%numtasks!=0
+//        Fdel = ParInteRp(Time, sliceStartTime[rank], fdel[sn], delaydt[sn], ndel);
+//TODO check with Sergei if Fdel has to be negative
 //        if (Fdel>0.0) {
 //          cerr << "Fdel > 0.0 in fill_Bufs." << endl;
 //          exit(0);
 //        }      
-//Disabled for test purposes
+//TODO Disabled for test purposes
 //        if (phaseCorrOn) Phase = ParInteRp(Time, phase, delaydt);
         phi = -2.0*PI*(StaPrms[sn].get_loobs()+GenPrms.get_startf()+
           GenPrms.get_bwfl()*0.5+GenPrms.get_foffset())*Fdel + Phase;
