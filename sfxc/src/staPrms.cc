@@ -14,25 +14,27 @@ Last change: 20061114
 
 */
 
-//these defines have to be the first in source file
-#define _LARGEFILE_SOURCE
-#define _LARGEFILE64_SOURCE
+// //these defines have to be the first in source file
+// #define _LARGEFILE_SOURCE
+// #define _LARGEFILE64_SOURCE
 
-//enable define on 32 bit CPU, disable on 64 bit CPU
-#define THIRTYTWO
+// //enable define on 32 bit CPU, disable on 64 bit CPU
+// #define THIRTYTWO
 
-//32 bit machine define,
-//use open, lseek, off_t in stead off open64, lseek64, off64_t
-#ifdef THIRTYTWO
-#define _FILE_OFFSET_BITS 64
-#endif
+// //32 bit machine define,
+// //use open, lseek, off_t in stead off open64, lseek64, off64_t
+// #ifdef THIRTYTWO
+// #define _FILE_OFFSET_BITS 64
+// #endif
 
-//WARNING, check if definitions are appropriate on machine
-//definition of 32 bit and 64 bit (un)signed integers
-#define INT32  int
-#define UINT32 unsigned int
-#define INT64  long long
-#define UINT64 unsigned long long
+// //WARNING, check if definitions are appropriate on machine
+// //definition of 32 bit and 64 bit (un)signed integers
+// #define INT32  int
+// #define UINT32 unsigned int
+// #define INT64  long long
+// #define UINT64 unsigned long long
+
+#include <types.h>
 
 //standard c includes
 #include <stdio.h>

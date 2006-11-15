@@ -74,6 +74,8 @@ Find Offsets
 Process data
 */
 
+#include <types.h>
+
 //standard c includes
 #include <stdio.h>
 #include <stdlib.h>
@@ -102,6 +104,9 @@ using namespace std;
 #include "InData.h"
 #include "ProcessData.h"
 
+#include <vector>
+#include <Input_reader_file.h>
+
 
 //global variables
 //declaration and default settings run parameters
@@ -116,14 +121,18 @@ UINT32 seed;
 double PI=4.0*atan(1.0);
 //declarations for offsets
 INT64 sliceStartByte[NstationsMax][NcoresMax];
-INT64 sliceStopByte [NstationsMax][NcoresMax];
+// INT64 sliceStopByte [NstationsMax][NcoresMax];
 INT64 sliceStartTime [NcoresMax];
-INT64 sliceStopTime  [NcoresMax];
+//INT64 sliceStopTime  [NcoresMax];
 INT64 sliceTime;
 
 
 int main(int argc, char *argv[])
 {
+  if (argc != 2) {
+    std::cout << "usage: " << argv[0] << " <ctrl-file>" << std::endl;
+    exit(1);
+  }
 
   //declarations
   char   ctrlFile[lineLength]; // control file name
@@ -203,15 +212,22 @@ int main(int argc, char *argv[])
     if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0) askContinue();
   }  
 
+  // NGHK: Has to be a pointer or a reference, 
+  //       since Input_reader is an abstract class
+  std::vector<Input_reader *> input_readers;
+  for (int i=0; i<Nstations; i++) {
+    input_readers.push_back(new Input_reader_file(StaPrms[i].get_mk4file()));
+  }
+
   //Find Offsets
-  FindOffsets(numtasks);
+  FindOffsets(input_readers, numtasks);
 
   if ( RunPrms.get_runoption() == 1) {
     //Process data
     //MULTIPLE CORE PROCESSING
     int rank=0;
     cout << "correlation on core " << rank << " started" << endl;
-    CorrelateBufs(rank);
+    CorrelateBufs(rank, input_readers);
     cout << "correlation on core " << rank << " finished" << endl;
   }
   return 1;
