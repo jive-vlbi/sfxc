@@ -145,6 +145,11 @@ INT64 sliceTime;
 
 int main(int argc, char *argv[])
 {
+  if (argc != 2) {
+    std::cout << "usage: " << argv[0] << " <ctrl-file>" << std::endl;
+    exit(1);
+  }
+
 
   //declarations
   char   ctrlFile[lineLength]; // control file name
@@ -165,6 +170,10 @@ int main(int argc, char *argv[])
   MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+
+  if (rank==0) {
+    std::cout << "Sfcx v" << PACKAGE_VERSION << std::endl;
+  }
 
   if(numtasks < 1) //entered at the command line
   {

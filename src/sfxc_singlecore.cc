@@ -134,6 +134,8 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
+  std::cout << "Sfcx v" << PACKAGE_VERSION << std::endl;
+
   //declarations
   char   ctrlFile[lineLength]; // control file name
   int    i, Nstations;
@@ -148,14 +150,7 @@ int main(int argc, char *argv[])
     cout << "number of tasks is larger than 4, program aborted\n";
     return -1;
   }
-/*
-  //check usage
-  if(argc != 2 ) {
-    cout << "USAGE: sfxc01  ctrlFile  or \n"
-         << "       sfxc01t ctrlFile  \n\n";
-    return -1;
-  }
-*/  
+
   //set the control file name
   strcpy(ctrlFile,argv[1]);
 
