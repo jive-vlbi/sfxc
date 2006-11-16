@@ -76,7 +76,7 @@ extern double PI;
 extern INT64 sliceStartByte[NstationsMax][NcoresMax];
 // extern INT64 sliceStopByte [NstationsMax][NcoresMax];
 extern INT64 sliceStartTime [NcoresMax];
-// extern INT64 sliceStopTime  [NcoresMax];
+extern INT64 sliceStopTime  [NcoresMax];
 extern INT64 sliceTime;
 
 
@@ -346,12 +346,13 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
       //read data from data files, do pre-correlation, 
       //and put results in Bufs. 
       if ( (BufPtr+n2fft)>BufSize ) {
-        fill_Bufs(readers,
-          Bufs,dcBufPrev,BufSize,
-          Mk4frame,FL,FC,signST,magnST,Nsamp,
-          sls,spls,planFW,planBW,
-          tbs,fs,Nf,timePtr,
-          delaydt,cdel,fdel,ndel,rank);
+        int nBytes = fill_Bufs(readers,
+                               Bufs,dcBufPrev,BufSize,
+                               Mk4frame,FL,FC,signST,magnST,Nsamp,
+                               sls,spls,planFW,planBW,
+                               tbs,fs,Nf,timePtr,
+                               delaydt,cdel,fdel,ndel,rank);
+        if (nBytes <= 0) break;
         timePtr=timePtr+BufTime;
         BufPtr=0;
       }
@@ -450,7 +451,12 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
 //     //break from while loop at end of time slice
 
     // NGHK: CHANGE THIS:
-    if (loop >= 3) break;
+    std::cout << "timePtr  = " << (INT64)timePtr << std::endl;
+    std::cout << "stoptime = " << sliceStopTime[0] << std::endl;
+    if (timePtr > sliceStopTime[0]) {
+      std::cout << "processed until after stop time" << std::endl;
+      break;
+    }
 //     if (BytePtr[0] >= sliceStopByte[0][rank]) break;
     
   } // End while loop for processing from startbyte until stopbyte
@@ -587,7 +593,12 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
     for (i=2*BufSize; i<3*BufSize; i++) {
      if (FC[sn] == FL[sn]) {
         //fill Mk4frame if frame counter at end of array
-       fill_Mk4frame(sn, *readers[sn], Mk4frame[sn], signST, magnST, Nsamp);
+       int nBytes = fill_Mk4frame(sn, *readers[sn], Mk4frame[sn], 
+                                  signST, magnST, Nsamp);
+       if (nBytes==0) {
+         std::cout << "End of input for reader " << sn << std::endl;
+         return nBytes;
+       }
         FC[sn] = 0;
       }
       //fill remaining of dcBufs with data from Mk4file
@@ -685,7 +696,7 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
     delete [] dcBufs[sn];
   delete [] dcBufs;
   
-  return retval;
+  return 1;
 }
 
 

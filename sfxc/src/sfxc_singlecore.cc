@@ -123,7 +123,7 @@ double PI=4.0*atan(1.0);
 INT64 sliceStartByte[NstationsMax][NcoresMax];
 // INT64 sliceStopByte [NstationsMax][NcoresMax];
 INT64 sliceStartTime [NcoresMax];
-//INT64 sliceStopTime  [NcoresMax];
+INT64 sliceStopTime  [NcoresMax];
 INT64 sliceTime;
 
 
