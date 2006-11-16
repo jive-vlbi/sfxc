@@ -6,7 +6,7 @@
 #include <netinet/in.h> // sockaddr_in
 #include <netdb.h>      // getservbyname()
 
-Input_reader_mark5::Input_reader_mark5(char *protocol) 
+Input_reader_mark5::Input_reader_mark5(char *protocol, int port) 
   : buffer(), msglev(-1)
 {
   int protocol_type, unconnected_sock;
@@ -67,15 +67,8 @@ Input_reader_mark5::Input_reader_mark5(char *protocol)
 
   struct sockaddr_in socaddin;  /* For connect() socket info */ 
 
-  { // Get port number
-    struct servent * set;    
-    if ((set = getservbyname("m5data", protocol)) != NULL) {
-      socaddin.sin_port = set->s_port;
-    } else {
-      // NGHK: hardcoded the port if it is not in /etc/services:
-      socaddin.sin_port = 2630; 
-    }
-  }
+  socaddin.sin_port = port;
+
   if (msglev < 1) {
     std::cerr << "DEBUG: port is " << socaddin.sin_port << std::endl;
   }

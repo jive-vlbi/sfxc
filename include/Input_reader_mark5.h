@@ -10,18 +10,22 @@
  **/
 class Input_reader_mark5 : public Input_reader {
 public:
-  Input_reader_mark5(char *protocol = "tcp");
+  /**
+     Constructor.
+     @param[in] protocol The network protocol that should be used. For
+                now: tcp, udp (not tested). Later: tsunami, streaming
+                (tcp for headers, udp for data)?
+     @param[in] port: the port number on which the reader should
+                listen for a connection
+   **/
+  Input_reader_mark5(char *protocol = "tcp",
+                     int port = 2630);
   ~Input_reader_mark5();
 
   INT64 move_forward(INT64 nBytes);
   INT64 get_bytes(INT64 nBytes, char *out);
   
 private:
-//   /** Reads from the network into the buffer.
-//    **/
-//   void *read_mark5(void *);
-
-//   sem_t empty, full;
   std::vector<char> buffer;
   int sock;
   int msglev;
