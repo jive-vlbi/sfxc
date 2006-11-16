@@ -68,7 +68,7 @@ extern UINT32 seed;
 extern INT64 sliceStartByte[NstationsMax][NcoresMax];
 // extern INT64 sliceStopByte [NstationsMax][NcoresMax];
 extern INT64 sliceStartTime [NcoresMax];
-// extern INT64 sliceStopTime  [NcoresMax];
+extern INT64 sliceStopTime  [NcoresMax];
 extern INT64 sliceTime;
 
 
@@ -251,9 +251,9 @@ int FindOffsets(std::vector<Input_reader *> input_readers,
     dus = dus * 3600;
     dus = dus * 1000000;
     sliceStartTime[tn] = sliceStartTime[tn] - dus;
-//     sliceStopTime[tn] = sliceStartTime[tn] + sliceTime;
-//     if (RunPrms.get_messagelvl()> 1)
-//       cout << sliceStartTime[tn] << " " << sliceStopTime[tn] << endl;
+    sliceStopTime[tn] = sliceStartTime[tn] + sliceTime;
+    if (RunPrms.get_messagelvl()> 1)
+      cout << sliceStartTime[tn] << " " << sliceStopTime[tn] << endl;
   }    
   return retval;
   
