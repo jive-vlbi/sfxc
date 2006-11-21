@@ -6,7 +6,7 @@ AM_CXXFLAGS =
 bin_PROGRAMS = sfxc sfxc_singlecore sfxc_adam
 
 OBJ=runPrms.cc genPrms.cc staPrms.cc genFunctions.cc \
-    InData.cc ProcessData.cc Input_reader_file.cc
+    InData.cc ProcessData.cc Input_reader_file.cc delayTable.cc
 
 sfxc_SOURCES = $(OBJ) sfxc.cc 
 
