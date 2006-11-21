@@ -36,10 +36,6 @@ Last change: 20061114
 
 #include <types.h>
 
-//standard c includes
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 //includes for system calls
 #include <sys/types.h>

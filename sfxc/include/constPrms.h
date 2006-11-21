@@ -17,6 +17,7 @@ Last change: 20061114
 */
 
 #include "gen_defines.h"
+#include <string>
 
 const int   lineLength    =     256; //maximum allowed line length in input file
 const int   strLength     =     256; //maximum allowed string length
@@ -26,4 +27,4 @@ const int   BufTime       =   16384; //delta time for Bufs in micro seconds
                                      //2*BufTime > deltaTR
                                      //deltaTR=Earthradius/SOL
                                      //deltaTR=6378000/299792458*1e6=21275 microseconds
-const string Mk4          =   "MK4";
+const std::string Mk4          =   "MK4";

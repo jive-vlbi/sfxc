@@ -16,6 +16,8 @@ $Source$
  **/
 class Input_reader {
   public:
+  virtual ~Input_reader() {
+  }
   /** Moves the read_pointer nBytes bytes forward. 
       @param[in] nBytes Number of bytes to advance.
       \pre nBytes >= 0

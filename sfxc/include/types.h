@@ -10,8 +10,11 @@
 #include "../config.h"
 
 // For using large files:
-#define _LARGEFILE_SOURCE
-#define _LARGEFILE64_SOURCE
+#undef  _LARGEFILE_SOURCE
+#define _LARGEFILE_SOURCE 1
+#undef  _LARGEFILE64_SOURCE
+#define _LARGEFILE64_SOURCE 1
+#undef  _FILE_OFFSET_BITS
 #define _FILE_OFFSET_BITS 64
 
 
@@ -43,4 +46,33 @@ NGHK: No 64 bits type found ...
 NGHK: No 32 bits type found ...
 #endif
 
+enum MPI_TAG {
+  /// General initialisation channel
+  MPI_TAG_INIT =0,       
+  /// General communication channel
+  MPI_TAG_COMMUNICATION,
+  /// Add an input stream to a correlator node, using MPI
+  MPI_TAG_ADD_INPUT_MPI,
+  /// Later: Add an input stream to a correlator node, using TCP
+  //MPI_TAG_ADD_INPUT_TCP,
+  /// Add a channel to a correlator node
+  MPI_TAG_ADD_CHANNEL,   
+
+  MPI_TAG_ERROR
+};
+
+// MPI_MSG are always sent over MPI_TAG_COMMUNICATION
+enum MPI_MSG {
+  /// You should be a node to which data is sent
+  MPI_INPUT_NODE = 0,
+  /// You should be a node that can correlate data
+  MPI_CORRELATOR_NODE,
+
+  /// The correlator node is ready to process data
+  MPI_CORRELATOR_READY,
+
+  /// The correlation node is ready to process data
+  MPI_CORRELATION_READY,
+  MPI_MSG_ERROR
+};
 #endif // TYPES_H
