@@ -14,26 +14,6 @@ Last change: 20061121
 
 */
 
-//these defines have to be the first in source file
-#define _LARGEFILE_SOURCE
-#define _LARGEFILE64_SOURCE
-
-//enable define on 32 bit CPU, disable on 64 bit CPU
-#define THIRTYTWO
-
-//32 bit machine define,
-//use open, lseek, off_t in stead off open64, lseek64, off64_t
-#ifdef THIRTYTWO
-#define _FILE_OFFSET_BITS 64
-#endif
-
-//WARNING, check if definitions are appropriate on machine
-//definition of 32 bit and 64 bit (un)signed integers
-#define INT32  int
-#define UINT32 unsigned int
-#define INT64  long long
-#define UINT64 unsigned long long
-
 //standard c includes
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,6 +34,7 @@ using namespace std;
 //the class definitions and function definitions
 #include "constPrms.h"
 #include "runPrms.h"
+#include "genPrms.h"
 #include "staPrms.h"
 #include "genFunctions.h"
 #include "delayTable.h"
@@ -146,9 +127,9 @@ int delayTable::readDelayTable(char *delayTableName, INT64 start, INT64 stop)
   double f0,f1,f2;   
 
   //open delay table
-  fp = fopen(DelayTableName, "r");
+  fp = fopen(delayTableName, "r");
   if (!fp) {
-    cerr << "Error: could not open file :" << DelayTableName << endl;
+    cerr << "Error: could not open file :" << delayTableName << endl;
     return 1;
   }
 
@@ -159,7 +140,7 @@ int delayTable::readDelayTable(char *delayTableName, INT64 start, INT64 stop)
   retval = retval + getDelayLine(fp, t1, c1, m1, r1, f1);
   retval = retval + getDelayLine(fp, t2, c2, m2, r2, f2);
   if (retval != 0) {
-    cerr << "Error: reading data from:" << DelayTableName << endl;
+    cerr << "Error: reading data from:" << delayTableName << endl;
     return retval;
   }
   dt = t2-t1;
@@ -196,7 +177,7 @@ int delayTable::readDelayTable(char *delayTableName, INT64 start, INT64 stop)
     f0 = f1;    f1 = f2;
     retval = getDelayLine(fp, t2, c2, m2, r2, f2);
     if (retval != 0) {
-      cerr << "Error: reading data from:" << DelayTableName << endl;
+      cerr << "Error: reading data from:" << delayTableName << endl;
       return retval;
     }
   }
@@ -207,10 +188,10 @@ int delayTable::readDelayTable(char *delayTableName, INT64 start, INT64 stop)
   {
     //calculate parabolic ceofficients
     tdt[idel]=t1;
-    parabCoefs(t0,t1,t2,c1,c2,c3,cA[[idel]],cB[[idel]],cC[[idel]]);
-    parabCoefs(t0,t1,t2,m1,m2,m3,mA[[idel]],mB[[idel]],mC[[idel]]);
-    parabCoefs(t0,t1,t2,r1,r2,r3,rA[[idel]],rB[[idel]],rC[[idel]]);
-    parabCoefs(t0,t1,t2,f1,f2,f3,fA[[idel]],fB[[idel]],fC[[idel]]);
+    parabCoefs(t0,t1,t2,c0,c1,c2,cA[idel],cB[idel],cC[idel]);
+    parabCoefs(t0,t1,t2,m0,m1,m2,mA[idel],mB[idel],mC[idel]);
+    parabCoefs(t0,t1,t2,r0,r1,r2,rA[idel],rB[idel],rC[idel]);
+    parabCoefs(t0,t1,t2,f0,f1,f2,fA[idel],fB[idel],fC[idel]);
     //process next line
     t0 = t1;    t1 = t2;
     c0 = c1;    c1 = c2;
@@ -219,7 +200,7 @@ int delayTable::readDelayTable(char *delayTableName, INT64 start, INT64 stop)
     f0 = f1;    f1 = f2;
     retval = getDelayLine(fp, t2, c2, m2, r2, f2);
     if (retval != 0) {
-      cerr << "Error: reading data from:" << DelayTableName << endl;
+      cerr << "Error: reading data from:" << delayTableName << endl;
       return retval;
     }
     idel++;
@@ -237,12 +218,14 @@ int delayTable::readDelayTable(char *delayTableName, INT64 start, INT64 stop)
 double delayTable::calcDelay(INT64 time, int delayType)
 {
    INT64 index;
+   double A,B,C;
+   
    //set start time scale to zero
    time = time - tdt[0]; 
    //calculate array index for closest time
    index = (2*time + dt) / (2*dt);
    
-   switch delayType {
+   switch (delayType) {
      case Cdel:
        A = cA[index];
        B = cB[index];
@@ -270,10 +253,9 @@ double delayTable::calcDelay(INT64 time, int delayType)
    }
    //reset time scale
    time = time + tdt[0];
-   //calculate delay;
-   delay = A*time*time + B*time + C;
-
-   return delay;
+   
+   //return calculated delay;
+   return A*time*time + B*time + C;
 }
 
 
@@ -282,13 +264,14 @@ int getDelayLine(FILE *fp, INT64 &t, double &c, double &m, double &r, double &f)
 {
   int   retval = 0;
   char *sep    = " ";
+  char sB[256];
   
   fgets(sB,256,fp);
-  t = atof(strtok(sB,sep))*1000000; //from sec to usec
+  t = (INT64)atof(strtok(sB,sep))*1000000; //from sec to usec
   c = atof(strtok((char*)0,sep)) / 1000000.0; //from usec to sec
   m = atof(strtok((char*)0,sep)) / 1000000.0;
   r = atof(strtok((char*)0,sep)) / 1000000.0;
-  f = StaPrms.get_cde()*c + StaPrms.get_mde()*m + StaPrms.get_rde()*r;
+  f = GenPrms.get_cde()*c + GenPrms.get_mde()*m + GenPrms.get_rde()*r;
   
   return retval;
 }
@@ -296,7 +279,7 @@ int getDelayLine(FILE *fp, INT64 &t, double &c, double &m, double &r, double &f)
 
 //calculate the parabolic coefficients A, B and C
 //delay = A*t*t + B*t + C
-int parabCoefs (INT64 t0,INT64 t1,INT64 t2,double d1,double d2,double d3,
+int parabCoefs (INT64 t0,INT64 t1,INT64 t2,double d0,double d1,double d2,
   double& A,double& B,double& C)
 {
   
@@ -306,7 +289,7 @@ int parabCoefs (INT64 t0,INT64 t1,INT64 t2,double d1,double d2,double d3,
   R = (t0*t0-t1*t1)*(t1-t2) - (t1*t1-t2*t2)*(t0-t1);
   A = L/R;
   B = ( (d0-d1) - A*(t0*t0-t1*t1) ) / (t0-t1);
-  C = d0-A*t0*t0-b*t0;
+  C = d0-A*t0*t0-B*t0;
 
   return 0;
 }
