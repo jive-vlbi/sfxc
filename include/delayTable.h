@@ -14,6 +14,7 @@ Last change: 20061115
 
 **/
 
+#include <types.h>
 
 class delayTable
 {
@@ -21,7 +22,7 @@ class delayTable
   private:
 
     //
-    ITN64    ndel; // number of parabolic delay functions covering start until stop
+    INT64  ndel; // number of parabolic delay functions covering start until stop
     
     INT64  *tdt;          // time in delaytable
     INT64  dt;            // time step in delaytable
