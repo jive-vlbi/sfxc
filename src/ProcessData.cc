@@ -72,7 +72,6 @@ using namespace std;
 extern RunP  RunPrms;
 extern GenP  GenPrms;
 extern StaP  StaPrms[NstationsMax];
-extern double PI;
 extern INT64 sliceStartByte[NstationsMax][NcoresMax];
 // extern INT64 sliceStopByte [NstationsMax][NcoresMax];
 extern INT64 sliceStartTime [NcoresMax];
@@ -441,34 +440,19 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
       fwrite(accxps[bsln],sizeof(fftw_complex),n2fft*pad/2+1,outP);
     }
 
-    //determine position of file read pointer 
-//     BytePtr[0] = lseek(inFile[0], 0, SEEK_CUR);
-//     if (RunPrms.get_messagelvl()> 0)
-//       cout <<
-//         "BytePtr[0]            =" << BytePtr[0] << endl <<
-//         //"sliceStopByte[0]["<< rank <<"]=" << sliceStopByte[0][rank] << endl <<
-//         "timePtr=" << timePtr << endl;
-//     //break from while loop at end of time slice
-
-    // NGHK: CHANGE THIS:
+    // Check wether we are finished.
     std::cout << "timePtr  = " << (INT64)timePtr << std::endl;
     std::cout << "stoptime = " << sliceStopTime[0] << std::endl;
     if (timePtr > sliceStopTime[0]) {
       std::cout << "processed until after stop time" << std::endl;
       break;
     }
-//     if (BytePtr[0] >= sliceStopByte[0][rank]) break;
-    
   } // End while loop for processing from startbyte until stopbyte
   
   if (RunPrms.get_messagelvl()> 0)
     cout << "After timePtr=" << timePtr << endl;
   //close output file
 
-  //close the input files
-//   for (sn=0; sn<nstations; sn++){
-//     close(inFile[sn]);
-//   }
   //close the output result file
   fclose(outP);
   
@@ -651,7 +635,7 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
       FoffRatio=0.5+GenPrms.get_foffset()/GenPrms.get_bwfl();
       for (jf = 0; jf < Nf; jf++)
       {
-        phi = -2.0*PI*dfs*tbs*fs[jf] + FoffRatio*PI*jshift/GenPrms.get_ovrfl();
+        phi = -2.0*M_PI*dfs*tbs*fs[jf] + FoffRatio*M_PI*jshift/GenPrms.get_ovrfl();
         spls[jf][0] = spls[jf][0]*cos(phi)-spls[jf][1]*sin(phi);
         spls[jf][1] = spls[jf][0]*sin(phi)+spls[jf][1]*cos(phi);
       }
@@ -676,7 +660,7 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
 //        }      
 //TODO Disabled for test purposes
 //        if (phaseCorrOn) Phase = ParInteRp(Time, phase, delaydt);
-        phi = -2.0*PI*(StaPrms[sn].get_loobs()+GenPrms.get_startf()+
+        phi = -2.0*M_PI*(StaPrms[sn].get_loobs()+GenPrms.get_startf()+
           GenPrms.get_bwfl()*0.5+GenPrms.get_foffset())*Fdel + Phase;
         Bufs[sn][lsegm*jsegm+jl]=sls[jl][0]*sin(phi)-sls[jl][1]*cos(phi);
       }

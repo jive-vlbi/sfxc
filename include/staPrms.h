@@ -1,3 +1,6 @@
+#ifndef STA_PRMS_H
+#define STA_PRMS_H
+
 /*
 CVS keywords
 $Author$
@@ -13,6 +16,9 @@ StartDate  : 20060912
 Last change: 20061114
 
 */
+
+//standard c includes
+#include <stdio.h>
 
 const int chmax      =     8; //max nr of channels, nch*fo <=32
 const int fomax      =     4; //maximum fan out
@@ -97,3 +103,4 @@ class StaP
 };
 
 
+#endif // STA_PRMS_H

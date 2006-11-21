@@ -1,3 +1,6 @@
+#ifndef GEN_PRMS_H
+#define GEN_PRMS_H
+
 /*
 CVS keywords
 $Author$
@@ -120,3 +123,4 @@ class GenP
 };
 
 
+#endif // GEN_PRMS_H

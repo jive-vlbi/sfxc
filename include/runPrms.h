@@ -1,3 +1,5 @@
+#ifndef RUN_PRMS_H
+#define RUN_PRMS_H
 /**
 CVS keywords
 $Author$
@@ -45,3 +47,4 @@ class RunP
 };
 
 
+#endif // RUN_PRMS_H
