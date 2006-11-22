@@ -43,7 +43,9 @@ int main(int argc, char *argv[]) {
   assert (nBytes == BUFFSIZE);
 
   while ((nBytes = reader.get_bytes(BUFFSIZE, buff)) > 0) {
-    //std::cout << nBytes << std::endl;
+    if (nBytes != BUFFSIZE) 
+      std::cout << nBytes << " bytes read instead of requested "
+                << BUFFSIZE << std::endl;
     out.write(buff, nBytes*sizeof(char));
     nForward = reader.move_forward(nBytes);
     assert (nBytes == nForward);
