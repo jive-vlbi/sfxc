@@ -4,13 +4,14 @@
 #include <algorithm>
 
 Input_reader_file::Input_reader_file(char *filename) : 
-  Input_reader(), file(filename, std::ios::in | std::ios::binary)
+  Input_reader()
 {
-  assert(file.is_open());
+  file = open(filename, O_RDONLY, 0);
+  //assert(is_open(file));
 }
 
 Input_reader_file::~Input_reader_file() {
-  file.close();
+  close(file);
 }
 
 INT64 Input_reader_file::move_forward(INT64 nBytes) {
@@ -20,7 +21,7 @@ INT64 Input_reader_file::move_forward(INT64 nBytes) {
     buffer.erase(buffer.begin(), buffer.begin()+nBytes);
   } else {
     // Completely empty the buffer and forward the filepointer.
-    file.seekg(nBytes-buffer.size(), std::ios_base::cur);
+    lseek(file, nBytes-buffer.size(), SEEK_CUR);
     buffer.clear();
   }
   return nBytes;
@@ -34,7 +35,7 @@ INT64 Input_reader_file::get_bytes(INT64 nBytes, char*out) {
     // always completely fill the buffer
     INT64 nRead = buffer.capacity() - buffer.size();
     char *tmp_buff = new char[nRead];
-    INT64 size = file.readsome(tmp_buff, nRead);
+    INT64 size = read(file, tmp_buff, nRead);
 
     std::vector<char>::iterator it = buffer.end();
     buffer.resize(buffer.size()+size);
