@@ -10,7 +10,7 @@ char *outfile = "output.txt";
 #define BUFFSIZE 1000
 
 int main(int argc, char *argv[]) {
-  int nBytes;
+  int nBytes, nForward;
   char buff[BUFFSIZE];
 
   Input_reader_file reader(infile);
@@ -43,9 +43,10 @@ int main(int argc, char *argv[]) {
   assert (nBytes == BUFFSIZE);
 
   while ((nBytes = reader.get_bytes(BUFFSIZE, buff)) > 0) {
+    //std::cout << nBytes << std::endl;
     out.write(buff, nBytes*sizeof(char));
-    nBytes = reader.move_forward(BUFFSIZE);
-    assert (nBytes == BUFFSIZE);
+    nForward = reader.move_forward(nBytes);
+    assert (nBytes == nForward);
   }
 
   out.close();
@@ -60,7 +61,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
   
-  remove(outfile);
+  //remove(outfile);
 
   return 0;
 }
