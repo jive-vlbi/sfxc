@@ -18,19 +18,6 @@ Last change: 20061114
 
 */
 
-// //these defines have to be the first in source file
-// #define _LARGEFILE_SOURCE
-// #define _LARGEFILE64_SOURCE
-
-// //enable define on 32 bit CPU, disable on 64 bit CPU
-// #define THIRTYTWO
-
-// //32 bit machine define,
-// //use open, lseek, off_t in stead off open64, lseek64, off64_t
-// #ifdef THIRTYTWO
-// #define _FILE_OFFSET_BITS 64
-// #endif
-
 #include <types.h>
 
 //standard c includes
@@ -67,15 +54,15 @@ using namespace std;
 #include "genFunctions.h"
 #include "InData.h"
 #include "ProcessData.h"
+#include "delayTable.h"
 
 //global variables
 extern RunP  RunPrms;
 extern GenP  GenPrms;
 extern StaP  StaPrms[NstationsMax];
-extern INT64 sliceStartByte[NstationsMax][NcoresMax];
-// extern INT64 sliceStopByte [NstationsMax][NcoresMax];
-extern INT64 sliceStartTime [NcoresMax];
-extern INT64 sliceStopTime  [NcoresMax];
+extern INT64 sliceStartByte[NstationsMax][NprocessesMax];
+extern INT64 sliceStartTime [NprocessesMax];
+extern INT64 sliceStopTime  [NprocessesMax];
 extern INT64 sliceTime;
 
 
@@ -87,8 +74,8 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
   double **Mk4frame, INT64 *FL, INT64 *FC,
   double *signST, double *magnST, INT64 *Nsamp,
   fftw_complex *sls, fftw_complex *spls, fftw_plan& planFW, fftw_plan& planBW,
-  double tbs, double *fs, int Nf, double& timePtr,
-  INT64 *delaydt, double **cdel, double **fdel, INT64 ndel, int rank);
+  double tbs, double *fs, int Nf, double timePtr,
+  DelayTable *delTbl, int rank);
 
 int fetch_invecs(INT64& BufPtr, int nstations, int n2fft,
   double **invecs, double **Bufs);
@@ -100,18 +87,16 @@ int fetch_invecs(INT64& BufPtr, int nstations, int n2fft,
 int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
 {
   //declarations
+  int retval = 0;
   int i,j,l;
   int nstations, sn, sno; //nr of stations and station counters
   int n2fft; //FFT length in correlation
   int pad; //padding with zeros for invecs
-//   int *inFile; //file descriptor input file
   INT64 Nsamp2Avg; //nr of samples to average the correlation
   INT64 Nsegm2Avg; //nr of fourier segments to average the correlation
   INT64 segm; //segment number in for loop
   INT64 TenPct;
-  INT64 *BytePtr; //location of input file read pointer
   INT64 BufPtr; //location of the buffer pointer
-  INT64 statusPtr; // status of file pointer
   INT64 *Nsamp;
   double timePtr; //a time pointer in micro seconds
   int nbslns; //number of baselines, cross and auto correlations
@@ -132,8 +117,6 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   double SR, tbs; //sample rate and time between samples
   double dfr, *fs; // delta frequency in frequency scale, frequency scale
   int    jf, Nf; //nr of frequencies in frequency scale
-  double **cdel, **mdel, **rdel, **fdel; //arrays for delay tables
-  INT64 *delaydt, **tdel, ndel; // time in delay table in usec and number of delay lines
   FILE *outP; //output result file
   char outFile[256], coreStr[5];
 
@@ -143,10 +126,11 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   fftw_plan    planFW, planBW;//plans for forward and backward fft 
   int lsegm; //fourier length of a segment in the pre-correlation
 
-  cout << "correlation process " << rank << " started" << endl;
+  cout << "\n\nCorrelation process " << rank << " started.\n\n";
   
   //initialisations and allocations  
   nstations = GenPrms.get_nstations();
+  DelayTable delTbl[nstations];
   nbslns    = nstations*(nstations-1)/2 + nstations; //cross + auto 
   n2fft     = GenPrms.get_n2fft();
   lsegm     = GenPrms.get_lsegm();
@@ -156,10 +140,10 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   TenPct    = Nsegm2Avg/10;
   SR=2.0*GenPrms.get_bwfl()*GenPrms.get_ovrfl();//sample rate
   tbs=1.0/SR; //time between samples in seconds
-  BufSize   = (int)(BufTime * (SR/1000000.0));
-  Nf = lsegm/2+1;
-  dfr = 1.0/(lsegm*tbs);
-  fs = new double[Nf];
+  BufSize   = BufTime * (int)(SR/1000000.0);
+  Nf = lsegm/2+1; //number of frequencies
+  dfr = 1.0/(lsegm*tbs); // delta frequency
+  fs = new double[Nf]; // frequency array
   for (jf=0; jf<Nf; jf++) //frequency scale in the segment
     fs[jf]=jf*dfr-0.5*GenPrms.get_bwfl()-GenPrms.get_foffset();
   
@@ -175,8 +159,6 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   }
     
   norms = new float[nbslns];
-  //inFile = new int[nstations];
-  BytePtr = new INT64[nstations];
   signST = new double[nstations];
   magnST = new double[nstations];
   Nsamp = new INT64[nstations];
@@ -197,12 +179,12 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   }
   
   Mk4frame = new double *[nstations];
-  FL = new INT64 [nstations];
-  FC = new INT64 [nstations];
+  FL = new INT64 [nstations];//frame lengths
+  FC = new INT64 [nstations];//frame counters
 
   for (sn=0; sn<nstations; sn++){
-    FL[sn] = frameMk4*StaPrms[sn].get_fo();
-    FC[sn] = FL[sn];
+    FL[sn] = frameMk4*StaPrms[sn].get_fo();//initialise
+    FC[sn] = FL[sn];//set counter to end of frame
     Mk4frame[sn] = new double[FL[sn]];
   }
   
@@ -228,7 +210,7 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   for (sn = 0; sn < nstations; sn++){
     fwd_plans[sn] =
       fftw_plan_dft_r2c_1d(n2fft*pad,invecs[sn],xps[sn],FFTW_EXHAUSTIVE);
-  }
+  }  
 
   //arrays and plans for delay correction
   sls  = new fftw_complex[lsegm];
@@ -236,39 +218,13 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   planBW = fftw_plan_dft_1d(lsegm, sls, spls, FFTW_BACKWARD, FFTW_ESTIMATE);
   planFW = fftw_plan_dft_1d(lsegm, spls, sls, FFTW_FORWARD,  FFTW_ESTIMATE);
 
-
-  //arrays for delay tables
-  delaydt = new INT64[nstations];
-  tdel    = new INT64*[nstations];
-  cdel    = new double*[nstations];
-  mdel    = new double*[nstations];
-  rdel    = new double*[nstations];
-  fdel    = new double*[nstations];
-
   for (sn=0; sn<nstations; sn++) {
-    //determine intervals in delay tables
-    delaydt[sn] = Delaydt(StaPrms[sn].get_delaytable());
-    ndel = sliceTime/delaydt[sn]+3;//nr of delay lines
-    if (RunPrms.get_messagelvl()> 1){
-      cout << rank << " " << sn << " delaydt=" << delaydt[sn] << endl;
-      cout << rank << " " << sn << " sliceTime=" << sliceTime << endl;
-      cout << rank << " " << sn << " ndel=" << ndel << endl;
-      cout << rank << " " << sn << " B sliceStartTime=" << sliceStartTime[rank] << endl;
-      cout << rank << " " << sn << " delay table=" << StaPrms[sn].get_delaytable() << endl;
+    retval = delTbl[sn].readDelayTable(StaPrms[sn].get_delaytable(),
+      sliceStartTime[rank],sliceStopTime[rank], BufTime );
+    if (retval != 0) {
+      cerr << "ERROR: when reading delay table.\n";
+      return retval;
     }
-    tdel[sn]= new INT64[ndel];
-    cdel[sn]= new double[ndel];
-    mdel[sn]= new double[ndel];
-    rdel[sn]= new double[ndel];
-    fdel[sn]= new double[ndel];
-    tdel[sn][0] = 0;
-    
-    ReadDelayTable(StaPrms[sn].get_delaytable(), sliceStartTime[rank], delaydt[sn],
-      ndel, GenPrms.get_cde(), GenPrms.get_mde(), GenPrms.get_rde(),
-      tdel[sn], cdel[sn], mdel[sn], rdel[sn], fdel[sn]);
-      
-//    cout << rank << " " << sn << " A sliceStartTime=" << sliceStartTime[rank] << endl;
-      
   }
 
   //open the output file
@@ -277,34 +233,18 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   strcat(outFile,coreStr);
   outP = fopen64(outFile,"wb");
 
-  //open the input files
-  //initialise file pointers in Bytes and set file pointers
-  for (sn=0; sn<nstations; sn++) {
-    //inFile[sn]=open(StaPrms[sn].get_mk4file(),O_RDONLY,0);
-    BytePtr[sn] = sliceStartByte[sn][rank];
-    statusPtr = readers[sn]->move_forward(BytePtr[sn]);
-    if (statusPtr != BytePtr[sn]){
-      cerr << "Could not go the requested file position for file: "
-	   // << StaPrms[sn].get_mk4file() 
-	   << endl;
-      return -1;
-    }
-  }
-    
-
   //initialise dcBufPrev with data from Mk4 file
   for (sn=0; sn<nstations; sn++) {
     for (i=0; i<2*BufSize; i++) {
       if (FC[sn] == FL[sn]) {
-        //fill Mk4frame if frame counter at end of array
+        //fill Mk4frame if frame counter at end of frame
         fill_Mk4frame(sn, *readers[sn], Mk4frame[sn], 
-		      signST, magnST, Nsamp);
+                      signST, magnST, Nsamp);
         FC[sn] = 0;
       }
       //fill remaining of dcBufs with data from Mk4
       dcBufPrev[sn][i]=Mk4frame[sn][FC[sn]];
       FC[sn]++;
-      dcBufPrev[sn][i]=1;
     }
   }
 
@@ -313,15 +253,13 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   timePtr = sliceStartTime[rank];
   BufPtr = BufSize;
   loop=0;
-  if (RunPrms.get_messagelvl()> 0)
-    cout << "Before timePtr=" << timePtr << endl;
   
-  //while loop for processing from startbyte until stopbyte
+  //while loop for processing from starttime until stoptime
   while (1)
   {
     loop++;
-    if (RunPrms.get_messagelvl()> 0)
-      cout << "loop=" << loop << endl;
+//    if (RunPrms.get_messagelvl()> 0)
+      cout << "Process="<< rank <<" loop=" << loop << endl;
     
     //initialise statistical values to zero
     for (sn=0; sn<nstations; sn++) {
@@ -345,13 +283,17 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
       //read data from data files, do pre-correlation, 
       //and put results in Bufs. 
       if ( (BufPtr+n2fft)>BufSize ) {
-        int nBytes = fill_Bufs(readers,
-                               Bufs,dcBufPrev,BufSize,
-                               Mk4frame,FL,FC,signST,magnST,Nsamp,
-                               sls,spls,planFW,planBW,
-                               tbs,fs,Nf,timePtr,
-                               delaydt,cdel,fdel,ndel,rank);
-        if (nBytes <= 0) break;
+//        int nBytes = fill_Bufs(readers, Bufs,dcBufPrev,BufSize,
+//          Mk4frame,FL,FC,signST,magnST,Nsamp,sls,spls,planFW,planBW,
+//          tbs,fs,Nf,timePtr,delTbl,rank);
+//        if (nBytes <= 0) break;
+        retval = fill_Bufs(readers, Bufs,dcBufPrev,BufSize,
+          Mk4frame,FL,FC,signST,magnST,Nsamp,sls,spls,planFW,planBW,
+          tbs,fs,Nf,timePtr,delTbl,rank);
+        if (retval !=0) {
+          cerr << "ERROR: in function fill_Bufs\n";
+          return retval;
+        }
         timePtr=timePtr+BufTime;
         BufPtr=0;
       }
@@ -391,9 +333,11 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
         }
       }
       
-      if (RunPrms.get_messagelvl()> 0)
-        if (segm%TenPct == 0)
+      if (RunPrms.get_messagelvl()> 0) {
+        if (segm%TenPct == 0) {
           cout << "segm=" << segm << endl;
+        }  
+      }    
       
     }
 
@@ -439,37 +383,23 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
     for (bsln = 0; bsln < nbslns; bsln++){
       fwrite(accxps[bsln],sizeof(fftw_complex),n2fft*pad/2+1,outP);
     }
+//TODO: replace previous for loop by:
+//      fwrite(accxps[bsln],sizeof(fftw_complex),nbslns*n2fft*pad/2+1,outP);
 
     // Check wether we are finished.
-    std::cout << "timePtr  = " << (INT64)timePtr << std::endl;
-    std::cout << "stoptime = " << sliceStopTime[0] << std::endl;
-    if (timePtr > sliceStopTime[0]) {
-      std::cout << "processed until after stop time" << std::endl;
-      break;
+    std::cout << "Process="<< rank << " timePtr = " << (INT64)timePtr << std::endl;
+    std::cout << "Process="<< rank << " stoptime= " << sliceStopTime[rank] << std::endl;
+    if (timePtr > sliceStopTime[rank]) {
+      std::cout << "Process="<< rank << " finished, timePtr after stopTime" << std::endl;
+      break; //
     }
+    
   } // End while loop for processing from startbyte until stopbyte
   
-  if (RunPrms.get_messagelvl()> 0)
-    cout << "After timePtr=" << timePtr << endl;
-  //close output file
-
   //close the output result file
   fclose(outP);
   
   //free allocated memory   
-  for (sn=0; sn<nstations; sn++){
-    delete [] fdel[sn];
-    delete [] rdel[sn];
-    delete [] mdel[sn];
-    delete [] cdel[sn];
-    delete [] tdel[sn];
-  }
-  delete [] fdel;
-  delete [] rdel;
-  delete [] mdel;
-  delete [] cdel;
-  delete [] tdel;
-  delete [] delaydt;
   
   fftw_destroy_plan(planFW);
   fftw_destroy_plan(planBW);
@@ -509,15 +439,13 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   delete [] Nsamp;
   delete [] magnST;
   delete [] signST;
-  delete [] BytePtr;
-  //delete [] inFile;
   delete [] norms;
   
   delete [] fs;
   
-  cout << "correlation process " << rank << " finished" << endl;
+  cout << "\n\nCorrelation process " << rank << " finished.\n\n";
   
-  return 1;
+  return retval;
 
 }
 
@@ -532,8 +460,8 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
   double **Mk4frame, INT64 *FL, INT64 *FC,
   double *signST, double *magnST, INT64 *Nsamp,
   fftw_complex *sls, fftw_complex *spls, fftw_plan& planFW, fftw_plan& planBW,
-  double tbs, double *fs, int Nf, double& timePtr,
-  INT64 *delaydt, double **cdel, double **fdel, INT64 ndel, int rank)
+  double tbs, double *fs, int Nf, double timePtr,
+  DelayTable *delTbl, int rank)
 {
   //declarations
   int retval = 0;
@@ -575,14 +503,14 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
     }
     
     for (i=2*BufSize; i<3*BufSize; i++) {
-     if (FC[sn] == FL[sn]) {
-        //fill Mk4frame if frame counter at end of array
-       int nBytes = fill_Mk4frame(sn, *readers[sn], Mk4frame[sn], 
+      if (FC[sn] == FL[sn]) {
+        //fill Mk4frame if frame counter at end of frame
+        int nBytes = fill_Mk4frame(sn, *readers[sn], Mk4frame[sn], 
                                   signST, magnST, Nsamp);
-       if (nBytes==0) {
-         std::cout << "End of input for reader " << sn << std::endl;
-         return nBytes;
-       }
+        if (nBytes==0) {
+          cerr << "ERROR: End of input for reader " << sn << endl;
+          return 1;
+        }
         FC[sn] = 0;
       }
       //fill remaining of dcBufs with data from Mk4file
@@ -594,12 +522,12 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
     //in other words process data in dcBufs, output in Bufs
     for (jsegm=0; jsegm<Nsegm2DC; jsegm++) {
       Time = timePtr + jsegm*lsegm*tbs*1000000.; //in usec
-      Cdel = 0.0;
-//TODO calculation of Cdel causes runtime errors when TimeToProcess%numtasks!=0
-//      Cdel = ParInteRp(Time, sliceStartTime[rank], cdel[sn], delaydt[sn], ndel);
+      Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
+//TODO test calculation Cdel and Fdel
+//TODO check with Sergei valid parameters for Cdel, Fdel, etc
       if (Cdel>0.0) {
-        cerr << "Cdel > 0.0 in fill_Bufs." << endl;
-        exit(0);
+        cerr << "Cdel > 0.0 in fill_Bufs()." << endl;
+        return 1;
       }      
       //address shift due to time delay for the  current segment
       jshift = (long long int)floor(Cdel/tbs+0.5);
@@ -624,12 +552,10 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
       //calculate the fract bit phase corrections and
       //apply them and pi/2 also
       Time = timePtr + jsegm*lsegm*tbs*1000000.+lsegm/2*tbs*1000000.;
-      Cdel = 0.0;    
-//TODO calculation of Cdel causes runtime errors when TimeToProcess%numtasks!=0
-//      Cdel = ParInteRp(Time, sliceStartTime[rank], cdel[sn], delaydt[sn], ndel);
+      Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
       if (Cdel>0.0) {
-        cerr << "Cdel > 0.0 in fill_Bufs." << endl;
-        exit(0);
+        cerr << "Cdel > 0.0 in fill_Bufs()." << endl;
+        return 1;
       }      
       dfs = Cdel/tbs - floor(Cdel/tbs + 0.5);
       FoffRatio=0.5+GenPrms.get_foffset()/GenPrms.get_bwfl();
@@ -650,16 +576,13 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
       for (jl=0;jl<lsegm;jl++)
       {
         Time = timePtr + jsegm*lsegm*tbs*1000000. + jl*tbs*1000000.;
-        Fdel = 0.0;
-//TODO calculation of Fdel causes runtime errors when TimeToProcess%numtasks!=0
-//        Fdel = ParInteRp(Time, sliceStartTime[rank], fdel[sn], delaydt[sn], ndel);
-//TODO check with Sergei if Fdel has to be negative
-//        if (Fdel>0.0) {
-//          cerr << "Fdel > 0.0 in fill_Bufs." << endl;
-//          exit(0);
-//        }      
-//TODO Disabled for test purposes
-//        if (phaseCorrOn) Phase = ParInteRp(Time, phase, delaydt);
+      Fdel = delTbl[sn].calcDelay(Time, DelayTable::Fdel);
+      if (Fdel>0.0) {
+        cerr << "Fdel > 0.0 in fill_Bufs()." << endl;
+        return 1;
+      }      
+//TODO not implemented
+//        if (phaseCorrOn) Phase = phsTbl[sn].calcPhase(Time);
         phi = -2.0*M_PI*(StaPrms[sn].get_loobs()+GenPrms.get_startf()+
           GenPrms.get_bwfl()*0.5+GenPrms.get_foffset())*Fdel + Phase;
         Bufs[sn][lsegm*jsegm+jl]=sls[jl][0]*sin(phi)-sls[jl][1]*cos(phi);
@@ -680,7 +603,7 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
     delete [] dcBufs[sn];
   delete [] dcBufs;
   
-  return 1;
+  return retval;
 }
 
 

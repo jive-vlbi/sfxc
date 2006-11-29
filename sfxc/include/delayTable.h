@@ -16,7 +16,7 @@ Last change: 20061115
 
 #include <types.h>
 
-class delayTable
+class DelayTable
 {
 
   private:
@@ -24,8 +24,8 @@ class delayTable
     //
     INT64  ndel; // number of parabolic delay functions covering start until stop
     
-    INT64  *tdt;          // time in delaytable
-    INT64  dt;            // time step in delaytable
+    INT64  startDT;       // start time delaytable
+    INT64  stepDT;        // time step in delaytable
     double *cA, *cB, *cC; // Y = aX^2 + bX + c
     double *mA, *mB, *mC; // per read delay line one series of these coefficients
     double *rA, *rB, *rC;
@@ -35,17 +35,17 @@ class delayTable
   public:
 
     //default constructor, set default values 
-    delayTable();
+    DelayTable();
 
     //destructor
-    ~delayTable();
+    ~DelayTable();
     
     //read the delay table, do some checks and
     //calculate coefficients for parabolic interpolation
-    int readDelayTable(char *delayTableName, INT64 start, INT64 stop);
+    int readDelayTable(char *delayTableName, INT64 start, INT64 stop, INT64 BufTime);
 
     //calculate the delay for the delayType at time in microseconds
-    double calcDelay(INT64 time, int delayType);
+    double calcDelay(double time, int delayType);
 
     enum delayType {Cdel, Mdel, Rdel, Fdel};
 

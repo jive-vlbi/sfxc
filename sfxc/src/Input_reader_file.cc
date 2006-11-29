@@ -1,3 +1,16 @@
+/*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
+Author     : NGH Kruithof
+StartDate  : 20061101
+Last change: 20061124
+*/
+
 #include <Input_reader_file.h>
 #include <assert.h>
 #include <iostream>

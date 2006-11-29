@@ -14,26 +14,6 @@ Last change: 20061114
 
 */
 
-// //these defines have to be the first in source file
-// #define _LARGEFILE_SOURCE
-// #define _LARGEFILE64_SOURCE
-
-// //enable define on 32 bit CPU, disable on 64 bit CPU
-// #define THIRTYTWO
-
-// //32 bit machine define,
-// //use open, lseek, off_t in stead off open64, lseek64, off64_t
-// #ifdef THIRTYTWO
-// #define _FILE_OFFSET_BITS 64
-// #endif
-
-// //WARNING, check if definitions are appropriate on machine
-// //definition of 32 bit and 64 bit (un)signed integers
-// #define INT32  int
-// #define UINT32 unsigned int
-// #define INT64  long long
-// #define UINT64 unsigned long long
-
 #include <types.h>
 
 
@@ -90,7 +70,7 @@ int*  StaP::get_magnBS()     { return magnBS;}
 //for station specific control parameters
 StaP::StaP()
 {
-  int i,j;
+  int j;
   char *home;
 
   tbr     =  8;
@@ -149,7 +129,7 @@ StaP::~StaP() {
 //parse control file C
 int StaP::parse_ctrlFile(char *ctrlFile, int staNr)
 {
-  int  retval=0, i;
+  int  retval=0;
   FILE *ctrlP;
   char *line, *key, *val, *val1, staKW[256];
 
@@ -234,6 +214,7 @@ int StaP::findMK4data(FILE *ctrlP)
       retval = retval + getLongVal(key,val,"SYNHS1",synhs1);
       retval = retval + getLongVal(key,val,"SYNHS2",synhs2);
       retval = retval + getLongVal(key,val,"MOD",mod);
+      retval = retval + getLongVal(key,val,"RNDHDR",rndhdr);
 
       if (strcmp(key,"MK4FILE") == 0) strcpy(mk4file,val);
       if (strcmp(key,"HDRMAP") == 0)  strcpy(hdrmap,val);
@@ -283,8 +264,8 @@ int StaP::findMK4data(FILE *ctrlP)
 //look for Delay data
 int StaP::findDelaydata(FILE *ctrlP)
 {
-  int retval = 0, vall, i;
-  char *line, *key, *val, *copy, *s;
+  int retval = 0;
+  char *line, *key, *val;
 
   //allocate memory
   line     = new char[lineLength];
@@ -314,7 +295,7 @@ int StaP::findDelaydata(FILE *ctrlP)
 int StaP::check_params()
 {
 
-  int retval = 0, i, j;
+  int retval = 0, j;
   if (RunPrms.get_messagelvl() > 0) {
     cout << endl <<
       "MK4 data file        = " << mk4file << "\n" <<
