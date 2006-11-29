@@ -60,6 +60,10 @@ int main(int argc, char *argv[])
     if (rank == 0) {
       std::cout << "Usage: " << argv[0] << " <ctrl-file>" << std::endl;
     }
+    
+	//close the mpi stuff
+  	MPI_Finalize();
+    
     exit(0);
   }
 

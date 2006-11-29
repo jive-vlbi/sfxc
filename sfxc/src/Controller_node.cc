@@ -90,8 +90,6 @@ Controller_node::Controller_node(int numtasks, int rank, char * ctrlFile)
     MPI_Send(&type, 1, MPI_INT, i+1, MPI_TAG_INIT, MPI_COMM_WORLD);
     char *input_str = StaPrms[i].get_mk4file();
     // strlen+1 so that \0 gets transmitted as well
-    // 256 is the buffer size in Input_node:
-    assert(strlen(input_str)+1 <= 256);
     MPI_Send(input_str, strlen(input_str)+1, MPI_CHAR, 
              i+1, MPI_TAG_INIT, MPI_COMM_WORLD);
   }
@@ -100,7 +98,7 @@ Controller_node::Controller_node(int numtasks, int rank, char * ctrlFile)
     int type = MPI_CORRELATOR_NODE;
     MPI_Send(&type, 1, MPI_INT, i, MPI_TAG_INIT, MPI_COMM_WORLD);
     for (int j=1; j<=Nstations; j++) {
-      MPI_Send(&j, 1, MPI_INT, i, MPI_TAG_ADD_INPUT_MPI, MPI_COMM_WORLD);
+      MPI_Send(&j, 1, MPI_INT, i, MPI_TAG_ADD_INPUT_TCP, MPI_COMM_WORLD);
     }
     // Channels:
 //     for (int i=1; i<Nstations; i++) {

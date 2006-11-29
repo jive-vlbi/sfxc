@@ -64,12 +64,14 @@ enum MPI_TAG {
   MPI_TAG_INIT =0,       
   /// General communication channel
   MPI_TAG_COMMUNICATION,
-  /// Add an input stream to a correlator node, using MPI
+  /// Add an input stream to a correlator node, using MPI (not in use)
   MPI_TAG_ADD_INPUT_MPI,
-  /// Later: Add an input stream to a correlator node, using TCP
-  //MPI_TAG_ADD_INPUT_TCP,
+  /// Add an input stream to a correlator node, using TCP
+  MPI_TAG_ADD_INPUT_TCP,
   /// Add a channel to a correlator node
   MPI_TAG_ADD_CHANNEL,   
+  /// Notify an input reader about a correlator node
+  MPI_TAG_ADD_CORRELATOR_NODE_TO_READER_TCP,
 
   MPI_TAG_ERROR
 };
