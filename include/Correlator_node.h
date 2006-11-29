@@ -15,6 +15,9 @@ class Correlator_node : public Node {
 public:
   Correlator_node(int rank);
   void start();
+
+private:
+  void open_input_channel_tcp(int rank_reader);
 };
 
 #endif // CORRELATOR_NODE_H

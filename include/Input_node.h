@@ -10,11 +10,16 @@
 */
 
 #include <Node.h>
+#include <Input_reader.h>
 
 class Input_node : public Node {
 public:
   Input_node(int rank);
+  ~Input_node();
   void start();
+
+private:
+  Input_reader *reader;
 };
 
 #endif // INPUT_NODE_H
