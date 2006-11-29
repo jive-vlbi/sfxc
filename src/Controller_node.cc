@@ -1,3 +1,16 @@
+/*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
+Author     : NGH Kruithof
+StartDate  : 20061101
+Last change: 20061124
+*/
+
 #include <Controller_node.h>
 #include <iostream>
 #include <assert.h>

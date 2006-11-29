@@ -28,10 +28,10 @@ StaP StaPrms[NstationsMax];
 // used for randomising numbers for Headers in Mk4 file
 UINT32 seed;
 //declarations for offsets
-INT64 sliceStartByte[NstationsMax][NcoresMax];
-INT64 sliceStopByte [NstationsMax][NcoresMax];
-INT64 sliceStartTime [NcoresMax];
-INT64 sliceStopTime  [NcoresMax];
+INT64 sliceStartByte[NstationsMax][NprocessesMax];
+INT64 sliceStopByte [NstationsMax][NprocessesMax];
+INT64 sliceStartTime [NprocessesMax];
+INT64 sliceStopTime  [NprocessesMax];
 INT64 sliceTime;
 
 #include <iostream> 

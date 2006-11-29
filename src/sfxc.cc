@@ -14,7 +14,7 @@ Last change  20061114
 
 TODO: add doxygen style comments in *.cc and *.h
 TODO: review message levels in *.cc and *.h
-TODO: compiler at huygens generates more warning, check and try to fic this
+TODO: compiler at huygens generates more warning, check and try to fix this
 
 Description
 sfxc correlates the single channel data from N stations recorded on linux
@@ -133,23 +133,22 @@ GenP GenPrms;
 StaP StaPrms[NstationsMax];
 // used for randomising numbers for Headers in Mk4 file
 UINT32 seed;
-//PI
-double PI=4.0*atan(1.0);
 //declarations for offsets
-INT64 sliceStartByte[NstationsMax][NcoresMax];
-INT64 sliceStopByte [NstationsMax][NcoresMax];
-INT64 sliceStartTime [NcoresMax];
-INT64 sliceStopTime  [NcoresMax];
+INT64 sliceStartByte[NstationsMax][NprocessesMax];
+INT64 sliceStartTime [NprocessesMax];
+INT64 sliceStopTime  [NprocessesMax];
 INT64 sliceTime;
 
 
+//return value 0 when no errors occurred
 int main(int argc, char *argv[])
 {
+/*
   if (argc != 2) {
     std::cout << "usage: " << argv[0] << " <ctrl-file>" << std::endl;
     exit(1);
   }
-
+*/
 
   //declarations
   char   ctrlFile[lineLength]; // control file name
@@ -172,7 +171,7 @@ int main(int argc, char *argv[])
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
   if (rank==0) {
-    std::cout << "Sfcx v" << PACKAGE_VERSION << std::endl;
+    std::cout << "sfcx v" << PACKAGE_VERSION << std::endl;
   }
 
   if(numtasks < 1) //entered at the command line
@@ -202,7 +201,7 @@ int main(int argc, char *argv[])
     return -1;
   }
   
-  if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks > 1)
+  if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks == 1)
     askContinue();
 
   //parse control file for general parameters
@@ -217,7 +216,7 @@ int main(int argc, char *argv[])
     return -1;
   }
   
-  if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks >1)
+  if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks == 1)
     askContinue();
 
   //get the number of stations
@@ -236,7 +235,7 @@ int main(int argc, char *argv[])
       cerr << "ERROR: Station control parameter, program aborted.\n";
       return -1;
     }
-    if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks > 1)
+    if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks == 1)
       askContinue();
   }  
 
@@ -248,18 +247,23 @@ int main(int argc, char *argv[])
   }
 
   //Find Offsets
-  FindOffsets(input_readers, numtasks);
+  if (FindOffsets(input_readers, numtasks, rank) !=0) {
+    cerr << "ERROR: FindOffsets, program aborted.\n";
+    return -1;
+  }
 
-  if ( RunPrms.get_runoption() == 1) {
-    //Process data
-    //MULTIPLE CORE PROCESSING
-    CorrelateBufs(rank, input_readers);
+  if ( RunPrms.get_runoption() == 1 ) {
+    //Process data for rank (=process identifier)
+    if (CorrelateBufs(rank, input_readers) != 0) {
+      cerr << "ERROR: CorrelateBufs, program aborted.\n";
+      return -1;
+    }
   }
 
   //close the mpi stuff
   MPI_Finalize();
 
-  return 1;
+  return 0;
 
 }
 

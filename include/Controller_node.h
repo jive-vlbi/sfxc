@@ -1,3 +1,16 @@
+/*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
+Author     : NGH Kruithof
+StartDate  : 20061101
+Last change: 20061124
+*/
+
 #ifndef CONTROLLER_NODE_H
 #define CONTROLLER_NODE_H
 

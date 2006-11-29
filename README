@@ -1,1 +1,1 @@
-aclocal && autoheader && autoconf && automake && ./configure
+aclocal && autoheader && autoconf && automake && ./configure CXX=mpicxx

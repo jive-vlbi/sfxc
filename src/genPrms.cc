@@ -14,19 +14,6 @@ Last change: 20060912
 
 */
 
-// //these defines have to be the first in source file
-// #define _LARGEFILE_SOURCE
-// #define _LARGEFILE64_SOURCE
-
-// //enable define on 32 bit CPU, disable on 64 bit CPU
-// #define THIRTYTWO
-
-// //32 bit machine define,
-// //use open, lseek, off_t in stead off open64, lseek64, off64_t
-// #ifdef THIRTYTWO
-// #define _FILE_OFFSET_BITS 64
-// #endif
-
 #include <types.h>
 
 //standard c includes
@@ -173,7 +160,7 @@ GenP::GenP()
 //parse control file for general control parameters
 int GenP::parse_ctrlFile(char *ctrlFile)
 {
-  int  retval=0, i, vall;
+  int  retval=0;
   FILE *ctrlP;
   char *line, *key, *val, *val1, *val2, *val3, *val4;
   char *logname, *corname;
@@ -287,7 +274,7 @@ int GenP::parse_ctrlFile(char *ctrlFile)
 int GenP::check_params()
 {
 
-  int retval = 0, i, j, FFTlength, Overlap;
+  int retval = 0, FFTlength, Overlap;
   INT64 tStart, tStop, sec2proc;
   FILE *fl;
   char command[256];
@@ -412,7 +399,7 @@ int GenP::check_params()
     retval=-1;
   }
 
-  Overlap = 100*ovrlp;
+  Overlap = (int) (100*ovrlp);
   if (!(Overlap==0 || Overlap==25 ||Overlap==50 ||Overlap==75 )) {
     cerr << "ERROR: Overlap = " << ovrlp <<
       ", it should be [0|0.25|0.5|0.75]." << endl;

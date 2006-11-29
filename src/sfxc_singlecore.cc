@@ -1,4 +1,17 @@
 /*
+CVS keywords
+$Author$
+$Date$
+$Name$
+$Revision$
+$Source$
+
+Author     : NGH Kruithof
+StartDate  : 20061101
+Last change: 20061124
+*/
+
+/*
 Source       sfxc01.cc
 Title        software FX correlator
 Author       RHJ Oerlemans
@@ -120,10 +133,10 @@ UINT32 seed;
 //PI
 double PI=4.0*atan(1.0);
 //declarations for offsets
-INT64 sliceStartByte[NstationsMax][NcoresMax];
-// INT64 sliceStopByte [NstationsMax][NcoresMax];
-INT64 sliceStartTime [NcoresMax];
-INT64 sliceStopTime  [NcoresMax];
+INT64 sliceStartByte[NstationsMax][NprocessesMax];
+// INT64 sliceStopByte [NstationsMax][NprocessesMax];
+INT64 sliceStartTime [NprocessesMax];
+INT64 sliceStopTime  [NprocessesMax];
 INT64 sliceTime;
 
 
@@ -215,12 +228,12 @@ int main(int argc, char *argv[])
   }
 
   //Find Offsets
-  FindOffsets(input_readers, numtasks);
+  int rank=0;
+  FindOffsets(input_readers, numtasks, rank);
 
   if ( RunPrms.get_runoption() == 1) {
     //Process data
     //MULTIPLE CORE PROCESSING
-    int rank=0;
     cout << "correlation on core " << rank << " started" << endl;
     CorrelateBufs(rank, input_readers);
     cout << "correlation on core " << rank << " finished" << endl;
