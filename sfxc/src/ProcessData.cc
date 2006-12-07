@@ -467,7 +467,7 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
   int retval = 0;
   int i;
   int nstations, sn; //nr of stations and station counter
-  int lsegm, jl; //fourier length of a segment in the pre-correlation
+  int lsegm,lsegm2, jl; //fourier length of a segment in the pre-correlation
   double Lsegm; //same as lsegm but in float
   double sqrtLsegm;
   INT64 Nsegm2DC; //nr of segments to delay correct, result in Bufs
@@ -479,10 +479,12 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
   double dfs, phi, FoffRatio;
   double Time; //time in micro seconds
 
+  double PI=4.0*atan(1.0);
   
   //initialisations and allocations
   nstations = GenPrms.get_nstations();
   lsegm = GenPrms.get_lsegm();
+  lsegm2= lsegm/2;
   Lsegm = lsegm;
   sqrtLsegm = sqrt(Lsegm);
   Nsegm2DC = BufSize/lsegm;
@@ -523,6 +525,7 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
     for (jsegm=0; jsegm<Nsegm2DC; jsegm++) {
       Time = timePtr + jsegm*lsegm*tbs*1000000.; //in usec
       Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
+//Cdel=0.0;
 //TODO test calculation Cdel and Fdel
 //TODO check with Sergei valid parameters for Cdel, Fdel, etc
       if (Cdel>0.0) {
@@ -530,7 +533,7 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
         return 1;
       }      
       //address shift due to time delay for the  current segment
-      jshift = (long long int)floor(Cdel/tbs+0.5);
+      jshift = (INT64)(Cdel/tbs+0.5);
       //fill the complex sls array
       for (jl=0; jl<lsegm; jl++){
         sls[jl][0] = dcBufs[sn][2*BufSize+jshift+jl+jsegm*lsegm];
@@ -540,12 +543,17 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
       //complex forward fourier transform
       fftw_execute(planBW);
       //apply normalization
-      for (jl=0; jl<lsegm/2; jl++){
+      for (jl=0; jl<=lsegm2; jl++){
         spls[jl][0] = spls[jl][0] / sqrtLsegm;
         spls[jl][1] = spls[jl][1] / sqrtLsegm;
       }
+      //multiply element 0 and lsegm2 by 0.5 to avoid jumps at segment borders
+      spls[0][0]=0.5*spls[0][0];//DC
+      spls[0][1]=0.5*spls[0][1];//Nyquist
+      spls[lsegm2][0]=0.5*spls[lsegm2][0];
+      spls[lsegm2][1]=0.5*spls[lsegm2][1];
       //zero the unused subband
-      for (jl=lsegm/2;jl<lsegm;jl++){
+      for (jl=lsegm2+1;jl<lsegm;jl++){
         spls[jl][0] = 0.0;
         spls[jl][1] = 0.0;
       }
@@ -553,6 +561,7 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
       //apply them and pi/2 also
       Time = timePtr + jsegm*lsegm*tbs*1000000.+lsegm/2*tbs*1000000.;
       Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
+//Cdel=0.0;
       if (Cdel>0.0) {
         cerr << "Cdel > 0.0 in fill_Bufs()." << endl;
         return 1;
@@ -561,7 +570,11 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
       FoffRatio=0.5+GenPrms.get_foffset()/GenPrms.get_bwfl();
       for (jf = 0; jf < Nf; jf++)
       {
-        phi = -2.0*M_PI*dfs*tbs*fs[jf] + FoffRatio*M_PI*jshift/GenPrms.get_ovrfl();
+//        phi = -2.0*M_PI*dfs*tbs*fs[jf] + FoffRatio*M_PI*jshift/GenPrms.get_ovrfl();
+        phi = -2.0*M_PI*dfs*tbs*fs[jf];
+//        phi = -6.283*phi;
+if ( (jsegm%100)==0 && jf==100)
+  printf("tbs=%g Cdel=%g jf=%d phi=%g cos=%g sin=%g\n",tbs, Cdel, jf, phi, cos(phi), sin(phi));
         spls[jf][0] = spls[jf][0]*cos(phi)-spls[jf][1]*sin(phi);
         spls[jf][1] = spls[jf][0]*sin(phi)+spls[jf][1]*cos(phi);
       }
@@ -576,16 +589,17 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
       for (jl=0;jl<lsegm;jl++)
       {
         Time = timePtr + jsegm*lsegm*tbs*1000000. + jl*tbs*1000000.;
-      Fdel = delTbl[sn].calcDelay(Time, DelayTable::Fdel);
-      if (Fdel>0.0) {
-        cerr << "Fdel > 0.0 in fill_Bufs()." << endl;
-        return 1;
-      }      
+        Fdel = delTbl[sn].calcDelay(Time, DelayTable::Fdel);
+//Fdel=0.0;
+        if (Fdel>0.0) {
+          cerr << "Fdel > 0.0 in fill_Bufs()." << endl;
+          return 1;
+        }      
 //TODO not implemented
 //        if (phaseCorrOn) Phase = phsTbl[sn].calcPhase(Time);
         phi = -2.0*M_PI*(StaPrms[sn].get_loobs()+GenPrms.get_startf()+
           GenPrms.get_bwfl()*0.5+GenPrms.get_foffset())*Fdel + Phase;
-        Bufs[sn][lsegm*jsegm+jl]=sls[jl][0]*sin(phi)-sls[jl][1]*cos(phi);
+        Bufs[sn][lsegm*jsegm+jl]=sls[jl][0]*cos(phi)-sls[jl][1]*sin(phi);
       }
       
     }

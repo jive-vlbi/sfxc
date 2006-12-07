@@ -113,7 +113,7 @@ DelayTable::~DelayTable()
 //read the delay table, do some checks and
 //calculate coefficients for parabolic interpolation
 int DelayTable::readDelayTable(char *delayTableName,
-  INT64 start, INT64 stop, INT64 BufTime)
+  INT64 start, INT64 stop, INT64 BufTime)//time in usec
 {
 
   int    retval = 0;
@@ -193,6 +193,12 @@ int DelayTable::readDelayTable(char *delayTableName,
     parabCoefs(t0,t1,t2,m0,m1,m2,mA[idel],mB[idel],mC[idel]);
     parabCoefs(t0,t1,t2,r0,r1,r2,rA[idel],rB[idel],rC[idel]);
     parabCoefs(t0,t1,t2,f0,f1,f2,fA[idel],fB[idel],fC[idel]);
+//DEBUGGING    
+if (idel == ndel/2) {
+  cout << "idel t0 t1 t2 " << idel << " " << t0 << " " << t1 << " " << t2 << endl;
+  cout << "c0 c1 c2 " << c0 << " " << c1 << " " << c2 << endl;
+  cout << "cA cB cC " << cA[idel] << " " << cB[idel] << " " << cC[idel] << endl;
+}    
     //process next line
     t0 = t1;    t1 = t2;
     c0 = c1;    c1 = c2;
