@@ -18,7 +18,7 @@
 int FindOffsets(std::vector<Input_reader *> input_readers,
                 int Numtask, int rank);
 
-int fill_Mk4frame(int station, Input_reader &reader, double *Mk4frame,
+int fill_Mk4frame(int station, Input_reader &reader, double **Mk4frame,
                   double *signST, double *magnST, INT64 *Nsamp);
 
 

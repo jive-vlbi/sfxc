@@ -238,7 +238,7 @@ int FindOffsets(std::vector<Input_reader *> input_readers,
 //*****************************************************************************
 //fill Mk4frame if frame counter at end of array
 //*****************************************************************************
-int fill_Mk4frame(int sn, Input_reader &reader, double *Mk4frame,
+int fill_Mk4frame(int sn, Input_reader &reader, double **Mk4frame,
   double *signST, double *magnST, INT64 *Nsamp)
 {
   INT64 readstatus=0;
@@ -281,7 +281,7 @@ int fill_Mk4frame(int sn, Input_reader &reader, double *Mk4frame,
         sign = (int)((work64 >>  StaPrms[sn].get_signBS()[ifo] ) & 0x1);
         magn = (int)((work64 >>  StaPrms[sn].get_magnBS()[ifo] ) & 0x1);
         //convert sign and magnitude into a double using the lookup table
-        Mk4frame[jbuf*fo+ifo] = smplTBL[sign][magn];
+        Mk4frame[sn][jbuf*fo+ifo] = smplTBL[sign][magn];
         //sample statistics
         signST[sn]=signST[sn]+sign;
         magnST[sn]=magnST[sn]+magn;
@@ -308,7 +308,7 @@ int fill_Mk4frame(int sn, Input_reader &reader, double *Mk4frame,
         sign = (int)((work32 >>  StaPrms[sn].get_signBS()[ifo] ) & 0x1);
         magn = (int)((work32 >>  StaPrms[sn].get_magnBS()[ifo] ) & 0x1);
         //convert sign and magnitude into a double using the lookup table
-        Mk4frame[jbuf*fo+ifo] = smplTBL[sign][magn];
+        Mk4frame[sn][jbuf*fo+ifo] = smplTBL[sign][magn];
         //sample statistics
         signST[sn]=signST[sn]+sign;
         magnST[sn]=magnST[sn]+magn;
@@ -323,7 +323,7 @@ int fill_Mk4frame(int sn, Input_reader &reader, double *Mk4frame,
     for(jhdr=0; jhdr<fo*hdrMk4; jhdr++) {
       sign=irbit2(&seed);
       magn=irbit2(&seed);
-      Mk4frame[jhdr] = smplTBL[sign][magn];
+      Mk4frame[sn][jhdr] = smplTBL[sign][magn];
     }
   }
      

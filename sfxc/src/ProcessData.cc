@@ -97,32 +97,32 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   INT64 segm; //segment number in for loop
   INT64 TenPct;
   INT64 BufPtr; //location of the buffer pointer
-  INT64 *Nsamp;
+  INT64 *Nsamp = NULL;
   double timePtr; //a time pointer in micro seconds
   int nbslns; //number of baselines, cross and auto correlations
   int bsln; // baseline number
-  float *norms; //normalization coeffs
-  double **Bufs; //buffers with pre-correlated data ready for correlation
-  double **dcBufPrev; //buffers with data for delay correction
+  float *norms = NULL; //normalization coeffs
+  double **Bufs = NULL; //buffers with pre-correlated data ready for correlation
+  double **dcBufPrev = NULL; //buffers with data for delay correction
   int BufSize; // size of one buffer in Bufs
-  double **invecs;//input vectors for FFT operation
-  fftw_complex **xps; //xps: result vectors from FFT
-  fftw_complex **accxps; //accumulated cross and auto powers Real and Imaginary part
-  fftw_plan *fwd_plans; //FFT plans
-  double **Mk4frame; //channel data for one frame
-  INT64 *FL; //Mk4 frame length
-  INT64 *FC; //Mk4 frame counter
-  double *signST, *magnST;//sign and magnitude statistics
+  double **invecs = NULL;//input vectors for FFT operation
+  fftw_complex **xps = NULL; //xps: result vectors from FFT
+  fftw_complex **accxps = NULL; //accumulated cross and auto powers Real and Imaginary part
+  fftw_plan *fwd_plans = NULL; //FFT plans
+  double **Mk4frame = NULL; //channel data for one frame
+  INT64 *FL = NULL; //Mk4 frame length
+  INT64 *FC = NULL; //Mk4 frame counter
+  double *signST = NULL, *magnST = NULL;//sign and magnitude statistics
   INT64 loop; //while loop counter
   double SR, tbs; //sample rate and time between samples
-  double dfr, *fs; // delta frequency in frequency scale, frequency scale
+  double dfr, *fs = NULL; // delta frequency in frequency scale, frequency scale
   int    jf, Nf; //nr of frequencies in frequency scale
-  FILE *outP; //output result file
+  FILE *outP = NULL; //output result file
   char outFile[256], coreStr[5];
 
 
   //declarations for fftw in delay correction
-  fftw_complex *sls, *spls; //FW:in,out; BW: out,in
+  fftw_complex *sls = NULL, *spls = NULL; //FW:in,out; BW: out,in
   fftw_plan    planFW, planBW;//plans for forward and backward fft 
   int lsegm; //fourier length of a segment in the pre-correlation
 
@@ -213,8 +213,8 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   }  
 
   //arrays and plans for delay correction
-  sls  = new fftw_complex[lsegm];
-  spls = new fftw_complex[lsegm];
+  sls   = new fftw_complex[lsegm];
+  spls  = new fftw_complex[lsegm];
   planBW = fftw_plan_dft_1d(lsegm, sls, spls, FFTW_BACKWARD, FFTW_ESTIMATE);
   planFW = fftw_plan_dft_1d(lsegm, spls, sls, FFTW_FORWARD,  FFTW_ESTIMATE);
 
@@ -238,11 +238,9 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
     for (i=0; i<2*BufSize; i++) {
       if (FC[sn] == FL[sn]) {
         //fill Mk4frame if frame counter at end of frame
-        fill_Mk4frame(sn, *readers[sn], Mk4frame[sn], 
-                      signST, magnST, Nsamp);
+        fill_Mk4frame(sn,*readers[sn],Mk4frame,signST,magnST,Nsamp);
         FC[sn] = 0;
       }
-      //fill remaining of dcBufs with data from Mk4
       dcBufPrev[sn][i]=Mk4frame[sn][FC[sn]];
       FC[sn]++;
     }
@@ -283,11 +281,7 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
       //read data from data files, do pre-correlation, 
       //and put results in Bufs. 
       if ( (BufPtr+n2fft)>BufSize ) {
-//        int nBytes = fill_Bufs(readers, Bufs,dcBufPrev,BufSize,
-//          Mk4frame,FL,FC,signST,magnST,Nsamp,sls,spls,planFW,planBW,
-//          tbs,fs,Nf,timePtr,delTbl,rank);
-//        if (nBytes <= 0) break;
-        retval = fill_Bufs(readers, Bufs,dcBufPrev,BufSize,
+        retval = fill_Bufs(readers,Bufs,dcBufPrev,BufSize,
           Mk4frame,FL,FC,signST,magnST,Nsamp,sls,spls,planFW,planBW,
           tbs,fs,Nf,timePtr,delTbl,rank);
         if (retval !=0) {
@@ -295,7 +289,7 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
           return retval;
         }
         timePtr=timePtr+BufTime;
-        BufPtr=0;
+        BufPtr=0;        
       }
 
       //get data from Bufs and put in invecs and increase BufPtr
@@ -403,12 +397,12 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
   
   fftw_destroy_plan(planFW);
   fftw_destroy_plan(planBW);
+  
   delete [] spls;
   delete [] sls;
 
   for (sn=0; sn<nstations; sn++)
     fftw_destroy_plan(fwd_plans[sn]);
-
   delete [] fwd_plans;
   
   for (j=0; j<nbslns; j++)
@@ -472,15 +466,13 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
   double sqrtLsegm;
   INT64 Nsegm2DC; //nr of segments to delay correct, result in Bufs
   INT64 jsegm; //segment number
-  INT64 jshift; //address shift due to delay correction
+  INT64 jshift = 0; //address shift due to delay correction
   int   jf; // frequency element counter
-  double **dcBufs; //buffers for delay corrections
+  double **dcBufs = NULL; //buffers for delay corrections
   double Cdel,Fdel,Phase;
   double dfs, phi, FoffRatio;
   double Time; //time in micro seconds
 
-  double PI=4.0*atan(1.0);
-  
   //initialisations and allocations
   nstations = GenPrms.get_nstations();
   lsegm = GenPrms.get_lsegm();
@@ -507,8 +499,8 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
     for (i=2*BufSize; i<3*BufSize; i++) {
       if (FC[sn] == FL[sn]) {
         //fill Mk4frame if frame counter at end of frame
-        int nBytes = fill_Mk4frame(sn, *readers[sn], Mk4frame[sn], 
-                                  signST, magnST, Nsamp);
+        int nBytes =
+        fill_Mk4frame(sn,*readers[sn],Mk4frame,signST,magnST,Nsamp);
         if (nBytes==0) {
           cerr << "ERROR: End of input for reader " << sn << endl;
           return 1;
@@ -516,41 +508,48 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
         FC[sn] = 0;
       }
       //fill remaining of dcBufs with data from Mk4file
-      dcBufs[sn][i]=Mk4frame[sn][FC[sn]]; 
+      dcBufs[sn][i]=Mk4frame[sn][FC[sn]];
       FC[sn]++;
     }
     
     //apply delay and phase corrections for all segments
     //in other words process data in dcBufs, output in Bufs
     for (jsegm=0; jsegm<Nsegm2DC; jsegm++) {
+    
       Time = timePtr + jsegm*lsegm*tbs*1000000.; //in usec
       Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
-//Cdel=0.0;
-//TODO test calculation Cdel and Fdel
-//TODO check with Sergei valid parameters for Cdel, Fdel, etc
+///Cdel=0.0;
+///Cdel=-1.0e-08;//RUUD: deze waarde veroorzaakt fout!!! waarom
+///Cdel=-1.0e-06;      
+Cdel=-1.0e-04;      
+      //TODO test calculation Cdel and Fdel
+      //TODO check with Sergei valid parameters for Cdel, Fdel, etc
       if (Cdel>0.0) {
         cerr << "Cdel > 0.0 in fill_Bufs()." << endl;
         return 1;
       }      
       //address shift due to time delay for the  current segment
       jshift = (INT64)(Cdel/tbs+0.5);
+      
       //fill the complex sls array
       for (jl=0; jl<lsegm; jl++){
-        sls[jl][0] = dcBufs[sn][2*BufSize+jshift+jl+jsegm*lsegm];
+        sls[jl][0] = dcBufs[sn][2*BufSize+jsegm*lsegm+jl+jshift];
         sls[jl][1] = 0.0;
       }
 
       //complex forward fourier transform
       fftw_execute(planBW);
       //apply normalization
-      for (jl=0; jl<=lsegm2; jl++){
+      for (jl=0; jl<lsegm; jl++){
         spls[jl][0] = spls[jl][0] / sqrtLsegm;
         spls[jl][1] = spls[jl][1] / sqrtLsegm;
       }
-      //multiply element 0 and lsegm2 by 0.5 to avoid jumps at segment borders
+      
+      //multiply element 0 and lsegm2 by 0.5
+      //to avoid jumps at segment borders
       spls[0][0]=0.5*spls[0][0];//DC
-      spls[0][1]=0.5*spls[0][1];//Nyquist
-      spls[lsegm2][0]=0.5*spls[lsegm2][0];
+      spls[0][1]=0.5*spls[0][1];
+      spls[lsegm2][0]=0.5*spls[lsegm2][0];//Nyquist
       spls[lsegm2][1]=0.5*spls[lsegm2][1];
       //zero the unused subband
       for (jl=lsegm2+1;jl<lsegm;jl++){
@@ -561,47 +560,51 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
       //apply them and pi/2 also
       Time = timePtr + jsegm*lsegm*tbs*1000000.+lsegm/2*tbs*1000000.;
       Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
-//Cdel=0.0;
+///Cdel=0.0;
+///Cdel=-1.0e-08;//RUUD: deze waarde veroorzaakt fout!!! waarom
+///Cdel=-1.0e-06;      
+Cdel=-1.0e-04;      
       if (Cdel>0.0) {
         cerr << "Cdel > 0.0 in fill_Bufs()." << endl;
         return 1;
       }      
       dfs = Cdel/tbs - floor(Cdel/tbs + 0.5);
       FoffRatio=0.5+GenPrms.get_foffset()/GenPrms.get_bwfl();
+      
       for (jf = 0; jf < Nf; jf++)
       {
-//        phi = -2.0*M_PI*dfs*tbs*fs[jf] + FoffRatio*M_PI*jshift/GenPrms.get_ovrfl();
-        phi = -2.0*M_PI*dfs*tbs*fs[jf];
-//        phi = -6.283*phi;
-if ( (jsegm%100)==0 && jf==100)
-  printf("tbs=%g Cdel=%g jf=%d phi=%g cos=%g sin=%g\n",tbs, Cdel, jf, phi, cos(phi), sin(phi));
+        phi = -2.0*M_PI*dfs*tbs*fs[jf] + FoffRatio*M_PI*jshift/GenPrms.get_ovrfl();
         spls[jf][0] = spls[jf][0]*cos(phi)-spls[jf][1]*sin(phi);
         spls[jf][1] = spls[jf][0]*sin(phi)+spls[jf][1]*cos(phi);
       }
+      
       //reverse complex fft
       fftw_execute(planFW);
+      
       //apply normalization and multiply by 2.0
       for (jl=0; jl<lsegm; jl++){
-        sls[jl][0] = sls[jl][0] / sqrtLsegm;
-        sls[jl][1] = sls[jl][1] / sqrtLsegm;
+        sls[jl][0] = 2.0*sls[jl][0] / sqrtLsegm;
+        sls[jl][1] = 2.0*sls[jl][1] / sqrtLsegm;//not used
       }
+
       //subtract dopplers and put real part in Bufs inside the segment
       for (jl=0;jl<lsegm;jl++)
       {
+      
         Time = timePtr + jsegm*lsegm*tbs*1000000. + jl*tbs*1000000.;
         Fdel = delTbl[sn].calcDelay(Time, DelayTable::Fdel);
-//Fdel=0.0;
+Fdel=0.0;
         if (Fdel>0.0) {
           cerr << "Fdel > 0.0 in fill_Bufs()." << endl;
           return 1;
         }      
-//TODO not implemented
-//        if (phaseCorrOn) Phase = phsTbl[sn].calcPhase(Time);
+       //TODO not implemented
+       //   if (phaseCorrOn) Phase = phsTbl[sn].calcPhase(Time);
         phi = -2.0*M_PI*(StaPrms[sn].get_loobs()+GenPrms.get_startf()+
           GenPrms.get_bwfl()*0.5+GenPrms.get_foffset())*Fdel + Phase;
+          
         Bufs[sn][lsegm*jsegm+jl]=sls[jl][0]*cos(phi)-sls[jl][1]*sin(phi);
       }
-      
     }
     
     //fill dcBufPrev arrays, remember for next loop
