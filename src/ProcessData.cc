@@ -518,10 +518,6 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
     
       Time = timePtr + jsegm*lsegm*tbs*1000000.; //in usec
       Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
-///Cdel=0.0;
-///Cdel=-1.0e-08;//RUUD: deze waarde veroorzaakt fout!!! waarom
-///Cdel=-1.0e-06;      
-Cdel=-1.0e-04;      
       //TODO test calculation Cdel and Fdel
       //TODO check with Sergei valid parameters for Cdel, Fdel, etc
       if (Cdel>0.0) {
@@ -560,10 +556,6 @@ Cdel=-1.0e-04;
       //apply them and pi/2 also
       Time = timePtr + jsegm*lsegm*tbs*1000000.+lsegm/2*tbs*1000000.;
       Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
-///Cdel=0.0;
-///Cdel=-1.0e-08;//RUUD: deze waarde veroorzaakt fout!!! waarom
-///Cdel=-1.0e-06;      
-Cdel=-1.0e-04;      
       if (Cdel>0.0) {
         cerr << "Cdel > 0.0 in fill_Bufs()." << endl;
         return 1;
@@ -574,8 +566,10 @@ Cdel=-1.0e-04;
       for (jf = 0; jf < Nf; jf++)
       {
         phi = -2.0*M_PI*dfs*tbs*fs[jf] + FoffRatio*M_PI*jshift/GenPrms.get_ovrfl();
-        spls[jf][0] = spls[jf][0]*cos(phi)-spls[jf][1]*sin(phi);
-        spls[jf][1] = spls[jf][0]*sin(phi)+spls[jf][1]*cos(phi);
+        double tmpR = spls[jf][0];
+        double tmpI = spls[jf][1];
+        spls[jf][0] = tmpR*cos(phi)-tmpI*sin(phi);
+        spls[jf][1] = tmpR*sin(phi)+tmpI*cos(phi);
       }
       
       //reverse complex fft
@@ -593,7 +587,6 @@ Cdel=-1.0e-04;
       
         Time = timePtr + jsegm*lsegm*tbs*1000000. + jl*tbs*1000000.;
         Fdel = delTbl[sn].calcDelay(Time, DelayTable::Fdel);
-Fdel=0.0;
         if (Fdel>0.0) {
           cerr << "Fdel > 0.0 in fill_Bufs()." << endl;
           return 1;
@@ -606,12 +599,11 @@ Fdel=0.0;
         Bufs[sn][lsegm*jsegm+jl]=sls[jl][0]*cos(phi)-sls[jl][1]*sin(phi);
       }
     }
-    
     //fill dcBufPrev arrays, remember for next loop
     for (i=0; i<2*BufSize; i++) {
       dcBufPrev[sn][i] = dcBufs[sn][BufSize+i];
     }
-    
+
   }  
   
 
