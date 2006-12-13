@@ -124,6 +124,8 @@ using namespace std;
 
 #include <Input_reader_file.h>
 
+#define SEED 10
+
 //global variables
 //declaration and default settings run parameters
 RunP RunPrms;
@@ -158,6 +160,9 @@ int main(int argc, char *argv[])
 
   // seed the random number generator (global variable!)
   seed = (UINT32) time((time_t *)NULL);
+  //TODO 13-12-2006: remove next line after tests
+  seed = SEED;
+  cout << "WARNING seed=" << seed << endl;
 
   //do the mpi initialisation
   status = MPI_Init(&argc,&argv);
