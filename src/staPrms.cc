@@ -60,7 +60,7 @@ char* StaP::get_hdrmap()     { return hdrmap; }
 char* StaP::get_modpat()     { return modpat; }
 char* StaP::get_delaytable() { return delaytable; }
 char* StaP::get_phasetable() { return phasetable; }
-int   StaP::get_loobs()      { return loobs;}
+INT64 StaP::get_loobs()      { return loobs;}
 int*  StaP::get_signBS()     { return signBS;}
 int*  StaP::get_magnBS()     { return magnBS;}
 
@@ -282,7 +282,7 @@ int StaP::findDelaydata(FILE *ctrlP)
     if (sscanf(line,"%s %s\n",key,val) == 2) {
       if (strcmp(key,"DELAYTABLE") == 0) strcpy(delaytable,val);
       if (strcmp(key,"PHASETABLE") == 0) strcpy(phasetable,val);
-      retval = retval + getLongVal(key,val,"LOOBS",loobs);
+      retval = retval + getINT64Val(key,val,"LOOBS",loobs);
     }
   }
     
