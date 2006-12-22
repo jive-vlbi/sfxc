@@ -65,6 +65,7 @@ extern INT64 sliceStartTime [NprocessesMax];
 extern INT64 sliceStopTime  [NprocessesMax];
 extern INT64 sliceTime;
 
+extern UINT32 seed;
 
 //***************************************************************************
 //prototypes for local functions
@@ -245,7 +246,11 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
       FC[sn]++;
     }
   }
-
+for (sn=0; sn<nstations; sn++) {
+  cout << "sn=" << sn << " ";
+  for (i=0; i<10; i++) cout << Mk4frame[sn][i] << " " ;
+  cout << endl;
+}  
   
   //loop initializations
   timePtr = sliceStartTime[rank];
@@ -317,10 +322,14 @@ int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
         for (sno = sn + 1; sno < nstations ; sno ++){
           for (l = 0 ; l < n2fft*pad/2 + 1 ; l++){
             //accxps[bsln][l] += xps[sn][l]*conj(xps[sno][l])
+            
             accxps[bsln][l][0] = accxps[bsln][l][0] +
-            (xps[sn][l][0] * xps[sno][l][0]) + (xps[sn][l][1] * xps[sno][l][1]);
+            (xps[sn][l][0] * xps[sno][l][0]) +
+            (xps[sn][l][1] * xps[sno][l][1]);
+            
             accxps[bsln][l][1] = accxps[bsln][l][1] +
-            (xps[sn][l][1] * xps[sno][l][0]) - (xps[sn][l][0] * xps[sno][l][1]);
+            (xps[sn][l][1] * xps[sno][l][0]) -
+            (xps[sn][l][0] * xps[sno][l][1]);
             
           }
           bsln++;
@@ -486,17 +495,49 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
   for (sn=0; sn<nstations; sn++){
     dcBufs[sn] = new double[3*BufSize];
   }
-
+/*
+//BEGIN OF TEST CODE1
+//generate artificial random noise
+for (sn=0; sn<nstations; sn++){
+  //initialise lookup table
+  double smplTBL[2][2];
+  smplTBL[0][0]=-7.0;
+  smplTBL[0][1]=-2.0;
+  smplTBL[1][0]= 2.0;
+  smplTBL[1][1]= 7.0;
+  int sig,mag;
+  int ibuf;
   
-  
-  for (sn=0; sn<nstations; sn++){
-  
-    //fill dcBufs with data from dcBufPrev
-    for (i=0; i<2*BufSize; i++) {
-      dcBufs[sn][i]=dcBufPrev[sn][i];
+#DEFINE SAME
+#IFDEF SAME
+  //All stations same random numbers
+  if (sn==0) {
+    for (ibuf=0; ibuf<BufSize; ibuf++) {
+      mag = irbit2(&seed);
+      sig = irbit2(&seed);
+      Bufs[sn][ibuf]=smplTBL[sig][mag];
     }
-    
-    for (i=2*BufSize; i<3*BufSize; i++) {
+  } else {
+    for (ibuf=0; ibuf<BufSize; ibuf++) {
+      Bufs[sn][ibuf]=Bufs[0][ibuf];
+    }
+  }
+#ELSEIF
+  //all stations different random numbers
+  for (ibuf=0; ibuf<BufSize; ibuf++) {
+    mag = irbit2(&seed);
+    sig = irbit2(&seed);
+    Bufs[sn][ibuf]=smplTBL[sig][mag];
+  }
+#ENDIF  
+}
+//END OF TEST CODE
+*/
+/*
+//BEGIN OF TEST CODE2
+for (sn=0; sn<nstations; sn++){
+  if (sn==0) {
+    for (i=0; i<BufSize; i++) {
       if (FC[sn] == FL[sn]) {
         //fill Mk4frame if frame counter at end of frame
         int nBytes =
@@ -507,13 +548,44 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
         }
         FC[sn] = 0;
       }
+      //fill Bufs with data from Mk4file
+      Bufs[sn][i]=Mk4frame[sn][FC[sn]];
+      FC[sn]++;
+    }
+  } else {
+    for (i=0; i<BufSize; i++) Bufs[sn][i]= Bufs[0][i];
+  }  
+    
+}
+//END OF TEST CODE2
+*/
+  for (sn=0; sn<nstations; sn++){
+  
+    //fill dcBufs with data from dcBufPrev
+    for (i=0; i<2*BufSize; i++) {
+      dcBufs[sn][i]=dcBufPrev[sn][i];
+    }
+    
+    for (i=2*BufSize; i<3*BufSize; i++) {
+      if (FC[sn] == FL[sn]) {
+        //fill Mk4frame if FrameCounter is at end of frame
+        int nBytes =
+        fill_Mk4frame(sn,*readers[sn],Mk4frame,signST,magnST,Nsamp);
+        if (nBytes==0) {
+          cerr << "ERROR: End of input for reader " << sn << endl;
+          return 1;
+        }
+        FC[sn] = 0;//reset FrameCounter for station sn 
+      }
       //fill remaining of dcBufs with data from Mk4file
       dcBufs[sn][i]=Mk4frame[sn][FC[sn]];
       FC[sn]++;
     }
+
     
     //apply delay and phase corrections for all segments
     //in other words process data in dcBufs, output in Bufs
+    
     for (jsegm=0; jsegm<Nsegm2DC; jsegm++) {
     
       Time = timePtr + jsegm*lsegm*tbs*1000000.; //in usec
@@ -529,7 +601,7 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
       
       //fill the complex sls array
       for (jl=0; jl<lsegm; jl++){
-        sls[jl][0] = dcBufs[sn][2*BufSize+jsegm*lsegm+jl+jshift];
+        sls[jl][0] = dcBufs[sn][2*BufSize + jsegm*lsegm + jl + jshift];
         sls[jl][1] = 0.0;
       }
 
@@ -595,14 +667,17 @@ int fill_Bufs(std::vector<Input_reader *> &readers,
        //   if (phaseCorrOn) Phase = phsTbl[sn].calcPhase(Time);
         phi = -2.0*M_PI*(StaPrms[sn].get_loobs()+GenPrms.get_startf()+
           GenPrms.get_bwfl()*0.5+GenPrms.get_foffset())*Fdel + Phase;
-          
         Bufs[sn][lsegm*jsegm+jl]=sls[jl][0]*cos(phi)-sls[jl][1]*sin(phi);
+
       }
     }
+    
+    
     //fill dcBufPrev arrays, remember for next loop
     for (i=0; i<2*BufSize; i++) {
       dcBufPrev[sn][i] = dcBufs[sn][BufSize+i];
     }
+
 
   }  
   

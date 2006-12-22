@@ -58,7 +58,7 @@ class StaP
     //delay correction related data
     char *delaytable; //table with delay data
     char *phasetable; //table with phase
-    int  loobs;       //local ascilator observing station
+    INT64 loobs;       //local ascilator observing station
 
     //private functions
     int findMK4data(FILE *ctrlP);
@@ -96,7 +96,7 @@ class StaP
     char* get_modpat();
     char* get_delaytable();
     char* get_phasetable();
-    int   get_loobs();
+    INT64 get_loobs();
     int*  get_signBS(); //bit shift parameters for sign
     int*  get_magnBS(); //bit shift parameters for magn
 
