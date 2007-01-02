@@ -11,6 +11,7 @@ $Source$
 #define DATA_READER_H
 
 #include <types.h>
+#include <iostream>
 
 /** Virtual class defining the interface for obtaining input.
  **/
@@ -24,7 +25,10 @@ public:
 //       \return Returns the number of bytes advanced.
 //   **/
   /// TODO: NGHK: REMOVE
-  UINT64 move_forward(UINT64 nBytes) { return nBytes; };
+  UINT64 move_forward(UINT64 nBytes) { 
+    std::cout << "MOVE_FORWARD is deprecated" << std::endl;
+    return get_bytes(nBytes, NULL); 
+  };
 
   /** Reads nBytes from channel into the buff starting from the
       read_pointer. If buff == NULL, then the buffer is not 
