@@ -22,7 +22,7 @@ Last change: 20061114
 class GenP
 {
 
-  private:
+  public:
 
     //general control parameters
     char  *experiment; //name of the experiment

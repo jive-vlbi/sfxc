@@ -20,7 +20,7 @@ Input_reader_file::Input_reader_file(char *filename) :
   Input_reader()
 {
   file = open(filename, O_RDONLY, 0);
-  //assert(is_open(file));
+  assert(is_open(file));
 }
 
 Input_reader_file::~Input_reader_file() {

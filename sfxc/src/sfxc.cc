@@ -122,7 +122,7 @@ using namespace std;
 #include "InData.h"
 #include "ProcessData.h"
 
-#include <Input_reader_file.h>
+#include <Data_reader_file.h>
 
 #define SEED 10
 
@@ -245,10 +245,10 @@ int main(int argc, char *argv[])
   }  
 
   // NGHK: Has to be a pointer or a reference, 
-  //       since Input_reader is an abstract class
-  std::vector<Input_reader *> input_readers;
+  //       since Data_reader is an abstract class
+  std::vector<Data_reader *> input_readers;
   for (int i=0; i<Nstations; i++) {
-    input_readers.push_back(new Input_reader_file(StaPrms[i].get_mk4file()));
+    input_readers.push_back(new Data_reader_file(StaPrms[i].get_mk4file()));
   }
 
   //Find Offsets

@@ -71,18 +71,35 @@ int main(int argc, char *argv[])
     Controller_node controller(numtasks, rank, argv[1]);
     controller.start();
   } else {
-    int job;
-    MPI_Status status;
-    MPI_Recv(&job, 1, MPI_INT, 0, MPI_TAG_INIT, MPI_COMM_WORLD, &status);
-    switch (job) {
-    case MPI_INPUT_NODE: {
-      Input_node input_node(rank);
-      input_node.start();
-      break;
-    }
-    case MPI_CORRELATOR_NODE: {
-      Correlator_node correlator(rank);
-      correlator.start();
+    MPI_Status status, status2;
+    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    switch (status.MPI_TAG) {
+    case MPI_TAG_SET_INPUT_NODE_FILE: 
+      {
+        assert(status.MPI_SOURCE == 0);
+        int size;
+        MPI_Get_elements(&status, MPI_CHAR, &size);
+        char filename[size];
+        MPI_Recv(&filename, size, MPI_CHAR, 0, 
+                 MPI_ANY_TAG, MPI_COMM_WORLD, &status2);
+
+        assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+        assert(status.MPI_TAG == status2.MPI_TAG);
+
+        Input_node input_node(rank, filename);
+        input_node.start();
+        break;
+      }
+    case MPI_TAG_SET_CORRELATOR_NODE: 
+      {
+        int job;
+        MPI_Recv(&job, 1, MPI_INT, 0, 
+                 MPI_ANY_TAG, MPI_COMM_WORLD, &status2);
+        assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+        assert(status.MPI_TAG == status2.MPI_TAG);
+
+        Correlator_node correlator(rank);
+        correlator.start();
       break;
     }
     default:

@@ -63,18 +63,18 @@ extern INT64 sliceTime;
 //*****************************************************************************
 
 // NGHK: station was sn
-int FindHeaderMk4(Input_reader &reader, int station, int& jsynch,
+int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
   INT64& usTime, INT64 usStart);
 
 int read64datafile(
   //input
-  Input_reader & reader,
+  Data_reader & reader,
   //output
   char tracks[][frameMk4*nfrms]);
 
 int read32datafile(
   //input
-  Input_reader &reader,
+  Data_reader &reader,
   //output
   char tracks[][frameMk4*nfrms]);
 
@@ -118,7 +118,7 @@ int fms(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
 //- Ncores dBytes have to be found which is the length in
 //  bytes to be processed by a core
 //*****************************************************************************
-int FindOffsets(std::vector<Input_reader *> input_readers,
+int FindOffsets(std::vector<Data_reader *> input_readers,
                 int numtasks, int rank)
 {
   
@@ -200,7 +200,12 @@ int FindOffsets(std::vector<Input_reader *> input_readers,
     sliceStartByte[sn][rank] = StartByte[sn] + rank*deltaBytes[sn];
     if (RunPrms.get_messagelvl()> 1) cout << endl;
     //goto required offset startbyte in stream
-    INT64 statusPtr = input_readers[sn]->move_forward(sliceStartByte[sn][rank]);
+
+    // NGHK: move_forward does not work anymore, only get_bytes
+    //INT64 statusPtr = 
+    //  input_readers[sn]->move_forward(sliceStartByte[sn][rank]);
+    INT64 statusPtr = input_readers[sn]->get_bytes(sliceStartByte[sn][rank], NULL);
+
     if (RunPrms.get_messagelvl()> 1)
       cout << "statusPtr =" << statusPtr << endl;    
     assert(statusPtr == sliceStartByte[sn][rank]);
@@ -238,7 +243,7 @@ int FindOffsets(std::vector<Input_reader *> input_readers,
 //*****************************************************************************
 //fill Mk4frame if frame counter at end of array
 //*****************************************************************************
-int fill_Mk4frame(int sn, Input_reader &reader, double **Mk4frame,
+int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame,
   double *signST, double *magnST, INT64 *Nsamp)
 {
   INT64 readstatus=0;
@@ -340,7 +345,7 @@ int fill_Mk4frame(int sn, Input_reader &reader, double **Mk4frame,
 // output: usTime  header time in us for requested offset
 //         jsynch
 //*****************************************************************************
-int FindHeaderMk4(Input_reader &reader, int station, int& jsynch,
+int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
   INT64& usTime, INT64 usStart)
 {
 
@@ -458,7 +463,7 @@ int FindHeaderMk4(Input_reader &reader, int station, int& jsynch,
 //*****************************************************************************
 int read64datafile(
   //input
-  Input_reader & reader,
+  Data_reader & reader,
   //output
   char tracks[][frameMk4*nfrms])
 {
@@ -492,7 +497,7 @@ int read64datafile(
 //*****************************************************************************
 int read32datafile(
   //input
-  Input_reader &reader,                   
+  Data_reader &reader,                   
   //output
   char tracks[][frameMk4*nfrms])
 {
