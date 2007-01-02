@@ -8,7 +8,8 @@ bin_PROGRAMS = sfxc sfxc_singlecore sfxc_adam
 OBJ=runPrms.cc genPrms.cc staPrms.cc \
 	genFunctions.cc \
 	InData.cc delayTable.cc \
-	ProcessData.cc Input_reader_file.cc Input_reader_tcp.cc
+	ProcessData.cc Data_reader_file.cc Data_reader_tcp.cc \
+	utils.cc
 
 sfxc_SOURCES = $(OBJ) sfxc.cc 
 

@@ -5,10 +5,6 @@ $Date$
 $Name$
 $Revision$
 $Source$
-
-Author     : NGH Kruithof
-StartDate  : 20061101
-Last change: 20061124
 */
 
 #include <Controller_node.h>
@@ -84,33 +80,35 @@ Controller_node::Controller_node(int numtasks, int rank, char * ctrlFile)
     assert(numtasks >= Nstations+2);
   }
 
-  for (int i=0; i<Nstations; i++) {
-    // starting an input reader
-    int type = MPI_INPUT_NODE;
-    MPI_Send(&type, 1, MPI_INT, i+1, MPI_TAG_INIT, MPI_COMM_WORLD);
-    char *input_str = StaPrms[i].get_mk4file();
-    // strlen+1 so that \0 gets transmitted as well
-    MPI_Send(input_str, strlen(input_str)+1, MPI_CHAR, 
-             i+1, MPI_TAG_INIT, MPI_COMM_WORLD);
-  }
   for (int i=Nstations+1; i<numtasks; i++) {
     // starting a correlator node
-    int type = MPI_CORRELATOR_NODE;
-    MPI_Send(&type, 1, MPI_INT, i, MPI_TAG_INIT, MPI_COMM_WORLD);
-    for (int j=1; j<=Nstations; j++) {
-      MPI_Send(&j, 1, MPI_INT, i, MPI_TAG_ADD_INPUT_TCP, MPI_COMM_WORLD);
-    }
-    // Channels:
-//     for (int i=1; i<Nstations; i++) {
-//       MPI_Send(&i, 1, MPI_INT, i, MPI_TAG_ADD_INPUT, MPI_COMM_WORLD);
-//     }
+    int type = MPI_TAG_SET_CORRELATOR_NODE;
+    MPI_Send(&type, 1, MPI_INT, i, 
+             MPI_TAG_SET_CORRELATOR_NODE, MPI_COMM_WORLD);
   }
+
+  for (int i=1; i<=Nstations; i++) {
+    // starting an input reader
+    char *filename = StaPrms[i-1].get_mk4file();
+    // strlen+1 so that \0 gets transmitted as well
+    MPI_Send(filename, strlen(filename)+1, MPI_CHAR, i,
+             MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
+
+    // Add correlator nodes to the input readers:
+    for (int j=Nstations+1; j<numtasks; j++) {
+      std::cout << "HERE" << j << std::endl;
+      MPI_Send(&j, 1, MPI_INT, i, 
+               MPI_TAG_ADD_CORRELATOR_NODE, MPI_COMM_WORLD);
+    }
+  }
+
 }
 
 void Controller_node::start() {
   // Start processing:
   
 
+  sleep(10);
   // End program:
   for (int i=1; i<numtasks; i++) {
     int type = MPI_CORRELATION_READY;

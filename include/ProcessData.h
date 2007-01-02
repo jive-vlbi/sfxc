@@ -7,9 +7,9 @@
   $Source$
 */
 
-#include "Input_reader.h"
+#include "Data_reader.h"
 
-int CorrelateBufs(int core, std::vector<Input_reader *> &readers);
+int CorrelateBufs(int core, std::vector<Data_reader *> &readers);
 
 
 

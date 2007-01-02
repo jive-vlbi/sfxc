@@ -70,7 +70,7 @@ extern UINT32 seed;
 //***************************************************************************
 //prototypes for local functions
 //***************************************************************************
-int fill_Bufs(std::vector<Input_reader *> &readers,
+int fill_Bufs(std::vector<Data_reader *> &readers,
   double **Bufs, double **dcBufPrev, int BufSize,
   double **Mk4frame, INT64 *FL, INT64 *FC,
   double *signST, double *magnST, INT64 *Nsamp,
@@ -85,7 +85,7 @@ int fetch_invecs(INT64& BufPtr, int nstations, int n2fft,
 //***************************************************************************
 // fill the buffers with pre-correlation data and correlate
 //***************************************************************************
-int CorrelateBufs(int rank, std::vector<Input_reader *> &readers)
+int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
 {
   //declarations
   int retval = 0;
@@ -458,7 +458,7 @@ for (sn=0; sn<nstations; sn++) {
 //read data from data files delay correction, and put results in Bufs.
 //remember data in dcBufPrev
 //***************************************************************************
-int fill_Bufs(std::vector<Input_reader *> &readers,
+int fill_Bufs(std::vector<Data_reader *> &readers,
   double **Bufs, double **dcBufPrev, int BufSize,
   double **Mk4frame, INT64 *FL, INT64 *FC,
   double *signST, double *magnST, INT64 *Nsamp,
