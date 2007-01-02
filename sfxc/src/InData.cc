@@ -202,9 +202,9 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
     //goto required offset startbyte in stream
 
     // NGHK: move_forward does not work anymore, only get_bytes
-    //INT64 statusPtr = 
-    //  input_readers[sn]->move_forward(sliceStartByte[sn][rank]);
-    INT64 statusPtr = input_readers[sn]->get_bytes(sliceStartByte[sn][rank], NULL);
+    //INT64 statusPtr = input_readers[sn]->move_forward(sliceStartByte[sn][rank]);
+    INT64 statusPtr = 
+      input_readers[sn]->get_bytes(sliceStartByte[sn][rank], NULL);
 
     if (RunPrms.get_messagelvl()> 1)
       cout << "statusPtr =" << statusPtr << endl;    
