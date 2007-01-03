@@ -27,4 +27,17 @@ INT64 get_us_time(int time[]);
   **/
 int initialise_control(char *filename);
                     
+/** Constructs an array containing all control data for a correlate node (Gen and Run).
+ *  @returns the size of the array
+  **/
+void send_control_data(int rank);
+
+/** Stores all control data for a correlate node (Gen and Run).
+  **/
+void receive_control_data(MPI_Status &status);
+                    
+                    
+void send_station_control_data(int rank, int station);
+void receive_station_control_data(MPI_Status &status);
+                    
 #endif // UTILS_H

@@ -20,7 +20,7 @@ Last change: 20061114
 class RunP
 {
 
-  private:
+  public:
 
     //parameters which control how the program is run
     int  messagelvl;      //message level

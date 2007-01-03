@@ -8,6 +8,8 @@
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 
+#include <assert.h>
+
 INT64 get_us_time(int time[]) {
   INT64 result = 0;
   // time[0] is year
@@ -101,7 +103,7 @@ initialise_control(char *filename) {
 
   // seed the random number generator (global variable!)
   seed = (UINT32) time((time_t *)NULL);
-  seed = 1166000073;
+  seed = SEED;
   std::cout << "seed: " << seed << std::endl;
 
   //parse control file for run parameters
@@ -159,5 +161,79 @@ initialise_control(char *filename) {
     if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0)
       askContinue();
   }
-  return 0;
+  
+  return 0;  
+}
+
+void send_control_data(int rank) {
+  char buffer[256];
+  int position = 0;
+
+  // first add the GenPrms
+  MPI_Pack(&GenPrms.nstations, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.bwin, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.lsegm, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.foffset, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.cde, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.mde, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.rde, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  
+  MPI_Pack(&GenPrms.filter, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.bwfl, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.startf, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.deltaf, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.ovrfl, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+
+  MPI_Pack(&GenPrms.n2fft, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.ovrlp, 1, MPI_FLOAT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.nsamp2avg, 1, MPI_LONG, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.pad, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  
+  MPI_Pack(&GenPrms.pad, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  
+  // next the RunPrms
+  MPI_Pack(&RunPrms.messagelvl, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&RunPrms.interactive, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  MPI_Pack(&RunPrms.runoption, 1, MPI_INT, buffer, 110, &position, MPI_COMM_WORLD);
+  
+  assert(position < 256);
+  MPI_Send(buffer, position, MPI_PACKED, rank, MPI_TAG_CONTROL_PARAM, MPI_COMM_WORLD);
+
+}
+
+void receive_control_data(MPI_Status &status) {
+  MPI_Status status2;
+  char buffer[256];
+  int position = 0;
+  MPI_Recv(buffer, 256, MPI_PACKED, 0, MPI_TAG_CONTROL_PARAM, MPI_COMM_WORLD, &status2);
+  
+  MPI_Unpack(buffer, 256, &position, &GenPrms.nstations, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.bwin, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.lsegm, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.foffset, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.cde, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.mde, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.rde, 1, MPI_INT, MPI_COMM_WORLD);
+  
+  MPI_Unpack(buffer, 256, &position, &GenPrms.filter, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.bwfl, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.startf, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.deltaf, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.ovrfl, 1, MPI_INT, MPI_COMM_WORLD);
+
+  MPI_Unpack(buffer, 256, &position, &GenPrms.n2fft, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.ovrlp, 1, MPI_FLOAT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.nsamp2avg, 1, MPI_LONG, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &GenPrms.pad, 1, MPI_INT, MPI_COMM_WORLD);
+
+  MPI_Unpack(buffer, 256, &position, &RunPrms.messagelvl, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &RunPrms.interactive, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, 256, &position, &RunPrms.runoption, 1, MPI_INT, MPI_COMM_WORLD);
+}
+
+void send_station_control_data(int rank, int station) {
+  
+}
+
+void receive_station_control_data(MPI_Status &status) {
 }
