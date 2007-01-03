@@ -213,7 +213,7 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
     if (RunPrms.get_messagelvl()> 1)
       cout << "statusPtr =" << statusPtr << endl;    
     assert(statusPtr == sliceStartByte[sn][rank] - 
-      (RunPrms.get_messagelvl()> 0 ? 2 : 1)*q
+      (RunPrms.get_messagelvl()> 0 ? 2 : 1)*
       (StaPrms[sn].get_nhs()==1 ? 4 : 8)*frameMk4*nfrms);
   }
   
