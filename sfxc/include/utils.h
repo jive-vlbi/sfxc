@@ -1,9 +1,9 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <types.h>
 #include <list>
 #include <string>
-#include <types.h>
 
 /// Interface_pair is a pair of two strings 
 /// containing the interface name and its ip address;

@@ -246,11 +246,6 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
       FC[sn]++;
     }
   }
-for (sn=0; sn<nstations; sn++) {
-  cout << "sn=" << sn << " ";
-  for (i=0; i<10; i++) cout << Mk4frame[sn][i] << " " ;
-  cout << endl;
-}  
   
   //loop initializations
   timePtr = sliceStartTime[rank];
@@ -261,7 +256,7 @@ for (sn=0; sn<nstations; sn++) {
   while (1)
   {
     loop++;
-//    if (RunPrms.get_messagelvl()> 0)
+    if (RunPrms.get_messagelvl()> 0)
       cout << "Process="<< rank <<" loop=" << loop << endl;
     
     //initialise statistical values to zero
@@ -386,8 +381,6 @@ for (sn=0; sn<nstations; sn++) {
     for (bsln = 0; bsln < nbslns; bsln++){
       fwrite(accxps[bsln],sizeof(fftw_complex),n2fft*pad/2+1,outP);
     }
-//TODO: replace previous for loop by:
-//      fwrite(accxps[bsln],sizeof(fftw_complex),nbslns*n2fft*pad/2+1,outP);
 
     // Check wether we are finished.
     std::cout << "Process="<< rank << " timePtr = " << (INT64)timePtr << std::endl;
@@ -495,70 +488,7 @@ int fill_Bufs(std::vector<Data_reader *> &readers,
   for (sn=0; sn<nstations; sn++){
     dcBufs[sn] = new double[3*BufSize];
   }
-/*
-//BEGIN OF TEST CODE1
-//generate artificial random noise
-for (sn=0; sn<nstations; sn++){
-  //initialise lookup table
-  double smplTBL[2][2];
-  smplTBL[0][0]=-7.0;
-  smplTBL[0][1]=-2.0;
-  smplTBL[1][0]= 2.0;
-  smplTBL[1][1]= 7.0;
-  int sig,mag;
-  int ibuf;
   
-#DEFINE SAME
-#IFDEF SAME
-  //All stations same random numbers
-  if (sn==0) {
-    for (ibuf=0; ibuf<BufSize; ibuf++) {
-      mag = irbit2(&seed);
-      sig = irbit2(&seed);
-      Bufs[sn][ibuf]=smplTBL[sig][mag];
-    }
-  } else {
-    for (ibuf=0; ibuf<BufSize; ibuf++) {
-      Bufs[sn][ibuf]=Bufs[0][ibuf];
-    }
-  }
-#ELSEIF
-  //all stations different random numbers
-  for (ibuf=0; ibuf<BufSize; ibuf++) {
-    mag = irbit2(&seed);
-    sig = irbit2(&seed);
-    Bufs[sn][ibuf]=smplTBL[sig][mag];
-  }
-#ENDIF  
-}
-//END OF TEST CODE
-*/
-/*
-//BEGIN OF TEST CODE2
-for (sn=0; sn<nstations; sn++){
-  if (sn==0) {
-    for (i=0; i<BufSize; i++) {
-      if (FC[sn] == FL[sn]) {
-        //fill Mk4frame if frame counter at end of frame
-        int nBytes =
-        fill_Mk4frame(sn,*readers[sn],Mk4frame,signST,magnST,Nsamp);
-        if (nBytes==0) {
-          cerr << "ERROR: End of input for reader " << sn << endl;
-          return 1;
-        }
-        FC[sn] = 0;
-      }
-      //fill Bufs with data from Mk4file
-      Bufs[sn][i]=Mk4frame[sn][FC[sn]];
-      FC[sn]++;
-    }
-  } else {
-    for (i=0; i<BufSize; i++) Bufs[sn][i]= Bufs[0][i];
-  }  
-    
-}
-//END OF TEST CODE2
-*/
   for (sn=0; sn<nstations; sn++){
   
     //fill dcBufs with data from dcBufPrev
@@ -590,8 +520,6 @@ for (sn=0; sn<nstations; sn++){
     
       Time = timePtr + jsegm*lsegm*tbs*1000000.; //in usec
       Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
-      //TODO test calculation Cdel and Fdel
-      //TODO check with Sergei valid parameters for Cdel, Fdel, etc
       if (Cdel>0.0) {
         cerr << "Cdel > 0.0 in fill_Bufs()." << endl;
         return 1;

@@ -158,5 +158,6 @@ initialise_control(char *filename) {
     }
     if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0)
       askContinue();
-  }  
+  }
+  return 0;
 }
