@@ -106,10 +106,10 @@ using namespace std;
 
 //includes for mpi
 //undef have to be before include <mpi.h>
-#undef SEEK_SET
-#undef SEEK_END
-#undef SEEK_CUR
-#include <mpi.h>
+//#undef SEEK_SET
+//#undef SEEK_END
+//#undef SEEK_CUR
+//#include <mpi.h>
 
 //constants
 #include "constPrms.h"
@@ -160,7 +160,8 @@ int main(int argc, char *argv[])
 
   // seed the random number generator (global variable!)
   seed = (UINT32) time((time_t *)NULL);
-  //TODO 13-12-2006: remove next line after tests
+  //TODO 13-12-2006: Fixed seeding for test purposes.
+  //remove next line of code after tests
   seed = SEED;
   cout << "WARNING seed=" << seed << endl;
 
