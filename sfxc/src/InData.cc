@@ -203,12 +203,18 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
 
     // NGHK: move_forward does not work anymore, only get_bytes
     //INT64 statusPtr = input_readers[sn]->move_forward(sliceStartByte[sn][rank]);
-    INT64 statusPtr = 
-      input_readers[sn]->get_bytes(sliceStartByte[sn][rank], NULL);
+
+    // NGHK: this is dirty, make read(32|64)datafile also move the read pointer
+    INT64 statusPtr = sliceStartByte[sn][rank] - 
+      (RunPrms.get_messagelvl()> 0 ? 2 : 1)* // read another frame for display
+      (StaPrms[sn].get_nhs()==1 ? 4 : 8)*frameMk4*nfrms; // Already read to get the timestamp
+    statusPtr = input_readers[sn]->get_bytes(statusPtr, NULL);
 
     if (RunPrms.get_messagelvl()> 1)
       cout << "statusPtr =" << statusPtr << endl;    
-    assert(statusPtr == sliceStartByte[sn][rank]);
+    assert(statusPtr == sliceStartByte[sn][rank] - 
+      (RunPrms.get_messagelvl()> 0 ? 2 : 1)*q
+      (StaPrms[sn].get_nhs()==1 ? 4 : 8)*frameMk4*nfrms);
   }
   
   sliceTime = (GenPrms.get_usLatest()-GenPrms.get_usEarliest() )/ (numtasks*1);

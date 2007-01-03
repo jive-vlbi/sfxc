@@ -19,11 +19,11 @@ class Data_reader {
 public:
   virtual ~Data_reader() {
   }
-//   /** Moves the read_pointer nBytes bytes forward. 
-//       @param[in] nBytes Number of bytes to advance.
-//       \pre nBytes >= 0
-//       \return Returns the number of bytes advanced.
-//   **/
+  /** DEPRECATED - Moves the read_pointer nBytes bytes forward. 
+      @param[in] nBytes Number of bytes to advance.
+      \pre nBytes >= 0
+      \return Returns the number of bytes advanced.
+  **/
   /// TODO: NGHK: REMOVE
   UINT64 move_forward(UINT64 nBytes) { 
     std::cout << "MOVE_FORWARD is deprecated" << std::endl;
