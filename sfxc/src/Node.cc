@@ -13,6 +13,7 @@ Last change: 20061124
 
 #include <Node.h>
 #include <iostream>
+#include <assert.h>
 
 Node::Node(int rank) : rank(rank), debug_level(1) {
 }
@@ -39,23 +40,33 @@ void Node::process_event(MPI_Status &status) {
     switch (result) {
     case 0: // Processing succeeded
       {
-	return;
+        return;
       }
     case 1: // Unknown command, try next controller
       {
-	continue;
+        continue;
         break;
       }
     case 2: // Processing failed
       {
-	write_debug(1, "Error in processing");
-	write_debug(1, status);
-	return;
+        write_debug(1, "Error in processing");
+        write_debug(1, status);
+        return;
       }
     }
   }
-  write_debug(1, "Unknown event");
+  write_debug(1, "ERROR: Unknown event");
   write_debug(1, status);
+
+  // Remove event:  
+  int size;
+  MPI_Get_elements(&status, MPI_CHAR, &size);
+  assert(size > 0);
+  char msg[size];
+  MPI_Status status2;
+  MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,
+           status.MPI_TAG, MPI_COMM_WORLD, &status2);
+  
 }
 
 void Node::write_debug(int lvl, const std::string &msg) {

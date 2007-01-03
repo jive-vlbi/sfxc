@@ -76,15 +76,19 @@ enum MPI_TAG {
   /// Make an output node write data to file
   MPI_TAG_SET_OUTPUT_NODE_FILE,
 
-  // Set the station number for the commands following
+  /// Set the station number for the commands following
   MPI_TAG_SET_STATION_NUMBER,
-  // Send the start time for a correlate_node
+  /// Send the start time for a correlate_node
   MPI_TAG_SET_START_TIME,
+  /// Send the stop time for a correlate_node
+  MPI_TAG_SET_STOP_TIME,
+  /// Send the control parameters for a correlator node
+  MPI_TAG_CONTROL_PARAM,
 
-  // All settings are set for the correlation, start correlating
+  /// All settings are set for the correlation, start correlating
   MPI_TAG_START_CORRELATE_NODE,
   
-  // Set the delay table for a data stream in a correlate node (DEPRECATED)
+  /// Set the delay table for a data stream in a correlate node (DEPRECATED)
   MPI_TAG_SET_CONTROL_FILE,
 
   /// Notify an input node about a correlator node
