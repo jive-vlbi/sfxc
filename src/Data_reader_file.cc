@@ -35,6 +35,7 @@ UINT64 Data_reader_file::move_forward(UINT64 nBytes) {
 }
 
 UINT64 Data_reader_file::get_bytes(UINT64 nBytes, char*out) {
+//   std::cout << "get_bytes " << nBytes << std::endl;
   if (out == NULL) {
     UINT64 pos = lseek(file, 0, SEEK_CUR);
     return lseek(file, nBytes, SEEK_CUR) - pos;
