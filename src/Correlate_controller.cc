@@ -23,6 +23,7 @@ extern INT64 sliceStartTime [NprocessesMax];
 extern INT64 sliceStopTime  [NprocessesMax];
 extern INT64 sliceTime;
 
+#include <MPI_Transfer.h>
 
 Correlate_controller::Correlate_controller(Buffer<output_value_type> &output_buffer)
  : output_buffer(output_buffer), running(false), curr_station(0)
@@ -155,8 +156,18 @@ Correlate_controller::process_event(MPI_Status &status) {
       start();           
       return 0;
     }
+  case MPI_TAG_CONTROL_PARAM:
+    {
+      std::cout << "MPI_TAG_CONTROL_PARAM" << std::endl;
+      MPI_Transfer mpi_transfer;
+      mpi_transfer.receive_general_parameters(status);
+      return 0;            
+    }
+  default:
+    {
+      return 1;
+    }
   }
-  return 1;
 }
 
 void 

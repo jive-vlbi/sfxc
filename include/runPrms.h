@@ -16,17 +16,10 @@ Last change: 20061114
 
 **/
 
+class MPI_Transfer;
 
 class RunP
 {
-  public:
-
-    //parameters which control how the program is run
-    int  messagelvl;      //message level
-    int  interactive;     //run interactive or automatically
-    int  runoption;       //run option, default 1=complete
-    
-        
   public:
 
     //default constructor, set default values 
@@ -42,6 +35,14 @@ class RunP
     int get_messagelvl();
     int get_interactive();
     int get_runoption();
+
+  private:
+    friend class MPI_Transfer;
+  
+    //parameters which control how the program is run
+    int  messagelvl;      //message level
+    int  interactive;     //run interactive or automatically
+    int  runoption;       //run option, default 1=complete
 };
 
 

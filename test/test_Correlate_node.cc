@@ -42,6 +42,7 @@ INT64 sliceStopTime  [NprocessesMax];
 INT64 sliceTime;
 /// TODO: NGHK: REMOVE THESE <------------ UNTIL HERE
 
+#include <MPI_Transfer.h>
 
 int main(int argc, char *argv[]) {
   // MPI
@@ -104,6 +105,9 @@ int main(int argc, char *argv[]) {
 //                        GenPrms.get_ssp()};
 //     MPI_Send(stop_time, 5, MPI_INT, 1,
 //              MPI_TAG_SET_STOP_TIME, MPI_COMM_WORLD);
+
+//    MPI_Transfer mpi_transfer;
+//    mpi_transfer.send_general_parameters(1);
 
     int cmd = 0;
     MPI_Send(&cmd, 1, MPI_INT, 1,
