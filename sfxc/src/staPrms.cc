@@ -44,7 +44,7 @@ extern RunP  RunPrms;
 
 //get functions
 char* StaP::get_stname()     { return stname; }
-char* StaP::get_datatype()   { return datatype; }
+int   StaP::get_datatype()   { return datatype; }
 int   StaP::get_tbr()        { return tbr; }
 int   StaP::get_fo()         { return fo; }
 int   StaP::get_bps()        { return bps; }
@@ -84,7 +84,7 @@ StaP::StaP()
   mod     =  0;
   rndhdr  =  1;
   stname     = new char[256];
-  datatype   = new char[256];
+  datatype   = DATATYPE_UNDEFINED;
   mk4file    = new char[256];
   hdrmap     = new char[256];
   modpat     = new char[256];
@@ -92,8 +92,6 @@ StaP::StaP()
   phasetable = new char[256];
   
   strcpy(stname,"undefined");
-  strcpy(datatype,"undefined");
-  strcpy(mk4file,"undefined");
   if ( ( home = getenv("HOME") )  == NULL){
     strcpy(hdrmap,"header_map_mk4_cx.txt"); //header map file
     strcpy(modpat,"modpattern.txt"); //modulation pattern file
@@ -117,7 +115,6 @@ StaP::StaP()
 //destructor
 StaP::~StaP() {
   delete [] stname;
-  delete [] datatype;
   delete [] mk4file;
   delete [] hdrmap;
   delete [] modpat;
@@ -160,8 +157,8 @@ int StaP::parse_ctrlFile(char *ctrlFile, int staNr)
       if (strcmp(key,staKW) == 0) {
         //station keyword found
         strcpy(stname,val);
-        strcpy(datatype,val1);
-        if (strcmp(datatype,"MK4") == 0) {
+        if (strcmp(val1,"MK4") == 0) {
+          datatype = DATATYPE_MK4;
           //look for MK4 type data
           retval = findMK4data(ctrlP);
         }
