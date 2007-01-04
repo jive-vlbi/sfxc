@@ -30,11 +30,11 @@ const int trksMax    =    64; //maximum number of tracks in array
 class StaP
 {
 
-  private:
+  public:
 
     //station specific paramters.
     char *stname;  //unique station
-    char *datatype;//[MK4|others], now only MK4
+    int  datatype;//[MK4|others], now only MK4
     
     //control parameters for Mk4 formatted data file
     int  tbr;      //track bit rate
@@ -80,7 +80,7 @@ class StaP
 
     //get functions
     char* get_stname();
-    char* get_datatype();
+    int   get_datatype();
     int   get_tbr();
     int   get_fo();
     int   get_bps();

@@ -136,7 +136,7 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
   //find first headers in data files, reset usEarliest if necessary,
   //return usTime and jsynch for requested byte offset
   for (sn=0; sn<NrStations; sn++) {
-    if (StaPrms[sn].get_datatype() == Mk4) {
+    if (StaPrms[sn].get_datatype() == DATATYPE_MK4) {
       FindHeaderMk4(*input_readers[sn], sn, jsynch[sn],
         usTime[sn], GenPrms.get_usEarliest());
     }
@@ -146,7 +146,7 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
   
   //calculate start offsets in bytes for all data files
   for (sn=0; sn<NrStations; sn++) {
-    if (StaPrms[sn].get_datatype() == Mk4) {
+    if (StaPrms[sn].get_datatype() == DATATYPE_MK4) {
       offTime[sn] = GenPrms.get_usEarliest() - usTime[sn];
       offFrames[sn] = offTime[sn] * StaPrms[sn].get_tbr()/frameMk4;
       if (StaPrms[sn].get_nhs() == 1) {
@@ -165,6 +165,9 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
         cout << "offSynch  =" << offSynch[sn]  << endl;
         cout << "StartByte =" << StartByte[sn] << endl;
       }
+    } else {
+      std::cout << "Unknown data type" << std::endl;
+      assert(false);
     }
   }
 
@@ -173,7 +176,7 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
   //DISABLED BECAUSE OF THE USE OF STREAMS INSTEAD OF FILES
 
   for (sn=0; sn<NrStations; sn++) {
-    if (StaPrms[sn].get_datatype() == Mk4) {
+    if (StaPrms[sn].get_datatype() == DATATYPE_MK4) {
       //number off frames in available data range
       NFrames[sn] =
       (GenPrms.get_usLatest() - GenPrms.get_usEarliest()) * StaPrms[sn].get_tbr()/frameMk4;
@@ -195,8 +198,9 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
   
   //for current rank and all stations set offsets
   for (sn=0; sn<NrStations; sn++) {
-    if (RunPrms.get_messagelvl()> 1)
+    if (RunPrms.get_messagelvl()> 1) {
       cout << "station=" << sn <<" start stop: ";
+    }
     sliceStartByte[sn][rank] = StartByte[sn] + rank*deltaBytes[sn];
     if (RunPrms.get_messagelvl()> 1) cout << endl;
     //goto required offset startbyte in stream
@@ -210,8 +214,9 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
       (StaPrms[sn].get_nhs()==1 ? 4 : 8)*frameMk4*nfrms; // Already read to get the timestamp
     statusPtr = input_readers[sn]->get_bytes(statusPtr, NULL);
 
-    if (RunPrms.get_messagelvl()> 1)
-      cout << "statusPtr =" << statusPtr << endl;    
+    if (RunPrms.get_messagelvl()> 1) {
+      cout << "statusPtr =" << statusPtr << endl;
+    }
     assert(statusPtr == sliceStartByte[sn][rank] - 
       (RunPrms.get_messagelvl()> 0 ? 2 : 1)*
       (StaPrms[sn].get_nhs()==1 ? 4 : 8)*frameMk4*nfrms);
@@ -232,7 +237,7 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
   //find headers for sliceStartByte in data files, only done for monitoring
   if ( RunPrms.get_messagelvl()> 0) {
     for (sn=0; sn<NrStations; sn++) {
-      if (StaPrms[sn].get_datatype() == Mk4) {
+      if (StaPrms[sn].get_datatype() == DATATYPE_MK4) {
         FindHeaderMk4(*input_readers[sn], sn, jsynch[sn],
           usTime[sn], sliceStartTime[rank]+dus);
       }

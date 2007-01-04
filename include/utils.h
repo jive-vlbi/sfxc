@@ -36,8 +36,4 @@ void send_control_data(int rank);
   **/
 void receive_control_data(MPI_Status &status);
                     
-                    
-void send_station_control_data(int rank, int station);
-void receive_station_control_data(MPI_Status &status);
-                    
 #endif // UTILS_H

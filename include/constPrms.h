@@ -15,6 +15,8 @@ Last change: 20061114
 
 
 */
+#ifndef CONSTPRMS_H
+#define CONSTPRMS_H
 
 #include "gen_defines.h"
 #include <string>
@@ -27,4 +29,10 @@ const int   BufTime       =   16384; //delta time for Bufs in micro seconds
                                      //2*BufTime > deltaTR
                                      //deltaTR=Earthradius/SpeedOfLight
                                      //deltaTR=6378000/299792458*1e6=21275 microseconds
-const std::string Mk4          =   "MK4";
+
+enum Datatypes {
+  DATATYPE_UNDEFINED = -1,
+  DATATYPE_MK4
+};
+
+#endif // CONSTPRMS_H

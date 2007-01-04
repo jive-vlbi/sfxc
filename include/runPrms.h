@@ -19,7 +19,6 @@ Last change: 20061114
 
 class RunP
 {
-
   public:
 
     //parameters which control how the program is run
@@ -43,7 +42,6 @@ class RunP
     int get_messagelvl();
     int get_interactive();
     int get_runoption();
-
 };
 
 
