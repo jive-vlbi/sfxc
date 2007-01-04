@@ -17,7 +17,8 @@ TESTS           = \
   test_Correlate_node
 
 
-OBJ = ../src/Controller.cc \
+OBJ = ../src/MPI_Transfer.cc \
+      ../src/Controller.cc \
       ../src/Input_controller.cc \
       ../src/Output_controller.cc \
       ../src/Node.cc ../src/Data_node.cc \

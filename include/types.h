@@ -116,19 +116,6 @@ enum MPI_TAG {
   MPI_TAG_ERROR
 };
 
-//// MPI_MSG are always sent over MPI_TAG_COMMUNICATION
-//enum MPI_MSG {
-////   /// You should be a node to which data is sent
-////   MPI_INPUT_NODE = 0,
-////   /// You should be a node that can correlate data
-////   MPI_CORRELATOR_NODE,
-//
-//  /// The correlator node is ready to process data
-//  MPI_CORRELATOR_READY,
-//
-//  MPI_MSG_ERROR
-//};
-
 //undef have to be before include <mpi.h>
 #ifdef SEEK_SET
 #undef SEEK_SET
