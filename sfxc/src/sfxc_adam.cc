@@ -86,8 +86,8 @@ int main(int argc, char *argv[])
         assert(status.MPI_SOURCE == status2.MPI_SOURCE);
         assert(status.MPI_TAG == status2.MPI_TAG);
 
-        Input_node input_node(rank, filename);
-        input_node.start();
+        Data_node data_node(rank, filename);
+        Data_node.start();
         break;
       }
     case MPI_TAG_SET_CORRELATOR_NODE: 
