@@ -2,7 +2,8 @@
 #define MPI_TRANSFER_H_
 
 #include "types.h"
-
+/** Transfer special classes for the sfxc using MPI
+ **/
 class MPI_Transfer
 {
 public:
