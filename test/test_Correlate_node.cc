@@ -66,7 +66,9 @@ int main(int argc, char *argv[]) {
   ///////////////////////////
   if (rank == 0) {
     // Initialise correlator node
-    char *control_file = "/jop54_0/kruithof/data/n05c2/sfxc_n06c2_McNtTrWb.nodel.ctrl";
+    assert(argc==2);
+    char *control_file = argv[1];
+    //"/jop54_0/kruithof/data/n05c2/sfxc_n06c2_McNtTrWb.nodel.ctrl";
     //char *control_file = "/jop54_0/kruithof/data/n05c2/sfxc_n06c2_WbWb.nodel.ctrl";
     if (initialise_control(control_file) != 0) {
       std::cout << "Initialisation using control file failed" << std::endl;
@@ -83,13 +85,25 @@ int main(int argc, char *argv[]) {
                MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
     }
 
-    char *outfile_data = GenPrms.get_corfile();
-    MPI_Send(outfile_data, strlen(outfile_data)+1, MPI_CHAR, 1,
-             MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);
+//     char *outfile_data = GenPrms.get_corfile();
+//     MPI_Send(outfile_data, strlen(outfile_data)+1, MPI_CHAR, 1,
+//              MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);
 
-    int start_time[] = {2006, 168, 07, 32, 33};
-    MPI_Send(start_time, 5, MPI_INT, 1,
-             MPI_TAG_SET_START_TIME, MPI_COMM_WORLD);
+//     int start_time[] = {GenPrms.get_yst(),
+//                         GenPrms.get_dst(),
+//                         GenPrms.get_hst(),
+//                         GenPrms.get_mst(),
+//                         GenPrms.get_sst()};
+//     MPI_Send(start_time, 5, MPI_INT, 1,
+//              MPI_TAG_SET_START_TIME, MPI_COMM_WORLD);
+
+//     int stop_time[] = {GenPrms.get_ysp(),
+//                        GenPrms.get_dsp(),
+//                        GenPrms.get_hsp(),
+//                        GenPrms.get_msp(),
+//                        GenPrms.get_ssp()};
+//     MPI_Send(stop_time, 5, MPI_INT, 1,
+//              MPI_TAG_SET_STOP_TIME, MPI_COMM_WORLD);
 
     int cmd = 0;
     MPI_Send(&cmd, 1, MPI_INT, 1,
