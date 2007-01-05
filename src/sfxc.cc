@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
   // seed the random number generator (global variable!)
   seed = (UINT32) time((time_t *)NULL);
   //TODO 13-12-2006: Fixed seeding for test purposes.
-  //remove next line of code after tests
+  //make fixed seeding or time based seeding a control file option
   seed = SEED;
   cout << "WARNING seed=" << seed << endl;
 
