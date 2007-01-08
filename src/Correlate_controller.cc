@@ -37,8 +37,6 @@ Correlate_controller::~Correlate_controller()
 int 
 Correlate_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
-//  sliceStartTime[0] = 0;
-//  sliceStopTime[0] = 0;
   switch (status.MPI_TAG) {
   case MPI_TAG_SET_STATION_NUMBER:
     {
@@ -81,7 +79,7 @@ Correlate_controller::process_event(MPI_Status &status) {
       char filename[size];
       MPI_Recv(&filename, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      
+
       GenPrms.corfile = filename;
 
       return 0;
@@ -100,8 +98,6 @@ Correlate_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      std::cout << "FILENAME: " << filename << std::endl;
-
       if (initialise_control(filename) != 0) {
         std::cout << "Initialisation using control file failed" << std::endl;
       }
@@ -163,10 +159,7 @@ Correlate_controller::process_event(MPI_Status &status) {
       mpi_transfer.receive_general_parameters(status);
       return 0;            
     }
-  default:
-    {
-      return 1;
-    }
+  default: return 1;
   }
 }
 
