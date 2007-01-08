@@ -18,6 +18,7 @@ Last change: 20061114
 */
 
 #include <types.h>
+#include <string.h>
 
 class GenP
 {
@@ -39,7 +40,7 @@ class GenP
     int   nstations;  //number of radio telescope stations
     char  *outdir;    //output data directory
     char  *logfile;   //log file name
-    char  *corfile;   //correlator product file
+    std::string corfile;   //correlator product file
           
     int   bwin;       //band width input in Hertz
     int   lsegm;      //length of a Fourier segment in a delay correction
@@ -91,7 +92,7 @@ class GenP
     int   get_nstations();
     char* get_outdir();
     char* get_logfile();
-    char* get_corfile();
+    const char* get_corfile();
     
     int   get_bwin();
     int   get_lsegm();

@@ -82,7 +82,6 @@ MPI_Transfer::send_general_parameters(int rank) {
              buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&StaPrms[station].hm, 1, MPI_INT, 
              buffer, size, &position, MPI_COMM_WORLD);
-
     MPI_Pack(&StaPrms[station].loobs, 1, MPI_LONG, 
              buffer, size, &position, MPI_COMM_WORLD);
   }
@@ -98,7 +97,6 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status) {
   
   int size;
   MPI_Get_elements(&status, MPI_CHAR, &size);
-  std::cout << "receive_general_parameters: Received size is : " << size << std::endl;
   assert(size > 0);
   char buffer[size];
   MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE,
@@ -106,16 +104,10 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status) {
 
   int position = 0; 
   
-  MPI_Unpack(buffer, 1000, &position, &RunPrms.messagelvl, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, 1000, &position, &RunPrms.interactive, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, 1000, &position, &RunPrms.runoption, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &RunPrms.messagelvl, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &RunPrms.interactive, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &RunPrms.runoption, 1, MPI_INT, MPI_COMM_WORLD);
 
-//  int size = 1024;
-//  MPI_Status status2;
-//  char buffer[size];
-//  int position = 0;
-//  MPI_Recv(buffer, size, MPI_PACKED, 0, MPI_TAG_CONTROL_PARAM, MPI_COMM_WORLD, &status2);
-//  
   MPI_Unpack(buffer, size, &position, &GenPrms.nstations, 1, MPI_INT, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.bwin, 1, MPI_INT, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.lsegm, 1, MPI_INT, MPI_COMM_WORLD);
@@ -166,14 +158,13 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status) {
              MPI_COMM_WORLD);
     MPI_Unpack(buffer, size, &position, &StaPrms[station].hm, 1, MPI_INT, 
              MPI_COMM_WORLD);
-
     MPI_Unpack(buffer, size, &position, &StaPrms[station].loobs, 1, MPI_LONG, 
              MPI_COMM_WORLD);
   }
   
-  //RunPrms.messagelvl = 2;
-
-    //check control parameters, optionally show them
+  assert(position == size);
+  
+  //check control parameters, optionally show them
   if (RunPrms.check_params() != 0) {
     std::cerr << "ERROR: Run control parameter, program aborted.\n";
     return;
@@ -186,16 +177,14 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status) {
   }
   
 
-  //get the number of stations
-  int Nstations = GenPrms.get_nstations();
-
-  //check station control parameters, optionally show them
-  for (int i=0; i<Nstations; i++){
-    if (StaPrms[i].check_params() != 0 ) {
-      std::cerr << "ERROR: Station control parameter, program aborted.\n";
-      return;
-    }
-  }
-
-   
+//  //get the number of stations
+//  int Nstations = GenPrms.get_nstations();
+//
+//  //check station control parameters, optionally show them
+//  for (int i=0; i<Nstations; i++){
+//    if (StaPrms[i].check_params() != 0 ) {
+//      std::cerr << "ERROR: Station control parameter, program aborted.\n";
+//      return;
+//    }
+//  }
 }

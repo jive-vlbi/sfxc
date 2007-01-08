@@ -64,7 +64,7 @@ int   GenP::get_ssp()       { return ssp; }
 int   GenP::get_nstations() { return nstations; }
 char* GenP::get_outdir()    { return outdir;}
 char* GenP::get_logfile()   { return logfile;}
-char* GenP::get_corfile()   { return corfile;}
+const char* GenP::get_corfile()   { return corfile.c_str();}
 
 int   GenP::get_bwin()      { return bwin;}
 int   GenP::get_lsegm()     { return lsegm;}
@@ -132,9 +132,8 @@ GenP::GenP()
   logfile  = new char[256];
   strcpy(logfile,outdir);
   strcat(logfile,"/DefExp.log");
-  corfile  = new char[256];
-  strcpy(corfile,outdir);
-  strcat(corfile,"/DefExp.cor");
+  corfile = outdir;
+  corfile.append("/DefExp.cor");
 
   bwin    = 16000000;
   lsegm   = 2048;
@@ -261,9 +260,9 @@ int GenP::parse_ctrlFile(char *ctrlFile)
   strcpy(logfile, outdir);
   strcat(logfile,"/");
   strcat(logfile, logname);
-  strcpy(corfile, outdir);
-  strcat(corfile,"/");
-  strcat(corfile, corname);
+  corfile = outdir;
+  corfile.append("/");
+  corfile.append(corname);
 
   return retval;
 }
@@ -349,7 +348,7 @@ int GenP::check_params()
     retval=-1;
   }
 
-  fl = fopen(corfile,"w");
+  fl = fopen(corfile.c_str(),"w");
   if (!fl) {
     cerr << "ERROR: Cannot create file in directory: " << outdir << endl;
     retval =-1;
@@ -357,7 +356,7 @@ int GenP::check_params()
     fclose(fl);
     //delete empty file
     strcpy(command,"rm -f ");
-    strcat(command,corfile);
+    strcat(command,corfile.c_str());
     system(command);
   }
 
