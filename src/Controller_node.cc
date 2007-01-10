@@ -110,8 +110,8 @@ void Controller_node::start() {
 
   sleep(10);
   // End program:
-  for (int i=1; i<numtasks; i++) {
-    int type = MPI_CORRELATION_READY;
-    MPI_Send(&type, 1, MPI_INT, i, MPI_TAG_COMMUNICATION, MPI_COMM_WORLD);
-  }
+//  for (int i=1; i<numtasks; i++) {
+//    int type = MPI_CORRELATION_READY;
+//    MPI_Send(&type, 1, MPI_INT, i, MPI_TAG_COMMUNICATION, MPI_COMM_WORLD);
+//  }
 }

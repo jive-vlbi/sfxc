@@ -116,7 +116,7 @@ int RunP::parse_ctrlFile(char *ctrlFile)
 
 
 //check the run parameters
-int RunP::check_params()
+int RunP::check_params() const
 {
 
   int retval = 0;

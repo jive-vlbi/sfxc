@@ -27,10 +27,49 @@ const int hdrMk4     =   160; //header length bits  mk4 file on mk5 disk
 const int nfrms      =     2; //number of frames to be processed at one go
 const int trksMax    =    64; //maximum number of tracks in array
 
+class MPI_Transfer;
+
 class StaP
 {
-
+  friend class MPI_Transfer;
   public:
+
+    //default constructor, set default values 
+    StaP();
+
+    //destructor
+    ~StaP();
+
+    //parse control file for station parameters
+    int parse_ctrlFile(char *ctrlFile, int staNr);
+
+    //check station parameters
+    int check_params() const;
+
+    //get functions
+    char* get_stname() { return stname; }
+    int   get_datatype();
+    int   get_tbr();
+    int   get_fo();
+    int   get_bps();
+    int   get_tphs();
+    int   get_nhs();
+    int   get_boff();
+    int   get_synhs1();
+    int   get_synhs2();
+    int   get_mod();
+    int   get_rndhdr();
+    char* get_mk4file();
+    char* get_hdrmap();
+    char* get_modpat();
+    char* get_delaytable();
+    char* get_phasetable();
+    INT64 get_loobs();
+    int*  get_signBS(); //bit shift parameters for sign
+    int*  get_magnBS(); //bit shift parameters for magn
+
+
+  private:
 
     //station specific paramters.
     char *stname;  //unique station
@@ -63,43 +102,6 @@ class StaP
     //private functions
     int findMK4data(FILE *ctrlP);
     int findDelaydata(FILE *ctrlP);
-    
-  public:
-
-    //default constructor, set default values 
-    StaP();
-
-    //destructor
-    ~StaP();
-
-    //parse control file for station parameters
-    int parse_ctrlFile(char *ctrlFile, int staNr);
-
-    //check station parameters
-    int check_params();
-
-    //get functions
-    char* get_stname();
-    int   get_datatype();
-    int   get_tbr();
-    int   get_fo();
-    int   get_bps();
-    int   get_tphs();
-    int   get_nhs();
-    int   get_boff();
-    int   get_synhs1();
-    int   get_synhs2();
-    int   get_mod();
-    int   get_rndhdr();
-    char* get_mk4file();
-    char* get_hdrmap();
-    char* get_modpat();
-    char* get_delaytable();
-    char* get_phasetable();
-    INT64 get_loobs();
-    int*  get_signBS(); //bit shift parameters for sign
-    int*  get_magnBS(); //bit shift parameters for magn
-
 };
 
 

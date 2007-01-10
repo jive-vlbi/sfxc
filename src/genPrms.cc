@@ -264,13 +264,26 @@ int GenP::parse_ctrlFile(char *ctrlFile)
   corfile.append("/");
   corfile.append(corname);
 
+  // NGHK: From check_params until the end:
+  if (!filter) {
+    bwfl = bwin;
+    startf = 0;
+    deltaf = 0;
+    ovrfl = 1;
+  }
+  
+  //initialize earliest possible start time and
+  //latest possible stop time in micro seconds
+  usEarliest = get_usStart();
+  usLatest   = get_usStop();
+  
   return retval;
 }
 
 
 
 //display and check general parameters
-int GenP::check_params()
+int GenP::check_params() const
 {
 
   int retval = 0, FFTlength, Overlap;
@@ -284,13 +297,6 @@ int GenP::check_params()
   tStop =dsp*24*3600+hsp*3600+msp*60+ssp;
   sec2proc=tStop-tStart;
 
-  if (!filter) {
-    bwfl = bwin;
-    startf = 0;
-    deltaf = 0;
-    ovrfl = 1;
-  }
-  
   if ( RunPrms.get_messagelvl() > 0) {
     //display general parameters
     cout <<
@@ -406,11 +412,6 @@ int GenP::check_params()
   
   }
 
-  //initialize earliest possible start time and
-  //latest possible stop time in micro seconds
-  usEarliest = get_usStart();
-  usLatest   = get_usStop();
-  
   return retval;
 
 }

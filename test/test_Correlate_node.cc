@@ -26,6 +26,7 @@
 #include "genFunctions.h"
 #include "InData.h"
 #include "ProcessData.h"
+#include "delayTable.h"
 //global variables
 //declaration and default settings run parameters
 RunP RunPrms;
@@ -74,8 +75,8 @@ int main(int argc, char *argv[]) {
     }
 
     // This one has to go:
-    MPI_Send(control_file, strlen(control_file)+1, MPI_CHAR, 1,
-             MPI_TAG_SET_CONTROL_FILE, MPI_COMM_WORLD);
+//    MPI_Send(control_file, strlen(control_file)+1, MPI_CHAR, 1,
+//             MPI_TAG_SET_CONTROL_FILE, MPI_COMM_WORLD);
             
     // strlen+1 so that \0 gets transmitted as well
     for (int i=0; i<GenPrms.get_nstations(); i++) {
@@ -84,28 +85,43 @@ int main(int argc, char *argv[]) {
                MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
     }
 
-     const char *outfile_data = GenPrms.get_corfile();
-     MPI_Send((void *)outfile_data, strlen(outfile_data)+1, MPI_CHAR, 1,
-              MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);
-
-     int start_time[] = {GenPrms.get_yst(),
-                         GenPrms.get_dst(),
-                         GenPrms.get_hst(),
-                         GenPrms.get_mst(),
-                         GenPrms.get_sst()};
-     MPI_Send(start_time, 5, MPI_INT, 1,
-              MPI_TAG_SET_START_TIME, MPI_COMM_WORLD);
-
-     int stop_time[] = {GenPrms.get_ysp(),
-                        GenPrms.get_dsp(),
-                        GenPrms.get_hsp(),
-                        GenPrms.get_msp(),
-                        GenPrms.get_ssp()};
-     MPI_Send(stop_time, 5, MPI_INT, 1,
-              MPI_TAG_SET_STOP_TIME, MPI_COMM_WORLD);
-
     MPI_Transfer mpi_transfer;
     mpi_transfer.send_general_parameters(1);
+
+    for (int i=0; i<GenPrms.get_nstations(); i++) {
+      DelayTable delay; 
+      std::cout << StaPrms[i].get_delaytable() << std::endl;
+      int retval = delay.readDelayTable(StaPrms[i].get_delaytable(),
+                                        BufTime );
+      if (retval != 0) {
+        std::cerr << "ERROR: when reading delay table.\n";
+        return retval;
+      }
+      mpi_transfer.send_delay_table(delay, 1);
+    }
+
+    const char *outfile_data = GenPrms.get_corfile();
+    MPI_Send((void *)outfile_data, strlen(outfile_data)+1, MPI_CHAR, 1,
+             MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);
+    
+    int start_time[] = {GenPrms.get_yst(),
+                        GenPrms.get_dst(),
+                        GenPrms.get_hst(),
+                        GenPrms.get_mst(),
+                        GenPrms.get_sst()};
+    MPI_Send(start_time, 5, MPI_INT, 1,
+             MPI_TAG_SET_START_TIME, MPI_COMM_WORLD);
+   
+    int stop_time[] = {GenPrms.get_ysp(),
+                       GenPrms.get_dsp(),
+                       GenPrms.get_hsp(),
+                       GenPrms.get_msp(),
+                       GenPrms.get_ssp()};
+    MPI_Send(stop_time, 5, MPI_INT, 1,
+             MPI_TAG_SET_STOP_TIME, MPI_COMM_WORLD);
+
+    // Send delay tables
+    
 
     int cmd = 0;
     MPI_Send(&cmd, 1, MPI_INT, 1,
@@ -146,7 +162,6 @@ int main(int argc, char *argv[]) {
         }
       }      
       std::cout << std::endl << __LINE__ << " HERE" << std::endl;
-    
     }
   } else if (rank == 1) {
     Correlate_node correlate_node(rank);

@@ -84,6 +84,8 @@ enum MPI_TAG {
   MPI_TAG_SET_STOP_TIME,
   /// Send the control parameters for a correlator node
   MPI_TAG_CONTROL_PARAM,
+  /// Send a delay table
+  MPI_TAG_DELAY_TABLE,
 
   /// All settings are set for the correlation, start correlating
   MPI_TAG_START_CORRELATE_NODE,

@@ -25,6 +25,7 @@ Last change: 20061114
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 //#include <complex.h> //depricated
 #include <fftw3.h>
 
@@ -60,10 +61,10 @@ using namespace std;
 extern RunP  RunPrms;
 extern GenP  GenPrms;
 extern StaP  StaPrms[NstationsMax];
-extern INT64 sliceStartByte[NstationsMax][NprocessesMax];
+//extern INT64 sliceStartByte[NstationsMax][NprocessesMax];
 extern INT64 sliceStartTime [NprocessesMax];
 extern INT64 sliceStopTime  [NprocessesMax];
-extern INT64 sliceTime;
+//extern INT64 sliceTime;
 
 extern UINT32 seed;
 
@@ -76,10 +77,39 @@ int fill_Bufs(std::vector<Data_reader *> &readers,
   double *signST, double *magnST, INT64 *Nsamp,
   fftw_complex *sls, fftw_complex *spls, fftw_plan& planFW, fftw_plan& planBW,
   double tbs, double *fs, int Nf, double timePtr,
-  DelayTable *delTbl, int rank);
+  std::vector<DelayTable> &delTbl, int rank);
 
 int fetch_invecs(INT64& BufPtr, int nstations, int n2fft,
   double **invecs, double **Bufs);
+
+
+// NGHK: Make this global for a single initialisation during the correlation process, 
+//       put in a correlate class later
+bool init_delTbl = true;
+std::vector<DelayTable> delTbl;
+int initialise_delay_tables(int nstations, StaP StaPrms[]) {
+  if (!init_delTbl) return 0;
+  init_delTbl = false;
+  
+  std::cout << sliceStartTime[0] << " slice_stop_time: " << sliceStopTime[0] << std::endl;
+  delTbl.resize(nstations);
+  for (int sn=0; sn<nstations; sn++) {
+    std::cout << "DelTbl: " << StaPrms[sn].get_delaytable() << std::endl;
+    int retval = delTbl[sn].readDelayTable(StaPrms[sn].get_delaytable(),
+      //sliceStartTime[0],sliceStopTime[0], 
+      BufTime );
+    if (retval != 0) {
+      cerr << "ERROR: when reading delay table.\n";
+      return retval;
+    }
+  }
+  return 0;
+}
+void correlation_add_delay_table(DelayTable &table) {
+  init_delTbl = false;
+  
+  delTbl.push_back(table);
+}
 
   
 //***************************************************************************
@@ -87,6 +117,8 @@ int fetch_invecs(INT64& BufPtr, int nstations, int n2fft,
 //***************************************************************************
 int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
 {
+  seed = 10;
+  std::cout << "set seed to " << seed << std::endl;
   //declarations
   int retval = 0;
   int i,j,l;
@@ -121,7 +153,6 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   FILE *outP = NULL; //output result file
   char outFile[256], coreStr[5];
 
-
   //declarations for fftw in delay correction
   fftw_complex *sls = NULL, *spls = NULL; //FW:in,out; BW: out,in
   fftw_plan    planFW, planBW;//plans for forward and backward fft 
@@ -131,7 +162,6 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   
   //initialisations and allocations  
   nstations = GenPrms.get_nstations();
-  DelayTable delTbl[nstations];
   nbslns    = nstations*(nstations-1)/2 + nstations; //cross + auto 
   n2fft     = GenPrms.get_n2fft();
   lsegm     = GenPrms.get_lsegm();
@@ -147,7 +177,7 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   fs = new double[Nf]; // frequency array
   for (jf=0; jf<Nf; jf++) //frequency scale in the segment
     fs[jf]=jf*dfr-0.5*GenPrms.get_bwfl()-GenPrms.get_foffset();
-  
+
   if (RunPrms.get_messagelvl()> 1){
     cout << "BufSize=" << BufSize << endl;
     cout << "Nsamp2Avg=" << Nsamp2Avg << endl;
@@ -214,19 +244,18 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   }  
 
   //arrays and plans for delay correction
+  std::cout << "lsegm: " << lsegm << std::endl;
+  std::cout << "n2fft: " << n2fft*pad/2+1 << std::endl;
   sls   = new fftw_complex[lsegm];
   spls  = new fftw_complex[lsegm];
   planBW = fftw_plan_dft_1d(lsegm, sls, spls, FFTW_BACKWARD, FFTW_ESTIMATE);
   planFW = fftw_plan_dft_1d(lsegm, spls, sls, FFTW_FORWARD,  FFTW_ESTIMATE);
 
-  for (sn=0; sn<nstations; sn++) {
-    retval = delTbl[sn].readDelayTable(StaPrms[sn].get_delaytable(),
-      sliceStartTime[rank],sliceStopTime[rank], BufTime );
-    if (retval != 0) {
-      cerr << "ERROR: when reading delay table.\n";
-      return retval;
-    }
+  retval = initialise_delay_tables(nstations, StaPrms);
+  if (retval != 0) {
+    return retval;
   }
+  assert((int)delTbl.size() == nstations);
 
   //open the output file
   strcpy(outFile,GenPrms.get_corfile());
@@ -252,6 +281,8 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   BufPtr = BufSize;
   loop=0;
   
+  std::cout.precision(25);
+  std::cout << "Starting correlation: " << timePtr << " bufptr: " << BufPtr << std::endl; 
   //while loop for processing from starttime until stoptime
   while (1)
   {
@@ -457,7 +488,7 @@ int fill_Bufs(std::vector<Data_reader *> &readers,
   double *signST, double *magnST, INT64 *Nsamp,
   fftw_complex *sls, fftw_complex *spls, fftw_plan& planFW, fftw_plan& planBW,
   double tbs, double *fs, int Nf, double timePtr,
-  DelayTable *delTbl, int rank)
+  std::vector<DelayTable> &delTbl, int rank)
 {
   //declarations
   int retval = 0;
@@ -635,5 +666,3 @@ int fetch_invecs(INT64& BufPtr, int nstations, int n2fft,
   BufPtr=BufPtr+n2fft;
   return(0);
 }
-
-

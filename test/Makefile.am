@@ -5,12 +5,14 @@ AM_CXXFLAGS =
 
 check_PROGRAMS = \
   test_buffer \
+  test_Transfer_control_parameters \
   test_Data_reader_file \
   test_Data_reader_mark5 \
   test_Data_node \
   test_Correlate_node
 TESTS           = \
   test_buffer \
+  test_Transfer_control_parameters \
   test_Data_reader_file \
   test_Data_reader_mark5.py \
   test_Data_node.py \
@@ -28,6 +30,11 @@ OBJ = ../src/MPI_Transfer.cc \
 
 test_buffer_SOURCES = \
   test_buffer.cc
+
+test_Transfer_control_parameters_SOURCES = \
+  $(OBJ) test_Transfer_control_parameters.cc delayTable.cc \
+  ../src/runPrms.cc ../src/genPrms.cc ../src/staPrms.cc \
+	../src/genFunctions.cc
 
 test_Data_reader_file_SOURCES = \
   test_Data_reader_file.cc ../src/Data_reader_file.cc
