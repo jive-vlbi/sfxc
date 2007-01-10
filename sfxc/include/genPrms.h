@@ -18,54 +18,13 @@ Last change: 20061114
 */
 
 #include <types.h>
-#include <string.h>
+#include <string>
+
+class MPI_Transfer;
 
 class GenP
 {
-
-  public:
-
-    //general control parameters
-    char  *experiment; //name of the experiment
-    int   yst;        //start year
-    int   dst;        //start day
-    int   hst;        //start hour
-    int   mst;        //start minute
-    int   sst;        //start second
-    int   ysp;        //stop  year
-    int   dsp;        //stop  day
-    int   hsp;        //stop  hour
-    int   msp;        //stop  minute
-    int   ssp;        //stop  second
-    int   nstations;  //number of radio telescope stations
-    char  *outdir;    //output data directory
-    char  *logfile;   //log file name
-    std::string corfile;   //correlator product file
-          
-    int   bwin;       //band width input in Hertz
-    int   lsegm;      //length of a Fourier segment in a delay correction
-    int   foffset;    //frequency offset in Hertz
-    int   cde;        //enable CDE column in delay table
-    int   mde;        //enable MDE column in delay table
-    int   rde;        //enable RDE column in delay table
-    
-    int   filter;     //enable filtering
-    int   bwfl;       //band width filter in Hertz
-    int   startf;     //filter start frequency in Hertz
-    int   deltaf;     //filter resolution in Hertz
-    int   ovrfl;      //enable oversampling
-
-    int   n2fft;      //length of Fourier segment in correlation
-    float ovrlp;      //overlap parameter for Fourier segmetns in correlation
-    INT64 nsamp2avg;  //number of samples to average
-    int   pad;        //padding with zeros in correlation
-
-    INT64 usStart;    //start time in micro seconds without year
-    INT64 usStop;     //stop time in micro seconds without year
-    INT64 usEarliest; //earliest possible start time in micro seconds
-    INT64 usLatest;   //latest possible start time in micro seconds
-    
-    
+  friend class MPI_Transfer;
   public:
 
     //default constructor, set default values for Mk4 control parameters
@@ -75,7 +34,7 @@ class GenP
     int parse_ctrlFile(char *ctrlFile);
 
     //check control parameters
-    int check_params();
+    int check_params() const;
 
     //get functions
     char* get_experiment();
@@ -121,6 +80,65 @@ class GenP
     void  set_usEarliest(INT64);
     void  set_usLatest(INT64);
 
+    void set_start(int time[]) {
+      yst = time[0];
+      dst = time[1];
+      hst = time[2];
+      mst = time[3];
+      sst = time[4];
+    }
+    void set_stop(int time[]) {
+      ysp = time[0];
+      dsp = time[1];
+      hsp = time[2];
+      msp = time[3];
+      ssp = time[4];
+    }
+    void set_corfile(char *filename) {
+      corfile = filename;
+    }
+
+  private:
+
+    //general control parameters
+    char  *experiment; //name of the experiment
+    int   yst;        //start year
+    int   dst;        //start day
+    int   hst;        //start hour
+    int   mst;        //start minute
+    int   sst;        //start second
+    int   ysp;        //stop  year
+    int   dsp;        //stop  day
+    int   hsp;        //stop  hour
+    int   msp;        //stop  minute
+    int   ssp;        //stop  second
+    int   nstations;  //number of radio telescope stations
+    char  *outdir;    //output data directory
+    char  *logfile;   //log file name
+    std::string corfile;   //correlator product file
+
+    int   bwin;       //band width input in Hertz
+    int   lsegm;      //length of a Fourier segment in a delay correction
+    int   foffset;    //frequency offset in Hertz
+    int   cde;        //enable CDE column in delay table
+    int   mde;        //enable MDE column in delay table
+    int   rde;        //enable RDE column in delay table
+    
+    int   filter;     //enable filtering
+    int   bwfl;       //band width filter in Hertz
+    int   startf;     //filter start frequency in Hertz
+    int   deltaf;     //filter resolution in Hertz
+    int   ovrfl;      //enable oversampling
+
+    int   n2fft;      //length of Fourier segment in correlation
+    float ovrlp;      //overlap parameter for Fourier segmetns in correlation
+    INT64 nsamp2avg;  //number of samples to average
+    int   pad;        //padding with zeros in correlation
+
+    INT64 usStart;    //start time in micro seconds without year
+    INT64 usStop;     //stop time in micro seconds without year
+    INT64 usEarliest; //earliest possible start time in micro seconds
+    INT64 usLatest;   //latest possible start time in micro seconds
 };
 
 

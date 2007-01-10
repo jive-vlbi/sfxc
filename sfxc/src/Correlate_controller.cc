@@ -80,7 +80,7 @@ Correlate_controller::process_event(MPI_Status &status) {
       MPI_Recv(&filename, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      GenPrms.corfile = filename;
+      GenPrms.set_corfile(filename);
 
       return 0;
   {
@@ -114,13 +114,10 @@ Correlate_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      GenPrms.yst = time[0];
-      GenPrms.dst = time[1];
-      GenPrms.hst = time[2];
-      GenPrms.mst = time[3];
-      GenPrms.sst = time[4];
+      GenPrms.set_start(time);
 
       sliceStartTime[0] = get_us_time(time);
+      GenPrms.set_usEarliest(get_us_time(time));
       return 0;
     }
   case MPI_TAG_SET_STOP_TIME:
@@ -133,13 +130,10 @@ Correlate_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
 
-      GenPrms.ysp = time[0];
-      GenPrms.dsp = time[1];
-      GenPrms.hsp = time[2];
-      GenPrms.msp = time[3];
-      GenPrms.ssp = time[4];
+      GenPrms.set_stop(time);
       
       sliceStopTime[0] = get_us_time(time);
+      GenPrms.set_usLatest(get_us_time(time));
       return 0;
     }
   case MPI_TAG_START_CORRELATE_NODE:
@@ -156,7 +150,16 @@ Correlate_controller::process_event(MPI_Status &status) {
     {
       std::cout << "MPI_TAG_CONTROL_PARAM" << std::endl;
       MPI_Transfer mpi_transfer;
-      mpi_transfer.receive_general_parameters(status);
+      mpi_transfer.receive_general_parameters(status,RunPrms,GenPrms,StaPrms);
+      return 0;            
+    }
+  case MPI_TAG_DELAY_TABLE:
+    {
+      std::cout << "MPI_TAG_DELAY_TABLE" << std::endl;
+      MPI_Transfer mpi_transfer;
+      DelayTable table;
+      mpi_transfer.receive_delay_table(status, table);
+      correlation_add_delay_table(table);
       return 0;            
     }
   default: return 1;

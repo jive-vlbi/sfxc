@@ -9,7 +9,7 @@
 
 #include <types.h>
 #include <Controller_node.h>
-#include <Input_node.h>
+#include <Data_node.h>
 #include <Correlator_node.h>
 
 

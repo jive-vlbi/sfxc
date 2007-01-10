@@ -20,6 +20,8 @@ class MPI_Transfer;
 
 class RunP
 {
+  friend class MPI_Transfer;
+
   public:
 
     //default constructor, set default values 
@@ -29,7 +31,7 @@ class RunP
     int parse_ctrlFile(char *ctrlFile);
 
     //check run parameters
-    int check_params();
+    int check_params() const;
 
     //get functions
     int get_messagelvl();
@@ -37,8 +39,6 @@ class RunP
     int get_runoption();
 
   private:
-    friend class MPI_Transfer;
-  
     //parameters which control how the program is run
     int  messagelvl;      //message level
     int  interactive;     //run interactive or automatically

@@ -21,6 +21,7 @@ Last change: 20061114
 #include <sys/types.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <assert.h>
 
 //c++ includes
 #include <iostream>
@@ -43,7 +44,6 @@ extern RunP  RunPrms;
 //*****************************************************************************
 
 //get functions
-char* StaP::get_stname()     { return stname; }
 int   StaP::get_datatype()   { return datatype; }
 int   StaP::get_tbr()        { return tbr; }
 int   StaP::get_fo()         { return fo; }
@@ -177,6 +177,16 @@ int StaP::parse_ctrlFile(char *ctrlFile, int staNr)
   delete [] val;
   delete [] val1;
 
+  assert((0<fo) && (fo<=fomax));
+  //mk4 to mk5 bit shift numbers
+  //recalculation because on tape 36 tracks and track 0,1,34,35 not used on disk
+  hs = hs - 1;
+  hm = hm - 1;
+  for (int j=0; j < fo; j++) {
+    signBS[j] = signBS[j] - 2 + 32*hs;
+    magnBS[j] = magnBS[j] - 2 + 32*hm;
+  }
+
   return retval;
 }
 
@@ -289,7 +299,7 @@ int StaP::findDelaydata(FILE *ctrlP)
 
 
 //check the station paramters and optionally display them
-int StaP::check_params()
+int StaP::check_params() const
 {
 
   int retval = 0, j;
@@ -329,15 +339,6 @@ int StaP::check_params()
 
   }
 
-  //mk4 to mk5 bit shift numbers
-  //recalculation because on tape 36 tracks and track 0,1,34,35 not used on disk
-  hs = hs - 1;
-  hm = hm - 1;
-  for (j=0; j < fo; j++) {
-    signBS[j] = signBS[j] - 2 + 32*hs;
-    magnBS[j] = magnBS[j] - 2 + 32*hm;
-  }
-  
   if (RunPrms.get_messagelvl() > 0) {
     cout << "Converted to Mk5 disk bit shift numbers:" << endl;
     
