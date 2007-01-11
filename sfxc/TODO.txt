@@ -1,8 +1,14 @@
 TODO:
 
+Control files
+- check for redundancies and remove them [RHJO]
+- add run option for analyses of mk4 files and print/write headers [RHJO]
+- Set random generator with a well defined seed in the control file [RHJO]
+  option: fixed seeding and runtime based seeding
+- which parameters can be extracted from vex file [RHJO]
+
 Correlation:
 - create a Correlator class with status functions 
-- Set random generator with a well defined seed in the control file
 - Why not using a standard number generator?
 - Document classes
 - Data_writer and Output_node for collecting data
@@ -17,6 +23,8 @@ Correlation:
   INT64 sliceTime;
   are they necessary and where are they set
 - check timestamps in the headers during correlation
+- instead of one correlator product file per process these have to be
+  concatenated into one correlator product file [RHJO]
 
 Multi core:
 - Data_writer similar to Data_reader
@@ -26,13 +34,31 @@ Multi core:
 - Get sfxc_adam working again
 - schrijven van debug informatie (niet naar \verb~std::cout~)
 
+Functionality:
+- add overlapping in correlation [RHJO]
+- add filtering before delay correction [RHJO]
+- Convertor: from correlator product to FITS format.
+  Develop separate application or integrate whith correlator software
+
+Documentation
+- high level documentation document, describing what happens and how
+  it happens in the sw correlator. See also deliverable DJ 1.4
+  in DoW. [RHJO]
+
 Test:
 - Complete test_suite
 - add .sfxc file with control information per computer
 
 General:
 - switch to svn (to accomodate moving files, check cvs2svn)?
+- check in original sw correlator code using cxmk4, cx2fl, delpha and sfxct
+
+
+
+STATUS:
+If an action item is not mentioned nothing is done yet.
+Copy action item to this list and describe status (date, who, what) 
 
 
 DONE:
-
+Move action item from TODO list to DONE list
