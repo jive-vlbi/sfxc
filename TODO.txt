@@ -1,13 +1,38 @@
 TODO:
 
-- Set random generator with a well defined seed (for debugging).
+Correlation:
+- create a Correlator class with status functions 
+- Set random generator with a well defined seed in the control file
 - Why not using a standard number generator?
 - Document classes
 - Data_writer and Output_node for collecting data
 - Remove global variables
 - Send messages for control parameters.
 - Create a utility directory (c2f, etc.)
+- Parameters: welke wordt waar gebruikt, gezet? Documentatie
+- Global variables: global parameters en:
+  INT64 sliceStartByte[NstationsMax][NprocessesMax];
+  INT64 sliceStartTime[NprocessesMax];
+  INT64 sliceStopTime [NprocessesMax];
+  INT64 sliceTime;
+  are they necessary and where are they set
+- check timestamps in the headers during correlation
+
+Multi core:
+- Data_writer similar to Data_reader
+- Add Data_reader 
+      Data_writer
+- send time slices, manage nodes
+- Get sfxc_adam working again
+- schrijven van debug informatie (niet naar \verb~std::cout~)
+
+Test:
+- Complete test_suite
+- add .sfxc file with control information per computer
+
+General:
 - switch to svn (to accomodate moving files, check cvs2svn)?
+
 
 DONE:
 

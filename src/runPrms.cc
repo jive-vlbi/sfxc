@@ -47,9 +47,9 @@ using namespace std;
 //*****************************************************************************
 
 //get functions
-int RunP::get_messagelvl()  { return messagelvl; }
-int RunP::get_interactive() { return interactive; }
-int RunP::get_runoption()   { return runoption; }
+int RunP::get_messagelvl()  const { return messagelvl; }
+int RunP::get_interactive() const { return interactive; }
+int RunP::get_runoption()   const { return runoption; }
 
 
 

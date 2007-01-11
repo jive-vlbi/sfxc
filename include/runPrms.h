@@ -34,9 +34,9 @@ class RunP
     int check_params() const;
 
     //get functions
-    int get_messagelvl();
-    int get_interactive();
-    int get_runoption();
+    int get_messagelvl() const;
+    int get_interactive() const;
+    int get_runoption() const;
 
   private:
     //parameters which control how the program is run
