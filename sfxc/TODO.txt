@@ -1,0 +1,13 @@
+TODO:
+
+- Set random generator with a well defined seed (for debugging).
+- Why not using a standard number generator?
+- Document classes
+- Data_writer and Output_node for collecting data
+- Remove global variables
+- Send messages for control parameters.
+- Create a utility directory (c2f, etc.)
+- switch to svn (to accomodate moving files, check cvs2svn)?
+
+DONE:
+
