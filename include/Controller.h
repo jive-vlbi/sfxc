@@ -12,8 +12,9 @@
 // Include MPI
 #include <types.h>
 
-/** Generic controller. A controller manages one component of a node,
-    e.g. the input, correlation or output.
+/** A controller manages one component of a node, for example the input, 
+ * correlation or output. The controller processes MPI events and adjusts the
+ * status of the node accordingly. 
 
     \ingroup ImportantClasses
  **/
