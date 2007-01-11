@@ -44,7 +44,11 @@ public:
    **/
   void write_debug(int lvl, const MPI_Status &status);
 
+  /**
+     Add a controller to the node.
+   **/
   void add_controller(Controller *controller);
+  
 private:
   int rank;
   Controller_list controllers;
