@@ -1,0 +1,5 @@
+.deps
+Makefile
+Makefile.in
+sfxc
+sfxc_singlecore
