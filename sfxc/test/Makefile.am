@@ -32,9 +32,9 @@ test_buffer_SOURCES = \
   test_buffer.cc
 
 test_Transfer_control_parameters_SOURCES = \
-  $(OBJ) test_Transfer_control_parameters.cc delayTable.cc \
+  $(OBJ) test_Transfer_control_parameters.cc ../src/delayTable.cc \
   ../src/runPrms.cc ../src/genPrms.cc ../src/staPrms.cc \
-	../src/genFunctions.cc
+  ../src/genFunctions.cc
 
 test_Data_reader_file_SOURCES = \
   test_Data_reader_file.cc ../src/Data_reader_file.cc
@@ -43,13 +43,14 @@ test_Data_reader_mark5_SOURCES = \
   test_Data_reader_mark5.cc ../src/Data_reader_mark5.cc
 
 test_Data_node_SOURCES = \
-  $(OBJ) test_Data_node.cc 
+  $(OBJ) test_Data_node.cc \
+  ../src/runPrms.cc ../src/genPrms.cc ../src/staPrms.cc \
+  ../src/genFunctions.cc ../src/delayTable.cc
 
 test_Correlate_node_SOURCES = \
   $(OBJ) test_Correlate_node.cc \
   ../src/Correlate_node.cc ../src/Correlate_controller.cc \
   ../src/runPrms.cc ../src/genPrms.cc ../src/staPrms.cc \
-	../src/genFunctions.cc \
-	../src/InData.cc ../src/delayTable.cc \
-	../src/ProcessData.cc
-  
+  ../src/genFunctions.cc \
+  ../src/InData.cc ../src/delayTable.cc \
+  ../src/ProcessData.cc
