@@ -47,26 +47,26 @@ class StaP
     int check_params() const;
 
     //get functions
-    char* get_stname() { return stname; }
-    int   get_datatype();
-    int   get_tbr();
-    int   get_fo();
-    int   get_bps();
-    int   get_tphs();
-    int   get_nhs();
-    int   get_boff();
-    int   get_synhs1();
-    int   get_synhs2();
-    int   get_mod();
-    int   get_rndhdr();
-    char* get_mk4file();
-    char* get_hdrmap();
-    char* get_modpat();
-    char* get_delaytable();
-    char* get_phasetable();
-    INT64 get_loobs();
-    int*  get_signBS(); //bit shift parameters for sign
-    int*  get_magnBS(); //bit shift parameters for magn
+    char* get_stname() const;
+    int   get_datatype() const;
+    int   get_tbr() const;
+    int   get_fo() const;
+    int   get_bps() const;
+    int   get_tphs() const;
+    int   get_nhs() const;
+    int   get_boff() const;
+    int   get_synhs1() const;
+    int   get_synhs2() const;
+    int   get_mod() const;
+    int   get_rndhdr() const;
+    char* get_mk4file() const;
+    char* get_hdrmap() const;
+    char* get_modpat() const;
+    char* get_delaytable() const;
+    char* get_phasetable() const;
+    INT64 get_loobs() const;
+    const int*  get_signBS() const; //bit shift parameters for sign
+    const int*  get_magnBS() const; //bit shift parameters for magn
 
 
   private:

@@ -50,66 +50,51 @@ extern RunP  RunPrms;
 //*****************************************************************************
 
 //get functions
-char* GenP::get_experiment(){ return experiment; }
-int   GenP::get_yst()       { return yst; }
-int   GenP::get_dst()       { return dst; }
-int   GenP::get_hst()       { return hst; }
-int   GenP::get_mst()       { return mst; }
-int   GenP::get_sst()       { return sst; }
-int   GenP::get_ysp()       { return ysp; }
-int   GenP::get_dsp()       { return dsp; }
-int   GenP::get_hsp()       { return hsp; }
-int   GenP::get_msp()       { return msp; }
-int   GenP::get_ssp()       { return ssp; }
-int   GenP::get_nstations() { return nstations; }
-char* GenP::get_outdir()    { return outdir;}
-char* GenP::get_logfile()   { return logfile;}
-const char* GenP::get_corfile()   { return corfile.c_str();}
+char* GenP::get_experiment() const { return experiment; }
+int   GenP::get_yst()        const { return yst; }
+int   GenP::get_dst()        const { return dst; }
+int   GenP::get_hst()        const { return hst; }
+int   GenP::get_mst()        const { return mst; }
+int   GenP::get_sst()        const { return sst; }
+int   GenP::get_ysp()        const { return ysp; }
+int   GenP::get_dsp()        const { return dsp; }
+int   GenP::get_hsp()        const { return hsp; }
+int   GenP::get_msp()        const { return msp; }
+int   GenP::get_ssp()        const { return ssp; }
+int   GenP::get_nstations()  const { return nstations; }
+char* GenP::get_outdir()     const { return outdir;}
+char* GenP::get_logfile()    const { return logfile;}
+const char* GenP::get_corfile()    const { return corfile.c_str();}
 
-int   GenP::get_bwin()      { return bwin;}
-int   GenP::get_lsegm()     { return lsegm;}
-int   GenP::get_foffset()   { return foffset;}
-int   GenP::get_cde()       { return cde;}
-int   GenP::get_mde()       { return mde;}
-int   GenP::get_rde()       { return rde;}
+int   GenP::get_bwin()       const { return bwin;}
+int   GenP::get_lsegm()      const { return lsegm;}
+int   GenP::get_foffset()    const { return foffset;}
+int   GenP::get_cde()        const { return cde;}
+int   GenP::get_mde()        const { return mde;}
+int   GenP::get_rde()        const { return rde;}
 
-int   GenP::get_filter()    { return filter;}
-int   GenP::get_bwfl()      { return bwfl;}
-int   GenP::get_startf()    { return startf;}
-int   GenP::get_deltaf()    { return deltaf;}
-int   GenP::get_ovrfl()     { return ovrfl;}
+int   GenP::get_filter()     const { return filter;}
+int   GenP::get_bwfl()       const { return bwfl;}
+int   GenP::get_startf()     const { return startf;}
+int   GenP::get_deltaf()     const { return deltaf;}
+int   GenP::get_ovrfl()      const { return ovrfl;}
 
-int   GenP::get_n2fft()     { return n2fft;}
-float GenP::get_ovrlp()     { return ovrlp;}
-INT64 GenP::get_nsamp2avg() { return nsamp2avg;}
-int   GenP::get_pad()       { return pad;}
+int   GenP::get_n2fft()      const { return n2fft;}
+float GenP::get_ovrlp()      const { return ovrlp;}
+INT64 GenP::get_nsamp2avg()  const { return nsamp2avg;}
+int   GenP::get_pad()        const { return pad;}
 
-INT64 GenP::get_usStart() {
-
-  usStart = dst;                 //days
-  usStart = hst +   24* usStart; //hours
-  usStart = mst +   60* usStart; //minutes
-  usStart = sst +   60* usStart; //minutes
-  usStart = 0   + 1000* usStart; //milisecs
-  usStart = 0   + 1000* usStart; //microsecs
+INT64 GenP::get_usStart()  const {
   return usStart;
   
 }  
 
-INT64 GenP::get_usStop() {
-
-  usStop = dsp;                //days
-  usStop = hsp +   24* usStop; //hours
-  usStop = msp +   60* usStop; //minutes
-  usStop = ssp +   60* usStop; //minutes
-  usStop = 0   + 1000* usStop; //milisecs
-  usStop = 0   + 1000* usStop; //microsecs
+INT64 GenP::get_usStop()  const {
   return usStop;
-  
 }  
 
-INT64 GenP::get_usEarliest(){ return usEarliest; }
-INT64 GenP::get_usLatest()  { return usLatest; }
+INT64 GenP::get_usEarliest() const { return usEarliest; }
+INT64 GenP::get_usLatest()   const { return usLatest; }
 
 void  GenP::set_usEarliest(INT64 newEarliest) {
   usEarliest = newEarliest;
@@ -218,19 +203,23 @@ int GenP::parse_ctrlFile(char *ctrlFile)
     if (sscanf(line,"%s %s %s %s %s %s\n",key,val,val1,val2,val3,val4) == 6){
       //start time: yyyy ddd hh mm ss
       if (!strcmp(key,"START")) {
-        retval = retval + str2int(val,yst);
-        retval = retval + str2int(val1,dst);
-        retval = retval + str2int(val2,hst);
-        retval = retval + str2int(val3,mst);
-        retval = retval + str2int(val4,sst);
+        int time[5];
+        retval = retval + str2int(val,time[0]);
+        retval = retval + str2int(val1,time[1]);
+        retval = retval + str2int(val2,time[2]);
+        retval = retval + str2int(val3,time[3]);
+        retval = retval + str2int(val4,time[4]);
+        set_start(time);
       }
       //stop time: yyyy ddd hh mm ss
       if (!strcmp(key,"STOP")) {
-        retval = retval + str2int(val,ysp);
-        retval = retval + str2int(val1,dsp);
-        retval = retval + str2int(val2,hsp);
-        retval = retval + str2int(val3,msp);
-        retval = retval + str2int(val4,ssp);
+        int time[5];
+        retval = retval + str2int(val,time[0]);
+        retval = retval + str2int(val1,time[1]);
+        retval = retval + str2int(val2,time[2]);
+        retval = retval + str2int(val3,time[3]);
+        retval = retval + str2int(val4,time[4]);
+        set_stop(time);
       }
     }
 
@@ -417,3 +406,35 @@ int GenP::check_params() const
 }
 
 
+void GenP::set_start(int time[]) {
+  yst = time[0];
+  dst = time[1];
+  hst = time[2];
+  mst = time[3];
+  sst = time[4];
+  
+  usStart = dst;                 //days
+  usStart = hst +   24* usStart; //hours
+  usStart = mst +   60* usStart; //minutes
+  usStart = sst +   60* usStart; //minutes
+  usStart = 0   + 1000* usStart; //milisecs
+  usStart = 0   + 1000* usStart; //microsecs
+}
+
+void GenP::set_stop(int time[]) {
+  ysp = time[0];
+  dsp = time[1];
+  hsp = time[2];
+  msp = time[3];
+  ssp = time[4];
+
+  usStop = dsp;                //days
+  usStop = hsp +   24* usStop; //hours
+  usStop = msp +   60* usStop; //minutes
+  usStop = ssp +   60* usStop; //minutes
+  usStop = 0   + 1000* usStop; //milisecs
+  usStop = 0   + 1000* usStop; //microsecs
+}
+void GenP::set_corfile(char *filename) {
+  corfile = filename;
+}

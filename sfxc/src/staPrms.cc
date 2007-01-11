@@ -44,25 +44,26 @@ extern RunP  RunPrms;
 //*****************************************************************************
 
 //get functions
-int   StaP::get_datatype()   { return datatype; }
-int   StaP::get_tbr()        { return tbr; }
-int   StaP::get_fo()         { return fo; }
-int   StaP::get_bps()        { return bps; }
-int   StaP::get_nhs()        { return nhs; }
-int   StaP::get_tphs()       { return tphs; }
-int   StaP::get_boff()       { return boff; }
-int   StaP::get_synhs1()     { return synhs1; }
-int   StaP::get_synhs2()     { return synhs2; }
-int   StaP::get_mod()        { return mod; }
-int   StaP::get_rndhdr()     { return rndhdr; }
-char* StaP::get_mk4file()    { return mk4file; }
-char* StaP::get_hdrmap()     { return hdrmap; }
-char* StaP::get_modpat()     { return modpat; }
-char* StaP::get_delaytable() { return delaytable; }
-char* StaP::get_phasetable() { return phasetable; }
-INT64 StaP::get_loobs()      { return loobs;}
-int*  StaP::get_signBS()     { return signBS;}
-int*  StaP::get_magnBS()     { return magnBS;}
+char* StaP::get_stname()     const { return stname; }
+int   StaP::get_datatype()   const { return datatype; }
+int   StaP::get_tbr()        const { return tbr; }
+int   StaP::get_fo()         const { return fo; }
+int   StaP::get_bps()        const { return bps; }
+int   StaP::get_nhs()        const { return nhs; }
+int   StaP::get_tphs()       const { return tphs; }
+int   StaP::get_boff()       const { return boff; }
+int   StaP::get_synhs1()     const { return synhs1; }
+int   StaP::get_synhs2()     const { return synhs2; }
+int   StaP::get_mod()        const { return mod; }
+int   StaP::get_rndhdr()     const { return rndhdr; }
+char* StaP::get_mk4file()    const { return mk4file; }
+char* StaP::get_hdrmap()     const { return hdrmap; }
+char* StaP::get_modpat()     const { return modpat; }
+char* StaP::get_delaytable() const { return delaytable; }
+char* StaP::get_phasetable() const { return phasetable; }
+INT64 StaP::get_loobs()      const { return loobs;}
+const int*  StaP::get_signBS()     const { return signBS;}
+const int*  StaP::get_magnBS()     const { return magnBS;}
 
 
 

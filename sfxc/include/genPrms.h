@@ -37,66 +37,52 @@ class GenP
     int check_params() const;
 
     //get functions
-    char* get_experiment();
-    int   get_yst();
-    int   get_dst();
-    int   get_hst();
-    int   get_mst();
-    int   get_sst();
-    int   get_ysp();
-    int   get_dsp();
-    int   get_hsp();
-    int   get_msp();
-    int   get_ssp();
-    int   get_nstations();
-    char* get_outdir();
-    char* get_logfile();
-    const char* get_corfile();
+    char* get_experiment() const;
+    int   get_yst() const;
+    int   get_dst() const;
+    int   get_hst() const;
+    int   get_mst() const;
+    int   get_sst() const;
+    int   get_ysp() const;
+    int   get_dsp() const;
+    int   get_hsp() const;
+    int   get_msp() const;
+    int   get_ssp() const;
+    int   get_nstations() const;
+    char* get_outdir() const;
+    char* get_logfile() const;
+    const char* get_corfile() const;
     
-    int   get_bwin();
-    int   get_lsegm();
-    int   get_foffset();
-    int   get_cde();
-    int   get_mde();
-    int   get_rde();
+    int   get_bwin() const;
+    int   get_lsegm() const;
+    int   get_foffset() const;
+    int   get_cde() const;
+    int   get_mde() const;
+    int   get_rde() const;
 
-    int   get_filter();
-    int   get_bwfl();
-    int   get_startf();
-    int   get_deltaf();
-    int   get_ovrfl();
+    int   get_filter() const;
+    int   get_bwfl() const;
+    int   get_startf() const;
+    int   get_deltaf() const;
+    int   get_ovrfl() const;
 
-    int   get_n2fft();
-    float get_ovrlp();
-    INT64 get_nsamp2avg();
-    int   get_pad();
+    int   get_n2fft() const;
+    float get_ovrlp() const;
+    INT64 get_nsamp2avg() const;
+    int   get_pad() const;
 
-    INT64 get_usStart();
-    INT64 get_usStop();
-    INT64 get_usEarliest();
-    INT64 get_usLatest();
+    INT64 get_usStart() const;
+    INT64 get_usStop() const;
+    INT64 get_usEarliest() const;
+    INT64 get_usLatest() const;
 
     //set functions
     void  set_usEarliest(INT64);
     void  set_usLatest(INT64);
 
-    void set_start(int time[]) {
-      yst = time[0];
-      dst = time[1];
-      hst = time[2];
-      mst = time[3];
-      sst = time[4];
-    }
-    void set_stop(int time[]) {
-      ysp = time[0];
-      dsp = time[1];
-      hsp = time[2];
-      msp = time[3];
-      ssp = time[4];
-    }
-    void set_corfile(char *filename) {
-      corfile = filename;
-    }
+    void set_start(int time[]);
+    void set_stop(int time[]);
+    void set_corfile(char *filename);
 
   private:
 
