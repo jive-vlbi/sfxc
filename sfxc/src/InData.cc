@@ -130,6 +130,7 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
   INT64 NFrames[NstationsMax], FrPcore[NstationsMax];
   INT64 deltaBytes[NstationsMax];
   INT64 dus;
+  INT64 startTime;
 
   NrStations = GenPrms.get_nstations();
   
@@ -201,7 +202,8 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
     if (RunPrms.get_messagelvl()> 1) {
       cout << "station=" << sn <<" start stop: ";
     }
-    sliceStartByte[sn][rank] = StartByte[sn] + rank*deltaBytes[sn];
+    // NGHK: Check
+    StartByte[sn] = StartByte[sn] + rank*deltaBytes[sn];
     if (RunPrms.get_messagelvl()> 1) cout << endl;
     //goto required offset startbyte in stream
 
@@ -209,7 +211,7 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
     //INT64 statusPtr = input_readers[sn]->move_forward(sliceStartByte[sn][rank]);
 
     // NGHK: this is dirty, make read(32|64)datafile also move the read pointer
-    INT64 statusPtr = sliceStartByte[sn][rank] - 
+    INT64 statusPtr = StartByte[sn] - 
       (RunPrms.get_messagelvl()> 0 ? 2 : 1)* // read another frame for display
       (StaPrms[sn].get_nhs()==1 ? 4 : 8)*frameMk4*nfrms; // Already read to get the timestamp
     statusPtr = input_readers[sn]->get_bytes(statusPtr, NULL);
@@ -217,29 +219,23 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
     if (RunPrms.get_messagelvl()> 1) {
       cout << "statusPtr =" << statusPtr << endl;
     }
-    assert(statusPtr == sliceStartByte[sn][rank] - 
+    assert(statusPtr == StartByte[sn] - 
       (RunPrms.get_messagelvl()> 0 ? 2 : 1)*
       (StaPrms[sn].get_nhs()==1 ? 4 : 8)*frameMk4*nfrms);
   }
   
-  sliceTime = (GenPrms.get_usLatest()-GenPrms.get_usEarliest() )/ (numtasks*1);
-  sliceStartTime[rank] = GenPrms.get_usEarliest()*1 + sliceTime*rank;
+  startTime = GenPrms.get_usEarliest();
   dus = GenPrms.get_dst()* 24; //dus = day in micro seconds
   dus = dus * 3600;
   dus = dus * 1000000;
-  sliceStartTime[rank] = sliceStartTime[rank] - dus;
-  sliceStopTime[rank] = sliceStartTime[rank] + sliceTime;
-  if (RunPrms.get_messagelvl()> 1){
-    cout << "Slice start and stop times per process" << endl;
-    cout << sliceStartTime[rank] << " " << sliceStopTime[rank] << endl;
-  }
+  startTime = startTime - dus;
   
-  //find headers for sliceStartByte in data files, only done for monitoring
+  //find headers for StartByte in data files, only done for monitoring
   if ( RunPrms.get_messagelvl()> 0) {
     for (sn=0; sn<NrStations; sn++) {
       if (StaPrms[sn].get_datatype() == DATATYPE_MK4) {
         FindHeaderMk4(*input_readers[sn], sn, jsynch[sn],
-          usTime[sn], sliceStartTime[rank]+dus);
+          usTime[sn], startTime+dus);
       }
       if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks == 1)
         askContinue();
