@@ -56,7 +56,7 @@ Test:
 General:
 - switch to svn (to accomodate moving files, check cvs2svn)?
 - check in original sw correlator code using cxmk4, cx2fl, delpha and sfxct
-- Check in the sfxc based on files (in a separate module)
+  (in a separate module)
 
 
 STATUS:
