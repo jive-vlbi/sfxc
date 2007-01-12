@@ -28,6 +28,7 @@ Correlation:
   - FFTw in place, 
   - std::vectors instead of arrays with fixed length
   - std::string instead of char * to ease the copy constructor
+- delayTable: use milliseconds instead of seconds to be able to use integers
 
 Multi core:
 - Data_writer similar to Data_reader
@@ -82,7 +83,9 @@ Copy action item to this list and describe status (date, who, what)
 4. [NGHK, 11-01-2007]
    - Data_writer and Output_node for collecting data
    - Debug_writer and Debug_node for writing Debug information
-5. [NGHK, 11-01-2007]
+5. [NGHK, 11-01-2007] 
+   - delayTable: use milliseconds instead of seconds to be able to use integers
+6. [NGHK, 11-01-2007]
    - Connect all nodes using a controller node
 
 
