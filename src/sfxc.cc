@@ -135,11 +135,6 @@ GenP GenPrms;
 StaP StaPrms[NstationsMax];
 // used for randomising numbers for Headers in Mk4 file
 UINT32 seed;
-//declarations for offsets
-INT64 sliceStartByte[NstationsMax][NprocessesMax];
-INT64 sliceStartTime [NprocessesMax];
-INT64 sliceStopTime  [NprocessesMax];
-INT64 sliceTime;
 
 
 //return value 0 when no errors occurred

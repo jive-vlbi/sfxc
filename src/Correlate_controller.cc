@@ -116,7 +116,6 @@ Correlate_controller::process_event(MPI_Status &status) {
       
       GenPrms.set_start(time);
 
-      sliceStartTime[0] = get_us_time(time);
       GenPrms.set_usEarliest(get_us_time(time));
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
@@ -132,7 +131,6 @@ Correlate_controller::process_event(MPI_Status &status) {
 
       GenPrms.set_stop(time);
       
-      sliceStopTime[0] = get_us_time(time);
       GenPrms.set_usLatest(get_us_time(time));
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

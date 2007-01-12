@@ -92,7 +92,6 @@ int initialise_delay_tables(int nstations, StaP StaPrms[]) {
   if (!init_delTbl) return 0;
   init_delTbl = false;
   
-  std::cout << sliceStartTime[0] << " slice_stop_time: " << sliceStopTime[0] << std::endl;
   delTbl.resize(nstations);
   for (int sn=0; sn<nstations; sn++) {
     std::cout << "DelTbl: " << StaPrms[sn].get_delaytable() << std::endl;
@@ -120,8 +119,6 @@ void correlation_add_delay_table(DelayTable &table) {
 //***************************************************************************
 int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
 {
-  seed = 10;
-  std::cout << "set seed to " << seed << std::endl;
   //declarations
   int retval = 0;
   int i,j,l;
@@ -283,7 +280,10 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   }
                                                                  
   //loop initializations
-  timePtr = sliceStartTime[rank];
+  INT64 dus = GenPrms.get_dst()* 24; //dus = day in micro seconds
+  dus = dus * 3600;
+  dus = dus * 1000000;
+  timePtr = GenPrms.get_usEarliest() - dus;
   BufPtr = BufSize;
   loop=0;
 
@@ -432,8 +432,8 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
 
     // Check wether we are finished.
     std::cout << "Process="<< rank << " timePtr = " << (INT64)timePtr << std::endl;
-    std::cout << "Process="<< rank << " stoptime= " << sliceStopTime[rank] << std::endl;
-    if (timePtr > sliceStopTime[rank]) {
+    std::cout << "Process="<< rank << " stoptime= " << GenPrms.get_usStop()-dus << std::endl;
+    if (timePtr > GenPrms.get_usStop()-dus) {
       std::cout << "Process="<< rank << " finished, timePtr after stopTime" << std::endl;
       break; //
     }

@@ -289,6 +289,7 @@ double DelayTable::calcDelay(double time, int delayType) const
    index = (2*(INT64)time + stepDT) / (2*stepDT);
    if ((index < 0) || (index >= ndel)){
      cout << "time=" << time << " index=" << index << " ndel=" << ndel <<endl;
+     assert(false);
      return 1.0;
    }  
    switch (delayType) {
