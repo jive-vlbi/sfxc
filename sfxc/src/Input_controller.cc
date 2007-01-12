@@ -13,7 +13,7 @@ Input_controller::~Input_controller() {
   //pthread_kill(input_thread, SIGKILL);
 }
 
-int
+Input_controller::Process_event_status
 Input_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_SET_INPUT_NODE_FILE:
@@ -36,10 +36,10 @@ Input_controller::process_event(MPI_Status &status) {
         start();
       }
       
-      return 0;
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   }
-  return 1;
+  return PROCESS_EVENT_STATUS_UNKNOWN;
 }
 
 void

@@ -8,7 +8,8 @@ Output_controller::Output_controller(Buffer<value_type> &buffer)
   : Controller(), buffer(buffer), writer(NULL) {
 }
 
-int Output_controller::process_event(MPI_Status &status) {
+Controller::Process_event_status
+Output_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_SET_OUTPUT_NODE_FILE:
     {
@@ -30,10 +31,10 @@ int Output_controller::process_event(MPI_Status &status) {
       }
       
       
-      return 0;
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   }
-  return 1;
+  return PROCESS_EVENT_STATUS_UNKNOWN;
 }
 
 void

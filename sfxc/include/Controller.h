@@ -1,4 +1,4 @@
-/*
+  /*
   $Author$
   $Date$
   $Name$
@@ -24,13 +24,14 @@ public:
 
   virtual ~Controller() {
   }
-  /** Try to process an event received by the node.
-     \return 
-     - 0: processing succeeded
-     - 1: unknown event
-     - 2: processing failed
-   **/
-  virtual int process_event(MPI_Status &status) = 0;
+  
+  enum Process_event_status {
+    PROCESS_EVENT_STATUS_SUCCEEDED = 0,
+    PROCESS_EVENT_STATUS_UNKNOWN,
+    PROCESS_EVENT_STATUS_FAILED
+  };
+  
+  virtual Process_event_status process_event(MPI_Status &status) = 0;
 };
 
 #endif // CONTROLLER_H

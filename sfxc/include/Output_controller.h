@@ -11,7 +11,7 @@ public:
   typedef Output_controller  Self;
   Output_controller(Buffer<value_type> &buffer);
 
-  int process_event(MPI_Status &status);  
+  Process_event_status process_event(MPI_Status &status);  
 
 
   //void set_buffer(Buffer<value_type> &buff);
