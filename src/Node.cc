@@ -36,18 +36,18 @@ void Node::process_event(MPI_Status &status) {
   for (Controller_iterator it = controllers.begin();
        it != controllers.end();
        it++) {
-    int result = (*it)->process_event(status);
+    Controller::Process_event_status result = (*it)->process_event(status);
     switch (result) {
-    case 0: // Processing succeeded
+    case Controller::PROCESS_EVENT_STATUS_SUCCEEDED: // Processing succeeded
       {
         return;
       }
-    case 1: // Unknown command, try next controller
+    case Controller::PROCESS_EVENT_STATUS_UNKNOWN: // Unknown command, try next controller
       {
         continue;
         break;
       }
-    case 2: // Processing failed
+    case Controller::PROCESS_EVENT_STATUS_FAILED: // Processing failed
       {
         write_debug(1, "Error in processing");
         write_debug(1, status);

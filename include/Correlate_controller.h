@@ -19,7 +19,7 @@ public:
   Correlate_controller(Buffer<output_value_type> &output_buffer);
   ~Correlate_controller();
   
-  int process_event(MPI_Status &status);
+  Process_event_status process_event(MPI_Status &status);
   
   void start();
   void stop();
