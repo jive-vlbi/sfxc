@@ -74,6 +74,9 @@ Copy action item to this list and describe status (date, who, what)
    - Parameters: welke wordt waar gebruikt, gezet?
    - Documentatie Correlator class
 
+1. [YP, 11-01-2007] Make fringe plots from the correlator output
+2. [YP, 11-01-2007] Make a utility to transfer the correlator output to FITS
+
 
 1. [NGHK, 11-01-2007] switch to svn (to accomodate moving files, check cvs2svn)?
 2. [NGHK, 11-01-2007] Remove global variables
