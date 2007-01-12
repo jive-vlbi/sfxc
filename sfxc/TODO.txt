@@ -2,19 +2,20 @@ TODO:
 
 Control files
 - check for redundancies and remove them [RHJO]
-- add run option for analyses of mk4 files and print/write headers [RHJO]
-- Set random generator with a well defined seed in the control file [RHJO]
+- add run option for analyses of mk4 files and print/write headers, 
+  maybe in a separate application
+- Set random generator with a well defined seed in the control file
   option: fixed seeding and runtime based seeding
-- which parameters can be extracted from vex file [RHJO]
+- which parameters can be extracted from vex file
+- store the control files in XML format
 
 Correlation:
 - create a Correlator class with status functions 
-- Why not using a standard number generator?
+- Why not using a standard number generator? Ask Max (NGHK)
 - Document classes
 - Data_writer and Output_node for collecting data
+- Debug_writer and Debug_node for writing Debug information
 - Remove global variables
-- Send messages for control parameters.
-- Create a utility directory (c2f, etc.)
 - Parameters: welke wordt waar gebruikt, gezet? Documentatie
 - Global variables: global parameters en:
   INT64 sliceStartByte[NstationsMax][NprocessesMax];
@@ -23,8 +24,10 @@ Correlation:
   INT64 sliceTime;
   are they necessary and where are they set
 - check timestamps in the headers during correlation
-- instead of one correlator product file per process these have to be
-  concatenated into one correlator product file [RHJO]
+- optimize code: 
+  - FFTw in place, 
+  - std::vectors instead of arrays with fixed length
+  - std::string instead of char * to ease the copy constructor
 
 Multi core:
 - Data_writer similar to Data_reader
@@ -32,7 +35,7 @@ Multi core:
       Data_writer
 - send time slices, manage nodes
 - Get sfxc_adam working again
-- schrijven van debug informatie (niet naar \verb~std::cout~)
+- schrijven van debug informatie (niet naar std::cout)
 
 Functionality:
 - add overlapping in correlation [RHJO]
@@ -44,6 +47,7 @@ Documentation
 - high level documentation document, describing what happens and how
   it happens in the sw correlator. See also deliverable DJ 1.4
   in DoW. [RHJO]
+- Write doxygen code for the control parameters
 
 Test:
 - Complete test_suite
@@ -52,13 +56,37 @@ Test:
 General:
 - switch to svn (to accomodate moving files, check cvs2svn)?
 - check in original sw correlator code using cxmk4, cx2fl, delpha and sfxct
-
+- Check in the sfxc based on files (in a separate module)
 
 
 STATUS:
 If an action item is not mentioned nothing is done yet.
-Copy action item to this list and describe status (date, who, what) 
+Copy action item to this list and describe status (date, who, what)
+
+1. [RHJO, 11-01-2007] 
+  high level documentation document, describing what happens and how
+  it happens in the sw correlator. See also deliverable DJ 1.4
+  in DoW. [RHJO]
+2. [RHJO, 11-01-2007] check for redundancies and remove them [RHJO]
+3. [RHJO, 11-01-2007] 
+   - create a Correlator class with status functions 
+   - Remove global variables (RunPrms, GenPrms, StaPrms)
+   - Parameters: welke wordt waar gebruikt, gezet?
+   - Documentatie Correlator class
+
+
+1. [NGHK, 11-01-2007] switch to svn (to accomodate moving files, check cvs2svn)?
+2. [NGHK, 11-01-2007] Remove global variables
+3. [NGHK, 11-01-2007] Write doxygen code for the control parameters
+4. [NGHK, 11-01-2007]
+   - Data_writer and Output_node for collecting data
+   - Debug_writer and Debug_node for writing Debug information
+5. [NGHK, 11-01-2007]
+   - Connect all nodes using a controller node
 
 
 DONE:
 Move action item from TODO list to DONE list
+
+- [NGHK, 11-01-2007] Send messages for control parameters (MPI version).
+- [NGHK, 11-01-2007] Create a utility directory (c2f, etc.)
