@@ -40,7 +40,7 @@ Multi core:
 Functionality:
 - add overlapping in correlation [RHJO]
 - add filtering before delay correction [RHJO]
-- Convertor: from correlator product to FITS format.
+- Convertor: from correlator product to FITS format. [RHJO]
   Develop separate application or integrate whith correlator software
 
 Documentation
