@@ -10,7 +10,6 @@ Class function definitions for runparameters
 
 Author     : RHJ Oerlemans
 StartDate  : 20060912
-Last change: 20061114
 
 */
 
@@ -123,6 +122,8 @@ int RunP::check_params() const
   //display run parameters
   if (messagelvl > 0) {
     cout <<
+    "--------------------------------------------------------------------------------\n" <<
+    "General run settings\n" <<
     endl <<
     "Message level        = " << messagelvl << endl <<
     "Interactive          = " << interactive << endl <<

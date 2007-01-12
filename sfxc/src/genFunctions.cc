@@ -83,7 +83,7 @@ int getINT64Val(char *key, char *val, char *skey, INT64& sval)
   char *endp;
   
   if (!strcmp(key,skey)) {
-    sval = strtol(val, &endp, 10);
+    sval = strtoll(val, &endp, 10);
     if(RunPrms.get_messagelvl() > 1 ) {
       cout << "getINT64Val: " << skey <<" "<< sval << endl;
     }

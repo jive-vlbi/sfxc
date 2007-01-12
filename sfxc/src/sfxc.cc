@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
   //TODO 13-12-2006: Fixed seeding for test purposes.
   //make fixed seeding or time based seeding a control file option
   seed = SEED;
-  cout << "WARNING seed=" << seed << endl;
+  cout << endl << "WARNING seed=" << seed << endl;
 
   //do the mpi initialisation
   status = MPI_Init(&argc,&argv);
