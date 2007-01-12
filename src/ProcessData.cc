@@ -56,6 +56,7 @@ using namespace std;
 #include "InData.h"
 #include "ProcessData.h"
 #include "delayTable.h"
+#include "timer.h"
 
 //global variables
 extern RunP  RunPrms;
@@ -105,6 +106,8 @@ int initialise_delay_tables(int nstations, StaP StaPrms[]) {
   }
   return 0;
 }
+
+
 void correlation_add_delay_table(DelayTable &table) {
   init_delTbl = false;
   
@@ -152,6 +155,9 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   int    jf, Nf; //nr of frequencies in frequency scale
   FILE *outP = NULL; //output result file
   char outFile[256], coreStr[5];
+  //timer parameters
+  ptimer  tmr1;
+  tmr1 = (ptimer)malloc(sizeof(timer));  
 
   //declarations for fftw in delay correction
   fftw_complex *sls = NULL, *spls = NULL; //FW:in,out; BW: out,in
@@ -275,14 +281,25 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
       FC[sn]++;
     }
   }
-  
+                                                                 
   //loop initializations
   timePtr = sliceStartTime[rank];
   BufPtr = BufSize;
   loop=0;
+
   
-  std::cout.precision(25);
-  std::cout << "Starting correlation: " << timePtr << " bufptr: " << BufPtr << std::endl; 
+  if (RunPrms.get_messagelvl()> 0) {
+    std::cout.precision(25);
+    std::cout << "Starting correlation: " << timePtr << " bufptr: " << BufPtr << std::endl;
+
+    char sB1[25],sB2[25];
+    strcpy(sB1,"Correlation for process=");
+    sprintf(sB2,"%d",rank);
+    strcat(sB1,sB2);
+    strcpy(tmr1->ID,sB1);
+    tmrBegin(tmr1);
+  }
+  
   //while loop for processing from starttime until stoptime
   while (1)
   {
@@ -422,7 +439,7 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
     }
     
   } // End while loop for processing from startbyte until stopbyte
-  
+  tmrEnd(tmr1);
   //close the output result file
   fclose(outP);
   

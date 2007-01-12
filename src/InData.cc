@@ -376,7 +376,9 @@ int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
   INT64 TOTusec0, TOTusec1; //in micro seconds
     
   if (RunPrms.get_messagelvl()> 0) {
-    cout << "Start data display for station " << StaPrms[station].get_stname() << endl;
+    cout <<
+    "--------------------------------------------------------------------------------\n" <<
+    "Start data display for station " << StaPrms[station].get_stname() << endl;
   }
   
   //read and unpack scanfile data into tracks

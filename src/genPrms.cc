@@ -289,7 +289,9 @@ int GenP::check_params() const
   if ( RunPrms.get_messagelvl() > 0) {
     //display general parameters
     cout <<
-      endl <<
+     "--------------------------------------------------------------------------------\n" <<
+     "General experiment related control parameters.\n" <<
+     endl <<
       "Experiment           = " << experiment << endl <<
       "Start                = " << setw(4) << yst << setw(4) << dst <<
                                    setw(3) << hst << setw(3) << mst <<

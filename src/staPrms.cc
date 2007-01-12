@@ -10,7 +10,6 @@ Class function definitions for station specific data
 
 Author     : RHJ Oerlemans
 StartDate  : 20060913
-Last change: 20061114
 
 */
 
@@ -44,25 +43,26 @@ extern RunP  RunPrms;
 //*****************************************************************************
 
 //get functions
-int   StaP::get_datatype()   { return datatype; }
-int   StaP::get_tbr()        { return tbr; }
-int   StaP::get_fo()         { return fo; }
-int   StaP::get_bps()        { return bps; }
-int   StaP::get_nhs()        { return nhs; }
-int   StaP::get_tphs()       { return tphs; }
-int   StaP::get_boff()       { return boff; }
-int   StaP::get_synhs1()     { return synhs1; }
-int   StaP::get_synhs2()     { return synhs2; }
-int   StaP::get_mod()        { return mod; }
-int   StaP::get_rndhdr()     { return rndhdr; }
-char* StaP::get_mk4file()    { return mk4file; }
-char* StaP::get_hdrmap()     { return hdrmap; }
-char* StaP::get_modpat()     { return modpat; }
-char* StaP::get_delaytable() { return delaytable; }
-char* StaP::get_phasetable() { return phasetable; }
-INT64 StaP::get_loobs()      { return loobs;}
-int*  StaP::get_signBS()     { return signBS;}
-int*  StaP::get_magnBS()     { return magnBS;}
+char* StaP::get_stname()     const { return stname; }
+int   StaP::get_datatype()   const { return datatype; }
+int   StaP::get_tbr()        const { return tbr; }
+int   StaP::get_fo()         const { return fo; }
+int   StaP::get_bps()        const { return bps; }
+int   StaP::get_nhs()        const { return nhs; }
+int   StaP::get_tphs()       const { return tphs; }
+int   StaP::get_boff()       const { return boff; }
+int   StaP::get_synhs1()     const { return synhs1; }
+int   StaP::get_synhs2()     const { return synhs2; }
+int   StaP::get_mod()        const { return mod; }
+int   StaP::get_rndhdr()     const { return rndhdr; }
+char* StaP::get_mk4file()    const { return mk4file; }
+char* StaP::get_hdrmap()     const { return hdrmap; }
+char* StaP::get_modpat()     const { return modpat; }
+char* StaP::get_delaytable() const { return delaytable; }
+char* StaP::get_phasetable() const { return phasetable; }
+INT64 StaP::get_loobs()      const { return loobs;}
+const int*  StaP::get_signBS()     const { return signBS;}
+const int*  StaP::get_magnBS()     const { return magnBS;}
 
 
 
@@ -283,14 +283,13 @@ int StaP::findDelaydata(FILE *ctrlP)
   strcpy (key,"continue");
   
   while ( strcmp(key,"DELAYEND")!= 0 ) {
-    //look for delay related data
+    //look for MK4 type data
     if (fgets(line,lineLength,ctrlP) == (char *) NULL) break;
     //split line contents in key and value
     if (sscanf(line,"%s %s\n",key,val) == 2) {
       if (strcmp(key,"DELAYTABLE") == 0) strcpy(delaytable,val);
       if (strcmp(key,"PHASETABLE") == 0) strcpy(phasetable,val);
       retval = retval + getINT64Val(key,val,"LOOBS",loobs);
-//cout << "LOOBS=" << loobs << endl;
     }
   }
     
@@ -306,7 +305,9 @@ int StaP::check_params() const
   int retval = 0, j;
   if (RunPrms.get_messagelvl() > 0) {
     cout << endl <<
-      "--------------------------------------------------------------------------------\n"
+      "--------------------------------------------------------------------------------\n" <<
+      "Station related control parameters\n" <<
+      "Station name         = " << stname << "\n" <<
       "MK4 data file        = " << mk4file << "\n" <<
       "Track bit rate       = " << tbr << "Mb/s/track\n" <<
       "Fan out              = 1:" <<fo << "\n" <<
