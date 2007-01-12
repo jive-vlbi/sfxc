@@ -54,7 +54,6 @@ Test:
 - add .sfxc file with control information per computer
 
 General:
-- switch to svn (to accomodate moving files, check cvs2svn)?
 - check in original sw correlator code using cxmk4, cx2fl, delpha and sfxct
   (in a separate module)
 
@@ -78,7 +77,6 @@ Copy action item to this list and describe status (date, who, what)
 2. [YP, 11-01-2007] Make a utility to transfer the correlator output to FITS
 
 
-1. [NGHK, 11-01-2007] switch to svn (to accomodate moving files, check cvs2svn)?
 2. [NGHK, 11-01-2007] Remove global variables
 3. [NGHK, 11-01-2007] Write doxygen code for the control parameters
 4. [NGHK, 11-01-2007]
@@ -91,5 +89,6 @@ Copy action item to this list and describe status (date, who, what)
 DONE:
 Move action item from TODO list to DONE list
 
+- [NGHK, 12-01-2007] switch to svn
 - [NGHK, 11-01-2007] Send messages for control parameters (MPI version).
 - [NGHK, 11-01-2007] Create a utility directory (c2f, etc.)
