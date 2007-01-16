@@ -19,15 +19,17 @@ $Source$
 #include <iostream>
 #include <fstream>
 #include <stdio.h>
+#include <math.h>
 #include <vector>
 
-#define N 25
+#define NCOLS 9
 
 int
 main (int argc, char *argv[])
 {
   if (argc != 3) {
     std::cout << "Usage: " << argv[0] << " <infile> <outfile>" << std::endl;
+    exit(1);
   }
 
   std::ifstream infile(argv[1]);
@@ -35,41 +37,46 @@ main (int argc, char *argv[])
   FILE *outfile = fopen(argv[2], "w");
   assert(outfile != 0);
 
-  double datax[25], datay[25];
+  std::cout.precision(20);
 
-  int rows = 0;
+  std::vector<double> times, delays;
+
   // read data: (9 columns for n05c2)
-  int c1;
-  double c2,c3,c4,c5,c6,c7,c8,c9;
-  while (infile >> c1 >> c2 >> c3 >> c4 >> c5 >> c6 >> c7 >> c8 >> c9) {
-    assert(rows <= N);
+  int time;
+  double c[NCOLS-1];
+  while (infile >> time) {
+    for (int i=0; i<NCOLS-1; i++) {
+      if (!(infile >> c[i])) {
+        std::cout << "Incomplete line" << std::endl;
+        break;
+      }
+    }
     // c1 is hhmmss format, get the number of seconds from 24:00h:
-    int sec = c1%100; // Seconds
-    sec += ((c1/100)%100)*60; // Minutes
-    sec += ((c1/10000)%100)*60*60; // Hours
+    int milisec = time%100; // Seconds
+    milisec += ((time/100)%100)*60; // Minutes
+    milisec += ((time/10000)%100)*60*60; // Hours
+    milisec *= 1000;
     
-    datax[rows] = sec;
-    datay[rows] = c8;
+    times.push_back(milisec);
+    delays.push_back(c[6]);
 
     // Print out data for debugging purposes:
-    printf ("%d %20.16f\n", sec, datay[rows]);
-
-    rows++;
+    std::cout << times.back() << " " <<  delays.back() << std::endl;
   }
 
   { // Do the interpolation
     gsl_interp_accel *acc 
       = gsl_interp_accel_alloc ();
     gsl_spline *spline 
-      = gsl_spline_alloc (gsl_interp_cspline, rows);
+      = gsl_spline_alloc (gsl_interp_cspline, times.size());
     
-    gsl_spline_init (spline, datax, datay, rows);
+    gsl_spline_init (spline, &(times[0]), &(delays[0]), times.size());
     
-    for (double xi = datax[0]-3; xi < datax[rows-1]+3; xi += 0.125) {
+    // add 3 seconds:
+    for (double xi = times[0]-3000; xi <= times.back()+3000; xi += 125) {
       double yi = gsl_spline_eval (spline, xi, acc);
-      
       // Print with high precision:
-      fprintf (outfile, "%f %20.16f 0.0 0.0\n", xi, yi/1000000);
+      fprintf (outfile, "%d %20.16f 0.0 0.0\n", int(xi), yi/1000000);
       //outfile << xi << " " << yi << " 0.0 0.0" << std::endl;
     }
 
