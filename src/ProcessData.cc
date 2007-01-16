@@ -90,14 +90,13 @@ bool init_delTbl = true;
 std::vector<DelayTable> delTbl;
 int initialise_delay_tables(int nstations, StaP StaPrms[]) {
   if (!init_delTbl) return 0;
+  std::cout << "initialise_delay_tables" << std::endl;
   init_delTbl = false;
   
   delTbl.resize(nstations);
   for (int sn=0; sn<nstations; sn++) {
     std::cout << "DelTbl: " << StaPrms[sn].get_delaytable() << std::endl;
-    int retval = delTbl[sn].readDelayTable(StaPrms[sn].get_delaytable(),
-      //sliceStartTime[0],sliceStopTime[0], 
-      BufTime );
+    int retval = delTbl[sn].readDelayTable(StaPrms[sn].get_delaytable(), BufTime );
     if (retval != 0) {
       cerr << "ERROR: when reading delay table.\n";
       return retval;
@@ -108,9 +107,11 @@ int initialise_delay_tables(int nstations, StaP StaPrms[]) {
 
 
 void correlation_add_delay_table(DelayTable &table) {
+  std::cout << "correlation_add_delay_table" << std::endl;
   init_delTbl = false;
   
   delTbl.push_back(table);
+  assert(table == delTbl.back());
 }
 
   
@@ -119,6 +120,10 @@ void correlation_add_delay_table(DelayTable &table) {
 //***************************************************************************
 int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
 {
+  seed = (UINT32) time((time_t *)NULL);
+  seed = 10;
+  std::cout << "CorrelateBufs: seed: " << seed << std::endl;
+  
   //declarations
   int retval = 0;
   int i,j,l;
@@ -247,8 +252,6 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   }  
 
   //arrays and plans for delay correction
-  std::cout << "lsegm: " << lsegm << std::endl;
-  std::cout << "n2fft: " << n2fft*pad/2+1 << std::endl;
   sls   = new fftw_complex[lsegm];
   spls  = new fftw_complex[lsegm];
   planBW = fftw_plan_dft_1d(lsegm, sls, spls, FFTW_BACKWARD, FFTW_ESTIMATE);
