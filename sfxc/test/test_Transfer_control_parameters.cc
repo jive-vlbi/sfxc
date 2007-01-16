@@ -274,12 +274,12 @@ void check_delay_table(char *filename_delay_table) {
 
   MPI_Transfer transfer;
   if (rank==0) {
-    {
+    { // assignment
       DelayTable delayTable2 = delayTable;
       assert(delayTable == delayTable2);
     }
   
-    {
+    { // copy constructor
       DelayTable delayTable2(delayTable);
       assert(delayTable == delayTable2);
     }
@@ -316,9 +316,8 @@ int main(int argc, char *argv[]) {
     std::cout << "Initialisation using control file failed" << std::endl;
   }
   
-  check_control_parameters();
+  //check_control_parameters();
 
-  //close the mpi stuff
   MPI_Barrier( MPI_COMM_WORLD );
 
   for (int i=0; i<GenPrms.get_nstations(); i++) {

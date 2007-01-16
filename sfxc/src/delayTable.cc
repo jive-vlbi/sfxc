@@ -101,7 +101,7 @@ DelayTable::operator==(const DelayTable &other) const {
     //Cdel, Mdel, Rdel, Fdel
     delay1 = calcDelay(t, Cdel);
     delay2 = other.calcDelay(t, Cdel);
-    assert(delay1 == delay2);
+    if (delay1 != delay2) return false;
     t += .02*stepDT;
   }
   
@@ -189,17 +189,24 @@ int DelayTable::readDelayTable(char *delayTableName,
   //fill arrays c?, m?, r?, f? where ?=[A|B|C]
   while ( idel < ndel )
   {
+    double A,B,C;
+
     //calculate parabolic coefficients
-    parabCoefs(t0,t1,t2,c0,c1,c2,cA[idel],cB[idel],cC[idel]);
-    parabCoefs(t0,t1,t2,m0,m1,m2,mA[idel],mB[idel],mC[idel]);
-    parabCoefs(t0,t1,t2,r0,r1,r2,rA[idel],rB[idel],rC[idel]);
-    parabCoefs(t0,t1,t2,f0,f1,f2,fA[idel],fB[idel],fC[idel]);
-    //process next line
+    parabCoefs(t0,t1,t2,c0,c1,c2,A,B,C);
+    cA.push_back(A); cB.push_back(B); cC.push_back(C);
+    parabCoefs(t0,t1,t2,m0,m1,m2,A,B,C);
+    mA.push_back(A); mB.push_back(B); mC.push_back(C);
+    parabCoefs(t0,t1,t2,r0,r1,r2,A,B,C);
+    rA.push_back(A); rB.push_back(B); rC.push_back(C);
+    parabCoefs(t0,t1,t2,f0,f1,f2,A,B,C);
+    fA.push_back(A); fB.push_back(B); fC.push_back(C);
+
     t0 = t1;    t1 = t2;
     c0 = c1;    c1 = c2;
     m0 = m1;    m1 = m2;
     r0 = r1;    r1 = r2;
     f0 = f1;    f1 = f2;
+
     retval = getDelayLine(fp, t2, c2, m2, r2, f2);
     if (retval != 0) {
       cerr << "Error: reading data from:" << delayTableName << endl;
@@ -335,7 +342,7 @@ int getDelayLine(FILE *fp, INT64 &t, double &c, double &m, double &r, double &f)
   if (feof(fp)) return 1;
 
   if (fgets(sB,256,fp) == NULL) return 1;
-  t = (INT64)(atof(strtok(sB,sep))*1000000); //from sec to usec
+  t = (INT64)(atof(strtok(sB,sep))*1000); //from milisec to usec
   c = atof(strtok((char*)0,sep)) / 1000000.0; //from usec to sec
   m = atof(strtok((char*)0,sep)) / 1000000.0;
   r = atof(strtok((char*)0,sep)) / 1000000.0;

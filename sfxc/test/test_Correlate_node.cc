@@ -115,9 +115,6 @@ int main(int argc, char *argv[]) {
     MPI_Send(stop_time, 5, MPI_INT, 1,
              MPI_TAG_SET_STOP_TIME, MPI_COMM_WORLD);
 
-    // Send delay tables
-    
-
     int cmd = 0;
     MPI_Send(&cmd, 1, MPI_INT, 1,
              MPI_TAG_START_CORRELATE_NODE, MPI_COMM_WORLD);

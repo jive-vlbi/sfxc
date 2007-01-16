@@ -99,13 +99,6 @@ int
 initialise_control(char *filename) {
   int    i, Nstations;
   
-//  int status, numtasks, rank;
-
-  // seed the random number generator (global variable!)
-  seed = (UINT32) time((time_t *)NULL);
-  seed = SEED;
-  std::cout << "seed: " << seed << std::endl;
-
   //parse control file for run parameters
   if (RunPrms.parse_ctrlFile(filename) != 0) {
     cerr << "ERROR: Control file "<< filename <<", program aborted.\n";
