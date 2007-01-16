@@ -129,7 +129,6 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
   INT64 StartByte[NstationsMax], offSynch[NstationsMax];
   INT64 NFrames[NstationsMax], FrPcore[NstationsMax];
   INT64 deltaBytes[NstationsMax];
-  INT64 dus;
   INT64 startTime;
 
   NrStations = GenPrms.get_nstations();
@@ -202,13 +201,11 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
     if (RunPrms.get_messagelvl()> 1) {
       cout << "station=" << sn <<" start stop: ";
     }
-    // NGHK: Check
     StartByte[sn] = StartByte[sn] + rank*deltaBytes[sn];
     if (RunPrms.get_messagelvl()> 1) cout << endl;
     //goto required offset startbyte in stream
 
     // NGHK: move_forward does not work anymore, only get_bytes
-    //INT64 statusPtr = input_readers[sn]->move_forward(sliceStartByte[sn][rank]);
 
     // NGHK: this is dirty, make read(32|64)datafile also move the read pointer
     INT64 statusPtr = StartByte[sn] - 
@@ -225,17 +222,13 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
   }
   
   startTime = GenPrms.get_usEarliest();
-  dus = GenPrms.get_dst()* 24; //dus = day in micro seconds
-  dus = dus * 3600;
-  dus = dus * 1000000;
-  startTime = startTime - dus;
   
   //find headers for StartByte in data files, only done for monitoring
   if ( RunPrms.get_messagelvl()> 0) {
     for (sn=0; sn<NrStations; sn++) {
       if (StaPrms[sn].get_datatype() == DATATYPE_MK4) {
         FindHeaderMk4(*input_readers[sn], sn, jsynch[sn],
-          usTime[sn], startTime+dus);
+          usTime[sn], startTime); // NGHK: was + dus
       }
       if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks == 1)
         askContinue();
@@ -727,8 +720,7 @@ void timeComps(char tracks[][frameMk4*nfrms],int jsynch,int synchtrack,int headS
   //WARNING: do not try equation above this line.
   //ohterwise large integers will not be calculated correctly
   //Use next lines to calculate
-  *TOTusec = *day;                   //days
-  *TOTusec = *hh +   24* (*TOTusec); //hours
+  *TOTusec = *hh; 
   *TOTusec = *mm +   60* (*TOTusec); //minutes
   *TOTusec = *ss +   60* (*TOTusec); //minutes
   *TOTusec = *ms + 1000* (*TOTusec); //milisecs

@@ -94,13 +94,17 @@ INT64 GenP::get_usStop()  const {
 }  
 
 INT64 GenP::get_usEarliest() const { return usEarliest; }
-INT64 GenP::get_usLatest()   const { return usLatest; }
+INT64 GenP::get_usLatest()   const { 
+  std::cout << "get_usLatest() is DEPRICATED." << std::endl;
+  return usLatest; 
+}
 
 void  GenP::set_usEarliest(INT64 newEarliest) {
   usEarliest = newEarliest;
 }
 
 void  GenP::set_usLatest(INT64 newLatest) {
+  std::cout << "set_usLatest() is DEPRICATED." << std::endl;
   usLatest = newLatest;
 }
 
@@ -415,8 +419,7 @@ void GenP::set_start(int time[]) {
   mst = time[3];
   sst = time[4];
   
-  usStart = dst;                 //days
-  usStart = hst +   24* usStart; //hours
+  usStart = hst;                 //hours
   usStart = mst +   60* usStart; //minutes
   usStart = sst +   60* usStart; //minutes
   usStart = 0   + 1000* usStart; //milisecs
@@ -430,8 +433,7 @@ void GenP::set_stop(int time[]) {
   msp = time[3];
   ssp = time[4];
 
-  usStop = dsp;                //days
-  usStop = hsp +   24* usStop; //hours
+  usStop = hsp;                //hours
   usStop = msp +   60* usStop; //minutes
   usStop = ssp +   60* usStop; //minutes
   usStop = 0   + 1000* usStop; //milisecs

@@ -34,8 +34,23 @@ class RunP
     int check_params() const;
 
     //get functions
+    
+    /** The message level.
+     * -# only error and abort messages will appear
+     * -# 0 + higher level progress and warning messages
+     * -# 1 + lower-level warning and progress messages + information messages
+    **/
     int get_messagelvl() const;
+    /** Ask for confirmation to continue after completion of a processing step.
+     * Enabling the interactive mode is only useful when message level is 1 or higher.
+     * DO NOT RUN INTERACTIVE WHEN USING MORE THAN 1 CORE/PROCESS
+     **/
     int get_interactive() const;
+    /** Run options.
+     * - 0 : determine the file offset to get to the START. Usually this option
+     *        is run in combination with MESSAGELVL>1 and INTERACTIVE=1
+     * - 1 : execute all main processing steps: offset, unpack, delay, correlate
+     **/
     int get_runoption() const;
 
   private:
