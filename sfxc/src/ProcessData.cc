@@ -283,10 +283,7 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   }
                                                                  
   //loop initializations
-  INT64 dus = GenPrms.get_dst()* 24; //dus = day in micro seconds
-  dus = dus * 3600;
-  dus = dus * 1000000;
-  timePtr = GenPrms.get_usEarliest() - dus;
+  timePtr = GenPrms.get_usEarliest();
   BufPtr = BufSize;
   loop=0;
 
@@ -435,8 +432,8 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
 
     // Check wether we are finished.
     std::cout << "Process="<< rank << " timePtr = " << (INT64)timePtr << std::endl;
-    std::cout << "Process="<< rank << " stoptime= " << GenPrms.get_usStop()-dus << std::endl;
-    if (timePtr > GenPrms.get_usStop()-dus) {
+    std::cout << "Process="<< rank << " stoptime= " << GenPrms.get_usStop() << std::endl;
+    if (timePtr > GenPrms.get_usStop()) {
       std::cout << "Process="<< rank << " finished, timePtr after stopTime" << std::endl;
       break; //
     }

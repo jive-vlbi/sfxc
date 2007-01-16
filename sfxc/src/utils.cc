@@ -13,8 +13,7 @@
 INT64 get_us_time(int time[]) {
   INT64 result = 0;
   // time[0] is year
-  result = time[1];                // days
-  result = time[2] +   24* result; // hours
+  result = time[2]; // hours
   result = time[3] +   60* result; // minutes
   result = time[4] +   60* result; // seconds
   result = 0       + 1000* result; // milisecs

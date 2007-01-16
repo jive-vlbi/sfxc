@@ -47,30 +47,50 @@ class StaP
     int check_params() const;
 
     //get functions
+    /** The namename of the station. **/
     char* get_stname() const;
+    /** The format in which the data is stored. **/
     int   get_datatype() const;
+    /** Track bit rate in Mb/s/track. **/
     int   get_tbr() const;
+    /** Fanout, can be: 1,2,4 **/
     int   get_fo() const;
+    /** bits per sample: mostly 2, 1 sign and 1 magnitude bit **/
     int   get_bps() const;
+    /** Tracks per headstack. **/
     int   get_tphs() const;
+    /** Number of headstacks: 1 or 2 **/
     int   get_nhs() const;
+    /** Fine offset in bytes, determine by trail and error **/
     int   get_boff() const;
+    /** Synchronisation track for headstack 1: <32 **/
     int   get_synhs1() const;
+    /** Synchronisation track for headstack 2: <32.
+     * mandatory if NHS=2, optional if NHS=1 but not relevant
+     **/
     int   get_synhs2() const;
+    /** Modulation enabled if modulation pattern file is defined. **/
     int   get_mod() const;
+    /** Substitute random values for the header **/
     int   get_rndhdr() const;
+    /** Filename of the MK4 file**/
     char* get_mk4file() const;
+    /** Headermap file. **/
     char* get_hdrmap() const;
+    /** Name of the modulation pattern file. **/
     char* get_modpat() const;
+    /** Name of the file containing the delay table information. **/
     char* get_delaytable() const;
+    /** Name of the file containing the phase table information. **/
     char* get_phasetable() const;
+    /** Local oscilator observing station. NGHK: What is this? **/
     INT64 get_loobs() const;
+    /** bit shift parameters for sign **/
     const int*  get_signBS() const; //bit shift parameters for sign
+    /** bit shift parameters for magn **/
     const int*  get_magnBS() const; //bit shift parameters for magn
 
-
   private:
-
     //station specific paramters.
     char *stname;  //unique station
     int  datatype;//[MK4|others], now only MK4
