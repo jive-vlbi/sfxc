@@ -25,8 +25,10 @@ extern INT64 sliceTime;
 
 #include <MPI_Transfer.h>
 
-Correlate_controller::Correlate_controller(Buffer<output_value_type> &output_buffer)
- : output_buffer(output_buffer), running(false), curr_station(0)
+Correlate_controller::Correlate_controller(Buffer<output_value_type> &output_buffer,
+                                           Log_writer &log_writer)
+ : Controller(log_writer), 
+   output_buffer(output_buffer), running(false), curr_station(0)
 {
 }
 
@@ -40,7 +42,7 @@ Correlate_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_SET_STATION_NUMBER:
     {
-      std::cout << "MPI_TAG_SET_STATION_NUMBER" << std::endl;
+      log_writer << "MPI_TAG_SET_STATION_NUMBER" << std::endl;
       int station;
       MPI_Recv(&station, 1, MPI_INT, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -56,7 +58,7 @@ Correlate_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_SET_INPUT_NODE_FILE:
     {
-      std::cout << "MPI_TAG_SET_INPUT_NODE_FILE" << std::endl;
+      log_writer << "MPI_TAG_SET_INPUT_NODE_FILE" << std::endl;
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 0);
@@ -73,7 +75,7 @@ Correlate_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_SET_OUTPUT_NODE_FILE:
   {
-    std::cout << "MPI_TAG_SET_OUTPUT_NODE_FILE" << std::endl;
+    log_writer << "MPI_TAG_SET_OUTPUT_NODE_FILE" << std::endl;
     int size;
     MPI_Get_elements(&status, MPI_CHAR, &size);
     assert(size > 0);
@@ -87,7 +89,7 @@ Correlate_controller::process_event(MPI_Status &status) {
   }
   case MPI_TAG_SET_CONTROL_FILE:
     {
-      std::cout << "MPI_TAG_SET_CONTROL_FILE: DEPRECATED" << std::endl;
+      log_writer << "MPI_TAG_SET_CONTROL_FILE: DEPRECATED" << std::endl;
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 0);
@@ -98,15 +100,15 @@ Correlate_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      if (initialise_control(filename) != 0) {
-        std::cout << "Initialisation using control file failed" << std::endl;
+      if (initialise_control(filename, log_writer) != 0) {
+        log_writer << "Initialisation using control file failed" << std::endl;
       }
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_SET_START_TIME:
     {
-      std::cout << "MPI_TAG_SET_START_TIME" << std::endl;
+      log_writer << "MPI_TAG_SET_START_TIME" << std::endl;
       int time[5];
       MPI_Recv(&time, 5, MPI_INT, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -121,7 +123,7 @@ Correlate_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_SET_STOP_TIME:
     {
-      std::cout << "MPI_TAG_SET_STOP_TIME" << std::endl;
+      log_writer << "MPI_TAG_SET_STOP_TIME" << std::endl;
       int time[5];
       MPI_Recv(&time, 5, MPI_INT, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -136,7 +138,7 @@ Correlate_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_START_CORRELATE_NODE:
     {
-      std::cout << "MPI_TAG_START_CORRELATE_NODE" << std::endl;
+      log_writer << "MPI_TAG_START_CORRELATE_NODE" << std::endl;
       int cmd;
       MPI_Recv(&cmd, 1, MPI_INT, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -146,14 +148,14 @@ Correlate_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_CONTROL_PARAM:
     {
-      std::cout << "MPI_TAG_CONTROL_PARAM" << std::endl;
+      log_writer << "MPI_TAG_CONTROL_PARAM" << std::endl;
       MPI_Transfer mpi_transfer;
       mpi_transfer.receive_general_parameters(status,RunPrms,GenPrms,StaPrms);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_DELAY_TABLE:
     {
-      std::cout << "MPI_TAG_DELAY_TABLE" << std::endl;
+      log_writer << "MPI_TAG_DELAY_TABLE" << std::endl;
       MPI_Transfer mpi_transfer;
       DelayTable table;
       mpi_transfer.receive_delay_table(status, table);
@@ -185,17 +187,17 @@ Correlate_controller::start_correlating(void *self_) {
 void
 Correlate_controller::correlate() {
   //Find Offsets
-  std::cout << "Correlate_controller: Find offsets ..." << std::endl;
+  log_writer << "Correlate_controller: Find offsets ..." << std::endl;
   assert((int)data_readers.size() == GenPrms.get_nstations());
   if (FindOffsets(data_readers, 1, 0) !=0) {
     std::cerr << "ERROR: FindOffsets, program aborted.\n";
     return;
   }
 
-  std::cout << "Correlate_controller: Correlate bufs ..." << std::endl;
+  log_writer << "Correlate_controller: Correlate bufs ..." << std::endl;
   if ( RunPrms.get_runoption() == 1 ) {
     //Process data for rank (=process identifier)
     CorrelateBufs(0, data_readers);
   }
-  std::cout << "Correlate_controller: correlation done ..." << std::endl;
+  log_writer << "Correlate_controller: correlation done ..." << std::endl;
 }

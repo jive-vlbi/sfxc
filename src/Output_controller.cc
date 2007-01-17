@@ -4,8 +4,9 @@
 
 #include <Data_writer_file.h>
 
-Output_controller::Output_controller(Buffer<value_type> &buffer)
-  : Controller(), buffer(buffer), writer(NULL) {
+Output_controller::Output_controller(Buffer<value_type> &buffer,
+                                     Log_writer &log_writer)
+  : Controller(log_writer), buffer(buffer), writer(NULL) {
 }
 
 Controller::Process_event_status

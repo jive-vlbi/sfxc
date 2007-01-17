@@ -15,6 +15,8 @@
 #include <Semaphore_buffer.h>
 #include <Ring_buffer.h>
 
+#include "Log_writer_cout.h"
+
 class Data_node : public Node {
 public:
   Data_node(int rank, int buffer_size = 1024);
@@ -23,6 +25,8 @@ public:
 private:
   //Ring_buffer<Input_controller::value_type> buffer;
   Semaphore_buffer<Input_controller::value_type> buffer;
+
+  Log_writer_cout log_writer;
 
   Input_controller input;
   Output_controller output;

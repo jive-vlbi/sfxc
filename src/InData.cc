@@ -52,10 +52,8 @@ extern RunP  RunPrms;
 extern GenP  GenPrms;
 extern StaP  StaPrms[NstationsMax];
 extern UINT32 seed;
-extern INT64 sliceStartByte[NstationsMax][NprocessesMax];
-extern INT64 sliceStartTime [NprocessesMax];
-extern INT64 sliceStopTime  [NprocessesMax];
-extern INT64 sliceTime;
+
+#include <ProcessData.h>
 
 
 //*****************************************************************************
@@ -157,16 +155,18 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
         offSynch[sn] = (jsynch[sn] -64) *8;
       }
       StartByte[sn] = StaPrms[sn].get_boff() + offBytes[sn] + offSynch[sn];
-      if (RunPrms.get_messagelvl()>1) {
-        cout << "usTime    =" << usTime[sn]    << endl;
-        cout << "offTime   =" << offTime[sn]   << endl;
-        cout << "offFrames =" << offFrames[sn] << endl;
-        cout << "offBytes  =" << offBytes[sn]  << endl;
-        cout << "offSynch  =" << offSynch[sn]  << endl;
-        cout << "StartByte =" << StartByte[sn] << endl;
+      {
+        log_writer.set_current_messagelevel(2);
+        log_writer << "usTime    =" << usTime[sn];
+        log_writer << std::endl;
+        log_writer << "offTime   =" << offTime[sn]   << std::endl;
+        log_writer << "offFrames =" << offFrames[sn] << endl;
+        log_writer << "offBytes  =" << offBytes[sn]  << endl;
+        log_writer << "offSynch  =" << offSynch[sn]  << endl;
+        log_writer << "StartByte =" << StartByte[sn] << endl;
       }
     } else {
-      std::cout << "Unknown data type" << std::endl;
+      log_writer.message(0,"Unknown data type");
       assert(false);
     }
   }
@@ -182,27 +182,35 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
       (GenPrms.get_usLatest() - GenPrms.get_usEarliest()) * StaPrms[sn].get_tbr()/frameMk4;
       //Frames to be processed per core
       FrPcore[sn] = NFrames[sn]/numtasks;
-      if (RunPrms.get_messagelvl()> 1)
-        cout << "FrPcore[" << sn << "]=" << FrPcore[sn] <<endl;
+      {
+        stringstream msg;
+        msg << "FrPcore[" << sn << "]=" << FrPcore[sn];
+        log_writer.message(2, msg);
+      }
       //delta
       if (StaPrms[sn].get_nhs() == 1) {    
         deltaBytes[sn] = FrPcore[sn]*frameMk4*4;
       } else {
         deltaBytes[sn] = FrPcore[sn]*frameMk4*8;
       }
-      if (RunPrms.get_messagelvl()> 1)
-        cout << "deltaBytes[" << sn << "]=" << deltaBytes[sn] <<endl;
+      {
+        stringstream msg;
+        msg << "deltaBytes[" << sn << "]=" << deltaBytes[sn];
+        log_writer.message(2, msg);
+      }
     }
   }
   
   
   //for current rank and all stations set offsets
   for (sn=0; sn<NrStations; sn++) {
-    if (RunPrms.get_messagelvl()> 1) {
-      cout << "station=" << sn <<" start stop: ";
+    {
+      stringstream msg;
+      msg << "station=" << sn <<" start stop: ";
+      log_writer.message(2, msg);
     }
     StartByte[sn] = StartByte[sn] + rank*deltaBytes[sn];
-    if (RunPrms.get_messagelvl()> 1) cout << endl;
+    log_writer.message(2,"");
     //goto required offset startbyte in stream
 
     // NGHK: move_forward does not work anymore, only get_bytes
@@ -213,8 +221,10 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
       (StaPrms[sn].get_nhs()==1 ? 4 : 8)*frameMk4*nfrms; // Already read to get the timestamp
     statusPtr = input_readers[sn]->get_bytes(statusPtr, NULL);
 
-    if (RunPrms.get_messagelvl()> 1) {
-      cout << "statusPtr =" << statusPtr << endl;
+    {
+      stringstream msg;
+      msg << "statusPtr =" << statusPtr << endl;
+      log_writer.message(2,msg);
     }
     assert(statusPtr == StartByte[sn] - 
       (RunPrms.get_messagelvl()> 0 ? 2 : 1)*
@@ -364,22 +374,24 @@ int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
   int year1,day1,hh1,mm1,ss1,ms1,us1; //TOT for headstack 1
   INT64 TOTusec0, TOTusec1; //in micro seconds
     
-  if (RunPrms.get_messagelvl()> 0) {
-    cout <<
+  {
+    stringstream msg;
+    msg <<
     "--------------------------------------------------------------------------------\n" <<
-    "Start data display for station " << StaPrms[station].get_stname() << endl;
+    "Start data display for station " << StaPrms[station].get_stname();
+    log_writer.message(2,msg);
   }
   
   //read and unpack scanfile data into tracks
   nhs = StaPrms[station].get_nhs();
   if (nhs==1) {
     if (read32datafile(reader, tracks) != 0) {
-      cerr << "Error in read32datafile.\n";
+      log_writer.message(0,"Error in read32datafile.\n");
       return -1;
     }
   } else {
     if (read64datafile(reader, tracks) != 0) {
-      cerr << "Error in read64datafile.\n";
+      log_writer.message(0,"Error in read64datafile.\n");
       return -1;
     }
   }
@@ -436,21 +448,26 @@ int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
     min = min - hr*60;
     day = hr/24;
     hr  = hr - day*24;
-    cout << "Requested (slice) start time   = " <<
-    setw(4) << GenPrms.get_yst() << "y " << setw(3) << day << "d " <<
-    setw(2) << hr << "h " << setw(2) << min << "m " <<
-    setw(2) << sec << "s " << endl;
+    {
+      stringstream msg;
+      msg << "Requested (slice) start time   = " <<
+      setw(4) << GenPrms.get_yst() << "y " << setw(3) << day << "d " <<
+      setw(2) << hr << "h " << setw(2) << min << "m " <<
+      setw(2) << sec << "s ";
+      log_writer.message(0, msg);
+    }
   }
 
   if( usStart < usTime  ) {
     GenPrms.set_usEarliest(usTime);
-    if( RunPrms.get_messagelvl()> 0)
-      cout << endl <<
-      "Warning  Requested start time is earlier than start time in data file.\n\n";
+    log_writer.message(0,
+      "\nWarning  Requested start time is earlier than start time in data file.\n\n");
   }
 
-  if (RunPrms.get_messagelvl()> 0) {
-    cout << "End data display for station " << StaPrms[station].get_stname() << endl;
+  {
+    stringstream msg;
+    msg << "End data display for station " << StaPrms[station].get_stname() << endl;
+    log_writer.message(1, msg);
   }
 
                                        
@@ -562,17 +579,18 @@ void printTrackstats(char tracks[][frameMk4*nfrms], int nhs)
   }
 
   //report track statistics (stdout)
-  printf("\nTrack bit statistics\n");
-  printf(
-  "\n_________________________________________________________________");
+  log_writer.message(0,"Track bit statistics");
+  log_writer.message(0,"_________________________________________________________________");
+  log_writer.message(0,"_________________________________________________________________");
   for(jtrack=0;jtrack<nolines;jtrack++){
-    printf("\n| %02d   %f | %02d   %f | %02d   %f | %02d   %f |", 
+    char buff[80];
+    snprintf(buff, 80, "\n| %02d   %f | %02d   %f | %02d   %f | %02d   %f |", 
     jtrack*4+0, trackstats[jtrack*4+0], jtrack*4+1, trackstats[jtrack*4+1],
     jtrack*4+2, trackstats[jtrack*4+2], jtrack*4+3, trackstats[jtrack*4+3]);
+    log_writer.message(0,buff);
   }
-  printf(
-  "\n|_______________|_______________|_______________|_______________|");
-  printf("\n\n");
+  log_writer.message(0,"|_______________|_______________|_______________|_______________|");
+  
 }
 
 
@@ -625,6 +643,7 @@ void printFrameHeader(
   char tracks[][frameMk4*nfrms], INT64 jsynch0, INT64 jsynch1, int nhs,
   char *hdrmap)
 {
+  char buff[80];
   char headerfield[6];
   int jtrack;
   INT32 jsample;
@@ -635,63 +654,77 @@ void printFrameHeader(
   
   //print header content at start of table (stdout)
   if(jsynch0>=64) {
-    printf("\n\n            jsynch0=%016lld               ",jsynch0);
+    snprintf(buff, 80, "\n\n            jsynch0=%016lld               ",jsynch0);
+    log_writer.message(0,buff);
   } else {
-    printf("\n\n            jsynch0 not found                    ");
+    log_writer.message(0,"            jsynch0 not found                    ");
   }
   if(nhs==2) {
     if(jsynch1>=64) {
-      printf("jsynch1=%016lld",jsynch1);
+      snprintf(buff,80,"jsynch1=%016lld",jsynch1);
+      log_writer.message(0,buff);
     } else {
-      printf("jsynch1 not found");
+      snprintf(buff, 80, "jsynch1 not found");
+      log_writer.message(0,buff);
     }
   }
 
-  printf("\n            headstack 0                            ");
-  if(nhs==2) printf("headstack 1");
-  printf("\n tracks tr1 00000000001111111111222222222233       ");
-  if(nhs==2) printf("00000000001111111111222222222233");
-  printf("\n        tr0 01234567890123456789012345678901       ");
-  if(nhs==2) printf("01234567890123456789012345678901");
-  printf("\n");
-  printf("\n sample");
+  log_writer.message(0,"\n            headstack 0                            ");
+  if(nhs==2) {
+    log_writer.message(0,"headstack 1");
+  }
+  log_writer.message(0,"\n tracks tr1 00000000001111111111222222222233       ");
+  if(nhs==2) log_writer.message(0,"00000000001111111111222222222233");
+  log_writer.message(0,"\n        tr0 01234567890123456789012345678901       ");
+  if(nhs==2) log_writer.message(0,"01234567890123456789012345678901");
+  log_writer.message(0,"\n");
+  log_writer.message(0,"\n sample");
 
   //print table (stdout)
   for(jsample=jsynch0-64;jsample<jsynch0+116;jsample++){
-    printf("\n %06d     ",jsample);
-    for(jtrack=0;jtrack<32;jtrack++)
-      printf("%1d",tracks[jtrack   ][jsample]);
+    snprintf(buff,80,"\n %06d     ",jsample);
+    log_writer.message(0,buff);
+    for(jtrack=0;jtrack<32;jtrack++) {
+      snprintf(buff,80,"%1d",tracks[jtrack   ][jsample]);
+      log_writer.message(0,buff);
+    }
     fscanf(hdrP,"%s",headerfield);
-    printf(" %s ",headerfield);
+    snprintf(buff, 80, " %s ",headerfield);
+    log_writer.message(0,buff);
     if(nhs==2) {
-      for(jtrack=0;jtrack<32;jtrack++)
-        printf("%1d",tracks[jtrack+32][jsample]);
+      for(jtrack=0;jtrack<32;jtrack++) {
+        snprintf(buff,80,"%1d",tracks[jtrack+32][jsample]);
+        log_writer.message(0,buff);
+      }
     }
   } 
   //print header content at end of table (stdout)
-  printf("\n");
-  printf("\n sample");
-  printf("\n            headstack 0                            ");
-  if(nhs==2) printf("headstack 1");
-  printf("\n tracks tr1 00000000001111111111222222222233       ");
-  if(nhs==2) printf("00000000001111111111222222222233");
-  printf("\n        tr0 01234567890123456789012345678901       ");
-  if(nhs==2) printf("01234567890123456789012345678901");
+  log_writer.message(0, "\n");
+  log_writer.message(0, "\n sample");
+  log_writer.message(0, "\n            headstack 0                            ");
+  if(nhs==2) log_writer.message(0, "headstack 1");
+  log_writer.message(0, "\n tracks tr1 00000000001111111111222222222233       ");
+  if(nhs==2) log_writer.message(0, "00000000001111111111222222222233");
+  log_writer.message(0, "\n        tr0 01234567890123456789012345678901       ");
+  if(nhs==2) log_writer.message(0, "01234567890123456789012345678901");
 
   if(jsynch0>=64) {
-    printf(  "\n            jsynch0=%016lld               ",jsynch0);
+    snprintf(buff,80,"\n            jsynch0=%016lld               ",jsynch0);
+    log_writer.message(0, buff);
   } else {
-    printf("\n\n            jsynch0 not found                    ");
+    snprintf(buff,80,"\n\n            jsynch0 not found                    ");
+    log_writer.message(0,buff); 
     jsynch0=64;
   }
   if(nhs==2) {
     if(jsynch1>=64) {
-      printf("jsynch1=%016lld",jsynch1);
+      snprintf(buff,80,"jsynch1=%016lld",jsynch1);
+      log_writer.message(0,buff);
     } else {
-      printf("jsynch1 not found");
+      log_writer.message(0,"jsynch1 not found");
     }
   }
-  printf("\n\n");
+  log_writer.message(0, "\n\n");
 
   fclose(hdrP);
 }
@@ -726,13 +759,13 @@ void timeComps(char tracks[][frameMk4*nfrms],int jsynch,int synchtrack,int headS
   *TOTusec = *ms + 1000* (*TOTusec); //milisecs
   *TOTusec = *us + 1000* (*TOTusec); //microsecs
 
-  if (RunPrms.get_messagelvl()> 0) {
-    //printing the first found TOT (stdout)
-    printf("TCD on track%2d headstack %1d TOT%1d= ",synchtrack,headS,headS);
-    printf("200%1dy %03dd %02dh %02dm %02ds %03d.%03dms\n",
-      *year,*day,*hh,*mm,*ss,*ms,*us);
-  }
-
+  //printing the first found TOT (stdout)
+  char buff[80];
+  snprintf(buff,80,"TCD on track%2d headstack %1d TOT%1d= ",synchtrack,headS,headS);
+  log_writer.message(1,buff);
+  snprintf(buff,80,"200%1dy %03dd %02dh %02dm %02ds %03d.%03dms\n",
+           *year,*day,*hh,*mm,*ss,*ms,*us);
+  log_writer.message(1,buff);
 }    
 
 

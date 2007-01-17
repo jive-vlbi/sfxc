@@ -11,6 +11,8 @@
 
 // Include MPI
 #include <types.h>
+#include <sfxc_mpi.h>
+#include <Log_writer.h>
 
 /** A controller manages one component of a node, for example the input, 
  * correlation or output. The controller processes MPI events and adjusts the
@@ -20,7 +22,7 @@
  **/
 class Controller {
 public:
-  Controller();
+  Controller(Log_writer &log_writer);
 
   virtual ~Controller() {
   }
@@ -32,6 +34,8 @@ public:
   };
   
   virtual Process_event_status process_event(MPI_Status &status) = 0;
+  protected:
+  Log_writer &log_writer;
 };
 
 #endif // CONTROLLER_H

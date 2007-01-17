@@ -4,12 +4,13 @@
 #include <Controller.h>
 #include <Buffer.h>
 #include <Data_writer.h>
+#include <Log_writer.h>
 
 class Output_controller : public Controller {
 public:
   typedef char       value_type[131072];
   typedef Output_controller  Self;
-  Output_controller(Buffer<value_type> &buffer);
+  Output_controller(Buffer<value_type> &buffer, Log_writer &log_writer);
 
   Process_event_status process_event(MPI_Status &status);  
 

@@ -2,6 +2,7 @@
 #define MPI_TRANSFER_H_
 
 #include "types.h"
+#include "sfxc_mpi.h"
 #include "delayTable.h"
 #include "runPrms.h"
 #include "genPrms.h"

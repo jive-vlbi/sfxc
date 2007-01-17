@@ -9,7 +9,8 @@ OBJ=runPrms.cc genPrms.cc staPrms.cc \
 	genFunctions.cc \
 	InData.cc delayTable.cc \
 	ProcessData.cc Data_reader_file.cc Data_reader_tcp.cc \
-	utils.cc timer.cc
+	utils.cc timer.cc \
+	Log_writer.cc Log_writer_cout.cc Log_writer_void.cc
 
 sfxc_SOURCES = $(OBJ) sfxc.cc 
 

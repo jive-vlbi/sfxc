@@ -299,12 +299,11 @@ int StaP::findDelaydata(FILE *ctrlP)
 
 
 //check the station paramters and optionally display them
-int StaP::check_params() const
+int StaP::check_params(Log_writer &log_writer) const
 {
 
   int retval = 0, j;
-  if (RunPrms.get_messagelvl() > 0) {
-    cout << endl <<
+  log_writer(1) << endl <<
       "--------------------------------------------------------------------------------\n" <<
       "Station related control parameters\n" <<
       "Station name         = " << stname << "\n" <<
@@ -320,38 +319,36 @@ int StaP::check_params() const
       "Modulation on if 1   = " << mod << "\n" <<
       "Random header if 1   = " << rndhdr << "\n" <<
       "Header map file      = " << hdrmap << "\n";
-    if (mod) cout << "Modulation pattern file = "<< mod << "\n";
-    cout << endl;
+    if (mod) log_writer(1) << "Modulation pattern file = "<< mod << "\n";
+    log_writer(1) << endl;
 
          
-    cout << endl <<
+    log_writer(1) << endl <<
       "Delaytable           = " << delaytable << endl <<
       "Phasetable           = " << phasetable << endl <<
       "Local oscilator      = " << loobs << endl;
-    cout << endl;
+    log_writer(1) << endl;
    
-    cout << "Mk4 tape bit shift numbers:" << endl;
+    log_writer(1) << "Mk4 tape bit shift numbers:" << endl;
     
-    cout << "SIGN " << hs;
-    for (j=0; j < fo; j++) cout <<  " " << signBS[j];
-    cout << endl;
+    log_writer(1) << "SIGN " << hs;
+    for (j=0; j < fo; j++) log_writer(1) <<  " " << signBS[j];
+    log_writer(1) << endl;
 
-    cout << "MAGN " << hm;
-    for (j=0; j < fo; j++) cout <<  " " << magnBS[j];
-    cout << endl;
-
-  }
+    log_writer(1) << "MAGN " << hm;
+    for (j=0; j < fo; j++) log_writer(1) <<  " " << magnBS[j];
+    log_writer(1) << endl;
 
   if (RunPrms.get_messagelvl() > 0) {
-    cout << "Converted to Mk5 disk bit shift numbers:" << endl;
+    log_writer(1) << "Converted to Mk5 disk bit shift numbers:" << endl;
     
-    cout << "SIGN " << hs;
-    for (j=0; j < fo; j++) cout <<  " " << signBS[j];
-    cout << endl;
+    log_writer(1) << "SIGN " << hs;
+    for (j=0; j < fo; j++) log_writer(1) <<  " " << signBS[j];
+    log_writer(1) << endl;
 
-    cout << "MAGN " << hm;
-    for (j=0; j < fo; j++) cout <<  " " << magnBS[j];
-    cout << endl;
+    log_writer(1) << "MAGN " << hm;
+    for (j=0; j < fo; j++) log_writer(1) <<  " " << magnBS[j];
+    log_writer(1) << endl;
   }
 
   //check control parameters and show faulty ones

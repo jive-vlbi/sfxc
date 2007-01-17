@@ -123,6 +123,8 @@ using namespace std;
 #include "ProcessData.h"
 
 #include <Data_reader_file.h>
+#include <Log_writer_cout.h>
+#include <Log_writer_void.h>
 
 #define SEED 10
 
@@ -140,85 +142,65 @@ UINT32 seed;
 //return value 0 when no errors occurred
 int main(int argc, char *argv[])
 {
-/*
+  Log_writer_cout log_writer(0,false);
+  set_log_writer(log_writer); 
+
   if (argc != 2) {
-    std::cout << "usage: " << argv[0] << " <ctrl-file>" << std::endl;
+    log_writer << "usage: " << argv[0] << " <ctrl-file>" << std::endl;
     exit(1);
   }
-*/
+
 
   //declarations
   char   ctrlFile[lineLength]; // control file name
   int    i, Nstations;
   
-  int status, numtasks, rank;
-
   // seed the random number generator (global variable!)
   seed = (UINT32) time((time_t *)NULL);
   //TODO 13-12-2006: Fixed seeding for test purposes.
   //make fixed seeding or time based seeding a control file option
   seed = SEED;
-  cout << endl << "WARNING seed=" << seed << endl;
+  log_writer << std::endl << "WARNING seed=" << seed << endl;
 
-  //do the mpi initialisation
-  status = MPI_Init(&argc,&argv);
-  if (status != MPI_SUCCESS) {
-    cout << "Error starting MPI program. Terminating.\n";
-    MPI_Abort(MPI_COMM_WORLD, status);
-  }
-  // get the number of tasks set at commandline (= number of processors)
-  MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
-  // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  log_writer << "sfcx v" << PACKAGE_VERSION << std::endl;
 
-  if (rank==0) {
-    std::cout << "sfcx v" << PACKAGE_VERSION << std::endl;
-  }
-
-  if(numtasks < 1) //entered at the command line
-  {
-    cerr << "number of tasks is smaller than 1, program aborted\n";
-    return -1;
-  }
-  
   //set the control file name
   strcpy(ctrlFile,argv[1]);
 
   //parse control file for run parameters
   if (RunPrms.parse_ctrlFile(ctrlFile) != 0) {
-    cerr << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
+    log_writer << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
     return -1;
   }
+
+  log_writer.set_messagelevel(RunPrms.get_messagelvl());
+  log_writer.set_interactive(RunPrms.get_interactive());
 
   //show version information and control file info
-  if (RunPrms.get_messagelvl() > 0)
-    cout << "\nSource " << __FILE__ << " compiled at: "
-         << __DATE__ << " " <<__TIME__ << "\n\n"
-         << "Control file name "  <<  ctrlFile << "\n\n";
+  log_writer << "Source " << __FILE__ 
+               << " compiled at: " << __DATE__ << " "<<__TIME__<<"\n\n";
   
   //check control parameters, optionally show them
-  if (RunPrms.check_params() != 0) {
-    cerr << "ERROR: Run control parameter, program aborted.\n";
+  if (RunPrms.check_params(log_writer) != 0) {
+    log_writer.message(0,"ERROR: Run control parameter, program aborted.\n");
     return -1;
   }
   
-  if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks == 1)
-    askContinue();
+  log_writer.ask_continue();
 
   //parse control file for general parameters
-  if (GenPrms.parse_ctrlFile(ctrlFile) != 0) {
-    cerr << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
+  if (GenPrms.parse_ctrlFile(ctrlFile, log_writer) != 0) {
+    log_writer << "ERROR: Control file " << ctrlFile <<", program aborted.\n";
     return -1;
   }
 
   //check general control parameters, optionally show them
-  if (GenPrms.check_params() != 0) {
-    cerr << "ERROR: General control parameter, program aborted.\n";
+  if (GenPrms.check_params(log_writer) != 0) {
+    log_writer.message(0,"ERROR: General control parameter, program aborted.\n");
     return -1;
   }
   
-  if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks == 1)
-    askContinue();
+  log_writer.ask_continue();
 
   //get the number of stations
   Nstations = GenPrms.get_nstations();
@@ -226,19 +208,19 @@ int main(int argc, char *argv[])
   //parse the control file for all station parameters
   for (i=0; i<Nstations; i++)
     if (StaPrms[i].parse_ctrlFile(ctrlFile,i) != 0 ) {
-      cerr << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
+      log_writer << "ERROR: Control file " << ctrlFile <<", program aborted.\n";
       return -1;
     }
     
   //check station control parameters, optionally show them
   for (i=0; i<Nstations; i++){
-    if (StaPrms[i].check_params() != 0 ) {
-      cerr << "ERROR: Station control parameter, program aborted.\n";
+    if (StaPrms[i].check_params(log_writer) != 0 ) {
+      log_writer.message(0,"ERROR: Station control parameter, program aborted.\n");
       return -1;
     }
-    if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0 && numtasks == 1)
-      askContinue();
+    log_writer.ask_continue();
   }  
+  
 
   // NGHK: Has to be a pointer or a reference, 
   //       since Data_reader is an abstract class
@@ -248,21 +230,18 @@ int main(int argc, char *argv[])
   }
 
   //Find Offsets
-  if (FindOffsets(input_readers, numtasks, rank) !=0) {
-    cerr << "ERROR: FindOffsets, program aborted.\n";
+  if (FindOffsets(input_readers, 1, 0) !=0) {
+    log_writer.message(0,"ERROR: FindOffsets, program aborted.\n");
     return -1;
   }
 
   if ( RunPrms.get_runoption() == 1 ) {
     //Process data for rank (=process identifier)
-    if (CorrelateBufs(rank, input_readers) != 0) {
-      cerr << "ERROR: CorrelateBufs, program aborted.\n";
+    if (CorrelateBufs(0, input_readers) != 0) {
+      log_writer.message(0,"ERROR: CorrelateBufs, program aborted.\n");
       return -1;
     }
   }
-
-  //close the mpi stuff
-  MPI_Finalize();
 
   return 0;
 

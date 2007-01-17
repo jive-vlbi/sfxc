@@ -32,7 +32,6 @@ StartDate  : 20060912
 #include <string>
 using namespace std;
 
-
 //constants
 #include "constPrms.h"
 
@@ -115,13 +114,13 @@ int RunP::parse_ctrlFile(char *ctrlFile)
 
 
 //check the run parameters
-int RunP::check_params() const
+int RunP::check_params(Log_writer &log_writer) const
 {
 
   int retval = 0;
   //display run parameters
-  if (messagelvl > 0) {
-    cout <<
+  log_writer.set_current_messagelevel(1);
+  log_writer <<
     "--------------------------------------------------------------------------------\n" <<
     "General run settings\n" <<
     endl <<
@@ -129,11 +128,10 @@ int RunP::check_params() const
     "Interactive          = " << interactive << endl <<
     "Run option           = " << runoption << endl <<
     endl;
-  }
 
   //check run parameters and show faulty ones
   if (!(messagelvl == 0 || messagelvl == 1 || messagelvl == 2 )) {
-    cerr <<
+    log_writer(0) <<
     "ERROR: Message level = " << messagelvl << endl <<
     "- 0: only error messages\n" <<
     "- 1: 0 + higher level warning and progress messages\n" <<
@@ -142,7 +140,7 @@ int RunP::check_params() const
   }
 
   if (!(interactive == 0 || interactive == 1)) {
-    cerr <<
+    log_writer(0) <<
     "ERROR: Interactive = " << interactive << endl <<
     "- 0: run automatically\n" <<
     "- 1: run interactive\n";
@@ -150,10 +148,10 @@ int RunP::check_params() const
   }
 
   if (!(runoption == 0 || runoption == 1)) {
-    cerr <<
+    log_writer(0) <<
     "ERROR: Run option = " << runoption << endl <<
     "- 0: calculate only offsets\n" <<
-    "- 1: run complete program";
+    "- 1: run complete program\n";
     retval=-1;
   }
 

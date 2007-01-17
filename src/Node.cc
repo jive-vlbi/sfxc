@@ -15,7 +15,7 @@ Last change: 20061124
 #include <iostream>
 #include <assert.h>
 
-Node::Node(int rank) : rank(rank), debug_level(1) {
+Node::Node(int rank) : rank(rank), log_writer(1) {
 }
 
 void 
@@ -49,14 +49,12 @@ void Node::process_event(MPI_Status &status) {
       }
     case Controller::PROCESS_EVENT_STATUS_FAILED: // Processing failed
       {
-        write_debug(1, "Error in processing");
-        write_debug(1, status);
+        log_writer(0) << "Error in processing tag:" << status.MPI_TAG << std::endl;
         return;
       }
     }
   }
-  write_debug(1, "ERROR: Unknown event");
-  write_debug(1, status);
+  log_writer.message(1, "ERROR: Unknown event");
 
   // Remove event:  
   int size;
@@ -67,17 +65,5 @@ void Node::process_event(MPI_Status &status) {
   MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,
            status.MPI_TAG, MPI_COMM_WORLD, &status2);
   
-}
-
-void Node::write_debug(int lvl, const std::string &msg) {
-  if (lvl <= debug_level)
-    std::cerr << "Rank " << rank << ": " << msg << std::endl;
-}
-
-void Node::write_debug(int lvl, const MPI_Status &status) {
-  if (lvl <= debug_level)
-    std::cerr << "Rank " << rank << ": "
-              << "Source: " << status.MPI_SOURCE 
-	      << ", Tag: " << status.MPI_TAG << std::endl;
 }
 
