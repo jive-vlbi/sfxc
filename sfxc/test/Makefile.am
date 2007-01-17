@@ -27,7 +27,10 @@ OBJ = ../src/MPI_Transfer.cc \
       ../src/Data_reader_file.cc ../src/Data_reader_tcp.cc \
       ../src/Data_writer_file.cc \
       ../src/utils.cc \
-      ../src/timer.cc
+      ../src/timer.cc \
+      ../src/Log_writer.cc \
+      ../src/Log_writer_cout.cc \
+      ../src/Log_writer_void.cc
 
 test_buffer_SOURCES = \
   test_buffer.cc

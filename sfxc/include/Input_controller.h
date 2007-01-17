@@ -11,7 +11,7 @@ public:
   typedef char      value_type[131072];
   typedef Input_controller  Self;
   
-  Input_controller(Buffer<value_type> &buffer);
+  Input_controller(Buffer<value_type> &buffer, Log_writer &log_writer);
   ~Input_controller();
 
   Process_event_status process_event(MPI_Status &status);

@@ -16,6 +16,8 @@ Last change: 20061114
 
 **/
 
+#include "Log_writer.h"
+
 class MPI_Transfer;
 
 class RunP
@@ -31,7 +33,7 @@ class RunP
     int parse_ctrlFile(char *ctrlFile);
 
     //check run parameters
-    int check_params() const;
+    int check_params(Log_writer &log_writer) const;
 
     //get functions
     

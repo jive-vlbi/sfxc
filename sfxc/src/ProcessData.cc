@@ -58,6 +58,9 @@ using namespace std;
 #include "delayTable.h"
 #include "timer.h"
 
+#include "Log_writer.h"
+#include "Log_writer_void.h"
+
 //global variables
 extern RunP  RunPrms;
 extern GenP  GenPrms;
@@ -68,6 +71,14 @@ extern INT64 sliceStopTime  [NprocessesMax];
 //extern INT64 sliceTime;
 
 extern UINT32 seed;
+
+// NGHK: This variable should definately go into a correlate class:
+Log_writer_void init_writer(10,false);
+Log_writer &log_writer=init_writer;
+void set_log_writer(Log_writer &writer) {
+  log_writer = writer;
+}
+
 
 //***************************************************************************
 //prototypes for local functions
@@ -90,15 +101,16 @@ bool init_delTbl = true;
 std::vector<DelayTable> delTbl;
 int initialise_delay_tables(int nstations, StaP StaPrms[]) {
   if (!init_delTbl) return 0;
-  std::cout << "initialise_delay_tables" << std::endl;
+  log_writer.message(1,"initialise_delay_tables");
   init_delTbl = false;
   
   delTbl.resize(nstations);
   for (int sn=0; sn<nstations; sn++) {
-    std::cout << "DelTbl: " << StaPrms[sn].get_delaytable() << std::endl;
+    string msg = string("DelTbl: ")+StaPrms[sn].get_delaytable();
+    log_writer.message(2,msg);
     int retval = delTbl[sn].readDelayTable(StaPrms[sn].get_delaytable(), BufTime );
     if (retval != 0) {
-      cerr << "ERROR: when reading delay table.\n";
+      log_writer.message(0,"ERROR: when reading delay table.\n");
       return retval;
     }
   }
@@ -107,7 +119,7 @@ int initialise_delay_tables(int nstations, StaP StaPrms[]) {
 
 
 void correlation_add_delay_table(DelayTable &table) {
-  std::cout << "correlation_add_delay_table" << std::endl;
+  log_writer.message(1,"correlation_add_delay_table");
   init_delTbl = false;
   
   delTbl.push_back(table);
@@ -120,9 +132,12 @@ void correlation_add_delay_table(DelayTable &table) {
 //***************************************************************************
 int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
 {
+  std::stringstream msg;
+
   seed = (UINT32) time((time_t *)NULL);
   seed = 10;
-  std::cout << "CorrelateBufs: seed: " << seed << std::endl;
+  msg << "CorrelateBufs: seed: " << seed;
+  log_writer.message(1,msg);
   
   //declarations
   int retval = 0;
@@ -166,7 +181,9 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   fftw_plan    planFW, planBW;//plans for forward and backward fft 
   int lsegm; //fourier length of a segment in the pre-correlation
 
-  cout << "\n\nCorrelation process " << rank << " started.\n\n";
+  msg.str("");
+  msg << "\n\nCorrelation process " << rank << " started.\n\n";
+  log_writer.message(0,msg);
   
   //initialisations and allocations  
   nstations = GenPrms.get_nstations();
@@ -186,15 +203,17 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   for (jf=0; jf<Nf; jf++) //frequency scale in the segment
     fs[jf]=jf*dfr-0.5*GenPrms.get_bwfl()-GenPrms.get_foffset();
 
-  if (RunPrms.get_messagelvl()> 1){
-    cout << "BufSize=" << BufSize << endl;
-    cout << "Nsamp2Avg=" << Nsamp2Avg << endl;
-    cout << "n2fft    =" << n2fft << endl;
-    cout << "Nsegm2Avg=" << Nsegm2Avg << endl;
-    cout << "SR  = " << SR << endl;
-    cout << "tbs = " << tbs << endl;
-    cout << "Nf  = " << Nf << endl;
-    cout << "dfr = " << dfr << endl;
+  {
+    msg.str("");
+    msg << "BufSize=" << BufSize << endl;
+    msg << "Nsamp2Avg=" << Nsamp2Avg << endl;
+    msg << "n2fft    =" << n2fft << endl;
+    msg << "Nsegm2Avg=" << Nsegm2Avg << endl;
+    msg << "SR  = " << SR << endl;
+    msg << "tbs = " << tbs << endl;
+    msg << "Nf  = " << Nf << endl;
+    msg << "dfr = " << dfr << endl;
+    log_writer.message(2, msg);
   }
     
   norms = new float[nbslns];
@@ -244,8 +263,7 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   fwd_plans = new fftw_plan[nstations];  
   
   //plan the FFTs
-  if (RunPrms.get_messagelvl()> 0)
-    cout << "\nPlanning the FFTs for correlation!\n";
+  log_writer.message(1,"\nPlanning the FFTs for correlation!\n");
   for (sn = 0; sn < nstations; sn++){
     fwd_plans[sn] =
       fftw_plan_dft_r2c_1d(n2fft*pad,invecs[sn],xps[sn],FFTW_EXHAUSTIVE);
@@ -289,8 +307,9 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
 
   
   if (RunPrms.get_messagelvl()> 0) {
-    std::cout.precision(25);
-    std::cout << "Starting correlation: " << timePtr << " bufptr: " << BufPtr << std::endl;
+    msg.str("");
+    msg << "Starting correlation: " << timePtr << " bufptr: " << BufPtr << std::endl;
+    log_writer.message(1, msg);
 
     char sB1[25],sB2[25];
     strcpy(sB1,"Correlation for process=");
@@ -304,8 +323,9 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   while (1)
   {
     loop++;
-    if (RunPrms.get_messagelvl()> 0)
-      cout << "Process="<< rank <<" loop=" << loop << endl;
+    msg.str("");
+    msg << "Process="<< rank <<" loop=" << loop << endl;
+    log_writer.message(1, msg);
     
     //initialise statistical values to zero
     for (sn=0; sn<nstations; sn++) {
@@ -333,7 +353,7 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
           Mk4frame,FL,FC,signST,magnST,Nsamp,sls,spls,planFW,planBW,
           tbs,fs,Nf,timePtr,delTbl,rank);
         if (retval !=0) {
-          cerr << "ERROR: in function fill_Bufs\n";
+          log_writer.message(1, "ERROR: in function fill_Bufs\n");
           return retval;
         }
         timePtr=timePtr+BufTime;
@@ -381,7 +401,9 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
       
       if (RunPrms.get_messagelvl()> 0) {
         if (segm%TenPct == 0) {
-          cout << "segm=" << segm << endl;
+          msg.str("");
+          msg << "segm=" << segm;
+          log_writer.message(1,msg);
         }  
       }    
       
@@ -392,10 +414,12 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
       signST[sn] = signST[sn]/Nsamp[sn];
       magnST[sn] = magnST[sn]/Nsamp[sn];
       if (RunPrms.get_messagelvl()> 0){
-        cout << "Sample statistics " << "sn=" << sn <<
-        " Nsamp=" << Nsamp[sn] <<
-        " signST=" << signST[sn] <<
-        " magnST=" << magnST[sn] << endl;
+        msg.str("");
+        msg << "Sample statistics " << "sn=" << sn 
+            << " Nsamp=" << Nsamp[sn] 
+            << " signST=" << signST[sn] 
+            << " magnST=" << magnST[sn] << endl;
+          log_writer.message(1,msg);
       }  
     }
 
@@ -431,10 +455,15 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
     }
 
     // Check wether we are finished.
-    std::cout << "Process="<< rank << " timePtr = " << (INT64)timePtr << std::endl;
-    std::cout << "Process="<< rank << " stoptime= " << GenPrms.get_usStop() << std::endl;
+    msg.str("");
+    msg << "Process="<< rank << " timePtr = " << (INT64)timePtr << std::endl;
+    msg << "Process="<< rank << " stoptime= " << GenPrms.get_usStop() << std::endl;
+    log_writer.message(1,msg);
+    
     if (timePtr > GenPrms.get_usStop()) {
-      std::cout << "Process="<< rank << " finished, timePtr after stopTime" << std::endl;
+      msg.str("");
+      msg << "Process="<< rank << " finished, timePtr after stopTime" << std::endl;
+      log_writer.message(1,msg);
       break; //
     }
     
@@ -683,3 +712,4 @@ int fetch_invecs(INT64& BufPtr, int nstations, int n2fft,
   BufPtr=BufPtr+n2fft;
   return(0);
 }
+

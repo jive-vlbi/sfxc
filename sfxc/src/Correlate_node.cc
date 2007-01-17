@@ -3,8 +3,9 @@
 Correlate_node::Correlate_node(int rank, int buff_size)
  : Node(rank), 
    buffer(buff_size),
-   correlate_controller(buffer),
-   output_controller(buffer)
+   log_writer(0,0),
+   correlate_controller(buffer, log_writer),
+   output_controller(buffer, log_writer)
 {
   //write_debug(1, "Correlate_node(rank)");
   add_controller(&correlate_controller);
@@ -13,6 +14,6 @@ Correlate_node::Correlate_node(int rank, int buff_size)
 
 Correlate_node::~Correlate_node()
 {
-  write_debug(1, "~Correlate_node()");
+  log_writer.message(1, "~Correlate_node()");
 }
 

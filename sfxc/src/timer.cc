@@ -10,6 +10,9 @@ this file contains timer functions
 #include <stdlib.h>
 #include <time.h>
 
+// NGHK: remove this, for now to have access to the Log_writer  
+#include <ProcessData.h>
+
 #include "timer.h"
 
 //Start a timer
@@ -17,7 +20,7 @@ void tmrBegin(ptimer tmr)
 {
     tmr->CPUbegin=clock();
     tmr->Tbegin=time(NULL);
-    printf("\n**** Timer for %s started\n",tmr->ID);
+    log_writer << "**** Timer for " << tmr->ID << "started\n";
 }
 
 
@@ -31,9 +34,8 @@ void tmrEnd(ptimer tmr)
     
     CPU_elapsed=((double) (tmr->CPUend - tmr->CPUbegin))/CLOCKS_PER_SEC;
     T_elapsed=difftime(tmr->Tend, tmr->Tbegin);
-    printf("\n**** Timer for %s stopped, ",tmr->ID);
-    printf("CPU elapsed %g seconds Total %g seconds\n",
-    CPU_elapsed, T_elapsed);
+    log_writer << "**** Timer for " << tmr->ID << "stopped\n";
+    log_writer << "CPU elapsed " << CPU_elapsed << " seconds Total " << T_elapsed << " seconds\n";
 }
 
 

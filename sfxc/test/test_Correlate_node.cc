@@ -9,6 +9,7 @@
 */
 
 #include <types.h>
+#include <sfxc_mpi.h>
 #include <Correlate_node.h>
 #include <fstream>
 #include <assert.h>
@@ -39,6 +40,8 @@ UINT32 seed;
 /// TODO: NGHK: REMOVE THESE <------------ UNTIL HERE
 
 #include <MPI_Transfer.h>
+#include <Log_writer_cout.h>
+#include <Log_writer_void.h>
 
 int main(int argc, char *argv[]) {
   // MPI
@@ -60,13 +63,14 @@ int main(int argc, char *argv[]) {
   //  The real work
   ///////////////////////////
   if (rank == 0) {
+    Log_writer_void log_writer(0,0);
     // Initialise correlator node
     assert(argc==2);
     char *control_file = argv[1];
     //"/jop54_0/kruithof/data/n05c2/sfxc_n06c2_McNtTrWb.nodel.ctrl";
     //char *control_file = "/jop54_0/kruithof/data/n05c2/sfxc_n06c2_WbWb.nodel.ctrl";
-    if (initialise_control(control_file) != 0) {
-      std::cout << "Initialisation using control file failed" << std::endl;
+    if (initialise_control(control_file, log_writer) != 0) {
+      log_writer(0) << "Initialisation using control file failed" << std::endl;
     }
 
     // This one has to go:
@@ -85,11 +89,11 @@ int main(int argc, char *argv[]) {
 
     for (int i=0; i<GenPrms.get_nstations(); i++) {
       DelayTable delay; 
-      std::cout << StaPrms[i].get_delaytable() << std::endl;
+      log_writer << StaPrms[i].get_delaytable() << std::endl;
       int retval = delay.readDelayTable(StaPrms[i].get_delaytable(),
                                         BufTime );
       if (retval != 0) {
-        std::cerr << "ERROR: when reading delay table.\n";
+        log_writer << "ERROR: when reading delay table.\n";
         return retval;
       }
       mpi_transfer.send_delay_table(delay, 1);
@@ -128,7 +132,7 @@ int main(int argc, char *argv[]) {
       switch (status.MPI_TAG) {
         case MPI_MSG_CORRELATE_ENDED:
         {
-          std::cout << "MPI_MSG_CORRELATE_ENDED " << std::endl;
+          log_writer << "MPI_MSG_CORRELATE_ENDED " << std::endl;
           // Wait for data node to finish
           int i=0;
           MPI_Recv(&i, 1, MPI_INT, status.MPI_SOURCE,
@@ -149,16 +153,15 @@ int main(int argc, char *argv[]) {
           MPI_Recv(&message, size, MPI_CHAR, status.MPI_SOURCE,
                    status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-          std::cout << "MPI_MSG_TEXT_MESSAGE: " << message << std::endl;
+          log_writer << "MPI_MSG_TEXT_MESSAGE: " << message << std::endl;
           break;            
         }
       }      
-      std::cout << std::endl << __LINE__ << " HERE" << std::endl;
+      log_writer << std::endl << __LINE__ << " HERE" << std::endl;
     }
   } else if (rank == 1) {
     Correlate_node correlate_node(rank);
     correlate_node.start();
-    std::cout << std::endl << rank << " READY" << std::endl;
   }
 
 

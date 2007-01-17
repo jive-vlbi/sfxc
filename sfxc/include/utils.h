@@ -4,6 +4,7 @@
 #include <types.h>
 #include <list>
 #include <string>
+#include "Log_writer.h"
 
 /// Interface_pair is a pair of two strings 
 /// containing the interface name and its ip address;
@@ -25,15 +26,15 @@ INT64 get_us_time(int time[]);
 
 /** Initialises the global control files, this should be removed at some point.
   **/
-int initialise_control(char *filename);
+int initialise_control(char *filename, Log_writer &log_writer);
                     
-/** Constructs an array containing all control data for a correlate node (Gen and Run).
- *  @returns the size of the array
-  **/
-void send_control_data(int rank);
-
-/** Stores all control data for a correlate node (Gen and Run).
-  **/
-void receive_control_data(MPI_Status &status);
+///** Constructs an array containing all control data for a correlate node (Gen and Run).
+// *  @returns the size of the array
+//  **/
+//void send_control_data(int rank);
+//
+///** Stores all control data for a correlate node (Gen and Run).
+//  **/
+//void receive_control_data(MPI_Status &status);
                     
 #endif // UTILS_H

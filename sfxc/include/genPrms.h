@@ -19,6 +19,7 @@ Last change: 20061114
 
 #include <types.h>
 #include <string>
+#include "Log_writer.h"
 
 class MPI_Transfer;
 
@@ -31,10 +32,10 @@ class GenP
     GenP();
 
     //parse control file c
-    int parse_ctrlFile(char *ctrlFile);
+    int parse_ctrlFile(char *ctrlFile, Log_writer&log_writer);
 
     //check control parameters
-    int check_params() const;
+    int check_params(Log_writer &log_writer) const;
 
     //get functions
     

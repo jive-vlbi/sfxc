@@ -26,13 +26,13 @@ Controller_node::Controller_node(int numtasks, int rank, char * ctrlFile)
   
   //parse control file for run parameters
   if (RunPrms.parse_ctrlFile(ctrlFile) != 0) {
-    std::cerr << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
+    log_writer << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
     return;
   }
   
   //show version information and control file info
   if (RunPrms.get_messagelvl()> 0)
-    std::cout << "\nSource " << __FILE__ << " compiled at: "
+    log_writer << "\nSource " << __FILE__ << " compiled at: "
          << __DATE__ << " " <<__TIME__ << "\n\n"
          << "Control file name "  <<  ctrlFile << "\n";
   

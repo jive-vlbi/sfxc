@@ -1,4 +1,4 @@
-#include <utils.h>
+#include "utils.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -95,7 +95,7 @@ extern INT64 sliceTime;
 /** Initialises the global control files, this should be removed at some point.
  **/
 int
-initialise_control(char *filename) {
+initialise_control(char *filename, Log_writer &log_writer) {
   int    i, Nstations;
   
   //parse control file for run parameters
@@ -106,33 +106,31 @@ initialise_control(char *filename) {
 
   //show version information and control file info
   if (RunPrms.get_messagelvl() > 0)
-    cout << "\nSource " << __FILE__ << " compiled at: "
+    log_writer << "\nSource " << __FILE__ << " compiled at: "
          << __DATE__ << " " <<__TIME__ << "\n\n"
          << "Control file name "  <<  filename << "\n\n";
   
   //check control parameters, optionally show them
-  if (RunPrms.check_params() != 0) {
-    cerr << "ERROR: Run control parameter, program aborted.\n";
+  if (RunPrms.check_params(log_writer) != 0) {
+    log_writer << "ERROR: Run control parameter, program aborted.\n";
     return -1;
   }
   
-  if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0)
-    askContinue();
+  log_writer.ask_continue();
 
   //parse control file for general parameters
-  if (GenPrms.parse_ctrlFile(filename) != 0) {
-    cerr << "ERROR: Control file "<< filename <<", program aborted.\n";
+  if (GenPrms.parse_ctrlFile(filename,log_writer) != 0) {
+    log_writer << "ERROR: Control file "<< filename <<", program aborted.\n";
     return -1;
   }
 
   //check general control parameters, optionally show them
-  if (GenPrms.check_params() != 0) {
+  if (GenPrms.check_params(log_writer) != 0) {
     cerr << "ERROR: General control parameter, program aborted.\n";
     return -1;
   }
   
-  if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0)
-    askContinue();
+  log_writer.ask_continue();
 
   //get the number of stations
   Nstations = GenPrms.get_nstations();
@@ -140,25 +138,18 @@ initialise_control(char *filename) {
   //parse the control file for all station parameters
   for (i=0; i<Nstations; i++)
     if (StaPrms[i].parse_ctrlFile(filename,i) != 0 ) {
-      cerr << "ERROR: Control file "<< filename <<", program aborted.\n";
+      log_writer << "ERROR: Control file "<< filename <<", program aborted.\n";
       return -1;
     }
     
   //check station control parameters, optionally show them
   for (i=0; i<Nstations; i++){
-    if (StaPrms[i].check_params() != 0 ) {
-      cerr << "ERROR: Station control parameter, program aborted.\n";
+    if (StaPrms[i].check_params(log_writer) != 0 ) {
+      log_writer << "ERROR: Station control parameter, program aborted.\n";
       return -1;
     }
-    if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0)
-      askContinue();
+    log_writer.ask_continue();
   }
   
   return 0;  
-}
-
-void send_control_data(int rank) {
-}
-
-void receive_control_data(MPI_Status &status) {
 }

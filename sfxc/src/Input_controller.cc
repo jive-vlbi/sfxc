@@ -4,8 +4,9 @@
 #include <assert.h>
 #include <signal.h>
 
-Input_controller::Input_controller(Buffer<value_type> &buffer) 
-  : Controller(), buffer(buffer), reader(NULL), running(false) {
+Input_controller::Input_controller(Buffer<value_type> &buffer,
+                                   Log_writer &log_writer) 
+  : Controller(log_writer), buffer(buffer), reader(NULL), running(false) {
 }
 
 Input_controller::~Input_controller() {

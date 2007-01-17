@@ -18,13 +18,14 @@ $Source$
 Data_node::Data_node(int rank, int size) 
   : Node(rank), 
     buffer(size), 
-    input(buffer), output(buffer)
+    log_writer(0,0),     
+    input(buffer, log_writer), output(buffer, log_writer)
 {
-  write_debug(1, "Data_node(rank,size)");
+  log_writer(1)<< "Data_node(rank,size)";
   add_controller(&input);
   add_controller(&output);
 }
 
 Data_node::~Data_node() {
-  write_debug(1, "~Data_node()");
+  log_writer(1) << "~Data_node()";
 }

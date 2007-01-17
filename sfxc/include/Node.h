@@ -10,11 +10,13 @@
 #define NODE_H
 
 #include <types.h>
+#include <sfxc_mpi.h>
 
 #include <string>
 #include <list>
 
-#include <Controller.h>
+#include "Controller.h"
+#include "Log_writer_void.h"
 
 /** Generic node to which a number of controllers can be added.
     \ingroup ImportantClasses
@@ -39,10 +41,6 @@ public:
      Produce an error message (either to std::cerr or to a specialised "Log-node")
    **/
   void write_debug(int lvl, const std::string &msg);
-  /**
-     Write a MPI_Status message.
-   **/
-  void write_debug(int lvl, const MPI_Status &status);
 
   /**
      Add a controller to the node.
@@ -52,7 +50,7 @@ public:
 private:
   int rank;
   Controller_list controllers;
-  int debug_level;
+  Log_writer_void log_writer;
 };
 
 #endif // NODE_H

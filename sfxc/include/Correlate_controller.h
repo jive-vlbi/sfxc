@@ -16,7 +16,8 @@ public:
   typedef char                 input_value_type[131072];
   typedef char                 output_value_type[131072];
 
-  Correlate_controller(Buffer<output_value_type> &output_buffer);
+  Correlate_controller(Buffer<output_value_type> &output_buffer, 
+                       Log_writer &log_writer);
   ~Correlate_controller();
   
   Process_event_status process_event(MPI_Status &status);

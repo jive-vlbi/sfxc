@@ -19,6 +19,7 @@ Last change: 20061114
 
 //standard c includes
 #include <stdio.h>
+#include "Log_writer.h"
 
 const int chmax      =     8; //max nr of channels, nch*fo <=32
 const int fomax      =     4; //maximum fan out
@@ -44,7 +45,7 @@ class StaP
     int parse_ctrlFile(char *ctrlFile, int staNr);
 
     //check station parameters
-    int check_params() const;
+    int check_params(Log_writer &log_writer) const;
 
     //get functions
     /** The namename of the station. **/
