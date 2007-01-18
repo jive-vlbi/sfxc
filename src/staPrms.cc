@@ -124,7 +124,7 @@ StaP::~StaP() {
 
 
 //parse control file C
-int StaP::parse_ctrlFile(char *ctrlFile, int staNr)
+int StaP::parse_ctrlFile(char *ctrlFile, int staNr, Log_writer &log_writer)
 {
   int  retval=0;
   FILE *ctrlP;
@@ -160,10 +160,10 @@ int StaP::parse_ctrlFile(char *ctrlFile, int staNr)
         if (strcmp(val1,"MK4") == 0) {
           datatype = DATATYPE_MK4;
           //look for MK4 type data
-          retval = findMK4data(ctrlP);
+          retval = findMK4data(ctrlP, log_writer);
         }
         //look for Delay data
-        retval = findDelaydata(ctrlP);
+        retval = findDelaydata(ctrlP, log_writer);
       }
     }    
   }//end while loop station keyword
@@ -192,7 +192,7 @@ int StaP::parse_ctrlFile(char *ctrlFile, int staNr)
 
 
 //look for MK4 type data
-int StaP::findMK4data(FILE *ctrlP)
+int StaP::findMK4data(FILE *ctrlP, Log_writer &log_writer)
 {
   int retval = 0, vall, i;
   char *line, *key, *val, *copy, *s;
@@ -212,16 +212,16 @@ int StaP::findMK4data(FILE *ctrlP)
     //split line contents in key and value
     if (sscanf(line,"%s %s\n",key,val) == 2) {
       //parse the MK4 type data
-      retval = retval + getLongVal(key,val,"TBR",tbr);
-      retval = retval + getLongVal(key,val,"FO",fo);
-      retval = retval + getLongVal(key,val,"BPS",bps);
-      retval = retval + getLongVal(key,val,"NHS",nhs);
-      retval = retval + getLongVal(key,val,"TPHS",tphs);
-      retval = retval + getLongVal(key,val,"BOFF",boff);
-      retval = retval + getLongVal(key,val,"SYNHS1",synhs1);
-      retval = retval + getLongVal(key,val,"SYNHS2",synhs2);
-      retval = retval + getLongVal(key,val,"MOD",mod);
-      retval = retval + getLongVal(key,val,"RNDHDR",rndhdr);
+      retval = retval + getLongVal(key,val,"TBR",tbr, log_writer);
+      retval = retval + getLongVal(key,val,"FO",fo, log_writer);
+      retval = retval + getLongVal(key,val,"BPS",bps, log_writer);
+      retval = retval + getLongVal(key,val,"NHS",nhs, log_writer);
+      retval = retval + getLongVal(key,val,"TPHS",tphs, log_writer);
+      retval = retval + getLongVal(key,val,"BOFF",boff, log_writer);
+      retval = retval + getLongVal(key,val,"SYNHS1",synhs1, log_writer);
+      retval = retval + getLongVal(key,val,"SYNHS2",synhs2, log_writer);
+      retval = retval + getLongVal(key,val,"MOD",mod, log_writer);
+      retval = retval + getLongVal(key,val,"RNDHDR",rndhdr, log_writer);
 
       if (strcmp(key,"MK4FILE") == 0) strcpy(mk4file,val);
       if (strcmp(key,"HDRMAP") == 0)  strcpy(hdrmap,val);
@@ -269,7 +269,7 @@ int StaP::findMK4data(FILE *ctrlP)
 
 
 //look for Delay data
-int StaP::findDelaydata(FILE *ctrlP)
+int StaP::findDelaydata(FILE *ctrlP, Log_writer &log_writer)
 {
   int retval = 0;
   char *line, *key, *val;
@@ -289,7 +289,7 @@ int StaP::findDelaydata(FILE *ctrlP)
     if (sscanf(line,"%s %s\n",key,val) == 2) {
       if (strcmp(key,"DELAYTABLE") == 0) strcpy(delaytable,val);
       if (strcmp(key,"PHASETABLE") == 0) strcpy(phasetable,val);
-      retval = retval + getINT64Val(key,val,"LOOBS",loobs);
+      retval = retval + getINT64Val(key,val,"LOOBS",loobs, log_writer);
     }
   }
     

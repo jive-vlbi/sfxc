@@ -294,7 +294,8 @@ double DelayTable::calcDelay(double time, int delayType) const
    time = time - startDT;
    //calculate array index for closest time
    index = (2*(INT64)time + stepDT) / (2*stepDT);
-   if ((index < 0) || (index >= ndel)){
+   if ((index < 0) || (index >= ndel)) {
+     cout.precision(20);
      cout << "time=" << time << " index=" << index << " ndel=" << ndel <<endl;
      assert(false);
      return 1.0;
@@ -359,11 +360,17 @@ int parabCoefs (INT64 t0,INT64 t1,INT64 t2,double d0,double d1,double d2,
 {
   double L,R;
 
+  assert((t0 != t1) && (t1 != t2));
   L = (d0-d1)*(t1-t2) - (d1-d2)*(t0-t1);
   R = (t0*t0-t1*t1)*(t1-t2) - (t1*t1-t2*t2)*(t0-t1);
   A = L/R;
   B = ( (d0-d1) - A*(t0*t0-t1*t1) ) / (t0-t1);
   C = d0-A*t0*t0-B*t0;
+  assert(L==L);
+  assert(R==R);
+  assert(A==A);
+  assert(B==B);
+  assert(C==C);
 
   return 0;
 }

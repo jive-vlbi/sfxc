@@ -99,16 +99,16 @@ initialise_control(char *filename, Log_writer &log_writer) {
   int    i, Nstations;
   
   //parse control file for run parameters
-  if (RunPrms.parse_ctrlFile(filename) != 0) {
+  if (RunPrms.parse_ctrlFile(filename, log_writer) != 0) {
     cerr << "ERROR: Control file "<< filename <<", program aborted.\n";
     return -1;
   }
 
   //show version information and control file info
   if (RunPrms.get_messagelvl() > 0)
-    log_writer << "\nSource " << __FILE__ << " compiled at: "
-         << __DATE__ << " " <<__TIME__ << "\n\n"
-         << "Control file name "  <<  filename << "\n\n";
+    log_writer << "Source " << __FILE__ << " compiled at: "
+         << __DATE__ << " " <<__TIME__ << "\n"
+         << "Control file name "  <<  filename << "\n";
   
   //check control parameters, optionally show them
   if (RunPrms.check_params(log_writer) != 0) {
@@ -137,7 +137,7 @@ initialise_control(char *filename, Log_writer &log_writer) {
   
   //parse the control file for all station parameters
   for (i=0; i<Nstations; i++)
-    if (StaPrms[i].parse_ctrlFile(filename,i) != 0 ) {
+    if (StaPrms[i].parse_ctrlFile(filename,i, log_writer) != 0 ) {
       log_writer << "ERROR: Control file "<< filename <<", program aborted.\n";
       return -1;
     }

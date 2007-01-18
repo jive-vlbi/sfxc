@@ -42,7 +42,7 @@ class StaP
     ~StaP();
 
     //parse control file for station parameters
-    int parse_ctrlFile(char *ctrlFile, int staNr);
+    int parse_ctrlFile(char *ctrlFile, int staNr, Log_writer &log_writer);
 
     //check station parameters
     int check_params(Log_writer &log_writer) const;
@@ -121,8 +121,8 @@ class StaP
     INT64 loobs;       //local ascilator observing station
 
     //private functions
-    int findMK4data(FILE *ctrlP);
-    int findDelaydata(FILE *ctrlP);
+    int findMK4data(FILE *ctrlP, Log_writer &log_writer);
+    int findDelaydata(FILE *ctrlP, Log_writer &log_writer);
 };
 
 

@@ -17,8 +17,7 @@ void Log_writer_cout::ask_continue() {
   
   std::cout << "\nEnter c to continue, any other character to stop: ";
   std::cin >> repl;
-  std::cout << std::endl;
-  if (strcmp(&repl,"c")!=0) {
+  if (repl!='c') {
     std::cout << "Application stopped by user!\n";
     exit(0);
   }

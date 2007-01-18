@@ -11,12 +11,12 @@ check_PROGRAMS = \
   test_Data_node \
   test_Correlate_node
 TESTS           = \
+  test_Transfer_control_parameters.py \
+  test_Correlate_node.py \
   test_buffer \
-  test_Transfer_control_parameters \
   test_Data_reader_file \
   test_Data_reader_mark5.py \
-  test_Data_node.py \
-  test_Correlate_node
+  test_Data_node.py 
 
 
 OBJ = ../src/MPI_Transfer.cc \

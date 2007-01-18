@@ -15,7 +15,7 @@ Last change: 20061114
 */
 
 #include <types.h>
-
+#include "genFunctions.h"
 //standard c includes
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,40 +33,19 @@ using namespace std;
 //global variables
 extern RunP  RunPrms;
 
-//*****************************************************************************
-//continue or stop
-//*****************************************************************************
-void askContinue(void)
-{
-  char repl[2]; // user reply character
-  
-  cout << "\nEnter c to continue, any other character to stop: ";
-  scanf("%s",repl);
-  if (strcmp(repl,"c")!=0) {
-    cout << "Application stopped by user!\n";
-    exit(0);
-  }
-  cout << endl;
-}
-
-
-
 
 //*****************************************************************************
 //
 //*****************************************************************************
-int getLongVal(char *key, char *val, char *skey, int& sval)
+int getLongVal(char *key, char *val, char *skey, int& sval, Log_writer &log_writer)
 {
   char *endp;
   
   if (!strcmp(key,skey)) {
     sval = strtol(val, &endp, 10);
-    if(RunPrms.get_messagelvl() > 1 ) {
-      cout << "getLongVal: " << skey <<" "<< sval << endl;
-    }
+    log_writer(2) << "getLongVal: " << skey <<" "<< sval << endl;
     if (endp == val) {
-      fprintf(stderr,
-        "**** Unable to convert string for key %s into long\n",key);
+      log_writer(0) << "**** Unable to convert string for key "<<key<<" into long\n";
       return -1;
     }
   }
@@ -78,18 +57,15 @@ int getLongVal(char *key, char *val, char *skey, int& sval)
 //*****************************************************************************
 //
 //*****************************************************************************
-int getINT64Val(char *key, char *val, char *skey, INT64& sval)
+int getINT64Val(char *key, char *val, char *skey, INT64& sval, Log_writer &log_writer)
 {
   char *endp;
   
   if (!strcmp(key,skey)) {
     sval = strtoll(val, &endp, 10);
-    if(RunPrms.get_messagelvl() > 1 ) {
-      cout << "getINT64Val: " << skey <<" "<< sval << endl;
-    }
+    log_writer(2) << "getINT64Val: " << skey <<" "<< sval << endl;
     if (endp == val) {
-      fprintf(stderr,
-        "**** Unable to convert string for key %s into long\n",key);
+      log_writer(0) << "**** Unable to convert string for key " << key << " into long\n";
       return -1;
     }
   }
@@ -100,7 +76,7 @@ int getINT64Val(char *key, char *val, char *skey, INT64& sval)
 //*****************************************************************************
 //
 //*****************************************************************************
-int getFloatVal(char *key, char *val, char *skey, float& sval)
+int getFloatVal(char *key, char *val, char *skey, float& sval, Log_writer &log_writer)
 {
   char *endp;
   

@@ -10,13 +10,12 @@ this file contains timer functions
 #include <stdlib.h>
 #include <time.h>
 
-// NGHK: remove this, for now to have access to the Log_writer  
-#include <ProcessData.h>
+#include "Log_writer.h"
 
 #include "timer.h"
 
 //Start a timer
-void tmrBegin(ptimer tmr)
+void tmrBegin(ptimer tmr, Log_writer &log_writer)
 {
     tmr->CPUbegin=clock();
     tmr->Tbegin=time(NULL);
@@ -25,7 +24,7 @@ void tmrBegin(ptimer tmr)
 
 
 //Stop a timer
-void tmrEnd(ptimer tmr)
+void tmrEnd(ptimer tmr, Log_writer &log_writer)
 {
     double T_elapsed, CPU_elapsed;
     

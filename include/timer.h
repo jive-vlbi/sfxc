@@ -17,8 +17,8 @@ typedef struct {
 
 
 //Start a timer
-void tmrBegin(ptimer tmr);
+void tmrBegin(ptimer tmr, Log_writer &log_writer);
 
 //Stop a timer
-void tmrEnd(ptimer tmr);
+void tmrEnd(ptimer tmr, Log_writer &log_writer);
 

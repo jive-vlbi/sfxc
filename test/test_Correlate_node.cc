@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
   if (status != MPI_SUCCESS) {
     std::cout << "Error starting MPI program. Terminating.\n";
     MPI_Abort(MPI_COMM_WORLD, status);
+    return 1;
   }
 
   // get the number of tasks set at commandline (= number of processors)
@@ -59,11 +60,14 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
+  Log_writer_void log_writer(0);
+  set_log_writer(log_writer);
+
   ///////////////////////////
   //  The real work
   ///////////////////////////
   if (rank == 0) {
-    Log_writer_void log_writer(0,0);
+    Log_writer_void log_writer(0);
     // Initialise correlator node
     assert(argc==2);
     char *control_file = argv[1];
@@ -71,6 +75,7 @@ int main(int argc, char *argv[]) {
     //char *control_file = "/jop54_0/kruithof/data/n05c2/sfxc_n06c2_WbWb.nodel.ctrl";
     if (initialise_control(control_file, log_writer) != 0) {
       log_writer(0) << "Initialisation using control file failed" << std::endl;
+      return 1;
     }
 
     // This one has to go:

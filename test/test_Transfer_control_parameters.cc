@@ -17,6 +17,7 @@
 #include "constPrms.h"
 
 #include <utils.h>
+#include "Log_writer_cout.h"
 
 #include <constPrms.h>
 #include <runPrms.h>
@@ -297,6 +298,7 @@ void check_delay_table(char *filename_delay_table) {
 
 
 int main(int argc, char *argv[]) {
+  Log_writer_cout log_writer(-1);
   //initialisation
   int status = MPI_Init(&argc,&argv);
   if (status != MPI_SUCCESS) {
@@ -312,8 +314,9 @@ int main(int argc, char *argv[]) {
   // Initialise correlator node
   assert(argc==2);
   char *control_file = argv[1];
-  if (initialise_control(control_file) != 0) {
+  if (initialise_control(control_file, log_writer) != 0) {
     std::cout << "Initialisation using control file failed" << std::endl;
+    return 1;
   }
   
   //check_control_parameters();
