@@ -124,7 +124,6 @@ using namespace std;
 
 #include <Data_reader_file.h>
 #include <Log_writer_cout.h>
-#include <Log_writer_void.h>
 
 #define SEED 10
 
@@ -168,7 +167,7 @@ int main(int argc, char *argv[])
   strcpy(ctrlFile,argv[1]);
 
   //parse control file for run parameters
-  if (RunPrms.parse_ctrlFile(ctrlFile) != 0) {
+  if (RunPrms.parse_ctrlFile(ctrlFile, log_writer) != 0) {
     log_writer << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
     return -1;
   }
@@ -207,7 +206,7 @@ int main(int argc, char *argv[])
   
   //parse the control file for all station parameters
   for (i=0; i<Nstations; i++)
-    if (StaPrms[i].parse_ctrlFile(ctrlFile,i) != 0 ) {
+    if (StaPrms[i].parse_ctrlFile(ctrlFile, i, log_writer) != 0 ) {
       log_writer << "ERROR: Control file " << ctrlFile <<", program aborted.\n";
       return -1;
     }

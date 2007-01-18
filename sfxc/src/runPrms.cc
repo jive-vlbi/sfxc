@@ -62,7 +62,7 @@ RunP::RunP()
 
 
 //parse control file for run parameters
-int RunP::parse_ctrlFile(char *ctrlFile)
+int RunP::parse_ctrlFile(char *ctrlFile, Log_writer &log_writer)
 {
   int  retval=0;
   FILE *ctrlP;
@@ -74,7 +74,7 @@ int RunP::parse_ctrlFile(char *ctrlFile)
   val  = new char[lineLength];
 
   if( access(ctrlFile, R_OK) != 0 ) {
-    cerr << "ERROR: File " << ctrlFile << "is not accessible or does not exist.\n";
+    cerr << "ERROR: File " << ctrlFile << " is not accessible or does not exist.\n";
     return -1;
   }
 
@@ -91,9 +91,9 @@ int RunP::parse_ctrlFile(char *ctrlFile)
     //split line contents in key and value
     if (sscanf(line,"%s %s\n",key,val) == 2){
       
-      retval = retval + getLongVal(key,val,"MESSAGELVL",messagelvl);
-      retval = retval + getLongVal(key,val,"INTERACTIVE",interactive);
-      retval = retval + getLongVal(key,val,"RUNOPTION",runoption);
+      retval = retval + getLongVal(key,val,"MESSAGELVL",messagelvl, log_writer);
+      retval = retval + getLongVal(key,val,"INTERACTIVE",interactive, log_writer);
+      retval = retval + getLongVal(key,val,"RUNOPTION",runoption, log_writer);
       
     }
 

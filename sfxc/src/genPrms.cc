@@ -189,20 +189,20 @@ int GenP::parse_ctrlFile(char *ctrlFile, Log_writer&log_writer)
       if (strcmp(key,"LOGFILE") == 0)    strcpy(logname,val);
       if (strcmp(key,"CORFILE") == 0)    strcpy(corname,val);
       
-      retval = retval + getLongVal(key,val,"NSTATIONS",nstations);
-      retval = retval + getLongVal(key,val,"BWIN",bwin);
-      retval = retval + getLongVal(key,val,"LSEGM",lsegm);
-      retval = retval + getLongVal(key,val,"FOFFSET",foffset);
-      retval = retval + getLongVal(key,val,"FILTER",filter);
-      retval = retval + getLongVal(key,val,"BWFL",bwfl);
-      retval = retval + getLongVal(key,val,"STARTF",startf);
-      retval = retval + getLongVal(key,val,"DELTAF",deltaf);
-      retval = retval + getLongVal(key,val,"OVRFL",ovrfl);
+      retval = retval + getLongVal(key,val,"NSTATIONS",nstations, log_writer);
+      retval = retval + getLongVal(key,val,"BWIN",bwin, log_writer);
+      retval = retval + getLongVal(key,val,"LSEGM",lsegm, log_writer);
+      retval = retval + getLongVal(key,val,"FOFFSET",foffset, log_writer);
+      retval = retval + getLongVal(key,val,"FILTER",filter, log_writer);
+      retval = retval + getLongVal(key,val,"BWFL",bwfl, log_writer);
+      retval = retval + getLongVal(key,val,"STARTF",startf, log_writer);
+      retval = retval + getLongVal(key,val,"DELTAF",deltaf, log_writer);
+      retval = retval + getLongVal(key,val,"OVRFL",ovrfl, log_writer);
 
-      retval = retval + getLongVal(key,val,"N2FFT",n2fft);
-      retval = retval + getINT64Val(key,val,"NSAMP2AVG",nsamp2avg);
-      retval = retval + getFloatVal(key,val,"OVRLP",ovrlp);
-      retval = retval + getLongVal(key,val,"PAD",pad);
+      retval = retval + getLongVal(key,val,"N2FFT",n2fft, log_writer);
+      retval = retval + getINT64Val(key,val,"NSAMP2AVG",nsamp2avg, log_writer);
+      retval = retval + getFloatVal(key,val,"OVRLP",ovrlp, log_writer);
+      retval = retval + getLongVal(key,val,"PAD",pad, log_writer);
      
     }
 

@@ -6,7 +6,7 @@
 class Log_writer_void : public Log_writer
 {
 public:
-  Log_writer_void(int messagelevel, bool interactive=false);
+  Log_writer_void(int messagelevel=0, bool interactive=false);
   
   void set_interactive(int i) { }
   int  get_interactive()      { return false; }

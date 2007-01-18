@@ -6,7 +6,7 @@
 class Log_writer_cout : public Log_writer
 {
 public:
-  Log_writer_cout(int interactive, bool interactive);
+  Log_writer_cout(int interactive=0, bool interactive=false);
   
   void ask_continue();
 

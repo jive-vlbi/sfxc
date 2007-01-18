@@ -29,7 +29,7 @@ public:
   void set_current_messagelevel(int level);
 
   /** << operators **/
-  Log_writer &operator()(int i) {set_messagelevel(i); return *this;};
+  Log_writer &operator()(int i) {current_level = i; return *this;};
   
   Log_writer &operator<<(INT32 i);
   Log_writer &operator<<(UINT32 i);
