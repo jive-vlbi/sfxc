@@ -5,7 +5,7 @@
  */
 
 #include <types.h>
-#include <Controller_node.h>
+#include <Manager_node.h>
 #include <Data_node.h>
 #include <Correlator_node.h>
 
@@ -51,8 +51,8 @@ int main(int argc, char *argv[]) {
     int numtasks;
     MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
     
-    Controller_node controller(numtasks, rank, argv[1]);
-    controller.start();
+    Manager_node manager(numtasks, rank, argv[1]);
+    manager.start();
   } else {
     MPI_Status status, status2;
     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);

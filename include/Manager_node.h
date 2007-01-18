@@ -14,9 +14,9 @@
 
 #include <Node.h>
 
-class Controller_node : public Node {
+class Manager_node : public Node {
 public:
-  Controller_node(int numtasks, int rank, char * control_file);
+  Manager_node(int numtasks, int rank, char * control_file);
   
   void start();
 private:
