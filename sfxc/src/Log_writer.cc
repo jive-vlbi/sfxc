@@ -25,6 +25,45 @@ void Log_writer::message(int messagelevel, std::stringstream const &msg) {
   } 
 }
 
+/** Writes a warning **/ 
+void Log_writer::warning(const char buff[]) {
+  write_message("WARNING: ");
+  write_message(buff);
+  write_message("\n");
+}
+/** Writes a warning **/ 
+void Log_writer::warning(std::string const &msg) {
+  write_message("WARNING: ");
+  write_message(msg.c_str());
+  write_message("\n");
+}
+/** Writes a warning **/ 
+void Log_writer::warning(std::stringstream const &msg) {
+  write_message("WARNING: ");
+  write_message(msg.str().c_str());
+  write_message("\n");
+}
+
+/** Writes a error **/ 
+void Log_writer::error(const char buff[]) {
+  write_message("ERROR: ");
+  write_message(buff);
+  write_message("\n");
+}
+/** Writes a error **/ 
+void Log_writer::error(std::string const &msg) {
+  write_message("ERROR: ");
+  write_message(msg.c_str());
+  write_message("\n");
+}
+/** Writes a error **/ 
+void Log_writer::error(std::stringstream const &msg) {
+  write_message("ERROR: ");
+  write_message(msg.str().c_str());
+  write_message("\n");
+}
+
+
 void Log_writer::set_current_messagelevel(int level) {
   current_level = level;
 }

@@ -24,6 +24,21 @@ public:
   **/ 
   void message(int messagelevel, std::stringstream const &msg);
   
+  /** Writes a warning **/ 
+  void warning(const char buff[]);
+  /** Writes a warning **/ 
+  void warning(std::string const &msg);
+  /** Writes a warning **/ 
+  void warning(std::stringstream const &msg);
+
+  /** Writes a error **/ 
+  void error(const char buff[]);
+  /** Writes a error **/ 
+  void error(std::string const &msg);
+  /** Writes a error **/ 
+  void error(std::stringstream const &msg);
+  
+
   /** Set the message level for the coming messages:
   **/ 
   void set_current_messagelevel(int level);

@@ -140,7 +140,7 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   seed = (UINT32) time((time_t *)NULL);
   seed = 10;
   msg << "CorrelateBufs: seed: " << seed;
-  get_log_writer().message(0,msg);
+  get_log_writer().warning(msg);
   
   //declarations
   int retval = 0;
