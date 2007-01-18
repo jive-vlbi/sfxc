@@ -21,8 +21,6 @@ private:
   // Buffer for the output, input is directly handled by the Correlator_controller
   Semaphore_buffer<Output_controller::value_type> buffer;
 
-  Log_writer_void log_writer;
-
   Correlator_controller correlator_controller;
   Output_controller     output_controller;
 };

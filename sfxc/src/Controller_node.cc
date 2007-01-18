@@ -11,6 +11,10 @@ $Source$
 #include <iostream>
 #include <assert.h>
 
+#include "sfxc_mpi.h"
+#include "utils.h"
+#include "MPI_Transfer.h"
+
 // NGHK: Global variables
 #include <runPrms.h>
 #include <genPrms.h>
@@ -20,71 +24,24 @@ extern RunP RunPrms;
 extern GenP GenPrms;
 extern StaP StaPrms[NstationsMax];
 
-Controller_node::Controller_node(int numtasks, int rank, char * ctrlFile) 
+Controller_node::Controller_node(int numtasks, int rank, char * control_file) 
   : Node(rank), numtasks(numtasks)
 {
+  assert(rank == 0);
   
-  //parse control file for run parameters
-  if (RunPrms.parse_ctrlFile(ctrlFile) != 0) {
-    log_writer << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
-    return;
-  }
+  int err;
+  err = read_control_file(control_file);
+  if (err != 0) return;
   
-  //show version information and control file info
-  if (RunPrms.get_messagelvl()> 0)
-    log_writer << "\nSource " << __FILE__ << " compiled at: "
-         << __DATE__ << " " <<__TIME__ << "\n\n"
-         << "Control file name "  <<  ctrlFile << "\n";
-  
-  //check control parameters, optionally show them
-  if (RunPrms.check_params() != 0) {
-    std::cerr << "ERROR: Run control parameter, program aborted.\n";
-    return;
-  }
-  
-  //parse control file for general parameters
-  if (GenPrms.parse_ctrlFile(ctrlFile) != 0) {
-    std::cerr << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
-    return;
-  }
-
-  //check general control parameters, optionally show them
-  if (GenPrms.check_params() != 0) {
-    std::cerr << "ERROR: General control parameter, program aborted.\n";
-    return;
-  }
-  
-  //get the number of stations
-  Nstations = GenPrms.get_nstations();
-  
-  //parse the control file for all station parameters
-  for (int i=0; i<Nstations; i++)
-    if (StaPrms[i].parse_ctrlFile(ctrlFile,i) != 0 ) {
-      std::cerr << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
-      return;
-    }
-    
-  //check station control parameters, optionally show them
-  for (int i=0; i<Nstations; i++){
-    if (StaPrms[i].check_params() != 0 ) {
-      std::cerr << "ERROR: Station control parameter, program aborted.\n";
-      return;
-    }
-  }  
-
-  // starting up the other processes:
-  if (numtasks < Nstations+2) {
-    // We need at least 1 control node, Nstations readers and 1 correlator.
-    std::cerr << "ERROR: To few processes to correlate, at least "
-              << Nstations+2 << " processes are needed" << std::endl;
-    assert(numtasks >= Nstations+2);
-  }
+  assert(Nstations+2 <= numtasks);
 
   for (int i=Nstations+1; i<numtasks; i++) {
     // starting a correlator node
     int type = MPI_TAG_SET_CORRELATOR_NODE;
     MPI_Send(&type, 1, MPI_INT, i, 
              MPI_TAG_SET_CORRELATOR_NODE, MPI_COMM_WORLD);
+    err = send_control_parameters_to_controller_node(i);
+    if (err != 0) return;
   }
 
   for (int i=1; i<=Nstations; i++) {
@@ -96,22 +53,59 @@ Controller_node::Controller_node(int numtasks, int rank, char * ctrlFile)
 
     // Add correlator nodes to the input readers:
     for (int j=Nstations+1; j<numtasks; j++) {
-      std::cout << "HERE" << j << std::endl;
       MPI_Send(&j, 1, MPI_INT, i, 
                MPI_TAG_ADD_CORRELATOR_NODE, MPI_COMM_WORLD);
     }
   }
-
+  if (err != 0) return;
+  log_writer.MPI(1,"Initialisation ready");
 }
 
 void Controller_node::start() {
-  // Start processing:
-  
+  Node::start();
 
-  sleep(10);
   // End program:
-//  for (int i=1; i<numtasks; i++) {
-//    int type = MPI_CORRELATION_READY;
-//    MPI_Send(&type, 1, MPI_INT, i, MPI_TAG_COMMUNICATION, MPI_COMM_WORLD);
-//  }
+  for (int i=1; i<numtasks; i++) {
+    int type = MPI_MSG_CORRELATION_READY;
+    MPI_Send(&type, 1, MPI_INT, i, MPI_TAG_COMMUNICATION, MPI_COMM_WORLD);
+  }
 }
+int Controller_node::read_control_file(char *control_file) {
+  if (initialise_control(control_file, log_writer) != 0) {
+    log_writer.error("Initialisation using control file failed");
+    return 1;
+  }
+  Nstations = GenPrms.get_nstations();
+  return 0;
+}
+
+int Controller_node::send_control_parameters_to_controller_node(int node) {
+  // strlen+1 so that \0 gets transmitted as well
+  for (int i=0; i<GenPrms.get_nstations(); i++) {
+    char *infile_data = StaPrms[i].get_mk4file();
+    MPI_Send(infile_data, strlen(infile_data)+1, MPI_CHAR, node,
+             MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
+  }
+
+  MPI_Transfer mpi_transfer;
+  mpi_transfer.send_general_parameters(node);
+
+  for (int i=0; i<GenPrms.get_nstations(); i++) {
+    DelayTable delay; 
+    log_writer << StaPrms[i].get_delaytable() << std::endl;
+    int retval = delay.readDelayTable(StaPrms[i].get_delaytable(),
+                                      BufTime );
+    if (retval != 0) {
+      log_writer.error("error while reading delay table.");
+      return retval;
+    }
+    mpi_transfer.send_delay_table(delay, node);
+  }
+
+  const char *outfile_data = GenPrms.get_corfile();
+  MPI_Send((void *)outfile_data, strlen(outfile_data)+1, MPI_CHAR, node,
+           MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);
+           
+  return 0;
+}
+

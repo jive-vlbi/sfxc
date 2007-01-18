@@ -78,9 +78,8 @@ int main(int argc, char *argv[]) {
       return 1;
     }
 
-    // This one has to go:
-//    MPI_Send(control_file, strlen(control_file)+1, MPI_CHAR, 1,
-//             MPI_TAG_SET_CONTROL_FILE, MPI_COMM_WORLD);
+    //MPI_Send(control_file, strlen(control_file)+1, MPI_CHAR, 1,
+    //         MPI_TAG_SET_CONTROL_FILE, MPI_COMM_WORLD);
             
     // strlen+1 so that \0 gets transmitted as well
     for (int i=0; i<GenPrms.get_nstations(); i++) {
