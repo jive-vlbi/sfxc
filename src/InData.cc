@@ -355,20 +355,20 @@ int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
   int year1,day1,hh1,mm1,ss1,ms1,us1; //TOT for headstack 1
   INT64 TOTusec0, TOTusec1; //in micro seconds
     
-  get_log_writer()(0) <<
+  get_log_writer()(1) <<
     "--------------------------------------------------------------------------------\n" <<
-    "Start data display for station " << StaPrms[station].get_stname();
+    "Start data display for station " << StaPrms[station].get_stname() << std::endl;
   
   //read and unpack scanfile data into tracks
   nhs = StaPrms[station].get_nhs();
   if (nhs==1) {
     if (read32datafile(reader, tracks) != 0) {
-      get_log_writer().message(0,"Error in read32datafile.\n");
+      get_log_writer().error("error in read32datafile.");
       return -1;
     }
   } else {
     if (read64datafile(reader, tracks) != 0) {
-      get_log_writer().message(0,"Error in read64datafile.\n");
+      get_log_writer().error("error in read64datafile.");
       return -1;
     }
   }
@@ -407,12 +407,12 @@ int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
       &Head1, &year1, &day1, &hh1, &mm1, &ss1, &ms1, &us1, &TOTusec1);
       
     if(jsynch0 != jsynch1) {
-      cerr << "\nWARNING: jsynch mismatch\n";
+      get_log_writer()(0) << "\nWARNING: jsynch mismatch\n";
       return -1;
     }  
     if(TOTusec0 != TOTusec1) {
-      cerr << "\nWARNING: time code mismatch, TOTusec0 = " << TOTusec0
-           << " TOTusec1 = " << TOTusec1 << endl;
+      get_log_writer()(0) << "\nWARNING: time code mismatch, TOTusec0 = " << TOTusec0
+                    << " TOTusec1 = " << TOTusec1 << endl;
       return -1;
     }  
   }

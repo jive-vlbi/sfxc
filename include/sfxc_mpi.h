@@ -1,6 +1,8 @@
 #ifndef SFXC_MPI_H
 #define SFXC_MPI_H
 
+#define LOG_NODE 0
+
 enum MPI_TAG {
   /// General initialisation channel
   MPI_TAG_INIT =0,       
@@ -54,7 +56,7 @@ enum MPI_TAG {
   /// The correlation node is ready to process data
   MPI_MSG_CORRELATION_READY,
   
-  /// Message sent to the message node (currently the controller node)
+  /// Message sent to the log node (LOG_NODE)
   MPI_MSG_TEXT_MESSAGE,
 
   MPI_TAG_ERROR
