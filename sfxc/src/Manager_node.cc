@@ -7,7 +7,7 @@ $Revision$
 $Source$
 */
 
-#include <Controller_node.h>
+#include <Manager_node.h>
 #include <iostream>
 #include <assert.h>
 
@@ -24,7 +24,7 @@ extern RunP RunPrms;
 extern GenP GenPrms;
 extern StaP StaPrms[NstationsMax];
 
-Controller_node::Controller_node(int numtasks, int rank, char * control_file) 
+Manager_node::Manager_node(int numtasks, int rank, char * control_file) 
   : Node(rank), numtasks(numtasks)
 {
   assert(rank == 0);
@@ -61,7 +61,7 @@ Controller_node::Controller_node(int numtasks, int rank, char * control_file)
   log_writer.MPI(1,"Initialisation ready");
 }
 
-void Controller_node::start() {
+void Manager_node::start() {
   Node::start();
 
   // End program:
@@ -70,7 +70,7 @@ void Controller_node::start() {
     MPI_Send(&type, 1, MPI_INT, i, MPI_TAG_COMMUNICATION, MPI_COMM_WORLD);
   }
 }
-int Controller_node::read_control_file(char *control_file) {
+int Manager_node::read_control_file(char *control_file) {
   if (initialise_control(control_file, log_writer) != 0) {
     log_writer.error("Initialisation using control file failed");
     return 1;
@@ -79,7 +79,7 @@ int Controller_node::read_control_file(char *control_file) {
   return 0;
 }
 
-int Controller_node::send_control_parameters_to_controller_node(int node) {
+int Manager_node::send_control_parameters_to_controller_node(int node) {
   // strlen+1 so that \0 gets transmitted as well
   for (int i=0; i<GenPrms.get_nstations(); i++) {
     char *infile_data = StaPrms[i].get_mk4file();
