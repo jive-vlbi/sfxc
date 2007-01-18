@@ -1,4 +1,4 @@
-#include <Correlate_controller.h>
+#include <Correlator_controller.h>
 #include <signal.h>
 #include <iostream>
 #include <ProcessData.h>
@@ -7,8 +7,7 @@
 #include <Data_reader_file.h>
 #include <utils.h>
 
-/// TODO: NGHK: REMOVE
-#include <utils.h>
+#include <assert.h>
 
 /// TODO: NGHK: REMOVE
 #include <constPrms.h>
@@ -25,19 +24,19 @@ extern INT64 sliceTime;
 
 #include <MPI_Transfer.h>
 
-Correlate_controller::Correlate_controller(Buffer<output_value_type> &output_buffer,
+Correlator_controller::Correlator_controller(Buffer<output_value_type> &output_buffer,
                                            Log_writer &log_writer)
  : Controller(log_writer), 
    output_buffer(output_buffer), running(false), curr_station(0)
 {
 }
 
-Correlate_controller::~Correlate_controller()
+Correlator_controller::~Correlator_controller()
 {
 }
 
 Controller::Process_event_status 
-Correlate_controller::process_event(MPI_Status &status) {
+Correlator_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
   case MPI_TAG_SET_STATION_NUMBER:
@@ -167,13 +166,13 @@ Correlate_controller::process_event(MPI_Status &status) {
 }
 
 void 
-Correlate_controller::start() {
-  pthread_create(&correlate_thread, NULL, start_correlating, static_cast<void*>(this));
+Correlator_controller::start() {
+  pthread_create(&correlator_thread, NULL, start_correlating, static_cast<void*>(this));
   running = true;
 }
 
 void *
-Correlate_controller::start_correlating(void *self_) {
+Correlator_controller::start_correlating(void *self_) {
   Self *self = static_cast<Self *>(self_);
   self->correlate();
 
@@ -185,19 +184,19 @@ Correlate_controller::start_correlating(void *self_) {
 }
 
 void
-Correlate_controller::correlate() {
+Correlator_controller::correlate() {
   //Find Offsets
-  log_writer << "Correlate_controller: Find offsets ..." << std::endl;
+  log_writer << "Correlator_controller: Find offsets ..." << std::endl;
   assert((int)data_readers.size() == GenPrms.get_nstations());
   if (FindOffsets(data_readers, 1, 0) !=0) {
     std::cerr << "ERROR: FindOffsets, program aborted.\n";
     return;
   }
 
-  log_writer << "Correlate_controller: Correlate bufs ..." << std::endl;
+  log_writer << "Correlator_controller: Correlator bufs ..." << std::endl;
   if ( RunPrms.get_runoption() == 1 ) {
     //Process data for rank (=process identifier)
     CorrelateBufs(0, data_readers);
   }
-  log_writer << "Correlate_controller: correlation done ..." << std::endl;
+  log_writer << "Correlator_controller: correlation done ..." << std::endl;
 }

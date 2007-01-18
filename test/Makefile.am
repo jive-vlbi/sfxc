@@ -9,10 +9,10 @@ check_PROGRAMS = \
   test_Data_reader_file \
   test_Data_reader_mark5 \
   test_Data_node \
-  test_Correlate_node
+  test_Correlator_node
 TESTS           = \
   test_Transfer_control_parameters.py \
-  test_Correlate_node.py \
+  test_Correlator_node.py \
   test_buffer \
   test_Data_reader_file \
   test_Data_reader_mark5.py \
@@ -51,9 +51,9 @@ test_Data_node_SOURCES = \
   ../src/runPrms.cc ../src/genPrms.cc ../src/staPrms.cc \
   ../src/genFunctions.cc ../src/delayTable.cc
 
-test_Correlate_node_SOURCES = \
-  $(OBJ) test_Correlate_node.cc \
-  ../src/Correlate_node.cc ../src/Correlate_controller.cc \
+test_Correlator_node_SOURCES = \
+  $(OBJ) test_Correlator_node.cc \
+  ../src/Correlator_node.cc ../src/Correlator_controller.cc \
   ../src/runPrms.cc ../src/genPrms.cc ../src/staPrms.cc \
   ../src/genFunctions.cc \
   ../src/InData.cc ../src/delayTable.cc \

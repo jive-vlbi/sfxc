@@ -10,7 +10,7 @@
 
 #include <types.h>
 #include <sfxc_mpi.h>
-#include <Correlate_node.h>
+#include <Correlator_node.h>
 #include <fstream>
 #include <assert.h>
 
@@ -165,8 +165,8 @@ int main(int argc, char *argv[]) {
       log_writer << std::endl << __LINE__ << " HERE" << std::endl;
     }
   } else if (rank == 1) {
-    Correlate_node correlate_node(rank);
-    correlate_node.start();
+    Correlator_node correlator_node(rank);
+    correlator_node.start();
   }
 
 
