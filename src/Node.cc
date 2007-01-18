@@ -15,7 +15,8 @@ Last change: 20061124
 #include <iostream>
 #include <assert.h>
 
-Node::Node(int rank) : rank(rank), log_writer(1) {
+Node::Node(int rank) : rank(rank), log_writer(0) {
+  log_writer.set_mpilevel(10);
 }
 
 void 

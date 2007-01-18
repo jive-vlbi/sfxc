@@ -6,26 +6,23 @@ $Name$
 $Revision$
 $Source$
 
-Author     : NGH Kruithof
-StartDate  : 20061101
-Last change: 20061124
-*/
-
-/*
-Source       sfxc01.cc
+Source       sfxc.cc
 Title        software FX correlator
 Author       RHJ Oerlemans
 Started      20060901
-Last change  20060912
+Last change  20061114
 
+TODO: add doxygen style comments in *.cc and *.h
+TODO: review message levels in *.cc and *.h
+TODO: compiler at huygens generates more warning, check and try to fix this
 
 Description
-sfxc01 correlates the single channel data from N stations recorded on linux
+sfxc correlates the single channel data from N stations recorded on linux
 type harddisks. It can run on a multiprocessor machine or cluster.
-When sfxc01 runs on M processors the data from each station is divided into
+When sfxc runs on M processors the data from each station is divided into
 M chunks of equal length. All chunks from N stations but in the same
 time interval are processed on a separate processor. After the correlation
-of the time chunks the separate output files can be concatenated.
+of the time chunks the separate output files will be concatenated.
 
 The diagram below shows how the data from 4 stations is processed
 simultaneously on 3 processors. After the correlation the 3 correlator
@@ -52,7 +49,7 @@ chunk 3 | data   | data   | data   | data   | ---> CORE_3 --->|CorProduct 3|
 Input files:
 
 control file.
--Contains all relevant information to run sfxc01
+-Contains all relevant information to run sfxc
 -ascii file with keyword-value pairs. File is parsed
 
 data files,
@@ -61,27 +58,28 @@ data files,
 
 delay table files
 -one for each station
--
+
 
 phase table files
 -one for each station
+-this table is only used in special cases like spacecraft tracking
+-TODO the use of this table is not implemented yet
 
 Output:
-log file
-correlator file(s)
+-log file.  TODO: writing of log file not implemented
+-correlator file(s), one per time slice. TODO: concatenate into one output file
 
 Usage:
-sfxc01  control_file [ro ml nc i] or
-sfxc01t control_file [ro ml nc i]
-command line options between [] are optional:
-  ro: run option ro=[r0|r1] default=1, complete
-  ml: message level ml=[m0|m1|m2]. default=0 no messages except for errors
-  nc: nr of cores   nc=[n1|n2|n3|...] default 1 core
-  i : interactive when present. default not interactive mode
-The command line options can also be set in the control file.
-These values override the ones set on the command line.
+mpirun -np numtasks sfxc control_file
+
+mpirun        : command to run a MPI enabled application
+-np           : command option indicating the number of processors
+numtasks      : number of processors
+sfxc          : the software correlator application
+control_file  : file with parameter settings for sfxc
 
 Flow of the program:
+MPI settings
 Read control file
 Find Offsets
 Process data
@@ -106,6 +104,13 @@ using namespace std;
 #include <fcntl.h>
 #include <unistd.h>
 
+//includes for mpi
+//undef have to be before include <mpi.h>
+//#undef SEEK_SET
+//#undef SEEK_END
+//#undef SEEK_CUR
+//#include <mpi.h>
+
 //constants
 #include "constPrms.h"
 
@@ -117,9 +122,10 @@ using namespace std;
 #include "InData.h"
 #include "ProcessData.h"
 
-#include <vector>
 #include <Data_reader_file.h>
+#include <Log_writer_cout.h>
 
+#define SEED 10
 
 //global variables
 //declaration and default settings run parameters
@@ -130,95 +136,90 @@ GenP GenPrms;
 StaP StaPrms[NstationsMax];
 // used for randomising numbers for Headers in Mk4 file
 UINT32 seed;
-//PI
-double PI=4.0*atan(1.0);
-//declarations for offsets
-INT64 sliceStartByte[NstationsMax][NprocessesMax];
-// INT64 sliceStopByte [NstationsMax][NprocessesMax];
-INT64 sliceStartTime [NprocessesMax];
-INT64 sliceStopTime  [NprocessesMax];
-INT64 sliceTime;
 
 
+//return value 0 when no errors occurred
 int main(int argc, char *argv[])
 {
+  Log_writer_cout log_writer(0,false);
+  set_log_writer(log_writer); 
+
   if (argc != 2) {
-    std::cout << "usage: " << argv[0] << " <ctrl-file>" << std::endl;
+    log_writer << "usage: " << argv[0] << " <ctrl-file>" << std::endl;
     exit(1);
   }
 
-  std::cout << "Sfcx v" << PACKAGE_VERSION << std::endl;
 
   //declarations
   char   ctrlFile[lineLength]; // control file name
   int    i, Nstations;
   
-  int numtasks=1;
-
   // seed the random number generator (global variable!)
   seed = (UINT32) time((time_t *)NULL);
+  //TODO 13-12-2006: Fixed seeding for test purposes.
+  //make fixed seeding or time based seeding a control file option
+  seed = SEED;
+  log_writer << std::endl << "WARNING seed=" << seed << endl;
 
-  if(numtasks > 4) //entered at the command line
-  {
-    cout << "number of tasks is larger than 4, program aborted\n";
-    return -1;
-  }
+  log_writer << "sfcx v" << PACKAGE_VERSION << std::endl;
 
   //set the control file name
   strcpy(ctrlFile,argv[1]);
 
   //parse control file for run parameters
-  if (RunPrms.parse_ctrlFile(ctrlFile) != 0) {
-    cerr << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
+  if (RunPrms.parse_ctrlFile(ctrlFile, log_writer) != 0) {
+    log_writer << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
     return -1;
   }
-  
+
+  log_writer.set_messagelevel(RunPrms.get_messagelvl());
+  log_writer.set_interactive(RunPrms.get_interactive());
+
   //show version information and control file info
-  if (RunPrms.get_messagelvl()> 0)
-    cout << "\nSource " << __FILE__ << " compiled at: "
-         << __DATE__ << " " <<__TIME__ << "\n\n"
-         << "Control file name "  <<  ctrlFile << "\n";
+  log_writer << "Source " << __FILE__ 
+               << " compiled at: " << __DATE__ << " "<<__TIME__<<"\n\n";
   
   //check control parameters, optionally show them
-  if (RunPrms.check_params() != 0) {
-    cerr << "ERROR: Run control parameter, program aborted.\n";
+  if (RunPrms.check_params(log_writer) != 0) {
+    log_writer.message(0,"ERROR: Run control parameter, program aborted.\n");
     return -1;
   }
   
-  if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0) askContinue();
+  log_writer.ask_continue();
 
   //parse control file for general parameters
-  if (GenPrms.parse_ctrlFile(ctrlFile) != 0) {
-    cerr << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
+  if (GenPrms.parse_ctrlFile(ctrlFile, log_writer) != 0) {
+    log_writer << "ERROR: Control file " << ctrlFile <<", program aborted.\n";
     return -1;
   }
 
   //check general control parameters, optionally show them
-  if (GenPrms.check_params() != 0) {
-    cerr << "ERROR: General control parameter, program aborted.\n";
+  if (GenPrms.check_params(log_writer) != 0) {
+    log_writer.message(0,"ERROR: General control parameter, program aborted.\n");
     return -1;
   }
   
-  if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0) askContinue();    
+  log_writer.ask_continue();
 
   //get the number of stations
   Nstations = GenPrms.get_nstations();
   
   //parse the control file for all station parameters
   for (i=0; i<Nstations; i++)
-    if (StaPrms[i].parse_ctrlFile(ctrlFile,i) != 0 ) {
-      cerr << "ERROR: Control file "<< ctrlFile <<", program aborted.\n";
+    if (StaPrms[i].parse_ctrlFile(ctrlFile, i, log_writer) != 0 ) {
+      log_writer << "ERROR: Control file " << ctrlFile <<", program aborted.\n";
       return -1;
     }
     
   //check station control parameters, optionally show them
   for (i=0; i<Nstations; i++){
-    if (StaPrms[i].check_params() != 0 ) {
-      cerr << "ERROR: Station control parameter, program aborted.\n";
+    if (StaPrms[i].check_params(log_writer) != 0 ) {
+      log_writer.message(0,"ERROR: Station control parameter, program aborted.\n");
       return -1;
     }
-    if (RunPrms.get_interactive() && RunPrms.get_messagelvl()> 0) askContinue();
+    log_writer.ask_continue();
   }  
+  
 
   // NGHK: Has to be a pointer or a reference, 
   //       since Data_reader is an abstract class
@@ -228,17 +229,19 @@ int main(int argc, char *argv[])
   }
 
   //Find Offsets
-  int rank=0;
-  FindOffsets(input_readers, numtasks, rank);
-
-  if ( RunPrms.get_runoption() == 1) {
-    //Process data
-    //MULTIPLE CORE PROCESSING
-    cout << "correlation on core " << rank << " started" << endl;
-    CorrelateBufs(rank, input_readers);
-    cout << "correlation on core " << rank << " finished" << endl;
+  if (FindOffsets(input_readers, 1, 0) !=0) {
+    log_writer.message(0,"ERROR: FindOffsets, program aborted.\n");
+    return -1;
   }
-  return 1;
+
+  if ( RunPrms.get_runoption() == 1 ) {
+    //Process data for rank (=process identifier)
+    if (CorrelateBufs(0, input_readers) != 0) {
+      log_writer.message(0,"ERROR: CorrelateBufs, program aborted.\n");
+      return -1;
+    }
+  }
+
+  return 0;
 
 }
-

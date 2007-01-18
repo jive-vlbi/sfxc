@@ -1,18 +1,13 @@
-/*
-  CVS keywords
-  $Author$
-  $Date$
-  $Name$
-  $Revision$
-  $Source$
-*/
+/* Author(s): Nico Kruithof
+ * 
+ * $URL:$
+ * $Id: $
+ */
 
 #include <types.h>
 #include <Controller_node.h>
 #include <Data_node.h>
 #include <Correlator_node.h>
-
-
 
 //global variables
 #include <runPrms.h>
@@ -33,36 +28,29 @@ UINT32 seed;
 #include <assert.h>
 
 
-
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   // MPI
-  int numtasks, rank;
+  int rank;
 
   //initialisation
   int status = MPI_Init(&argc,&argv);
   if (status != MPI_SUCCESS) {
     std::cout << "Error starting MPI program. Terminating.\n";
     MPI_Abort(MPI_COMM_WORLD, status);
+    return 1;
   }
 
-  // get the number of tasks set at commandline (= number of processors)
-  MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-  if (argc != 2) {
-    if (rank == 0) {
-      std::cout << "Usage: " << argv[0] << " <ctrl-file>" << std::endl;
-    }
-    
-	//close the mpi stuff
-  	MPI_Finalize();
-    
-    exit(0);
-  }
-
+  ///////////////////////////
+  //  The real work
+  ///////////////////////////
   if (rank == 0) {
+    // get the number of tasks set at commandline (= number of processors)
+    int numtasks;
+    MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
+    
     Controller_node controller(numtasks, rank, argv[1]);
     controller.start();
   } else {
@@ -81,8 +69,7 @@ int main(int argc, char *argv[])
         assert(status.MPI_SOURCE == status2.MPI_SOURCE);
         assert(status.MPI_TAG == status2.MPI_TAG);
 
-        Data_node data_node(rank, filename);
-        Data_node.start();
+        Data_node data_node(rank);
         break;
       }
     case MPI_TAG_SET_CORRELATOR_NODE: 
@@ -104,10 +91,11 @@ int main(int argc, char *argv[])
     }
   }
 
+
+
   //close the mpi stuff
+  MPI_Barrier( MPI_COMM_WORLD );
   MPI_Finalize();
 
-  return 1;
-
+  return 0;
 }
-

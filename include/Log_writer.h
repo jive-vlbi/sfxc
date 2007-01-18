@@ -38,6 +38,13 @@ public:
   /** Writes a error **/ 
   void error(std::stringstream const &msg);
   
+  /** Writes a MPI message **/ 
+  void MPI(int level, const char buff[]);
+  /** Writes a MPI message **/ 
+  void MPI(int level, std::string const &msg);
+  /** Writes a MPI message **/ 
+  void MPI(int level, std::stringstream const &msg);
+  
 
   /** Set the message level for the coming messages:
   **/ 
@@ -56,15 +63,19 @@ public:
   // for std::endl
   Log_writer &operator<<(std::ostream& (*f)(std::ostream&) ); 
 
-  void set_messagelevel(int level) { _level = level; }
-  int  get_messagelevel()          { return _level; }
+  /// Sets all message levels to level
+  void set_messagelevel(int level);
+
+  void set_mpilevel(int level) { mpi_level = level; }
+  int  get_mpilevel()          { return mpi_level; }
 
   /** Ask the user to proceed to the next correlation step.
   **/ 
   virtual void ask_continue();
 private:
   virtual void write_message(const char buff[])=0;
-  int _level, current_level;
+  int main_level, current_level;
+  int mpi_level;
 };
 
 #endif /*LOG_WRITER_H_*/

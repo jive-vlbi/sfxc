@@ -15,6 +15,9 @@ OBJ=runPrms.cc genPrms.cc staPrms.cc \
 sfxc_SOURCES = $(OBJ) sfxc.cc 
 
 sfxc_adam_SOURCES = $(OBJ) sfxc_adam.cc \
-  Controller_node.cc Correlator_node.cc Input_node.cc Node.cc
+  Controller_node.cc Correlator_node.cc Data_node.cc Node.cc \
+	Controller.cc Correlator_controller.cc Input_controller.cc Output_controller.cc \
+	Data_writer_file.cc \
+  MPI_Transfer.cc
 
 sfxc_singlecore_SOURCES = $(OBJ) sfxc_singlecore.cc
