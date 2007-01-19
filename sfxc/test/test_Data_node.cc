@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 
     MPI_Status status;
     MPI_Probe(1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    assert(status.MPI_TAG == MPI_MSG_DATASTREAM_EMPTY);
+    assert(status.MPI_TAG == MPI_TAG_DATASTREAM_EMPTY);
     assert(status.MPI_SOURCE == 1);
   
   
@@ -85,13 +85,13 @@ int main(int argc, char *argv[]) {
     int i;
     MPI_Status status2;
     MPI_Recv(&i, 1, MPI_INT, MPI_ANY_SOURCE,
-             MPI_MSG_DATASTREAM_EMPTY, MPI_COMM_WORLD, &status2);
+             MPI_TAG_DATASTREAM_EMPTY, MPI_COMM_WORLD, &status2);
    
    
     // Terminate data node
     i=0;
     MPI_Send(&i, 1, MPI_INT, 1,
-             MPI_MSG_CORRELATION_READY, MPI_COMM_WORLD);
+             MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
 
   } else if (rank == 1) {
     Data_node data_node(rank);

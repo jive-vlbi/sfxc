@@ -178,7 +178,7 @@ Correlator_controller::start_correlating(void *self_) {
 
   int i=0; 
   MPI_Send(&i, 1, MPI_INT, 0,
-           MPI_MSG_CORRELATE_ENDED, MPI_COMM_WORLD);
+           MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD);
 
   return NULL;
 }

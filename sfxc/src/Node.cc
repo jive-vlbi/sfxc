@@ -17,6 +17,7 @@ Last change: 20061124
 
 Node::Node(int rank) : rank(rank), log_writer(0) {
   log_writer.set_mpilevel(10);
+  log_writer.set_rank(rank);
 }
 
 void 
@@ -28,7 +29,7 @@ void Node::start() {
   while (true) {
     MPI_Status status;
     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    if (status.MPI_TAG == MPI_MSG_CORRELATION_READY) return;
+    if (status.MPI_TAG == MPI_TAG_CORRELATION_READY) return;
     process_event(status);
   }
 }
@@ -55,12 +56,16 @@ void Node::process_event(MPI_Status &status) {
       }
     }
   }
-  log_writer.message(1, "ERROR: Unknown event");
-
+  {
+    char msg[80];
+    snprintf(msg, 80, "Unknown event %d", status.MPI_TAG);
+    log_writer.error(msg);
+  }
+  
   // Remove event:  
   int size;
   MPI_Get_elements(&status, MPI_CHAR, &size);
-  assert(size > 0);
+  assert(size >= 0);
   char msg[size];
   MPI_Status status2;
   MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,

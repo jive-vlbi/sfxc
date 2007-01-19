@@ -25,9 +25,12 @@ extern GenP GenPrms;
 extern StaP StaPrms[NstationsMax];
 
 Manager_node::Manager_node(int numtasks, int rank, char * control_file) 
-  : Node(rank), numtasks(numtasks)
+  : Node(rank), numtasks(numtasks), 
+    log_controller(log_writer_cout), manager_controller(Node::log_writer, numtasks)
 {
   assert(rank == 0);
+  add_controller(&log_controller);
+  add_controller(&manager_controller);
   
   int err;
   err = read_control_file(control_file);
@@ -58,6 +61,14 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
     }
   }
   if (err != 0) return;
+  
+  // set manager_controller:
+  manager_controller.set_start_time(GenPrms.get_usStart());
+  manager_controller.set_stop_time(GenPrms.get_usStop());
+  
+  
+
+
   log_writer.MPI(1,"Initialisation ready");
 }
 
@@ -66,10 +77,11 @@ void Manager_node::start() {
 
   // End program:
   for (int i=1; i<numtasks; i++) {
-    int type = MPI_MSG_CORRELATION_READY;
+    int type = MPI_TAG_CORRELATION_READY;
     MPI_Send(&type, 1, MPI_INT, i, MPI_TAG_COMMUNICATION, MPI_COMM_WORLD);
   }
 }
+
 int Manager_node::read_control_file(char *control_file) {
   if (initialise_control(control_file, log_writer) != 0) {
     log_writer.error("Initialisation using control file failed");

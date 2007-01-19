@@ -60,7 +60,7 @@ Output_controller::start_writing(void *self_) {
   // Writing ended, notify controller node
   int i=0; 
   MPI_Send(&i, 1, MPI_INT, 0,
-           MPI_MSG_DATASTREAM_EMPTY, MPI_COMM_WORLD);
+           MPI_TAG_DATASTREAM_EMPTY, MPI_COMM_WORLD);
 
   return NULL;
 }

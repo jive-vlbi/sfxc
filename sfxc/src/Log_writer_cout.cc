@@ -2,7 +2,7 @@
 #include <iostream>
 
 Log_writer_cout::Log_writer_cout(int messagelevel, bool interactive) 
-  : Log_writer(messagelevel), _interactive(interactive)
+  : Log_writer(messagelevel, interactive)
 {
   
 }
@@ -12,7 +12,7 @@ void Log_writer_cout::write_message(const char buff[]) {
 }
   
 void Log_writer_cout::ask_continue() {
-  if (!_interactive) return;
+  if (!get_interactive()) return;
   char repl; // user reply character
   
   std::cout << "\nEnter c to continue, any other character to stop: ";

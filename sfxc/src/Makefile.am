@@ -10,13 +10,15 @@ OBJ=runPrms.cc genPrms.cc staPrms.cc \
 	InData.cc delayTable.cc \
 	ProcessData.cc Data_reader_file.cc Data_reader_tcp.cc \
 	utils.cc timer.cc \
-	Log_writer.cc Log_writer_cout.cc Log_writer_void.cc
+	Log_writer.cc Log_writer_cout.cc Log_writer_void.cc Log_writer_mpi.cc \
+	Log_controller.cc
 
 sfxc_SOURCES = $(OBJ) sfxc.cc 
 
 sfxc_adam_SOURCES = $(OBJ) sfxc_adam.cc \
   Manager_node.cc Correlator_node.cc Data_node.cc Node.cc \
-	Controller.cc Correlator_controller.cc Input_controller.cc Output_controller.cc \
+	Controller.cc Input_controller.cc Output_controller.cc \
+	Correlator_controller.cc Manager_controller.cc \
 	Data_writer_file.cc \
   MPI_Transfer.cc
 
