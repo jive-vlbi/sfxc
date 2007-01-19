@@ -1,7 +1,7 @@
 #include <Log_writer.h>
 
-Log_writer::Log_writer(int messagelevel)
- : main_level(messagelevel), current_level(0), mpi_level(main_level) 
+Log_writer::Log_writer(int messagelevel, bool interactive)
+ : main_level(messagelevel), current_level(0), mpi_level(main_level), _interactive(interactive) 
 {}
 
 Log_writer::~Log_writer() {}
@@ -84,7 +84,27 @@ void Log_writer::MPI(int level, std::stringstream const &msg) {
   }
 }
 
+char* Log_writer::itoa( int value, char* result, int base ) {
+  // check that the base if valid
+  if (base < 2 || base > 16) { *result = 0; return result; }
+  
+  char* out = result;
+  int quotient = value;
 
+  do {
+    *out = "0123456789abcdef"[ std::abs( quotient % base ) ];
+    ++out;
+    quotient /= base;
+  } while ( quotient );
+  
+  // Only apply negative sign for base 10
+  if ( value < 0 && base == 10) *out++ = '-';
+  
+  std::reverse( result, out );
+  *out = 0;
+  
+  return result;
+}
 void Log_writer::set_current_messagelevel(int level) {
   current_level = level;
 }

@@ -9,14 +9,16 @@ check_PROGRAMS = \
   test_Data_reader_file \
   test_Data_reader_mark5 \
   test_Data_node \
-  test_Correlator_node
+  test_Correlator_node \
+  test_Log_writer_mpi
 TESTS           = \
   test_Transfer_control_parameters.py \
   test_Correlator_node.py \
   test_buffer \
   test_Data_reader_file \
   test_Data_reader_mark5.py \
-  test_Data_node.py 
+  test_Data_node.py \
+  test_Log_writer_mpi.py
 
 
 OBJ = ../src/MPI_Transfer.cc \
@@ -58,3 +60,9 @@ test_Correlator_node_SOURCES = \
   ../src/genFunctions.cc \
   ../src/InData.cc ../src/delayTable.cc \
   ../src/ProcessData.cc
+
+test_Log_writer_mpi_SOURCES = \
+  test_Log_writer_mpi.cc \
+  ../src/Node.cc \
+  ../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/Log_writer_mpi.cc \
+  ../src/Controller.cc ../src/Log_controller.cc

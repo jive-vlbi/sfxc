@@ -14,7 +14,7 @@ public:
 
   Process_event_status process_event(MPI_Status &status);  
 
-
+private:
   //void set_buffer(Buffer<value_type> &buff);
   
   void start();

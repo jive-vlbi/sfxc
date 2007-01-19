@@ -16,7 +16,7 @@
 #include <list>
 
 #include "Controller.h"
-#include "Log_writer_cout.h"
+#include "Log_writer_mpi.h"
 
 /** Generic node to which a number of controllers can be added.
     \ingroup ImportantClasses
@@ -52,7 +52,7 @@ private:
   Controller_list controllers;
 
 protected:
-  Log_writer_cout log_writer;
+  Log_writer_mpi log_writer;
 };
 
 #endif // NODE_H

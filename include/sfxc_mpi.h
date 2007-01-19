@@ -48,16 +48,19 @@ enum MPI_TAG {
   MPI_TAG_ADD_CORRELATOR_NODE_TO_READER_TCP,
 
   /// The data at a buffer stopped.
-  MPI_MSG_DATASTREAM_EMPTY,
+  MPI_TAG_DATASTREAM_EMPTY,
   
   /// A correlate node finished
-  MPI_MSG_CORRELATE_ENDED,
+  MPI_TAG_CORRELATE_ENDED,
 
   /// The correlation node is ready to process data
-  MPI_MSG_CORRELATION_READY,
+  MPI_TAG_CORRELATION_READY,
   
   /// Message sent to the log node (LOG_NODE)
-  MPI_MSG_TEXT_MESSAGE,
+  MPI_TAG_TEXT_MESSAGE,
+  
+  /// Send a log message to the manager node
+  MPI_TAG_LOG_MESSAGE,
 
   MPI_TAG_ERROR
 };

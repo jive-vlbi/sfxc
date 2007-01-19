@@ -10,7 +10,7 @@ using namespace std;
 
 class Log_writer {
 public:
-  Log_writer(int messagelevel);
+  Log_writer(int messagelevel=0, bool interactive=false);
   
   virtual ~Log_writer();
   
@@ -46,10 +46,6 @@ public:
   void MPI(int level, std::stringstream const &msg);
   
 
-  /** Set the message level for the coming messages:
-  **/ 
-  void set_current_messagelevel(int level);
-
   /** << operators **/
   Log_writer &operator()(int i) {current_level = i; return *this;};
   
@@ -63,19 +59,28 @@ public:
   // for std::endl
   Log_writer &operator<<(std::ostream& (*f)(std::ostream&) ); 
 
+
+  char* itoa( int value, char* result, int base );
+
   /// Sets all message levels to level
   void set_messagelevel(int level);
+
+  /** Set the message level for the coming messages:
+  **/ 
+  void set_current_messagelevel(int level);
+
+  void set_interactive(int i) { _interactive = i; }
+  int  get_interactive()      { return _interactive; }
 
   void set_mpilevel(int level) { mpi_level = level; }
   int  get_mpilevel()          { return mpi_level; }
 
-  /** Ask the user to proceed to the next correlation step.
-  **/ 
+  /** Ask the user to proceed to the next correlation step. **/ 
   virtual void ask_continue();
 private:
   virtual void write_message(const char buff[])=0;
   int main_level, current_level;
-  int mpi_level;
+  int mpi_level, _interactive;
 };
 
 #endif /*LOG_WRITER_H_*/
