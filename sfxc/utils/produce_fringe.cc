@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 
   // Example of a fourier transform
   complex<double> in[N], out[N];
-  fftw_plan p, p2;
+  fftw_plan p;
   
   std::ifstream infile(argv[1], std::ios::in | std::ios::binary);
   assert(infile.is_open());
