@@ -123,6 +123,7 @@ using namespace std;
 #include "ProcessData.h"
 
 #include <Data_reader_file.h>
+#include <Data_writer_file.h>
 #include <Log_writer_cout.h>
 
 #define SEED 10
@@ -201,6 +202,11 @@ int main(int argc, char *argv[])
   
   log_writer.ask_continue();
 
+  // Set the output writer
+  Data_writer_file data_writer(GenPrms.get_corfile());
+  set_data_writer(data_writer); 
+
+
   //get the number of stations
   Nstations = GenPrms.get_nstations();
   
@@ -236,7 +242,7 @@ int main(int argc, char *argv[])
 
   if ( RunPrms.get_runoption() == 1 ) {
     //Process data for rank (=process identifier)
-    if (CorrelateBufs(0, input_readers) != 0) {
+    if (CorrelateBufs(input_readers) != 0) {
       log_writer.message(0,"ERROR: CorrelateBufs, program aborted.\n");
       return -1;
     }

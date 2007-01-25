@@ -17,6 +17,7 @@ public:
 private:
   int numtasks;
   INT64 start, stop;
+  int slice;
 };
 
 #endif /*MANAGER_CONTROLLER_H_*/

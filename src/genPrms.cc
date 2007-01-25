@@ -102,6 +102,13 @@ INT64 GenP::get_usLatest()   const {
   return usLatest; 
 }
 
+void GenP::set_usStart(INT64 start) {
+  usStart = start;
+}
+void GenP::set_usStop(INT64 stop) {
+  usStop = stop;
+}
+
 void  GenP::set_usEarliest(INT64 newEarliest) {
   usEarliest = newEarliest;
 }

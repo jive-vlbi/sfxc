@@ -72,9 +72,23 @@ extern INT64 sliceStopTime  [NprocessesMax];
 
 extern UINT32 seed;
 
+#include <Data_writer.h>
+
+Data_writer *data_writer=NULL;
+// NGHK: This variable should definately go into a correlate class:
+void set_data_writer(Data_writer &writer) {
+  if (data_writer!=NULL) delete(data_writer);
+  data_writer = &writer;
+}
+Data_writer &get_data_writer() {
+  assert(data_writer != NULL);
+  return *data_writer;
+}
+
 // NGHK: This variable should definately go into a correlate class:
 Log_writer      *log_writer=NULL;
 void set_log_writer(Log_writer &writer) {
+  if (log_writer!=NULL) delete(log_writer);
   log_writer = &writer;
 }
 Log_writer &get_log_writer() {
@@ -92,7 +106,7 @@ int fill_Bufs(std::vector<Data_reader *> &readers,
   double *signST, double *magnST, INT64 *Nsamp,
   fftw_complex *sls, fftw_complex *spls, fftw_plan& planFW, fftw_plan& planBW,
   double tbs, double *fs, int Nf, double timePtr,
-  std::vector<DelayTable> &delTbl, int rank);
+  std::vector<DelayTable> &delTbl);
 
 int fetch_invecs(INT64& BufPtr, int nstations, int n2fft,
   double **invecs, double **Bufs);
@@ -129,64 +143,65 @@ void correlation_add_delay_table(DelayTable &table) {
   assert(table == delTbl.back());
 }
 
-  
-//***************************************************************************
-// fill the buffers with pre-correlation data and correlate
-//***************************************************************************
-int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
-{
-  std::stringstream msg;
+//declarations
+int retval = 0;
+int i,j,l;
+int nstations, sn, sno; //nr of stations and station counters
+int n2fft; //FFT length in correlation
+int pad; //padding with zeros for invecs
+INT64 Nsamp2Avg; //nr of samples to average the correlation
+INT64 Nsegm2Avg; //nr of fourier segments to average the correlation
+INT64 segm; //segment number in for loop
+INT64 TenPct;
+INT64 BufPtr; //location of the buffer pointer
+INT64 *Nsamp = NULL;
+double timePtr; //a time pointer in micro seconds
+int nbslns; //number of baselines, cross and auto correlations
+int bsln; // baseline number
+float *norms = NULL; //normalization coeffs
+double **Bufs = NULL; //buffers with pre-correlated data ready for correlation
+double **dcBufPrev = NULL; //buffers with data for delay correction
+int BufSize; // size of one buffer in Bufs
+double **invecs = NULL;//input vectors for FFT operation
+fftw_complex **xps = NULL; //xps: result vectors from FFT
+//fftw_complex **accxps = NULL; //accumulated cross and auto powers Real and Imaginary part
+fftw_plan *fwd_plans = NULL; //FFT plans
+double **Mk4frame = NULL; //channel data for one frame
+INT64 *FL = NULL; //Mk4 frame length
+INT64 *FC = NULL; //Mk4 frame counter
+double *signST = NULL, *magnST = NULL;//sign and magnitude statistics
+INT64 loop; //while loop counter
+double SR, tbs; //sample rate and time between samples
+double dfr, *fs = NULL; // delta frequency in frequency scale, frequency scale
+int    jf, Nf; //nr of frequencies in frequency scale
+char outFile[256], coreStr[5];
+//timer parameters
+ptimer  tmr1;
+// accumulated cross and auto powers Real and Imaginary part
+fftw_complex **accxps;
 
+//declarations for fftw in delay correction
+fftw_complex *sls = NULL, *spls = NULL; //FW:in,out; BW: out,in
+fftw_plan    planFW, planBW;//plans for forward and backward fft 
+int lsegm; //fourier length of a segment in the pre-correlation
+
+std::vector<Data_reader *> readers;
+
+int CorrelateBufs_initialise(std::vector<Data_reader *> &readers_) {
+  readers = readers_;
+
+  // All variables needed for CorrelateBufs
   seed = (UINT32) time((time_t *)NULL);
   seed = 10;
-  msg << "CorrelateBufs: seed: " << seed;
-  get_log_writer().warning(msg);
-  
-  //declarations
-  int retval = 0;
-  int i,j,l;
-  int nstations, sn, sno; //nr of stations and station counters
-  int n2fft; //FFT length in correlation
-  int pad; //padding with zeros for invecs
-  INT64 Nsamp2Avg; //nr of samples to average the correlation
-  INT64 Nsegm2Avg; //nr of fourier segments to average the correlation
-  INT64 segm; //segment number in for loop
-  INT64 TenPct;
-  INT64 BufPtr; //location of the buffer pointer
-  INT64 *Nsamp = NULL;
-  double timePtr; //a time pointer in micro seconds
-  int nbslns; //number of baselines, cross and auto correlations
-  int bsln; // baseline number
-  float *norms = NULL; //normalization coeffs
-  double **Bufs = NULL; //buffers with pre-correlated data ready for correlation
-  double **dcBufPrev = NULL; //buffers with data for delay correction
-  int BufSize; // size of one buffer in Bufs
-  double **invecs = NULL;//input vectors for FFT operation
-  fftw_complex **xps = NULL; //xps: result vectors from FFT
-  fftw_complex **accxps = NULL; //accumulated cross and auto powers Real and Imaginary part
-  fftw_plan *fwd_plans = NULL; //FFT plans
-  double **Mk4frame = NULL; //channel data for one frame
-  INT64 *FL = NULL; //Mk4 frame length
-  INT64 *FC = NULL; //Mk4 frame counter
-  double *signST = NULL, *magnST = NULL;//sign and magnitude statistics
-  INT64 loop; //while loop counter
-  double SR, tbs; //sample rate and time between samples
-  double dfr, *fs = NULL; // delta frequency in frequency scale, frequency scale
-  int    jf, Nf; //nr of frequencies in frequency scale
-  FILE *outP = NULL; //output result file
-  char outFile[256], coreStr[5];
-  //timer parameters
-  ptimer  tmr1;
-  tmr1 = (ptimer)malloc(sizeof(timer));  
+  {
+    std::stringstream msg;
+    msg << "CorrelateBufs: seed: " << seed;
+    get_log_writer().warning(msg);
+  }
 
-  //declarations for fftw in delay correction
-  fftw_complex *sls = NULL, *spls = NULL; //FW:in,out; BW: out,in
-  fftw_plan    planFW, planBW;//plans for forward and backward fft 
-  int lsegm; //fourier length of a segment in the pre-correlation
+  tmr1 = (ptimer)malloc(sizeof(timer));
 
-  msg.str("");
-  msg << "\n\nCorrelation process " << rank << " started.\n\n";
-  get_log_writer().message(0,msg);
+  get_log_writer()(0) << "Correlation process started." << std::endl;
   
   //initialisations and allocations  
   nstations = GenPrms.get_nstations();
@@ -207,16 +222,16 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
     fs[jf]=jf*dfr-0.5*GenPrms.get_bwfl()-GenPrms.get_foffset();
 
   {
-    msg.str("");
-    msg << "BufSize=" << BufSize << endl;
-    msg << "Nsamp2Avg=" << Nsamp2Avg << endl;
-    msg << "n2fft    =" << n2fft << endl;
-    msg << "Nsegm2Avg=" << Nsegm2Avg << endl;
-    msg << "SR  = " << SR << endl;
-    msg << "tbs = " << tbs << endl;
-    msg << "Nf  = " << Nf << endl;
-    msg << "dfr = " << dfr << endl;
-    get_log_writer().message(2, msg);
+    get_log_writer()(2)
+      << "BufSize=" << BufSize << endl
+      << "Nsamp2Avg=" << Nsamp2Avg << endl
+      << "n2fft    =" << n2fft << endl
+      << "Nsegm2Avg=" << Nsegm2Avg << endl
+      << "SR  = " << SR << endl
+      << "tbs = " << tbs << endl
+      << "Nf  = " << Nf << endl
+      << "dfr = " << dfr << endl;
+    
   }
     
   norms = new float[nbslns];
@@ -257,7 +272,6 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
       xps[sn][j][1] = 0.0;
     }
   }
-
   accxps = new fftw_complex*[nbslns];
   for (j=0; j<nbslns; j++){
     accxps[j] =  new fftw_complex[n2fft*pad/2+1];
@@ -284,12 +298,6 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   }
   assert((int)delTbl.size() == nstations);
 
-  //open the output file
-  strcpy(outFile,GenPrms.get_corfile());
-  sprintf(coreStr,"%.2d",rank);
-  strcat(outFile,coreStr);
-  outP = fopen64(outFile,"wb");
-
   //initialise dcBufPrev with data from Mk4 file
   for (sn=0; sn<nstations; sn++) {
     for (i=0; i<2*BufSize; i++) {
@@ -310,170 +318,162 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
 
   
   if (RunPrms.get_messagelvl()> 0) {
-    msg.str("");
-    msg << "Starting correlation: " << timePtr << " bufptr: " << BufPtr << std::endl;
-    get_log_writer().message(1, msg);
+    get_log_writer()(1)
+      << "Starting correlation: " << timePtr << " bufptr: " << BufPtr << std::endl;
 
-    char sB1[25],sB2[25];
-    strcpy(sB1,"Correlation for process=");
-    sprintf(sB2,"%d",rank);
-    strcat(sB1,sB2);
+    char sB1[25];
+    strcpy(sB1,"Correlation");
     strcpy(tmr1->ID,sB1);
     tmrBegin(tmr1,get_log_writer());
   }
+
+  return retval;
+}
+
+int CorrelateBufs_process_segment() {
+  loop++;
+  get_log_writer()(1) << "Process loop=" << loop << endl;;
   
-  //while loop for processing from starttime until stoptime
-  while (1)
-  {
-    loop++;
-    msg.str("");
-    msg << "Process="<< rank <<" loop=" << loop << endl;
-    get_log_writer().message(1, msg);
+  //initialise statistical values to zero
+  for (sn=0; sn<nstations; sn++) {
+    signST[sn]=0.0;
+    magnST[sn]=0.0;
+    Nsamp[sn]=0;
+  }
+
+  //zero accxps array and norms array
+  for (i = 0; i < nbslns ; i++){
+    for (j = 0 ; j < n2fft*pad/2+1; j++){
+      accxps[i][j][0] = 0.0; //real 
+      accxps[i][j][1] = 0.0; //imaginary
+    }
+    norms[i] = 0.0;
+  }
+
+  //process all the segments 
+  for (segm = 0 ; segm < Nsegm2Avg ; segm++){
+
+    //read data from data files, do pre-correlation, 
+    //and put results in Bufs. 
+    if ( (BufPtr+n2fft)>BufSize ) {
+      retval = fill_Bufs(readers,Bufs,dcBufPrev,BufSize,
+        Mk4frame,FL,FC,signST,magnST,Nsamp,sls,spls,planFW,planBW,
+        tbs,fs,Nf,timePtr,delTbl);
+      if (retval !=0) {
+        get_log_writer().message(1, "ERROR: in function fill_Bufs\n");
+        return retval;
+      }
+      timePtr=timePtr+BufTime;
+      BufPtr=0;        
+    }
+
+    //get data from Bufs and put in invecs and increase BufPtr
+    fetch_invecs(BufPtr, nstations, n2fft, invecs, Bufs);
     
-    //initialise statistical values to zero
-    for (sn=0; sn<nstations; sn++) {
-      signST[sn]=0.0;
-      magnST[sn]=0.0;
-      Nsamp[sn]=0;
-    }
-  
-    //zero accxps array and norms array
-    for (i = 0; i < nbslns ; i++){
-      for (j = 0 ; j < n2fft*pad/2+1; j++){
-        accxps[i][j][0] = 0.0; //real 
-        accxps[i][j][1] = 0.0; //imaginary
-      }
-      norms[i] = 0.0;
-    }
-
-    //process all the segments 
-    for (segm = 0 ; segm < Nsegm2Avg ; segm++){
-
-      //read data from data files, do pre-correlation, 
-      //and put results in Bufs. 
-      if ( (BufPtr+n2fft)>BufSize ) {
-        retval = fill_Bufs(readers,Bufs,dcBufPrev,BufSize,
-          Mk4frame,FL,FC,signST,magnST,Nsamp,sls,spls,planFW,planBW,
-          tbs,fs,Nf,timePtr,delTbl,rank);
-        if (retval !=0) {
-          get_log_writer().message(1, "ERROR: in function fill_Bufs\n");
-          return retval;
-        }
-        timePtr=timePtr+BufTime;
-        BufPtr=0;        
-      }
-
-      //get data from Bufs and put in invecs and increase BufPtr
-      fetch_invecs(BufPtr, nstations, n2fft, invecs, Bufs);
-      
-      //correlations
-      bsln = 0; //initialise basline number
-      
-      // FWD FFT each station +
-      // form the auto products
-      for (sn = 0 ; sn < nstations; sn++){
-        //input: invecs -> result: xps
-        fftw_execute(fwd_plans[sn]);
-        for (l = 0 ; l < n2fft*pad/2 + 1 ; l++){
-          //accxps[bsln][l] += xps[sn][l]*conj(xps[sn][l]);
-          accxps[bsln][l][0] = accxps[bsln][l][0] +
-          (xps[sn][l][0] * xps[sn][l][0]) + (xps[sn][l][1] * xps[sn][l][1]);
-          //accxps[bsln][l][1] imaginary part stays zero
-        }
-        bsln++;
-      }
-            
-      // form cross products
-      for (sn = 0 ; sn < nstations - 1; sn++){
-        for (sno = sn + 1; sno < nstations ; sno ++){
-          for (l = 0 ; l < n2fft*pad/2 + 1 ; l++){
-            //accxps[bsln][l] += xps[sn][l]*conj(xps[sno][l])
-            
-            accxps[bsln][l][0] = accxps[bsln][l][0] +
-            (xps[sn][l][0] * xps[sno][l][0]) +
-            (xps[sn][l][1] * xps[sno][l][1]);
-            
-            accxps[bsln][l][1] = accxps[bsln][l][1] +
-            (xps[sn][l][1] * xps[sno][l][0]) -
-            (xps[sn][l][0] * xps[sno][l][1]);
-            
-          }
-          bsln++;
-        }
-      }
-      
-      if (RunPrms.get_messagelvl()> 0) {
-        if (segm%TenPct == 0) {
-          msg.str("");
-          msg << "segm=" << segm;
-          get_log_writer().message(1,msg);
-        }  
-      }    
-      
-    }
-
-    //average the sample statistics
-    for (sn=0; sn<nstations; sn++) {
-      signST[sn] = signST[sn]/Nsamp[sn];
-      magnST[sn] = magnST[sn]/Nsamp[sn];
-      if (RunPrms.get_messagelvl()> 0){
-        msg.str("");
-        msg << "Sample statistics " << "sn=" << sn 
-            << " Nsamp=" << Nsamp[sn] 
-            << " signST=" << signST[sn] 
-            << " magnST=" << magnST[sn] << endl;
-          get_log_writer().message(1,msg);
-      }  
-    }
-
+    //correlations
+    bsln = 0; //initialise basline number
     
-    //average correlation results over all segments
-    bsln = 0;//reinitialise baseline counter
-    //auto product normalization, mean pwr = 1
-    for (sn = 0 ; sn < nstations ; sn++){
-      for (l = 0; l < n2fft*pad/2 + 1; l++){
-        norms[bsln] = norms[bsln] + accxps[bsln][l][0];
-      }
-      norms[bsln] = norms[bsln] / (double)(n2fft*pad/2 + 1);
-      for (l = 0; l < n2fft*pad/2 + 1; l++){
-        accxps[bsln][l][0] = accxps[bsln][l][0] / norms[bsln];
+    // FWD FFT each station +
+    // form the auto products
+    for (sn = 0 ; sn < nstations; sn++){
+      //input: invecs -> result: xps
+      fftw_execute(fwd_plans[sn]);
+      for (l = 0 ; l < n2fft*pad/2 + 1 ; l++){
+        //accxps[bsln][l] += xps[sn][l]*conj(xps[sn][l]);
+        accxps[bsln][l][0] = accxps[bsln][l][0] +
+        (xps[sn][l][0] * xps[sn][l][0]) + (xps[sn][l][1] * xps[sn][l][1]);
+        //accxps[bsln][l][1] imaginary part stays zero
       }
       bsln++;
     }
-    //cross product normalization
+          
+    // form cross products
     for (sn = 0 ; sn < nstations - 1; sn++){
       for (sno = sn + 1; sno < nstations ; sno ++){
-        norms[bsln] = sqrt(norms[sn]*norms[sno]);
         for (l = 0 ; l < n2fft*pad/2 + 1 ; l++){
-          accxps[bsln][l][0] = accxps[bsln][l][0] / norms[bsln];
-          accxps[bsln][l][1] = accxps[bsln][l][1] / norms[bsln];
+          //accxps[bsln][l] += xps[sn][l]*conj(xps[sno][l])
+          
+          accxps[bsln][l][0] = accxps[bsln][l][0] +
+          (xps[sn][l][0] * xps[sno][l][0]) +
+          (xps[sn][l][1] * xps[sno][l][1]);
+          
+          accxps[bsln][l][1] = accxps[bsln][l][1] +
+          (xps[sn][l][1] * xps[sno][l][0]) -
+          (xps[sn][l][0] * xps[sno][l][1]);
+          
         }
         bsln++;
       }
     }
-
-    //write normalized correlation results to output file
-    for (bsln = 0; bsln < nbslns; bsln++){
-      fwrite(accxps[bsln],sizeof(fftw_complex),n2fft*pad/2+1,outP);
-    }
-
-    // Check wether we are finished.
-    msg.str("");
-    msg << "Process="<< rank << " timePtr = " << (INT64)timePtr << std::endl;
-    msg << "Process="<< rank << " stoptime= " << GenPrms.get_usStop() << std::endl;
-    get_log_writer().message(1,msg);
     
-    if (timePtr > GenPrms.get_usStop()) {
-      msg.str("");
-      msg << "Process="<< rank << " finished, timePtr after stopTime" << std::endl;
-      get_log_writer().message(1,msg);
-      break; //
-    }
+    if (RunPrms.get_messagelvl()> 0) {
+      if (segm%TenPct == 0) {
+        get_log_writer()(2) << "segm=" << segm << std::endl;
+      }  
+    }    
     
-  } // End while loop for processing from startbyte until stopbyte
+  }
+
+  //average the sample statistics
+  for (sn=0; sn<nstations; sn++) {
+    signST[sn] = signST[sn]/Nsamp[sn];
+    magnST[sn] = magnST[sn]/Nsamp[sn];
+    if (RunPrms.get_messagelvl()> 0){
+      get_log_writer()(1)
+        << "Sample statistics " << "sn=" << sn 
+        << " Nsamp=" << Nsamp[sn] 
+        << " signST=" << signST[sn] 
+        << " magnST=" << magnST[sn] << endl;
+    }  
+  }
+
+  
+  //average correlation results over all segments
+  bsln = 0;//reinitialise baseline counter
+  //auto product normalization, mean pwr = 1
+  for (sn = 0 ; sn < nstations ; sn++){
+    for (l = 0; l < n2fft*pad/2 + 1; l++){
+      norms[bsln] = norms[bsln] + accxps[bsln][l][0];
+    }
+    norms[bsln] = norms[bsln] / (double)(n2fft*pad/2 + 1);
+    for (l = 0; l < n2fft*pad/2 + 1; l++){
+      accxps[bsln][l][0] = accxps[bsln][l][0] / norms[bsln];
+    }
+    bsln++;
+  }
+  //cross product normalization
+  for (sn = 0 ; sn < nstations - 1; sn++){
+    for (sno = sn + 1; sno < nstations ; sno ++){
+      norms[bsln] = sqrt(norms[sn]*norms[sno]);
+      for (l = 0 ; l < n2fft*pad/2 + 1 ; l++){
+        accxps[bsln][l][0] = accxps[bsln][l][0] / norms[bsln];
+        accxps[bsln][l][1] = accxps[bsln][l][1] / norms[bsln];
+      }
+      bsln++;
+    }
+  }
+
+  //write normalized correlation results to output file
+  // NGHK: Make arrays consecutive to be able to write all data at once
+  for (bsln = 0; bsln < nbslns; bsln++){
+    //fwrite(accxps[bsln],sizeof(fftw_complex),n2fft*pad/2+1,outP);
+    get_data_writer().put_bytes(sizeof(fftw_complex)*(n2fft*pad/2+1),
+                                (char *)(accxps[bsln]));
+  }
+
+  // Check wether we are finished.
+  get_log_writer()(1) << "TimePtr = " << (INT64)timePtr << std::endl;
+  get_log_writer()(1) << "Stoptime= " << GenPrms.get_usStop() << std::endl;
+  
+  if (timePtr > GenPrms.get_usStop()) {
+    get_log_writer()(1) << "Finished, timePtr after stopTime" << std::endl;
+    return 1; //
+  }
+  return 0;
+}
+
+int CorrelateBufs_finalise() {
   tmrEnd(tmr1,get_log_writer());
-  //close the output result file
-  fclose(outP);
   
   //free allocated memory   
   
@@ -519,10 +519,28 @@ int CorrelateBufs(int rank, std::vector<Data_reader *> &readers)
   
   delete [] fs;
   
-  cout << "\n\nCorrelation process " << rank << " finished.\n\n";
+  get_log_writer()(0) << "Correlation finished." << std::endl;
   
-  return retval;
+  return 0;
+}
+  
+//***************************************************************************
+// fill the buffers with pre-correlation data and correlate
+//***************************************************************************
+int CorrelateBufs(std::vector<Data_reader *> &readers)
+{
+  int retval;
+  retval = CorrelateBufs_initialise(readers);
 
+  if (retval < 0) return retval;
+  
+  //while loop for processing from starttime until stoptime
+  while ((retval=CorrelateBufs_process_segment())==0)
+  { } // End while loop for processing from startbyte until stopbyte
+
+  if (retval < 0) return retval;
+
+  return CorrelateBufs_finalise();
 }
 
 
@@ -537,7 +555,7 @@ int fill_Bufs(std::vector<Data_reader *> &readers,
   double *signST, double *magnST, INT64 *Nsamp,
   fftw_complex *sls, fftw_complex *spls, fftw_plan& planFW, fftw_plan& planBW,
   double tbs, double *fs, int Nf, double timePtr,
-  std::vector<DelayTable> &delTbl, int rank)
+  std::vector<DelayTable> &delTbl)
 {
   //declarations
   int retval = 0;

@@ -44,6 +44,11 @@ void Node::process_event(MPI_Status &status) {
       {
         return;
       }
+    case Controller::PROCESS_EVENT_STATUS_DESTROY_NODE: // End the current node
+      {
+        continue;
+        break;
+      }
     case Controller::PROCESS_EVENT_STATUS_UNKNOWN: // Unknown command, try next controller
       {
         continue;

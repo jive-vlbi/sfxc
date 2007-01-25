@@ -10,7 +10,8 @@ check_PROGRAMS = \
   test_Data_reader_mark5 \
   test_Data_node \
   test_Correlator_node \
-  test_Log_writer_mpi
+  test_Log_writer_mpi \
+  test_TCP_connection
 TESTS           = \
   test_Transfer_control_parameters.py \
   test_Correlator_node.py \
@@ -66,3 +67,7 @@ test_Log_writer_mpi_SOURCES = \
   ../src/Node.cc \
   ../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/Log_writer_mpi.cc \
   ../src/Controller.cc ../src/Log_controller.cc
+  
+test_TCP_connection_SOURCES = \
+  test_TCP_connection.cc \
+  ../src/TCP_Connection.cc

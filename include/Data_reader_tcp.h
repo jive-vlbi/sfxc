@@ -16,15 +16,17 @@ public:
                 listen for a connection
    **/
   Data_reader_tcp(int port = 2630);
+  void open_connection();
   ~Data_reader_tcp();
 
   UINT64 move_forward(UINT64 nBytes);
   UINT64 get_bytes(UINT64 nBytes, char *out);
-  
+
+  unsigned int get_port();  
 private:
-  std::vector<char> buffer;
-  int sock;
-  int msglev;
+//  std::vector<char> buffer;
+  int connection_socket, port_socket;
+  int port;
 };
 
 #endif // DATA_READER_TCP_H

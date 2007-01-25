@@ -1,4 +1,4 @@
-/* Author(s): Nico Kruithof
+/* Author(s): Nico Kruithof, 2007
  * 
  * $URL:$
  * $Id: $
@@ -6,7 +6,8 @@
 
 #include <types.h>
 #include <Manager_node.h>
-#include <Data_node.h>
+#include <Input_node.h>
+#include <Output_node.h>
 #include <Correlator_node.h>
 
 //global variables
@@ -60,16 +61,34 @@ int main(int argc, char *argv[]) {
     case MPI_TAG_SET_INPUT_NODE_FILE: 
       {
         assert(status.MPI_SOURCE == 0);
-        int size;
-        MPI_Get_elements(&status, MPI_CHAR, &size);
-        char filename[size];
-        MPI_Recv(&filename, size, MPI_CHAR, 0, 
-                 MPI_ANY_TAG, MPI_COMM_WORLD, &status2);
+//        int size;
+//        MPI_Get_elements(&status, MPI_CHAR, &size);
+//        char filename[size];
+//        MPI_Recv(&filename, size, MPI_CHAR, 0, 
+//                 MPI_ANY_TAG, MPI_COMM_WORLD, &status2);
+//
+//        assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+//        assert(status.MPI_TAG == status2.MPI_TAG);
 
-        assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-        assert(status.MPI_TAG == status2.MPI_TAG);
+        Input_node input_node(rank);
+        input_node.start();
+        break;
+      }
+    case MPI_TAG_SET_OUTPUT_NODE_FILE: 
+      {
+        assert(rank==1);
+        assert(status.MPI_SOURCE == 0);
+//        int size;
+//        MPI_Get_elements(&status, MPI_CHAR, &size);
+//        char filename[size];
+//        MPI_Recv(&filename, size, MPI_CHAR, 0, 
+//                 MPI_ANY_TAG, MPI_COMM_WORLD, &status2);
+//
+//        assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+//        assert(status.MPI_TAG == status2.MPI_TAG);
 
-        Data_node data_node(rank);
+        Output_node output_node(rank);
+        output_node.start();
         break;
       }
     case MPI_TAG_SET_CORRELATOR_NODE: 

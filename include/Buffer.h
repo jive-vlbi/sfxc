@@ -4,6 +4,27 @@
 #include <vector>
 #include <assert.h>
 
+template <class T, int N>
+class Buffer_element {
+public:
+  typedef T value_type;
+  int size() { return N; }
+  
+  T &operator[](int i) {
+    assert(i >= 0);
+    assert(i < N);
+    return _buffer[i];
+  }
+  T *buffer() {
+    return &_buffer[0];
+  }
+private:
+  T _buffer[N];
+};
+
+/** Generic buffer class
+ * @precondition T is default constructible
+ **/
 template <class T>
 class Buffer {
 public:
@@ -18,6 +39,8 @@ public:
 
   virtual T &consume(int &status) = 0;
   virtual void consumed() = 0;
+
+  virtual bool empty()= 0; 
 
 protected:
   T& get_prod_elem() {
@@ -41,8 +64,8 @@ protected:
 
 private:
   // The buffer
-  T *buffer;
-  int *status;
+  std::vector<T> buffer;
+  std::vector<int> status;
   // indices in the buffer
   int front, rear;
 };
@@ -51,10 +74,11 @@ template <class T>
 Buffer<T>::
 Buffer(int size) 
   : size(size), 
-    buffer(new T[size]), status(new int[size]), 
     front(0), rear(0)
 {
   assert(size > 0);
+  buffer.resize(size);
+  status.resize(size);
 }
 
 
@@ -62,7 +86,6 @@ template <class T>
 Buffer<T>::
 ~Buffer()
 {
-  delete[](buffer);
 }
 
 #endif // BUFFER_H

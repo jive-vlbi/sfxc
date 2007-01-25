@@ -436,9 +436,10 @@ int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
   }
 
   if( usStart < usTime  ) {
-    GenPrms.set_usEarliest(usTime);
     get_log_writer().message(0,
-      "\nWarning  Requested start time is earlier than start time in data file.\n\n");
+      "Warning  Requested start time is earlier than start time in data file:");
+    get_log_writer()(0) << "  * " << GenPrms.get_usEarliest() << " = " << usTime << std::endl;
+    GenPrms.set_usEarliest(usTime);
   }
 
   get_log_writer()(1) << "End data display for station " << StaPrms[station].get_stname() << endl;

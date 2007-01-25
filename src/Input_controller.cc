@@ -67,7 +67,7 @@ void
 Input_controller::read() {
   while (running) {
     value_type &t = buffer.produce();
-    UINT64 size = reader->get_bytes(sizeof(value_type), t);
+    UINT64 size = reader->get_bytes(sizeof(value_type), t.buffer());
     buffer.produced(size);
     if (size == 0) {
       running = false;

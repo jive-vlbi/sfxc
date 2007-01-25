@@ -30,7 +30,8 @@ public:
   enum Process_event_status {
     PROCESS_EVENT_STATUS_SUCCEEDED = 0,
     PROCESS_EVENT_STATUS_UNKNOWN,
-    PROCESS_EVENT_STATUS_FAILED
+    PROCESS_EVENT_STATUS_FAILED,
+    PROCESS_EVENT_STATUS_DESTROY_NODE
   };
   
   virtual Process_event_status process_event(MPI_Status &status) = 0;
