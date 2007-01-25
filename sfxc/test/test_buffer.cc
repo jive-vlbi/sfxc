@@ -19,8 +19,7 @@ typedef long long INT64;
 #include <pthread.h>
 
 #define NElem 3
-typedef int T[NElem];
-
+typedef Buffer_element<int, NElem> T;
 
 Buffer<T> *buffer;
 int Nmessages = 14;

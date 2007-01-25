@@ -5,6 +5,8 @@
 #include <InData.h>
 
 #include <Data_reader_file.h>
+#include <Data_writer_tcp.h>
+#include <Data_writer_file.h>
 #include <utils.h>
 
 #include <assert.h>
@@ -27,7 +29,8 @@ extern INT64 sliceTime;
 Correlator_controller::Correlator_controller(Buffer<output_value_type> &output_buffer,
                                            Log_writer &log_writer)
  : Controller(log_writer), 
-   output_buffer(output_buffer), running(false), curr_station(0)
+   output_buffer(output_buffer), running(false), curr_station(0),
+   data_writer(NULL)
 {
 }
 
@@ -82,7 +85,9 @@ Correlator_controller::process_event(MPI_Status &status) {
     MPI_Recv(&filename, size, MPI_CHAR, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-    GenPrms.set_corfile(filename);
+    Data_writer *writer = new Data_writer_file(filename);
+    set_data_writer(*writer);
+    //GenPrms.set_corfile(filename);
 
     return PROCESS_EVENT_STATUS_SUCCEEDED;
   }
@@ -135,13 +140,33 @@ Correlator_controller::process_event(MPI_Status &status) {
       GenPrms.set_usLatest(get_us_time(time));
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
+  case MPI_TAG_SET_TIME_SLICE:
+    {
+      log_writer.MPI(2,"MPI_TAG_SET_TIME_SLICE");
+      INT64 time[2];
+      MPI_Recv(&time, 2, MPI_LONG, status.MPI_SOURCE,
+               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+
+      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+      assert(status.MPI_TAG == status2.MPI_TAG);
+
+      GenPrms.set_usStart(time[0]);
+      GenPrms.set_usEarliest(time[0]);
+      
+      GenPrms.set_usStop(time[1]);
+      
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+    
   case MPI_TAG_START_CORRELATE_NODE:
     {
       log_writer.MPI(2,"MPI_TAG_START_CORRELATE_NODE");
-      int cmd;
-      MPI_Recv(&cmd, 1, MPI_INT, status.MPI_SOURCE,
+      int slice;
+      MPI_Recv(&slice, 1, MPI_INT, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
-               
+      MPI_Send(&slice, 1, MPI_INT, 
+               1, MPI_TAG_SET_WEIGHT_OUTPUT_STREAM, MPI_COMM_WORLD);
+      
       start();           
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
@@ -161,6 +186,26 @@ Correlator_controller::process_event(MPI_Status &status) {
       correlation_add_delay_table(table);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
+  case MPI_TAG_SET_OUTPUT_STREAM_TCP:
+    {
+      log_writer.MPI(2,"MPI_TAG_SET_OUTPUT_STREAM_TCP");
+      int size;
+      MPI_Get_elements(&status, MPI_UNSIGNED_LONG, &size);
+      assert(size > 1);
+      UINT64 ip_addr[size];
+      MPI_Recv(&ip_addr, size, MPI_UNSIGNED_LONG, status.MPI_SOURCE,
+               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+      
+      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+      assert(status.MPI_TAG == status2.MPI_TAG);
+      
+      if (data_writer != NULL) delete data_writer;
+      // last element is the port number:
+      data_writer = new Data_writer_tcp(ip_addr, size-1, ip_addr[size-1]);
+      set_data_writer(*data_writer);
+      
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
   }
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }
@@ -177,6 +222,8 @@ Correlator_controller::start_correlating(void *self_) {
   self->correlate();
 
   int i=0; 
+  MPI_Send(&i, 1, MPI_INT, 1,
+           MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED, MPI_COMM_WORLD);
   MPI_Send(&i, 1, MPI_INT, 0,
            MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD);
 
@@ -196,7 +243,7 @@ Correlator_controller::correlate() {
   log_writer << "Correlator_controller: Correlator bufs ..." << std::endl;
   if ( RunPrms.get_runoption() == 1 ) {
     //Process data for rank (=process identifier)
-    CorrelateBufs(0, data_readers);
+    CorrelateBufs(data_readers);
   }
   log_writer << "Correlator_controller: correlation done ..." << std::endl;
 }

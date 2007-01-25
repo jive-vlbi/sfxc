@@ -8,7 +8,7 @@
 class Input_controller : public Controller {
 public:
   /// TODO: NGHK: Make this type global?
-  typedef char      value_type[131072];
+  typedef Buffer_element<char,131072>      value_type;
   typedef Input_controller  Self;
   
   Input_controller(Buffer<value_type> &buffer, Log_writer &log_writer);

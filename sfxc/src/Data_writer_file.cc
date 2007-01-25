@@ -13,18 +13,20 @@
 
 #include <fcntl.h> // file control
 
-Data_writer_file::Data_writer_file(char *filename) : 
-  Data_writer(), file(-1)
+Data_writer_file::Data_writer_file(const char *filename) : 
+  Data_writer()
 {
-  file = open(filename, O_WRONLY | O_CREAT, 0600);
-  assert(file >= 0);
+  file = fopen64(filename, "wb");
+  assert(file != NULL);
 }
 
 Data_writer_file::~Data_writer_file() {
-  close(file);
+  fclose(file);
 }
   
 UINT64 
 Data_writer_file::put_bytes(UINT64 nBytes, char *buff) {
-  return write(file, buff, nBytes);
+  UINT64 result = fwrite(buff, 1, nBytes, file);
+  assert(result == nBytes);
+  return result;
 }

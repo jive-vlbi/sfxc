@@ -15,10 +15,24 @@ enum MPI_TAG {
   MPI_TAG_SET_INPUT_NODE_TCP, // Not yet implemented
   /// Add a correlator node 
   MPI_TAG_SET_CORRELATOR_NODE,
-  /// Add an input stream to a correlator node, using MPI (not in use)
-
   /// Make an output node write data to file
   MPI_TAG_SET_OUTPUT_NODE_FILE,
+
+  /// Create an output stream for a correlate node (input stream for the output node)
+  MPI_TAG_CREATE_OUTPUT_STREAM_TCP,
+
+  /** Set the output stream for a correlate node.
+   * Data: UINT64 ... ip_addresses, UINT64 port
+   **/
+  MPI_TAG_SET_OUTPUT_STREAM_TCP,
+
+  
+  /// Set the weight of a output stream. 
+  /// Output streams are written with increasing weights.
+  MPI_TAG_SET_WEIGHT_OUTPUT_STREAM,
+  
+  /// The output stream from the sending node is finished for this time slice.
+  MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED,
 
   /// Set the station number for the commands following
   MPI_TAG_SET_STATION_NUMBER,
@@ -26,6 +40,8 @@ enum MPI_TAG {
   MPI_TAG_SET_START_TIME,
   /// Send the stop time for a correlate_node
   MPI_TAG_SET_STOP_TIME,
+  /// Send the start time for a correlate_node
+  MPI_TAG_SET_TIME_SLICE,
   /// Send the control parameters for a correlator node
   MPI_TAG_CONTROL_PARAM,
   /// Send a delay table
