@@ -8,6 +8,8 @@ Control files
   option: fixed seeding and runtime based seeding
 - which parameters can be extracted from vex file
 - store the control files in XML format
+- mark files as "file:///path/filename" in order to be able to use
+  "tcp://host:port" and "mark5://host:port" later as well
 
 Correlation:
 - create a Correlator class with status functions 
@@ -21,6 +23,7 @@ Correlation:
   - std::vectors instead of arrays with fixed length
   - std::string instead of char * to ease the copy constructor
 - move header_map_mk4_cx.txt to a header file
+- do a FindOffsets before every integration step
 
 Multi core:
 - Data_writer similar to Data_reader
