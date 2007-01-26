@@ -188,8 +188,6 @@ int lsegm; //fourier length of a segment in the pre-correlation
 std::vector<Data_reader *> readers;
 
 int CorrelateBufs_initialise(std::vector<Data_reader *> &readers_) {
-  readers = readers_;
-
   // All variables needed for CorrelateBufs
   seed = (UINT32) time((time_t *)NULL);
   seed = 10;
@@ -198,6 +196,8 @@ int CorrelateBufs_initialise(std::vector<Data_reader *> &readers_) {
     msg << "CorrelateBufs: seed: " << seed;
     get_log_writer().warning(msg);
   }
+
+  readers = readers_;
 
   tmr1 = (ptimer)malloc(sizeof(timer));
 
@@ -317,7 +317,7 @@ int CorrelateBufs_initialise(std::vector<Data_reader *> &readers_) {
   loop=0;
 
   
-  if (RunPrms.get_messagelvl()> 0) {
+  if (get_log_writer().get_messagelevel()> 0) {
     get_log_writer()(1)
       << "Starting correlation: " << timePtr << " bufptr: " << BufPtr << std::endl;
 
@@ -406,7 +406,7 @@ int CorrelateBufs_process_segment() {
       }
     }
     
-    if (RunPrms.get_messagelvl()> 0) {
+    if (get_log_writer().get_messagelevel()> 0) {
       if (segm%TenPct == 0) {
         get_log_writer()(2) << "segm=" << segm << std::endl;
       }  
@@ -418,7 +418,7 @@ int CorrelateBufs_process_segment() {
   for (sn=0; sn<nstations; sn++) {
     signST[sn] = signST[sn]/Nsamp[sn];
     magnST[sn] = magnST[sn]/Nsamp[sn];
-    if (RunPrms.get_messagelvl()> 0){
+    if (get_log_writer().get_messagelevel()> 0){
       get_log_writer()(1)
         << "Sample statistics " << "sn=" << sn 
         << " Nsamp=" << Nsamp[sn] 

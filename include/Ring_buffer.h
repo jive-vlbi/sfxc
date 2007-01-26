@@ -21,9 +21,10 @@ public:
   T &consume(int &status);
   void consumed();
 
+  bool empty() { return ptr_empty==ptr_full; }
 
 private:
-  INT64 empty, full;
+  INT64 ptr_empty, ptr_full;
 };
 
 
@@ -35,7 +36,7 @@ private:
 template <class T>
 Ring_buffer<T>::
 Ring_buffer(int size) 
-  : Base(size), empty(0), full(0)
+  : Base(size), ptr_empty(0), ptr_full(0)
 {
 }
 
@@ -46,28 +47,29 @@ Ring_buffer<T>::~Ring_buffer() {
 template <class T>
 T &
 Ring_buffer<T>::produce() {
-  if (full >= empty+Base::size) std::cout << "Buffer overflow" << std::endl;
+  if (ptr_full >= ptr_empty+Base::size) 
+    std::cout << "Buffer overflow" << std::endl;
   return Base::get_prod_elem();
 }
 
 template <class T>
 void
 Ring_buffer<T>::produced(int status) {
-  full++;
+  ptr_full++;
   Base::succ_prod(status);
 }
   
 template <class T>
 T &
 Ring_buffer<T>::consume(int &status) {
-  if (full <= empty) std::cout << "Buffer underflow" << std::endl;
+  if (ptr_full <= ptr_empty) std::cout << "Buffer underflow" << std::endl;
   return Base::get_cons_elem(status);
 }
 
 template <class T>
 void
 Ring_buffer<T>::consumed() {
-  empty++;
+  ptr_empty++;
   Base::succ_cons();
 }
 

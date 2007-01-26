@@ -9,7 +9,7 @@
 */
 
 #include <types.h>
-#include <Data_node.h>
+#include <Input_node.h>
 #include <fstream>
 #include <assert.h>
 
@@ -94,8 +94,8 @@ int main(int argc, char *argv[]) {
              MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
 
   } else if (rank == 1) {
-    Data_node data_node(rank);
-    data_node.start();
+    Input_node input_node(rank);
+    input_node.start();
   }
 
 

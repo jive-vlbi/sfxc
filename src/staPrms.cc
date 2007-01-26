@@ -339,7 +339,7 @@ int StaP::check_params(Log_writer &log_writer) const
     for (j=0; j < fo; j++) log_writer(1) <<  " " << magnBS[j];
     log_writer(1) << endl;
 
-  if (RunPrms.get_messagelvl() > 0) {
+  {
     log_writer(1) << "Converted to Mk5 disk bit shift numbers:" << endl;
     
     log_writer(1) << "SIGN " << hs;

@@ -64,6 +64,7 @@ public:
 
   /// Sets all message levels to level
   void set_messagelevel(int level);
+  int get_messagelevel() { return main_level; }
 
   /** Set the message level for the coming messages:
   **/ 

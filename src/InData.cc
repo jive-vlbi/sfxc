@@ -204,20 +204,20 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
 
     // NGHK: this is dirty, make read(32|64)datafile also move the read pointer
     INT64 statusPtr = StartByte[sn] - 
-      (RunPrms.get_messagelvl()> 0 ? 2 : 1)* // read another frame for display
+      (get_log_writer().get_messagelevel()> 0 ? 2 : 1)* // read another frame for display
       (StaPrms[sn].get_nhs()==1 ? 4 : 8)*frameMk4*nfrms; // Already read to get the timestamp
     statusPtr = input_readers[sn]->get_bytes(statusPtr, NULL);
 
     get_log_writer()(2) << "statusPtr =" << statusPtr << endl;
     assert(statusPtr == StartByte[sn] - 
-      (RunPrms.get_messagelvl()> 0 ? 2 : 1)*
+      (get_log_writer().get_messagelevel()> 0 ? 2 : 1)*
       (StaPrms[sn].get_nhs()==1 ? 4 : 8)*frameMk4*nfrms);
   }
   
   startTime = GenPrms.get_usEarliest();
   
   //find headers for StartByte in data files, only done for monitoring
-  if ( RunPrms.get_messagelvl()> 0) {
+  if ( get_log_writer().get_messagelevel()> 0) {
     for (sn=0; sn<NrStations; sn++) {
       if (StaPrms[sn].get_datatype() == DATATYPE_MK4) {
         FindHeaderMk4(*input_readers[sn], sn, jsynch[sn],
@@ -374,7 +374,7 @@ int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
   }
 
   //print track statistics on stdout
-  if (RunPrms.get_messagelvl()> 0)
+  if (get_log_writer().get_messagelevel()> 0)
     printTrackstats(tracks, nhs);
   
   //find sync word(s)
@@ -388,7 +388,7 @@ int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
   jsynch=jsynch0;
   
   strcpy(hdrmap,StaPrms[station].get_hdrmap());
-  if (RunPrms.get_messagelvl()> 0){
+  if (get_log_writer().get_messagelevel() > 0){
     //printFrameHeader
     printFrameHeader(tracks, jsynch0, jsynch1, nhs, hdrmap);
   }  
@@ -417,7 +417,7 @@ int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
     }  
   }
 
-  if (RunPrms.get_messagelvl()> 0) {
+  if (get_log_writer().get_messagelevel()> 0) {
     sec = usStart/1000000;
     min = sec/60;
     sec = sec - min*60;
