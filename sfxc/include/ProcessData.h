@@ -12,7 +12,14 @@
 #include "Log_writer.h"
 #include "Data_writer.h"
 
+
+
+
 int CorrelateBufs(std::vector<Data_reader *> &readers);
+int CorrelateBufs_initialise(std::vector<Data_reader *> &readers_);
+int CorrelateBufs_process_segment();
+int CorrelateBufs_finalise();
+
 
 // NGHK: Defined in ProcessData.cc, remove as soon as there is a correlate class
 void correlation_add_delay_table(DelayTable &table);

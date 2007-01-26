@@ -25,9 +25,9 @@ extern GenP GenPrms;
 extern StaP StaPrms[NstationsMax];
 
 Manager_node::Manager_node(int numtasks, int rank, char * control_file) 
-  : Node(rank), numtasks(numtasks), 
+  : Node(rank), numtasks(numtasks), slicenr(0), 
     log_controller(log_writer_cout), 
-    manager_controller(Node::log_writer, numtasks)
+    manager_controller(*this)
 
 {
   assert(rank == 0);
@@ -42,6 +42,9 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   // 1 manager node, 1 output node, Nstations input nodes 
   // and at least 1 correlator node
   assert(Nstations+3 <= numtasks);
+  log_writer(0) << "nStations: " << GenPrms.get_nstations() << std::endl;
+  Ncorrelator_nodes = numtasks - (Nstations+2); 
+
   
   {
     // Node 1 is the output node
@@ -69,8 +72,8 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
     // starting an input reader
     char *filename = StaPrms[i].get_mk4file();
     // strlen+1 so that \0 gets transmitted as well
-    MPI_Send(filename, strlen(filename)+1, MPI_CHAR, i+2,
-             MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
+    MPI_Send(filename, strlen(filename)+1, MPI_CHAR, 
+             i+2, MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
 
     // Add correlator nodes to the input readers:
 //    for (int j=Nstations+2; j<numtasks; j++) {
@@ -81,8 +84,8 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   if (err != 0) return;
   
   // set manager_controller:
-  manager_controller.set_start_time(GenPrms.get_usStart());
-  manager_controller.set_stop_time(GenPrms.get_usStop());
+  set_start_time(GenPrms.get_usStart());
+  set_stop_time(GenPrms.get_usStop());
   
   log_writer.MPI(1,"Initialisation ready");
 }
@@ -90,11 +93,14 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
 void Manager_node::start() {
   Node::start();
 
+  int type = 0;
+
   // End program:
-  for (int i=1; i<numtasks; i++) {
-    int type = MPI_TAG_CORRELATION_READY;
-    MPI_Send(&type, 1, MPI_INT, i, MPI_TAG_COMMUNICATION, MPI_COMM_WORLD);
+  for (int i=0; i<GenPrms.get_nstations(); i++) {
+    MPI_Send(&type, 1, MPI_INT, i+2, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
   }
+  
+    MPI_Send(&type, 1, MPI_INT, 1, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
 }
 
 int Manager_node::read_control_file(char *control_file) {
@@ -108,7 +114,6 @@ int Manager_node::read_control_file(char *control_file) {
 
 int Manager_node::send_control_parameters_to_controller_node(int node) {
   // strlen+1 so that \0 gets transmitted as well
-  log_writer.warning("sending input node file to correlator node: remove");
   for (int i=0; i<GenPrms.get_nstations(); i++) {
     char *infile_data = StaPrms[i].get_mk4file();
     MPI_Send(infile_data, strlen(infile_data)+1, MPI_CHAR, node,

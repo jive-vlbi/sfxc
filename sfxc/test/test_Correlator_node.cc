@@ -134,9 +134,9 @@ int main(int argc, char *argv[]) {
       assert(status.MPI_SOURCE == 1);
 
       switch (status.MPI_TAG) {
-        case MPI_MSG_CORRELATE_ENDED:
+        case MPI_TAG_CORRELATE_ENDED:
         {
-          log_writer << "MPI_MSG_CORRELATE_ENDED " << std::endl;
+          log_writer << "MPI_TAG_CORRELATE_ENDED " << std::endl;
           // Wait for data node to finish
           int i=0;
           MPI_Recv(&i, 1, MPI_INT, status.MPI_SOURCE,
@@ -144,11 +144,11 @@ int main(int argc, char *argv[]) {
   
           // Terminate data node
           MPI_Send(&i, 1, MPI_INT, 1,
-                   MPI_MSG_CORRELATION_READY, MPI_COMM_WORLD);
+                   MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
           finished = true;
           break;
         }
-        case MPI_MSG_TEXT_MESSAGE:
+        case MPI_TAG_TEXT_MESSAGE:
         {
           int size;
           MPI_Get_elements(&status, MPI_CHAR, &size);
@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
           MPI_Recv(&message, size, MPI_CHAR, status.MPI_SOURCE,
                    status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-          log_writer << "MPI_MSG_TEXT_MESSAGE: " << message << std::endl;
+          log_writer << "MPI_TAG_TEXT_MESSAGE: " << message << std::endl;
           break;            
         }
       }      

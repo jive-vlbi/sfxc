@@ -32,10 +32,23 @@ public:
    **/
   void start();
 
+  /** Non-blocking check if a message is available and process it.
+   * - -1: terminate node
+   * - 0: no message
+   * - 1: message processed
+   **/
+  int check_and_process_waiting_messages();
+
+  /** Blocking check for a message and process it.
+   * - false: no message
+   * - true: message processed
+   **/
+  int check_and_process_messages();
+
   /** Process an MPI event.
       Try to delegate it to the controllers, otherwise produce an error message.
    **/
-  void process_event(MPI_Status &status);
+  int process_event(MPI_Status &status);
 
   /**
      Produce an error message (either to std::cerr or to a specialised "Log-node")
@@ -46,6 +59,10 @@ public:
      Add a controller to the node.
    **/
   void add_controller(Controller *controller);
+  
+  Log_writer &get_log_writer() {
+    return log_writer;
+  }
   
 private:
   int rank;
