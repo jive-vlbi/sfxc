@@ -46,9 +46,9 @@ using namespace std;
 #include "staPrms.h"
 #include "genFunctions.h"
 #include "InData.h"
-
-//global variables
-extern RunP  RunPrms;
+//
+////global variables
+//extern RunP  RunPrms;
 extern GenP  GenPrms;
 extern StaP  StaPrms[NstationsMax];
 extern UINT32 seed;

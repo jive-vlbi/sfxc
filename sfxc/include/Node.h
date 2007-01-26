@@ -25,6 +25,14 @@ class Node {
   typedef std::list<Controller *>            Controller_list;
   typedef Controller_list::iterator          Controller_iterator;
 public:
+  enum MESSAGE_RESULT {
+    MESSAGE_PROCESSED = 0,
+    TERMINATE_NODE,
+    NO_MESSAGE,
+    ERROR_IN_PROCESSING,
+    MESSAGE_UNKNOWN
+  };
+
   Node(int rank);
   virtual ~Node() {
   }
@@ -37,18 +45,18 @@ public:
    * - 0: no message
    * - 1: message processed
    **/
-  int check_and_process_waiting_messages();
+  MESSAGE_RESULT check_and_process_waiting_messages();
 
   /** Blocking check for a message and process it.
    * - false: no message
    * - true: message processed
    **/
-  int check_and_process_messages();
+  MESSAGE_RESULT check_and_process_messages();
 
   /** Process an MPI event.
       Try to delegate it to the controllers, otherwise produce an error message.
    **/
-  int process_event(MPI_Status &status);
+  MESSAGE_RESULT process_event(MPI_Status &status);
 
   /**
      Produce an error message (either to std::cerr or to a specialised "Log-node")
