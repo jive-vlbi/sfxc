@@ -187,7 +187,7 @@ int lsegm; //fourier length of a segment in the pre-correlation
 
 std::vector<Data_reader *> readers;
 
-int CorrelateBufs_initialise(std::vector<Data_reader *> &readers_) {
+int CorrelateBufs_initialise_correlator(std::vector<Data_reader *> &readers_) {
   // All variables needed for CorrelateBufs
   seed = (UINT32) time((time_t *)NULL);
   seed = 10;
@@ -297,7 +297,11 @@ int CorrelateBufs_initialise(std::vector<Data_reader *> &readers_) {
     return retval;
   }
   assert((int)delTbl.size() == nstations);
+  
+  return 0;
+}
 
+int CorrelateBufs_initialise_time_slice() {
   //initialise dcBufPrev with data from Mk4 file
   for (sn=0; sn<nstations; sn++) {
     for (i=0; i<2*BufSize; i++) {
@@ -529,16 +533,30 @@ int CorrelateBufs_finalise() {
 //***************************************************************************
 int CorrelateBufs(std::vector<Data_reader *> &readers)
 {
-  int retval;
-  retval = CorrelateBufs_initialise(readers);
+  int err;
 
-  if (retval < 0) return retval;
+  //Find Offsets
+  err = FindOffsets(readers, 1, 0);
+  if (err !=0) {
+    get_log_writer().message(0,"ERROR: FindOffsets, program aborted.\n");
+    return -1;
+  }
+
+  if ( RunPrms.get_runoption() != 1 ) return 0;
+  
+  err = CorrelateBufs_initialise_correlator(readers);
+  if (err < 0) return retval;
+
+  err = CorrelateBufs_initialise_time_slice();
+  if (err < 0) return retval;
+
+
   
   //while loop for processing from starttime until stoptime
-  while ((retval=CorrelateBufs_process_segment())==0)
+  while ((err=CorrelateBufs_process_segment())==0)
   { } // End while loop for processing from startbyte until stopbyte
 
-  if (retval < 0) return retval;
+  if (err < 0) return retval;
 
   return CorrelateBufs_finalise();
 }

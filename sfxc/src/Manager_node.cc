@@ -42,7 +42,6 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   // 1 manager node, 1 output node, Nstations input nodes 
   // and at least 1 correlator node
   assert(Nstations+3 <= numtasks);
-  log_writer(0) << "nStations: " << GenPrms.get_nstations() << std::endl;
   Ncorrelator_nodes = numtasks - (Nstations+2); 
 
   
