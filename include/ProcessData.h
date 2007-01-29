@@ -16,7 +16,8 @@
 
 
 int CorrelateBufs(std::vector<Data_reader *> &readers);
-int CorrelateBufs_initialise(std::vector<Data_reader *> &readers_);
+int CorrelateBufs_initialise_time_slice();
+int CorrelateBufs_initialise_correlator(std::vector<Data_reader *> &readers_);
 int CorrelateBufs_process_segment();
 int CorrelateBufs_finalise();
 

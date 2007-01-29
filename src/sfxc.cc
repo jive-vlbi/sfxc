@@ -234,11 +234,11 @@ int main(int argc, char *argv[])
     input_readers.push_back(new Data_reader_file(StaPrms[i].get_mk4file()));
   }
 
-  //Find Offsets
-  if (FindOffsets(input_readers, 1, 0) !=0) {
-    log_writer.message(0,"ERROR: FindOffsets, program aborted.\n");
-    return -1;
-  }
+//  //Find Offsets
+//  if (FindOffsets(input_readers, 1, 0) !=0) {
+//    log_writer.message(0,"ERROR: FindOffsets, program aborted.\n");
+//    return -1;
+//  }
 
   if ( RunPrms.get_runoption() == 1 ) {
     //Process data for rank (=process identifier)

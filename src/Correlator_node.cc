@@ -41,20 +41,26 @@ void Correlator_node::start()
     switch (status) {
       case STOPPED: {
         // blocking:
-        if (check_and_process_messages()==-1) {
+        if (check_and_process_messages()==TERMINATE_NODE) {
           status = END_CORRELATING;
         }
         break;
       }
       case CORRELATING: {
-        while (check_and_process_waiting_messages() && (status==CORRELATING)) {}
+        log_writer(0) << "check for messages\n";
+        while ((check_and_process_waiting_messages() != NO_MESSAGE) &&
+               (status==CORRELATING)) {}
+        log_writer(0) << "/check for messages\n";
         
         if (status==CORRELATING) {
           switch(correlate_state) {
             case FIND_INITIAL_OFFSETS: {
               //Find Offsets
               correlate_state = INITIALISE_TIME_SLICE;
-              if (FindOffsets(data_readers, 1, 0) !=0) {
+              log_writer(0) << "FindOffsets\n";
+              err = FindOffsets(data_readers, 1, 0);
+              log_writer(0) << "/FindOffsets\n";
+              if (err !=0) {
                 log_writer.message(0,"ERROR: FindOffsets, program aborted.\n");
                 correlate_state = END_TIME_SLICE;
               }
@@ -62,7 +68,9 @@ void Correlator_node::start()
             }
             case INITIALISE_TIME_SLICE: {
               log_writer(0) << "Initialising correlation\n";
-              err = CorrelateBufs_initialise(data_readers);
+              err = CorrelateBufs_initialise_correlator(data_readers);
+              assert(err == 0);
+              err = CorrelateBufs_initialise_time_slice();
               log_writer(0) << "/Initialising correlation\n";
               correlate_state = CORRELATE_SEGMENT;              
               if (err < 0) {
