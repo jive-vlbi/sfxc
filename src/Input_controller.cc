@@ -1,17 +1,19 @@
+/* Author(s): Nico Kruithof, 2007
+ * 
+ * $HeadURL$
+ * $Id$
+ */
+
 #include <Input_controller.h>
 #include <Data_reader_file.h>
+#include <Data_writer_tcp.h>
+#include <TCP_Connection.h>
 #include <iostream>
 #include <assert.h>
 #include <signal.h>
 
-Input_controller::Input_controller(Buffer<value_type> &buffer,
-                                   Log_writer &log_writer) 
-  : Controller(log_writer), buffer(buffer), reader(NULL), running(false) {
-}
-
-Input_controller::~Input_controller() {
-  stop();
-  //pthread_kill(input_thread, SIGKILL);
+Input_controller::Input_controller(Input_node &node) 
+  : Controller(node.get_log_writer()), node(node) {
 }
 
 Input_controller::Process_event_status
@@ -19,6 +21,7 @@ Input_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_SET_INPUT_NODE_FILE:
     {
+      log_writer.MPI(2,"MPI_TAG_SET_INPUT_NODE_FILE");
       MPI_Status status2;
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
@@ -30,12 +33,37 @@ Input_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
 
-      if (reader != NULL) delete reader;
-      reader = new Data_reader_file(filename);
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+  case MPI_TAG_ADD_CORRELATOR_NODE: 
+    {
+      log_writer.MPI(2,"MPI_TAG_ADD_CORRELATOR_NODE");
+      
+      MPI_Status status2;
+      int corr_node;
+      MPI_Recv(&corr_node, 1, MPI_INT, status.MPI_SOURCE,
+               status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      if (reader != NULL) {
-        start();
-      }
+      log_writer.MPI(2,"Data_writer");
+      Data_writer_tcp *data_writer = new Data_writer_tcp(1233);
+      log_writer.MPI(2,"/Data_writer");
+      node.set_data_writer(corr_node, data_writer);
+
+      TCP_Connection tcp_connection;
+      std::vector<UINT64>  ip_addresses;
+      tcp_connection.get_ip_addresses(ip_addresses);
+
+      //start_output(&data_readers[node]);
+
+      // Add port
+      ip_addresses.push_back(data_writer->get_port());
+      // Add rank
+      ip_addresses.push_back(node.get_rank()-2);
+      
+      MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_UNSIGNED_LONG, 
+               corr_node, MPI_TAG_SET_INPUT_STREAM_TCP, MPI_COMM_WORLD);
+      
+      node.set_status();      
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
@@ -43,34 +71,3 @@ Input_controller::process_event(MPI_Status &status) {
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }
 
-void
-Input_controller::start() {
-  pthread_create(&input_thread, NULL, start_reading, static_cast<void*>(this));
-  running = true;
-}
-void
-Input_controller::stop() {
-  running = false;
-}
-bool
-Input_controller::is_running() {
-  return running;
-}
-void *
-Input_controller::start_reading(void *self_) {
-  Self *self = static_cast<Self *>(self_);
-  self->read();
-  return NULL;
-}
-
-void
-Input_controller::read() {
-  while (running) {
-    value_type &t = buffer.produce();
-    UINT64 size = reader->get_bytes(sizeof(value_type), t.buffer());
-    buffer.produced(size);
-    if (size == 0) {
-      running = false;
-    }
-  }
-}
