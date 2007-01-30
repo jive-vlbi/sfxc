@@ -1,6 +1,6 @@
 /* Author(s): Nico Kruithof, 2007
  * 
- * $URL$
+ * $url$
  * $Id$
  */
 
