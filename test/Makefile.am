@@ -4,7 +4,7 @@ AM_CPPFLAGS = -Iinclude -I../include -g
 AM_CXXFLAGS = 
 
   
-check_PROGRAMS = bin_PROGRAMS= \
+check_PROGRAMS = \
   test_buffer \
   test_Transfer_control_parameters \
   test_Data_reader_file \
