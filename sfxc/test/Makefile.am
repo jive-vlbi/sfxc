@@ -3,7 +3,8 @@ EXTRA_DIST =
 AM_CPPFLAGS = -Iinclude -I../include -g
 AM_CXXFLAGS = 
 
-check_PROGRAMS = \
+  
+check_PROGRAMS = bin_PROGRAMS= \
   test_buffer \
   test_Transfer_control_parameters \
   test_Data_reader_file \
@@ -12,6 +13,7 @@ check_PROGRAMS = \
   test_Correlator_node \
   test_Log_writer_mpi \
   test_TCP_connection
+
 TESTS           = \
   test_Transfer_control_parameters.py \
   test_Correlator_node.py \
@@ -36,7 +38,8 @@ OBJ = ../src/MPI_Transfer.cc \
       ../src/Log_writer_cout.cc \
       ../src/Log_writer_void.cc \
       ../src/Log_writer_mpi.cc \
-      ../src/TCP_Connection.cc
+      ../src/TCP_Connection.cc \
+      ../src/Data_writer_tcp.cc
 
 test_buffer_SOURCES = \
   test_buffer.cc
@@ -63,7 +66,7 @@ test_Correlator_node_SOURCES = \
   ../src/runPrms.cc ../src/genPrms.cc ../src/staPrms.cc \
   ../src/genFunctions.cc \
   ../src/InData.cc ../src/delayTable.cc \
-  ../src/ProcessData.cc ../src/Data_writer_tcp.cc
+  ../src/ProcessData.cc
 
 test_Log_writer_mpi_SOURCES = \
   test_Log_writer_mpi.cc \

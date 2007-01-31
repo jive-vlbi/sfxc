@@ -1,6 +1,5 @@
 /* Author(s): Nico Kruithof, 2007
  * 
- * $url$
  * $Id$
  */
 
@@ -41,12 +40,10 @@ Input_controller::process_event(MPI_Status &status) {
       
       MPI_Status status2;
       int corr_node;
-      MPI_Recv(&corr_node, 1, MPI_INT, status.MPI_SOURCE,
+      MPI_Recv(&corr_node, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      log_writer.MPI(2,"Data_writer");
       Data_writer_tcp *data_writer = new Data_writer_tcp(1233);
-      log_writer.MPI(2,"/Data_writer");
       node.set_data_writer(corr_node, data_writer);
 
       TCP_Connection tcp_connection;
@@ -60,7 +57,7 @@ Input_controller::process_event(MPI_Status &status) {
       // Add rank
       ip_addresses.push_back(node.get_rank()-2);
       
-      MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_UNSIGNED_LONG, 
+      MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_UINT64, 
                corr_node, MPI_TAG_SET_INPUT_STREAM_TCP, MPI_COMM_WORLD);
       
       node.set_status();      

@@ -13,11 +13,7 @@
 // #include <genPrms.h>
 
 #include <Node.h>
-#include <Log_controller.h>
 #include <Manager_controller.h>
-#include <Log_writer_cout.h>
-
-class Manager_controller;
 
 class Manager_node : public Node {
 public:
@@ -49,10 +45,7 @@ private:
   int Nstations, Ncorrelator_nodes;
   int slicenr;
   
-  Log_writer_cout log_writer_cout;
-  
   //Controllers:
-  Log_controller log_controller;
   Manager_controller manager_controller;
   
   INT64 start_time, stop_time;

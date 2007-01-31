@@ -26,79 +26,79 @@ MPI_Transfer::send_general_parameters(int rank) {
   char buffer[size];
   
   // RunPrms
-  MPI_Pack(&RunPrms.messagelvl, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD); 
-  MPI_Pack(&RunPrms.interactive, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&RunPrms.runoption, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&RunPrms.messagelvl, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
+  MPI_Pack(&RunPrms.interactive, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&RunPrms.runoption, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   
   // GenPrms
-  MPI_Pack(&GenPrms.yst, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.dst, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.hst, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.mst, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.sst, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.ysp, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.dsp, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.hsp, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.msp, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.ssp, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.yst, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.dst, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.hst, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.mst, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.sst, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.ysp, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.dsp, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.hsp, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.msp, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.ssp, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
 
-  MPI_Pack(&GenPrms.nstations, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.bwin, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.lsegm, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.foffset, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.cde, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.mde, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.rde, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.nstations, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.bwin, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.lsegm, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.foffset, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.cde, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.mde, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.rde, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   
-  MPI_Pack(&GenPrms.filter, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.bwfl, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.startf, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.deltaf, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.ovrfl, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.filter, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.bwfl, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.startf, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.deltaf, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.ovrfl, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
 
-  MPI_Pack(&GenPrms.n2fft, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.n2fft, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&GenPrms.ovrlp, 1, MPI_FLOAT, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.nsamp2avg, 1, MPI_LONG, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&GenPrms.pad, 1, MPI_INT, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.nsamp2avg, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.pad, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   
-//  MPI_Pack(&GenPrms.usStart, 1, MPI_LONG, buffer, size, &position, MPI_COMM_WORLD);
-//  MPI_Pack(&GenPrms.usStop, 1, MPI_LONG, buffer, size, &position, MPI_COMM_WORLD);
-//  MPI_Pack(&GenPrms.usEarliest, 1, MPI_LONG, buffer, size, &position, MPI_COMM_WORLD);
-//  MPI_Pack(&GenPrms.usLatest, 1, MPI_LONG, buffer, size, &position, MPI_COMM_WORLD);
+//  MPI_Pack(&GenPrms.usStart, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+//  MPI_Pack(&GenPrms.usStop, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+//  MPI_Pack(&GenPrms.usEarliest, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+//  MPI_Pack(&GenPrms.usLatest, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
 
   // add data for the stations:
   for (int station=0; station<GenPrms.get_nstations(); station++) {
-    MPI_Pack(&(StaPrms[station].datatype), 1, MPI_INT, 
+    MPI_Pack(&(StaPrms[station].datatype), 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&(StaPrms[station].tbr), 1, MPI_INT, 
+    MPI_Pack(&(StaPrms[station].tbr), 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].fo, 1, MPI_INT, 
+    MPI_Pack(&StaPrms[station].fo, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].bps, 1, MPI_INT, 
+    MPI_Pack(&StaPrms[station].bps, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].nhs, 1, MPI_INT, 
+    MPI_Pack(&StaPrms[station].nhs, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].tphs, 1, MPI_INT, 
+    MPI_Pack(&StaPrms[station].tphs, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].boff, 1, MPI_INT, 
+    MPI_Pack(&StaPrms[station].boff, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].synhs1, 1, MPI_INT, 
+    MPI_Pack(&StaPrms[station].synhs1, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].synhs2, 1, MPI_INT, 
+    MPI_Pack(&StaPrms[station].synhs2, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].mod, 1, MPI_INT, 
+    MPI_Pack(&StaPrms[station].mod, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].rndhdr, 1, MPI_INT, 
+    MPI_Pack(&StaPrms[station].rndhdr, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].signBS, fomax, MPI_INT, 
+    MPI_Pack(&StaPrms[station].signBS, fomax, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].magnBS, fomax, MPI_INT, 
+    MPI_Pack(&StaPrms[station].magnBS, fomax, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].hs, 1, MPI_INT, 
+    MPI_Pack(&StaPrms[station].hs, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].hm, 1, MPI_INT, 
+    MPI_Pack(&StaPrms[station].hm, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].loobs, 1, MPI_LONG, 
+    MPI_Pack(&StaPrms[station].loobs, 1, MPI_INT64, 
              buffer, size, &position, MPI_COMM_WORLD);
   }
 
@@ -123,77 +123,77 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
 
   int position = 0; 
   
-  MPI_Unpack(buffer, size, &position, &RunPrms.messagelvl, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &RunPrms.interactive, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &RunPrms.runoption, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &RunPrms.messagelvl, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &RunPrms.interactive, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &RunPrms.runoption, 1, MPI_INT32, MPI_COMM_WORLD);
 
-  MPI_Unpack(buffer, size, &position, &GenPrms.yst, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.dst, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.hst, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.mst, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.sst, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.ysp, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.dsp, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.hsp, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.msp, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.ssp, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.yst, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.dst, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.hst, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.mst, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.sst, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.ysp, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.dsp, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.hsp, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.msp, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.ssp, 1, MPI_INT32, MPI_COMM_WORLD);
 
-  MPI_Unpack(buffer, size, &position, &GenPrms.nstations, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.bwin, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.lsegm, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.foffset, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.cde, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.mde, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.rde, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.nstations, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.bwin, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.lsegm, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.foffset, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.cde, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.mde, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.rde, 1, MPI_INT32, MPI_COMM_WORLD);
   
-  MPI_Unpack(buffer, size, &position, &GenPrms.filter, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.bwfl, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.startf, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.deltaf, 1, MPI_INT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.ovrfl, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.filter, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.bwfl, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.startf, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.deltaf, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.ovrfl, 1, MPI_INT32, MPI_COMM_WORLD);
 
-  MPI_Unpack(buffer, size, &position, &GenPrms.n2fft, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.n2fft, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.ovrlp, 1, MPI_FLOAT, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.nsamp2avg, 1, MPI_LONG, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &GenPrms.pad, 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.nsamp2avg, 1, MPI_INT64, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &GenPrms.pad, 1, MPI_INT32, MPI_COMM_WORLD);
 
-//  MPI_Unpack(buffer, size, &position, &GenPrms.usStart, 1, MPI_LONG, MPI_COMM_WORLD);
-//  MPI_Unpack(buffer, size, &position, &GenPrms.usStop, 1, MPI_LONG, MPI_COMM_WORLD);
-//  MPI_Unpack(buffer, size, &position, &GenPrms.usEarliest, 1, MPI_LONG, MPI_COMM_WORLD);
-//  MPI_Unpack(buffer, size, &position, &GenPrms.usLatest, 1, MPI_LONG, MPI_COMM_WORLD);
+//  MPI_Unpack(buffer, size, &position, &GenPrms.usStart, 1, MPI_INT64, MPI_COMM_WORLD);
+//  MPI_Unpack(buffer, size, &position, &GenPrms.usStop, 1, MPI_INT64, MPI_COMM_WORLD);
+//  MPI_Unpack(buffer, size, &position, &GenPrms.usEarliest, 1, MPI_INT64, MPI_COMM_WORLD);
+//  MPI_Unpack(buffer, size, &position, &GenPrms.usLatest, 1, MPI_INT64, MPI_COMM_WORLD);
   
   for (int station=0; station<GenPrms.get_nstations(); station++) {
-    MPI_Unpack(buffer, size, &position, &(StaPrms[station].datatype), 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &(StaPrms[station].datatype), 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &(StaPrms[station].tbr), 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &(StaPrms[station].tbr), 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].fo, 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].fo, 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].bps, 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].bps, 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].nhs, 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].nhs, 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].tphs, 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].tphs, 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].boff, 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].boff, 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].synhs1, 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].synhs1, 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].synhs2, 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].synhs2, 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].mod, 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].mod, 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].rndhdr, 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].rndhdr, 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].signBS, fomax, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].signBS, fomax, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].magnBS, fomax, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].magnBS, fomax, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].hs, 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].hs, 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].hm, 1, MPI_INT, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].hm, 1, MPI_INT32, 
              MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].loobs, 1, MPI_LONG, 
+    MPI_Unpack(buffer, size, &position, &StaPrms[station].loobs, 1, MPI_INT64, 
              MPI_COMM_WORLD);
   }
   
@@ -231,9 +231,9 @@ MPI_Transfer::send_delay_table(DelayTable &table, int rank) {
   char buffer[size];
 
   // Scalars
-  MPI_Pack(&table.ndel, 1, MPI_LONG, buffer, size, &position, MPI_COMM_WORLD); 
-  MPI_Pack(&table.startDT, 1, MPI_LONG, buffer, size, &position, MPI_COMM_WORLD); 
-  MPI_Pack(&table.stepDT, 1, MPI_LONG, buffer, size, &position, MPI_COMM_WORLD); 
+  MPI_Pack(&table.ndel, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD); 
+  MPI_Pack(&table.startDT, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD); 
+  MPI_Pack(&table.stepDT, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD); 
 
   // Arrays
   for (int i=0; i<table.ndel; i++) {
@@ -270,9 +270,9 @@ MPI_Transfer::receive_delay_table(MPI_Status &status, DelayTable &table) {
   
 
   // Scalars
-  MPI_Unpack(buffer, size, &position, &table.ndel, 1, MPI_LONG, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &table.startDT, 1, MPI_LONG, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &table.stepDT, 1, MPI_LONG, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &table.ndel, 1, MPI_INT64, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &table.startDT, 1, MPI_INT64, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &table.stepDT, 1, MPI_INT64, MPI_COMM_WORLD);
   table.reserve_data();
   
   // Arrays

@@ -45,13 +45,13 @@ public:
    * - 0: no message
    * - 1: message processed
    **/
-  MESSAGE_RESULT check_and_process_waiting_messages();
+  MESSAGE_RESULT check_and_process_waiting_message();
 
   /** Blocking check for a message and process it.
    * - false: no message
    * - true: message processed
    **/
-  MESSAGE_RESULT check_and_process_messages();
+  MESSAGE_RESULT check_and_process_message();
 
   /** Process an MPI event.
       Try to delegate it to the controllers, otherwise produce an error message.
@@ -71,6 +71,7 @@ public:
   Log_writer &get_log_writer() {
     return log_writer;
   }
+  int get_rank() { return rank; }
   
 private:
   int rank;

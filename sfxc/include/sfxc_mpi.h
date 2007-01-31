@@ -1,7 +1,9 @@
 #ifndef SFXC_MPI_H
 #define SFXC_MPI_H
 
-#define LOG_NODE 0
+#define RANK_MANAGER_NODE 0
+#define RANK_LOG_NODE     1
+#define RANK_OUTPUT_NODE  2
 
 enum MPI_TAG {
   /// General initialisation channel
@@ -17,10 +19,18 @@ enum MPI_TAG {
   MPI_TAG_SET_CORRELATOR_NODE,
   /// Make an output node write data to file
   MPI_TAG_SET_OUTPUT_NODE_FILE,
+  
+  /// Make an log node write data to file
+  MPI_TAG_SET_LOG_NODE_FILE,
+  /// Make an log node write data to cout
+  MPI_TAG_SET_LOG_NODE_COUT,
 
   /// Create an output stream for a correlate node (input stream for the output node)
   MPI_TAG_CREATE_OUTPUT_STREAM_TCP,
 
+  /// Create an input stream for a correlate node (output stream for the input node)
+  MPI_TAG_SET_INPUT_STREAM_TCP,
+  
   /** Set the output stream for a correlate node.
    * Data: UINT64 ... ip_addresses, UINT64 port
    **/
@@ -68,6 +78,9 @@ enum MPI_TAG {
   
   /// A correlate node finished
   MPI_TAG_CORRELATE_ENDED,
+  
+  /// A log node terminated and will not send more messages:
+  MPI_TAG_LOG_MESSAGES_ENDED,
 
   /// The correlation node is ready to process data
   MPI_TAG_CORRELATION_READY,

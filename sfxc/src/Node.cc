@@ -27,7 +27,7 @@ Node::add_controller(Controller *controller) {
 
 void Node::start() {
   while (true) {
-    MESSAGE_RESULT result = check_and_process_messages();
+    MESSAGE_RESULT result = check_and_process_message();
     
     // NGHK: Make an enum for the result types:
     switch (result) {
@@ -35,6 +35,10 @@ void Node::start() {
         break;
       }
       case TERMINATE_NODE: {
+        int rank = get_rank();
+        MPI_Send(&rank, 1, MPI_INT, 
+                 RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
+        
         return;
       }
       case NO_MESSAGE: {
@@ -52,7 +56,7 @@ void Node::start() {
   }
 }
 
-Node::MESSAGE_RESULT Node::check_and_process_waiting_messages() {
+Node::MESSAGE_RESULT Node::check_and_process_waiting_message() {
     MPI_Status status;
     int result;
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &result, &status);
@@ -62,7 +66,7 @@ Node::MESSAGE_RESULT Node::check_and_process_waiting_messages() {
     return NO_MESSAGE;
 }
 
-Node::MESSAGE_RESULT Node::check_and_process_messages() {
+Node::MESSAGE_RESULT Node::check_and_process_message() {
     MPI_Status status;
     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     
@@ -72,7 +76,7 @@ Node::MESSAGE_RESULT Node::check_and_process_messages() {
 Node::MESSAGE_RESULT Node::process_event(MPI_Status &status) {
   if (status.MPI_TAG == MPI_TAG_CORRELATION_READY) {
     MPI_Status status2; int msg;
-    MPI_Recv(&msg, 1, MPI_INT, status.MPI_SOURCE,
+    MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
     
     log_writer.MPI(0, "MPI_TAG_CORRELATION_READY <===");

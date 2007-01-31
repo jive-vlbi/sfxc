@@ -84,13 +84,13 @@ int main(int argc, char *argv[]) {
     // Wait for data node to finish
     int i;
     MPI_Status status2;
-    MPI_Recv(&i, 1, MPI_INT, MPI_ANY_SOURCE,
+    MPI_Recv(&i, 1, MPI_INT32, MPI_ANY_SOURCE,
              MPI_TAG_DATASTREAM_EMPTY, MPI_COMM_WORLD, &status2);
    
    
     // Terminate data node
     i=0;
-    MPI_Send(&i, 1, MPI_INT, 1,
+    MPI_Send(&i, 1, MPI_INT32, 1,
              MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
 
   } else if (rank == 1) {

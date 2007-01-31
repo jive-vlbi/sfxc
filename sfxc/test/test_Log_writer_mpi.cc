@@ -6,9 +6,9 @@
 #include "Log_writer_mpi.h"
 #include "Log_controller.h"
 
-class Log_node : public Node {
+class Test_log_node : public Node {
 public:
-  Log_node(int rank) : Node(rank), log_controller(log_writer) {
+  Test_log_node(int rank) : Node(rank), log_controller(log_writer) {
     add_controller(&log_controller);
   }
 private:
@@ -36,14 +36,14 @@ int main(int argc, char *argv[]) {
   assert(numtasks==2);
   
   if (rank==0) {
-    Log_node node(rank);
+    Test_log_node node(rank);
     node.start();
   } else {
     Log_writer_mpi writer;
     writer.set_rank(rank);
     writer << "a\nb\nc\n";
     int i=0;
-    MPI_Send(&i, 1, MPI_INT, 0, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
+    MPI_Send(&i, 1, MPI_INT32, 0, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
   }
 
 

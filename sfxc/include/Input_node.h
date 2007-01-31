@@ -1,7 +1,6 @@
 /* Author(s): Nico Kruithof, 2007
  * 
- * $URL:$
- * $Id: $
+ * $Id$
  */
 
 #ifndef INPUT_NODE_H
@@ -9,7 +8,10 @@
 
 #include <Node.h>
 #include <Input_controller.h>
-#include <Output_controller.h>
+
+#include <Data_reader.h>
+#include <Data_writer.h>
+
 #include <Semaphore_buffer.h>
 #include <Ring_buffer.h>
 
@@ -20,14 +22,27 @@ public:
   Input_node(int rank, int buffer_size = 1024);
   ~Input_node();
   
+  void start();
+
+  enum STATUS {
+    STOPPED=0,
+    SEND_OUTPUT,
+    END_NODE
+  };
+  
+  void set_status();
+  
+  void set_data_writer(int pos, Data_writer *writer);
+  Data_writer *get_data_writer(int pos);
+  
 private:
-  //Ring_buffer<Input_controller::value_type> buffer;
   Semaphore_buffer<Input_controller::value_type> buffer;
 
-  Log_writer_cout log_writer;
-
-  Input_controller input;
-  Output_controller output;
+  Input_controller            input_controller;
+  Data_reader                *data_reader;
+  std::vector<Data_writer *>  data_writers;
+  
+  STATUS status;
 };
 
 #endif // INPUT_NODE_H

@@ -36,7 +36,7 @@ void Log_writer_mpi::write_message(const char buff[]) {
 }
   
 void Log_writer_mpi::send() {
-  MPI_Send((void*)msg.c_str(), msg.size()+1, MPI_CHAR, 0, 
-           MPI_TAG_LOG_MESSAGE, MPI_COMM_WORLD);
+  MPI_Send((void*)msg.c_str(), msg.size()+1, MPI_CHAR, 
+           RANK_LOG_NODE, MPI_TAG_LOG_MESSAGE, MPI_COMM_WORLD);
   msg = rank_str;
 }
