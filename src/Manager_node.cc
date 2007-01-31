@@ -1,11 +1,7 @@
-/*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
-*/
+/* Author(s): Nico Kruithof, 2007
+ * 
+ * $Id$
+ */
 
 #include <Manager_node.h>
 #include <iostream>
@@ -26,13 +22,11 @@ extern StaP StaPrms[NstationsMax];
 
 Manager_node::Manager_node(int numtasks, int rank, char * control_file) 
   : Node(rank), numtasks(numtasks), slicenr(0), 
-    log_controller(log_writer_cout), 
     manager_controller(*this)
 
 {
   assert(rank == 0);
 
-  add_controller(&log_controller);
   add_controller(&manager_controller);
   
   int err;
@@ -45,40 +39,49 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   Ncorrelator_nodes = numtasks - (Nstations+2); 
 
   
-  {
-    // Node 1 is the output node
-    const char *filename = GenPrms.get_corfile();
-    MPI_Send((void *)filename, strlen(filename)+1, MPI_CHAR, 1, 
-             MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);
+  { // Initialise the log node
+    int msg;
+    MPI_Send(&msg, 1, MPI_INT, 
+             RANK_LOG_NODE, MPI_TAG_SET_LOG_NODE_COUT, MPI_COMM_WORLD);
+//    char log_file[] = "output.txt";
+//    MPI_Send(&log_file, strlen(log_file)+1, MPI_CHAR, 
+//             RANK_LOG_NODE, MPI_TAG_SET_LOG_NODE_FILE, MPI_COMM_WORLD);
   }  
 
-  // Nstations+2 and later are correlate nodes
-  for (int i=Nstations+2; i<numtasks; i++) {
+  { // Initialise the output node
+    const char *filename = GenPrms.get_corfile();
+    MPI_Send((void *)filename, strlen(filename)+1, MPI_CHAR, 
+             RANK_OUTPUT_NODE, MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);
+  }  
+
+  // Nstations+3 and later are correlate nodes
+  for (int i=Nstations+3; i<numtasks; i++) {
     // starting a correlator node
     int type = MPI_TAG_SET_CORRELATOR_NODE;
-    MPI_Send(&type, 1, MPI_INT, i, 
+    MPI_Send(&type, 1, MPI_INT32, i, 
              MPI_TAG_SET_CORRELATOR_NODE, MPI_COMM_WORLD);
     err = send_control_parameters_to_controller_node(i);
     if (err != 0) return;
     
     // Notify the output node (node 1):
-//    MPI_Send(&i, 1, MPI_INT, 
+//    MPI_Send(&i, 1, MPI_INT32, 
 //             1, MPI_TAG_CREATE_OUTPUT_STREAM_TCP, MPI_COMM_WORLD);
   }
 
   // Node 2 to Nstations+1 are input nodes
   for (int i=0; i<Nstations; i++) {
+    int start_input_nodes = 3;
     // starting an input reader
     char *filename = StaPrms[i].get_mk4file();
     // strlen+1 so that \0 gets transmitted as well
     MPI_Send(filename, strlen(filename)+1, MPI_CHAR, 
-             i+2, MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
+             i+start_input_nodes, MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
 
     // Add correlator nodes to the input readers:
-//    for (int j=Nstations+2; j<numtasks; j++) {
-//      MPI_Send(&j, 1, MPI_INT, i+2, 
-//               MPI_TAG_ADD_CORRELATOR_NODE, MPI_COMM_WORLD);
-//    }
+    for (int j=Nstations+start_input_nodes; j<numtasks; j++) {
+      MPI_Send(&j, 1, MPI_INT32, i+start_input_nodes, 
+               MPI_TAG_ADD_CORRELATOR_NODE, MPI_COMM_WORLD);
+    }
   }
   if (err != 0) return;
   
@@ -96,10 +99,10 @@ void Manager_node::start() {
 
   // End program:
   for (int i=0; i<GenPrms.get_nstations(); i++) {
-    MPI_Send(&type, 1, MPI_INT, i+2, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
+    MPI_Send(&type, 1, MPI_INT32, i+2, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
   }
   
-    MPI_Send(&type, 1, MPI_INT, 1, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
+  MPI_Send(&type, 1, MPI_INT32, 1, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
 }
 
 int Manager_node::read_control_file(char *control_file) {

@@ -96,14 +96,18 @@ DelayTable::operator==(const DelayTable &other) const {
   if (fB != other.fB) return false;
   if (fC != other.fC) return false;
   
-  double t = startDT, delay1, delay2;
-  while (t < startDT + (ndel-2) *stepDT) {
-    //Cdel, Mdel, Rdel, Fdel
-    delay1 = calcDelay(t, Cdel);
-    delay2 = other.calcDelay(t, Cdel);
-    if (delay1 != delay2) return false;
-    t += .02*stepDT;
-  }
+//  double t = startDT, delay1, delay2;
+//  while (t < startDT + (ndel-2) *stepDT) {
+//    //Cdel, Mdel, Rdel, Fdel
+//    double t1 = t;
+//    delay1 = calcDelay(t, Cdel);
+//    delay2 = calcDelay(t, Cdel);
+//    if (delay1 != delay2) {
+//      std::cout << delay1 - delay2 << std::endl;
+//    }
+//    if (delay1 != delay2) return false;
+//    t += .02*stepDT;
+//  }
   
   return true;
 }

@@ -46,6 +46,7 @@ public:
   void start();
   
   void add_data_reader(Data_reader *reader);
+  void set_data_reader(int node, Data_reader *reader);
   
   /// Destroys the previous writer, if it exists.  
   void set_data_writer(Data_writer *data_writer);

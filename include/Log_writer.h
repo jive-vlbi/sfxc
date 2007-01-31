@@ -60,7 +60,7 @@ public:
   Log_writer &operator<<(std::ostream& (*f)(std::ostream&) ); 
 
 
-  char* itoa( int value, char* result, int base );
+  char* itoa( int value, char* result, int base ) const;
 
   /// Sets all message levels to level
   void set_messagelevel(int level);

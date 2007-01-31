@@ -17,6 +17,10 @@ public:
    **/
   Data_reader_tcp(int port = 2630);
   void open_connection();
+
+  /// Connect the data_reader to a data_writer.  
+  Data_reader_tcp(UINT64 *ip_addr, int nAddr, unsigned short int port);
+  
   ~Data_reader_tcp();
 
   UINT64 move_forward(UINT64 nBytes);
@@ -25,7 +29,7 @@ public:
   unsigned int get_port();  
 private:
 //  std::vector<char> buffer;
-  int connection_socket, port_socket;
+  int connection_socket, socket;
   int port;
 };
 

@@ -121,12 +121,18 @@ int RunP::check_params(Log_writer &log_writer) const
   //display run parameters
   log_writer.set_current_messagelevel(1);
   log_writer <<
-    "--------------------------------------------------------------------------------\n" <<
-    "General run settings\n" <<
-    endl <<
-    "Message level        = " << messagelvl << endl <<
-    "Interactive          = " << interactive << endl <<
-    "Run option           = " << runoption << endl <<
+    "--------------------------------------------------------------------------------\n";
+  log_writer <<
+    "General run settings\n" << endl;
+  log_writer <<
+    "Message level        = ";
+  log_writer << messagelvl;
+  log_writer << endl;
+  log_writer <<
+    "Interactive          = " << interactive << endl;
+  log_writer <<
+    "Run option           = " << runoption << endl;
+  log_writer <<
     endl;
 
   //check run parameters and show faulty ones

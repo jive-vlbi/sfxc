@@ -42,7 +42,7 @@ Output_controller::process_event(MPI_Status &status) {
       log_writer.MPI(0, "MPI_TAG_CREATE_OUTPUT_STREAM_TCP");
       
       int corr_rank;
-      MPI_Recv(&corr_rank, 1, MPI_INT, status.MPI_SOURCE,
+      MPI_Recv(&corr_rank, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
@@ -54,9 +54,13 @@ Output_controller::process_event(MPI_Status &status) {
       input_stream.buffer      = new Queue_buffer<value_type>();
       input_stream.slice_ready = false;
 
-      if (data_readers.size() <= (unsigned int)corr_rank) {
-        data_readers.resize(corr_rank+1);
-      }
+//      if (data_readers.size() <= (unsigned int)corr_rank) {
+//        data_readers.resize(corr_rank+1);
+//      }
+//      if (data_readers[corr_rank] != NULL) {
+//        delete(data_readers[corr_rank]);
+//      }
+      
       data_readers[corr_rank] = input_stream;
  
       TCP_Connection tcp_connection;
@@ -75,7 +79,7 @@ Output_controller::process_event(MPI_Status &status) {
     {
       log_writer.MPI(0, "MPI_TAG_SET_WEIGHT_OUTPUT_STREAM");
       int weight;
-      MPI_Recv(&weight, 1, MPI_INT, status.MPI_SOURCE,
+      MPI_Recv(&weight, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
@@ -89,7 +93,7 @@ Output_controller::process_event(MPI_Status &status) {
     {
       log_writer.MPI(0, "MPI_TAG_OUTPUT_STREAM_ENDED");
       int weight;
-      MPI_Recv(&weight, 1, MPI_INT, status.MPI_SOURCE,
+      MPI_Recv(&weight, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
@@ -156,7 +160,7 @@ Output_controller::start_writing(void *self_) {
 
   // Writing ended, notify controller node
   int i=0; 
-  MPI_Send(&i, 1, MPI_INT, 0,
+  MPI_Send(&i, 1, MPI_INT32, 0,
            MPI_TAG_DATASTREAM_EMPTY, MPI_COMM_WORLD);
 
   return NULL;

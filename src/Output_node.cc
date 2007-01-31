@@ -13,12 +13,9 @@
 #include <assert.h>
 
 Output_node::Output_node(int rank, int size) 
-  : Node(rank), 
-    buffer(size), 
-    input(buffer, log_writer), output(buffer, log_writer)
+  : Node(rank), buffer(size),     
+    output(buffer, get_log_writer())
 {
-  log_writer(0)<< "Output_node(rank,size)" << std::endl;
-  add_controller(&input);
   add_controller(&output);
 }
 

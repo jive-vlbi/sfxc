@@ -44,7 +44,8 @@ TCP_Connection::open_port(unsigned short int port) {
   if (bind(listenSocket,
            (struct sockaddr *) &serverAddress,
            sizeof(serverAddress)) < 0) {
-    std::cerr << "cannot bind socket to port " << port << std::endl;
+    if (verbose) 
+      std::cerr << "cannot bind socket to port " << port << std::endl;
     return -1;
   }
   
@@ -82,7 +83,7 @@ TCP_Connection::open_connection(int socket) {
                          &clientAddressLength);
   if (connectSocket < 0) {
     std::cerr << "cannot accept connection ";
-    return -1;
+    return 0;
   }
   
   // Show the IP address of the client.

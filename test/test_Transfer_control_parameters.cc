@@ -1,10 +1,7 @@
-/*
-  $Author$
-  $Date$
-  $Name$
-  $Revision$
-  $Source$
-*/
+/* Author(s): Nico Kruithof, 2007
+ * 
+ * $Id$
+ */
 
 #include <types.h>
 #include <iostream>
@@ -265,9 +262,9 @@ void check_control_parameters() {
 }
 
 void check_delay_table(char *filename_delay_table) {
-//  if (rank==0) {
-//    std::cout << "check delay: " << filename_delay_table << std::endl;
-//  }
+  if (rank==0) {
+    std::cout << "check delay: " << filename_delay_table << std::endl;
+  }
 
   // Read delay_table:
   DelayTable delayTable;
@@ -285,14 +282,14 @@ void check_delay_table(char *filename_delay_table) {
       assert(delayTable == delayTable2);
     }
     
-    transfer.send_delay_table(delayTable,1);
+//    transfer.send_delay_table(delayTable,1);
   } else {
-    DelayTable delayTable2;
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    transfer.receive_delay_table(status,delayTable2);
-    
-    assert(delayTable == delayTable2);
+//    DelayTable delayTable2;
+//    MPI_Status status;
+//    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+//    transfer.receive_delay_table(status,delayTable2);
+//    
+//    assert(delayTable == delayTable2);
   }
 }
 

@@ -1,12 +1,7 @@
-/*
-  $Author$
-  $Date$
-  $Name$
-  $Revision$
-  $Source$
-  
-  Tests correlating two files from disk (based on local ip-address)
-*/
+/* Author(s): Nico Kruithof, 2007
+ * 
+ * $Id$
+ */
 
 #include <types.h>
 #include <sfxc_mpi.h>
@@ -71,8 +66,8 @@ int main(int argc, char *argv[]) {
     // Initialise correlator node
     assert(argc==2);
     char *control_file = argv[1];
-    //"/jop54_0/kruithof/data/n05c2/sfxc_n06c2_McNtTrWb.nodel.ctrl";
-    //char *control_file = "/jop54_0/kruithof/data/n05c2/sfxc_n06c2_WbWb.nodel.ctrl";
+    //"/jop35_0/kruithof/data/n05c2/sfxc_n06c2_McNtTrWb.nodel.ctrl";
+    //char *control_file = "/jop35_0/kruithof/data/n05c2/sfxc_n06c2_WbWb.nodel.ctrl";
     if (initialise_control(control_file, log_writer) != 0) {
       log_writer(0) << "Initialisation using control file failed" << std::endl;
       return 1;
@@ -112,7 +107,7 @@ int main(int argc, char *argv[]) {
                         GenPrms.get_hst(),
                         GenPrms.get_mst(),
                         GenPrms.get_sst()};
-    MPI_Send(start_time, 5, MPI_INT, 1,
+    MPI_Send(start_time, 5, MPI_INT32, 1,
              MPI_TAG_SET_START_TIME, MPI_COMM_WORLD);
    
     int stop_time[] = {GenPrms.get_ysp(),
@@ -120,11 +115,11 @@ int main(int argc, char *argv[]) {
                        GenPrms.get_hsp(),
                        GenPrms.get_msp(),
                        GenPrms.get_ssp()};
-    MPI_Send(stop_time, 5, MPI_INT, 1,
+    MPI_Send(stop_time, 5, MPI_INT32, 1,
              MPI_TAG_SET_STOP_TIME, MPI_COMM_WORLD);
 
     int cmd = 0;
-    MPI_Send(&cmd, 1, MPI_INT, 1,
+    MPI_Send(&cmd, 1, MPI_INT32, 1,
              MPI_TAG_START_CORRELATE_NODE, MPI_COMM_WORLD);
 
     bool finished = false;
@@ -139,11 +134,11 @@ int main(int argc, char *argv[]) {
           log_writer << "MPI_TAG_CORRELATE_ENDED " << std::endl;
           // Wait for data node to finish
           int i=0;
-          MPI_Recv(&i, 1, MPI_INT, status.MPI_SOURCE,
+          MPI_Recv(&i, 1, MPI_INT32, status.MPI_SOURCE,
                    status.MPI_TAG, MPI_COMM_WORLD, &status2);
   
           // Terminate data node
-          MPI_Send(&i, 1, MPI_INT, 1,
+          MPI_Send(&i, 1, MPI_INT32, 1,
                    MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
           finished = true;
           break;
