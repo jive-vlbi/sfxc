@@ -21,8 +21,18 @@ void Data_reader_tcp::open_connection() {
   assert(socket > 0);
 }
 
-Data_reader_tcp::Data_reader_tcp(UINT64 *ip_addr, int nAddr, unsigned short int port) {
-  std::cout << "NYImpl\n";
+Data_reader_tcp::Data_reader_tcp(UINT64 *ip_addr, int nAddr, unsigned short int port)
+  : Data_reader(), socket(-1)
+{
+  TCP_Connection connection;
+  int i=0;
+  do {
+    socket = connection.do_connect(ip_addr[i], port);
+    i = (i+1)%nAddr;
+  } while (socket <= 0);
+  
+  std::cout << "CONNECTION SUCCEEDED *********************************" << std::endl;
+  assert(socket > 0);
 }
 
 
