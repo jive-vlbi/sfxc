@@ -27,7 +27,7 @@ TCP_Connection::open_port(unsigned short int port) {
 
   listenSocket = socket(AF_INET, SOCK_STREAM, 0);
   if (listenSocket < 0) {
-    std::cerr << "cannot create listen socket" << std::endl;
+    std::cout << "cannot create listen socket" << std::endl;
     return -1;
   }
   
@@ -45,7 +45,7 @@ TCP_Connection::open_port(unsigned short int port) {
            (struct sockaddr *) &serverAddress,
            sizeof(serverAddress)) < 0) {
     if (verbose) 
-      std::cerr << "cannot bind socket to port " << port << std::endl;
+      std::cout << "cannot bind socket to port " << port << std::endl;
     return -1;
   }
   
@@ -82,7 +82,7 @@ TCP_Connection::open_connection(int socket) {
                          (struct sockaddr *) &clientAddress,
                          &clientAddressLength);
   if (connectSocket < 0) {
-    std::cerr << "cannot accept connection ";
+    std::cout << "cannot accept connection ";
     return 0;
   }
   
@@ -124,7 +124,7 @@ TCP_Connection::do_connect(const char *hostname, unsigned short int port) {
   // parameter means, but it seems to work.
   socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
   if (socketDescriptor < 0) {
-    std::cerr << "cannot create socket\n";
+    std::cout << "cannot create socket\n";
     return -1;
   }
 
@@ -139,7 +139,7 @@ TCP_Connection::do_connect(const char *hostname, unsigned short int port) {
   if (connect(socketDescriptor,
               (struct sockaddr *) &serverAddress,
               sizeof(serverAddress)) < 0) {
-    std::cerr << "cannot connect\n";
+    std::cout << "cannot connect to port " << port << "\n";
     close(socketDescriptor);
     return -1;
   }
@@ -172,7 +172,7 @@ TCP_Connection::do_connect(UINT64 ip, unsigned short int port) {
   // parameter means, but it seems to work.
   socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
   if (socketDescriptor < 0) {
-    std::cerr << "cannot create socket\n";
+    std::cout << "cannot create socket\n";
     return -1;
   }
 
@@ -187,7 +187,7 @@ TCP_Connection::do_connect(UINT64 ip, unsigned short int port) {
   if (connect(socketDescriptor,
               (struct sockaddr *) &serverAddress,
               sizeof(serverAddress)) < 0) {
-    std::cerr << "cannot connect\n";
+    std::cout << "cannot connect to port " << port << "\n";
     close(socketDescriptor);
     return -1;
   }

@@ -55,10 +55,12 @@ Input_controller::process_event(MPI_Status &status) {
       // Add port
       ip_addresses.push_back(data_writer->get_port());
       // Add rank
-      ip_addresses.push_back(node.get_rank()-2);
+      //ip_addresses.push_back(node.get_rank()-2);
       
       MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_UINT64, 
                corr_node, MPI_TAG_SET_INPUT_STREAM_TCP, MPI_COMM_WORLD);
+      
+      data_writer->open_connection();
       
       node.set_status();      
       

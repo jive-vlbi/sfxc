@@ -34,8 +34,8 @@ void Data_writer_tcp::open_connection() {
   assert(socket > 0);
 }
 
-Data_writer_tcp::  Data_writer_tcp(UINT64 ip_addr[], int nAddr, unsigned short int port) : 
-  Data_writer(), socket(-1)
+Data_writer_tcp::Data_writer_tcp(UINT64 ip_addr[], int nAddr, unsigned short int port) 
+ : Data_writer(), socket(-1)
 {
   TCP_Connection connection(true);
   int i=0;
