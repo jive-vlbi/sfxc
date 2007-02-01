@@ -1,0 +1,9 @@
+CC = g++
+vex2ccf:     vex2ccf.o vexplus.o libvex.a
+	$(CC) -o vex2ccf vexplus.o  vex2ccf.o -L. -lvex -lfl
+#-L lvex: link the local libvex.a
+#-lfl: link the flex library, thjs one should come after lvex
+vex2ccf.o: vex2ccf.cc
+	$(CC) -c vex2ccf.cc
+vexplus.o: vexplus.C vexplus.h
+	$(CC) -c vexplus.C
