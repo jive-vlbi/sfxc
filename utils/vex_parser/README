@@ -1,0 +1,277 @@
+On juw27 and PCInt cluster:
+==========================
+
+051209: Harro moved from vex2005 to vex2005nut to let the new vex files,
+        with nutation in EOP, pass the vex parser. On juw27 (see
+        /juw27_0/JCCS-COFendianfix/system_make/locations.juw27.mak)
+        /aips++4/verkout/JCCSUtil/vex2005nut
+
+On juw26:
+========
+
+051215: Adapt rel3009, as "adapt base" dd 051207:
+
+rlogin juw26 -l jive_cc
+setenv CCC_ROOT /juw26_0/jccs/rel3009
+cd $CCC_ROOT/system_make
+cvs edit locations.*.mak
+ftp jaw0
+> cd /jccs/base/system_make
+> mget locations.*.mak
+> quit
+cd $CCC_ROOT/include/prep_job
+cvs edit vexplus.h
+ftp jaw0
+> cd /jccs/base/include/prep_job
+> get vexplus.h
+> quit
+cd $CCC_ROOT/source/prep_job
+cvs edit vexplus.C vexcjd.C cjdvex.C
+ftp jaw0
+> cd /jccs/base/source/prep_job
+> mget vexplus.C vexcjd.C cjdvex.C
+> quit
+cd $CCC_ROOT/make
+#we only have to rebuild fmovex.fmovex_lib prep_job.vexplus
+gmake install
+
+051207: Friso as jive_cc copied the source files from vex2005nut on
+        jaw0, and built it:
+
+rlogin juw26 -l jive_cc
+cd /juw26_6/jccs/util
+mkdir vex2005nut; cd vex2005nut
+ftp jaw0
+> cd /jccs/util/vex2005nut
+> mget * 
+> quit
+gmake libvex.a libvex.sl
+ll
+     216586 Dec  7 13:40 libvex.a
+     184653 Dec  7 13:40 libvex.sl
+       1055 Dec  7 13:39 Makefile
+       6941 Dec  7 13:39 print_vex.c
+      12288 Dec  7 13:40 print_vex.o
+       4515 Dec  7 13:40 README
+      23742 Dec  7 13:39 vex_get.c
+      27608 Dec  7 13:40 vex_get.o
+        147 Dec  7 13:39 vex++.h
+      25636 Dec  7 13:39 vex.h
+      77504 Dec  7 13:40 vex.o
+      49664 Dec  7 13:39 vex_util.c
+      41916 Dec  7 13:40 vex_util.o
+      51757 Dec  7 13:39 vex.y
+      16530 Dec  7 13:39 vex.yy.l
+      54492 Dec  7 13:40 vex.yy.o
+       5484 Dec  7 13:40 y.tab.h
+
+Adapt base release
+==================
+rlogin juw26 -l jive_cc
+setenv CCC_ROOT /juw26_0/jccs/base
+cd $CCC_ROOT/system_make
+cvs edit locations.*.mak
+ftp jaw0
+> cd /jccs/base/system_make
+> mget locations.*.mak
+> quit
+cd $CCC_ROOT/include/prep_job
+cvs edit vexplus.h
+ftp jaw0
+> cd /jccs/base/include/prep_job
+> get vexplus.h
+> quit
+cd $CCC_ROOT/source/prep_job
+cvs edit vexplus.C vexcjd.C cjdvex.C
+ftp jaw0
+> cd /jccs/base/source/prep_job
+> mget vexplus.C vexcjd.C cjdvex.C
+> quit
+cd $CCC_ROOT/make
+#we only have to rebuild fmovex.fmovex_lib prep_job.vexplus
+gmake all install
+
+
+On jaw0:
+=======
+
+051215: Adapt rel3009, as "adapt base" dd 051207:
+
+rlogin jaw0 -l jive_cc
+setenv CCC_ROOT /jccs/rel3009
+cd $CCC_ROOT/system_make
+cvs edit locations.*.mak
+emacs locations.jaw1.mak; // ->vex2005nut 
+emacs locations.jaw0.mak; // ->vex2005nut 
+emacs locations.juw26.mak; // ->vex2005nut 
+cd $CCC_ROOT/include/prep_job
+cvs edit vexplus.h
+ftp jaw1
+> cd /jaw1_0/users/jive_cc/base/include/prep_job
+> get vexplus.h
+> quit
+cd $CCC_ROOT/source/prep_job
+cvs edit vexplus.C vexcjd.C cjdvex.C
+ftp jaw1
+> cd /jaw1_0/users/jive_cc/base/source/prep_job
+> mget vexplus.C vexcjd.C cjdvex.C
+> quit
+cd $CCC_ROOT/make
+#we have to rebuild experiments_db, prep_job, fmovex, prep_job and proc_job
+gmake all install
+
+051207: Friso as jive_cc copied the source files from vex2005nut on
+        jaw1, and built it:
+
+rlogin jaw0 -l jive_cc
+cd /jccs/util
+mkdir vex2005nut; cd vex2005nut
+ftp jaw0
+> cd /jaw1_0/users/jive_cc/util/vex2005nut
+> mget * 
+> quit
+gmake libvex.a libvex.sl
+ll
+
+         1055 Dec  7 13:19 Makefile     //source
+         3340 Dec  7 13:25 README       //this file
+       217614 Dec  7 13:25 libvex.a    <- ar -qc libvex.a *.o
+       246194 Dec  7 13:25 libvex.sl*  <- gcc -fPIC -shared -o libvex.sl *.o
+         6941 Dec  7 13:19 print_vex.c  //source
+        10429 Dec  7 13:25 print_vex.o <- gcc -c print_vex.c
+          147 Dec  7 13:19 vex++.h      //source
+        25636 Dec  7 13:19 vex.h        //source
+        81713 Dec  7 13:25 vex.o       <- gcc -c vex.c
+        51757 Dec  7 13:19 vex.y        //source
+        16530 Dec  7 13:19 vex.yy.l     //source
+        45200 Dec  7 13:25 vex.yy.o    <- gcc -c vex.yy.c <- flex -t vex.yy.l
+        23742 Dec  7 13:20 vex_get.c    //source  
+        23465 Dec  7 13:25 vex_get.o   <- gcc -c vex_get.c
+        49664 Dec  7 13:20 vex_util.c   //source 
+        48535 Dec  7 13:25 vex_util.o  <- gcc -c vex_util.c
+         5207 Dec  7 13:25 y.tab.h     <- bison -d -y vex.y
+
+Adapt base release
+==================
+rlogin jaw0 -l jive_cc
+setenv CCC_ROOT /jccs/base
+cd $CCC_ROOT/system_make
+cvs edit locations.*.mak
+emacs locations.jaw1.mak; // ->vex2005nut 
+emacs locations.jaw0.mak; // ->vex2005nut 
+emacs locations.juw26.mak; // ->vex2005nut 
+cd $CCC_ROOT/include/prep_job
+cvs edit vexplus.h
+ftp jaw1
+> cd /jaw1_0/users/jive_cc/base/include/prep_job
+> get vexplus.h
+> quit
+cd $CCC_ROOT/source/prep_job
+cvs edit vexplus.C vexcjd.C cjdvex.C
+ftp jaw1
+> cd /jaw1_0/users/jive_cc/base/source/prep_job
+> mget vexplus.C vexcjd.C cjdvex.C
+> quit
+cd $CCC_ROOT/make
+#we have to rebuild experiments_db, prep_job, fmovex, prep_job and proc_job
+gmake install
+
+On jaw1:
+=======
+
+051206: Friso as jive_cc copied vex2005 (based on fs-9.7.7) to
+        vex2005nut and added the nutation bits from vex-9.8.2:
+
+rlogin jaw1 -l jive_cc
+cd /jaw1_0/users/jive_cc/util
+mkdir vex2005nut; cd vex2005nut
+cp ......
+
+Differences between vex2005-orig and vex-9.8.2 source files (on jaw0),
+and corresponding differences between vex2005 and vex2005nut files:
+         print_vex.c  none
+         vex.h        new/mod'd create_ fu's for nut and horizon
+         vex.y        new nut tokens, types and eop_lowl components
+         vex.yy.l     new nut <LINE>s
+         vex_get.c    none
+         vex_util.c   new nut fields
+
+removed all intermediates and products
+
+Contents of this directory:
+==========================
+
+Sources:
+-------
+          1055 Nov 16  2004 Makefile   (copied from vex2004) -> libvex.a
+          5242 Dec  6 14:53 README     this file
+          6941 May 27  2005 print_vex.c -> libvex.a 
+           147 Oct 22  2001 vex++.h    C++ wrapper around VEX library (copied from vex2001)
+         25636 Dec  6 15:43 vex.h      declarations/prototypes for VEX library
+         51757 Dec  6 16:19 vex.y      -> libvex.a (bison grammar file)
+         16530 Dec  6 15:51 vex.yy.l   -> libvex.a
+         23742 May 27  2005 vex_get.c  -> libvex.a
+         49664 Dec  6 15:56 vex_util.c -> libvex.a
+
+Go build:
+--------
+gmake libvex.a libvex.sl
+output:
+------
+bison -d -y vex.y
+mv -f y.tab.c vex.c
+/local/gcc-3.2/bin/gcc -fPIC   -c -o vex.o vex.c
+flex  -t vex.yy.l > vex.yy.c
+/local/gcc-3.2/bin/gcc -fPIC   -c -o vex.yy.o vex.yy.c
+/local/gcc-3.2/bin/gcc -fPIC   -c -o vex_util.o vex_util.c
+/local/gcc-3.2/bin/gcc -fPIC   -c -o print_vex.o print_vex.c
+/local/gcc-3.2/bin/gcc -fPIC   -c -o vex_get.o vex_get.c
+vex_get.c: In function `get_all_lowl':
+vex_get.c:451: warning: deprecated use of label at end of compound statement
+touch libvex.a
+rm libvex.a
+ar -qc libvex.a vex.o vex.yy.o vex_util.o print_vex.o vex_get.o
+touch libvex.sl
+rm libvex.sl
+gcc  -fPIC -shared -o libvex.sl vex.o vex.yy.o vex_util.o print_vex.o vex_get.o
+rm vex.c vex.yy.c
+
+Intermediates:
+-------------
+   5207 Dec  6 16:22 y.tab.h     <- bison -d -y vex.y
+                     vex.c       <- bison -d -y vex.y
+  81713 Dec  6 16:22 vex.o       <- gcc -c      vex.c
+                     vex.yy.c    <- flex -t     vex.yy.l
+  45200 Dec  6 16:22 vex.yy.o    <- gcc -c      vex.yy.c
+  10429 Dec  6 16:22 print_vex.o <- gcc -c      print_vex.c
+  23465 Dec  6 16:22 vex_get.o   <- gcc -c       vex_get.c
+  48535 Dec  6 16:22 vex_util.o  <- gcc -c       vex_util.c
+
+Products:
+--------
+ 217614 Dec  6 16:22 libvex.a    <- ar -qc libvex.a *.o
+ 246194 Dec  6 16:22 libvex.sl*  <- gcc -fPIC -shared -o libvex.sl *.o
+
+Adapt base configuration:
+------------------------
+emacs $CCC_ROOT/system_make/locations.jaw1.mak; // ->vex2005nut 
+emacs $CCC_ROOT/system_make/locations.jaw0.mak; // ->vex2005nut 
+emacs $CCC_ROOT/system_make/locations.juw26.mak; // ->vex2005nut 
+cd $CCC_ROOT/source/prep_job; gmake freshstart all install
+
+-------Intermezzo as olnon:
+cd /jaw1_0/users/olnon/test_eop/source/prep_job; gmake freshstart all install
+emacs vexplus.h // add DeltaPsi() and DeltaEps() functions in $EOP section
+emacs vexplus.C // implement these functions
+emacs vexcjd.C // use these functions instead of environment variable.
+emacs cjdvex.C // add the deltaPsi and deltaEps fields to the EOP block
+-------
+
+As jive_cc (in base release):
+cd $CCC_ROOT/include/prep_job
+cp /jaw1_0/users/olnon/test_eop/include/prep_job/vexplus.h .
+cd $CCC_ROOT/source/prep_job
+cp /jaw1_0/users/olnon/test_eop/source/prep_job/vexplus.C .
+emacs vexcjd.C // partial copy from test_eop/vexcjd.C
+cp /jaw1_0/users/olnon/test_eop/source/prep_job/cjdvex.C .
+gmake freshstart all install
