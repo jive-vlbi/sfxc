@@ -58,7 +58,7 @@ main (int argc, char *argv[])
     milisec *= 1000;
     
     times.push_back(milisec);
-    delays.push_back(c[6]);
+    delays.push_back(c[0]);
 
     // Print out data for debugging purposes:
     std::cout << times.back() << " " <<  delays.back() << std::endl;
@@ -76,8 +76,9 @@ main (int argc, char *argv[])
     for (double xi = times[0]-3000; xi <= times.back()+3000; xi += 125) {
       double yi = gsl_spline_eval (spline, xi, acc);
       // Print with high precision:
-      fprintf (outfile, "%d %20.16f 0.0 0.0\n", int(xi), yi/1000000);
-      //outfile << xi << " " << yi << " 0.0 0.0" << std::endl;
+      fprintf (outfile, "%d %20.16f 0.0 0.0\n", 
+               int(xi), 
+               (yi)/1000000 - 0./16000000);
     }
 
     gsl_spline_free (spline);
