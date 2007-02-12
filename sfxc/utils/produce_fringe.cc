@@ -10,8 +10,14 @@
 #include <fftw3.h>
 using namespace std;
 
-#define N 257
-#define N2 512
+#define N 513
+#define N2 1024
+
+// Number of output files:
+#define NFILES 10
+// Number of subsequent integration steps (fourier series) in one file
+#define NINTERGRATIONS_IN_ONE_FILE 1
+
 #include <fstream>
 
 int main(int argc, char *argv[])
@@ -36,30 +42,34 @@ int main(int argc, char *argv[])
   while (!finished) {
     char out_filename[20];
     sprintf(out_filename, "out%d.txt", corr_nr);
-    corr_nr = (corr_nr+1)%3;
+    corr_nr = (corr_nr+1)%NFILES;
     std::ofstream fout(out_filename, std::ios::app);
     assert(fout.is_open());
 
-    // read in one fourier segment
-    for  (int i=0; i<N; i++) {
-      infile.read((char *)&in[i], 2*sizeof(double));
-    }
-    for (int i=N; i<N2; i++) {
-      in[i] = in[N2 - i];
-    }
-
-    // check whether we are finished
-    finished = infile.eof();
-
-    if (!finished) {
-      fftw_execute(p); /* repeat as needed */
-      
-      for (int i=0; i<N; i++) {
-        fout << in[i].real() << " \t" << in[i].imag() << " \t" 
-             << out[i].real() << " \t" 
-             << out[i].imag() << " \t" 
-             << (i%N)
-             << std::endl;
+    for (int integration=0; 
+         integration<NINTERGRATIONS_IN_ONE_FILE; integration++) {
+          
+      // read in one fourier segment
+      for  (int i=0; i<N; i++) {
+        infile.read((char *)&in[N-1-i], 2*sizeof(double));
+      }
+      for (int i=N; i<N2; i++) {
+        in[i] = in[N2 - i];
+      }
+  
+      // check whether we are finished
+      finished = infile.eof();
+  
+      if (!finished) {
+        fftw_execute(p); /* repeat as needed */
+        
+        for (int i=0; i<N; i++) {
+          fout << in[i].real() << " \t" << in[i].imag() << " \t" 
+               << out[i].real() << " \t" 
+               << out[i].imag() << " \t" 
+               << (i%N)
+               << std::endl;
+        }
       }
     }
   }
