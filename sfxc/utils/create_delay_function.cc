@@ -1,15 +1,11 @@
-/*
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
-
-  This small utility reads data from a file (argv[1]), interpolates
-  the data and writes it to file (argv[2]).
-
-  You will need gsl (GNU scientific library) for the interpolation.
-
+/* Author(s): Nico Kruithof, 2007
+ * 
+ * $Id$
+ * 
+ * This small utility reads data from a file (argv[1]), interpolates
+ * the data and writes it to file (argv[2]).
+ * 
+ * You will need gsl (GNU scientific library) for the interpolation.
 */
 
 #include <assert.h>
