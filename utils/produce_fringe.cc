@@ -1,3 +1,7 @@
+/* Author(s): Nico Kruithof, 2007
+ * 
+ * $Id: test_Correlator_node.cc 144 2007-01-31 07:34:21Z kruithof $
+ */
 #include <iostream>
 #include <complex>
 #include <stdio.h>
