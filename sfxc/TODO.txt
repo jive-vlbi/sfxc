@@ -16,6 +16,8 @@ Control files
 - Use a Makefile.am to generate the makefiles used by vex2ccf
 
 Correlation:
+- !!! Check the integration: 512 and 1024 give a "Floating point exception"
+- !!! Check cross correlation for fringes
 - create a Correlator class with status functions 
 - Document classes
 - Data_writer and Output_node for collecting data
@@ -53,7 +55,7 @@ Documentation
 
 Test:
 - Complete test_suite
-- add .sfxc file with control information per computer
+- add .sfxcrc file with control information per computer
 
 General:
 - check in original sw correlator code using cxmk4, cx2fl, delpha and sfxct
@@ -71,7 +73,6 @@ Future (possible) developments
 
 Questions:
 - Why are parabCoefs and getDelayLine not members of DelayTable?
-- Why not using a standard number generator? Ask Max (NGHK)
 
 Repository
 - add cxmk4, cx2fl, delpha, sfxct including its control files
