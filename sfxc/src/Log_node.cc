@@ -14,9 +14,9 @@
 #include <assert.h>
 
 Log_node::Log_node(int rank, int nNodes) 
-  : Node(rank), log_controller(*this, nNodes)
+  : Node(rank), log_node_ctrl(*this, nNodes)
 {
-  add_controller(&log_controller);
+  add_controller(&log_node_ctrl);
 
   get_log_writer().message(0, "Log_node: ready");
 
@@ -26,8 +26,7 @@ Log_node::Log_node(int rank, int nNodes)
 }
 
 void Log_node::start() {
-  while (!log_controller.ready()) {
+  while (!log_node_ctrl.ready()) {
     check_and_process_message();
   }
-//  Node::start();
 }
