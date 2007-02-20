@@ -52,7 +52,7 @@ OBJ = ../src/utils.cc \
       ../src/Controller.cc \
       ../src/Output_node_controller.cc \
       ../src/Input_node_controller.cc \
-      ../src/Log_controller.cc \
+      ../src/Log_node_controller.cc \
       ../src/Single_data_reader_controller.cc \
       ../src/Multiple_data_readers_controller.cc \
       ../src/Single_data_writer_controller.cc \

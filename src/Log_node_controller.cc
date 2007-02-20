@@ -3,13 +3,13 @@
  * $Id$
  */
 
-#include "Log_controller.h"
+#include "Log_node.h"
 #include <assert.h>
 
 #include "Log_writer_cout.h"
 #include "Log_writer_file.h"
 
-Log_controller::Log_controller(Node &node, int nNodes)
+Log_node_controller::Log_node_controller(Node &node, int nNodes)
  : Controller(node.get_log_writer()), 
    log_writer(NULL), 
    nConnections(nNodes-1)
@@ -43,7 +43,7 @@ Log_controller::Log_controller(Node &node, int nNodes)
 }
 
 Controller::Process_event_status 
-Log_controller::process_event(MPI_Status &status) {
+Log_node_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
     case MPI_TAG_LOG_MESSAGE: {
@@ -83,7 +83,7 @@ Log_controller::process_event(MPI_Status &status) {
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }
 
-void Log_controller::set_log_writer(Log_writer *writer) {
+void Log_node_controller::set_log_writer(Log_writer *writer) {
   assert(log_writer == NULL);
   //if (log_writer != NULL) delete log_writer;
   log_writer = writer;
