@@ -16,7 +16,7 @@ using namespace std;
 // Number of output files:
 #define NFILES 10
 // Number of subsequent integration steps (fourier series) in one file
-#define NINTERGRATIONS_IN_ONE_FILE 1
+#define NINTERGRATIONS_IN_ONE_FILE -1
 
 #include <fstream>
 
@@ -47,8 +47,8 @@ int main(int argc, char *argv[])
     assert(fout.is_open());
 
     for (int integration=0; 
-         integration<NINTERGRATIONS_IN_ONE_FILE; integration++) {
-          
+         (!finished) && (integration!=NINTERGRATIONS_IN_ONE_FILE); 
+         integration++) {
       // read in one fourier segment
       for  (int i=0; i<N; i++) {
         infile.read((char *)&in[N-1-i], 2*sizeof(double));

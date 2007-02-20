@@ -1,20 +1,21 @@
 #include <iostream>
 #include <assert.h>
 
-#include "Node.h"
-#include "Log_writer_cout.h"
+//#include "Node.h"
+#include "Log_node.h"
+//#include "Log_writer_cout.h"
 #include "Log_writer_mpi.h"
-#include "Log_controller.h"
+//#include "Log_controller.h"
 
-class Test_log_node : public Node {
-public:
-  Test_log_node(int rank) : Node(rank), log_controller(log_writer) {
-    add_controller(&log_controller);
-  }
-private:
-  Log_writer_cout log_writer;
-  Log_controller log_controller;
-};
+//class Test_log_node : public Node {
+//public:
+//  Test_log_node(int rank) : Node(rank), log_controller(log_writer) {
+//    add_controller(&log_controller);
+//  }
+//private:
+//  Log_writer_cout log_writer;
+//  Log_controller log_controller;
+//};
 
 int main(int argc, char *argv[]) {
   // MPI
@@ -36,14 +37,19 @@ int main(int argc, char *argv[]) {
   assert(numtasks==2);
   
   if (rank==0) {
-    Test_log_node node(rank);
-    node.start();
-  } else {
-    Log_writer_mpi writer;
-    writer.set_rank(rank);
-    writer << "a\nb\nc\n";
     int i=0;
-    MPI_Send(&i, 1, MPI_INT32, 0, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
+
+    MPI_Send(&i, 1, MPI_INT32, 
+             RANK_LOG_NODE, MPI_TAG_LOG_NODE_SET_OUTPUT_COUT, MPI_COMM_WORLD);
+
+    Log_writer_mpi writer(rank);
+    writer << "a\nb\nc\n";
+    MPI_Send(&i, 1, MPI_INT32, 
+             RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
+  } else {
+    assert (rank == RANK_LOG_NODE);
+    Log_node node(rank, numtasks);
+    node.start();
   }
 
 

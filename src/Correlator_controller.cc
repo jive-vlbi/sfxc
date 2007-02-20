@@ -171,8 +171,9 @@ Correlator_controller::process_event(MPI_Status &status) {
       int slice;
       MPI_Recv(&slice, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      MPI_Send(&slice, 1, MPI_INT32, 
-               RANK_OUTPUT_NODE, MPI_TAG_SET_WEIGHT_OUTPUT_STREAM, MPI_COMM_WORLD);
+      INT64 priority[] = {node.get_rank(), slice};
+      MPI_Send(&priority, 2, MPI_INT64, 
+               RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_STREAM_SET_PRIORITY, MPI_COMM_WORLD);
       
       node.start_correlating();           
 
@@ -233,41 +234,3 @@ Correlator_controller::process_event(MPI_Status &status) {
   }
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }
-
-//void 
-//Correlator_controller::start() {
-//  pthread_create(&correlator_thread, NULL, start_correlating, static_cast<void*>(this));
-//  running = true;
-//}
-//
-//void *
-//Correlator_controller::start_correlating(void *self_) {
-//  Self *self = static_cast<Self *>(self_);
-//  self->correlate();
-//
-//  int i=0; 
-//  MPI_Send(&i, 1, MPI_INT32, 1,
-//           MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED, MPI_COMM_WORLD);
-//  MPI_Send(&i, 1, MPI_INT32, 0,
-//           MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD);
-//
-//  return NULL;
-//}
-//
-//void
-//Correlator_controller::correlate() {
-//  //Find Offsets
-//  log_writer << "Correlator_controller: Find offsets ..." << std::endl;
-//  assert((int)data_readers.size() == GenPrms.get_nstations());
-//  if (FindOffsets(data_readers, 1, 0) !=0) {
-//    std::cerr << "ERROR: FindOffsets, program aborted.\n";
-//    return;
-//  }
-//
-//  log_writer << "Correlator_controller: Correlator bufs ..." << std::endl;
-//  if ( RunPrms.get_runoption() == 1 ) {
-//    //Process data for rank (=process identifier)
-//    CorrelateBufs(data_readers);
-//  }
-//  log_writer << "Correlator_controller: correlation done ..." << std::endl;
-//}

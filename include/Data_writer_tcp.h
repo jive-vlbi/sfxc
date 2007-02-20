@@ -10,7 +10,7 @@ public:
   Data_writer_tcp(int port = 2630);
   void open_connection();
 
-  Data_writer_tcp(UINT64 *ip_addr, int nAddr, unsigned short int port);
+  //Data_writer_tcp(UINT64 *ip_addr, int nAddr, unsigned short int port);
   ~Data_writer_tcp();
   
   UINT64 put_bytes(UINT64 nBytes, char *buff);

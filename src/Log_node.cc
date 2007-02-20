@@ -7,6 +7,8 @@
 
 #include <types.h>
 #include <Log_writer.h>
+#include <Log_writer_cout.h>
+#include <Log_writer_file.h>
 
 #include <iostream>
 #include <assert.h>
@@ -15,16 +17,17 @@ Log_node::Log_node(int rank, int nNodes)
   : Node(rank), log_controller(*this, nNodes)
 {
   add_controller(&log_controller);
-}
 
-Log_node::~Log_node() {
-  log_writer(1) << "~Log_node()";
+  get_log_writer().message(0, "Log_node: ready");
+
+  INT32 msg;
+  MPI_Send(&msg, 1, MPI_INT32, 
+           RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
 }
 
 void Log_node::start() {
   while (!log_controller.ready()) {
-    //std::cout << "**" << std::endl; 
     check_and_process_message();
-    //    Node::start();
   }
+//  Node::start();
 }

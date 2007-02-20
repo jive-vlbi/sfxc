@@ -115,7 +115,7 @@ void Log_writer::set_messagelevel(int level) {
   mpi_level = level;
 }
 
-Log_writer &Log_writer::operator<<(INT32 i) {
+Log_writer &Log_writer::operator<<(int i) {
   if (main_level >= current_level) {
     char str[20];
     sprintf(str, "%d", i);
@@ -124,16 +124,34 @@ Log_writer &Log_writer::operator<<(INT32 i) {
   return *this;
 }
 
-Log_writer &Log_writer::operator<<(UINT32 i) {
+Log_writer &Log_writer::operator<<(unsigned int i) {
   if (main_level >= current_level) {
     char str[20];
-    sprintf(str, "%ud", i);
+    sprintf(str, "%u", i);
     write_message(str);
   }
   return *this;
 }
 
-Log_writer &Log_writer::operator<<(INT64 i) {
+Log_writer &Log_writer::operator<<(long int i) {
+  if (main_level >= current_level) {
+    char str[20];
+    snprintf(str,20, "%ld", i);
+    write_message(str);
+  }
+  return *this;
+}
+
+Log_writer &Log_writer::operator<<(unsigned long int i) {
+  if (main_level >= current_level) {
+    char str[20];
+    snprintf(str,20, "%lu", i);
+    write_message(str);
+  }
+  return *this;
+}
+
+Log_writer &Log_writer::operator<<(long long int i) {
   if (main_level >= current_level) {
     char str[20];
     snprintf(str,20, "%lld", i);
@@ -142,10 +160,10 @@ Log_writer &Log_writer::operator<<(INT64 i) {
   return *this;
 }
 
-Log_writer &Log_writer::operator<<(UINT64 i) {
+Log_writer &Log_writer::operator<<(unsigned long long int i) {
   if (main_level >= current_level) {
     char str[20];
-    snprintf(str,20, "%llud", i);
+    snprintf(str,20, "%llu", i);
     write_message(str);
   }
   return *this;

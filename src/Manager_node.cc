@@ -41,7 +41,7 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   
   { // Initialise the log node
     int msg;
-    MPI_Send(&msg, 1, MPI_INT, 
+    MPI_Send(&msg, 1, MPI_INT32, 
              RANK_LOG_NODE, MPI_TAG_SET_LOG_NODE_COUT, MPI_COMM_WORLD);
 //    char log_file[] = "output.txt";
 //    MPI_Send(&log_file, strlen(log_file)+1, MPI_CHAR, 
@@ -80,7 +80,7 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
     // Add correlator nodes to the input readers:
     for (int j=Nstations+start_input_nodes; j<numtasks; j++) {
       MPI_Send(&j, 1, MPI_INT32, i+start_input_nodes, 
-               MPI_TAG_ADD_CORRELATOR_NODE, MPI_COMM_WORLD);
+               MPI_TAG_ADD_CORRELATOR_NODE_TCP, MPI_COMM_WORLD);
     }
   }
   if (err != 0) return;
@@ -89,7 +89,7 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   set_start_time(GenPrms.get_usStart());
   set_stop_time(GenPrms.get_usStop());
   
-  log_writer.MPI(1,"Initialisation ready");
+  get_log_writer().MPI(1,"Initialisation ready");
 }
 
 void Manager_node::start() {
@@ -106,8 +106,8 @@ void Manager_node::start() {
 }
 
 int Manager_node::read_control_file(char *control_file) {
-  if (initialise_control(control_file, log_writer) != 0) {
-    log_writer.error("Initialisation using control file failed");
+  if (initialise_control(control_file, get_log_writer()) != 0) {
+    get_log_writer().error("Initialisation using control file failed");
     return 1;
   }
   Nstations = GenPrms.get_nstations();
@@ -115,28 +115,32 @@ int Manager_node::read_control_file(char *control_file) {
 }
 
 int Manager_node::send_control_parameters_to_controller_node(int node) {
-  // strlen+1 so that \0 gets transmitted as well
-  for (int i=0; i<GenPrms.get_nstations(); i++) {
-    char *infile_data = StaPrms[i].get_mk4file();
-    MPI_Send(infile_data, strlen(infile_data)+1, MPI_CHAR, node,
-             MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
-  }
+  // Send the filename of the data files directly to the correlator nodes:
+//  // strlen+1 so that \0 gets transmitted as well
+//  for (int i=0; i<GenPrms.get_nstations(); i++) {
+//    char *infile_data = StaPrms[i].get_mk4file();
+//    MPI_Send(infile_data, strlen(infile_data)+1, MPI_CHAR, node,
+//             MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
+//  }
 
+  // Send the necessary control parameters:
   MPI_Transfer mpi_transfer;
   mpi_transfer.send_general_parameters(node);
 
+  // Send the delay tables:
   for (int i=0; i<GenPrms.get_nstations(); i++) {
     DelayTable delay; 
-    log_writer << StaPrms[i].get_delaytable() << std::endl;
+    get_log_writer() << StaPrms[i].get_delaytable() << std::endl;
     int retval = delay.readDelayTable(StaPrms[i].get_delaytable(),
                                       BufTime );
     if (retval != 0) {
-      log_writer.error("error while reading delay table.");
+      get_log_writer().error("error while reading delay table.");
       return retval;
     }
     mpi_transfer.send_delay_table(delay, node);
   }
 
+  // Send the name of the correlator product file:
   const char *outfile_data = GenPrms.get_corfile();
   MPI_Send((void *)outfile_data, strlen(outfile_data)+1, MPI_CHAR, node,
            MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);

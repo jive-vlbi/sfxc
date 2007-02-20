@@ -2,16 +2,14 @@
 #include "sfxc_mpi.h"
 #include <assert.h>
 
-Log_writer_mpi::Log_writer_mpi(int messagelevel, bool interactive) 
+Log_writer_mpi::Log_writer_mpi(int rank, int messagelevel, bool interactive) 
   : Log_writer(messagelevel,interactive), rank_str("#---: ")
 {
-//  strcpy(rank_str, "#---: ");
-//  msg = new char[size];
-//  strcpy(msg, rank_str);
-//  pos = strlen(rank_str);
+  set_rank(rank);
 }
   
 void Log_writer_mpi::set_rank(int rank) {
+  // Destroys the current message
   assert(rank < 1000);
   rank_str = "#";
   char ch_rank[3];
@@ -25,6 +23,7 @@ void Log_writer_mpi::set_rank(int rank) {
 void Log_writer_mpi::write_message(const char buff[]) {
   char *end=strchr(buff, '\n');
   while (end != NULL) {
+    assert(*end == '\n');
     // Don't send the '\n', a newline is always given in the Log_controller
     msg.append(buff, end-buff);
     send();

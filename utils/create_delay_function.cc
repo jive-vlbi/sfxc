@@ -54,6 +54,8 @@ main (int argc, char *argv[])
     milisec *= 1000;
     
     times.push_back(milisec);
+    // c[0] is the second column in the data file (first is the time)
+    // c[1] is the third, etc.
     delays.push_back(c[6]);
 
     // Print out data for debugging purposes:
@@ -72,6 +74,8 @@ main (int argc, char *argv[])
     for (double xi = times[0]-3000; xi <= times.back()+3000; xi += 125) {
       double yi = gsl_spline_eval (spline, xi, acc);
       // Print with high precision:
+      // xi is time in second miliseconds from the beginning of the day
+      // yi is delay in microseconds
       fprintf (outfile, "%d %20.16f 0.0 0.0\n", 
                int(xi), 
                yi - 0./16);

@@ -24,6 +24,7 @@ public:
   void consumed();
 
   bool empty();
+  bool full() { return false; }
 
 private:
   // One semaphores to avoid reading from an empty queue:

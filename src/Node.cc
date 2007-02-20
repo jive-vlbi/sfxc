@@ -15,9 +15,18 @@ Last change: 20061124
 #include <iostream>
 #include <assert.h>
 
-Node::Node(int rank) : rank(rank), log_writer(0) {
-  log_writer.set_mpilevel(10);
-  log_writer.set_rank(rank);
+Node::Node(int rank) : rank(rank), log_writer(new Log_writer_mpi(rank, 0)) {
+  log_writer->set_mpilevel(10);
+}
+
+Node::Node(int rank, Log_writer *writer) : rank(rank), log_writer(writer) {
+  log_writer->set_mpilevel(10);
+}
+
+Node::~Node() {
+  int rank = get_rank();
+  MPI_Send(&rank, 1, MPI_INT, 
+           RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
 }
 
 void 
@@ -29,16 +38,11 @@ void Node::start() {
   while (true) {
     MESSAGE_RESULT result = check_and_process_message();
     
-    // NGHK: Make an enum for the result types:
     switch (result) {
       case MESSAGE_PROCESSED: {
         break;
       }
       case TERMINATE_NODE: {
-        int rank = get_rank();
-        MPI_Send(&rank, 1, MPI_INT, 
-                 RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
-        
         return;
       }
       case NO_MESSAGE: {
@@ -46,7 +50,7 @@ void Node::start() {
         return;
       }
       case ERROR_IN_PROCESSING: {
-        log_writer.error("Error, failed to process message");
+        get_log_writer().error("Error, failed to process message");
         break;
       }
       case MESSAGE_UNKNOWN: {
@@ -56,7 +60,8 @@ void Node::start() {
   }
 }
 
-Node::MESSAGE_RESULT Node::check_and_process_waiting_message() {
+Node::MESSAGE_RESULT 
+Node::check_and_process_waiting_message() {
     MPI_Status status;
     int result;
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &result, &status);
@@ -66,20 +71,22 @@ Node::MESSAGE_RESULT Node::check_and_process_waiting_message() {
     return NO_MESSAGE;
 }
 
-Node::MESSAGE_RESULT Node::check_and_process_message() {
+Node::MESSAGE_RESULT 
+Node::check_and_process_message() {
     MPI_Status status;
     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     
     return process_event(status);
 }
 
-Node::MESSAGE_RESULT Node::process_event(MPI_Status &status) {
+Node::MESSAGE_RESULT 
+Node::process_event(MPI_Status &status) {
   if (status.MPI_TAG == MPI_TAG_CORRELATION_READY) {
     MPI_Status status2; int msg;
     MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
     
-    log_writer.MPI(0, "MPI_TAG_CORRELATION_READY <===");
+    get_log_writer().MPI(0, "MPI_TAG_CORRELATION_READY");
     return TERMINATE_NODE;
   }
   for (Controller_iterator it = controllers.begin();
@@ -87,26 +94,27 @@ Node::MESSAGE_RESULT Node::process_event(MPI_Status &status) {
        it++) {
     Controller::Process_event_status result = (*it)->process_event(status);
     switch (result) {
-    case Controller::PROCESS_EVENT_STATUS_SUCCEEDED: // Processing succeeded
-      {
+    case Controller::PROCESS_EVENT_STATUS_SUCCEEDED: 
+      { // Processing succeeded
         return MESSAGE_PROCESSED;
       }
-    case Controller::PROCESS_EVENT_STATUS_UNKNOWN: // Unknown command, try next controller
-      {
+    case Controller::PROCESS_EVENT_STATUS_UNKNOWN: 
+      { // Unknown command, try next controller
         continue;
         break;
       }
-    case Controller::PROCESS_EVENT_STATUS_FAILED: // Processing failed
-      {
-        log_writer(0) << "Error in processing tag:" << status.MPI_TAG << std::endl;
+    case Controller::PROCESS_EVENT_STATUS_FAILED: 
+      { // Processing failed
+        get_log_writer()(0) 
+          << "Error in processing tag:" << status.MPI_TAG << std::endl;
         return ERROR_IN_PROCESSING;
       }
     }
   }
   {
     char msg[80];
-    snprintf(msg, 80, "Unknown event %d", status.MPI_TAG);
-    log_writer.error(msg);
+    snprintf(msg, 80, "Unknown event %s", print_MPI_TAG(status.MPI_TAG));
+    get_log_writer().error(msg);
   }
   
   // Remove event:  
