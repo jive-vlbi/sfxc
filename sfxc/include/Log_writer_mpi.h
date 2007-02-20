@@ -7,7 +7,7 @@
 class Log_writer_mpi : public Log_writer
 {
 public:
-  Log_writer_mpi(int interactive=0, bool interactive=false);
+  Log_writer_mpi(int rank, int messagelevel=0, bool interactive=false);
   
   void set_rank(int rank);
 private:

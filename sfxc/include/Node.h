@@ -20,6 +20,7 @@
 
 /** Generic node to which a number of controllers can be added.
     \ingroup ImportantClasses
+    \ingroup Node
  **/
 class Node {
   typedef std::list<Controller *>            Controller_list;
@@ -34,8 +35,8 @@ public:
   };
 
   Node(int rank);
-  virtual ~Node() {
-  }
+  Node(int rank, Log_writer *writer);
+  virtual ~Node();
   /** Start the node
    **/
   void start();
@@ -69,16 +70,20 @@ public:
   void add_controller(Controller *controller);
   
   Log_writer &get_log_writer() {
-    return log_writer;
+    return *log_writer;
   }
+
+  void set_log_writer(Log_writer *new_writer) {
+    log_writer = new_writer;
+  }
+
   int get_rank() { return rank; }
   
 private:
   int rank;
   Controller_list controllers;
 
-protected:
-  Log_writer_mpi log_writer;
+  Log_writer *log_writer;
 };
 
 #endif // NODE_H

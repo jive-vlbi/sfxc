@@ -4,7 +4,7 @@
 #include <Node.h>
 #include <Correlator_controller.h>
 
-#include <Input_controller.h>
+#include <Multiple_data_readers_controller.h>
 #include <Output_controller.h>
 
 #include <Semaphore_buffer.h>

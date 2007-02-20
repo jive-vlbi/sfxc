@@ -15,6 +15,9 @@
 #include <Node.h>
 #include <Manager_controller.h>
 
+/**
+ * \ingroup Node
+ **/
 class Manager_node : public Node {
 public:
   Manager_node(int numtasks, int rank, char * control_file);

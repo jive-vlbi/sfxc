@@ -9,6 +9,7 @@ Log_writer_cout::Log_writer_cout(int messagelevel, bool interactive)
   
 void Log_writer_cout::write_message(const char buff[]) {
   std::cout << buff;
+  std::cout.flush();
 }
   
 void Log_writer_cout::ask_continue() {

@@ -4,6 +4,8 @@
 #include <vector>
 #include <assert.h>
 
+/// Use this element for the buffer class if you want to store an array
+/// on every position.
 template <class T, int N>
 class Buffer_element {
 public:
@@ -22,8 +24,8 @@ private:
   T _buffer[N];
 };
 
-/** Generic buffer class
- * @precondition T is default constructible
+/** Generic buffer class.
+ * Precondition T is default constructible
  **/
 template <class T>
 class Buffer {
@@ -41,6 +43,7 @@ public:
   virtual void consumed() = 0;
 
   virtual bool empty()= 0; 
+  virtual bool full()= 0; 
 
 protected:
   T& get_prod_elem() {

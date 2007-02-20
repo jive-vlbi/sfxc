@@ -35,13 +35,15 @@ public:
                      int port = 2630);
   ~Data_reader_mark5();
 
-  UINT64 move_forward(UINT64 nBytes);
+  //UINT64 move_forward(UINT64 nBytes);
   UINT64 get_bytes(UINT64 nBytes, char *out);
-  
+
+  bool eof();  
 private:
-  std::vector<char> buffer;
+//  std::vector<char> buffer;
   int sock;
   int msglev;
+  bool _eof;
 };
 
 #endif // DATA_READER_MARK5_H

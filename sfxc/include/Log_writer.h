@@ -49,10 +49,12 @@ public:
   /** << operators **/
   Log_writer &operator()(int i) {current_level = i; return *this;};
   
-  Log_writer &operator<<(INT32 i);
-  Log_writer &operator<<(UINT32 i);
-  Log_writer &operator<<(INT64 i);
-  Log_writer &operator<<(UINT64 i);
+  Log_writer &operator<<(int i);
+  Log_writer &operator<<(unsigned int i);
+  Log_writer &operator<<(long int i);
+  Log_writer &operator<<(unsigned long int i);
+  Log_writer &operator<<(long long int i);
+  Log_writer &operator<<(unsigned long long int i);
   Log_writer &operator<<(double d);
   Log_writer &operator<<(char ch[]);
   Log_writer &operator<<(std::string str);

@@ -28,7 +28,13 @@ public:
     return (ip_addr == 0x100007f);
   }
   bool is_localhost(const char *hostname) {
-    return (hostname = "127.0.0.1");
+    return (hostname == "127.0.0.1");
+  }
+  std::string ip_addr(UINT64 ip) {
+    char addr[16];
+    sprintf(addr, "%d.%d.%d.%d", 
+            (int)ip&255, (int)(ip>>8)&255, (int)(ip>>16)&255, (int)ip>>24);
+    return std::string(addr);
   }
 private:
   bool verbose;

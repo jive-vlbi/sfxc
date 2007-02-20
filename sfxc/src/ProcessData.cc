@@ -382,7 +382,7 @@ int CorrelateBufs_process_segment() {
     for (sn = 0 ; sn < nstations; sn++){
       //input: invecs -> result: xps
       fftw_execute(fwd_plans[sn]);
-      for (l = 0 ; l < n2fft*pad/2 + 1 ; l++){
+      for (l = 0 ; l < n2fft*pad/2 + 1 ; l++) {
         //accxps[bsln][l] += xps[sn][l]*conj(xps[sn][l]);
         accxps[bsln][l][0] = accxps[bsln][l][0] +
         (xps[sn][l][0] * xps[sn][l][0]) + (xps[sn][l][1] * xps[sn][l][1]);
@@ -410,11 +410,11 @@ int CorrelateBufs_process_segment() {
       }
     }
     
-    if (get_log_writer().get_messagelevel()> 0) {
-      if (segm%TenPct == 0) {
-        get_log_writer()(2) << "segm=" << segm << std::endl;
-      }  
-    }    
+//    if (get_log_writer().get_messagelevel()> 0) {
+//      if (segm%TenPct == 0) {
+//        get_log_writer()(2) << "segm=" << segm << std::endl;
+//      }  
+//    }    
     
   }
 
@@ -639,10 +639,13 @@ int fill_Bufs(std::vector<Data_reader *> &readers,
       if (Cdel>0.0) {
         cerr << "Cdel > 0.0 in fill_Bufs()." << endl;
         return 1;
-      }      
+      }
       //address shift due to time delay for the  current segment
       jshift = (INT64)(Cdel/tbs+0.5);
-      
+      assert((-2*BufSize <= jshift) && (jshift <= 0));      
+//      std::cout << sn << " " << jsegm << " " << Cdel << "/" << tbs 
+//                << "="<< Cdel/tbs << "="<<jshift << std::endl; 
+
       //fill the complex sls array
       for (jl=0; jl<lsegm; jl++){
         sls[jl][0] = dcBufs[sn][2*BufSize + jsegm*lsegm + jl + jshift];

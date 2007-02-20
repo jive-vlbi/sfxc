@@ -316,6 +316,7 @@ int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame,
   }
 
   //Replace Header with Random Pattern,
+  seed = 10;
   if ( rndhdr ) {
     for(jhdr=0; jhdr<fo*hdrMk4; jhdr++) {
       sign=irbit2(&seed);

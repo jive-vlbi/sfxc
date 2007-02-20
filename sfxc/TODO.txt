@@ -34,12 +34,15 @@ Correlation:
   contribute to the end result
 
 Multi core:
+- use state instead of running in Data_reader2buffer (similar to B2dw)
 - Data_writer similar to Data_reader
 - Add Data_reader 
       Data_writer
 - send time slices, manage nodes
 - Get sfxc_adam working again
 - schrijven van debug informatie (niet naar std::cout)
+- output_stream ends after a number of send bytes, not after MPI message
+  (asynchronous)
 
 Functionality:
 - add overlapping in correlation [RHJO]

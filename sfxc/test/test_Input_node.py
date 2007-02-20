@@ -2,16 +2,22 @@
 
 import sys, os,time, filecmp;
 
+inputfile = "/jop54_0/kruithof/data/n05c2/mark5/n06c2_da193_no0005.Mc"
 inputfile = "data/input.txt"
 outputfile = "output.txt"
 
-result = os.system("mpirun -np 2 ./test_Data_node "+inputfile+" "+outputfile)
-if result:
-  print "test_Data_node: returned error."
+status = os.system("compile test_Input_node")
+if (status != 0): 
+  sys.exit(1)
+
+status = os.system("mpirun -np 4 ./test_Input_node "+inputfile+" "+outputfile)
+if (status != 0):
+  print "test_Input_node: returned error."
   sys.exit(1);
 
-result = filecmp.cmp(inputfile, outputfile)
-if not result:
+os.system("sync")
+status = filecmp.cmp(inputfile, outputfile)
+if (status == 0):
   print "Compare: files differ."
   sys.exit(1);
 

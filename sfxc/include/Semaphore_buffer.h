@@ -16,16 +16,20 @@ public:
   Semaphore_buffer(int size);
   ~Semaphore_buffer();
 
+  // NGHK: add a mutex in produce (multiple producers)
   T &produce();
   void produced(int status);
   
+  // NGHK: add a mutex in consume (multiple consumers)
   T &consume(int &status);
   void consumed();
 
   bool empty();
+  bool full();
 private:
   // Two semaphores to avoid overwriting of data
   sem_t empty_sem, full_sem;
+  
 };
 
 
@@ -87,7 +91,15 @@ bool
 Semaphore_buffer<T>::empty() {
   int val;
   sem_getvalue(&empty_sem, &val);
-  return (val > 0);
+  return (val == 0);
+}
+
+template <class T>
+bool 
+Semaphore_buffer<T>::full() {
+  int val;
+  sem_getvalue(&full_sem, &val);
+  return (val == 0);
 }
 
 #endif // SEMAPHORE_BUFFER_H

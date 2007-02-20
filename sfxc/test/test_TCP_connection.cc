@@ -32,12 +32,33 @@ int main(int argc, char *argv[]) {
 
   TCP_Connection connection;  
   if (rank==0) {
+    char out_buff[100], in_buff[100];
+
     int listenSocket = connection.open_port(1233);
     assert(listenSocket > 0);
     int connectSocket = connection.open_connection(listenSocket);
+
     assert(connectSocket > 0);
+
+    for (int i=0; i<100; i++) out_buff[i] = (char)i;
+    send(connectSocket, out_buff, 100, 0);
+    recv(connectSocket, in_buff, 100, 0);
+    for (int i=0; i<100; i++) {
+      assert(out_buff[i] == in_buff[i]);
+      in_buff[i] = ' ';
+    }
+    shutdown(connectSocket, 2);
+    
     connectSocket = connection.open_connection(listenSocket);
+
     assert(connectSocket > 0);
+
+    send(connectSocket, out_buff, 100, 0);
+    recv(connectSocket, in_buff, 100, 0);
+    for (int i=0; i<100; i++) {
+      assert(out_buff[i] == in_buff[i]);
+    }
+    shutdown(connectSocket, 2);
   } else {
     {
       std::vector<std::string> addr;
@@ -53,8 +74,14 @@ int main(int argc, char *argv[]) {
   
         it ++;
         if (it == addr.end()) it = addr.begin();
-      } 
+      }
       assert(connectSocket > 0);
+
+      char buff[100]; 
+      recv(connectSocket, buff, 100, 0);
+      send(connectSocket, buff, 100, 0);
+      
+      shutdown(connectSocket, 2);
     }
     {
       std::vector<UINT64> addr;
@@ -74,6 +101,12 @@ int main(int argc, char *argv[]) {
         if (it == addr.end()) it = addr.begin();
       } 
       assert(connectSocket > 0);
+
+      char buff[100]; 
+      recv(connectSocket, buff, 100, 0);
+      send(connectSocket, buff, 100, 0);
+
+      shutdown(connectSocket, 2);
     }
   }
 

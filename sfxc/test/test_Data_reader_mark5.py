@@ -6,6 +6,9 @@ infile = "/jop51_0/kruithof/data/JIVE-13.del"
 infile = "data/input.txt"
 outfile = "output.txt"
 
+status = os.system("make test_Data_reader_mark5")
+if (status != 0): sys.exit(1)
+
 os.system("./test_Data_reader_mark5 "+outfile+"&");
 #os.system("Net2file -f "+outfile+"&")
 

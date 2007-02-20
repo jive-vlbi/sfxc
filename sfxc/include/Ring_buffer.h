@@ -22,6 +22,7 @@ public:
   void consumed();
 
   bool empty() { return ptr_empty==ptr_full; }
+  bool full() { return (ptr_full >= ptr_empty+Base::size); }
 
 private:
   INT64 ptr_empty, ptr_full;

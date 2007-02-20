@@ -7,7 +7,7 @@
 #include <netdb.h>      // getservbyname()
 
 Data_reader_mark5::Data_reader_mark5(char *protocol, int port) 
-  : buffer(), msglev(-1)
+  : msglev(-1), _eof(false)
 {
   int protocol_type, unconnected_sock;
   // Check protocol
@@ -134,42 +134,59 @@ Data_reader_mark5::Data_reader_mark5(char *protocol, int port)
 Data_reader_mark5::~Data_reader_mark5() {
 }
 
-UINT64 Data_reader_mark5::move_forward(UINT64 nBytes) {
-  assert(nBytes >= 0);
-  if (buffer.size() > nBytes) {
-    assert(nBytes < buffer.capacity());
-    buffer.erase(buffer.begin(), buffer.begin()+nBytes);
-    return nBytes;
-  } else {
-    // Completely empty the buffer and forward the filepointer.
-    UINT64 size = buffer.size();
-    buffer.clear();
-    char *tmp_buff = new char[nBytes-size];
-    size += recv(sock, (void *) tmp_buff, nBytes-size, 0);
-    return size;
-  }
-}
+//UINT64 Data_reader_mark5::move_forward(UINT64 nBytes) {
+//  assert(nBytes >= 0);
+//  if (buffer.size() > nBytes) {
+//    assert(nBytes < buffer.capacity());
+//    buffer.erase(buffer.begin(), buffer.begin()+nBytes);
+//    return nBytes;
+//  } else {
+//    // Completely empty the buffer and forward the filepointer.
+//    UINT64 size = buffer.size();
+//    buffer.clear();
+//    char *tmp_buff = new char[nBytes-size];
+//    size += recv(sock, (void *) tmp_buff, nBytes-size, 0);
+//    return size;
+//  }
+//}
 
 UINT64 Data_reader_mark5::get_bytes(UINT64 nBytes, char*out) {
-  if (nBytes > buffer.capacity()) {
-    buffer.reserve(nBytes);
+//  if (nBytes > buffer.capacity()) {
+//    buffer.reserve(nBytes);
+//  }
+//  if (nBytes > buffer.size()) {
+//    // always completely fill the buffer
+//    UINT64 nRead = buffer.capacity() - buffer.size();
+//    char *tmp_buff = new char[nRead];
+//    /* Read data from socket */ 
+//    UINT64 size = recv(sock, (void *) tmp_buff, nRead, 0);
+//
+//    std::vector<char>::iterator it = buffer.end();
+//    buffer.resize(buffer.size()+size);
+//    std::copy(tmp_buff, tmp_buff + size, it);
+//
+//    delete[] tmp_buff;
+//  }
+//
+//  std::copy(buffer.begin(), 
+//	    buffer.begin() + std::min(buffer.size(), (size_t)nBytes),
+//	    out);
+//  return std::min(buffer.size(), (size_t)nBytes);
+
+  UINT64 size = 0, last;
+  size = last = recv(sock, (void *) out, nBytes, 0);
+  while (size < nBytes) {
+    last = recv(sock, (void *) (out+size), nBytes-size, 0);
+    if (last == 0) {
+      _eof = true;
+      return size;
+    }
+    size += last;
   }
-  if (nBytes > buffer.size()) {
-    // always completely fill the buffer
-    UINT64 nRead = buffer.capacity() - buffer.size();
-    char *tmp_buff = new char[nRead];
-    /* Read data from socket */ 
-    UINT64 size = recv(sock, (void *) tmp_buff, nRead, 0);
+  
+  return nBytes;
+}
 
-    std::vector<char>::iterator it = buffer.end();
-    buffer.resize(buffer.size()+size);
-    std::copy(tmp_buff, tmp_buff + size, it);
-
-    delete[] tmp_buff;
-  }
-
-  std::copy(buffer.begin(), 
-	    buffer.begin() + std::min(buffer.size(), (size_t)nBytes),
-	    out);
-  return std::min(buffer.size(), (size_t)nBytes);
+bool Data_reader_mark5::eof() {
+  
 }

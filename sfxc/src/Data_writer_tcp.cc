@@ -34,25 +34,28 @@ void Data_writer_tcp::open_connection() {
   assert(socket > 0);
 }
 
-Data_writer_tcp::Data_writer_tcp(UINT64 ip_addr[], int nAddr, unsigned short int port) 
- : Data_writer(), socket(-1)
-{
-  TCP_Connection connection(true);
-  int i=0;
-  do {
-    socket = connection.do_connect(ip_addr[i], port);
-    i = (i+1)%nAddr;
-  } while (socket <= 0);
-  
-  assert(socket > 0);
-}
+//Data_writer_tcp::Data_writer_tcp(UINT64 ip_addr[], int nAddr, unsigned short int port) 
+// : Data_writer(), socket(-1)
+//{
+//  TCP_Connection connection(true);
+//  int i=0;
+//  do {
+//    socket = connection.do_connect(ip_addr[i], port);
+//    i = (i+1)%nAddr;
+//  } while (socket <= 0);
+//  
+//  assert(socket > 0);
+//}
 
 Data_writer_tcp::~Data_writer_tcp() {
+  close(socket);
 }
   
 UINT64 
 Data_writer_tcp::put_bytes(UINT64 nBytes, char *buff) {
-  return send(socket, buff, nBytes, 0);
+  assert(socket > 0);
+  assert(nBytes > 0);
+  return write(socket, buff, nBytes);
 }
 
 

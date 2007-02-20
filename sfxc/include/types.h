@@ -74,7 +74,12 @@ Last change: 20061124
   NGHK: No 32 bits type found ...
 #endif
 
+// Automatically generate a print function for enums
+#define DECLARE_ENUM(A) A,
+#define MAP_ENUM_TO_STRING(A) #A,
+
 /** 
     \defgroup ImportantClasses Important classes
+    \defgroup Node             Nodes for the MPI-version
  **/
 #endif // TYPES_H
