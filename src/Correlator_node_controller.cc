@@ -1,4 +1,3 @@
-#include <Correlator_controller.h>
 #include <Correlator_node.h>
 #include <signal.h>
 #include <iostream>
@@ -26,7 +25,7 @@ extern StaP  StaPrms[NstationsMax];
 
 #include <MPI_Transfer.h>
 
-Correlator_controller::Correlator_controller(Correlator_node &node)
+Correlator_node_controller::Correlator_node_controller(Correlator_node &node)
  : Controller(node.get_log_writer()), 
    node(node)
 //   output_buffer(output_buffer), curr_station(0),
@@ -37,12 +36,12 @@ Correlator_controller::Correlator_controller(Correlator_node &node)
    GenPrms.set_usEarliest(0);
 }
 
-Correlator_controller::~Correlator_controller()
+Correlator_node_controller::~Correlator_node_controller()
 {
 }
 
 Controller::Process_event_status 
-Correlator_controller::process_event(MPI_Status &status) {
+Correlator_node_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
 //  case MPI_TAG_SET_STATION_NUMBER:
@@ -61,40 +60,40 @@ Correlator_controller::process_event(MPI_Status &status) {
 //      }
 //      return PROCESS_EVENT_STATUS_SUCCEEDED;
 //    }
-  case MPI_TAG_SET_INPUT_NODE_FILE:
-    {
-      log_writer.MPI(2,"MPI_TAG_SET_INPUT_NODE_FILE");
-      log_writer.warning("sending input node file to correlator node: remove");
-      int size;
-      MPI_Get_elements(&status, MPI_CHAR, &size);
-      assert(size > 0);
-      char filename[size];
-      MPI_Recv(&filename, size, MPI_CHAR, status.MPI_SOURCE,
-               status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
-      
-      node.add_data_reader(new Data_reader_file(filename));
-      return PROCESS_EVENT_STATUS_SUCCEEDED;
-    }
-  case MPI_TAG_SET_INPUT_STREAM_TCP:
-    {
-      log_writer.MPI(2,"MPI_TAG_SET_INPUT_STREAM_TCP");
-      int size;
-      MPI_Get_elements(&status, MPI_INT64, &size);
-      assert(size > 0);
-      UINT64 ip_addr[size];
-      MPI_Recv(&ip_addr, size, MPI_UINT64, status.MPI_SOURCE,
-               status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
-      
-      node.set_data_reader(status.MPI_SOURCE,
-        new Data_reader_tcp(ip_addr, size -2, ip_addr[size-1]));
-      return PROCESS_EVENT_STATUS_SUCCEEDED;
-    }
+//  case MPI_TAG_SET_INPUT_NODE_FILE:
+//    {
+//      log_writer.MPI(2,"MPI_TAG_SET_INPUT_NODE_FILE");
+//      log_writer.warning("sending input node file to correlator node: remove");
+//      int size;
+//      MPI_Get_elements(&status, MPI_CHAR, &size);
+//      assert(size > 0);
+//      char filename[size];
+//      MPI_Recv(&filename, size, MPI_CHAR, status.MPI_SOURCE,
+//               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+//      
+//      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+//      assert(status.MPI_TAG == status2.MPI_TAG);
+//      
+//      node.add_data_reader(new Data_reader_file(filename));
+//      return PROCESS_EVENT_STATUS_SUCCEEDED;
+//    }
+//  case MPI_TAG_SET_INPUT_STREAM_TCP:
+//    {
+//      log_writer.MPI(2,"MPI_TAG_SET_INPUT_STREAM_TCP");
+//      int size;
+//      MPI_Get_elements(&status, MPI_INT64, &size);
+//      assert(size > 0);
+//      UINT64 ip_addr[size];
+//      MPI_Recv(&ip_addr, size, MPI_UINT64, status.MPI_SOURCE,
+//               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+//      
+//      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+//      assert(status.MPI_TAG == status2.MPI_TAG);
+//      
+//      node.set_data_reader(status.MPI_SOURCE,
+//        new Data_reader_tcp(ip_addr, size -2, ip_addr[size-1]));
+//      return PROCESS_EVENT_STATUS_SUCCEEDED;
+//    }
   case MPI_TAG_SET_CONTROL_FILE:
     {
       log_writer.MPI(2,"MPI_TAG_SET_CONTROL_FILE: DEPRECATED");
@@ -114,36 +113,36 @@ Correlator_controller::process_event(MPI_Status &status) {
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-  case MPI_TAG_SET_START_TIME:
-    {
-      log_writer.MPI(2,"MPI_TAG_SET_START_TIME, deprecated");
-      int time[5];
-      MPI_Recv(&time, 5, MPI_INT32, status.MPI_SOURCE,
-               status.MPI_TAG, MPI_COMM_WORLD, &status2);
-
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
-      
-      GenPrms.set_start(time);
-
-      GenPrms.set_usEarliest(get_us_time(time));
-      return PROCESS_EVENT_STATUS_SUCCEEDED;
-    }
-  case MPI_TAG_SET_STOP_TIME:
-    {
-      log_writer.MPI(2,"MPI_TAG_SET_STOP_TIME, deprecated");
-      int time[5];
-      MPI_Recv(&time, 5, MPI_INT32, status.MPI_SOURCE,
-               status.MPI_TAG, MPI_COMM_WORLD, &status2);
-
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
-
-      GenPrms.set_stop(time);
-      
-      GenPrms.set_usLatest(get_us_time(time));
-      return PROCESS_EVENT_STATUS_SUCCEEDED;
-    }
+//  case MPI_TAG_SET_START_TIME:
+//    {
+//      log_writer.MPI(2,"MPI_TAG_SET_START_TIME, deprecated");
+//      int time[5];
+//      MPI_Recv(&time, 5, MPI_INT32, status.MPI_SOURCE,
+//               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+//
+//      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+//      assert(status.MPI_TAG == status2.MPI_TAG);
+//      
+//      GenPrms.set_start(time);
+//
+//      GenPrms.set_usEarliest(get_us_time(time));
+//      return PROCESS_EVENT_STATUS_SUCCEEDED;
+//    }
+//  case MPI_TAG_SET_STOP_TIME:
+//    {
+//      log_writer.MPI(2,"MPI_TAG_SET_STOP_TIME, deprecated");
+//      int time[5];
+//      MPI_Recv(&time, 5, MPI_INT32, status.MPI_SOURCE,
+//               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+//
+//      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+//      assert(status.MPI_TAG == status2.MPI_TAG);
+//
+//      GenPrms.set_stop(time);
+//      
+//      GenPrms.set_usLatest(get_us_time(time));
+//      return PROCESS_EVENT_STATUS_SUCCEEDED;
+//    }
   case MPI_TAG_SET_TIME_SLICE:
     {
       log_writer.MPI(2,"MPI_TAG_SET_TIME_SLICE");
@@ -195,42 +194,42 @@ Correlator_controller::process_event(MPI_Status &status) {
       correlation_add_delay_table(table);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-  case MPI_TAG_SET_OUTPUT_STREAM_TCP:
-    {
-      log_writer.MPI(2,"MPI_TAG_SET_OUTPUT_STREAM_TCP");
-      int size;
-      MPI_Get_elements(&status, MPI_UNSIGNED_LONG, &size);
-      assert(size > 1);
-      UINT64 ip_addr[size];
-      MPI_Recv(&ip_addr, size, MPI_UNSIGNED_LONG, status.MPI_SOURCE,
-               status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
-
-      // last element is the port number:
-      Data_writer *writer = new Data_writer_tcp(ip_addr, size-1, ip_addr[size-1]);
-      assert(writer != NULL);
-      node.set_data_writer(writer);      
-      
-      return PROCESS_EVENT_STATUS_SUCCEEDED;
-    }
-  case MPI_TAG_SET_OUTPUT_NODE_FILE:
-    {
-      log_writer.MPI(2,"MPI_TAG_SET_OUTPUT_NODE_FILE");
-      int size;
-      MPI_Get_elements(&status, MPI_CHAR, &size);
-      assert(size > 0);
-      char filename[size];
-      MPI_Recv(&filename, size, MPI_CHAR, status.MPI_SOURCE,
-               status.MPI_TAG, MPI_COMM_WORLD, &status2);
-  
-      Data_writer *writer = new Data_writer_file(filename);
-      set_data_writer(*writer);
-      //GenPrms.set_corfile(filename);
-  
-      return PROCESS_EVENT_STATUS_SUCCEEDED;
-    }
+//  case MPI_TAG_SET_OUTPUT_STREAM_TCP:
+//    {
+//      log_writer.MPI(2,"MPI_TAG_SET_OUTPUT_STREAM_TCP");
+//      int size;
+//      MPI_Get_elements(&status, MPI_UNSIGNED_LONG, &size);
+//      assert(size > 1);
+//      UINT64 ip_addr[size];
+//      MPI_Recv(&ip_addr, size, MPI_UNSIGNED_LONG, status.MPI_SOURCE,
+//               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+//      
+//      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+//      assert(status.MPI_TAG == status2.MPI_TAG);
+//
+//      // last element is the port number:
+//      Data_writer *writer = new Data_writer_tcp(ip_addr, size-1, ip_addr[size-1]);
+//      assert(writer != NULL);
+//      node.set_data_writer(writer);      
+//      
+//      return PROCESS_EVENT_STATUS_SUCCEEDED;
+//    }
+//  case MPI_TAG_SET_OUTPUT_NODE_FILE:
+//    {
+//      log_writer.MPI(2,"MPI_TAG_SET_OUTPUT_NODE_FILE");
+//      int size;
+//      MPI_Get_elements(&status, MPI_CHAR, &size);
+//      assert(size > 0);
+//      char filename[size];
+//      MPI_Recv(&filename, size, MPI_CHAR, status.MPI_SOURCE,
+//               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+//  
+//      Data_writer *writer = new Data_writer_file(filename);
+//      set_data_writer(*writer);
+//      //GenPrms.set_corfile(filename);
+//  
+//      return PROCESS_EVENT_STATUS_SUCCEEDED;
+//    }
   }
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }

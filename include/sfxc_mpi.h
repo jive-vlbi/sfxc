@@ -74,7 +74,7 @@ enum MPI_TAG {
   /// Set the priority of the output stream.
   /// Two values of INT64: {StreamNr, Priority}
   MPI_TAG_OUTPUT_STREAM_SET_PRIORITY,
-
+  
   // Correlate node specific commands
   //-------------------------------------------------------------------------//
 

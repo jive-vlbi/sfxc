@@ -7,8 +7,8 @@ Correlator_node::Correlator_node(int rank, int buff_size)
  : Node(rank),
    output_buffer(buff_size),
    data_writer(NULL), 
-   correlator_controller(*this),
-   //output_controller(*this),
+   correlator_node_ctrl(*this),
+   data_writer_ctrl(get_log_writer()),
    correlate_state(INITIALISE_TIME_SLICE),
    status(STOPPED)
 {
@@ -18,7 +18,8 @@ Correlator_node::Correlator_node(int rank, int buff_size)
   // set the log writer for ProcessData:
   ::set_log_writer(get_log_writer());
 
-  add_controller(&correlator_controller);
+  add_controller(&correlator_node_ctrl);
+  add_controller(&data_writer_ctrl);
   int i=0;
   MPI_Send(&i, 1, MPI_INT32, 0, MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD);
 }

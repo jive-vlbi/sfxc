@@ -14,6 +14,20 @@ Multiple_data_readers_controller(Log_writer &writer)
   : Controller(writer) {
 }
 
+Multiple_data_readers_controller::
+~Multiple_data_readers_controller() {
+  for (std::vector<Data_reader2buffer<value_type> >::iterator 
+         it = data_readers.begin(); it != data_readers.end(); it++) {
+    it->stop();
+    // Don't delete the buffers. 
+    // This should be done by the node that also created them.
+    if ((*it).get_data_reader() != NULL) {
+      delete (*it).get_data_reader();
+      (*it).set_data_reader(NULL);
+    }
+  }
+}
+
 Multiple_data_readers_controller::Process_event_status
 Multiple_data_readers_controller::process_event(MPI_Status &status) {
   MPI_Status status2;

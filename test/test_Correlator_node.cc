@@ -55,13 +55,22 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
+  assert(numtasks == 2);
+
   Log_writer_void log_writer(0);
   set_log_writer(log_writer);
 
   ///////////////////////////
   //  The real work
   ///////////////////////////
-  if (rank == 0) {
+  
+  int correlator_node = 1;
+  assert(correlator_node+RANK_MANAGER_NODE == 1);
+  
+  if (rank == correlator_node) {
+    Correlator_node correlator_node(rank);
+    correlator_node.start();
+  } else {
     Log_writer_void log_writer(0);
     // Initialise correlator node
     assert(argc==2);
@@ -73,18 +82,15 @@ int main(int argc, char *argv[]) {
       return 1;
     }
 
-    //MPI_Send(control_file, strlen(control_file)+1, MPI_CHAR, 1,
-    //         MPI_TAG_SET_CONTROL_FILE, MPI_COMM_WORLD);
-            
     // strlen+1 so that \0 gets transmitted as well
     for (int i=0; i<GenPrms.get_nstations(); i++) {
       char *infile_data = StaPrms[i].get_mk4file();
-      MPI_Send(infile_data, strlen(infile_data)+1, MPI_CHAR, 1,
-               MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
+      MPI_Send(infile_data, strlen(infile_data)+1, MPI_CHAR, correlator_node,
+               MPI_TAG_SET_DATA_READER_FILE, MPI_COMM_WORLD);
     }
 
     MPI_Transfer mpi_transfer;
-    mpi_transfer.send_general_parameters(1);
+    mpi_transfer.send_general_parameters(correlator_node);
 
     for (int i=0; i<GenPrms.get_nstations(); i++) {
       DelayTable delay; 
@@ -99,34 +105,37 @@ int main(int argc, char *argv[]) {
     }
 
     const char *outfile_data = GenPrms.get_corfile();
-    MPI_Send((void *)outfile_data, strlen(outfile_data)+1, MPI_CHAR, 1,
-             MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);
+    MPI_Send((void *)outfile_data, strlen(outfile_data)+1, MPI_CHAR, correlator_node,
+             MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
     
-    int start_time[] = {GenPrms.get_yst(),
-                        GenPrms.get_dst(),
-                        GenPrms.get_hst(),
-                        GenPrms.get_mst(),
-                        GenPrms.get_sst()};
-    MPI_Send(start_time, 5, MPI_INT32, 1,
-             MPI_TAG_SET_START_TIME, MPI_COMM_WORLD);
-   
-    int stop_time[] = {GenPrms.get_ysp(),
-                       GenPrms.get_dsp(),
-                       GenPrms.get_hsp(),
-                       GenPrms.get_msp(),
-                       GenPrms.get_ssp()};
-    MPI_Send(stop_time, 5, MPI_INT32, 1,
-             MPI_TAG_SET_STOP_TIME, MPI_COMM_WORLD);
+//    int start_time[] = {GenPrms.get_yst(),
+//                        GenPrms.get_dst(),
+//                        GenPrms.get_hst(),
+//                        GenPrms.get_mst(),
+//                        GenPrms.get_sst()};
+//    MPI_Send(start_time, 5, MPI_INT32, 1,
+//             MPI_TAG_SET_START_TIME, MPI_COMM_WORLD);
+//   
+//    int stop_time[] = {GenPrms.get_ysp(),
+//                       GenPrms.get_dsp(),
+//                       GenPrms.get_hsp(),
+//                       GenPrms.get_msp(),
+//                       GenPrms.get_ssp()};
+//    MPI_Send(stop_time, 5, MPI_INT32, 1,
+//             MPI_TAG_SET_STOP_TIME, MPI_COMM_WORLD);
+    INT64 times[] = {GenPrms.get_usStart(), GenPrms.get_usStop()};
+    MPI_Send(times, 2, MPI_INT64, correlator_node,
+             MPI_TAG_SET_TIME_SLICE, MPI_COMM_WORLD);
 
     int cmd = 0;
-    MPI_Send(&cmd, 1, MPI_INT32, 1,
+    MPI_Send(&cmd, 1, MPI_INT32, correlator_node,
              MPI_TAG_START_CORRELATE_NODE, MPI_COMM_WORLD);
 
     bool finished = false;
     MPI_Status status, status2;
     while (!finished) {
-      MPI_Probe(1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-      assert(status.MPI_SOURCE == 1);
+      MPI_Probe(correlator_node, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      assert(status.MPI_SOURCE == RANK_MANAGER_NODE);
 
       switch (status.MPI_TAG) {
         case MPI_TAG_CORRELATE_ENDED:
@@ -138,7 +147,7 @@ int main(int argc, char *argv[]) {
                    status.MPI_TAG, MPI_COMM_WORLD, &status2);
   
           // Terminate data node
-          MPI_Send(&i, 1, MPI_INT32, 1,
+          MPI_Send(&i, 1, MPI_INT32, correlator_node,
                    MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
           finished = true;
           break;
@@ -158,9 +167,6 @@ int main(int argc, char *argv[]) {
       }      
       log_writer << std::endl << __LINE__ << " HERE" << std::endl;
     }
-  } else if (rank == 1) {
-    Correlator_node correlator_node(rank);
-    correlator_node.start();
   }
 
 

@@ -19,10 +19,12 @@ public:
   typedef Buffer<value_type>               Buffer;
   
   Single_data_writer_controller(Log_writer &writer);
+  ~Single_data_writer_controller();
 
   Process_event_status process_event(MPI_Status &status);
   
   Buffer *buffer();
+  void set_buffer(Buffer *buffer);
 private:
   Buffer2data_writer<value_type>                 buffer2writer;
 };

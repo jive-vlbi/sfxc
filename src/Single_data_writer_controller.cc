@@ -14,6 +14,17 @@ Single_data_writer_controller(Log_writer &writer)
   : Controller(writer) {
 }
 
+Single_data_writer_controller::
+~Single_data_writer_controller() {
+  buffer2writer.stop();
+  // Don't delete the buffers. 
+  // This should be done by the node that also created them.
+  if (buffer2writer.get_data_writer() != NULL) {
+    delete buffer2writer.get_data_writer();
+    buffer2writer.set_data_writer(NULL);
+  }
+}
+
 Single_data_writer_controller::Process_event_status
 Single_data_writer_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
@@ -51,3 +62,9 @@ Single_data_writer_controller::Buffer *
 Single_data_writer_controller::buffer() {
   return buffer2writer.get_buffer();
 }
+
+void Single_data_writer_controller::set_buffer(Buffer *buffer) {
+  buffer2writer.set_buffer(buffer);
+  buffer2writer.try_start();
+}
+
