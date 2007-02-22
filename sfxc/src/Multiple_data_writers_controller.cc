@@ -19,9 +19,16 @@ Multiple_data_writers_controller(Log_writer &writer)
 
 Multiple_data_writers_controller::
 ~Multiple_data_writers_controller() {
-//  for (int i=0; i<data_writers.size(); i++) {
-//    data_writers[i].stop();
-//   }
+  for (std::vector<Buffer2data_writer<value_type> >::iterator 
+         it = data_writers.begin(); it != data_writers.end(); it++) {
+    it->stop();
+    // Don't delete the buffers. 
+    // This should be done by the node that also created them.
+    if ((*it).get_data_writer() != NULL) {
+      delete (*it).get_data_writer();
+      (*it).set_data_writer(NULL);
+    }
+  }
 }
 
 Multiple_data_writers_controller::Process_event_status

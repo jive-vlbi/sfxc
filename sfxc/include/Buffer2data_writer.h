@@ -74,7 +74,6 @@ Buffer2data_writer<T>::~Buffer2data_writer()
     }
   }
   stop();
-  if (data_writer != NULL) delete data_writer;
 }
   
 template <class T>

@@ -97,11 +97,14 @@ int main(int argc, char *argv[]) {
       buffer2writer.set_buffer(&buffer);
       buffer2writer.start();
       
-      while (buffer2writer.status() == Buffer2data_writer<value_type>::RUNNING) {
-        sleep(1);
+      while (!reader2buffer.get_data_reader()->eof()) {
+        usleep(100000);
+      }
+      while (!buffer2writer.get_buffer()->empty()) {
+        usleep(100000);
       }
     }
-    
+  
     //check output:
     std::string command = "diff ";
     command += infile; command += " "; command += outfile;

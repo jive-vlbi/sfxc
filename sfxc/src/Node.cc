@@ -86,7 +86,7 @@ Node::process_event(MPI_Status &status) {
     MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
     
-    get_log_writer().MPI(0, "MPI_TAG_CORRELATION_READY");
+    get_log_writer().MPI(0, print_MPI_TAG(status.MPI_TAG));
     return TERMINATE_NODE;
   }
   for (Controller_iterator it = controllers.begin();

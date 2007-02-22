@@ -192,6 +192,12 @@ Test_Output_node_controller::process_event(MPI_Status &status) {
 }
 
 int main(int argc, char *argv[]) {
+  int input_node = 2;
+  int output_node = 3;
+
+  assert(input_node+output_node+RANK_MANAGER_NODE+RANK_LOG_NODE == 6);
+
+
   // MPI
   int numtasks, rank;
 
@@ -219,9 +225,6 @@ int main(int argc, char *argv[]) {
   assert(argc == 3);
   char *infile = argv[1];
   char *outfile = argv[2];
-
-  int input_node = 2;
-  int output_node = 3;
 
   MPI_Status status;
   
@@ -338,7 +341,7 @@ int main(int argc, char *argv[]) {
 //        MPI_Send(&rank, 1, MPI_INT,
 //                 RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
         assert(rank == output_node);
-        Test_Output_node node(rank);
+        Output_node node(rank);
         node.start();
         break;
       }

@@ -23,6 +23,7 @@ public:
   typedef Buffer<value_type>               Buffer;
   
   Multiple_data_readers_controller(Log_writer &writer);
+  ~Multiple_data_readers_controller();
 
   Process_event_status process_event(MPI_Status &status);
   

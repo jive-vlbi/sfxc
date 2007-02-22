@@ -75,18 +75,15 @@ test_Input_node_SOURCES = \
 
 test_Correlator_node_SOURCES = \
   $(OBJ) test_Correlator_node.cc \
-  ../src/Correlator_node.cc ../src/Correlator_controller.cc \
-  ../src/runPrms.cc ../src/genPrms.cc ../src/staPrms.cc \
-  ../src/genFunctions.cc \
-  ../src/InData.cc ../src/delayTable.cc \
-  ../src/ProcessData.cc
+  ../src/Correlator_node.cc ../src/Correlator_node_controller.cc \
+  ../src/InData.cc ../src/ProcessData.cc
 
 test_Log_writer_mpi_SOURCES = \
   test_Log_writer_mpi.cc \
   ../src/Node.cc \
   ../src/Log_writer.cc ../src/Log_writer_cout.cc \
   ../src/Log_writer_mpi.cc  ../src/Log_writer_file.cc \
-  ../src/Controller.cc ../src/Log_controller.cc  ../src/Log_node.cc
+  ../src/Controller.cc ../src/Log_node_controller.cc  ../src/Log_node.cc
   
 test_TCP_connection_SOURCES = \
   test_TCP_connection.cc \

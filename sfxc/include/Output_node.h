@@ -54,12 +54,19 @@ public:
   
   void set_status();
 
+  void create_buffer(int num);
+
   void set_weight_of_input_stream(int num, UINT64 weight);
   void time_slice_finished(int num);      
   
 
 private:
+  bool data_available();
   void write_output();
+
+
+  // Output buffer:
+  Semaphore_buffer<value_type>        output_buffer;
 
   // Controllers:
   Output_node_controller              output_node_ctrl;

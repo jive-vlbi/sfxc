@@ -14,6 +14,7 @@
 
 Output_node::Output_node(int rank, int size)
   : Node(rank),
+    output_buffer(1000),
     output_node_ctrl(*this),
     data_readers_ctrl(get_log_writer()),
     data_writer_ctrl(get_log_writer()),
@@ -24,6 +25,7 @@ Output_node::Output_node(int rank, int size)
 
 Output_node::Output_node(int rank, Log_writer *writer, int size) 
   : Node(rank, writer),
+    output_buffer(1000),
     output_node_ctrl(*this),
     data_readers_ctrl(get_log_writer()),
     data_writer_ctrl(get_log_writer())
@@ -39,6 +41,8 @@ void Output_node::initialise() {
   INT32 msg;
   MPI_Send(&msg, 1, MPI_INT32, 
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
+           
+  data_writer_ctrl.set_buffer(&output_buffer);  
 }
 
 Output_node::~Output_node() {
@@ -56,11 +60,16 @@ void Output_node::start() {
         break;
       }
       case WRITE_OUTPUT: {
-        while ((check_and_process_waiting_message() != NO_MESSAGE) &&
-               (status != END_NODE)) {
-        }
+        Node::MESSAGE_RESULT result;
+        while ((result = check_and_process_waiting_message()) != NO_MESSAGE) {
+          if (result == TERMINATE_NODE) {
+            status = END_NODE;
+          }
+        } 
         
-        write_output();
+        if (data_available()) {
+          write_output();
+        }
         break;
       }
       case END_NODE: { // For completeness sake, is caught by the while loop
@@ -68,17 +77,31 @@ void Output_node::start() {
       }
     }
   }
+  
+  // empty the input buffers to the output
+  while (data_available()) {
+    // We might not have received all the time slice termination messages yet:
+    while (check_and_process_waiting_message() != NO_MESSAGE) {}
+    write_output();
+  }
+  
+  // wait until the output buffer is empty
+  while (!output_buffer.empty()) {
+    usleep(100000);
+  }
+}
+
+void Output_node::create_buffer(int num) {
+  // Create an output buffer:
+  assert(data_readers_ctrl.get_buffer(num) == NULL);
+  Buffer *new_buffer = new Queue_buffer<value_type>();
+  data_readers_ctrl.set_buffer(num, new_buffer);
 }
 
 void Output_node::set_weight_of_input_stream(int num, UINT64 weight) {
   assert(num >= 0);
   
-  // Create an output buffer:
-  assert(data_readers_ctrl.get_buffer(num) == NULL);
-  Buffer *new_buffer = new Queue_buffer<value_type>();
-  data_readers_ctrl.set_buffer(num, new_buffer);
-
-  // Add the weight to the priority queue:
+    // Add the weight to the priority queue:
   // Check that the weight does not exist yet and is larger than the minimum:
   assert(input_streams_order.find(weight) == input_streams_order.end());
   if (!input_streams_order.empty()) {
@@ -101,22 +124,30 @@ void Output_node::time_slice_finished(int num) {
 }
 
 void Output_node::set_status() {
+  if (status == END_NODE) return;
   status = STOPPED;
   if (!input_streams_order.empty()) status = WRITE_OUTPUT;
 }
 
 void Output_node::write_output() {
+  assert(!input_streams_order.empty());
   int head = input_streams_order.begin()->second;
   Buffer *buffer = data_readers_ctrl.get_buffer(head);
+  
+  assert(buffer != NULL);
   if (buffer->empty()) {
     if (input_streams_finished[head]) {
+      // NGHK: TODO:
+//      data_readers_ctrl.get_input_stream(head).suspend();
+//      data_readers_ctrl.set_buffer(head, NULL);
+//      data_readers_ctrl.get_input_stream(head).resume();
+      
       input_streams_order.erase(input_streams_order.begin());
       input_streams_finished[head] = false;
     } else {
       usleep(100000); // .1 second:
     }
   } else {
-    std::cout << "WRITE_OUTPUT" << std::endl;
     int status;
     value_type &in_elem = buffer->consume(status);
     value_type &out_elem = data_writer_ctrl.buffer()->produce();
@@ -124,4 +155,8 @@ void Output_node::write_output() {
     data_writer_ctrl.buffer()->produced(status);
     buffer->consumed();
   }
+}
+
+bool Output_node::data_available() {
+  return !input_streams_order.empty();
 }

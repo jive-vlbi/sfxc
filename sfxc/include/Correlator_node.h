@@ -2,17 +2,31 @@
 #define CORRELATOR_NODE_H
 
 #include <Node.h>
-#include <Correlator_controller.h>
 
 #include <Multiple_data_readers_controller.h>
-#include <Output_controller.h>
+#include <Single_data_writer_controller.h>
 
 #include <Semaphore_buffer.h>
 
 #include "Log_writer_mpi.h"
 
 // Declare the correlator controller:
-class Correlator_controller;
+class Correlator_node;
+
+/**
+ * Correlator_node_controller processes specific signals for the Correlator node.
+ **/ 
+class Correlator_node_controller : public Controller
+{
+public:
+  Correlator_node_controller(Correlator_node &node);
+  ~Correlator_node_controller();
+  
+  Process_event_status process_event(MPI_Status &status);
+  
+private:
+  Correlator_node &node;
+};
 
 class Correlator_node : public Node
 {
@@ -63,8 +77,8 @@ private:
   Semaphore_buffer<output_value_type>      output_buffer;
   Data_writer                    *data_writer;
 
-  Correlator_controller          correlator_controller;
-  Output_controller              output_controller;
+  Correlator_node_controller     correlator_node_ctrl;
+  Single_data_writer_controller  data_writer_ctrl;
   
   // State variables:
   int correlate_state, status;
