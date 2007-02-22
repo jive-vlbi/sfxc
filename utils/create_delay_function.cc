@@ -2,8 +2,8 @@
  * 
  * $Id$
  * 
- * This small utility reads data from a file (argv[1]), interpolates
- * the data and writes it to file (argv[2]).
+ * This small utility reads data from a file, interpolates
+ * the data and writes it to file.
  * 
  * You will need gsl (GNU scientific library) for the interpolation.
 */
@@ -20,28 +20,53 @@
 
 #define NCOLS 9
 
+void usage() {
+  std::cout << "Usage: create_delay_function " 
+            << "<nCols> <selectedCol> <infile> <outfile>" << std::endl;
+}
+
 int
 main (int argc, char *argv[])
 {
-  if (argc != 3) {
-    std::cout << "Usage: " << argv[0] << " <infile> <outfile>" << std::endl;
+  if (argc != 5) {
+    usage();
     exit(1);
   }
 
-  std::ifstream infile(argv[1]);
+  int nColumns, data_column;
+  if (sscanf(argv[1], "%d", &nColumns) ==0 ) {
+    usage();
+    return 1;
+  }
+  if (sscanf(argv[2], "%d", &data_column) ==0 ) {
+    usage();
+    return 1;
+  }
+  if (data_column >= nColumns) {
+    std::cout << "selectedColumn is not smaller nCols: "
+              << data_column << " >= " << nColumns << std::endl;
+    return 1;
+  }
+
+  // The first column (time) is stored separately
+  data_column--;
+
+  std::ifstream infile(argv[3]);
   assert(infile.is_open());
-  FILE *outfile = fopen(argv[2], "w");
+  FILE *outfile = fopen(argv[4], "w");
   assert(outfile != 0);
+
+  // Do the actual work:
 
   std::cout.precision(20);
 
   std::vector<double> times, delays;
 
-  // read data: (9 columns for n05c2)
+  // Read the data:
   int time;
-  double c[NCOLS-1];
+  double c[nColumns-1];
   while (infile >> time) {
-    for (int i=0; i<NCOLS-1; i++) {
+    for (int i=0; i<nColumns-1; i++) {
       if (!(infile >> c[i])) {
         std::cout << "Incomplete line" << std::endl;
         break;
@@ -56,7 +81,7 @@ main (int argc, char *argv[])
     times.push_back(milisec);
     // c[0] is the second column in the data file (first is the time)
     // c[1] is the third, etc.
-    delays.push_back(c[6]);
+    delays.push_back(c[data_column]);
 
     // Print out data for debugging purposes:
     std::cout << times.back() << " " <<  delays.back() << std::endl;
@@ -76,9 +101,7 @@ main (int argc, char *argv[])
       // Print with high precision:
       // xi is time in second miliseconds from the beginning of the day
       // yi is delay in microseconds
-      fprintf (outfile, "%d %20.16f 0.0 0.0\n", 
-               int(xi), 
-               yi - 0./16);
+      fprintf (outfile, "%d %20.16f 0.0 0.0\n", int(xi), yi);
     }
 
     gsl_spline_free (spline);
