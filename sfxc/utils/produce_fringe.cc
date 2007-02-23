@@ -10,13 +10,13 @@
 #include <fftw3.h>
 using namespace std;
 
-#define N 513
 #define N2 1024
+#define N  (N2/2 + 1)
 
 // Number of output files:
-#define NFILES 10
+#define NFILES 1
 // Number of subsequent integration steps (fourier series) in one file
-#define NINTERGRATIONS_IN_ONE_FILE -1
+#define NINTERGRATIONS_IN_ONE_FILE 3
 
 #include <fstream>
 
@@ -36,6 +36,13 @@ int main(int argc, char *argv[])
                        reinterpret_cast<fftw_complex*>(&out),
                        FFTW_BACKWARD, 
                        FFTW_ESTIMATE);
+
+  for (int i=0; i<NFILES; i++) {
+    char out_filename[20];
+    sprintf(out_filename, "out%d.txt", i);
+    unlink(out_filename);
+  }
+
 
   bool finished = false;
   int corr_nr=0;
@@ -64,10 +71,11 @@ int main(int argc, char *argv[])
         fftw_execute(p); /* repeat as needed */
         
         for (int i=0; i<N; i++) {
-          fout << in[i].real() << " \t" << in[i].imag() << " \t" 
+          fout << integration*N+i << " \t"
+               << in[i].real() << " \t" 
+               << in[i].imag() << " \t" 
                << out[i].real() << " \t" 
                << out[i].imag() << " \t" 
-               << (i%N)
                << std::endl;
         }
       }
