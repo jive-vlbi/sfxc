@@ -37,7 +37,10 @@ private:
 
   Buffer2writer &get_writer(unsigned int i);
 
-  std::vector< Buffer2data_writer<value_type> >  data_writers;
+  // These are pointers, because a resize of the vector will 
+  // copy construct all the elements and then destroy the old 
+  // elements and we can't copy construct the extra threads.
+  std::vector< Buffer2data_writer<value_type> *>  data_writers;
 };
 
 #endif /* MULTIPLE_DATA_WRITERS_CONTROLLER_H */

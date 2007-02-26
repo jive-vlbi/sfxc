@@ -22,6 +22,7 @@ public:
   };
 
   Data_reader2buffer();
+  Data_reader2buffer(const Data_reader2buffer &buffer);
   ~Data_reader2buffer();
   
   Data_reader *get_data_reader();
@@ -42,7 +43,7 @@ private:
   Data_reader *data_reader;
   Buffer<T>   *buffer;
   State       state;
-  pthread_t   redirect_thread;
+  pthread_t   io_thread;
 };
 
 
@@ -53,6 +54,13 @@ Data_reader2buffer<T>::Data_reader2buffer()
 {
 }
 
+template <class T>
+Data_reader2buffer<T>::
+Data_reader2buffer(const Data_reader2buffer &buffer) {
+  // No copy constructor, the threads don't like it
+  assert(false);
+}
+  
 template <class T>
 Data_reader2buffer<T>::~Data_reader2buffer() 
 {
@@ -101,7 +109,7 @@ Data_reader2buffer<T>::start() {
   assert(buffer != NULL);
   
   state = RUNNING;
-  pthread_create(&redirect_thread, NULL, 
+  pthread_create(&io_thread, NULL, 
                  start_reading, static_cast<void*>(this));
 }
 
@@ -110,7 +118,7 @@ void
 Data_reader2buffer<T>::stop() {
   if (state == STOPPED) return;
   state = STOPPED;
-  pthread_join(redirect_thread, NULL);
+  pthread_join(io_thread, NULL);
 }
 
 template <class T>
@@ -131,13 +139,17 @@ template <class T>
 void
 Data_reader2buffer<T>::read() {
   while (state != STOPPED) {
-    if ((state == SUSPENDED) || buffer->full() || data_reader->eof()) {
+    if (state == SUSPENDED) {
+      usleep(100000); // .1 second:
+    } else if (buffer->full() || data_reader->eof()) {
       usleep(100000); // .1 second:
     } else {
       T &elem = buffer->produce();
       int size = data_reader->get_bytes(sizeof(T),(char*)&elem);
       buffer->produced(size);
-      if (size == 0) state = SUSPENDED;
+      if (size == 0) {
+        state = SUSPENDED;
+      }
     }
   }
 }

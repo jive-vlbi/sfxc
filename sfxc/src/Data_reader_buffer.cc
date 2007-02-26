@@ -12,7 +12,6 @@ Data_reader_buffer::Data_reader_buffer(Buffer *buff)
    end_of_file(false)
 {
   assert(buffer != NULL);
-  data_start = buffer->consume(bytes_left).buffer();
 }
 
 Data_reader_buffer::~Data_reader_buffer() {
@@ -23,7 +22,6 @@ UINT64 Data_reader_buffer::get_bytes(UINT64 nBytes, char *output_buffer) {
   UINT64 bytes_to_read = nBytes;
   while (bytes_to_read > 0) {
     if (bytes_left == 0) {
-      buffer->consumed();
       data_start = buffer->consume(bytes_left).buffer();
       if (bytes_left == 0) {
         end_of_file = true;
@@ -38,6 +36,10 @@ UINT64 Data_reader_buffer::get_bytes(UINT64 nBytes, char *output_buffer) {
     }
     bytes_to_read -=curr_read;
     bytes_left -=curr_read;
+    
+    if (bytes_left == 0) {
+      buffer->consumed();
+    }
   }
   return nBytes;
 }

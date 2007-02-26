@@ -1,7 +1,7 @@
 #ifndef SFXC_MPI_H
 #define SFXC_MPI_H
 
-#define RANK_MANAGER_NODE 0
+#define RANK_MANAGER_NODE 2
 #define RANK_LOG_NODE     1
 #define RANK_OUTPUT_NODE  2
 
