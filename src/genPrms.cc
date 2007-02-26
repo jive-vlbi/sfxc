@@ -291,7 +291,7 @@ int GenP::check_params(Log_writer &log_writer) const
   int retval = 0, FFTlength, Overlap;
   INT64 tStart, tStop, sec2proc;
   FILE *fl;
-  char command[256];
+  //char command[256];
 
   //calculate some parameters
   //TBD: add year in next calculations
@@ -366,9 +366,11 @@ int GenP::check_params(Log_writer &log_writer) const
   } else {
     fclose(fl);
     //delete empty file
-    strcpy(command,"rm -f ");
-    strcat(command,corfile.c_str());
-    system(command);
+    // NGHK: Use the system call instead of system()
+    unlink(corfile.c_str());
+//    strcpy(command,"rm -f ");
+//    strcat(command,);
+//    system(command);
   }
 
   if (lsegm > 63) {

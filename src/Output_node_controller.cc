@@ -10,7 +10,7 @@
 #include <Queue_buffer.h>
 
 Output_node_controller::Output_node_controller(Output_node &node)
-  : Controller(node.get_log_writer()), node(node) {
+  : Controller(node), node(node) {
     
 }
 
@@ -20,7 +20,7 @@ Output_node_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_OUTPUT_STREAM_SET_PRIORITY:
     {
-      log_writer.MPI(0, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(0, print_MPI_TAG(status.MPI_TAG));
       INT64 weight[2];
       MPI_Recv(&weight, 2, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -37,7 +37,7 @@ Output_node_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED:
     {
-      log_writer.MPI(0, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(0, print_MPI_TAG(status.MPI_TAG));
       int rank;
       MPI_Recv(&rank, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);

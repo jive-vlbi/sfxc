@@ -10,7 +10,7 @@
 #include "Log_writer_file.h"
 
 Log_node_controller::Log_node_controller(Node &node, int nNodes)
- : Controller(node.get_log_writer()), 
+ : Controller(node), 
    log_writer(NULL), 
    nConnections(nNodes-1)
 {

@@ -30,3 +30,8 @@ void Log_node::start() {
     check_and_process_message();
   }
 }
+
+void Log_node::hook_added_data_reader(int reader) {
+}
+void Log_node::hook_added_data_writer(int writer) {
+}

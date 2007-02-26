@@ -29,7 +29,8 @@ public:
 private:
   // Two semaphores to avoid overwriting of data
   sem_t empty_sem, full_sem;
-  
+  // For debugging purposes:
+  bool consuming, producing;
 };
 
 
@@ -41,7 +42,7 @@ private:
 template <class T>
 Semaphore_buffer<T>::
 Semaphore_buffer(int size) 
-  : Base(size)
+  : Base(size), consuming(false), producing(false)
 {
   assert(size > 0);
   if ( sem_init(&empty_sem, 1, 0) == -1 ) {
@@ -61,6 +62,7 @@ Semaphore_buffer<T>::~Semaphore_buffer() {
 template <class T>
 T &
 Semaphore_buffer<T>::produce() {
+  assert(!producing); producing = true;
   sem_wait(&full_sem);
   return Base::get_prod_elem();
 }
@@ -68,6 +70,7 @@ Semaphore_buffer<T>::produce() {
 template <class T>
 void
 Semaphore_buffer<T>::produced(int status) {
+  assert(producing); producing = false;
   Base::succ_prod(status);
   sem_post(&empty_sem);
 }
@@ -75,6 +78,7 @@ Semaphore_buffer<T>::produced(int status) {
 template <class T>
 T &
 Semaphore_buffer<T>::consume(int &status) {
+  assert(!consuming); consuming = true;
   sem_wait(&empty_sem);
   return Base::get_cons_elem(status);
 }
@@ -82,6 +86,7 @@ Semaphore_buffer<T>::consume(int &status) {
 template <class T>
 void
 Semaphore_buffer<T>::consumed() {
+  assert(consuming); consuming = false;
   Base::succ_cons();
   sem_post(&full_sem);
 }

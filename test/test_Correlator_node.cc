@@ -3,15 +3,10 @@
  * $Id$
  */
 
-#include <types.h>
-#include <sfxc_mpi.h>
 #include <Correlator_node.h>
-#include <fstream>
-#include <assert.h>
+#include <Log_node.h>
 
-#include <stdio.h>
-#include <iostream>
-
+#include <types.h>
 #include <utils.h>
 
 /// TODO: NGHK: REMOVE THESE: <------------ FROM HERE
@@ -38,15 +33,57 @@ UINT32 seed;
 #include <Log_writer_cout.h>
 #include <Log_writer_void.h>
 
+void 
+send_control_parameters_to_controller_node(char *filename,
+                                           int rank, 
+                                           Log_writer &log_writer) {
+  if (initialise_control(filename, log_writer) != 0) {
+    log_writer(0) << "Initialisation using control file \'" << filename 
+                  << "\'failed" << std::endl;
+    return;
+  }
+
+  assert(GenPrms.get_nstations() <= 255);
+  for (int i=0; i<GenPrms.get_nstations(); i++) {
+    int length = strlen(StaPrms[i].get_mk4file())+1;
+    char msg[length];
+    sprintf(msg, "%c%s", (char)i, StaPrms[i].get_mk4file()); 
+    // strlen+1 so that \0 gets transmitted as well
+    MPI_Send(msg, length+1, MPI_CHAR, rank,
+             MPI_TAG_ADD_DATA_READER_FILE, MPI_COMM_WORLD);
+  }
+
+  MPI_Transfer mpi_transfer;
+  mpi_transfer.send_general_parameters(rank);
+
+  for (int i=0; i<GenPrms.get_nstations(); i++) {
+    DelayTable delay; 
+    log_writer << StaPrms[i].get_delaytable() << std::endl;
+    int retval = delay.readDelayTable(StaPrms[i].get_delaytable(),
+                                      BufTime );
+    if (retval != 0) {
+      log_writer << "ERROR: when reading delay table.\n";
+      return;
+    }
+    mpi_transfer.send_delay_table(delay, rank);
+  }
+
+  const char *outfile_data = GenPrms.get_corfile();
+  MPI_Send((void *)outfile_data, strlen(outfile_data)+1, MPI_CHAR, rank,
+           MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
+
+}
+
+
 int main(int argc, char *argv[]) {
   // MPI
   int numtasks, rank;
 
   //initialisation
-  int status = MPI_Init(&argc,&argv);
-  if (status != MPI_SUCCESS) {
+  int error = MPI_Init(&argc,&argv);
+  if (error != MPI_SUCCESS) {
     std::cout << "Error starting MPI program. Terminating.\n";
-    MPI_Abort(MPI_COMM_WORLD, status);
+    MPI_Abort(MPI_COMM_WORLD, error);
     return 1;
   }
 
@@ -55,105 +92,81 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-  assert(numtasks == 2);
-
-  Log_writer_void log_writer(0);
-  set_log_writer(log_writer);
+  assert(numtasks == 3);
 
   ///////////////////////////
   //  The real work
   ///////////////////////////
   
-  int correlator_node = 1;
-  assert(correlator_node+RANK_MANAGER_NODE == 1);
+  int rank_correlator_node = 2;
+  assert(rank_correlator_node+RANK_MANAGER_NODE+RANK_LOG_NODE == 3);
   
-  if (rank == correlator_node) {
-    Correlator_node correlator_node(rank);
-    correlator_node.start();
-  } else {
-    Log_writer_void log_writer(0);
-    // Initialise correlator node
+  if (rank == RANK_MANAGER_NODE) {
+    MPI_Status status, status2;
+    { // Initialise the log node
+      int msg=0;
+      MPI_Send(&msg, 1, MPI_INT32, 
+               RANK_LOG_NODE, MPI_TAG_SET_LOG_NODE, MPI_COMM_WORLD);
+      MPI_Send(&msg, 1, MPI_INT32, 
+               RANK_LOG_NODE, MPI_TAG_LOG_NODE_SET_OUTPUT_COUT, MPI_COMM_WORLD);
+      MPI_Recv(&msg, 1, MPI_INT32, 
+               RANK_LOG_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
+    }  
+
+    { // Initialise the correlator node
+      int type = MPI_TAG_SET_CORRELATOR_NODE;
+      MPI_Send(&type, 1, MPI_INT32, rank_correlator_node, 
+               MPI_TAG_SET_CORRELATOR_NODE, MPI_COMM_WORLD);
+      int msg;
+      MPI_Recv(&msg, 1, MPI_INT32, 
+               rank_correlator_node, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD,
+               &status);
+    }
+
+    Log_writer_mpi log_writer(RANK_MANAGER_NODE);
+    // Send the control parameters to the correlator node:
     assert(argc==2);
-    char *control_file = argv[1];
-    //"/jop35_0/kruithof/data/n05c2/sfxc_n06c2_McNtTrWb.nodel.ctrl";
-    //char *control_file = "/jop35_0/kruithof/data/n05c2/sfxc_n06c2_WbWb.nodel.ctrl";
-    if (initialise_control(control_file, log_writer) != 0) {
-      log_writer(0) << "Initialisation using control file failed" << std::endl;
-      return 1;
+    send_control_parameters_to_controller_node(argv[1], 
+                                               rank_correlator_node, 
+                                               log_writer);
+
+    { // Start a single time slice
+      INT32 i;
+      MPI_Recv(&i, 1, MPI_INT32, rank_correlator_node,
+               MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD, &status2);
+  
+      INT64 times[] = {GenPrms.get_usStart(), GenPrms.get_usStop()};
+      MPI_Send(times, 2, MPI_INT64, rank_correlator_node,
+               MPI_TAG_SET_TIME_SLICE, MPI_COMM_WORLD);
+  
+      int cmd = 0;
+      MPI_Send(&cmd, 1, MPI_INT32, rank_correlator_node,
+               MPI_TAG_START_CORRELATE_NODE, MPI_COMM_WORLD);
     }
-
-    // strlen+1 so that \0 gets transmitted as well
-    for (int i=0; i<GenPrms.get_nstations(); i++) {
-      char *infile_data = StaPrms[i].get_mk4file();
-      MPI_Send(infile_data, strlen(infile_data)+1, MPI_CHAR, correlator_node,
-               MPI_TAG_SET_DATA_READER_FILE, MPI_COMM_WORLD);
-    }
-
-    MPI_Transfer mpi_transfer;
-    mpi_transfer.send_general_parameters(correlator_node);
-
-    for (int i=0; i<GenPrms.get_nstations(); i++) {
-      DelayTable delay; 
-      log_writer << StaPrms[i].get_delaytable() << std::endl;
-      int retval = delay.readDelayTable(StaPrms[i].get_delaytable(),
-                                        BufTime );
-      if (retval != 0) {
-        log_writer << "ERROR: when reading delay table.\n";
-        return retval;
-      }
-      mpi_transfer.send_delay_table(delay, 1);
-    }
-
-    const char *outfile_data = GenPrms.get_corfile();
-    MPI_Send((void *)outfile_data, strlen(outfile_data)+1, MPI_CHAR, correlator_node,
-             MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
-    
-//    int start_time[] = {GenPrms.get_yst(),
-//                        GenPrms.get_dst(),
-//                        GenPrms.get_hst(),
-//                        GenPrms.get_mst(),
-//                        GenPrms.get_sst()};
-//    MPI_Send(start_time, 5, MPI_INT32, 1,
-//             MPI_TAG_SET_START_TIME, MPI_COMM_WORLD);
-//   
-//    int stop_time[] = {GenPrms.get_ysp(),
-//                       GenPrms.get_dsp(),
-//                       GenPrms.get_hsp(),
-//                       GenPrms.get_msp(),
-//                       GenPrms.get_ssp()};
-//    MPI_Send(stop_time, 5, MPI_INT32, 1,
-//             MPI_TAG_SET_STOP_TIME, MPI_COMM_WORLD);
-    INT64 times[] = {GenPrms.get_usStart(), GenPrms.get_usStop()};
-    MPI_Send(times, 2, MPI_INT64, correlator_node,
-             MPI_TAG_SET_TIME_SLICE, MPI_COMM_WORLD);
-
-    int cmd = 0;
-    MPI_Send(&cmd, 1, MPI_INT32, correlator_node,
-             MPI_TAG_START_CORRELATE_NODE, MPI_COMM_WORLD);
 
     bool finished = false;
-    MPI_Status status, status2;
     while (!finished) {
-      MPI_Probe(correlator_node, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-      assert(status.MPI_SOURCE == RANK_MANAGER_NODE);
+      MPI_Probe(rank_correlator_node, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      //assert(status.MPI_SOURCE == RANK_MANAGER_NODE);
 
       switch (status.MPI_TAG) {
         case MPI_TAG_CORRELATE_ENDED:
         {
-          log_writer << "MPI_TAG_CORRELATE_ENDED " << std::endl;
+          log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
           // Wait for data node to finish
-          int i=0;
+          INT32 i=0;
           MPI_Recv(&i, 1, MPI_INT32, status.MPI_SOURCE,
-                   status.MPI_TAG, MPI_COMM_WORLD, &status2);
+                   MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD, &status2);
   
           // Terminate data node
-          MPI_Send(&i, 1, MPI_INT32, correlator_node,
+          MPI_Send(&i, 1, MPI_INT32, rank_correlator_node,
                    MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
           finished = true;
           break;
         }
         case MPI_TAG_TEXT_MESSAGE:
         {
+          log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
           int size;
           MPI_Get_elements(&status, MPI_CHAR, &size);
           assert(size > 0);
@@ -164,8 +177,54 @@ int main(int argc, char *argv[]) {
           log_writer << "MPI_TAG_TEXT_MESSAGE: " << message << std::endl;
           break;            
         }
-      }      
-      log_writer << std::endl << __LINE__ << " HERE" << std::endl;
+        default: {
+          char err[80];
+          snprintf(err, 80, "Unknown event %s", print_MPI_TAG(status.MPI_TAG));
+          log_writer.error(err);
+
+          // Remove event:  
+          int size;
+          MPI_Get_elements(&status, MPI_CHAR, &size);
+          assert(size >= 0);
+          char msg[size];
+          MPI_Status status2;
+          MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,
+                   status.MPI_TAG, MPI_COMM_WORLD, &status2);
+        }
+      }
+    }
+    {
+      MPI_Send(&rank, 1, MPI_INT, 
+               RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
+    }
+  } else {
+    MPI_Status status;
+    INT32 msg;
+    MPI_Recv(&msg, 1, MPI_INT32, 
+             RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    switch (status.MPI_TAG) {
+    case MPI_TAG_SET_CORRELATOR_NODE: 
+      {
+        assert (rank == rank_correlator_node);
+        Correlator_node correlator(rank);
+        correlator.start();
+        break;
+      }
+    case MPI_TAG_SET_LOG_NODE: 
+      {
+        assert (RANK_LOG_NODE == rank);
+        int numtasks;
+        MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
+        Log_node log_node(rank,numtasks);
+        log_node.start();
+        break;
+      }
+    default:
+      {
+        std::cout << "Unknown node type " << status.MPI_TAG << std::endl;
+        assert(false);
+        return 1;
+      }
     }
   }
 

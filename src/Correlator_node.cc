@@ -1,16 +1,17 @@
 #include "Correlator_node.h"
 
 #include "ProcessData.h"
+#include "Data_writer_buffer.h"
 #include "InData.h"
 
 Correlator_node::Correlator_node(int rank, int buff_size)
  : Node(rank),
    output_buffer(buff_size),
-   data_writer(NULL), 
    correlator_node_ctrl(*this),
-   data_writer_ctrl(get_log_writer()),
+   data_readers_ctrl(*this),
+   data_writer_ctrl(*this),
    correlate_state(INITIALISE_TIME_SLICE),
-   status(STOPPED)
+   status(STOPPED), initial_slice(true)
 {
   get_log_writer().MPI(0, "Correlate_node(rank)");
   //add_controller(&output_controller);
@@ -19,34 +20,25 @@ Correlator_node::Correlator_node(int rank, int buff_size)
   ::set_log_writer(get_log_writer());
 
   add_controller(&correlator_node_ctrl);
+  add_controller(&data_readers_ctrl);
   add_controller(&data_writer_ctrl);
+  
+  INT32 msg;
+  MPI_Send(&msg, 1, MPI_INT32, 
+           RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
+  
   int i=0;
-  MPI_Send(&i, 1, MPI_INT32, 0, MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD);
+  MPI_Send(&i, 1, MPI_INT32, 
+           RANK_MANAGER_NODE, MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD);
 }
 
 Correlator_node::~Correlator_node()
 {
+  while (!data_writer_ctrl.buffer()->empty()) {
+    usleep(100000);
+  }
   get_log_writer().message(1, "~Correlate_node()");
 }
-
-void Correlator_node::add_data_reader(Data_reader *reader) {
-  data_readers.push_back(reader);
-}
-
-void Correlator_node::set_data_reader(int node, Data_reader *reader) {
-  if (data_readers.size() <= (UINT32)node) data_readers.resize(node+1, NULL);
-  if (data_readers[node] != NULL) delete data_readers[node];
-  data_readers[node] = reader;
-}
-void Correlator_node::set_data_writer(Data_writer *data_writer_) {
-  if (data_writer != NULL) delete data_writer;
-  data_writer = data_writer_;
-  assert(data_writer != NULL);
-  
-  // Set the data writer in ProcessData:
-  ::set_data_writer(*data_writer);
-}
-
 
 void Correlator_node::start()
 {
@@ -68,9 +60,19 @@ void Correlator_node::start()
         if (status==CORRELATING) {
           switch(correlate_state) {
             case FIND_INITIAL_OFFSETS: {
+              if (initial_slice) {
+                initial_slice = false;
+                for (unsigned int i=0; 
+                     i<data_readers_ctrl.number_of_data_readers(); i++) {
+                  if (data_readers_ctrl.initialised(i)) {
+                    data_readers_ctrl.set_buffer(i, 
+                      new Semaphore_buffer<input_value_type>(1000));
+                  }
+                }
+              }
               //Find Offsets
               correlate_state = INITIALISE_TIME_SLICE;
-              err = FindOffsets(data_readers, 1, 0);
+              err = FindOffsets(data_readers_ctrl.get_vector_data_readers(), 1, 0);
               if (err !=0) {
                 get_log_writer().message(0,"ERROR: FindOffsets, program aborted.\n");
                 correlate_state = END_TIME_SLICE;
@@ -78,7 +80,7 @@ void Correlator_node::start()
               break;
             }
             case INITIALISE_TIME_SLICE: {
-              err = CorrelateBufs_initialise_correlator(data_readers);
+              err = CorrelateBufs_initialise_correlator(data_readers_ctrl.get_vector_data_readers());
               assert(err == 0);
               err = CorrelateBufs_initialise_time_slice();
               correlate_state = CORRELATE_SEGMENT;              
@@ -107,12 +109,12 @@ void Correlator_node::start()
                 get_log_writer().error("in end time slice");
                 status = END_CORRELATING;
               }
-              int i=0;
+              INT32 i=0;
               // Notify output node: 
-              MPI_Send(&i, 1, MPI_INT32, 1,
+              MPI_Send(&i, 1, MPI_INT32, RANK_OUTPUT_NODE,
                        MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED, MPI_COMM_WORLD);
               // Notify manager node:
-              MPI_Send(&i, 1, MPI_INT32, 0,
+              MPI_Send(&i, 1, MPI_INT32, RANK_MANAGER_NODE,
                        MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD);
               break;
             }
@@ -123,3 +125,14 @@ void Correlator_node::start()
   }
 }
 
+
+void Correlator_node::hook_added_data_reader(int reader) {
+}
+void Correlator_node::hook_added_data_writer(int i) {
+  assert(i == 0);
+  
+  data_writer_ctrl.set_buffer(new Semaphore_buffer<output_value_type>(100));
+  
+  Data_writer *writer = new Data_writer_buffer(data_writer_ctrl.buffer());
+  ::set_data_writer(*writer);
+}

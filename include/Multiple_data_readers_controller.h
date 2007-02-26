@@ -22,18 +22,27 @@ public:
   typedef Data_reader2buffer<value_type>   Reader2buffer;
   typedef Buffer<value_type>               Buffer;
   
-  Multiple_data_readers_controller(Log_writer &writer);
+  Multiple_data_readers_controller(Node &node);
   ~Multiple_data_readers_controller();
 
   Process_event_status process_event(MPI_Status &status);
   
   Buffer *get_buffer(unsigned int i);
   void set_buffer(unsigned int i, Buffer *buffer);
+
+  std::vector<Data_reader *> &get_vector_data_readers();
+
+  bool initialised(unsigned int i);
+  unsigned int number_of_data_readers();
 private:
-  Reader2buffer &create_input_stream(unsigned int i);
-  Reader2buffer &get_input_stream(unsigned int i);
+  void add_data_reader(int i, Data_reader *reader);
 
   std::vector<Data_reader2buffer<value_type> >   data_readers;
+  
+  // InData expects a vector of input_readers.
+  std::vector<Data_reader *>                     data_readers_out;
+  
+  bool more_data_readers_can_be_added;
 };
 
 #endif /* MULTIPLE_DATA_READERS_CONTROLLER_H */

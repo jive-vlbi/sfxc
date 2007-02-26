@@ -15,8 +15,8 @@
 Input_node::Input_node(int rank, Log_writer *log_writer, int size) 
   : Node(rank, log_writer), 
     input_node_ctrl(*this),
-    data_reader_ctrl(get_log_writer()),
-    data_writers_ctrl(get_log_writer()),
+    data_reader_ctrl(*this),
+    data_writers_ctrl(*this),
     time_stamp(1),
     buffer_size(size),
     status(STOPPED)
@@ -26,8 +26,8 @@ Input_node::Input_node(int rank, Log_writer *log_writer, int size)
 Input_node::Input_node(int rank, int size) 
   : Node(rank), 
     input_node_ctrl(*this),
-    data_reader_ctrl(get_log_writer()),
-    data_writers_ctrl(get_log_writer()),
+    data_reader_ctrl(*this),
+    data_writers_ctrl(*this),
     time_stamp(1),
     buffer_size(size),
     status(STOPPED)
@@ -207,3 +207,8 @@ void Input_node::stop_stream(const std::list<int>::iterator &stream_it) {
   active_list.erase(it_del);
 }
 
+void Input_node::hook_added_data_reader(int reader) {
+}
+
+void Input_node::hook_added_data_writer(int writer) {
+}

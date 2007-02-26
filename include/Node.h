@@ -15,8 +15,8 @@
 #include <string>
 #include <list>
 
-#include "Controller.h"
-#include "Log_writer_mpi.h"
+#include <Controller.h>
+#include <Log_writer_mpi.h>
 
 /** Generic node to which a number of controllers can be added.
     \ingroup ImportantClasses
@@ -78,7 +78,16 @@ public:
   }
 
   int get_rank() { return rank; }
-  
+
+  /** Callback function after adding a data_reader to the input streams. 
+   * Reader = 0 for a Single_data_reader_controller
+   **/
+  virtual void hook_added_data_reader(int reader) = 0;
+  /** Callback function after adding a data_reader to the input streams.
+   * Reader = 0 for a Single_data_reader_controller
+   **/
+  virtual void hook_added_data_writer(int writer) = 0;
+ 
 private:
   int rank;
   Controller_list controllers;

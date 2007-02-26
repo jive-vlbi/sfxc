@@ -40,3 +40,7 @@ UINT64 Data_reader_file::get_bytes(UINT64 nBytes, char*out) {
   if (file.eof()) return file.gcount();
   return nBytes;
 }
+
+bool Data_reader_file::eof() {
+  return file.eof(); 
+}

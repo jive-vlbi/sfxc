@@ -1,6 +1,9 @@
 #include <Controller.h>
 
-Controller::Controller(Log_writer &log_writer) : log_writer(log_writer) {
+Controller::Controller(Node &node) : node(node) {
 }
-// int Controller::Process_event(MPI_Status &status) {
-// }
+
+Log_writer &
+Controller::get_log_writer() {
+  return node.get_log_writer();
+}
