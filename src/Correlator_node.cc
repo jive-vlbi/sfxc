@@ -11,10 +11,9 @@ Correlator_node::Correlator_node(int rank, int buff_size)
    data_readers_ctrl(*this),
    data_writer_ctrl(*this),
    correlate_state(INITIALISE_TIME_SLICE),
-   status(STOPPED), initial_slice(true)
+   status(STOPPED)
 {
   get_log_writer().MPI(0, "Correlate_node(rank)");
-  //add_controller(&output_controller);
   
   // set the log writer for ProcessData:
   ::set_log_writer(get_log_writer());
@@ -60,16 +59,6 @@ void Correlator_node::start()
         if (status==CORRELATING) {
           switch(correlate_state) {
             case FIND_INITIAL_OFFSETS: {
-              if (initial_slice) {
-                initial_slice = false;
-                for (unsigned int i=0; 
-                     i<data_readers_ctrl.number_of_data_readers(); i++) {
-                  if (data_readers_ctrl.initialised(i)) {
-                    data_readers_ctrl.set_buffer(i, 
-                      new Semaphore_buffer<input_value_type>(1000));
-                  }
-                }
-              }
               //Find Offsets
               correlate_state = INITIALISE_TIME_SLICE;
               err = FindOffsets(data_readers_ctrl.get_vector_data_readers(), 1, 0);
@@ -126,8 +115,11 @@ void Correlator_node::start()
 }
 
 
-void Correlator_node::hook_added_data_reader(int reader) {
+void Correlator_node::hook_added_data_reader(int i) {
+  Buffer<input_value_type> *buffer = new Semaphore_buffer<input_value_type>(1000);
+  data_readers_ctrl.set_buffer(i, buffer);
 }
+
 void Correlator_node::hook_added_data_writer(int i) {
   assert(i == 0);
   

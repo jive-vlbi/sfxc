@@ -37,7 +37,10 @@ public:
 private:
   void add_data_reader(int i, Data_reader *reader);
 
-  std::vector<Data_reader2buffer<value_type> >   data_readers;
+  // These are pointers, because a resize of the vector will 
+  // copy construct all the elements and then destroy the old 
+  // elements and we can't copy construct the extra threads.
+  std::vector< Data_reader2buffer<value_type>* >   data_readers;
   
   // InData expects a vector of input_readers.
   std::vector<Data_reader *>                     data_readers_out;

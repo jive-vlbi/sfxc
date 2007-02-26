@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
   //  The real work
   ///////////////////////////
   
-  int rank_correlator_node = 2;
+  int rank_correlator_node = 0;
   assert(rank_correlator_node+RANK_MANAGER_NODE+RANK_LOG_NODE == 3);
   
   if (rank == RANK_MANAGER_NODE) {
@@ -219,6 +219,15 @@ int main(int argc, char *argv[]) {
         log_node.start();
         break;
       }
+//    case MPI_TAG_SET_OUTPUT_NODE: 
+//      {
+//        assert (RANK_OUTPUT_NODE == rank);
+//        int numtasks;
+//        MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
+//        Output_node output_node(rank,numtasks);
+//        output_node.start();
+//        break;
+//      }
     default:
       {
         std::cout << "Unknown node type " << status.MPI_TAG << std::endl;

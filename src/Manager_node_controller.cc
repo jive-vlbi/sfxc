@@ -3,7 +3,7 @@
 #include <assert.h>
 
 Manager_node_controller::Manager_node_controller(Manager_node &node)
- : Controller(node.get_log_writer()), node(node)
+ : Controller(node), node(node)
 {
 }
 
@@ -31,12 +31,12 @@ Manager_node_controller::process_event(MPI_Status &status) {
                  status.MPI_SOURCE, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
         node.add_number_correlator_node(-1);
         if (node.get_number_correlator_nodes()==0) {
-          log_writer(0) << "number_correlator_nodes()==0" << std::endl;
+          get_log_writer()(0) << "number_correlator_nodes()==0" << std::endl;
           MPI_Send(&type, 1, MPI_INT32, 
                    0, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
         }
       } else {
-        log_writer(0) << "Start a new time slice\n";
+        get_log_writer()(0) << "Start a new time slice\n";
         INT64 times[] = {node.get_start_time(), node.get_stop_time()};
         MPI_Send(times, 2, MPI_INT64, corr_node,
                  MPI_TAG_SET_TIME_SLICE, MPI_COMM_WORLD);

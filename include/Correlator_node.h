@@ -87,7 +87,6 @@ private:
   
   // State variables:
   int correlate_state, status;
-  bool initial_slice;
 };
 
 #endif // CORRELATOR_NODE_H

@@ -70,8 +70,8 @@ Correlator_node_controller::process_event(MPI_Status &status) {
       MPI_Recv(&time, 2, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      get_log_writer()(0) << "  start: " << time[0] << std::endl;
-      get_log_writer()(0) << "  stop : " << time[1] << std::endl;
+      get_log_writer()(0) << "  start: " << time[0] 
+                          << ", stop : " << time[1] << std::endl;
 
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);

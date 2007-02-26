@@ -19,14 +19,16 @@ Multiple_data_writers_controller(Node &node)
 
 Multiple_data_writers_controller::
 ~Multiple_data_writers_controller() {
-  for (std::vector<Buffer2data_writer<value_type> >::iterator 
+  for (std::vector< Buffer2data_writer<value_type>* >::iterator 
          it = data_writers.begin(); it != data_writers.end(); it++) {
-    it->stop();
-    // Don't delete the buffers. 
-    // This should be done by the node that also created them.
-    if ((*it).get_data_writer() != NULL) {
-      delete (*it).get_data_writer();
-      (*it).set_data_writer(NULL);
+    if ((*it) != NULL) {
+      (*it)->stop();
+      // Don't delete the buffers. 
+      // This should be done by the node that also created them.
+      if ((*it)->get_data_writer() != NULL) {
+        delete (*it)->get_data_writer();
+        (*it)->set_data_writer(NULL);
+      }
     }
   }
 }
@@ -125,7 +127,8 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 Multiple_data_writers_controller::Buffer2writer &
 Multiple_data_writers_controller::get_writer(unsigned int i) {
   assert((unsigned int)i < data_writers.size());
-  return data_writers[i];
+  assert(data_writers[i] != NULL);
+  return *data_writers[i];
 }
 
 Multiple_data_writers_controller::Buffer *
@@ -143,10 +146,12 @@ Multiple_data_writers_controller::set_buffer(unsigned int i, Buffer *buff) {
 bool 
 Multiple_data_writers_controller::ready() {
   for (unsigned int i=0; i<data_writers.size(); i++) {
-    if (data_writers[i].get_buffer() != NULL) {
-      assert(data_writers[i].get_data_writer() != NULL);
-      if (!data_writers[i].get_buffer()->empty()) {
-        return false;
+    if (data_writers[i] != NULL) {
+      if (data_writers[i]->get_buffer() != NULL) {
+        assert(data_writers[i]->get_data_writer() != NULL);
+        if (!data_writers[i]->get_buffer()->empty()) {
+          return false;
+        }
       }
     }
   }
@@ -157,11 +162,14 @@ void
 Multiple_data_writers_controller::
 add_data_writer(unsigned int i, Data_writer *writer) {
   if (data_writers.size() <= i) {
-    data_writers.resize(i+1);
+    data_writers.resize(i+1, NULL);
   }
   assert(i < data_writers.size());
 
-  Buffer2writer &buffer2writer = data_writers[i];
+  if (data_writers[i] == NULL) {
+    data_writers[i] = new Buffer2data_writer<value_type>();
+  }
+  Buffer2writer &buffer2writer = *data_writers[i];
   assert(buffer2writer.get_data_writer() == NULL);
   assert(buffer2writer.get_buffer() == NULL);
   
