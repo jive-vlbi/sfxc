@@ -251,7 +251,7 @@ MPI_Transfer::send_delay_table(DelayTable &table, int rank) {
     MPI_Pack(&(table.fC[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
   }
   assert(position <= size);
-  
+
   MPI_Send(buffer, position, MPI_PACKED, rank, MPI_TAG_DELAY_TABLE, MPI_COMM_WORLD);
 }
 

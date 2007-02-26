@@ -16,8 +16,8 @@ Output_node::Output_node(int rank, int size)
   : Node(rank),
     output_buffer(1000),
     output_node_ctrl(*this),
-    data_readers_ctrl(get_log_writer()),
-    data_writer_ctrl(get_log_writer()),
+    data_readers_ctrl(*this),
+    data_writer_ctrl(*this),
     status(STOPPED)
 {
   initialise();
@@ -27,8 +27,8 @@ Output_node::Output_node(int rank, Log_writer *writer, int size)
   : Node(rank, writer),
     output_buffer(1000),
     output_node_ctrl(*this),
-    data_readers_ctrl(get_log_writer()),
-    data_writer_ctrl(get_log_writer())
+    data_readers_ctrl(*this),
+    data_writer_ctrl(*this)
 {
   initialise(); 
 }
@@ -159,4 +159,10 @@ void Output_node::write_output() {
 
 bool Output_node::data_available() {
   return !input_streams_order.empty();
+}
+
+void Output_node::hook_added_data_reader(int reader) {
+}
+
+void Output_node::hook_added_data_writer(int writer) {
 }

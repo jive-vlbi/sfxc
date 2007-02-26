@@ -1,13 +1,14 @@
-#include "Manager_controller.h"
+#include "Manager_node.h"
+
 #include <assert.h>
 
-Manager_controller::Manager_controller(Manager_node &node)
+Manager_node_controller::Manager_node_controller(Manager_node &node)
  : Controller(node.get_log_writer()), node(node)
 {
 }
 
 Controller::Process_event_status 
-Manager_controller::process_event(MPI_Status &status) {
+Manager_node_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
     case MPI_TAG_CORRELATE_ENDED:

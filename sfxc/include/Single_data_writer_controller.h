@@ -18,7 +18,7 @@ public:
   typedef Buffer_element<char,131072>      value_type;
   typedef Buffer<value_type>               Buffer;
   
-  Single_data_writer_controller(Log_writer &writer);
+  Single_data_writer_controller(Node &node);
   ~Single_data_writer_controller();
 
   Process_event_status process_event(MPI_Status &status);
@@ -26,6 +26,8 @@ public:
   Buffer *buffer();
   void set_buffer(Buffer *buffer);
 private:
+  void set_data_writer(Data_writer *writer);
+
   Buffer2data_writer<value_type>                 buffer2writer;
 };
 

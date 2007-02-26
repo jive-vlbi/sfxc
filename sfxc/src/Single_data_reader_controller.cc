@@ -10,8 +10,8 @@
 #include <Data_reader_tcp.h>
 
 Single_data_reader_controller::
-Single_data_reader_controller(Log_writer &writer) 
-  : Controller(writer) {
+Single_data_reader_controller(Node &node) 
+  : Controller(node) {
 }
 
 Single_data_reader_controller::Process_event_status
@@ -20,7 +20,7 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_SET_DATA_READER_FILE:
     {
-      log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 0);
@@ -31,20 +31,13 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
 
-      if (reader2buffer.get_data_reader() != NULL) {
-        reader2buffer.stop();
-        reader2buffer.set_data_reader(NULL);
-        delete reader2buffer.get_data_reader();
-      }
-      reader2buffer.set_data_reader(new Data_reader_file(filename));
-      assert(reader2buffer.get_buffer() != NULL);
-      reader2buffer.start();
+      set_data_reader(new Data_reader_file(filename));
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_SET_DATA_READER_TCP:
     {
-      log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
 
       int size;
       MPI_Get_elements(&status, MPI_UINT64, &size);
@@ -56,51 +49,10 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
 
-      if (reader2buffer.get_data_reader() != NULL) {
-        reader2buffer.stop();
-        reader2buffer.set_data_reader(NULL);
-        delete reader2buffer.get_data_reader();
-      }
-      Data_reader *data_reader = 
-        new Data_reader_tcp(ip_addr, size-1, ip_addr[size-1]);
-      reader2buffer.set_data_reader(data_reader);
-      assert(reader2buffer.get_buffer() != NULL);
-      reader2buffer.start();
+      set_data_reader(new Data_reader_tcp(ip_addr, size-1, ip_addr[size-1]));
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-//  case MPI_TAG_ADD_CORRELATOR_NODE: 
-//    {
-//      log_writer.MPI(2,"MPI_TAG_ADD_CORRELATOR_NODE");
-//      
-//      MPI_Status status2;
-//      int corr_node;
-//      MPI_Recv(&corr_node, 1, MPI_INT32, status.MPI_SOURCE,
-//               status.MPI_TAG, MPI_COMM_WORLD, &status2);
-//
-//      Data_writer_tcp *data_writer = new Data_writer_tcp(1233);
-//      node.set_data_writer(corr_node, data_writer);
-//
-//      TCP_Connection tcp_connection;
-//      std::vector<UINT64>  ip_addresses;
-//      tcp_connection.get_ip_addresses(ip_addresses);
-//
-//      //start_output(&data_readers[node]);
-//
-//      // Add port
-//      ip_addresses.push_back(data_writer->get_port());
-//      // Add rank
-//      //ip_addresses.push_back(node.get_rank()-2);
-//      
-//      MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_UINT64, 
-//               corr_node, MPI_TAG_SET_DATA_READER_STREAM_TCP, MPI_COMM_WORLD);
-//      
-//      data_writer->open_connection();
-//      
-//      node.set_status();      
-//      
-//      return PROCESS_EVENT_STATUS_SUCCEEDED;
-//    }
   }
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }
@@ -124,4 +76,19 @@ void
 Single_data_reader_controller::set_buffer(Buffer *buff) {
   assert(buffer() == NULL);
   return reader2buffer.set_buffer(buff);
+}
+
+void 
+Single_data_reader_controller::set_data_reader(Data_reader *reader) {
+  if (reader2buffer.get_data_reader() != NULL) {
+    reader2buffer.stop();
+    reader2buffer.set_data_reader(NULL);
+    delete reader2buffer.get_data_reader();
+  }
+
+  reader2buffer.set_data_reader(reader);
+  assert(reader2buffer.get_buffer() != NULL);
+  reader2buffer.start();
+
+  node.hook_added_data_reader(0);
 }

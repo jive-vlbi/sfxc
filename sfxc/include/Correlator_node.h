@@ -59,11 +59,11 @@ public:
   
   void start();
   
-  void add_data_reader(Data_reader *reader);
-  void set_data_reader(int node, Data_reader *reader);
-  
-  /// Destroys the previous writer, if it exists.  
-  void set_data_writer(Data_writer *data_writer);
+//  void add_data_reader(Data_reader *reader);
+//  void set_data_reader(int node, Data_reader *reader);
+//  
+//  /// Destroys the previous writer, if it exists.  
+//  void set_data_writer(Data_writer *data_writer);
 
   void start_correlating() { 
     status=CORRELATING; 
@@ -71,17 +71,23 @@ public:
   }
   bool get_correlating() const { return (status==CORRELATING); }
 
-private:
-  std::vector<Data_reader *>     data_readers;
-  // Buffer for the output, input is directly handled by the Correlator_controller
-  Semaphore_buffer<output_value_type>      output_buffer;
-  Data_writer                    *data_writer;
+  // Callback functions:
+  void hook_added_data_reader(int reader);
+  void hook_added_data_writer(int writer);
 
-  Correlator_node_controller     correlator_node_ctrl;
-  Single_data_writer_controller  data_writer_ctrl;
+private:
+//  std::vector<Data_reader *>     data_readers;
+  // Buffer for the output, input is directly handled by the Correlator_controller
+  Semaphore_buffer<output_value_type> output_buffer;
+  //Data_writer                      *data_writer;
+
+  Correlator_node_controller       correlator_node_ctrl;
+  Multiple_data_readers_controller data_readers_ctrl;
+  Single_data_writer_controller    data_writer_ctrl;
   
   // State variables:
   int correlate_state, status;
+  bool initial_slice;
 };
 
 #endif // CORRELATOR_NODE_H

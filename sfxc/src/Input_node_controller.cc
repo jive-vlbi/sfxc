@@ -5,7 +5,7 @@
 //---------------------------------------------------------------------------//
 
 Input_node_controller::Input_node_controller(Input_node &node) 
-: Controller(node.get_log_writer()), node(node)
+: Controller(node), node(node)
 {
 }
   
@@ -14,7 +14,7 @@ Input_node_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
     case MPI_TAG_INPUT_STREAM_SET_PRIORITY: {
-      log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
 
       INT64 msg[3];
       MPI_Recv(&msg, 3, MPI_INT64, status.MPI_SOURCE,

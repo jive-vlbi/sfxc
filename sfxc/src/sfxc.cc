@@ -1,17 +1,18 @@
+/* Copyright (c) 2006 JIVE (Netherlands)
+ * All rights reserved.
+ * 
+ * This file is part of sfxc (software FX correlator);
+ * 
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ * 
+ * Author(s): Ruud Oerlemans, 2006 
+ *            Nico Kruithof, 2007
+ * 
+ * $Id$
+ */
+
 /*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
-
-Source       sfxc.cc
-Title        software FX correlator
-Author       RHJ Oerlemans
-Started      20060901
-Last change  20061114
-
 TODO: add doxygen style comments in *.cc and *.h
 TODO: review message levels in *.cc and *.h
 TODO: compiler at huygens generates more warning, check and try to fix this

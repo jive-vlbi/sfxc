@@ -7,7 +7,7 @@
 
 enum MPI_TAG {
   /// General initialisation channel
-  MPI_TAG_INIT,
+  MPI_TAG_INIT=0,
   
   // INITIALISATION OF THE DIFFERENT TYPES OF NODES:
   //------------------------------------------------------------------------

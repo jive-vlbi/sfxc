@@ -13,8 +13,8 @@
 #include <Semaphore_buffer.h>
 
 Multiple_data_writers_controller::
-Multiple_data_writers_controller(Log_writer &writer) 
-  : Controller(writer) {
+Multiple_data_writers_controller(Node &node) 
+  : Controller(node) {
 }
 
 Multiple_data_writers_controller::
@@ -36,7 +36,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_ADD_OUTPUT_CONNECTION_SINGLE_INPUT_TCP: 
     {
-      log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       
       MPI_Status status2;
       INT32 corr_node;
@@ -57,13 +57,13 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       
       data_writer->open_connection();
 
-      set_writer(corr_node, data_writer);
+      add_data_writer(corr_node, data_writer);
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP: 
     {
-      log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       
       MPI_Status status2;
       INT32 ranks[2]; // Rank of reader and writer:
@@ -86,13 +86,13 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 
       data_writer->open_connection();
 
-      set_writer(ranks[1], data_writer);
+      add_data_writer(ranks[1], data_writer);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_ADD_DATA_WRITER_FILE: 
     {
-      log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       
       MPI_Status status2;
       int size;
@@ -113,38 +113,13 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 
       Data_writer_file *data_writer = new Data_writer_file(filename); 
 
-      set_writer(corr_node, data_writer);
+      add_data_writer(corr_node, data_writer);
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   }
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }
-
-
-Multiple_data_writers_controller::Buffer2writer &
-Multiple_data_writers_controller::create_writer(unsigned int str) {
-  if (data_writers.size() <= str) {
-    data_writers.resize(str+1);
-  }
-  assert(str < data_writers.size());
-  return data_writers[str];
-}
-
-Multiple_data_writers_controller::Buffer2writer &
-Multiple_data_writers_controller::
-set_writer(unsigned int i, Data_writer *data_writer) {
-  Buffer2writer &buffer2writer = create_writer(i);
-  assert(buffer2writer.get_data_writer() == NULL);
-  assert(buffer2writer.get_buffer() == NULL);
-  
-  buffer2writer.set_data_writer(data_writer);
-
-  buffer2writer.try_start();
-  
-  return buffer2writer;
-}
-
 
 
 Multiple_data_writers_controller::Buffer2writer &
@@ -176,4 +151,23 @@ Multiple_data_writers_controller::ready() {
     }
   }
   return true;
+}
+
+void 
+Multiple_data_writers_controller::
+add_data_writer(unsigned int i, Data_writer *writer) {
+  if (data_writers.size() <= i) {
+    data_writers.resize(i+1);
+  }
+  assert(i < data_writers.size());
+
+  Buffer2writer &buffer2writer = data_writers[i];
+  assert(buffer2writer.get_data_writer() == NULL);
+  assert(buffer2writer.get_buffer() == NULL);
+  
+  buffer2writer.set_data_writer(writer);
+
+  buffer2writer.try_start();
+  
+  node.hook_added_data_writer(i);
 }

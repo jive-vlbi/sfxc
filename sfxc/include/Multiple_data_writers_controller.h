@@ -21,7 +21,7 @@ public:
   typedef Buffer<value_type>               Buffer;
   typedef Buffer2data_writer<value_type>   Buffer2writer;
   
-  Multiple_data_writers_controller(Log_writer &writer);
+  Multiple_data_writers_controller(Node &node);
   ~Multiple_data_writers_controller();
   
   Process_event_status process_event(MPI_Status &status);
@@ -32,9 +32,10 @@ public:
   bool ready();
   
 private:
+  void add_data_writer(unsigned int i, Data_writer *writer);
+
+
   Buffer2writer &get_writer(unsigned int i);
-  Buffer2writer &set_writer(unsigned int i, Data_writer *writer);
-  Buffer2writer &create_writer(unsigned int i);
 
   std::vector< Buffer2data_writer<value_type> >  data_writers;
 };

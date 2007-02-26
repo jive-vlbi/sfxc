@@ -131,6 +131,8 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
 
   NrStations = GenPrms.get_nstations();
   
+  assert(input_readers.size() == (unsigned int)NrStations);
+  
   //find first headers in data files, reset usEarliest if necessary,
   //return usTime and jsynch for requested byte offset
   for (sn=0; sn<NrStations; sn++) {
@@ -194,6 +196,8 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
     }
   }
   
+  assert(rank == 0);
+  assert(numtasks == 1);
   
   //for current rank and all stations set offsets
   for (sn=0; sn<NrStations; sn++) {

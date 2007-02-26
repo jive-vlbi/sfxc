@@ -10,8 +10,8 @@
 #include <Data_writer_tcp.h>
 
 Single_data_writer_controller::
-Single_data_writer_controller(Log_writer &writer) 
-  : Controller(writer) {
+Single_data_writer_controller(Node &node) 
+  : Controller(node) {
 }
 
 Single_data_writer_controller::
@@ -31,7 +31,7 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_SET_DATA_WRITER_FILE:
     {
-      log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 0);
@@ -42,14 +42,7 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
 
-      if (buffer2writer.get_data_writer() != NULL) {
-        buffer2writer.stop();
-        buffer2writer.set_data_writer(NULL);
-        delete buffer2writer.get_data_writer();
-      }
-      Data_writer *data_writer = new Data_writer_file(filename);
-      buffer2writer.set_data_writer(data_writer);
-      buffer2writer.try_start();
+      set_data_writer(new Data_writer_file(filename));
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
@@ -68,3 +61,14 @@ void Single_data_writer_controller::set_buffer(Buffer *buffer) {
   buffer2writer.try_start();
 }
 
+void Single_data_writer_controller::set_data_writer(Data_writer *writer) {
+  if (buffer2writer.get_data_writer() != NULL) {
+    buffer2writer.stop();
+    buffer2writer.set_data_writer(NULL);
+    delete buffer2writer.get_data_writer();
+  }
+  buffer2writer.set_data_writer(writer);
+  buffer2writer.try_start();
+  
+  node.hook_added_data_writer(0);
+}

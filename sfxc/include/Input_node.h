@@ -75,6 +75,10 @@ public:
   /// Remove an output stream from the list of active output streams
   void remove_from_active_list(int stream);
 
+  // Callback functions:
+  void hook_added_data_reader(int reader);
+  void hook_added_data_writer(int writer);
+
 private:
   // Stop a stream in active_list
   void stop_stream(const std::list<int>::iterator &stream_it);

@@ -105,7 +105,7 @@ private:
 };
 
 Test_Output_node_controller::Test_Output_node_controller(Test_Output_node &node)
-  : Controller(node.get_log_writer()), node(node) {
+  : Controller(node), node(node) {
   INT32 msg;
   MPI_Send(&msg, 1, MPI_INT32, 
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
@@ -117,7 +117,7 @@ Test_Output_node_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_SET_DATA_WRITER_FILE:
     {
-      log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 0);
@@ -135,7 +135,7 @@ Test_Output_node_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_ADD_DATA_READER_TCP:
     {
-      log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
 
       int size;
       MPI_Get_elements(&status, MPI_UINT64, &size);
@@ -149,12 +149,6 @@ Test_Output_node_controller::process_event(MPI_Status &status) {
       
       UINT64 port = ip_addr[size-2];
       TCP_Connection connection(true); 
-//      std::cout << "IP: "
-//                << connection.ip_addr(ip_addr[0]) << " "
-//                << connection.ip_addr(ip_addr[1]) << " "
-//                << ip_addr[2] << " "
-//                << ip_addr[3] << " "
-//                << std::endl;
       
       Data_reader_tcp *data_reader = 
         new Data_reader_tcp(ip_addr, size-2, port);
@@ -165,7 +159,7 @@ Test_Output_node_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_OUTPUT_STREAM_SET_PRIORITY:
     {
-      log_writer.MPI(0, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(0, print_MPI_TAG(status.MPI_TAG));
       INT64 weight[2];
       MPI_Recv(&weight, 2, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -177,7 +171,7 @@ Test_Output_node_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED: 
     {
-      log_writer.MPI(0, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(0, print_MPI_TAG(status.MPI_TAG));
       INT32 rank;
       MPI_Recv(&rank, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);

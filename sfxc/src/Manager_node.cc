@@ -38,20 +38,28 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   assert(Nstations+3 <= numtasks);
   Ncorrelator_nodes = numtasks - (Nstations+2); 
 
+  MPI_Status status;
   
   { // Initialise the log node
-    int msg;
+    int msg=0;
+    // Log node:
     MPI_Send(&msg, 1, MPI_INT32, 
-             RANK_LOG_NODE, MPI_TAG_SET_LOG_NODE_COUT, MPI_COMM_WORLD);
-//    char log_file[] = "output.txt";
-//    MPI_Send(&log_file, strlen(log_file)+1, MPI_CHAR, 
-//             RANK_LOG_NODE, MPI_TAG_SET_LOG_NODE_FILE, MPI_COMM_WORLD);
+             RANK_LOG_NODE, MPI_TAG_SET_LOG_NODE, MPI_COMM_WORLD);
+    MPI_Send(&msg, 1, MPI_INT32, 
+             RANK_LOG_NODE, MPI_TAG_LOG_NODE_SET_OUTPUT_COUT, MPI_COMM_WORLD);
+    MPI_Recv(&msg, 1, MPI_INT32, 
+             RANK_LOG_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
   }  
 
   { // Initialise the output node
+    int msg=0;
     const char *filename = GenPrms.get_corfile();
+    MPI_Send(&msg, 1, MPI_INT32, 
+             RANK_OUTPUT_NODE, MPI_TAG_SET_OUTPUT_NODE, MPI_COMM_WORLD);
     MPI_Send((void *)filename, strlen(filename)+1, MPI_CHAR, 
-             RANK_OUTPUT_NODE, MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);
+             RANK_OUTPUT_NODE, MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
+    MPI_Recv(&msg, 1, MPI_INT32, 
+             RANK_OUTPUT_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
   }  
 
   // Nstations+3 and later are correlate nodes
@@ -60,10 +68,20 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
     int type = MPI_TAG_SET_CORRELATOR_NODE;
     MPI_Send(&type, 1, MPI_INT32, i, 
              MPI_TAG_SET_CORRELATOR_NODE, MPI_COMM_WORLD);
+    int msg;
+    MPI_Recv(&msg, 1, MPI_INT32, 
+             i, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
+
     err = send_control_parameters_to_controller_node(i);
     if (err != 0) return;
+
     
     // Notify the output node (node 1):
+    INT32 ranks[2] = {i, RANK_LOG_NODE};
+    MPI_Send(ranks, 2, MPI_INT32, 
+             i, 
+             MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
+
 //    MPI_Send(&i, 1, MPI_INT32, 
 //             1, MPI_TAG_CREATE_OUTPUT_STREAM_TCP, MPI_COMM_WORLD);
   }
@@ -72,15 +90,27 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   for (int i=0; i<Nstations; i++) {
     int start_input_nodes = 3;
     // starting an input reader
+    int msg=0;
+    MPI_Send(&msg, 1, MPI_INT32, 
+             i+start_input_nodes, MPI_TAG_SET_INPUT_NODE, MPI_COMM_WORLD);
+    MPI_Recv(&msg, 1, MPI_INT32, 
+             i+start_input_nodes, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD,
+             &status);
+
     char *filename = StaPrms[i].get_mk4file();
     // strlen+1 so that \0 gets transmitted as well
     MPI_Send(filename, strlen(filename)+1, MPI_CHAR, 
-             i+start_input_nodes, MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
+             i+start_input_nodes, MPI_TAG_SET_DATA_READER_FILE, MPI_COMM_WORLD);
 
     // Add correlator nodes to the input readers:
+    INT32 ranks[2] = {i+start_input_nodes, 0};
     for (int j=Nstations+start_input_nodes; j<numtasks; j++) {
-      MPI_Send(&j, 1, MPI_INT32, i+start_input_nodes, 
-               MPI_TAG_ADD_CORRELATOR_NODE_TCP, MPI_COMM_WORLD);
+      ranks[1] = j;
+      MPI_Send(ranks, 2, MPI_INT32, 
+               i+start_input_nodes,
+               MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
+//      MPI_Send(&j, 1, MPI_INT32, i+start_input_nodes, 
+//               MPI_TAG_ADD_CORRELATOR_NODE_TCP, MPI_COMM_WORLD);
     }
   }
   if (err != 0) return;
@@ -141,10 +171,16 @@ int Manager_node::send_control_parameters_to_controller_node(int node) {
   }
 
   // Send the name of the correlator product file:
-  const char *outfile_data = GenPrms.get_corfile();
-  MPI_Send((void *)outfile_data, strlen(outfile_data)+1, MPI_CHAR, node,
-           MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);
+//  const char *outfile_data = GenPrms.get_corfile();
+//  MPI_Send((void *)outfile_data, strlen(outfile_data)+1, MPI_CHAR, node,
+//           MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);
            
   return 0;
 }
 
+
+void Manager_node::hook_added_data_reader(int reader) {
+}
+
+void Manager_node::hook_added_data_writer(int writer) {
+}

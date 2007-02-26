@@ -8,6 +8,10 @@
 
 using namespace std;
 
+/// Conversion of an integer to an character.
+/// NGHK: Move this function to utils.h?
+char* itoa( int value, char* result, int base );
+
 class Log_writer {
 public:
   Log_writer(int messagelevel=0, bool interactive=false);
@@ -61,8 +65,6 @@ public:
   // for std::endl
   Log_writer &operator<<(std::ostream& (*f)(std::ostream&) ); 
 
-
-  char* itoa( int value, char* result, int base ) const;
 
   /// Sets all message levels to level
   void set_messagelevel(int level);

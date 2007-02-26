@@ -13,7 +13,23 @@
 // #include <genPrms.h>
 
 #include <Node.h>
-#include <Manager_controller.h>
+#include <Controller.h>
+
+class Manager_node;
+
+class Manager_node_controller : public Controller
+{
+public:
+  Manager_node_controller(Manager_node &node);
+
+  Process_event_status process_event(MPI_Status &status);
+  
+  
+private:
+  Manager_node &node;
+};
+
+
 
 /**
  * \ingroup Node
@@ -36,6 +52,10 @@ public:
   
   void add_number_correlator_node(int n) { Ncorrelator_nodes += n; }
   int get_number_correlator_nodes() { return Ncorrelator_nodes; }
+
+  // Callback functions:
+  void hook_added_data_reader(int reader);
+  void hook_added_data_writer(int writer);
   
 private:
 
@@ -49,7 +69,7 @@ private:
   int slicenr;
   
   //Controllers:
-  Manager_controller manager_controller;
+  Manager_node_controller manager_controller;
   
   INT64 start_time, stop_time;
 };

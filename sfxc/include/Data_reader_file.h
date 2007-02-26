@@ -33,7 +33,7 @@ class Data_reader_file : public Data_reader {
 
   UINT64 get_bytes(UINT64 nBytes, char *out);
 
-  bool eof() { return file.eof(); }  
+  bool eof();  
   
 private:
   std::ifstream file;

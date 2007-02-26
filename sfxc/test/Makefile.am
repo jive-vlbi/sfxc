@@ -36,8 +36,10 @@ OBJ = ../src/utils.cc \
       \
       ../src/Data_reader_file.cc \
       ../src/Data_reader_tcp.cc \
+      ../src/Data_reader_buffer.cc \
       ../src/Data_writer_file.cc \
       ../src/Data_writer_tcp.cc \
+      ../src/Data_writer_buffer.cc \
       ../src/Log_writer.cc \
       ../src/Log_writer_file.cc \
       ../src/Log_writer_cout.cc \

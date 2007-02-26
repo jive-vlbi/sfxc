@@ -46,6 +46,8 @@ public:
   virtual bool full()= 0; 
 
 protected:
+  // Generic functions for a circular buffer:
+
   T& get_prod_elem() {
     return buffer[rear];
   }
@@ -62,7 +64,7 @@ protected:
     front = (front+1)%size;
   }
 
-  // Children are allowed to the the buffer size;
+  // Children are allowed to access the buffer size;
   int size;
 
 private:

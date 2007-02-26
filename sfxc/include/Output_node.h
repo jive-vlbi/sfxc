@@ -59,6 +59,9 @@ public:
   void set_weight_of_input_stream(int num, UINT64 weight);
   void time_slice_finished(int num);      
   
+  // Callback functions:
+  void hook_added_data_reader(int reader);
+  void hook_added_data_writer(int writer);
 
 private:
   bool data_available();

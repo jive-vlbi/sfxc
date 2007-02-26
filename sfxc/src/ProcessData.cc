@@ -26,7 +26,6 @@ Last change: 20061114
 #include <string.h>
 #include <math.h>
 #include <assert.h>
-//#include <complex.h> //depricated
 #include <fftw3.h>
 
 //c++ includes
@@ -127,7 +126,7 @@ int initialise_delay_tables(int nstations, StaP StaPrms[]) {
     get_log_writer().message(2,msg);
     int retval = delTbl[sn].readDelayTable(StaPrms[sn].get_delaytable(), BufTime );
     if (retval != 0) {
-      get_log_writer().message(0,"ERROR: when reading delay table.\n");
+      get_log_writer().error("ERROR: when reading delay table.\n");
       return retval;
     }
   }
@@ -364,7 +363,7 @@ int CorrelateBufs_process_segment() {
         Mk4frame,FL,FC,signST,magnST,Nsamp,sls,spls,planFW,planBW,
         tbs,fs,Nf,timePtr,delTbl);
       if (retval !=0) {
-        get_log_writer().message(1, "ERROR: in function fill_Bufs\n");
+        get_log_writer().error("in function fill_Bufs\n");
         return retval;
       }
       timePtr=timePtr+BufTime;
@@ -642,6 +641,12 @@ int fill_Bufs(std::vector<Data_reader *> &readers,
       }
       //address shift due to time delay for the  current segment
       jshift = (INT64)(Cdel/tbs+0.5);
+//      std::cout.precision(20);
+//      if (sn == 0) {
+//        std::cout << sn << " \t" 
+//                  //<< timePtr << " \t" << (int)(jsegm*lsegm*tbs*1000000) << " \t"
+//                  << Time << " \t" << Cdel << " \t" << jshift << std::endl;
+//      }
       assert((-2*BufSize <= jshift) && (jshift <= 0));      
 //      std::cout << sn << " " << jsegm << " " << Cdel << "/" << tbs 
 //                << "="<< Cdel/tbs << "="<<jshift << std::endl; 
