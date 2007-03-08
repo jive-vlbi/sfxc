@@ -42,12 +42,9 @@ using namespace std;
 #include "constPrms.h"
 
 //the class definitions and function definitions
-#include "runPrms.h"
 #include "genPrms.h"
 #include "genFunctions.h"
 
-//global variables
-extern RunP  RunPrms;
 
 //*****************************************************************************
 //function definitions
@@ -55,22 +52,23 @@ extern RunP  RunPrms;
 
 //get functions
 char* GenP::get_experiment() const { return experiment; }
+
 int   GenP::get_yst()        const { return yst; }
 int   GenP::get_dst()        const { return dst; }
 int   GenP::get_hst()        const { return hst; }
 int   GenP::get_mst()        const { return mst; }
 int   GenP::get_sst()        const { return sst; }
-int   GenP::get_ysp()        const { return ysp; }
-int   GenP::get_dsp()        const { return dsp; }
-int   GenP::get_hsp()        const { return hsp; }
-int   GenP::get_msp()        const { return msp; }
-int   GenP::get_ssp()        const { return ssp; }
+
+int   GenP::get_duration()   const { return duration; }
+INT64 GenP::get_usDur()      const { return duration*1000000; }
+
 int   GenP::get_nstations()  const { return nstations; }
 char* GenP::get_outdir()     const { return outdir;}
 char* GenP::get_logfile()    const { return logfile;}
 const char* GenP::get_corfile()    const { return corfile.c_str();}
 
-int   GenP::get_bwin()       const { return bwin;}
+INT64 GenP::get_skyfreq()    const { return skyfreq;}
+INT64 GenP::get_bwin()       const { return bwin;}
 int   GenP::get_lsegm()      const { return lsegm;}
 int   GenP::get_foffset()    const { return foffset;}
 int   GenP::get_cde()        const { return cde;}
@@ -85,37 +83,25 @@ int   GenP::get_ovrfl()      const { return ovrfl;}
 
 int   GenP::get_n2fft()      const { return n2fft;}
 float GenP::get_ovrlp()      const { return ovrlp;}
-INT64 GenP::get_nsamp2avg()  const { return nsamp2avg;}
+float GenP::get_time2avg()   const { return time2avg;}
+INT64 GenP::get_usTime2Avg() const { return (INT64)(time2avg*1000000);}
 int   GenP::get_pad()        const { return pad;}
 
-INT64 GenP::get_usStart()  const {
-  return usStart;
-  
-}  
 
-INT64 GenP::get_usStop()  const {
-  return usStop;
-}  
+INT64 GenP::get_usStart()  const {  return usStart;}
 
-INT64 GenP::get_usEarliest() const { return usEarliest; }
-INT64 GenP::get_usLatest()   const { 
-  return usLatest; 
-}
+//TODO RHJO: 20070213 check which of the functions until DEPRICATED? is depricated
+//INT64 GenP::get_usStop()   const {  return usStop;}
 
-void GenP::set_usStart(INT64 start) {
-  usStart = start;
-}
-void GenP::set_usStop(INT64 stop) {
-  usStop = stop;
-}
+//void GenP::set_usStart(INT64 start) { usStart = start;}
+//void GenP::set_usStop(INT64 stop)   { usStop = stop;}
 
-void  GenP::set_usEarliest(INT64 newEarliest) {
-  usEarliest = newEarliest;
-}
+//INT64 GenP::get_usEarliest() const { return usEarliest; }
+//INT64 GenP::get_usLatest()   const { return usLatest;}
 
-void  GenP::set_usLatest(INT64 newLatest) {
-  usLatest = newLatest;
-}
+//void  GenP::set_usEarliest(INT64 newEarliest) { usEarliest = newEarliest;}
+//void  GenP::set_usLatest(INT64 newLatest)     { usLatest = newLatest;}
+// DEPRICATED?
 
 //default constructor, set default values for general control parameters
 GenP::GenP()
@@ -123,7 +109,7 @@ GenP::GenP()
   experiment = new char[256];
   strcpy(experiment,"DefExp");
   yst=dst=hst=mst=sst=0;
-  ysp=dsp=hsp=msp=ssp=0;
+  duration=0;
   nstations = 2;
   outdir  = new char[256];
   outdir = getcwd(NULL, 256);//current working directory
@@ -148,10 +134,9 @@ GenP::GenP()
 
   n2fft     = 512;
   ovrlp     = 0.0;
-  nsamp2avg = 1600000;
+  time2avg  = 0.5;
   pad       = 2;
 }
-
 
 
 //parse control file for general control parameters
@@ -174,7 +159,8 @@ int GenP::parse_ctrlFile(char *ctrlFile, Log_writer&log_writer)
   corname = new char[lineLength];
 
   if( access(ctrlFile, R_OK) != 0 ) {
-    log_writer(0) << "**** File " << ctrlFile << "is not accessible or does not exist.\n";
+    log_writer(0) << "**** File " << ctrlFile
+                  << "is not accessible or does not exist.\n";
     return -1;
   }
 
@@ -195,45 +181,24 @@ int GenP::parse_ctrlFile(char *ctrlFile, Log_writer&log_writer)
       if (strcmp(key,"OUTDIR") == 0)     strcpy(outdir,val);
       if (strcmp(key,"LOGFILE") == 0)    strcpy(logname,val);
       if (strcmp(key,"CORFILE") == 0)    strcpy(corname,val);
+      if (strcmp(key,"START") == 0)      set_start(val);
       
+      retval = retval + getLongVal(key,val,"DURATION",duration, log_writer);
       retval = retval + getLongVal(key,val,"NSTATIONS",nstations, log_writer);
       retval = retval + getLongVal(key,val,"BWIN",bwin, log_writer);
-      retval = retval + getLongVal(key,val,"LSEGM",lsegm, log_writer);
-      retval = retval + getLongVal(key,val,"FOFFSET",foffset, log_writer);
+      retval = retval + getLongVal(key,val,"N2FFTDEL",lsegm, log_writer);
+      retval = retval + getINT64Val(key,val,"SKYFREQ",skyfreq, log_writer);
       retval = retval + getLongVal(key,val,"FILTER",filter, log_writer);
       retval = retval + getLongVal(key,val,"BWFL",bwfl, log_writer);
       retval = retval + getLongVal(key,val,"STARTF",startf, log_writer);
       retval = retval + getLongVal(key,val,"DELTAF",deltaf, log_writer);
       retval = retval + getLongVal(key,val,"OVRFL",ovrfl, log_writer);
 
-      retval = retval + getLongVal(key,val,"N2FFT",n2fft, log_writer);
-      retval = retval + getINT64Val(key,val,"NSAMP2AVG",nsamp2avg, log_writer);
+      retval = retval + getLongVal(key,val,"N2FFTCORR",n2fft, log_writer);
+      retval = retval + getFloatVal(key,val,"TIME2AVG",time2avg, log_writer);
       retval = retval + getFloatVal(key,val,"OVRLP",ovrlp, log_writer);
       retval = retval + getLongVal(key,val,"PAD",pad, log_writer);
      
-    }
-
-    if (sscanf(line,"%s %s %s %s %s %s\n",key,val,val1,val2,val3,val4) == 6){
-      //start time: yyyy ddd hh mm ss
-      if (!strcmp(key,"START")) {
-        int time[5];
-        retval = retval + str2int(val,time[0]);
-        retval = retval + str2int(val1,time[1]);
-        retval = retval + str2int(val2,time[2]);
-        retval = retval + str2int(val3,time[3]);
-        retval = retval + str2int(val4,time[4]);
-        set_start(time);
-      }
-      //stop time: yyyy ddd hh mm ss
-      if (!strcmp(key,"STOP")) {
-        int time[5];
-        retval = retval + str2int(val,time[0]);
-        retval = retval + str2int(val1,time[1]);
-        retval = retval + str2int(val2,time[2]);
-        retval = retval + str2int(val3,time[3]);
-        retval = retval + str2int(val4,time[4]);
-        set_stop(time);
-      }
     }
 
     if (sscanf(line,"%s %s %s %s\n",key,val,val1,val2) == 4){
@@ -273,11 +238,12 @@ int GenP::parse_ctrlFile(char *ctrlFile, Log_writer&log_writer)
     deltaf = 0;
     ovrfl = 1;
   }
-  
+
+  //TODO RHJO check if depricated
   //initialize earliest possible start time and
   //latest possible stop time in micro seconds
-  usEarliest = get_usStart();
-  usLatest   = get_usStop();
+//  usEarliest = get_usStart();
+//  usLatest   = get_usStop();
   
   return retval;
 }
@@ -289,15 +255,8 @@ int GenP::check_params(Log_writer &log_writer) const
 {
 
   int retval = 0, FFTlength, Overlap;
-  INT64 tStart, tStop, sec2proc;
   FILE *fl;
-  //char command[256];
-
-  //calculate some parameters
-  //TBD: add year in next calculations
-  tStart=dst*24*3600+hst*3600+mst*60+sst;
-  tStop =dsp*24*3600+hsp*3600+msp*60+ssp;
-  sec2proc=tStop-tStart;
+  char command[256];
 
   //display general parameters
   stringstream msg;
@@ -309,17 +268,15 @@ int GenP::check_params(Log_writer &log_writer) const
   "Start                = " << setw(4) << yst << setw(4) << dst <<
                                setw(3) << hst << setw(3) << mst <<
                                setw(3) << sst << " (y d h m s)\n" <<
-  "Stop                 = " << setw(4) << ysp << setw(4) << dsp <<
-                               setw(3) << hsp << setw(3) << msp <<
-                               setw(3) << ssp << " (y d h m s)\n" <<
+  "Duration             = " << duration << endl <<                             
   "Number of stations   = " << nstations << endl <<
   "Output directory     = " << outdir << endl <<
   "Log file             = " << logfile << endl <<
   "Correlator file      = " << corfile << endl << endl <<
    
+  "Sky frequency        = " << skyfreq << endl <<
   "Input bandwidth      = " << bwin << endl <<
   "Segment length delay correction = " << lsegm << endl <<
-  "Frequency offset     = " << foffset << endl <<
   "Enabled delay table columns = "
     << cde << " " << mde << " " << rde << " " << endl << endl <<
       
@@ -331,7 +288,7 @@ int GenP::check_params(Log_writer &log_writer) const
     
   "Length of segment in correlation = " << n2fft << endl <<
   "Segment overlap      = " << ovrlp << endl <<
-  "Number of samples to average = " << nsamp2avg << endl <<
+  "Time to average (sec)= " << time2avg << endl <<
   "Padding with zeros   = " << pad << endl << endl;
   log_writer.message(1,msg);
 
@@ -344,21 +301,6 @@ int GenP::check_params(Log_writer &log_writer) const
     retval = -1;
   }
   
-  if (dsp > 366 || hsp > 23 || msp > 59 || ssp > 59) {
-    log_writer(0) << "ERROR: Check stop time for values out of range" << endl;
-    retval = -1;
-  }
-  
-  if (tStart > tStop) {
-    log_writer(0) << "ERROR: Start time is later than stop time! \n";
-    retval=-1;
-  }
-
-  if (sec2proc<1) {
-    log_writer(0) << "ERROR: Seconds to process is 0, nothing to be done! \n";
-    retval=-1;
-  }
-
   fl = fopen(corfile.c_str(),"w");
   if (!fl) {
     log_writer(0) << "ERROR: Cannot create file in directory: " << outdir << endl;
@@ -366,11 +308,9 @@ int GenP::check_params(Log_writer &log_writer) const
   } else {
     fclose(fl);
     //delete empty file
-    // NGHK: Use the system call instead of system()
-    unlink(corfile.c_str());
-//    strcpy(command,"rm -f ");
-//    strcat(command,);
-//    system(command);
+    strcpy(command,"rm -f ");
+    strcat(command,corfile.c_str());
+    system(command);
   }
 
   if (lsegm > 63) {
@@ -411,6 +351,11 @@ int GenP::check_params(Log_writer &log_writer) const
     retval=-1;
   }
 
+  if ( pad < 1 || pad > 2) {//TODO RHJO check if these are the only valid values
+    log_writer(0) << "ERROR: Padding should be 1 or 2 \n";
+    retval=-1;
+  }
+  
   Overlap = (int) (100*ovrlp);
   if (!(Overlap==0 || Overlap==25 ||Overlap==50 ||Overlap==75 )) {
     log_writer(0) << "ERROR: Overlap = " << ovrlp <<
@@ -423,13 +368,14 @@ int GenP::check_params(Log_writer &log_writer) const
 
 }
 
-
-void GenP::set_start(int time[]) {
-  yst = time[0];
-  dst = time[1];
-  hst = time[2];
-  mst = time[3];
-  sst = time[4];
+//extract start time values from string and 
+//calculate start wrt 00:00 in micro seconds
+void GenP::set_start(string Time) {
+  yst = str_to_long(Time,0,4);  //pos=0, length=4
+  dst = str_to_long(Time,5,3);
+  hst = str_to_long(Time,9,2);
+  mst = str_to_long(Time,12,2);
+  sst = str_to_long(Time,15,2);
   
   usStart = hst;                 //hours
   usStart = mst +   60* usStart; //minutes
@@ -438,19 +384,7 @@ void GenP::set_start(int time[]) {
   usStart = 0   + 1000* usStart; //microsecs
 }
 
-void GenP::set_stop(int time[]) {
-  ysp = time[0];
-  dsp = time[1];
-  hsp = time[2];
-  msp = time[3];
-  ssp = time[4];
 
-  usStop = hsp;                //hours
-  usStop = msp +   60* usStop; //minutes
-  usStop = ssp +   60* usStop; //minutes
-  usStop = 0   + 1000* usStop; //milisecs
-  usStop = 0   + 1000* usStop; //microsecs
-}
 void GenP::set_corfile(char *filename) {
   corfile = filename;
 }
