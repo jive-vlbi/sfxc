@@ -16,7 +16,6 @@ Last change: 20061124
 
 #include <Data_reader.h>
 #include <vector>
-#include <fstream>
 
 //
 
@@ -31,13 +30,12 @@ class Data_reader_file : public Data_reader {
 
   ~Data_reader_file();
 
+  UINT64 move_forward(UINT64 nBytes);
   UINT64 get_bytes(UINT64 nBytes, char *out);
-
-  bool eof();  
   
 private:
-  std::ifstream file;
-//  std::vector<char> buffer;
+  int file;
+  std::vector<char> buffer;
 };
 
 #endif // DATA_READER_FILE_H
