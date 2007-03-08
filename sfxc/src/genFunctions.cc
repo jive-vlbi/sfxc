@@ -108,13 +108,34 @@ int str2int(char *val, int& sval)
   return 0;  
 }
 
+//*****************************************************************************
+//  convert a sub string from inString with length characters
+//  into a long starting at pos. 
+//  return value is the desired sub string as a long
+//*****************************************************************************
+long str_to_long (std::string inString, int pos, int length)
+{
+  std::string str=inString.substr(pos,length);
+  char tmp[length+1];
+  strcpy(tmp,str.c_str());
+  
+  char *endp;
+  long sval = strtol(tmp, &endp, 10);
+  if (endp == tmp) {
+    fprintf(stderr,"**** Unable to convert string %s into long\n",tmp);
+    return -1;
+  } else {
+    return sval;
+  }  
+}
 
 //*****************************************************************************
 //  irbit2: random seeding
 //  See Numerical Recipes
 //  primitive polynomial mod 2 of order n produces 2^n - 1 random bits
 //*****************************************************************************
-int irbit2(UINT32 *iseed){
+int irbit2(UINT32 *iseed)
+{
   #define IB1 1
   //  #define IB2 2
   #define IB4 8

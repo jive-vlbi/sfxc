@@ -36,12 +36,15 @@ class DelayTable
     
     //read the delay table, do some checks and
     //calculate coefficients for parabolic interpolation
+    int readDelayTable(char *delayTableName);
+    //TODO RHJO delete when depricated
     int readDelayTable(char *delayTableName, INT64 start, INT64 stop, INT64 BufTime);
-    //read the delay table, do some checks and
-    //calculate coefficients for parabolic interpolation
+    //TODO RHJO delete when depricated
     int readDelayTable(char *delayTableName, INT64 BufTime);
 
     //calculate the delay for the delayType at time in microseconds
+    double calcDelay(INT64 time, int delayType) const;
+    //TODO RHJO delete when depricated
     double calcDelay(double time, int delayType) const;
 
     enum delayType {Cdel, Mdel, Rdel, Fdel};
@@ -52,8 +55,8 @@ class DelayTable
     void reserve_data();
     INT64  ndel; // number of parabolic delay functions covering start until stop
     
-    INT64  startDT;       // start time delaytable
-    INT64  stepDT;        // time step in delaytable
+    INT64  startDT;       // start time delaytable in micro seconds
+    INT64  stepDT;        // time step in delaytable in micro seconds
     std::vector<double> cA, cB, cC; // Y = aX^2 + bX + c
     std::vector<double> mA, mB, mC; // per read delay line one series of these coefficients
     std::vector<double> rA, rB, rC;

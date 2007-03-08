@@ -41,6 +41,7 @@ class GenP
     
     /** Name of the experiment. **/
     char* get_experiment() const;
+    
     /** year in the starttime. **/
     int   get_yst() const;
     /** day in the starttime. **/
@@ -51,16 +52,11 @@ class GenP
     int   get_mst() const;
     /** seconds in the starttime. **/
     int   get_sst() const;
-    /** year in the stoptime. **/
-    int   get_ysp() const;
-    /** day in the stoptime. **/
-    int   get_dsp() const;
-    /** hour in the stoptime. **/
-    int   get_hsp() const;
-    /** minutes in the stoptime. **/
-    int   get_msp() const;
-    /** seconds in the stoptime. **/
-    int   get_ssp() const;
+
+    /** duration of the experiment / correlated data (sec) **/
+    int   get_duration() const;
+    /** duration of the experiment / correlated data (usec) **/
+    INT64 get_usDur() const;
     
     /** The number of stations **/
     int   get_nstations() const;
@@ -71,8 +67,10 @@ class GenP
     /** Name of the correlation output file. **/
     const char* get_corfile() const;
     
+    /** Sky frequency in Hz. **/
+    INT64 get_skyfreq() const;
     /** Input band width in Hz. **/
-    int   get_bwin() const;
+    INT64 get_bwin() const;
     /** Length of a Fourier segment in delay correction. **/
     int   get_lsegm() const;
     /** Frequency offset. **/
@@ -102,59 +100,70 @@ class GenP
      * 0: no overlap. 
      **/
     float get_ovrlp() const;
-    /** Number of samples to average in correlation. **/
-    INT64 get_nsamp2avg() const;
+    /** Time (sec) to average in correlation**/
+    float get_time2avg() const;
+    /** Time (usec) to average in correlation**/
+    INT64 get_usTime2Avg() const;
     /** Padding with zeros in correlation.
-     * NGHK: Values? 
+     * 1: lenght = n2fft, no padding
+     * 2: length = 2 * n2fft, padding with n2fft zeros
      **/
     int   get_pad() const;
 
-    /** Get the start time in microseconds from the beginning of the day. **/
+    /** Get the start time in microseconds
+        from the beginning of the day 00:00. **/
     INT64 get_usStart() const;
-    /** Get the stop time in microseconds from the beginning of the day.  **/
-    INT64 get_usStop() const;
-    /** Get the earliest possible time for correlation 
-     * in microseconds from the beginning of the day. **/
-    INT64 get_usEarliest() const;
-    /** Depricated: do not use. **/
-    INT64 get_usLatest() const;
+    
+//TODO RHJO 14-02-2007 check which are depricated    
+//    /** Get the stop time in microseconds from the beginning of the day.  **/
+//    INT64 get_usStop() const;
+//    /** Get the earliest possible time for correlation 
+//     * in microseconds from the beginning of the day. **/
+//    INT64 get_usEarliest() const;
+//    /** Depricated: do not use. **/
+ //   INT64 get_usLatest() const;
 
     //set functions
-    /** Set the earliest possible time for correlation 
-     * in microseconds from the beginning of the day. **/
-    void  set_usStart(INT64);
-    void  set_usStop(INT64);
-    void  set_usEarliest(INT64);
-    /** Depricated: do not use. **/
-    void  set_usLatest(INT64);
+    
+//    /** Set the earliest possible time for correlation 
+//    * in microseconds from the beginning of the day. **/
+//    void  set_usStart(INT64);
+//    void  set_usStop(INT64);
+//    void  set_usEarliest(INT64);
+//    /** Depricated: do not use. **/
+//    void  set_usLatest(INT64);
 
-    /** Set the start time in microseconds from the beginning of the day. **/
-    void set_start(int time[]);
-    /** Set the stop time in microseconds from the beginning of the day. **/
-    void set_stop(int time[]);
     /** Set the name of the correlation output file. **/
     void set_corfile(char *filename);
 
+    
   private:
+  
+    //member functions
+    
+    // Set the start time in microseconds from the beginning of the day.
+    void set_start(std::string Time);
 
-    //general control parameters
+    //data members
+    
     char  *experiment; //name of the experiment
+    
     int   yst;        //start year
     int   dst;        //start day
     int   hst;        //start hour
     int   mst;        //start minute
     int   sst;        //start second
-    int   ysp;        //stop  year
-    int   dsp;        //stop  day
-    int   hsp;        //stop  hour
-    int   msp;        //stop  minute
-    int   ssp;        //stop  second
+    
+    int   duration;   //duration of the experiment/correlated data (sec)
+    INT64 usDur;      //duration of the experiment/correlated data (usec)
+    
     int   nstations;  //number of radio telescope stations
     char  *outdir;    //output data directory
     char  *logfile;   //log file name
     std::string corfile;   //correlator product file
 
-    int   bwin;       //band width input in Hertz
+    INT64 skyfreq;    //skyfrequency in Hertz
+    INT32 bwin;       //band width input in Hertz
     int   lsegm;      //length of a Fourier segment in a delay correction
     int   foffset;    //frequency offset in Hertz
     int   cde;        //enable CDE column in delay table
@@ -167,15 +176,18 @@ class GenP
     int   deltaf;     //filter resolution in Hertz
     int   ovrfl;      //enable oversampling
 
-    int   n2fft;      //length of Fourier segment in correlation
-    float ovrlp;      //overlap parameter for Fourier segmetns in correlation
-    INT64 nsamp2avg;  //number of samples to average
-    int   pad;        //padding with zeros in correlation
+    int    n2fft;      //length of Fourier segment in correlation
+    float  ovrlp;      //overlap parameter for Fourier segmetns in correlation
+    float  time2avg;   //time to average the correlation in sec
+    INT64  usTime2Avg; //time to average the correlation in usec
+    int    pad;        //padding with zeros in correlation
 
-    INT64 usStart;    //start time in micro seconds without year
-    INT64 usStop;     //stop time in micro seconds without year
-    INT64 usEarliest; //earliest possible start time in micro seconds
-    INT64 usLatest;   //latest possible start time in micro seconds
+    INT64  usStart;    //start time in micro seconds without year and day
+
+//TODO RHJO 14-02-2007 check which are depricated    
+//    INT64 usStop;     //stop time in micro seconds without year
+//    INT64 usEarliest; //earliest possible start time in micro seconds
+//    INT64 usLatest;   //latest possible start time in micro seconds
 };
 
 

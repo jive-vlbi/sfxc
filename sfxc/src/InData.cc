@@ -61,9 +61,6 @@ extern UINT32 seed;
 //*****************************************************************************
 
 // NGHK: station was sn
-int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
-  INT64& usTime, INT64 usStart);
-
 int read64datafile(
   //input
   Data_reader & reader,
@@ -131,14 +128,12 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
 
   NrStations = GenPrms.get_nstations();
   
-  assert(input_readers.size() == (unsigned int)NrStations);
-  
   //find first headers in data files, reset usEarliest if necessary,
   //return usTime and jsynch for requested byte offset
   for (sn=0; sn<NrStations; sn++) {
     if (StaPrms[sn].get_datatype() == DATATYPE_MK4) {
       FindHeaderMk4(*input_readers[sn], sn, jsynch[sn],
-        usTime[sn], GenPrms.get_usEarliest());
+        usTime[sn], GenPrms.get_usStart());
     }
     get_log_writer().ask_continue();
   }
@@ -146,7 +141,7 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
   //calculate start offsets in bytes for all data files
   for (sn=0; sn<NrStations; sn++) {
     if (StaPrms[sn].get_datatype() == DATATYPE_MK4) {
-      offTime[sn] = GenPrms.get_usEarliest() - usTime[sn];
+      offTime[sn] = GenPrms.get_usStart() - usTime[sn];
       offFrames[sn] = offTime[sn] * StaPrms[sn].get_tbr()/frameMk4;
       if (StaPrms[sn].get_nhs() == 1) {
         offBytes[sn] = offFrames[sn] * frameMk4 * 4;
@@ -180,7 +175,7 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
     if (StaPrms[sn].get_datatype() == DATATYPE_MK4) {
       //number off frames in available data range
       NFrames[sn] =
-      (GenPrms.get_usLatest() - GenPrms.get_usEarliest()) * StaPrms[sn].get_tbr()/frameMk4;
+      GenPrms.get_usDur() * StaPrms[sn].get_tbr()/frameMk4;
       //Frames to be processed per core
       FrPcore[sn] = NFrames[sn]/numtasks;
       {
@@ -196,8 +191,6 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
     }
   }
   
-  assert(rank == 0);
-  assert(numtasks == 1);
   
   //for current rank and all stations set offsets
   for (sn=0; sn<NrStations; sn++) {
@@ -218,7 +211,7 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
       (StaPrms[sn].get_nhs()==1 ? 4 : 8)*frameMk4*nfrms);
   }
   
-  startTime = GenPrms.get_usEarliest();
+  startTime = GenPrms.get_usStart();
   
   //find headers for StartByte in data files, only done for monitoring
   if ( get_log_writer().get_messagelevel()> 0) {
@@ -233,6 +226,28 @@ int FindOffsets(std::vector<Data_reader *> input_readers,
 
   return retval;
   
+}
+
+
+//*****************************************************************************
+//show first MK4 headers
+//*****************************************************************************
+int show_MK4_headers(std::vector<Data_reader *> input_readers)
+{
+  
+  int   retval = 0, sn, NrStations;
+  int   jsynch[NstationsMax];
+  INT64 usTime[NstationsMax];
+
+  NrStations = GenPrms.get_nstations();
+  
+  //find first headers in data files
+  for (sn=0; sn<NrStations; sn++) {
+    FindHeaderMk4(*input_readers[sn], sn, jsynch[sn],usTime[sn],
+                  GenPrms.get_usStart());
+    get_log_writer().ask_continue();
+  }
+  return retval;
 }
 
 
@@ -320,7 +335,84 @@ int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame,
   }
 
   //Replace Header with Random Pattern,
-  seed = 10;
+  if ( rndhdr ) {
+    for(jhdr=0; jhdr<fo*hdrMk4; jhdr++) {
+      sign=irbit2(&seed);
+      magn=irbit2(&seed);
+      Mk4frame[sn][jhdr] = smplTBL[sign][magn];
+    }
+  }
+     
+  return readstatus;
+}
+
+
+
+//*****************************************************************************
+//fill Mk4frame if frame counter at end of array
+//*****************************************************************************
+int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame)
+{
+  INT64 readstatus=0;
+  INT32 r32block[frameMk4];  //32 bit buffer samples of 32 track data
+  INT64 r64block[frameMk4];  //64 bit buffer samples of 64 track data
+  
+  int ifo, jhdr;
+  int nhs, fo, rndhdr = 0;
+  int sign, magn;
+  double smplTBL[2][2];
+  INT64 jbuf;
+  //work variables
+  INT32 work32;
+  INT64 work64;
+
+  //initialise lookup table
+  smplTBL[0][0]=-7.0;
+  smplTBL[0][1]=-2.0;
+  smplTBL[1][0]= 2.0;
+  smplTBL[1][1]= 7.0;
+  
+  nhs    = StaPrms[sn].get_nhs();
+  fo     = StaPrms[sn].get_fo();
+  rndhdr = StaPrms[sn].get_rndhdr();
+  
+  //extracting for 2 headstacks
+  if(nhs==2) {
+    readstatus = reader.get_bytes(8*frameMk4, (char*)r64block);
+    if (readstatus < 0)
+      return readstatus;//error when reading
+      
+    for(jbuf=0; jbuf<(frameMk4); jbuf++) {
+      work64=r64block[jbuf];
+      for(ifo=0; ifo<fo; ifo++) {
+        //get sign and magnitude bit for all channels
+        sign = (int)((work64 >>  StaPrms[sn].get_signBS()[ifo] ) & 0x1);
+        magn = (int)((work64 >>  StaPrms[sn].get_magnBS()[ifo] ) & 0x1);
+        //convert sign and magnitude into a double using the lookup table
+        Mk4frame[sn][jbuf*fo+ifo] = smplTBL[sign][magn];
+      }
+    }
+  }
+
+  //extracting for 1 headstack
+  if(nhs==1) {
+    readstatus = reader.get_bytes(4*frameMk4, (char*)r32block);
+    if (readstatus < 0) 
+      return readstatus;//error when reading
+      
+    for(jbuf=0; jbuf<(frameMk4); jbuf++) {
+      work32=r32block[jbuf];
+      for(ifo=0; ifo<fo; ifo++) {
+        //get sign and magnitude bit for all channels
+        sign = (int)((work32 >>  StaPrms[sn].get_signBS()[ifo] ) & 0x1);
+        magn = (int)((work32 >>  StaPrms[sn].get_magnBS()[ifo] ) & 0x1);
+        //convert sign and magnitude into a double using the lookup table
+        Mk4frame[sn][jbuf*fo+ifo] = smplTBL[sign][magn];
+      }
+    }
+  }
+
+  //Replace Header with Random Pattern,
   if ( rndhdr ) {
     for(jhdr=0; jhdr<fo*hdrMk4; jhdr++) {
       sign=irbit2(&seed);
@@ -337,8 +429,7 @@ int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame,
 //*****************************************************************************
 // find the header in the Mk4 type file after offset bytes and
 // reset usEarliest in GemPrms if necessary
-// input : sn      station number
-//         offset  in bytes from where to start reading the file
+// input : station station number
 // output: usTime  header time in us for requested offset
 //         jsynch
 //*****************************************************************************
@@ -432,8 +523,8 @@ int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
     hr  = hr - day*24;
     {
       stringstream msg;
-      msg << "Requested (slice) start time   = " <<
-        setw(4) << GenPrms.get_yst() << "y " << setw(3) << day << "d " <<
+      msg << "Requested (slice) start time   = " << endl <<
+        setw(4) << GenPrms.get_yst() << "y " << setw(3) << GenPrms.get_dst() << "d " <<
         setw(2) << hr << "h " << setw(2) << min << "m " <<
         setw(2) << sec << "s ";
       get_log_writer().message(1, msg);
@@ -443,8 +534,8 @@ int FindHeaderMk4(Data_reader &reader, int station, int& jsynch,
   if( usStart < usTime  ) {
     get_log_writer().message(0,
       "Warning  Requested start time is earlier than start time in data file:");
-    get_log_writer()(0) << "  * " << GenPrms.get_usEarliest() << " = " << usTime << std::endl;
-    GenPrms.set_usEarliest(usTime);
+    get_log_writer()(0) << "  * " << usStart << " < " << usTime << std::endl;
+//    GenPrms.set_usStart(usTime);
   }
 
   get_log_writer()(1) << "End data display for station " << StaPrms[station].get_stname() << endl;
@@ -710,7 +801,10 @@ void printFrameHeader(
 
 
 //*****************************************************************************
-// calculating and printing of time components
+// calculating and printing of time components for the current fram
+// results/output
+// -TOTusec: total time in usec wrt start of the day 00:00
+// -year, day, hh, mm, ss, ms, us: complete time stamp of the frame
 //*****************************************************************************
 void timeComps(char tracks[][frameMk4*nfrms],int jsynch,int synchtrack,int headS,
   int *Head, int *year, int *day,

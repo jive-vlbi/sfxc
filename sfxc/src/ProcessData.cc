@@ -26,6 +26,7 @@ Last change: 20061114
 #include <string.h>
 #include <math.h>
 #include <assert.h>
+//#include <complex.h> //depricated
 #include <fftw3.h>
 
 //c++ includes
@@ -74,11 +75,15 @@ extern UINT32 seed;
 #include <Data_writer.h>
 
 Data_writer *data_writer=NULL;
+//***************************************************************************
 // NGHK: This variable should definately go into a correlate class:
-void set_data_writer(Data_writer &writer) {
+void set_data_writer(Data_writer &writer)
+{
   if (data_writer!=NULL) delete(data_writer);
   data_writer = &writer;
 }
+
+//***************************************************************************
 Data_writer &get_data_writer() {
   assert(data_writer != NULL);
   return *data_writer;
@@ -86,11 +91,15 @@ Data_writer &get_data_writer() {
 
 // NGHK: This variable should definately go into a correlate class:
 Log_writer      *log_writer=NULL;
-void set_log_writer(Log_writer &writer) {
+void set_log_writer(Log_writer &writer)
+{
   if (log_writer!=NULL) delete(log_writer);
   log_writer = &writer;
 }
-Log_writer &get_log_writer() {
+
+//***************************************************************************
+Log_writer &get_log_writer()
+{
   assert(log_writer != NULL);
   return *log_writer;
 }
@@ -111,11 +120,13 @@ int fetch_invecs(INT64& BufPtr, int nstations, int n2fft,
   double **invecs, double **Bufs);
 
 
+//***************************************************************************
 // NGHK: Make this global for a single initialisation during the correlation process, 
 //       put in a correlate class later
 bool init_delTbl = true;
 std::vector<DelayTable> delTbl;
-int initialise_delay_tables(int nstations, StaP StaPrms[]) {
+int initialise_delay_tables(int nstations, StaP StaPrms[])
+{
   if (!init_delTbl) return 0;
   get_log_writer().message(1,"initialise_delay_tables");
   init_delTbl = false;
@@ -126,7 +137,7 @@ int initialise_delay_tables(int nstations, StaP StaPrms[]) {
     get_log_writer().message(2,msg);
     int retval = delTbl[sn].readDelayTable(StaPrms[sn].get_delaytable(), BufTime );
     if (retval != 0) {
-      get_log_writer().error("ERROR: when reading delay table.\n");
+      get_log_writer().message(0,"ERROR: when reading delay table.\n");
       return retval;
     }
   }
@@ -134,7 +145,9 @@ int initialise_delay_tables(int nstations, StaP StaPrms[]) {
 }
 
 
-void correlation_add_delay_table(DelayTable &table) {
+//***************************************************************************
+void correlation_add_delay_table(DelayTable &table)
+{
   get_log_writer().message(1,"correlation_add_delay_table");
   init_delTbl = false;
   
@@ -178,6 +191,7 @@ char outFile[256], coreStr[5];
 ptimer  tmr1;
 // accumulated cross and auto powers Real and Imaginary part
 fftw_complex **accxps;
+//fftw_complex accxps[nbslns][];
 
 //declarations for fftw in delay correction
 fftw_complex *sls = NULL, *spls = NULL; //FW:in,out; BW: out,in
@@ -186,7 +200,11 @@ int lsegm; //fourier length of a segment in the pre-correlation
 
 std::vector<Data_reader *> readers;
 
-int CorrelateBufs_initialise_correlator(std::vector<Data_reader *> &readers_) {
+
+
+//***************************************************************************
+int CorrelateBufs_initialise_correlator(std::vector<Data_reader *> &readers_)
+{
   // All variables needed for CorrelateBufs
   seed = (UINT32) time((time_t *)NULL);
   seed = 10;
@@ -208,8 +226,8 @@ int CorrelateBufs_initialise_correlator(std::vector<Data_reader *> &readers_) {
   n2fft     = GenPrms.get_n2fft();
   lsegm     = GenPrms.get_lsegm();
   pad       = GenPrms.get_pad();
-  Nsamp2Avg = GenPrms.get_nsamp2avg();
-  Nsegm2Avg = Nsamp2Avg/n2fft;
+  Nsegm2Avg = 2 * GenPrms.get_bwfl() / GenPrms.get_n2fft();
+  Nsegm2Avg = GenPrms.get_time2avg() * Nsegm2Avg;
   TenPct    = Nsegm2Avg/10;
   SR=2.0*GenPrms.get_bwfl()*GenPrms.get_ovrfl();//sample rate
   tbs=1.0/SR; //time between samples in seconds
@@ -300,7 +318,11 @@ int CorrelateBufs_initialise_correlator(std::vector<Data_reader *> &readers_) {
   return 0;
 }
 
-int CorrelateBufs_initialise_time_slice() {
+
+
+//***************************************************************************
+int CorrelateBufs_initialise_time_slice()
+{
   //initialise dcBufPrev with data from Mk4 file
   for (sn=0; sn<nstations; sn++) {
     for (i=0; i<2*BufSize; i++) {
@@ -315,7 +337,7 @@ int CorrelateBufs_initialise_time_slice() {
   }
                                                                  
   //loop initializations
-  timePtr = GenPrms.get_usEarliest();
+  timePtr = GenPrms.get_usStart();
   BufPtr = BufSize;
   loop=0;
 
@@ -333,7 +355,11 @@ int CorrelateBufs_initialise_time_slice() {
   return retval;
 }
 
-int CorrelateBufs_process_segment() {
+
+
+//***************************************************************************
+int CorrelateBufs_process_segment()
+{
   loop++;
   get_log_writer()(1) << "Process loop=" << loop << endl;;
   
@@ -363,7 +389,7 @@ int CorrelateBufs_process_segment() {
         Mk4frame,FL,FC,signST,magnST,Nsamp,sls,spls,planFW,planBW,
         tbs,fs,Nf,timePtr,delTbl);
       if (retval !=0) {
-        get_log_writer().error("in function fill_Bufs\n");
+        get_log_writer().message(1, "ERROR: in function fill_Bufs\n");
         return retval;
       }
       timePtr=timePtr+BufTime;
@@ -381,7 +407,7 @@ int CorrelateBufs_process_segment() {
     for (sn = 0 ; sn < nstations; sn++){
       //input: invecs -> result: xps
       fftw_execute(fwd_plans[sn]);
-      for (l = 0 ; l < n2fft*pad/2 + 1 ; l++) {
+      for (l = 0 ; l < n2fft*pad/2 + 1 ; l++){
         //accxps[bsln][l] += xps[sn][l]*conj(xps[sn][l]);
         accxps[bsln][l][0] = accxps[bsln][l][0] +
         (xps[sn][l][0] * xps[sn][l][0]) + (xps[sn][l][1] * xps[sn][l][1]);
@@ -409,11 +435,11 @@ int CorrelateBufs_process_segment() {
       }
     }
     
-//    if (get_log_writer().get_messagelevel()> 0) {
-//      if (segm%TenPct == 0) {
-//        get_log_writer()(2) << "segm=" << segm << std::endl;
-//      }  
-//    }    
+    if (get_log_writer().get_messagelevel()> 0) {
+      if (segm%TenPct == 0) {
+        get_log_writer()(2) << "segm=" << segm << std::endl;
+      }  
+    }    
     
   }
 
@@ -466,16 +492,20 @@ int CorrelateBufs_process_segment() {
 
   // Check wether we are finished.
   get_log_writer()(1) << "TimePtr = " << (INT64)timePtr << std::endl;
-  get_log_writer()(1) << "Stoptime= " << GenPrms.get_usStop() << std::endl;
+  get_log_writer()(1) << "Stoptime= " << GenPrms.get_usStart() + GenPrms.get_usDur() << std::endl;
   
-  if (timePtr > GenPrms.get_usStop()) {
+  if ( timePtr > GenPrms.get_usStart() + GenPrms.get_usDur() ) {
     get_log_writer()(1) << "Finished, timePtr after stopTime" << std::endl;
     return 1; //
   }
   return 0;
 }
 
-int CorrelateBufs_finalise() {
+
+
+//***************************************************************************
+int CorrelateBufs_finalise()
+{
   tmrEnd(tmr1,get_log_writer());
   
   //free allocated memory   
@@ -632,32 +662,24 @@ int fill_Bufs(std::vector<Data_reader *> &readers,
     //in other words process data in dcBufs, output in Bufs
     
     for (jsegm=0; jsegm<Nsegm2DC; jsegm++) {
-    
+
+      // 1) calculate delay (Cdel) as a function of Time
       Time = timePtr + jsegm*lsegm*tbs*1000000.; //in usec
       Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
       if (Cdel>0.0) {
         cerr << "Cdel > 0.0 in fill_Bufs()." << endl;
         return 1;
-      }
-      //address shift due to time delay for the  current segment
+      }      
+      // 2) calculate address shift based on Cdel
       jshift = (INT64)(Cdel/tbs+0.5);
-//      std::cout.precision(20);
-//      if (sn == 0) {
-//        std::cout << sn << " \t" 
-//                  //<< timePtr << " \t" << (int)(jsegm*lsegm*tbs*1000000) << " \t"
-//                  << Time << " \t" << Cdel << " \t" << jshift << std::endl;
-//      }
-      assert((-2*BufSize <= jshift) && (jshift <= 0));      
-//      std::cout << sn << " " << jsegm << " " << Cdel << "/" << tbs 
-//                << "="<< Cdel/tbs << "="<<jshift << std::endl; 
-
-      //fill the complex sls array
+      
+      // 3) fill the complex sls array and apply address shift
       for (jl=0; jl<lsegm; jl++){
         sls[jl][0] = dcBufs[sn][2*BufSize + jsegm*lsegm + jl + jshift];
         sls[jl][1] = 0.0;
       }
 
-      //complex forward fourier transform
+      // 4) apply complex to complex forward FFT to sls. Output= spls
       fftw_execute(planBW);
       //apply normalization
       for (jl=0; jl<lsegm; jl++){

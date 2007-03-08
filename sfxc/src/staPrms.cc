@@ -157,9 +157,9 @@ int StaP::parse_ctrlFile(char *ctrlFile, int staNr, Log_writer &log_writer)
       if (strcmp(key,staKW) == 0) {
         //station keyword found
         strcpy(stname,val);
-        if (strcmp(val1,"MK4") == 0) {
+        if (strcmp(val1,"Mark4") == 0) {
           datatype = DATATYPE_MK4;
-          //look for MK4 type data
+          //look for Mark4 type data
           retval = findMK4data(ctrlP, log_writer);
         }
         //look for Delay data
@@ -191,7 +191,7 @@ int StaP::parse_ctrlFile(char *ctrlFile, int staNr, Log_writer &log_writer)
 }
 
 
-//look for MK4 type data
+//look for Mark4 type data
 int StaP::findMK4data(FILE *ctrlP, Log_writer &log_writer)
 {
   int retval = 0, vall, i;
@@ -207,11 +207,11 @@ int StaP::findMK4data(FILE *ctrlP, Log_writer &log_writer)
   strcpy (key,"continue");
   
   while ( strcmp(key,"MK4END")!= 0 ) {
-    //look for MK4 type data
+    //look for Mark4 type data
     if (fgets(line,lineLength,ctrlP) == (char *) NULL) break;
     //split line contents in key and value
     if (sscanf(line,"%s %s\n",key,val) == 2) {
-      //parse the MK4 type data
+      //parse the Mark4 type data
       retval = retval + getLongVal(key,val,"TBR",tbr, log_writer);
       retval = retval + getLongVal(key,val,"FO",fo, log_writer);
       retval = retval + getLongVal(key,val,"BPS",bps, log_writer);
@@ -261,7 +261,7 @@ int StaP::findMK4data(FILE *ctrlP, Log_writer &log_writer)
         }
       }
     }
-  }//end while loop MK4 type data
+  }//end while loop Mark4 type data
   
   if (retval != 0) cerr << "ERROR in findMK4data!\n";
   return retval;
@@ -283,13 +283,13 @@ int StaP::findDelaydata(FILE *ctrlP, Log_writer &log_writer)
   strcpy (key,"continue");
   
   while ( strcmp(key,"DELAYEND")!= 0 ) {
-    //look for MK4 type data
+    //look for Mark4 type data
     if (fgets(line,lineLength,ctrlP) == (char *) NULL) break;
     //split line contents in key and value
     if (sscanf(line,"%s %s\n",key,val) == 2) {
       if (strcmp(key,"DELAYTABLE") == 0) strcpy(delaytable,val);
       if (strcmp(key,"PHASETABLE") == 0) strcpy(phasetable,val);
-      retval = retval + getINT64Val(key,val,"LOOBS",loobs, log_writer);
+//      retval = retval + getINT64Val(key,val,"LOOBS",loobs, log_writer); TODO RHJO obsolete?
     }
   }
     
@@ -307,7 +307,7 @@ int StaP::check_params(Log_writer &log_writer) const
       "--------------------------------------------------------------------------------\n" <<
       "Station related control parameters\n" <<
       "Station name         = " << stname << "\n" <<
-      "MK4 data file        = " << mk4file << "\n" <<
+      "Mark4 data file      = " << mk4file << "\n" <<
       "Track bit rate       = " << tbr << "Mb/s/track\n" <<
       "Fan out              = 1:" <<fo << "\n" <<
       "Bits per sample      = " << bps << "\n" <<
@@ -325,8 +325,8 @@ int StaP::check_params(Log_writer &log_writer) const
          
     log_writer(1) << endl <<
       "Delaytable           = " << delaytable << endl <<
-      "Phasetable           = " << phasetable << endl <<
-      "Local oscilator      = " << loobs << endl;
+      "Phasetable           = " << phasetable << endl;
+//      "Local oscilator      = " << loobs << endl; //TODO RHJO obsolete ??
     log_writer(1) << endl;
    
     log_writer(1) << "Mk4 tape bit shift numbers:" << endl;
@@ -392,7 +392,7 @@ int StaP::check_params(Log_writer &log_writer) const
 
   //check if the data file exists
   if( access(mk4file, R_OK) != 0 ) {
-    cerr << "MK4 file " << mk4file << " is not accessible or does not exist\n";
+    cerr << "Mark4 file " << mk4file << " is not accessible or does not exist\n";
     retval=-1;
   }
 
