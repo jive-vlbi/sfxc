@@ -289,7 +289,6 @@ int StaP::findDelaydata(FILE *ctrlP, Log_writer &log_writer)
     if (sscanf(line,"%s %s\n",key,val) == 2) {
       if (strcmp(key,"DELAYTABLE") == 0) strcpy(delaytable,val);
       if (strcmp(key,"PHASETABLE") == 0) strcpy(phasetable,val);
-//      retval = retval + getINT64Val(key,val,"LOOBS",loobs, log_writer); TODO RHJO obsolete?
     }
   }
     
@@ -304,52 +303,41 @@ int StaP::check_params(Log_writer &log_writer) const
 
   int retval = 0, j;
   log_writer(1) << endl <<
-      "--------------------------------------------------------------------------------\n" <<
-      "Station related control parameters\n" <<
-      "Station name         = " << stname << "\n" <<
-      "Mark4 data file      = " << mk4file << "\n" <<
-      "Track bit rate       = " << tbr << "Mb/s/track\n" <<
-      "Fan out              = 1:" <<fo << "\n" <<
-      "Bits per sample      = " << bps << "\n" <<
-      "Nr of headstacks     = " << nhs << "\n" <<
-      "Tracks per headstack = " << tphs << "\n" <<
-      "Fine offset          = " << boff << " bytes\n" <<
-      "Sync track headstack1= " << synhs1 << "\n" <<
-      "Sync track headstack2= " << synhs2 << "\n" <<
-      "Modulation on if 1   = " << mod << "\n" <<
-      "Random header if 1   = " << rndhdr << "\n" <<
-      "Header map file      = " << hdrmap << "\n";
-    if (mod) log_writer(1) << "Modulation pattern file = "<< mod << "\n";
-    log_writer(1) << endl;
+    "--------------------------------------------------------------------------------\n" <<
+    "Station related control parameters\n" <<
+    "Station name         = " << stname << "\n" <<
+    "Mark4 data file      = " << mk4file << "\n" <<
+    "Track bit rate       = " << tbr << "Mb/s/track\n" <<
+    "Fan out              = 1:" <<fo << "\n" <<
+    "Bits per sample      = " << bps << "\n" <<
+    "Nr of headstacks     = " << nhs << "\n" <<
+    "Tracks per headstack = " << tphs << "\n" <<
+    "Fine offset          = " << boff << " bytes\n" <<
+    "Sync track headstack1= " << synhs1 << "\n" <<
+    "Sync track headstack2= " << synhs2 << "\n" <<
+    "Modulation on if 1   = " << mod << "\n" <<
+    "Random header if 1   = " << rndhdr << "\n" <<
+    "Header map file      = " << hdrmap << "\n";
+  if (mod) log_writer(1) << "Modulation pattern file = "<< mod << "\n";
+
+  log_writer(1) << endl;
 
          
-    log_writer(1) << endl <<
-      "Delaytable           = " << delaytable << endl <<
-      "Phasetable           = " << phasetable << endl;
-//      "Local oscilator      = " << loobs << endl; //TODO RHJO obsolete ??
-    log_writer(1) << endl;
+  log_writer(1) << endl <<
+    "Delaytable           = " << delaytable << endl <<
+    "Phasetable           = " << phasetable << endl;
+  log_writer(1) << endl;
    
-    log_writer(1) << "Mk4 tape bit shift numbers:" << endl;
+
+  log_writer(1) << "Converted to Mk5 disk bit shift numbers:" << endl;
     
-    log_writer(1) << "SIGN " << hs;
-    for (j=0; j < fo; j++) log_writer(1) <<  " " << signBS[j];
-    log_writer(1) << endl;
+  log_writer(1) << "SIGN " << hs;
+  for (j=0; j < fo; j++) log_writer(1) <<  " " << signBS[j];
+  log_writer(1) << endl;
 
-    log_writer(1) << "MAGN " << hm;
-    for (j=0; j < fo; j++) log_writer(1) <<  " " << magnBS[j];
-    log_writer(1) << endl;
-
-  {
-    log_writer(1) << "Converted to Mk5 disk bit shift numbers:" << endl;
-    
-    log_writer(1) << "SIGN " << hs;
-    for (j=0; j < fo; j++) log_writer(1) <<  " " << signBS[j];
-    log_writer(1) << endl;
-
-    log_writer(1) << "MAGN " << hm;
-    for (j=0; j < fo; j++) log_writer(1) <<  " " << magnBS[j];
-    log_writer(1) << endl;
-  }
+  log_writer(1) << "MAGN " << hm;
+  for (j=0; j < fo; j++) log_writer(1) <<  " " << magnBS[j];
+  log_writer(1) << endl;
 
   //check control parameters and show faulty ones
   if (!(fo==1 || fo==2 || fo==4 )) {

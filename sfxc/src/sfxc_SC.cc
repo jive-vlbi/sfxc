@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
            // && data_available TODO RHJO implement
            )
     {
-      //TODO RHJO delete line after testing
+      //TODO RHJO test and debug code
       cout << "\nTS/nTS " << setw(2) << ++TS << "/" << nTS <<
        " startTS " << startTS << endl;
       //process the next time slice:

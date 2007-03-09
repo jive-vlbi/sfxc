@@ -17,8 +17,6 @@ Control files
 
 Correlation:
 - !!! Check the integration: 512 and 1024 give a "Floating point exception"
-- !!! Check cross correlation for fringes
-- create a Correlator class with status functions 
 - Document classes
 - Data_writer and Output_node for collecting data
 - Remove global variables
@@ -29,9 +27,8 @@ Correlation:
   - std::vectors instead of arrays with fixed length
   - std::string instead of char * to ease the copy constructor
 - move header_map_mk4_cx.txt to a header file
-- do a FindOffsets before every integration step
-- are all processing steps necessary, which steps do and do not
-  contribute to the end result
+- check timestamp every averaging segment
+
 
 Multi core:
 - use state instead of running in Data_reader2buffer (similar to B2dw)
@@ -47,11 +44,11 @@ Multi core:
 Functionality:
 - add overlapping in correlation [RHJO]
 - add filtering before delay correction [RHJO]
-- Convertor: from correlator product to FITS format. [RHJO]
+- Convertor: from correlator product to Measurement Set format. [RHJO]
   Develop separate application or integrate whith correlator software
 
 Documentation
-- high level documentation document, describing what happens and how
+- high level design document, describing what happens and how
   it happens in the sw correlator. See also deliverable DJ 1.4
   in DoW. [RHJO]
 - Write doxygen code for the control parameters
@@ -59,6 +56,13 @@ Documentation
 Test:
 - Complete test_suite
 - add .sfxcrc file with control information per computer
+
+
+Testing, test scenarios:
+- process different kinds of experiments and check analyse their results
+  - An experiment with upper and lower side band
+  - Process some of the recent VLBI fringe tests (03-2007)
+  
 
 General:
 - check in original sw correlator code using cxmk4, cx2fl, delpha and sfxct
@@ -68,11 +72,17 @@ Performance and Optimization
 - run benchmark tests on various machines
 - add and refine timing in sfxc
 
-Future (possible) developments
+Future (possible) developments and design issues
 - current sfxc (31-1-2007) can correlate only one channel. Should there be a
   multi channel version
-- A vex file can describe more  than one mode. Should sfxc be able to handle
+- A vex file can describe more than one mode. Should sfxc be able to handle
   more modes
+- in the current design one correlator node has all the funtionality 
+  (channel extraction, delay correction, correlation). Only one channel is
+  processed others are neglected. Analyse other architectures. Where should 
+  the conversion from bit to float take place? 
+- Calculation of the delay model: make a separate easy to use application
+  or integrate it with sfxc.
 
 Questions:
 - Why are parabCoefs and getDelayLine not members of DelayTable?
@@ -99,19 +109,25 @@ Copy action item to this list and describe status (date, who, what)
    - Parameters: welke wordt waar gebruikt, gezet?
    - Documentatie Correlator class
 4. [RHJO, 22-11-2007]
-   - investigate to store the control files in XML format. Started with xml design.
-     Stop gap job, low priority. See e-mail exchange with Dominik from PSNC
+   - investigate to store the control files in XML format. Started with xml 
+     design. Stop gap job, low priority. See e-mail exchange with Dominik from
+     PSNC
 5. [RHJO, 22-11-2007]
-   - Convertor: from correlator product (CP)to FITS format. After consulting Harro we
-   should convert CP to measurement sets (MS). Advantages:
+   - Convertor: from correlator product (CP)to FITS format. After consulting 
+   Harro we should convert CP to measurement sets (MS). Advantages:
    a) more flexible way of data storing
-   b) Harro has sw able to write MS he only needs to know the CP format and write
-      appropriate CP reading sw
+   b) Harro has sw able to write MS he only needs to know the CP format and 
+      write appropriate CP reading sw
 6. [RHJO, 30-11-2007]
    - which parameters can be extracted from vex file.
      Application vex2cff designed and implemented. It extracts relevant
      ccf parameters and sets others to default values. vex2ccf uses
      class VexPlus and the official vex parser.      
+7. [RHJO, 26-02-2007] 
+   - Remove global variables: These have been removed in the new correlator
+     classes, but in some places they have to be maintained until old code 
+     is depricated
+
      
 
 1. [YP, 11-01-2007] Make fringe plots from the correlator output
@@ -126,7 +142,23 @@ Copy action item to this list and describe status (date, who, what)
 
 DONE:
 Move action item from TODO list to DONE list
-- [RHJO, 30-01-2007] Control files: which parameters can be extracted from vex file
+- [RHJO, 30-01-2007] Control files: which parameters can be extracted 
+  from vex file
+- [RHJI, 02-03-2007] !!! Check cross correlation for fringes. 
+  Fringes now present. They were absent because of difference in interpretation 
+  of Local Oscilator frequency by RHJO and SP. 
+- [RHJO, 02-03-2007] create a Correlator class with status functions. 
+  Three classes designed and implemented: 
+  CorrelatorCore, DelayCorrection, TScorrelator  
+  A new main sfxc_SC.cc for single core processing is developed
+- [RHJO, 02-03-2007] are all processing steps necessary, which steps do and 
+  do not contribute to the end result. Discussed this with MK and SP. 
+  Conclusion for the time being do not change the delay correction and 
+  correlation algorithms. Make current algorithms work and an a later stage
+  design new algorithms, implement these in different applications or ad run
+  options to current implementation.
+- [RHJO, 06-03-2007] application written for fringe analysis using the sfxc 
+  result output files. SP gave advise on this. 
 
 - [NGHK, 17-01-2007] Log_writer and Log_node for writing logging information
 - [NGHK, 16-01-2007] Write doxygen code for the control parameters

@@ -1,6 +1,6 @@
 EXTRA_DIST = 
 
-AM_CPPFLAGS =
+AM_CPPFLAGS = -L/usr/lib
 AM_CXXFLAGS = -I../include
 
 bin_PROGRAMS = create_delay_function \
