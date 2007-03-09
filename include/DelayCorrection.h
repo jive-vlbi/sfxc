@@ -82,9 +82,9 @@ class DelayCorrection
     double tbs;         //time between samples
     int    Nf;          //nr of frequencies in frequency scale
     double *fs;         //delta frequency in frequency scale, frequency scale
-    INT32  foffset;     //frequency offset in Hertz
-    INT32  bwfl;        //band width after filter 
-    INT32  startf;      //start frequency
+    double foffset;     //frequency offset in Hertz
+    double bwfl;        //band width after filter 
+    double startf;      //start frequency
     int    ovrfl;       //oversampling in filter
 
     int    n2fftcorr;   //FFT length in correlation
@@ -94,7 +94,7 @@ class DelayCorrection
     fftw_plan    planT2F;//plan for complex FFT Time to Frequeny
     fftw_plan    planF2T;//plan for complex FFT Frequency to Time
 
-    INT64 skyfreq;       //channel sky frequency
+    double skyfreq;       //channel sky frequency
 
     std::vector<DelayTable> delTbl;
 

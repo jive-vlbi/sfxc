@@ -95,6 +95,25 @@ int getFloatVal(char *key, char *val, char *skey, float& sval, Log_writer &log_w
 //*****************************************************************************
 //
 //*****************************************************************************
+int getDoubleVal(char *key, char *val, char *skey, double& sval, Log_writer &log_writer)
+{
+  char *endp;
+  
+  if (!strcmp(key,skey)) {
+    sval = strtod(val, &endp);
+    if (endp == val) {
+      fprintf(stderr,
+        "**** Unable to convert string for key %s into float\n",key);
+      return -1;
+    }
+  }
+  return 0;
+}
+
+
+//*****************************************************************************
+//
+//*****************************************************************************
 int str2int(char *val, int& sval)
 {
   char *endp;

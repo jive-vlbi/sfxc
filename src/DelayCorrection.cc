@@ -318,7 +318,6 @@ void DelayCorrection::fill_Bufs(std::vector<Data_reader *> input_readers)
         Fdel = delTbl[sn].calcDelay(Time, DelayTable::Fdel);
         Phase=0.0; //TODO RHJO phase correction to be implemented later
         phi  =-2.0*M_PI*Fdel*(skyfreq + startf + bwfl*0.5)+Phase;
-        //TODO RHJO delay rate missing ???
 
         Bufs[sn][n2fftDC*jsegm+jl]=sls[jl][0]*cos(phi)-sls[jl][1]*sin(phi);
       }

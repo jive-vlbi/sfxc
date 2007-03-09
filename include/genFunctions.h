@@ -24,6 +24,8 @@ int getINT64Val(char *key, char *val, char *skey, INT64& sval, Log_writer &log_w
 
 int getFloatVal(char *key, char *val, char *skey, float& sval, Log_writer &log_writer);
 
+int getDoubleVal(char *key, char *val, char *skey, double& sval, Log_writer &log_writer);
+
 int str2int(char *val, int& sval);
 
 long str_to_long (std::string inString, int pos, int length);

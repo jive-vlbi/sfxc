@@ -68,13 +68,13 @@ class GenP
     const char* get_corfile() const;
     
     /** Sky frequency in Hz. **/
-    INT64 get_skyfreq() const;
+    double get_skyfreq() const;
     /** Input band width in Hz. **/
-    INT64 get_bwin() const;
+    double get_bwin() const;
     /** Length of a Fourier segment in delay correction. **/
     int   get_lsegm() const;
     /** Frequency offset. **/
-    int   get_foffset() const;
+    double get_foffset() const;
     /** Enable the CDE column in the delay table. **/
     int   get_cde() const;
     /** Enable the MDE column in the delay table. **/
@@ -86,11 +86,11 @@ class GenP
         01-09-2006: filter not implemented in sfxc. **/
     int   get_filter() const;
     /** Bandwidth after optional filtering, Default BWFL=BWIN if FILTER=0. **/
-    int   get_bwfl() const;
+    double get_bwfl() const;
     /** Filter start frequency, Default STARTF=0 if FITLER=0. **/
-    int   get_startf() const;
+    double   get_startf() const;
     /** Filter resolution in Hz. **/
-    int   get_deltaf() const;
+    double   get_deltaf() const;
     /** Filter oversampling. Default OVRFL=1 if FILTER=0 **/
     int   get_ovrfl() const;
 
@@ -162,19 +162,19 @@ class GenP
     char  *logfile;   //log file name
     std::string corfile;   //correlator product file
 
-    INT64 skyfreq;    //skyfrequency in Hertz
-    INT32 bwin;       //band width input in Hertz
-    int   lsegm;      //length of a Fourier segment in a delay correction
-    int   foffset;    //frequency offset in Hertz
-    int   cde;        //enable CDE column in delay table
-    int   mde;        //enable MDE column in delay table
-    int   rde;        //enable RDE column in delay table
+    double skyfreq;    //skyfrequency in Hertz
+    double bwin;       //band width input in Hertz
+    int    lsegm;      //length of a Fourier segment in a delay correction
+    double foffset;    //frequency offset in Hertz
+    int    cde;        //enable CDE column in delay table
+    int    mde;        //enable MDE column in delay table
+    int    rde;        //enable RDE column in delay table
     
-    int   filter;     //enable filtering
-    int   bwfl;       //band width filter in Hertz
-    int   startf;     //filter start frequency in Hertz
-    int   deltaf;     //filter resolution in Hertz
-    int   ovrfl;      //enable oversampling
+    int    filter;     //enable filtering
+    double bwfl;       //band width filter in Hertz
+    double startf;     //filter start frequency in Hertz
+    double deltaf;     //filter resolution in Hertz
+    int    ovrfl;      //enable oversampling
 
     int    n2fft;      //length of Fourier segment in correlation
     float  ovrlp;      //overlap parameter for Fourier segmetns in correlation

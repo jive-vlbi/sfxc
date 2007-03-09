@@ -214,12 +214,12 @@ int main (int argc, char *argv[])
 
   //bandwidth input
   cc_file<<"#_____________________________________________________________\n";
-  double bwin=VP.BW(VP.Station(StatChI[0]),ModeCh,ChanChI);
+  double skyfreq = VP.SkyFreq(VP.Station(StatChI[0]), ModeCh, ChanChI) * 1000000.;
+  cc_file<<"SKYFREQ     " << skyfreq<< endl;
+  double bwin =  VP.BW(VP.Station(StatChI[0]),ModeCh,ChanChI);
   cc_file<<"BWIN        "<< bwin <<endl;
   //fft length in delay correction
   cc_file<<"N2FFTDEL    2048   !* Default Value *!\n";
-  //frequency offset
-  cc_file<<"FOFFSET     0      !* Default Value *!\n";
   //delay columns
   cc_file<<"DELCOLS     1 1 1  !* Default Value *!\n";
   cc_file<<"\n";
@@ -239,7 +239,7 @@ int main (int argc, char *argv[])
 
   //correlation fft length
   cc_file<<"#_____________________________________________________________\n";
-  cc_file<<"N2FFTCOR    256  !* Default Value *!\n";
+  cc_file<<"N2FFTCORR   256  !* Default Value *!\n";
   //correlation overlap
   cc_file<<"OVRLP       0.0  !* Default Value *!\n";
   //correlation time to average
@@ -320,8 +320,6 @@ int main (int argc, char *argv[])
     
     //delay_table
     cc_file<<"DELAYTABLE  !* REPLACE BY ACTUAL NAME *!\n";
-    //local_oscilator
-    cc_file<<"LOOBS       "<<VP.LO(StationStr,ModeCh,0) << endl;
     //DELAYEND
     cc_file<<"DELAYEND\n\n\n";
   }  

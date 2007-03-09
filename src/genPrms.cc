@@ -67,19 +67,19 @@ char* GenP::get_outdir()     const { return outdir;}
 char* GenP::get_logfile()    const { return logfile;}
 const char* GenP::get_corfile()    const { return corfile.c_str();}
 
-INT64 GenP::get_skyfreq()    const { return skyfreq;}
-INT64 GenP::get_bwin()       const { return bwin;}
-int   GenP::get_lsegm()      const { return lsegm;}
-int   GenP::get_foffset()    const { return foffset;}
-int   GenP::get_cde()        const { return cde;}
-int   GenP::get_mde()        const { return mde;}
-int   GenP::get_rde()        const { return rde;}
+double GenP::get_skyfreq()    const { return skyfreq;}
+double GenP::get_bwin()       const { return bwin;}
+int    GenP::get_lsegm()      const { return lsegm;}
+double GenP::get_foffset()    const { return foffset;}
+int    GenP::get_cde()        const { return cde;}
+int    GenP::get_mde()        const { return mde;}
+int    GenP::get_rde()        const { return rde;}
 
-int   GenP::get_filter()     const { return filter;}
-int   GenP::get_bwfl()       const { return bwfl;}
-int   GenP::get_startf()     const { return startf;}
-int   GenP::get_deltaf()     const { return deltaf;}
-int   GenP::get_ovrfl()      const { return ovrfl;}
+int    GenP::get_filter()     const { return filter;}
+double GenP::get_bwfl()       const { return bwfl;}
+double GenP::get_startf()     const { return startf;}
+double GenP::get_deltaf()     const { return deltaf;}
+int    GenP::get_ovrfl()      const { return ovrfl;}
 
 int   GenP::get_n2fft()      const { return n2fft;}
 float GenP::get_ovrlp()      const { return ovrlp;}
@@ -185,13 +185,13 @@ int GenP::parse_ctrlFile(char *ctrlFile, Log_writer&log_writer)
       
       retval = retval + getLongVal(key,val,"DURATION",duration, log_writer);
       retval = retval + getLongVal(key,val,"NSTATIONS",nstations, log_writer);
-      retval = retval + getLongVal(key,val,"BWIN",bwin, log_writer);
+      retval = retval + getDoubleVal(key,val,"BWIN",bwin, log_writer);
       retval = retval + getLongVal(key,val,"N2FFTDEL",lsegm, log_writer);
-      retval = retval + getINT64Val(key,val,"SKYFREQ",skyfreq, log_writer);
+      retval = retval + getDoubleVal(key,val,"SKYFREQ",skyfreq, log_writer);
       retval = retval + getLongVal(key,val,"FILTER",filter, log_writer);
-      retval = retval + getLongVal(key,val,"BWFL",bwfl, log_writer);
-      retval = retval + getLongVal(key,val,"STARTF",startf, log_writer);
-      retval = retval + getLongVal(key,val,"DELTAF",deltaf, log_writer);
+      retval = retval + getDoubleVal(key,val,"BWFL",bwfl, log_writer);
+      retval = retval + getDoubleVal(key,val,"STARTF",startf, log_writer);
+      retval = retval + getDoubleVal(key,val,"DELTAF",deltaf, log_writer);
       retval = retval + getLongVal(key,val,"OVRFL",ovrfl, log_writer);
 
       retval = retval + getLongVal(key,val,"N2FFTCORR",n2fft, log_writer);
