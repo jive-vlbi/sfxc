@@ -33,13 +33,13 @@ int main(int argc, char *argv[])
   set_log_writer(log_writer);
 
   if (argc != 2) {
-    log_writer << "usage: " << argv[0] << " correlator_control_file" << std::endl;
+    log_writer << "usage: " << argv[0] << " correlator_control_file" << endl;
     exit(1);
   }
 
   //make fixed seeding or time based seeding a control file option
   seed = SEED;
-  log_writer << std::endl << "WARNING seed=" << seed << endl;
+  log_writer << endl << "WARNING seed=" << seed << endl;
 
   //set the control file name
   char   ctrlFile[lineLength]; // control file name
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
   //initialise input readers
   // NGHK: Has to be a pointer or a reference,
   //       since Data_reader is an abstract class
-  std::vector<Data_reader *> input_readers;
+  vector<Data_reader *> input_readers;
   for (int i=0; i<nstations; i++) {
     input_readers.push_back(new Data_reader_file(StaPrms[i].get_mk4file()));
   }

@@ -91,7 +91,7 @@ public:
     int    N_Stations( ) const;
 
     // Name of the icount+1 station in the list
-   std::string Station( const int& icount ) const;
+    std::string Station( const int& icount ) const;
 
     //________________$MODE__________________________________________
     //
@@ -101,7 +101,7 @@ public:
     int    N_Modes( ) const;
 
     // icount+1 mode in the list
-   std::string Mode( const int& icount ) const;
+    std::string Mode( const int& icount ) const;
 
     /////////////////////////////////////////////////////////////////
     // SCHEDULE VEX BLOCK____________________________________________
@@ -117,20 +117,20 @@ public:
     int    N_Scans( const std::string& stat ) const;
 
     // Name for icount+1st scan
-   std::string ScanName(const std::string& stat, const int& icount ) const;
-   std::string ScanName(const int& icount ) const;
+    std::string ScanName(const std::string& stat, const int& icount ) const;
+    std::string ScanName(const int& icount ) const;
 
     // Start time for icount+1st scan
-   std::string ScanStart(const std::string& stat, const int& icount ) const;
+    std::string ScanStart(const std::string& stat, const int& icount ) const;
 
     // Mode for icount+1st scan
-   std::string ScanMode(const std::string& stat, const int& icount ) const;
+    std::string ScanMode(const std::string& stat, const int& icount ) const;
 
     // Source for icount+1st scan
-   std::string ScanSource(const std::string& stat, const int& icount ) const;
+    std::string ScanSource(const std::string& stat, const int& icount ) const;
 
     // Pass id for icount+1st scan and station stat
-   std::string  ScanPass(const std::string& stat, const int& icount ) const;
+    std::string  ScanPass(const std::string& stat, const int& icount ) const;
 
     // Duration for icount+1st scan and station stat
     double ScanDuration(const std::string& stat, const int& icount ) const;
@@ -154,7 +154,7 @@ public:
     // Antenna parameters. Required in scheduling and correlation.
 
     // Mount of the antenna identified with stat
-   std::string AxisMount( const std::string& stat ) const;
+    std::string AxisMount( const std::string& stat ) const;
 
     // Axis offset of the antenna
     double AxisOffset( const std::string& stat ) const;
@@ -167,11 +167,11 @@ public:
     int    N_BBCs( const std::string& stat, const std::string& mode ) const;
 
     // Linkname that links a chan_def to an if
-   std::string Link_bbc_if( const std::string& stat, const std::string& mode,
+    std::string Link_bbc_if( const std::string& stat, const std::string& mode,
                         const int& icount ) const;
 
     // Linkname set for a bbc link from frequency
-   std::string Resolve_bbc_freq( const std::string& stat, const std::string& mode,
+    std::string Resolve_bbc_freq( const std::string& stat, const std::string& mode,
 			      const int& icount ) const;
 
     //________________$CLOCK_________________________________________
@@ -189,7 +189,7 @@ public:
     double ClockRate( const std::string& stat ) const;
 
     // Epoch in VEX-character string format of origin of clock model
-   std::string ClockEpoch( const std::string& stat ) const;
+    std::string ClockEpoch( const std::string& stat ) const;
 
     //________________$CORR__________________________________________
     //
@@ -201,7 +201,7 @@ public:
     // data-taking and correlation.
 
     // Recorder type used at stat
-   std::string Recorder( const std::string& stat ) const;
+    std::string Recorder( const std::string& stat ) const;
 
     // Length of tape used at stat
     double MediumLength( const std::string& stat ) const;
@@ -220,7 +220,7 @@ public:
     double A1_TAI() const;
 
     // EOP epoch
-   std::string EOPEpoch() const;
+    std::string EOPEpoch() const;
 
     // Number of EOP points
     int    N_EOP_Points() const;
