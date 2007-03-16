@@ -62,7 +62,8 @@ int main(int argc, char *argv[])
     analysisName = "analysis" + s + ".txt";
     Aout[i].open(analysisName.c_str());
     assert(Aout[i].is_open());
-    Aout[i] << "#  nT  bsln  iMax    amplMax      phase      noise        SNR\n";
+    Aout[i] << "#  nT  bsln  iMax    amplMax      phase      noise        SNR    phase\n";
+    Aout[i] << "#                                 radians                        degrees\n";
   }
 
   
@@ -132,7 +133,8 @@ int main(int argc, char *argv[])
           setw(10) << amplMax << " " << 
           setw(10) << argAmplMax << " " <<
           setw(10) << noiseRMS << " " <<
-          setw(10) << SNR << endl;
+          setw(10) << SNR << " " <<
+          setw(10) << argAmplMax/M_PI*180. << endl;
         Cbsln++;
       }
       bsln++;

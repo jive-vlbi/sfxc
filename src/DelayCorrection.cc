@@ -286,7 +286,7 @@ void DelayCorrection::fill_Bufs(std::vector<Data_reader *> input_readers)
       }
 
       
-      // 5a)calculate the fract bit shift (=phase corrections in time domain)
+      // 5a)calculate the fract bit shift (=phase corrections in freq domain)
       Time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000 + n2fftDC/2*tbs*1000000);
       Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
       dfs  = Cdel/tbs - floor(Cdel/tbs + 0.5);
