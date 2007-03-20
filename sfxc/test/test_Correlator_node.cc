@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
   //  The real work
   ///////////////////////////
   
-  int rank_correlator_node = 0;
+  int rank_correlator_node = 2;
   assert(rank_correlator_node+RANK_MANAGER_NODE+RANK_LOG_NODE == 3);
   
   if (rank == RANK_MANAGER_NODE) {
@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
       MPI_Recv(&i, 1, MPI_INT32, rank_correlator_node,
                MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD, &status2);
   
-      INT64 times[] = {GenPrms.get_usStart(), GenPrms.get_usStop()};
+      INT64 times[] = {GenPrms.get_usStart(), GenPrms.get_duration()};
       MPI_Send(times, 2, MPI_INT64, rank_correlator_node,
                MPI_TAG_SET_TIME_SLICE, MPI_COMM_WORLD);
   

@@ -29,6 +29,13 @@ private:
 };
 
 /**
+ * The output node will receive a message from the controller node where
+ * to store the data and it allows connections from the correlate node to
+ * be opened. The node sorts the received data from the correlate nodes
+ * and stores it for further processing. The output node has to make the
+ * received data available to the user and it should be archived in a
+ * proper way.
+ * 
  * \ingroup Node
  **/
 class Output_node : public Node {

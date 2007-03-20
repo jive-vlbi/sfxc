@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
   ///////////////////////////
   //  The real work
   ///////////////////////////
-  if (rank == 0) {
+  if (rank == RANK_MANAGER_NODE) {
     // get the number of tasks set at commandline (= number of processors)
     int numtasks;
     MPI_Comm_size(MPI_COMM_WORLD,&numtasks);

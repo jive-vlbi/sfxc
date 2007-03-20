@@ -28,6 +28,10 @@ public:
       \pre buff is allocated. nBytes >= 0
   **/ 
   virtual UINT64 get_bytes(UINT64 nBytes, char *buff) = 0;
+
+  /** Returns true if all data is read from the input reader.
+  **/ 
+  virtual bool eof() = 0;
 };
 
 

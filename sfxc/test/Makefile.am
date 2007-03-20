@@ -3,7 +3,7 @@ EXTRA_DIST =
 AM_CPPFLAGS = -Iinclude -I../include -g
 AM_CXXFLAGS = 
 
-  
+
 check_PROGRAMS = \
   test_buffer \
   test_Transfer_control_parameters \

@@ -32,8 +32,8 @@ Correlator_node_controller::Correlator_node_controller(Correlator_node &node)
 //   data_writer(NULL)
 {
    GenPrms.set_usStart(0);
-   GenPrms.set_usStop(0);
-   GenPrms.set_usEarliest(0);
+//   GenPrms.set_usStop(0);
+//   GenPrms.set_usEarliest(0);
 }
 
 Correlator_node_controller::~Correlator_node_controller()
@@ -71,15 +71,13 @@ Correlator_node_controller::process_event(MPI_Status &status) {
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       get_log_writer()(0) << "  start: " << time[0] 
-                          << ", stop : " << time[1] << std::endl;
+                          << ", duration: " << time[1] << std::endl;
 
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
 
       GenPrms.set_usStart(time[0]);
-      GenPrms.set_usEarliest(time[0]);
-      
-      GenPrms.set_usStop(time[1]);
+      GenPrms.set_duration(time[1]);
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

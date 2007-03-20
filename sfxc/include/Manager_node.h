@@ -32,6 +32,15 @@ private:
 
 
 /**
+ * The manager node sends messages to initialize the other nodes and tells them
+ * how to connect to each other. After the initialization, it maintains a list 
+ * of available correlate nodes and delegates time slices to available 
+ * correlate nodes. 
+ * 
+ * The interface to the user will communicate with the manager node to
+ * send commands to the correlator and obtain status information from the
+ * correlation process. 
+ * 
  * \ingroup Node
  **/
 class Manager_node : public Node {
@@ -42,10 +51,10 @@ public:
   
   
   void set_start_time(INT64 start_) { start_time = start_; }
-  void set_stop_time(INT64 stop_) { stop_time = stop_; }
+  void set_duration(int duration_) { duration = duration_; }
 
   INT64 get_start_time() const { return start_time; }
-  INT64 get_stop_time() const { return stop_time; }
+  INT32 get_duration() const { return duration; }
 
   int get_numtasks() { return numtasks; }
   int &get_new_slice_number() { return ++slicenr; }
@@ -71,7 +80,8 @@ private:
   //Controllers:
   Manager_node_controller manager_controller;
   
-  INT64 start_time, stop_time;
+  INT64 start_time;
+  INT32 duration;
 };
 
 #endif // CONTROLLER_NODE_H

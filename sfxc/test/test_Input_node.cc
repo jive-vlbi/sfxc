@@ -256,20 +256,9 @@ int main(int argc, char *argv[]) {
              input_node, 
              MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
 
-//    {
-//      int position=0;
-//      int size=strlen(outfile)+1+4; // 4 byte integer + outfile + \0
-//      char buffer[size];
-//      INT32 corr_node = output_node;
-//      MPI_Pack(&corr_node, 1, MPI_INT32, 
-//               buffer, size, &position, MPI_COMM_WORLD);
-//      MPI_Pack(outfile, size-4, MPI_CHAR, 
-//               buffer, size, &position, MPI_COMM_WORLD);
-//      assert(position == size);
-//  
-//      MPI_Send(buffer, position, MPI_PACKED, 
-//               input_node, MPI_TAG_ADD_DATA_WRITER_FILE, MPI_COMM_WORLD);
-//    }
+    UINT64 channel;
+    MPI_Recv(&channel, 1, MPI_UINT64, output_node,
+             MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
 
     // set priorities:
     INT64 priority_in[] = {output_node,0,0};
@@ -316,24 +305,6 @@ int main(int argc, char *argv[]) {
         break;
       }
       case MPI_TAG_SET_OUTPUT_NODE: {
-//        Log_writer_mpi log_writer(rank);
-//        INT32 msg;
-//        MPI_Send(&msg, 1, MPI_INT32,
-//                 RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
-
-//        for (int i=0; i<3; i++) {
-//          MPI_Status status, status2;
-//          MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-//          log_writer.MPI(0,print_MPI_TAG(status.MPI_TAG));
-//          int size;
-//          MPI_Get_elements(&status, MPI_CHAR, &size);
-//          assert(size >= 0);
-//          char msg[size];
-//          MPI_Recv(&msg, size, MPI_CHAR, MPI_ANY_SOURCE,
-//                   MPI_ANY_TAG, MPI_COMM_WORLD, &status2);
-//        }
-//        MPI_Send(&rank, 1, MPI_INT,
-//                 RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
         assert(rank == output_node);
         Output_node node(rank);
         node.start();
