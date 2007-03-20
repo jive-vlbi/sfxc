@@ -125,9 +125,10 @@ class GenP
 
     //set functions
     
-//    /** Set the earliest possible time for correlation 
-//    * in microseconds from the beginning of the day. **/
-//    void  set_usStart(INT64);
+    /** Set the earliest possible time for correlation 
+    * in microseconds from the beginning of the day. **/
+    void  set_usStart(INT64);
+    void  set_duration(int);
 //    void  set_usStop(INT64);
 //    void  set_usEarliest(INT64);
 //    /** Depricated: do not use. **/

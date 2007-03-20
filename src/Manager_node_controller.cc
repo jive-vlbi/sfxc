@@ -24,7 +24,18 @@ Manager_node_controller::process_event(MPI_Status &status) {
       // NGHK: Do not correlate
       //node.set_start_time(node.get_stop_time());
 
-      if (node.get_stop_time() <= node.get_start_time()) {
+      if (node.get_duration() > 0) {
+        get_log_writer()(0) << "Start a new time slice\n";
+        INT64 times[] = {node.get_start_time(),
+                         node.get_duration()};
+        MPI_Send(times, 2, MPI_INT64, corr_node,
+                 MPI_TAG_SET_TIME_SLICE, MPI_COMM_WORLD);
+        // Only one time slice for now
+        node.set_duration(0);
+
+        MPI_Send(&node.get_new_slice_number(), 1, MPI_INT32, corr_node,
+                 MPI_TAG_START_CORRELATE_NODE, MPI_COMM_WORLD);
+      } else {
         // End program:
         int type=0;
         MPI_Send(&type, 1, MPI_INT32, 
@@ -35,15 +46,6 @@ Manager_node_controller::process_event(MPI_Status &status) {
           MPI_Send(&type, 1, MPI_INT32, 
                    0, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
         }
-      } else {
-        get_log_writer()(0) << "Start a new time slice\n";
-        INT64 times[] = {node.get_start_time(), node.get_stop_time()};
-        MPI_Send(times, 2, MPI_INT64, corr_node,
-                 MPI_TAG_SET_TIME_SLICE, MPI_COMM_WORLD);
-        node.set_start_time(node.get_stop_time());
-
-        MPI_Send(&node.get_new_slice_number(), 1, MPI_INT32, corr_node,
-                 MPI_TAG_START_CORRELATE_NODE, MPI_COMM_WORLD);
       }
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;

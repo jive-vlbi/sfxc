@@ -1,7 +1,7 @@
 #ifndef SFXC_MPI_H
 #define SFXC_MPI_H
 
-#define RANK_MANAGER_NODE 2
+#define RANK_MANAGER_NODE 0
 #define RANK_LOG_NODE     1
 #define RANK_OUTPUT_NODE  2
 
@@ -53,6 +53,9 @@ enum MPI_TAG {
   MPI_TAG_ADD_OUTPUT_CONNECTION_SINGLE_INPUT_TCP,
   // many -> many
   MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP,
+  
+  /// Acknowledge that an input connection is set up properly (for synchronisation)
+  MPI_TAG_INPUT_CONNECTION_ESTABLISHED,
   
   /// This message is sent to the sending node, which creates the connection to the
   /// receiving node, message contains the number of the MPI-node
@@ -137,6 +140,8 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_SET_OUTPUT_CONNECTION_SINGLE_INPUT_TCP"; }
     case MPI_TAG_SET_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP:
       { return "MPI_TAG_SET_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP"; }
+    case MPI_TAG_INPUT_CONNECTION_ESTABLISHED:
+      { return "MPI_TAG_INPUT_CONNECTION_ESTABLISHED"; }
     case MPI_TAG_SET_DATA_WRITER_FILE:
       { return "MPI_TAG_SET_DATA_WRITER_FILE"; }
     case MPI_TAG_INIT:

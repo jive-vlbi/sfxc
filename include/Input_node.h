@@ -31,6 +31,13 @@ private:
 };
 
 /**
+ * The input node opens a controller for reading data and one for
+ * forwarding the data. It then connects the two using a buffer. The data
+ * node will receive a message from the controller node specifying how to
+ * obtain the input: from file or over the network using one of various
+ * types of transfer protocols. It will also receive messages containing
+ * a start and stop time and the correlate node to send the data to.
+ * 
  * \ingroup Node
  **/
 class Input_node : public Node {

@@ -19,30 +19,28 @@ Last change: 20061124
 #include <fcntl.h> // file control
 
 Data_reader_file::Data_reader_file(char *filename) : 
-  Data_reader(), file(-1)
+  Data_reader()
 {
-  file = open(filename, O_RDONLY, 0);
-  assert(file >= 0);
+  file.open(filename, std::ios::in | std::ios::binary);
+  assert(file.is_open() );
 }
 
-Data_reader_file::~Data_reader_file()
-{
-  close(file);
+Data_reader_file::~Data_reader_file() {
+  file.close();
 }
 
-UINT64 Data_reader_file::move_forward(UINT64 nBytes)
-{
-  std::cout << "MOVE_FORWARD is deprecated" << std::endl;
-  return 0;
-}
-
-UINT64 Data_reader_file::get_bytes(UINT64 nBytes, char*out)
-{
-//  if (nBytes != 80000) 
-//    std::cout << "get_bytes " << nBytes << std::endl;
+UINT64 Data_reader_file::get_bytes(UINT64 nBytes, char*out) {
   if (out == NULL) {
-    UINT64 pos = lseek(file, 0, SEEK_CUR);
-    return lseek(file, nBytes, SEEK_CUR) - pos;
+    UINT64 pos = file.tellg();
+    file.seekg (nBytes, std::ios::cur);
+    UINT64 pos2 = file.tellg();
+    return pos2 - pos;
   }
-  return read(file, out, nBytes);
+  file.read(out, nBytes);
+  if (file.eof()) return file.gcount();
+  return nBytes;
+}
+
+bool Data_reader_file::eof() {
+  return file.eof(); 
 }

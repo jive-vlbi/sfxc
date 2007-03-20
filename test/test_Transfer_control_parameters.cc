@@ -81,21 +81,21 @@ void check_control_parameters() {
     if (GenPrms.get_sst() != GenPrms2.get_sst()) {
       std::cout << "MPI GenPrms: sst differs" << std::endl;
     }
-    if (GenPrms.get_ysp() != GenPrms2.get_ysp()) {
-      std::cout << "MPI GenPrms: ysp differs" << std::endl;
-    }
-    if (GenPrms.get_dsp() != GenPrms2.get_dsp()) {
-      std::cout << "MPI GenPrms: dsp differs" << std::endl;
-    }
-    if (GenPrms.get_hsp() != GenPrms2.get_hsp()) {
-      std::cout << "MPI GenPrms: hsp differs" << std::endl;
-    }
-    if (GenPrms.get_msp() != GenPrms2.get_msp()) {
-      std::cout << "MPI GenPrms: msp differs" << std::endl;
-    }
-    if (GenPrms.get_ssp() != GenPrms2.get_ssp()) {
-      std::cout << "MPI GenPrms: ssp differs" << std::endl;
-    }
+//    if (GenPrms.get_ysp() != GenPrms2.get_ysp()) {
+//      std::cout << "MPI GenPrms: ysp differs" << std::endl;
+//    }
+//    if (GenPrms.get_dsp() != GenPrms2.get_dsp()) {
+//      std::cout << "MPI GenPrms: dsp differs" << std::endl;
+//    }
+//    if (GenPrms.get_hsp() != GenPrms2.get_hsp()) {
+//      std::cout << "MPI GenPrms: hsp differs" << std::endl;
+//    }
+//    if (GenPrms.get_msp() != GenPrms2.get_msp()) {
+//      std::cout << "MPI GenPrms: msp differs" << std::endl;
+//    }
+//    if (GenPrms.get_ssp() != GenPrms2.get_ssp()) {
+//      std::cout << "MPI GenPrms: ssp differs" << std::endl;
+//    }
     if (strcmp(GenPrms.get_outdir(), GenPrms2.get_outdir())) {
       std::cout << "MPI GenPrms: outdir differs" << std::endl;
     }
@@ -147,9 +147,9 @@ void check_control_parameters() {
     if (GenPrms.get_ovrlp() != GenPrms2.get_ovrlp()) {
       std::cout << "MPI GenPrms: overlp differs" << std::endl;
     }
-    if (GenPrms.get_nsamp2avg() != GenPrms2.get_nsamp2avg()) {
-      std::cout << "MPI GenPrms: nsamp2avg differs" << std::endl;
-    }
+//    if (GenPrms.get_nsamp2avg() != GenPrms2.get_nsamp2avg()) {
+//      std::cout << "MPI GenPrms: nsamp2avg differs" << std::endl;
+//    }
     if (GenPrms.get_pad() != GenPrms2.get_pad()) {
       std::cout << "MPI GenPrms: pad differs" << std::endl;
     }
@@ -157,15 +157,15 @@ void check_control_parameters() {
     if (GenPrms.get_usStart() != GenPrms2.get_usStart()) {
       std::cout << "MPI GenPrms: usStart differs" << std::endl;
     }
-    if (GenPrms.get_usStop() != GenPrms2.get_usStop()) {
-      std::cout << "MPI GenPrms: usStop differs" << std::endl;
-    }
-    if (GenPrms.get_usEarliest() != GenPrms2.get_usEarliest()) {
-      std::cout << "MPI GenPrms: usEarliest differs" << std::endl;
-    }
-    if (GenPrms.get_usLatest() != GenPrms2.get_usLatest()) {
-      std::cout << "MPI GenPrms: usLatest differs" << std::endl;
-    }
+//    if (GenPrms.get_usStop() != GenPrms2.get_usStop()) {
+//      std::cout << "MPI GenPrms: usStop differs" << std::endl;
+//    }
+//    if (GenPrms.get_usEarliest() != GenPrms2.get_usEarliest()) {
+//      std::cout << "MPI GenPrms: usEarliest differs" << std::endl;
+//    }
+//    if (GenPrms.get_usLatest() != GenPrms2.get_usLatest()) {
+//      std::cout << "MPI GenPrms: usLatest differs" << std::endl;
+//    }
     
     for (int i=0; i<GenPrms.get_nstations(); i++) {
       if (strcmp(StaPrms[i].get_stname(), StaPrms2[i].get_stname())) {

@@ -22,7 +22,7 @@ extern StaP StaPrms[NstationsMax];
 
 Manager_node::Manager_node(int numtasks, int rank, char * control_file) 
   : Node(rank), numtasks(numtasks), slicenr(0), 
-    manager_controller(*this)
+    manager_controller(*this), start_time(-1), duration(-1)
 
 {
   assert(rank == 0);
@@ -117,7 +117,7 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   
   // set manager_controller:
   set_start_time(GenPrms.get_usStart());
-  set_stop_time(GenPrms.get_usStop());
+  set_duration(GenPrms.get_duration());
   
   get_log_writer().MPI(1,"Initialisation ready");
 }

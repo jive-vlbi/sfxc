@@ -55,6 +55,10 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       Data_reader *reader = new Data_reader_tcp(ip_addr, size-2, port);
       add_data_reader(corr_node, reader);
 
+      MPI_Send(&corr_node, 1, MPI_UINT64, 
+               RANK_MANAGER_NODE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               MPI_COMM_WORLD);
+      
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_ADD_DATA_READER_FILE:

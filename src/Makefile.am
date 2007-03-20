@@ -5,6 +5,11 @@ AM_CXXFLAGS =
 
 bin_PROGRAMS = sfxc sfxc_SC sfxc_adam
 
+TESTS           = \
+	test_sfxc.py \
+	test_sfxc_SC.py \
+	test_sfxc_adam.py
+
 OBJ=runPrms.cc genPrms.cc staPrms.cc \
 	genFunctions.cc \
 	utils.cc timer.cc \
@@ -20,10 +25,15 @@ sfxc_SOURCES = $(OBJ) sfxc.cc
 sfxc_adam_SOURCES = $(OBJ) sfxc_adam.cc \
   Node.cc Manager_node.cc Log_node.cc \
   Correlator_node.cc Input_node.cc Output_node.cc \
-	Controller.cc Input_controller.cc Output_controller.cc \
-    Correlator_controller.cc Manager_controller.cc Log_controller.cc \
+	Controller.cc Input_node_controller.cc Output_node_controller.cc \
+  Correlator_node_controller.cc Manager_node_controller.cc Log_node_controller.cc \
   MPI_Transfer.cc TCP_Connection.cc \
-  Log_writer_mpi.cc Data_reader_tcp.cc  Data_writer_tcp.cc
+  Log_writer_mpi.cc Data_reader_tcp.cc  Data_writer_tcp.cc \
+  Data_writer_buffer.cc Data_reader_buffer.cc \
+  Multiple_data_readers_controller.cc \
+  Multiple_data_writers_controller.cc \
+  Single_data_writer_controller.cc \
+  Single_data_reader_controller.cc
 
 sfxc_SC_SOURCES = $(OBJ) sfxc_SC.cc
 
