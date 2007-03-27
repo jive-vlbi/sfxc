@@ -1,5 +1,5 @@
-#ifndef TSCORRELATOR_H
-#define TSCORRELATOR_H
+#ifndef CORRELATE_INTEGRATION_SLICE_H
+#define CORRELATE_INTEGRATION_SLICE_H
 
 /*
 Author     : RHJ Oerlemans
@@ -16,12 +16,12 @@ Last change: 20070201
 #include <Data_reader_file.h>
 
 /** TScorrlelator correlates one time slice of data for all stations. **/
-class TScorrelator
+class Correlate_integration_slice
 {
   public:
      
     /** Initialise the Time Slice correlator.  **/
-    TScorrelator(GenP& GenPrms,  StaP* StaPrms,
+    Correlate_integration_slice(GenP& GenPrms,  StaP* StaPrms,
       Log_writer& lg_wrtr, 
       Data_writer& dt_wrtr,
       std::vector<Data_reader *> input_readers,//TODO RHJO reference
@@ -39,4 +39,4 @@ class TScorrelator
     CorrelationCore cc;//class
 
 };
-#endif // TSCORRELATOR_H
+#endif // CORRELATE_INTEGRATION_SLICE_H
