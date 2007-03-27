@@ -24,15 +24,13 @@ class TScorrelator
     TScorrelator(GenP& GenPrms,  StaP* StaPrms,
       Log_writer& lg_wrtr, 
       Data_writer& dt_wrtr,
-      std::vector<Data_reader *> input_readers,
+      std::vector<Data_reader *> input_readers,//TODO RHJO reference
       INT64 startTS);
 
     /** Correlates all the segments (Nsegm2Avg) in the time slice.
     \pre startTS: start time of current time slice in usec wrt 00:00
     **/
-    void CorrelateTimeSlice(
-      StaP* StaPrms,
-      std::vector<Data_reader *> input_readers);
+    void CorrelateTimeSlice( std::vector<Data_reader *> input_readers); //TODO RHJO reference
     
 
   private:
