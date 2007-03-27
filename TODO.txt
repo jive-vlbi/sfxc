@@ -1,3 +1,21 @@
+Questions from Nico:
+- General: How do I use the classes?
+  1. Initialise TScorrelator
+    - Set the parameters
+    - Set the delay table
+    - Set the input and output writers
+  2. WHILE there are time slices to be processed DO
+    - Initialise time slice (set start time and duration)
+    - Correlate the time slice
+    - Stop the correlation (send the output?)
+  3. Stop TScorrelator (destructor)
+       
+- A function to change the starttime for a new time slice in TScorrelator
+- How can I use my own delay table (transferred with MPI)?
+- Why do you use startTS instead of increasing the start time and decreasing the duration?
+- Why does CorrelateTimeSlice() get readers and StaPrms?
+
+
 TODO:
 
 Control files
@@ -24,7 +42,6 @@ Correlation:
   - std::string instead of char * to ease the copy constructor
 - move header_map_mk4_cx.txt to a header file
 - write result from correlator as complex floats in CPF (correlator product file)
-
 
 Multi core:
 - use state instead of running in Data_reader2buffer (similar to B2dw)
