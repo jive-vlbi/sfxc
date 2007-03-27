@@ -6,10 +6,11 @@ Last change: 20070209
 
 
 //sfxc includes
-#include "TScorrelator.h"
+#include "Correlate_integration_slice.h"
 
-// Initialise the Time Slice correlator.
-TScorrelator::TScorrelator(GenP& GenPrms, StaP* StaPrms,
+// Initialise the correlation for one integration slice
+Correlate_integration_slice::
+  Correlate_integration_slice(GenP& GenPrms, StaP* StaPrms,
   Log_writer& lg_wrtr, 
   Data_writer& dt_wrtr,
   std::vector<Data_reader *> input_readers,
@@ -23,8 +24,8 @@ TScorrelator::TScorrelator(GenP& GenPrms, StaP* StaPrms,
 }
 
 
-// Correlates all the segments (Nsegm2Avg) in the time slice.
-void TScorrelator::CorrelateTimeSlice(
+// Correlates all the segments (Nsegm2Avg) in the integration slice.
+void Correlate_integration_slice::CorrelateTimeSlice(
   std::vector<Data_reader *> input_readers)
 {  
   //TODO RHJO test/debug code

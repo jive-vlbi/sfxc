@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
     INT64 startTS=GenPrms.get_usStart();
 
     //initialise time slice correlator
-    TScorrelator tsc(GenPrms, StaPrms, log_writer, data_writer, input_readers, startTS);
+    Correlate_integration_slice tsc(GenPrms, StaPrms, log_writer, data_writer, input_readers, startTS);
 
     //while still time slices and data are available
     while (startTS < GenPrms.get_usStart() + GenPrms.get_usDur()
