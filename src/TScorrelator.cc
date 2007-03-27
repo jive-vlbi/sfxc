@@ -15,7 +15,7 @@ TScorrelator::TScorrelator(GenP& GenPrms, StaP* StaPrms,
   std::vector<Data_reader *> input_readers,
   INT64 startTS)
   //member initialisations
-  :dc(GenPrms, StaPrms, lg_wrtr), cc(GenPrms, dt_wrtr)
+  :dc(GenPrms, StaPrms, lg_wrtr/*,input_readers*/), cc(GenPrms, dt_wrtr)
 {
   Nsegm2Avg = 2 * GenPrms.get_bwfl() / GenPrms.get_n2fft();
   Nsegm2Avg = (INT32) (GenPrms.get_time2avg() * Nsegm2Avg);
@@ -25,7 +25,6 @@ TScorrelator::TScorrelator(GenP& GenPrms, StaP* StaPrms,
 
 // Correlates all the segments (Nsegm2Avg) in the time slice.
 void TScorrelator::CorrelateTimeSlice(
-  StaP* StaPrms,
   std::vector<Data_reader *> input_readers)
 {  
   //TODO RHJO test/debug code

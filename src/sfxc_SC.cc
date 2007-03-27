@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
       cout << "\nTS/nTS " << setw(2) << ++TS << "/" << nTS <<
        " startTS " << startTS << endl;
       //process the next time slice:
-      tsc.CorrelateTimeSlice(StaPrms, input_readers);
+      tsc.CorrelateTimeSlice(input_readers);
       //set start of next time slice to: start of time slice + time to average
       startTS += GenPrms.get_usTime2Avg(); //in usec
     }

@@ -62,7 +62,7 @@ DelayCorrection::
   for (int sn=0; sn<nstations; sn++) {
     string msg = string("DelTbl: ")+StaPrms[sn].get_delaytable();
     get_log_writer().message(2,msg);
-    int retval = delTbl[sn].readDelayTable(StaPrms[sn].get_delaytable());
+    int retval = delTbl[sn].readDelayTable(StaPrms[sn].get_delaytable());//TODO RHJO vector delay tables
     if (retval != 0) {
       get_log_writer().message(0,"ERROR: when reading delay table.\n");
     }
