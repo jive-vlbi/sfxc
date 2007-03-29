@@ -34,9 +34,6 @@ Last change: 20060912
 #include <string>
 using namespace std;
 
-// NGHK: remove this, for now to have access to the Log_writer  
-#include <ProcessData.h>
-
 
 //constants
 #include "constPrms.h"

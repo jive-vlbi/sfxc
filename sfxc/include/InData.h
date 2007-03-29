@@ -13,6 +13,9 @@
 #include <Data_reader.h>
 #include <vector>
 
+void set_log_writer(Log_writer &log_writer_);
+
+Log_writer &get_log_writer();
 
 int FindOffsets(std::vector<Data_reader *> input_readers,
                 int Numtask, int rank);

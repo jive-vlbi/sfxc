@@ -121,15 +121,6 @@ int main(int argc, char *argv[])
     log_writer.ask_continue();
   }
 
-  //initialise input readers
-  // NGHK: Has to be a pointer or a reference,
-  //       since Data_reader is an abstract class
-//  vector<Data_reader *> data_readers;
-//  for (int i=0; i<nstations; i++) {
-//    data_readers.push_back(new Data_reader_file(StaPrms[i].get_mk4file()));
-//  }
-
-
 
   //display and check mk4file header info for start time set in ccf
 //  if (show_MK4_headers(data_readers) !=0) {
@@ -149,18 +140,15 @@ int main(int argc, char *argv[])
     DelayTable delay_table;
     string msg = string("DelTbl: ")+StaPrms[sn].get_delaytable();
     get_log_writer().message(2,msg);
-    //read the proper delay table
     int retval = delay_table.readDelayTable(StaPrms[sn].get_delaytable());
     if (retval != 0) {
       get_log_writer().message(0,"ERROR: when reading delay table.\n");
     }
-
     IntSlc.set_delay_table(sn,delay_table);//pass the delay table 
 
     Data_reader *data_reader;
     data_reader = new Data_reader_file(StaPrms[sn].get_mk4file());
     IntSlc.set_data_reader(sn,data_reader);//pass the data reader
-
     IntSlc.init_reader(sn,StaPrms[sn],startIS);//initialise readers to proper position
   }
 

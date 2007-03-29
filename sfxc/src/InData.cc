@@ -53,8 +53,6 @@ extern GenP  GenPrms;
 extern StaP  StaPrms[NstationsMax];
 extern UINT32 seed;
 
-#include <ProcessData.h>
-
 
 //*****************************************************************************
 //function prototypes only used in this source, not public
@@ -105,6 +103,19 @@ int fss(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
 
 int fms(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
 
+
+Log_writer *log_writer=NULL;
+
+void set_log_writer(Log_writer &log_writer_)
+{
+  log_writer = &log_writer_;
+}
+
+Log_writer &get_log_writer()
+{
+  assert(log_writer!=NULL);
+  return *log_writer;
+}
 
 
 //*****************************************************************************
