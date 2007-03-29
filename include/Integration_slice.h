@@ -43,6 +43,7 @@ class Integration_slice
     **/
     void correlate();
     
+    Data_writer &get_data_writer();
 
   private:
     INT32           Nsegm2Avg; //nr of segments to average

@@ -1,6 +1,5 @@
 #include "Correlator_node.h"
 
-#include "ProcessData.h"
 #include "Data_writer_buffer.h"
 #include "InData.h"
 
@@ -10,8 +9,10 @@ Correlator_node::Correlator_node(int rank, int buff_size)
    correlator_node_ctrl(*this),
    data_readers_ctrl(*this),
    data_writer_ctrl(*this),
+   integration_slice(GenPrms, StaPrms, get_log_writer()),
    correlate_state(INITIALISE_TIME_SLICE),
-   status(STOPPED)
+   status(STOPPED),
+   buffer_size(buff_size)
 {
   get_log_writer().MPI(0, "Correlate_node(rank)");
   
@@ -33,17 +34,19 @@ Correlator_node::Correlator_node(int rank, int buff_size)
 
 Correlator_node::~Correlator_node()
 {
+  assert(data_writer_ctrl.buffer() != NULL);
   while (!data_writer_ctrl.buffer()->empty()) {
     usleep(100000);
   }
-  get_log_writer().message(1, "~Correlate_node()");
 }
 
 void Correlator_node::start()
 {
-  int err;
-  while (status != END_CORRELATING) {
+  while (true) {
     switch (status) {
+      case END_CORRELATING: {
+        return;
+      }
       case STOPPED: {
         // blocking:
         if (check_and_process_message()==TERMINATE_NODE) {
@@ -52,55 +55,41 @@ void Correlator_node::start()
         break;
       }
       case CORRELATING: {
-        while ((check_and_process_waiting_message() != NO_MESSAGE) &&
-               (status==CORRELATING)) {
+        if (process_all_waiting_messages() == TERMINATE_NODE) {
+          status = END_CORRELATING;
         }
         
         if (status==CORRELATING) {
           switch(correlate_state) {
-            case FIND_INITIAL_OFFSETS: {
-              //Find Offsets
-              correlate_state = INITIALISE_TIME_SLICE;
-              err = FindOffsets(data_readers_ctrl.get_vector_data_readers(), 1, 0);
-              if (err !=0) {
-                get_log_writer().message(0,"ERROR: FindOffsets, program aborted.\n");
-                correlate_state = END_TIME_SLICE;
-              }
-              break;
-            }
             case INITIALISE_TIME_SLICE: {
-              err = CorrelateBufs_initialise_correlator(data_readers_ctrl.get_vector_data_readers());
-              assert(err == 0);
-              err = CorrelateBufs_initialise_time_slice();
-              correlate_state = CORRELATE_SEGMENT;              
-              if (err < 0) {
-                get_log_writer().error("Initialising correlation");
-                status = END_CORRELATING;
-              }
+              // Initialise the correlator for a new time slice:
+              startIS=GenPrms.get_usStart();
+              correlate_state = CORRELATE_SEGMENT;
               break;
             }
             case CORRELATE_SEGMENT: {
-              err = CorrelateBufs_process_segment();
-              if (err != 0) {
-                if (err > 0) {
-                  correlate_state = END_TIME_SLICE;
-                } else {
-                  get_log_writer().error("During correlation");
-                  status = END_CORRELATING;
-                }
+              // Do one integration step:
+              //while still time slices and data are available
+              if (startIS >= GenPrms.get_usStart() + GenPrms.get_usDur()
+                     /* && data_available TODO RHJO implement*/ ) {
+                correlate_state = END_TIME_SLICE;
+                break;
               }
+                             
+              //process the next time slice:
+              integration_slice.correlate();
+              //set start of next time slice to: start of time slice + time to average
+              startIS += GenPrms.get_usTime2Avg(); //in usec
               break;
             }
             case END_TIME_SLICE: {
-              err = CorrelateBufs_finalise();
+              get_log_writer() << "Time slice finished" << std::endl;
+              // Finish processing a time slice:
               status = STOPPED;
-              if (err < 0) {
-                get_log_writer().error("in end time slice");
-                status = END_CORRELATING;
-              }
-              INT32 i=0;
+              UINT64 i[] = {get_rank(), get_data_writer().data_counter()};
+              get_data_writer().reset_data_counter();
               // Notify output node: 
-              MPI_Send(&i, 1, MPI_INT32, RANK_OUTPUT_NODE,
+              MPI_Send(&i, 2, MPI_UINT64, RANK_OUTPUT_NODE,
                        MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED, MPI_COMM_WORLD);
               // Notify manager node:
               MPI_Send(&i, 1, MPI_INT32, RANK_MANAGER_NODE,
@@ -114,17 +103,26 @@ void Correlator_node::start()
   }
 }
 
+void Correlator_node::start_correlating() {
+  assert(status != CORRELATING); 
+  status=CORRELATING; 
+  correlate_state = INITIALISE_TIME_SLICE; 
+}
+
+void Correlator_node::add_delay_table(int sn, DelayTable &table) {
+  integration_slice.set_delay_table(sn, table);
+}
+
 
 void Correlator_node::hook_added_data_reader(int i) {
-  Buffer<input_value_type> *buffer = new Semaphore_buffer<input_value_type>(1000);
+  Buffer<input_value_type> *buffer = new Semaphore_buffer<input_value_type>(buffer_size);
   data_readers_ctrl.set_buffer(i, buffer);
 }
 
 void Correlator_node::hook_added_data_writer(int i) {
   assert(i == 0);
   
-  data_writer_ctrl.set_buffer(new Semaphore_buffer<output_value_type>(100));
+  data_writer_ctrl.set_buffer(new Semaphore_buffer<output_value_type>(buffer_size));
   
-  Data_writer *writer = new Data_writer_buffer(data_writer_ctrl.buffer());
-  ::set_data_writer(*writer);
+  integration_slice.set_data_writer(new Data_writer_buffer(data_writer_ctrl.buffer()));
 }

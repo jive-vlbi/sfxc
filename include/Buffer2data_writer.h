@@ -156,7 +156,7 @@ Buffer2data_writer<T>::write() {
       UINT64 size2 = data_writer->put_bytes(size,(char*)&elem);
       assert((UINT64)size == size2);
       buffer->consumed();
-      if (size == 0) state = SUSPENDED;
+      //if (size == 0) state = SUSPENDED;
     }
   }
 }

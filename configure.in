@@ -46,6 +46,7 @@ as root]))
 
 AC_OUTPUT(Makefile
           src/Makefile
+          src/multicore/Makefile
           test/Makefile
           include/Makefile
           doc/Makefile

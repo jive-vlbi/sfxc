@@ -46,8 +46,8 @@ class Input_node : public Node {
   typedef Single_data_reader_controller::value_type     value_type;
   typedef Semaphore_buffer<value_type>     Buffer;
 public:
-  Input_node(int rank, Log_writer *log_writer, int buffer_size = 1024);
-  Input_node(int rank, int buffer_size = 1024);
+  Input_node(int rank, Log_writer *log_writer, int buffer_size = 10);
+  Input_node(int rank, int buffer_size = 10);
   ~Input_node();
   
   /// Generic constructor function, that is called in the body of every constructor

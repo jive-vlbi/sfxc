@@ -11,6 +11,7 @@
 #include <Single_data_writer_controller.h>
 
 #include <map>
+#include <queue>
 
 class Output_node;
 
@@ -44,9 +45,39 @@ public:
   typedef std::map<UINT64, int>                 Input_stream_priority_map;
   typedef Input_stream_priority_map::value_type Input_stream_priority_map_value;
   typedef Buffer<value_type>                    Buffer;
+  
+  /** Manages the input from one correlator node.
+   * The input stream is used to maintain the data 
+   **/
+  class Input_stream {
+  public:
+    Input_stream(Data_reader *reader);
+    
+    /** Fills the buffer with as much data as possible and returns the number of
+     * bytes written.
+     **/
+    int write_bytes(value_type &elem);
+    /** returns whether we reached the end of the current time slice
+     **/
+    bool end_of_slice();
+    /** returns whether there is data available
+     **/
+    bool has_data();
+    
+    /** sets the length of a new time slice
+     **/
+    void set_length_time_slice(UINT64 nBytes);
+  private:
+    // Data_reader from which the input data can be read
+    Data_reader *reader;
+    // The number of bytes left in the current slice
+    int curr_bytes;
+    // list with sizes of the time slices
+    std::queue<UINT64> slice_size;
+  };
 
-  Output_node(int rank, Log_writer *writer, int buffer_size = 1024);
-  Output_node(int rank, int buffer_size = 1024);
+  Output_node(int rank, Log_writer *writer, int buffer_size = 10);
+  Output_node(int rank, int buffer_size = 10);
   void initialise();
 
   ~Output_node();
@@ -64,7 +95,7 @@ public:
   void create_buffer(int num);
 
   void set_weight_of_input_stream(int num, UINT64 weight);
-  void time_slice_finished(int num);      
+  void time_slice_finished(int rank, UINT64 nBytes);      
   
   // Callback functions:
   void hook_added_data_reader(int reader);
@@ -83,9 +114,20 @@ private:
   Multiple_data_readers_controller    data_readers_ctrl;
   Single_data_writer_controller       data_writer_ctrl;
 
-  STATUS                                       status;
-  Input_stream_priority_map                    input_streams_order;
-  std::vector<bool>                            input_streams_finished;
+  STATUS                              status;
+  // Priority map of the input streams
+  Input_stream_priority_map           input_streams_order;
+  // One input stream for every correlate node
+  std::vector<Input_stream *>         input_streams;
+  
+  /** List of streams that stores whether a time slice is transferred.
+   * The stream is not finished, if input_streams_finished[i]==0
+   * if input_streams_finished[i]>0 then the stream is finished and specifies
+   * the number of bytes belonging to the slice
+   **/
+//  std::vector<UINT64>                 input_streams_finished;
+  /// the data_readers read the data from the buffers in the data_readers_ctrl.
+//  std::vector<Data_reader *>          data_readers;
 };
 
 #endif // OUTPUT_NODE_H

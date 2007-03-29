@@ -90,8 +90,8 @@ INT64 GenP::get_usStart()  const {  return usStart;}
 //TODO RHJO: 20070213 check which of the functions until DEPRICATED? is depricated
 //INT64 GenP::get_usStop()   const {  return usStop;}
 
-void GenP::set_usStart(INT64 start) { usStart = start;}
-void GenP::set_duration(int dur) { duration = dur;}
+void GenP::set_usStart(INT64 start) { usStart = start; }
+void GenP::set_duration(int dur) { duration = dur; }
 //void GenP::set_usStop(INT64 stop)   { usStop = stop;}
 
 //INT64 GenP::get_usEarliest() const { return usEarliest; }

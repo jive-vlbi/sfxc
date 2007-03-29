@@ -8,6 +8,7 @@
 #include <sfxc_mpi.h>
 #include <Data_writer_file.h>
 #include <Data_writer_tcp.h>
+#include <TCP_Connection.h>
 
 Single_data_writer_controller::
 Single_data_writer_controller(Node &node) 
@@ -43,6 +44,35 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
       assert(status.MPI_TAG == status2.MPI_TAG);
 
       set_data_writer(new Data_writer_file(filename));
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+  case MPI_TAG_SET_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP: 
+    {
+      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      
+      MPI_Status status2;
+      INT32 ranks[2]; // Rank of reader and writer:
+      MPI_Recv(ranks, 2, MPI_INT32, status.MPI_SOURCE,
+               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+
+      Data_writer_tcp *data_writer = new Data_writer_tcp(1233); 
+
+      TCP_Connection tcp_connection;
+      std::vector<UINT64>  ip_addresses;
+      tcp_connection.get_ip_addresses(ip_addresses);
+
+      // Add port
+      ip_addresses.push_back(data_writer->get_port());
+      // Add rank
+      ip_addresses.push_back(ranks[0]);
+      
+      MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_UINT64, 
+               ranks[1], MPI_TAG_ADD_DATA_READER_TCP, MPI_COMM_WORLD);
+
+      data_writer->open_connection();
+
+      set_data_writer(data_writer);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

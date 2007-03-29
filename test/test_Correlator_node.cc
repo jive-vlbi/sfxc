@@ -16,7 +16,6 @@
 #include "staPrms.h"
 #include "genFunctions.h"
 #include "InData.h"
-#include "ProcessData.h"
 #include "delayTable.h"
 //global variables
 //declaration and default settings run parameters
@@ -56,16 +55,16 @@ send_control_parameters_to_controller_node(char *filename,
   MPI_Transfer mpi_transfer;
   mpi_transfer.send_general_parameters(rank);
 
-  for (int i=0; i<GenPrms.get_nstations(); i++) {
+  for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
     DelayTable delay; 
-    log_writer << StaPrms[i].get_delaytable() << std::endl;
-    int retval = delay.readDelayTable(StaPrms[i].get_delaytable(),
+    log_writer << StaPrms[sn].get_delaytable() << std::endl;
+    int retval = delay.readDelayTable(StaPrms[sn].get_delaytable(),
                                       BufTime );
     if (retval != 0) {
       log_writer << "ERROR: when reading delay table.\n";
       return;
     }
-    mpi_transfer.send_delay_table(delay, rank);
+    mpi_transfer.send_delay_table(delay, sn, rank);
   }
 
   const char *outfile_data = GenPrms.get_corfile();
@@ -135,13 +134,11 @@ int main(int argc, char *argv[]) {
       MPI_Recv(&i, 1, MPI_INT32, rank_correlator_node,
                MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD, &status2);
   
-      INT64 times[] = {GenPrms.get_usStart(), GenPrms.get_duration()};
-      MPI_Send(times, 2, MPI_INT64, rank_correlator_node,
-               MPI_TAG_SET_TIME_SLICE, MPI_COMM_WORLD);
-  
-      int cmd = 0;
-      MPI_Send(&cmd, 1, MPI_INT32, rank_correlator_node,
-               MPI_TAG_START_CORRELATE_NODE, MPI_COMM_WORLD);
+      INT64 times[] = {0, // Slice number
+                       GenPrms.get_usStart(),
+                       GenPrms.get_duration()};
+      MPI_Send(times, 3, MPI_INT64, rank_correlator_node,
+               MPI_TAG_CORRELATE_TIME_SLICE, MPI_COMM_WORLD);
     }
 
     bool finished = false;

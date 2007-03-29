@@ -7,6 +7,7 @@ Last change: 20070209
 
 //sfxc includes
 #include "CorrelationCore.h"
+#include <assert.h>
 
 CorrelationCore::CorrelationCore(GenP& GenPrms)
   :data_writer(NULL)//member initialisation list
@@ -174,6 +175,7 @@ void CorrelationCore::write_time_slice()
 
 Data_writer& CorrelationCore::get_data_writer()
 {
+  assert(data_writer != NULL);
   return *data_writer;
 }
 
@@ -182,4 +184,3 @@ void CorrelationCore::set_data_writer(Data_writer *data_writer_)
 {
   data_writer=data_writer_;
 }
-

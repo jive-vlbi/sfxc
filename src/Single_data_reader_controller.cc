@@ -33,6 +33,11 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
 
       set_data_reader(new Data_reader_file(filename));
 
+      INT64 msg = 0;
+      MPI_Send(&msg, 1, MPI_INT64, 
+               RANK_MANAGER_NODE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               MPI_COMM_WORLD);
+
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_SET_DATA_READER_TCP:
@@ -50,6 +55,11 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
       assert(status.MPI_TAG == status2.MPI_TAG);
 
       set_data_reader(new Data_reader_tcp(ip_addr, size-1, ip_addr[size-1]));
+
+      INT64 msg = status.MPI_SOURCE;
+      MPI_Send(&msg, 1, MPI_INT64, 
+               RANK_MANAGER_NODE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               MPI_COMM_WORLD);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

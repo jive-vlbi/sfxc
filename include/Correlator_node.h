@@ -6,9 +6,21 @@
 #include <Multiple_data_readers_controller.h>
 #include <Single_data_writer_controller.h>
 
+#include <Integration_slice.h>
 #include <Semaphore_buffer.h>
 
 #include "Log_writer_mpi.h"
+
+/// TODO: NGHK: REMOVE
+#include <constPrms.h>
+#include <runPrms.h>
+#include <genPrms.h>
+#include <staPrms.h>
+extern RunP  RunPrms;
+extern GenP  GenPrms;
+extern StaP  StaPrms[NstationsMax];
+
+
 
 // Declare the correlator controller:
 class Correlator_node;
@@ -55,8 +67,6 @@ public:
   enum CORRELATE_STEPS {
     /// Initialise the correlator for a new time slice:
     INITIALISE_TIME_SLICE=0,
-    /// Proceed to the initial position in the data stream:
-    FIND_INITIAL_OFFSETS,
     /// Do one integration step:
     CORRELATE_SEGMENT,
     /// Finish processing a time slice:
@@ -67,35 +77,48 @@ public:
   ~Correlator_node();
   
   void start();
-  
-//  void add_data_reader(Data_reader *reader);
-//  void set_data_reader(int node, Data_reader *reader);
-//  
-//  /// Destroys the previous writer, if it exists.  
-//  void set_data_writer(Data_writer *data_writer);
 
-  void start_correlating() { 
-    status=CORRELATING; 
-    correlate_state = FIND_INITIAL_OFFSETS; 
-  }
-  bool get_correlating() const { return (status==CORRELATING); }
+  /// Starts the correlation process.  
+  void start_correlating();
 
-  // Callback functions:
+  /// Callback function for adding a data_reader:
   void hook_added_data_reader(int reader);
+  /// Callback function for adding a data_writer:
   void hook_added_data_writer(int writer);
 
+  void add_delay_table(int sn, DelayTable &table);
+    
+
+  /// Get the Integration_slice (the class doing the actual work)
+  Integration_slice &get_integration_slice() {
+    return integration_slice;
+  }
+  Data_writer &get_data_writer() {
+    return integration_slice.get_data_writer();
+  }
+  std::vector<Data_reader *> &
+  get_vector_data_readers() {
+    return data_readers_ctrl.get_vector_data_readers();
+  }
 private:
-//  std::vector<Data_reader *>     data_readers;
   // Buffer for the output, input is directly handled by the Correlator_controller
   Semaphore_buffer<output_value_type> output_buffer;
-  //Data_writer                      *data_writer;
 
   Correlator_node_controller       correlator_node_ctrl;
   Multiple_data_readers_controller data_readers_ctrl;
   Single_data_writer_controller    data_writer_ctrl;
+
+  // The actual correlator code:
+  Integration_slice integration_slice;
+  //Data_writer *writer;
   
   // State variables:
-  int correlate_state, status;
+  CORRELATE_STEPS correlate_state;
+  STATUS status;
+  /// Number of elements in a buffer
+  int                                          buffer_size;
+
+  INT64 startIS;
 };
 
 #endif // CORRELATOR_NODE_H

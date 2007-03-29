@@ -10,7 +10,7 @@ public:
   Data_writer_file(const char *filename);
   ~Data_writer_file();
   
-  UINT64 put_bytes(UINT64 nBytes, char *buff);
+  UINT64 do_put_bytes(UINT64 nBytes, char *buff);
 
 private:
   FILE *file;

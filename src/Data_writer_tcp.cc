@@ -52,7 +52,7 @@ Data_writer_tcp::~Data_writer_tcp() {
 }
   
 UINT64 
-Data_writer_tcp::put_bytes(UINT64 nBytes, char *buff) {
+Data_writer_tcp::do_put_bytes(UINT64 nBytes, char *buff) {
   assert(socket > 0);
   assert(nBytes > 0);
   return write(socket, buff, nBytes);
@@ -62,3 +62,4 @@ Data_writer_tcp::put_bytes(UINT64 nBytes, char *buff) {
 unsigned int Data_writer_tcp::get_port() {
   return port;
 }  
+

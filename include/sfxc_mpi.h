@@ -86,9 +86,8 @@ enum MPI_TAG {
   /// Send a delay table
   MPI_TAG_DELAY_TABLE,
   /// All settings are set for the correlation, start correlating
-  MPI_TAG_START_CORRELATE_NODE,
-  /// Send the start time for a correlate_node
-  MPI_TAG_SET_TIME_SLICE,
+  /// Send the slice number, start time and duration to a correlate_node
+  MPI_TAG_CORRELATE_TIME_SLICE,
   /// The output stream from the sending node is finished for this time slice.
   MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED,
   /// The correlation node is ready to process data
@@ -176,10 +175,8 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_CONTROL_PARAM"; }
     case MPI_TAG_DELAY_TABLE:
       { return "MPI_TAG_DELAY_TABLE"; }
-    case MPI_TAG_START_CORRELATE_NODE:
-      { return "MPI_TAG_START_CORRELATE_NODE"; }
-    case MPI_TAG_SET_TIME_SLICE:
-      { return "MPI_TAG_SET_TIME_SLICE"; }
+    case MPI_TAG_CORRELATE_TIME_SLICE:
+      { return "MPI_TAG_CORRELATE_TIME_SLICE"; }
     case MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED:
       { return "MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED"; }
     case MPI_TAG_CORRELATION_READY:

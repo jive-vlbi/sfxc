@@ -72,6 +72,15 @@ Node::check_and_process_waiting_message() {
 }
 
 Node::MESSAGE_RESULT 
+Node::process_all_waiting_messages() {
+  MESSAGE_RESULT result;
+  do {
+    result = check_and_process_waiting_message();
+  } while (result == MESSAGE_PROCESSED);
+  return result;
+}
+
+Node::MESSAGE_RESULT 
 Node::check_and_process_message() {
     MPI_Status status;
     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);

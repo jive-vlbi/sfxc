@@ -14,6 +14,7 @@
 
 #include <Node.h>
 #include <Controller.h>
+#include <vector>
 
 class Manager_node;
 
@@ -50,38 +51,46 @@ public:
   void start();
   
   
-  void set_start_time(INT64 start_) { start_time = start_; }
-  void set_duration(int duration_) { duration = duration_; }
-
-  INT64 get_start_time() const { return start_time; }
-  INT32 get_duration() const { return duration; }
-
   int get_numtasks() { return numtasks; }
   int &get_new_slice_number() { return ++slicenr; }
   
-  void add_number_correlator_node(int n) { Ncorrelator_nodes += n; }
-  int get_number_correlator_nodes() { return Ncorrelator_nodes; }
-
   // Callback functions:
   void hook_added_data_reader(int reader);
   void hook_added_data_writer(int writer);
+  
+  /// Different states a correlator node can have
+  enum CORRELATING_STATE {
+    /// The correlator node is being initialised
+    INITIALISING = 0,
+    /// The correlator node is currently correlating a time slice
+    CORRELATING,
+    /// The correlator node is ready to process a time slice
+    READY,
+    /// The correlator node is terminated
+    FINISHED
+  };
+
+  /// Set the state of a correlator node  
+  void set_correlating_state(int node, CORRELATING_STATE state);
   
 private:
 
   int read_control_file(char *control_file);
   int send_control_parameters_to_controller_node(int rank);
 
+  std::vector<CORRELATING_STATE> state_correlate_nodes;
+    
 //   RunP RunPrms;
 //   GenP GenPrms;
   int numtasks, rank;
-  int Nstations, Ncorrelator_nodes;
   int slicenr;
   
   //Controllers:
   Manager_node_controller manager_controller;
   
-  INT64 start_time;
-  INT32 duration;
+  int START_INPUT_NODES, START_CORRELATE_NODES, 
+      N_INPUT_NODES, N_CORRELATE_NODES;
+  
 };
 
 #endif // CONTROLLER_NODE_H

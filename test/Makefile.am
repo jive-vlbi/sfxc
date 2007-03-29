@@ -37,6 +37,7 @@ OBJ = ../src/utils.cc \
       ../src/Data_reader_file.cc \
       ../src/Data_reader_tcp.cc \
       ../src/Data_reader_buffer.cc \
+      ../src/Data_writer.cc \
       ../src/Data_writer_file.cc \
       ../src/Data_writer_tcp.cc \
       ../src/Data_writer_buffer.cc \
@@ -59,6 +60,7 @@ OBJ = ../src/utils.cc \
       ../src/Multiple_data_readers_controller.cc \
       ../src/Single_data_writer_controller.cc \
       ../src/Multiple_data_writers_controller.cc
+      
 test_buffer_SOURCES = \
   test_buffer.cc
 
@@ -66,7 +68,8 @@ test_Transfer_control_parameters_SOURCES = \
   $(OBJ) test_Transfer_control_parameters.cc 
 
 test_Data_reader_file_SOURCES = \
-  test_Data_reader_file.cc ../src/Data_reader_file.cc ../src/Data_writer_file.cc \
+  test_Data_reader_file.cc ../src/Data_reader_file.cc ../src/Data_writer.cc \
+  ../src/Data_writer_file.cc \
   ../src/Log_writer.cc ../src/Log_writer_cout.cc
 
 test_Data_reader_mark5_SOURCES = \
@@ -78,7 +81,10 @@ test_Input_node_SOURCES = \
 test_Correlator_node_SOURCES = \
   $(OBJ) test_Correlator_node.cc \
   ../src/Correlator_node.cc ../src/Correlator_node_controller.cc \
-  ../src/InData.cc ../src/ProcessData.cc
+  ../src/Integration_slice.cc \
+  ../src/CorrelationCore.cc \
+  ../src/DelayCorrection.cc \
+  ../src/InData.cc
 
 test_Log_writer_mpi_SOURCES = \
   test_Log_writer_mpi.cc \

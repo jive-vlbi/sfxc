@@ -77,8 +77,13 @@ void Input_node::start() {
         break;
       }
       case SEND_OUTPUT: {
-        while ((check_and_process_waiting_message() != NO_MESSAGE) &&
-               (status != END_NODE)) {
+        MESSAGE_RESULT msg_result = check_and_process_waiting_message();
+        while ((msg_result != NO_MESSAGE) && (status != END_NODE)) {
+          if (msg_result == TERMINATE_NODE) {
+            status = END_NODE;
+            break;
+          }
+          msg_result = check_and_process_waiting_message();
         }
         
         if (data_reader_ctrl.eof() && data_reader_ctrl.buffer()->empty()) {

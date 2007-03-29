@@ -50,12 +50,12 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       assert(status.MPI_TAG == status2.MPI_TAG);
       
       UINT64 port = ip_addr[size-2];
-      UINT64 corr_node = ip_addr[size-1];
+      INT64 corr_node = ip_addr[size-1];
       
       Data_reader *reader = new Data_reader_tcp(ip_addr, size-2, port);
       add_data_reader(corr_node, reader);
 
-      MPI_Send(&corr_node, 1, MPI_UINT64, 
+      MPI_Send(&corr_node, 1, MPI_INT64, 
                RANK_MANAGER_NODE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
       
@@ -80,6 +80,11 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       
       Data_reader *reader = new Data_reader_file(filename);
       add_data_reader(corr_node, reader);
+
+      INT64 msg = 0;
+      MPI_Send(&msg, 1, MPI_INT64, 
+               RANK_MANAGER_NODE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               MPI_COMM_WORLD);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
