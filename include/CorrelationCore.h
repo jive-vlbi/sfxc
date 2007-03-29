@@ -34,7 +34,7 @@ class CorrelationCore
 
     /** Initialise the correlator with proper values, allocate arrays,
         createFFTW plans.**/
-    CorrelationCore(GenP&, Data_writer&);
+    CorrelationCore(GenP&);
 
     /** De-allocate correlator arrays, destroy FFTW plans.**/
     ~CorrelationCore();
@@ -52,13 +52,16 @@ class CorrelationCore
     /** Write the averaged results for the current time slice.**/
     void write_time_slice();
 
+    /** **/
+    void set_data_writer(Data_writer *data_writer);
+
     
   private:
 
     Data_writer& get_data_writer();
 
     //data members
-    Data_writer& data_writer;
+    Data_writer *data_writer;
 
     fftw_complex **accxps; //accumulated fftw_complex accxps[nbslns][];
     double **segm;        //input segments for FFT operation, one per station

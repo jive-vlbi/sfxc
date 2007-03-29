@@ -9,9 +9,10 @@ Last change: 20070209
 
 //Allocate arrays, initialise parameters
 DelayCorrection::
-  DelayCorrection(GenP& GenPrms, StaP* StaPrms,  Log_writer& lg_wrtr)
+  DelayCorrection(GenP& GenPrms, StaP* StaPrms, Log_writer &lg_wrtr)
   //member initialisation list
   :log_writer(lg_wrtr)
+
 {
   nstations   = GenPrms.get_nstations();
   n2fftDC     = GenPrms.get_lsegm();
@@ -57,16 +58,10 @@ DelayCorrection::
   //4b) and 4c) probably not necessary anymore
 
 
-  //initialise delay arrays with proper data from delay tables
-  delTbl.resize(nstations);
-  for (int sn=0; sn<nstations; sn++) {
-    string msg = string("DelTbl: ")+StaPrms[sn].get_delaytable();
-    get_log_writer().message(2,msg);
-    int retval = delTbl[sn].readDelayTable(StaPrms[sn].get_delaytable());//TODO RHJO vector delay tables
-    if (retval != 0) {
-      get_log_writer().message(0,"ERROR: when reading delay table.\n");
-    }
-  }
+  //set vector sizes
+  delTbl.resize(nstations);//delay tables 
+  data_reader.resize(nstations,NULL);//data_readers
+
 
   data_frame = new double *[nstations];
   df_length = new INT32 [nstations];//frame lengths
@@ -110,12 +105,17 @@ DelayCorrection::~DelayCorrection()
 }
 
 
-//go to desired position in input reader
-void DelayCorrection::init_readers(
-  StaP* StaPrms,
-  std::vector<Data_reader *> input_readers,
-  INT64 startTS) //start time of the current time slice
-                 //wrt start of the day (usec)
+
+//set local data reader parameter
+void DelayCorrection::set_data_reader(int sn, Data_reader *data_reader_)
+{
+  data_reader[sn]=data_reader_;
+}
+
+
+
+//go to desired position in input reader forr station sn
+void DelayCorrection::init_reader(int sn, StaP &StaPrms, INT64 startIS)
 {
   
   int   jsynch; //shift to go to the synch word in the buffer
@@ -127,64 +127,60 @@ void DelayCorrection::init_readers(
 
   int msglvl; //message level parameter
   
-  for (int sn=0; sn<nstations; sn++) {
   
-    if (StaPrms[sn].get_datatype() == DATATYPE_MK4)
-    {
+  if (StaPrms.get_datatype() == DATATYPE_MK4)
+  {
 
-      // remember message level and set message level to 0
-      msglvl = get_log_writer().get_messagelevel();
-      get_log_writer().set_messagelevel(0);
-      // return usTime and jsynch for current header
-      FindHeaderMk4(*input_readers[sn], sn, jsynch, usTime, startTS);
-      // reset message level
-      get_log_writer().set_messagelevel(msglvl);
-      
-      //calculate offsets 
-      offTime = startTS - usTime;
-      offFrames = offTime * StaPrms[sn].get_tbr()/frameMk4;
-      if (StaPrms[sn].get_nhs() == 1) {
-        offBytes = offFrames * frameMk4 * 4;
-        offSynch = (jsynch -64) *4;
-       } else {
-        offBytes = offFrames * frameMk4 * 8;
-        offSynch = (jsynch -64) *8;
-      }
-      offBytes = StaPrms[sn].get_boff() + offBytes + offSynch;
-      //go to desired position in input_reader by moving offBytes forward
-      input_readers[sn]->get_bytes(offBytes, NULL);
-    }
-    else
-    {
-      get_log_writer().message(0,"Unknown data type");
-      assert(false);
-    }
+    // remember message level and set message level to 0
+    msglvl = get_log_writer().get_messagelevel();
+    get_log_writer().set_messagelevel(0);
+    // return usTime and jsynch for current header
+    FindHeaderMk4(*data_reader[sn], sn, jsynch, usTime, startIS);
+    // reset message level
+    get_log_writer().set_messagelevel(msglvl);
     
+    //calculate offsets 
+    offTime = startIS - usTime;
+    offFrames = offTime * StaPrms.get_tbr()/frameMk4;
+    if (StaPrms.get_nhs() == 1) {
+      offBytes = offFrames * frameMk4 * 4;
+      offSynch = (jsynch -64) *4;
+     } else {
+      offBytes = offFrames * frameMk4 * 8;
+      offSynch = (jsynch -64) *8;
+    }
+    offBytes = StaPrms.get_boff() + offBytes + offSynch;
+    //go to desired position in input_reader by moving offBytes forward
+    data_reader[sn]->get_bytes(offBytes, NULL);
   }
+  else
+  {
+    get_log_writer().message(0,"Unknown data type");
+    assert(false);
+  }
+    
 
   //initialise dcBufPrev with data from input channel (can be Mk4 file)
-  for (int sn=0; sn<nstations; sn++) {
-    for (int i=0; i<2*BufSize; i++) {
-      if (df_counter[sn] == df_length[sn]) {
-        //fill data_frame if data frame counter at end of frame
-        //TODO RHJO implement data type check for other data type
-        fill_Mk4frame(sn,*input_readers[sn],data_frame);
-        df_counter[sn] = 0;
-      }
-      dcBufPrev[sn][i]=data_frame[sn][df_counter[sn]];
-      df_counter[sn]++;
+  for (int i=0; i<2*BufSize; i++) {
+    if (df_counter[sn] == df_length[sn]) {
+      //fill data_frame if data frame counter at end of frame
+      //TODO RHJO implement data type check for other data type
+      fill_Mk4frame(sn,*data_reader[sn],data_frame);
+      df_counter[sn] = 0;
     }
+    dcBufPrev[sn][i]=data_frame[sn][df_counter[sn]];
+    df_counter[sn]++;
   }
   
 }
 
 
 // fills the next segment to be processed by correlator core.
-void DelayCorrection::fill_segment(std::vector<Data_reader *> input_readers)
+void DelayCorrection::fill_segment()
 {
   //(re)fill Bufs when all data in Bufs is processed
   if ( (BufPtr + n2fftcorr) > BufSize ) {
-    fill_Bufs(input_readers);
+    fill_Bufs();
     timePtr=timePtr+BufTime;
     BufPtr=0;
   }
@@ -207,7 +203,7 @@ double **DelayCorrection::get_segment()
 
 //Fills Bufs with delay corrected data. This function has to be called
 //every time all data in Bufs are processed.
-void DelayCorrection::fill_Bufs(std::vector<Data_reader *> input_readers)
+void DelayCorrection::fill_Bufs()
 {
 //  double Time; //time in micro seconds
   INT64  Time; //time in micro seconds
@@ -232,7 +228,7 @@ void DelayCorrection::fill_Bufs(std::vector<Data_reader *> input_readers)
     for (int i=2*BufSize; i<3*BufSize; i++) {
       if (df_counter[sn] == df_length[sn]) {
         //fill data frame if data frame counter is at end of frame
-        int nBytes = fill_Mk4frame(sn,*input_readers[sn],data_frame);
+        int nBytes = fill_Mk4frame(sn,*data_reader[sn],data_frame);
         if (nBytes==0) {
 //TODO RHJO implement error handling
 //          cerr << "ERROR: End of input for reader " << sn << endl;
@@ -337,5 +333,11 @@ void DelayCorrection::fill_Bufs(std::vector<Data_reader *> input_readers)
 Log_writer& DelayCorrection::get_log_writer()
 {
   return log_writer;
+}
+
+//set local delay table parameter
+void DelayCorrection::set_delay_table(int sn, DelayTable &delay_table)
+{
+  delTbl[sn]=delay_table;
 }
 

@@ -38,34 +38,36 @@ class DelayCorrection
   public:
 
     /** Allocate arrays, initialise parameters. **/
-    DelayCorrection(GenP& GenPrms, StaP* StaPrms, Log_writer& lg_wrtr);
+    DelayCorrection(GenP &GenPrms, StaP* StaPrms, Log_writer &lg_wrtr);
 
     /** De-allocate arrays and destroy plans. **/
     ~DelayCorrection();
-    
+
+    /** **/    
+    void set_data_reader(int sn, Data_reader *data_reader_); 
+
     /** Go to desired position in input reader.**/
-    void init_readers(
-      StaP* StaPrms,
-      std::vector<Data_reader *> input_readers,
-      INT64 startTS); 
+    void init_reader(int sn, StaP &StaPrms, INT64 startIS); 
     
     /** fills the next segment to be processed by correlator core**/
-    void fill_segment(std::vector<Data_reader *> input_readers);
+    void fill_segment();
 
     /** get the segment filled with delay corrected data. **/
     double** get_segment();
 
+    /** assigns delay table for station number sn**/
+    void set_delay_table(int sn, DelayTable &delay_table);
 
   private:
 
     //member functions
     // Fill Bufs with delay corrected data.
-    void fill_Bufs(std::vector<Data_reader *> input_readers);
+    void fill_Bufs();
     
     Log_writer& get_log_writer();
 
     //data members
-    Log_writer& log_writer;
+    Log_writer &log_writer;
     
     INT64  timePtr;     //time in usec wrt 00:00 used for delay table
     double **segm;      //nstation data buffer ready for correlation
@@ -96,12 +98,13 @@ class DelayCorrection
 
     double skyfreq;       //channel sky frequency
 
-    std::vector<DelayTable> delTbl;
 
-    double **data_frame; //array with data to be delay corrected
+    double **data_frame;  //array with data to be delay corrected
     INT32  *df_length;    //data frame length
     INT32  *df_counter;   //data frame counter
+    
+    vector<DelayTable>    delTbl;
+    vector<Data_reader *> data_reader;
 
-        
 };
 #endif //DELAYCORRECTION_H

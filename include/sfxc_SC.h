@@ -32,7 +32,7 @@ using namespace std;
 #include "InData.h"
 #include "Log_writer.h"
 #include "Data_writer.h"
-#include "Correlate_integration_slice.h"
+#include "Integration_slice.h"
 
 #include <Data_reader_file.h>
 #include <Data_writer_file.h>
