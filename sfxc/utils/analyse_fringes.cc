@@ -175,11 +175,11 @@ double noise_rms(complex<double> *array, int length, int imax)
   int n2avg=0;
 
   for (int i=0 ; i< length ; i++){
-    if (i < ll || i >> ul) {
+    if ( (i < ll) || (i > ul) ) {
       //skip 10% arround lag for max which is at imax 
       n2avg++;
       meanR += array[i].real();
-      meanI += array[i].real();
+      meanI += array[i].imag();
     }
   }
 
@@ -187,7 +187,7 @@ double noise_rms(complex<double> *array, int length, int imax)
   meanI /= n2avg;
 
   for (int i=0 ; i< length ; i++){
-    if (i < ll || i >> ul) {
+    if ((i < ll) || (i > ul)) {
       sum += pow( (array[i].real()-meanR),2.0 ) + pow( (array[i].imag()-meanI),2.0 );
     }
   }
