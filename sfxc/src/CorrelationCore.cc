@@ -8,8 +8,8 @@ Last change: 20070209
 //sfxc includes
 #include "CorrelationCore.h"
 
-CorrelationCore::CorrelationCore(GenP& GenPrms, Data_writer& dt_wrtr)
-  :data_writer(dt_wrtr)//member initialisation list
+CorrelationCore::CorrelationCore(GenP& GenPrms)
+  :data_writer(NULL)//member initialisation list
 {
   nstations = GenPrms.get_nstations();
   nbslns    = nstations*(nstations-1)/2 + nstations;
@@ -174,6 +174,12 @@ void CorrelationCore::write_time_slice()
 
 Data_writer& CorrelationCore::get_data_writer()
 {
-  return data_writer;
+  return *data_writer;
+}
+
+
+void CorrelationCore::set_data_writer(Data_writer *data_writer_)
+{
+  data_writer=data_writer_;
 }
 

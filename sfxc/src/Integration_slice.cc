@@ -6,27 +6,52 @@ Last change: 20070209
 
 
 //sfxc includes
-#include "Correlate_integration_slice.h"
+#include "Integration_slice.h"
 
 // Initialise the correlation for one integration slice
-Correlate_integration_slice::
-  Correlate_integration_slice(GenP& GenPrms, StaP* StaPrms,
-  Log_writer& lg_wrtr, 
-  Data_writer& dt_wrtr,
-  std::vector<Data_reader *> input_readers,
-  INT64 startTS)
+Integration_slice::Integration_slice(
+  GenP &GenPrms, 
+  StaP* StaPrms,
+  Log_writer &lg_wrtr)
   //member initialisations
-  :dc(GenPrms, StaPrms, lg_wrtr/*,input_readers*/), cc(GenPrms, dt_wrtr)
+  :dc(GenPrms, StaPrms, lg_wrtr), cc(GenPrms)
 {
   Nsegm2Avg = 2 * GenPrms.get_bwfl() / GenPrms.get_n2fft();
   Nsegm2Avg = (INT32) (GenPrms.get_time2avg() * Nsegm2Avg);
-  dc.init_readers(StaPrms, input_readers, startTS);
+}
+
+
+
+//pass the delay table
+void Integration_slice::set_delay_table(int i, DelayTable &delay_table)
+{
+  dc.set_delay_table(i,delay_table);
+}
+
+
+//pass the data reader
+void Integration_slice::set_data_reader(int sn, Data_reader *data_reader)
+{
+  dc.set_data_reader(sn,data_reader);
+}
+
+
+//pass the data writer 
+void Integration_slice::set_data_writer(Data_writer *data_writer)
+{
+  cc.set_data_writer(data_writer);
+}
+
+
+//initialise reader to proper position
+void Integration_slice::init_reader(int sn, StaP &StaPrms, INT64 startIS)
+{
+  dc.init_reader(sn,StaPrms,startIS);
 }
 
 
 // Correlates all the segments (Nsegm2Avg) in the integration slice.
-void Correlate_integration_slice::CorrelateTimeSlice(
-  std::vector<Data_reader *> input_readers)
+void Integration_slice::correlate()
 {  
   //TODO RHJO test/debug code
   float TenPct=Nsegm2Avg/10.0, i=0;
@@ -39,7 +64,7 @@ void Correlate_integration_slice::CorrelateTimeSlice(
   for (INT32 segm = 0 ; segm < Nsegm2Avg ; segm++){
 
     //fill the current segment in cc with delay corrected data from dc
-    dc.fill_segment(input_readers);
+    dc.fill_segment();
     //do the correlation for current segment.
     cc.correlate_segment(dc.get_segment());
 
@@ -47,7 +72,7 @@ void Correlate_integration_slice::CorrelateTimeSlice(
     if ( floor((segm+1)/TenPct) == i+1 ){
       i++;
       cout << "segm=" << setw(8) << segm << " " <<
-      setw(3) << i*10 << " % of current TS processed\n";
+      setw(3) << i*10 << " % of current Integration Slice processed\n";
     }
       
   }

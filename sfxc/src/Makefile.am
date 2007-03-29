@@ -17,7 +17,7 @@ OBJ=runPrms.cc genPrms.cc staPrms.cc \
   Data_reader_file.cc Data_writer_file.cc \
 	Log_writer.cc Log_writer_cout.cc Log_writer_void.cc \
 	Log_writer_file.cc \
-  Correlate_integration_slice.cc CorrelationCore.cc DelayCorrection.cc
+  Integration_slice.cc CorrelationCore.cc DelayCorrection.cc
 
 
 sfxc_SOURCES = $(OBJ) sfxc.cc 

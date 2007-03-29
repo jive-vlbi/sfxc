@@ -14,7 +14,7 @@ if (status != 0): sys.exit(1)
 # run the executable on all ccf files
 for ctrlfile in controlfiles:
   print "Control file: "+ctrlfile
-  status = os.system("sfxc_SC "+ctrlfile)
+  status = os.system("./sfxc_SC "+ctrlfile)
   if (status != 0): sys.exit(1)
   
 sys.exit(0);

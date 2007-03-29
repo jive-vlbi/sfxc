@@ -95,7 +95,6 @@ int main(int argc, char *argv[])
 
   //set the output writer
   Data_writer_file data_writer(GenPrms.get_corfile());
-  set_data_writer(data_writer); 
 
   //get the number of stations
   int    nstations;
@@ -125,43 +124,66 @@ int main(int argc, char *argv[])
   //initialise input readers
   // NGHK: Has to be a pointer or a reference,
   //       since Data_reader is an abstract class
-  vector<Data_reader *> input_readers;
-  for (int i=0; i<nstations; i++) {
-    input_readers.push_back(new Data_reader_file(StaPrms[i].get_mk4file()));
-  }
+//  vector<Data_reader *> data_readers;
+//  for (int i=0; i<nstations; i++) {
+//    data_readers.push_back(new Data_reader_file(StaPrms[i].get_mk4file()));
+//  }
+
 
 
   //display and check mk4file header info for start time set in ccf
-  if (show_MK4_headers(input_readers) !=0) {
-    log_writer.message(0,"ERROR: show_MK4_headers, program aborted.\n");
-    return -1;
-  }
+//  if (show_MK4_headers(data_readers) !=0) {
+//    log_writer.message(0,"ERROR: show_MK4_headers, program aborted.\n");
+//    return -1;
+//  }
 
   
+  //initialise start of first integration slice,
+  //which is start of scan wrt to 00:00 in usec
+  INT64 startIS=GenPrms.get_usStart();
+
+  //initialise integration slice
+  Integration_slice IntSlc(GenPrms, StaPrms, log_writer);
+
+  for (int sn=0; sn< nstations; sn++) {
+    DelayTable delay_table;
+    string msg = string("DelTbl: ")+StaPrms[sn].get_delaytable();
+    get_log_writer().message(2,msg);
+    //read the proper delay table
+    int retval = delay_table.readDelayTable(StaPrms[sn].get_delaytable());
+    if (retval != 0) {
+      get_log_writer().message(0,"ERROR: when reading delay table.\n");
+    }
+
+    IntSlc.set_delay_table(sn,delay_table);//pass the delay table 
+
+    Data_reader *data_reader;
+    data_reader = new Data_reader_file(StaPrms[sn].get_mk4file());
+    IntSlc.set_data_reader(sn,data_reader);//pass the data reader
+
+    IntSlc.init_reader(sn,StaPrms[sn],startIS);//initialise readers to proper position
+  }
+
+  IntSlc.set_data_writer(&data_writer);//pass the data writer 
+
+
   //process the mk4file data
   if ( RunPrms.get_runoption() == 1 ) {
 
-    int nTS=GenPrms.get_usDur()/GenPrms.get_usTime2Avg(), TS=0;
+    int nIS=GenPrms.get_usDur()/GenPrms.get_usTime2Avg(), IS=0;
     
-    //initialise start of first time slice,
-    //which is start of scan wrt to 00:00 in usec
-    INT64 startTS=GenPrms.get_usStart();
-
-    //initialise time slice correlator
-    Correlate_integration_slice tsc(GenPrms, StaPrms, log_writer, data_writer, input_readers, startTS);
-
-    //while still time slices and data are available
-    while (startTS < GenPrms.get_usStart() + GenPrms.get_usDur()
-           // && data_available TODO RHJO implement
-           )
+    //while still integration slices and data are available
+    while (startIS < GenPrms.get_usStart() + GenPrms.get_usDur()
+          // && data_available TODO RHJO implement
+          )
     {
       //TODO RHJO test and debug code
-      cout << "\nTS/nTS " << setw(2) << ++TS << "/" << nTS <<
-       " startTS " << startTS << endl;
-      //process the next time slice:
-      tsc.CorrelateTimeSlice(input_readers);
-      //set start of next time slice to: start of time slice + time to average
-      startTS += GenPrms.get_usTime2Avg(); //in usec
+      cout << "\nIS/nIS=" << setw(2) << ++IS << "/" << nIS <<
+       " startIS=" << startIS << " usec"<< endl;
+      //process the next integration slice:
+      IntSlc.correlate();
+      //set start of next time slice to: start of integration slice + time to average
+      startIS += GenPrms.get_usTime2Avg(); //in usec
     }
   
   }
