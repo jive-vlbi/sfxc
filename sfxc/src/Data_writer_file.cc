@@ -25,7 +25,7 @@ Data_writer_file::~Data_writer_file() {
 }
   
 UINT64 
-Data_writer_file::put_bytes(UINT64 nBytes, char *buff) {
+Data_writer_file::do_put_bytes(UINT64 nBytes, char *buff) {
   UINT64 result = fwrite(buff, 1, nBytes, file);
   assert(result == nBytes);
   return result;

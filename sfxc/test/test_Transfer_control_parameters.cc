@@ -269,6 +269,7 @@ void check_delay_table(char *filename_delay_table) {
   // Read delay_table:
   DelayTable delayTable;
   delayTable.readDelayTable(filename_delay_table, BufTime);
+  int sn = 134; // Some random value
 
   MPI_Transfer transfer;
   if (rank==0) {
@@ -282,14 +283,15 @@ void check_delay_table(char *filename_delay_table) {
       assert(delayTable == delayTable2);
     }
     
-    transfer.send_delay_table(delayTable,1);
+    transfer.send_delay_table(delayTable,sn,1);
   } else {
     DelayTable delayTable2;
     MPI_Status status;
     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    transfer.receive_delay_table(status,delayTable2);
-    
+    int sn2;
+    transfer.receive_delay_table(status,delayTable2,sn2);
     assert(delayTable == delayTable2);
+    assert(sn == sn2);
   }
 }
 

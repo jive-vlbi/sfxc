@@ -1,3 +1,11 @@
+/* Author(s): Nico Kruithof, 2007
+ * 
+ * $Id: sfxc_adam.cc 174 2007-03-20 09:08:42Z kruithof $
+ * 
+ * Dummy implementation of Integration_slice for testing the data flow of the 
+ * multicore version without actually performing the correlation.
+ */
+
 /*
 Author     : RHJ Oerlemans
 StartDate  : 20070201
@@ -16,8 +24,6 @@ Integration_slice::Integration_slice(
   //member initialisations
   :dc(GenPrms, StaPrms, lg_wrtr), cc(GenPrms)
 {
-  Nsegm2Avg = 2 * GenPrms.get_bwfl() / GenPrms.get_n2fft();
-  Nsegm2Avg = (INT32) (GenPrms.get_time2avg() * Nsegm2Avg);
 }
 
 
@@ -25,7 +31,6 @@ Integration_slice::Integration_slice(
 //pass the delay table
 void Integration_slice::set_delay_table(int i, DelayTable &delay_table)
 {
-  dc.set_delay_table(i,delay_table);
 }
 
 
@@ -46,7 +51,6 @@ void Integration_slice::set_data_writer(Data_writer *data_writer)
 //initialise reader to proper position
 void Integration_slice::init_reader(int sn, StaP &StaPrms, INT64 startIS)
 {
-  dc.init_reader(sn,StaPrms,startIS);
 }
 
 
@@ -89,3 +93,41 @@ void Integration_slice::correlate()
 Data_writer &Integration_slice::get_data_writer() {
   return cc.get_data_writer();
 }
+
+
+
+//
+////sfxc includes
+//#include "Integration_slice.h"
+//
+//Log_writer *TSC_log_writer;
+//Data_writer *TSC_data_writer;
+//INT64 TSC_startTS;
+//
+//// Initialise the Time Slice correlator.
+//TScorrelator::TScorrelator(GenP& GenPrms, StaP* StaPrms,
+//  Log_writer& lg_wrtr, 
+//  Data_writer& dt_wrtr,
+//  std::vector<Data_reader *> input_readers,
+//  INT64 startTS)
+//  //member initialisations
+//  :dc(GenPrms, StaPrms, lg_wrtr), cc(GenPrms, dt_wrtr)
+//{
+//  TSC_log_writer = &lg_wrtr;
+//  TSC_data_writer = &dt_wrtr;
+//  TSC_startTS = startTS;
+//}
+//
+//
+//// Correlates all the segments (Nsegm2Avg) in the time slice.
+//void TScorrelator::CorrelateTimeSlice(
+//  StaP* StaPrms,
+//  std::vector<Data_reader *> input_readers)
+//{
+//  char data[256];
+//  sprintf(data, "%ld\n", TSC_startTS);
+//  TSC_startTS++;
+//  TSC_data_writer->put_bytes(strlen(data), data);
+//  usleep(10000);
+//}
+//

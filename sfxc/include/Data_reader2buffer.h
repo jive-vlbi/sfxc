@@ -1,3 +1,11 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ */
+
 #ifndef DATA_READER2BUFFER_H
 #define DATA_READER2BUFFER_H
 
@@ -141,14 +149,13 @@ Data_reader2buffer<T>::read() {
   while (state != STOPPED) {
     if (state == SUSPENDED) {
       usleep(100000); // .1 second:
-    } else if (buffer->full() || data_reader->eof()) {
-      usleep(100000); // .1 second:
     } else {
-      T &elem = buffer->produce();
-      int size = data_reader->get_bytes(sizeof(T),(char*)&elem);
-      buffer->produced(size);
-      if (size == 0) {
-        state = SUSPENDED;
+      if (buffer->full() || data_reader->eof()) {
+        usleep(10000); // .1 second:
+      } else {
+        T &elem = buffer->produce();
+        int size = data_reader->get_bytes(sizeof(T),(char*)&elem);
+        buffer->produced(size);
       }
     }
   }

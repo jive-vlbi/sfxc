@@ -1,3 +1,11 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ */
+
 #include "MPI_Transfer.h"
 #include <types.h>
 #include <assert.h>
@@ -234,10 +242,13 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
 }
 
 void 
-MPI_Transfer::send_delay_table(DelayTable &table, int rank) {
-  int size = 3*sizeof(INT64) + table.ndel*12*sizeof(double); 
+MPI_Transfer::send_delay_table(DelayTable &table, int sn, int rank) {
+  int size = 3*sizeof(INT64) + sizeof(INT32) + table.ndel*12*sizeof(double); 
   int position=0;
   char buffer[size];
+
+  // First, set the station number
+  MPI_Pack(&sn, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
 
   // Scalars
   MPI_Pack(&table.ndel, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD); 
@@ -265,7 +276,7 @@ MPI_Transfer::send_delay_table(DelayTable &table, int rank) {
 }
 
 void 
-MPI_Transfer::receive_delay_table(MPI_Status &status, DelayTable &table) {
+MPI_Transfer::receive_delay_table(MPI_Status &status, DelayTable &table, int &sn) {
   MPI_Status status2;
   
   int size;
@@ -276,6 +287,9 @@ MPI_Transfer::receive_delay_table(MPI_Status &status, DelayTable &table) {
            status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
   int position = 0; 
+
+  // First, get the station number
+  MPI_Unpack(buffer, size, &position, &sn, 1, MPI_INT32, MPI_COMM_WORLD);
   
 
   // Scalars

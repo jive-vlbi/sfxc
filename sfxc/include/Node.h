@@ -47,6 +47,8 @@ public:
    * - 1: message processed
    **/
   MESSAGE_RESULT check_and_process_waiting_message();
+  
+  MESSAGE_RESULT process_all_waiting_messages();
 
   /** Blocking check for a message and process it.
    * - false: no message

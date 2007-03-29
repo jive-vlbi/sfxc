@@ -13,10 +13,12 @@ public:
   //Data_writer_tcp(UINT64 *ip_addr, int nAddr, unsigned short int port);
   ~Data_writer_tcp();
   
-  UINT64 put_bytes(UINT64 nBytes, char *buff);
-
   unsigned int get_port();  
+
+  void flush();
 private:
+  UINT64 do_put_bytes(UINT64 nBytes, char *buff);
+
   int connection_socket, socket;
   int port;
 };

@@ -1,4 +1,7 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
  * $Id$
  */
@@ -7,6 +10,7 @@
 
 #include <types.h>
 #include <Data_writer_file.h>
+#include <Data_reader_buffer.h>
 #include <Queue_buffer.h>
 
 #include <iostream>
@@ -46,7 +50,18 @@ void Output_node::initialise() {
 }
 
 Output_node::~Output_node() {
-  get_log_writer()(1) << "~Output_node()";
+  // empty the input buffers to the output
+
+  while (data_available()) {
+    // We might not have received all the time slice termination messages yet:
+    while (check_and_process_waiting_message() != NO_MESSAGE) {}
+    write_output();
+  }
+  
+  // wait until the output buffer is empty
+  while (!output_buffer.empty()) {
+    usleep(100000);
+  }
 }
 
 void Output_node::start() {
@@ -60,42 +75,28 @@ void Output_node::start() {
         break;
       }
       case WRITE_OUTPUT: {
-        Node::MESSAGE_RESULT result;
-        while ((result = check_and_process_waiting_message()) != NO_MESSAGE) {
-          if (result == TERMINATE_NODE) {
-            status = END_NODE;
-          }
-        } 
+        if (process_all_waiting_messages() == TERMINATE_NODE) {
+          status = END_NODE;
+          break;
+        }
         
         if (data_available()) {
           write_output();
         }
         break;
       }
-      case END_NODE: { // For completeness sake, is caught by the while loop
+      case END_NODE: { // For completeness sake
         break;
       }
     }
   }
-  
-  // empty the input buffers to the output
-  while (data_available()) {
-    // We might not have received all the time slice termination messages yet:
-    while (check_and_process_waiting_message() != NO_MESSAGE) {}
-    write_output();
-  }
-  
-  // wait until the output buffer is empty
-  while (!output_buffer.empty()) {
-    usleep(100000);
-  }
 }
 
 void Output_node::create_buffer(int num) {
-  // Create an output buffer:
-  assert(data_readers_ctrl.get_buffer(num) == NULL);
-  Buffer *new_buffer = new Queue_buffer<value_type>();
-  data_readers_ctrl.set_buffer(num, new_buffer);
+//  // Create an output buffer:
+//  assert(data_readers_ctrl.get_buffer(num) == NULL);
+//  Buffer *new_buffer = new Queue_buffer<value_type>();
+//  data_readers_ctrl.set_buffer(num, new_buffer);
 }
 
 void Output_node::set_weight_of_input_stream(int num, UINT64 weight) {
@@ -109,18 +110,15 @@ void Output_node::set_weight_of_input_stream(int num, UINT64 weight) {
   }
   input_streams_order.insert(Input_stream_priority_map_value(weight,num));
   
-  // Set finished to false:
-  if (input_streams_finished.size() <= (unsigned int)num) {
-    input_streams_finished.resize(num+1);
-  }
-  input_streams_finished[num] = false;
   status = WRITE_OUTPUT;
 }
 
-void Output_node::time_slice_finished(int num) {
-  assert(input_streams_finished.size() > (unsigned int) num);
-  assert(!input_streams_finished[num]);
-  input_streams_finished[num] = true;
+void Output_node::time_slice_finished(int rank, UINT64 nBytes) {
+  assert(input_streams.size() > (unsigned int) rank);
+  assert(input_streams[rank] != NULL);
+  input_streams[rank]->set_length_time_slice(nBytes);
+     
+  set_status();
 }
 
 void Output_node::set_status() {
@@ -131,29 +129,23 @@ void Output_node::set_status() {
 
 void Output_node::write_output() {
   assert(!input_streams_order.empty());
-  int head = input_streams_order.begin()->second;
-  Buffer *buffer = data_readers_ctrl.get_buffer(head);
   
-  assert(buffer != NULL);
-  if (buffer->empty()) {
-    if (input_streams_finished[head]) {
-      // NGHK: TODO:
-//      data_readers_ctrl.get_input_stream(head).suspend();
-//      data_readers_ctrl.set_buffer(head, NULL);
-//      data_readers_ctrl.get_input_stream(head).resume();
-      
+  int head = input_streams_order.begin()->second;
+  
+  assert(input_streams[head] != NULL);
+  if (input_streams[head]->has_data()) {
+    // Write data ...
+    value_type &out_elem = data_writer_ctrl.buffer()->produce();
+    int nBytes = input_streams[head]->write_bytes(out_elem);
+    data_writer_ctrl.buffer()->produced(nBytes);
+    
+    // Check whether we arrived at the end of the slice
+    if (input_streams[head]->end_of_slice()) {
       input_streams_order.erase(input_streams_order.begin());
-      input_streams_finished[head] = false;
-    } else {
-      usleep(100000); // .1 second:
     }
   } else {
-    int status;
-    value_type &in_elem = buffer->consume(status);
-    value_type &out_elem = data_writer_ctrl.buffer()->produce();
-    memcpy(&out_elem, &in_elem, status); 
-    data_writer_ctrl.buffer()->produced(status);
-    buffer->consumed();
+    // No data available yet, sleep
+    usleep(100000); // .1 second:
   }
 }
 
@@ -162,7 +154,60 @@ bool Output_node::data_available() {
 }
 
 void Output_node::hook_added_data_reader(int reader) {
+  // Create an output buffer:
+  assert(data_readers_ctrl.get_buffer(reader) == NULL);
+  Buffer *new_buffer = new Queue_buffer<value_type>();
+  data_readers_ctrl.set_buffer(reader, new_buffer);
+  
+  // Create the data_stream:
+  if (input_streams.size() <= (size_t)reader) {
+    input_streams.resize(reader+1, NULL);
+  }
+  assert(input_streams[reader] == NULL);
+  input_streams[reader] = new Input_stream(new Data_reader_buffer(new_buffer));
 }
 
 void Output_node::hook_added_data_writer(int writer) {
+}
+
+
+/*
+ *  Input_stream
+ */
+
+Output_node::Input_stream::Input_stream(Data_reader *reader)
+  : reader(reader), curr_bytes(0) 
+{
+}
+
+int 
+Output_node::Input_stream::write_bytes(value_type &elem) {
+  if (curr_bytes == 0) {
+    if (!slice_size.empty()) {
+      curr_bytes = slice_size.front();
+      slice_size.pop();
+    }
+  }
+  if (curr_bytes == 0) {
+    return 0;
+  } else {
+    int status = reader->get_bytes(min(131072, curr_bytes), elem.buffer());
+    curr_bytes -= status;
+    return status;
+  }
+}
+
+
+bool 
+Output_node::Input_stream::end_of_slice() {
+  return (curr_bytes == 0);
+}
+bool 
+Output_node::Input_stream::has_data() {
+  return (curr_bytes > 0) || (!slice_size.empty());
+}
+    
+void 
+Output_node::Input_stream::set_length_time_slice(UINT64 nBytes) {
+  slice_size.push(nBytes);
 }

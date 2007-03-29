@@ -55,10 +55,9 @@ class CorrelationCore
     /** **/
     void set_data_writer(Data_writer *data_writer);
 
+    Data_writer &get_data_writer();
     
   private:
-
-    Data_writer& get_data_writer();
 
     //data members
     Data_writer *data_writer;

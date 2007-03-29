@@ -32,8 +32,10 @@ public:
 
   ~Data_writer_buffer();
 
-  UINT64 put_bytes(UINT64 nBytes, char *buff);
 private:
+  UINT64 do_put_bytes(UINT64 nBytes, char *buff);
+
+
   // The input buffer
   Buffer       *buffer;
   // Number of bytes left in the current buffer-element

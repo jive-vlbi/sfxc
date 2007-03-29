@@ -1,13 +1,13 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ */
+
 #ifndef DATA_READER_H
 #define DATA_READER_H
-
-/*
-  $Author$
-  $Date$
-  $Name$
-  $Revision$
-  $Source$
-*/
 
 
 #include <types.h>
@@ -22,7 +22,7 @@ public:
 
   /** Reads nBytes from channel into the buff starting from the
       read_pointer. If buff == NULL, then the buffer is not 
-      filled and the amount of bytes is only read.
+      filled and the read pointer is only increased by the amount of bytes.
       
       \return the number of bytes read into the buffer.
       \pre buff is allocated. nBytes >= 0
