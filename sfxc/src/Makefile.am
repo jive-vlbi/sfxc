@@ -5,12 +5,11 @@ EXTRA_DIST =
 AM_CPPFLAGS = -I../include
 AM_CXXFLAGS = 
 
-bin_PROGRAMS = sfxc sfxc_SC sfxc_adam
+bin_PROGRAMS = sfxc sfxc_SC
 
 TESTS           = \
 	test_sfxc.py \
-	test_sfxc_SC.py \
-	test_sfxc_adam.py
+	test_sfxc_SC.py
 
 OBJ=runPrms.cc genPrms.cc staPrms.cc \
 	genFunctions.cc \
@@ -23,9 +22,7 @@ OBJ=runPrms.cc genPrms.cc staPrms.cc \
   Integration_slice.cc CorrelationCore.cc DelayCorrection.cc
 
 
-sfxc_SOURCES = $(OBJ) sfxc.cc 
-
-sfxc_adam_SOURCES = $(OBJ) sfxc_adam.cc \
+sfxc_SOURCES = $(OBJ) sfxc.cc \
   Node.cc Manager_node.cc Log_node.cc \
   Correlator_node.cc Input_node.cc Output_node.cc \
 	Controller.cc Input_node_controller.cc Output_node_controller.cc \
