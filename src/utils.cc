@@ -10,6 +10,25 @@
 
 #include <assert.h>
 
+
+#include <genFunctions.h>
+#include <iostream>
+using namespace std;
+//constants
+#include "constPrms.h"
+
+//class and function definitions
+#include "genFunctions.h"
+#include "InData.h"
+
+#include <Data_reader_file.h>
+
+#define SEED 10
+
+
+// used for randomising numbers for Headers in Mk4 file
+extern UINT32 seed;
+
 INT64 get_us_time(int time[]) {
   INT64 result = 0;
   // time[0] is year
@@ -58,43 +77,12 @@ void get_ip_address(std::list<Interface_pair> &addresses,
 }
 
 
-#include <genFunctions.h>
-#include <iostream>
-using namespace std;
-//constants
-#include "constPrms.h"
-
-//class and function definitions
-#include "runPrms.h"
-#include "genPrms.h"
-#include "staPrms.h"
-#include "genFunctions.h"
-#include "InData.h"
-
-#include <Data_reader_file.h>
-
-#define SEED 10
-
-//global variables
-//declaration and default settings run parameters
-extern RunP RunPrms;
-//declaration and default settings general parameters
-extern GenP GenPrms;
-//station parameters class, declaration and default settings
-extern StaP StaPrms[NstationsMax];
-// used for randomising numbers for Headers in Mk4 file
-extern UINT32 seed;
-//declarations for offsets
-extern INT64 sliceStartByte[NstationsMax][NprocessesMax];
-extern INT64 sliceStartTime [NprocessesMax];
-extern INT64 sliceStopTime  [NprocessesMax];
-extern INT64 sliceTime;
-
-
 /** Initialises the global control files, this should be removed at some point.
  **/
 int
-initialise_control(char *filename, Log_writer &log_writer) {
+initialise_control(char *filename, Log_writer &log_writer, 
+  RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]) 
+{
   int    i, Nstations;
   
   //parse control file for run parameters

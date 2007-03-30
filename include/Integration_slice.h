@@ -36,7 +36,7 @@ class Integration_slice
     void set_data_writer(Data_writer *data_writer);
 
     /** **/
-    void init_reader(int sn, StaP &StaPrms, INT64 startIS);
+    void init_reader(int sn, INT64 startIS);
 
     /** Correlates all the segments (Nsegm2Avg) in the time slice.
     \pre startIS: start time of current integration slice in usec wrt 00:00

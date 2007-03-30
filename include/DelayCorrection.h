@@ -38,7 +38,7 @@ class DelayCorrection
   public:
 
     /** Allocate arrays, initialise parameters. **/
-    DelayCorrection(GenP &GenPrms, StaP* StaPrms, Log_writer &lg_wrtr);
+    DelayCorrection(GenP &GenPrms_, StaP* StaPrms_, Log_writer &lg_wrtr);
 
     /** De-allocate arrays and destroy plans. **/
     ~DelayCorrection();
@@ -47,7 +47,7 @@ class DelayCorrection
     void set_data_reader(int sn, Data_reader *data_reader_); 
 
     /** Go to desired position in input reader.**/
-    void init_reader(int sn, StaP &StaPrms, INT64 startIS); 
+    void init_reader(int sn, INT64 startIS); 
     
     /** fills the next segment to be processed by correlator core**/
     void fill_segment();
@@ -68,6 +68,8 @@ class DelayCorrection
 
     //data members
     Log_writer &log_writer;
+    StaP       *StaPrms;
+    GenP       &GenPrms;
     
     INT64  timePtr;     //time in usec wrt 00:00 used for delay table
     double **segm;      //nstation data buffer ready for correlation

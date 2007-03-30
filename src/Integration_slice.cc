@@ -11,7 +11,7 @@ Last change: 20070209
 // Initialise the correlation for one integration slice
 Integration_slice::Integration_slice(
   GenP &GenPrms, 
-  StaP* StaPrms,
+  StaP *StaPrms,
   Log_writer &lg_wrtr)
   //member initialisations
   :dc(GenPrms, StaPrms, lg_wrtr), cc(GenPrms)
@@ -44,9 +44,9 @@ void Integration_slice::set_data_writer(Data_writer *data_writer)
 
 
 //initialise reader to proper position
-void Integration_slice::init_reader(int sn, StaP &StaPrms, INT64 startIS)
+void Integration_slice::init_reader(int sn, INT64 startIS)
 {
-  dc.init_reader(sn,StaPrms,startIS);
+  dc.init_reader(sn,startIS);
 }
 
 

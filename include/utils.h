@@ -5,6 +5,9 @@
 #include <list>
 #include <string>
 #include "Log_writer.h"
+#include "runPrms.h"
+#include "genPrms.h"
+#include "staPrms.h"
 
 /// Interface_pair is a pair of two strings 
 /// containing the interface name and its ip address;
@@ -26,7 +29,8 @@ INT64 get_us_time(int time[]);
 
 /** Initialises the global control files, this should be removed at some point.
   **/
-int initialise_control(char *filename, Log_writer &log_writer);
+int initialise_control(char *filename, Log_writer &log_writer, 
+  RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]);
                     
 ///** Constructs an array containing all control data for a correlate node (Gen and Run).
 // *  @returns the size of the array
