@@ -9,11 +9,14 @@ Last change: 20070209
 
 //Allocate arrays, initialise parameters
 DelayCorrection::
-  DelayCorrection(GenP& GenPrms, StaP* StaPrms, Log_writer &lg_wrtr)
+  DelayCorrection(GenP &GenPrms_, StaP *StaPrms_, Log_writer &lg_wrtr)
   //member initialisation list
-  :log_writer(lg_wrtr)
+  :log_writer(lg_wrtr), GenPrms(GenPrms_)
 
 {
+  
+  StaPrms     = StaPrms_;
+
   nstations   = GenPrms.get_nstations();
   n2fftDC     = GenPrms.get_lsegm();
   SR          = 2.0*GenPrms.get_bwfl()*GenPrms.get_ovrfl();
@@ -114,8 +117,8 @@ void DelayCorrection::set_data_reader(int sn, Data_reader *data_reader_)
 
 
 
-//go to desired position in input reader forr station sn
-void DelayCorrection::init_reader(int sn, StaP &StaPrms, INT64 startIS)
+//go to desired position in input reader for station sn
+void DelayCorrection::init_reader(int sn, INT64 startIS)
 {
   
   int   jsynch; //shift to go to the synch word in the buffer
@@ -128,28 +131,28 @@ void DelayCorrection::init_reader(int sn, StaP &StaPrms, INT64 startIS)
   int msglvl; //message level parameter
   
   
-  if (StaPrms.get_datatype() == DATATYPE_MK4)
+  if (StaPrms[sn].get_datatype() == DATATYPE_MK4)
   {
 
     // remember message level and set message level to 0
     msglvl = get_log_writer().get_messagelevel();
     get_log_writer().set_messagelevel(0);
     // return usTime and jsynch for current header
-    FindHeaderMk4(*data_reader[sn], sn, jsynch, usTime, startIS);
+    FindHeaderMk4(*data_reader[sn], jsynch, usTime, startIS, StaPrms[sn], GenPrms);
     // reset message level
     get_log_writer().set_messagelevel(msglvl);
     
     //calculate offsets 
     offTime = startIS - usTime;
-    offFrames = offTime * StaPrms.get_tbr()/frameMk4;
-    if (StaPrms.get_nhs() == 1) {
+    offFrames = offTime * StaPrms[sn].get_tbr()/frameMk4;
+    if (StaPrms[sn].get_nhs() == 1) {
       offBytes = offFrames * frameMk4 * 4;
       offSynch = (jsynch -64) *4;
      } else {
       offBytes = offFrames * frameMk4 * 8;
       offSynch = (jsynch -64) *8;
     }
-    offBytes = StaPrms.get_boff() + offBytes + offSynch;
+    offBytes = StaPrms[sn].get_boff() + offBytes + offSynch;
     //go to desired position in input_reader by moving offBytes forward
     data_reader[sn]->get_bytes(offBytes, NULL);
   }
@@ -165,7 +168,7 @@ void DelayCorrection::init_reader(int sn, StaP &StaPrms, INT64 startIS)
     if (df_counter[sn] == df_length[sn]) {
       //fill data_frame if data frame counter at end of frame
       //TODO RHJO implement data type check for other data type
-      fill_Mk4frame(sn,*data_reader[sn],data_frame);
+      fill_Mk4frame(sn,*data_reader[sn],data_frame, StaPrms[sn]);
       df_counter[sn] = 0;
     }
     dcBufPrev[sn][i]=data_frame[sn][df_counter[sn]];
@@ -228,7 +231,7 @@ void DelayCorrection::fill_Bufs()
     for (int i=2*BufSize; i<3*BufSize; i++) {
       if (df_counter[sn] == df_length[sn]) {
         //fill data frame if data frame counter is at end of frame
-        int nBytes = fill_Mk4frame(sn,*data_reader[sn],data_frame);
+        int nBytes = fill_Mk4frame(sn,*data_reader[sn],data_frame,StaPrms[sn]);
         if (nBytes==0) {
 //TODO RHJO implement error handling
 //          cerr << "ERROR: End of input for reader " << sn << endl;

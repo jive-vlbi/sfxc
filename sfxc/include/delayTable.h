@@ -26,26 +26,22 @@ class DelayTable
   friend class MPI_Transfer;
   
   public:
-    //default constructor, set default values 
+    //constructor, set default values 
     DelayTable();
 
     //destructor
     ~DelayTable();
     
     bool operator==(const DelayTable &other) const;
-    
+
+    void set_cmr(GenP GenPrms);
+
     //read the delay table, do some checks and
     //calculate coefficients for parabolic interpolation
     int readDelayTable(char *delayTableName);
-    //TODO RHJO delete when depricated
-    int readDelayTable(char *delayTableName, INT64 start, INT64 stop, INT64 BufTime);
-    //TODO RHJO delete when depricated
-    int readDelayTable(char *delayTableName, INT64 BufTime);
 
     //calculate the delay for the delayType at time in microseconds
     double calcDelay(INT64 time, int delayType) const;
-    //TODO RHJO delete when depricated
-    double calcDelay(double time, int delayType) const;
 
     enum delayType {Cdel, Mdel, Rdel, Fdel};
 
@@ -53,6 +49,16 @@ class DelayTable
 
   private:
     void reserve_data();
+
+    //get the next line from the delay table file
+    int getDelayLine(FILE *fp, INT64 &t, 
+      double &c, double &m, double &r, double &f);
+
+    //calculate the parabolic coefficients A, B and C
+    int parabCoefs (INT64 t0,INT64 t1,INT64 t2,
+      double d1,double d2,double d3,
+      double& A,double& B,double& C);
+
     INT64  ndel; // number of parabolic delay functions covering start until stop
     
     INT64  startDT;       // start time delaytable in micro seconds
@@ -61,6 +67,8 @@ class DelayTable
     std::vector<double> mA, mB, mC; // per read delay line one series of these coefficients
     std::vector<double> rA, rB, rC;
     std::vector<double> fA, fB, fC;
+    
+    int cde, mde, rde; //switches which determine which columns of delay table are used
 };
 
 

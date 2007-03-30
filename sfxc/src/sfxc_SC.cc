@@ -15,14 +15,6 @@ Last change  20070209
 
 #define SEED 10
 
-//TODO RHJO make local after InData and ProcessData are depricated
-//global variables
-//declaration and default settings run parameters
-RunP RunPrms;
-//declaration and default settings general parameters
-GenP GenPrms;
-//station parameters class, declaration and default settings
-StaP StaPrms[NstationsMax];
 // used for randomising numbers for Headers in Mk4 file
 UINT32 seed;
 
@@ -46,7 +38,7 @@ int main(int argc, char *argv[])
   strcpy(ctrlFile,argv[1]);
 
   //declaration and default settings run parameters
-//  RunP RunPrms;
+  RunP RunPrms;
   
   //parse control file for run parameters
   if (RunPrms.parse_ctrlFile(ctrlFile, log_writer) != 0) {
@@ -74,7 +66,7 @@ int main(int argc, char *argv[])
   log_writer.ask_continue();
 
   //declaration and default settings general parameters
-//  GenP GenPrms;
+  GenP GenPrms;
     
   //parse control file for general parameters
   if (GenPrms.parse_ctrlFile(ctrlFile, log_writer) != 0) {
@@ -101,16 +93,16 @@ int main(int argc, char *argv[])
   nstations = GenPrms.get_nstations();
     
   //station parameters class, declaration and default settings
-//  StaP StaPrms[NstationsMax];
+  StaP StaPrms[NstationsMax];
   
   //parse the control file for all station parameters
   for (int i=0; i<nstations; i++)
     if (StaPrms[i].parse_ctrlFile(ctrlFile, i, log_writer) != 0 ) {
-      log_writer << "ERROR: Control file "
-                 << ctrlFile <<", program aborted.\n";
+      log_writer <<"ERROR: Control file "<< ctrlFile <<", program aborted.\n";
       return -1;
     }
     
+
   //check station control parameters, optionally show them
   for (int i=0; i<nstations; i++){
     if (StaPrms[i].check_params(log_writer) != 0 ) {
@@ -121,13 +113,6 @@ int main(int argc, char *argv[])
     log_writer.ask_continue();
   }
 
-
-  //display and check mk4file header info for start time set in ccf
-//  if (show_MK4_headers(data_readers) !=0) {
-//    log_writer.message(0,"ERROR: show_MK4_headers, program aborted.\n");
-//    return -1;
-//  }
-
   
   //initialise start of first integration slice,
   //which is start of scan wrt to 00:00 in usec
@@ -137,7 +122,10 @@ int main(int argc, char *argv[])
   Integration_slice IntSlc(GenPrms, StaPrms, log_writer);
 
   for (int sn=0; sn< nstations; sn++) {
+
+    //Delay table initialisations
     DelayTable delay_table;
+    delay_table.set_cmr(GenPrms);//set delay table column switches
     string msg = string("DelTbl: ")+StaPrms[sn].get_delaytable();
     get_log_writer().message(2,msg);
     int retval = delay_table.readDelayTable(StaPrms[sn].get_delaytable());
@@ -146,10 +134,14 @@ int main(int argc, char *argv[])
     }
     IntSlc.set_delay_table(sn,delay_table);//pass the delay table 
 
+    //Data reader initialisations
     Data_reader *data_reader;
     data_reader = new Data_reader_file(StaPrms[sn].get_mk4file());
     IntSlc.set_data_reader(sn,data_reader);//pass the data reader
-    IntSlc.init_reader(sn,StaPrms[sn],startIS);//initialise readers to proper position
+    //display and check mk4file header info for start time set in ccf
+    show_MK4_header(data_reader, startIS, StaPrms[sn], GenPrms);
+    IntSlc.init_reader(sn,startIS);//initialise readers to proper position
+
   }
 
   IntSlc.set_data_writer(&data_writer);//pass the data writer 
