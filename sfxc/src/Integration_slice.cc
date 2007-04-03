@@ -9,16 +9,40 @@ Last change: 20070209
 #include "Integration_slice.h"
 
 // Initialise the correlation for one integration slice
+Integration_slice::Integration_slice(Log_writer &lg_wrtr)
+  //member initialisations
+  :dc(lg_wrtr), cc(), parameters_set(false)
+{
+}
+
+
 Integration_slice::Integration_slice(
   GenP &GenPrms, 
   StaP *StaPrms,
   Log_writer &lg_wrtr)
   //member initialisations
-  :dc(GenPrms, StaPrms, lg_wrtr), cc(GenPrms)
+  :dc(lg_wrtr), cc(), parameters_set(false)
 {
+  set_parameters(GenPrms,StaPrms);
+}
+
+void
+Integration_slice::set_parameters(
+  GenP &GenPrms, 
+  StaP *StaPrms)
+{
+  // Only set the parameters once, otherwise the arrays get constructed twice
+  assert( !parameters_set );
+  parameters_set = true;
+  
+  dc.set_parameters(GenPrms, StaPrms);
+  cc.set_parameters(GenPrms);
+  
   Nsegm2Avg = 2 * GenPrms.get_bwfl() / GenPrms.get_n2fft();
   Nsegm2Avg = (INT32) (GenPrms.get_time2avg() * Nsegm2Avg);
 }
+
+
 
 
 

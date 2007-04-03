@@ -108,7 +108,7 @@ GenP::GenP()
   strcpy(experiment,"DefExp");
   yst=dst=hst=mst=sst=0;
   duration=0;
-  nstations = 2;
+  nstations = 0;
   outdir  = new char[256];
   outdir = getcwd(NULL, 256);//current working directory
   logfile  = new char[256];
