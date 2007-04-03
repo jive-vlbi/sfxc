@@ -26,7 +26,7 @@ using namespace std;
 #include "genPrms.h"
 
 /**
-Functions and data necessary to correlate one Time Slice.
+ * Functions and data necessary to correlate one Time Slice.
 **/
 class CorrelationCore
 {
@@ -34,10 +34,14 @@ class CorrelationCore
 
     /** Initialise the correlator with proper values, allocate arrays,
         createFFTW plans.**/
+    CorrelationCore();
     CorrelationCore(GenP&);
 
     /** De-allocate correlator arrays, destroy FFTW plans.**/
     ~CorrelationCore();
+
+    /** Sets the parameters for the correlation **/
+    void set_parameters(GenP &GenPrms);
 
     /** Initialise array values to zero before the correlation
         of the time slice.**/

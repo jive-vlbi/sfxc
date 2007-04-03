@@ -8,13 +8,23 @@ Last change: 20070209
 
 
 //Allocate arrays, initialise parameters
-DelayCorrection::
-  DelayCorrection(GenP &GenPrms_, StaP *StaPrms_, Log_writer &lg_wrtr)
-  //member initialisation list
-  :log_writer(lg_wrtr), GenPrms(GenPrms_)
-
+DelayCorrection::DelayCorrection(Log_writer &lg_wrtr)
+  : log_writer(lg_wrtr)
 {
-  
+}
+//Allocate arrays, initialise parameters
+DelayCorrection::DelayCorrection(GenP &GenPrms_, 
+                                 StaP *StaPrms_, 
+                                 Log_writer &lg_wrtr)
+  : log_writer(lg_wrtr)
+{
+  set_parameters(GenPrms_, StaPrms_);
+}
+
+//Allocate arrays, initialise parameters
+void DelayCorrection::set_parameters(GenP &GenPrms_, StaP *StaPrms_)
+{
+  GenPrms     = GenPrms_;
   StaPrms     = StaPrms_;
 
   nstations   = GenPrms.get_nstations();
@@ -162,12 +172,12 @@ void DelayCorrection::init_reader(int sn, INT64 startIS)
     assert(false);
   }
     
-
   //initialise dcBufPrev with data from input channel (can be Mk4 file)
   for (int i=0; i<2*BufSize; i++) {
     if (df_counter[sn] == df_length[sn]) {
       //fill data_frame if data frame counter at end of frame
       //TODO RHJO implement data type check for other data type
+
       fill_Mk4frame(sn,*data_reader[sn],data_frame, StaPrms[sn]);
       df_counter[sn] = 0;
     }

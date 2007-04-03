@@ -9,8 +9,18 @@ Last change: 20070209
 #include "CorrelationCore.h"
 #include <assert.h>
 
+CorrelationCore::CorrelationCore()
+  :data_writer(NULL)//member initialisation list
+{
+}
+
 CorrelationCore::CorrelationCore(GenP& GenPrms)
   :data_writer(NULL)//member initialisation list
+{
+  set_parameters(GenPrms);
+}
+
+void CorrelationCore::set_parameters(GenP& GenPrms)
 {
   nstations = GenPrms.get_nstations();
   nbslns    = nstations*(nstations-1)/2 + nstations;
