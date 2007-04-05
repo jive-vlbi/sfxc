@@ -1,8 +1,11 @@
-/*
-Author     : RHJ Oerlemans
-StartDate  : 20070201
-Last change: 20070209
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
 
 
 //sfxc includes

@@ -1,18 +1,12 @@
-/*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
-
-General purpose functions
-
-Author     : RHJ Oerlemans
-StartDate  : 20060841
-Last change: 20061114
-
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * General purpose functions
+ */
 
 #include <types.h>
 #include "genFunctions.h"

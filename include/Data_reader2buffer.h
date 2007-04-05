@@ -4,6 +4,7 @@
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
  * $Id$
+ *
  */
 
 #ifndef DATA_READER2BUFFER_H
@@ -13,6 +14,7 @@
 #include <Buffer.h>
 
 #include <assert.h>
+#include <pthread.h>
 
 /** Reads data from the data reader and puts it in a buffer,
  * which is useful for non-blocking IO.
@@ -43,6 +45,7 @@ public:
   void try_start();
   void stop();
   State get_state();
+  void set_state(State new_state);
 
 private:
   static void *start_reading(void *);
@@ -52,6 +55,8 @@ private:
   Buffer<T>   *buffer;
   State       state;
   pthread_t   io_thread;
+  
+  pthread_mutex_t mutex_for_set_state;
 };
 
 
@@ -60,11 +65,12 @@ template <class T>
 Data_reader2buffer<T>::Data_reader2buffer() 
   : data_reader(NULL), buffer(NULL), state(STOPPED)
 {
+  pthread_mutex_init(&mutex_for_set_state, NULL);
 }
 
 template <class T>
 Data_reader2buffer<T>::
-Data_reader2buffer(const Data_reader2buffer &buffer) {
+Data_reader2buffer(const Data_reader2buffer &buffer){
   // No copy constructor, the threads don't like it
   assert(false);
 }
@@ -116,7 +122,7 @@ Data_reader2buffer<T>::start() {
   assert(data_reader != NULL);
   assert(buffer != NULL);
   
-  state = RUNNING;
+  set_state(RUNNING);
   pthread_create(&io_thread, NULL, 
                  start_reading, static_cast<void*>(this));
 }
@@ -125,7 +131,7 @@ template <class T>
 void
 Data_reader2buffer<T>::stop() {
   if (state == STOPPED) return;
-  state = STOPPED;
+  set_state(STOPPED);
   pthread_join(io_thread, NULL);
 }
 
@@ -133,6 +139,14 @@ template <class T>
 typename Data_reader2buffer<T>::State
 Data_reader2buffer<T>::get_state() {
   return state;
+}
+
+template <class T>
+void 
+Data_reader2buffer<T>::set_state(State new_state) {
+  pthread_mutex_lock( &mutex_for_set_state );
+  state = new_state;
+  pthread_mutex_unlock( &mutex_for_set_state );  
 }
 
 template <class T>
@@ -156,6 +170,7 @@ Data_reader2buffer<T>::read() {
         T &elem = buffer->produce();
         int size = data_reader->get_bytes(sizeof(T),(char*)&elem);
         buffer->produced(size);
+        if (size == 0) set_state(SUSPENDED);
       }
     }
   }

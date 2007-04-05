@@ -1,3 +1,11 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ */
+
 #include "utils.h"
 
 #include <sys/types.h>

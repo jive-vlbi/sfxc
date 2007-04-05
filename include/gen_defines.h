@@ -1,14 +1,14 @@
-//TODO RHJO 20070213: delete from repository, depricated
-/*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * general defines
+ */
 
-general defines
-*/
+//TODO RHJO 20070213: delete from repository, depricated
 
 //WARNING, check if definitions are appropriate on machine
 //definition of 32 bit and 64 bit (un)signed integers

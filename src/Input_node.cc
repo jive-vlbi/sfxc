@@ -1,6 +1,10 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
  * $Id$
+ *
  */
 
 #include <Input_node.h>
@@ -12,24 +16,27 @@
 #include <assert.h>
 #include <time.h>
 
-Input_node::Input_node(int rank, Log_writer *log_writer, int size) 
+#define BUFFER_SIZE 10
+
+Input_node::Input_node(int rank, Log_writer *log_writer) 
   : Node(rank, log_writer), 
     input_node_ctrl(*this),
     data_reader_ctrl(*this),
     data_writers_ctrl(*this),
     time_stamp(1),
-    buffer_size(size),
+    buffer_size(BUFFER_SIZE),
     status(STOPPED)
 {
   initialise();
 }
-Input_node::Input_node(int rank, int size) 
+Input_node::Input_node(int rank) 
   : Node(rank), 
     input_node_ctrl(*this),
     data_reader_ctrl(*this),
     data_writers_ctrl(*this),
     time_stamp(1),
-    buffer_size(size),
+    buffer_size(BUFFER_SIZE),
+    nr_input_reader(nr_input_reader),
     status(STOPPED)
 {
   initialise();
@@ -37,7 +44,7 @@ Input_node::Input_node(int rank, int size)
 void Input_node::initialise() 
 {
   data_reader_ctrl.set_buffer(new Buffer(buffer_size));
-  get_log_writer().MPI(0, "Input_node()");
+  get_log_writer() << "Input_node()" << std::endl;
   add_controller(&input_node_ctrl);
   add_controller(&data_reader_ctrl);
   add_controller(&data_writers_ctrl);
@@ -104,6 +111,8 @@ void Input_node::start() {
             for (std::list<int>::iterator it = active_list.begin();
                  it != active_list.end(); it++) {
               assert(data_writers_ctrl.buffer(*it) != NULL);
+              assert(data_writers_ctrl[*it]->status() == 
+                     Multiple_data_writers_controller::Buffer2writer::RUNNING);
               value_type &prod_elem =
                 data_writers_ctrl.buffer(*it)->produce();
               memcpy(prod_elem.buffer(), cons_elem.buffer(), size);

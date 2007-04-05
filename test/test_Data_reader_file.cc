@@ -1,12 +1,11 @@
-/*
-  $Author$
-  $Date$
-  $Name$
-  $Revision$
-  $Source$
-  
-  Author: Nico Kruithof <Kruithof@jive.nl>
-  Checks reading data from file using a Data_reader.
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * Checks reading data from file using a Data_reader.
 */
 
 

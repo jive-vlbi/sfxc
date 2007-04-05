@@ -1,11 +1,12 @@
-/*
-header file to be included in sfxc_SC.cc
-
-Source       sfxc_SC.h
-Author       RHJ Oerlemans
-Started      20070213
-Last change  20070213
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * header file to be included in sfxc_SC.cc
+ */
 
 #ifndef SFXC_SC_H
 #define SFXC_SC_H

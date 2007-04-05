@@ -1,3 +1,12 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
+
 #include "sfxc_mpi.h"
 #include "TCP_Connection.h"
 
@@ -34,7 +43,13 @@ int main(int argc, char *argv[]) {
   if (rank==0) {
     char out_buff[100], in_buff[100];
 
-    int listenSocket = connection.open_port(1233);
+    int port = 1233;
+    int listenSocket=0;
+    while (listenSocket <= 0) {
+      listenSocket = connection.open_port(port);
+      port ++;
+    }
+    std::cout << "listenSocket: " << listenSocket << " " << port << std::endl;
     assert(listenSocket > 0);
     int connectSocket = connection.open_connection(listenSocket);
 

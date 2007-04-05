@@ -1,8 +1,11 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
  * 
- * $Id: Single_data_writer_controller.cc 153 2007-02-05 09:12:43Z kruithof $
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
  */
-
 
 #include <Single_data_writer_controller.h>
 #include <sfxc_mpi.h>
@@ -32,7 +35,7 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_SET_DATA_WRITER_FILE:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer().MPI(0, print_MPI_TAG(status.MPI_TAG));
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 0);
@@ -44,6 +47,11 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
       assert(status.MPI_TAG == status2.MPI_TAG);
 
       set_data_writer(new Data_writer_file(filename));
+
+      INT64 return_msg = 0;
+      MPI_Send(&return_msg, 1, MPI_INT64, 
+               RANK_MANAGER_NODE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               MPI_COMM_WORLD);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
@@ -90,6 +98,11 @@ void Single_data_writer_controller::set_buffer(Buffer *buffer) {
   buffer2writer.set_buffer(buffer);
   buffer2writer.try_start();
 }
+
+Data_writer *Single_data_writer_controller::get_data_writer(int i) {
+  return buffer2writer.get_data_writer();
+}
+
 
 void Single_data_writer_controller::set_data_writer(Data_writer *writer) {
   if (buffer2writer.get_data_writer() != NULL) {

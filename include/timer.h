@@ -1,10 +1,12 @@
-/*
-CVS keywords
-$Id$
-$Name$
-
-timer structure and prototypes
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * timer structure and prototypes
+ */
 
 
 typedef struct {

@@ -1,6 +1,10 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
  * 
- * $Id: sfxc_adam.cc 174 2007-03-20 09:08:42Z kruithof $
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
  */
 
 #include <types.h>
@@ -47,6 +51,7 @@ int main(int argc, char *argv[]) {
   assert(status.MPI_TAG == MPI_TAG_SET_INPUT_NODE); 
 
   {
+    // msg is the number of the input node
     Input_node input_node(rank);
     input_node.start();
   } // Make sure the destructor is called

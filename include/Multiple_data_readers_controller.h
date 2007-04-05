@@ -1,6 +1,10 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
  * 
- * $Id: Multiple_data_writer_controller.cc 153 2007-02-05 09:12:43Z kruithof $
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
  */
 
 #ifndef MULTIPLE_DATA_READERS_CONTROLLER_H
@@ -29,6 +33,8 @@ public:
   
   Buffer *get_buffer(unsigned int i);
   void set_buffer(unsigned int i, Buffer *buffer);
+
+  Data_reader *get_data_reader(int i);
 
   std::vector<Data_reader *> &get_vector_data_readers();
 

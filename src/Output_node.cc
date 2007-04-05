@@ -4,6 +4,7 @@
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
  * $Id$
+ *
  */
 
 #include <Output_node.h>
@@ -22,7 +23,8 @@ Output_node::Output_node(int rank, int size)
     output_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
-    status(STOPPED)
+    status(STOPPED),
+    curr_slice(0), number_of_time_slices(-1)
 {
   initialise();
 }
@@ -32,7 +34,8 @@ Output_node::Output_node(int rank, Log_writer *writer, int size)
     output_buffer(1000),
     output_node_ctrl(*this),
     data_readers_ctrl(*this),
-    data_writer_ctrl(*this)
+    data_writer_ctrl(*this),
+    curr_slice(0), number_of_time_slices(-1)
 {
   initialise(); 
 }
@@ -89,6 +92,9 @@ void Output_node::start() {
         break;
       }
     }
+    if (curr_slice == number_of_time_slices) {
+      status = END_NODE;
+    }
   }
 }
 
@@ -103,11 +109,8 @@ void Output_node::set_weight_of_input_stream(int num, UINT64 weight) {
   assert(num >= 0);
   
     // Add the weight to the priority queue:
-  // Check that the weight does not exist yet and is larger than the minimum:
+  // Check that the weight does not exist yet:
   assert(input_streams_order.find(weight) == input_streams_order.end());
-  if (!input_streams_order.empty()) {
-    assert(input_streams_order.begin()->first < weight);
-  }
   input_streams_order.insert(Input_stream_priority_map_value(weight,num));
   
   status = WRITE_OUTPUT;
@@ -124,24 +127,39 @@ void Output_node::time_slice_finished(int rank, UINT64 nBytes) {
 void Output_node::set_status() {
   if (status == END_NODE) return;
   status = STOPPED;
-  if (!input_streams_order.empty()) status = WRITE_OUTPUT;
+  if (input_streams_order.empty()) return;
+  if (input_streams_order.begin()->first != curr_slice) return;
+  if (input_streams[input_streams_order.begin()->second]->has_data()) {
+    status = WRITE_OUTPUT;
+    return;
+  }
 }
 
 void Output_node::write_output() {
   assert(!input_streams_order.empty());
   
-  int head = input_streams_order.begin()->second;
+  if (input_streams_order.begin()->first == curr_slice) {
+    int head = input_streams_order.begin()->second;
   
-  assert(input_streams[head] != NULL);
-  if (input_streams[head]->has_data()) {
-    // Write data ...
-    value_type &out_elem = data_writer_ctrl.buffer()->produce();
-    int nBytes = input_streams[head]->write_bytes(out_elem);
-    data_writer_ctrl.buffer()->produced(nBytes);
-    
-    // Check whether we arrived at the end of the slice
-    if (input_streams[head]->end_of_slice()) {
-      input_streams_order.erase(input_streams_order.begin());
+    assert(input_streams[head] != NULL);
+    if (input_streams[head]->has_data()) {
+      // Write data ...
+      value_type &out_elem = data_writer_ctrl.buffer()->produce();
+      int nBytes = input_streams[head]->write_bytes(out_elem);
+      data_writer_ctrl.buffer()->produced(nBytes);
+      
+      // Check whether we arrived at the end of the slice
+      if (input_streams[head]->end_of_slice()) {
+        input_streams_order.erase(input_streams_order.begin());
+        if (curr_slice == number_of_time_slices) {
+          status = END_NODE;
+          return;
+        }
+        curr_slice++;
+      }
+    } else {
+      // No data available yet, sleep
+      usleep(100000); // .1 second:
     }
   } else {
     // No data available yet, sleep
@@ -168,6 +186,11 @@ void Output_node::hook_added_data_reader(int reader) {
 }
 
 void Output_node::hook_added_data_writer(int writer) {
+}
+
+void 
+Output_node::set_number_of_time_slices(int n_time_slices) {
+  number_of_time_slices = n_time_slices;
 }
 
 

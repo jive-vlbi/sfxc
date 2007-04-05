@@ -1,18 +1,12 @@
-/*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
-
-Functions for input data handling
-
-Author     : RHJ Oerlemans
-StartDate  : 20061005
-Last change: 20061114
-
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * Functions for input data handling
+ */
 
 #include <types.h>
 
@@ -122,7 +116,7 @@ Log_writer &get_log_writer()
 void show_MK4_header(Data_reader *data_reader, INT64 startIS, 
   StaP &StaPrms, GenP &GenPrms)
 {
-  
+  if (get_log_writer().get_messagelevel() == 0) return;
   int   jsynch;
   INT64 usTime;
 

@@ -1,5 +1,14 @@
 #!/usr/bin/python
 
+# Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+# All rights reserved.
+#  
+# Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+# 
+# $Id$
+# 
+
+
 import sys, os,time, filecmp;
 
 # Load the ccf files for testing:
@@ -14,7 +23,7 @@ if (status != 0): sys.exit(1)
 # run the executable on all ccf files
 for ctrlfile in controlfiles:
   print "Control file: "+ctrlfile
-  status = os.system("./sfxc_SC "+ctrlfile)
+  status = os.system("time ./sfxc_SC "+ctrlfile)
   if (status != 0): sys.exit(1)
   
 sys.exit(0);

@@ -1,15 +1,12 @@
-/*
-sfxc_SC = sfxc Single Core
-sfxc    = software FX correlator
-FX      = first FFT then correlate
-
-usage: sfxc_SC correlator_control_file 
-
-Source       sfxc_SC.cc
-Author       RHJ Oerlemans
-Started      20070209
-Last change  20070209
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * usage: sfxc_SC correlator_control_file 
+ */
 
 #include "sfxc_SC.h"
 

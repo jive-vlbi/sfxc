@@ -1,3 +1,12 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
+
 #ifndef DATA_WRITER_H
 #define DATA_WRITER_H
 
@@ -26,7 +35,7 @@ public:
 private:
   /** Function that actually writes the data to the output device.
   **/ 
-  virtual UINT64 do_put_bytes(UINT64 nBytes, char *buff) = 0;
+  virtual INT64 do_put_bytes(INT64 nBytes, char *buff) = 0;
   
   UINT64 _data_counter;
 };

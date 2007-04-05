@@ -1,18 +1,12 @@
-/*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
-
-General function definitions
-
-Author     : RHJ Oerlemans
-StartDate  : 20060804
-Last change: 20060804
-
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * General function definitions
+ */
 
 #include <string>
 #include <types.h>

@@ -1,11 +1,11 @@
-/*
-  $Author$
-  $Date$
-  $Name$
-  $Revision$
-  $Source$
-  
-  Tests reading a file from disk and then writing it back using a Data_node
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ *  Tests reading a file from disk and then writing it back using a Data_node
 */
 
 #include <types.h>

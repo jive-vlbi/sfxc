@@ -1,3 +1,12 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
+
 #ifndef CORRELATOR_NODE_H
 #define CORRELATOR_NODE_H
 
@@ -68,18 +77,18 @@ public:
     /// Initialise the correlator for a new time slice:
     INITIALISE_TIME_SLICE=0,
     /// Do one integration step:
-    CORRELATE_SEGMENT,
+    CORRELATE_INTEGRATION_SLICE,
     /// Finish processing a time slice:
     END_TIME_SLICE
   };
   
-  Correlator_node(int rank, int buff_size=10);
+  Correlator_node(int rank, int nr_corr_node, int buff_size);
   ~Correlator_node();
   
   void start();
 
   /// Starts the correlation process.  
-  void start_correlating();
+  void start_correlating(INT64 start, INT64 duration);
 
   /// Callback function for adding a data_reader:
   void hook_added_data_reader(int reader);
@@ -100,6 +109,11 @@ public:
   get_vector_data_readers() {
     return data_readers_ctrl.get_vector_data_readers();
   }
+  
+  int get_correlate_node_number();
+  void set_parameters(RunP &runPrms, GenP &genPrms, StaP *staPrms);
+  
+  void set_slice_number(int sliceNr);
 private:
   // Buffer for the output, input is directly handled by the Correlator_controller
   Semaphore_buffer<output_value_type> output_buffer;
@@ -116,9 +130,10 @@ private:
   CORRELATE_STEPS correlate_state;
   STATUS status;
   /// Number of elements in a buffer
-  int                                          buffer_size;
+  int                                          buffer_size, nr_corr_node;
 
   INT64 startIS;
+  int sliceNr;
 };
 
 #endif // CORRELATOR_NODE_H

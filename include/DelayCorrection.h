@@ -1,8 +1,11 @@
-/*
-Author     : RHJ Oerlemans
-StartDate  : 20070202
-Last change: 20070202
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
 
 #ifndef DELAYCORRECTION_H
 #define DELAYCORRECTION_H

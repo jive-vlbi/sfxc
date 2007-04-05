@@ -1,12 +1,11 @@
-/*
-  $Author$
-  $Date$
-  $Name$
-  $Revision$
-  $Source$
-  
-  Author: Nico Kruithof <Kruithof@jive.nl>
-  Tests reading data from a Mark5 (simulation using File2net).
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * Tests reading data from a Mark5 (simulation using File2net).
 */
 
 #include <types.h>

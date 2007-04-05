@@ -1,10 +1,11 @@
-/*
-  $Author$
-  $Date$
-  $Name$
-  $Revision$
-  $Source$
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
 
 #ifndef CONTROLLER_NODE_H
 #define CONTROLLER_NODE_H

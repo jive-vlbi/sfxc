@@ -1,6 +1,10 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
  * 
- * $Id: Multiple_data_writers_controller.cc 153 2007-02-05 09:12:43Z kruithof $
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
  */
 
 #include <Data_writer_buffer.h>
@@ -17,7 +21,8 @@ Data_writer_buffer::Data_writer_buffer(Buffer *buff)
 Data_writer_buffer::~Data_writer_buffer() {
 }
 
-UINT64 Data_writer_buffer::do_put_bytes(UINT64 nBytes, char *input_buffer) {
+INT64 
+Data_writer_buffer::do_put_bytes(INT64 nBytes, char *input_buffer) {
   UINT64 write_bytes = nBytes;
   while (write_bytes > 0) {
     data_start = buffer->produce().buffer();

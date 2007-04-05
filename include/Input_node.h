@@ -1,6 +1,10 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
  * $Id$
+ *
  */
 
 #ifndef INPUT_NODE_H
@@ -46,8 +50,8 @@ class Input_node : public Node {
   typedef Single_data_reader_controller::value_type     value_type;
   typedef Semaphore_buffer<value_type>     Buffer;
 public:
-  Input_node(int rank, Log_writer *log_writer, int buffer_size = 10);
-  Input_node(int rank, int buffer_size = 10);
+  Input_node(int rank, Log_writer *log_writer);
+  Input_node(int rank);
   ~Input_node();
   
   /// Generic constructor function, that is called in the body of every constructor
@@ -106,8 +110,12 @@ private:
   
   /// Number of elements in a buffer
   int                                          buffer_size;
+  
+  /// Number of the input reader (input readers should be numbered 0..N)
+  int nr_input_reader;
   /// Status of the state machine
   STATUS                                       status;
+  
 };
 
 #endif // INPUT_NODE_H

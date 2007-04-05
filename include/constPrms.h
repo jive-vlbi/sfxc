@@ -1,20 +1,14 @@
-/*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * A general header file with contants to be included in sfxc01.cc
+ * and other source files
+ */
 
-A general header file with contants to be included in sfxc01.cc
-and other source files
-
-Author     : RHJ Oerlemans
-StartDate  : 20060912
-Last change: 20061114
-
-
-*/
 #ifndef CONSTPRMS_H
 #define CONSTPRMS_H
 

@@ -1,3 +1,12 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
+
 #ifndef DATA_WRITER_TCP_H
 #define DATA_WRITER_TCP_H
 
@@ -17,7 +26,7 @@ public:
 
   void flush();
 private:
-  UINT64 do_put_bytes(UINT64 nBytes, char *buff);
+  INT64 do_put_bytes(INT64 nBytes, char *buff);
 
   int connection_socket, socket;
   int port;

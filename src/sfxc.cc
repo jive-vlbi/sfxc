@@ -1,6 +1,10 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
  * $Id$
+ *
  */
 
 #include <types.h>
@@ -71,13 +75,14 @@ int main(int argc, char *argv[]) {
       }
     case MPI_TAG_SET_INPUT_NODE: 
       {
+        // The integer is the number of the input_reader:
         Input_node input_node(rank);
         input_node.start();
         break;
       }
     case MPI_TAG_SET_CORRELATOR_NODE: 
       {
-        Correlator_node correlator(rank);
+        Correlator_node correlator(rank, msg, 10);
         correlator.start();
         break;
       }

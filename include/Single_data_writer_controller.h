@@ -1,6 +1,10 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
  * 
- * $Id: Single_data_writer_controller.cc 153 2007-02-05 09:12:43Z kruithof $
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
  */
 
 #ifndef SINGLE_DATA_WRITER_CONTROLLER_H
@@ -25,6 +29,7 @@ public:
   
   Buffer *buffer();
   void set_buffer(Buffer *buffer);
+  Data_writer *get_data_writer(int i);
 private:
   void set_data_writer(Data_writer *writer);
 

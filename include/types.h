@@ -1,21 +1,12 @@
-/*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
-
-Author     : NGH Kruithof
-StartDate  : 20061101
-Last change: 20061124
-*/
-
-/** 
-    Definitions of common types.
-    
-    Author: Nico Kruithof <Kruithof@jive.nl>
-**/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * Definitions of common types.
+ */
 
 #ifndef TYPES_H
 #define TYPES_H
