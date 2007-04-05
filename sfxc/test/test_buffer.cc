@@ -1,13 +1,12 @@
-/*
-  $Author$
-  $Date$
-  $Name$
-  $Revision$
-  $Source$
-  
-  Author: Nico Kruithof <Kruithof@jive.nl>
-  Tests several implementations of buffers.
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * Tests several implementations of buffers.
+ */
 
 typedef long long INT64;
 

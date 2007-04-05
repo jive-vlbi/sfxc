@@ -1,3 +1,12 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
+
 #ifndef BUFFER2DATA_WRITER_H
 #define BUFFER2DATA_WRITER_H
 
@@ -153,10 +162,19 @@ Buffer2data_writer<T>::write() {
     } else {
       int size;
       T &elem = buffer->consume(size);
-      UINT64 size2 = data_writer->put_bytes(size,(char*)&elem);
+      UINT64 size2 = data_writer->put_bytes(size,elem.buffer());
+      char *buff = elem.buffer() + size2;
+      while ((UINT64)size > size2) {
+        std::cout << "Size2: " << size2 << std::endl;
+        assert(size2 > 0);
+        UINT64 new_size = size - size2; 
+        new_size = data_writer->put_bytes(new_size,buff);
+        assert(new_size > 0);
+        size2 += new_size;
+        buff += new_size;        
+      }
       assert((UINT64)size == size2);
       buffer->consumed();
-      //if (size == 0) state = SUSPENDED;
     }
   }
 }

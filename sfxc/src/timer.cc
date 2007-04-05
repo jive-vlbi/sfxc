@@ -1,10 +1,13 @@
-/*
-CVS keywords
-$Id$
-$Name$
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * this file contains timer functions
+ */
 
-this file contains timer functions
-*/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

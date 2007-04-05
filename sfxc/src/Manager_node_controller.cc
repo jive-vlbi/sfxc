@@ -1,3 +1,12 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
+
 #include "Manager_node.h"
 
 #include <assert.h>
@@ -11,7 +20,7 @@ Controller::Process_event_status
 Manager_node_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
-    case MPI_TAG_CORRELATE_ENDED:
+    case MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED:
     {
       int i;
       MPI_Recv(&i, 1, MPI_INT32, status.MPI_SOURCE,

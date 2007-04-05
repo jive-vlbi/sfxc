@@ -1,3 +1,12 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
+
 #ifndef BUFFER_H
 #define BUFFER_H
 
@@ -27,7 +36,7 @@ private:
 /** Generic buffer class.
  * Precondition T is default constructible
  **/
-template <class T>
+template <class T = Buffer_element<char, 131072> >
 class Buffer {
 public:
   typedef T                                       value_type;
@@ -69,7 +78,7 @@ protected:
 
 private:
   // The buffer
-  std::vector<T> buffer;
+  std::vector<T>   buffer;
   std::vector<int> status;
   // indices in the buffer
   int front, rear;

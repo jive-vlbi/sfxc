@@ -1,14 +1,10 @@
-/* Copyright (c) 2007 JIVE (Netherlands)
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
  * 
- * This file is part of sfxc (software FX correlator);
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
- * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
- * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * Author(s): Nico Kruithof, 2007
- * 
- * $Id: Multiple_data_writers_controller.cc 153 2007-02-05 09:12:43Z kruithof $
+ * $Id$
+ *
  */
 
 #ifndef DATA_WRITER_BUFFER_H
@@ -33,7 +29,7 @@ public:
   ~Data_writer_buffer();
 
 private:
-  UINT64 do_put_bytes(UINT64 nBytes, char *buff);
+  INT64 do_put_bytes(INT64 nBytes, char *buff);
 
 
   // The input buffer

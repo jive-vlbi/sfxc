@@ -4,6 +4,7 @@
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
  * $Id$
+ *
  */
 
 #ifndef DATA_READER_H

@@ -1,10 +1,11 @@
-/*
-  $Author$
-  $Date$
-  $Name$
-  $Revision$
-  $Source$
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
 
 #include <Data_writer_file.h>
 #include <assert.h>
@@ -24,8 +25,8 @@ Data_writer_file::~Data_writer_file() {
   fclose(file);
 }
   
-UINT64 
-Data_writer_file::do_put_bytes(UINT64 nBytes, char *buff) {
+INT64 
+Data_writer_file::do_put_bytes(INT64 nBytes, char *buff) {
   UINT64 result = fwrite(buff, 1, nBytes, file);
   assert(result == nBytes);
   return result;

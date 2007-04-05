@@ -1,8 +1,11 @@
-/*
-Author     : RHJ Oerlemans
-StartDate  : 20070201
-Last change: 20070209
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
 
 
 //sfxc includes
@@ -174,9 +177,11 @@ void CorrelationCore::write_time_slice()
   //write normalized correlation results to output file
   //NGHK: Make arrays consecutive to be able to write all data at once
   for (int bsln = 0; bsln < nbslns; bsln++){
-    get_data_writer().
-      put_bytes(sizeof(fftw_complex)*(n2fftcorr*padding/2+1),
-                (char *)(accxps[bsln]));
+    UINT64 nWrite = sizeof(fftw_complex)*(n2fftcorr*padding/2+1); 
+    UINT64 written = get_data_writer().
+      put_bytes(nWrite, (char *)(accxps[bsln]));
+    assert(nWrite == written);
+    
   }
 
 

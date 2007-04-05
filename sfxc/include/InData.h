@@ -1,11 +1,11 @@
-/*
-  CVS keywords
-  $Author$
-  $Date$
-  $Name$
-  $Revision$
-  $Source$
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
 
 #ifndef INDATA_H
 #define INDATA_H

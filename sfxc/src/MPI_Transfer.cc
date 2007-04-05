@@ -4,6 +4,7 @@
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
  * $Id$
+ *
  */
 
 #include "MPI_Transfer.h"
@@ -73,7 +74,7 @@ MPI_Transfer::send_general_parameters(int rank) {
   MPI_Pack(&GenPrms.time2avg, 1, MPI_FLOAT, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&GenPrms.pad, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   
-//  MPI_Pack(&GenPrms.usStart, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.usStart, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
 //  MPI_Pack(&GenPrms.usStop, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
 //  MPI_Pack(&GenPrms.usEarliest, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
 //  MPI_Pack(&GenPrms.usLatest, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
@@ -174,7 +175,8 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
   MPI_Unpack(buffer, size, &position, &GenPrms.time2avg, 1, MPI_FLOAT, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.pad, 1, MPI_INT32, MPI_COMM_WORLD);
 
-//  MPI_Unpack(buffer, size, &position, &GenPrms.usStart, 1, MPI_INT64, MPI_COMM_WORLD);
+
+  MPI_Unpack(buffer, size, &position, &GenPrms.usStart, 1, MPI_INT64, MPI_COMM_WORLD);
 //  MPI_Unpack(buffer, size, &position, &GenPrms.usStop, 1, MPI_INT64, MPI_COMM_WORLD);
 //  MPI_Unpack(buffer, size, &position, &GenPrms.usEarliest, 1, MPI_INT64, MPI_COMM_WORLD);
 //  MPI_Unpack(buffer, size, &position, &GenPrms.usLatest, 1, MPI_INT64, MPI_COMM_WORLD);
@@ -243,7 +245,7 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
 
 void 
 MPI_Transfer::send_delay_table(DelayTable &table, int sn, int rank) {
-  int size = 3*sizeof(INT64) + sizeof(INT32) + table.ndel*12*sizeof(double); 
+  int size = 3*sizeof(INT64) + 4*sizeof(INT32) + table.ndel*12*sizeof(double); 
   int position=0;
   char buffer[size];
 
@@ -254,6 +256,10 @@ MPI_Transfer::send_delay_table(DelayTable &table, int sn, int rank) {
   MPI_Pack(&table.ndel, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD); 
   MPI_Pack(&table.startDT, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD); 
   MPI_Pack(&table.stepDT, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD); 
+
+  MPI_Pack(&table.cde, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
+  MPI_Pack(&table.mde, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
+  MPI_Pack(&table.rde, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
 
   // Arrays
   for (int i=0; i<table.ndel; i++) {
@@ -296,6 +302,11 @@ MPI_Transfer::receive_delay_table(MPI_Status &status, DelayTable &table, int &sn
   MPI_Unpack(buffer, size, &position, &table.ndel, 1, MPI_INT64, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &table.startDT, 1, MPI_INT64, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &table.stepDT, 1, MPI_INT64, MPI_COMM_WORLD);
+
+  MPI_Unpack(buffer, size, &position, &table.cde, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &table.mde, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &table.rde, 1, MPI_INT32, MPI_COMM_WORLD);
+
   table.reserve_data();
   
   // Arrays

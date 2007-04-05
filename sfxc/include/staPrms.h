@@ -1,21 +1,15 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * Class definitions for Station Parameters
+ */
+
 #ifndef STA_PRMS_H
 #define STA_PRMS_H
-
-/*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
-
-Class definitions for Station Parameters
-
-Author     : RHJ Oerlemans
-StartDate  : 20060912
-Last change: 20061114
-
-*/
 
 //standard c includes
 #include <stdio.h>

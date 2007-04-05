@@ -1,18 +1,12 @@
-/*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
-
-Class function definitions for station specific data
-
-Author     : RHJ Oerlemans
-StartDate  : 20061117
-Last change: 20061121
-
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * Class function definitions for station specific data
+ */
 
 //standard c includes
 #include <stdio.h>

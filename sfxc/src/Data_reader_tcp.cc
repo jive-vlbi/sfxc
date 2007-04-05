@@ -1,3 +1,12 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
+
 #include <Data_reader_tcp.h>
 #include <assert.h>
 
@@ -43,15 +52,17 @@ Data_reader_tcp::~Data_reader_tcp() {
 
 UINT64 Data_reader_tcp::get_bytes(UINT64 nBytes, char*out) {
   // NGHK: TODO: check that out != NULL
+  assert(out != NULL);
+
   assert(socket > 0);
   UINT64 nRead = 0;
+  
   while (nRead < nBytes) {
     /* Read data from socket */ 
-    UINT64 size = recv(socket, (void *) out, nBytes-nRead, 0);
+    UINT64 size = read(socket, (void *) out, nBytes-nRead);
     if (size == 0) {
+      std::cout << "Data_reader_tcp: SIZE == 0" << std::endl;
       // Connection closed
-      close(socket);
-      socket = -1;
       return nRead;
     }
     nRead += size;

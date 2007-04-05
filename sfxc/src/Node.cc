@@ -1,26 +1,22 @@
-/*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
-
-Author     : NGH Kruithof
-StartDate  : 20061101
-Last change: 20061124
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
 
 #include <Node.h>
 #include <iostream>
 #include <assert.h>
 
 Node::Node(int rank) : rank(rank), log_writer(new Log_writer_mpi(rank, 0)) {
-  log_writer->set_mpilevel(10);
+  log_writer->set_mpilevel(1);
 }
 
 Node::Node(int rank, Log_writer *writer) : rank(rank), log_writer(writer) {
-  log_writer->set_mpilevel(10);
+  log_writer->set_mpilevel(1);
 }
 
 Node::~Node() {

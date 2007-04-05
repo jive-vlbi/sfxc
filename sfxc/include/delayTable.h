@@ -1,23 +1,18 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * Class definitions for delay table
+ */
 #ifndef DELAYTABLE_H
 #define DELAYTABLE_H
-/**
-CVS keywords
-$Author $
-$Date$
-$Name$
-$Revision$
-$Source$
-
-Class definitions for delay table
-
-Author     : RHJ Oerlemans
-StartDate  : 20061115
-Last change: 20061115
-
-**/
 
 #include <types.h>
 #include <vector>
+#include <genPrms.h>
 
 class MPI_Transfer;
 

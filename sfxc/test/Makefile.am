@@ -9,6 +9,7 @@ check_PROGRAMS = \
   test_Transfer_control_parameters \
   test_Data_reader_file \
   test_Data_reader_mark5 \
+  test_Data_reader_TCP \
   test_Input_node \
   test_Correlator_node \
   test_Log_writer_mpi \
@@ -20,6 +21,7 @@ TESTS           = \
   test_buffer \
   test_Data_reader_file \
   test_Data_reader_mark5.py \
+  test_Data_reader_TCP.py \
   test_Input_node.py \
   test_Log_writer_mpi.py
 
@@ -71,6 +73,11 @@ test_Data_reader_file_SOURCES = \
   test_Data_reader_file.cc ../src/Data_reader_file.cc ../src/Data_writer.cc \
   ../src/Data_writer_file.cc \
   ../src/Log_writer.cc ../src/Log_writer_cout.cc
+
+test_Data_reader_TCP_SOURCES = \
+  test_Data_reader_TCP.cc ../src/Data_reader_tcp.cc ../src/Data_writer.cc \
+  ../src/Data_writer_tcp.cc ../src/TCP_Connection.cc ../src/Data_reader_file.cc \
+  ../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/Data_reader_buffer.cc
 
 test_Data_reader_mark5_SOURCES = \
   test_Data_reader_mark5.cc ../src/Data_reader_mark5.cc

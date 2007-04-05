@@ -1,3 +1,12 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
+
 #ifndef SEMAPHORE_BUFFER_H
 #define SEMAPHORE_BUFFER_H
 
@@ -6,7 +15,7 @@
 #include <assert.h>
 #include <iostream>
 
-template <class T>
+template <class T = Buffer_element<char, 131072> >
 class Semaphore_buffer : public Buffer<T> {
 public:
   typedef T                                       value_type;

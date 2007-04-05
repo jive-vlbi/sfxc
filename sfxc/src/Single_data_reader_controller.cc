@@ -1,8 +1,11 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
  * 
- * $Id: Single_data_reader_controller.cc 153 2007-02-05 09:12:43Z kruithof $
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
  */
-
 
 #include <Single_data_reader_controller.h>
 #include <sfxc_mpi.h>

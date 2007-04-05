@@ -1,6 +1,10 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
  * $Id$
+ *
  */
 
 #include <types.h>
@@ -268,7 +272,8 @@ void check_delay_table(char *filename_delay_table) {
 
   // Read delay_table:
   DelayTable delayTable;
-  delayTable.readDelayTable(filename_delay_table, BufTime);
+  delayTable.set_cmr(GenPrms);
+  delayTable.readDelayTable(filename_delay_table);
   int sn = 134; // Some random value
 
   MPI_Transfer transfer;
@@ -286,6 +291,7 @@ void check_delay_table(char *filename_delay_table) {
     transfer.send_delay_table(delayTable,sn,1);
   } else {
     DelayTable delayTable2;
+    delayTable2.set_cmr(GenPrms);
     MPI_Status status;
     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     int sn2;
@@ -313,16 +319,15 @@ int main(int argc, char *argv[]) {
   // Initialise correlator node
   assert(argc==2);
   char *control_file = argv[1];
-  if (initialise_control(control_file, log_writer) != 0) {
+  if (initialise_control(control_file, log_writer, RunPrms, GenPrms, StaPrms) != 0) {
     std::cout << "Initialisation using control file failed" << std::endl;
     return 1;
   }
   
-  //check_control_parameters();
-
-  MPI_Barrier( MPI_COMM_WORLD );
+  check_control_parameters();
 
   for (int i=0; i<GenPrms.get_nstations(); i++) {
+    MPI_Barrier( MPI_COMM_WORLD );
     check_delay_table(StaPrms[i].get_delaytable());
   }
 

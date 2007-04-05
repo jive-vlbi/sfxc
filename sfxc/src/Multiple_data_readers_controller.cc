@@ -1,8 +1,11 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
  * 
- * $Id: Multiple_data_readers_controller.cc 153 2007-02-05 09:12:43Z kruithof $
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
  */
-
 
 #include <Multiple_data_readers_controller.h>
 #include <Data_reader_file.h>
@@ -68,21 +71,21 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 1); // rank + filename
-      char ip_addr[size];
-      MPI_Recv(&ip_addr, size, MPI_CHAR, status.MPI_SOURCE,
+      char msg[size];
+      MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      UINT64 corr_node = (int)ip_addr[0];
-      char *filename = ip_addr+1;
+      int corr_node = (int)msg[0];
+      char *filename = msg+1;
       
       Data_reader *reader = new Data_reader_file(filename);
       add_data_reader(corr_node, reader);
 
-      INT64 msg = 0;
-      MPI_Send(&msg, 1, MPI_INT64, 
+      INT64 return_msg = 0;
+      MPI_Send(&return_msg, 1, MPI_INT64, 
                RANK_MANAGER_NODE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
 
@@ -110,6 +113,11 @@ Multiple_data_readers_controller::set_buffer(unsigned int i, Buffer *buffer) {
   data_readers[i]->start();
 }
 
+Data_reader *Multiple_data_readers_controller::get_data_reader(int i) {
+  assert(i < data_readers.size());
+  assert(data_readers[i] != NULL);
+  return data_readers[i]->get_data_reader();
+}
 bool Multiple_data_readers_controller::initialised(unsigned int i) {
   if (i >= data_readers.size()) return false;
   if (data_readers[i] == NULL) return false;
@@ -125,11 +133,12 @@ Multiple_data_readers_controller::get_vector_data_readers() {
   if (data_readers_out.empty()) {
     for (unsigned int i=0; i<data_readers.size(); i++) {
       if (data_readers[i] != NULL) {
-        if (data_readers[i]->get_buffer() != NULL) {
-          // This is an active data_reader
-          Data_reader *reader = new Data_reader_buffer(data_readers[i]->get_buffer());
-          data_readers_out.push_back(reader);
-        }
+        data_readers_out.push_back(data_readers[i]->get_data_reader());
+//        if (data_readers[i]->get_buffer() != NULL) {
+//          // This is an active data_reader
+//          Data_reader *reader = new Data_reader_buffer(data_readers[i]->get_buffer());
+//          data_readers_out.push_back(reader);
+//        }
       }
     }
     more_data_readers_can_be_added = false;

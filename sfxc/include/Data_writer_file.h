@@ -1,3 +1,12 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
+
 #ifndef DATA_WRITER_FILE_H
 #define DATA_WRITER_FILE_H
 
@@ -10,7 +19,7 @@ public:
   Data_writer_file(const char *filename);
   ~Data_writer_file();
   
-  UINT64 do_put_bytes(UINT64 nBytes, char *buff);
+  INT64 do_put_bytes(INT64 nBytes, char *buff);
 
 private:
   FILE *file;

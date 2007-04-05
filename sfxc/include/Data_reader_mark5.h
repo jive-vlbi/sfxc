@@ -1,15 +1,11 @@
-/*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
-
-Author     : NGH Kruithof
-StartDate  : 20061101
-Last change: 20061124
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
 
 #ifndef DATA_READER_MARK5_H
 #define DATA_READER_MARK5_H

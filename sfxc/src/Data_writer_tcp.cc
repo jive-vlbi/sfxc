@@ -1,10 +1,11 @@
-/*
-  $Author: kruithof $
-  $Date: 2007-01-02 14:39:48 +0100 (Tue, 02 Jan 2007) $
-  $Name$
-  $Revision: 64 $
-  $Source$
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ */
 
 #include <Data_writer_tcp.h>
 #include <assert.h>
@@ -15,6 +16,7 @@
 // defines send:
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <errno.h>
 
 Data_writer_tcp::Data_writer_tcp(int _port) 
 : connection_socket(-1), socket(-1), port(_port)
@@ -34,28 +36,20 @@ void Data_writer_tcp::open_connection() {
   assert(socket > 0);
 }
 
-//Data_writer_tcp::Data_writer_tcp(UINT64 ip_addr[], int nAddr, unsigned short int port) 
-// : Data_writer(), socket(-1)
-//{
-//  TCP_Connection connection(true);
-//  int i=0;
-//  do {
-//    socket = connection.do_connect(ip_addr[i], port);
-//    i = (i+1)%nAddr;
-//  } while (socket <= 0);
-//  
-//  assert(socket > 0);
-//}
-
 Data_writer_tcp::~Data_writer_tcp() {
   close(socket);
 }
   
-UINT64 
-Data_writer_tcp::do_put_bytes(UINT64 nBytes, char *buff) {
+INT64
+Data_writer_tcp::do_put_bytes(INT64 nBytes, char *buff) {
   assert(socket > 0);
   assert(nBytes > 0);
-  return write(socket, buff, nBytes);
+  ssize_t result = write(socket, buff, nBytes);
+  if (result <= 0) {
+    std::cout << " RESULT: " << result << " ... " << strerror(errno) << std::endl;
+  }
+  assert(result > 0);
+  return result;
 }
 
 

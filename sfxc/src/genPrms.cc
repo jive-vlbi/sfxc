@@ -1,18 +1,12 @@
-/*
-CVS keywords
-$Author$
-$Date$
-$Name$
-$Revision$
-$Source$
-
-Class function definitions for general parameters
-
-Author     : RHJ Oerlemans
-StartDate  : 20060912
-Last change: 20060912
-
-*/
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
+ * Class function definitions for general parameters
+ */
 
 #include <types.h>
 

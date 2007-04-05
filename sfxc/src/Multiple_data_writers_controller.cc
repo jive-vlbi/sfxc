@@ -1,8 +1,11 @@
-/* Author(s): Nico Kruithof, 2007
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
  * 
- * $Id: Multiple_data_writers_controller.cc 153 2007-02-05 09:12:43Z kruithof $
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id$
+ *
  */
-
 
 #include <Multiple_data_writers_controller.h>
 #include <sfxc_mpi.h>
@@ -68,8 +71,13 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       
       MPI_Status status2;
-      INT32 ranks[2]; // Rank of reader and writer:
-      MPI_Recv(ranks, 2, MPI_INT32, status.MPI_SOURCE,
+
+      /* - INT32: Rank of the stream for the data reader
+       * - INT32: Rank of the stream for the data writer
+       * - INT32: Rank of the node to connect to
+       */
+      INT32 ranks[3]; 
+      MPI_Recv(ranks, 3, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       Data_writer_tcp *data_writer = new Data_writer_tcp(1233); 
@@ -80,11 +88,11 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 
       // Add port
       ip_addresses.push_back(data_writer->get_port());
-      // Add rank
+      // Add number of the data stream:
       ip_addresses.push_back(ranks[0]);
       
       MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_UINT64, 
-               ranks[1], MPI_TAG_ADD_DATA_READER_TCP, MPI_COMM_WORLD);
+               ranks[2], MPI_TAG_ADD_DATA_READER_TCP, MPI_COMM_WORLD);
 
       data_writer->open_connection();
 
@@ -141,6 +149,14 @@ Multiple_data_writers_controller::set_buffer(unsigned int i, Buffer *buff) {
   get_writer(i).set_buffer(buff);
   get_writer(i).try_start();
   
+}
+
+
+Multiple_data_writers_controller::Buffer2writer *
+Multiple_data_writers_controller::operator[](int i) {
+  assert(i < data_writers.size());
+  
+  return data_writers[i];
 }
 
 bool 
