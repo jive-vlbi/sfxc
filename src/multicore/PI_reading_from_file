@@ -1,0 +1,6 @@
+localhost 0 /jop54_0/kruithof/eclipse_workspace/sfxc/src/multicore/manager_node_reading_from_file
+localhost 1 /jop54_0/kruithof/eclipse_workspace/sfxc/src/multicore/log_node
+localhost 1 /jop54_0/kruithof/eclipse_workspace/sfxc/src/multicore/output_node
+localhost 1 /jop54_0/kruithof/eclipse_workspace/sfxc/src/multicore/correlator_node
+localhost 1 /jop54_0/kruithof/eclipse_workspace/sfxc/src/multicore/correlator_node
+localhost 1 /jop54_0/kruithof/eclipse_workspace/sfxc/src/multicore/correlator_node

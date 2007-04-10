@@ -82,6 +82,15 @@ public:
     END_TIME_SLICE
   };
   
+  // Functions for multithreading init reader:
+  struct Init_reader_struct {
+    Self *corr_node;
+    pthread_t thread;
+    INT64 sn, startIS;
+  };
+  static void *start_init_reader(void *);
+  
+  
   Correlator_node(int rank, int nr_corr_node, int buff_size);
   ~Correlator_node();
   

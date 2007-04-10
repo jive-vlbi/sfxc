@@ -154,7 +154,7 @@ Multiple_data_writers_controller::set_buffer(unsigned int i, Buffer *buff) {
 
 Multiple_data_writers_controller::Buffer2writer *
 Multiple_data_writers_controller::operator[](int i) {
-  assert(i < data_writers.size());
+  assert((size_t)i < data_writers.size());
   
   return data_writers[i];
 }
@@ -195,3 +195,4 @@ add_data_writer(unsigned int i, Data_writer *writer) {
   
   node.hook_added_data_writer(i);
 }
+

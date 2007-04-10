@@ -22,7 +22,7 @@ public:
       \return the number of bytes read into the buffer.
       \pre buff is allocated. nBytes >= 0
   **/ 
-  UINT64 put_bytes(UINT64 nBytes, char *buff);
+  INT64 put_bytes(INT64 nBytes, char *buff);
   
   /** Returns the number of bytes written
    **/

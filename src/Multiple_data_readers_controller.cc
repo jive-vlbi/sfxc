@@ -114,7 +114,7 @@ Multiple_data_readers_controller::set_buffer(unsigned int i, Buffer *buffer) {
 }
 
 Data_reader *Multiple_data_readers_controller::get_data_reader(int i) {
-  assert(i < data_readers.size());
+  assert((size_t)i < data_readers.size());
   assert(data_readers[i] != NULL);
   return data_readers[i]->get_data_reader();
 }

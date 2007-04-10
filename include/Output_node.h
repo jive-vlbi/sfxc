@@ -46,7 +46,7 @@ private:
 class Output_node : public Node {
 public:
   typedef Buffer_element<char,131072>           value_type;
-  typedef std::map<UINT64, int>                 Input_stream_priority_map;
+  typedef std::map<INT32, int>                  Input_stream_priority_map;
   typedef Input_stream_priority_map::value_type Input_stream_priority_map_value;
   typedef Buffer<value_type>                    Buffer;
   
@@ -131,7 +131,7 @@ private:
    * if input_streams_finished[i]>0 then the stream is finished and specifies
    * the number of bytes belonging to the slice
    **/
-  UINT32 curr_slice,number_of_time_slices;
+  INT32 curr_slice,number_of_time_slices;
 //  std::vector<UINT64>                 input_streams_finished;
   /// the data_readers read the data from the buffers in the data_readers_ctrl.
 //  std::vector<Data_reader *>          data_readers;
