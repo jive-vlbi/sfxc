@@ -104,6 +104,7 @@ void Input_node::start() {
             int size;
             assert(data_reader_ctrl.buffer() != NULL);
             value_type &cons_elem = data_reader_ctrl.buffer()->consume(size);
+//            get_log_writer()(0) << " - status == SEND_OUTPUT " << size <<  std::endl;
 
             update_active_list();
 
@@ -111,12 +112,13 @@ void Input_node::start() {
             for (std::list<int>::iterator it = active_list.begin();
                  it != active_list.end(); it++) {
               assert(data_writers_ctrl.buffer(*it) != NULL);
-              assert(data_writers_ctrl[*it]->status() == 
-                     Multiple_data_writers_controller::Buffer2writer::RUNNING);
-              value_type &prod_elem =
-                data_writers_ctrl.buffer(*it)->produce();
-              memcpy(prod_elem.buffer(), cons_elem.buffer(), size);
-              data_writers_ctrl.buffer(*it)->produced(size);
+              if (data_writers_ctrl[*it]->status() == 
+                  Multiple_data_writers_controller::Buffer2writer::RUNNING) {
+                value_type &prod_elem =
+                  data_writers_ctrl.buffer(*it)->produce();
+                memcpy(prod_elem.buffer(), cons_elem.buffer(), size);
+                data_writers_ctrl.buffer(*it)->produced(size);
+              }
             }
             data_reader_ctrl.buffer()->consumed();
           }
@@ -176,6 +178,7 @@ void Input_node::update_active_list() {
     assert(found);
     stop_queue.erase(stop_queue.begin());
   }
+
   set_status();
 }  
 

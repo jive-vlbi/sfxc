@@ -28,6 +28,6 @@ Data_writer_file::~Data_writer_file() {
 INT64 
 Data_writer_file::do_put_bytes(INT64 nBytes, char *buff) {
   UINT64 result = fwrite(buff, 1, nBytes, file);
-  assert(result == nBytes);
+  assert(result == (UINT64)nBytes);
   return result;
 }

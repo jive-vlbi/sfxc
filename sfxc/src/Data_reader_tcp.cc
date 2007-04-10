@@ -52,10 +52,23 @@ Data_reader_tcp::~Data_reader_tcp() {
 
 UINT64 Data_reader_tcp::get_bytes(UINT64 nBytes, char*out) {
   // NGHK: TODO: check that out != NULL
-  assert(out != NULL);
-
   assert(socket > 0);
   UINT64 nRead = 0;
+
+  if (out == NULL) {
+    UINT64 buff_size = 1000000;
+    buff_size = (nBytes < buff_size ? nBytes : buff_size);
+    char buff[(int)buff_size];
+    while (nRead < nBytes) {
+      UINT64 read_bytes = (buff_size < (nBytes-nRead) ? buff_size : nBytes-nRead);
+      UINT64 size = get_bytes(read_bytes, buff);
+      if (size == 0) {
+        return nRead;
+      }
+      nRead += size;
+    }
+    return nRead;
+  }
   
   while (nRead < nBytes) {
     /* Read data from socket */ 

@@ -42,13 +42,12 @@ Data_writer_tcp::~Data_writer_tcp() {
   
 INT64
 Data_writer_tcp::do_put_bytes(INT64 nBytes, char *buff) {
-  assert(socket > 0);
+  if (socket <= 0) return 0;
   assert(nBytes > 0);
   ssize_t result = write(socket, buff, nBytes);
   if (result <= 0) {
     std::cout << " RESULT: " << result << " ... " << strerror(errno) << std::endl;
   }
-  assert(result > 0);
   return result;
 }
 

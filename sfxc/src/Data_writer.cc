@@ -15,9 +15,9 @@ Data_writer::Data_writer() : _data_counter(0) {
 Data_writer::~Data_writer() {
 }
   
-UINT64 
-Data_writer::put_bytes(UINT64 nBytes, char *buff) {
-  UINT64 result = do_put_bytes(nBytes, buff);
+INT64 
+Data_writer::put_bytes(INT64 nBytes, char *buff) {
+  INT64 result = do_put_bytes(nBytes, buff);
   _data_counter += result;
   return result;
 }

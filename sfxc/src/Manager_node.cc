@@ -36,15 +36,18 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   err = read_control_file(control_file);
   if (err != 0) return;
 
-  // 0: Manager node
-  // 1: Log node
-  // 2: Output node
   START_INPUT_NODES = 3;
+#ifdef READ_DATA_FOR_CORRELATE_NODES_FROM_FILE
+  // Reading from file does not need input nodes:
+  N_INPUT_NODES = 0;
+#else
   N_INPUT_NODES = GenPrms.get_nstations();
   assert(N_INPUT_NODES > 0);
+#endif
   
   START_CORRELATE_NODES = START_INPUT_NODES + N_INPUT_NODES;
-  N_CORRELATE_NODES = numtasks - 3 - N_INPUT_NODES;
+  N_CORRELATE_NODES = numtasks - START_CORRELATE_NODES;
+
   assert(N_CORRELATE_NODES > 0);
 
   MPI_Status status;
@@ -142,7 +145,8 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   }
 
   // Initialise input nodes
-  for (int i=0; i<N_INPUT_NODES; i++) {
+  for (int i=0; i<GenPrms.get_nstations(); i++) {
+#ifndef READ_DATA_FOR_CORRELATE_NODES_FROM_FILE
     // starting an input reader
     MPI_Send(&i, 1, MPI_INT32, 
              i+START_INPUT_NODES, MPI_TAG_SET_INPUT_NODE, MPI_COMM_WORLD);
@@ -162,22 +166,23 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
                MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
       assert(status.MPI_SOURCE == i+START_INPUT_NODES);
     }
+#endif
 
     // Add correlator nodes to the input readers:
-//    INT32 ranks[3] = {i, 0, 0};
     for (int j=0; j<N_CORRELATE_NODES; j++) {
-//      ranks[1] = j;
-//      ranks[2] = j+START_CORRELATE_NODES;
-//      MPI_Send(ranks, 3, MPI_INT32, 
-//               i + START_INPUT_NODES,
-//               MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
 
+#ifdef READ_DATA_FOR_CORRELATE_NODES_FROM_FILE
       char filename[strlen(StaPrms[i].get_mk4file())+1];
       sprintf(filename, "%c%s", (char)i, StaPrms[i].get_mk4file());
       // strlen+1 so that \0 gets transmitted as well
       MPI_Send(filename, strlen(filename+1)+2, MPI_CHAR, 
                j+START_CORRELATE_NODES, MPI_TAG_ADD_DATA_READER_FILE, MPI_COMM_WORLD);
-
+#else
+      INT32 ranks[3] = {i, j, j+START_CORRELATE_NODES};
+      MPI_Send(ranks, 3, MPI_INT32, 
+               i + START_INPUT_NODES,
+               MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
+#endif
       // Wait until the connection is set up:
       INT64 msg;
       MPI_Recv(&msg, 1, MPI_INT64, MPI_ANY_SOURCE,
@@ -193,15 +198,16 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
 }
 
 void Manager_node::start() {
-//  for (int input_node=0; input_node<GenPrms.get_nstations(); input_node++) {
-//    for (int corr_node=0; corr_node<N_CORRELATE_NODES; corr_node++) {
-//      // Stream, start time, stop time
-//      INT64 msg[3] = {corr_node, 0, 0};
-//      MPI_Send(&msg, 3, MPI_INT64, input_node+START_INPUT_NODES,
-//               MPI_TAG_INPUT_STREAM_SET_PRIORITY, MPI_COMM_WORLD);
-//    }
-//  }
-  
+#ifndef READ_DATA_FOR_CORRELATE_NODES_FROM_FILE
+  for (int input_node=0; input_node<GenPrms.get_nstations(); input_node++) {
+    for (int corr_node=0; corr_node<N_CORRELATE_NODES; corr_node++) {
+      // Stream, start time, stop time
+      INT64 msg[3] = {corr_node, 0, 0};
+      MPI_Send(&msg, 3, MPI_INT64, input_node+START_INPUT_NODES,
+               MPI_TAG_INPUT_STREAM_SET_PRIORITY, MPI_COMM_WORLD);
+    }
+  }
+#endif
   
   while (GenPrms.get_duration() > 0) {
     // Check for MPI messages

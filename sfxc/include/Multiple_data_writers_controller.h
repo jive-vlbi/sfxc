@@ -33,7 +33,7 @@ public:
   Buffer *buffer(unsigned int i);
   void set_buffer(unsigned int i, Buffer *buff);
   
-  Buffer2data_writer<value_type> *operator[](int i);
+  Buffer2writer *operator[](int i);
   
   bool ready();
   

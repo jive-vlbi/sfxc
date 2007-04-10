@@ -29,6 +29,12 @@ Input_node_controller::process_event(MPI_Status &status) {
       MPI_Recv(&msg, 3, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
+//      get_log_writer()
+//        << "  - stream: " << msg[0]
+//        << ", start: " << msg[1]
+//        << ", stop: " << msg[2]
+//        << std::endl;
+
       // stream, start, stop
       node.set_priority(msg[0],msg[1],msg[2]);
       return PROCESS_EVENT_STATUS_SUCCEEDED;

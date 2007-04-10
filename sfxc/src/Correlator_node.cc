@@ -81,8 +81,17 @@ void Correlator_node::start()
               startIS=GenPrms.get_usStart();
 
               //initialise readers to proper position
+              Init_reader_struct init_readers[GenPrms.get_nstations()];
               for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
-                integration_slice.init_reader(sn,startIS);
+                init_readers[sn].corr_node = this;
+                init_readers[sn].startIS = startIS;
+                init_readers[sn].sn = sn;
+                
+                pthread_create(&init_readers[sn].thread, NULL, 
+                               start_init_reader, static_cast<void*>(&init_readers[sn]));
+              }
+              for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
+                pthread_join(init_readers[sn].thread, NULL);
               }
               
               correlate_state = CORRELATE_INTEGRATION_SLICE;
@@ -178,4 +187,10 @@ int Correlator_node::get_correlate_node_number() {
 
 void Correlator_node::set_slice_number(int sliceNr_) {
   sliceNr = sliceNr_;
+}
+
+void *Correlator_node::start_init_reader(void * self_) {
+  Init_reader_struct *ir_struct = static_cast<Init_reader_struct *>(self_);
+  ir_struct->corr_node->integration_slice.init_reader(ir_struct->sn,ir_struct->startIS);
+  return NULL;
 }
