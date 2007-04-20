@@ -37,19 +37,19 @@ class CorrelationCore
     /** Initialise the correlator with proper values, allocate arrays,
         createFFTW plans.**/
     CorrelationCore();
-    CorrelationCore(GenP&);
+    CorrelationCore(GenP&, int ref_sn);
 
     /** De-allocate correlator arrays, destroy FFTW plans.**/
     ~CorrelationCore();
 
     /** Sets the parameters for the correlation **/
-    void set_parameters(GenP &GenPrms);
+    void set_parameters(GenP &GenPrms, int ref_sn);
 
     /** Initialise array values to zero before the correlation
         of the time slice.**/
     void init_time_slice();
     
-    /** Calculate FFT, Auto and Cross correlations for current segment. **/
+    /** Calculate FFT, Auto and Cross correlations for current segment.**/
     void correlate_segment(double** in_segm);
     
     /** Average correlation results in the current time slice. **/
@@ -80,5 +80,10 @@ class CorrelationCore
 
     fftw_plan *p_r2c; //FFT plans
 
+    //function members
+    void correlate_baseline(int station1, int station2, int bsln);
+    void normalise_correlation(int station1, int station2, int bsln);
+
+    int ref_station;
 };
 #endif // CORRELATIONCORE_H

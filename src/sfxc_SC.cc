@@ -17,7 +17,7 @@ UINT32 seed;
 
 int main(int argc, char *argv[])
 {
-  //initialise log writer for run time messagae
+  //initialise log writer for run time messages
   Log_writer_cout log_writer(0,false);
   set_log_writer(log_writer);
 
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
   INT64 startIS=GenPrms.get_usStart();
 
   //initialise integration slice
-  Integration_slice IntSlc(GenPrms, StaPrms, log_writer);
+  Integration_slice IntSlc(GenPrms, StaPrms, log_writer, RunPrms.get_ref_station());  
 
   for (int sn=0; sn< nstations; sn++) {
 
@@ -143,7 +143,6 @@ int main(int argc, char *argv[])
 
   IntSlc.set_data_writer(&data_writer);//pass the data writer 
 
-
   //process the mk4file data
   if ( RunPrms.get_runoption() == 1 ) {
 
@@ -154,8 +153,7 @@ int main(int argc, char *argv[])
           // && data_available TODO RHJO implement
           )
     {
-      //TODO RHJO test and debug code
-      cout << "\nIS/nIS=" << setw(2) << ++IS << "/" << nIS <<
+      log_writer(1) << "\nIS/nIS=" << ++IS << "/" << nIS <<
        " startIS=" << startIS << " usec"<< endl;
       //process the next integration slice:
       IntSlc.correlate();

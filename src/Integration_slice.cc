@@ -14,7 +14,7 @@
 // Initialise the correlation for one integration slice
 Integration_slice::Integration_slice(Log_writer &lg_wrtr)
   //member initialisations
-  :dc(lg_wrtr), cc(), parameters_set(false)
+  :dc(lg_wrtr), cc(), parameters_set(false), log_writer(lg_wrtr)
 {
 }
 
@@ -22,26 +22,28 @@ Integration_slice::Integration_slice(Log_writer &lg_wrtr)
 Integration_slice::Integration_slice(
   GenP &GenPrms, 
   StaP *StaPrms,
-  Log_writer &lg_wrtr)
+  Log_writer &lg_wrtr,
+  int ref_station)
   //member initialisations
-  :dc(lg_wrtr), cc(), parameters_set(false)
+  :dc(lg_wrtr), cc(), parameters_set(false), log_writer(lg_wrtr)
 {
-  set_parameters(GenPrms,StaPrms);
+  set_parameters(GenPrms,StaPrms, ref_station);
 }
 
 void
 Integration_slice::set_parameters(
   GenP &GenPrms, 
-  StaP *StaPrms)
+  StaP *StaPrms,
+  int  ref_station)
 {
   // Only set the parameters once, otherwise the arrays get constructed twice
   assert( !parameters_set );
   parameters_set = true;
   
   dc.set_parameters(GenPrms, StaPrms);
-  cc.set_parameters(GenPrms);
+  cc.set_parameters(GenPrms, ref_station);
   
-  Nsegm2Avg = 2 * GenPrms.get_bwfl() / GenPrms.get_n2fft();
+  Nsegm2Avg = INT32 (2 * GenPrms.get_bwfl() / GenPrms.get_n2fft());
   Nsegm2Avg = (INT32) (GenPrms.get_time2avg() * Nsegm2Avg);
 }
 
@@ -80,9 +82,8 @@ void Integration_slice::init_reader(int sn, INT64 startIS)
 // Correlates all the segments (Nsegm2Avg) in the integration slice.
 void Integration_slice::correlate()
 {  
-  //TODO RHJO test/debug code
   float TenPct=Nsegm2Avg/10.0, i=0;
-  cout << "Nsegm2Avg " << Nsegm2Avg << endl;
+  log_writer(1) << "Nsegm2Avg " << Nsegm2Avg << endl;
   
   //zero accumulation accxps array and norms array.
   cc.init_time_slice();
@@ -95,11 +96,10 @@ void Integration_slice::correlate()
     //do the correlation for current segment.
     cc.correlate_segment(dc.get_segment());
 
-    //TODO RHJO test/debug code
     if ( floor((segm+1)/TenPct) == i+1 ){
       i++;
-      cout << "segm=" << setw(8) << segm << " " <<
-      setw(3) << i*10 << " % of current Integration Slice processed\n";
+      log_writer(1) << "segm=" << segm << "\t " << i*10 << 
+      " % of current Integration Slice processed\n";
     }
       
   }
@@ -116,3 +116,10 @@ void Integration_slice::correlate()
 Data_writer &Integration_slice::get_data_writer() {
   return cc.get_data_writer();
 }
+
+
+Log_writer& Integration_slice::get_log_writer()
+{
+  return log_writer;
+}
+

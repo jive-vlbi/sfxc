@@ -25,9 +25,10 @@ class Integration_slice
     /** Initialise the Time Slice correlator.  **/
     Integration_slice(Log_writer &lg_wrtr);
 
-    Integration_slice(GenP &GenPrms, StaP* StaPrms, Log_writer &lg_wrtr);
+    Integration_slice(GenP &GenPrms, StaP* StaPrms, Log_writer &lg_wrtr, 
+       int ref_station);
 
-    void set_parameters(GenP &GenPrms, StaP* StaPrms);
+    void set_parameters(GenP &GenPrms, StaP* StaPrms, int ref_station);
       
 
     /** assigns delay table for station number sn**/
@@ -49,11 +50,15 @@ class Integration_slice
     
     Data_writer &get_data_writer();
 
+    Log_writer &get_log_writer();
+
   private:
     INT32           Nsegm2Avg; //nr of segments to average
     DelayCorrection dc;//class
     CorrelationCore cc;//class
     bool            parameters_set; // For debugging
+
+    Log_writer      &log_writer;
 
 };
 #endif // INTEGRATION_SLICE_H
