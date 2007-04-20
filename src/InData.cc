@@ -158,8 +158,8 @@ int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame, StaP &StaPrms)
   //extracting for 2 headstacks
   if(nhs==2) {
     readstatus = reader.get_bytes(8*frameMk4, (char*)r64block);
-    if (readstatus < 0)
-      return readstatus;//error when reading
+    if (readstatus != 8*frameMk4)
+      return -1;//error when reading
       
     for(jbuf=0; jbuf<(frameMk4); jbuf++) {
       work64=r64block[jbuf];
@@ -176,8 +176,8 @@ int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame, StaP &StaPrms)
   //extracting for 1 headstack
   if(nhs==1) {
     readstatus = reader.get_bytes(4*frameMk4, (char*)r32block);
-    if (readstatus < 0) 
-      return readstatus;//error when reading
+    if (readstatus != 4*frameMk4) 
+      return -1;//error when reading
       
     for(jbuf=0; jbuf<(frameMk4); jbuf++) {
       work32=r32block[jbuf];

@@ -131,7 +131,7 @@ void DelayCorrection::set_data_reader(int sn, Data_reader *data_reader_)
 
 
 //go to desired position in input reader for station sn
-void DelayCorrection::init_reader(int sn, INT64 startIS)
+bool DelayCorrection::init_reader(int sn, INT64 startIS)
 {
   
   int   jsynch; //shift to go to the synch word in the buffer
@@ -151,7 +151,9 @@ void DelayCorrection::init_reader(int sn, INT64 startIS)
     msglvl = get_log_writer().get_messagelevel();
     get_log_writer().set_messagelevel(0);
     // return usTime and jsynch for current header
-    FindHeaderMk4(*data_reader[sn], jsynch, usTime, startIS, StaPrms[sn], GenPrms);
+    int result = FindHeaderMk4(*data_reader[sn], jsynch, usTime, startIS, StaPrms[sn], GenPrms);
+    if (result != 0) return false;
+
     // reset message level
     get_log_writer().set_messagelevel(msglvl);
     
@@ -167,7 +169,8 @@ void DelayCorrection::init_reader(int sn, INT64 startIS)
     }
     offBytes = StaPrms[sn].get_boff() + offBytes + offSynch;
     //go to desired position in input_reader by moving offBytes forward
-    data_reader[sn]->get_bytes(offBytes, NULL);
+    INT64 bytesRead = data_reader[sn]->get_bytes(offBytes, NULL);
+    if (bytesRead != offBytes) return false;
   }
   else
   {
@@ -181,22 +184,24 @@ void DelayCorrection::init_reader(int sn, INT64 startIS)
       //fill data_frame if data frame counter at end of frame
       //TODO RHJO implement data type check for other data type
 
-      fill_Mk4frame(sn,*data_reader[sn],data_frame, StaPrms[sn]);
+      int status = fill_Mk4frame(sn,*data_reader[sn],data_frame, StaPrms[sn]);
+      if (status < 0) return false;
       df_counter[sn] = 0;
     }
     dcBufPrev[sn][i]=data_frame[sn][df_counter[sn]];
     df_counter[sn]++;
   }
   
+  return true;
 }
 
 
 // fills the next segment to be processed by correlator core.
-void DelayCorrection::fill_segment()
+bool DelayCorrection::fill_segment()
 {
   //(re)fill Bufs when all data in Bufs is processed
   if ( (BufPtr + n2fftcorr) > BufSize ) {
-    fill_Bufs();
+    if (!fill_Bufs()) return false;
     timePtr=timePtr+BufTime;
     BufPtr=0;
   }
@@ -207,6 +212,8 @@ void DelayCorrection::fill_segment()
     }
   }
   BufPtr=BufPtr+n2fftcorr;
+
+  return true;
 }
 
 
@@ -219,7 +226,7 @@ double **DelayCorrection::get_segment()
 
 //Fills Bufs with delay corrected data. This function has to be called
 //every time all data in Bufs are processed.
-void DelayCorrection::fill_Bufs()
+bool DelayCorrection::fill_Bufs()
 {
 //  double Time; //time in micro seconds
   INT64  Time; //time in micro seconds
@@ -245,10 +252,8 @@ void DelayCorrection::fill_Bufs()
       if (df_counter[sn] == df_length[sn]) {
         //fill data frame if data frame counter is at end of frame
         int nBytes = fill_Mk4frame(sn,*data_reader[sn],data_frame,StaPrms[sn]);
-        if (nBytes==0) {
-//TODO RHJO implement error handling
-//          cerr << "ERROR: End of input for reader " << sn << endl;
-//          return 1;
+        if (nBytes <= 0) {
+          return false;
         }
         df_counter[sn] = 0;//reset FrameCounter for station sn
       }
@@ -343,6 +348,8 @@ void DelayCorrection::fill_Bufs()
       dcBufPrev[sn][i] = dcBufs[sn][BufSize+i];
 
   }
+
+  return true;
 }
 
 
@@ -352,8 +359,10 @@ Log_writer& DelayCorrection::get_log_writer()
 }
 
 //set local delay table parameter
-void DelayCorrection::set_delay_table(int sn, DelayTable &delay_table)
+bool DelayCorrection::set_delay_table(int sn, DelayTable &delay_table)
 {
   delTbl[sn]=delay_table;
+  
+  return true;
 }
 

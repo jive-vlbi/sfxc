@@ -47,16 +47,16 @@ class CorrelationCore
 
     /** Initialise array values to zero before the correlation
         of the time slice.**/
-    void init_time_slice();
+    bool init_time_slice();
     
     /** Calculate FFT, Auto and Cross correlations for current segment.**/
-    void correlate_segment(double** in_segm);
+    bool correlate_segment(double** in_segm);
     
     /** Average correlation results in the current time slice. **/
-    void average_time_slice();
+    bool average_time_slice();
 
     /** Write the averaged results for the current time slice.**/
-    void write_time_slice();
+    bool write_time_slice();
 
     /** **/
     void set_data_writer(Data_writer *data_writer);

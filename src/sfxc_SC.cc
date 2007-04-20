@@ -115,8 +115,11 @@ int main(int argc, char *argv[])
   //which is start of scan wrt to 00:00 in usec
   INT64 startIS=GenPrms.get_usStart();
 
+  bool result;
+
   //initialise integration slice
-  Integration_slice IntSlc(GenPrms, StaPrms, log_writer, RunPrms.get_ref_station());  
+  Integration_slice IntSlc(GenPrms, StaPrms, log_writer, 
+                           RunPrms.get_ref_station());  
 
   for (int sn=0; sn< nstations; sn++) {
 
@@ -128,8 +131,13 @@ int main(int argc, char *argv[])
     int retval = delay_table.readDelayTable(StaPrms[sn].get_delaytable());
     if (retval != 0) {
       get_log_writer().message(0,"ERROR: when reading delay table.\n");
+      return -1;
     }
-    IntSlc.set_delay_table(sn,delay_table);//pass the delay table 
+    result = IntSlc.set_delay_table(sn,delay_table);//pass the delay table 
+    if (!result) {
+      log_writer.error("Could not read delay table");
+      return -1;
+    }
 
     //Data reader initialisations
     Data_reader *data_reader;
@@ -137,7 +145,14 @@ int main(int argc, char *argv[])
     IntSlc.set_data_reader(sn,data_reader);//pass the data reader
     //display and check mk4file header info for start time set in ccf
     show_MK4_header(data_reader, startIS, StaPrms[sn], GenPrms);
-    IntSlc.init_reader(sn,startIS);//initialise readers to proper position
+    
+    //initialise readers to proper position
+    result = IntSlc.init_reader(sn,startIS);
+
+    if (!result) {
+      log_writer.error("Could not initialise the data reader");
+      return -1;
+    }
 
   }
 
@@ -150,14 +165,22 @@ int main(int argc, char *argv[])
     
     //while still integration slices and data are available
     while (startIS < GenPrms.get_usStart() + GenPrms.get_usDur()
-          // && data_available TODO RHJO implement
           )
     {
-      log_writer(1) << "\nIS/nIS=" << ++IS << "/" << nIS <<
-       " startIS=" << startIS << " usec"<< endl;
+      log_writer(1) << "\nIS/nIS=" << ++IS << "/" << nIS 
+                    << " startIS=" << startIS << " usec"<< endl;
+
       //process the next integration slice:
-      IntSlc.correlate();
-      //set start of next time slice to: start of integration slice + time to average
+      result = IntSlc.correlate();
+
+      if (!result) {
+        // Error in correlation, exiting.
+        log_writer.error("Error in correlating time slice, exiting.");
+        return -1;
+      }
+
+      //set start of next time slice to: 
+      //  start of integration slice + time to average
       startIS += GenPrms.get_usTime2Avg(); //in usec
     }
   

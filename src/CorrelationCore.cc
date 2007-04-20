@@ -91,7 +91,7 @@ CorrelationCore::~CorrelationCore()
 
 
 
-void CorrelationCore::init_time_slice()
+bool CorrelationCore::init_time_slice()
 {
   for (int i = 0; i < nbslns ; i++){
     for (int j = 0 ; j < n2fftcorr*padding/2+1; j++){
@@ -100,6 +100,7 @@ void CorrelationCore::init_time_slice()
     }
     norms[i] = 0.0;
   }
+  return true;
 }
 
 
@@ -122,7 +123,7 @@ void CorrelationCore::correlate_baseline(int station1, int station2, int bsln) {
 
 
 
-void CorrelationCore::correlate_segment(double** in_segm)
+bool CorrelationCore::correlate_segment(double** in_segm)
 {
   int bsln = 0; //initialise basline number    
   
@@ -158,9 +159,8 @@ void CorrelationCore::correlate_segment(double** in_segm)
       }
     }
   }
-        
-  
-  
+
+  return true;
 }
 
 
@@ -177,7 +177,7 @@ void CorrelationCore::normalise_correlation(int station1, int station2, int bsln
 
 
 
-void CorrelationCore::average_time_slice()
+bool CorrelationCore::average_time_slice()
 {
 
   int bsln = 0;//initialise baseline counter
@@ -212,11 +212,12 @@ void CorrelationCore::average_time_slice()
     }
   }
 
+  return true;
 }
 
 
 
-void CorrelationCore::write_time_slice()
+bool CorrelationCore::write_time_slice()
 {
   //TODO RHJO: test
   //write normalized correlation results to output file
@@ -225,11 +226,10 @@ void CorrelationCore::write_time_slice()
     UINT64 nWrite = sizeof(fftw_complex)*(n2fftcorr*padding/2+1); 
     UINT64 written = get_data_writer().
       put_bytes(nWrite, (char *)(accxps[bsln]));
-    assert(nWrite == written);
-    
+    if (nWrite != written) return false;
   }
 
-
+  return true;
 }
 
 
