@@ -43,6 +43,7 @@ using namespace std;
 int RunP::get_messagelvl()  const { return messagelvl; }
 int RunP::get_interactive() const { return interactive; }
 int RunP::get_runoption()   const { return runoption; }
+int RunP::get_ref_station() const { return ref_station; }
 
 
 
@@ -52,6 +53,7 @@ RunP::RunP()
   messagelvl  = 0; //only error and abort messages
   interactive = 0; //run automatically
   runoption   = 1; //run program complete
+  ref_station = -1;//correlate all possible base lines (auto and crosses)
 }
 
 
@@ -89,6 +91,7 @@ int RunP::parse_ctrlFile(char *ctrlFile, Log_writer &log_writer)
       retval = retval + getLongVal(key,val,"MESSAGELVL",messagelvl, log_writer);
       retval = retval + getLongVal(key,val,"INTERACTIVE",interactive, log_writer);
       retval = retval + getLongVal(key,val,"RUNOPTION",runoption, log_writer);
+      retval = retval + getLongVal(key,val,"REFSTATION",ref_station, log_writer);      
       
     }
 
@@ -127,6 +130,8 @@ int RunP::check_params(Log_writer &log_writer) const
     "Interactive          = " << interactive << endl;
   log_writer <<
     "Run option           = " << runoption << endl;
+  log_writer <<
+    "Reference station    = " << ref_station << endl;
   log_writer <<
     endl;
 

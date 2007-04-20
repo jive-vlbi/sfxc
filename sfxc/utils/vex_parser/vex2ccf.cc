@@ -21,12 +21,14 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <assert.h>
 
 //c++ includes
 #include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <iomanip>
 using namespace std;
 
 //includes for system calls
@@ -52,8 +54,9 @@ long str_to_long (std::string inString, int pos, int length)
   }  
 }
 
-
-//month length
+//this function is called by yd2md
+//input month, K
+//output month length
 int MonthLength(int M, int K)
 {
  return M==2 ? 30-K : (275*(M+1)/9) - (275*M/9);
@@ -77,6 +80,8 @@ void yd2md(int year, int doy, int &month, int &dom){
   month = current_month;
 }
 
+//input year month day
+//output Julian Day
 long long JD(int y, int m, int d)
 {
    return ( 1461 * ( y + 4800 + ( m - 14 ) / 12 ) ) / 4 +
@@ -84,6 +89,41 @@ long long JD(int y, int m, int d)
           ( 3 * ( ( y + 4900 + ( m - 14 ) / 12 ) / 100 ) ) / 4 +
           d - 32075;  
 }
+
+
+// Given: some year, pY
+// Returns 366 if pY is a leap year, 365 if it is not
+int DaysPerYear(int pY)
+{
+  int result=365;
+  if (pY % 400 ==  0)  result = 366;
+  else if (pY % 100 == 0) result = 365;
+  else if (pY % 4 == 0) result = 366;
+  else result = 365;
+  return result;
+}
+
+
+//returns clock epoch in seconds for timeString
+//assumption: |year-ref_year|<=1
+long ceps(string timeString, int ref_year)
+{
+  long clock_epoch=0;
+  int year = str_to_long(timeString,0,4);  //pos=0, length=4
+  int doy = str_to_long(timeString,5,3);
+  int hr = str_to_long(timeString,9,2);
+  int min = str_to_long(timeString,12,2);
+  int sec = str_to_long(timeString,15,2);
+  assert(abs(year-ref_year)<=1);
+  if (ref_year == year) {
+    clock_epoch = sec + 60*min + 3600*hr + 86400*doy;
+  } else {
+    int DpY = DaysPerYear(ref_year);
+    clock_epoch = sec + 60*min + 3600*hr + 86400*doy + (year-ref_year)*DpY * 86400;
+  }
+  return clock_epoch;
+}
+
 
 int main (int argc, char *argv[])
 {
@@ -215,7 +255,6 @@ int main (int argc, char *argv[])
 
   //set ccf name    
   string Experiment = VP.ExperName()+"_"+
-    VP.ScanSource(VP.Station(StatChI[0]),ScanChI)+"_"+
     VP.ScanName(ScanChI)+"_"+LFT;
   if (n_stat_ccf < n_stations) {
     Experiment = Experiment + "_";
@@ -435,30 +474,7 @@ int main (int argc, char *argv[])
   dc_file<<"Scan ID         " << VP.ScanName(ScanChI) << endl;
   //channel id and index
   dc_file<<"Channel ID      " << LFT << endl;
-  //nr of stations
-  dc_file<<"nr of stations  " << n_stat_ccf << endl << endl;
-
-
-  //for each station write relevant parameters to dcf
-  int axty=0;
-  for (int i=0; i<n_stat_ccf; i++)
-  {
-    string deltbl = 
-      VP.ExperName()+"_"+VP.ScanName(ScanChI)+"_"+ 
-      VP.Station(StatChI[i])+".del";
-
-    dc_file<<"#SITE_________________________________________________________\n";
-    dc_file<<"DELAYTABLE      "<< deltbl << endl;
-    dc_file<<"site_name       "<< VP.Site(VP.Station(StatChI[i]))<<endl;
-    dc_file<<"site_position_x "<< VP.SiteX(VP.Station(StatChI[i]))<< endl;
-    dc_file<<"site_position_y "<< VP.SiteY(VP.Station(StatChI[i]))<< endl;
-    dc_file<<"site_position_z "<< VP.SiteZ(VP.Station(StatChI[i]))<< endl;
-    if (VP.AxisMount(VP.Station(StatChI[i])) == "az_el") axty=3;
-    if (VP.AxisMount(VP.Station(StatChI[i])) == "ha_dec") axty=4;
-    dc_file<<"axis_type       "<< axty << endl;
-    dc_file<<"axis_offset     "<< VP.AxisOffset(VP.Station(StatChI[i]))<<endl;
-    dc_file<<endl;
-  }
+  dc_file<< endl;
 
 
   int SourceChI;
@@ -467,49 +483,86 @@ int main (int argc, char *argv[])
     if(VP.SourceName(j) == VP.ScanSource(VP.Station(StatChI[0]),ScanChI))
       SourceChI=j;
   dc_file<<"source_name     " <<  VP.SourceName(SourceChI)<<endl;
-  dc_file<<"source_ra       " <<  VP.Source_RA(SourceChI)<<endl;
+  dc_file<<"source_ra       " <<  setprecision(12) << VP.Source_RA(SourceChI)<<endl;
   dc_file<<"source_dec      " <<  VP.Source_Dec(SourceChI)<<endl;
   dc_file<<endl;
 
-  dc_file<<"#EOP_________________________________________________________\n";
-  dc_file<<"tai_utc         " << VP.TAI_UTC()<<endl;
-  string eop_ref_epoch=VP.EOPEpoch();
-  int year = str_to_long(eop_ref_epoch,0,4);  //pos=0, length=4
-  int doy = str_to_long(eop_ref_epoch,5,3);
-  int month, day;
-  yd2md(year,doy,month,day);
-  dc_file<<"eop_ref_epoch   " << JD(year,month,day) <<" julian day"<<endl;
-  dc_file<<"num_eop_points  " << VP.N_EOP_Points()<<endl;
-  for(int i=0; i<VP.N_EOP_Points(); i++) 
-    dc_file<< "ut1_utc[" << i << "]      " << VP.UT1_UTC(i) << endl;
-  for(int i=0; i<VP.N_EOP_Points(); i++) 
-    dc_file<< "x_wobble[" << i << "]     " << VP.XWobble(i) << endl;
-  for(int i=0; i<VP.N_EOP_Points(); i++) 
-    dc_file<< "y_wobble[" << i << "]     " << VP.YWobble(i) << endl;
-  dc_file<<endl;
+  {
+    dc_file<<"#EOP__________________________________________________________\n";
+    dc_file<<"tai_utc         " << VP.TAI_UTC()<<endl;
+    string eop_ref_epoch=VP.EOPEpoch();
+    int year = str_to_long(eop_ref_epoch,0,4);  //pos=0, length=4
+    int doy = str_to_long(eop_ref_epoch,5,3);
+    int month, day;
+    yd2md(year,doy,month,day);
+    dc_file<<"eop_ref_epoch   " << JD(year,month,day) <<" julian day"<<endl;
+    dc_file<<"num_eop_points  " << VP.N_EOP_Points()<<endl;
+    for(int i=0; i<VP.N_EOP_Points(); i++) 
+      dc_file<< "ut1_utc[" << i << "]      " << VP.UT1_UTC(i) << endl;
+    for(int i=0; i<VP.N_EOP_Points(); i++) 
+      dc_file<< "x_wobble[" << i << "]     " << VP.XWobble(i) << endl;
+    for(int i=0; i<VP.N_EOP_Points(); i++) 
+      dc_file<< "y_wobble[" << i << "]     " << VP.YWobble(i) << endl;
+    dc_file<<endl;
+  }
+
+  int year_start;
+  {
+    dc_file<<"#SCAN_________________________________________________________\n";
+    string startTime=VP.ScanStart(VP.Station(StatChI[0]), ScanChI);
+    year_start = str_to_long(startTime,0,4);  //pos=0, length=4
+    int doy = str_to_long(startTime,5,3);
+    int month, day;
+    int hr  = str_to_long(startTime,9,2);
+    int min = str_to_long(startTime,12,2);
+    int sec = str_to_long(startTime,15,2);
+    yd2md(year_start,doy,month,day);    
+    dc_file<<"year            " << year_start << endl;  //pos=0, length=4
+    dc_file<<"month           " << month << endl;
+    dc_file<<"day             " << day << endl;
+    dc_file<<"hr              " << hr  << endl;
+    dc_file<<"min             " << min << endl;
+    dc_file<<"sec             " << sec << endl;
+    dc_file<<"scan_duration   " << 
+      VP.ScanDuration(VP.Station(StatChI[0]), ScanChI)  << endl;
+    long scan_start = sec + min*60 + hr*3600 + doy*86400;
+    dc_file<<"scan_start      " << scan_start << " (sec) " << startTime << endl;
+    dc_file<<endl;
+  }
 
 
-  dc_file<<"#SCAN_______________________________________________________\n";
-  string startTime=VP.ScanStart(VP.Station(StatChI[0]), ScanChI);
-  year = str_to_long(startTime,0,4);  //pos=0, length=4
-  doy = str_to_long(startTime,5,3);
-  yd2md(year,doy,month,day);
-  
-  dc_file<<"year            " << year << endl;  //pos=0, length=4
-  dc_file<<"month           " << month << endl;
-  dc_file<<"day             " << day << endl;
-  dc_file<<"hr              " << str_to_long(startTime,9,2) << endl;
-  dc_file<<"min             " << str_to_long(startTime,12,2) << endl;
-  dc_file<<"sec             " << str_to_long(startTime,15,2) << endl;
-
-
-  dc_file<<"scan_duration   " << 
-    VP.ScanDuration(VP.Station(StatChI[0]), ScanChI)  << endl;
-  dc_file<<endl;
-
-  dc_file<<"#RFREQ_______________________________________________________\n";
+  dc_file<<"#RFREQ________________________________________________________\n";
   dc_file<<"freq            " << skyfreq << endl;
   dc_file<<endl;
+
+  dc_file<<"#Station_data_________________________________________________\n";
+  //nr of stations
+  dc_file<<"nr_of_stations  " << n_stat_ccf << endl << endl;
+
+  //for each station write relevant parameters to dcf
+  int axis_type=0;
+  for (int i=0; i<n_stat_ccf; i++)
+  {
+    string deltbl = 
+      VP.ExperName()+"_"+VP.ScanName(ScanChI)+"_"+ 
+      VP.Station(StatChI[i])+".del";
+
+    dc_file<<"#SITE_________________________________________________________\n";
+    dc_file<<"DELAYTABLE            "<< deltbl << endl;
+    dc_file<<"site_name             "<< VP.Site(VP.Station(StatChI[i]))<<endl;
+    dc_file<<"site_position_x       "<< setprecision(12) << VP.SiteX(VP.Station(StatChI[i]))<< endl;
+    dc_file<<"site_position_y       "<< VP.SiteY(VP.Station(StatChI[i]))<< endl;
+    dc_file<<"site_position_z       "<< VP.SiteZ(VP.Station(StatChI[i]))<< endl;
+    if (VP.AxisMount(VP.Station(StatChI[i])) == "az_el") axis_type=3;
+    if (VP.AxisMount(VP.Station(StatChI[i])) == "ha_dec") axis_type=4;
+    dc_file<<"axis_type             "<< axis_type << endl;
+    dc_file<<"axis_offset           "<< VP.AxisOffset(VP.Station(StatChI[i]))<<endl;
+    dc_file<<"clock_early           "<< VP.ClockOffset(VP.Station(StatChI[i]))<< " (usec)\n";
+    dc_file<<"clock_rate            "<< VP.ClockRate(VP.Station(StatChI[i]))<< " (usec/sec)\n";
+    string clock_epoch = VP.ClockEpoch(VP.Station(StatChI[i]));
+    dc_file<<"clock_epoch           "<< ceps(clock_epoch,year_start) <<" (sec) " << clock_epoch<<endl;
+    dc_file<<endl;
+  }
 
   //close ccf
   dc_file.close();

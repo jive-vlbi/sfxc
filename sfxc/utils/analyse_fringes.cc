@@ -25,22 +25,36 @@ double noise_rms(complex<double> *array, int length, int imax);
 //main
 int main(int argc, char *argv[])
 {
+  int ns, nCross, nbslns, nAutos; 
 
-  if (argc != 4){
+  if ((argc < 4) && (argc > 5)){
+    cout << "\nusage  : analyse_fringes  sfxc_product_filename  nr_of_stations  n2fft <ret>\n";
+    cout << "usage  : analyse_fringes  sfxc_product_filename  nr_of_stations  n2fft r<ret>\n";
     cout << "purpose: calculate fringes from correlator product file and analyse the fringes.\n";
-    cout << "usage  : analyse_fringes  sfxc_product_filename  nr_of_stations  n2fft <ret>\n";
     cout << "output : fringes.txt, analysis?.txt. Where ? is cross-correlation baseline nr\n";
     cout << "         Use e.g. gnuplot for graphic presentation.\n";
     return 0;
+  } else {
+
+    ns     = atoi(argv[2]);//nr of stations
+    nAutos = ns;
+
+    if (argc == 4){
+    //all auto and cross correlations
+      nCross = ns*(ns-1)/2;//nr of cross baselines
+      nbslns = ns + ns*(ns-1)/2;//nr of baselines auto + cross
+    } else {
+      //one reference station: one auto and rest cross correltions
+      nCross = ns-1;//nr of cross baselines
+      nbslns = 2*ns-1;//nr of baselines auto + cross
+    }
+
   }
 
   
   ifstream infile(argv[1], ios::in | ios::binary);
   assert(infile.is_open());
 
-  int ns=atoi(argv[2]);//nr of stations
-  int nCross = ns*(ns-1)/2;//nr of cross baselines
-  int nbslns = ns + ns*(ns-1)/2;//nr of baselines auto + cross
   int n2fft=atoi(argv[3]) + 1;//FFT length + 1 in correlation
   double ampl[n2fft]; //fringe amplitude
   
@@ -114,7 +128,7 @@ int main(int argc, char *argv[])
       }
 
       //analyse cross correlation fringe and write results to file
-      if (bsln >= ns) {
+      if (bsln >= nAutos) {
         //find lag for max amplitude
         int iForMax = i_for_max(ampl,n2fft);
         //calculate max amplitude
@@ -125,7 +139,7 @@ int main(int argc, char *argv[])
         double noiseRMS = noise_rms(outR,n2fft,iForMax);
         //signal noise ratio
         double SNR=amplMax/noiseRMS;
-        //append to end of file, one putput file per cross cor baseline
+        //append to end of file, one output file per cross cor baseline
         Aout[Cbsln] << 
           setw(5) << nT << " " << 
           setw(5) << bsln << " " << 
@@ -136,6 +150,7 @@ int main(int argc, char *argv[])
           setw(10) << SNR << " " <<
           setw(10) << argAmplMax/M_PI*180. << endl;
         Cbsln++;
+ 
       }
       bsln++;
     }

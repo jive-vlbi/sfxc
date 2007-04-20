@@ -49,12 +49,19 @@ class RunP
      * - 1 : execute all main processing steps: offset, unpack, delay, correlate
      **/
     int get_runoption() const;
+    /** Reference station
+     * -1 and >= nstations : correlate all auto and cross base lines
+     * 0 <= ref_station < nstation : correlate all autos and only crosses against reference
+     **/
+    int get_ref_station() const;
 
   private:
     //parameters which control how the program is run
     int  messagelvl;      //message level
     int  interactive;     //run interactive or automatically
     int  runoption;       //run option, default 1=complete
+    int  ref_station;     //-1 or > nstations all correlations. 
+                          //0<=ref_station<nsations use reference station
 };
 
 

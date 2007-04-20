@@ -30,8 +30,6 @@ using namespace std;
 #include "staPrms.h"
 #include "genFunctions.h"
 
-//global variables
-extern RunP  RunPrms;
 
 //*****************************************************************************
 //funtion definitions

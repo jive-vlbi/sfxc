@@ -1,21 +1,3 @@
-Questions from Nico:
-- General: How do I use the classes?
-  1. Initialise TScorrelator
-    - Set the parameters
-    - Set the delay table
-    - Set the input and output writers
-  2. WHILE there are time slices to be processed DO
-    - Initialise time slice (set start time and duration)
-    - Correlate the time slice
-    - Stop the correlation (send the output?)
-  3. Stop TScorrelator (destructor)
-       
-- A function to change the starttime for a new time slice in TScorrelator
-- How can I use my own delay table (transferred with MPI)?
-- Why do you use startTS instead of increasing the start time and decreasing the duration?
-- Why does CorrelateTimeSlice() get readers and StaPrms?
-
-
 TODO:
 
 Control files
@@ -164,6 +146,24 @@ Move action item from TODO list to DONE list
   vex2ccf and the CCF parser in sfxc have been tuned. Keywords have been given
   more meaningfull names
 - [RHJO, 14-03-2007] Correlation: Parameters: welke wordt waar gebruikt, gezet? Documentatie
+- [RHJO, 30-03-2007] Questions from Nico have been solved:
+  - General: How do I use the classes?
+    1. Initialise TScorrelator
+      - Set the parameters
+      - Set the delay table
+      - Set the input and output writers
+    2. WHILE there are time slices to be processed DO
+      - Initialise time slice (set start time and duration)
+      - Correlate the time slice
+      - Stop the correlation (send the output?)
+    3. Stop TScorrelator (destructor)
+       
+  - A function to change the starttime for a new time slice in TScorrelator
+  - How can I use my own delay table (transferred with MPI)?
+  - Why do you use startTS instead of increasing the start time and decreasing the duration?
+  - Why does CorrelateTimeSlice() get readers and StaPrms?
+
+
 
 
 
