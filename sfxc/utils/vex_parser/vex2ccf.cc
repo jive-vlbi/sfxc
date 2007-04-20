@@ -130,9 +130,10 @@ int main (int argc, char *argv[])
 
   if (argc != 2){
     cout << "purposes:a) create ccf for sfxc by extracting relevant\n";
-    cout << "         vex parameters and setting defaults values\n";
-    cout << "         for the others.\n";
-    cout << "         b) create dcf for delmo.\n";
+    cout << "            vex parameters and setting defaults values\n";
+    cout << "            for the others.\n";
+    cout << "         b) create dcf and a local copy of DE405_le.jpl for \n";
+    cout << "            application delmo.\n\n";
     cout << "usage  : vex2ccf vexfilename <ret>\n";
     return 0;
   }
@@ -317,9 +318,9 @@ int main (int argc, char *argv[])
   //directory for output
   cc_file<<"OUTDIR           !* REPLACE BY ACTUAL NAME *!\n";
   //logfile name
-  cc_file<<"LOGFILE          !* REPLACE BY ACTUAL NAME *!\n";
+  cc_file<<"LOGFILE          " << Experiment << ".log !* DEFAULT NAME *!\n";
   //correlation file name
-  cc_file<<"CORFILE          !* REPLACE BY ACTUAL NAME *!\n";
+  cc_file<<"CORFILE          " << Experiment << ".cor !* DEFAULT NAME *!\n";
   cc_file<<"\n";
 
 
@@ -437,7 +438,7 @@ int main (int argc, char *argv[])
     string deltbl = 
       VP.ExperName()+"_"+VP.ScanName(ScanChI)+"_"+ 
       VP.Station(StatChI[i])+".del";
-    cc_file<<"DELAYTABLE  " << deltbl << endl;
+    cc_file<<"DELAYTABLE  " << deltbl << "  !* DEFAULT NAME *!\n";
     //DELAYEND
     cc_file<<"DELAYEND\n\n\n";
   }  
@@ -566,6 +567,19 @@ int main (int argc, char *argv[])
 
   //close ccf
   dc_file.close();
+
+
+  //make a local copy of the DE405_le.jpl file. This file is necessary to generate the delay
+  //tables using the application delmo.
+
+  char *home;
+  home = getenv("HOME");
+
+  char cmd[256];
+  strcpy(cmd, "cp ");
+  strcat(cmd, home);
+  strcat(cmd, "/bin/DE405_le.jpl .");
+  system (cmd);
 
   return 0;
 }
