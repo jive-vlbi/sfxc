@@ -54,22 +54,22 @@ class DelayCorrection
     void set_data_reader(int sn, Data_reader *data_reader_); 
 
     /** Go to desired position in input reader.**/
-    void init_reader(int sn, INT64 startIS); 
+    bool init_reader(int sn, INT64 startIS); 
     
     /** fills the next segment to be processed by correlator core**/
-    void fill_segment();
+    bool fill_segment();
 
     /** get the segment filled with delay corrected data. **/
     double** get_segment();
 
     /** assigns delay table for station number sn**/
-    void set_delay_table(int sn, DelayTable &delay_table);
+    bool set_delay_table(int sn, DelayTable &delay_table);
 
   private:
 
     //member functions
     // Fill Bufs with delay corrected data.
-    void fill_Bufs();
+    bool fill_Bufs();
     
     Log_writer& get_log_writer();
 

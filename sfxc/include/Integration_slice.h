@@ -32,7 +32,7 @@ class Integration_slice
       
 
     /** assigns delay table for station number sn**/
-    void set_delay_table(int sn, DelayTable &delay_table);
+    bool set_delay_table(int sn, DelayTable &delay_table);
 
     /** **/
     void set_data_reader(int sn, Data_reader *data_reader);
@@ -41,12 +41,12 @@ class Integration_slice
     void set_data_writer(Data_writer *data_writer);
 
     /** **/
-    void init_reader(int sn, INT64 startIS);
+    bool init_reader(int sn, INT64 startIS);
 
     /** Correlates all the segments (Nsegm2Avg) in the time slice.
     \pre startIS: start time of current integration slice in usec wrt 00:00
     **/
-    void correlate();
+    bool correlate();
     
     Data_writer &get_data_writer();
 
