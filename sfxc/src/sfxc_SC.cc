@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
     //initialise readers to proper position
     result = IntSlc.init_reader(sn,startIS);
 
-    if (!result) {
+    if (!result && !RunPrms.get_interactive()) {
       log_writer.error("Could not initialise the data reader");
       return -1;
     }

@@ -224,7 +224,7 @@ int FindHeaderMk4(Data_reader &reader, int& jsynch,
   INT64 jsynch0, jsynch1;
   int nhs, synhs1, synhs2;
 
-  INT64 day, hr, min, sec;
+  INT64 day, hr, min, sec, milis;
     
   int Head0,Head1;  //Headstack IDs as seen in the header
   int year0,day0,hh0,mm0,ss0,ms0,us0; //TOT for headstack 0
@@ -294,19 +294,21 @@ int FindHeaderMk4(Data_reader &reader, int& jsynch,
   }
 
   if (get_log_writer().get_messagelevel()> 0) {
-    sec = usStart/1000000;
-    min = sec/60;
-    sec = sec - min*60;
-    hr  = min/60;
-    min = min - hr*60;
-    day = hr/24;
-    hr  = hr - day*24;
+    milis= usStart/1000;
+    sec  = milis/1000;
+    milis= milis-sec*1000;
+    min  = sec/60;
+    sec  = sec - min*60;
+    hr   = min/60;
+    min  = min - hr*60;
+    day  = hr/24;
+    hr   = hr - day*24;
     {
       stringstream msg;
       msg << "Requested (slice) start time   = " << endl <<
         setw(4) << GenPrms.get_yst() << "y " << setw(3) << GenPrms.get_dst() << "d " <<
         setw(2) << hr << "h " << setw(2) << min << "m " <<
-        setw(2) << sec << "s ";
+        setw(2) << sec << "s " << setw(3) << milis << "ms";
       get_log_writer().message(1, msg);
     }
   }

@@ -46,6 +46,8 @@ class GenP
     int   get_mst() const;
     /** seconds in the starttime. **/
     int   get_sst() const;
+    /** miliseconds in the starttime. **/
+    int   get_milisst() const;
 
     /** duration of the experiment / correlated data (sec) **/
     int   get_duration() const;
@@ -148,6 +150,7 @@ class GenP
     int   hst;        //start hour
     int   mst;        //start minute
     int   sst;        //start second
+    int   milisst;    //start milisecond
     
     int   duration;   //duration of the experiment/correlated data (sec)
     INT64 usDur;      //duration of the experiment/correlated data (usec)
