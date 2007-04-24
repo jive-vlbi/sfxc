@@ -21,7 +21,7 @@ Data_reader_buffer::Data_reader_buffer(Buffer *buff)
 Data_reader_buffer::~Data_reader_buffer() {
 }
 
-UINT64 Data_reader_buffer::get_bytes(UINT64 nBytes, char *output_buffer) {
+size_t Data_reader_buffer::do_get_bytes(size_t nBytes, char *output_buffer) {
   char *out = output_buffer; 
   UINT64 bytes_to_read = nBytes;
   while (bytes_to_read > 0) {

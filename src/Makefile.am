@@ -15,7 +15,7 @@ OBJ=runPrms.cc genPrms.cc staPrms.cc \
 	genFunctions.cc \
 	utils.cc timer.cc \
 	InData.cc delayTable.cc \
-	Data_writer.cc \
+	Data_writer.cc Data_reader.cc \
   Data_reader_file.cc Data_writer_file.cc \
 	Log_writer.cc Log_writer_cout.cc Log_writer_void.cc \
 	Log_writer_file.cc \

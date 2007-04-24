@@ -13,36 +13,34 @@
 #include "Integration_slice.h"
 
 // "Local" global variables
-Log_writer  *int_slice_log_writer;
 INT64        int_slice_startTS;
 
 // Initialise the correlation for one integration slice
-Integration_slice::Integration_slice(
-  Log_writer &lg_wrtr)
+Integration_slice::Integration_slice(Log_writer &lg_wrtr)
   //member initialisations
-  :dc(lg_wrtr), cc()
+  :dc(lg_wrtr), cc(), log_writer(lg_wrtr)
 {
-  int_slice_log_writer = &lg_wrtr;
   int_slice_startTS = 0;
 }
 
 Integration_slice::Integration_slice(
   GenP &GenPrms, 
   StaP* StaPrms,
-  Log_writer &lg_wrtr)
+  Log_writer &lg_wrtr,
+  int ref_station)
   //member initialisations
-  :dc(lg_wrtr), cc()
+  : dc(lg_wrtr), cc(), log_writer(lg_wrtr)
 {
-  int_slice_log_writer = &lg_wrtr;
   int_slice_startTS = 0;
 }
 
-void Integration_slice::set_parameters(GenP &GenPrms, StaP* StaPrms) {
+void Integration_slice::set_parameters(GenP &GenPrms, StaP* StaPrms, int ref_station) {
 } 
 
 //pass the delay table
-void Integration_slice::set_delay_table(int i, DelayTable &delay_table)
+bool Integration_slice::set_delay_table(int i, DelayTable &delay_table)
 {
+  return true;
 }
 
 
@@ -61,13 +59,14 @@ void Integration_slice::set_data_writer(Data_writer *data_writer)
 
 
 //initialise reader to proper position
-void Integration_slice::init_reader(int sn, INT64 startIS)
+bool Integration_slice::init_reader(int sn, INT64 startIS)
 {
+  return true;
 }
 
 
 // Correlates all the segments (Nsegm2Avg) in the integration slice.
-void Integration_slice::correlate()
+bool Integration_slice::correlate()
 {  
   char data[80];
   sprintf(data, "%ld\n", int_slice_startTS);

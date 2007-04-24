@@ -31,12 +31,10 @@ public:
                      int port = 2630);
   ~Data_reader_mark5();
 
-  //UINT64 move_forward(UINT64 nBytes);
-  UINT64 get_bytes(UINT64 nBytes, char *out);
-
   bool eof();  
 private:
-//  std::vector<char> buffer;
+  size_t do_get_bytes(size_t nBytes, char *out);
+
   int sock;
   int msglev;
   bool _eof;

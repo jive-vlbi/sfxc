@@ -13,7 +13,8 @@ OBJ= \
   ../Multiple_data_writers_controller.cc \
   ../Single_data_writer_controller.cc \
   ../Single_data_reader_controller.cc \
-	../Data_reader_file.cc ../Data_reader_tcp.cc ../Data_reader_buffer.cc \
+	../Data_reader.cc \
+	  ../Data_reader_file.cc ../Data_reader_tcp.cc ../Data_reader_buffer.cc \
 	../Data_writer.cc ../Data_writer_file.cc ../Data_writer_tcp.cc \
     ../Data_writer_buffer.cc \
 	../Log_writer.cc ../Log_writer_mpi.cc \

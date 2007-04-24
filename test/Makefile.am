@@ -36,6 +36,7 @@ OBJ = ../src/utils.cc \
       ../src/genFunctions.cc \
       ../src/delayTable.cc \
       \
+      ../src/Data_reader.cc \
       ../src/Data_reader_file.cc \
       ../src/Data_reader_tcp.cc \
       ../src/Data_reader_buffer.cc \
@@ -70,7 +71,8 @@ test_Transfer_control_parameters_SOURCES = \
   $(OBJ) test_Transfer_control_parameters.cc 
 
 test_Data_reader_file_SOURCES = \
-  test_Data_reader_file.cc ../src/Data_reader_file.cc ../src/Data_writer.cc \
+  test_Data_reader_file.cc ../src/Data_reader.cc \
+  ../src/Data_reader_file.cc ../src/Data_writer.cc \
   ../src/Data_writer_file.cc \
   ../src/Log_writer.cc ../src/Log_writer_cout.cc
 
@@ -80,7 +82,7 @@ test_Data_reader_TCP_SOURCES = \
   ../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/Data_reader_buffer.cc
 
 test_Data_reader_mark5_SOURCES = \
-  test_Data_reader_mark5.cc ../src/Data_reader_mark5.cc
+  test_Data_reader_mark5.cc ../src/Data_reader.cc ../src/Data_reader_mark5.cc
 
 test_Input_node_SOURCES = \
   $(OBJ) test_Input_node.cc
