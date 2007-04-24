@@ -106,8 +106,8 @@ class StaP
     char *modpat;  //modulation pattern
     int  signBS[fomax]; //bit shift parameters for sign
     int  magnBS[fomax]; //bit shift parameters for magn
-    int  hs;
-    int  hm;
+    int  hs;            //number of the headstack for the sign tracks (1 or 2)
+    int  hm;            //number of the headstack for the magn tracks (1 or 2)
     
     //delay correction related data
     char *delaytable; //table with delay data

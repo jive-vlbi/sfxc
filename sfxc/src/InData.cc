@@ -41,7 +41,8 @@ using namespace std;
 #include "genFunctions.h"
 #include "InData.h"
 
-//
+#include "Mark4_header_map.h"
+
 extern UINT32 seed;
 
 
@@ -194,8 +195,8 @@ int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame, StaP &StaPrms)
   //Replace Header with Random Pattern,
   if ( rndhdr ) {
     for(jhdr=0; jhdr<fo*hdrMk4; jhdr++) {
-      sign=irbit2(&seed);
-      magn=irbit2(&seed);
+      sign=irbit2();
+      magn=irbit2();
       Mk4frame[sn][jhdr] = smplTBL[sign][magn];
     }
   }
@@ -463,7 +464,7 @@ int findSyncWord(
   for(jsample=0;jsample<(frameMk4*nfrms-64);jsample++){
     synchcorr[jsample]=0;
     for(jcorr=0;jcorr<32;jcorr++){
-      synchcorr[jsample]=synchcorr[jsample]+synchbuff[jsample+jcorr];
+      synchcorr[jsample] += synchbuff[jsample+jcorr];
     }
   }
           
@@ -478,6 +479,8 @@ int findSyncWord(
     cerr << "No synchronisation word found!\n";
     retval=-1;
   }
+  std::cout << "jsynch: " << *jsynch << std::endl;
+
   return retval;
   
 }
@@ -492,13 +495,10 @@ void printFrameHeader(
   char *hdrmap)
 {
   char buff[80];
-  char headerfield[6];
   int jtrack;
   INT32 jsample;
-  FILE  *hdrP;
         
   //open the header map file
-  hdrP=fopen(hdrmap,"r");
   
   //print header content at start of table (stdout)
   if(jsynch0>=64) {
@@ -529,6 +529,7 @@ void printFrameHeader(
   get_log_writer() << "\n sample";
 
   //print table (stdout)
+  int i=0;
   for(jsample=jsynch0-64;jsample<jsynch0+116;jsample++){
     snprintf(buff,80,"\n %06d     ",jsample);
     get_log_writer() << buff;
@@ -536,8 +537,7 @@ void printFrameHeader(
       snprintf(buff,80,"%1d",tracks[jtrack   ][jsample]);
       get_log_writer() << buff;
     }
-    fscanf(hdrP,"%s",headerfield);
-    snprintf(buff, 80, " %s ",headerfield);
+    snprintf(buff, 80, " %s ",header_map[i]);
     get_log_writer() << buff;
     if(nhs==2) {
       for(jtrack=0;jtrack<32;jtrack++) {
@@ -573,8 +573,6 @@ void printFrameHeader(
     }
   }
   get_log_writer() << "\n\n";
-
-  fclose(hdrP);
 }
 
 

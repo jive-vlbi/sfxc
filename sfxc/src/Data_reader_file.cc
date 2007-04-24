@@ -25,7 +25,8 @@ Data_reader_file::~Data_reader_file() {
   file.close();
 }
 
-UINT64 Data_reader_file::get_bytes(UINT64 nBytes, char*out) {
+size_t
+Data_reader_file::do_get_bytes(size_t nBytes, char*out) {
   if (out == NULL) {
     UINT64 pos = file.tellg();
     file.seekg (nBytes, std::ios::cur);
