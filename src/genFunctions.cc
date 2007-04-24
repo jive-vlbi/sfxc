@@ -147,7 +147,11 @@ long str_to_long (std::string inString, int pos, int length)
 //  See Numerical Recipes
 //  primitive polynomial mod 2 of order n produces 2^n - 1 random bits
 //*****************************************************************************
-int irbit2(UINT32 *iseed)
+UINT32 iseed;
+void set_seed(UINT32 seed_) {
+  iseed = seed_;
+}
+int irbit2()
 {
   #define IB1 1
   //  #define IB2 2
@@ -159,11 +163,11 @@ int irbit2(UINT32 *iseed)
   #define MASK (IB1+IB4+IB6)
  
     
-  if (*iseed & IB30) {
-    *iseed=((*iseed ^ MASK) << 1) | IB1;
+  if (iseed & IB30) {
+    iseed=((iseed ^ MASK) << 1) | IB1;
     return 1;
   } else {
-    *iseed <<= 1;
+    iseed <<= 1;
     return 0;
   }
   #undef MASK

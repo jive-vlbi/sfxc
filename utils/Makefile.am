@@ -5,7 +5,8 @@ AM_CXXFLAGS = -I../include
 
 bin_PROGRAMS = create_delay_function \
                produce_fringe \
-               analyse_fringes
+               analyse_fringes \
+               analyse_mark4_file
 
 create_delay_function_SOURCES = create_delay_function.cc
 create_delay_function_LDADD = -lgsl -lgslcblas
@@ -13,3 +14,11 @@ create_delay_function_LDADD = -lgsl -lgslcblas
 produce_fringe_SOURCES = produce_fringe.cc
 
 analyse_fringes_SOURCES = analyse_fringes.cc
+
+analyse_mark4_file_SOURCES = \
+  analyse_mark4_file.cc \
+  ../src/staPrms.cc ../src/genPrms.cc ../src/runPrms.cc ../src/genFunctions.cc \
+  ../src/Log_writer.cc ../src/Log_writer_cout.cc \
+  ../src/Data_reader.cc ../src/Data_reader_file.cc \
+  ../src/Channel_extractor_mark4.cc \
+  ../src/utils.cc

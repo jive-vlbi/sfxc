@@ -12,6 +12,11 @@
 
 #include <Data_reader.h>
 #include <vector>
+#include <Log_writer.h>
+
+#include <staPrms.h>
+#include <genPrms.h>
+#include <runPrms.h>
 
 void set_log_writer(Log_writer &log_writer_);
 

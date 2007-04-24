@@ -27,11 +27,11 @@ class Data_reader_file : public Data_reader {
 
   ~Data_reader_file();
 
-  UINT64 get_bytes(UINT64 nBytes, char *out);
-
   bool eof();  
   
 private:
+  size_t do_get_bytes(size_t nBytes, char *out);
+
   std::ifstream file;
 //  std::vector<char> buffer;
 };

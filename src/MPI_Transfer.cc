@@ -38,6 +38,7 @@ MPI_Transfer::send_general_parameters(int rank) {
   MPI_Pack(&RunPrms.messagelvl, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
   MPI_Pack(&RunPrms.interactive, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&RunPrms.runoption, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&RunPrms.ref_station, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   
   // GenPrms
   MPI_Pack(&GenPrms.yst, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
@@ -45,14 +46,9 @@ MPI_Transfer::send_general_parameters(int rank) {
   MPI_Pack(&GenPrms.hst, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&GenPrms.mst, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&GenPrms.sst, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-  // NGHK: NEWLY ADDED
+
   MPI_Pack(&GenPrms.duration, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&GenPrms.skyfreq, 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
-//  MPI_Pack(&GenPrms.ysp, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-//  MPI_Pack(&GenPrms.dsp, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-//  MPI_Pack(&GenPrms.hsp, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-//  MPI_Pack(&GenPrms.msp, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-//  MPI_Pack(&GenPrms.ssp, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
 
   MPI_Pack(&GenPrms.nstations, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&GenPrms.bwin, 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
@@ -70,14 +66,10 @@ MPI_Transfer::send_general_parameters(int rank) {
 
   MPI_Pack(&GenPrms.n2fft, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&GenPrms.ovrlp, 1, MPI_FLOAT, buffer, size, &position, MPI_COMM_WORLD);
-//  MPI_Pack(&GenPrms.nsamp2avg, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&GenPrms.time2avg, 1, MPI_FLOAT, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&GenPrms.pad, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   
   MPI_Pack(&GenPrms.usStart, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
-//  MPI_Pack(&GenPrms.usStop, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
-//  MPI_Pack(&GenPrms.usEarliest, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
-//  MPI_Pack(&GenPrms.usLatest, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
 
   // add data for the stations:
   for (int station=0; station<GenPrms.get_nstations(); station++) {
@@ -139,22 +131,17 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
   MPI_Unpack(buffer, size, &position, &RunPrms.messagelvl, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &RunPrms.interactive, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &RunPrms.runoption, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &RunPrms.ref_station, 1, MPI_INT32, MPI_COMM_WORLD);
 
   MPI_Unpack(buffer, size, &position, &GenPrms.yst, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.dst, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.hst, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.mst, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.sst, 1, MPI_INT32, MPI_COMM_WORLD);
-  // NGHK: NEWLY ADDED
+
   MPI_Unpack(buffer, size, &position, &GenPrms.duration, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.skyfreq, 1, MPI_DOUBLE, MPI_COMM_WORLD);
   
-//  MPI_Unpack(buffer, size, &position, &GenPrms.ysp, 1, MPI_INT32, MPI_COMM_WORLD);
-//  MPI_Unpack(buffer, size, &position, &GenPrms.dsp, 1, MPI_INT32, MPI_COMM_WORLD);
-//  MPI_Unpack(buffer, size, &position, &GenPrms.hsp, 1, MPI_INT32, MPI_COMM_WORLD);
-//  MPI_Unpack(buffer, size, &position, &GenPrms.msp, 1, MPI_INT32, MPI_COMM_WORLD);
-//  MPI_Unpack(buffer, size, &position, &GenPrms.ssp, 1, MPI_INT32, MPI_COMM_WORLD);
-
   MPI_Unpack(buffer, size, &position, &GenPrms.nstations, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.bwin, 1, MPI_DOUBLE, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.lsegm, 1, MPI_INT32, MPI_COMM_WORLD);
@@ -171,15 +158,11 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
 
   MPI_Unpack(buffer, size, &position, &GenPrms.n2fft, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.ovrlp, 1, MPI_FLOAT, MPI_COMM_WORLD);
-//  MPI_Unpack(buffer, size, &position, &GenPrms.nsamp2avg, 1, MPI_INT64, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.time2avg, 1, MPI_FLOAT, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.pad, 1, MPI_INT32, MPI_COMM_WORLD);
 
 
   MPI_Unpack(buffer, size, &position, &GenPrms.usStart, 1, MPI_INT64, MPI_COMM_WORLD);
-//  MPI_Unpack(buffer, size, &position, &GenPrms.usStop, 1, MPI_INT64, MPI_COMM_WORLD);
-//  MPI_Unpack(buffer, size, &position, &GenPrms.usEarliest, 1, MPI_INT64, MPI_COMM_WORLD);
-//  MPI_Unpack(buffer, size, &position, &GenPrms.usLatest, 1, MPI_INT64, MPI_COMM_WORLD);
   
   for (int station=0; station<GenPrms.get_nstations(); station++) {
     MPI_Unpack(buffer, size, &position, &(StaPrms[station].datatype), 1, MPI_INT32, 
@@ -217,30 +200,6 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
   }
   
   assert(position == size);
-  
-//  //check control parameters, optionally show them
-//  if (RunPrms.check_params() != 0) {
-//    std::cerr << "ERROR: Run control parameter, program aborted.\n";
-//    return;
-//  }
-//
-//  //check general control parameters, optionally show them
-//  if (GenPrms.check_params() != 0) {
-//    std::cerr << "ERROR: General control parameter, program aborted.\n";
-//    return;
-//  }
-//  
-//
-//  //get the number of stations
-//  int Nstations = GenPrms.get_nstations();
-//
-//  //check station control parameters, optionally show them
-//  for (int i=0; i<Nstations; i++){
-//    if (StaPrms[i].check_params() != 0 ) {
-//      std::cerr << "ERROR: Station control parameter, program aborted.\n";
-//      return;
-//    }
-//  }
 }
 
 void 
