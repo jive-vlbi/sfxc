@@ -28,11 +28,11 @@ public:
 
   ~Data_reader_buffer();
 
-  UINT64 get_bytes(UINT64 nBytes, char *out);
-
   bool eof();  
   
 private:
+  size_t do_get_bytes(size_t nBytes, char *out);
+
   // The input buffer
   Buffer       *buffer;
   // Number of bytes left in the current buffer-element

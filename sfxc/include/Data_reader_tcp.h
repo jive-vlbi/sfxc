@@ -39,12 +39,13 @@ public:
   ~Data_reader_tcp();
 
 //  UINT64 move_forward(UINT64 nBytes);
-  UINT64 get_bytes(UINT64 nBytes, char *out);
-
   unsigned int get_port();
   
   bool eof() { return socket < 0; }  
 private:
+  size_t do_get_bytes(size_t nBytes, char *out);
+
+
 //  std::vector<char> buffer;
   int connection_socket, socket;
   int port;

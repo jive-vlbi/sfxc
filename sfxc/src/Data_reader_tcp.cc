@@ -50,7 +50,7 @@ Data_reader_tcp::~Data_reader_tcp() {
   if (socket > 0) close(socket);
 }
 
-UINT64 Data_reader_tcp::get_bytes(UINT64 nBytes, char*out) {
+size_t Data_reader_tcp::do_get_bytes(size_t nBytes, char*out) {
   // NGHK: TODO: check that out != NULL
   assert(socket > 0);
   UINT64 nRead = 0;
