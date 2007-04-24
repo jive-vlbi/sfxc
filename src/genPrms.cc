@@ -259,7 +259,7 @@ int GenP::check_params(Log_writer &log_writer) const
   "Experiment           = " << experiment << endl <<
   "Start                = " << setw(4) << yst << setw(4) << dst <<
                                setw(3) << hst << setw(3) << mst <<
-                               setw(3) << sst << " (y d h m s)\n" <<
+                               setw(3) << sst << setw(4) << milisst << " (y d h m s m)\n" <<
   "Duration             = " << duration << endl <<                             
   "Number of stations   = " << nstations << endl <<
   "Output directory     = " << outdir << endl <<
@@ -363,17 +363,18 @@ int GenP::check_params(Log_writer &log_writer) const
 //extract start time values from string and 
 //calculate start wrt 00:00 in micro seconds
 void GenP::set_start(string Time) {
-  yst = str_to_long(Time,0,4);  //pos=0, length=4
-  dst = str_to_long(Time,5,3);
-  hst = str_to_long(Time,9,2);
-  mst = str_to_long(Time,12,2);
-  sst = str_to_long(Time,15,2);
+  yst     = str_to_long(Time,0,4);  //pos=0, length=4
+  dst     = str_to_long(Time,5,3);
+  hst     = str_to_long(Time,9,2);
+  mst     = str_to_long(Time,12,2);
+  sst     = str_to_long(Time,15,2);
+  milisst = str_to_long(Time,18,3);
   
-  usStart = hst;                 //hours
-  usStart = mst +   60* usStart; //minutes
-  usStart = sst +   60* usStart; //minutes
-  usStart = 0   + 1000* usStart; //milisecs
-  usStart = 0   + 1000* usStart; //microsecs
+  usStart = hst;                      //hours
+  usStart = mst      +   60* usStart; //minutes
+  usStart = sst      +   60* usStart; //minutes
+  usStart = milisst  + 1000* usStart; //milisecs
+  usStart = 0        + 1000* usStart; //microsecs
 }
 
 

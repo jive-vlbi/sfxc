@@ -294,6 +294,7 @@ int main (int argc, char *argv[])
   cc_file<<"MESSAGELVL  1  !* Default Value *!\n";
   cc_file<<"INTERACTIVE 0  !* Default Value *!\n";
   cc_file<<"RUNOPTION   1  !* Default Value *!\n";
+  cc_file<<"REFSTATION  -1 !* Default Value *!\n";
   cc_file<<"\n";
 
   //write general parameters block
@@ -307,7 +308,7 @@ int main (int argc, char *argv[])
   cc_file<<"Channel ID index " << LFT << "  " << ChanChI << endl;
   //start time
   cc_file<<"START            " << 
-    VP.ScanStart(VP.Station(StatChI[0]), ScanChI) <<
+    VP.ScanStart(VP.Station(StatChI[0]), ScanChI) << "000ms" <<
     " !* Default: later START allowed, but before START + DURATION *!\n";
   //scan duration 
   cc_file<<"DURATION         " << 
