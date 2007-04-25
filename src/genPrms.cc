@@ -248,7 +248,6 @@ int GenP::check_params(Log_writer &log_writer) const
 
   int retval = 0, FFTlength, Overlap;
   FILE *fl;
-  char command[256];
 
   //display general parameters
   stringstream msg;
@@ -300,9 +299,7 @@ int GenP::check_params(Log_writer &log_writer) const
   } else {
     fclose(fl);
     //delete empty file
-    strcpy(command,"rm -f ");
-    strcat(command,corfile.c_str());
-    system(command);
+    remove(corfile.c_str());
   }
 
   if (lsegm > 63) {

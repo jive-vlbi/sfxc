@@ -19,7 +19,10 @@
 template <class T>
 class Channel_extractor_mark4_implementation {
 public:
-  Channel_extractor_mark4_implementation(Data_reader &reader, StaP &staPrms);
+  typedef Channel_extractor_mark4::DEBUG_LEVEL  DEBUG_LEVEL;
+
+  Channel_extractor_mark4_implementation(Data_reader &reader, StaP &staPrms,
+                                         DEBUG_LEVEL debug_level);
 
   void goto_time_stamp(INT64 time);
   INT64 get_last_time_stamp();
@@ -27,6 +30,8 @@ public:
   UINT64 get_bytes(UINT64 nBytes, char *buff);
   
   bool eof();
+
+  bool check_track_bit_statistics();  
   
 private:
 
@@ -61,11 +66,15 @@ private:
   INT32 start_day;
   INT64 start_microtime;
   INT32 TBR;
+  DEBUG_LEVEL debug_level;
+  int block_count;
 };
 
 
 Channel_extractor_mark4::
-Channel_extractor_mark4(Data_reader &reader, StaP &staPrms)
+Channel_extractor_mark4(Data_reader &reader, 
+                        StaP &staPrms, 
+                        DEBUG_LEVEL debug_level)
  : Data_reader(),
    n_head_stacks(staPrms.get_nhs()),
    ch_extractor_1_head_stack(NULL),
@@ -73,11 +82,11 @@ Channel_extractor_mark4(Data_reader &reader, StaP &staPrms)
 {
   if (n_head_stacks == 1) {
     ch_extractor_1_head_stack = 
-      new Channel_extractor_mark4_implementation<UINT32>(reader, staPrms);
+      new Channel_extractor_mark4_implementation<UINT32>(reader, staPrms, debug_level);
   } else {
     assert (n_head_stacks == 2);
     ch_extractor_2_head_stack = 
-      new Channel_extractor_mark4_implementation<UINT64>(reader, staPrms);
+      new Channel_extractor_mark4_implementation<UINT64>(reader, staPrms, debug_level);
   }
 }
 
@@ -121,13 +130,17 @@ bool Channel_extractor_mark4::eof() {
 
 template <class T>
 Channel_extractor_mark4_implementation<T>::
-Channel_extractor_mark4_implementation(Data_reader &reader, StaP &staPrms)
+Channel_extractor_mark4_implementation(Data_reader &reader, 
+                                       StaP &staPrms, 
+                                       DEBUG_LEVEL debug_level)
  : reader(reader),
    fan_out(staPrms.get_fo()), 
    n_bits_per_sample(staPrms.get_bps()),
    insert_random_headers(staPrms.get_rndhdr()),
    curr_pos_in_block(0),
-   TBR(staPrms.get_tbr())
+   TBR(staPrms.get_tbr()),
+   debug_level(debug_level),
+   block_count(0)
 {
   
   assert(staPrms.get_tphs()*staPrms.get_nhs() == sizeof(T)*8);
@@ -152,6 +165,7 @@ Channel_extractor_mark4_implementation(Data_reader &reader, StaP &staPrms)
 
   assert(find_header() == 0);
   mark4_header.set_header(block);
+  mark4_header.check_header();
   
   start_day = mark4_header.day(0);
   start_microtime = mark4_header.get_microtime(0);
@@ -209,7 +223,11 @@ get_bytes(UINT64 nOutputBytes, char *output_buffer) {
       for (typename std::vector<int>::iterator it = tracks.begin();
            it != tracks.end(); it++) {
         //get sign and magnitude bit for all channels
-        sample = ( block[curr_pos_in_block]>>(*it) ) & 1;
+        if (insert_random_headers && (curr_pos_in_block < 160)) {
+          sample = irbit2();
+        } else {
+          sample = ( block[curr_pos_in_block]>>(*it) ) & 1;
+        }
         // insert the sample into the output buffer
         output_buffer[bytes_processed] |= (sample << sample_pos);
         // Shift two positions in the output buffer
@@ -249,13 +267,21 @@ int
 Channel_extractor_mark4_implementation<T>::
 read_new_block() {
   int result = reader.get_bytes(frameMk4*sizeof(T),(char *)block)/sizeof(T);
-  assert(find_header() == 0);
-  mark4_header.set_header(block);
-
   if (result != frameMk4*sizeof(T)) return result;
 
-  check_time_stamp();
-
+  if (debug_level >= Channel_extractor_mark4::CHECK_PERIODIC_HEADERS) {
+    if ((debug_level >= Channel_extractor_mark4::CHECK_ALL_HEADERS) ||
+        ((++block_count % 100) == 0)) {
+      assert(find_header() == 0);
+      mark4_header.check_header();
+      check_time_stamp();
+      if (Channel_extractor_mark4::CHECK_BIT_STATISTICS) {
+        if (!check_track_bit_statistics()) {
+          std::cout << "Track bit statistics are off." << std::endl;
+        }
+      }
+    }
+  }
 
   return result;
 }
@@ -311,4 +337,30 @@ find_header() {
     return start_header-96;
   } 
   return -1;
+}
+
+template <class T>
+bool
+Channel_extractor_mark4_implementation<T>::
+check_track_bit_statistics() {
+  double track_bit_statistics[sizeof(T)*8];
+  for (size_t track=0; track<sizeof(T)*8; track++) {
+    track_bit_statistics[track]=0;
+  }
+  
+  for (int i=160; i<frameMk4; i++) {
+    for (size_t track=0; track<sizeof(T)*8; track++) {
+      track_bit_statistics[track] += (block[i] >> track) &1;
+    }
+  }
+  
+  for (size_t track=0; track<sizeof(T)*8; track++) {
+    track_bit_statistics[track] /= frameMk4;
+    if ((track_bit_statistics[track] < .45) ||
+        (track_bit_statistics[track] > .55)) {
+      return false;
+    }
+  }    
+  
+  return true;
 }

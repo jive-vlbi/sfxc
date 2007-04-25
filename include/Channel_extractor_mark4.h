@@ -25,7 +25,17 @@ class Channel_extractor_mark4_implementation;
 class Channel_extractor_mark4 : public Data_reader
 {
 public:
-  Channel_extractor_mark4(Data_reader &reader, StaP &StaPrms);
+  enum DEBUG_LEVEL {
+    NO_CHECKS = 0,
+    CHECK_PERIODIC_HEADERS,
+    CHECK_ALL_HEADERS,
+    CHECK_BIT_STATISTICS
+  };
+
+  Channel_extractor_mark4(Data_reader &reader, 
+                          StaP &StaPrms, 
+                          DEBUG_LEVEL debug_level = CHECK_PERIODIC_HEADERS);
+  
   
   void goto_time_stamp(INT64 time);
   INT64 get_last_time_stamp();
