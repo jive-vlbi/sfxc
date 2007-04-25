@@ -115,7 +115,7 @@ bool Integration_slice::correlate()
   //write the correlation result for the current time slice
   result = cc.write_time_slice();
 
-  if (!result) return false;
+  return result;
 }
 
 Data_writer &Integration_slice::get_data_writer() {
