@@ -73,7 +73,8 @@ bool Integration_slice::correlate()
   int_slice_startTS++;
   get_data_writer().put_bytes(strlen(data), data);
   usleep(100000);
-  
+
+  return true;  
 }
 
 Data_writer &Integration_slice::get_data_writer() {

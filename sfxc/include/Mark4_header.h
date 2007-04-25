@@ -19,6 +19,7 @@ public:
   Mark4_header();
   
   void set_header(T *header);
+  void check_header();
   
   int year(int track);
   int day(int track);
@@ -65,7 +66,10 @@ Mark4_header<T>::Mark4_header() : header(NULL) {
 template <class T>
 void Mark4_header<T>::set_header(T* hdr) {
   header = hdr;
+}
 
+template <class T>
+void Mark4_header<T>::check_header() {
   // Check for a valid header
   assert(is_valid());
   assert(checkCRC());

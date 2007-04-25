@@ -129,63 +129,21 @@ int main(int argc, char *argv[]) {
     log_writer.error("Initialisation using control file failed");
     return 1;
   }
-  
-//  log_writer.set_messagelevel(0);
-
-//  double *data_frame_old[1];
-//  data_frame_old[0] = new double[frameMk4*staPrms.get_fo()];
-//  
-//  {
-//    Data_reader_file data_reader(staPrms.get_mk4file());
-//
-//    
-//    fill_Mk4frame(0, data_reader, data_frame_old, staPrms);
-//  
-//    std::ofstream out("out.txt");  
-//    for (int i=0; i<frameMk4*staPrms.get_fo(); i++) {
-//      out << data_frame_old[0][i] << std::endl;
-//    }
-//  }
 
   {
     Data_reader_file data_reader(staPrms[station_nr].get_mk4file());
-    Channel_extractor_mark4 ch_extractor(data_reader, staPrms[station_nr]);
-    int nBytes = (frameMk4*staPrms[station_nr].get_fo()*staPrms[station_nr].get_bps())/8;
+    Channel_extractor_mark4 
+      ch_extractor(data_reader, 
+                   staPrms[station_nr], 
+                   Channel_extractor_mark4::CHECK_PERIODIC_HEADERS);
+    int nBytes = 
+      (frameMk4*staPrms[station_nr].get_fo()*staPrms[station_nr].get_bps())/8;
     char data_frame[nBytes];
     
-    for (int i=1; i>0; ) {
+    for (int i=nBytes; i==nBytes; ) {
       i = ch_extractor.get_bytes(nBytes, data_frame);
-      
-//      int values[2][2] = {{-7, -2}, {2,7}};
-//  
-//      std::ofstream out("out2.txt");  
-//      
-//      int i=0;
-//      for (int byte = 0; byte < nBytes; byte++) {
-//        for (int bit=0; bit<8; bit += 2) {
-//          out << values[(data_frame[byte] >> bit)&1][(data_frame[byte] >> (bit+1))&1]
-//              << " " << data_frame_old[0][i]
-//              << std::endl;
-//          i++;
-//        } 
-//      }
     }
     
   }
 
-
-//  delete[] data_frame_old[0];
-
-//  UINT64 startIS=27121077500;
-  
-//  int   jsynch;
-//  INT64 usTime;
-
-  //find first header in data file
-//  NGHK_FindHeaderMk4(data_reader, jsynch ,usTime, startIS, StaPrms, GenPrms);
-//  NGHK_FindHeaderMk4(data_reader, jsynch ,usTime, startIS, StaPrms, GenPrms);
-//  NGHK_FindHeaderMk4(data_reader, jsynch ,usTime, startIS, StaPrms, GenPrms);
-//  NGHK_FindHeaderMk4(data_reader, jsynch ,usTime, startIS, StaPrms, GenPrms);
-//  NGHK_FindHeaderMk4(data_reader, jsynch ,usTime, startIS, StaPrms, GenPrms);
-//  NGHK_FindHeaderMk4(data_reader, jsynch ,usTime, startIS, StaPrms, GenPrms);
 }

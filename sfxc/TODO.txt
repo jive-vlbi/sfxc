@@ -11,6 +11,7 @@ Control files
 - make simple functional design for ccf editor. This editor is part
   of WFM to be developed by PSNC (Dominik)
 - Use a Makefile.am to generate the makefiles used by vex2ccf
+- Why no random headers by default?
 
 Correlation:
 - !!! Check the integration: 512 and 1024 give a "Floating point exception"
