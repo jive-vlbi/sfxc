@@ -30,6 +30,7 @@ using namespace std;
 #include "runPrms.h"
 #include "genPrms.h"
 #include "staPrms.h"
+#include "timer.h"
 #include "InData.h"
 #include "Log_writer.h"
 #include "Data_writer.h"
@@ -38,6 +39,7 @@ using namespace std;
 #include <Data_reader_file.h>
 #include <Data_writer_file.h>
 #include <Log_writer_cout.h>
+
 
 #endif // SFXC_SC_H
 

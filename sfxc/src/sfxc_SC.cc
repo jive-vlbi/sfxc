@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
   Log_writer_cout log_writer(0,false);
   set_log_writer(log_writer);
 
+
   if (argc != 2) {
     log_writer << "usage: " << argv[0] << " correlator_control_file" << endl;
     exit(1);
@@ -157,6 +158,7 @@ int main(int argc, char *argv[])
   }
 
   IntSlc.set_data_writer(&data_writer);//pass the data writer 
+  
 
   //process the mk4file data
   if ( RunPrms.get_runoption() == 1 ) {
@@ -185,5 +187,6 @@ int main(int argc, char *argv[])
     }
   
   }
+
 
 }
