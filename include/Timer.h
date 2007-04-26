@@ -11,6 +11,9 @@
 #ifndef TIMER_H
 #define TIMER_H
 
+//c includes
+#include <time.h>
+
 //c++ includes
 #include <iostream>
 #include <iomanip>
@@ -25,18 +28,28 @@ using namespace std;
 class Timer {
 
   public:
+
+    /** Sets ID to unknown process **/
+    Timer();
+
     /** Start a timer **/
-    void tmrBegin(Log_writer &log_writer);
+    void start(Log_writer &log_writer);
 
     /** Stop a timer **/
-    void tmrEnd(Log_writer &log_writer);
+    void stop(Log_writer &log_writer);
+
+    /** Set a timer ID**/
+    void set_ID(string ID_)
+    {
+      ID = ID_;
+    }
 
   private:
     clock_t  CPUbegin;
     clock_t  CPUend;
     time_t   Tbegin;
     time_t   Tend;
-    string   ID[100];
+    string   ID;
 
 };
 

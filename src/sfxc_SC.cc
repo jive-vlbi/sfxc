@@ -159,6 +159,9 @@ int main(int argc, char *argv[])
 
   IntSlc.set_data_writer(&data_writer);//pass the data writer 
   
+  Timer tmr_process_data;
+  tmr_process_data.set_ID("data processing");  
+  tmr_process_data.start(log_writer);
 
   //process the mk4file data
   if ( RunPrms.get_runoption() == 1 ) {
@@ -188,5 +191,6 @@ int main(int argc, char *argv[])
   
   }
 
+  tmr_process_data.stop(log_writer);
 
 }

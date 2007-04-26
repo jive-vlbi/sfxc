@@ -30,7 +30,7 @@ using namespace std;
 #include "runPrms.h"
 #include "genPrms.h"
 #include "staPrms.h"
-#include "timer.h"
+#include "Timer.h"
 #include "InData.h"
 #include "Log_writer.h"
 #include "Data_writer.h"
