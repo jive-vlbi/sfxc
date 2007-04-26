@@ -8,19 +8,36 @@
  * timer structure and prototypes
  */
 
+#ifndef TIMER_H
+#define TIMER_H
 
-typedef struct {
-    clock_t CPUbegin;
-    clock_t CPUend;
-    time_t Tbegin;
-    time_t Tend;
-    char   ID[100];
-} timer, *ptimer;
+//c++ includes
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <vector>
+using namespace std;
 
 
-//Start a timer
-void tmrBegin(ptimer tmr, Log_writer &log_writer);
+#include "Log_writer.h"
 
-//Stop a timer
-void tmrEnd(ptimer tmr, Log_writer &log_writer);
 
+class Timer {
+
+  public:
+    /** Start a timer **/
+    void tmrBegin(Log_writer &log_writer);
+
+    /** Stop a timer **/
+    void tmrEnd(Log_writer &log_writer);
+
+  private:
+    clock_t  CPUbegin;
+    clock_t  CPUend;
+    time_t   Tbegin;
+    time_t   Tend;
+    string   ID[100];
+
+};
+
+#endif

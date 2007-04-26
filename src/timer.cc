@@ -17,6 +17,9 @@
 
 #include "timer.h"
 
+//default constructor, set default values for run parameters
+timer::timer()
+
 //Start a timer
 void tmrBegin(ptimer tmr, Log_writer &log_writer)
 {
