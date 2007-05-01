@@ -25,6 +25,7 @@ using namespace std;
 
 //sfxc includes
 #include <types.h>
+#include "Timer.h"
 #include "constPrms.h"
 #include "genPrms.h"
 #include "staPrms.h"
@@ -58,6 +59,7 @@ class DelayCorrection
     
     /** fills the next segment to be processed by correlator core**/
     bool fill_segment();
+    bool fill_segment(Timer &cx_tmr, Timer &dc_tmr);
 
     /** get the segment filled with delay corrected data. **/
     double** get_segment();
@@ -70,6 +72,7 @@ class DelayCorrection
     //member functions
     // Fill Bufs with delay corrected data.
     bool fill_Bufs();
+    bool fill_Bufs(Timer &cx_tmr, Timer &dc_tmr);
     
     Log_writer& get_log_writer();
 

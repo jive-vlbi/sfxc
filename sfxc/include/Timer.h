@@ -29,14 +29,25 @@ class Timer {
 
   public:
 
-    /** Sets ID to unknown process **/
+    /** Sets default values for:
+        CPU_elapsed = CPU_accu = 0.0;
+        T_elapsed = T_accu = 0.0;
+        ID = "unknown process ";
+    **/
     Timer();
 
     /** Start a timer **/
     void start(Log_writer &log_writer);
+    void start();
 
     /** Stop a timer **/
     void stop(Log_writer &log_writer);
+
+    /** Stop timer and accumulate timer results **/
+    void stop_accumulate();
+
+    /** Show accumulated results **/
+    void show_accu_result(Log_writer &log_writer);
 
     /** Set a timer ID**/
     void set_ID(string ID_)
@@ -50,6 +61,8 @@ class Timer {
     time_t   Tbegin;
     time_t   Tend;
     string   ID;
+    double   CPU_elapsed, CPU_accu;
+    double   T_elapsed, T_accu;
 
 };
 

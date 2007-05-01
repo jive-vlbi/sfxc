@@ -165,6 +165,13 @@ int main(int argc, char *argv[])
 
   //process the mk4file data
   if ( RunPrms.get_runoption() == 1 ) {
+/*
+    Timer cd_tmr, cc_tmr, cx_tmr, dc_tmr;
+    cd_tmr.set_ID("channel extraction + delay correction");
+    cc_tmr.set_ID("correlation");
+    cx_tmr.set_ID("channel extraction");
+    dc_tmr.set_ID("delay correction");
+*/    
 
     int nIS=GenPrms.get_usDur()/GenPrms.get_usTime2Avg(), IS=0;
     
@@ -176,6 +183,7 @@ int main(int argc, char *argv[])
                     << " startIS=" << startIS << " usec"<< endl;
 
       //process the next integration slice:
+//      result = IntSlc.correlate(cd_tmr, cc_tmr, cx_tmr, dc_tmr);
       result = IntSlc.correlate();
 
       if (!result) {
@@ -188,7 +196,12 @@ int main(int argc, char *argv[])
       //  start of integration slice + time to average
       startIS += GenPrms.get_usTime2Avg(); //in usec
     }
-  
+/*    
+    cx_tmr.show_accu_result(log_writer);
+    dc_tmr.show_accu_result(log_writer);
+    cd_tmr.show_accu_result(log_writer);
+    cc_tmr.show_accu_result(log_writer);
+*/
   }
 
   tmr_process_data.stop(log_writer);
