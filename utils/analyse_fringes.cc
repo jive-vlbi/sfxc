@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
       for (int i=0; i<n2fft; i++) {
         outR[i] = out[(i+n2fft/2)%n2fft];
         ampl[i] = sqrt( outR[i].real() * outR[i].real() +  
-                        outR[i].imag() * outR[i].imag() );
+                        outR[i].imag() * outR[i].imag() ) / n2fft;
         fout << 
           setw(12) << in[i].real() << " " << 
           setw(12) << in[i].imag() << " " << 
