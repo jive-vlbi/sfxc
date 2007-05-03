@@ -19,31 +19,31 @@ OBJ= \
     ../Data_writer_buffer.cc \
 	../Log_writer.cc ../Log_writer_mpi.cc \
   ../runPrms.cc ../genPrms.cc ../staPrms.cc ../genFunctions.cc \
-	../utils.cc ../timer.cc \
+	../utils.cc ../Timer.cc \
   ../MPI_Transfer.cc ../delayTable.cc ../TCP_Connection.cc
 
-manager_node_SOURCES = $(OBJ) manager_node.cc \
+manager_node_SOURCES = $(OBJ) manager.cc \
   ../Manager_node.cc ../Manager_node_controller.cc
 
-manager_node_reading_from_file_SOURCES = $(OBJ) manager_node.cc \
+manager_node_reading_from_file_SOURCES = $(OBJ) manager.cc \
   ../Manager_node_reading_from_file.cc ../Manager_node_controller.cc
 
-log_node_SOURCES = $(OBJ) log_node.cc \
+log_node_SOURCES = $(OBJ) log.cc \
   ../Log_node.cc ../Log_node_controller.cc \
   ../Log_writer_cout.cc ../Log_writer_file.cc
 
-input_node_SOURCES = $(OBJ) input_node.cc \
+input_node_SOURCES = $(OBJ) input.cc \
   ../Input_node.cc ../Input_node_controller.cc
 
-correlator_node_SOURCES = $(OBJ) correlator_node.cc \
+correlator_node_SOURCES = $(OBJ) correlator.cc \
   ../Correlator_node.cc ../Correlator_node_controller.cc \
   ../InData.cc \
   ../Integration_slice.cc ../CorrelationCore.cc ../DelayCorrection.cc
-	
-output_node_SOURCES = $(OBJ) output_node.cc \
+
+output_node_SOURCES = $(OBJ) output.cc \
   ../Output_node.cc ../Output_node_controller.cc 
-  
-dummy_correlator_node_SOURCES = $(OBJ) correlator_node.cc \
+
+dummy_correlator_node_SOURCES = $(OBJ) correlator.cc \
   ../Correlator_node.cc ../Correlator_node_controller.cc \
 	../InData.cc \
   ../Dummy_Integration_slice.cc ../CorrelationCore.cc ../DelayCorrection.cc
