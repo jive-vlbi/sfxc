@@ -114,10 +114,6 @@ public:
   Data_writer &get_data_writer() {
     return integration_slice.get_data_writer();
   }
-  std::vector<Data_reader *> &
-  get_vector_data_readers() {
-    return data_readers_ctrl.get_vector_data_readers();
-  }
   
   int get_correlate_node_number();
   void set_parameters(RunP &runPrms, GenP &genPrms, StaP *staPrms);

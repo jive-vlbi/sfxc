@@ -45,10 +45,6 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, int buff_size)
 
 Correlator_node::~Correlator_node()
 {
-//  assert(data_writer_ctrl.buffer() != NULL);
-//  while (!data_writer_ctrl.buffer()->empty()) {
-//    usleep(100000);
-//  }
 }
 
 void Correlator_node::start()
@@ -59,7 +55,6 @@ void Correlator_node::start()
         return;
       }
       case STOPPED: {
-//        get_log_writer() << " status = STOPPED" << std::endl;
         // blocking:
         if (check_and_process_message()==TERMINATE_NODE) {
           status = END_CORRELATING;
@@ -67,7 +62,7 @@ void Correlator_node::start()
         break;
       }
       case CORRELATING: {
-        get_log_writer() << " status = CORRELATING" << std::endl;
+        get_log_writer()(2) << " status = CORRELATING" << std::endl;
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           status = END_CORRELATING;
         }
@@ -75,7 +70,7 @@ void Correlator_node::start()
         if (status==CORRELATING) {
           switch(correlate_state) {
             case INITIALISE_TIME_SLICE: {
-              get_log_writer() << " correlate_state = INITIALISE_TIME_SLICE" << std::endl;
+              get_log_writer()(2) << " correlate_state = INITIALISE_TIME_SLICE" << std::endl;
               // Initialise the correlator for a new time slice:
               
               startIS=GenPrms.get_usStart();
@@ -86,7 +81,7 @@ void Correlator_node::start()
                 init_readers[sn].corr_node = this;
                 init_readers[sn].startIS = startIS;
                 init_readers[sn].sn = sn;
-                
+
                 pthread_create(&init_readers[sn].thread, NULL, 
                                start_init_reader, static_cast<void*>(&init_readers[sn]));
               }
@@ -98,7 +93,7 @@ void Correlator_node::start()
               break;
             }
             case CORRELATE_INTEGRATION_SLICE: {
-              get_log_writer() << " correlate_state = CORRELATE_INTEGRATION_SLICE" << std::endl;
+              get_log_writer()(2) << " correlate_state = CORRELATE_INTEGRATION_SLICE" << std::endl;
               // Do one integration step:
               //while still time slices and data are available
               if (startIS >= GenPrms.get_usStart() + GenPrms.get_usDur()
@@ -114,14 +109,7 @@ void Correlator_node::start()
               break;
             }
             case END_TIME_SLICE: {
-              get_log_writer() << " correlate_state = END_TIME_SLICE" << std::endl;
-//              int size = (256+1);
-//              fftw_complex buff[size];
-//              for (int i=0; i<size; i++) {
-//                buff[i][0] = sliceNr;
-//                buff[i][1] = sliceNr;
-//              }
-//              integration_slice.cc.get_data_writer().put_bytes(sizeof(fftw_complex)*size, (char *)buff);
+              get_log_writer()(2) << " correlate_state = END_TIME_SLICE" << std::endl;
 
               // Finish processing a time slice:
               status = STOPPED;
@@ -150,6 +138,7 @@ void Correlator_node::start()
 void Correlator_node::start_correlating(INT64 start, INT64 duration) {
   assert(status != CORRELATING); 
   
+  integration_slice.set_start_time_and_duration(start, duration);  
   GenPrms.set_usStart(start);
   GenPrms.set_duration(duration);
   
@@ -168,16 +157,12 @@ void Correlator_node::set_parameters(RunP &runPrms, GenP &genPrms, StaP *staPrms
 
 
 void Correlator_node::hook_added_data_reader(int i) {
-//  Buffer<input_value_type> *buffer = new Semaphore_buffer<input_value_type>(buffer_size);
-//  data_readers_ctrl.set_buffer(i, buffer);
-//  integration_slice.set_data_reader(i,new Data_reader_buffer(buffer));
   integration_slice.set_data_reader(i,data_readers_ctrl.get_data_reader(i));
 }
 
 void Correlator_node::hook_added_data_writer(int i) {
   assert(i == 0);
-//  data_writer_ctrl.set_buffer(new Semaphore_buffer<output_value_type>(buffer_size));
-//  integration_slice.set_data_writer(new Data_writer_buffer(data_writer_ctrl.buffer()));
+
   integration_slice.set_data_writer(data_writer_ctrl.get_data_writer(i));
 }
 

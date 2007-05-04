@@ -35,8 +35,7 @@ public:
   void set_buffer(unsigned int i, Buffer *buffer);
 
   Data_reader *get_data_reader(int i);
-
-  std::vector<Data_reader *> &get_vector_data_readers();
+  Reader2buffer *get_data_reader2buffer(int i);
 
   bool initialised(unsigned int i);
   unsigned int number_of_data_readers();
@@ -46,12 +45,7 @@ private:
   // These are pointers, because a resize of the vector will 
   // copy construct all the elements and then destroy the old 
   // elements and we can't copy construct the extra threads.
-  std::vector< Data_reader2buffer<value_type>* >   data_readers;
-  
-  // InData expects a vector of input_readers.
-  std::vector<Data_reader *>                     data_readers_out;
-  
-  bool more_data_readers_can_be_added;
+  std::vector< Reader2buffer* >   data_readers;
 };
 
 #endif /* MULTIPLE_DATA_READERS_CONTROLLER_H */

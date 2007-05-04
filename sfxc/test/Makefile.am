@@ -27,7 +27,7 @@ TESTS           = \
 
 
 OBJ = ../src/utils.cc \
-      ../src/timer.cc \
+      ../src/Timer.cc \
       ../src/TCP_Connection.cc \
       ../src/MPI_Transfer.cc \
       ../src/runPrms.cc \
@@ -63,7 +63,7 @@ OBJ = ../src/utils.cc \
       ../src/Multiple_data_readers_controller.cc \
       ../src/Single_data_writer_controller.cc \
       ../src/Multiple_data_writers_controller.cc
-      
+
 test_buffer_SOURCES = \
   test_buffer.cc
 

@@ -83,6 +83,18 @@ void Output_node::start() {
           break;
         }
         
+        // check incoming connections
+        for (size_t reader = 0;
+             reader < data_readers_ctrl.number_of_data_readers();
+             reader++) {
+          if (data_readers_ctrl.get_data_reader2buffer(reader)->get_state() == 
+              Multiple_data_readers_controller::Reader2buffer::SUSPENDED) {
+            get_log_writer() << "Data_reader " << reader << " suspended" << std::endl;
+            data_readers_ctrl.get_data_reader2buffer(reader)->set_state(
+              Multiple_data_readers_controller::Reader2buffer::STOPPED);
+          }
+        }
+        
         if (data_available()) {
           write_output();
         }

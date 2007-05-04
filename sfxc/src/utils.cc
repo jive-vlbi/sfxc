@@ -131,18 +131,18 @@ initialise_control(char *filename, Log_writer &log_writer,
   Nstations = GenPrms.get_nstations();
   
   //parse the control file for all station parameters
-  for (i=0; i<Nstations; i++)
+  for (i=0; i<Nstations; i++) {
     if (StaPrms[i].parse_ctrlFile(filename,i, log_writer) != 0 ) {
       log_writer << "ERROR: Control file "<< filename <<", program aborted.\n";
       return -1;
     }
     
-  //check station control parameters, optionally show them
-  for (i=0; i<Nstations; i++){
+    //check station control parameters, optionally show them
     if (StaPrms[i].check_params(log_writer) != 0 ) {
       log_writer << "ERROR: Station control parameter, program aborted.\n";
       return -1;
     }
+    
     log_writer.ask_continue();
   }
   
