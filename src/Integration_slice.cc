@@ -71,6 +71,9 @@ void Integration_slice::set_data_writer(Data_writer *data_writer)
   cc.set_data_writer(data_writer);
 }
 
+void Integration_slice::set_start_time_and_duration(INT64 us_start, int duration) {
+  dc.set_start_time_and_duration(us_start, duration);
+}
 
 //initialise reader to proper position
 bool Integration_slice::init_reader(int sn, INT64 startIS)

@@ -128,6 +128,10 @@ void DelayCorrection::set_data_reader(int sn, Data_reader *data_reader_)
   data_reader[sn]=data_reader_;
 }
 
+void DelayCorrection::set_start_time_and_duration(INT64 us_start, int duration) {
+  GenPrms.set_usStart(us_start);
+  GenPrms.set_duration(duration);
+}
 
 
 //go to desired position in input reader for station sn

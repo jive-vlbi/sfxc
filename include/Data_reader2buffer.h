@@ -165,7 +165,7 @@ Data_reader2buffer<T>::read() {
       usleep(100000); // .1 second:
     } else {
       if (buffer->full() || data_reader->eof()) {
-        usleep(10000); // .1 second:
+        usleep(10000); // .01 second:
       } else {
         T &elem = buffer->produce();
         int size = data_reader->get_bytes(sizeof(T),(char*)&elem);

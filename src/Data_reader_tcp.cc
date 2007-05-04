@@ -74,7 +74,6 @@ size_t Data_reader_tcp::do_get_bytes(size_t nBytes, char*out) {
     /* Read data from socket */ 
     UINT64 size = read(socket, (void *) out, nBytes-nRead);
     if (size == 0) {
-      std::cout << "Data_reader_tcp: SIZE == 0" << std::endl;
       // Connection closed
       return nRead;
     }

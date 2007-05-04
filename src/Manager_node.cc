@@ -28,9 +28,25 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   : Node(rank), numtasks(numtasks), slicenr(0), 
     manager_controller(*this)
 {
+  MPI_Status status;
+  
   assert(rank == 0);
 
   add_controller(&manager_controller);
+
+  { // Initialise the log node, otherwise no error messages can be sent.
+    assert (RANK_LOG_NODE == 1);
+    
+    int msg=0;
+    // Log node:
+    MPI_Send(&msg, 1, MPI_INT32, 
+             RANK_LOG_NODE, MPI_TAG_SET_LOG_NODE, MPI_COMM_WORLD);
+    MPI_Send(&msg, 1, MPI_INT32, 
+             RANK_LOG_NODE, MPI_TAG_LOG_NODE_SET_OUTPUT_COUT, MPI_COMM_WORLD);
+    MPI_Recv(&msg, 1, MPI_INT32, 
+             RANK_LOG_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
+  }  
+
   
   int err;
   err = read_control_file(control_file);
@@ -48,22 +64,7 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   START_CORRELATE_NODES = START_INPUT_NODES + N_INPUT_NODES;
   N_CORRELATE_NODES = numtasks - START_CORRELATE_NODES;
 
-  assert(N_CORRELATE_NODES > 0);
-
-  MPI_Status status;
-  
-  { // Initialise the log node
-    assert (RANK_LOG_NODE == 1);
-    
-    int msg=0;
-    // Log node:
-    MPI_Send(&msg, 1, MPI_INT32, 
-             RANK_LOG_NODE, MPI_TAG_SET_LOG_NODE, MPI_COMM_WORLD);
-    MPI_Send(&msg, 1, MPI_INT32, 
-             RANK_LOG_NODE, MPI_TAG_LOG_NODE_SET_OUTPUT_COUT, MPI_COMM_WORLD);
-    MPI_Recv(&msg, 1, MPI_INT32, 
-             RANK_LOG_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
-  }  
+  assert(N_CORRELATE_NODES > 1);
 
   { // Initialise the output node
     assert (RANK_OUTPUT_NODE == 2);
@@ -209,6 +210,8 @@ void Manager_node::start() {
   }
 #endif
   
+  
+  int last_correlator_node = -1;
   while (GenPrms.get_duration() > 0) {
     // Check for MPI messages
     while ((check_and_process_waiting_message() != NO_MESSAGE)) {
@@ -217,11 +220,12 @@ void Manager_node::start() {
     // Check if there are Correlate nodes waiting:
     bool searching = true;
     
-    // Duration of one time slice:
+    // Duration of one time slice in seconds:
     int slice_duration = 1;
-    for (int i=0; (i<numtasks) && searching; i++) {
-      if (state_correlate_nodes[i] == READY) {
+    for (int i=0; (i<numtasks) && (GenPrms.get_duration()>0); i++) {
+      if ((state_correlate_nodes[i] == READY) && (last_correlator_node != i)) {
         searching = false;
+        last_correlator_node = i;
 
         INT64 times[] = {slicenr,
                          GenPrms.get_usStart(),

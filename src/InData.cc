@@ -481,8 +481,6 @@ int findSyncWord(
     cerr << "No synchronisation word found!\n";
     retval=-1;
   }
-  std::cout << "jsynch: " << *jsynch << std::endl;
-
   return retval;
   
 }
@@ -500,18 +498,16 @@ void printFrameHeader(
   int jtrack;
   INT32 jsample;
         
-  //open the header map file
-  
   //print header content at start of table (stdout)
   if(jsynch0>=64) {
-    snprintf(buff, 80, "\n\n            jsynch0=%016lld               ",jsynch0);
+    snprintf(buff, 80, "\n\n            jsynch0=%016ld               ",jsynch0);
     get_log_writer() << buff;
   } else {
     get_log_writer() << "            jsynch0 not found                    ";
   }
   if(nhs==2) {
     if(jsynch1>=64) {
-      snprintf(buff,80,"jsynch1=%016lld",jsynch1);
+      snprintf(buff,80,"jsynch1=%016ld",jsynch1);
       get_log_writer() << buff;
     } else {
       snprintf(buff, 80, "jsynch1 not found");
@@ -559,7 +555,7 @@ void printFrameHeader(
   if(nhs==2) get_log_writer() << "01234567890123456789012345678901";
 
   if(jsynch0>=64) {
-    snprintf(buff,80,"\n            jsynch0=%016lld               ",jsynch0);
+    snprintf(buff,80,"\n            jsynch0=%016ld               ",jsynch0);
     get_log_writer() << buff;
   } else {
     snprintf(buff,80,"\n\n            jsynch0 not found                    ");
@@ -568,7 +564,7 @@ void printFrameHeader(
   }
   if(nhs==2) {
     if(jsynch1>=64) {
-      snprintf(buff,80,"jsynch1=%016lld",jsynch1);
+      snprintf(buff,80,"jsynch1=%016ld",jsynch1);
       get_log_writer() << buff;
     } else {
       get_log_writer() << "jsynch1 not found";

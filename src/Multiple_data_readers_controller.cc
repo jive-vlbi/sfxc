@@ -15,7 +15,7 @@
 
 Multiple_data_readers_controller::
 Multiple_data_readers_controller(Node &node) 
-  : Controller(node), more_data_readers_can_be_added(true) {
+  : Controller(node) {
 }
 
 Multiple_data_readers_controller::
@@ -113,11 +113,19 @@ Multiple_data_readers_controller::set_buffer(unsigned int i, Buffer *buffer) {
   data_readers[i]->start();
 }
 
-Data_reader *Multiple_data_readers_controller::get_data_reader(int i) {
+Data_reader *
+Multiple_data_readers_controller::get_data_reader(int i) {
   assert((size_t)i < data_readers.size());
   assert(data_readers[i] != NULL);
   return data_readers[i]->get_data_reader();
 }
+
+Multiple_data_readers_controller::Reader2buffer *
+Multiple_data_readers_controller::get_data_reader2buffer(int i) {
+  assert((size_t)i < data_readers.size());
+  return data_readers[i];
+}
+
 bool Multiple_data_readers_controller::initialised(unsigned int i) {
   if (i >= data_readers.size()) return false;
   if (data_readers[i] == NULL) return false;
@@ -128,29 +136,10 @@ unsigned int Multiple_data_readers_controller::number_of_data_readers() {
   return data_readers.size();
 }
 
-std::vector<Data_reader *> &
-Multiple_data_readers_controller::get_vector_data_readers() {
-  if (data_readers_out.empty()) {
-    for (unsigned int i=0; i<data_readers.size(); i++) {
-      if (data_readers[i] != NULL) {
-        data_readers_out.push_back(data_readers[i]->get_data_reader());
-//        if (data_readers[i]->get_buffer() != NULL) {
-//          // This is an active data_reader
-//          Data_reader *reader = new Data_reader_buffer(data_readers[i]->get_buffer());
-//          data_readers_out.push_back(reader);
-//        }
-      }
-    }
-    more_data_readers_can_be_added = false;
-  }
-  assert(!more_data_readers_can_be_added);
-  return data_readers_out;
-}
 
 void 
 Multiple_data_readers_controller::add_data_reader(int i, Data_reader *reader) {
   // This is false after the first call of get_vector_data_readers()
-  assert(more_data_readers_can_be_added);
   
   if (data_readers.size() <= (unsigned int)i) {
     data_readers.resize(i+1, NULL);

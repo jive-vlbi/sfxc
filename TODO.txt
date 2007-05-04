@@ -12,6 +12,10 @@ Control files
   of WFM to be developed by PSNC (Dominik)
 - Use a Makefile.am to generate the makefiles used by vex2ccf
 - Why no random headers by default?
+- The name of the logfile is read by GenPrms, 
+  but reading GenPrms requires a log_writer ... which requires the filename
+- RNDHDR: not per station, but for all stations
+- JSON 
 
 Correlation:
 - !!! Check the integration: 512 and 1024 give a "Floating point exception"
