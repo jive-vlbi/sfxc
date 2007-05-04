@@ -82,7 +82,6 @@ class DelayCorrection
     //data members
     Log_writer &log_writer;
     StaP       *StaPrms;
-    GenP       GenPrms;
     
     INT64  timePtr;     //time in usec wrt 00:00 used for delay table
     double **segm;      //nstation data buffer ready for correlation

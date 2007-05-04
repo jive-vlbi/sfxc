@@ -103,7 +103,7 @@ bool Integration_slice::correlate()
 
     if ( floor((segm+1)/TenPct) == i+1 ){
       i++;
-      log_writer(1) << "segm=" << segm << "\t " << i*10 << 
+      log_writer(0) << "segm=" << segm << "\t " << i*10 << 
       " % of current Integration Slice processed\n";
     }
   }

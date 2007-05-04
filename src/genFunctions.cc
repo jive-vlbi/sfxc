@@ -153,6 +153,7 @@ void set_seed(UINT32 seed_) {
 }
 int irbit2()
 {
+  std::cout << "irbit2" << std::endl;
   #define IB1 1
   //  #define IB2 2
   #define IB4 8
