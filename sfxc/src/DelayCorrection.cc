@@ -25,9 +25,8 @@ DelayCorrection::DelayCorrection(GenP &GenPrms_,
 }
 
 //Allocate arrays, initialise parameters
-void DelayCorrection::set_parameters(GenP &GenPrms_, StaP *StaPrms_)
+void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
 {
-  GenPrms     = GenPrms_;
   StaPrms     = StaPrms_;
 
   nstations   = GenPrms.get_nstations();
@@ -129,8 +128,8 @@ void DelayCorrection::set_data_reader(int sn, Data_reader *data_reader_)
 }
 
 void DelayCorrection::set_start_time_and_duration(INT64 us_start, int duration) {
-  GenPrms.set_usStart(us_start);
-  GenPrms.set_duration(duration);
+  timePtr = us_start;//set timePtr to start for delay
+  BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
 }
 
 
@@ -155,7 +154,7 @@ bool DelayCorrection::init_reader(int sn, INT64 startIS)
     msglvl = get_log_writer().get_messagelevel();
     get_log_writer().set_messagelevel(0);
     // return usTime and jsynch for current header
-    int result = FindHeaderMk4(*data_reader[sn], jsynch, usTime, startIS, StaPrms[sn], GenPrms);
+    int result = FindHeaderMk4(*data_reader[sn], jsynch, usTime, startIS, StaPrms[sn]);
     if (result != 0) return false;
 
     // reset message level

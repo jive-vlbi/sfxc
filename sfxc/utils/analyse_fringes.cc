@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 {
   int ns, nCross, nbslns, nAutos; 
 
-  if ((argc < 4) && (argc > 5)){
+  if ((argc < 4) || (argc > 5)){
     cout << "\nusage  : analyse_fringes  sfxc_product_filename  nr_of_stations  n2fft <ret>\n";
     cout << "usage  : analyse_fringes  sfxc_product_filename  nr_of_stations  n2fft r<ret>\n";
     cout << "purpose: calculate fringes from correlator product file and analyse the fringes.\n";
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
   int Cbsln = 0;
   int nT = 0;//initialise nr of time interval
 
-
+  int lagNr=0;
   while (!finished) {
     if (bsln == nbslns) {
       bsln=0;
@@ -124,7 +124,22 @@ int main(int argc, char *argv[])
           setw(12) << in[i].imag() << " " << 
           setw(12) << outR[i].real() << " " << 
           setw(12) << outR[i].imag() << " " << 
-          setw(12) << ampl[i] << " " << endl;
+          setw(12) << ampl[i] << " " << lagNr << endl;
+        lagNr = (lagNr+1)%(nbslns*n2fft);
+        if (lagNr == 0) {
+        fout << 
+          setw(12) << 0 << " " << 
+          setw(12) << 0 << " " << 
+          setw(12) << 0 << " " << 
+          setw(12) << 0 << " " << 
+          setw(12) << 0 << " " << nbslns*n2fft << endl;
+        fout << 
+          setw(12) << 0 << " " << 
+          setw(12) << 0 << " " << 
+          setw(12) << 0 << " " << 
+          setw(12) << 0 << " " << 
+          setw(12) << 0 << " " << 0 << endl;
+        }
       }
 
       //analyse cross correlation fringe and write results to file

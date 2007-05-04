@@ -122,7 +122,7 @@ void show_MK4_header(Data_reader *data_reader, INT64 startIS,
   INT64 usTime;
 
   //find first header in data file
-  FindHeaderMk4(*data_reader, jsynch ,usTime, startIS, StaPrms, GenPrms);
+  FindHeaderMk4(*data_reader, jsynch ,usTime, startIS, StaPrms);
   get_log_writer().ask_continue();
 }
 
@@ -214,7 +214,7 @@ int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame, StaP &StaPrms)
 //         jsynch
 //*****************************************************************************
 int FindHeaderMk4(Data_reader &reader, int& jsynch,
-  INT64& usTime, INT64 usStart, StaP &StaPrms, GenP &GenPrms)
+  INT64& usTime, INT64 usStart, StaP &StaPrms)
 {
   int retval = 0;
   
@@ -306,7 +306,7 @@ int FindHeaderMk4(Data_reader &reader, int& jsynch,
     {
       stringstream msg;
       msg << "Requested (slice) start time   = " << endl <<
-        setw(4) << GenPrms.get_yst() << "y " << setw(3) << GenPrms.get_dst() << "d " <<
+//        setw(4) << GenPrms.get_yst() << "y " << setw(3) << GenPrms.get_dst() << "d " <<
         setw(2) << hr << "h " << setw(2) << min << "m " <<
         setw(2) << sec << "s " << setw(3) << milis << "ms";
       get_log_writer().message(1, msg);

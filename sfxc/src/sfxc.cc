@@ -25,8 +25,6 @@ RunP RunPrms;
 GenP GenPrms;
 //station parameters class, declaration and default settings
 StaP StaPrms[NstationsMax];
-// used for randomising numbers for Headers in Mk4 file
-UINT32 seed;
 
 
 #include <iostream> 
