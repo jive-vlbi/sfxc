@@ -68,7 +68,7 @@ class DelayCorrection
     bool set_delay_table(int sn, DelayTable &delay_table);
 
     /** Set the start time and the duration of the correlation **/
-    void set_start_time_and_duration(INT64 us_start, int duration);
+    void set_start_time(INT64 us_start);
 
   private:
 

@@ -127,9 +127,8 @@ void DelayCorrection::set_data_reader(int sn, Data_reader *data_reader_)
   data_reader[sn]=data_reader_;
 }
 
-void DelayCorrection::set_start_time_and_duration(INT64 us_start, int duration) {
+void DelayCorrection::set_start_time(INT64 us_start) {
   timePtr = us_start;//set timePtr to start for delay
-  BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
 }
 
 
@@ -181,6 +180,9 @@ bool DelayCorrection::init_reader(int sn, INT64 startIS)
     assert(false);
   }
     
+  df_counter[sn] = df_length[sn]; //set counter to end of frame
+  BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
+
   //initialise dcBufPrev with data from input channel (can be Mk4 file)
   for (int i=0; i<2*BufSize; i++) {
     if (df_counter[sn] == df_length[sn]) {
@@ -536,6 +538,8 @@ Log_writer& DelayCorrection::get_log_writer()
 //set local delay table parameter
 bool DelayCorrection::set_delay_table(int sn, DelayTable &delay_table)
 {
+  assert(sn >= 0);
+  assert((size_t)sn < delTbl.size());
   delTbl[sn]=delay_table;
   
   return true;

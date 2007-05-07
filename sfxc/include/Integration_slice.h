@@ -44,8 +44,12 @@ class Integration_slice
     /** **/
     bool init_reader(int sn, INT64 startIS);
 
-    /** Set the start time and the duration of the correlation **/
-    void set_start_time_and_duration(INT64 us_start, int duration);
+    /**
+     *  Set the start time and the duration of the correlation.
+     *  NGHK: DISCUSS: Is this function needed? 
+     *  DelayCorrection can find the start time in the data?
+     **/
+    void set_start_time(INT64 us_start);
 
     /** Correlates all the segments (Nsegm2Avg) in the time slice.
     \pre startIS: start time of current integration slice in usec wrt 00:00
