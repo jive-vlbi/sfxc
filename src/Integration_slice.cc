@@ -71,8 +71,8 @@ void Integration_slice::set_data_writer(Data_writer *data_writer)
   cc.set_data_writer(data_writer);
 }
 
-void Integration_slice::set_start_time_and_duration(INT64 us_start, int duration) {
-  dc.set_start_time_and_duration(us_start, duration);
+void Integration_slice::set_start_time(INT64 us_start) {
+  dc.set_start_time(us_start);
 }
 
 //initialise reader to proper position
@@ -103,7 +103,7 @@ bool Integration_slice::correlate()
 
     if ( floor((segm+1)/TenPct) == i+1 ){
       i++;
-      log_writer(0) << "segm=" << segm << "\t " << i*10 << 
+      log_writer(1) << "segm=" << segm << "\t " << i*10 << 
       " % of current Integration Slice processed\n";
     }
   }

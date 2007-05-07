@@ -112,7 +112,7 @@ public:
     return integration_slice;
   }
   Data_writer &get_data_writer() {
-    return integration_slice.get_data_writer();
+    return get_integration_slice().get_data_writer();
   }
   
   int get_correlate_node_number();

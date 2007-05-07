@@ -57,7 +57,7 @@ void Integration_slice::set_data_writer(Data_writer *data_writer)
   cc.set_data_writer(data_writer);
 }
 
-void Integration_slice::set_start_time_and_duration(INT64 us_start, int duration) {
+void Integration_slice::set_start_time(INT64 us_start) {
 }
 
 

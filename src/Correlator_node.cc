@@ -103,7 +103,7 @@ void Correlator_node::start()
               }
                              
               //process the next time slice:
-              integration_slice.correlate();
+              get_integration_slice().correlate();
               //set start of next time slice to: start of time slice + time to average
               startIS += GenPrms.get_usTime2Avg(); //in usec
               break;
@@ -135,35 +135,37 @@ void Correlator_node::start()
   }
 }
 
-void Correlator_node::start_correlating(INT64 start, INT64 duration) {
+void Correlator_node::start_correlating(INT64 us_start, INT64 duration) {
   assert(status != CORRELATING); 
   
-  integration_slice.set_start_time_and_duration(start, duration);  
-  GenPrms.set_usStart(start);
+  GenPrms.set_usStart(us_start);
   GenPrms.set_duration(duration);
-  
+
+  get_integration_slice().set_start_time(us_start);
+
+
   status=CORRELATING; 
   correlate_state = INITIALISE_TIME_SLICE; 
 }
 
 void Correlator_node::add_delay_table(int sn, DelayTable &table) {
-  integration_slice.set_delay_table(sn, table);
+  get_integration_slice().set_delay_table(sn, table);
 }
 
 
 void Correlator_node::set_parameters(RunP &runPrms, GenP &genPrms, StaP *staPrms) {
-  integration_slice.set_parameters(genPrms, staPrms, RunPrms.get_ref_station());
+  get_integration_slice().set_parameters(genPrms, staPrms, runPrms.get_ref_station());
 }
 
 
 void Correlator_node::hook_added_data_reader(int i) {
-  integration_slice.set_data_reader(i,data_readers_ctrl.get_data_reader(i));
+  get_integration_slice().set_data_reader(i,data_readers_ctrl.get_data_reader(i));
 }
 
 void Correlator_node::hook_added_data_writer(int i) {
   assert(i == 0);
 
-  integration_slice.set_data_writer(data_writer_ctrl.get_data_writer(i));
+  get_integration_slice().set_data_writer(data_writer_ctrl.get_data_writer(i));
 }
 
 int Correlator_node::get_correlate_node_number() {
@@ -176,6 +178,6 @@ void Correlator_node::set_slice_number(int sliceNr_) {
 
 void *Correlator_node::start_init_reader(void * self_) {
   Init_reader_struct *ir_struct = static_cast<Init_reader_struct *>(self_);
-  ir_struct->corr_node->integration_slice.init_reader(ir_struct->sn,ir_struct->startIS);
+  ir_struct->corr_node->get_integration_slice().init_reader(ir_struct->sn,ir_struct->startIS);
   return NULL;
 }
