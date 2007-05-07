@@ -13,7 +13,7 @@ inputfile = "/jop54_0/kruithof/data/n05c2/mark5/n06c2_da193_no0005.Mc"
 inputfile = "data/input.txt"
 outputfile = "output.txt"
 
-status = os.system("compile test_Input_node")
+status = os.system("make test_Input_node")
 if (status != 0): 
   sys.exit(1)
 

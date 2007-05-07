@@ -16,7 +16,7 @@ if os.path.isfile(RC_FILE):
   execfile(RC_FILE)
 
 # compile the executable
-status = os.system("compile sfxc")
+status = os.system("make sfxc")
 if (status != 0): sys.exit(1)
 
 # run the executable on all ccf files
