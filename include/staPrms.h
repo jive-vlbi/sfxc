@@ -70,8 +70,6 @@ class StaP
     int   get_rndhdr() const;
     /** Filename of the MK4 file**/
     char* get_mk4file() const;
-    /** Headermap file. **/
-    char* get_hdrmap() const;
     /** Name of the modulation pattern file. **/
     char* get_modpat() const;
     /** Name of the file containing the delay table information. **/
@@ -102,7 +100,6 @@ class StaP
     int  mod;      //modulation.  on=1, off=0
     int  rndhdr;   //random header on if 1 and off if 0
     char *mk4file; //input data in mk4 file format
-    char *hdrmap;  //headermap file
     char *modpat;  //modulation pattern
     int  signBS[fomax]; //bit shift parameters for sign
     int  magnBS[fomax]; //bit shift parameters for magn
