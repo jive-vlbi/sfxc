@@ -13,7 +13,7 @@ infile = "data/input.txt"
 infile = "/jop54_0/kruithof/data/JIVE-013/JIVE-13.del"
 outfile = "output.txt"
 
-status = os.system("compile test_Data_reader_TCP")
+status = os.system("make test_Data_reader_TCP")
 if (status != 0): sys.exit(1)
 
 os.system("mpirun -np 2 ./test_Data_reader_TCP "+infile+" "+outfile);
