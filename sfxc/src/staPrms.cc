@@ -49,7 +49,6 @@ int   StaP::get_synhs2()     const { return synhs2; }
 int   StaP::get_mod()        const { return mod; }
 int   StaP::get_rndhdr()     const { return rndhdr; }
 char* StaP::get_mk4file()    const { return mk4file; }
-char* StaP::get_hdrmap()     const { return hdrmap; }
 char* StaP::get_modpat()     const { return modpat; }
 char* StaP::get_delaytable() const { return delaytable; }
 char* StaP::get_phasetable() const { return phasetable; }
@@ -64,7 +63,7 @@ const int*  StaP::get_magnBS()     const { return magnBS;}
 StaP::StaP()
 {
   int j;
-  char *home;
+//   char *home;
 
   tbr     =  8;
   fo      =  4;
@@ -79,24 +78,10 @@ StaP::StaP()
   stname     = new char[256];
   datatype   = DATATYPE_UNDEFINED;
   mk4file    = new char[256];
-  hdrmap     = new char[256];
   modpat     = new char[256];
   delaytable = new char[256];
   phasetable = new char[256];
   
-  strcpy(stname,"undefined");
-  if ( ( home = getenv("HOME") )  == NULL){
-    strcpy(hdrmap,"header_map_mk4_cx.txt"); //header map file
-    strcpy(modpat,"modpattern.txt"); //modulation pattern file
-  } else {
-    strcpy(hdrmap,home);
-    strcat(hdrmap,"/bin/header_map_mk4_cx.txt");
-    strcpy(modpat,home);
-    strcat(modpat,"/bin/modpattern.txt"); //modulation pattern file
-  }
-  strcpy(delaytable,"undefined");
-  strcpy(phasetable,"undefined");
-
   hs=hm=-1;
   for (j=0; j<fomax; j++) {
     signBS[j]=magnBS[j]=-1;
@@ -109,7 +94,6 @@ StaP::StaP()
 StaP::~StaP() {
   delete [] stname;
   delete [] mk4file;
-  delete [] hdrmap;
   delete [] modpat;
   delete [] delaytable;
   delete [] phasetable;
@@ -217,7 +201,6 @@ int StaP::findMK4data(FILE *ctrlP, Log_writer &log_writer)
       retval = retval + getLongVal(key,val,"RNDHDR",rndhdr, log_writer);
 
       if (strcmp(key,"MK4FILE") == 0) strcpy(mk4file,val);
-      if (strcmp(key,"HDRMAP") == 0)  strcpy(hdrmap,val);
       if (strcmp(key,"MODPAT") == 0)  strcpy(modpat,val);
 
       if( strcmp(key,"SIGN") == 0 ) {
@@ -309,8 +292,7 @@ int StaP::check_params(Log_writer &log_writer) const
     "Sync track headstack1= " << synhs1 << "\n" <<
     "Sync track headstack2= " << synhs2 << "\n" <<
     "Modulation on if 1   = " << mod << "\n" <<
-    "Random header if 1   = " << rndhdr << "\n" <<
-    "Header map file      = " << hdrmap << "\n";
+    "Random header if 1   = " << rndhdr << "\n";
   if (mod) log_writer(1) << "Modulation pattern file = "<< mod << "\n";
 
   log_writer(1) << endl;
@@ -374,12 +356,6 @@ int StaP::check_params(Log_writer &log_writer) const
   //check if the data file exists
   if( access(mk4file, R_OK) != 0 ) {
     cerr << "Mark4 file " << mk4file << " is not accessible or does not exist\n";
-    retval=-1;
-  }
-
-  //check if the header map file exists
-  if(access(hdrmap,R_OK) != 0 ) {
-    cerr << "Header map file " << hdrmap << " is not accessible or does not exist\n";
     retval=-1;
   }
 

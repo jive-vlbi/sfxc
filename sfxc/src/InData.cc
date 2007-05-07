@@ -73,8 +73,7 @@ int findSyncWord(
 
 void printFrameHeader(
   //input
-  char tracks[][frameMk4*nfrms], INT64 jsynch0, INT64 jsynch1, int nhs,
-  char *hdrmap);
+  char tracks[][frameMk4*nfrms], INT64 jsynch0, INT64 jsynch1, int nhs);
 
 void timeComps(char tracks[][frameMk4*nfrms],int jsynch,int synchtrack,int headS,
   int *Head, int *year, int *day,
@@ -220,7 +219,6 @@ int FindHeaderMk4(Data_reader &reader, int& jsynch,
   
   //buffer for unpacked tracks, NTRACKS tracks, NFRMS Mk4 frames long
   char  tracks[trksMax][frameMk4*nfrms];
-  char  hdrmap[strLength];
   INT64 jsynch0, jsynch1;
   int nhs, synhs1, synhs2;
 
@@ -263,10 +261,9 @@ int FindHeaderMk4(Data_reader &reader, int& jsynch,
       return -1;//no synchronisation word found
   jsynch=jsynch0;
   
-  strcpy(hdrmap,StaPrms.get_hdrmap());
   if (get_log_writer().get_messagelevel() > 0){
     //printFrameHeader
-    printFrameHeader(tracks, jsynch0, jsynch1, nhs, hdrmap);
+    printFrameHeader(tracks, jsynch0, jsynch1, nhs);
   }  
 
       
@@ -491,8 +488,7 @@ int findSyncWord(
 //*****************************************************************************
 void printFrameHeader(
   //input
-  char tracks[][frameMk4*nfrms], INT64 jsynch0, INT64 jsynch1, int nhs,
-  char *hdrmap)
+  char tracks[][frameMk4*nfrms], INT64 jsynch0, INT64 jsynch1, int nhs)
 {
   char buff[80];
   int jtrack;
