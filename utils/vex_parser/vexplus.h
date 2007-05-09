@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------
 //
-// $Id: vexplus.h,v 3.7 2006/02/10 10:21:59 verkout Exp $
+// $Id$
 // 
 // Original File: vexcjd.h 
 // Original Date: 8-1-1998 Author: Henk W. Klijn Hesselink
