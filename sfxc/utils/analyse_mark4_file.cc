@@ -3,7 +3,7 @@
  * 
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
- * $Id: Buffer.h 191 2007-04-05 11:34:41Z kruithof $
+ * $Id$
  *
  */
 
