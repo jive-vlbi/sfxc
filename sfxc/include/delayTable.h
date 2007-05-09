@@ -58,6 +58,7 @@ class DelayTable
     
     INT64  startDT;       // start time delaytable in micro seconds
     INT64  stepDT;        // time step in delaytable in micro seconds
+    double one_over_stepDT;
     std::vector<double> cA, cB, cC; // Y = aX^2 + bX + c
     std::vector<double> mA, mB, mC; // per read delay line one series of these coefficients
     std::vector<double> rA, rB, rC;

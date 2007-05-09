@@ -126,81 +126,46 @@ void show_MK4_header(Data_reader *data_reader, INT64 startIS,
 }
 
 
+double sampleTableMS[4] = {-7., -2., 2., 7.};
+double sampleTableM[2] = {-1., 1.};
 
 //*****************************************************************************
 //fill Mk4frame if frame counter at end of array
 //*****************************************************************************
 int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame, StaP &StaPrms)
 {
-  INT64 readstatus=0;
-  INT32 r32block[frameMk4];  //32 bit buffer samples of 32 track data
-  INT64 r64block[frameMk4];  //64 bit buffer samples of 64 track data
+  // #samples/frame * #bits/sample (=fanout*bits/sample) / 8 (#bits/byte)
+  size_t nBytes = (frameMk4 * StaPrms.get_fo() * StaPrms.get_bps()) / 8;
+  char buffer[nBytes];
   
-  int ifo, jhdr;
-  int nhs, fo, rndhdr = 0;
-  int sign, magn;
-  double smplTBL[2][2];
-  INT64 jbuf;
-  //work variables
-  INT32 work32;
-  INT64 work64;
-
-  //initialise lookup table
-  smplTBL[0][0]=-7.0;
-  smplTBL[0][1]=-2.0;
-  smplTBL[1][0]= 2.0;
-  smplTBL[1][1]= 7.0;
+  size_t readstatus = reader.get_bytes(nBytes, buffer);
+  if (nBytes != readstatus) return 1;
   
-  nhs    = StaPrms.get_nhs();
-  fo     = StaPrms.get_fo();
-  rndhdr = StaPrms.get_rndhdr();
-  
-  //extracting for 2 headstacks
-  if(nhs==2) {
-    readstatus = reader.get_bytes(8*frameMk4, (char*)r64block);
-    if (readstatus != 8*frameMk4)
-      return -1;//error when reading
-      
-    for(jbuf=0; jbuf<(frameMk4); jbuf++) {
-      work64=r64block[jbuf];
-      for(ifo=0; ifo<fo; ifo++) {
-        //get sign and magnitude bit for all channels
-        sign = (int)((work64 >>  StaPrms.get_signBS()[ifo] ) & 0x1);
-        magn = (int)((work64 >>  StaPrms.get_magnBS()[ifo] ) & 0x1);
-        //convert sign and magnitude into a double using the lookup table
-        Mk4frame[sn][jbuf*fo+ifo] = smplTBL[sign][magn];
-      }
+  int sample = 0;
+  if (StaPrms.get_bps() == 2) {
+    for (size_t byte=0; byte<nBytes; byte++) {
+      char ch = buffer[byte];
+      for (int bit=0; bit<4; bit++) {
+        Mk4frame[sn][sample] = sampleTableMS[ch&3];
+        ch = (ch>>2);
+        sample++;
+      } 
+    }
+  } else {
+    assert(StaPrms.get_bps() == 1);
+    for (size_t byte=0; byte<nBytes; byte++) {
+      char ch = buffer[byte];
+      for (int bit=0; bit<8; bit++) {
+        Mk4frame[sn][sample] = sampleTableM[ch&1];
+        ch = (ch>>1);
+        sample++;
+      } 
     }
   }
 
-  //extracting for 1 headstack
-  if(nhs==1) {
-    readstatus = reader.get_bytes(4*frameMk4, (char*)r32block);
-    if (readstatus != 4*frameMk4) 
-      return -1;//error when reading
-      
-    for(jbuf=0; jbuf<(frameMk4); jbuf++) {
-      work32=r32block[jbuf];
-      for(ifo=0; ifo<fo; ifo++) {
-        //get sign and magnitude bit for all channels
-        sign = (int)((work32 >>  StaPrms.get_signBS()[ifo] ) & 0x1);
-        magn = (int)((work32 >>  StaPrms.get_magnBS()[ifo] ) & 0x1);
-        //convert sign and magnitude into a double using the lookup table
-        Mk4frame[sn][jbuf*fo+ifo] = smplTBL[sign][magn];
-      }
-    }
-  }
+  if (nBytes != readstatus) return 0;
 
-  //Replace Header with Random Pattern,
-  if ( rndhdr ) {
-    for(jhdr=0; jhdr<fo*hdrMk4; jhdr++) {
-      sign=irbit2();
-      magn=irbit2();
-      Mk4frame[sn][jhdr] = smplTBL[sign][magn];
-    }
-  }
-     
-  return readstatus;
+  return readstatus*8/StaPrms.get_bps();
 }
 
 
@@ -215,6 +180,7 @@ int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame, StaP &StaPrms)
 int FindHeaderMk4(Data_reader &reader, int& jsynch,
   INT64& usTime, INT64 usStart, StaP &StaPrms)
 {
+  assert(false);
   int retval = 0;
   
   //buffer for unpacked tracks, NTRACKS tracks, NFRMS Mk4 frames long
@@ -475,6 +441,7 @@ int findSyncWord(
   }
 
   if(*jsynch == 0){
+    assert(false);
     cerr << "No synchronisation word found!\n";
     retval=-1;
   }

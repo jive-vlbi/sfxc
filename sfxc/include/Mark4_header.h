@@ -225,7 +225,7 @@ Mark4_header<T>::get_microtime(int track) {
   return microsecond(track) + 
          1000000*(second(track) + 
                   60 * (minute(track) + 
-                        60*hour(track)));
+                        60*(INT64)hour(track)));
 } 
 
 template <class T>

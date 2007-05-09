@@ -20,11 +20,12 @@ OBJ=runPrms.cc genPrms.cc staPrms.cc \
 	Log_writer.cc Log_writer_cout.cc Log_writer_void.cc \
 	Log_writer_file.cc \
   Integration_slice.cc CorrelationCore.cc DelayCorrection.cc \
-  Timer.cc
+  Timer.cc \
+  Channel_extractor_mark4.cc
 
 
 sfxc_SOURCES = $(OBJ) sfxc.cc \
-  Node.cc Manager_node.cc Log_node.cc \
+  Node.cc Manager_node_reading_from_file.cc Log_node.cc \
   Correlator_node.cc Input_node.cc Output_node.cc \
 	Controller.cc Input_node_controller.cc Output_node_controller.cc \
   Correlator_node_controller.cc Manager_node_controller.cc Log_node_controller.cc \
