@@ -9,6 +9,8 @@
  */
 
 #include "sfxc_SC.h"
+#include <Channel_extractor.h>
+#include <Channel_extractor_mark4.h>
 
 #define SEED 10
 
@@ -143,12 +145,20 @@ int main(int argc, char *argv[])
     //Data reader initialisations
     Data_reader *data_reader;
     data_reader = new Data_reader_file(StaPrms[sn].get_mk4file());
-    IntSlc.set_data_reader(sn,data_reader);//pass the data reader
-    //display and check mk4file header info for start time set in ccf
-    show_MK4_header(data_reader, startIS, StaPrms[sn], GenPrms);
-    
+    Channel_extractor *ch_extractor;
+    ch_extractor = new Channel_extractor_mark4(*data_reader, StaPrms[sn]);
+
     //initialise readers to proper position
-    result = IntSlc.init_reader(sn,startIS);
+    result &= (ch_extractor->goto_time(startIS) == 0);
+
+    
+    IntSlc.set_data_reader(sn,ch_extractor);//pass the data reader
+    result &= IntSlc.init_reader(sn,startIS);
+
+    //display and check mk4file header info for start time set in ccf
+    //NGHK: commented out, use channel extracter later on
+    //show_MK4_header(data_reader, startIS, StaPrms[sn], GenPrms);
+    
 
     if (!result && !RunPrms.get_interactive()) {
       log_writer.error("Could not initialise the data reader");

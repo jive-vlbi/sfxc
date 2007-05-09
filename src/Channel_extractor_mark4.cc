@@ -3,7 +3,7 @@
  * 
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
- * $Id: Buffer.h 191 2007-04-05 11:34:41Z kruithof $
+ * $Id$
  *
  */
 
@@ -24,8 +24,8 @@ public:
   Channel_extractor_mark4_implementation(Data_reader &reader, StaP &staPrms,
                                          DEBUG_LEVEL debug_level);
 
-  void goto_time_stamp(INT64 time);
-  INT64 get_last_time_stamp();
+  int goto_time(INT64 time);
+  INT64 get_current_time();
 
   UINT64 get_bytes(UINT64 nBytes, char *buff);
   
@@ -75,7 +75,7 @@ Channel_extractor_mark4::
 Channel_extractor_mark4(Data_reader &reader, 
                         StaP &staPrms, 
                         DEBUG_LEVEL debug_level)
- : Data_reader(),
+ : Channel_extractor(),
    n_head_stacks(staPrms.get_nhs()),
    ch_extractor_1_head_stack(NULL),
    ch_extractor_2_head_stack(NULL)
@@ -90,20 +90,20 @@ Channel_extractor_mark4(Data_reader &reader,
   }
 }
 
-void 
-Channel_extractor_mark4::goto_time_stamp(INT64 time) {
+int 
+Channel_extractor_mark4::goto_time(INT64 time) {
   if (n_head_stacks == 1) {
-    ch_extractor_1_head_stack->goto_time_stamp(time);
+    return ch_extractor_1_head_stack->goto_time(time);
   } else {
-    ch_extractor_2_head_stack->goto_time_stamp(time);
+    return ch_extractor_2_head_stack->goto_time(time);
   }
 }
 INT64 
-Channel_extractor_mark4::get_last_time_stamp() {
+Channel_extractor_mark4::get_current_time() {
   if (n_head_stacks == 1) {
-    return ch_extractor_1_head_stack->get_last_time_stamp();
+    return ch_extractor_1_head_stack->get_current_time();
   } else {
-    return ch_extractor_2_head_stack->get_last_time_stamp();
+    return ch_extractor_2_head_stack->get_current_time();
   }
 }
 
@@ -171,36 +171,55 @@ Channel_extractor_mark4_implementation(Data_reader &reader,
   start_microtime = mark4_header.get_microtime(0);
   reader.reset_data_counter();
 
-  // Store a list of tracks: First sign then (optionally) magnitude
+  // Store a list of tracks: first magnitude (optional), then sign 
   tracks.resize(n_bits_per_sample*fan_out);
   for (int i=0; i<fan_out; i++) {
-    if (! mark4_header.is_sign(staPrms.get_signBS()[i])) {
-      std::cout << "Track " << staPrms.get_signBS()[i]
-                << " is not a sign track" << std::endl;
-    }
-    tracks[n_bits_per_sample*i] = staPrms.get_signBS()[i];
     if (n_bits_per_sample > 1) {
       if (! mark4_header.is_magn(staPrms.get_magnBS()[i])) {
         std::cout << "Track " << staPrms.get_magnBS()[i]
                   << " is not a magn track" << std::endl;
       }
-      tracks[n_bits_per_sample*i+1] = staPrms.get_magnBS()[i];
+      tracks[n_bits_per_sample*i] = staPrms.get_magnBS()[i];
+      
+      if (! mark4_header.is_sign(staPrms.get_signBS()[i])) {
+        std::cout << "Track " << staPrms.get_signBS()[i]
+                  << " is not a sign track" << std::endl;
+      }
+      tracks[n_bits_per_sample*i+1] = staPrms.get_signBS()[i];
+    } else {
+      if (! mark4_header.is_sign(staPrms.get_signBS()[i])) {
+        std::cout << "Track " << staPrms.get_signBS()[i]
+                  << " is not a sign track" << std::endl;
+      }
+      tracks[n_bits_per_sample*i] = staPrms.get_signBS()[i];
     }
   }
-  std::cout << std::endl;
 }
 
 template <class T>
-void
+int 
 Channel_extractor_mark4_implementation<T>::
-goto_time_stamp(INT64 time) {
-  assert(false);
+goto_time(INT64 time) {
+	int offset = 5000;
+  size_t read_n_bytes = (time+offset-get_current_time()) * sizeof(T)* TBR - 
+                        frameMk4*sizeof(T);
+  
+  size_t result = reader.get_bytes(read_n_bytes,NULL);
+  if (result != read_n_bytes) return result;
+
+  // Need to read the data to check the header
+  read_new_block();
+
+  assert(get_current_time() == time+offset);
+  // reset read pointer:
+  curr_pos_in_block = 0;
+  return 0;
 }
 
 template <class T>
 INT64
 Channel_extractor_mark4_implementation<T>::
-get_last_time_stamp() {
+get_current_time() {
   return mark4_header.get_microtime(tracks[0]);
 }
 
@@ -218,7 +237,7 @@ get_bytes(UINT64 nOutputBytes, char *output_buffer) {
     // Filled from least to most significant bit
 
     // Position in the output byte:
-    int sample;
+    char sample;
     for (int sample_pos=0; sample_pos<8;) {
       for (typename std::vector<int>::iterator it = tracks.begin();
            it != tracks.end(); it++) {

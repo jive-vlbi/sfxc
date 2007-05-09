@@ -135,51 +135,6 @@ void DelayCorrection::set_start_time(INT64 us_start) {
 //go to desired position in input reader for station sn
 bool DelayCorrection::init_reader(int sn, INT64 startIS)
 {
-  
-  int   jsynch; //shift to go to the synch word in the buffer
-  INT64 usTime; //time stamp of current header wrt start of day (usec)
-  INT64 offTime; //offset time (usec) wrt current header
-  INT64 offFrames; //offset in frames wrt current header
-  INT64 offSynch; //offset (bytes) caused bty jsynch
-  INT64 offBytes; //total offset (bytes) wrt current reader position
-
-  int msglvl; //message level parameter
-  
-  
-  if (StaPrms[sn].get_datatype() == DATATYPE_MK4)
-  {
-
-    // remember message level and set message level to 0
-    msglvl = get_log_writer().get_messagelevel();
-    get_log_writer().set_messagelevel(0);
-    // return usTime and jsynch for current header
-    int result = FindHeaderMk4(*data_reader[sn], jsynch, usTime, startIS, StaPrms[sn]);
-    if (result != 0) return false;
-
-    // reset message level
-    get_log_writer().set_messagelevel(msglvl);
-    
-    //calculate offsets 
-    offTime = startIS - usTime;
-    offFrames = offTime * StaPrms[sn].get_tbr()/frameMk4;
-    if (StaPrms[sn].get_nhs() == 1) {
-      offBytes = offFrames * frameMk4 * 4;
-      offSynch = (jsynch -64) *4;
-     } else {
-      offBytes = offFrames * frameMk4 * 8;
-      offSynch = (jsynch -64) *8;
-    }
-    offBytes = StaPrms[sn].get_boff() + offBytes + offSynch;
-    //go to desired position in input_reader by moving offBytes forward
-    INT64 bytesRead = data_reader[sn]->get_bytes(offBytes, NULL);
-    if (bytesRead != offBytes) return false;
-  }
-  else
-  {
-    get_log_writer().message(0,"Unknown data type");
-    assert(false);
-  }
-    
   df_counter[sn] = df_length[sn]; //set counter to end of frame
   BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
 

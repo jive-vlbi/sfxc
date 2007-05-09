@@ -10,7 +10,7 @@
 #ifndef MARK4_CHANNEL_EXTRACTOR_H_
 #define MARK4_CHANNEL_EXTRACTOR_H_
 
-#include <Data_reader.h>
+#include <Channel_extractor.h>
 #include <Data_writer.h>
 
 #include <staPrms.h>
@@ -22,7 +22,7 @@
 template <class T>
 class Channel_extractor_mark4_implementation;
 
-class Channel_extractor_mark4 : public Data_reader
+class Channel_extractor_mark4 : public Channel_extractor
 {
 public:
   enum DEBUG_LEVEL {
@@ -36,9 +36,8 @@ public:
                           StaP &StaPrms, 
                           DEBUG_LEVEL debug_level = CHECK_PERIODIC_HEADERS);
   
-  
-  void goto_time_stamp(INT64 time);
-  INT64 get_last_time_stamp();
+  int goto_time(INT64 time);
+  INT64 get_current_time();
 
   bool eof();
 private:
