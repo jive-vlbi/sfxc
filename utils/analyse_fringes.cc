@@ -118,28 +118,16 @@ int main(int argc, char *argv[])
       for (int i=0; i<n2fft; i++) {
         outR[i] = out[(i+n2fft/2)%n2fft];
         ampl[i] = sqrt( outR[i].real() * outR[i].real() +  
-                        outR[i].imag() * outR[i].imag() ) / n2fft;
+                        outR[i].imag() * outR[i].imag() );
         fout << 
           setw(12) << in[i].real() << " " << 
           setw(12) << in[i].imag() << " " << 
           setw(12) << outR[i].real() << " " << 
           setw(12) << outR[i].imag() << " " << 
-          setw(12) << ampl[i] << " " << lagNr << endl;
+          setw(12) << ampl[i] / n2fft << " " <<
+          setw(12) << lagNr << endl;
         lagNr = (lagNr+1)%(nbslns*n2fft);
-        if (lagNr == 0) {
-        fout << 
-          setw(12) << 0 << " " << 
-          setw(12) << 0 << " " << 
-          setw(12) << 0 << " " << 
-          setw(12) << 0 << " " << 
-          setw(12) << 0 << " " << nbslns*n2fft << endl;
-        fout << 
-          setw(12) << 0 << " " << 
-          setw(12) << 0 << " " << 
-          setw(12) << 0 << " " << 
-          setw(12) << 0 << " " << 
-          setw(12) << 0 << " " << 0 << endl;
-        }
+        if (lagNr == 0)  fout << endl;
       }
 
       //analyse cross correlation fringe and write results to file
@@ -159,7 +147,7 @@ int main(int argc, char *argv[])
           setw(5) << nT << " " << 
           setw(5) << bsln << " " << 
           setw(5) << iForMax << " " << 
-          setw(10) << amplMax << " " << 
+          setw(10) << amplMax / n2fft << " " << 
           setw(10) << argAmplMax << " " <<
           setw(10) << noiseRMS << " " <<
           setw(10) << SNR << " " <<

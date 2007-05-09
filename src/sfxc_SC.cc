@@ -12,11 +12,6 @@
 #include <Channel_extractor.h>
 #include <Channel_extractor_mark4.h>
 
-#define SEED 10
-
-// used for randomising numbers for Headers in Mk4 file
-UINT32 seed;
-
 int main(int argc, char *argv[])
 {
   //initialise log writer for run time messages
@@ -30,8 +25,8 @@ int main(int argc, char *argv[])
   }
 
   //make fixed seeding or time based seeding a control file option
-  seed = SEED;
-  log_writer << endl << "WARNING seed=" << seed << endl;
+  set_seed(10);
+  log_writer << endl << "WARNING fixed seed=10\n";
 
   //set the control file name
   char   ctrlFile[lineLength]; // control file name
@@ -96,11 +91,13 @@ int main(int argc, char *argv[])
   StaP StaPrms[NstationsMax];
   
   //parse the control file for all station parameters
-  for (int i=0; i<nstations; i++)
+  for (int i=0; i<nstations; i++) {
+    StaPrms[i].set_genPrms(GenPrms);
     if (StaPrms[i].parse_ctrlFile(ctrlFile, i, log_writer) != 0 ) {
       log_writer <<"ERROR: Control file "<< ctrlFile <<", program aborted.\n";
       return -1;
     }
+  }
     
 
   //check station control parameters, optionally show them
@@ -146,7 +143,8 @@ int main(int argc, char *argv[])
     Data_reader *data_reader;
     data_reader = new Data_reader_file(StaPrms[sn].get_mk4file());
     Channel_extractor *ch_extractor;
-    ch_extractor = new Channel_extractor_mark4(*data_reader, StaPrms[sn]);
+    ch_extractor = new Channel_extractor_mark4(*data_reader, StaPrms[sn], 
+      GenPrms.get_rndhdr());
 
     //initialise readers to proper position
     result &= (ch_extractor->goto_time(startIS) == 0);
@@ -175,13 +173,6 @@ int main(int argc, char *argv[])
 
   //process the mk4file data
   if ( RunPrms.get_runoption() == 1 ) {
-/*
-    Timer cd_tmr, cc_tmr, cx_tmr, dc_tmr;
-    cd_tmr.set_ID("channel extraction + delay correction");
-    cc_tmr.set_ID("correlation");
-    cx_tmr.set_ID("channel extraction");
-    dc_tmr.set_ID("delay correction");
-*/    
 
     int nIS=GenPrms.get_usDur()/GenPrms.get_usTime2Avg(), IS=0;
     
@@ -192,8 +183,6 @@ int main(int argc, char *argv[])
       log_writer(1) << "\nIS/nIS=" << ++IS << "/" << nIS 
                     << " startIS=" << startIS << " usec"<< endl;
 
-      //process the next integration slice:
-//      result = IntSlc.correlate(cd_tmr, cc_tmr, cx_tmr, dc_tmr);
       result = IntSlc.correlate();
 
       if (!result) {
@@ -206,12 +195,6 @@ int main(int argc, char *argv[])
       //  start of integration slice + time to average
       startIS += GenPrms.get_usTime2Avg(); //in usec
     }
-/*    
-    cx_tmr.show_accu_result(log_writer);
-    dc_tmr.show_accu_result(log_writer);
-    cd_tmr.show_accu_result(log_writer);
-    cc_tmr.show_accu_result(log_writer);
-*/
   }
 
   tmr_process_data.stop(log_writer);

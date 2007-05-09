@@ -13,7 +13,9 @@
 
 //standard c includes
 #include <stdio.h>
+
 #include "Log_writer.h"
+#include "genPrms.h"
 
 const int chmax      =     8; //max nr of channels, nch*fo <=32
 const int fomax      =     4; //maximum fan out
@@ -66,8 +68,6 @@ class StaP
     int   get_synhs2() const;
     /** Modulation enabled if modulation pattern file is defined. **/
     int   get_mod() const;
-    /** Substitute random values for the header **/
-    int   get_rndhdr() const;
     /** Filename of the MK4 file**/
     char* get_mk4file() const;
     /** Name of the modulation pattern file. **/
@@ -82,6 +82,15 @@ class StaP
     const int*  get_signBS() const; //bit shift parameters for sign
     /** bit shift parameters for magn **/
     const int*  get_magnBS() const; //bit shift parameters for magn
+
+
+    //get functions
+    GenP get_genPrms() const { return genPrms; }
+
+    //set functions
+    void set_genPrms(GenP &genPrms_) { genPrms=genPrms_; }
+
+
 
   private:
     //station specific paramters.
@@ -98,13 +107,14 @@ class StaP
     int  synhs1;   //synchronisation track for headstack 1: <32
     int  synhs2;   //synchronisation track for headstack 2: <32
     int  mod;      //modulation.  on=1, off=0
-    int  rndhdr;   //random header on if 1 and off if 0
     char *mk4file; //input data in mk4 file format
     char *modpat;  //modulation pattern
     int  signBS[fomax]; //bit shift parameters for sign
     int  magnBS[fomax]; //bit shift parameters for magn
     int  hs;            //number of the headstack for the sign tracks (1 or 2)
     int  hm;            //number of the headstack for the magn tracks (1 or 2)
+
+    GenP genPrms;
     
     //delay correction related data
     char *delaytable; //table with delay data

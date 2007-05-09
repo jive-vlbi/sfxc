@@ -25,8 +25,7 @@ Log_writer &get_log_writer();
 void show_MK4_header(Data_reader *data_reader, INT64 startIS, 
   StaP &StaPrms, GenP &GenPrms);
 
-int  fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame, 
-  StaP &StaPrms);
+int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame, StaP &StaPrms);
 
 int  FindHeaderMk4(Data_reader &reader, int& jsynch,
   INT64& usTime, INT64 usStart, StaP &StaPrms);

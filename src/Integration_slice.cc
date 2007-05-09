@@ -93,6 +93,7 @@ bool Integration_slice::correlate()
   //zero accumulation accxps array and norms array.
   result = cc.init_time_slice();
 
+
   //process all the segments in the Time Slice (=Time to Average)
   for (INT32 segm = 0 ; result && (segm < Nsegm2Avg) ; segm++){
 
@@ -108,66 +109,21 @@ bool Integration_slice::correlate()
     }
   }
 
+
   if (!result) return false;
   
   //normalise the accumulated correlation results
   result = cc.average_time_slice();
 
-  if (!result) return false;
-
-  //write the correlation result for the current time slice
-  result = cc.write_time_slice();
-
-  return result;
-}
-
-
-
-// Correlates all the segments (Nsegm2Avg) in the integration slice.
-bool Integration_slice::correlate(Timer &cd_tmr, Timer &cc_tmr, Timer &cx_tmr, Timer &dc_tmr)
-{  
-  bool result = true;
-
-  float TenPct=Nsegm2Avg/10.0, i=0;
-  log_writer(1) << "Nsegm2Avg " << Nsegm2Avg << endl;
-  
-  //zero accumulation accxps array and norms array.
-  result = cc.init_time_slice();
-
-  //process all the segments in the Time Slice (=Time to Average)
-  for (INT32 segm = 0 ; result && (segm < Nsegm2Avg) ; segm++){
-
-    cd_tmr.start();
-    //fill the current segment in cc with delay corrected data from dc
-    result &= dc.fill_segment(cx_tmr, dc_tmr);
-    cd_tmr.stop_accumulate();
-
-    cc_tmr.start();
-    //do the correlation for current segment.
-    result &= cc.correlate_segment(dc.get_segment());
-    cc_tmr.stop_accumulate();
-
-    if ( floor((segm+1)/TenPct) == i+1 ){
-      i++;
-      log_writer(1) << "segm=" << segm << "\t " << i*10 << 
-      " % of current Integration Slice processed\n";
-    }
-  }
-
-  if (!result) return false;
-  
-  cc_tmr.start();
-  //normalise the accumulated correlation results
-  result = cc.average_time_slice();
 
   if (!result) return false;
 
   //write the correlation result for the current time slice
   result = cc.write_time_slice();
-  cc_tmr.stop_accumulate();
-
   return result;
 }
+
+
 
 
 

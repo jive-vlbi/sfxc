@@ -47,7 +47,6 @@ int   StaP::get_boff()       const { return boff; }
 int   StaP::get_synhs1()     const { return synhs1; }
 int   StaP::get_synhs2()     const { return synhs2; }
 int   StaP::get_mod()        const { return mod; }
-int   StaP::get_rndhdr()     const { return rndhdr; }
 char* StaP::get_mk4file()    const { return mk4file; }
 char* StaP::get_modpat()     const { return modpat; }
 char* StaP::get_delaytable() const { return delaytable; }
@@ -74,7 +73,6 @@ StaP::StaP()
   synhs1  =  1;
   synhs2  =  1;
   mod     =  0;
-  rndhdr  =  1;
   stname     = new char[256];
   datatype   = DATATYPE_UNDEFINED;
   mk4file    = new char[256];
@@ -198,7 +196,6 @@ int StaP::findMK4data(FILE *ctrlP, Log_writer &log_writer)
       retval = retval + getLongVal(key,val,"SYNHS1",synhs1, log_writer);
       retval = retval + getLongVal(key,val,"SYNHS2",synhs2, log_writer);
       retval = retval + getLongVal(key,val,"MOD",mod, log_writer);
-      retval = retval + getLongVal(key,val,"RNDHDR",rndhdr, log_writer);
 
       if (strcmp(key,"MK4FILE") == 0) strcpy(mk4file,val);
       if (strcmp(key,"MODPAT") == 0)  strcpy(modpat,val);
@@ -291,8 +288,7 @@ int StaP::check_params(Log_writer &log_writer) const
     "Fine offset          = " << boff << " bytes\n" <<
     "Sync track headstack1= " << synhs1 << "\n" <<
     "Sync track headstack2= " << synhs2 << "\n" <<
-    "Modulation on if 1   = " << mod << "\n" <<
-    "Random header if 1   = " << rndhdr << "\n";
+    "Modulation on if 1   = " << mod << "\n";
   if (mod) log_writer(1) << "Modulation pattern file = "<< mod << "\n";
 
   log_writer(1) << endl;

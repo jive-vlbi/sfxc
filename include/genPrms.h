@@ -36,6 +36,9 @@ class GenP
     /** Name of the experiment. **/
     char* get_experiment() const;
     
+    /** Substitute random values for the header **/
+    int   get_rndhdr() const;
+
     /** year in the starttime. **/
     int   get_yst() const;
     /** day in the starttime. **/
@@ -142,6 +145,8 @@ class GenP
     void set_start(std::string Time);
 
     //data members
+
+    int  rndhdr;   //random header on if 1 and off if 0
     
     char  *experiment; //name of the experiment
     

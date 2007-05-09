@@ -44,6 +44,8 @@ using namespace std;
 //get functions
 char* GenP::get_experiment() const { return experiment; }
 
+int   GenP::get_rndhdr()     const { return rndhdr; }
+
 int   GenP::get_yst()        const { return yst; }
 int   GenP::get_dst()        const { return dst; }
 int   GenP::get_hst()        const { return hst; }
@@ -81,19 +83,10 @@ int   GenP::get_pad()        const { return pad;}
 
 INT64 GenP::get_usStart()  const {  return usStart;}
 
-//TODO RHJO: 20070213 check which of the functions until DEPRICATED? is depricated
-//INT64 GenP::get_usStop()   const {  return usStop;}
 
 void GenP::set_usStart(INT64 start) { usStart = start; }
 void GenP::set_duration(int dur) { duration = dur; }
-//void GenP::set_usStop(INT64 stop)   { usStop = stop;}
 
-//INT64 GenP::get_usEarliest() const { return usEarliest; }
-//INT64 GenP::get_usLatest()   const { return usLatest;}
-
-//void  GenP::set_usEarliest(INT64 newEarliest) { usEarliest = newEarliest;}
-//void  GenP::set_usLatest(INT64 newLatest)     { usLatest = newLatest;}
-// DEPRICATED?
 
 //default constructor, set default values for general control parameters
 GenP::GenP()
@@ -110,6 +103,8 @@ GenP::GenP()
   strcat(logfile,"/DefExp.log");
   corfile = outdir;
   corfile.append("/DefExp.cor");
+
+  rndhdr  = 1;
 
   bwin    = 16000000;
   lsegm   = 2048;
@@ -175,6 +170,7 @@ int GenP::parse_ctrlFile(char *ctrlFile, Log_writer&log_writer)
       if (strcmp(key,"CORFILE") == 0)    strcpy(corname,val);
       if (strcmp(key,"START") == 0)      set_start(val);
       
+      retval = retval + getLongVal(key,val,"RNDHDR",rndhdr, log_writer);
       retval = retval + getLongVal(key,val,"DURATION",duration, log_writer);
       retval = retval + getLongVal(key,val,"NSTATIONS",nstations, log_writer);
       retval = retval + getDoubleVal(key,val,"BWIN",bwin, log_writer);
@@ -231,12 +227,6 @@ int GenP::parse_ctrlFile(char *ctrlFile, Log_writer&log_writer)
     ovrfl = 1;
   }
 
-  //TODO RHJO check if depricated
-  //initialize earliest possible start time and
-  //latest possible stop time in micro seconds
-//  usEarliest = get_usStart();
-//  usLatest   = get_usStop();
-  
   return retval;
 }
 
@@ -260,6 +250,7 @@ int GenP::check_params(Log_writer &log_writer) const
                                setw(3) << hst << setw(3) << mst <<
                                setw(3) << sst << setw(4) << milisst << " (y d h m s m)\n" <<
   "Duration             = " << duration << endl <<                             
+  "Random header if 1   = " << rndhdr << "\n" <<
   "Number of stations   = " << nstations << endl <<
   "Output directory     = " << outdir << endl <<
   "Log file             = " << logfile << endl <<
