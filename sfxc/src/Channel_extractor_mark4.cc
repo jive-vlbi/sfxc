@@ -27,7 +27,7 @@ public:
   int goto_time(INT64 time);
   INT64 get_current_time();
 
-  UINT64 get_bytes(UINT64 nBytes, char *buff);
+  size_t do_get_bytes(size_t nBytes, char *buff);
   
   bool eof();
 
@@ -110,9 +110,9 @@ Channel_extractor_mark4::get_current_time() {
 size_t 
 Channel_extractor_mark4::do_get_bytes(size_t nBytes, char *buff) {
   if (n_head_stacks == 1) {
-    return ch_extractor_1_head_stack->get_bytes(nBytes, buff);
+    return ch_extractor_1_head_stack->do_get_bytes(nBytes, buff);
   } else {
-    return ch_extractor_2_head_stack->get_bytes(nBytes, buff);
+    return ch_extractor_2_head_stack->do_get_bytes(nBytes, buff);
   }
 }
 
@@ -200,8 +200,7 @@ template <class T>
 int 
 Channel_extractor_mark4_implementation<T>::
 goto_time(INT64 time) {
-	int offset = 5000;
-  size_t read_n_bytes = (time+offset-get_current_time()) * sizeof(T)* TBR - 
+  size_t read_n_bytes = (time-get_current_time()) * sizeof(T)* TBR - 
                         frameMk4*sizeof(T);
   
   size_t result = reader.get_bytes(read_n_bytes,NULL);
@@ -210,7 +209,7 @@ goto_time(INT64 time) {
   // Need to read the data to check the header
   read_new_block();
 
-  assert(get_current_time() == time+offset);
+  assert(get_current_time() == time);
   // reset read pointer:
   curr_pos_in_block = 0;
   return 0;
@@ -224,9 +223,9 @@ get_current_time() {
 }
 
 template <class T>
-UINT64
+size_t
 Channel_extractor_mark4_implementation<T>::
-get_bytes(UINT64 nOutputBytes, char *output_buffer) {
+do_get_bytes(size_t nOutputBytes, char *output_buffer) {
   UINT64 bytes_processed = 0;
   
   // Initialise the output buffer:
