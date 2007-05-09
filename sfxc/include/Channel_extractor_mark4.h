@@ -34,6 +34,7 @@ public:
 
   Channel_extractor_mark4(Data_reader &reader, 
                           StaP &StaPrms, 
+                          bool insert_random_headers_,
                           DEBUG_LEVEL debug_level = CHECK_PERIODIC_HEADERS);
   
   int goto_time(INT64 time);

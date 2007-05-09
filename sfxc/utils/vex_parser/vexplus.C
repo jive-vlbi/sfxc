@@ -27,6 +27,7 @@ static char rcsid[]="@(#)$Id: vexplus.C,v 3.6 2006/01/16 11:21:29 jive_cc Exp $"
 // Side effects: 
 //------------------------------------------------------------------------
 using namespace std;
+
 int VexPlus::parseVex()
 {
     return  vex_open( const_cast<char*>(filename.c_str()), &vexp);

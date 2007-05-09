@@ -21,7 +21,9 @@ class Channel_extractor_mark4_implementation {
 public:
   typedef Channel_extractor_mark4::DEBUG_LEVEL  DEBUG_LEVEL;
 
-  Channel_extractor_mark4_implementation(Data_reader &reader, StaP &staPrms,
+  Channel_extractor_mark4_implementation(Data_reader &reader, 
+                                         StaP &staPrms,
+                                         bool insert_random_headers_,
                                          DEBUG_LEVEL debug_level);
 
   int goto_time(INT64 time);
@@ -74,6 +76,7 @@ private:
 Channel_extractor_mark4::
 Channel_extractor_mark4(Data_reader &reader, 
                         StaP &staPrms, 
+                        bool insert_random_headers_,
                         DEBUG_LEVEL debug_level)
  : Channel_extractor(),
    n_head_stacks(staPrms.get_nhs()),
@@ -82,11 +85,13 @@ Channel_extractor_mark4(Data_reader &reader,
 {
   if (n_head_stacks == 1) {
     ch_extractor_1_head_stack = 
-      new Channel_extractor_mark4_implementation<UINT32>(reader, staPrms, debug_level);
+      new Channel_extractor_mark4_implementation<UINT32>(reader, staPrms, 
+        insert_random_headers_, debug_level);
   } else {
     assert (n_head_stacks == 2);
     ch_extractor_2_head_stack = 
-      new Channel_extractor_mark4_implementation<UINT64>(reader, staPrms, debug_level);
+      new Channel_extractor_mark4_implementation<UINT64>(reader, staPrms, 
+        insert_random_headers_, debug_level);
   }
 }
 
@@ -132,11 +137,12 @@ template <class T>
 Channel_extractor_mark4_implementation<T>::
 Channel_extractor_mark4_implementation(Data_reader &reader, 
                                        StaP &staPrms, 
+                                       bool insert_random_headers_,
                                        DEBUG_LEVEL debug_level)
  : reader(reader),
    fan_out(staPrms.get_fo()), 
    n_bits_per_sample(staPrms.get_bps()),
-   insert_random_headers(staPrms.get_rndhdr()),
+   insert_random_headers(insert_random_headers_),
    curr_pos_in_block(0),
    TBR(staPrms.get_tbr()),
    debug_level(debug_level),

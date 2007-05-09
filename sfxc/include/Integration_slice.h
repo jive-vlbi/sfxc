@@ -55,7 +55,6 @@ class Integration_slice
     \pre startIS: start time of current integration slice in usec wrt 00:00
     **/
     bool correlate();
-    bool correlate(Timer &cd_tmr, Timer &cc_tmr, Timer &cx_tmr, Timer &dc_tmr);
     
     Data_writer &get_data_writer();
 

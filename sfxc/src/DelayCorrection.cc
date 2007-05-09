@@ -176,27 +176,6 @@ bool DelayCorrection::fill_segment()
   return true;
 }
 
-// fills the next segment to be processed by correlator core.
-bool DelayCorrection::fill_segment(Timer &cx_tmr, Timer &dc_tmr)
-{
-  //(re)fill Bufs when all data in Bufs is processed
-  if ( (BufPtr + n2fftcorr) > BufSize ) {
-    if (!fill_Bufs(cx_tmr,dc_tmr)) return false;
-    timePtr=timePtr+BufTime;
-    BufPtr=0;
-  }
-  //fill segm using delay corrected data in Bufs
-  for (int i = 0; i < nstations; i++){
-    for (int j = 0; j < n2fftcorr; j++){
-      segm[i][j] = Bufs[i][j+ BufPtr];
-    }
-  }
-  BufPtr=BufPtr+n2fftcorr;
-
-  return true;
-}
-
-
 
 // returns pointer to segment with delay corrected data.
 double **DelayCorrection::get_segment()
@@ -212,7 +191,6 @@ bool DelayCorrection::fill_Bufs()
 //  double Time; //time in micro seconds
   INT64  Time; //time in micro seconds
   double Cdel;
-  double Fdel; 
   double phi;
   double tmpR;
   double tmpI;
@@ -318,6 +296,28 @@ bool DelayCorrection::fill_Bufs()
       fftw_execute(planF2T);
       
 
+      Time = timePtr + (INT64)(jsegm*tmpC + n2fftDC/2*tmpB);
+      phi  = tmpA*delTbl[sn].calcDelay(Time, DelayTable::Fdel);
+      tmp1 = sin(phi);
+      tmp2 = cos(phi);
+
+      for (int jl=0;jl<n2fftDC;jl++) {
+
+        // 6b)apply normalization and multiply by 2.0
+        sls[jl][0] = 2.0*sls[jl][0] / sqrtN2fft;
+
+        // 7) fringe stopping
+        Bufs[sn][n2fftDC*jsegm+jl]=sls[jl][0]*tmp2-sls[jl][1]*tmp1;
+      }
+
+
+/*
+//TODO RHJO: original code, calculation of cos(phi) and sin(phi) per sample
+//           very time comsuming. cos(phi) and sin(phi) now calculated once
+//           per segment. Fringes a little lower but calculation now 24 sec
+//           in stead of 40 sec. 
+//           Discuss this change with Mark and Sergei.
+      double Fdel; 
       for (int jl=0;jl<n2fftDC;jl++) {
 
         // 6b)apply normalization and multiply by 2.0
@@ -332,147 +332,10 @@ bool DelayCorrection::fill_Bufs()
 
         Bufs[sn][n2fftDC*jsegm+jl]=sls[jl][0]*cos(phi)-sls[jl][1]*sin(phi);
       }
-      
+*/      
     
     }
     
-    //fill dcBufsPrev with part 2 and 3 from dcBufs.
-    //in other words: remember for filling the next Bufs
-    for (int i=0; i<2*BufSize; i++) 
-      dcBufPrev[sn][i] = dcBufs[sn][BufSize+i];
-
-  }
-
-  return true;
-}
-
-
-//Fills Bufs with delay corrected data. This function has to be called
-//every time all data in Bufs are processed.
-//
-//With Timers for channel axtraction and delay correction
-bool DelayCorrection::fill_Bufs(Timer &cx_tmr, Timer &dc_tmr)
-{
-//  double Time; //time in micro seconds
-  INT64  Time; //time in micro seconds
-  double Cdel;
-  double Fdel; 
-  double Phase;
-  double phi;
-  double tmpR;
-  double tmpI;
-  double sqrtN2fft = sqrt((double) n2fftDC);
-  double dfs;      
-  double FoffRatio;
-
-  int jshift; //address shift due to signal delay wrt Earth center
-  
-  for (int sn=0; sn<nstations; sn++){
-  
-    //fill part 1 and 2 of dcBufs with data from dcBufPrev
-    for (int i=0; i<2*BufSize; i++) dcBufs[sn][i]=dcBufPrev[sn][i];
-    
-    //fill part 3 of dcBufs with data from input channel (can be Mk4File)
-    for (int i=2*BufSize; i<3*BufSize; i++) {
-      if (df_counter[sn] == df_length[sn]) {
-        cx_tmr.start();
-        //fill data frame if data frame counter is at end of frame
-        int nBytes = fill_Mk4frame(sn,*data_reader[sn],data_frame,StaPrms[sn]);
-        cx_tmr.stop_accumulate();
-        if (nBytes <= 0) {
-          return false;
-        }
-        df_counter[sn] = 0;//reset FrameCounter for station sn
-      }
-      //fill remaining of dcBufs with data from Mk4file
-      dcBufs[sn][i]=data_frame[sn][df_counter[sn]];
-      df_counter[sn]++;
-    }
-
-    dc_tmr.start();    
-    //apply delay and phase corrections for all segments (n2fftDC long)
-    //in other words process data in dcBufs, output in Bufs
-    for (int jsegm=0; jsegm<Nsegm2DC; jsegm++) {
-
-
-      Time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000); //micro sec 
-      Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
-      
-      // 1)calculate the address shift due to time delay for the current segment
-      jshift = (INT64)(Cdel/tbs+0.5);
-      
-      // 2)apply the address shift when filling the complex sls array
-      for (int jl=0; jl<n2fftDC; jl++){
-        sls[jl][0] = dcBufs[sn][2*BufSize + jsegm*n2fftDC + jl + jshift];
-        sls[jl][1] = 0.0;
-      }
-
-      // 3) execute the complex to complex FFT, from Time to Frequency domain
-      //    input: sls. output spls
-
-      fftw_execute(planT2F);
-      
-      // 4a)apply normalization
-      for (int jl=0; jl<n2fftDC; jl++){//TODO RHJO replace upper limit by n2fftDC/2+1
-        spls[jl][0] = spls[jl][0] / sqrtN2fft;
-        spls[jl][1] = spls[jl][1] / sqrtN2fft;
-      }
-      
-      // 4b)multiply element 0 and n2fftDC/2 by 0.5
-      //    to avoid jumps at segment borders
-      spls[0][0]=0.5*spls[0][0];
-      spls[0][1]=0.5*spls[0][1];
-      spls[n2fftDC/2][0]=0.5*spls[n2fftDC/2][0];//Nyquist
-      spls[n2fftDC/2][1]=0.5*spls[n2fftDC/2][1];
-      
-      // 4c) zero the unused subband
-      for (int jl=n2fftDC/2+1;jl<n2fftDC;jl++){
-        spls[jl][0] = 0.0;
-        spls[jl][1] = 0.0;
-      }
-
-      
-      // 5a)calculate the fract bit shift (=phase corrections in freq domain)
-      Time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000 + n2fftDC/2*tbs*1000000);
-      Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
-      dfs  = Cdel/tbs - floor(Cdel/tbs + 0.5);
-      FoffRatio=0.5+foffset/bwfl;//TODO RHJO foffset=0 replace FoffRatio by 0.5
-
-      // 5b)apply phase correction in frequency range
-      for (int jf = 0; jf < Nf; jf++){
-        phi  = -2.0*M_PI*dfs*tbs*fs[jf] + FoffRatio*M_PI*jshift/ovrfl;
-        tmpR = spls[jf][0];
-        tmpI = spls[jf][1];
-        spls[jf][0] = tmpR*cos(phi)-tmpI*sin(phi);
-        spls[jf][1] = tmpR*sin(phi)+tmpI*cos(phi);
-      }
-      
-      // 6a)execute the complex to complex FFT, from Frequency to Time domain
-      //    input: spls. output sls
-      fftw_execute(planF2T);
-      
-      // 6b)apply normalization and multiply by 2.0
-      for (int jl=0; jl<n2fftDC; jl++){
-        sls[jl][0] = 2.0*sls[jl][0] / sqrtN2fft;
-        sls[jl][1] = 2.0*sls[jl][1] / sqrtN2fft;//not used
-      }
-
-      // 7)subtract dopplers and put real part in Bufs for the current segment
-      for (int jl=0;jl<n2fftDC;jl++) {
-
-        Time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000 + jl*tbs*1000000);
-        Fdel = delTbl[sn].calcDelay(Time, DelayTable::Fdel);
-        Phase=0.0; //TODO RHJO phase correction to be implemented later
-        phi  =-2.0*M_PI*Fdel*(skyfreq + startf + bwfl*0.5)+Phase;
-
-        Bufs[sn][n2fftDC*jsegm+jl]=sls[jl][0]*cos(phi)-sls[jl][1]*sin(phi);
-      }
-      
-    
-    }
-
-    dc_tmr.stop_accumulate();
-
     //fill dcBufsPrev with part 2 and 3 from dcBufs.
     //in other words: remember for filling the next Bufs
     for (int i=0; i<2*BufSize; i++) 

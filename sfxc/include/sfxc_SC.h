@@ -35,6 +35,7 @@ using namespace std;
 #include "Log_writer.h"
 #include "Data_writer.h"
 #include "Integration_slice.h"
+#include "genFunctions.h"
 
 #include <Data_reader_file.h>
 #include <Data_writer_file.h>
