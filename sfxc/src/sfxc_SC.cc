@@ -11,6 +11,7 @@
 #include "sfxc_SC.h"
 #include <Channel_extractor.h>
 #include <Channel_extractor_mark4.h>
+#include <Bits_to_float_converter.h>
 
 int main(int argc, char *argv[])
 {
@@ -149,8 +150,11 @@ int main(int argc, char *argv[])
     //initialise readers to proper position
     result &= (ch_extractor->goto_time(startIS) == 0);
 
+    Bits_to_float_converter *sample_reader = new Bits_to_float_converter();
+    sample_reader->set_bits_per_sample(StaPrms[sn].get_bps());
+    sample_reader->set_channel_extractor(ch_extractor);
     
-    IntSlc.set_data_reader(sn,ch_extractor);//pass the data reader
+    IntSlc.set_sample_reader(sn,sample_reader);//pass the data reader
     result &= IntSlc.init_reader(sn,startIS);
 
     //display and check mk4file header info for start time set in ccf

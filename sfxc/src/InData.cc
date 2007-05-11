@@ -132,40 +132,13 @@ double sampleTableM[2] = {-1., 1.};
 //*****************************************************************************
 //fill Mk4frame if frame counter at end of array
 //*****************************************************************************
-int fill_Mk4frame(int sn, Data_reader &reader, double **Mk4frame, StaP &StaPrms)
+int fill_Mk4frame(int sn, Bits_to_float_converter &reader, double **Mk4frame, StaP &StaPrms)
 {
-  // #samples/frame * #bits/sample (=fanout*bits/sample) / 8 (#bits/byte)
-  size_t nBytes = (frameMk4 * StaPrms.get_fo() * StaPrms.get_bps()) / 8;
-  char buffer[nBytes];
+  size_t nBytes = frameMk4 * StaPrms.get_fo();
   
-  size_t readstatus = reader.get_bytes(nBytes, buffer);
-  if (nBytes != readstatus) return 1;
+  size_t readstatus = reader.get_data(nBytes, Mk4frame[sn]);
   
-  int sample = 0;
-  if (StaPrms.get_bps() == 2) {
-    for (size_t byte=0; byte<nBytes; byte++) {
-      char ch = buffer[byte];
-      for (int bit=0; bit<4; bit++) {
-        Mk4frame[sn][sample] = sampleTableMS[ch&3];
-        ch = (ch>>2);
-        sample++;
-      } 
-    }
-  } else {
-    assert(StaPrms.get_bps() == 1);
-    for (size_t byte=0; byte<nBytes; byte++) {
-      char ch = buffer[byte];
-      for (int bit=0; bit<8; bit++) {
-        Mk4frame[sn][sample] = sampleTableM[ch&1];
-        ch = (ch>>1);
-        sample++;
-      } 
-    }
-  }
-
-  if (nBytes != readstatus) return 0;
-
-  return readstatus*8/StaPrms.get_bps();
+  return readstatus;
 }
 
 

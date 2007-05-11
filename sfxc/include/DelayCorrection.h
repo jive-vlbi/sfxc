@@ -31,7 +31,7 @@ using namespace std;
 #include "staPrms.h"
 #include "InData.h"
 #include "delayTable.h"
-#include <Data_reader_file.h>
+#include <Bits_to_float_converter.h>
 #include <Log_writer.h>
 
 
@@ -52,7 +52,7 @@ class DelayCorrection
     void set_parameters(GenP &GenPrms, StaP* StaPrms);
 
     /** **/    
-    void set_data_reader(int sn, Data_reader *data_reader_); 
+    void set_sample_reader(int sn, Bits_to_float_converter *data_reader_); 
 
     /** Go to desired position in input reader.**/
     bool init_reader(int sn, INT64 startIS); 
@@ -116,7 +116,7 @@ class DelayCorrection
     INT32  *df_counter;   //data frame counter
     
     vector<DelayTable>    delTbl;
-    vector<Data_reader *> data_reader;
+    vector<Bits_to_float_converter *> sample_reader;
 
 };
 #endif //DELAYCORRECTION_H

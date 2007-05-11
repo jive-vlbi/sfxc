@@ -21,7 +21,8 @@ OBJ=runPrms.cc genPrms.cc staPrms.cc \
 	Log_writer_file.cc \
   Integration_slice.cc CorrelationCore.cc DelayCorrection.cc \
   Timer.cc \
-  Channel_extractor_mark4.cc
+  Channel_extractor_mark4.cc \
+  Bits_to_float_converter.cc
 
 
 sfxc_SOURCES = $(OBJ) sfxc.cc \
@@ -35,7 +36,8 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   Multiple_data_readers_controller.cc \
   Multiple_data_writers_controller.cc \
   Single_data_writer_controller.cc \
-  Single_data_reader_controller.cc
+  Single_data_reader_controller.cc \
+  Bits_to_float_converter.cc
 
 sfxc_SC_SOURCES = $(OBJ) sfxc_SC.cc
 
