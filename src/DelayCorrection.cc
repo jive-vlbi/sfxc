@@ -75,7 +75,7 @@ void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
 
   //set vector sizes
   delTbl.resize(nstations);//delay tables 
-  data_reader.resize(nstations,NULL);//data_readers
+  sample_reader.resize(nstations,NULL);//sample_readers
 
 
   data_frame = new double *[nstations];
@@ -122,9 +122,9 @@ DelayCorrection::~DelayCorrection()
 
 
 //set local data reader parameter
-void DelayCorrection::set_data_reader(int sn, Data_reader *data_reader_)
+void DelayCorrection::set_sample_reader(int sn, Bits_to_float_converter *sample_reader_)
 {
-  data_reader[sn]=data_reader_;
+  sample_reader[sn]=sample_reader_;
 }
 
 void DelayCorrection::set_start_time(INT64 us_start) {
@@ -144,7 +144,7 @@ bool DelayCorrection::init_reader(int sn, INT64 startIS)
       //fill data_frame if data frame counter at end of frame
       //TODO RHJO implement data type check for other data type
 
-      int status = fill_Mk4frame(sn,*data_reader[sn],data_frame, StaPrms[sn]);
+      int status = fill_Mk4frame(sn,*sample_reader[sn],data_frame, StaPrms[sn]);
       if (status < 0) return false;
       df_counter[sn] = 0;
     }
@@ -216,7 +216,7 @@ bool DelayCorrection::fill_Bufs()
     for (int i=2*BufSize; i<3*BufSize; i++) {
       if (df_counter[sn] == df_length[sn]) {
         //fill data frame if data frame counter is at end of frame
-        int nBytes = fill_Mk4frame(sn,*data_reader[sn],data_frame,StaPrms[sn]);
+        int nBytes = fill_Mk4frame(sn,*sample_reader[sn],data_frame,StaPrms[sn]);
         if (nBytes <= 0) {
           return false;
         }
@@ -296,6 +296,29 @@ bool DelayCorrection::fill_Bufs()
       fftw_execute(planF2T);
       
 
+
+      double Fdel; 
+      for (int jl=0;jl<n2fftDC;jl++) {
+        // 6b)apply normalization and multiply by 2.0
+        sls[jl][0] = 2.0*sls[jl][0] / sqrtN2fft;
+
+        // 7)subtract dopplers and put real part in Bufs for the current segment
+        //Time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000 + jl*tbs*1000000);
+        Time = timePtr + (INT64)(jsegm*tmpC + jl*tmpB);
+        Fdel = delTbl[sn].calcDelay(Time, DelayTable::Fdel);
+        //phi  =-2.0*M_PI*(skyfreq + startf + bwfl*0.5)*Fdel;
+        phi  = tmpA*Fdel;
+
+        Bufs[sn][n2fftDC*jsegm+jl]=sls[jl][0]*cos(phi)-sls[jl][1]*sin(phi);
+      }
+
+
+/*
+//TODO RHJO: optimized code, calculation of cos(phi) and sin(phi) per sample
+//           very time comsuming. cos(phi) and sin(phi) now calculated once
+//           per segment. Fringes a little lower but calculation now 24 sec
+//           in stead of 40 sec. 
+//           Discuss this change with Mark and Sergei.
       Time = timePtr + (INT64)(jsegm*tmpC + n2fftDC/2*tmpB);
       phi  = tmpA*delTbl[sn].calcDelay(Time, DelayTable::Fdel);
       tmp1 = sin(phi);
@@ -308,29 +331,6 @@ bool DelayCorrection::fill_Bufs()
 
         // 7) fringe stopping
         Bufs[sn][n2fftDC*jsegm+jl]=sls[jl][0]*tmp2-sls[jl][1]*tmp1;
-      }
-
-
-/*
-//TODO RHJO: original code, calculation of cos(phi) and sin(phi) per sample
-//           very time comsuming. cos(phi) and sin(phi) now calculated once
-//           per segment. Fringes a little lower but calculation now 24 sec
-//           in stead of 40 sec. 
-//           Discuss this change with Mark and Sergei.
-      double Fdel; 
-      for (int jl=0;jl<n2fftDC;jl++) {
-
-        // 6b)apply normalization and multiply by 2.0
-        sls[jl][0] = 2.0*sls[jl][0] / sqrtN2fft;
-
-        // 7)subtract dopplers and put real part in Bufs for the current segment
-        //Time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000 + jl*tbs*1000000);
-        Time = timePtr + (INT64)(jsegm*tmpC + jl*tmpB);
-        Fdel = delTbl[sn].calcDelay(Time, DelayTable::Fdel);
-        //phi  =-2.0*M_PI*(skyfreq + startf + bwfl*0.5)*Fdel;
-        phi  = tmpA*Fdel;
-
-        Bufs[sn][n2fftDC*jsegm+jl]=sls[jl][0]*cos(phi)-sls[jl][1]*sin(phi);
       }
 */      
     

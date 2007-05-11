@@ -30,6 +30,9 @@ public:
   INT64 get_current_time();
 
   size_t do_get_bytes(size_t nBytes, char *buff);
+
+  size_t get_samples(size_t nSamples, double *bit_samples, 
+                     const double *val_array);
   
   bool eof();
 
@@ -60,7 +63,10 @@ private:
   /// Insertion of random bits for the headers, to remove a false signal
   bool insert_random_headers; 
 
+  /// The data
   T block[frameMk4];
+  
+  /// Read pointer in the data (an index)
   int curr_pos_in_block;
   
   Mark4_header<T> mark4_header;
@@ -113,13 +119,25 @@ Channel_extractor_mark4::get_current_time() {
 }
 
 size_t 
+Channel_extractor_mark4::
+get_samples(size_t nSamples, double *bit_samples, const double *val_array) {
+  if (n_head_stacks == 1) {
+    return 
+      ch_extractor_1_head_stack->get_samples(nSamples, bit_samples, val_array);
+  } else {
+    return 
+      ch_extractor_2_head_stack->get_samples(nSamples, bit_samples, val_array);
+  }
+}
+
+size_t 
 Channel_extractor_mark4::do_get_bytes(size_t nBytes, char *buff) {
   if (n_head_stacks == 1) {
     return ch_extractor_1_head_stack->do_get_bytes(nBytes, buff);
   } else {
     return ch_extractor_2_head_stack->do_get_bytes(nBytes, buff);
   }
-}
+  }
 
 bool Channel_extractor_mark4::eof() {
   if (n_head_stacks == 1) {
@@ -244,13 +262,12 @@ do_get_bytes(size_t nOutputBytes, char *output_buffer) {
     // Position in the output byte:
     char sample;
     for (int sample_pos=0; sample_pos<8;) {
-      for (typename std::vector<int>::iterator it = tracks.begin();
-           it != tracks.end(); it++) {
+      for (size_t track_it=0; track_it<tracks.size(); track_it++) {
         //get sign and magnitude bit for all channels
         if (insert_random_headers && (curr_pos_in_block < 160)) {
           sample = irbit2();
         } else {
-          sample = ( block[curr_pos_in_block]>>(*it) ) & 1;
+          sample = ( block[curr_pos_in_block]>>tracks[track_it] ) & 1;
         }
         // insert the sample into the output buffer
         output_buffer[bytes_processed] |= (sample << sample_pos);
@@ -267,6 +284,48 @@ do_get_bytes(size_t nOutputBytes, char *output_buffer) {
               
   return bytes_processed;
 }
+
+template <class T>
+size_t
+Channel_extractor_mark4_implementation<T>::
+get_samples(size_t nSamples, double *samples, const double *val_array) {
+  assert(nSamples%(fan_out) == 0);
+
+  size_t samples_processed = 0;
+  
+  if (n_bits_per_sample == 1) {
+    // Not yet implemented
+    assert (false);
+  } else {
+    while (samples_processed < nSamples) {
+      // skip every second position!
+      int bit_sample;
+      for (size_t track_it=0; track_it<tracks.size(); track_it+=2) {
+        //get sign and magnitude bit for all channels
+        // we need to multiply with 2 since tracks[track_it+1] can be zero
+        // and a >> of a negative value does not work
+        if ((curr_pos_in_block < 160) && insert_random_headers) {
+          bit_sample = irbit2() + 2*irbit2();
+        } else {
+          // set sign and magnitude:
+          bit_sample = 
+            (( block[curr_pos_in_block]>> tracks[track_it] ) & 1)
+            + 
+            (( block[curr_pos_in_block]>>tracks[track_it+1] ) & 1)*2;
+        }
+        samples[samples_processed] = val_array[bit_sample];
+//        std::cout << samples[samples_processed] << std::endl;
+        samples_processed++;
+      }
+      if (!increase_current_position_in_block()) {
+        // End of data
+        return samples_processed;
+      }
+    }
+  }  
+              
+  return samples_processed;
+}  
   
 template <class T>
 bool
@@ -282,7 +341,6 @@ increase_current_position_in_block() {
     }
     curr_pos_in_block = 0;
   }
-  assert(curr_pos_in_block < frameMk4);
   return true;
 }
   

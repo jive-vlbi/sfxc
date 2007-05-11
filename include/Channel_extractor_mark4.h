@@ -40,6 +40,10 @@ public:
   int goto_time(INT64 time);
   INT64 get_current_time();
 
+  /** Returns a number of samples, one sample per character. **/
+  size_t get_samples(size_t nSamples, double *bit_samples, 
+                     const double *val_array);
+
   bool eof();
 private:
   size_t do_get_bytes(size_t nBytes, char *buff);

@@ -36,7 +36,7 @@ class Integration_slice
     bool set_delay_table(int sn, DelayTable &delay_table);
 
     /** **/
-    void set_data_reader(int sn, Data_reader *data_reader);
+    void set_sample_reader(int sn, Bits_to_float_converter *sample_reader);
 
     /** **/
     void set_data_writer(Data_writer *data_writer);
