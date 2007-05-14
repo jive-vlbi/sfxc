@@ -30,4 +30,4 @@ analyse_mark4_file_SOURCES = \
   ../src/Log_writer.cc ../src/Log_writer_cout.cc \
   ../src/Data_reader.cc ../src/Data_reader_file.cc \
   ../src/Channel_extractor_mark4.cc \
-  ../src/utils.cc
+  ../src/utils.cc ../src/Bits_to_float_converter.cc
