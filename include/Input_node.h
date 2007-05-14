@@ -87,8 +87,8 @@ public:
   void remove_from_active_list(int stream);
 
   // Callback functions:
-  void hook_added_data_reader(int reader);
-  void hook_added_data_writer(int writer);
+  void hook_added_data_reader(size_t reader);
+  void hook_added_data_writer(size_t writer);
 
 private:
   // Stop a stream in active_list

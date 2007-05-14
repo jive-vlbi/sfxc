@@ -36,8 +36,7 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   Multiple_data_readers_controller.cc \
   Multiple_data_writers_controller.cc \
   Single_data_writer_controller.cc \
-  Single_data_reader_controller.cc \
-  Bits_to_float_converter.cc
+  Single_data_reader_controller.cc
 
 sfxc_SC_SOURCES = $(OBJ) sfxc_SC.cc
 

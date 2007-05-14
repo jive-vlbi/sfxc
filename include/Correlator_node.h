@@ -100,9 +100,9 @@ public:
   void start_correlating(INT64 start, INT64 duration);
 
   /// Callback function for adding a data_reader:
-  void hook_added_data_reader(int reader);
+  void hook_added_data_reader(size_t reader);
   /// Callback function for adding a data_writer:
-  void hook_added_data_writer(int writer);
+  void hook_added_data_writer(size_t writer);
 
   void add_delay_table(int sn, DelayTable &table);
     
@@ -126,10 +126,10 @@ private:
   Correlator_node_controller       correlator_node_ctrl;
   Multiple_data_readers_controller data_readers_ctrl;
   Single_data_writer_controller    data_writer_ctrl;
+  std::vector<Channel_extractor *> channel_extractors;
 
   // The actual correlator code:
   Integration_slice integration_slice;
-  //Data_writer *writer;
   
   // State variables:
   CORRELATE_STEPS correlate_state;

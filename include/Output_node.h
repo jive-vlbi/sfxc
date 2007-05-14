@@ -104,8 +104,8 @@ public:
   void set_number_of_time_slices(int n_time_slices);
 
   // Callback functions:
-  void hook_added_data_reader(int reader);
-  void hook_added_data_writer(int writer);
+  void hook_added_data_reader(size_t reader);
+  void hook_added_data_writer(size_t writer);
 
 private:
   bool data_available();

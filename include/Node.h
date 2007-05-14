@@ -85,11 +85,11 @@ public:
   /** Callback function after adding a data_reader to the input streams. 
    * Reader = 0 for a Single_data_reader_controller
    **/
-  virtual void hook_added_data_reader(int reader) = 0;
+  virtual void hook_added_data_reader(size_t reader) = 0;
   /** Callback function after adding a data_reader to the input streams.
    * Reader = 0 for a Single_data_reader_controller
    **/
-  virtual void hook_added_data_writer(int writer) = 0;
+  virtual void hook_added_data_writer(size_t writer) = 0;
  
 private:
   int rank;
