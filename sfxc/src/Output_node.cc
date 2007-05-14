@@ -183,21 +183,21 @@ bool Output_node::data_available() {
   return !input_streams_order.empty();
 }
 
-void Output_node::hook_added_data_reader(int reader) {
+void Output_node::hook_added_data_reader(size_t reader) {
   // Create an output buffer:
   assert(data_readers_ctrl.get_buffer(reader) == NULL);
   Buffer *new_buffer = new Queue_buffer<value_type>();
   data_readers_ctrl.set_buffer(reader, new_buffer);
   
   // Create the data_stream:
-  if (input_streams.size() <= (size_t)reader) {
+  if (input_streams.size() <= reader) {
     input_streams.resize(reader+1, NULL);
   }
   assert(input_streams[reader] == NULL);
   input_streams[reader] = new Input_stream(new Data_reader_buffer(new_buffer));
 }
 
-void Output_node::hook_added_data_writer(int writer) {
+void Output_node::hook_added_data_writer(size_t writer) {
 }
 
 void 

@@ -68,6 +68,7 @@ MPI_Transfer::send_general_parameters(int rank) {
   MPI_Pack(&GenPrms.ovrlp, 1, MPI_FLOAT, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&GenPrms.time2avg, 1, MPI_FLOAT, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&GenPrms.pad, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&GenPrms.rndhdr, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   
   MPI_Pack(&GenPrms.usStart, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
 
@@ -92,8 +93,6 @@ MPI_Transfer::send_general_parameters(int rank) {
     MPI_Pack(&StaPrms[station].synhs2, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&StaPrms[station].mod, 1, MPI_INT32, 
-             buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&StaPrms[station].rndhdr, 1, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&StaPrms[station].signBS, fomax, MPI_INT32, 
              buffer, size, &position, MPI_COMM_WORLD);
@@ -161,6 +160,9 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
   MPI_Unpack(buffer, size, &position, &GenPrms.time2avg, 1, MPI_FLOAT, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.pad, 1, MPI_INT32, MPI_COMM_WORLD);
 
+  MPI_Unpack(buffer, size, &position, &GenPrms.rndhdr, 1, MPI_INT32, 
+             MPI_COMM_WORLD);
+
 
   MPI_Unpack(buffer, size, &position, &GenPrms.usStart, 1, MPI_INT64, MPI_COMM_WORLD);
   
@@ -184,8 +186,6 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
     MPI_Unpack(buffer, size, &position, &StaPrms[station].synhs2, 1, MPI_INT32, 
              MPI_COMM_WORLD);
     MPI_Unpack(buffer, size, &position, &StaPrms[station].mod, 1, MPI_INT32, 
-             MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &StaPrms[station].rndhdr, 1, MPI_INT32, 
              MPI_COMM_WORLD);
     MPI_Unpack(buffer, size, &position, &StaPrms[station].signBS, fomax, MPI_INT32, 
              MPI_COMM_WORLD);

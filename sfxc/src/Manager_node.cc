@@ -335,10 +335,10 @@ int Manager_node::send_control_parameters_to_controller_node(int node) {
 }
 
 
-void Manager_node::hook_added_data_reader(int reader) {
+void Manager_node::hook_added_data_reader(size_t reader) {
 }
 
-void Manager_node::hook_added_data_writer(int writer) {
+void Manager_node::hook_added_data_writer(size_t writer) {
 }
 
 void Manager_node::set_correlating_state(int node, CORRELATING_STATE state) {

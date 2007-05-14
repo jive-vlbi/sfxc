@@ -224,8 +224,8 @@ void Input_node::stop_stream(const std::list<int>::iterator &stream_it) {
   active_list.erase(it_del);
 }
 
-void Input_node::hook_added_data_reader(int reader) {
+void Input_node::hook_added_data_reader(size_t reader) {
 }
 
-void Input_node::hook_added_data_writer(int writer) {
+void Input_node::hook_added_data_writer(size_t writer) {
 }

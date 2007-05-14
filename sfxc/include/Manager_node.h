@@ -56,8 +56,8 @@ public:
   int &get_new_slice_number() { return ++slicenr; }
   
   // Callback functions:
-  void hook_added_data_reader(int reader);
-  void hook_added_data_writer(int writer);
+  void hook_added_data_reader(size_t reader);
+  void hook_added_data_writer(size_t writer);
   
   /// Different states a correlator node can have
   enum CORRELATING_STATE {

@@ -40,8 +40,8 @@ public:
   void start();
 
   // Callback functions:
-  void hook_added_data_reader(int reader);
-  void hook_added_data_writer(int writer);
+  void hook_added_data_reader(size_t reader);
+  void hook_added_data_writer(size_t writer);
 
 private:
   Log_node_controller log_node_ctrl;

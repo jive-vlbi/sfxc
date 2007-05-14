@@ -12,6 +12,7 @@
 #include "Data_reader_buffer.h"
 #include "Data_writer_buffer.h"
 #include "InData.h"
+#include <Channel_extractor_mark4.h>
 
 Correlator_node::Correlator_node(int rank, int nr_corr_node, int buff_size)
  : Node(rank),
@@ -158,11 +159,23 @@ void Correlator_node::set_parameters(RunP &runPrms, GenP &genPrms, StaP *staPrms
 }
 
 
-void Correlator_node::hook_added_data_reader(int i) {
-  get_integration_slice().set_data_reader(i,data_readers_ctrl.get_data_reader(i));
+void Correlator_node::hook_added_data_reader(size_t stream_nr) {
+  if (channel_extractors.size() <= stream_nr) {
+    channel_extractors.resize(stream_nr+1, NULL);
+  }
+  assert(channel_extractors[stream_nr] == NULL);
+  channel_extractors[stream_nr] = 
+    new Channel_extractor_mark4(*data_readers_ctrl.get_data_reader(stream_nr), 
+                                *StaPrms, GenPrms.get_rndhdr());
+
+    Bits_to_float_converter *sample_reader = new Bits_to_float_converter();
+    sample_reader->set_bits_per_sample(StaPrms->get_bps());
+    sample_reader->set_channel_extractor(channel_extractors[stream_nr]);
+    
+    get_integration_slice().set_sample_reader(stream_nr,sample_reader);
 }
 
-void Correlator_node::hook_added_data_writer(int i) {
+void Correlator_node::hook_added_data_writer(size_t i) {
   assert(i == 0);
 
   get_integration_slice().set_data_writer(data_writer_ctrl.get_data_writer(i));
@@ -178,6 +191,8 @@ void Correlator_node::set_slice_number(int sliceNr_) {
 
 void *Correlator_node::start_init_reader(void * self_) {
   Init_reader_struct *ir_struct = static_cast<Init_reader_struct *>(self_);
-  ir_struct->corr_node->get_integration_slice().init_reader(ir_struct->sn,ir_struct->startIS);
+  Correlator_node *node = ir_struct->corr_node;
+  node->channel_extractors[ir_struct->sn]->goto_time(ir_struct->startIS);
+  node->get_integration_slice().init_reader(ir_struct->sn,ir_struct->startIS);
   return NULL;
 }
