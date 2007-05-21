@@ -45,9 +45,9 @@ bool Integration_slice::set_delay_table(int i, DelayTable &delay_table)
 
 
 //pass the data reader
-void Integration_slice::set_data_reader(int sn, Data_reader *data_reader)
+void Integration_slice::set_sample_reader(int sn, Bits_to_float_converter *sample_reader)
 {
-//  dc.set_data_reader(sn,data_reader);
+  dc.set_sample_reader(sn, sample_reader);
 }
 
 

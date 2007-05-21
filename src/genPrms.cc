@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 //includes for system calls
 #include <sys/types.h>
@@ -80,6 +81,8 @@ float GenP::get_time2avg()   const { return time2avg;}
 INT64 GenP::get_usTime2Avg() const { return (INT64)(time2avg*1000000);}
 int   GenP::get_pad()        const { return pad;}
 
+int   GenP::get_sideband()   const { return sideband;}
+
 
 INT64 GenP::get_usStart()  const {  return usStart;}
 
@@ -123,6 +126,9 @@ GenP::GenP()
   ovrlp     = 0.0;
   time2avg  = 0.5;
   pad       = 2;
+  
+  sideband = 0;
+  
 }
 
 
@@ -169,6 +175,14 @@ int GenP::parse_ctrlFile(char *ctrlFile, Log_writer&log_writer)
       if (strcmp(key,"LOGFILE") == 0)    strcpy(logname,val);
       if (strcmp(key,"CORFILE") == 0)    strcpy(corname,val);
       if (strcmp(key,"START") == 0)      set_start(val);
+      if ( strcmp(key,"SIDEBAND") == 0 ) {
+        if ( strcmp(val,"L") == 0 ) {
+          sideband = -1;
+        } else {
+          assert(strcmp(val,"U") == 0);
+          sideband = 1;
+        }
+      }
       
       retval = retval + getLongVal(key,val,"RNDHDR",rndhdr, log_writer);
       retval = retval + getLongVal(key,val,"DURATION",duration, log_writer);
@@ -344,6 +358,12 @@ int GenP::check_params(Log_writer &log_writer) const
   
   }
 
+  //check if the sideband is set
+  if( sideband == 0 ) {
+    cerr << "Sideband not set\n";
+    retval=-1;
+  }
+  
   return retval;
 
 }

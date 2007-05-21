@@ -109,6 +109,8 @@ class GenP
      **/
     int   get_pad() const;
 
+    int get_sideband() const;
+
     /** Get the start time in microseconds
         from the beginning of the day 00:00. **/
     INT64 get_usStart() const;
@@ -186,6 +188,8 @@ class GenP
     int    pad;        //padding with zeros in correlation
 
     INT64  usStart;    //start time in micro seconds without year and day
+
+    int sideband;
 
 //TODO RHJO 14-02-2007 check which are depricated    
 //    INT64 usStop;     //stop time in micro seconds without year
