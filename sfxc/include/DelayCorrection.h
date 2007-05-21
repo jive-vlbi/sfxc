@@ -118,5 +118,6 @@ class DelayCorrection
     vector<DelayTable>    delTbl;
     vector<Bits_to_float_converter *> sample_reader;
 
+  int sideband;
 };
 #endif //DELAYCORRECTION_H
