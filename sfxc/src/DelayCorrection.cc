@@ -36,11 +36,14 @@ void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
   tbs         = 1.0/SR;
   Nsegm2DC    = BufSize/n2fftDC;
 
+  sideband    = GenPrms.get_sideband();
+
   Nf          = n2fftDC/2+1; //number of frequencies
   double dfr  = 1.0/(n2fftDC*tbs); // delta frequency
   fs          = new double[Nf]; // frequency array
+
   for (int jf=0; jf<Nf; jf++) //frequency scale in the segment
-    fs[jf]=jf*dfr-0.5*GenPrms.get_bwfl()-GenPrms.get_foffset();
+    fs[jf]=jf*dfr-0.5*sideband*GenPrms.get_bwfl()-GenPrms.get_foffset();
 
   foffset     = GenPrms.get_foffset();
   bwfl        = GenPrms.get_bwfl();
@@ -49,7 +52,7 @@ void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
   skyfreq     = GenPrms.get_skyfreq();
 
   n2fftcorr   = GenPrms.get_n2fft();
-
+  
   segm = new double*[nstations];
   Bufs = new double*[nstations];
   dcBufs = new double*[nstations];
@@ -282,6 +285,7 @@ bool DelayCorrection::fill_Bufs()
       // 5b)apply phase correction in frequency range
       for (int jf = 0; jf < Nf; jf++){
         //phi  = -2.0*M_PI*dfs*tbs*fs[jf] + 0.5*M_PI*jshift/ovrfl;
+        
         phi  = tmp1*fs[jf] + tmp2;
         tmp3=cos(phi);
         tmp4=sin(phi);
@@ -301,13 +305,13 @@ bool DelayCorrection::fill_Bufs()
       for (int jl=0;jl<n2fftDC;jl++) {
         // 6b)apply normalization and multiply by 2.0
         sls[jl][0] = 2.0*sls[jl][0] / sqrtN2fft;
-
+        
         // 7)subtract dopplers and put real part in Bufs for the current segment
         //Time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000 + jl*tbs*1000000);
         Time = timePtr + (INT64)(jsegm*tmpC + jl*tmpB);
         Fdel = delTbl[sn].calcDelay(Time, DelayTable::Fdel);
-        //phi  =-2.0*M_PI*(skyfreq + startf + bwfl*0.5)*Fdel;
-        phi  = tmpA*Fdel;
+        
+        phi  = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*Fdel;
 
         Bufs[sn][n2fftDC*jsegm+jl]=sls[jl][0]*cos(phi)-sls[jl][1]*sin(phi);
       }
