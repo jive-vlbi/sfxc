@@ -210,6 +210,9 @@ bool DelayCorrection::fill_Bufs()
   tmpB = tbs*1000000;
   tmpC = n2fftDC*tmpB;
 
+  INT64 prev_time_for_fdel=-1;             // Time is always positive
+  double prev_cos_fdel=0, prev_sin_fdel=1; // Initialise to remove warning
+  
   for (int sn=0; sn<nstations; sn++){
   
     //fill part 1 and 2 of dcBufs with data from dcBufPrev
@@ -309,11 +312,18 @@ bool DelayCorrection::fill_Bufs()
         // 7)subtract dopplers and put real part in Bufs for the current segment
         //Time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000 + jl*tbs*1000000);
         Time = timePtr + (INT64)(jsegm*tmpC + jl*tmpB);
-        Fdel = delTbl[sn].calcDelay(Time, DelayTable::Fdel);
-        
-        phi  = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*Fdel;
+        if (Time != prev_time_for_fdel) {
+          // NGHK: CHECK: The precision in Time is not sufficient to compute  
+          // the exact time delay for each sample. The precision is in us 
+          // (1e-6), whereas the sample rate can be 16MHz (16e6). 
+          Fdel = delTbl[sn].calcDelay(Time, DelayTable::Fdel);
+          phi  = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*Fdel;
+          prev_time_for_fdel = Time;
+          prev_cos_fdel = cos(phi);
+          prev_sin_fdel = sin(phi);
+        }
 
-        Bufs[sn][n2fftDC*jsegm+jl]=sls[jl][0]*cos(phi)-sls[jl][1]*sin(phi);
+        Bufs[sn][n2fftDC*jsegm+jl]=sls[jl][0]*prev_cos_fdel-sls[jl][1]*prev_sin_fdel;
       }
 
 
