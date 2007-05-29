@@ -5,7 +5,6 @@ Control files
   maybe in a separate application
 - Set random generator with a well defined seed in the control file
   option: fixed seeding and runtime based seeding
-- investigate the option to store the control files in XML format
 - mark files as "file:///path/filename" in order to be able to use
   "tcp://host:port" and "mark5://host:port" later as well
 - make simple functional design for ccf editor. This editor is part
@@ -14,7 +13,6 @@ Control files
 - Why no random headers by default?
 - The name of the logfile is read by GenPrms, 
   but reading GenPrms requires a log_writer ... which requires the filename
-- RNDHDR: not per station, but for all stations
 - JSON 
 
 Correlation:
@@ -27,7 +25,6 @@ Correlation:
   - FFTW in place,
   - std::vectors instead of arrays with fixed length
   - std::string instead of char * to ease the copy constructor
-- move header_map_mk4_cx.txt to a header file
 - write result from correlator as complex floats in CPF (correlator product file)
 
 Multi core:
@@ -44,8 +41,6 @@ Multi core:
 Functionality:
 - add overlapping in correlation [RHJO]
 - add filtering before delay correction [RHJO]
-- Convertor: from correlator product to Measurement Set format. [RHJO]
-  Develop separate application or integrate whith correlator software
 
 Documentation
 - high level design document, describing what happens and how
@@ -77,8 +72,6 @@ Future (possible) developments and design issues
   (channel extraction, delay correction, correlation). Only one channel is
   processed others are neglected. Analyse other architectures. Where should 
   the conversion from bit to float take place? 
-- Calculation of the delay model: make a separate easy to use application
-  or integrate it with sfxc. Consult Mark K when starting.
 
 Questions:
 - Why are parabCoefs and getDelayLine not members of DelayTable?
@@ -97,22 +90,7 @@ Copy action item to this list and describe status (date, who, what)
   - high level documentation document, describing what happens and how
   it happens in the sw correlator. See also deliverable DJ 1.4
   in DoW. [RHJO]
-4. [RHJO, 22-11-2007]
-   - investigate to store the control files in XML format. Started with xml 
-     design. Stop gap job, low priority. See e-mail exchange with Dominik from
-     PSNC
-5. [RHJO, 22-11-2007]
-   - Convertor: from correlator product (CP)to FITS format. After consulting 
-   Harro we should convert CP to measurement sets (MS). Advantages:
-   a) more flexible way of data storing
-   b) Harro has sw able to write MS he only needs to know the CP format and 
-      write appropriate CP reading sw
-   [13-03-2007]
    Harro started working on a CPF to MS convertor
-7. [RHJO, 26-02-2007] 
-   - Remove global variables: These have been removed in the new correlator
-     classes, but in some places they have to be maintained until old code 
-     is depricated
 
      
 
@@ -168,9 +146,22 @@ Move action item from TODO list to DONE list
   - Why do you use startTS instead of increasing the start time and decreasing the duration?
   - Why does CorrelateTimeSlice() get readers and StaPrms?
 
+- [RHJO, 09-05-2007] RNDHDR: not per station, but for all stations
+
+- [RHJO, 15-04-2007 ] Harro VerKouter has enabled j2ms2 to handle sfxc_SC 
+  output format
+  Convertor: from correlator product to Measurement Set format. [RHJO]
+  Develop separate application or integrate whith correlator software
 
 
+- [RHJO, april 2007] delmo generates delay tables
+  Calculation of the delay model: make a separate easy to use application
+  or integrate it with sfxc. Consult Mark K when starting.
 
+- [RHJO, april 2007] in the PSNC-JIVE meeting it was deciced to stay with the
+  keyword:value principle. However to stucture  the ccf JSON is considered as
+  an option.
+  investigate the option to store the control files in XML format
 
 - [NGHK, 17-01-2007] Log_writer and Log_node for writing logging information
 - [NGHK, 16-01-2007] Write doxygen code for the control parameters
@@ -179,3 +170,4 @@ Move action item from TODO list to DONE list
 - [NGHK, 12-01-2007] switch to svn
 - [NGHK, 11-01-2007] Send messages for control parameters (MPI version).
 - [NGHK, 11-01-2007] Create a utility directory (c2f, etc.)
+- [NGHK, april 2007] move header_map_mk4_cx.txt to a header file
