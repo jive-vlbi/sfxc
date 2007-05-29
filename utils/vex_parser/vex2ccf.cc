@@ -56,9 +56,9 @@ long ceps(string timeString, int ref_year);
 int create_ccf (string vexStr, VexPlus &VP, int ModeChI, int *StatChI, int ScanChI, 
    int n_stat_ccf, int ChanChI, int ChanChIop);
 
-void write_station_block
+void write_station_blocks
   (ofstream &cc_file, VexPlus &VP, int ModeChI, int *StatChI, int ScanChI, 
-  int n_stat_ccf, string LFT, int block_nr);
+  int n_stat_ccf, string LFT, string LFTop, int OtherPolarisation);
 
 int create_dcf (string vexStr, VexPlus &VP, int ModeChI, int *StatChI, int ScanChI, 
    int n_stat_ccf, int ChanChI, int ChanChIop);
@@ -205,16 +205,6 @@ int main (int argc, char *argv[])
 
   create_dcf(vexStr, VP, ModeChI, StatChI, ScanChI, n_stat_ccf, ChanChI, ChanChIop);
 
-  //make a local copy of the DE405_le.jpl file. This file is necessary to generate the delay
-  //tables using the application delmo.
-  char *home;
-  home = getenv("HOME");
-  char cmd[256];
-  strcpy(cmd, "cp ");
-  strcat(cmd, home);
-  strcat(cmd, "/bin/DE405_le.jpl .");
-  system (cmd);
-
   return 0;
 }
 
@@ -232,7 +222,7 @@ int create_ccf
 {
   string ModeCh=VP.Mode(ModeChI);
   string LFT=VP.Link_freq_track(VP.Station(StatChI[0]),ModeCh,ChanChI);
-  string LFTop="";
+  string LFTop=""; //for other polarisation.
 
   //set ccf name    
   string CorrelationJob = VP.ExperName()+"_"+VP.ScanName(ScanChI)+"_"+LFT+LFTop;
@@ -315,11 +305,13 @@ int create_ccf
   cc_file<<"\n";
 
 
-  //bandwidth input
   cc_file<<"#_____________________________________________________________\n";
   cc_file<<"SKYFREQ     "<< 
     VP.SkyFreq(VP.Station(StatChI[0]), ModeCh, ChanChI) * 1000000. << endl;
+  //bandwidth input
   cc_file<<"BWIN        "<< VP.BW(VP.Station(StatChI[0]),ModeCh,ChanChI) <<endl;
+  //side band U or L
+  cc_file<<"SIDEBAND    "<< VP.SideBand( VP.Station(StatChI[0]), ModeCh,ChanChI)<<endl;
   //fft length in delay correction
   cc_file<<"N2FFTDEL    2048   #User changeable.\n";
   //delay columns
@@ -350,11 +342,11 @@ int create_ccf
   cc_file<<"PAD         2    #User changeable.\n";
   cc_file<<"\n\n";
 
-  //write block for each station
-  write_station_block (cc_file, VP, ModeChI, StatChI, ScanChI, n_stat_ccf, LFT, 0);
+  //write data block for each station
+  write_station_blocks (cc_file, VP, ModeChI, StatChI, ScanChI, n_stat_ccf, LFT, LFTop, 0);
   if (ChanChIop != -1)
     //write block for each station for other polarisation
-    write_station_block(cc_file, VP, ModeChI, StatChI, ScanChI, n_stat_ccf, LFTop, 1);
+    write_station_blocks(cc_file, VP, ModeChI, StatChI, ScanChI, n_stat_ccf, LFT, LFTop, 1);
 
   //close ccf
   cc_file.close();
@@ -364,19 +356,22 @@ int create_ccf
 
 
 //write block for each station
-void write_station_block
+void write_station_blocks
   (ofstream &cc_file, VexPlus &VP, int ModeChI, int *StatChI, int ScanChI, 
-  int n_stat_ccf, string LFT, int block_nr)
+  int n_stat_ccf, string LFT, string LFTop, int OtherPolarisation)
 {
   string ModeCh = VP.Mode(ModeChI);
   cout.fill('0');
+  string LFTlocal = LFT;
+  if (OtherPolarisation == 1) LFTlocal=LFTop;
+
   for (int i=0; i<n_stat_ccf; i++)
   {
     string StationStr(VP.Station(StatChI[i]));
     int fo=VP.FanOut(StationStr,ModeCh);
     //station_name data_type
     cc_file<<"#_____________________________________________________________\n";
-    cc_file << "ST" << setfill('0') << setw(4) << (block_nr * n_stat_ccf + i) << "  " <<
+    cc_file << "ST" << setfill('0') << setw(4) << (OtherPolarisation * n_stat_ccf + i) << "  " <<
       StationStr << " " <<
       VP.TrackFormat(StationStr,ModeCh) << endl << endl;
     //fan_out
@@ -405,7 +400,7 @@ void write_station_block
     while (trnr < VP.N_TrackLines(StationStr, ModeCh)) {
       RTF=VP.Resolve_track_freq(StationStr, ModeCh,trnr);
       SM=VP.TrackSignMag(StationStr, ModeCh,trnr);
-      if (RTF == LFT && SM=="sign"){
+      if (RTF == LFTlocal && SM=="sign"){
         cc_file<<"SIGN        " << 
           VP.HeadstackNr(StationStr,ModeCh,trnr) << " ";
         for (int j=0; j<fo; j++)
@@ -422,7 +417,7 @@ void write_station_block
       while (trnr < VP.N_TrackLines(StationStr, ModeCh)) {
         RTF=VP.Resolve_track_freq(StationStr, ModeCh,trnr);
         SM=VP.TrackSignMag(StationStr, ModeCh,trnr);
-        if (RTF == LFT && SM=="mag"){
+        if (RTF == LFTlocal && SM=="mag"){
           cc_file<<"MAGN        " << 
             VP.HeadstackNr(StationStr,ModeCh,trnr) << " ";
           for (int j=0; j<fo; j++)
@@ -436,11 +431,10 @@ void write_station_block
 
     //MK4END
     cc_file<<"MK4END\n\n";
-    
-    //delay_table
-    string deltbl = 
-      VP.ExperName()+"_"+VP.ScanName(ScanChI)+"_"+ 
-      VP.Station(StatChI[i])+".del";
+
+   //delay_table
+    string deltbl = VP.ExperName()+"_"+VP.ScanName(ScanChI)+"_"+
+      VP.Station(StatChI[i])+"_"+LFT+".del";
     cc_file<<"DELAYTABLE  " << deltbl << "  #DEFAULT NAME\n";
     //DELAYEND
     cc_file<<"DELAYEND\n\n\n";
@@ -449,7 +443,7 @@ void write_station_block
 }
 
 
-  
+
 //create dcf and write proper values (dcf=delay modelcontrol file)
 int create_dcf(string vexStr, VexPlus &VP, int ModeChI, int *StatChI, int ScanChI, 
    int n_stat_ccf, int ChanChI, int ChanChIop)
@@ -565,11 +559,11 @@ int create_dcf(string vexStr, VexPlus &VP, int ModeChI, int *StatChI, int ScanCh
   int axis_type=0;
   for (int i=0; i<n_stat_ccf; i++)
   {
-    string deltbl = 
-      VP.ExperName()+"_"+VP.ScanName(ScanChI)+"_"+ 
-      VP.Station(StatChI[i])+".del";
+
 
     dc_file<<"#SITE_________________________________________________________\n";
+    string deltbl = VP.ExperName()+"_"+VP.ScanName(ScanChI)+"_"+
+      VP.Station(StatChI[i])+"_"+LFT+".del";
     dc_file<<"DELAYTABLE            "<< deltbl << endl;
     dc_file<<"site_name             "<< VP.Site(VP.Station(StatChI[i]))<<endl;
     dc_file<<"site_position_x       "<< setprecision(12) << VP.SiteX(VP.Station(StatChI[i]))<< endl;
