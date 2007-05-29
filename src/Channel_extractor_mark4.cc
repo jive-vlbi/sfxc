@@ -224,7 +224,15 @@ template <class T>
 int 
 Channel_extractor_mark4_implementation<T>::
 goto_time(INT64 time) {
-  size_t read_n_bytes = (time-get_current_time()) * sizeof(T)* TBR - 
+  INT64 current_time = get_current_time();
+  if (time < current_time) {
+    std::cout << "time in past, current time is: " << get_current_time() << "us" << std::endl;
+    std::cout << "            requested time is: " << time << "us" << std::endl;
+    return -1;
+  } else if (time == current_time) {
+    return 0;
+  }
+  size_t read_n_bytes = (time-current_time) * sizeof(T)* TBR - 
                         frameMk4*sizeof(T);
   
   size_t result = reader.get_bytes(read_n_bytes,NULL);

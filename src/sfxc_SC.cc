@@ -150,6 +150,11 @@ int main(int argc, char *argv[])
     //initialise readers to proper position
     result &= (ch_extractor->goto_time(startIS) == 0);
 
+    if (!result && !RunPrms.get_interactive()) {
+      log_writer.error("Could not find start time: too early");
+      return -1;
+    }
+
     Bits_to_float_converter *sample_reader = new Bits_to_float_converter();
     sample_reader->set_bits_per_sample(StaPrms[sn].get_bps());
     sample_reader->set_channel_extractor(ch_extractor);
