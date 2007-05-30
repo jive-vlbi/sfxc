@@ -254,53 +254,53 @@ bool DelayCorrection::fill_Bufs()
         sls[jl][1] = 0.0;
       }
 
-//       // 3) execute the complex to complex FFT, from Time to Frequency domain
-//       //    input: sls. output spls
-//       fftw_execute(planT2F);
+      // 3) execute the complex to complex FFT, from Time to Frequency domain
+      //    input: sls. output spls
+      fftw_execute(planT2F);
       
-//       // 4a)apply normalization
-//       for (int jl=0; jl<n2fftDC/2+1; jl++){
-//         spls[jl][0] = spls[jl][0] / sqrtN2fft;
-//         spls[jl][1] = spls[jl][1] / sqrtN2fft;
-//       }
+      // 4a)apply normalization
+      for (int jl=0; jl<n2fftDC/2+1; jl++){
+        spls[jl][0] = spls[jl][0] / sqrtN2fft;
+        spls[jl][1] = spls[jl][1] / sqrtN2fft;
+      }
       
-//       // 4b)multiply element 0 and n2fftDC/2 by 0.5
-//       //    to avoid jumps at segment borders
-//       spls[0][0]=0.5*spls[0][0];
-//       spls[0][1]=0.5*spls[0][1];
-//       spls[n2fftDC/2][0]=0.5*spls[n2fftDC/2][0];//Nyquist
-//       spls[n2fftDC/2][1]=0.5*spls[n2fftDC/2][1];
+      // 4b)multiply element 0 and n2fftDC/2 by 0.5
+      //    to avoid jumps at segment borders
+      spls[0][0]=0.5*spls[0][0];
+      spls[0][1]=0.5*spls[0][1];
+      spls[n2fftDC/2][0]=0.5*spls[n2fftDC/2][0];//Nyquist
+      spls[n2fftDC/2][1]=0.5*spls[n2fftDC/2][1];
       
-//       // 4c) zero the unused subband
-//       for (int jl=n2fftDC/2+1;jl<n2fftDC;jl++){
-//         spls[jl][0] = 0.0;
-//         spls[jl][1] = 0.0;
-//       }
+      // 4c) zero the unused subband
+      for (int jl=n2fftDC/2+1;jl<n2fftDC;jl++){
+        spls[jl][0] = 0.0;
+        spls[jl][1] = 0.0;
+      }
 
       
-//       // 5a)calculate the fract bit shift (=phase corrections in freq domain)
-//       //Time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000 + n2fftDC/2*tbs*1000000);
-//       Time = timePtr + (INT64)(tmpC*(jsegm+0.5));
-//       Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
-//       dfs  = Cdel/tbs - floor(Cdel/tbs + 0.5);
+      // 5a)calculate the fract bit shift (=phase corrections in freq domain)
+      //Time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000 + n2fftDC/2*tbs*1000000);
+      Time = timePtr + (INT64)(tmpC*(jsegm+0.5));
+      Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
+      dfs  = Cdel/tbs - floor(Cdel/tbs + 0.5);
 
-//       tmp1 = -2.0*M_PI*dfs*tbs;
-//       tmp2 = 0.5*M_PI*jshift/ovrfl;
-//       // 5b)apply phase correction in frequency range
-//       for (int jf = 0; jf < Nf; jf++){
-//         //phi  = -2.0*M_PI*dfs*tbs*fs[jf] + 0.5*M_PI*jshift/ovrfl;
-//         phi  = tmp1*fs[jf] + tmp2;
-//         tmp3=cos(phi);
-//         tmp4=sin(phi);
-//         tmpR = spls[jf][0];
-//         tmpI = spls[jf][1];
-//         spls[jf][0] = tmpR*tmp3-tmpI*tmp4;
-//         spls[jf][1] = tmpR*tmp4+tmpI*tmp3;
-//       }
+      tmp1 = -2.0*M_PI*dfs*tbs;
+      tmp2 = 0.5*M_PI*jshift/ovrfl;
+      // 5b)apply phase correction in frequency range
+      for (int jf = 0; jf < Nf; jf++){
+        //phi  = -2.0*M_PI*dfs*tbs*fs[jf] + 0.5*M_PI*jshift/ovrfl;
+        phi  = tmp1*fs[jf] + tmp2;
+        tmp3=cos(phi);
+        tmp4=sin(phi);
+        tmpR = spls[jf][0];
+        tmpI = spls[jf][1];
+        spls[jf][0] = tmpR*tmp3-tmpI*tmp4;
+        spls[jf][1] = tmpR*tmp4+tmpI*tmp3;
+      }
       
-//       // 6a)execute the complex to complex FFT, from Frequency to Time domain
-//       //    input: spls. output sls
-//       fftw_execute(planF2T);
+      // 6a)execute the complex to complex FFT, from Frequency to Time domain
+      //    input: spls. output sls
+      fftw_execute(planF2T);
       
 
 
