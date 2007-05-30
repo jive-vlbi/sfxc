@@ -97,8 +97,7 @@ void Correlator_node::start()
               get_log_writer()(2) << " correlate_state = CORRELATE_INTEGRATION_SLICE" << std::endl;
               // Do one integration step:
               //while still time slices and data are available
-              if (startIS >= GenPrms.get_usStart() + GenPrms.get_usDur()
-                     /* && data_available TODO RHJO implement*/ ) {
+              if (startIS >= GenPrms.get_usStart() + GenPrms.get_usDur()) {
                 correlate_state = END_TIME_SLICE;
                 break;
               }

@@ -19,7 +19,6 @@ Correlation:
 - !!! Check the integration: 512 and 1024 give a "Floating point exception"
 - Document classes
 - Data_writer and Output_node for collecting data
-- Remove global variables
 - check timestamps in the headers during correlation
 - optimize code: 
   - FFTW in place,
@@ -39,8 +38,8 @@ Multi core:
   (asynchronous)
 
 Functionality:
-- add overlapping in correlation [RHJO]
-- add filtering before delay correction [RHJO]
+- add overlapping in correlation [NGHK]. Discuss with Mark and Sergei first.
+- add filtering before delay correction [NGHK]. Discuss with Mark and Sergei first.
 
 Documentation
 - high level design document, describing what happens and how
@@ -81,6 +80,11 @@ Repository
   this is the original sw correlator
 - add data directory, in this directory are control and vex files
 
+
+Ruud's TODO in source code:
+DelayCorrection.cc line 72: FFT type discuss with Sergei and  Mark
+DelayCorrection.cc line 301: alternative code for fringe stopping, discuss with Sergei Mark
+genPrms.cc kine 334: allowed values padding ask Sergei
 
 STATUS:
 If an action item is not mentioned nothing is done yet.

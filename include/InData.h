@@ -23,7 +23,7 @@
 void set_log_writer(Log_writer &log_writer_);
 
 Log_writer &get_log_writer();
-                
+
 void show_MK4_header(Data_reader *data_reader, INT64 startIS, 
   StaP &StaPrms, GenP &GenPrms);
 

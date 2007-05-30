@@ -79,12 +79,10 @@ class StaP
     /** Local oscilator observing station. NGHK: What is this? **/
     INT64 get_loobs() const;
     /** bit shift parameters for sign **/
-    const int*  get_signBS() const; //bit shift parameters for sign
+    const int*  get_signBS() const;
     /** bit shift parameters for magn **/
-    const int*  get_magnBS() const; //bit shift parameters for magn
+    const int*  get_magnBS() const;
 
-
-    //get functions
     GenP get_genPrms() const { return genPrms; }
 
     //set functions
