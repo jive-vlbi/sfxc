@@ -184,7 +184,8 @@ Channel_extractor_mark4_implementation(Data_reader &reader,
   }
   assert(header_start >= 0);
   
-  memmove(block, block + header_start, header_start*sizeof(T));
+cout << header_start << endl;
+  memmove(block, block + header_start, (frameMk4-header_start)*sizeof(T));
   reader.get_bytes(header_start*sizeof(T), (char *)&block[frameMk4-header_start]);
 
   assert(find_header() == 0);

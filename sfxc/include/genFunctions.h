@@ -5,7 +5,7 @@
  * 
  * $Id$
  *
- * General function definitions
+ * General purpose function definitions. Non class specific
  */
 
 #include <string>

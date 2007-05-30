@@ -29,8 +29,6 @@ using namespace std;
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "gen_defines.h"
-
 //constants
 #include "constPrms.h"
 

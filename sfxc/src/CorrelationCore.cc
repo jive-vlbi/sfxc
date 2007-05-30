@@ -219,7 +219,6 @@ bool CorrelationCore::average_time_slice()
 
 bool CorrelationCore::write_time_slice()
 {
-  //TODO RHJO: test
   //write normalized correlation results to output file
   //NGHK: Make arrays consecutive to be able to write all data at once
   for (int bsln = 0; bsln < nbslns; bsln++){

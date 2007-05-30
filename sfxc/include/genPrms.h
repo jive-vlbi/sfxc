@@ -114,15 +114,6 @@ class GenP
     /** Get the start time in microseconds
         from the beginning of the day 00:00. **/
     INT64 get_usStart() const;
-    
-//TODO RHJO 14-02-2007 check which are depricated    
-//    /** Get the stop time in microseconds from the beginning of the day.  **/
-//    INT64 get_usStop() const;
-//    /** Get the earliest possible time for correlation 
-//     * in microseconds from the beginning of the day. **/
-//    INT64 get_usEarliest() const;
-//    /** Depricated: do not use. **/
- //   INT64 get_usLatest() const;
 
     //set functions
     
@@ -130,10 +121,6 @@ class GenP
     * in microseconds from the beginning of the day. **/
     void  set_usStart(INT64);
     void  set_duration(int);
-//    void  set_usStop(INT64);
-//    void  set_usEarliest(INT64);
-//    /** Depricated: do not use. **/
-//    void  set_usLatest(INT64);
 
     /** Set the name of the correlation output file. **/
     void set_corfile(char *filename);
@@ -191,10 +178,6 @@ class GenP
 
     int sideband;
 
-//TODO RHJO 14-02-2007 check which are depricated    
-//    INT64 usStop;     //stop time in micro seconds without year
-//    INT64 usEarliest; //earliest possible start time in micro seconds
-//    INT64 usLatest;   //latest possible start time in micro seconds
 };
 
 
