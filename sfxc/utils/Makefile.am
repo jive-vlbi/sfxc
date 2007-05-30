@@ -7,7 +7,8 @@ bin_PROGRAMS = create_delay_function \
                produce_fringe \
                analyse_fringes \
                analyse_mark4_file \
-               print_headers
+               print_headers \
+               produce_html_plotpage
 
 create_delay_function_SOURCES = create_delay_function.cc
 create_delay_function_LDADD = -lgsl -lgslcblas
@@ -31,3 +32,8 @@ analyse_mark4_file_SOURCES = \
   ../src/Data_reader.cc ../src/Data_reader_file.cc \
   ../src/Channel_extractor_mark4.cc \
   ../src/utils.cc ../src/Bits_to_float_converter.cc
+
+produce_html_plotpage_SOURCES = produce_html_plotpage.cc \
+	../src/genPrms.cc ../src/staPrms.cc ../src/runPrms.cc ../src/genFunctions.cc \
+	../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/utils.cc \
+	gnuplot_i.cc
