@@ -148,10 +148,12 @@ int main(int argc, char *argv[])
       GenPrms.get_rndhdr());
 
     //initialise readers to proper position
-    result &= (ch_extractor->goto_time(startIS) == 0);
+    result = ch_extractor->goto_time(startIS);
 
-    if (!result && !RunPrms.get_interactive()) {
-      log_writer.error("Could not find start time: too early");
+    if (result != 0) {
+      std::stringstream msg; msg << "result: " << result;
+      log_writer.error(msg);
+      log_writer.error("Could not go to the right time stamp");
       return -1;
     }
 
@@ -160,7 +162,7 @@ int main(int argc, char *argv[])
     sample_reader->set_channel_extractor(ch_extractor);
     
     IntSlc.set_sample_reader(sn,sample_reader);//pass the data reader
-    result &= IntSlc.init_reader(sn,startIS);
+    result = IntSlc.init_reader(sn,startIS);
 
     //display and check mk4file header info for start time set in ccf
     //NGHK: commented out, use channel extracter later on
@@ -168,6 +170,7 @@ int main(int argc, char *argv[])
     
 
     if (!result && !RunPrms.get_interactive()) {
+      log_writer.error(StaPrms[sn].get_mk4file());
       log_writer.error("Could not initialise the data reader");
       return -1;
     }

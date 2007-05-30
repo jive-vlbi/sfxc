@@ -45,6 +45,8 @@ public:
                      const double *val_array);
 
   bool eof();
+
+  void print_header(Log_writer &writer, int track=0);
 private:
   size_t do_get_bytes(size_t nBytes, char *buff);
   
