@@ -44,6 +44,7 @@ using namespace std;
 
 //get functions
 char* GenP::get_experiment() const { return experiment; }
+char* GenP::get_job() const { return job; }
 
 int   GenP::get_rndhdr()     const { return rndhdr; }
 
@@ -96,6 +97,8 @@ GenP::GenP()
 {
   experiment = new char[256];
   strcpy(experiment,"DefExp");
+  job = new char[256];
+  strcpy(job,"No Job");
   yst=dst=hst=mst=sst=0;
   duration=0;
   nstations = 0;
@@ -171,6 +174,7 @@ int GenP::parse_ctrlFile(char *ctrlFile, Log_writer&log_writer)
     if (sscanf(line,"%s %s\n",key,val) == 2){
       
       if (strcmp(key,"EXPERIMENT") == 0) strcpy(experiment,val);
+      if (strcmp(key,"JOB") == 0) strcpy(job,val);
       if (strcmp(key,"OUTDIR") == 0)     strcpy(outdir,val);
       if (strcmp(key,"LOGFILE") == 0)    strcpy(logname,val);
       if (strcmp(key,"CORFILE") == 0)    strcpy(corname,val);
@@ -260,6 +264,7 @@ int GenP::check_params(Log_writer &log_writer) const
   "General experiment related control parameters.\n" <<
   endl <<
   "Experiment           = " << experiment << endl <<
+  "Job                  = " << job << endl <<
   "Start                = " << setw(4) << yst << setw(4) << dst <<
                                setw(3) << hst << setw(3) << mst <<
                                setw(3) << sst << setw(4) << milisst << " (y d h m s m)\n" <<

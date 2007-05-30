@@ -27,7 +27,9 @@ GenP GenPrms;
 StaP StaPrms[NstationsMax];
 
 struct Plot_data {
-  std::string experiment_name;
+  std::string job_name;
+  double frequency;
+  char sideband;
   std::vector<std::string> autos, crosses;
 };
 
@@ -53,7 +55,9 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
 
   log_writer(0) << GenPrms.get_corfile() << std::endl;
   
-  data.experiment_name = GenPrms.get_experiment();
+  data.job_name = GenPrms.get_job();
+  data.frequency = GenPrms.get_skyfreq();
+  data.sideband = (GenPrms.get_sideband()-1 ? 'L' : 'U');
   std::ifstream infile(GenPrms.get_corfile(), ios::in | ios::binary);
   assert(infile.is_open());
 
@@ -69,7 +73,7 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
     }
     char title[80], filename[80];
     snprintf(title, 80, "Auto %s", StaPrms[i].get_stname());
-    snprintf(filename, 80, "%s_%s.png", GenPrms.get_experiment(), StaPrms[i].get_stname());
+    snprintf(filename, 80, "%s_%s.png", GenPrms.get_job(), StaPrms[i].get_stname());
     data.autos.push_back(filename);
     plot(filename, nLags, magnitude, title);    
   }
@@ -98,7 +102,7 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
                  StaPrms[i].get_stname(), 
                  StaPrms[j].get_stname());
         snprintf(filename, 80, "%s_%s-%s.png", 
-                 GenPrms.get_experiment(), 
+                 GenPrms.get_job(), 
                  StaPrms[i].get_stname(), 
                  StaPrms[j].get_stname());
         data.crosses.push_back(filename);
@@ -122,7 +126,7 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
                  StaPrms[ref_station].get_stname(), 
                  StaPrms[i].get_stname());
         snprintf(filename, 80, "%s_%s-%s.png", 
-                 GenPrms.get_experiment(), 
+                 GenPrms.get_job(), 
                  StaPrms[ref_station].get_stname(), 
                  StaPrms[i].get_stname());
         data.crosses.push_back(filename);
@@ -135,7 +139,9 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
 }
 
 void print_html(std::ostream &html_output, Plot_data &data) {
-  html_output << "<h1>" << data.experiment_name << "</h1>" << std::endl;
+  html_output << "<h1>" << data.job_name << "</h1>" << std::endl;
+  html_output << data.frequency << " - " 
+              << data.sideband << "<br>" << std::endl;
 
   html_output << "<h3>Auto correlations</h3>" << std::endl;
   for (size_t i=0; i<data.autos.size(); i++) {
