@@ -135,7 +135,8 @@ int main(int argc, char *argv[]) {
     Channel_extractor_mark4 
       ch_extractor(data_reader, 
                    staPrms[station_nr], 
-                   Channel_extractor_mark4::CHECK_PERIODIC_HEADERS);
+                   Channel_extractor_mark4::CHECK_ALL_HEADERS);
+    ch_extractor.print_header(log_writer(0), 0);
     int nBytes = 
       (frameMk4*staPrms[station_nr].get_fo()*staPrms[station_nr].get_bps())/8;
     char data_frame[nBytes];

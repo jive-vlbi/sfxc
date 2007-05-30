@@ -38,6 +38,7 @@ public:
 
   bool check_track_bit_statistics();  
   
+  void print_header(Log_writer &writer, int track);
 private:
 
   // Finds the header on the track of the first sign bit
@@ -146,7 +147,15 @@ bool Channel_extractor_mark4::eof() {
     return ch_extractor_2_head_stack->eof();
   }
 }
-  
+
+void Channel_extractor_mark4::print_header(Log_writer &writer, int track) {
+  if (n_head_stacks == 1) {
+    return ch_extractor_1_head_stack->print_header(writer, track);
+  } else {
+    return ch_extractor_2_head_stack->print_header(writer, track);
+  }
+}
+
 /*********************************************************************
  * Implementation of the Channel_extractor for Mark 4 files (32 or 64 bit)
  *********************************************************************/
@@ -184,9 +193,9 @@ Channel_extractor_mark4_implementation(Data_reader &reader,
   }
   assert(header_start >= 0);
   
-cout << header_start << endl;
   memmove(block, block + header_start, (frameMk4-header_start)*sizeof(T));
-  reader.get_bytes(header_start*sizeof(T), (char *)&block[frameMk4-header_start]);
+  reader.get_bytes(header_start*sizeof(T),
+                   (char *)&block[frameMk4-header_start]);
 
   assert(find_header() == 0);
   mark4_header.set_header(block);
@@ -200,16 +209,16 @@ cout << header_start << endl;
   tracks.resize(n_bits_per_sample*fan_out);
   for (int i=0; i<fan_out; i++) {
     if (n_bits_per_sample > 1) {
-      if (! mark4_header.is_magn(staPrms.get_magnBS()[i])) {
-        std::cout << "Track " << staPrms.get_magnBS()[i]
-                  << " is not a magn track" << std::endl;
-      }
+//       if (! mark4_header.is_magn(staPrms.get_magnBS()[i])) {
+//         std::cout << "Track " << staPrms.get_magnBS()[i]
+//                   << " is not a magn track" << std::endl;
+//       }
       tracks[n_bits_per_sample*i] = staPrms.get_magnBS()[i];
       
-      if (! mark4_header.is_sign(staPrms.get_signBS()[i])) {
-        std::cout << "Track " << staPrms.get_signBS()[i]
-                  << " is not a sign track" << std::endl;
-      }
+//       if (! mark4_header.is_sign(staPrms.get_signBS()[i])) {
+//         std::cout << "Track " << staPrms.get_signBS()[i]
+//                   << " is not a sign track" << std::endl;
+//       }
       tracks[n_bits_per_sample*i+1] = staPrms.get_signBS()[i];
     } else {
       if (! mark4_header.is_sign(staPrms.get_signBS()[i])) {
@@ -234,8 +243,12 @@ goto_time(INT64 time) {
     return 0;
   }
   size_t read_n_bytes = (time-current_time) * sizeof(T)* TBR - 
-                        frameMk4*sizeof(T);
+                         frameMk4*sizeof(T);
   
+  if (read_n_bytes == 0) {
+    return 0;
+  }
+  std::cout << "read_n_bytes: " << read_n_bytes << std::endl;
   size_t result = reader.get_bytes(read_n_bytes,NULL);
   if (result != read_n_bytes) return result;
 
@@ -454,4 +467,18 @@ check_track_bit_statistics() {
   }    
   
   return true;
+}
+
+template <class T>
+void 
+Channel_extractor_mark4_implementation<T>::
+print_header(Log_writer &writer, int track) {
+  writer << mark4_header.year(track) << "y"
+         << mark4_header.day(track) << "d"
+         << mark4_header.hour(track) << "h"
+         << mark4_header.minute(track) << "m"
+         << mark4_header.second(track) << "s"
+         << mark4_header.microsecond(track) << "us"
+         << std::endl;
+  writer << "equals: " << get_current_time() << "us" << std::endl;
 }
