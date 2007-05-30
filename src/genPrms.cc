@@ -251,7 +251,7 @@ int GenP::check_params(Log_writer &log_writer) const
 {
 
   int retval = 0, FFTlength, Overlap;
-  FILE *fl;
+//   FILE *fl;
 
   //display general parameters
   stringstream msg;
@@ -297,15 +297,15 @@ int GenP::check_params(Log_writer &log_writer) const
     retval = -1;
   }
   
-  fl = fopen(corfile.c_str(),"w");
-  if (!fl) {
-    log_writer(0) << "ERROR: Cannot create file in directory: " << outdir << endl;
-    retval =-1;
-  } else {
-    fclose(fl);
-    //delete empty file
-    remove(corfile.c_str());
-  }
+//   fl = fopen(corfile.c_str(),"w");
+//   if (!fl) {
+//     log_writer(0) << "ERROR: Cannot create file in directory: " << outdir << endl;
+//     retval =-1;
+//   } else {
+//     fclose(fl);
+//     //delete empty file
+//     remove(corfile.c_str());
+//   }
 
   if (lsegm > 63) {
     FFTlength = lsegm;
