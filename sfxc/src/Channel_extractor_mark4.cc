@@ -248,7 +248,6 @@ goto_time(INT64 time) {
   if (read_n_bytes == 0) {
     return 0;
   }
-  std::cout << "read_n_bytes: " << read_n_bytes << std::endl;
   size_t result = reader.get_bytes(read_n_bytes,NULL);
   if (result != read_n_bytes) return result;
 

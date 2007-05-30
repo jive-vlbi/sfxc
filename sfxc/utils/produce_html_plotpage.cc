@@ -65,6 +65,9 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
   std::complex<double> in[nLags], out[nLags];
   double magnitude[nLags];
   
+  char polarisation = 'l';
+
+  std::vector<std::string> station_names;
   // Auto correlations 
   for (int i=0; i<GenPrms.get_nstations(); i++) {
     for  (int j=0; j<nLags; j++) {
@@ -72,9 +75,19 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
       magnitude[j] = abs(in[j]);
     }
     char title[80], filename[80];
-    snprintf(title, 80, "Auto %s", StaPrms[i].get_stname());
-    snprintf(filename, 80, "%d_%s_%s.png", plotNr, GenPrms.get_job(), StaPrms[i].get_stname());
+    if ((i!=0) && 
+        (!strcmp(StaPrms[0].get_stname(), StaPrms[i].get_stname()))) {
+      polarisation = 'r';
+    }
+    char station_name[10];
+    snprintf(station_name, 10, "%s-%c", StaPrms[i].get_stname(), polarisation);
+    station_names.push_back(std::string(station_name));
+    
+    snprintf(title, 80, "Auto %s", station_names[i].c_str());
+    snprintf(filename, 80, "%d_%s_%s.png", 
+             plotNr, GenPrms.get_job(), station_names[i].c_str());
     data.autos.push_back(filename);
+    
     plotNr ++;
     plot(filename, nLags, magnitude, title);    
   }
@@ -99,15 +112,16 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
         }
         
         char title[80], filename[80];
-        snprintf(title, 80, "Cross %s-%s", 
-                 StaPrms[i].get_stname(), 
-                 StaPrms[j].get_stname());
+        snprintf(title, 80, "Cross %s vs. %s", 
+                 station_names[i].c_str(), 
+                 station_names[j].c_str());
         snprintf(filename, 80, "%3d_%s_%s-%s.png", 
                  plotNr,
                  GenPrms.get_job(), 
-                 StaPrms[i].get_stname(), 
-                 StaPrms[j].get_stname());
+                 station_names[i].c_str(), 
+                 station_names[j].c_str());
         data.crosses.push_back(filename);
+        plotNr++;
 
         plot(filename, nLags, magnitude, title);
       }    
@@ -125,15 +139,17 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
         }
         
         char title[80], filename[80];
-        snprintf(title, 80, "Cross %s-%s", 
-                 StaPrms[ref_station].get_stname(), 
-                 StaPrms[i].get_stname());
+        snprintf(title, 80, "Cross %s vs. %s", 
+                 station_names[ref_station].c_str(), 
+                 station_names[i].c_str());
         snprintf(filename, 80, "%3d_%s_%s-%s.png", 
                  plotNr,
                  GenPrms.get_job(), 
-                 StaPrms[ref_station].get_stname(), 
-                 StaPrms[i].get_stname());
+                 station_names[ref_station].c_str(), 
+                 station_names[i].c_str());
         data.crosses.push_back(filename);
+        plotNr++;
+
         plot(filename, nLags, magnitude, title);
       }
     }    
@@ -144,8 +160,9 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
 
 void print_html(std::ostream &html_output, Plot_data &data) {
   html_output << "<h1>" << data.job_name << "</h1>" << std::endl;
-  html_output << data.frequency << " - " 
-              << data.sideband << "<br>" << std::endl;
+  html_output << "<pre>Frequency: " << data.frequency << "<br>"
+              << "Sideband: " << data.sideband << "</pre>"
+              << std::endl;
 
   html_output << "<h3>Auto correlations</h3>" << std::endl;
   for (size_t i=0; i<data.autos.size(); i++) {
