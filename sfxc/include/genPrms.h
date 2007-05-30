@@ -36,6 +36,9 @@ class GenP
     /** Name of the experiment. **/
     char* get_experiment() const;
     
+    /** Name of the job. **/
+    char* get_job() const;
+    
     /** Substitute random values for the header **/
     int   get_rndhdr() const;
 
@@ -138,6 +141,7 @@ class GenP
     int  rndhdr;   //random header on if 1 and off if 0
     
     char  *experiment; //name of the experiment
+    char  *job;        //name of the job
     
     int   yst;        //start year
     int   dst;        //start day
