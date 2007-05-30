@@ -42,8 +42,9 @@ void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
   double dfr  = 1.0/(n2fftDC*tbs); // delta frequency
   fs          = new double[Nf]; // frequency array
 
-  for (int jf=0; jf<Nf; jf++) //frequency scale in the segment
+  for (int jf=0; jf<Nf; jf++) {//frequency scale in the segment
     fs[jf]=jf*dfr-0.5*sideband*GenPrms.get_bwfl()-GenPrms.get_foffset();
+  }
 
   foffset     = GenPrms.get_foffset();
   bwfl        = GenPrms.get_bwfl();

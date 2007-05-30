@@ -46,7 +46,7 @@ void plot(char *filename, int nPts, double *values, char *title) {
 }
 
 void produce_plots(char *ctrl_file, Plot_data &data) {
-  int err;
+  int err, plotNr = 0;
 
   Log_writer_cout log_writer;
 
@@ -73,8 +73,9 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
     }
     char title[80], filename[80];
     snprintf(title, 80, "Auto %s", StaPrms[i].get_stname());
-    snprintf(filename, 80, "%s_%s.png", GenPrms.get_job(), StaPrms[i].get_stname());
+    snprintf(filename, 80, "%d_%s_%s.png", plotNr, GenPrms.get_job(), StaPrms[i].get_stname());
     data.autos.push_back(filename);
+    plotNr ++;
     plot(filename, nLags, magnitude, title);    
   }
   
@@ -101,11 +102,13 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
         snprintf(title, 80, "Cross %s-%s", 
                  StaPrms[i].get_stname(), 
                  StaPrms[j].get_stname());
-        snprintf(filename, 80, "%s_%s-%s.png", 
+        snprintf(filename, 80, "%3d_%s_%s-%s.png", 
+                 plotNr,
                  GenPrms.get_job(), 
                  StaPrms[i].get_stname(), 
                  StaPrms[j].get_stname());
         data.crosses.push_back(filename);
+
         plot(filename, nLags, magnitude, title);
       }    
     }
@@ -125,7 +128,8 @@ void produce_plots(char *ctrl_file, Plot_data &data) {
         snprintf(title, 80, "Cross %s-%s", 
                  StaPrms[ref_station].get_stname(), 
                  StaPrms[i].get_stname());
-        snprintf(filename, 80, "%s_%s-%s.png", 
+        snprintf(filename, 80, "%3d_%s_%s-%s.png", 
+                 plotNr,
                  GenPrms.get_job(), 
                  StaPrms[ref_station].get_stname(), 
                  StaPrms[i].get_stname());
