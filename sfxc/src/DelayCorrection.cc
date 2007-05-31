@@ -42,8 +42,9 @@ void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
   double dfr  = 1.0/(n2fftDC*tbs); // delta frequency
   fs          = new double[Nf]; // frequency array
 
-  for (int jf=0; jf<Nf; jf++) {//frequency scale in the segment
-    fs[jf]=jf*dfr-0.5*sideband*GenPrms.get_bwfl()-GenPrms.get_foffset();
+  for (int jf=0; jf<Nf; jf++) {
+    //frequency scale in the segment
+    fs[jf]=sideband*(jf*dfr-0.5*GenPrms.get_bwfl()-GenPrms.get_foffset());
   }
 
   foffset     = GenPrms.get_foffset();
@@ -302,8 +303,6 @@ bool DelayCorrection::fill_Bufs()
       //    input: spls. output sls
       fftw_execute(planF2T);
       
-
-
       double Fdel; 
       for (int jl=0;jl<n2fftDC;jl++) {
         // 6b)apply normalization and multiply by 2.0
