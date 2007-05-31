@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 
   //make fixed seeding or time based seeding a control file option
   set_seed(10);
-  log_writer << endl << "WARNING fixed seed=10\n";
+  log_writer(1) << endl << "WARNING fixed seed=10\n";
 
   //set the control file name
   char   ctrlFile[lineLength]; // control file name
@@ -48,8 +48,8 @@ int main(int argc, char *argv[])
   log_writer.set_interactive(RunPrms.get_interactive());
 
   //show version information and control file info
-  log_writer << "Source " << __FILE__ 
-             << " compiled at: " << __DATE__ << " "<<__TIME__<<"\n\n";
+  log_writer(1) << "Source " << __FILE__ 
+                << " compiled at: " << __DATE__ << " "<<__TIME__<<"\n\n";
   
   
   //check run control parameters, optionally show them
