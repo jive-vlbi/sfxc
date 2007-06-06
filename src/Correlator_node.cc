@@ -154,7 +154,9 @@ void Correlator_node::add_delay_table(int sn, DelayTable &table) {
 
 
 void Correlator_node::set_parameters(RunP &runPrms, GenP &genPrms, StaP *staPrms) {
-  get_integration_slice().set_parameters(genPrms, staPrms, runPrms.get_ref_station());
+  get_integration_slice().set_parameters(genPrms, staPrms, 
+					 runPrms.get_ref_station(0),
+					 runPrms.get_ref_station(1));
 }
 
 

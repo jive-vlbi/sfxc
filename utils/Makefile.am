@@ -8,10 +8,11 @@ bin_PROGRAMS = create_delay_function \
                analyse_fringes \
                analyse_mark4_file \
                print_headers \
-               produce_html_plotpage
+               produce_html_plotpage \
+               make_sfxc_experiment_makefile
 
 create_delay_function_SOURCES = create_delay_function.cc
-create_delay_function_LDADD = -lgsl -lgslcblas
+create_delay_function_LDFLAGS = -lgsl -lgslcblas
 
 produce_fringe_SOURCES = produce_fringe.cc
 
@@ -34,6 +35,12 @@ analyse_mark4_file_SOURCES = \
   ../src/utils.cc ../src/Bits_to_float_converter.cc
 
 produce_html_plotpage_SOURCES = produce_html_plotpage.cc \
-	../src/genPrms.cc ../src/staPrms.cc ../src/runPrms.cc ../src/genFunctions.cc \
+	../src/genPrms.cc ../src/staPrms.cc \
+	../src/runPrms.cc ../src/genFunctions.cc \
 	../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/utils.cc \
 	gnuplot_i.cc
+
+make_sfxc_experiment_makefile_SOURCES = make_sfxc_experiment_makefile.cc \
+	vex_parser/vexplus.cc
+make_sfxc_experiment_makefile_LDFLAGS = -Lvex_parser -lvex -lfl -ljson
+

@@ -27,14 +27,15 @@ Integration_slice::Integration_slice(
   GenP &GenPrms, 
   StaP* StaPrms,
   Log_writer &lg_wrtr,
-  int ref_station)
+  int ref_station1, int ref_station2)
   //member initialisations
   : dc(lg_wrtr), cc(), log_writer(lg_wrtr)
 {
   int_slice_startTS = 0;
 }
 
-void Integration_slice::set_parameters(GenP &GenPrms, StaP* StaPrms, int ref_station) {
+void Integration_slice::set_parameters(GenP &GenPrms, StaP* StaPrms, 
+				       int ref_station1, int ref_station2) {
 } 
 
 //pass the delay table

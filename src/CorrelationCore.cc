@@ -17,18 +17,22 @@ CorrelationCore::CorrelationCore()
 {
 }
 
-CorrelationCore::CorrelationCore(GenP& GenPrms, int ref_sn)
+CorrelationCore::CorrelationCore(GenP& GenPrms, int ref_sn1, int ref_sn2)
   :data_writer(NULL)//member initialisation list
 {
-  set_parameters(GenPrms, ref_sn);
+  set_parameters(GenPrms, ref_sn1, ref_sn2);
 }
 
-void CorrelationCore::set_parameters(GenP& GenPrms, int ref_sn)
+void CorrelationCore::set_parameters(GenP& GenPrms, int ref_sn1, int ref_sn2)
 {
   nstations = GenPrms.get_nstations();
-  if (0 <= ref_sn && ref_sn < nstations) {
+  if (0 <= ref_sn1 && ref_sn1 < nstations) {
     //use a reference station
-    nbslns    = 2*nstations-1;
+    if (0 <= ref_sn2 && ref_sn2 < nstations) {
+      nbslns    = 3*nstations-2;
+    } else {
+      nbslns    = 2*nstations-1;
+    }
   } else {
     //correlate all baselines
     nbslns    = nstations*(nstations-1)/2 + nstations;
@@ -63,7 +67,8 @@ void CorrelationCore::set_parameters(GenP& GenPrms, int ref_sn)
       fftw_plan_dft_r2c_1d(n2fftcorr*padding,segm[sn],xps[sn],FFTW_EXHAUSTIVE);
   }  
  
-  ref_station = ref_sn; 
+  ref_station1 = ref_sn1; 
+  ref_station2 = ref_sn2;
 }
 
 
@@ -142,12 +147,20 @@ bool CorrelationCore::correlate_segment(double** in_segm)
     bsln++;
   }
 
-  if (0 <= ref_station && ref_station < nstations) {
-    //calculate the correlations using only the reference station
+  if (0 <= ref_station1 && ref_station1 < nstations) {
+    //calculate the correlations using one or two reference stations
     for (int sno = 0; sno < nstations ; sno ++){
-      if(sno != ref_station) {
-        correlate_baseline(ref_station, sno, bsln);
+      if ((sno != ref_station1) && (sno != ref_station2)) {
+        correlate_baseline(ref_station1, sno, bsln);
         bsln++;
+      }
+    }
+    if (0 <= ref_station2 && ref_station2 < nstations) {
+      for (int sno = 0; sno < nstations ; sno ++){
+	if ((sno != ref_station1) && (sno != ref_station2)) {
+	  correlate_baseline(ref_station2, sno, bsln);
+	  bsln++;
+	}
       }
     }
   } else {
@@ -194,12 +207,20 @@ bool CorrelationCore::average_time_slice()
   }
 
 
-  if (0 <= ref_station && ref_station < nstations) {
-    //cross product normalisation w.r.t reference station
+  if (0 <= ref_station1 && ref_station1 < nstations) {
+    //calculate the correlations using one or two reference stations
     for (int sno = 0; sno < nstations ; sno ++){
-      if (sno != ref_station) {
-        normalise_correlation(ref_station,sno,bsln);
+      if ((sno != ref_station1) && (sno != ref_station2)) {
+        normalise_correlation(ref_station1,sno,bsln);
         bsln++;
+      }
+    }
+    if (0 <= ref_station2 && ref_station2 < nstations) {
+      for (int sno = 0; sno < nstations ; sno ++){
+	if ((sno != ref_station1) && (sno != ref_station2)) {
+	  normalise_correlation(ref_station2,sno,bsln);
+	  bsln++;
+	}
       }
     }
   } else {
