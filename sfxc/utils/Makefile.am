@@ -3,13 +3,30 @@ EXTRA_DIST =
 AM_CPPFLAGS = -L/usr/lib
 AM_CXXFLAGS = -I../include
 
-bin_PROGRAMS = create_delay_function \
+bin_PROGRAMS = vex_parser/libvex.a \
+               vex_parser/sfxc_vex2ccf \
+               vex_parser/sfxc_vex2dcf \
+               delmo/src/delmo \
+               create_delay_function \
                produce_fringe \
                analyse_fringes \
                analyse_mark4_file \
                print_headers \
                produce_html_plotpage \
                make_sfxc_experiment_makefile
+
+vex_parser/libvex.a:
+	cd vex_parser; make
+
+vex_parser/sfxc_vex2ccf: vex_parser/libvex.a
+	cd vex_parser; make -f Makefile.v2c sfxc_vex2ccf
+
+vex_parser/sfxc_vex2dcf: vex_parser/libvex.a
+	cd vex_parser; make -f Makefile.v2c sfxc_vex2dcf
+
+delmo/src/delmo:
+	cd delmo/lib; make
+	cd delmo/src; make delmo
 
 create_delay_function_SOURCES = create_delay_function.cc
 create_delay_function_LDFLAGS = -lgsl -lgslcblas

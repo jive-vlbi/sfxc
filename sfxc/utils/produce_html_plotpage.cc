@@ -1,7 +1,7 @@
 /* author : N.G.H. Kruithof
 */
 
-#define MIN_SNR_VALUE 2.5
+#define MIN_SNR_VALUE 3
 
 #include <iostream>
 #include <complex>
