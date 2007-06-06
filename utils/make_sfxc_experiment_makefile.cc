@@ -148,14 +148,12 @@ void print_del_section(std::ostream &out,
   for (int channel = 0; channel < nChannels; channel ++) {
     assert(sfxc_ctrl["stations"].isArray());
     // Dependency on one station per channel is enough
-//     for (size_t i=0; i<sfxc_ctrl["stations"].size(); i++) {
     out << " \\\n  "
         <<generate_del_filename(sfxc_ctrl["deldir"].asString(),
                                 vex.ExperName(),
                                 sfxc_ctrl["scan"].asString(),
                                 channel+1,
                                 vex.Station(0)).c_str();
-//     }
     if ((channel<nChannels-1) &&
         (vex.SkyFreq(vex.Station(0),vex.Mode(0),channel) ==
          vex.SkyFreq(vex.Station(0),vex.Mode(0),channel+1))) {
@@ -174,12 +172,12 @@ void print_del_section(std::ostream &out,
         << "\tsfxc_vex2dcf $(VEXFILE) $(CTRLFILE)"
         << std::endl;
 
-    for (size_t i=0; i<sfxc_ctrl["stations"].size(); i++) {
+    for (int station=0; station<vex.N_Stations(); station++) {
       out <<generate_del_filename(sfxc_ctrl["deldir"].asString(),
                                   vex.ExperName(),
                                   sfxc_ctrl["scan"].asString(),
                                   channel+1,
-                                  vex.Station(i)).c_str()
+                                  vex.Station(station)).c_str()
           << ": " 
           << generate_dcf_filename(sfxc_ctrl["deldir"].asString(),
                                    vex.ExperName(),

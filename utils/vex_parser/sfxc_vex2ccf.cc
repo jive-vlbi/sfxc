@@ -244,7 +244,7 @@ void make_ccf(int channel1, int channel2) {
   //correlation overlap
   cc_file<<"OVRLP       0.0  #User changeable.\n";
   //correlation time to average
-  cc_file<<"TIME2AVG    0.5  #User changeable.\n";
+  cc_file<<"TIME2AVG    " << ctrl_file["integration_time"].asDouble() << "\n";
   //correlation padding
   cc_file<<"PAD         2    #User changeable.\n";
   cc_file<<"\n\n";

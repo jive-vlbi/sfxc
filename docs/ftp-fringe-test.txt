@@ -1,3 +1,7 @@
+ERRORS 
+3. add "scp jive@jop13:/jop13_1/softcorr/ftpdata/ftpdata/* mk4/"
+
+
 This document describes the steps to do a ftp-fringe-test using the
 JIVE sfxc correlator..
 
@@ -14,6 +18,8 @@ JIVE sfxc correlator..
    per channel, one per station) with N parallel processes. These
    control files are generated automatically and are used for the
    correlation.
+6. Copy the files to the mk4dir (the directory containing the mk4 files):
+   scp jive@jop13:/jop13_1/softcorr/ftpdata/ftpdata/* mk4/
 6. make -j<N> correlate
    Computes the correlation with N parallel processes
 7. make html
@@ -28,6 +34,7 @@ JIVE sfxc correlator..
 2. ./configure CXX=mpicxx
 3. make
 4. cd utils/vex_parser/ && \
+   make && \
    make -f Makefile.v2c sfxc_vex2ccf sfxc_vex2dcf && \
    cd -
 5. cd utils/delmo/lib && \
