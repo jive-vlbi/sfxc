@@ -37,13 +37,13 @@ class CorrelationCore
     /** Initialise the correlator with proper values, allocate arrays,
         createFFTW plans.**/
     CorrelationCore();
-    CorrelationCore(GenP&, int ref_sn);
+    CorrelationCore(GenP&, int ref_sn1, int ref_sn2);
 
     /** De-allocate correlator arrays, destroy FFTW plans.**/
     ~CorrelationCore();
 
     /** Sets the parameters for the correlation **/
-    void set_parameters(GenP &GenPrms, int ref_sn);
+    void set_parameters(GenP &GenPrms, int ref_sn1, int ref_sn2);
 
     /** Initialise array values to zero before the correlation
         of the time slice.**/
@@ -84,6 +84,6 @@ class CorrelationCore
     void correlate_baseline(int station1, int station2, int bsln);
     void normalise_correlation(int station1, int station2, int bsln);
 
-    int ref_station;
+    int ref_station1, ref_station2;
 };
 #endif // CORRELATIONCORE_H

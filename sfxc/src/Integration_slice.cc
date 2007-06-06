@@ -23,25 +23,26 @@ Integration_slice::Integration_slice(
   GenP &GenPrms, 
   StaP *StaPrms,
   Log_writer &lg_wrtr,
-  int ref_station)
+  int ref_station1,
+  int ref_station2)
   //member initialisations
   :dc(lg_wrtr), cc(), parameters_set(false), log_writer(lg_wrtr)
 {
-  set_parameters(GenPrms,StaPrms, ref_station);
+  set_parameters(GenPrms,StaPrms, ref_station1, ref_station2);
 }
 
 void
 Integration_slice::set_parameters(
   GenP &GenPrms, 
-  StaP *StaPrms,
-  int  ref_station)
+  StaP *StaPrms, 
+  int ref_station1, int ref_station2)
 {
   // Only set the parameters once, otherwise the arrays get constructed twice
   assert( !parameters_set );
   parameters_set = true;
   
   dc.set_parameters(GenPrms, StaPrms);
-  cc.set_parameters(GenPrms, ref_station);
+  cc.set_parameters(GenPrms, ref_station1, ref_station2);
   
   Nsegm2Avg = INT32 (2 * GenPrms.get_bwfl() / GenPrms.get_n2fft());
   Nsegm2Avg = (INT32) (GenPrms.get_time2avg() * Nsegm2Avg);

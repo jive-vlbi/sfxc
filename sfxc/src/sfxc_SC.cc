@@ -120,7 +120,8 @@ int main(int argc, char *argv[])
 
   //initialise integration slice
   Integration_slice IntSlc(GenPrms, StaPrms, log_writer, 
-                           RunPrms.get_ref_station());  
+                           RunPrms.get_ref_station(0), 
+                           RunPrms.get_ref_station(1));  
 
   for (int sn=0; sn< nstations; sn++) {
 

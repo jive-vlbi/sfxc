@@ -27,9 +27,10 @@ class Integration_slice
     Integration_slice(Log_writer &lg_wrtr);
 
     Integration_slice(GenP &GenPrms, StaP* StaPrms, Log_writer &lg_wrtr, 
-       int ref_station);
+       int ref_station1, int ref_station2);
 
-    void set_parameters(GenP &GenPrms, StaP* StaPrms, int ref_station);
+    void set_parameters(GenP &GenPrms, StaP* StaPrms, 
+			int ref_station1, int ref_station2);
       
 
     /** assigns delay table for station number sn**/

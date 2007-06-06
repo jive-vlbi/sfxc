@@ -22,7 +22,12 @@
 #define _FILE_OFFSET_BITS 64
 
 // typedef long INT64;
-#if SIZEOF_LONG==8
+#if SIZEOF_INT==8
+  #define INT64 int 
+  #define UINT64 unsigned int
+  #define MPI_INT64  MPI_INT
+  #define MPI_UINT64 MPI_UNSIGNED_INT
+#elif SIZEOF_LONG==8
   #define INT64 long 
   #define UINT64 unsigned long
   #define MPI_INT64  MPI_LONG
@@ -30,13 +35,8 @@
 #elif SIZEOF_LONG_LONG==8
   #define INT64 long long 
   #define UINT64 unsigned long long
-  #define MPI_INT64  MPI_LONG_LONG_INT
-  #define MPI_UINT64 MPI_UNSIGNED_LONG_LONG_INT
-#elif SIZEOF_INT==8
-  #define INT64 int 
-  #define UINT64 unsigned int
-  #define MPI_INT64  MPI_INT
-  #define MPI_UINT64 MPI_UNSIGNED_INT
+  #define MPI_INT64  MPI_LONG_LONG
+  #define MPI_UINT64 MPI_UNSIGNED_LONG_LONG
 #else
   NGHK: No 64 bits type found ...
 #endif

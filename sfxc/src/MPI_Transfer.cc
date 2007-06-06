@@ -38,7 +38,8 @@ MPI_Transfer::send_general_parameters(int rank) {
   MPI_Pack(&RunPrms.messagelvl, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
   MPI_Pack(&RunPrms.interactive, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&RunPrms.runoption, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&RunPrms.ref_station, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&RunPrms.ref_station1, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&RunPrms.ref_station2, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   
   // GenPrms
   MPI_Pack(&GenPrms.yst, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
@@ -130,7 +131,8 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
   MPI_Unpack(buffer, size, &position, &RunPrms.messagelvl, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &RunPrms.interactive, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &RunPrms.runoption, 1, MPI_INT32, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &RunPrms.ref_station, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &RunPrms.ref_station1, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &RunPrms.ref_station2, 1, MPI_INT32, MPI_COMM_WORLD);
 
   MPI_Unpack(buffer, size, &position, &GenPrms.yst, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position, &GenPrms.dst, 1, MPI_INT32, MPI_COMM_WORLD);

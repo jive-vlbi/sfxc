@@ -3,10 +3,16 @@ vex2ccf:     vex2ccf.o vexplus.o libvex.a
 	$(CC) -o vex2ccf vexplus.o  vex2ccf.o -L. -lvex -lfl
 
 vex2ccf_automated_all_channels:     vex2ccf_automated_all_channels.o vexplus.o libvex.a
-	$(CC) -o vex2ccf_automated_all_channels vexplus.o  vex2ccf_automated_all_channels.o -L. -lvex -lfl
+	$(CC) $(CXXFLAGS) $(LDFLAGS) -o vex2ccf_automated_all_channels vexplus.o  vex2ccf_automated_all_channels.o -L. -lvex -lfl -ljson
+sfxc_vex2ccf:     sfxc_vex2ccf.o vexplus.o libvex.a
+	$(CC) $(CXXFLAGS) $(LDFLAGS) -o sfxc_vex2ccf vexplus.o  sfxc_vex2ccf.o -L. -lvex -lfl -ljson
+
+sfxc_vex2dcf:     sfxc_vex2dcf.o vexplus.o libvex.a
+	$(CC) $(CXXFLAGS) $(LDFLAGS) -o sfxc_vex2dcf vexplus.o  sfxc_vex2dcf.o -L. -lvex -lfl -ljson
+
 #-L lvex: link the local libvex.a
 #-lfl: link the flex library, thjs one should come after lvex
 vex2ccf.o: vex2ccf.cc
 	$(CC) -c vex2ccf.cc
-vexplus.o: vexplus.C vexplus.h
-	$(CC) -c vexplus.C
+vexplus.o: vexplus.cc vexplus.h
+	$(CC) -c vexplus.cc

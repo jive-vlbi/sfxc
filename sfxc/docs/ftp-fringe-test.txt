@@ -1,0 +1,130 @@
+This document describes the steps to do a ftp-fringe-test using the
+JIVE sfxc correlator..
+
+1. Compile the software correlator and the utilities.
+   See the comments below.
+2. Get the vexfile from ccsops:
+   scp jops@ccsops:/ccs/expr/<experiment_name>/<vexfile>
+3. Produce a sfxc-control file.
+   An example is given below.
+4. make_sfxc_experiment_makefile <vexfile> <sfxc-control file> <output_dir>
+   This produces a makefile for the experiment
+5. make -j<N> 
+   Generates the ccf files (one per channel) and the delay tables (one
+   per channel, one per station) with N parallel processes. These
+   control files are generated automatically and are used for the
+   correlation.
+6. make -j<N> correlate
+   Computes the correlation with N parallel processes
+7. make html
+   Produces the output website
+
+
+=====================
+ compilation of sfxc
+=====================
+
+1. aclocal && autoheader && autoconf && automake --add-missing
+2. ./configure CXX=mpicxx
+3. make
+4. cd utils/vex_parser/ && \
+   make -f Makefile.v2c sfxc_vex2ccf sfxc_vex2dcf && \
+   cd -
+5. cd utils/delmo/lib && \
+   make && \
+   cd ../src && \
+   make delmo && \
+   cd ../../..
+6. You now have the utilities:
+   - src/sfxc_SC
+   - utils/make_sfxc_experiment_makefile
+   - utils/vex_parser/sfxc_vex2ccf
+   - utils/vex_parser/sfxc_vex2dcf
+   - utils/delmo/src/delmo
+   Make them available by copying them in a bin directory or 
+   putting them in the path
+
+===========================
+ example sfxc-control file
+===========================
+
+The sfxc-control file is a json file (www.json.org) that provides the
+data needed to correlate the experiment.
+
+{
+  "scan": "No0001",
+  "start": "2007y156d14h07m56s000ms",
+  "duration": 2,
+
+  "refstation": "Jb",
+  "stations": [
+    "Cm",
+    "Wb",
+    "Jb",
+    "On",
+    "Sh"  ],
+  "mk4file": [
+    "f07l2_cm_no0001.m5a",
+    "f07l2_ef_no0001.m5a",
+    "f07l2_wb_no0001.m5a",
+    "f07l2_jb_no0001.m5a",
+    "f07l2_on_no0001.m5a",
+    "f07l2_mc_no0001.m5a",
+    "f07l2_nt_no0001.m5a",
+    "f07l2_tr_no0001.m5a",
+    "f07l2_ur_no0001.m5a",
+    "f07l2_sh_no0001.m5a",
+    "f07l2_hh_no0001.m5a"],
+
+  "mk4dir": "\/data2\/jops\/kruithof\/f07l2\/mk4",
+  "ccfdir": "\/data2\/jops\/kruithof\/f07l2\/ccf",
+  "deldir": "\/data2\/jops\/kruithof\/f07l2\/delay",
+  "outdir": "\/data2\/jops\/kruithof\/f07l2\/output",
+  "htmldir": "\/data2\/jops\/kruithof\/f07l2\/html/scan1",
+
+  "number_of_lags": 1024,
+  "integration_time": 2,
+  "messagelevel": 0
+}
+
+======================================
+ description of the sfxc-control file
+======================================
+
+scan: The scan to correlate, as specified in the vex file
+
+start: The start time of the correlation.
+
+duration: The duration of the correlation in seconds.
+
+refstation: the reference station. This should be the name of one of
+  the stations as specified in the vex file.
+
+stations: A list of the stations to correlate. Each station is
+  reffered to by the station name in the vex file. The order is not
+  important.
+
+mk4file: A list of the names of the mark4 files in the same order as
+  the stations are given in the vex-file.
+
+mk4dir: The directory with the mark4 data files
+
+ccfdir: The directory where the correlator control files are
+  stored. These are automatically generated and updated
+
+deldir: The directory containing the delay tables. These are
+  automatically generated.
+
+outdir: The directory where the output of the correlation is stored
+
+htmldir: The directory where the html page is stored with the fringe-plots
+
+number_of_lags: The number of lags to use in the correlation. This is
+  the same as the number of visibilities for the auto correlations.
+
+integration_time: The integration time in seconds
+
+messagelevel: The amount of messages the correlator should produce.
+ - 0 no output
+ - 1 some output
+ - 2 debugging

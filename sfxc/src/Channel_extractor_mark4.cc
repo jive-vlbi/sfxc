@@ -28,6 +28,7 @@ public:
 
   int goto_time(INT64 time);
   INT64 get_current_time();
+  std::string time2string(INT64 time);
 
   size_t do_get_bytes(size_t nBytes, char *buff);
 
@@ -236,8 +237,10 @@ Channel_extractor_mark4_implementation<T>::
 goto_time(INT64 time) {
   INT64 current_time = get_current_time();
   if (time < current_time) {
-    std::cout << "time in past, current time is: " << get_current_time() << "us" << std::endl;
-    std::cout << "            requested time is: " << time << "us" << std::endl;
+    std::cout << "time in past, current time is: " 
+              << time2string(current_time) << std::endl;
+    std::cout << "            requested time is: " 
+              << time2string(time) << std::endl;
     return -1;
   } else if (time == current_time) {
     return 0;
@@ -266,6 +269,24 @@ Channel_extractor_mark4_implementation<T>::
 get_current_time() {
   return mark4_header.get_microtime(tracks[0]);
 }
+
+template <class T>
+std::string 
+Channel_extractor_mark4_implementation<T>::
+time2string(INT64 time) {
+  char time_str[80];
+  time = time/1000;
+  int ms = time % 1000;
+  time = time/1000;
+  int s = time % 60;
+  time = time/60;
+  int m = time % 60;
+  time = time/60;
+  int h = time;
+  snprintf(time_str, 80, "%02dh%02dm%02ds%03dms", h, m, s, ms);
+  return std::string(time_str);
+}
+
 
 template <class T>
 size_t
@@ -472,6 +493,7 @@ template <class T>
 void 
 Channel_extractor_mark4_implementation<T>::
 print_header(Log_writer &writer, int track) {
+  INT64 current_time = get_current_time();
   writer << mark4_header.year(track) << "y"
          << mark4_header.day(track) << "d"
          << mark4_header.hour(track) << "h"
@@ -479,5 +501,6 @@ print_header(Log_writer &writer, int track) {
          << mark4_header.second(track) << "s"
          << mark4_header.microsecond(track) << "us"
          << std::endl;
-  writer << "equals: " << get_current_time() << "us" << std::endl;
+  writer << "         " << time2string(current_time) << std::endl;
+  writer << "equals: " << current_time << "us" << std::endl;
 }

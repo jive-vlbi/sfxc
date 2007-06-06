@@ -9,6 +9,7 @@
  */
 
 #include <types.h>
+#include <assert.h>
 
 //standard c includes
 #include <stdio.h>
@@ -43,7 +44,11 @@ using namespace std;
 int RunP::get_messagelvl()  const { return messagelvl; }
 int RunP::get_interactive() const { return interactive; }
 int RunP::get_runoption()   const { return runoption; }
-int RunP::get_ref_station() const { return ref_station; }
+int RunP::get_ref_station(int i) const { 
+  if (i == 0) return ref_station1; 
+  assert(i == 1);
+  return ref_station2;
+}
 
 
 
@@ -53,7 +58,8 @@ RunP::RunP()
   messagelvl  = 0; //only error and abort messages
   interactive = 0; //run automatically
   runoption   = 1; //run program complete
-  ref_station = -1;//correlate all possible base lines (auto and crosses)
+  ref_station1 = -1;//correlate all possible base lines (auto and crosses)
+  ref_station2 = -1;//correlate all possible base lines (auto and crosses)
 }
 
 
@@ -91,7 +97,8 @@ int RunP::parse_ctrlFile(char *ctrlFile, Log_writer &log_writer)
       retval = retval + getLongVal(key,val,"MESSAGELVL",messagelvl, log_writer);
       retval = retval + getLongVal(key,val,"INTERACTIVE",interactive, log_writer);
       retval = retval + getLongVal(key,val,"RUNOPTION",runoption, log_writer);
-      retval = retval + getLongVal(key,val,"REFSTATION",ref_station, log_writer);      
+      retval = retval + getLongVal(key,val,"REFSTATION1",ref_station1, log_writer);      
+      retval = retval + getLongVal(key,val,"REFSTATION2",ref_station2, log_writer);      
       
     }
 
@@ -131,7 +138,9 @@ int RunP::check_params(Log_writer &log_writer) const
   log_writer <<
     "Run option           = " << runoption << endl;
   log_writer <<
-    "Reference station    = " << ref_station << endl;
+    "Reference station1   = " << ref_station1 << endl;
+  log_writer <<
+    "Reference station2   = " << ref_station2 << endl;
   log_writer <<
     endl;
 
