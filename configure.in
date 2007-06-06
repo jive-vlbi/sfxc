@@ -5,6 +5,7 @@ AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(sfxc, 0.0.2)
 
 dnl Checks for programs.
+AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_CPP
 AC_PROG_INSTALL

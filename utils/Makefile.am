@@ -15,16 +15,16 @@ bin_PROGRAMS = vex_parser/libvex.a \
                produce_html_plotpage \
                make_sfxc_experiment_makefile
 
-vex_parser/libvex.a:
+vex_parser/libvex.a$(EXEEXT):
 	cd vex_parser; make
 
-vex_parser/sfxc_vex2ccf: vex_parser/libvex.a
+vex_parser/sfxc_vex2ccf$(EXEEXT): vex_parser/libvex.a
 	cd vex_parser; make -f Makefile.v2c sfxc_vex2ccf
 
-vex_parser/sfxc_vex2dcf: vex_parser/libvex.a
+vex_parser/sfxc_vex2dcf$(EXEEXT): vex_parser/libvex.a
 	cd vex_parser; make -f Makefile.v2c sfxc_vex2dcf
 
-delmo/src/delmo:
+delmo/src/delmo$(EXEEXT):
 	cd delmo/lib; make
 	cd delmo/src; make delmo
 
