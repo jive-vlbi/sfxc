@@ -241,7 +241,7 @@ bool DelayCorrection::fill_Bufs()
 
 
       //Time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000); //micro sec 
-      Time = timePtr + (INT64)(jsegm*tmpC); //micro sec 
+      Time = timePtr + (INT64)(jsegm*(tmpC+.5)); //micro sec 
       Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
       
       // 1)calculate the address shift due to time delay for the current segment
@@ -281,9 +281,9 @@ bool DelayCorrection::fill_Bufs()
       
       // 5a)calculate the fract bit shift (=phase corrections in freq domain)
       //Time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000 + n2fftDC/2*tbs*1000000);
-      Time = timePtr + (INT64)(tmpC*(jsegm+0.5));
-      Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
-      dfs  = Cdel/tbs - floor(Cdel/tbs + 0.5);
+//       Time = timePtr + (INT64)(tmpC*(jsegm+0.5));
+//       Cdel = delTbl[sn].calcDelay(Time, DelayTable::Cdel);
+//       dfs  = Cdel/tbs - floor(Cdel/tbs + 0.5);
 
       tmp1 = -2.0*M_PI*dfs*tbs;
       tmp2 = 0.5*M_PI*jshift/ovrfl;

@@ -33,6 +33,7 @@ public:
   
   INT64 get_microtime_difference(INT32 day, INT64 utime, int track); 
   INT64 get_microtime(int track);
+  std::string get_time_str(int track);
 
   bool checkCRC();
   void recomputeCRC();
@@ -227,6 +228,20 @@ Mark4_header<T>::get_microtime(int track) {
                   60 * (minute(track) + 
                         60*(INT64)hour(track)));
 } 
+
+template <class T>
+std::string
+Mark4_header<T>::get_time_str(int track) {
+  char time_str[40];
+  snprintf(time_str,40, "%04dy%03dd%02dh%02dm%02ds%06dus",
+	   year(track),
+	   day(track),
+	   hour(track),
+	   minute(track),
+	   second(track),
+	   microsecond(track));
+  return std::string(time_str);
+}
 
 template <class T>
 INT64 
