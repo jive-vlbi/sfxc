@@ -44,6 +44,10 @@ Unable to link to fftw3 library. If you
 just installed it: try running ldconfig
 as root]))
 
+dnl export these variable (so Makefile substitutions
+dnl can be made. 
+AC_SUBST(CXXFLAGS)
+AC_SUBST(LDFLAGS)
 
 AC_OUTPUT(Makefile
           src/Makefile

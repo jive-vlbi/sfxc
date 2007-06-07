@@ -494,13 +494,7 @@ void
 Channel_extractor_mark4_implementation<T>::
 print_header(Log_writer &writer, int track) {
   INT64 current_time = get_current_time();
-  writer << mark4_header.year(track) << "y"
-         << mark4_header.day(track) << "d"
-         << mark4_header.hour(track) << "h"
-         << mark4_header.minute(track) << "m"
-         << mark4_header.second(track) << "s"
-         << mark4_header.microsecond(track) << "us"
-         << std::endl;
+  writer << "time: " << mark4_header.get_time_str(track) << std::endl;
   writer << "         " << time2string(current_time) << std::endl;
   writer << "equals: " << current_time << "us" << std::endl;
 }

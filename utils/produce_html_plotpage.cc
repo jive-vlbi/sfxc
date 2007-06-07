@@ -187,8 +187,9 @@ Plot_generator::generate_auto_plots(std::ifstream &infile,
                                     Plot_data &plot_data) {
   for (int station=stations_start; station<stations_end; station++) {
     infile.read((char *)&in[0], 2*in.size()*sizeof(double));
-    for  (int j=0; j<nLags; j++) {
-      magnitude[j] = abs(in[j]);
+
+    for  (int lag=0; lag<nLags; lag++) {
+      magnitude[lag] = abs(in[lag]);
     }
     char title[80], filename[80];
     
@@ -235,7 +236,7 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
 
   fftw_execute(visibilities2lags);
   for  (int lag=0; lag<nLags; lag++) {
-    magnitude[lag] = abs(out[(lag+nLags/2)%nLags]);
+    magnitude[lag] = abs(out[(lag+nLags/2)%nLags])/nLags;
   }
       
   char title[80], filename[80];

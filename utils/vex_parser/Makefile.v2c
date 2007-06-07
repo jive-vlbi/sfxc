@@ -4,6 +4,7 @@ vex2ccf:     vex2ccf.o vexplus.o libvex.a
 
 vex2ccf_automated_all_channels:     vex2ccf_automated_all_channels.o vexplus.o libvex.a
 	$(CC) $(CXXFLAGS) $(LDFLAGS) -o vex2ccf_automated_all_channels vexplus.o  vex2ccf_automated_all_channels.o -L. -lvex -lfl -ljson
+
 sfxc_vex2ccf:     sfxc_vex2ccf.o vexplus.o libvex.a
 	$(CC) $(CXXFLAGS) $(LDFLAGS) -o sfxc_vex2ccf vexplus.o  sfxc_vex2ccf.o -L. -lvex -lfl -ljson
 
