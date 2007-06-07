@@ -12,6 +12,7 @@
 
 #include <assert.h>
 
+#include <complex>
 #include <fftw3.h>
 
 #include <math.h>
@@ -73,7 +74,12 @@ class DelayCorrection
 
     //member functions
     // Fill Bufs with delay corrected data.
-    bool fill_Bufs();
+  bool fill_Bufs();
+  bool fill_data_before_delay_correction();
+  bool delay_correct();
+  bool fractional_bit_shift(double const delay, int const integer_shift);
+  bool fringe_stopping(int station, int jsegm);
+  
     
     Log_writer& get_log_writer();
 
@@ -103,17 +109,12 @@ class DelayCorrection
 
     int    n2fftcorr;   //FFT length in correlation
     
-    fftw_complex *sls;  //FW:in; BW: out
-    fftw_complex *spls; //FW:out; BW: in
+    std::complex<double> *sls;      //FW:in; BW: out
+    std::complex<double> *sls_freq; //FW:out; BW: in
     fftw_plan    planT2F;//plan for complex FFT Time to Frequeny
     fftw_plan    planF2T;//plan for complex FFT Frequency to Time
 
     double skyfreq;       //channel sky frequency
-
-
-    double **data_frame;  //array with data to be delay corrected
-    INT32  *df_length;    //data frame length
-    INT32  *df_counter;   //data frame counter
     
     vector<DelayTable>    delTbl;
     vector<Bits_to_float_converter *> sample_reader;
