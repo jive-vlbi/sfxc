@@ -147,7 +147,9 @@ void make_ccf(int channel1, int channel2) {
   cc_file<<"INTERACTIVE 0  #User changeable.\n";
   cc_file<<"RUNOPTION   1  #User changeable.\n";
   {
-    assert (ctrl_file["refstation"].isString());
+    if (!ctrl_file["refstation"].isString()) {
+      ctrl_file["refstation"] = "";
+    }
     int ref_station_nr = -1;
     for (size_t i=0; i<stations.size(); i++) {
       if (vex_file.Station(stations[i]) == 
