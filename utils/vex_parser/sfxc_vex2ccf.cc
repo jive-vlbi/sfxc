@@ -49,7 +49,7 @@ std::vector<int> stations;
               
 // sets the vector stations
 void set_stations();
-void make_ccf(int channel1, int channel2);
+void make_ccf(std::string const &channel1, std::string const &channel2);
 void write_station_block(ofstream &cc_file, int nth_station_in_ccf, 
                          int station, int channel, int channel_for_delay_table,
                          std::string const &scan);
@@ -89,41 +89,32 @@ int main (int argc, char *argv[])
   set_stations();
 
   //create and fill a correlator control file
-  int nChannels = vex_file.N_FreqChans(vex_file.Station(0),
-                                       vex_file.Mode(0));
-  for (int channel = 0; channel < nChannels; channel ++) {
-    if ((channel<nChannels-1) &&
-        (vex_file.SkyFreq(vex_file.Station(0),vex_file.Mode(0),channel) ==
-         vex_file.SkyFreq(vex_file.Station(0),vex_file.Mode(0),channel+1))) {
-      make_ccf(channel, channel+1);
-      channel++;
+  std::vector< std::vector<std::string> > channels;
+  channels = get_channels(vex_file, ctrl_file);
+  for (size_t channel = 0; channel < channels.size(); channel++) {
+    if (channels[channel].size() == 1) {
+      make_ccf(channels[channel][0], "");
     } else {
-      // Next channel is not the other polarisation
-      make_ccf(channel, -1);
+      make_ccf(channels[channel][0], channels[channel][1]);
     }
   }
   return 0;
 }
 
-void make_ccf(int channel1, int channel2) {
+void make_ccf(std::string const &channel1, std::string const &channel2) {
   std::string scan_name = ctrl_file["scan"].asString();
 
   //open ccf, channel+1 since the channels are 1-based in the vex-file
   std::ofstream cc_file(generate_ccf_filename(ctrl_file["ccfdir"].asString(),
                                               vex_file.ExperName(),
                                               ctrl_file["scan"].asString(),
-                                              channel1+1, channel2+1).c_str());
+                                              channel1, channel2).c_str());
   assert(cc_file.is_open());
 
 
-  string CorrelationJob = 
-    vex_file.ExperName()+"_"+
-    scan_name+"_"+
-    vex_file.Link_freq_track(vex_file.Station(0),vex_file.Mode(0),channel1);
-  if (channel2 >= 0) {
-    CorrelationJob +=
-      "_" + 
-      (vex_file.Link_freq_track(vex_file.Station(0),vex_file.Mode(0),channel2));
+  string CorrelationJob = vex_file.ExperName()+"_"+scan_name+"_"+channel1;
+  if (channel2.size() > 0) {
+    CorrelationJob += "_" + channel2;
   }
   time_t creation_time;
   time(&creation_time);
@@ -159,7 +150,7 @@ void make_ccf(int channel1, int channel2) {
     }
     if (ref_station_nr >= 0) {
       cc_file <<"REFSTATION1  " << ref_station_nr << " #User changeable.\n";
-      if (channel2 >= 0) {
+      if (channel2.size() > 0) {
         cc_file <<"REFSTATION2  " << ref_station_nr+stations.size() 
                 << " #User changeable.\n";
       } else {
@@ -193,7 +184,7 @@ void make_ccf(int channel1, int channel2) {
   cc_file<<"DURATION         " << ctrl_file["duration"] << " #User changeable.\n";
   //rndhdr
   cc_file<<"RNDHDR           1  #User changeable.\n";
-  if (channel2 >= 0) {
+  if (channel2.size() > 0) {
     cc_file<<"NSTATIONS        " << 2*stations.size() << endl;
   } else {
     cc_file<<"NSTATIONS        " << stations.size() << endl;
@@ -209,20 +200,44 @@ void make_ccf(int channel1, int channel2) {
          << generate_cor_filename("",
                                   vex_file.ExperName(),
                                   ctrl_file["scan"].asString(),
-                                  channel1+1, channel2+1).c_str()
+                                  channel1, channel2).c_str()
          << "\n";
   cc_file<<"\n";
+
+  int ch1_int = -1, ch2_int = -1;
+  for (size_t ch=0; 
+       ch<vex_file.N_FreqChans(vex_file.Station(0), vex_file.Mode(0)); 
+       ch++) {
+    if (channel1 == vex_file.Link_freq_track(vex_file.Station(0), 
+                                             vex_file.Mode(0),
+                                             ch)) {
+      ch1_int = ch;
+    }
+    if (channel2 == vex_file.Link_freq_track(vex_file.Station(0), 
+                                             vex_file.Mode(0),
+                                             ch)) {
+      ch2_int = ch;
+    }
+  }
+  assert(ch1_int != -1);
+  assert((channel2.size() == 0) || (ch2_int != -1));
 
 
   //bandwidth input
   cc_file<<"#_____________________________________________________________\n";
-  cc_file<<"SKYFREQ     "<< 
-    vex_file.SkyFreq(vex_file.Station(0), vex_file.Mode(0), channel1) * 1000000. << endl;
-  cc_file<<"BWIN        "<< vex_file.BW(vex_file.Station(0),vex_file.Mode(0),channel1) <<endl;
+  cc_file<<"SKYFREQ     "
+         << vex_file.SkyFreq(vex_file.Station(0), vex_file.Mode(0), ch1_int) * 1000000.
+         << endl;
+  cc_file<<"BWIN        "
+         << vex_file.BW(vex_file.Station(0),vex_file.Mode(0),ch1_int) \
+         << std::endl;
   //side band U or L
-  cc_file<<"SIDEBAND    "<< vex_file.SideBand( vex_file.Station(0), vex_file.Mode(0),channel1)<<endl;
+  cc_file<< "SIDEBAND    "
+         << vex_file.SideBand( vex_file.Station(0), vex_file.Mode(0),ch1_int)
+         << endl;
   //fft length in delay correction
-  cc_file<<"N2FFTDEL     "<< ctrl_file["number_of_lags"].asInt() << std::endl;
+  cc_file<<"N2FFTDEL     "
+         << ctrl_file["number_of_lags"].asInt() << std::endl;
   //delay columns
   cc_file<<"DELCOLS     1 1 1  #User changeable.\n";
   cc_file<<"\n";
@@ -254,14 +269,14 @@ void make_ccf(int channel1, int channel2) {
   //write block for each station
   for (size_t station=0; station<stations.size(); station++) {
     write_station_block(cc_file, station, station, 
-                        channel1, channel1, scan_name);
+                        ch1_int, ch1_int, scan_name);
   }
-  if (channel2 >= 0) {
+  if (channel2.size() > 0) {
     for (size_t station=0; station<stations.size(); station++) {
       write_station_block(cc_file, 
                           station+stations.size(), 
                           station, 
-                          channel2, channel1, scan_name);
+                          ch2_int, ch1_int, scan_name);
     }
   }
 
@@ -358,7 +373,9 @@ void write_station_block(ofstream &cc_file,
          << generate_del_filename(ctrl_file["deldir"].asString(),
                                   vex_file.ExperName(),
                                   ctrl_file["scan"].asString(),
-                                  channel_for_delay_table+1,
+                                  vex_file.Link_freq_track(vex_file.Station(0), 
+                                                           vex_file.Mode(0),
+                                                           channel_for_delay_table+1),
                                   vex_file.Station(stations[station]))
          << "\n";
   //DELAYEND
