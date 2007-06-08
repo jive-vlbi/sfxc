@@ -32,7 +32,7 @@ VexPlus vex_file;
 Json::Value ctrl_file;
 int scan_nr = -1;
               
-void make_dcf(int channel1, int channel2);
+void make_dcf(std::string const &channel1, int station);
 long str_to_long (std::string inString, int pos, int length);
 
 //this function is called by yd2md
@@ -86,6 +86,9 @@ int main (int argc, char *argv[])
     }
   }
 
+  std::vector< std::vector<std::string> > channels;
+  channels = get_channels(vex_file, ctrl_file);
+
   assert(vex_file.N_Modes() == 1);
 
   for (size_t scan = 0; scan < vex_file.N_Scans(vex_file.Station(0)); scan++) {
@@ -96,26 +99,23 @@ int main (int argc, char *argv[])
   }
   assert(scan_nr >= 0);
 
-  int nChannels = vex_file.N_FreqChans(vex_file.Station(0),
-                                       vex_file.Mode(0));
-  for (int channel = 0; channel < nChannels; channel ++) {
+  for (int channel = 0; channel < channels.size(); channel ++) {
     assert(ctrl_file["stations"].isArray());
     for (size_t station=0; station<ctrl_file["stations"].size(); station++) {
-      make_dcf(channel, station);
+      make_dcf(channels[channel][0], station);
     }
   }
 
   return 0;
 }
 
-void make_dcf(int channel, int station) {
-  string LFT=vex_file.Link_freq_track(vex_file.Station(station),vex_file.Mode(0),channel);
-  string CorrelationJob = vex_file.ExperName()+"_"+ctrl_file["scan"].asString()+"_"+LFT;
+void make_dcf(std::string const &channel, int station) {
+  string CorrelationJob = vex_file.ExperName()+"_"+ctrl_file["scan"].asString()+"_"+channel;
 
   string dcf_name=generate_dcf_filename(ctrl_file["deldir"].asString(),
                                         vex_file.ExperName(),
                                         ctrl_file["scan"].asString(),
-                                        channel+1);
+                                        channel);
 
 
   //open dcf
@@ -132,7 +132,7 @@ void make_dcf(int channel, int station) {
   dc_file<<"#EXPERIMENT___________________________________________________\n";
   dc_file<<"experiment      " << vex_file.ExperName() << endl;
   //channel id and index
-  dc_file<<"Channel ID      " << LFT << endl;
+  dc_file<<"Channel ID      " << channel << endl;
   dc_file<< endl;
 
 
@@ -193,10 +193,21 @@ void make_dcf(int channel, int station) {
     dc_file<<endl;
   }
 
+  int ch_int = -1;
+  for (size_t ch=0; 
+       ch<vex_file.N_FreqChans(vex_file.Station(0), vex_file.Mode(0)); 
+       ch++) {
+    if (channel == vex_file.Link_freq_track(vex_file.Station(0), 
+                                            vex_file.Mode(0),
+                                            ch)) {
+      ch_int = ch;
+    }
+  }
+  assert(ch_int != -1);
 
   dc_file<<"#RFREQ________________________________________________________\n";
   dc_file<<"freq            " << 
-    vex_file.SkyFreq(vex_file.Station(station), vex_file.Mode(0), channel) * 1000000. << endl;
+    vex_file.SkyFreq(vex_file.Station(station), vex_file.Mode(0), ch_int) * 1000000. << endl;
   dc_file<<endl;
 
   dc_file<<"#Station_data_________________________________________________\n";
@@ -213,7 +224,7 @@ void make_dcf(int channel, int station) {
     string deltbl = generate_del_filename(ctrl_file["deldir"].asString(),
                                           vex_file.ExperName(),
                                           ctrl_file["scan"].asString(),
-                                          channel+1,
+                                          channel,
                                           vex_file.Station(station));
     dc_file<<"DELAYTABLE            "<< deltbl << endl;
     dc_file<<"site_name             "<< vex_file.Site(vex_file.Station(station))<<endl;

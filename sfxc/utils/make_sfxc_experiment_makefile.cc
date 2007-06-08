@@ -5,6 +5,8 @@
 #include <basic.h>
 #include <assert.h>
 
+std::vector< std::vector<std::string> > channels;
+
 void print_general_section(std::ostream &out, 
 			   char this_program[],
 			   char vex_file[], 
@@ -57,6 +59,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  channels = get_channels(vex, sfxc_ctrl);
+
   print_general_section(out, this_program, vex_file, ctrl_file);
   print_ccf_section(out, vex, sfxc_ctrl);
   print_del_section(out, vex, sfxc_ctrl);
@@ -88,53 +92,43 @@ void print_general_section(std::ostream &out,
 void print_ccf_section(std::ostream &out,
                        VexPlus const &vex, 
                        Json::Value const &sfxc_ctrl) {
-
-  int nChannels = vex.N_FreqChans(vex.Station(0),
-                                       vex.Mode(0));
-
   out << "CCF = ";
-  for (int channel = 0; channel < nChannels; channel ++) {
-    if ((channel<nChannels-1) &&
-        (vex.SkyFreq(vex.Station(0),vex.Mode(0),channel) ==
-         vex.SkyFreq(vex.Station(0),vex.Mode(0),channel+1))) {
+  for (size_t channel = 0; channel < channels.size(); channel++) {
+    if (channels[channel].size() == 1) {
       out << " \\\n  "
           << generate_ccf_filename(sfxc_ctrl["ccfdir"].asString(),
                                    vex.ExperName(),
                                    sfxc_ctrl["scan"].asString(),
-                                   channel+1, channel+2).c_str();
-      channel++;
+                                   channels[channel][0], "");
     } else {
-      // Next channel is not the other polarisation
       out << " \\\n  "
           << generate_ccf_filename(sfxc_ctrl["ccfdir"].asString(),
                                    vex.ExperName(),
                                    sfxc_ctrl["scan"].asString(),
-                                   channel+1, -1).c_str();
+                                   channels[channel][0],
+                                   channels[channel][1]);
     }
   }
   out << std::endl << std::endl;
   out << "ccf: $(CCF)" << std::endl;
-  for (int channel = 0; channel < nChannels; channel ++) {
-    if ((channel<nChannels-1) &&
-        (vex.SkyFreq(vex.Station(0),vex.Mode(0),channel) ==
-         vex.SkyFreq(vex.Station(0),vex.Mode(0),channel+1))) {
+
+  for (size_t channel = 0; channel < channels.size(); channel++) {
+    if (channels[channel].size() == 1) {
       out << generate_ccf_filename(sfxc_ctrl["ccfdir"].asString(),
                                    vex.ExperName(),
                                    sfxc_ctrl["scan"].asString(),
-                                   channel+1, channel+2).c_str();
-      channel++;
+                                   channels[channel][0], "");
     } else {
-      // Next channel is not the other polarisation
       out << generate_ccf_filename(sfxc_ctrl["ccfdir"].asString(),
                                    vex.ExperName(),
                                    sfxc_ctrl["scan"].asString(),
-                                   channel+1, -1).c_str();
+                                   channels[channel][0],
+                                   channels[channel][1]);
     }
     out << ": $(VEXFILE) $(CTRLFILE)" << std::endl
         << "\tsfxc_vex2ccf $(VEXFILE) $(CTRLFILE)"
         << std::endl
         << std::endl;
-
   }
 }
 
@@ -142,32 +136,24 @@ void print_del_section(std::ostream &out,
                        VexPlus const &vex, 
                        Json::Value const &sfxc_ctrl) {
 
-  int nChannels = vex.N_FreqChans(vex.Station(0), vex.Mode(0));
-
   out << "DELAYTABLES =";
-  for (int channel = 0; channel < nChannels; channel ++) {
-    assert(sfxc_ctrl["stations"].isArray());
-    // Dependency on one station per channel is enough
+  for (size_t channel = 0; channel < channels.size(); channel++) {
     out << " \\\n  "
         <<generate_del_filename(sfxc_ctrl["deldir"].asString(),
                                 vex.ExperName(),
                                 sfxc_ctrl["scan"].asString(),
-                                channel+1,
+                                channels[channel][0],
                                 vex.Station(0)).c_str();
-    if ((channel<nChannels-1) &&
-        (vex.SkyFreq(vex.Station(0),vex.Mode(0),channel) ==
-         vex.SkyFreq(vex.Station(0),vex.Mode(0),channel+1))) {
-      channel++;
-    }
   }
   out << std::endl << std::endl;
   out << "del: $(DELAYTABLES)" << std::endl;
-  for (int channel = 0; channel < nChannels; channel ++) {
+
+  for (size_t channel = 0; channel < channels.size(); channel++) {
     assert(sfxc_ctrl["stations"].isArray());
     out <<generate_dcf_filename(sfxc_ctrl["deldir"].asString(),
                                 vex.ExperName(),
                                 sfxc_ctrl["scan"].asString(),
-                                channel+1).c_str();
+                                channels[channel][0]).c_str();
     out << ": $(VEXFILE)" << std::endl
         << "\tsfxc_vex2dcf $(VEXFILE) $(CTRLFILE)"
         << std::endl;
@@ -176,26 +162,21 @@ void print_del_section(std::ostream &out,
       out <<generate_del_filename(sfxc_ctrl["deldir"].asString(),
                                   vex.ExperName(),
                                   sfxc_ctrl["scan"].asString(),
-                                  channel+1,
+                                  channels[channel][0],
                                   vex.Station(station)).c_str()
           << ": " 
           << generate_dcf_filename(sfxc_ctrl["deldir"].asString(),
                                    vex.ExperName(),
                                    sfxc_ctrl["scan"].asString(),
-                                   channel+1).c_str()
+                                   channels[channel][0]).c_str()
           << std::endl
           << "\tdelmo "
           << generate_dcf_filename(sfxc_ctrl["deldir"].asString(),
                                    vex.ExperName(),
                                    sfxc_ctrl["scan"].asString(),
-                                   channel+1).c_str()
+                                   channels[channel][0]).c_str()
           << " .250"
           << std::endl;
-    }
-    if ((channel<nChannels-1) &&
-        (vex.SkyFreq(vex.Station(0),vex.Mode(0),channel) ==
-         vex.SkyFreq(vex.Station(0),vex.Mode(0),channel+1))) {
-      channel++;
     }
   }
   out << std::endl << std::endl;
@@ -204,18 +185,15 @@ void print_del_section(std::ostream &out,
 void print_correlate_section(std::ostream &out,
                              VexPlus const &vex, 
                              Json::Value const &sfxc_ctrl) {
-  int nChannels = vex.N_FreqChans(vex.Station(0), vex.Mode(0));
-
   out << "CORRELATION_OUTPUT_FILES = ";
-  for (int channel = 0; channel < nChannels; channel ++) {
-    if ((channel<nChannels-1) &&
-        (vex.SkyFreq(vex.Station(0),vex.Mode(0),channel) ==
-         vex.SkyFreq(vex.Station(0),vex.Mode(0),channel+1))) {
+  for (size_t channel = 0; channel < channels.size(); channel++) {
+    if (channels[channel].size() == 2) {
       out << " \\\n  "
           << generate_cor_filename(sfxc_ctrl["outdir"].asString(),
                                    vex.ExperName(),
                                    sfxc_ctrl["scan"].asString(),
-                                   channel+1, channel+2).c_str();
+                                   channels[channel][0], 
+                                   channels[channel][1]).c_str();
       channel++;
     } else {
       // Next channel is not the other polarisation
@@ -223,37 +201,40 @@ void print_correlate_section(std::ostream &out,
           << generate_cor_filename(sfxc_ctrl["outdir"].asString(),
                                    vex.ExperName(),
                                    sfxc_ctrl["scan"].asString(),
-                                   channel+1, -1).c_str();
+                                   channels[channel][0], 
+                                   "").c_str();
     }
   }
   out << std::endl
       << "correlate: $(CORRELATION_OUTPUT_FILES)" << std::endl
       << std::endl;
   
-  for (int channel = 0; channel < nChannels; channel ++) {
+  for (size_t channel = 0; channel < channels.size(); channel++) {
     std::string cor_file, ccf_file;
-    if ((channel<nChannels-1) &&
-        (vex.SkyFreq(vex.Station(0),vex.Mode(0),channel) ==
-         vex.SkyFreq(vex.Station(0),vex.Mode(0),channel+1))) {
+    if (channels[channel].size() == 2) {
       cor_file = generate_cor_filename(sfxc_ctrl["outdir"].asString(),
                                        vex.ExperName(),
                                        sfxc_ctrl["scan"].asString(),
-                                       channel+1, channel+2).c_str();
+                                       channels[channel][0], 
+                                       channels[channel][1]).c_str();
       ccf_file = generate_ccf_filename(sfxc_ctrl["ccfdir"].asString(),
                                        vex.ExperName(),
                                        sfxc_ctrl["scan"].asString(),
-                                       channel+1, channel+2).c_str();
+                                       channels[channel][0], 
+                                       channels[channel][1]).c_str();
       channel++;
     } else {
       // Next channel is not the other polarisation
       cor_file = generate_cor_filename(sfxc_ctrl["outdir"].asString(),
                                        vex.ExperName(),
                                        sfxc_ctrl["scan"].asString(),
-                                       channel+1, -1).c_str();
+                                       channels[channel][0], 
+                                       "");
       ccf_file = generate_ccf_filename(sfxc_ctrl["ccfdir"].asString(),
                                        vex.ExperName(),
                                        sfxc_ctrl["scan"].asString(),
-                                       channel+1, -1).c_str();
+                                       channels[channel][0], 
+                                       "");
     }
     out << cor_file << ": " << ccf_file << " " << "$(DELAYTABLES)" << std::endl
         << "\tsfxc_SC " << ccf_file << std::endl;;
