@@ -12,6 +12,9 @@
 #include <types.h>
 #include <Semaphore_buffer.h>
 
+#include <Data_reader_buffer.h>
+#include <Channel_extractor_mark4.h>
+
 #include <iostream>
 #include <assert.h>
 #include <time.h>
@@ -23,6 +26,7 @@ Input_node::Input_node(int rank, Log_writer *log_writer)
     input_node_ctrl(*this),
     data_reader_ctrl(*this),
     data_writers_ctrl(*this),
+    channel_extractor(NULL),
     time_stamp(1),
     buffer_size(BUFFER_SIZE),
     status(STOPPED)
@@ -34,6 +38,7 @@ Input_node::Input_node(int rank)
     input_node_ctrl(*this),
     data_reader_ctrl(*this),
     data_writers_ctrl(*this),
+    channel_extractor(NULL),
     time_stamp(1),
     buffer_size(BUFFER_SIZE),
     nr_input_reader(nr_input_reader),
@@ -93,18 +98,24 @@ void Input_node::start() {
           msg_result = check_and_process_waiting_message();
         }
         
-        if (data_reader_ctrl.eof() && data_reader_ctrl.buffer()->empty()) {
+        if (channel_extractor->eof()) {
           status = END_NODE;
           break;
         }
         if (status == SEND_OUTPUT) {
           if (data_reader_ctrl.buffer()->empty()) {
+            // unnecessary, but convenient to avoid blocking the process
             usleep(100000); // .1 second:
           } else {
-            int size;
             assert(data_reader_ctrl.buffer() != NULL);
-            value_type &cons_elem = data_reader_ctrl.buffer()->consume(size);
-//            get_log_writer()(0) << " - status == SEND_OUTPUT " << size <<  std::endl;
+            int size = 131072;
+            get_log_writer()(0) << " - status == SEND_OUTPUT " << size <<  std::endl;
+            char buffer[size];
+            size = channel_extractor->get_bytes(size, buffer);
+            if (size <= 0) {
+              status = END_NODE;
+              break;
+            }
 
             update_active_list();
 
@@ -116,11 +127,11 @@ void Input_node::start() {
                   Multiple_data_writers_controller::Buffer2writer::RUNNING) {
                 value_type &prod_elem =
                   data_writers_ctrl.buffer(*it)->produce();
-                memcpy(prod_elem.buffer(), cons_elem.buffer(), size);
+                memcpy(prod_elem.buffer(), buffer, size);
                 data_writers_ctrl.buffer(*it)->produced(size);
               }
             }
-            data_reader_ctrl.buffer()->consumed();
+            //data_reader_ctrl.buffer()->consumed();
           }
         }
         break;
@@ -135,11 +146,22 @@ void Input_node::start() {
     usleep(100000); // .1 second:
   }
   
+  for (std::list<int>::iterator it = active_list.begin();
+       it != active_list.end(); it++) {
+    if (data_writers_ctrl.get_rank_node_reader(*it) >= 0) {
+      UINT64 msg[2] = {get_input_node_number(), 
+                       data_writers_ctrl.get_data_writer(*it)->data_counter()};
+      data_writers_ctrl.get_data_writer(*it)->reset_data_counter();
+      // Notify output node: 
+      MPI_Send(&msg, 2, MPI_UINT64, RANK_OUTPUT_NODE,
+               MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED, MPI_COMM_WORLD);
+    }
+  }
+
   INT32 rank = get_rank();
   MPI_Send(&rank, 1, MPI_INT32, 
            RANK_MANAGER_NODE, MPI_TAG_DATASTREAM_EMPTY, MPI_COMM_WORLD);
 }
-
 
 void Input_node::set_priority(int stream, UINT64 start, UINT64 stop) {
   start_queue.insert(std::pair<INT64,int>(start, stream));
@@ -224,7 +246,14 @@ void Input_node::stop_stream(const std::list<int>::iterator &stream_it) {
   active_list.erase(it_del);
 }
 
-void Input_node::hook_added_data_reader(size_t reader) {
+void Input_node::hook_added_data_reader(size_t stream_nr) {
+  assert(channel_extractor == NULL);
+  assert(data_reader_ctrl.get_data_reader() != NULL);
+  Data_reader_buffer * data_reader_buffer = 
+    new Data_reader_buffer(data_reader_ctrl.buffer());
+  channel_extractor = 
+    new Channel_extractor_mark4(*data_reader_buffer, 
+                                StaPrms[nr_input_reader], GenPrms.get_rndhdr());
 }
 
 void Input_node::hook_added_data_writer(size_t writer) {

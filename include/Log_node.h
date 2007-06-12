@@ -12,20 +12,21 @@
 
 #include <Node.h>
 #include <Log_writer.h>
+#include <Log_writer_mpi.h>
 
 class Log_node;
 
 class Log_node_controller : public Controller
 {
 public:
-  Log_node_controller(Node &node, int nNodes);
+  Log_node_controller(Node &node, int rank, int nNodes);
 
   Process_event_status process_event(MPI_Status &status);
 
   void set_log_writer(Log_writer *writer);
   bool ready() { return nConnections == 0; }
 private:
-  Log_writer *log_writer;
+  Log_writer *log_writer_output; // For outputting messages
   int nConnections;
 };
 

@@ -40,7 +40,8 @@ void
 send_control_parameters_to_controller_node(char *filename,
                                            int rank, 
                                            Log_writer &log_writer) {
-  if (initialise_control(filename, log_writer) != 0) {
+  if (initialise_control(filename, log_writer, RunPrms, GenPrms, StaPrms)
+      != 0) {
     log_writer(0) << "Initialisation using control file \'" << filename 
                   << "\'failed" << std::endl;
     return;
@@ -62,8 +63,7 @@ send_control_parameters_to_controller_node(char *filename,
   for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
     DelayTable delay; 
     log_writer << StaPrms[sn].get_delaytable() << std::endl;
-    int retval = delay.readDelayTable(StaPrms[sn].get_delaytable(),
-                                      BufTime );
+    int retval = delay.readDelayTable(StaPrms[sn].get_delaytable());
     if (retval != 0) {
       log_writer << "ERROR: when reading delay table.\n";
       return;
@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
     case MPI_TAG_SET_CORRELATOR_NODE: 
       {
         assert (rank == rank_correlator_node);
-        Correlator_node correlator(rank);
+        Correlator_node correlator(rank, numtasks, 10);
         correlator.start();
         break;
       }

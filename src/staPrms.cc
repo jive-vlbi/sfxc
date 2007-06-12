@@ -67,7 +67,7 @@ StaP::StaP()
   tbr     =  8;
   fo      =  4;
   bps     =  2;
-  nhs     =  2;
+  nhs     =  -1;
   tphs    = 32;
   boff    =  0;
   synhs1  =  1;

@@ -126,7 +126,6 @@ private:
   Correlator_node_controller       correlator_node_ctrl;
   Multiple_data_readers_controller data_readers_ctrl;
   Single_data_writer_controller    data_writer_ctrl;
-  std::vector<Channel_extractor *> channel_extractors;
 
   // The actual correlator code:
   Integration_slice integration_slice;

@@ -17,16 +17,17 @@
 Data_writer_file::Data_writer_file(const char *filename) : 
   Data_writer()
 {
-  file = fopen64(filename, "wb");
+  file = FOPEN(filename, "wb");
   assert(file != NULL);
 }
 
 Data_writer_file::~Data_writer_file() {
+  fflush(file);
   fclose(file);
 }
   
-INT64 
-Data_writer_file::do_put_bytes(INT64 nBytes, char *buff) {
+size_t 
+Data_writer_file::do_put_bytes(size_t nBytes, char *buff) {
   UINT64 result = fwrite(buff, 1, nBytes, file);
   assert(result == (UINT64)nBytes);
   return result;

@@ -156,6 +156,10 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
              i+START_INPUT_NODES, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD,
              &status);
 
+    // Send the necessary control parameters:
+    MPI_Transfer mpi_transfer;
+    mpi_transfer.send_general_parameters(i+START_INPUT_NODES);
+
     char *filename = StaPrms[i].get_mk4file();
     // strlen+1 so that \0 gets transmitted as well
     MPI_Send(filename, strlen(filename)+1, MPI_CHAR, 

@@ -118,11 +118,13 @@ void Correlator_node::start()
               get_data_writer().reset_data_counter();
               // Notify output node: 
               MPI_Send(&i, 2, MPI_UINT64, RANK_OUTPUT_NODE,
-                       MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED, MPI_COMM_WORLD);
+                       MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED, 
+                       MPI_COMM_WORLD);
               // Notify manager node:
               INT32 msg = 0;
               MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
-                       MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, MPI_COMM_WORLD);
+                       MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, 
+                       MPI_COMM_WORLD);
                        
   
                        
@@ -161,19 +163,11 @@ void Correlator_node::set_parameters(RunP &runPrms, GenP &genPrms, StaP *staPrms
 
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
-  if (channel_extractors.size() <= stream_nr) {
-    channel_extractors.resize(stream_nr+1, NULL);
-  }
-  assert(channel_extractors[stream_nr] == NULL);
-  channel_extractors[stream_nr] = 
-    new Channel_extractor_mark4(*data_readers_ctrl.get_data_reader(stream_nr), 
-                                *StaPrms, GenPrms.get_rndhdr());
-
-    Bits_to_float_converter *sample_reader = new Bits_to_float_converter();
-    sample_reader->set_bits_per_sample(StaPrms->get_bps());
-    sample_reader->set_channel_extractor(channel_extractors[stream_nr]);
-    
-    get_integration_slice().set_sample_reader(stream_nr,sample_reader);
+  Bits_to_float_converter *sample_reader = new Bits_to_float_converter();
+  sample_reader->set_bits_per_sample(StaPrms->get_bps());
+  sample_reader->set_data_reader(data_readers_ctrl.get_data_reader(stream_nr));
+  
+  get_integration_slice().set_sample_reader(stream_nr,sample_reader);
 }
 
 void Correlator_node::hook_added_data_writer(size_t i) {
@@ -193,7 +187,7 @@ void Correlator_node::set_slice_number(int sliceNr_) {
 void *Correlator_node::start_init_reader(void * self_) {
   Init_reader_struct *ir_struct = static_cast<Init_reader_struct *>(self_);
   Correlator_node *node = ir_struct->corr_node;
-  node->channel_extractors[ir_struct->sn]->goto_time(ir_struct->startIS);
+//  node->channel_extractors[ir_struct->sn]->goto_time(ir_struct->startIS);
   node->get_integration_slice().init_reader(ir_struct->sn,ir_struct->startIS);
   return NULL;
 }

@@ -34,7 +34,7 @@ log_node_SOURCES = $(OBJ) log.cc \
   ../Log_writer_cout.cc ../Log_writer_file.cc
 
 input_node_SOURCES = $(OBJ) input.cc \
-  ../Input_node.cc ../Input_node_controller.cc
+  ../Input_node_without_buffering.cc ../Input_node_controller.cc
 
 correlator_node_SOURCES = $(OBJ) correlator.cc \
   ../Correlator_node.cc ../Correlator_node_controller.cc \

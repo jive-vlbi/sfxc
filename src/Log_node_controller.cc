@@ -13,9 +13,9 @@
 #include "Log_writer_cout.h"
 #include "Log_writer_file.h"
 
-Log_node_controller::Log_node_controller(Node &node, int nNodes)
+Log_node_controller::Log_node_controller(Node &node, int rank, int nNodes)
  : Controller(node), 
-   log_writer(NULL), 
+   log_writer_output(NULL),
    nConnections(nNodes-1)
 {
   MPI_Status status, status2;
@@ -40,7 +40,8 @@ Log_node_controller::Log_node_controller(Node &node, int nNodes)
       break;
     }
     default: {
-      std::cout << "Unknown log type: " << print_MPI_TAG(status.MPI_TAG) << std::endl; 
+      // Use the default mpi log writer:
+      get_log_writer() << "Unknown log type: " << print_MPI_TAG(status.MPI_TAG) << std::endl; 
     }
   }
   
@@ -51,7 +52,7 @@ Log_node_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
     case MPI_TAG_LOG_MESSAGE: {
-      assert(log_writer != NULL);
+      assert(log_writer_output != NULL);
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 0);
@@ -62,11 +63,10 @@ Log_node_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      (*log_writer) << message << std::endl;;
+      (*log_writer_output) << message << std::endl;
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
     case MPI_TAG_LOG_MESSAGES_ENDED: {
-      assert(log_writer != NULL);
       int node;
       MPI_Recv(&node, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -74,10 +74,9 @@ Log_node_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      (*log_writer) << "#" << RANK_LOG_NODE << "  *** Node " << status.MPI_SOURCE
-                    << " finished." << std::endl;
-//      (*log_writer) << "#" << RANK_LOG_NODE << " nConnections: " 
-//                    << nConnections-1 << std::endl;
+      // Use the default mpi log writer:
+      get_log_writer() << "  *** Node " << status.MPI_SOURCE
+                       << " finished." << std::endl;
       
       nConnections --;
       return PROCESS_EVENT_STATUS_SUCCEEDED;
@@ -88,7 +87,7 @@ Log_node_controller::process_event(MPI_Status &status) {
 }
 
 void Log_node_controller::set_log_writer(Log_writer *writer) {
-  assert(log_writer == NULL);
+  assert(log_writer_output == NULL);
   //if (log_writer != NULL) delete log_writer;
-  log_writer = writer;
+  log_writer_output = writer;
 }

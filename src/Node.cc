@@ -12,17 +12,22 @@
 #include <assert.h>
 
 Node::Node(int rank) : rank(rank), log_writer(new Log_writer_mpi(rank, 0)) {
-  log_writer->set_mpilevel(1);
+  log_writer->set_mpilevel(2);
 }
 
 Node::Node(int rank, Log_writer *writer) : rank(rank), log_writer(writer) {
-  log_writer->set_mpilevel(1);
+  log_writer->set_mpilevel(2);
 }
 
 Node::~Node() {
   int rank = get_rank();
   MPI_Send(&rank, 1, MPI_INT, 
            RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
+}
+
+Log_writer &Node::get_log_writer() {
+  assert(log_writer != NULL);
+  return *log_writer;
 }
 
 void 
@@ -86,6 +91,8 @@ Node::check_and_process_message() {
 
 Node::MESSAGE_RESULT 
 Node::process_event(MPI_Status &status) {
+//  std::cout << "COUT: " << rank << ": " << status.MPI_SOURCE << " "
+//            << print_MPI_TAG(status.MPI_TAG) << std::endl;
   if (status.MPI_TAG == MPI_TAG_CORRELATION_READY) {
     MPI_Status status2; int msg;
     MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,

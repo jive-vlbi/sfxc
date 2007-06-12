@@ -16,6 +16,7 @@
 #include <vector>
 
 #include <utils.h>
+#include <complex>
 #include <Log_writer_cout.h>
 #include <gnuplot_i.h>
 

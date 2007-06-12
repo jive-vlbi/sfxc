@@ -8,6 +8,7 @@
  */
 
 #include <Data_writer.h>
+#include <iostream>
 
 Data_writer::Data_writer() : _data_counter(0) {
 }
@@ -15,10 +16,10 @@ Data_writer::Data_writer() : _data_counter(0) {
 Data_writer::~Data_writer() {
 }
   
-INT64 
-Data_writer::put_bytes(INT64 nBytes, char *buff) {
+size_t
+Data_writer::put_bytes(size_t nBytes, char *buff) {
   INT64 result = do_put_bytes(nBytes, buff);
-  _data_counter += result;
+  _data_counter += (INT64)result;
   return result;
 }
   

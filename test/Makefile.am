@@ -35,6 +35,8 @@ OBJ = ../src/utils.cc \
       ../src/staPrms.cc \
       ../src/genFunctions.cc \
       ../src/delayTable.cc \
+      ../src/Channel_extractor_mark4.cc \
+      ../src/Bits_to_float_converter.cc \
       \
       ../src/Data_reader.cc \
       ../src/Data_reader_file.cc \
@@ -51,7 +53,8 @@ OBJ = ../src/utils.cc \
       ../src/Log_writer_mpi.cc\
       \
       ../src/Node.cc \
-      ../src/Input_node.cc \
+      ../src/Input_node_without_buffering.cc \
+#      ../src/Input_node.cc \
       ../src/Output_node.cc \
       ../src/Log_node.cc \
       \
@@ -78,7 +81,7 @@ test_Data_reader_file_SOURCES = \
 
 test_Data_reader_TCP_SOURCES = \
   test_Data_reader_TCP.cc ../src/Data_reader_tcp.cc ../src/Data_writer.cc \
-  ../src/Data_writer_tcp.cc ../src/TCP_Connection.cc ../src/Data_reader_file.cc \
+  ../src/Data_writer_tcp.cc ../src/Data_reader.cc ../src/TCP_Connection.cc ../src/Data_reader_file.cc \
   ../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/Data_reader_buffer.cc
 
 test_Data_reader_mark5_SOURCES = \
@@ -101,8 +104,7 @@ test_Log_writer_mpi_SOURCES = \
   ../src/Log_writer.cc ../src/Log_writer_cout.cc \
   ../src/Log_writer_mpi.cc  ../src/Log_writer_file.cc \
   ../src/Controller.cc ../src/Log_node_controller.cc  ../src/Log_node.cc
-  
+
 test_TCP_connection_SOURCES = \
   test_TCP_connection.cc \
   ../src/TCP_Connection.cc
-  

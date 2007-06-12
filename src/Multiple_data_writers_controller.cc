@@ -22,18 +22,24 @@ Multiple_data_writers_controller(Node &node)
 
 Multiple_data_writers_controller::
 ~Multiple_data_writers_controller() {
-  for (std::vector< Buffer2data_writer<value_type>* >::iterator 
+  for (std::vector< Output_stream >::iterator 
          it = data_writers.begin(); it != data_writers.end(); it++) {
-    if ((*it) != NULL) {
-      (*it)->stop();
+    if ((*it).buffer2writer != NULL) {
+      (*it).buffer2writer->stop();
       // Don't delete the buffers. 
       // This should be done by the node that also created them.
-      if ((*it)->get_data_writer() != NULL) {
-        delete (*it)->get_data_writer();
-        (*it)->set_data_writer(NULL);
+      if ((*it).buffer2writer->get_data_writer() != NULL) {
+        delete (*it).buffer2writer->get_data_writer();
+        (*it).buffer2writer->set_data_writer(NULL);
       }
     }
   }
+}
+
+
+Data_writer *
+Multiple_data_writers_controller::get_data_writer(int i) {
+  return data_writers[i].buffer2writer->get_data_writer();
 }
 
 Multiple_data_writers_controller::Process_event_status
@@ -62,7 +68,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       
       data_writer->open_connection();
 
-      add_data_writer(corr_node, data_writer);
+      add_data_writer(corr_node, data_writer, corr_node, 0);
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
@@ -72,9 +78,9 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       
       MPI_Status status2;
 
-      /* - INT32: Rank of the stream for the data reader
-       * - INT32: Rank of the stream for the data writer
-       * - INT32: Rank of the node to connect to
+      /* - INT32: stream number for the data writer
+       * - INT32: stream number for the data reader
+       * - INT32: rank of the data_reader
        */
       INT32 ranks[3]; 
       MPI_Recv(ranks, 3, MPI_INT32, status.MPI_SOURCE,
@@ -89,14 +95,15 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       // Add port
       ip_addresses.push_back(data_writer->get_port());
       // Add number of the data stream:
-      ip_addresses.push_back(ranks[0]);
+      ip_addresses.push_back(ranks[1]);
       
       MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_UINT64, 
                ranks[2], MPI_TAG_ADD_DATA_READER_TCP, MPI_COMM_WORLD);
 
       data_writer->open_connection();
 
-      add_data_writer(ranks[1], data_writer);
+      // NGHK: 0 is not correct.
+      add_data_writer(ranks[0], data_writer, ranks[2], ranks[1]);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
@@ -108,7 +115,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 0);
-      char buffer[size], filename[size-4];
+      char buffer[size], filename[size-sizeof(INT32)];
       MPI_Recv(&buffer[0], size, MPI_PACKED, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       
@@ -118,13 +125,18 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       int position=0;
       INT32 corr_node;
       MPI_Unpack(buffer, size, &position, &corr_node, 1, MPI_INT32, MPI_COMM_WORLD);
-      MPI_Unpack(buffer, size, &position, filename, size-4, MPI_CHAR, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, filename, size-sizeof(INT32), MPI_CHAR, MPI_COMM_WORLD);
       assert(position == size);
 
       Data_writer_file *data_writer = new Data_writer_file(filename); 
 
-      add_data_writer(corr_node, data_writer);
+      add_data_writer(corr_node, data_writer, -1, -1);
       
+      INT64 return_msg = 0;
+      MPI_Send(&return_msg, 1, MPI_INT64, 
+               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               MPI_COMM_WORLD);
+
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   }
@@ -133,21 +145,21 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 
 
 Multiple_data_writers_controller::Buffer2writer &
-Multiple_data_writers_controller::get_writer(unsigned int i) {
+Multiple_data_writers_controller::get_buffer2writer(unsigned int i) {
   assert((unsigned int)i < data_writers.size());
-  assert(data_writers[i] != NULL);
-  return *data_writers[i];
+  assert(data_writers[i].buffer2writer != NULL);
+  return *data_writers[i].buffer2writer;
 }
 
 Multiple_data_writers_controller::Buffer *
 Multiple_data_writers_controller::buffer(unsigned int i) {
-  return get_writer(i).get_buffer();
+  return get_buffer2writer(i).get_buffer();
 }
 
 void 
 Multiple_data_writers_controller::set_buffer(unsigned int i, Buffer *buff) {
-  get_writer(i).set_buffer(buff);
-  get_writer(i).try_start();
+  get_buffer2writer(i).set_buffer(buff);
+  get_buffer2writer(i).try_start();
   
 }
 
@@ -156,16 +168,16 @@ Multiple_data_writers_controller::Buffer2writer *
 Multiple_data_writers_controller::operator[](int i) {
   assert((size_t)i < data_writers.size());
   
-  return data_writers[i];
+  return data_writers[i].buffer2writer;
 }
 
 bool 
 Multiple_data_writers_controller::ready() {
-  for (unsigned int i=0; i<data_writers.size(); i++) {
-    if (data_writers[i] != NULL) {
-      if (data_writers[i]->get_buffer() != NULL) {
-        assert(data_writers[i]->get_data_writer() != NULL);
-        if (!data_writers[i]->get_buffer()->empty()) {
+  for (size_t i=0; i<data_writers.size(); i++) {
+    if (data_writers[i].buffer2writer != NULL) {
+      if (data_writers[i].buffer2writer->get_buffer() != NULL) {
+        assert(data_writers[i].buffer2writer->get_data_writer() != NULL);
+        if (!data_writers[i].buffer2writer->get_buffer()->empty()) {
           return false;
         }
       }
@@ -176,22 +188,26 @@ Multiple_data_writers_controller::ready() {
 
 void 
 Multiple_data_writers_controller::
-add_data_writer(unsigned int i, Data_writer *writer) {
+add_data_writer(unsigned int i, Data_writer *writer, 
+                int rank_node_reader_, int stream_number_reader_) {
   if (data_writers.size() <= i) {
-    data_writers.resize(i+1, NULL);
+    data_writers.resize(i+1);
   }
   assert(i < data_writers.size());
 
-  if (data_writers[i] == NULL) {
-    data_writers[i] = new Buffer2data_writer<value_type>();
+  data_writers[i].rank_node_reader = rank_node_reader_;
+  data_writers[i].stream_number_reader = stream_number_reader_;
+  if (data_writers[i].buffer2writer != NULL) {
+    if (data_writers[i].buffer2writer->get_data_writer() != NULL) {
+      data_writers[i].buffer2writer->stop();
+      delete data_writers[i].buffer2writer->get_data_writer();
+      data_writers[i].buffer2writer->set_data_writer(NULL);
+    }
+  } else {
+    data_writers[i].buffer2writer = new Buffer2data_writer<value_type>();
   }
-  Buffer2writer &buffer2writer = *data_writers[i];
-  assert(buffer2writer.get_data_writer() == NULL);
-  assert(buffer2writer.get_buffer() == NULL);
   
-  buffer2writer.set_data_writer(writer);
-
-  buffer2writer.try_start();
+  data_writers[i].buffer2writer->set_data_writer(writer);
   
   node.hook_added_data_writer(i);
 }

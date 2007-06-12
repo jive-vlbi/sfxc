@@ -21,8 +21,10 @@ public:
   void set_rank(int rank);
 private:
   void send();
+  void set_prefix();
   void write_message(const char buff[]);
-  std::string rank_str, msg;
+  std::string msg;
+  int rank;
 };
 
 

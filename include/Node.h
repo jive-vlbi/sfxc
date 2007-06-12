@@ -72,9 +72,7 @@ public:
    **/
   void add_controller(Controller *controller);
   
-  Log_writer &get_log_writer() {
-    return *log_writer;
-  }
+  Log_writer &get_log_writer();
 
   void set_log_writer(Log_writer *new_writer) {
     log_writer = new_writer;

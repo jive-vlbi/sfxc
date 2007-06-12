@@ -26,7 +26,7 @@ public:
 
   void flush();
 private:
-  INT64 do_put_bytes(INT64 nBytes, char *buff);
+  size_t do_put_bytes(size_t nBytes, char *buff);
 
   int connection_socket, socket;
   int port;

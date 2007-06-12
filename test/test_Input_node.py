@@ -9,25 +9,20 @@
 
 import sys, os,time, filecmp;
 
-inputfile = "/jop54_0/kruithof/data/n05c2/mark5/n06c2_da193_no0005.Mc"
-inputfile = "data/input.txt"
-outputfile = "output.txt"
+# Load the ccf files for testing:
+RC_FILE = os.path.join(os.environ.get('HOME'), ".sfxcrc")
+if os.path.isfile(RC_FILE):
+  execfile(RC_FILE)
 
 status = os.system("make test_Input_node")
 if (status != 0): 
   sys.exit(1)
 
-status = os.system("mpirun -np 4 ./test_Input_node "+inputfile+" "+outputfile)
-if (status != 0):
-  print "test_Input_node: returned error."
-  sys.exit(1);
-
-os.system("sync")
-status = filecmp.cmp(inputfile, outputfile)
-if (status == 0):
-  print "Compare: files differ."
-  sys.exit(1);
-
-os.remove(outputfile)
+for control_file in controlfiles:
+  status = os.system("mpirun -np 4 ./test_Input_node " +
+                     control_file+" "+tmp_output_directory)
+  if (status != 0):
+    print "test_Input_node: returned error."
+    sys.exit(1);
 
 sys.exit(0);

@@ -21,8 +21,8 @@ Data_writer_buffer::Data_writer_buffer(Buffer *buff)
 Data_writer_buffer::~Data_writer_buffer() {
 }
 
-INT64 
-Data_writer_buffer::do_put_bytes(INT64 nBytes, char *input_buffer) {
+size_t 
+Data_writer_buffer::do_put_bytes(size_t nBytes, char *input_buffer) {
   UINT64 write_bytes = nBytes;
   while (write_bytes > 0) {
     data_start = buffer->produce().buffer();

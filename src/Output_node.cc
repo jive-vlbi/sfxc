@@ -54,6 +54,7 @@ void Output_node::initialise() {
 
 Output_node::~Output_node() {
   // empty the input buffers to the output
+  assert(status == END_NODE);
 
   while (data_available()) {
     // We might not have received all the time slice termination messages yet:
@@ -72,7 +73,7 @@ void Output_node::start() {
     switch (status) {
       case STOPPED: {
         // blocking:
-        if (check_and_process_message()==TERMINATE_NODE) {
+        if (check_and_process_message() == TERMINATE_NODE) {
           status = END_NODE;
         }
         break;
@@ -81,18 +82,6 @@ void Output_node::start() {
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           status = END_NODE;
           break;
-        }
-        
-        // check incoming connections
-        for (size_t reader = 0;
-             reader < data_readers_ctrl.number_of_data_readers();
-             reader++) {
-          if (data_readers_ctrl.get_data_reader2buffer(reader)->get_state() == 
-              Multiple_data_readers_controller::Reader2buffer::SUSPENDED) {
-            get_log_writer() << "Data_reader " << reader << " suspended" << std::endl;
-            data_readers_ctrl.get_data_reader2buffer(reader)->set_state(
-              Multiple_data_readers_controller::Reader2buffer::STOPPED);
-          }
         }
         
         if (data_available()) {
@@ -120,11 +109,14 @@ void Output_node::create_buffer(int num) {
 void Output_node::set_weight_of_input_stream(int num, UINT64 weight) {
   assert(num >= 0);
   
-    // Add the weight to the priority queue:
+  assert(num < (int)input_streams.size());
   // Check that the weight does not exist yet:
   assert(input_streams_order.find(weight) == input_streams_order.end());
+
+  // Add the weight to the priority queue:
   input_streams_order.insert(Input_stream_priority_map_value(weight,num));
-  
+
+  assert(status != END_NODE);
   status = WRITE_OUTPUT;
 }
 
@@ -141,6 +133,7 @@ void Output_node::set_status() {
   status = STOPPED;
   if (input_streams_order.empty()) return;
   if (input_streams_order.begin()->first != curr_slice) return;
+  assert(input_streams_order.begin()->second < (int)input_streams.size());
   if (input_streams[input_streams_order.begin()->second]->has_data()) {
     status = WRITE_OUTPUT;
     return;
