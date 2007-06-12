@@ -16,6 +16,7 @@ libvex.a: $(OBJECTS)
 vex.yy.o:	vex.yy.l y.tab.h
 
 y.tab.h:	vex.y
+	$(YACC) $(YFLAGS) vex.y
 
 vex_util.o:	y.tab.h
 
