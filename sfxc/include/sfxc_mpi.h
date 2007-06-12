@@ -62,7 +62,8 @@ enum MPI_TAG {
   MPI_TAG_SET_DATA_WRITER_TCP,
 
   /** Create a data reader stream for incoming data using TCP
-   * - ?
+   * - CHAR: stream number
+   * - CHAR+: filename
    **/
   MPI_TAG_ADD_DATA_READER_FILE,
   /** Create a data reader stream for incoming data using TCP
@@ -88,9 +89,17 @@ enum MPI_TAG {
   MPI_TAG_ADD_OUTPUT_CONNECTION_SINGLE_INPUT_TCP,
   /** This message is sent to the sending node, which creates the connection to the
    * receiving node, message contains the number of the MPI-node (many -> many)
-   * - ?
+   * - INT32: Rank of the stream for the data reader
+   * - INT32: Rank of the stream for the data writer
    **/
   MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP,
+
+  /** This message sets up the communication between two nodes using MPI 
+   * - INT32: stream number for the data writer
+   * - INT32: stream number for the data reader
+   * - INT32: rank of the data_reader
+   **/   
+  MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_MPI,
   
   /** Acknowledge that an input connection is set up properly (for synchronisation)
    * - INT32: Rank of the stream for the data reader
@@ -154,7 +163,8 @@ enum MPI_TAG {
    **/
   MPI_TAG_CORRELATE_TIME_SLICE,
   /** The output stream from the sending node is finished for this time slice
-   * - ?
+   * - UINT64 input stream
+   * - UINT64 nBytes
    **/
   MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED,
   /** The correlation node is ready to process data
@@ -220,6 +230,8 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_ADD_OUTPUT_CONNECTION_SINGLE_INPUT_TCP"; }
     case MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP:
       { return "MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP"; }
+    case MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_MPI:
+      { return "MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_MPI"; }
     case MPI_TAG_SET_OUTPUT_CONNECTION_SINGLE_INPUT_TCP:
       { return "MPI_TAG_SET_OUTPUT_CONNECTION_SINGLE_INPUT_TCP"; }
     case MPI_TAG_SET_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP:

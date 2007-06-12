@@ -19,7 +19,7 @@ public:
   Data_writer_file(const char *filename);
   ~Data_writer_file();
   
-  INT64 do_put_bytes(INT64 nBytes, char *buff);
+  size_t do_put_bytes(size_t nBytes, char *buff);
 
 private:
   FILE *file;

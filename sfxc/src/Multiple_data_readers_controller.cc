@@ -80,13 +80,14 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       
       int corr_node = (int)msg[0];
       char *filename = msg+1;
+      std::cout << filename << std::endl;
       
       Data_reader *reader = new Data_reader_file(filename);
       add_data_reader(corr_node, reader);
 
       INT64 return_msg = 0;
       MPI_Send(&return_msg, 1, MPI_INT64, 
-               RANK_MANAGER_NODE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;

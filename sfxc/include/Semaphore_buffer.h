@@ -105,7 +105,7 @@ bool
 Semaphore_buffer<T>::empty() {
   int val;
   sem_getvalue(&empty_sem, &val);
-  return (val == 0);
+  return (val <= 0);
 }
 
 template <class T>

@@ -448,7 +448,7 @@ find_header() {
   int nOnes = 0;
   UINT32 start_header;
   for (start_header=0; 
-       (start_header<(frameMk4*sizeof(T)-32)) && (nOnes <32); 
+       (start_header<(frameMk4-32)) && (nOnes <32); 
        start_header++) {
     if ((block[start_header] >> track) & 1) {
       nOnes ++;

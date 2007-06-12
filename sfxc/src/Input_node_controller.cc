@@ -8,7 +8,7 @@
  */
 
 #include <Input_node.h>
-
+#include <MPI_Transfer.h>
 //---------------------------------------------------------------------------//
 // Input_node_controller functions                                           //
 //---------------------------------------------------------------------------//
@@ -37,6 +37,12 @@ Input_node_controller::process_event(MPI_Status &status) {
 
       // stream, start, stop
       node.set_priority(msg[0],msg[1],msg[2]);
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+    case MPI_TAG_CONTROL_PARAM: {
+      MPI_Transfer mpi_transfer;
+      mpi_transfer.receive_general_parameters(status, RunPrms, GenPrms, StaPrms);
+      
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   }

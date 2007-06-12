@@ -54,8 +54,6 @@ int main(int argc, char *argv[]) {
     MPI_Send(infile, strlen(infile)+1, MPI_CHAR, 
              1, MPI_TAG_SET_DATA_READER_FILE, MPI_COMM_WORLD);
     
-    
-    
     Data_writer_tcp *data_writer = new Data_writer_tcp(1233); 
 
     TCP_Connection tcp_connection;
@@ -70,7 +68,7 @@ int main(int argc, char *argv[]) {
     
     // Transfer the data from the file:
     Data_reader *reader_file = new Data_reader_file(infile);
-    int buffsize = 10000, nread;
+    int buffsize = 100, nread;
     char buff[buffsize];
     while ((nread = reader_file->get_bytes(buffsize, buff)) > 0) {
       INT64 nwritten = data_writer->put_bytes(nread, buff);

@@ -33,6 +33,8 @@ public:
   
   Buffer *buffer();
   void set_buffer(Buffer *buffer);
+
+  Data_reader *get_data_reader();
 private:
   void set_data_reader(Data_reader *reader);
   

@@ -11,6 +11,7 @@
 #define DATA_WRITER_H
 
 #include <types.h>
+#include <stddef.h> // defines size_t
 
 class Data_writer {
 public:
@@ -22,7 +23,7 @@ public:
       \return the number of bytes read into the buffer.
       \pre buff is allocated. nBytes >= 0
   **/ 
-  INT64 put_bytes(INT64 nBytes, char *buff);
+  size_t put_bytes(size_t nBytes, char *buff);
   
   /** Returns the number of bytes written
    **/
@@ -35,7 +36,7 @@ public:
 private:
   /** Function that actually writes the data to the output device.
   **/ 
-  virtual INT64 do_put_bytes(INT64 nBytes, char *buff) = 0;
+  virtual size_t do_put_bytes(size_t nBytes, char *buff) = 0;
   
   UINT64 _data_counter;
 };

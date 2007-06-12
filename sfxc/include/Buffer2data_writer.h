@@ -166,20 +166,21 @@ Buffer2data_writer<T>::write() {
       if (size2 <= 0) {
         std::cout << "Error writing data, going to suspended state" << std::endl;
         state = SUSPENDED;
+      } else {
+        char *buff = elem.buffer() + size2;
+        while ((state == RUNNING) && (size > size2)) {
+          assert(size2 > 0);
+          INT64 new_size = size - size2; 
+          new_size = data_writer->put_bytes(new_size,buff);
+          if (new_size <= 0) {
+            std::cout << "Error writing data, going to suspended state" << std::endl;
+            state = SUSPENDED;
+          } else {
+            size2 += new_size;
+            buff += new_size;
+          }
+        }        
       }
-      char *buff = elem.buffer() + size2;
-      while ((state == RUNNING) && (size > size2)) {
-        assert(size2 > 0);
-        UINT64 new_size = size - size2; 
-        new_size = data_writer->put_bytes(new_size,buff);
-        if (new_size <= 0) {
-          std::cout << "Error writing data, going to suspended state" << std::endl;
-          state = SUSPENDED;
-        } else {
-          size2 += new_size;
-          buff += new_size;
-        }
-      }        
       assert((state != RUNNING) || (size == size2));
       buffer->consumed();
     }

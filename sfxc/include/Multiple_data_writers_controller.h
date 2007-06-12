@@ -37,16 +37,47 @@ public:
   
   bool ready();
   
+  Data_writer *get_data_writer(int i);
+    
+  int get_rank_node_reader(int i) {
+    assert((0<=i) && (i < (int)data_writers.size()));
+    return data_writers[i].rank_node_reader;
+  }  
+  
+  int get_stream_number_reader(int i) {
+    assert((0<=i) && (i < (int)data_writers.size()));
+    return data_writers[i].stream_number_reader;
+  }  
+  
 private:
-  void add_data_writer(unsigned int i, Data_writer *writer);
+  class Output_stream {
+  public:
+    Output_stream() 
+      : buffer2writer(NULL), rank_node_reader(-1), stream_number_reader(-1) {
+    }
+    /// The actual output stream
+    // These are pointers, because a resize of the vector will 
+    // copy construct all the elements and then destroy the old 
+    // elements and we can't copy construct the extra threads.
+    Buffer2writer *buffer2writer;
+    
+    /** The rank of the node the data is sent to, or -1 if the stream
+     *  is connected to a file.
+     **/
+    int rank_node_reader;
+
+    /** The number of the stream under which the data enters the data reader
+     **/
+    int stream_number_reader;
+  };
+
+  void add_data_writer(unsigned int i, Data_writer *writer, 
+                       int rank_node_reader, int stream_number_reader);
 
 
-  Buffer2writer &get_writer(unsigned int i);
+  Buffer2writer &get_buffer2writer(unsigned int i);
 
-  // These are pointers, because a resize of the vector will 
-  // copy construct all the elements and then destroy the old 
-  // elements and we can't copy construct the extra threads.
-  std::vector< Buffer2writer *>  data_writers;
+  std::vector< Output_stream >  data_writers;
 };
 
 #endif /* MULTIPLE_DATA_WRITERS_CONTROLLER_H */

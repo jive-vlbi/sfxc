@@ -14,12 +14,25 @@
 #include <Single_data_reader_controller.h>
 #include <Multiple_data_writers_controller.h>
 
+#include <Channel_extractor.h>
+
 #include <Data_reader2buffer.h>
 
 #include <Semaphore_buffer.h>
 
 #include <map>
 #include <vector>
+
+#include <constPrms.h>
+#include <runPrms.h>
+#include <genPrms.h>
+#include <staPrms.h>
+
+extern RunP  RunPrms;
+extern GenP  GenPrms;
+extern StaP  StaPrms[NstationsMax];
+
+
 
 class Input_node;
 
@@ -100,6 +113,9 @@ private:
   Single_data_reader_controller                data_reader_ctrl;
   /// An Input_node has several data streams for output.
   Multiple_data_writers_controller             data_writers_ctrl;
+
+  Channel_extractor * channel_extractor;
+
   
   /// Two queues for starting and stopping of output streams
   std::multimap<UINT64, int>                   start_queue, stop_queue;
@@ -113,8 +129,15 @@ private:
   
   /// Number of the input reader (input readers should be numbered 0..N)
   int nr_input_reader;
+  int get_input_node_number() {
+    return nr_input_reader;
+  }
   /// Status of the state machine
   STATUS                                       status;
+
+
+  static const size_t ch_buffer_size = 131072;
+  char ch_buffer[ch_buffer_size];
   
 };
 
