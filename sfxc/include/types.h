@@ -14,12 +14,15 @@
 #include "../config.h"
 
 // For using large files:
-#undef  _LARGEFILE_SOURCE
-#define _LARGEFILE_SOURCE 1
-#undef  _LARGEFILE64_SOURCE
-#define _LARGEFILE64_SOURCE 1
-#undef  _FILE_OFFSET_BITS
-#define _FILE_OFFSET_BITS 64
+#ifdef _FILE_OFFSET_BITS
+#  if _FILE_OFFSET_BITS == 64
+#    define FOPEN fopen
+#  else
+#    define FOPEN fopen64
+#  endif
+#else
+#  define FOPEN fopen64
+#endif
 
 // typedef long INT64;
 #if SIZEOF_INT==8
