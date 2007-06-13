@@ -36,12 +36,9 @@ int NGHK_FindHeaderMk4(Data_reader &reader, int& jsynch,
   
   //buffer for unpacked tracks, NTRACKS tracks, NFRMS Mk4 frames long
   char  tracks[trksMax][frameMk4*nfrms];
-//  char  hdrmap[strLength];
   INT64 jsynch0, jsynch1;
   int nhs, synhs1, synhs2;
 
-//  INT64 day, hr, min, sec;
-    
   int Head0,Head1;  //Headstack IDs as seen in the header
   int year0,day0,hh0,mm0,ss0,ms0,us0; //TOT for headstack 0
   int year1,day1,hh1,mm1,ss1,ms1,us1; //TOT for headstack 1
@@ -75,13 +72,6 @@ int NGHK_FindHeaderMk4(Data_reader &reader, int& jsynch,
       return -1;//no synchronisation word found
   jsynch=jsynch0;
   
-//  strcpy(hdrmap,StaPrms.get_hdrmap());
-//  if (get_log_writer().get_messagelevel() > 0){
-//    //printFrameHeader
-//    printFrameHeader(tracks, jsynch0, jsynch1, nhs, hdrmap);
-//  }  
-
-      
   // calculating TOT for headstack 0 
   timeComps(tracks, jsynch0, nhs, 0,
     &Head0, &year0, &day0, &hh0, &mm0, &ss0, &ms0, &us0, &TOTusec0);
@@ -143,8 +133,7 @@ int main(int argc, char *argv[]) {
     
     for (int i=nBytes; i==nBytes; ) {
       i = ch_extractor.get_bytes(nBytes, data_frame);
+      ch_extractor.print_header(log_writer(0), 0);
     }
-    
   }
-
 }

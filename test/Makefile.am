@@ -54,7 +54,6 @@ OBJ = ../src/utils.cc \
       \
       ../src/Node.cc \
       ../src/Input_node_without_buffering.cc \
-#      ../src/Input_node.cc \
       ../src/Output_node.cc \
       ../src/Log_node.cc \
       \

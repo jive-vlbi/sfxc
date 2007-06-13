@@ -203,14 +203,18 @@ bool DelayCorrection::delay_correct() {
 }
 
 bool DelayCorrection::fill_data_before_delay_correction() {
-  for (int stations=0; stations<nstations; stations++) {
+  for (int station=0; station<nstations; station++) {
     //fill part 1 and 2 of dcBufs with data from dcBufPrev
-    memcpy(&dcBufs[stations][0], &dcBufPrev[stations][0], 2*BufSize*sizeof(double));
+    memcpy(&dcBufs[station][0], &dcBufPrev[station][0], 2*BufSize*sizeof(double));
     
     int bytes_to_read = BufSize;
-    int status = sample_reader[stations]->get_data(bytes_to_read,
-					     &dcBufs[stations][2*BufSize]);
-    if (status != bytes_to_read) return false;
+    int status = sample_reader[station]->get_data(bytes_to_read,
+					     &dcBufs[station][2*BufSize]);
+    if (status != bytes_to_read) {
+      std::cout << "status != bytes_to_read, with station = " << station 
+                << std::endl;
+      return false;
+    }
   }
   return true;
 }
@@ -305,8 +309,14 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
 //every time all data in Bufs are processed.
 bool DelayCorrection::fill_Bufs()
 {
-  if (!fill_data_before_delay_correction()) return false;
-  if (!delay_correct()) return false;
+  if (!fill_data_before_delay_correction()) {
+    assert(false);
+    return false;
+  }
+  if (!delay_correct()) {
+    assert(false);
+    return false;
+  }
 //   if (!fringe_stopping()) return false;
 
   return true;
