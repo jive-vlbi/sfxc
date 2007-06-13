@@ -865,10 +865,10 @@ main(int argc, char *argv[])
   //parse delmo control file and process it
   if ( parse_control_file(ctrlFile)!=0) return 1;
 
-  //remove local copy of DE405_le.jpl
-  strcpy(cmd, "rm -f ");
-  strcat(cmd, "DE405_le.jpl");
-  system (cmd);
+/*   //remove local copy of DE405_le.jpl */
+/*   strcpy(cmd, "rm -f "); */
+/*   strcat(cmd, "DE405_le.jpl"); */
+/*   system (cmd); */
 
   return EXIT_SUCCESS;
 }

@@ -81,12 +81,12 @@ void print_general_section(std::ostream &out,
   out << "CTRLFILE =  " << exp_ctrl_file << std::endl;
   out << std::endl;
   out << "MAKE_MAKEFILE =  " << this_program << std::endl;
+  out << ".PRECIOUS: Makefile" << std::endl;
   out << std::endl;
   out << "all: Makefile ccf del" << std::endl;
   out << std::endl;
   out << "Makefile: $(VEXFILE) $(CTRLFILE)" << std::endl;
   out << "\t$(MAKE_MAKEFILE) $(VEXFILE) $(CTRLFILE) ." <<std::endl;
-  out << "\t$(MAKE) $(AM_MAKEFLAGS)" << std::endl;
   out << std::endl;
 }
 
@@ -139,12 +139,14 @@ void print_del_section(std::ostream &out,
 
   out << "DELAYTABLES =";
   for (size_t channel = 0; channel < channels.size(); channel++) {
-    out << " \\\n  "
-        <<generate_del_filename(sfxc_ctrl["deldir"].asString(),
-                                vex.ExperName(),
-                                sfxc_ctrl["scan"].asString(),
-                                channels[channel][0],
-                                vex.Station(0)).c_str();
+//     for (int station=0; station<vex.N_Stations(); station++) {
+      out << " \\\n  "
+          <<generate_del_filename(sfxc_ctrl["deldir"].asString(),
+                                  vex.ExperName(),
+                                  sfxc_ctrl["scan"].asString(),
+                                  channels[channel][0],
+                                  vex.Station(0)).c_str();
+//     }
   }
   out << std::endl << std::endl;
   out << "del: $(DELAYTABLES)" << std::endl;
@@ -206,7 +208,9 @@ void print_correlate_section(std::ostream &out,
     }
   }
   out << std::endl
-      << "correlate: $(CCF) $(DELAYTABLES) $(CORRELATION_OUTPUT_FILES)" << std::endl
+      << "correlate: all"  << std::endl
+      << "\t$(MAKE) do_correlate" << std::endl
+      << "do_correlate: $(CORRELATION_OUTPUT_FILES)" << std::endl
       << std::endl;
   
   for (size_t channel = 0; channel < channels.size(); channel++) {
