@@ -108,16 +108,21 @@ bool Integration_slice::correlate()
       log_writer(1) << "segm=" << segm << "\t " << i*10 << 
       " % of current Integration Slice processed\n";
     }
+
   }
 
+  if (!result) {
+    log_writer(0) << "Error in computing the integration" << std::endl;
+    return false;
+  }
 
-  if (!result) return false;
-  
   //normalise the accumulated correlation results
   result = cc.average_time_slice();
 
-
-  if (!result) return false;
+  if (!result) {
+    log_writer(0) << "Error in averaging the integration" << std::endl;
+    return false;
+  }
 
   //write the correlation result for the current time slice
   result = cc.write_time_slice();

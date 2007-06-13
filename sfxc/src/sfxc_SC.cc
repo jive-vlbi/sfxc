@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
       if (!result) {
         // Error in correlation, exiting.
         log_writer.error("Error in correlating time slice, exiting.");
-        return -1;
+        return 1;
       }
 
       //set start of next time slice to: 

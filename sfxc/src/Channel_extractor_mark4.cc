@@ -493,8 +493,5 @@ template <class T>
 void 
 Channel_extractor_mark4_implementation<T>::
 print_header(Log_writer &writer, int track) {
-  INT64 current_time = get_current_time();
   writer << "time: " << mark4_header.get_time_str(track) << std::endl;
-  writer << "         " << time2string(current_time) << std::endl;
-  writer << "equals: " << current_time << "us" << std::endl;
 }

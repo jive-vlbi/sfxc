@@ -26,8 +26,8 @@ void print_html_section(std::ostream &out,
                         Json::Value const &sfxc_ctrl);
 
 int main(int argc, char *argv[]) {
-  if (argc != 4) {
-    std::cout << argv[0] << " " << "<vex-file> <sfxc-exp-ctrlfile> <outdir>" 
+  if ((argc != 3) && (argc != 4)) {
+    std::cout << argv[0] << " " << "<vex-file> <sfxc-exp-ctrlfile> [<outdir>]" 
 	      << std::endl;
     exit(1);
   }
@@ -35,7 +35,8 @@ int main(int argc, char *argv[]) {
   char *this_program  = argv[0];
   char *vex_file      = argv[1];
   char *ctrl_file     = argv[2];
-  char *outdir        = argv[3];
+  char *outdir        = ".";
+  if (argc == 4) outdir = argv[3];
   
   std::string outfile = outdir; outfile.append("/Makefile");
   std::ofstream out(outfile.c_str());
@@ -194,7 +195,6 @@ void print_correlate_section(std::ostream &out,
                                    sfxc_ctrl["scan"].asString(),
                                    channels[channel][0], 
                                    channels[channel][1]).c_str();
-      channel++;
     } else {
       // Next channel is not the other polarisation
       out << " \\\n  "
@@ -206,7 +206,7 @@ void print_correlate_section(std::ostream &out,
     }
   }
   out << std::endl
-      << "correlate: $(CORRELATION_OUTPUT_FILES)" << std::endl
+      << "correlate: $(CCF) $(DELAYTABLES) $(CORRELATION_OUTPUT_FILES)" << std::endl
       << std::endl;
   
   for (size_t channel = 0; channel < channels.size(); channel++) {
@@ -222,7 +222,6 @@ void print_correlate_section(std::ostream &out,
                                        sfxc_ctrl["scan"].asString(),
                                        channels[channel][0], 
                                        channels[channel][1]).c_str();
-      channel++;
     } else {
       // Next channel is not the other polarisation
       cor_file = generate_cor_filename(sfxc_ctrl["outdir"].asString(),
