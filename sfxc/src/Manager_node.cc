@@ -209,7 +209,7 @@ void Manager_node::start() {
       // Stream, start time, stop time
       INT64 msg[3] = {corr_node, 0, 0};
       MPI_Send(&msg, 3, MPI_INT64, input_node+START_INPUT_NODES,
-               MPI_TAG_INPUT_STREAM_SET_PRIORITY, MPI_COMM_WORLD);
+               MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY, MPI_COMM_WORLD);
     }
   }
 #endif
