@@ -1,7 +1,8 @@
 /* author : N.G.H. Kruithof
 */
 
-#define MIN_SNR_VALUE 3
+#define MAX_SNR_VALUE 3
+#define MIN_SNR_VALUE 1.5
 
 #include <iostream>
 #include <complex>
@@ -436,11 +437,16 @@ void print_html() {
       }
       assert(data.crosses.size() == data.snr_crosses.size());
       for (size_t col=0; col<data.crosses.size(); col++) {
-        if (data.snr_crosses[col] > MIN_SNR_VALUE) {
-          html_output << "<td bgcolor='#00FF00'>";
-        } else {
-          html_output << "<td bgcolor='#FF0000'>";
-        }
+        int color_val = (int)(255*(data.snr_crosses[col]-MIN_SNR_VALUE) /
+                              (MAX_SNR_VALUE-MIN_SNR_VALUE));
+        if (color_val < 0) color_val = 0;
+        if (color_val > 255) color_val = 255;
+        char color[7];
+        snprintf(color, 7, "#%X%X%X", 255-color_val, color_val, 
+                 0
+                 //                 (color_val<128? color_val : 255-color_val)
+                 );
+        html_output << "<td bgcolor='" << color << "'>";
         html_output.precision(4);
         if (show_plots) {
           html_output << "<img src='" << data.crosses[col] << "'> " 
