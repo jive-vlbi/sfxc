@@ -176,7 +176,7 @@ Channel_extractor_mark4_implementation(Data_reader &reader,
    debug_level(debug_level),
    block_count(0)
 {
-  
+    
   assert(staPrms.get_tphs()*staPrms.get_nhs() == sizeof(T)*8);
   
   // Make sure the header starts on the first byte:

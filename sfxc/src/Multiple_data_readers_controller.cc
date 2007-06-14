@@ -53,12 +53,12 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       assert(status.MPI_TAG == status2.MPI_TAG);
       
       UINT64 port = ip_addr[size-2];
-      INT64 corr_node = ip_addr[size-1];
+      INT64 stream_nr = ip_addr[size-1];
       
       Data_reader *reader = new Data_reader_tcp(ip_addr, size-2, port);
-      add_data_reader(corr_node, reader);
+      add_data_reader(stream_nr, reader);
 
-      MPI_Send(&corr_node, 1, MPI_INT64, 
+      MPI_Send(&stream_nr, 1, MPI_INT64, 
                RANK_MANAGER_NODE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
       
@@ -80,7 +80,6 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       
       int corr_node = (int)msg[0];
       char *filename = msg+1;
-      std::cout << filename << std::endl;
       
       Data_reader *reader = new Data_reader_file(filename);
       add_data_reader(corr_node, reader);

@@ -135,8 +135,19 @@ enum MPI_TAG {
    * - INT64: StartTag
    * - INT64: StopTag
    **/
-  MPI_TAG_INPUT_STREAM_SET_PRIORITY,
-
+  MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY,
+  
+  /** Returns a message with the same tag back with the current time stamp in 
+   *  the channel extractor
+   * - INT64: the timestamp in microseconds
+   **/
+  MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP,
+   
+  /** The stop time for the input node. Terminate if this time is reached
+   * - INT64: Time in microseconds
+   **/
+  MPI_TAG_INPUT_NODE_STOP_TIME,
+   
   // Output node specific commands
   //-------------------------------------------------------------------------//
 
@@ -262,8 +273,12 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_ADD_DATA_READER_TCP"; }
     case MPI_TAG_ADD_DATA_WRITER_TCP:
       { return "MPI_TAG_ADD_DATA_WRITER_TCP"; }
-    case MPI_TAG_INPUT_STREAM_SET_PRIORITY:
+    case MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY:
       { return "MPI_TAG_INPUT_STREAM_SET_PRIORITY"; }
+    case MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP:
+      { return "MPI_TAG_GET_CURRENT_TIMESTAMP"; }
+    case MPI_TAG_INPUT_NODE_STOP_TIME:
+      { return "MPI_TAG_INPUT_NODE_STOP_TIME"; }
     case MPI_TAG_OUTPUT_STREAM_SET_PRIORITY:
       { return "MPI_TAG_OUTPUT_STREAM_SET_PRIORITY"; }
     case MPI_TAG_CONTROL_PARAM:
