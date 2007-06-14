@@ -166,20 +166,21 @@ double **DelayCorrection::get_segment()
 
 bool DelayCorrection::delay_correct() {
   INT64  Time; //time in micro seconds
-  double Cdel;
+  double Cdel_start, Cdel_end;
   int jshift; //address shift due to signal delay wrt Earth center
   double time_of_one_correlation_segment = n2fftDC*tbs*1000000;
 
   for (int stations=0; stations<nstations; stations++){
     //apply delay and phase corrections for all segments (n2fftDC long)
     //in other words process data in dcBufs, output in Bufs
+    Cdel_start = delTbl[stations].calcDelay(timePtr, DelayTable::Cdel)
     for (int jsegm=0; jsegm<Nsegm2DC; jsegm++) {
       // micro sec 
-      Time = timePtr + (INT64)(jsegm*(time_of_one_correlation_segment+.5)); 
-      Cdel = delTbl[stations].calcDelay(Time, DelayTable::Cdel);
+      Time = timePtr + (INT64)(jsegm*(time_of_one_correlation_segment)); 
+      Cdel_end = delTbl[stations].calcDelay(Time, DelayTable::Cdel);
       
       // 1)calculate the address shift due to time delay for the current segment
-      jshift = (int)(Cdel/tbs+0.5);
+      jshift = (int)(Cdel_start/tbs+0.5);
       
       INT32 offset = 2*BufSize + jshift + jsegm*n2fftDC;
       // 2)apply the address shift when filling the complex sls array
@@ -188,9 +189,12 @@ bool DelayCorrection::delay_correct() {
         sls[jl].imag() = 0.0;
       }
 
-      fractional_bit_shift(Cdel, jshift);
+      // Take the average for the fractional bit shift
+      fractional_bit_shift((Cdel_start+Cdel_end)/2, jshift);
 
       fringe_stopping(stations, jsegm);
+      
+      Cdel_start = Cdel_end;
     }
     
     //fill dcBufsPrev with part 2 and 3 from dcBufs.
