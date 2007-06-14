@@ -32,7 +32,8 @@ Input_node::Input_node(int rank, Log_writer *log_writer)
     channel_extractor(NULL),
     time_stamp(1),
     buffer_size(BUFFER_SIZE),
-    status(STOPPED)
+    status(STOPPED),
+    stop_time(-1)
 {
   initialise();
 }
@@ -45,7 +46,8 @@ Input_node::Input_node(int rank)
     time_stamp(1),
     buffer_size(BUFFER_SIZE),
     nr_input_reader(nr_input_reader),
-    status(STOPPED)
+    status(STOPPED),
+    stop_time(-1)
 {
   initialise();
 }
@@ -71,13 +73,20 @@ void Input_node::initialise()
 
 
 Input_node::~Input_node() {
-  while (!active_list.empty()) {
-    stop_stream(active_list.begin());
-  } 
+  assert(active_list.empty());
 }
 
 void Input_node::set_status() {
+  if ((stop_time >= 0) && ((UINT64)stop_time <= get_time_stamp()))
+    status = END_NODE;
+
   if (status == END_NODE) return;
+  
+  if (data_reader_ctrl.get_data_reader() == NULL) {
+    // No input yet.
+    status = STOPPED;
+    return;
+  }
   
   if (data_reader_ctrl.eof()) {
     status = END_NODE;
@@ -108,26 +117,20 @@ void Input_node::start() {
           msg_result = check_and_process_waiting_message();
         }
         
-        if (channel_extractor->eof()) {
-          status = END_NODE;
-          break;
-        }
         if (status == SEND_OUTPUT) {
-          assert(data_reader_ctrl.buffer() == NULL);
-          size_t size = channel_extractor->get_bytes(ch_buffer_size, ch_buffer);
-          if (size != ch_buffer_size) {
-            status = END_NODE;
-            // do write the remaining bytes
-          }
+          if (!active_list.empty()) {
+            for (std::list<int>::iterator it = active_list.begin();
+                 it != active_list.end(); it++) {
+              assert(data_writers_ctrl.get_data_writer(*it) != NULL);
+              data_writers_ctrl.get_data_writer(*it)->put_bytes(ch_buffer_size, ch_buffer);
+            }
 
-          update_active_list();
+            // refill the buffer and set the current time stamp:
+            fill_channel_buffer();
+            update_active_list();
+          } 
 
-          assert(!active_list.empty());
-          for (std::list<int>::iterator it = active_list.begin();
-               it != active_list.end(); it++) {
-            assert(data_writers_ctrl.get_data_writer(*it) != NULL);
-            data_writers_ctrl.get_data_writer(*it)->put_bytes(size, ch_buffer);
-          }
+          set_status();
         }
         break;
       }
@@ -139,7 +142,10 @@ void Input_node::start() {
 
   while (!data_writers_ctrl.ready()) usleep(100000); // .1 second:
 
-  while (!active_list.empty()) stop_stream(active_list.begin());
+
+  while (!active_list.empty()) {
+    remove_from_active_list(*active_list.begin());
+  } 
   
   INT32 rank = get_rank();
   MPI_Send(&rank, 1, MPI_INT32, 
@@ -147,6 +153,7 @@ void Input_node::start() {
 }
 
 void Input_node::set_priority(int stream, UINT64 start, UINT64 stop) {
+  assert(start <= stop);
   start_queue.insert(std::pair<INT64,int>(start, stream));
   // if stop == 0, then output to the stream until the end
   if (stop > 0) stop_queue.insert(std::pair<UINT64,int>(stop, stream));
@@ -154,33 +161,22 @@ void Input_node::set_priority(int stream, UINT64 start, UINT64 stop) {
   update_active_list();
 }
 
-void Input_node::set_time_stamp(value_type &t) {
-  std::cout << "TIME STAMP NOT SET" << std::endl;
+void Input_node::set_time_stamp(INT64 const &t) {
+  time_stamp = t;
 }  
 
 void Input_node::update_active_list() {
   // Check start_queue:
-  while (!start_queue.empty() &&
-         start_queue.begin()->first < get_time_stamp()) {
-    int stream = start_queue.begin()->second;
-    add_to_active_list(stream);
+  while ((!start_queue.empty()) &&
+         (start_queue.begin()->first <= get_time_stamp())) {
+    add_to_active_list(start_queue.begin()->second);
     start_queue.erase(start_queue.begin());
   }
 
   // Check stop_queue:
   while (!stop_queue.empty() &&
          stop_queue.begin()->first < get_time_stamp()) {
-    bool found = false;
-    int stream = stop_queue.begin()->second;
-    for (std::list<int>::iterator it = active_list.begin();
-         it != active_list.end(); it++) {
-      if (*it == stream) {
-        it--;
-        stop_stream(it);
-        found = true;
-      }
-    }
-    assert(found);
+    remove_from_active_list((*stop_queue.begin()).second);
     stop_queue.erase(stop_queue.begin());
   }
 
@@ -196,7 +192,6 @@ void Input_node::add_to_active_list(int stream) {
   
   active_list.push_back(stream);
   assert(data_writers_ctrl.buffer(stream) == NULL);
-  data_writers_ctrl.set_buffer(stream, new Buffer(buffer_size));
 }
 
 void Input_node::remove_from_active_list(int stream) {
@@ -204,33 +199,25 @@ void Input_node::remove_from_active_list(int stream) {
   for (std::list<int>::iterator it = active_list.begin();
        it != active_list.end(); it++) {
     if (*it == stream) {
-      assert(!found);
-      if (it == active_list.begin()) {
-        active_list.erase(it);
-        it = active_list.begin();
-      } else {
-        std::list<int>::iterator it_del = it;
-        it--;
-        active_list.erase(it_del);
+      std::list<int>::iterator to_delete = it;
+      it ++;
+      if (data_writers_ctrl.get_rank_node_reader(*to_delete) >= 0) {
+        // Data is not written to file but sent to another node.
+        UINT64 msg[] =
+          {data_writers_ctrl.get_stream_number_reader(*to_delete),
+           data_writers_ctrl.get_data_writer(*to_delete)->data_counter()};
+      
+        MPI_Send(&msg, 2, MPI_UINT64, 
+                 data_writers_ctrl.get_rank_node_reader(*to_delete),
+                 MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED, 
+                 MPI_COMM_WORLD);
       }
+      active_list.erase(to_delete);
+      it --;
       found = true;
     }
   }
   assert(found);
-}
-
-void Input_node::stop_stream(const std::list<int>::iterator &stream_it) {
-  if (data_writers_ctrl.get_rank_node_reader(*stream_it) >= 0) {
-    UINT64 msg[] =
-      {data_writers_ctrl.get_stream_number_reader(*stream_it),
-       data_writers_ctrl.get_data_writer(*stream_it)->data_counter()};
-
-    MPI_Send(&msg, 2, MPI_UINT64, 
-             data_writers_ctrl.get_rank_node_reader(*stream_it),
-             MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED, 
-             MPI_COMM_WORLD);
-  }
-  active_list.erase(stream_it);
 }
 
 void Input_node::hook_added_data_reader(size_t stream_nr) {
@@ -239,7 +226,28 @@ void Input_node::hook_added_data_reader(size_t stream_nr) {
   channel_extractor = 
     new Channel_extractor_mark4(*data_reader_ctrl.get_data_reader(), 
                                 StaPrms[nr_input_reader], GenPrms.get_rndhdr());
+
+  fill_channel_buffer();
+  set_status();
+}
+
+void Input_node::fill_channel_buffer() {
+  // No input buffer:
+  assert(data_reader_ctrl.buffer() == NULL);
+
+  // fill the buffer and set the current time stamp:
+  set_time_stamp(channel_extractor->get_current_time());
+  size_t size = channel_extractor->get_bytes(ch_buffer_size, ch_buffer);
+  if (size != ch_buffer_size) {
+    status = END_NODE;
+    // do write the remaining bytes
+  }
 }
 
 void Input_node::hook_added_data_writer(size_t writer) {
+}
+
+void Input_node::set_stop_time(INT64 stop_time_) {
+  stop_time = stop_time_;
+  set_status();
 }

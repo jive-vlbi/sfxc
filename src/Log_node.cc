@@ -29,6 +29,10 @@ Log_node::Log_node(int rank, int nNodes)
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
 }
 
+Log_node::~Log_node() {
+  assert(check_and_process_waiting_message() == NO_MESSAGE);
+}
+
 void Log_node::start() {
   while (!log_node_ctrl.ready()) {
     check_and_process_message();

@@ -88,6 +88,7 @@ Single_data_reader_controller::buffer() {
 void 
 Single_data_reader_controller::set_buffer(Buffer *buff) {
   assert(buffer() == NULL);
+  assert(false); // No buffering for the time being
   return reader2buffer.set_buffer(buff);
 }
 
@@ -107,6 +108,6 @@ Single_data_reader_controller::set_data_reader(Data_reader *reader) {
 
   reader2buffer.set_data_reader(reader);
   reader2buffer.try_start();
-
+  
   node.hook_added_data_reader(0);
 }

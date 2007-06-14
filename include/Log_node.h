@@ -24,7 +24,7 @@ public:
   Process_event_status process_event(MPI_Status &status);
 
   void set_log_writer(Log_writer *writer);
-  bool ready() { return nConnections == 0; }
+  bool ready();
 private:
   Log_writer *log_writer_output; // For outputting messages
   int nConnections;
@@ -37,6 +37,7 @@ private:
 class Log_node : public Node {
 public:
   Log_node(int rank, int nNodes);
+  ~Log_node();
 
   void start();
 

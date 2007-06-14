@@ -87,10 +87,12 @@ public:
   void set_priority(int stream, UINT64 start, UINT64 stop);
 
   /// Update the current time stamp
-  void set_time_stamp(value_type &t);
+  void set_time_stamp(INT64 const &t);
   
   /// Get the current time stamp  
   UINT64 get_time_stamp() { return time_stamp; }
+  
+  void set_stop_time(INT64 stop_time);
   
   /// Check whether we need to start or stop output streams:  
   void update_active_list();
@@ -104,8 +106,9 @@ public:
   void hook_added_data_writer(size_t writer);
 
 private:
-  // Stop a stream in active_list
-  void stop_stream(const std::list<int>::iterator &stream_it);
+
+  // refill the buffer and set the current time stamp:
+  void fill_channel_buffer();
 
   /// Controller for the input node (messages specific for the input node).
   Input_node_controller                        input_node_ctrl;
@@ -136,9 +139,14 @@ private:
   STATUS                                       status;
 
 
+  /// size of the buffer, this should be at least big enough to contain the
+  /// overlap in the time slices
   static const size_t ch_buffer_size = 131072;
+  /// The buffer for one channel. This should become an array of buffers in the
+  /// multichannel version.
   char ch_buffer[ch_buffer_size];
   
+  INT64 stop_time;
 };
 
 #endif // INPUT_NODE_H

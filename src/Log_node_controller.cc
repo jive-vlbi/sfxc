@@ -44,7 +44,6 @@ Log_node_controller::Log_node_controller(Node &node, int rank, int nNodes)
       get_log_writer() << "Unknown log type: " << print_MPI_TAG(status.MPI_TAG) << std::endl; 
     }
   }
-  
 }
 
 Controller::Process_event_status 
@@ -75,8 +74,8 @@ Log_node_controller::process_event(MPI_Status &status) {
       assert(status.MPI_TAG == status2.MPI_TAG);
       
       // Use the default mpi log writer:
-      get_log_writer() << "  *** Node " << status.MPI_SOURCE
-                       << " finished." << std::endl;
+      (*log_writer_output) << "  *** Node " << status.MPI_SOURCE
+                           << " finished." << std::endl;
       
       nConnections --;
       return PROCESS_EVENT_STATUS_SUCCEEDED;
@@ -90,4 +89,8 @@ void Log_node_controller::set_log_writer(Log_writer *writer) {
   assert(log_writer_output == NULL);
   //if (log_writer != NULL) delete log_writer;
   log_writer_output = writer;
+}
+
+bool Log_node_controller::ready() { 
+  return nConnections == 0; 
 }
