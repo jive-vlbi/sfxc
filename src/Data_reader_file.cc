@@ -19,7 +19,6 @@ Data_reader_file::Data_reader_file(char *filename) :
 {
   file.open(filename, std::ios::in | std::ios::binary);
   assert(file.is_open() );
-  std::cout << "Data_reader_file: file open" << std::endl;
 }
 
 Data_reader_file::~Data_reader_file() {
