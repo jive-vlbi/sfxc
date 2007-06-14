@@ -173,7 +173,7 @@ bool DelayCorrection::delay_correct() {
   for (int stations=0; stations<nstations; stations++){
     //apply delay and phase corrections for all segments (n2fftDC long)
     //in other words process data in dcBufs, output in Bufs
-    Cdel_start = delTbl[stations].calcDelay(timePtr, DelayTable::Cdel)
+    Cdel_start = delTbl[stations].calcDelay(timePtr, DelayTable::Cdel);
     for (int jsegm=0; jsegm<Nsegm2DC; jsegm++) {
       // micro sec 
       Time = timePtr + (INT64)(jsegm*(time_of_one_correlation_segment)); 

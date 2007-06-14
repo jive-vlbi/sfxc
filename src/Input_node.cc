@@ -61,9 +61,7 @@ void Input_node::initialise()
 
 
 Input_node::~Input_node() {
-  while (!active_list.empty()) {
-    stop_stream(active_list.begin());
-  } 
+  assert(active_list.empty());
 }
 
 void Input_node::set_status() {
@@ -171,7 +169,7 @@ void Input_node::set_priority(int stream, UINT64 start, UINT64 stop) {
   update_active_list();
 }
 
-void Input_node::set_time_stamp(value_type &t) {
+void Input_node::set_time_stamp(INT64 const &t) {
   std::cout << "TIME STAMP NOT SET" << std::endl;
 }  
 
@@ -187,17 +185,7 @@ void Input_node::update_active_list() {
   // Check stop_queue:
   while (!stop_queue.empty() &&
          stop_queue.begin()->first < get_time_stamp()) {
-    bool found = false;
-    int stream = stop_queue.begin()->second;
-    for (std::list<int>::iterator it = active_list.begin();
-         it != active_list.end(); it++) {
-      if (*it == stream) {
-        it--;
-        stop_stream(it);
-        found = true;
-      }
-    }
-    assert(found);
+    remove_from_active_list((*stop_queue.begin()).second);
     stop_queue.erase(stop_queue.begin());
   }
 
@@ -236,16 +224,6 @@ void Input_node::remove_from_active_list(int stream) {
   assert(found);
 }
 
-void Input_node::stop_stream(const std::list<int>::iterator &stream_it) {
-  INT32 rank = get_rank();
-  MPI_Send(&rank, 1, MPI_INT32, 
-           *stream_it, MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED,
-           MPI_COMM_WORLD);
-  
-  std::list<int>::iterator it_del = stream_it;
-  active_list.erase(it_del);
-}
-
 void Input_node::hook_added_data_reader(size_t stream_nr) {
   assert(channel_extractor == NULL);
   assert(data_reader_ctrl.get_data_reader() != NULL);
@@ -257,4 +235,9 @@ void Input_node::hook_added_data_reader(size_t stream_nr) {
 }
 
 void Input_node::hook_added_data_writer(size_t writer) {
+}
+
+void Input_node::set_stop_time(INT64 stop_time_) {
+  stop_time = stop_time_;
+  set_status();
 }
