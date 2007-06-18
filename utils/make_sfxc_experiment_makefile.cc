@@ -145,7 +145,7 @@ void print_del_section(std::ostream &out,
                                   vex.ExperName(),
                                   sfxc_ctrl["scan"].asString(),
                                   channels[channel][0],
-                                  vex.Station(0)).c_str();
+                                  vex.Station(vex.N_Stations()-1)).c_str();
 //     }
   }
   out << std::endl << std::endl;
