@@ -1,7 +1,7 @@
 /* author : N.G.H. Kruithof
 */
 
-#define MAX_SNR_VALUE 50
+#define MAX_SNR_VALUE 8
 #define MIN_SNR_VALUE 3
 
 #include <iostream>
@@ -442,10 +442,11 @@ void print_html() {
         if (color_val < 0) color_val = 0;
         if (color_val > 255) color_val = 255;
         char color[7];
-        snprintf(color, 7, "#%X%X%X", 255-color_val, color_val, 
-                 0
-                 //                 (color_val<128? color_val : 255-color_val)
-                 );
+        if (color_val >= 128) {
+          snprintf(color, 7, "#0%X0", color_val);
+        } else {
+          snprintf(color, 7, "#%X00", 255-color_val);
+        }
         html_output << "<td bgcolor='" << color << "'>";
         html_output.precision(4);
         if (show_plots) {
