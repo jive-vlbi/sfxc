@@ -1,8 +1,8 @@
 /* author : N.G.H. Kruithof
 */
 
-#define MAX_SNR_VALUE 3
-#define MIN_SNR_VALUE 1.5
+#define MAX_SNR_VALUE 50
+#define MIN_SNR_VALUE 3
 
 #include <iostream>
 #include <complex>
@@ -275,7 +275,7 @@ Plot_generator::signal_to_noise_ratio(std::vector< complex<double> > &data)
 {
   int index_max = 0;
   for (size_t i=1; i<data.size(); i++) {
-    if (abs(data[i]) > abs(data[index_max])) index_max = i;
+    if (norm(data[i]) > norm(data[index_max])) index_max = i;
   }
 
   //return noise rms in array, skip 10 % around maximum
@@ -298,11 +298,11 @@ Plot_generator::signal_to_noise_ratio(std::vector< complex<double> > &data)
   double sum = 0;
   for (size_t i=0 ; i< data.size() ; i++){
     if (((int)i < ll) || ((int)i > ul)) {
-      sum += abs(data[i]-mean);
+      sum += norm(data[i]-mean);
     }
   }
 
-  return sqrt(abs(data[index_max]-mean)/(sum/n2avg));
+  return sqrt(norm(data[index_max]-mean)/(sum/n2avg));
 }
 
 void print_html() {
