@@ -239,7 +239,15 @@ void print_correlate_section(std::ostream &out,
                                        channels[channel][0], 
                                        "");
     }
-    out << cor_file << ": " << ccf_file << " " << "$(DELAYTABLES)" << std::endl
+    out << cor_file << ": " << ccf_file;
+    for (int station=0; station<vex.N_Stations(); station++) {
+      out << " " << generate_del_filename(sfxc_ctrl["deldir"].asString(),
+                                          vex.ExperName(),
+                                          sfxc_ctrl["scan"].asString(),
+                                          channels[channel][0],
+                                          vex.Station(station));
+    }
+    out << std::endl
         << "\tsfxc_SC " << ccf_file << std::endl;;
   }
 }

@@ -194,12 +194,15 @@ Channel_extractor_mark4_implementation(Data_reader &reader,
   }
   assert(header_start >= 0);
   
-  memmove(block, block + header_start, (frameMk4-header_start)*sizeof(T));
-  reader.get_bytes(header_start*sizeof(T),
-                   (char *)&block[frameMk4-header_start]);
+  memmove(block, ((char*)block) + header_start, 
+          frameMk4*sizeof(T)-header_start);
+  reader.get_bytes(header_start,
+                   ((char *)block)+(frameMk4*sizeof(T)-header_start));
+
 
   assert(find_header() == 0);
   mark4_header.set_header(block);
+
   mark4_header.check_header();
   
   start_day = mark4_header.day(0);
@@ -444,21 +447,23 @@ int
 Channel_extractor_mark4_implementation<T>::
 find_header() {
   int track = 0;
+
+  char *data_start = (char*)block;
   
-  int nOnes = 0;
-  UINT32 start_header;
+  size_t nOnes = 0;
+  size_t start_header;
   for (start_header=0; 
-       (start_header<(frameMk4-32)) && (nOnes <32); 
+       (start_header<(frameMk4-32)) && (nOnes <32*sizeof(T)); 
        start_header++) {
-    if ((block[start_header] >> track) & 1) {
+    if ((data_start[start_header] >> track) & 1) {
       nOnes ++;
     } else {
       nOnes = 0;
     } 
   }
   // Check whether we found an entire header:
-  if ((nOnes == 32) && (start_header >= 96)) {
-    return start_header-96;
+  if ((nOnes == 32*sizeof(T)) && (start_header >= 96)) {
+    return start_header-96*sizeof(T);
   } 
   return -1;
 }
@@ -494,4 +499,5 @@ void
 Channel_extractor_mark4_implementation<T>::
 print_header(Log_writer &writer, int track) {
   writer << "time: " << mark4_header.get_time_str(track) << std::endl;
+  mark4_header.print_binary_header(writer);
 }

@@ -366,7 +366,7 @@ int StaP::check_params(Log_writer &log_writer) const
   //check if the delay table exists
   if( access(delaytable, R_OK) != 0 ) {
     cerr << "Delay file " << delaytable << " is not accessible or does not exist\n";
-    retval=-1;
+    //    retval=-1;
   }
   
   return retval;
