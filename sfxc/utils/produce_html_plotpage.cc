@@ -443,9 +443,9 @@ void print_html() {
         if (color_val > 255) color_val = 255;
         char color[7];
         if (color_val >= 128) {
-          snprintf(color, 7, "#0%X0", color_val);
+          snprintf(color, 7, "#00%X00", color_val);
         } else {
-          snprintf(color, 7, "#%X00", 255-color_val);
+          snprintf(color, 7, "#%X0000", 255-color_val);
         }
         html_output << "<td bgcolor='" << color << "'>";
         html_output.precision(4);
