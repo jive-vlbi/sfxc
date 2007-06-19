@@ -39,8 +39,6 @@ using namespace std;
 #include "genFunctions.h"
 #include "InData.h"
 
-#include "Mark4_header_map.h"
-
 extern UINT32 seed;
 
 
@@ -469,7 +467,7 @@ void printFrameHeader(
       snprintf(buff,80,"%1d",tracks[jtrack   ][jsample]);
       get_log_writer() << buff;
     }
-    snprintf(buff, 80, " %s ",header_map[i]);
+    //    snprintf(buff, 80, " %s ",header_map[i]);
     get_log_writer() << buff;
     if(nhs==2) {
       for(jtrack=0;jtrack<32;jtrack++) {

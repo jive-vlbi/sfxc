@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
     
     for (int i=nBytes; i==nBytes; ) {
       i = ch_extractor.get_bytes(nBytes, data_frame);
-      ch_extractor.print_header(log_writer(0), 0);
+//       ch_extractor.print_header(log_writer(0), 0);
     }
   }
 }
