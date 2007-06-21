@@ -459,7 +459,6 @@ void printFrameHeader(
   get_log_writer() << "\n sample";
 
   //print table (stdout)
-  int i=0;
   for(jsample=jsynch0-64;jsample<jsynch0+116;jsample++){
     snprintf(buff,80,"\n %06d     ",jsample);
     get_log_writer() << buff;

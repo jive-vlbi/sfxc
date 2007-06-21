@@ -22,6 +22,7 @@ public:
   typedef Channel_extractor_mark4::DEBUG_LEVEL  DEBUG_LEVEL;
 
   Channel_extractor_mark4_implementation(Data_reader &reader, 
+                                         char *first_data_block,
                                          StaP &staPrms,
                                          bool insert_random_headers_,
                                          DEBUG_LEVEL debug_level);
@@ -41,9 +42,6 @@ public:
   
   void print_header(Log_writer &writer, int track);
 private:
-
-  // Finds the header on the track of the first sign bit
-  int find_header();
 
   bool increase_current_position_in_block();
 
@@ -87,73 +85,214 @@ Channel_extractor_mark4(Data_reader &reader,
                         bool insert_random_headers_,
                         DEBUG_LEVEL debug_level)
  : Channel_extractor(),
-   n_head_stacks(staPrms.get_nhs()),
-   ch_extractor_1_head_stack(NULL),
-   ch_extractor_2_head_stack(NULL)
+   ch_extractor_8_tracks(NULL),
+   ch_extractor_16_tracks(NULL),
+   ch_extractor_32_tracks(NULL),
+   ch_extractor_64_tracks(NULL)
 {
-  if (n_head_stacks == 1) {
-    ch_extractor_1_head_stack = 
-      new Channel_extractor_mark4_implementation<UINT32>(reader, staPrms, 
-        insert_random_headers_, debug_level);
-  } else {
-    assert (n_head_stacks == 2);
-    ch_extractor_2_head_stack = 
-      new Channel_extractor_mark4_implementation<UINT64>(reader, staPrms, 
-        insert_random_headers_, debug_level);
+  char block[frameMk4];
+  n_tracks = find_header(block, reader);
+
+  switch (n_tracks) {
+  case 8:
+    {
+      ch_extractor_8_tracks = 
+        new Channel_extractor_mark4_implementation<char>
+        (reader, block, staPrms, insert_random_headers_, debug_level);
+      break;
+    }
+  case 16:
+    {
+      ch_extractor_16_tracks = 
+        new Channel_extractor_mark4_implementation<Two_bytes>
+        (reader, block, staPrms, insert_random_headers_, debug_level);
+      break;
+    }
+  case 32:
+    {
+      ch_extractor_32_tracks = 
+        new Channel_extractor_mark4_implementation<UINT32>
+        (reader, block, staPrms, insert_random_headers_, debug_level);
+      break;
+    }
+  case 64:
+    {
+      ch_extractor_64_tracks = 
+        new Channel_extractor_mark4_implementation<UINT64>
+        (reader, block, staPrms, insert_random_headers_, debug_level);
+      break;
+    }
+  default: 
+    {
+      assert(false);
+    }
   }
 }
 
 int 
-Channel_extractor_mark4::goto_time(INT64 time) {
-  if (n_head_stacks == 1) {
-    return ch_extractor_1_head_stack->goto_time(time);
-  } else {
-    return ch_extractor_2_head_stack->goto_time(time);
+Channel_extractor_mark4::find_header(char *buffer,
+                                     Data_reader &reader) {
+  size_t bytes_read = reader.get_bytes(frameMk4/2, buffer+frameMk4/2);
+  assert (bytes_read == frameMk4/2);
+
+  int nOnes=0, header_start=-1, nTracks8 = -1;
+  for (int block=0; (block<16) && (header_start<0); block++) {
+    // Move the last half to the first half and read frameMk4/2 bytes:
+    memcpy(buffer, buffer+frameMk4/2, frameMk4/2);
+    size_t bytes_read = reader.get_bytes(frameMk4/2, buffer+frameMk4/2);
+    assert (bytes_read == frameMk4/2);
+
+
+    // the header contains 64 bits before the syncword and
+    //                     64 bits after the syncword.
+    // We skip those bytes since we want to find an entire syncword
+    for (int byte=64; (byte<frameMk4-64*8) && (header_start<0); byte++) {
+      if (buffer[byte] == (char)(~0)) {
+        nOnes ++;
+      } else {
+        if ((nOnes>0) && (nOnes%32 == 0)) {
+          // make sure the begin of the header is in the buffer
+          // syncword is 32 samples, auxiliary data field 64 samples
+          header_start = byte - nOnes*3;
+          if (header_start >= 0) {
+            nTracks8 = nOnes/32;
+            switch (nTracks8) {
+            case 1: 
+              {
+                Mark4_header<char> header;
+                header.set_header(buffer+header_start);
+                if (!header.checkCRC()) {
+                  header_start = -1;
+                }
+                break;
+              }
+            case 2: 
+              {
+                Mark4_header<Two_bytes> header;
+                header.set_header((Two_bytes*)(buffer+header_start));
+                if (!header.checkCRC()) {
+                  header_start = -1;
+                }
+                break;
+              }
+            case 4: 
+              {
+                Mark4_header<UINT32> header;
+                header.set_header((UINT32*)(buffer+header_start));
+                if (!header.checkCRC()) {
+                  header_start = -1;
+                }
+                break;
+              }
+            case 8: 
+              {
+                Mark4_header<UINT64> header;
+                header.set_header((UINT64*)(buffer+header_start));
+                if (!header.checkCRC()) {
+                  header_start = -1;
+                }
+                break;
+              }
+            default:
+              {
+                assert(false);
+              }
+            }
+          }
+        }
+        nOnes=0;
+      }
+    }
   }
+  if (header_start < 0) return -1;
+  if (header_start == 0) return nTracks8*8;
+
+  memmove(buffer, buffer+header_start, frameMk4-header_start);
+  reader.get_bytes(header_start, buffer+frameMk4-header_start);
+
+  return nTracks8*8;
+}
+
+int 
+Channel_extractor_mark4::goto_time(INT64 time) {
+//   if (n_head_stacks == 1) {
+//     return ch_extractor_1_head_stack->goto_time(time);
+//   } else {
+//     return ch_extractor_2_head_stack->goto_time(time);
+//   }
+  return 0;
 }
 INT64 
 Channel_extractor_mark4::get_current_time() {
-  if (n_head_stacks == 1) {
-    return ch_extractor_1_head_stack->get_current_time();
-  } else {
-    return ch_extractor_2_head_stack->get_current_time();
+  switch (n_tracks) {
+  case  8: return ch_extractor_8_tracks->get_current_time();
+  case 16: return ch_extractor_16_tracks->get_current_time();
+  case 32: return ch_extractor_32_tracks->get_current_time();
+  case 64: return ch_extractor_64_tracks->get_current_time();
+  default: assert(false);
   }
+  return 0;
 }
 
 size_t 
 Channel_extractor_mark4::
 get_samples(size_t nSamples, double *bit_samples, const double *val_array) {
-  if (n_head_stacks == 1) {
-    return 
-      ch_extractor_1_head_stack->get_samples(nSamples, bit_samples, val_array);
-  } else {
-    return 
-      ch_extractor_2_head_stack->get_samples(nSamples, bit_samples, val_array);
+  switch (n_tracks) {
+  case  8: 
+    return ch_extractor_8_tracks->get_samples(nSamples,bit_samples,val_array);
+  case 16: 
+    return ch_extractor_16_tracks->get_samples(nSamples,bit_samples,val_array);
+  case 32:
+    return ch_extractor_32_tracks->get_samples(nSamples,bit_samples,val_array);
+  case 64:
+    return ch_extractor_64_tracks->get_samples(nSamples,bit_samples,val_array);
+  default: assert(false);
   }
+  return 0;
 }
 
 size_t 
 Channel_extractor_mark4::do_get_bytes(size_t nBytes, char *buff) {
-  if (n_head_stacks == 1) {
-    return ch_extractor_1_head_stack->do_get_bytes(nBytes, buff);
-  } else {
-    return ch_extractor_2_head_stack->do_get_bytes(nBytes, buff);
+  switch (n_tracks) {
+  case  8: 
+    return ch_extractor_8_tracks->do_get_bytes(nBytes, buff);
+  case 16: 
+    return ch_extractor_16_tracks->do_get_bytes(nBytes, buff);
+  case 32:
+    return ch_extractor_32_tracks->do_get_bytes(nBytes, buff);
+  case 64:
+    return ch_extractor_64_tracks->do_get_bytes(nBytes, buff);
+  default: assert(false);
   }
-  }
+  return 0;
+}
 
 bool Channel_extractor_mark4::eof() {
-  if (n_head_stacks == 1) {
-    return ch_extractor_1_head_stack->eof();
-  } else {
-    return ch_extractor_2_head_stack->eof();
+  switch (n_tracks) {
+  case  8: 
+    return ch_extractor_8_tracks->eof();
+  case 16: 
+    return ch_extractor_16_tracks->eof();
+  case 32:
+    return ch_extractor_32_tracks->eof();
+  case 64:
+    return ch_extractor_64_tracks->eof();
+  default: assert(false);
   }
+  return false;
 }
 
 void Channel_extractor_mark4::print_header(Log_writer &writer, int track) {
-  if (n_head_stacks == 1) {
-    return ch_extractor_1_head_stack->print_header(writer, track);
-  } else {
-    return ch_extractor_2_head_stack->print_header(writer, track);
+  switch (n_tracks) {
+  case  8: 
+    return ch_extractor_8_tracks->print_header(writer, track);
+  case 16: 
+    return ch_extractor_16_tracks->print_header(writer, track);
+  case 32:
+    return ch_extractor_32_tracks->print_header(writer, track);
+  case 64:
+    return ch_extractor_64_tracks->print_header(writer, track);
+  default: assert(false);
   }
 }
 
@@ -164,6 +303,7 @@ void Channel_extractor_mark4::print_header(Log_writer &writer, int track) {
 template <class T>
 Channel_extractor_mark4_implementation<T>::
 Channel_extractor_mark4_implementation(Data_reader &reader, 
+                                       char *first_data_block,
                                        StaP &staPrms, 
                                        bool insert_random_headers_,
                                        DEBUG_LEVEL debug_level)
@@ -175,34 +315,14 @@ Channel_extractor_mark4_implementation(Data_reader &reader,
    TBR(staPrms.get_tbr()),
    debug_level(debug_level),
    block_count(0)
-{
-    
-  assert(staPrms.get_tphs()*staPrms.get_nhs() == sizeof(T)*8);
-  
+{ 
+  memcpy(block, first_data_block, frameMk4);
   // Make sure the header starts on the first byte:
-  reader.get_bytes(frameMk4*sizeof(T), (char *)block);
+  size_t result = reader.get_bytes(frameMk4*(sizeof(T)-1), 
+                                   ((char *)block)+frameMk4);
+  assert(result == frameMk4*(sizeof(T)-1));
   
-  int header_start = find_header();
-  if (header_start < 0) {
-    // Header not found. It probably lies on the boundary of the processed block
-    // Read a half block and retry
-    int mid = (frameMk4*sizeof(T))/2+1;
-    int end = frameMk4*sizeof(T);
-    memcpy(block, block + mid, end-mid);
-    reader.get_bytes((UINT64)(end - mid), (char*)(block + mid));
-    header_start = find_header();
-  }
-  assert(header_start >= 0);
-  
-  memmove(block, ((char*)block) + header_start, 
-          frameMk4*sizeof(T)-header_start);
-  reader.get_bytes(header_start,
-                   ((char *)block)+(frameMk4*sizeof(T)-header_start));
-
-
-  assert(find_header() == 0);
   mark4_header.set_header(block);
-
   mark4_header.check_header();
   
   start_day = mark4_header.day(0);
@@ -225,10 +345,10 @@ Channel_extractor_mark4_implementation(Data_reader &reader,
 //       }
       tracks[n_bits_per_sample*i+1] = staPrms.get_signBS()[i];
     } else {
-      if (! mark4_header.is_sign(staPrms.get_signBS()[i])) {
-        std::cout << "Track " << staPrms.get_signBS()[i]
-                  << " is not a sign track" << std::endl;
-      }
+//       if (! mark4_header.is_sign(staPrms.get_signBS()[i])) {
+//         std::cout << "Track " << staPrms.get_signBS()[i]
+//                   << " is not a sign track" << std::endl;
+//       }
       tracks[n_bits_per_sample*i] = staPrms.get_signBS()[i];
     }
   }
@@ -399,7 +519,6 @@ read_new_block() {
   if (debug_level >= Channel_extractor_mark4::CHECK_PERIODIC_HEADERS) {
     if ((debug_level >= Channel_extractor_mark4::CHECK_ALL_HEADERS) ||
         ((++block_count % 100) == 0)) {
-      assert(find_header() == 0);
       mark4_header.check_header();
       check_time_stamp();
       if (Channel_extractor_mark4::CHECK_BIT_STATISTICS) {
@@ -443,32 +562,6 @@ eof() {
 }
 
 template <class T>
-int
-Channel_extractor_mark4_implementation<T>::
-find_header() {
-  int track = 0;
-
-  char *data_start = (char*)block;
-  
-  size_t nOnes = 0;
-  size_t start_header;
-  for (start_header=0; 
-       (start_header<(frameMk4-32)) && (nOnes <32*sizeof(T)); 
-       start_header++) {
-    if ((data_start[start_header] >> track) & 1) {
-      nOnes ++;
-    } else {
-      nOnes = 0;
-    } 
-  }
-  // Check whether we found an entire header:
-  if ((nOnes == 32*sizeof(T)) && (start_header >= 96)) {
-    return start_header-96*sizeof(T);
-  } 
-  return -1;
-}
-
-template <class T>
 bool
 Channel_extractor_mark4_implementation<T>::
 check_track_bit_statistics() {
@@ -499,5 +592,5 @@ void
 Channel_extractor_mark4_implementation<T>::
 print_header(Log_writer &writer, int track) {
   writer << "time: " << mark4_header.get_time_str(track) << std::endl;
-  mark4_header.print_binary_header(writer);
+//   mark4_header.print_binary_header(writer);
 }

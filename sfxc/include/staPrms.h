@@ -19,7 +19,8 @@
 
 const int chmax      =     8; //max nr of channels, nch*fo <=32
 const int fomax      =     4; //maximum fan out
-const int frameMk4   = 20000; //frame length in bits mk4 file on mk5 disk
+//frame length in bits mk4 file on mk5 disk
+#define frameMk4       20000
 const int hdrMk4     =   160; //header length bits  mk4 file on mk5 disk
 const int nfrms      =     2; //number of frames to be processed at one go
 const int trksMax    =    64; //maximum number of tracks in array
