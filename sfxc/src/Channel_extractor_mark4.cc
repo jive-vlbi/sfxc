@@ -41,6 +41,10 @@ public:
   bool check_track_bit_statistics();  
   
   void print_header(Log_writer &writer, int track);
+
+  Mark4_header<T> &header() {
+    return mark4_header;
+  }
 private:
 
   bool increase_current_position_in_block();
@@ -211,6 +215,30 @@ Channel_extractor_mark4::find_header(char *buffer,
   reader.get_bytes(header_start, buffer+frameMk4-header_start);
 
   return nTracks8*8;
+}
+
+int Channel_extractor_mark4::number_of_tracks() {
+  return n_tracks;
+}
+
+int Channel_extractor_mark4::track(int track) {
+  switch (n_tracks) {
+  case  8: return ch_extractor_8_tracks->header().track(track);
+  case 16: return ch_extractor_16_tracks->header().track(track);
+  case 32: return ch_extractor_32_tracks->header().track(track);
+  case 64: return ch_extractor_64_tracks->header().track(track);
+  default: assert(false);
+  }
+}
+
+int Channel_extractor_mark4::headstack(int track) {
+  switch (n_tracks) {
+  case  8: return ch_extractor_8_tracks->header().headstack(track);
+  case 16: return ch_extractor_16_tracks->header().headstack(track);
+  case 32: return ch_extractor_32_tracks->header().headstack(track);
+  case 64: return ch_extractor_64_tracks->header().headstack(track);
+  default: assert(false);
+  }
 }
 
 int 

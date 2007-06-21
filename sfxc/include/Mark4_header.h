@@ -21,15 +21,17 @@ public:
   void set_header(T *header);
   void check_header();
   
+  int headstack(int track);
+  int track(int track);
+  bool is_sign(int track);
+  bool is_magn(int track);
+  
   int year(int track);
   int day(int track);
   int hour(int track);
   int minute(int track);
   int second(int track);
   int microsecond(int track);
-  
-  bool is_sign(int track);
-  bool is_magn(int track);
   
   INT64 get_microtime_difference(INT32 day, INT64 utime, int track); 
   INT64 get_microtime(int track);
@@ -128,6 +130,16 @@ int Mark4_header<T>::microsecond(int track) {
   return milisec + microsecond_offset[unit];
 }
 
+template <class T>
+int Mark4_header<T>::headstack(int track) {
+  return 2*(((*(header+32)) >> track)&1) + (((*(header+33)) >> track)&1);
+}
+template <class T>
+int Mark4_header<T>::track(int track) {
+  return 
+    10*(2*(((*(header+34))>>track)&1) + (((*(header+35))>>track)&1)) +
+    BCD(header+36,track);
+}
 template <class T>
 bool Mark4_header<T>::is_sign(int track) {
   return ((((*(header+41)) >> track) &1) == 0);

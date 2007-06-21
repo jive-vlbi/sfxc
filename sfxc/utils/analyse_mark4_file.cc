@@ -127,6 +127,13 @@ int main(int argc, char *argv[]) {
                    staPrms[station_nr], 
                    Channel_extractor_mark4::CHECK_ALL_HEADERS);
     ch_extractor.print_header(log_writer(0), 0);
+    for (int i=0; i<ch_extractor.number_of_tracks(); i++) {
+      std::cout << "Track: " 
+                << i << " \t"
+                << ch_extractor.headstack(i) << " \t"
+                << ch_extractor.track(i) << " \t"
+                << std::endl;
+    }
 
     int nBytes = 
       (frameMk4*staPrms[station_nr].get_fo()*staPrms[station_nr].get_bps())/8;
