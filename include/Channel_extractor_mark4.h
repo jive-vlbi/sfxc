@@ -47,6 +47,10 @@ public:
   bool eof();
 
   void print_header(Log_writer &writer, int track=0);
+
+  int number_of_tracks();
+  int headstack(int track);
+  int track(int track);
 private:
   int find_header(char *buffer, Data_reader &reader);
 
