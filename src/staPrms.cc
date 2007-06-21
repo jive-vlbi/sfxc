@@ -352,7 +352,7 @@ int StaP::check_params(Log_writer &log_writer) const
   //check if the data file exists
   if( access(mk4file, R_OK) != 0 ) {
     cerr << "Mark4 file " << mk4file << " is not accessible or does not exist\n";
-    retval=-1;
+    //    retval=-1;
   }
 
   //check if the modulation pattern file exists only if modulation is applied

@@ -131,7 +131,7 @@ int DelayTable::readDelayTable(char *delayTableName)
   retval = retval + getDelayLine(fp, t1, c1, m1, r1, f1);
   retval = retval + getDelayLine(fp, t2, c2, m2, r2, f2);
   if (retval != 0) {
-    cerr << "ERROR: reading data from:" << delayTableName << endl;
+    cerr << "ERROR: reading data from: " << delayTableName << endl;
     return retval;
   }
   

@@ -306,9 +306,11 @@ void write_station_block(ofstream &cc_file,
   cc_file<<"BPS         " << BPS << endl;
   //nr_of_headstacks
   int NHS=1;
-  for (int j=0; j<vex_file.N_TrackLines(StationStr,vex_file.Mode(0)); j++)
-    if (vex_file.HeadstackNr(StationStr,vex_file.Mode(0),j)>1) 
+  for (int j=0; j<vex_file.N_TrackLines(StationStr,vex_file.Mode(0)); j++) {
+    if (vex_file.HeadstackNr(StationStr,vex_file.Mode(0),j)>1) {
       NHS=vex_file.HeadstackNr(StationStr,vex_file.Mode(0),j);
+    }
+  }
   cc_file<<"NHS         " << NHS << endl;
   //byte offset
   cc_file<<"BOFF        0  #User changeable.\n";
