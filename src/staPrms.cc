@@ -42,6 +42,8 @@ int   StaP::get_tbr()        const { return tbr; }
 int   StaP::get_fo()         const { return fo; }
 int   StaP::get_bps()        const { return bps; }
 int   StaP::get_nhs()        const { return nhs; }
+int   StaP::get_headstack_sign() const { return hs; }
+int   StaP::get_headstack_magn() const { return hm; }
 int   StaP::get_tphs()       const { return tphs; }
 int   StaP::get_boff()       const { return boff; }
 int   StaP::get_synhs1()     const { return synhs1; }
@@ -155,12 +157,13 @@ int StaP::parse_ctrlFile(char *ctrlFile, int staNr, Log_writer &log_writer)
   assert((0<fo) && (fo<=fomax));
   //mk4 to mk5 bit shift numbers
   //recalculation because on tape 36 tracks and track 0,1,34,35 not used on disk
+  // Make the headstacks 0 based:
   hs = hs - 1;
   hm = hm - 1;
-  for (int j=0; j < fo; j++) {
-    signBS[j] = signBS[j] - 2 + 32*hs;
-    magnBS[j] = magnBS[j] - 2 + 32*hm;
-  }
+//   for (int j=0; j < fo; j++) {
+//     signBS[j] = signBS[j] - 2 + 32*hs;
+//     magnBS[j] = magnBS[j] - 2 + 32*hm;
+//   }
 
   return retval;
 }

@@ -359,26 +359,31 @@ Channel_extractor_mark4_implementation(Data_reader &reader,
 
   // Store a list of tracks: first magnitude (optional), then sign 
   tracks.resize(n_bits_per_sample*fan_out);
+  int track = 0;
   for (int i=0; i<fan_out; i++) {
     if (n_bits_per_sample > 1) {
-//       if (! mark4_header.is_magn(staPrms.get_magnBS()[i])) {
-//         std::cout << "Track " << staPrms.get_magnBS()[i]
-//                   << " is not a magn track" << std::endl;
-//       }
-      tracks[n_bits_per_sample*i] = staPrms.get_magnBS()[i];
-      
-//       if (! mark4_header.is_sign(staPrms.get_signBS()[i])) {
-//         std::cout << "Track " << staPrms.get_signBS()[i]
-//                   << " is not a sign track" << std::endl;
-//       }
-      tracks[n_bits_per_sample*i+1] = staPrms.get_signBS()[i];
-    } else {
-//       if (! mark4_header.is_sign(staPrms.get_signBS()[i])) {
-//         std::cout << "Track " << staPrms.get_signBS()[i]
-//                   << " is not a sign track" << std::endl;
-//       }
-      tracks[n_bits_per_sample*i] = staPrms.get_signBS()[i];
+      tracks[track] = mark4_header.find_track(staPrms.get_headstack_magn(),
+                                              staPrms.get_magnBS()[i]);
+      assert(mark4_header.headstack(tracks[track]) == 
+             staPrms.get_headstack_magn());
+      assert(mark4_header.track(tracks[track]) == 
+             staPrms.get_magnBS()[i]);
+//       if (mark4_header.is_sign(tracks[track]))
+//         std::cout << "Track " << tracks[track] << " is not a magn track" 
+//                   << std::endl;
+
+      track++;
     }
+    tracks[track] = mark4_header.find_track(staPrms.get_headstack_sign(),
+                                            staPrms.get_signBS()[i]);
+    assert(mark4_header.headstack(tracks[track]) == 
+           staPrms.get_headstack_sign());
+    assert(mark4_header.track(tracks[track]) == 
+           staPrms.get_signBS()[i]);
+//     if (mark4_header.is_magn(tracks[track]))
+//       std::cout << "Track " << tracks[track] << " is not a sign track" 
+//                 << std::endl;
+    track++;
   }
 }
 

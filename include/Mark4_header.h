@@ -21,6 +21,8 @@ public:
   void set_header(T *header);
   void check_header();
   
+  int nTracks();
+  
   int headstack(int track);
   int track(int track);
   bool is_sign(int track);
@@ -32,6 +34,8 @@ public:
   int minute(int track);
   int second(int track);
   int microsecond(int track);
+
+  int find_track(int headstack, int track);
   
   INT64 get_microtime_difference(INT32 day, INT64 utime, int track); 
   INT64 get_microtime(int track);
@@ -93,6 +97,11 @@ bool Mark4_header<T>::is_valid() {
 }
 
 template <class T>
+int Mark4_header<T>::nTracks() {
+  return 8*sizeof(T);
+}
+
+template <class T>
 int Mark4_header<T>::year(int track) {
   assert((track >= 0) && (track < (int)sizeof(T)*8));
   return 2000 + BCD(header + 96+ 0, track);
@@ -147,6 +156,17 @@ bool Mark4_header<T>::is_sign(int track) {
 template <class T>
 bool Mark4_header<T>::is_magn(int track) {
   return ((((*(header+41)) >> track) &1) == 1);
+}
+
+template <class T>
+int Mark4_header<T>::find_track(int headstack_, int track_) {
+  for (int i=0; i<nTracks(); i++) {
+    if ((headstack(i) == headstack_) && (track(i) == track_)) {
+      return i;
+    }
+  }
+  assert(false);
+  return -1;
 }
 
 
