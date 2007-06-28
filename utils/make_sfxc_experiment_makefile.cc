@@ -190,21 +190,20 @@ void print_correlate_section(std::ostream &out,
                              Json::Value const &sfxc_ctrl) {
   out << "CORRELATION_OUTPUT_FILES = ";
   for (size_t channel = 0; channel < channels.size(); channel++) {
-    if (channels[channel].size() == 2) {
-      out << " \\\n  "
-          << generate_cor_filename(sfxc_ctrl["outdir"].asString(),
-                                   vex.ExperName(),
-                                   sfxc_ctrl["scan"].asString(),
-                                   channels[channel][0], 
-                                   channels[channel][1]).c_str();
-    } else {
+    out << "\\\n  ";
+    if (channels[channel].size() == 1) {
       // Next channel is not the other polarisation
-      out << " \\\n  "
-          << generate_cor_filename(sfxc_ctrl["outdir"].asString(),
+      out << generate_cor_filename(sfxc_ctrl["outdir"].asString(),
                                    vex.ExperName(),
                                    sfxc_ctrl["scan"].asString(),
                                    channels[channel][0], 
                                    "").c_str();
+    } else {
+      out << generate_cor_filename(sfxc_ctrl["outdir"].asString(),
+                                   vex.ExperName(),
+                                   sfxc_ctrl["scan"].asString(),
+                                   channels[channel][0], 
+                                   channels[channel][1]).c_str();
     }
   }
   out << std::endl
@@ -215,18 +214,7 @@ void print_correlate_section(std::ostream &out,
   
   for (size_t channel = 0; channel < channels.size(); channel++) {
     std::string cor_file, ccf_file;
-    if (channels[channel].size() == 2) {
-      cor_file = generate_cor_filename(sfxc_ctrl["outdir"].asString(),
-                                       vex.ExperName(),
-                                       sfxc_ctrl["scan"].asString(),
-                                       channels[channel][0], 
-                                       channels[channel][1]).c_str();
-      ccf_file = generate_ccf_filename(sfxc_ctrl["ccfdir"].asString(),
-                                       vex.ExperName(),
-                                       sfxc_ctrl["scan"].asString(),
-                                       channels[channel][0], 
-                                       channels[channel][1]).c_str();
-    } else {
+    if (channels[channel].size() == 1) {
       // Next channel is not the other polarisation
       cor_file = generate_cor_filename(sfxc_ctrl["outdir"].asString(),
                                        vex.ExperName(),
@@ -238,6 +226,17 @@ void print_correlate_section(std::ostream &out,
                                        sfxc_ctrl["scan"].asString(),
                                        channels[channel][0], 
                                        "");
+    } else {
+      cor_file = generate_cor_filename(sfxc_ctrl["outdir"].asString(),
+                                       vex.ExperName(),
+                                       sfxc_ctrl["scan"].asString(),
+                                       channels[channel][0], 
+                                       channels[channel][1]).c_str();
+      ccf_file = generate_ccf_filename(sfxc_ctrl["ccfdir"].asString(),
+                                       vex.ExperName(),
+                                       sfxc_ctrl["scan"].asString(),
+                                       channels[channel][0], 
+                                       channels[channel][1]).c_str();
     }
     out << cor_file << ": " << ccf_file;
     for (int station=0; station<vex.N_Stations(); station++) {
