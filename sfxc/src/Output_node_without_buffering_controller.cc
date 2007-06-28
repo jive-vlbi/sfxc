@@ -3,13 +3,13 @@
  * 
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
- * $Id$
+ * $Id: Output_node_without_buffering_controller.cc 221 2007-05-11 10:28:48Z kruithof $
  *
  */
 
 
-// Output_node_controller is defined in Output_node.h:
-#include <Output_node.h>
+// Output_node_without_buffering_controller is defined in Output_node_without_buffering.h:
+#include <Output_node_without_buffering.h>
 
 #include <iostream>
 #include <assert.h>
@@ -19,13 +19,13 @@
 #include <TCP_Connection.h>
 #include <Queue_buffer.h>
 
-Output_node_controller::Output_node_controller(Output_node &node)
+Output_node_without_buffering_controller::Output_node_without_buffering_controller(Output_node_without_buffering &node)
   : Controller(node), node(node) {
     
 }
 
 Controller::Process_event_status
-Output_node_controller::process_event(MPI_Status &status) {
+Output_node_without_buffering_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
   case MPI_TAG_OUTPUT_STREAM_SET_PRIORITY:
@@ -39,6 +39,7 @@ Output_node_controller::process_event(MPI_Status &status) {
       assert(status.MPI_TAG == status2.MPI_TAG);
 
       // Create an output buffer:
+      node.create_buffer(weight[0]);
       node.set_weight_of_input_stream(weight[0], weight[1]);
       node.set_status();
       
@@ -50,7 +51,7 @@ Output_node_controller::process_event(MPI_Status &status) {
       MPI_Recv(&rank, 2, MPI_UINT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      get_log_writer()(0) << print_MPI_TAG(status.MPI_TAG)
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG)
                           << " From: corr.node " << rank[0] <<", bytes " << rank[1] << std::endl;;
 
       

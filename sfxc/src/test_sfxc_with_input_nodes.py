@@ -36,7 +36,10 @@ if os.path.isfile(RC_FILE):
   execfile(RC_FILE)
 
 # compile the executable
-status = os.system("make sfxc_with_input_nodes")
+if (os.environ.get("MAKE")):
+  status = os.system('$MAKE sfxc_with_input_nodes')
+else:
+  status = os.system("make sfxc_with_input_nodes")
 if (status != 0): sys.exit(1)
 
 # run the executable on all ccf files

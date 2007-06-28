@@ -40,7 +40,7 @@ void check_control_parameters() {
   if (rank==0) {
     //std::cout << "check_control_parameters()" << std::endl;
     MPI_Transfer mpi_transfer;
-    mpi_transfer.send_general_parameters(1);
+    mpi_transfer.send_general_parameters(1, RunPrms, GenPrms, StaPrms);
     
   } else {
     RunP  RunPrms2 = RunPrms;

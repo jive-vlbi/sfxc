@@ -12,6 +12,7 @@
 
 #include <Data_reader.h>
 #include <Buffer.h>
+#include <boost/shared_ptr.hpp>
 
 //
 
@@ -24,7 +25,7 @@ class Data_reader_buffer : public Data_reader {
 public:
   /** Constructor, reads from buffer
    **/
-  Data_reader_buffer(Buffer *buff);
+  Data_reader_buffer(boost::shared_ptr<Buffer> buff);
 
   ~Data_reader_buffer();
 
@@ -34,7 +35,7 @@ private:
   size_t do_get_bytes(size_t nBytes, char *out);
 
   // The input buffer
-  Buffer       *buffer;
+  boost::shared_ptr<Buffer> buffer;
   // Number of bytes left in the current buffer-element
   int          bytes_left;
   // element: pointer to the beginning of the buffer

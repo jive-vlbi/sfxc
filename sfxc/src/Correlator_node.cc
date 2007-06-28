@@ -163,7 +163,8 @@ void Correlator_node::set_parameters(RunP &runPrms, GenP &genPrms, StaP *staPrms
 
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
-  Bits_to_float_converter *sample_reader = new Bits_to_float_converter();
+  boost::shared_ptr<Bits_to_float_converter> 
+    sample_reader(new Bits_to_float_converter());
   sample_reader->set_bits_per_sample(StaPrms->get_bps());
   sample_reader->set_data_reader(data_readers_ctrl.get_data_reader(stream_nr));
   

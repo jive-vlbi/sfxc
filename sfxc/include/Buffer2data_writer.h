@@ -13,7 +13,7 @@
 #include <Data_writer.h>
 #include <Buffer.h>
 
-
+#include <boost/shared_ptr.hpp>
 #include <assert.h>
 
 /** Reads data from a buffer and writes it to a Data_writer.
@@ -34,10 +34,10 @@ public:
   Buffer2data_writer();
   ~Buffer2data_writer();
   
-  void set_data_writer(Data_writer *data_writer);
-  void set_buffer(Buffer<T> *buffer);
-  Data_writer *get_data_writer();
-  Buffer<T>   *get_buffer();
+  void set_data_writer(boost::shared_ptr< Data_writer >data_writer);
+  void set_buffer(boost::shared_ptr< Buffer<T> > buffer);
+  boost::shared_ptr< Data_writer > get_data_writer();
+  boost::shared_ptr< Buffer<T> > get_buffer();
 
   /// Starts the asynchronous IO if the buffer and data_writer are not NULL  
   void try_start();
@@ -60,8 +60,8 @@ private:
   static void *start_writing(void *);
   void write();
 
-  Data_writer *data_writer;
-  Buffer<T>   *buffer;
+  boost::shared_ptr< Data_writer >  data_writer;
+  boost::shared_ptr< Buffer<T> >    buffer;
   State       state;
   pthread_t   redirect_thread;
 };
@@ -70,14 +70,14 @@ private:
 // Implementation:
 template <class T>
 Buffer2data_writer<T>::Buffer2data_writer() 
-  : data_writer(NULL), buffer(NULL), state(STOPPED), redirect_thread(0)
+  : state(STOPPED), redirect_thread(0)
 {
 }
 
 template <class T>
 Buffer2data_writer<T>::~Buffer2data_writer() 
 {
-  if (buffer != NULL) {
+  if (buffer != boost::shared_ptr< Buffer<T> >()) {
     if (!buffer->empty()) {
       std::cout << "Buffer of Buffer2data_writer is not empty" << std::endl;
     }
@@ -87,26 +87,26 @@ Buffer2data_writer<T>::~Buffer2data_writer()
   
 template <class T>
 void
-Buffer2data_writer<T>::set_data_writer(Data_writer *writer) {
+Buffer2data_writer<T>::set_data_writer(boost::shared_ptr< Data_writer > writer) {
   assert(state != RUNNING);
   data_writer = writer;
 }
 
 template <class T>
 void
-Buffer2data_writer<T>::set_buffer(Buffer<T> *buff) {
+Buffer2data_writer<T>::set_buffer(boost::shared_ptr< Buffer<T> > buff) {
   assert(state != RUNNING);
   buffer = buff;
 }
   
 template <class T>
-Data_writer *
+boost::shared_ptr< Data_writer >
 Buffer2data_writer<T>::get_data_writer() {
   return data_writer;
 }
 
 template <class T>
-Buffer<T>   *
+boost::shared_ptr< Buffer<T> > 
 Buffer2data_writer<T>::get_buffer() {
   return buffer;
 }

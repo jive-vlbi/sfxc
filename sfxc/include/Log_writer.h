@@ -17,9 +17,29 @@
 
 using namespace std;
 
-/// Conversion of an integer to an character.
-/// NGHK: Move this function to utils.h?
-char* itoa( int value, char* result, int base );
+/// Conversion of an integer-type to a character.
+template <class T>
+char* itoa(T value, char* result, int base ) {
+  // check that the base if valid
+  if (base < 2 || base > 16) { *result = 0; return result; }
+  
+  char* out = result;
+  T quotient = value;
+
+  do {
+    *out = "0123456789abcdef"[ (quotient<T(0) ? -1 : 1)*(quotient % base) ];
+    ++out;
+    quotient /= base;
+  } while ( quotient );
+  
+  // Only apply negative sign for base 10
+  if ( (value < T(0)) && (base == 10) ) *out++ = '-';
+  
+  std::reverse( result, out );
+  *out = 0;
+  
+  return result;
+}
 
 class Log_writer {
 public:

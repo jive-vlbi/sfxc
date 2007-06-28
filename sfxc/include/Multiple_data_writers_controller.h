@@ -30,14 +30,14 @@ public:
   
   Process_event_status process_event(MPI_Status &status);
   
-  Buffer *buffer(unsigned int i);
-  void set_buffer(unsigned int i, Buffer *buff);
+  boost::shared_ptr<Buffer> buffer(unsigned int i);
+  void set_buffer(unsigned int i, boost::shared_ptr<Buffer> buff);
   
   Buffer2writer *operator[](int i);
   
   bool ready();
   
-  Data_writer *get_data_writer(int i);
+  boost::shared_ptr<Data_writer> get_data_writer(int i);
     
   int get_rank_node_reader(int i) {
     assert((0<=i) && (i < (int)data_writers.size()));
@@ -71,7 +71,7 @@ private:
     int stream_number_reader;
   };
 
-  void add_data_writer(unsigned int i, Data_writer *writer, 
+  void add_data_writer(unsigned int i, boost::shared_ptr<Data_writer> writer, 
                        int rank_node_reader, int stream_number_reader);
 
 

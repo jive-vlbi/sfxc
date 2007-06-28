@@ -12,11 +12,11 @@
 #include <assert.h>
 
 Node::Node(int rank) : rank(rank), log_writer(new Log_writer_mpi(rank, 0)) {
-  log_writer->set_mpilevel(2);
+  log_writer->set_mpilevel(1);
 }
 
 Node::Node(int rank, Log_writer *writer) : rank(rank), log_writer(writer) {
-  log_writer->set_mpilevel(2);
+  log_writer->set_mpilevel(1);
 }
 
 Node::~Node() {
@@ -85,14 +85,13 @@ Node::MESSAGE_RESULT
 Node::check_and_process_message() {
     MPI_Status status;
     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    
-    return process_event(status);
+    MESSAGE_RESULT result = process_event(status); 
+    return result;
 }
 
 Node::MESSAGE_RESULT 
 Node::process_event(MPI_Status &status) {
-//  std::cout << "COUT: " << rank << ": " << status.MPI_SOURCE << " "
-//            << print_MPI_TAG(status.MPI_TAG) << std::endl;
+//  DEBUG_MSG("--- " << get_rank() << ", " << print_MPI_TAG(status.MPI_TAG));
   if (status.MPI_TAG == MPI_TAG_CORRELATION_READY) {
     MPI_Status status2; int msg;
     MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,

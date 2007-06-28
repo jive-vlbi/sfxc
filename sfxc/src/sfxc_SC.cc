@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
   log_writer.ask_continue();
 
   //set the output writer
-  Data_writer_file data_writer(GenPrms.get_corfile());
+  boost::shared_ptr<Data_writer_file> data_writer(new Data_writer_file(GenPrms.get_corfile()));
 
   //get the number of stations
   int    nstations;
@@ -144,9 +144,9 @@ int main(int argc, char *argv[])
     //Data reader initialisations
     Data_reader *data_reader;
     data_reader = new Data_reader_file(StaPrms[sn].get_mk4file());
-    Channel_extractor *ch_extractor;
-    ch_extractor = new Channel_extractor_mark4(*data_reader, StaPrms[sn], 
-      GenPrms.get_rndhdr());
+    boost::shared_ptr<Channel_extractor> 
+      ch_extractor(new Channel_extractor_mark4(*data_reader, StaPrms[sn], 
+                                               GenPrms.get_rndhdr()));
 
     //initialise readers to proper position
     result = ch_extractor->goto_time(startIS);
@@ -158,7 +158,8 @@ int main(int argc, char *argv[])
       return -1;
     }
 
-    Bits_to_float_converter *sample_reader = new Bits_to_float_converter();
+    boost::shared_ptr<Bits_to_float_converter>
+      sample_reader(new Bits_to_float_converter());
     sample_reader->set_bits_per_sample(StaPrms[sn].get_bps());
     sample_reader->set_channel_extractor(ch_extractor);
     
@@ -178,7 +179,7 @@ int main(int argc, char *argv[])
 
   }
 
-  IntSlc.set_data_writer(&data_writer);//pass the data writer 
+  IntSlc.set_data_writer(data_writer);//pass the data writer 
   
   Timer tmr_process_data;
   tmr_process_data.set_ID("data processing");  

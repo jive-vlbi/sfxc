@@ -10,7 +10,7 @@
 #include <Data_reader_buffer.h>
 #include <assert.h>
 
-Data_reader_buffer::Data_reader_buffer(Buffer *buff)
+Data_reader_buffer::Data_reader_buffer(boost::shared_ptr<Buffer> buff)
  : Data_reader(), 
    buffer(buff), bytes_left(0), 
    end_of_file(false)
@@ -21,14 +21,12 @@ Data_reader_buffer::Data_reader_buffer(Buffer *buff)
 Data_reader_buffer::~Data_reader_buffer() {
 }
 
-size_t Data_reader_buffer::do_get_bytes(size_t nBytes, char *output_buffer) {
-  char *out = output_buffer; 
-  UINT64 bytes_to_read = nBytes;
+size_t Data_reader_buffer::do_get_bytes(size_t nBytes, char *out) {
+  size_t bytes_to_read = nBytes;
   while (bytes_to_read > 0) {
     if (bytes_left == 0) {
       data_start = buffer->consume(bytes_left).buffer();
       if (bytes_left == 0) {
-        std::cout << "END_OF_FILE" << std::endl;
         end_of_file = true;
         return nBytes - bytes_to_read;
       }
@@ -37,8 +35,8 @@ size_t Data_reader_buffer::do_get_bytes(size_t nBytes, char *output_buffer) {
     if (out != NULL) {
       memcpy(out, data_start, curr_read);
       out += curr_read;
-      data_start += curr_read;
     }
+    data_start += curr_read;
     bytes_to_read -=curr_read;
     bytes_left -=curr_read;
     

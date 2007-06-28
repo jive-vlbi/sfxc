@@ -14,9 +14,7 @@ const double sample_value_ms[] = {-7, -2, 2, 7};
 const double sample_value_m[]  = {-5,  5};
 
 Bits_to_float_converter::Bits_to_float_converter()
- : bits_per_sample(0),
-   ch_extractor(NULL),
-   data_reader(NULL)
+ : bits_per_sample(0)
 {
   
 }
@@ -28,7 +26,6 @@ Bits_to_float_converter::get_data(size_t nSamples, double *buffer) {
   if (ch_extractor != NULL) {
     return get_data_from_channel_extractor(nSamples, buffer);
   } else {
-    assert(data_reader != NULL);
     return get_data_from_data_reader(nSamples, buffer);
   }
 } 
@@ -40,13 +37,13 @@ Bits_to_float_converter::set_bits_per_sample(int nbits) {
 
 void 
 Bits_to_float_converter::
-set_channel_extractor(Channel_extractor *ch_extractor_) {
+set_channel_extractor(boost::shared_ptr<Channel_extractor> ch_extractor_) {
   assert(data_reader == NULL);
   ch_extractor = ch_extractor_;
 }
 
 void 
-Bits_to_float_converter::set_data_reader(Data_reader *data_reader_) {
+Bits_to_float_converter::set_data_reader(boost::shared_ptr<Data_reader> data_reader_) {
   assert(ch_extractor == NULL);
   data_reader = data_reader_;
 }
@@ -54,6 +51,7 @@ Bits_to_float_converter::set_data_reader(Data_reader *data_reader_) {
 size_t 
 Bits_to_float_converter::
 get_data_from_channel_extractor(size_t nSamples, double *buffer) {
+  assert(ch_extractor != NULL);
   if (bits_per_sample == 2) {
     return ch_extractor->get_samples(nSamples, buffer, sample_value_ms);
   } else {
@@ -64,6 +62,7 @@ get_data_from_channel_extractor(size_t nSamples, double *buffer) {
 size_t 
 Bits_to_float_converter::
 get_data_from_data_reader(size_t nSamples, double *buffer) {
+  assert(data_reader != NULL);
   if (bits_per_sample == 2) {
     char bit_samples[nSamples/4];
     nSamples = data_reader->get_bytes(nSamples/4, bit_samples);

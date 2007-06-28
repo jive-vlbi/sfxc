@@ -15,6 +15,7 @@
 #include <fftw3.h>
 
 #include <types.h>
+#include <boost/shared_ptr.hpp>
 
 //c++ includes
 #include <iostream>
@@ -59,14 +60,14 @@ class CorrelationCore
     bool write_time_slice();
 
     /** **/
-    void set_data_writer(Data_writer *data_writer);
+    void set_data_writer(boost::shared_ptr<Data_writer> data_writer);
 
     Data_writer &get_data_writer();
     
   private:
 
     //data members
-    Data_writer *data_writer;
+    boost::shared_ptr<Data_writer> data_writer;
 
     fftw_complex **accxps; //accumulated fftw_complex accxps[nbslns][];
     double **segm;        //input segments for FFT operation, one per station

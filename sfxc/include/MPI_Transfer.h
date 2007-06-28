@@ -23,8 +23,10 @@ class MPI_Transfer
 public:
 	MPI_Transfer();
 	
-  void send_general_parameters(int rank);
-  void receive_general_parameters(MPI_Status &status, RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]);
+  void send_general_parameters(int rank,
+                               RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]);
+  void receive_general_parameters(MPI_Status &status, 
+                                  RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]);
   
   void send_delay_table(DelayTable &table, int sn, int rank);
   void receive_delay_table(MPI_Status &status, DelayTable &table, int &sn);

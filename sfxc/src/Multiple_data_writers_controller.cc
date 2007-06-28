@@ -25,19 +25,13 @@ Multiple_data_writers_controller::
   for (std::vector< Output_stream >::iterator 
          it = data_writers.begin(); it != data_writers.end(); it++) {
     if ((*it).buffer2writer != NULL) {
-      (*it).buffer2writer->stop();
-      // Don't delete the buffers. 
-      // This should be done by the node that also created them.
-      if ((*it).buffer2writer->get_data_writer() != NULL) {
-        delete (*it).buffer2writer->get_data_writer();
-        (*it).buffer2writer->set_data_writer(NULL);
-      }
+      delete it->buffer2writer;
     }
   }
 }
 
 
-Data_writer *
+boost::shared_ptr<Data_writer>
 Multiple_data_writers_controller::get_data_writer(int i) {
   return data_writers[i].buffer2writer->get_data_writer();
 }
@@ -47,6 +41,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_ADD_OUTPUT_CONNECTION_SINGLE_INPUT_TCP: 
     {
+//      std::cout << "--- " << node.get_rank() << " " << __FILE__ << "," << __LINE__ << std::endl;
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       
       MPI_Status status2;
@@ -68,12 +63,22 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       
       data_writer->open_connection();
 
-      add_data_writer(corr_node, data_writer, corr_node, 0);
+      assert(false); // NGHK: Do not always connect to corr_node: send two integers
+      boost::shared_ptr<Data_writer> writer(data_writer);
+      add_data_writer(corr_node, writer, corr_node, 0);
+
+      INT64 return_msg = 0;
+      MPI_Recv(&return_msg, 1, MPI_INT64, corr_node,
+               MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status2);
+      MPI_Send(&return_msg, 1, MPI_INT64, 
+               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               MPI_COMM_WORLD);
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP: 
     {
+//      std::cout << "--- " << node.get_rank() << " " << __FILE__ << "," << __LINE__ << std::endl;
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       
       MPI_Status status2;
@@ -102,37 +107,40 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 
       data_writer->open_connection();
 
-      // NGHK: 0 is not correct.
-      add_data_writer(ranks[0], data_writer, ranks[2], ranks[1]);
+      boost::shared_ptr<Data_writer> writer(data_writer);
+      add_data_writer(ranks[0], writer, ranks[2], ranks[1]);
+
+      INT64 return_msg = 0;
+      MPI_Recv(&return_msg, 1, MPI_INT64, ranks[2],
+               MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status2);
+      MPI_Send(&return_msg, 1, MPI_INT64, 
+               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               MPI_COMM_WORLD);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_ADD_DATA_WRITER_FILE: 
     {
+//      std::cout << "--- " << node.get_rank() << " " << __FILE__ << "," << __LINE__ << std::endl;
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       
       MPI_Status status2;
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 0);
-      char buffer[size], filename[size-sizeof(INT32)];
-      MPI_Recv(&buffer[0], size, MPI_PACKED, status.MPI_SOURCE,
+      char buffer[size];
+      MPI_Recv(buffer, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
 
-      int position=0;
-      INT32 corr_node;
-      MPI_Unpack(buffer, size, &position, &corr_node, 1, MPI_INT32, MPI_COMM_WORLD);
-      MPI_Unpack(buffer, size, &position, filename, size-sizeof(INT32), MPI_CHAR, MPI_COMM_WORLD);
-      assert(position == size);
+      boost::shared_ptr<Data_writer> 
+        data_writer(new Data_writer_file(&buffer[1])); 
 
-      Data_writer_file *data_writer = new Data_writer_file(filename); 
+      add_data_writer((int)buffer[0], data_writer, -1, -1);
 
-      add_data_writer(corr_node, data_writer, -1, -1);
-      
-      INT64 return_msg = 0;
+      INT64 return_msg=0;
       MPI_Send(&return_msg, 1, MPI_INT64, 
                status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
@@ -147,17 +155,23 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 Multiple_data_writers_controller::Buffer2writer &
 Multiple_data_writers_controller::get_buffer2writer(unsigned int i) {
   assert((unsigned int)i < data_writers.size());
+  if (data_writers[i].buffer2writer == NULL) {
+    std::cout << "data_writers[i].buffer2writer == NULL: " << node.get_rank() << std::endl;
+  }
   assert(data_writers[i].buffer2writer != NULL);
   return *data_writers[i].buffer2writer;
 }
 
-Multiple_data_writers_controller::Buffer *
+boost::shared_ptr<Multiple_data_writers_controller::Buffer>
 Multiple_data_writers_controller::buffer(unsigned int i) {
   return get_buffer2writer(i).get_buffer();
 }
 
 void 
-Multiple_data_writers_controller::set_buffer(unsigned int i, Buffer *buff) {
+Multiple_data_writers_controller::set_buffer
+  (unsigned int i, 
+   boost::shared_ptr<Multiple_data_writers_controller::Buffer> buff) 
+{
   get_buffer2writer(i).set_buffer(buff);
   get_buffer2writer(i).try_start();
   
@@ -188,22 +202,16 @@ Multiple_data_writers_controller::ready() {
 
 void 
 Multiple_data_writers_controller::
-add_data_writer(unsigned int i, Data_writer *writer, 
+add_data_writer(unsigned int i, boost::shared_ptr<Data_writer> writer, 
                 int rank_node_reader_, int stream_number_reader_) {
   if (data_writers.size() <= i) {
     data_writers.resize(i+1);
   }
   assert(i < data_writers.size());
-
+  
   data_writers[i].rank_node_reader = rank_node_reader_;
   data_writers[i].stream_number_reader = stream_number_reader_;
-  if (data_writers[i].buffer2writer != NULL) {
-    if (data_writers[i].buffer2writer->get_data_writer() != NULL) {
-      data_writers[i].buffer2writer->stop();
-      delete data_writers[i].buffer2writer->get_data_writer();
-      data_writers[i].buffer2writer->set_data_writer(NULL);
-    }
-  } else {
+  if (data_writers[i].buffer2writer == NULL) {
     data_writers[i].buffer2writer = new Buffer2data_writer<value_type>();
   }
   

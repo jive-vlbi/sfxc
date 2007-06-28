@@ -88,7 +88,7 @@ void get_ip_address(std::list<Interface_pair> &addresses,
 /** Initialises the global control files, this should be removed at some point.
  **/
 int
-initialise_control(char *filename, Log_writer &log_writer, 
+initialise_control(const char *filename, Log_writer &log_writer, 
   RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]) 
 {
   int    i, Nstations;

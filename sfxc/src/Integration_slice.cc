@@ -60,14 +60,17 @@ bool Integration_slice::set_delay_table(int i, DelayTable &delay_table)
 
 
 //pass the data reader
-void Integration_slice::set_sample_reader(int sn, Bits_to_float_converter *sample_reader)
+void Integration_slice::set_sample_reader
+  (int sn, 
+   boost::shared_ptr<Bits_to_float_converter> sample_reader)
 {
   dc.set_sample_reader(sn, sample_reader);
 }
 
 
 //pass the data writer 
-void Integration_slice::set_data_writer(Data_writer *data_writer)
+void Integration_slice::set_data_writer
+  (boost::shared_ptr<Data_writer> data_writer)
 {
   cc.set_data_writer(data_writer);
 }

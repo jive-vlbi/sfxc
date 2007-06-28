@@ -39,30 +39,30 @@
 #include <Data_reader_tcp.h>
 #include <utils.h>
 
-int input_node = 2;
-int output_node = 3;
-char output_file_to_disk[] = "output_file_to_disk.dat";
+const int input_node = 2;
+const int output_node = 3;
+const char output_file_to_disk[] = "output_file_to_disk.dat";
 
-
-RunP RunPrms;
-GenP GenPrms;
-StaP StaPrms[NstationsMax];
-
-// MPI
-int numtasks, rank;
 
 INT64 start_time = -1;
 INT64 stop_time  = -1;
 
-void wait_for_setting_up_channel() {
+
+void wait_for_setting_up_channel(int rank) {
   MPI_Status status;
   INT64 channel;
-  MPI_Recv(&channel, 1, MPI_INT64, MPI_ANY_SOURCE,
-           MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
+  if (rank >= 0) {
+    MPI_Recv(&channel, 1, MPI_INT64, rank,
+             MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
+  } else {
+    MPI_Recv(&channel, 1, MPI_INT64, MPI_ANY_SOURCE,
+             MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
+  }
 }
 
-void test_writing_data_to_file(char *control_file,
-                               char *output_file) {
+void test_writing_data_to_file(int rank, int numtasks,
+                               const char *control_file,
+                               const char *output_file) {
   MPI_Status status;
   
   if (rank == RANK_MANAGER_NODE) {
@@ -77,6 +77,10 @@ void test_writing_data_to_file(char *control_file,
 
     // Initialise control parameters
     Log_writer_mpi log_writer(rank);
+
+    RunP RunPrms;
+    GenP GenPrms;
+    StaP StaPrms[NstationsMax];
     initialise_control(control_file, log_writer, RunPrms, GenPrms, StaPrms);
 
 
@@ -85,7 +89,7 @@ void test_writing_data_to_file(char *control_file,
              input_node, MPI_TAG_SET_INPUT_NODE, MPI_COMM_WORLD);
 
     MPI_Transfer mpi_transfer;
-    mpi_transfer.send_general_parameters(input_node);
+    mpi_transfer.send_general_parameters(input_node, RunPrms, GenPrms, StaPrms);
 
     MPI_Recv(&msg, 1, MPI_INT32, 
              input_node, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
@@ -95,22 +99,21 @@ void test_writing_data_to_file(char *control_file,
     MPI_Send(StaPrms[0].get_mk4file(), strlen(StaPrms[0].get_mk4file())+1, 
              MPI_CHAR, 
              input_node, MPI_TAG_SET_DATA_READER_FILE, MPI_COMM_WORLD);
-    wait_for_setting_up_channel();
+    wait_for_setting_up_channel(input_node);
     
     { // send output file to input node
-      int size = strlen(output_file)+1+sizeof(int), position=0;
+      int size = strlen(output_file)+2;
       char buffer[size];
-      MPI_Pack(&output_node, 1, MPI_INT32, 
-               buffer, size, &position, MPI_COMM_WORLD);
-      MPI_Pack(output_file, strlen(output_file)+1, MPI_CHAR, 
-               buffer, size, &position, MPI_COMM_WORLD);
+      buffer[0] = (char)output_node;
+      strncpy(buffer+1, output_file, size-1);
     
-      MPI_Send(buffer, size, MPI_PACKED, 
+      MPI_Send(buffer, size, MPI_CHAR, 
                input_node, MPI_TAG_ADD_DATA_WRITER_FILE, MPI_COMM_WORLD);
-      wait_for_setting_up_channel();
+      wait_for_setting_up_channel(input_node);
     }
 
     // set priorities:
+    
     MPI_Send(&start_time, 1, MPI_INT64, 
              input_node, MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP, MPI_COMM_WORLD);
     MPI_Recv(&start_time, 1, MPI_INT64, 
@@ -118,7 +121,7 @@ void test_writing_data_to_file(char *control_file,
              MPI_COMM_WORLD, &status);
     
     // For testing, arbitrary value:
-    stop_time   = start_time + 3000000; // Add three seconds
+    stop_time   = start_time + 5000000; // Add five seconds
     
   
     INT64 priority_in[] = {output_node, start_time, stop_time};
@@ -179,12 +182,13 @@ void test_writing_data_to_file(char *control_file,
   }
 }
 
-void test_writing_data_to_output_node_using_TCP(char *control_file,
-                                                char *output_file) {
+void test_writing_data_to_output_node_using_TCP(int rank, int numtasks,
+                                                const char *control_file,
+                                                const char *output_file) {
   MPI_Status status;
   
   if (rank == RANK_MANAGER_NODE) {
-    int msg=0;
+    INT32 msg=0;
     // Log node:
     MPI_Send(&msg, 1, MPI_INT32, 
              RANK_LOG_NODE, MPI_TAG_SET_LOG_NODE, MPI_COMM_WORLD);
@@ -195,34 +199,49 @@ void test_writing_data_to_output_node_using_TCP(char *control_file,
 
     // Initialise control parameters
     Log_writer_mpi log_writer(rank);
+
+    RunP RunPrms;
+    GenP GenPrms;
+    StaP StaPrms[NstationsMax];
     initialise_control(control_file, log_writer, RunPrms, GenPrms, StaPrms);
 
 
-    // NGHK: Somehow, the input node has to be created before the output node.
-    // NGHK: Check why
-
-    // Input_node node:
-    MPI_Send(&msg, 1, MPI_INT32, 
-             input_node, MPI_TAG_SET_INPUT_NODE, MPI_COMM_WORLD);
-    MPI_Transfer mpi_transfer;
-    mpi_transfer.send_general_parameters(input_node);
-    MPI_Recv(&msg, 1, MPI_INT32, 
-             input_node, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
-    MPI_Send(StaPrms[0].get_mk4file(), strlen(StaPrms[0].get_mk4file())+1, 
-             MPI_CHAR, 
-             input_node, MPI_TAG_SET_DATA_READER_FILE, MPI_COMM_WORLD);
-    wait_for_setting_up_channel();
-
-    // Output_node node:
+    msg = 0;
     MPI_Send(&msg, 1, MPI_INT32, 
              output_node, MPI_TAG_SET_OUTPUT_NODE, MPI_COMM_WORLD);
+    
+    // NGHK: DEZE
     MPI_Recv(&msg, 1, MPI_INT32, 
              output_node, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
-    MPI_Send(output_file, strlen(output_file)+1, MPI_CHAR, 
+
+    // Output_node node:
+    char out_file[strlen(output_file)+1];
+    strncpy(out_file, output_file, strlen(output_file)+1);
+    MPI_Send(out_file, strlen(out_file)+1, MPI_CHAR, 
              output_node, MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
-    wait_for_setting_up_channel();
+    wait_for_setting_up_channel(output_node);
+
+    
+    // NGHK: For some reason, the input node has to be created 
+    // NGHK: before the output node. Check why
+    // Input_node node:
+    msg = 0;
+    MPI_Send(&msg, 1, MPI_INT32, 
+             input_node, MPI_TAG_SET_INPUT_NODE, MPI_COMM_WORLD);
+
+    MPI_Transfer mpi_transfer;
+    mpi_transfer.send_general_parameters(input_node, RunPrms, GenPrms, StaPrms);
+
+    MPI_Recv(&msg, 1, MPI_INT32, 
+             input_node, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
 
 
+    char *filename = StaPrms[0].get_mk4file();
+    MPI_Send(filename, strlen(filename)+1, 
+             MPI_CHAR, 
+             input_node, MPI_TAG_SET_DATA_READER_FILE, MPI_COMM_WORLD);
+
+    wait_for_setting_up_channel(input_node);
 
     // Connect input and output
     // the numbers are arbitrary
@@ -232,18 +251,10 @@ void test_writing_data_to_output_node_using_TCP(char *control_file,
     MPI_Send(ranks, 3, MPI_INT32, 
              input_node,
              MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
-    wait_for_setting_up_channel();
+    wait_for_setting_up_channel(input_node);
 
-    // set priorities:
-    MPI_Send(&start_time, 1, MPI_INT64, 
-             input_node, MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP, MPI_COMM_WORLD);
-    MPI_Recv(&start_time, 1, MPI_INT64, 
-             input_node, MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP, 
-             MPI_COMM_WORLD, &status);
-    
-    // For testing, arbitrary values:
-    stop_time   = start_time + 3000000; // Add three seconds
-
+    assert(start_time > 0); 
+    assert(stop_time > 0);
 
     // set priorities:
     {
@@ -278,33 +289,43 @@ void test_writing_data_to_output_node_using_TCP(char *control_file,
              RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
 
   } else {
-    INT32 msg;
-    MPI_Recv(&msg, 1, MPI_INT32, 
-             RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    
+    MPI_Status status;
+    MPI_Probe(RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     switch (status.MPI_TAG) {
-    case MPI_TAG_SET_LOG_NODE: {
-      assert (RANK_LOG_NODE == rank);
-      {
-        Log_node log_node(rank,numtasks);
-        log_node.start();
-      }
-      {
+    case MPI_TAG_SET_LOG_NODE: { 
         INT32 msg;
         MPI_Recv(&msg, 1, MPI_INT32, 
-                 rank, MPI_TAG_LOG_MESSAGES_ENDED, 
-                 MPI_COMM_WORLD, &status);
+                 RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        // No break
       }
-      break;
-    }
+    case MPI_TAG_LOG_MESSAGE: { 
+        {
+          assert (RANK_LOG_NODE == rank);
+          Log_node log_node(rank,numtasks);
+          log_node.start();
+        }
+        {
+          INT32 msg;
+          MPI_Recv(&msg, 1, MPI_INT32, 
+                   rank, MPI_TAG_LOG_MESSAGES_ENDED, 
+                   MPI_COMM_WORLD, &status);
+        }
+        break;
+      }
     case MPI_TAG_SET_INPUT_NODE: {
+      // The integer is the number of the input_reader:
+      INT32 msg;
+      MPI_Recv(&msg, 1, MPI_INT32, 
+               RANK_MANAGER_NODE, MPI_TAG_SET_INPUT_NODE, MPI_COMM_WORLD, &status);
       assert(rank == input_node);
       Input_node node(rank);
-      std::cout << "input_node.start()" <<std::endl;
       node.start();
       break;
     }
     case MPI_TAG_SET_OUTPUT_NODE: {
+      INT32 msg;
+      MPI_Recv(&msg, 1, MPI_INT32, 
+               RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
       assert(rank == output_node);
       Output_node node(rank);
       node.start();
@@ -318,12 +339,9 @@ void test_writing_data_to_output_node_using_TCP(char *control_file,
     }
   }
 }
+
 int main(int argc, char *argv[]) {
   assert(input_node+output_node+RANK_MANAGER_NODE+RANK_LOG_NODE == 6);
-
-  char *control_file, *output_directory;
-
-
 
   //initialisation
   int stat = MPI_Init(&argc,&argv);
@@ -332,72 +350,67 @@ int main(int argc, char *argv[]) {
     MPI_Abort(MPI_COMM_WORLD, stat);
   }
 
+  // MPI
+  int numtasks, rank;
   // get the number of tasks set at commandline (= number of processors)
   MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-
-  std::cout << "#" << rank << " pid = " << getpid() << std::endl;
-
-  // 0: controller
-  // 1: log node
-  // 2: input node
-  // 3: output node
   assert(numtasks == 4);
   
-  ///////////////////////////
-  //  The real work
-  ///////////////////////////
-  assert(argc == 3);
-  control_file = argv[1];
-  output_directory = argv[2];
+  std::cout << "#" << rank << " pid = " << getpid() << std::endl;
 
+  assert(argc == 3);
+  char control_file[80], output_directory[80];
+  strcpy(control_file, argv[1]);
+  strcpy(output_directory, argv[2]);
+  
   // First test
   char output_file1[strlen(output_directory)+strlen(output_file_to_disk)+2];
   char output_file2[strlen(output_directory)+strlen(output_file_to_disk)+2];
   sprintf(output_file1, "%s/%s.1", output_directory, output_file_to_disk);
   sprintf(output_file2, "%s/%s.2", output_directory, output_file_to_disk);
 
-  test_writing_data_to_file(control_file, output_file1);
-
-  /////////////////////
-  MPI_Barrier( MPI_COMM_WORLD );
-  /////////////////////
-
-  test_writing_data_to_file(control_file, output_file2);
+  {
+    // 0: controller
+    // 1: log node
+    // 2: input node
+    // 3: output node
+    
+    test_writing_data_to_file(rank, numtasks, control_file, output_file1);
+    MPI_Barrier( MPI_COMM_WORLD );
+    test_writing_data_to_file(rank, numtasks, control_file, output_file2);
+    MPI_Barrier( MPI_COMM_WORLD );
   
-  
-  if (rank == input_node) {
-    sync();
-    std::stringstream cmd; 
-    cmd << "cmp " << output_file1 << " " << output_file2;
-    if (system(cmd.str().c_str())) {
-      std::cout << "cmp file output failed" << std::endl;
-      return 1;
+    if (rank == input_node) {
+      sync();
+      std::stringstream cmd; 
+      cmd << "cmp " << output_file1 << " " << output_file2;
+      if (system(cmd.str().c_str())) {
+        std::cout << "cmp file output failed" << std::endl;
+        return 1;
+      }
     }
-  }
+  }    
 
-  /////////////////////
   MPI_Barrier( MPI_COMM_WORLD );
-  /////////////////////
-
-  // Second test
-  test_writing_data_to_output_node_using_TCP(control_file, output_file2);
-
-  /////////////////////
+  MPI_Status status;
+  int result;
+  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &result, &status);
+  assert(!result);
   MPI_Barrier( MPI_COMM_WORLD );
-  /////////////////////
-
-  // Second test
-  test_writing_data_to_output_node_using_TCP(control_file, output_file2);
   
-  if (rank == output_node) {
-    sync();
-    sleep(1);
-    std::stringstream cmd; cmd << "cmp " << output_file1 << " " << output_file2;
-    if (system(cmd.str().c_str())) {
-      std::cout << "cmp tcp output failed" << std::endl;
-      return 1;
+  {
+    test_writing_data_to_output_node_using_TCP(rank, numtasks, control_file, output_file2);
+    MPI_Barrier( MPI_COMM_WORLD );
+  
+    if (rank == output_node) {
+      sync();
+      std::stringstream cmd; cmd << "cmp " << output_file1 << " " << output_file2;
+      if (system(cmd.str().c_str())) {
+        std::cout << "cmp tcp output failed" << std::endl;
+        return 1;
+      }
     }
   }
 

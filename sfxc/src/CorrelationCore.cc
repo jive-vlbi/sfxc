@@ -13,12 +13,10 @@
 #include <assert.h>
 
 CorrelationCore::CorrelationCore()
-  :data_writer(NULL)//member initialisation list
 {
 }
 
 CorrelationCore::CorrelationCore(GenP& GenPrms, int ref_sn1, int ref_sn2)
-  :data_writer(NULL)//member initialisation list
 {
   set_parameters(GenPrms, ref_sn1, ref_sn2);
 }
@@ -260,7 +258,7 @@ Data_writer& CorrelationCore::get_data_writer()
 }
 
 
-void CorrelationCore::set_data_writer(Data_writer *data_writer_)
+void CorrelationCore::set_data_writer(boost::shared_ptr<Data_writer> data_writer_)
 {
   data_writer=data_writer_;
 }

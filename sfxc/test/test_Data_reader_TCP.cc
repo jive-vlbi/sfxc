@@ -98,12 +98,13 @@ int main(int argc, char *argv[]) {
     assert(status.MPI_SOURCE == status2.MPI_SOURCE);
     assert(status.MPI_TAG == status2.MPI_TAG);
 
-    Data_reader_tcp reader_tcp(ip_addr, size-1, ip_addr[size-1]);
+    boost::shared_ptr<Data_reader_tcp>
+      reader_tcp(new Data_reader_tcp(ip_addr, size-1, ip_addr[size-1]));
     
     Data_reader2buffer< Buffer_element<char, 131072> > data_reader2buffer;
-    data_reader2buffer.set_data_reader(&reader_tcp);
-    Semaphore_buffer<> sem_buffer(10);
-    data_reader2buffer.set_buffer(&sem_buffer);
+    data_reader2buffer.set_data_reader(reader_tcp);
+    boost::shared_ptr< Semaphore_buffer<> > sem_buffer(new Semaphore_buffer<>(10));
+    data_reader2buffer.set_buffer(sem_buffer);
     data_reader2buffer.try_start();
     Data_reader_buffer reader_buffer(data_reader2buffer.get_buffer());
     

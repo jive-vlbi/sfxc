@@ -5,7 +5,7 @@ AM_CXXFLAGS =
 
 bin_PROGRAMS = \
   manager_node manager_node_reading_from_file \
-  input_node correlator_node dummy_correlator_node output_node log_node
+  input_node correlator_node output_node log_node
 
 OBJ= \
   ../Node.cc ../Controller.cc \
@@ -43,8 +43,3 @@ correlator_node_SOURCES = $(OBJ) correlator.cc \
 
 output_node_SOURCES = $(OBJ) output.cc \
   ../Output_node.cc ../Output_node_controller.cc 
-
-dummy_correlator_node_SOURCES = $(OBJ) correlator.cc \
-  ../Correlator_node.cc ../Correlator_node_controller.cc \
-	../InData.cc \
-  ../Dummy_Integration_slice.cc ../CorrelationCore.cc ../DelayCorrection.cc

@@ -41,7 +41,7 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
 
 sfxc_with_input_nodes_SOURCES = $(OBJ) sfxc.cc \
   Node.cc Manager_node.cc Log_node.cc \
-  Correlator_node.cc Input_node.cc Output_node.cc \
+  Correlator_node.cc Input_node_without_buffering.cc Output_node.cc \
 	Controller.cc Input_node_controller.cc Output_node_controller.cc \
   Correlator_node_controller.cc Manager_node_controller.cc Log_node_controller.cc \
   MPI_Transfer.cc TCP_Connection.cc \

@@ -13,13 +13,14 @@
 #include <Data_writer_file.h>
 #include <Data_reader_buffer.h>
 #include <Queue_buffer.h>
+#include <Semaphore_buffer.h>
 
 #include <iostream>
 #include <assert.h>
 
 Output_node::Output_node(int rank, int size)
   : Node(rank),
-    output_buffer(1000),
+    output_buffer(new Semaphore_buffer<value_type>(1000)),
     output_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
@@ -31,7 +32,7 @@ Output_node::Output_node(int rank, int size)
 
 Output_node::Output_node(int rank, Log_writer *writer, int size) 
   : Node(rank, writer),
-    output_buffer(1000),
+    output_buffer(new Semaphore_buffer<value_type>(1000)),
     output_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
@@ -41,15 +42,16 @@ Output_node::Output_node(int rank, Log_writer *writer, int size)
 }
 
 void Output_node::initialise() {
+  get_log_writer() << "Output_node()" << std::endl;
   add_controller(&data_readers_ctrl);
   add_controller(&output_node_ctrl);
   add_controller(&data_writer_ctrl);
   
-  INT32 msg;
+  data_writer_ctrl.set_buffer(output_buffer);
+
+  INT32 msg=0;
   MPI_Send(&msg, 1, MPI_INT32, 
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
-           
-  data_writer_ctrl.set_buffer(&output_buffer);  
 }
 
 Output_node::~Output_node() {
@@ -63,7 +65,7 @@ Output_node::~Output_node() {
   }
   
   // wait until the output buffer is empty
-  while (!output_buffer.empty()) {
+  while (!output_buffer->empty()) {
     usleep(100000);
   }
 }
@@ -97,13 +99,6 @@ void Output_node::start() {
       status = END_NODE;
     }
   }
-}
-
-void Output_node::create_buffer(int num) {
-//  // Create an output buffer:
-//  assert(data_readers_ctrl.get_buffer(num) == NULL);
-//  Buffer *new_buffer = new Queue_buffer<value_type>();
-//  data_readers_ctrl.set_buffer(num, new_buffer);
 }
 
 void Output_node::set_weight_of_input_stream(int num, UINT64 weight) {
@@ -179,8 +174,9 @@ bool Output_node::data_available() {
 void Output_node::hook_added_data_reader(size_t reader) {
   // Create an output buffer:
   assert(data_readers_ctrl.get_buffer(reader) == NULL);
-  Buffer *new_buffer = new Queue_buffer<value_type>();
+  boost::shared_ptr<Buffer> new_buffer(new Queue_buffer<value_type>());
   data_readers_ctrl.set_buffer(reader, new_buffer);
+  data_readers_ctrl.get_data_reader2buffer(reader)->try_start();
   
   // Create the data_stream:
   if (input_streams.size() <= reader) {
@@ -219,9 +215,9 @@ Output_node::Input_stream::write_bytes(value_type &elem) {
   if (curr_bytes == 0) {
     return 0;
   } else {
-    int status = reader->get_bytes(min(131072, curr_bytes), elem.buffer());
-    curr_bytes -= status;
-    return status;
+    size_t bytes_read = reader->get_bytes(min(elem.size(), curr_bytes), elem.buffer());
+    curr_bytes -= bytes_read;
+    return bytes_read;
   }
 }
 
