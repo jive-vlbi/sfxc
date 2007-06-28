@@ -54,7 +54,7 @@ void Input_node::initialise()
   add_controller(&data_reader_ctrl);
   add_controller(&data_writers_ctrl);
 
-  INT32 msg;
+  INT32 msg=0;
   MPI_Send(&msg, 1, MPI_INT32, 
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
 }

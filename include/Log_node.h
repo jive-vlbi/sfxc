@@ -23,7 +23,8 @@ public:
 
   Process_event_status process_event(MPI_Status &status);
 
-  void set_log_writer(Log_writer *writer);
+  Log_writer &get_log_writer_output();
+  void set_log_writer_output(Log_writer *writer);
   bool ready();
 private:
   Log_writer *log_writer_output; // For outputting messages

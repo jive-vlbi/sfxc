@@ -46,6 +46,8 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
+  std::cout << "#" << rank << " pid = " << getpid() << std::endl;
+
   ///////////////////////////
   //  The real work
   ///////////////////////////
@@ -58,11 +60,16 @@ int main(int argc, char *argv[]) {
     manager.start();
   } else {
     MPI_Status status;
-    INT32 msg;
-    MPI_Recv(&msg, 1, MPI_INT32, 
-             RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Probe(RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     switch (status.MPI_TAG) {
-    case MPI_TAG_SET_LOG_NODE: 
+    case MPI_TAG_SET_LOG_NODE:
+      { 
+        INT32 msg;
+        MPI_Recv(&msg, 1, MPI_INT32, 
+                 RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        // No break
+      }
+    case MPI_TAG_LOG_MESSAGE: 
       {
         assert (RANK_LOG_NODE == rank);
         int numtasks;
@@ -74,18 +81,27 @@ int main(int argc, char *argv[]) {
     case MPI_TAG_SET_INPUT_NODE: 
       {
         // The integer is the number of the input_reader:
+        INT32 msg;
+        MPI_Recv(&msg, 1, MPI_INT32, 
+                 RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         Input_node input_node(rank);
         input_node.start();
         break;
       }
     case MPI_TAG_SET_CORRELATOR_NODE: 
       {
+        INT32 msg;
+        MPI_Recv(&msg, 1, MPI_INT32, 
+                 RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         Correlator_node correlator(rank, msg, 10);
         correlator.start();
         break;
       }
     case MPI_TAG_SET_OUTPUT_NODE: 
       {
+        INT32 msg;
+        MPI_Recv(&msg, 1, MPI_INT32, 
+                 RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         Output_node node(rank);
         node.start();
         break;

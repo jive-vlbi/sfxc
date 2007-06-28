@@ -79,21 +79,24 @@ int main(int argc, char *argv[]) {
   { // Read from data_reader and write to data_writer using a buffer and two threads
     {
       typedef Buffer_element<char, 100>  value_type;
-      Data_reader_file                   reader(infile);
-      Semaphore_buffer<value_type>       buffer(1000);
-      Data_writer_file                   writer(outfile);
+      boost::shared_ptr<Data_reader_file> 
+        reader(new Data_reader_file(infile));
+      boost::shared_ptr< Semaphore_buffer<value_type> > 
+        buffer(new Semaphore_buffer<value_type>(1000));
+      boost::shared_ptr<Data_writer_file> 
+        writer(new Data_writer_file(outfile));
       
       Log_writer_cout log_writer;
       
       Data_reader2buffer<value_type>     reader2buffer;
       Buffer2data_writer<value_type>     buffer2writer;
       
-      reader2buffer.set_data_reader(&reader);
-      reader2buffer.set_buffer(&buffer);
+      reader2buffer.set_data_reader(reader);
+      reader2buffer.set_buffer(buffer);
       reader2buffer.start();
   
-      buffer2writer.set_data_writer(&writer);
-      buffer2writer.set_buffer(&buffer);
+      buffer2writer.set_data_writer(writer);
+      buffer2writer.set_buffer(buffer);
       buffer2writer.start();
       
       while (!reader2buffer.get_data_reader()->eof()) {

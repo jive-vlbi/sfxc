@@ -28,6 +28,7 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   : Node(rank), numtasks(numtasks), slicenr(0), 
     manager_controller(*this)
 {
+  get_log_writer() << "Manager_node()" << std::endl;
   MPI_Status status;
   
   assert(rank == 0);
@@ -146,19 +147,20 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   }
 
   // Initialise input nodes
-  for (int i=0; i<GenPrms.get_nstations(); i++) {
+  for (int i=0; i<N_INPUT_NODES; i++) {
 #ifndef READ_DATA_FOR_CORRELATE_NODES_FROM_FILE
     // starting an input reader
     MPI_Send(&i, 1, MPI_INT32, 
              i+START_INPUT_NODES, MPI_TAG_SET_INPUT_NODE, MPI_COMM_WORLD);
+
+    // Send the necessary control parameters:
+    MPI_Transfer mpi_transfer;
+    mpi_transfer.send_general_parameters(i+START_INPUT_NODES, RunPrms, GenPrms, StaPrms);
+
     int msg;
     MPI_Recv(&msg, 1, MPI_INT32, 
              i+START_INPUT_NODES, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD,
              &status);
-
-    // Send the necessary control parameters:
-    MPI_Transfer mpi_transfer;
-    mpi_transfer.send_general_parameters(i+START_INPUT_NODES);
 
     char *filename = StaPrms[i].get_mk4file();
     // strlen+1 so that \0 gets transmitted as well
@@ -182,17 +184,22 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
       // strlen+1 so that \0 gets transmitted as well
       MPI_Send(filename, strlen(filename+1)+2, MPI_CHAR, 
                j+START_CORRELATE_NODES, MPI_TAG_ADD_DATA_READER_FILE, MPI_COMM_WORLD);
-#else
-      INT32 ranks[3] = {i, j, j+START_CORRELATE_NODES};
-      MPI_Send(ranks, 3, MPI_INT32, 
-               i + START_INPUT_NODES,
-               MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
-#endif
       // Wait until the connection is set up:
       INT64 msg;
       MPI_Recv(&msg, 1, MPI_INT64, MPI_ANY_SOURCE,
                MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
       assert(status.MPI_SOURCE == j+START_CORRELATE_NODES);               
+#else
+      INT32 ranks[3] = {i, j, j+START_CORRELATE_NODES};
+      MPI_Send(ranks, 3, MPI_INT32, 
+               i + START_INPUT_NODES,
+               MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
+      // Wait until the connection is set up:
+      INT64 msg;
+      MPI_Recv(&msg, 1, MPI_INT64, MPI_ANY_SOURCE,
+               MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
+      assert(status.MPI_SOURCE == i + START_INPUT_NODES);               
+#endif
     }
   }
 
@@ -218,7 +225,11 @@ void Manager_node::start() {
   int last_correlator_node = -1;
   while (GenPrms.get_duration() > 0) {
     // Check for MPI messages
-    while ((check_and_process_waiting_message() != NO_MESSAGE)) {
+    int result;
+    while ((result = check_and_process_waiting_message()) != NO_MESSAGE) {
+      if (result == TERMINATE_NODE) {
+        return;
+      }
     }
     
     // Check if there are Correlate nodes waiting:
@@ -315,7 +326,7 @@ int Manager_node::send_control_parameters_to_controller_node(int node) {
 
   // Send the necessary control parameters:
   MPI_Transfer mpi_transfer;
-  mpi_transfer.send_general_parameters(node);
+  mpi_transfer.send_general_parameters(node, RunPrms, GenPrms, StaPrms);
 
   // Send the delay tables:
   for (int sn=0; sn<GenPrms.get_nstations(); sn++) {

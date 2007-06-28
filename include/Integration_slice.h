@@ -37,10 +37,12 @@ class Integration_slice
     bool set_delay_table(int sn, DelayTable &delay_table);
 
     /** **/
-    void set_sample_reader(int sn, Bits_to_float_converter *sample_reader);
+    void set_sample_reader(
+      int sn, 
+      boost::shared_ptr<Bits_to_float_converter> sample_reader);
 
     /** **/
-    void set_data_writer(Data_writer *data_writer);
+    void set_data_writer(boost::shared_ptr<Data_writer> data_writer);
 
     /** **/
     bool init_reader(int sn, INT64 startIS);

@@ -46,6 +46,7 @@ Data_writer_tcp::do_put_bytes(size_t nBytes, char *buff) {
   assert(nBytes > 0);
   ssize_t result = write(socket, buff, nBytes);
   if (result <= 0) return 0;
+  assert((size_t)result == nBytes);
   return result;
 }
 

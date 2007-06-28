@@ -25,7 +25,7 @@ class RunP
     RunP();
 
     //parse control file for run parameters
-    int parse_ctrlFile(char *ctrlFile, Log_writer &log_writer);
+    int parse_ctrlFile(const char *ctrlFile, Log_writer &log_writer);
 
     //check run parameters
     int check_params(Log_writer &log_writer) const;

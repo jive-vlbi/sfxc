@@ -26,7 +26,7 @@ class GenP
     GenP();
 
     //parse control file c
-    int parse_ctrlFile(char *ctrlFile, Log_writer&log_writer);
+    int parse_ctrlFile(const char *ctrlFile, Log_writer&log_writer);
 
     //check control parameters
     int check_params(Log_writer &log_writer) const;

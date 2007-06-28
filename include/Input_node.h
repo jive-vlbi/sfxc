@@ -23,6 +23,8 @@
 #include <map>
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
+
 #include <constPrms.h>
 #include <runPrms.h>
 #include <genPrms.h>
@@ -117,7 +119,7 @@ private:
   /// An Input_node has several data streams for output.
   Multiple_data_writers_controller             data_writers_ctrl;
 
-  Channel_extractor * channel_extractor;
+  boost::shared_ptr<Channel_extractor> channel_extractor;
 
   
   /// Two queues for starting and stopping of output streams
@@ -147,6 +149,11 @@ private:
   char ch_buffer[ch_buffer_size];
   
   INT64 stop_time;
+
+public:
+  RunP RunPrms;
+  GenP GenPrms;
+  StaP StaPrms[NstationsMax];
 };
 
 #endif // INPUT_NODE_H

@@ -18,6 +18,14 @@
 #include "genPrms.h"
 #include "staPrms.h"
 
+
+#ifdef SFXC_PRINT_DEBUG
+#define DEBUG_MSG(msg) \
+    std::cout << __FILE__ << "," << __LINE__ << ": " << msg << std::endl; 
+#else
+#define DEBUG_MSG(msg) 
+#endif
+
 /// Interface_pair is a pair of two strings 
 /// containing the interface name and its ip address;
 typedef std::pair<std::string, std::string> Interface_pair;
@@ -38,7 +46,7 @@ INT64 get_us_time(int time[]);
 
 /** Initialises the global control files, this should be removed at some point.
   **/
-int initialise_control(char *filename, Log_writer &log_writer, 
+int initialise_control(const char *filename, Log_writer &log_writer, 
   RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]);
                     
 ///** Constructs an array containing all control data for a correlate node (Gen and Run).

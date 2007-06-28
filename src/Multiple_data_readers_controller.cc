@@ -23,13 +23,7 @@ Multiple_data_readers_controller::
   for (std::vector< Data_reader2buffer<value_type>* >::iterator 
          it = data_readers.begin(); it != data_readers.end(); it++) {
     if ((*it) != NULL) {
-      (*it)->stop();
-      // Don't delete the buffers. 
-      // This should be done by the node that also created them.
-      if ((*it)->get_data_reader() != NULL) {
-        delete (*it)->get_data_reader();
-        (*it)->set_data_reader(NULL);
-      }
+      delete *it;
     }
   }
 }
@@ -55,39 +49,47 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       UINT64 port = ip_addr[size-2];
       INT64 stream_nr = ip_addr[size-1];
       
-      Data_reader *reader = new Data_reader_tcp(ip_addr, size-2, port);
+      boost::shared_ptr<Data_reader> 
+        reader(new Data_reader_tcp(ip_addr, size-2, port));
       add_data_reader(stream_nr, reader);
 
       MPI_Send(&stream_nr, 1, MPI_INT64, 
-               RANK_MANAGER_NODE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_ADD_DATA_READER_FILE:
     {
+      assert(false);
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
 
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 1); // rank + filename
+      DEBUG_MSG(size);
       char msg[size];
+      DEBUG_MSG("");
       MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
+      DEBUG_MSG("");
 
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
       int corr_node = (int)msg[0];
       char *filename = msg+1;
+      DEBUG_MSG(corr_node << " " << filename);
       
-      Data_reader *reader = new Data_reader_file(filename);
+      boost::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
       add_data_reader(corr_node, reader);
 
+      DEBUG_MSG("");
       INT64 return_msg = 0;
       MPI_Send(&return_msg, 1, MPI_INT64, 
                status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
+      DEBUG_MSG("");
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
@@ -95,15 +97,18 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }
 
-Multiple_data_readers_controller::Buffer *
+boost::shared_ptr<Multiple_data_readers_controller::Buffer>
 Multiple_data_readers_controller::get_buffer(unsigned int i) {
-  if (i >= data_readers.size()) return NULL;
-  if (data_readers[i] == NULL) return NULL;
+  if (i >= data_readers.size()) 
+    return boost::shared_ptr<Multiple_data_readers_controller::Buffer>();
+  if (data_readers[i] == NULL) 
+    return boost::shared_ptr<Multiple_data_readers_controller::Buffer>();
   return data_readers[i]->get_buffer();
 }
 
 void 
-Multiple_data_readers_controller::set_buffer(unsigned int i, Buffer *buffer) {
+Multiple_data_readers_controller::set_buffer(unsigned int i, 
+                                             boost::shared_ptr<Buffer> buffer) {
   assert(i < data_readers.size());
   assert(data_readers[i] != NULL);
   assert(data_readers[i]->get_data_reader() != NULL);
@@ -113,7 +118,7 @@ Multiple_data_readers_controller::set_buffer(unsigned int i, Buffer *buffer) {
   data_readers[i]->start();
 }
 
-Data_reader *
+boost::shared_ptr<Data_reader>
 Multiple_data_readers_controller::get_data_reader(int i) {
   assert((size_t)i < data_readers.size());
   assert(data_readers[i] != NULL);
@@ -138,7 +143,10 @@ unsigned int Multiple_data_readers_controller::number_of_data_readers() {
 
 
 void 
-Multiple_data_readers_controller::add_data_reader(int i, Data_reader *reader) {
+Multiple_data_readers_controller::add_data_reader
+  (int i,
+   boost::shared_ptr<Data_reader> reader) 
+{
   // This is false after the first call of get_vector_data_readers()
   
   if (data_readers.size() <= (unsigned int)i) {
@@ -146,13 +154,7 @@ Multiple_data_readers_controller::add_data_reader(int i, Data_reader *reader) {
   }
   assert((UINT32)i < data_readers.size());
 
-  if (data_readers[i] != NULL) {
-    if (data_readers[i]->get_data_reader() != NULL) {
-      data_readers[i]->stop();
-      delete data_readers[i]->get_data_reader();
-      data_readers[i]->set_data_reader(NULL);
-    }
-  } else {
+  if (data_readers[i] == NULL) {
     data_readers[i] = new Data_reader2buffer<value_type>();
   }
   

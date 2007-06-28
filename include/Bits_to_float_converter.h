@@ -12,6 +12,7 @@
 
 #include <Channel_extractor.h>
 #include <Data_reader.h>
+#include <boost/shared_ptr.hpp>
 
 class Bits_to_float_converter
 {
@@ -26,12 +27,12 @@ public:
   
   /** Sets the input for the Bits_to_float_converter to a channel extractor
    **/
-  void set_channel_extractor(Channel_extractor *ch_extractor);
+  void set_channel_extractor(boost::shared_ptr<Channel_extractor> ch_extractor);
 
   /** Sets the input for the Bits_to_float_converter to a data reader.
    * This assumes that the samples are encoded in bytes
    **/
-  void set_data_reader(Data_reader *data_reader);
+  void set_data_reader(boost::shared_ptr<Data_reader> data_reader);
   
 private:
   size_t get_data_from_channel_extractor(size_t nSamples, double *buffer); 
@@ -39,8 +40,8 @@ private:
   
   int bits_per_sample;
 
-  Channel_extractor *ch_extractor;
-  Data_reader *data_reader;
+  boost::shared_ptr<Channel_extractor> ch_extractor;
+  boost::shared_ptr<Data_reader>       data_reader;
 };
 
 #endif /* BITS_TO_FLOAT_CONVERTER_H_ */

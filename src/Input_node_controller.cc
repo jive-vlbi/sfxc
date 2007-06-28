@@ -35,7 +35,8 @@ Input_node_controller::process_event(MPI_Status &status) {
     }
     case MPI_TAG_CONTROL_PARAM: {
       MPI_Transfer mpi_transfer;
-      mpi_transfer.receive_general_parameters(status, RunPrms, GenPrms, StaPrms);
+      mpi_transfer.receive_general_parameters(status, 
+                                              node.RunPrms, node.GenPrms, node.StaPrms);
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

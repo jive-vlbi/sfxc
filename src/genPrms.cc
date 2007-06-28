@@ -136,7 +136,7 @@ GenP::GenP()
 
 
 //parse control file for general control parameters
-int GenP::parse_ctrlFile(char *ctrlFile, Log_writer&log_writer)
+int GenP::parse_ctrlFile(const char *ctrlFile, Log_writer&log_writer)
 {
   int  retval=0;
   FILE *ctrlP;

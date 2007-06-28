@@ -55,10 +55,15 @@ send_control_parameters_to_controller_node(char *filename,
     // strlen+1 so that \0 gets transmitted as well
     MPI_Send(msg, length+1, MPI_CHAR, rank,
              MPI_TAG_ADD_DATA_READER_FILE, MPI_COMM_WORLD);
+
+    MPI_Status status;
+    INT64 channel;
+    MPI_Recv(&channel, 1, MPI_INT64, rank,
+             MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
   }
 
   MPI_Transfer mpi_transfer;
-  mpi_transfer.send_general_parameters(rank);
+  mpi_transfer.send_general_parameters(rank, RunPrms, GenPrms, StaPrms);
 
   for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
     DelayTable delay; 
@@ -220,15 +225,6 @@ int main(int argc, char *argv[]) {
         log_node.start();
         break;
       }
-//    case MPI_TAG_SET_OUTPUT_NODE: 
-//      {
-//        assert (RANK_OUTPUT_NODE == rank);
-//        int numtasks;
-//        MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
-//        Output_node output_node(rank,numtasks);
-//        output_node.start();
-//        break;
-//      }
     default:
       {
         std::cout << "Unknown node type " << status.MPI_TAG << std::endl;
@@ -237,8 +233,6 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-
-
 
   //close the mpi stuff
   MPI_Barrier( MPI_COMM_WORLD );

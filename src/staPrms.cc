@@ -101,7 +101,7 @@ StaP::~StaP() {
 
 
 //parse control file C
-int StaP::parse_ctrlFile(char *ctrlFile, int staNr, Log_writer &log_writer)
+int StaP::parse_ctrlFile(const char *ctrlFile, int staNr, Log_writer &log_writer)
 {
   int  retval=0;
   FILE *ctrlP;

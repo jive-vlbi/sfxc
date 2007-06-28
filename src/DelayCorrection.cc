@@ -9,7 +9,6 @@
 
 #include "DelayCorrection.h"
 
-
 //Allocate arrays, initialise parameters
 DelayCorrection::DelayCorrection(Log_writer &lg_wrtr)
   : log_writer(lg_wrtr)
@@ -40,7 +39,7 @@ void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
 
   Nf          = n2fftDC/2+1; //number of frequencies
   double dfr  = 1.0/(n2fftDC*tbs); // delta frequency
-  fs          = new double[Nf]; // frequency array
+  fs.resize(Nf); // frequency array
 
   for (int jf=0; jf<Nf; jf++) {
     //frequency scale in the segment
@@ -70,13 +69,13 @@ void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
   BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
   
   //arrays and plans for delay correction
-  sls      = new std::complex<double>[n2fftDC];
-  sls_freq = new std::complex<double>[n2fftDC];
+  sls.resize(n2fftDC);
+  sls_freq.resize(n2fftDC);
   planT2F = fftw_plan_dft_1d(n2fftDC, 
-			     (fftw_complex *)sls, (fftw_complex *)sls_freq, 
+			     (fftw_complex *)&sls[0], (fftw_complex *)&sls_freq[0], 
 			     FFTW_BACKWARD, FFTW_ESTIMATE);
   planF2T = fftw_plan_dft_1d(n2fftDC, 
-			     (fftw_complex *)sls_freq, (fftw_complex *)sls, 
+			     (fftw_complex *)&sls_freq[0], (fftw_complex *)&sls[0], 
 			     FFTW_FORWARD,  FFTW_ESTIMATE);
   //TODO RHJO: ask SP why not use fftw_plan_r2c_1d and fftw_plan_c2r_1d. Try!
   //4b) and 4c) probably not necessary anymore
@@ -84,15 +83,13 @@ void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
 
   //set vector sizes
   delTbl.resize(nstations);//delay tables 
-  sample_reader.resize(nstations,NULL);//sample_readers
+  sample_reader.resize(nstations);//sample_readers
 }
 
 
 //De-allocate arrays and destroy plans
 DelayCorrection::~DelayCorrection()
 {
-
-  delete [] fs;
 
   for (int sn=0; sn<nstations; sn++){
     delete [] segm[sn];
@@ -106,15 +103,13 @@ DelayCorrection::~DelayCorrection()
   fftw_destroy_plan(planF2T);
   fftw_destroy_plan(planT2F);
   
-  delete [] sls;
-  delete [] sls_freq;
-
 }
 
 
 
 //set local data reader parameter
-void DelayCorrection::set_sample_reader(int sn, Bits_to_float_converter *sample_reader_)
+void DelayCorrection::set_sample_reader
+  (int sn, boost::shared_ptr<Bits_to_float_converter> sample_reader_)
 {
   sample_reader[sn]=sample_reader_;
 }
@@ -127,6 +122,8 @@ void DelayCorrection::set_start_time(INT64 us_start) {
 //go to desired position in input reader for station sn
 bool DelayCorrection::init_reader(int sn, INT64 startIS)
 {
+  assert(sample_reader[sn] != 
+         boost::shared_ptr<Bits_to_float_converter>());
   BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
 
   //initialise dcBufPrev with data from input channel (can be Mk4 file)

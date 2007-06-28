@@ -65,7 +65,7 @@ RunP::RunP()
 
 
 //parse control file for run parameters
-int RunP::parse_ctrlFile(char *ctrlFile, Log_writer &log_writer)
+int RunP::parse_ctrlFile(const char *ctrlFile, Log_writer &log_writer)
 {
   int  retval=0;
   FILE *ctrlP;

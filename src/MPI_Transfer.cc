@@ -17,9 +17,9 @@
 #include <runPrms.h>
 #include <genPrms.h>
 #include <staPrms.h>
-extern RunP  RunPrms;
-extern GenP  GenPrms;
-extern StaP  StaPrms[NstationsMax];
+//extern RunP  RunPrms;
+//extern GenP  GenPrms;
+//extern StaP  StaPrms[NstationsMax];
 extern INT64 sliceStartByte[NstationsMax][NprocessesMax];
 extern INT64 sliceStartTime [NprocessesMax];
 extern INT64 sliceStopTime  [NprocessesMax];
@@ -30,7 +30,8 @@ MPI_Transfer::MPI_Transfer() {
 
   
 void 
-MPI_Transfer::send_general_parameters(int rank) {
+MPI_Transfer::send_general_parameters(int rank,
+                                      RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]) {
   int size = 1024, position=0;
   char buffer[size];
   

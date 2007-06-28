@@ -20,7 +20,6 @@
 #include <time.h>
 
 #include <MPI_Transfer.h>
-#include <errno.h>
 
 #define BUFFER_SIZE 10
 
@@ -29,7 +28,6 @@ Input_node::Input_node(int rank, Log_writer *log_writer)
     input_node_ctrl(*this),
     data_reader_ctrl(*this),
     data_writers_ctrl(*this),
-    channel_extractor(NULL),
     time_stamp(1),
     buffer_size(BUFFER_SIZE),
     status(STOPPED),
@@ -42,7 +40,6 @@ Input_node::Input_node(int rank)
     input_node_ctrl(*this),
     data_reader_ctrl(*this),
     data_writers_ctrl(*this),
-    channel_extractor(NULL),
     time_stamp(1),
     buffer_size(BUFFER_SIZE),
     nr_input_reader(nr_input_reader),
@@ -206,7 +203,6 @@ void Input_node::remove_from_active_list(int stream) {
         UINT64 msg[] =
           {data_writers_ctrl.get_stream_number_reader(*to_delete),
            data_writers_ctrl.get_data_writer(*to_delete)->data_counter()};
-      
         MPI_Send(&msg, 2, MPI_UINT64, 
                  data_writers_ctrl.get_rank_node_reader(*to_delete),
                  MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED, 
@@ -221,11 +217,12 @@ void Input_node::remove_from_active_list(int stream) {
 }
 
 void Input_node::hook_added_data_reader(size_t stream_nr) {
-  assert(channel_extractor == NULL);
+  assert(channel_extractor == boost::shared_ptr<Channel_extractor>());
   assert(data_reader_ctrl.get_data_reader() != NULL);
-  channel_extractor = 
-    new Channel_extractor_mark4(*data_reader_ctrl.get_data_reader(), 
-                                StaPrms[nr_input_reader], GenPrms.get_rndhdr());
+  channel_extractor = boost::shared_ptr<Channel_extractor>(
+      new Channel_extractor_mark4(*data_reader_ctrl.get_data_reader(), 
+                                  StaPrms[nr_input_reader], 
+                                  GenPrms.get_rndhdr()));
 
   fill_channel_buffer();
   set_status();

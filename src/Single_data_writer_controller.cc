@@ -21,12 +21,6 @@ Single_data_writer_controller(Node &node)
 Single_data_writer_controller::
 ~Single_data_writer_controller() {
   buffer2writer.stop();
-  // Don't delete the buffers. 
-  // This should be done by the node that also created them.
-  if (buffer2writer.get_data_writer() != NULL) {
-    delete buffer2writer.get_data_writer();
-    buffer2writer.set_data_writer(NULL);
-  }
 }
 
 Single_data_writer_controller::Process_event_status
@@ -46,11 +40,12 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
 
-      set_data_writer(new Data_writer_file(filename));
+      boost::shared_ptr<Data_writer> writer(new Data_writer_file(filename));
+      set_data_writer(writer);
 
       INT64 return_msg = 0;
       MPI_Send(&return_msg, 1, MPI_INT64, 
-               RANK_MANAGER_NODE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
@@ -80,7 +75,15 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
 
       data_writer->open_connection();
 
-      set_data_writer(data_writer);
+      boost::shared_ptr<Data_writer> writer(data_writer);
+      set_data_writer(writer);
+
+      INT64 return_msg = 0;
+      MPI_Recv(&return_msg, 1, MPI_INT64, ranks[1],
+               MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status2);
+      MPI_Send(&return_msg, 1, MPI_INT64, 
+               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               MPI_COMM_WORLD);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
@@ -89,27 +92,27 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
 }
 
 
-Single_data_writer_controller::Buffer *
+boost::shared_ptr<Single_data_writer_controller::Buffer>
 Single_data_writer_controller::buffer() {
   return buffer2writer.get_buffer();
 }
 
-void Single_data_writer_controller::set_buffer(Buffer *buffer) {
+void Single_data_writer_controller::set_buffer
+  (boost::shared_ptr<Single_data_writer_controller::Buffer> buffer) {
   buffer2writer.set_buffer(buffer);
   buffer2writer.try_start();
 }
 
-Data_writer *Single_data_writer_controller::get_data_writer(int i) {
+boost::shared_ptr<Data_writer> 
+Single_data_writer_controller::get_data_writer(int i) {
   return buffer2writer.get_data_writer();
 }
 
 
-void Single_data_writer_controller::set_data_writer(Data_writer *writer) {
-  if (buffer2writer.get_data_writer() != NULL) {
-    buffer2writer.stop();
-    buffer2writer.set_data_writer(NULL);
-    delete buffer2writer.get_data_writer();
-  }
+void Single_data_writer_controller::set_data_writer
+  (boost::shared_ptr<Data_writer> writer) 
+{
+  assert(buffer2writer.get_data_writer() == NULL);
   buffer2writer.set_data_writer(writer);
   buffer2writer.try_start();
   

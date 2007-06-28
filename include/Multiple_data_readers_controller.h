@@ -31,21 +31,24 @@ public:
 
   Process_event_status process_event(MPI_Status &status);
   
-  Buffer *get_buffer(unsigned int i);
-  void set_buffer(unsigned int i, Buffer *buffer);
+  boost::shared_ptr<Multiple_data_readers_controller::Buffer> 
+    get_buffer(unsigned int i);
+    
+  void set_buffer(unsigned int i, 
+                  boost::shared_ptr<Buffer> buffer);
 
-  Data_reader *get_data_reader(int i);
+  boost::shared_ptr<Data_reader> get_data_reader(int i);
   Reader2buffer *get_data_reader2buffer(int i);
 
   bool initialised(unsigned int i);
   unsigned int number_of_data_readers();
 private:
-  void add_data_reader(int i, Data_reader *reader);
+  void add_data_reader(int i, boost::shared_ptr<Data_reader> reader);
 
   // These are pointers, because a resize of the vector will 
   // copy construct all the elements and then destroy the old 
   // elements and we can't copy construct the extra threads.
-  std::vector< Reader2buffer* >   data_readers;
+  std::vector< Reader2buffer * >   data_readers;
 };
 
 #endif /* MULTIPLE_DATA_READERS_CONTROLLER_H */

@@ -12,9 +12,13 @@
 
 #include <Data_reader.h>
 #include <Buffer.h>
+#include <utils.h>
 
 #include <assert.h>
 #include <pthread.h>
+
+#include <boost/shared_ptr.hpp>
+
 
 /** Reads data from the data reader and puts it in a buffer,
  * which is useful for non-blocking IO.
@@ -35,11 +39,11 @@ public:
   Data_reader2buffer(const Data_reader2buffer &buffer);
   ~Data_reader2buffer();
   
-  Data_reader *get_data_reader();
-  void set_data_reader(Data_reader *data_reader);
+  boost::shared_ptr<Data_reader> get_data_reader();
+  void set_data_reader(boost::shared_ptr<Data_reader> data_reader);
 
-  Buffer<T> *get_buffer();
-  void set_buffer(Buffer<T> *buffer);
+  boost::shared_ptr< Buffer<T> > get_buffer();
+  void set_buffer(boost::shared_ptr< Buffer<T> > buffer);
   
   void start();
   void try_start();
@@ -51,8 +55,8 @@ private:
   static void *start_reading(void *);
   void read();
 private:
-  Data_reader *data_reader;
-  Buffer<T>   *buffer;
+  boost::shared_ptr< Data_reader > data_reader;
+  boost::shared_ptr< Buffer<T> >   buffer;
   State       state;
   pthread_t   io_thread;
   
@@ -63,7 +67,7 @@ private:
 // Implementation:
 template <class T>
 Data_reader2buffer<T>::Data_reader2buffer() 
-  : data_reader(NULL), buffer(NULL), state(STOPPED)
+  : state(STOPPED)
 {
   pthread_mutex_init(&mutex_for_set_state, NULL);
 }
@@ -83,26 +87,27 @@ Data_reader2buffer<T>::~Data_reader2buffer()
   
 template <class T>
 void
-Data_reader2buffer<T>::set_data_reader(Data_reader *reader) {
+Data_reader2buffer<T>::set_data_reader(boost::shared_ptr<Data_reader> reader) {
   assert(state != RUNNING);
   data_reader = reader;
 }
 
 template <class T>
-Data_reader *
+boost::shared_ptr<Data_reader>
 Data_reader2buffer<T>::get_data_reader() {
   return data_reader;
 }
 
 template <class T>
 void
-Data_reader2buffer<T>::set_buffer(Buffer<T> *buff) {
-  assert(state != RUNNING);
+Data_reader2buffer<T>::set_buffer(boost::shared_ptr< Buffer<T> > buff) {
+  assert(buffer == boost::shared_ptr< Buffer<T> >());
+  assert(state == STOPPED);
   buffer = buff;
 }
 
 template <class T>
-Buffer<T> *
+boost::shared_ptr< Buffer<T> >
 Data_reader2buffer<T>::get_buffer() {
   return buffer;
 }
@@ -122,9 +127,13 @@ Data_reader2buffer<T>::start() {
   assert(data_reader != NULL);
   assert(buffer != NULL);
   
-  set_state(RUNNING);
-  pthread_create(&io_thread, NULL, 
-                 start_reading, static_cast<void*>(this));
+  if (state == STOPPED) {
+    set_state(RUNNING);
+    pthread_create(&io_thread, NULL, 
+                   start_reading, static_cast<void*>(this));
+  } else {
+    set_state(RUNNING);
+  }  
 }
 
 template <class T>

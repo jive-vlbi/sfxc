@@ -159,5 +159,6 @@ size_t Data_reader_mark5::do_get_bytes(size_t nBytes, char*out) {
 }
 
 bool Data_reader_mark5::eof() {
-  
+  assert(false);
+  return false;
 }

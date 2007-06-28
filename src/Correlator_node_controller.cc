@@ -42,7 +42,7 @@ Correlator_node_controller::process_event(MPI_Status &status) {
   case MPI_TAG_CORRELATE_TIME_SLICE:
     {
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
-      INT64 time[3];
+      INT64 time[3]; // slice number, start, duration
       MPI_Recv(&time, 3, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
