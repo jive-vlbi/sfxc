@@ -413,7 +413,6 @@ goto_time(INT64 time) {
   if (result != read_n_bytes) return result;
 
   // Need to read the data to check the header
-  std::cout << __FILE__ << "," << __LINE__ << std::endl;
   read_new_block();
 
   assert(get_current_time() == time);
