@@ -59,35 +59,11 @@ private:
   /** The number of tracks, determined from the data **/
   int n_tracks;
   
-  class Two_bytes {
-  public:
-    Two_bytes() {
-    }
-    Two_bytes(int nr) {
-      (*this) = nr;
-    }
-    Two_bytes operator~() const {
-      Two_bytes result;
-      result.ch1 = ~ch1;
-      result.ch2 = ~ch2;
-      return result;
-    }
-    void operator=(int nr) {
-      ch1 = (nr>>8)&255;
-      ch2 = nr&255;
-    }
-    operator int() const {
-      return (((int)ch1)<<8) + ch2;
-    }
-  private:
-    unsigned char ch1,ch2;
-  };
-
   // Different implementations based on the number of head stacks:
-  Channel_extractor_mark4_implementation<char>         *ch_extractor_8_tracks;
-  Channel_extractor_mark4_implementation<Two_bytes>    *ch_extractor_16_tracks;
-  Channel_extractor_mark4_implementation<UINT32>       *ch_extractor_32_tracks;
-  Channel_extractor_mark4_implementation<UINT64>       *ch_extractor_64_tracks;
+  Channel_extractor_mark4_implementation<uint8_t>     *ch_extractor_8_tracks;
+  Channel_extractor_mark4_implementation<uint16_t>    *ch_extractor_16_tracks;
+  Channel_extractor_mark4_implementation<uint32_t>    *ch_extractor_32_tracks;
+  Channel_extractor_mark4_implementation<uint64_t>    *ch_extractor_64_tracks;
 };
 
 #endif /*MARK4_CHANNEL_EXTRACTOR_H_*/

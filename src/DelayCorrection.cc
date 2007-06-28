@@ -183,6 +183,8 @@ bool DelayCorrection::delay_correct() {
       jshift = (int)(Cdel_start/tbs+0.5);
       
       INT32 offset = 2*BufSize + jshift + jsegm*n2fftDC;
+      assert(offset >= 0);
+      assert(offset <= 3*BufSize-n2fftDC);
       // 2)apply the address shift when filling the complex sls array
       for (int jl=0; jl<n2fftDC; jl++){
         sls[jl].real() = dcBufs[stations][offset + jl];

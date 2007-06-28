@@ -19,7 +19,7 @@ public:
   Mark4_header();
   
   void set_header(T *header);
-  void check_header();
+  bool check_header();
   
   int nTracks();
   
@@ -68,9 +68,6 @@ const int Mark4_header<T>::microsecond_offset[] =
 
 template <class T>
 Mark4_header<T>::Mark4_header() : header(NULL) {
-//  memcpy(data_aaaa, start, 160*sizeof(tD));
-//  write();
-//  checkCRC();
 }
 
 template <class T>
@@ -79,18 +76,27 @@ void Mark4_header<T>::set_header(T* hdr) {
 }
 
 template <class T>
-void Mark4_header<T>::check_header() {
+bool Mark4_header<T>::check_header() {
   // Check for a valid header
-  assert(is_valid());
-  assert(checkCRC());
+  assert(header != NULL);
+  if (!is_valid()) return false;
+  if (!checkCRC()) return false;
+  return true;
 }
 
 
 template <class T>
 bool Mark4_header<T>::is_valid() {
   for (int i=64; i<96; i++) {
-    if (!(header[i] == (~T(0)))) {
-      std::cout << " No synchword found" << i << std::endl;
+    assert(T(-1)^T(0) == T(-1));
+    if (header[i] != T(-1)) {
+      char word[8*sizeof(T)];
+      itoa(header[i], word, 2);
+      printf(" Word:     %16s\n", word);
+      itoa(T(-1), word, 2);
+      printf(" Syncword: %16s\n", word);
+      std::cout << " No synchword found " << i << std::endl;
+      return false;
     }
   }
   return true;
@@ -214,7 +220,8 @@ template <class T>
 void Mark4_header<T>::crc12(T *crcBlock, T *data, int datawords)
 {
   for (int i=64; i<96; i++) {
-    assert(header[i] == (~T(0)));
+    assert(T(-1)^T(0) == T(-1));
+    assert(header[i] == T(-1));
   }
   T *d = data;
 
@@ -251,7 +258,9 @@ Mark4_header<T>::BCD(T *start, int track) {
                ((*(start+1)>>track)&1)*4 +
                ((*(start+2)>>track)&1)*2 +
                ((*(start+3)>>track)&1);
-  assert(result < 10);
+  if (result >= 10) {
+    std::cout << "BCD >= 10" << std::endl;
+  }
   return result;
 }
 

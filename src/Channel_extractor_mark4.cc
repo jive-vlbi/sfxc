@@ -51,7 +51,7 @@ private:
 
   int read_new_block();
   
-  void check_time_stamp();
+  bool check_time_stamp();
   
   Data_reader &reader;
   
@@ -101,28 +101,28 @@ Channel_extractor_mark4(Data_reader &reader,
   case 8:
     {
       ch_extractor_8_tracks = 
-        new Channel_extractor_mark4_implementation<char>
+        new Channel_extractor_mark4_implementation<uint8_t>
         (reader, block, staPrms, insert_random_headers_, debug_level);
       break;
     }
   case 16:
     {
       ch_extractor_16_tracks = 
-        new Channel_extractor_mark4_implementation<Two_bytes>
+        new Channel_extractor_mark4_implementation<uint16_t>
         (reader, block, staPrms, insert_random_headers_, debug_level);
       break;
     }
   case 32:
     {
       ch_extractor_32_tracks = 
-        new Channel_extractor_mark4_implementation<UINT32>
+        new Channel_extractor_mark4_implementation<uint32_t>
         (reader, block, staPrms, insert_random_headers_, debug_level);
       break;
     }
   case 64:
     {
       ch_extractor_64_tracks = 
-        new Channel_extractor_mark4_implementation<UINT64>
+        new Channel_extractor_mark4_implementation<uint64_t>
         (reader, block, staPrms, insert_random_headers_, debug_level);
       break;
     }
@@ -163,8 +163,8 @@ Channel_extractor_mark4::find_header(char *buffer,
             switch (nTracks8) {
             case 1: 
               {
-                Mark4_header<char> header;
-                header.set_header(buffer+header_start);
+                Mark4_header<uint8_t> header;
+                header.set_header((uint8_t*)(buffer+header_start));
                 if (!header.checkCRC()) {
                   header_start = -1;
                 }
@@ -172,8 +172,8 @@ Channel_extractor_mark4::find_header(char *buffer,
               }
             case 2: 
               {
-                Mark4_header<Two_bytes> header;
-                header.set_header((Two_bytes*)(buffer+header_start));
+                Mark4_header<uint16_t> header;
+                header.set_header((uint16_t*)(buffer+header_start));
                 if (!header.checkCRC()) {
                   header_start = -1;
                 }
@@ -181,8 +181,8 @@ Channel_extractor_mark4::find_header(char *buffer,
               }
             case 4: 
               {
-                Mark4_header<UINT32> header;
-                header.set_header((UINT32*)(buffer+header_start));
+                Mark4_header<uint32_t> header;
+                header.set_header((uint32_t*)(buffer+header_start));
                 if (!header.checkCRC()) {
                   header_start = -1;
                 }
@@ -190,8 +190,8 @@ Channel_extractor_mark4::find_header(char *buffer,
               }
             case 8: 
               {
-                Mark4_header<UINT64> header;
-                header.set_header((UINT64*)(buffer+header_start));
+                Mark4_header<uint64_t> header;
+                header.set_header((uint64_t*)(buffer+header_start));
                 if (!header.checkCRC()) {
                   header_start = -1;
                 }
@@ -243,11 +243,13 @@ int Channel_extractor_mark4::headstack(int track) {
 
 int 
 Channel_extractor_mark4::goto_time(INT64 time) {
-//   if (n_head_stacks == 1) {
-//     return ch_extractor_1_head_stack->goto_time(time);
-//   } else {
-//     return ch_extractor_2_head_stack->goto_time(time);
-//   }
+  switch (n_tracks) {
+  case  8: return ch_extractor_8_tracks->goto_time(time);
+  case 16: return ch_extractor_16_tracks->goto_time(time);
+  case 32: return ch_extractor_32_tracks->goto_time(time);
+  case 64: return ch_extractor_64_tracks->goto_time(time);
+  default: assert(false);
+  }
   return 0;
 }
 INT64 
@@ -411,6 +413,7 @@ goto_time(INT64 time) {
   if (result != read_n_bytes) return result;
 
   // Need to read the data to check the header
+  std::cout << __FILE__ << "," << __LINE__ << std::endl;
   read_new_block();
 
   assert(get_current_time() == time);
@@ -547,7 +550,9 @@ int
 Channel_extractor_mark4_implementation<T>::
 read_new_block() {
   int result = reader.get_bytes(frameMk4*sizeof(T),(char *)block)/sizeof(T);
-  if (result != frameMk4*sizeof(T)) return result;
+  if (result != frameMk4) {
+    return result;
+  }
 
   if (debug_level >= Channel_extractor_mark4::CHECK_PERIODIC_HEADERS) {
     if ((debug_level >= Channel_extractor_mark4::CHECK_ALL_HEADERS) ||
@@ -566,7 +571,7 @@ read_new_block() {
 }
 
 template <class T>
-void
+bool
 Channel_extractor_mark4_implementation<T>::
 check_time_stamp() {
   double delta_time = 
@@ -575,16 +580,11 @@ check_time_stamp() {
   double computed_TBR = (reader.data_counter()*8/1000000.) / 
                         (delta_time * sizeof(T) * 8);
   
-  assert (computed_TBR == TBR);
-//  static int count=0;
-//  if (count++ == 500) {
-//    count = 0;
-//    std::cout << "TBR: " 
-//              << (reader.data_counter()*8/1000000.)/(delta_time * sizeof(T) * 8) 
-//              << std::endl;
-//  }
-
-//  assert(false);
+  if (computed_TBR != TBR) {
+    std::cout << "Change in time: " << computed_TBR-TBR << std::endl;
+    return false;
+  }
+  return true;
 }
 
 template <class T>
@@ -624,6 +624,6 @@ template <class T>
 void 
 Channel_extractor_mark4_implementation<T>::
 print_header(Log_writer &writer, int track) {
-  writer << "time: " << mark4_header.get_time_str(track) << std::endl;
 //   mark4_header.print_binary_header(writer);
+  writer << "time: " << mark4_header.get_time_str(track) << std::endl;
 }
