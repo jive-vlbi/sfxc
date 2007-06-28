@@ -39,7 +39,7 @@ public:
   ~StaP();
 
   //parse control file for station parameters
-  int parse_ctrlFile(char *ctrlFile, int staNr, Log_writer &log_writer);
+  int parse_ctrlFile(const char *ctrlFile, int staNr, Log_writer &log_writer);
 
   //check station parameters
   int check_params(Log_writer &log_writer) const;
