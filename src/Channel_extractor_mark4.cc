@@ -361,6 +361,7 @@ Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader,
 
   // Store a list of tracks: first magnitude (optional), then sign 
   tracks.resize(n_bits_per_sample*fan_out);
+  assert(tracks.size() <= 8);
   int track = 0;
   for (int i=0; i<fan_out; i++) {
     if (n_bits_per_sample > 1) {
@@ -452,36 +453,62 @@ Channel_extractor_mark4_implementation<T>::
 do_get_bytes(size_t nOutputBytes, char *output_buffer) {
   UINT64 bytes_processed = 0;
   
-  // Initialise the output buffer:
-  memset(output_buffer, 0, nOutputBytes);
-  
   while (bytes_processed < nOutputBytes) {
     // Fill the output buffer
-    // Filled from least to most significant bit
+    if (insert_random_headers && (curr_pos_in_block < 160)) {
+      // We reading data from the header, generate random data
+      // Get the number of bytes to read from the header:
+      int nbytes_from_header = 
+        min(nOutputBytes-bytes_processed, 
+            ((160-curr_pos_in_block)*tracks.size())/8);
+      assert (nbytes_from_header > 0);
+      curr_pos_in_block += (nbytes_from_header*8)/tracks.size();
 
-    // Position in the output byte:
-    char sample;
-    for (int sample_pos=0; sample_pos<8;) {
-      for (size_t track_it=0; track_it<tracks.size(); track_it++) {
-        //get sign and magnitude bit for all channels
-        if (insert_random_headers && (curr_pos_in_block < 160)) {
-          sample = irbit2();
-        } else {
-          sample = ( block[curr_pos_in_block]>>tracks[track_it] ) & 1;
+      for (;nbytes_from_header > 0; nbytes_from_header--) {
+        output_buffer[bytes_processed] = // 8 random bits:
+          irbit2() + 
+          2*(irbit2() + 
+             2*(irbit2() + 
+                2*(irbit2() + 
+                   2*(irbit2() + 
+                      2*(irbit2() + 
+                         2*(irbit2() + 
+                            2*(irbit2())))))));
+        bytes_processed ++;
+      }
+      assert(curr_pos_in_block < frameMk4);
+    } else {
+      // We are reading from the data block.
+      // Filled from least to most significant bit
+      int nbytes_from_data_block = 
+        min(nOutputBytes-bytes_processed, 
+            ((frameMk4-curr_pos_in_block)*tracks.size())/8);
+      for (;nbytes_from_data_block > 0; nbytes_from_data_block--) {
+        output_buffer[bytes_processed] = 0;
+        for (int bit=0; bit<8;) {
+          for (size_t track_it=0; track_it<tracks.size(); track_it++) {
+            // insert the bit into the output buffer
+            output_buffer[bytes_processed] |= 
+              ((( block[curr_pos_in_block]>>tracks[track_it] ) & 1) << bit);
+            // Shift a position in the output buffer
+            bit ++;
+          }
+          curr_pos_in_block++;
         }
-        // insert the sample into the output buffer
-        output_buffer[bytes_processed] |= (sample << sample_pos);
-        // Shift two positions in the output buffer
-        sample_pos ++;
+        bytes_processed++;
       }
-      if (!increase_current_position_in_block()) {
-        // End of data
-        return bytes_processed;
+      if (curr_pos_in_block == frameMk4) {
+        int result = read_new_block();
+        if (result != frameMk4) {
+          // Could not read a new block: terminating
+          curr_pos_in_block = frameMk4-1;
+          return bytes_processed;
+        }
+        curr_pos_in_block = 0;
       }
+      assert(curr_pos_in_block < frameMk4);
     }
-    bytes_processed++;
   }
-              
   return bytes_processed;
 }
 
@@ -492,7 +519,7 @@ get_samples(size_t nSamples, double *samples, const double *val_array) {
   assert(nSamples%(fan_out) == 0);
 
   size_t samples_processed = 0;
-  
+
   if (n_bits_per_sample == 1) {
     // Not yet implemented
     assert (false);
@@ -508,13 +535,13 @@ get_samples(size_t nSamples, double *samples, const double *val_array) {
           bit_sample = irbit2() + 2*irbit2();
         } else {
           // set sign and magnitude:
-          bit_sample = 
+          bit_sample =
             (( block[curr_pos_in_block]>> tracks[track_it] ) & 1)
-            + 
+            +
             (( block[curr_pos_in_block]>>tracks[track_it+1] ) & 1)*2;
         }
         samples[samples_processed] = val_array[bit_sample];
-//        std::cout << samples[samples_processed] << std::endl;
+
         samples_processed++;
       }
       if (!increase_current_position_in_block()) {
@@ -522,8 +549,8 @@ get_samples(size_t nSamples, double *samples, const double *val_array) {
         return samples_processed;
       }
     }
-  }  
-              
+  }
+
   return samples_processed;
 }  
   
