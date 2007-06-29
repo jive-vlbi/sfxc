@@ -121,7 +121,8 @@ int main(int argc, char *argv[]) {
   }
 
   {
-    Data_reader_file data_reader(staPrms[station_nr].get_mk4file());
+    boost::shared_ptr<Data_reader> 
+      data_reader(new Data_reader_file(staPrms[station_nr].get_mk4file()));
     Channel_extractor_mark4 
       ch_extractor(data_reader, 
                    staPrms[station_nr], 

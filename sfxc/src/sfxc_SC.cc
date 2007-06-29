@@ -142,10 +142,10 @@ int main(int argc, char *argv[])
     }
 
     //Data reader initialisations
-    Data_reader *data_reader;
-    data_reader = new Data_reader_file(StaPrms[sn].get_mk4file());
+    boost::shared_ptr<Data_reader> 
+      data_reader(new Data_reader_file(StaPrms[sn].get_mk4file()));
     boost::shared_ptr<Channel_extractor> 
-      ch_extractor(new Channel_extractor_mark4(*data_reader, StaPrms[sn], 
+      ch_extractor(new Channel_extractor_mark4(data_reader, StaPrms[sn], 
                                                GenPrms.get_rndhdr()));
 
     //initialise readers to proper position
