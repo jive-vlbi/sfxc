@@ -50,7 +50,7 @@ Input_node::Input_node(int rank)
 }
 void Input_node::initialise() 
 {
-  get_log_writer() << "Input_node_without_buffering()" << std::endl;
+  get_log_writer() << "Input_node()" << std::endl;
 
   // NGHK: These use the global parameters: change
   MPI_Status status;
