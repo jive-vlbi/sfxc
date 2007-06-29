@@ -21,7 +21,7 @@ class Channel_extractor_mark4_implementation {
 public:
   typedef Channel_extractor_mark4::DEBUG_LEVEL  DEBUG_LEVEL;
 
-  Channel_extractor_mark4_implementation(Data_reader &reader, 
+  Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader, 
                                          char *first_data_block,
                                          StaP &staPrms,
                                          bool insert_random_headers_,
@@ -53,7 +53,7 @@ private:
   
   bool check_time_stamp();
   
-  Data_reader &reader;
+  boost::shared_ptr<Data_reader> reader;
   
   /// The number of samples per 32/64 bit integer
   int fan_out;
@@ -84,7 +84,7 @@ private:
 
 
 Channel_extractor_mark4::
-Channel_extractor_mark4(Data_reader &reader, 
+Channel_extractor_mark4(boost::shared_ptr<Data_reader> reader, 
                         StaP &staPrms, 
                         bool insert_random_headers_,
                         DEBUG_LEVEL debug_level)
@@ -135,15 +135,15 @@ Channel_extractor_mark4(Data_reader &reader,
 
 int 
 Channel_extractor_mark4::find_header(char *buffer,
-                                     Data_reader &reader) {
-  size_t bytes_read = reader.get_bytes(frameMk4/2, buffer+frameMk4/2);
+                                     boost::shared_ptr<Data_reader> reader) {
+  size_t bytes_read = reader->get_bytes(frameMk4/2, buffer+frameMk4/2);
   assert (bytes_read == frameMk4/2);
 
   int nOnes=0, header_start=-1, nTracks8 = -1;
   for (int block=0; (block<16) && (header_start<0); block++) {
     // Move the last half to the first half and read frameMk4/2 bytes:
     memcpy(buffer, buffer+frameMk4/2, frameMk4/2);
-    size_t bytes_read = reader.get_bytes(frameMk4/2, buffer+frameMk4/2);
+    size_t bytes_read = reader->get_bytes(frameMk4/2, buffer+frameMk4/2);
     assert (bytes_read == frameMk4/2);
 
 
@@ -212,7 +212,7 @@ Channel_extractor_mark4::find_header(char *buffer,
   if (header_start == 0) return nTracks8*8;
 
   memmove(buffer, buffer+header_start, frameMk4-header_start);
-  reader.get_bytes(header_start, buffer+frameMk4-header_start);
+  reader->get_bytes(header_start, buffer+frameMk4-header_start);
 
   return nTracks8*8;
 }
@@ -332,7 +332,7 @@ void Channel_extractor_mark4::print_header(Log_writer &writer, int track) {
 
 template <class T>
 Channel_extractor_mark4_implementation<T>::
-Channel_extractor_mark4_implementation(Data_reader &reader, 
+Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader, 
                                        char *first_data_block,
                                        StaP &staPrms, 
                                        bool insert_random_headers_,
@@ -348,7 +348,7 @@ Channel_extractor_mark4_implementation(Data_reader &reader,
 { 
   memcpy(block, first_data_block, frameMk4);
   // Make sure the header starts on the first byte:
-  size_t result = reader.get_bytes(frameMk4*(sizeof(T)-1), 
+  size_t result = reader->get_bytes(frameMk4*(sizeof(T)-1), 
                                    ((char *)block)+frameMk4);
   assert(result == frameMk4*(sizeof(T)-1));
   
@@ -357,7 +357,7 @@ Channel_extractor_mark4_implementation(Data_reader &reader,
   
   start_day = mark4_header.day(0);
   start_microtime = mark4_header.get_microtime(0);
-  reader.reset_data_counter();
+  reader->reset_data_counter();
 
   // Store a list of tracks: first magnitude (optional), then sign 
   tracks.resize(n_bits_per_sample*fan_out);
@@ -409,7 +409,7 @@ goto_time(INT64 time) {
   if (read_n_bytes == 0) {
     return 0;
   }
-  size_t result = reader.get_bytes(read_n_bytes,NULL);
+  size_t result = reader->get_bytes(read_n_bytes,NULL);
   if (result != read_n_bytes) return result;
 
   // Need to read the data to check the header
@@ -548,7 +548,7 @@ template <class T>
 int
 Channel_extractor_mark4_implementation<T>::
 read_new_block() {
-  int result = reader.get_bytes(frameMk4*sizeof(T),(char *)block)/sizeof(T);
+  int result = reader->get_bytes(frameMk4*sizeof(T),(char *)block)/sizeof(T);
   if (result != frameMk4) {
     return result;
   }
@@ -576,7 +576,7 @@ check_time_stamp() {
   double delta_time = 
     mark4_header.get_microtime_difference(start_day, start_microtime, tracks[0])/1000000.;
   
-  double computed_TBR = (reader.data_counter()*8/1000000.) / 
+  double computed_TBR = (reader->data_counter()*8/1000000.) / 
                         (delta_time * sizeof(T) * 8);
   
   if (computed_TBR != TBR) {
@@ -590,7 +590,7 @@ template <class T>
 bool
 Channel_extractor_mark4_implementation<T>::
 eof() {
-  return reader.eof();
+  return reader->eof();
 }
 
 template <class T>

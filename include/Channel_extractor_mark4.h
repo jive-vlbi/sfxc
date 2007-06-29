@@ -14,6 +14,7 @@
 #include <Data_writer.h>
 
 #include <staPrms.h>
+#include <boost/shared_ptr.hpp>
 
 #include <vector>
 
@@ -32,7 +33,7 @@ public:
     CHECK_BIT_STATISTICS
   };
 
-  Channel_extractor_mark4(Data_reader &reader, 
+  Channel_extractor_mark4(boost::shared_ptr<Data_reader> reader, 
                           StaP &StaPrms, 
                           bool insert_random_headers_,
                           DEBUG_LEVEL debug_level = CHECK_PERIODIC_HEADERS);
@@ -52,7 +53,7 @@ public:
   int headstack(int track);
   int track(int track);
 private:
-  int find_header(char *buffer, Data_reader &reader);
+  int find_header(char *buffer, boost::shared_ptr<Data_reader>reader);
 
   size_t do_get_bytes(size_t nBytes, char *buff);
   
