@@ -24,7 +24,7 @@ Log_node::Log_node(int rank, int nNodes)
 
   get_log_writer() << "Log_node()" << std::endl;
 
-  INT32 msg;
+  int32_t msg;
   MPI_Send(&msg, 1, MPI_INT32, 
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
 }

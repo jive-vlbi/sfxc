@@ -86,7 +86,7 @@ public:
   struct Init_reader_struct {
     Self *corr_node;
     pthread_t thread;
-    INT64 sn, startIS;
+    int64_t sn, startIS;
   };
   static void *start_init_reader(void *);
   
@@ -97,7 +97,7 @@ public:
   void start();
 
   /// Starts the correlation process.  
-  void start_correlating(INT64 start, INT64 duration);
+  void start_correlating(int64_t start, int64_t duration);
 
   /// Callback function for adding a data_reader:
   void hook_added_data_reader(size_t reader);
@@ -136,7 +136,7 @@ private:
   /// Number of elements in a buffer
   int                                          buffer_size, nr_corr_node;
 
-  INT64 startIS;
+  int64_t startIS;
   int sliceNr;
 };
 

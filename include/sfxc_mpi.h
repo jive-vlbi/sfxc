@@ -14,6 +14,14 @@
 #define RANK_LOG_NODE     1
 #define RANK_OUTPUT_NODE  2
 
+#define MPI_INT8   MPI_CHAR
+#define MPI_UINT8  MPI_UNSIGNED_CHAR
+#define MPI_INT16  MPI_SHORT
+#define MPI_UINT16 MPI_UNSIGNED_SHORT
+#define MPI_INT32  MPI_INT
+#define MPI_UINT32 MPI_UNSIGNED
+#define MPI_INT64  MPI_LONG_LONG
+
 enum MPI_TAG {
   // INITIALISATION OF THE DIFFERENT TYPES OF NODES:
   //------------------------------------------------------------------------
@@ -55,9 +63,13 @@ enum MPI_TAG {
    * - ?
    **/
   MPI_TAG_SET_DATA_WRITER_FILE,
+  /** Create a void data writer
+   * - int32_t: no content
+   **/
+  MPI_TAG_SET_DATA_WRITER_VOID,
   /** Create a data writer to a TCP connection, the input is 
-   * - UINT64+: ip_addresses
-   * - UINT64 port
+   * - uint64_t+: ip_addresses
+   * - uint64_t port
    **/
   MPI_TAG_SET_DATA_WRITER_TCP,
 
@@ -67,17 +79,21 @@ enum MPI_TAG {
    **/
   MPI_TAG_ADD_DATA_READER_FILE,
   /** Create a data reader stream for incoming data using TCP
-   * - UINT64: ip_addresses
-   * - UINT64: port
+   * - uint64_t: ip_addresses
+   * - uint64_t: port
    **/
   MPI_TAG_ADD_DATA_READER_TCP,
   /** Add a data writer to a file
    * - ?
    **/
   MPI_TAG_ADD_DATA_WRITER_FILE,
+  /** Add a void data writer
+   * - int32_t: channel number
+   **/
+  MPI_TAG_ADD_DATA_WRITER_VOID,
   /** Set the output stream for a correlate node
-   * - UINT64+ ip_addresses,
-   * - UINT64 port
+   * - uint64_t+ ip_addresses,
+   * - uint64_t port
    **/
   MPI_TAG_ADD_DATA_WRITER_TCP,
 
@@ -89,22 +105,22 @@ enum MPI_TAG {
   MPI_TAG_ADD_OUTPUT_CONNECTION_SINGLE_INPUT_TCP,
   /** This message is sent to the sending node, which creates the connection to the
    * receiving node, message contains the number of the MPI-node (many -> many)
-   * - INT32: Rank of the stream for the data reader
-   * - INT32: Rank of the stream for the data writer
+   * - int32_t: Rank of the stream for the data reader
+   * - int32_t: Rank of the stream for the data writer
    **/
   MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP,
 
   /** This message sets up the communication between two nodes using MPI 
-   * - INT32: stream number for the data writer
-   * - INT32: stream number for the data reader
-   * - INT32: rank of the data_reader
+   * - int32_t: stream number for the data writer
+   * - int32_t: stream number for the data reader
+   * - int32_t: rank of the data_reader
    **/   
   MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_MPI,
   
   /** Acknowledge that an input connection is set up properly (for synchronisation)
-   * - INT32: Rank of the stream for the data reader
-   * - INT32: Rank of the stream for the data writer
-   * - INT32: Rank of the node to connect to
+   * - int32_t: Rank of the stream for the data reader
+   * - int32_t: Rank of the stream for the data writer
+   * - int32_t: Rank of the node to connect to
    **/
   MPI_TAG_INPUT_CONNECTION_ESTABLISHED,
   
@@ -122,29 +138,29 @@ enum MPI_TAG {
   // Node specific commands 
   //-------------------------------------------------------------------------//
   /** Terminate a node. Note that the Output node has its own message
-   * - INT32: no specific value
+   * - int32_t: no specific value
    **/
-  MPI_TAG_CORRELATION_READY,
+  MPI_TAG_END_NODE,
   
   // Input node specific commands
   //-------------------------------------------------------------------------//
 
   /** Set the priority of the input stream
-   * Three values of INT64: {StreamNr, StartTag, StopTag}
-   * - INT64: StreamNr
-   * - INT64: StartTag
-   * - INT64: StopTag
+   * Three values of int64_t: {StreamNr, StartTag, StopTag}
+   * - int64_t: StreamNr
+   * - int64_t: StartTag
+   * - int64_t: StopTag
    **/
   MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY,
   
   /** Returns a message with the same tag back with the current time stamp in 
    *  the channel extractor
-   * - INT64: the timestamp in microseconds
+   * - int64_t: the timestamp in microseconds
    **/
   MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP,
    
   /** The stop time for the input node. Terminate if this time is reached
-   * - INT64: Time in microseconds
+   * - int64_t: Time in microseconds
    **/
   MPI_TAG_INPUT_NODE_STOP_TIME,
    
@@ -152,10 +168,11 @@ enum MPI_TAG {
   //-------------------------------------------------------------------------//
 
   /** Set the priority of the output stream
-   * - INT64: StreamNr
-   * - INT64: Priority
+   * - int64_t: StreamNr
+   * - int64_t: Priority
+   * - int64_t: Size in bytes of the stream
    **/
-  MPI_TAG_OUTPUT_STREAM_SET_PRIORITY,
+  MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
   
   // Correlate node specific commands
   //-------------------------------------------------------------------------//
@@ -173,18 +190,13 @@ enum MPI_TAG {
    * - ?
    **/
   MPI_TAG_CORRELATE_TIME_SLICE,
-  /** The output stream from the sending node is finished for this time slice
-   * - UINT64 input stream
-   * - UINT64 nBytes
-   **/
-  MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED,
   /** The correlation node is ready to process data
    * - ?
    **/
   MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
 
   /** The output can terminate if a number of time slices is received
-   * - INT32: total number of time slices
+   * - int32_t: total number of time slices
    **/
   MPI_TAG_OUTPUT_NODE_CORRELATION_READY,
 
@@ -237,6 +249,8 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
   switch (tag) {
     case MPI_TAG_ADD_DATA_WRITER_FILE:
       { return "MPI_TAG_ADD_DATA_WRITER_FILE"; }
+    case MPI_TAG_ADD_DATA_WRITER_VOID:
+      { return "MPI_TAG_ADD_DATA_WRITER_VOID"; }
     case MPI_TAG_ADD_OUTPUT_CONNECTION_SINGLE_INPUT_TCP:
       { return "MPI_TAG_ADD_OUTPUT_CONNECTION_SINGLE_INPUT_TCP"; }
     case MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP:
@@ -251,6 +265,8 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_INPUT_CONNECTION_ESTABLISHED"; }
     case MPI_TAG_SET_DATA_WRITER_FILE:
       { return "MPI_TAG_SET_DATA_WRITER_FILE"; }
+    case MPI_TAG_SET_DATA_WRITER_VOID:
+      { return "MPI_TAG_SET_DATA_WRITER_VOID"; }
     case MPI_TAG_SET_INPUT_NODE:
       { return "MPI_TAG_SET_INPUT_NODE"; }
     case MPI_TAG_SET_CORRELATOR_NODE:
@@ -279,20 +295,18 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_GET_CURRENT_TIMESTAMP"; }
     case MPI_TAG_INPUT_NODE_STOP_TIME:
       { return "MPI_TAG_INPUT_NODE_STOP_TIME"; }
-    case MPI_TAG_OUTPUT_STREAM_SET_PRIORITY:
-      { return "MPI_TAG_OUTPUT_STREAM_SET_PRIORITY"; }
+    case MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY:
+      { return "MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY"; }
     case MPI_TAG_CONTROL_PARAM:
       { return "MPI_TAG_CONTROL_PARAM"; }
     case MPI_TAG_DELAY_TABLE:
       { return "MPI_TAG_DELAY_TABLE"; }
     case MPI_TAG_CORRELATE_TIME_SLICE:
       { return "MPI_TAG_CORRELATE_TIME_SLICE"; }
-    case MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED:
-      { return "MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED"; }
     case MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED:
       { return "MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED"; }
-    case MPI_TAG_CORRELATION_READY:
-      { return "MPI_TAG_CORRELATION_READY"; }
+    case MPI_TAG_END_NODE:
+      { return "MPI_TAG_END_NODE"; }
     case MPI_TAG_OUTPUT_NODE_CORRELATION_READY:
       { return "MPI_TAG_OUTPUT_NODE_CORRELATION_READY"; }
     case MPI_TAG_LOG_NODE_SET_OUTPUT_COUT:

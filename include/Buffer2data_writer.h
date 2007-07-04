@@ -163,7 +163,7 @@ Buffer2data_writer<T>::write() {
       int size;
       T &elem = buffer->consume(size);
       if (size == 0) break;
-      INT64 size2 = data_writer->put_bytes(size,elem.buffer());
+      int64_t size2 = data_writer->put_bytes(size,elem.buffer());
       if (size2 <= 0) {
         std::cout << "1. Error writing data, going to suspended state" << std::endl;
         state = SUSPENDED;
@@ -171,7 +171,7 @@ Buffer2data_writer<T>::write() {
         char *buff = elem.buffer() + size2;
         while ((state == RUNNING) && (size > size2)) {
           assert(size2 > 0);
-          INT64 new_size = size - size2; 
+          int64_t new_size = size - size2; 
           new_size = data_writer->put_bytes(new_size,buff);
           if (new_size <= 0) {
             std::cout << "2. Error writing data, going to suspended state" << std::endl;

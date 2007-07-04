@@ -179,7 +179,6 @@ Data_reader2buffer<T>::read() {
         T &elem = buffer->produce();
         int size = data_reader->get_bytes(sizeof(T),(char*)&elem);
         buffer->produced(size);
-        if (size == 0) set_state(SUSPENDED);
       }
     }
   }

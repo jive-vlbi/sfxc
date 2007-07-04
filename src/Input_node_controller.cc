@@ -25,12 +25,13 @@ Input_node_controller::process_event(MPI_Status &status) {
     case MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY: {
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
 
-      INT64 msg[3];
-      MPI_Recv(&msg, 3, MPI_INT64, status.MPI_SOURCE,
+      int64_t msg[4];
+      MPI_Recv(&msg, 4, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       // stream, start, stop
-      node.set_priority(msg[0],msg[1],msg[2]);
+      assert((int64_t)(int(msg[1])) == msg[1]);
+      node.set_priority(msg[0],msg[1],msg[2],msg[3]);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
     case MPI_TAG_CONTROL_PARAM: {
@@ -41,7 +42,7 @@ Input_node_controller::process_event(MPI_Status &status) {
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
     case MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP: {
-      INT64 time_stamp;
+      int64_t time_stamp;
       MPI_Recv(&time_stamp, 1, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       time_stamp = node.get_time_stamp();
@@ -51,7 +52,7 @@ Input_node_controller::process_event(MPI_Status &status) {
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
     case MPI_TAG_INPUT_NODE_STOP_TIME: {
-      INT64 stop_time;
+      int64_t stop_time;
       MPI_Recv(&stop_time, 1, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       node.set_stop_time(stop_time);

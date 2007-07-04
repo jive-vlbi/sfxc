@@ -44,8 +44,8 @@ Integration_slice::set_parameters(
   dc.set_parameters(GenPrms, StaPrms);
   cc.set_parameters(GenPrms, ref_station1, ref_station2);
   
-  Nsegm2Avg = INT32 (2 * GenPrms.get_bwfl() / GenPrms.get_n2fft());
-  Nsegm2Avg = (INT32) (GenPrms.get_time2avg() * Nsegm2Avg);
+  Nsegm2Avg = int32_t (2 * GenPrms.get_bwfl() / GenPrms.get_n2fft());
+  Nsegm2Avg = (int32_t) (GenPrms.get_time2avg() * Nsegm2Avg);
 }
 
 
@@ -75,12 +75,12 @@ void Integration_slice::set_data_writer
   cc.set_data_writer(data_writer);
 }
 
-void Integration_slice::set_start_time(INT64 us_start) {
+void Integration_slice::set_start_time(int64_t us_start) {
   dc.set_start_time(us_start);
 }
 
 //initialise reader to proper position
-bool Integration_slice::init_reader(int sn, INT64 startIS)
+bool Integration_slice::init_reader(int sn, int64_t startIS)
 {
   return dc.init_reader(sn,startIS);
 }
@@ -99,7 +99,7 @@ bool Integration_slice::correlate()
 
 
   //process all the segments in the Time Slice (=Time to Average)
-  for (INT32 segm = 0 ; result && (segm < Nsegm2Avg) ; segm++){
+  for (int32_t segm = 0 ; result && (segm < Nsegm2Avg) ; segm++){
 
     //fill the current segment in cc with delay corrected data from dc
     result &= dc.fill_segment();

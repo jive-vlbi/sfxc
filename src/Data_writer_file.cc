@@ -17,18 +17,21 @@
 Data_writer_file::Data_writer_file(const char *filename) : 
   Data_writer()
 {
-  file = FOPEN(filename, "wb");
-  assert(file != NULL);
+  file.open(filename, std::ios::out | std::ios::binary);
+  assert(file.is_open() );
 }
 
 Data_writer_file::~Data_writer_file() {
-  fflush(file);
-  fclose(file);
+  file.close();
 }
   
 size_t 
 Data_writer_file::do_put_bytes(size_t nBytes, char *buff) {
-  UINT64 result = fwrite(buff, 1, nBytes, file);
-  assert(result == (UINT64)nBytes);
-  return result;
+  assert(file.good());
+  file.write(buff, nBytes);
+  if (file.good()) return nBytes;
+  return 0;
+//   uint64_t result = fwrite(buff, 1, nBytes, file);
+//   assert(result == (uint64_t)nBytes);
+//   return result;
 }

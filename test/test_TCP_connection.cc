@@ -99,12 +99,12 @@ int main(int argc, char *argv[]) {
       shutdown(connectSocket, 2);
     }
     {
-      std::vector<UINT64> addr;
+      std::vector<uint64_t> addr;
       connection.get_ip_addresses(addr);
       int connectSocket = -1;
   
       std::cout << std::hex;
-      for (std::vector<UINT64>::iterator it = addr.begin(); 
+      for (std::vector<uint64_t>::iterator it = addr.begin(); 
            connectSocket <= 0;) {
         struct in_addr addr1;
         addr1.s_addr = *it;

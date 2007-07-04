@@ -11,6 +11,7 @@
 #define DATA_WRITER_FILE_H
 
 #include <Data_writer.h>
+#include <fstream>
 
 #include <vector>
 
@@ -22,7 +23,7 @@ public:
   size_t do_put_bytes(size_t nBytes, char *buff);
 
 private:
-  FILE *file;
+  std::ofstream file;
 };
 
 #endif // DATA_WRITER_FILE_H

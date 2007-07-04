@@ -29,7 +29,7 @@ GenP GenPrms;
 //station parameters class, declaration and default settings
 StaP StaPrms[NstationsMax];
 // used for randomising numbers for Headers in Mk4 file
-UINT32 seed;
+uint32_t seed;
 /// TODO: NGHK: REMOVE THESE <------------ UNTIL HERE
 
 #include <MPI_Transfer.h>
@@ -57,7 +57,7 @@ send_control_parameters_to_controller_node(char *filename,
              MPI_TAG_ADD_DATA_READER_FILE, MPI_COMM_WORLD);
 
     MPI_Status status;
-    INT64 channel;
+    int64_t channel;
     MPI_Recv(&channel, 1, MPI_INT64, rank,
              MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
   }
@@ -139,11 +139,11 @@ int main(int argc, char *argv[]) {
                                                log_writer);
 
     { // Start a single time slice
-      INT32 i;
+      int32_t i;
       MPI_Recv(&i, 1, MPI_INT32, rank_correlator_node,
                MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD, &status2);
   
-      INT64 times[] = {0, // Slice number
+      int64_t times[] = {0, // Slice number
                        GenPrms.get_usStart(),
                        GenPrms.get_duration()};
       MPI_Send(times, 3, MPI_INT64, rank_correlator_node,
@@ -160,13 +160,13 @@ int main(int argc, char *argv[]) {
         {
           log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
           // Wait for data node to finish
-          INT32 i=0;
+          int32_t i=0;
           MPI_Recv(&i, 1, MPI_INT32, status.MPI_SOURCE,
                    MPI_TAG_CORRELATE_ENDED, MPI_COMM_WORLD, &status2);
   
           // Terminate data node
           MPI_Send(&i, 1, MPI_INT32, rank_correlator_node,
-                   MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
+                   MPI_TAG_END_NODE, MPI_COMM_WORLD);
           finished = true;
           break;
         }
@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
     }
   } else {
     MPI_Status status;
-    INT32 msg;
+    int32_t msg;
     MPI_Recv(&msg, 1, MPI_INT32, 
              RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     switch (status.MPI_TAG) {

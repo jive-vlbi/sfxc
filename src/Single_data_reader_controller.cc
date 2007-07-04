@@ -35,11 +35,11 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
       
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
-
+      
       boost::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
       set_data_reader(reader);
 
-      INT64 msg = 0;
+      int64_t msg = 0;
       MPI_Send(&msg, 1, MPI_INT64, 
                status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
@@ -49,10 +49,10 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
   case MPI_TAG_SET_DATA_READER_TCP:
     {
       int size;
-      MPI_Get_elements(&status, MPI_UINT64, &size);
+      MPI_Get_elements(&status, MPI_INT64, &size);
       assert(size > 0);
-      UINT64 ip_addr[size];
-      MPI_Recv(&ip_addr, size, MPI_UINT64, status.MPI_SOURCE,
+      uint64_t ip_addr[size];
+      MPI_Recv(&ip_addr, size, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
@@ -62,7 +62,7 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
         reader(new Data_reader_tcp(ip_addr, size-1, ip_addr[size-1]));
       set_data_reader(reader);
 
-      INT64 msg = status.MPI_SOURCE;
+      int64_t msg = status.MPI_SOURCE;
       MPI_Send(&msg, 1, MPI_INT64, 
                status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
@@ -91,8 +91,8 @@ Single_data_reader_controller::buffer() {
 }
 
 void 
-Single_data_reader_controller::set_buffer
-  (boost::shared_ptr<Single_data_reader_controller::Buffer> buff) 
+Single_data_reader_controller::
+set_buffer(boost::shared_ptr<Single_data_reader_controller::Buffer> buff) 
 {
   assert(buffer() == NULL);
   assert(false); // No buffering for the time being
@@ -106,8 +106,8 @@ Single_data_reader_controller::get_data_reader() {
 }
 
 void 
-Single_data_reader_controller::set_data_reader
-  (boost::shared_ptr<Data_reader> reader) 
+Single_data_reader_controller::
+set_data_reader(boost::shared_ptr<Data_reader> reader) 
 {
   assert(reader2buffer.get_data_reader() == NULL);
 

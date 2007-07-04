@@ -8,7 +8,7 @@
  */
 
 #include <Node.h>
-#include <iostream>
+#include <utils.h>
 #include <assert.h>
 
 Node::Node(int rank) : rank(rank), log_writer(new Log_writer_mpi(rank, 0)) {
@@ -91,8 +91,8 @@ Node::check_and_process_message() {
 
 Node::MESSAGE_RESULT 
 Node::process_event(MPI_Status &status) {
-//  DEBUG_MSG("--- " << get_rank() << ", " << print_MPI_TAG(status.MPI_TAG));
-  if (status.MPI_TAG == MPI_TAG_CORRELATION_READY) {
+  DEBUG_MSG("--- " << get_rank() << ", " << print_MPI_TAG(status.MPI_TAG));
+  if (status.MPI_TAG == MPI_TAG_END_NODE) {
     MPI_Status status2; int msg;
     MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);

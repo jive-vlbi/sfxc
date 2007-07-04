@@ -58,7 +58,7 @@ class GenP
     /** duration of the experiment / correlated data (sec) **/
     int   get_duration() const;
     /** duration of the experiment / correlated data (usec) **/
-    INT64 get_usDur() const;
+    int64_t get_usDur() const;
     
     /** The number of stations **/
     int   get_nstations() const;
@@ -105,7 +105,7 @@ class GenP
     /** Time (sec) to average in correlation**/
     float get_time2avg() const;
     /** Time (usec) to average in correlation**/
-    INT64 get_usTime2Avg() const;
+    int64_t get_usTime2Avg() const;
     /** Padding with zeros in correlation.
      * 1: lenght = n2fft, no padding
      * 2: length = 2 * n2fft, padding with n2fft zeros
@@ -116,13 +116,13 @@ class GenP
 
     /** Get the start time in microseconds
         from the beginning of the day 00:00. **/
-    INT64 get_usStart() const;
+    int64_t get_usStart() const;
 
     //set functions
     
     /** Set the earliest possible time for correlation 
     * in microseconds from the beginning of the day. **/
-    void  set_usStart(INT64);
+    void  set_usStart(int64_t);
     void  set_duration(int);
 
     /** Set the name of the correlation output file. **/
@@ -151,7 +151,7 @@ class GenP
     int   milisst;    //start milisecond
     
     int   duration;   //duration of the experiment/correlated data (sec)
-    INT64 usDur;      //duration of the experiment/correlated data (usec)
+    int64_t usDur;      //duration of the experiment/correlated data (usec)
     
     int   nstations;  //number of radio telescope stations
     char  *outdir;    //output data directory
@@ -175,10 +175,10 @@ class GenP
     int    n2fft;      //length of Fourier segment in correlation
     float  ovrlp;      //overlap parameter for Fourier segmetns in correlation
     float  time2avg;   //time to average the correlation in sec
-    INT64  usTime2Avg; //time to average the correlation in usec
+    int64_t  usTime2Avg; //time to average the correlation in usec
     int    pad;        //padding with zeros in correlation
 
-    INT64  usStart;    //start time in micro seconds without year and day
+    int64_t  usStart;    //start time in micro seconds without year and day
 
     int sideband;
 

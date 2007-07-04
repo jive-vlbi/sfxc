@@ -52,7 +52,7 @@ Log_node_controller::Log_node_controller(Node &node, int rank, int nNodes)
     MPI_Iprobe(RANK_MANAGER_NODE, MPI_TAG_SET_LOG_NODE, 
                MPI_COMM_WORLD, &result, &status);
     if (result) {
-      INT32 msg;
+      int32_t msg;
       MPI_Recv(&msg, 1, MPI_INT32, 
                RANK_MANAGER_NODE, MPI_TAG_SET_LOG_NODE, MPI_COMM_WORLD, &status);
     }

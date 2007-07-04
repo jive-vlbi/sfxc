@@ -19,7 +19,7 @@
 
 #include <utils.h>
 
-UINT32 seed;
+uint32_t seed;
 
 
 //*****************************************************************************
@@ -30,19 +30,19 @@ UINT32 seed;
 //         jsynch
 //*****************************************************************************
 int NGHK_FindHeaderMk4(Data_reader &reader, int& jsynch,
-  INT64& usTime, INT64 usStart, StaP &StaPrms, GenP &GenPrms)
+  int64_t& usTime, int64_t usStart, StaP &StaPrms, GenP &GenPrms)
 {
   int retval = 0;
   
   //buffer for unpacked tracks, NTRACKS tracks, NFRMS Mk4 frames long
   char  tracks[trksMax][frameMk4*nfrms];
-  INT64 jsynch0, jsynch1;
+  int64_t jsynch0, jsynch1;
   int nhs, synhs1, synhs2;
 
   int Head0,Head1;  //Headstack IDs as seen in the header
   int year0,day0,hh0,mm0,ss0,ms0,us0; //TOT for headstack 0
   int year1,day1,hh1,mm1,ss1,ms1,us1; //TOT for headstack 1
-  INT64 TOTusec0, TOTusec1; //in micro seconds
+  int64_t TOTusec0, TOTusec1; //in micro seconds
     
   //read and unpack scanfile data into tracks
   nhs = StaPrms.get_nhs();

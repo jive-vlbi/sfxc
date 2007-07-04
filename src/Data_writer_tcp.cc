@@ -17,12 +17,13 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <errno.h>
+#include <utils.h>
 
 Data_writer_tcp::Data_writer_tcp(int _port) 
 : connection_socket(-1), socket(-1), port(_port)
 {
   TCP_Connection connection;
-  
+
   connection_socket = connection.open_port(port);
   while (connection_socket <= 0) {
     port ++;
@@ -39,15 +40,21 @@ void Data_writer_tcp::open_connection() {
 Data_writer_tcp::~Data_writer_tcp() {
   close(socket);
 }
-  
+
 size_t
 Data_writer_tcp::do_put_bytes(size_t nBytes, char *buff) {
   if (socket <= 0) return 0;
   assert(nBytes > 0);
-  ssize_t result = write(socket, buff, nBytes);
-  if (result <= 0) return 0;
-  assert((size_t)result == nBytes);
-  return result;
+  size_t bytes_written = 0;
+  while (bytes_written != nBytes) {
+    ssize_t result = write(socket, buff+bytes_written, nBytes-bytes_written);
+    if (result <= 0) {
+      return bytes_written;
+    }
+    bytes_written += result;
+  }
+  assert(bytes_written == nBytes);
+  return bytes_written;
 }
 
 

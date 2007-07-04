@@ -77,7 +77,7 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
     MPI_Send((void *)filename, strlen(filename)+1, MPI_CHAR, 
              RANK_OUTPUT_NODE, MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
 
-    INT64 channel;
+    int64_t channel;
     MPI_Recv(&channel, 1, MPI_INT64, MPI_ANY_SOURCE,
              MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
     assert((int)status.MPI_SOURCE == RANK_OUTPUT_NODE);               
@@ -114,7 +114,7 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
       MPI_Send(output_filename, strlen(output_filename)+1, MPI_CHAR,
                i+START_CORRELATE_NODES, MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
 #else
-      INT32 ranks[2] = {i, RANK_OUTPUT_NODE};
+      int32_t ranks[2] = {i, RANK_OUTPUT_NODE};
       MPI_Send(ranks, 2, MPI_INT32, 
                i+START_CORRELATE_NODES, 
                MPI_TAG_SET_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
@@ -124,7 +124,7 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
       MPI_Status stat;
       MPI_Iprobe(MPI_ANY_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &result, &stat);
       while (result) { // Wait until all connections are set up properly
-        INT64 channel;
+        int64_t channel;
         MPI_Recv(&channel, 1, MPI_INT64, MPI_ANY_SOURCE,
                  MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &stat);
         assert((int)channel < N_CORRELATE_NODES);               
@@ -137,7 +137,7 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
     }
     while (n_nodes_initialised < N_CORRELATE_NODES) {
       MPI_Status stat;
-      INT64 channel;
+      int64_t channel;
       MPI_Recv(&channel, 1, MPI_INT64, MPI_ANY_SOURCE,
                MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &stat);
       assert(!connection[channel]);
@@ -168,7 +168,7 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
              i+START_INPUT_NODES, MPI_TAG_SET_DATA_READER_FILE, MPI_COMM_WORLD);
 
     { // Wait for the connection to be established
-      INT64 msg;
+      int64_t msg;
       MPI_Recv(&msg, 1, MPI_INT64, MPI_ANY_SOURCE,
                MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
       assert(status.MPI_SOURCE == i+START_INPUT_NODES);
@@ -185,17 +185,17 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
       MPI_Send(filename, strlen(filename+1)+2, MPI_CHAR, 
                j+START_CORRELATE_NODES, MPI_TAG_ADD_DATA_READER_FILE, MPI_COMM_WORLD);
       // Wait until the connection is set up:
-      INT64 msg;
+      int64_t msg;
       MPI_Recv(&msg, 1, MPI_INT64, MPI_ANY_SOURCE,
                MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
       assert(status.MPI_SOURCE == j+START_CORRELATE_NODES);               
 #else
-      INT32 ranks[3] = {i, j, j+START_CORRELATE_NODES};
+      int32_t ranks[3] = {i, j, j+START_CORRELATE_NODES};
       MPI_Send(ranks, 3, MPI_INT32, 
                i + START_INPUT_NODES,
                MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
       // Wait until the connection is set up:
-      INT64 msg;
+      int64_t msg;
       MPI_Recv(&msg, 1, MPI_INT64, MPI_ANY_SOURCE,
                MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
       assert(status.MPI_SOURCE == i + START_INPUT_NODES);               
@@ -214,7 +214,7 @@ void Manager_node::start() {
   for (int input_node=0; input_node<GenPrms.get_nstations(); input_node++) {
     for (int corr_node=0; corr_node<N_CORRELATE_NODES; corr_node++) {
       // Stream, start time, stop time
-      INT64 msg[3] = {corr_node, 0, 0};
+      int64_t msg[3] = {corr_node, 0, 0};
       MPI_Send(&msg, 3, MPI_INT64, input_node+START_INPUT_NODES,
                MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY, MPI_COMM_WORLD);
     }
@@ -242,7 +242,7 @@ void Manager_node::start() {
         searching = false;
         last_correlator_node = i;
 
-        INT64 times[] = {slicenr,
+        int64_t times[] = {slicenr,
                          GenPrms.get_usStart(),
                          min(GenPrms.get_duration(), slice_duration)};
         MPI_Send(times, 3, MPI_INT64, i,
@@ -282,7 +282,7 @@ void Manager_node::start() {
         // Terminate the correlate node
         int type = 0;
         MPI_Send(&type, 1, MPI_INT32, 
-                 i, MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
+                 i, MPI_TAG_END_NODE, MPI_COMM_WORLD);
         state_correlate_nodes[i] = FINISHED;
       }
       
@@ -298,7 +298,7 @@ void Manager_node::start() {
   int type = 0;
   for (int i=0; i<N_INPUT_NODES; i++) {
     MPI_Send(&type, 1, MPI_INT32, i+START_INPUT_NODES, 
-             MPI_TAG_CORRELATION_READY, MPI_COMM_WORLD);
+             MPI_TAG_END_NODE, MPI_COMM_WORLD);
   }
 
   // Terminate the output node  

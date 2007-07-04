@@ -33,12 +33,15 @@ using namespace std;
 
 #define SEED 10
 
+#ifdef SFXC_PRINT_DEBUG
+int RANK_OF_NODE = -1; // Rank of the current node
+#endif
 
 // used for randomising numbers for Headers in Mk4 file
-extern UINT32 seed;
+extern uint32_t seed;
 
-INT64 get_us_time(int time[]) {
-  INT64 result = 0;
+int64_t get_us_time(int time[]) {
+  int64_t result = 0;
   // time[0] is year
   result = time[2]; // hours
   result = time[3] +   60* result; // minutes

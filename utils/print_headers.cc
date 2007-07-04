@@ -28,12 +28,12 @@ int main(int argc, char *argv[]) {
   }
 
   Data_reader_file data_reader(argv[1]);
-  int nBytes = frameMk4*sizeof(INT64);
-  INT32 data_frame[frameMk4];
+  int nBytes = frameMk4*sizeof(int64_t);
+  int32_t data_frame[frameMk4];
   
   data_reader.get_bytes(nBytes, (char*)data_frame);
   
-  Mark4_header<INT32> header;
+  Mark4_header<int32_t> header;
   header.set_header(data_frame);
   header.check_header();
   

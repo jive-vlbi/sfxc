@@ -53,7 +53,7 @@ char* StaP::get_mk4file()    const { return mk4file; }
 char* StaP::get_modpat()     const { return modpat; }
 char* StaP::get_delaytable() const { return delaytable; }
 char* StaP::get_phasetable() const { return phasetable; }
-INT64 StaP::get_loobs()      const { return loobs;}
+int64_t StaP::get_loobs()      const { return loobs;}
 const int*  StaP::get_signBS()     const { return signBS;}
 const int*  StaP::get_magnBS()     const { return magnBS;}
 

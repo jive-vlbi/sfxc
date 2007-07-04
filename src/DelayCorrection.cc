@@ -114,13 +114,13 @@ void DelayCorrection::set_sample_reader
   sample_reader[sn]=sample_reader_;
 }
 
-void DelayCorrection::set_start_time(INT64 us_start) {
+void DelayCorrection::set_start_time(int64_t us_start) {
   timePtr = us_start;//set timePtr to start for delay
 }
 
 
 //go to desired position in input reader for station sn
-bool DelayCorrection::init_reader(int sn, INT64 startIS)
+bool DelayCorrection::init_reader(int sn, int64_t startIS)
 {
   assert(sample_reader[sn] != 
          boost::shared_ptr<Bits_to_float_converter>());
@@ -162,7 +162,7 @@ double **DelayCorrection::get_segment()
 }
 
 bool DelayCorrection::delay_correct() {
-  INT64  Time; //time in micro seconds
+  int64_t  Time; //time in micro seconds
   double Cdel_start, Cdel_end;
   int jshift; //address shift due to signal delay wrt Earth center
   double time_of_one_correlation_segment = n2fftDC*tbs*1000000;
@@ -173,13 +173,13 @@ bool DelayCorrection::delay_correct() {
     Cdel_start = delTbl[stations].calcDelay(timePtr, DelayTable::Cdel);
     for (int jsegm=0; jsegm<Nsegm2DC; jsegm++) {
       // micro sec 
-      Time = timePtr + (INT64)(jsegm*(time_of_one_correlation_segment)); 
+      Time = timePtr + (int64_t)(jsegm*(time_of_one_correlation_segment)); 
       Cdel_end = delTbl[stations].calcDelay(Time, DelayTable::Cdel);
       
       // 1)calculate the address shift due to time delay for the current segment
       jshift = (int)(Cdel_start/tbs+0.5);
       
-      INT32 offset = 2*BufSize + jshift + jsegm*n2fftDC;
+      int32_t offset = 2*BufSize + jshift + jsegm*n2fftDC;
       assert(offset >= 0);
       assert(offset <= 3*BufSize-n2fftDC);
       // 2)apply the address shift when filling the complex sls array
@@ -270,8 +270,8 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
   // Optimized: compute a delay after n_recompute samples
   const int n_recompute_delay = (256 < n2fftDC ? 256 : n2fftDC);
 
-  INT64 time = timePtr + (INT64)(jsegm*n2fftDC*tbs*1000000);
-  INT64 delta_time = (INT64)(n_recompute_delay*tbs*1000000);
+  int64_t time = timePtr + (int64_t)(jsegm*n2fftDC*tbs*1000000);
+  int64_t delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
   assert(delta_time > 0);
   double phi, cosPhi, sinPhi, deltaCosPhi, deltaSinPhi;
   double phi_end = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*

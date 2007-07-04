@@ -27,10 +27,10 @@
 RunP  RunPrms;
 GenP  GenPrms;
 StaP  StaPrms[NstationsMax];
-INT64 sliceStartByte[NstationsMax][NprocessesMax];
-INT64 sliceStartTime [NprocessesMax];
-INT64 sliceStopTime  [NprocessesMax];
-INT64 sliceTime;
+int64_t sliceStartByte[NstationsMax][NprocessesMax];
+int64_t sliceStartTime [NprocessesMax];
+int64_t sliceStopTime  [NprocessesMax];
+int64_t sliceTime;
 int seed;
 
 // MPI

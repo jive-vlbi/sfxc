@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     switch (status.MPI_TAG) {
     case MPI_TAG_SET_LOG_NODE:
       { 
-        INT32 msg;
+        int32_t msg;
         MPI_Recv(&msg, 1, MPI_INT32, 
                  RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         // No break
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
     case MPI_TAG_SET_INPUT_NODE: 
       {
         // The integer is the number of the input_reader:
-        INT32 msg;
+        int32_t msg;
         MPI_Recv(&msg, 1, MPI_INT32, 
                  RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         Input_node input_node(rank);
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
       }
     case MPI_TAG_SET_CORRELATOR_NODE: 
       {
-        INT32 msg;
+        int32_t msg;
         MPI_Recv(&msg, 1, MPI_INT32, 
                  RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         Correlator_node correlator(rank, msg, 10);
@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
       }
     case MPI_TAG_SET_OUTPUT_NODE: 
       {
-        INT32 msg;
+        int32_t msg;
         MPI_Recv(&msg, 1, MPI_INT32, 
                  RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         Output_node node(rank);

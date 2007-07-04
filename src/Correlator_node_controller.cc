@@ -42,7 +42,7 @@ Correlator_node_controller::process_event(MPI_Status &status) {
   case MPI_TAG_CORRELATE_TIME_SLICE:
     {
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
-      INT64 time[3]; // slice number, start, duration
+      int64_t time[3]; // slice number, start, duration
       MPI_Recv(&time, 3, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
@@ -50,7 +50,7 @@ Correlator_node_controller::process_event(MPI_Status &status) {
       assert(status.MPI_TAG == status2.MPI_TAG);
 
 #ifndef USE_FILES_FOR_OUTPUT
-      INT64 priority[] = {node.get_correlate_node_number(), time[0]};
+      int64_t priority[] = {node.get_correlate_node_number(), time[0]};
       MPI_Send(&priority, 2, MPI_INT64, 
                RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_STREAM_SET_PRIORITY, MPI_COMM_WORLD);
 #endif

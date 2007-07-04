@@ -12,10 +12,11 @@
 #include "Mark4_header.h"
 
 #include <assert.h>
+#include <utils.h>
 
 
 // Templated by the type of the element from which the samples are extracted
-// Either INT32 (n_head_stacks == 1) or INT64 (n_head_stacks == 2)
+// Either int32_t (n_head_stacks == 1) or int64_t (n_head_stacks == 2)
 template <class T>
 class Channel_extractor_mark4_implementation {
 public:
@@ -27,9 +28,9 @@ public:
                                          bool insert_random_headers_,
                                          DEBUG_LEVEL debug_level);
 
-  int goto_time(INT64 time);
-  INT64 get_current_time();
-  std::string time2string(INT64 time);
+  int goto_time(int64_t time);
+  int64_t get_current_time();
+  std::string time2string(int64_t time);
 
   size_t do_get_bytes(size_t nBytes, char *buff);
 
@@ -45,6 +46,9 @@ public:
   Mark4_header<T> &header() {
     return mark4_header;
   }
+
+  int get_data_rate(int channel);
+
 private:
 
   bool increase_current_position_in_block();
@@ -75,9 +79,9 @@ private:
   
   Mark4_header<T> mark4_header;
   
-  INT32 start_day;
-  INT64 start_microtime;
-  INT32 TBR;
+  int32_t start_day;
+  int64_t start_microtime;
+  int32_t TBR;
   DEBUG_LEVEL debug_level;
   int block_count;
 };
@@ -242,7 +246,7 @@ int Channel_extractor_mark4::headstack(int track) {
 }
 
 int 
-Channel_extractor_mark4::goto_time(INT64 time) {
+Channel_extractor_mark4::goto_time(int64_t time) {
   switch (n_tracks) {
   case  8: return ch_extractor_8_tracks->goto_time(time);
   case 16: return ch_extractor_16_tracks->goto_time(time);
@@ -252,7 +256,7 @@ Channel_extractor_mark4::goto_time(INT64 time) {
   }
   return 0;
 }
-INT64 
+int64_t 
 Channel_extractor_mark4::get_current_time() {
   switch (n_tracks) {
   case  8: return ch_extractor_8_tracks->get_current_time();
@@ -326,6 +330,20 @@ void Channel_extractor_mark4::print_header(Log_writer &writer, int track) {
   }
 }
 
+int Channel_extractor_mark4::get_data_rate(int channel) {
+  switch (n_tracks) {
+  case  8: 
+    return ch_extractor_8_tracks->get_data_rate(channel);
+  case 16: 
+    return ch_extractor_16_tracks->get_data_rate(channel);
+  case 32:
+    return ch_extractor_32_tracks->get_data_rate(channel);
+  case 64:
+    return ch_extractor_64_tracks->get_data_rate(channel);
+  default: assert(false);
+  }
+}
+
 /*********************************************************************
  * Implementation of the Channel_extractor for Mark 4 files (32 or 64 bit)
  *********************************************************************/
@@ -393,8 +411,8 @@ Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader,
 template <class T>
 int 
 Channel_extractor_mark4_implementation<T>::
-goto_time(INT64 time) {
-  INT64 current_time = get_current_time();
+goto_time(int64_t time) {
+  int64_t current_time = get_current_time();
   if (time < current_time) {
     std::cout << "time in past, current time is: " 
               << time2string(current_time) << std::endl;
@@ -423,7 +441,7 @@ goto_time(INT64 time) {
 }
 
 template <class T>
-INT64
+int64_t
 Channel_extractor_mark4_implementation<T>::
 get_current_time() {
   return mark4_header.get_microtime(tracks[0]);
@@ -432,7 +450,7 @@ get_current_time() {
 template <class T>
 std::string 
 Channel_extractor_mark4_implementation<T>::
-time2string(INT64 time) {
+time2string(int64_t time) {
   char time_str[80];
   time = time/1000;
   int ms = time % 1000;
@@ -451,7 +469,7 @@ template <class T>
 size_t
 Channel_extractor_mark4_implementation<T>::
 do_get_bytes(size_t nOutputBytes, char *output_buffer) {
-  UINT64 bytes_processed = 0;
+  uint64_t bytes_processed = 0;
   
   while (bytes_processed < nOutputBytes) {
     // Fill the output buffer
@@ -652,4 +670,11 @@ Channel_extractor_mark4_implementation<T>::
 print_header(Log_writer &writer, int track) {
 //   mark4_header.print_binary_header(writer);
   writer << "time: " << mark4_header.get_time_str(track) << std::endl;
+}
+
+template <class T>
+int
+Channel_extractor_mark4_implementation<T>::
+get_data_rate(int channel) {
+  return (TBR * tracks.size()) / 8;
 }

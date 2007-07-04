@@ -37,8 +37,8 @@ public:
 
   int find_track(int headstack, int track);
   
-  INT64 get_microtime_difference(INT32 day, INT64 utime, int track); 
-  INT64 get_microtime(int track);
+  int64_t get_microtime_difference(int32_t day, int64_t utime, int track); 
+  int64_t get_microtime(int track);
   std::string get_time_str(int track);
 
   bool checkCRC();
@@ -137,7 +137,7 @@ int Mark4_header<T>::second(int track) {
 
 template <class T>
 int Mark4_header<T>::microsecond(int track) {
-  INT64 milisec = BCD(header + 96+40, track)*100000 + 
+  int64_t milisec = BCD(header + 96+40, track)*100000 + 
                   BCD(header + 96+44, track)*10000;
   int unit =      BCD(header + 96+48, track);
   assert(unit != 4);
@@ -265,12 +265,12 @@ Mark4_header<T>::BCD(T *start, int track) {
 }
 
 template <class T>
-INT64
+int64_t
 Mark4_header<T>::get_microtime(int track) {
   return microsecond(track) + 
          1000000*(second(track) + 
                   60 * (minute(track) + 
-                        60*(INT64)hour(track)));
+                        60*(int64_t)hour(track)));
 } 
 
 template <class T>
@@ -288,8 +288,8 @@ Mark4_header<T>::get_time_str(int track) {
 }
 
 template <class T>
-INT64 
-Mark4_header<T>::get_microtime_difference(INT32 start_day, INT64 start_microtime, int track) {
+int64_t 
+Mark4_header<T>::get_microtime_difference(int32_t start_day, int64_t start_microtime, int track) {
   return get_microtime(track) + (day(track) - start_day)*1000*60*60*24 - start_microtime;
 } 
 

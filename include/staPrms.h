@@ -78,7 +78,7 @@ public:
   /** Name of the file containing the phase table information. **/
   char* get_phasetable() const;
   /** Local oscilator observing station. NGHK: What is this? **/
-  INT64 get_loobs() const;
+  int64_t get_loobs() const;
   /** bit shift parameters for sign **/
   const int*  get_signBS() const;
   /** bit shift parameters for magn **/
@@ -122,7 +122,7 @@ private:
   //delay correction related data
   char *delaytable; //table with delay data
   char *phasetable; //table with phase
-  INT64 loobs;       //local ascilator observing station
+  int64_t loobs;       //local ascilator observing station
 
   //private functions
   int findMK4data(FILE *ctrlP, Log_writer &log_writer);

@@ -31,7 +31,7 @@ Output_node_without_buffering_controller::process_event(MPI_Status &status) {
   case MPI_TAG_OUTPUT_STREAM_SET_PRIORITY:
     {
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
-      INT64 weight[2];
+      int64_t weight[2];
       MPI_Recv(&weight, 2, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       
@@ -47,8 +47,8 @@ Output_node_without_buffering_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED:
     {
-      UINT64 rank[2];
-      MPI_Recv(&rank, 2, MPI_UINT64, status.MPI_SOURCE,
+      int64_t rank[2];
+      MPI_Recv(&rank, 2, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG)
@@ -65,7 +65,7 @@ Output_node_without_buffering_controller::process_event(MPI_Status &status) {
   case MPI_TAG_OUTPUT_NODE_CORRELATION_READY:
     {
       get_log_writer().MPI(0, print_MPI_TAG(status.MPI_TAG));
-      INT32 nr_of_time_slices;
+      int32_t nr_of_time_slices;
       MPI_Recv(&nr_of_time_slices, 2, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       
