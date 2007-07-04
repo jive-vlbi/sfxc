@@ -113,13 +113,10 @@ void Correlator_node::start()
 
               // Finish processing a time slice:
               status = STOPPED;
-              int64_t i[] = {get_correlate_node_number(), 
-                             get_data_writer().data_counter()};
+              assert(get_data_writer().data_counter() ==
+                     number_of_integration_steps() * 
+                     output_size_of_one_integration_step());
               get_data_writer().reset_data_counter();
-              // Notify output node: 
-              MPI_Send(&i, 2, MPI_INT64, RANK_OUTPUT_NODE,
-                       MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED, 
-                       MPI_COMM_WORLD);
               // Notify manager node:
               int32_t msg = 0;
               MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
@@ -191,4 +188,19 @@ void *Correlator_node::start_init_reader(void * self_) {
 //  node->channel_extractors[ir_struct->sn]->goto_time(ir_struct->startIS);
   node->get_integration_slice().init_reader(ir_struct->sn,ir_struct->startIS);
   return NULL;
+}
+
+
+/** Number of integration steps done in the current time slice **/
+int Correlator_node::number_of_integration_steps() {
+  // NGHK: NYI
+  assert(false);
+  return -1;
+}
+
+/** Size in bytes of the output of one integration step **/
+int Correlator_node::output_size_of_one_integration_step() {
+  // NGHK: NYI
+  assert(false);
+  return -1;
 }

@@ -151,8 +151,7 @@ void check_control_parameters() {
       if (strcmp(StaPrms[i].get_stname(), StaPrms2[i].get_stname())) {
         std::cout << "MPI StaPrms[" << i << "]: stname differs" << std::endl;
         std::cout << "stname: \"" 
-                  << StaPrms[i].get_stname() << "\" vs. " << std::endl
-                  << "        \""  
+                  << StaPrms[i].get_stname() << "\" vs. \""  
                   << StaPrms2[i].get_stname() << "\"" << std::endl;
       }
 
@@ -190,8 +189,7 @@ void check_control_parameters() {
       if (strcmp(StaPrms[i].get_mk4file(), StaPrms2[i].get_mk4file())) {
         std::cout << "MPI StaPrms[" << i << "]: mk4file differs" << std::endl;
         std::cout << "mk4file: \"" 
-                  << StaPrms[i].get_mk4file() << "\" vs. " << std::endl
-                  << "         \""  
+                  << StaPrms[i].get_mk4file() << "\" vs. \""  
                   << StaPrms2[i].get_mk4file() << "\"" << std::endl;
       }
       if (strcmp(StaPrms[i].get_modpat(), StaPrms2[i].get_modpat())) {
@@ -204,8 +202,7 @@ void check_control_parameters() {
       if (strcmp(StaPrms[i].get_delaytable(), StaPrms2[i].get_delaytable())) {
         std::cout << "MPI StaPrms[" << i << "]: delaytable differs" << std::endl;
         std::cout << "delaytable: \"" 
-                  << StaPrms[i].get_delaytable() << "\" vs. " << std::endl
-                  << "            \"" 
+                  << StaPrms[i].get_delaytable() << "\" vs. \"" 
                   << StaPrms2[i].get_delaytable() << "\"" << std::endl;
       }
       if (strcmp(StaPrms[i].get_phasetable(), StaPrms2[i].get_phasetable())) {

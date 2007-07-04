@@ -8,8 +8,6 @@
  * Tests several implementations of buffers.
  */
 
-typedef long long int64_t;
-
 #include <iostream>
 
 

@@ -119,6 +119,12 @@ public:
   void set_parameters(RunP &runPrms, GenP &genPrms, StaP *staPrms);
   
   void set_slice_number(int sliceNr);
+
+  /** Number of integration steps done in the current time slice **/
+  int number_of_integration_steps();
+
+  /** Size in bytes of the output of one integration step **/
+  int output_size_of_one_integration_step();
 private:
   // Buffer for the output, input is directly handled by the Correlator_controller
   Semaphore_buffer<output_value_type> output_buffer;

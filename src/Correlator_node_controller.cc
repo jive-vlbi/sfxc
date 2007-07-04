@@ -50,9 +50,15 @@ Correlator_node_controller::process_event(MPI_Status &status) {
       assert(status.MPI_TAG == status2.MPI_TAG);
 
 #ifndef USE_FILES_FOR_OUTPUT
-      int64_t priority[] = {node.get_correlate_node_number(), time[0]};
-      MPI_Send(&priority, 2, MPI_INT64, 
-               RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_STREAM_SET_PRIORITY, MPI_COMM_WORLD);
+      int size_of_slice = -1;
+      int64_t priority[] = 
+        {node.get_correlate_node_number(), 
+         time[0],
+         size_of_slice
+        };
+      MPI_Send(&priority, 3, MPI_INT64, 
+               RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY, 
+               MPI_COMM_WORLD);
 #endif
       
       node.start_correlating(time[1], time[2]);

@@ -30,39 +30,45 @@ char *outfile = "output.txt";
 
 int main(int argc, char *argv[]) {
   {
-    int nBytes;
-    char buff[BUFFSIZE];
+    {
+      int bytes_read, bytes_written;
+      char buff[BUFFSIZE];
   
-    Data_reader_file reader(infile);
-    std::ofstream out(outfile, std::ios::out | std::ios::binary);
+      Data_reader_file reader(infile);
+      Data_writer_file writer(outfile);
   
-    nBytes= reader.get_bytes(100, buff);
-    assert(nBytes==100);
-    out.write(buff, nBytes*sizeof(char));
+      bytes_read = reader.get_bytes(100, buff);
+      assert(bytes_read==100);
+      bytes_written = writer.put_bytes(bytes_read, buff);
+      assert(bytes_read == bytes_written);
   
-    nBytes = reader.get_bytes(250, buff);
-    assert(nBytes==250);
-    out.write(buff, nBytes*sizeof(char));
+      bytes_read = reader.get_bytes(250, buff);
+      assert(bytes_read==250);
+      bytes_written = writer.put_bytes(bytes_read, buff);
+      assert(bytes_read == bytes_written);
   
-    for (int i=0; i<10; i++) {
-      nBytes = reader.get_bytes(50, buff);
-      assert(nBytes==50);
-      out.write(buff, nBytes*sizeof(char));
+      for (int i=0; i<10; i++) {
+        bytes_read = reader.get_bytes(50, buff);
+        assert(bytes_read==50);
+        bytes_written = writer.put_bytes(bytes_read, buff);
+        assert(bytes_read == bytes_written);
+      }
+  
+      bytes_read = reader.get_bytes(BUFFSIZE, buff);
+      assert(bytes_read==BUFFSIZE);
+      bytes_written = writer.put_bytes(bytes_read, buff);
+      assert(bytes_read == bytes_written);
+  
+      while (!reader.eof()) {
+        bytes_read = reader.get_bytes(BUFFSIZE, buff);
+        bytes_written = 0;
+        while (bytes_written != bytes_read) {
+          bytes_written += writer.put_bytes(bytes_read, buff);
+        }
+        assert(bytes_read == bytes_written);
+      }
     }
   
-    nBytes = reader.get_bytes(BUFFSIZE, buff);
-    assert(nBytes==BUFFSIZE);
-    out.write(buff, nBytes*sizeof(char));
-  
-    bool lastBlock = false;
-    while ((nBytes = reader.get_bytes(BUFFSIZE, buff)) > 0) {
-      assert(!lastBlock); 
-      if (nBytes != BUFFSIZE) lastBlock = true; // Only last block can have smaller size
-      out.write(buff, nBytes*sizeof(char));
-    }
-  
-    out.close();
-    
     //check output:
     std::string command = "diff ";
     command += infile; command += " "; command += outfile;
