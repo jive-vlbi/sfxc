@@ -5,23 +5,27 @@ AM_CXXFLAGS =
 
 
 check_PROGRAMS = \
+  test_mpi \
   test_buffer \
   test_Transfer_control_parameters \
   test_Data_reader_file \
   test_Data_reader_mark5 \
   test_Data_reader_TCP \
   test_Input_node \
+  test_Output_node \
   test_Correlator_node \
   test_Log_writer_mpi \
   test_TCP_connection
 
 TESTS           = \
+  test_mpi.py \
   test_Transfer_control_parameters.py \
   test_Correlator_node.py \
   test_buffer \
   test_Data_reader_file \
   test_Data_reader_mark5.py \
   test_Data_reader_TCP.py \
+  test_Output_node.py \
   test_Input_node.py \
   test_Log_writer_mpi.py
 
@@ -46,6 +50,7 @@ OBJ = ../src/utils.cc \
       ../src/Data_writer_file.cc \
       ../src/Data_writer_tcp.cc \
       ../src/Data_writer_buffer.cc \
+      ../src/Data_writer_void.cc \
       ../src/Log_writer.cc \
       ../src/Log_writer_file.cc \
       ../src/Log_writer_cout.cc \
@@ -65,6 +70,9 @@ OBJ = ../src/utils.cc \
       ../src/Multiple_data_readers_controller.cc \
       ../src/Single_data_writer_controller.cc \
       ../src/Multiple_data_writers_controller.cc
+
+test_mpi_SOURCES = \
+  test_mpi.cc
 
 test_buffer_SOURCES = \
   test_buffer.cc
@@ -88,6 +96,9 @@ test_Data_reader_mark5_SOURCES = \
 
 test_Input_node_SOURCES = \
   $(OBJ) test_Input_node.cc
+
+test_Output_node_SOURCES = \
+  $(OBJ) test_Output_node.cc
 
 test_Correlator_node_SOURCES = \
   $(OBJ) test_Correlator_node.cc \

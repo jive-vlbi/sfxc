@@ -39,7 +39,7 @@ using namespace std;
 #include "genFunctions.h"
 #include "InData.h"
 
-extern UINT32 seed;
+extern uint32_t seed;
 
 
 //*****************************************************************************
@@ -63,32 +63,32 @@ void printTrackstats(char tracks[][frameMk4*nfrms], int nhs);
 
 int findSyncWord(
   //input
-  char tracks[][frameMk4*nfrms], INT32 synchtrack, int headS,
+  char tracks[][frameMk4*nfrms], int32_t synchtrack, int headS,
   //output
-  INT64 *jsynch);
+  int64_t *jsynch);
 
 void printFrameHeader(
   //input
-  char tracks[][frameMk4*nfrms], INT64 jsynch0, INT64 jsynch1, int nhs);
+  char tracks[][frameMk4*nfrms], int64_t jsynch0, int64_t jsynch1, int nhs);
 
 void timeComps(char tracks[][frameMk4*nfrms],int jsynch,int synchtrack,int headS,
   int *Head, int *year, int *day,
   int *hh, int *mm, int *ss, int *ms, int *us,
-  INT64 *TOTusec);
+  int64_t *TOTusec);
 
-int fHead(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
+int fHead(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS);
 
-int fyear(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
+int fyear(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS);
 
-int fday(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
+int fday(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS);
 
-int fhh(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
+int fhh(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS);
 
-int fmm(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
+int fmm(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS);
 
-int fss(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
+int fss(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS);
 
-int fms(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS);
+int fms(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS);
 
 
 Log_writer *log_writer=NULL;
@@ -109,12 +109,12 @@ Log_writer &get_log_writer()
 //*****************************************************************************
 //show first MK4 header in file
 //*****************************************************************************
-void show_MK4_header(Data_reader *data_reader, INT64 startIS, 
+void show_MK4_header(Data_reader *data_reader, int64_t startIS, 
   StaP &StaPrms, GenP &GenPrms)
 {
   if (get_log_writer().get_messagelevel() == 0) return;
   int   jsynch;
-  INT64 usTime;
+  int64_t usTime;
 
   //find first header in data file
   FindHeaderMk4(*data_reader, jsynch ,usTime, startIS, StaPrms);
@@ -147,22 +147,22 @@ int fill_Mk4frame(int sn, Bits_to_float_converter &reader, double **Mk4frame, St
 //         jsynch
 //*****************************************************************************
 int FindHeaderMk4(Data_reader &reader, int& jsynch,
-  INT64& usTime, INT64 usStart, StaP &StaPrms)
+  int64_t& usTime, int64_t usStart, StaP &StaPrms)
 {
   assert(false);
   int retval = 0;
   
   //buffer for unpacked tracks, NTRACKS tracks, NFRMS Mk4 frames long
   char  tracks[trksMax][frameMk4*nfrms];
-  INT64 jsynch0, jsynch1;
+  int64_t jsynch0, jsynch1;
   int nhs, synhs1, synhs2;
 
-  INT64 day, hr, min, sec, milis;
+  int64_t day, hr, min, sec, milis;
     
   int Head0,Head1;  //Headstack IDs as seen in the header
   int year0,day0,hh0,mm0,ss0,ms0,us0; //TOT for headstack 0
   int year1,day1,hh1,mm1,ss1,ms1,us1; //TOT for headstack 1
-  INT64 TOTusec0, TOTusec1; //in micro seconds
+  int64_t TOTusec0, TOTusec1; //in micro seconds
     
   get_log_writer()(1) <<
     "--------------------------------------------------------------------------------\n" <<
@@ -269,11 +269,11 @@ int read64datafile(
   char tracks[][frameMk4*nfrms])
 {
   int jbuf1,jtrack;
-  INT64 readstatus;
+  int64_t readstatus;
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   // next parameters have to be 64 bit
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  INT64 rblock[frameMk4*nfrms], work;
+  int64_t rblock[frameMk4*nfrms], work;
   //read from data file into [frameMk4*nfrms] nr of blocks,
   //[EIGHT*frameMk4*nfrms] nr of bytes
   // read(dataP, rblock, 8*frameMk4*nfrms);
@@ -303,11 +303,11 @@ int read32datafile(
   char tracks[][frameMk4*nfrms])
 {
   int jbuf1,jtrack;
-  INT32 readstatus;
+  int32_t readstatus;
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   // next parameters have to be 32 bit
   // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  INT32 rblock[frameMk4*nfrms], work;
+  int32_t rblock[frameMk4*nfrms], work;
   //read from data file into [frameMk4*nfrms] nr of blocks,
   //[FOUR*frameMk4*nfrms] nr of bytes
   readstatus= reader.get_bytes(4*frameMk4*nfrms, (char *)rblock);
@@ -337,7 +337,7 @@ void printTrackstats(char tracks[][frameMk4*nfrms], int nhs)
 {
   float trackstats[64];
   int jtrack;
-  INT32 jsample;
+  int32_t jsample;
   int   notracks, nolines;
 
   if(nhs==1) {
@@ -383,12 +383,12 @@ void printTrackstats(char tracks[][frameMk4*nfrms], int nhs)
 //*****************************************************************************
 int findSyncWord(
   //input
-  char tracks[][frameMk4*nfrms], INT32 synchtrack, int headS,
+  char tracks[][frameMk4*nfrms], int32_t synchtrack, int headS,
   //output
-  INT64 *jsynch)
+  int64_t *jsynch)
 {
   int   synchbuff[frameMk4*nfrms],synchcorr[frameMk4*nfrms];
-  INT32 jsample, jcorr;
+  int32_t jsample, jcorr;
   int   retval = 0;
   
   //calculate synchbuffers on headstack
@@ -424,11 +424,11 @@ int findSyncWord(
 //*****************************************************************************
 void printFrameHeader(
   //input
-  char tracks[][frameMk4*nfrms], INT64 jsynch0, INT64 jsynch1, int nhs)
+  char tracks[][frameMk4*nfrms], int64_t jsynch0, int64_t jsynch1, int nhs)
 {
   char buff[80];
   int jtrack;
-  INT32 jsample;
+  int32_t jsample;
         
   //print header content at start of table (stdout)
   if(jsynch0>=64) {
@@ -514,7 +514,7 @@ void printFrameHeader(
 void timeComps(char tracks[][frameMk4*nfrms],int jsynch,int synchtrack,int headS,
   int *Head, int *year, int *day,
   int *hh, int *mm, int *ss, int *ms, int *us,
-  INT64 *TOTusec)
+  int64_t *TOTusec)
 {
   // calculating TOT for headstack 
   *Head = fHead(tracks,synchtrack,jsynch,headS*32);
@@ -551,7 +551,7 @@ void timeComps(char tracks[][frameMk4*nfrms],int jsynch,int synchtrack,int headS
 //*****************************************************************************
 //  fHead
 //*****************************************************************************
-int fHead(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
+int fHead(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS)
 {
   return
     tracks[headS+syntrk][jsync-31] + 2*tracks[headS+syntrk][jsync-32];
@@ -561,7 +561,7 @@ int fHead(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
 //*****************************************************************************
 //  fyear
 //*****************************************************************************
-int fyear(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
+int fyear(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS)
 {
   return
   (
@@ -579,7 +579,7 @@ int fyear(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
 //*****************************************************************************
 //  fday
 //*****************************************************************************
-int fday(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
+int fday(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS)
 {
   return
   (
@@ -610,7 +610,7 @@ int fday(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
 //*****************************************************************************
 //  fhh
 //*****************************************************************************
-int fhh(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
+int fhh(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS)
 {
   return
   (
@@ -633,7 +633,7 @@ int fhh(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
 //*****************************************************************************
 //  fmm
 //*****************************************************************************
-int fmm(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
+int fmm(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS)
 {
   return
   (
@@ -657,7 +657,7 @@ int fmm(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
 //*****************************************************************************
 //  fss
 //*****************************************************************************
-int fss(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
+int fss(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS)
 {
   return
   (
@@ -682,7 +682,7 @@ int fss(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
 //*****************************************************************************
 //  fms
 //*****************************************************************************
-int fms(char tracks[][frameMk4*nfrms], INT32 syntrk, INT64 jsync, int headS)
+int fms(char tracks[][frameMk4*nfrms], int32_t syntrk, int64_t jsync, int headS)
 {
   return
   (

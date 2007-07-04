@@ -45,14 +45,14 @@ class Integration_slice
     void set_data_writer(boost::shared_ptr<Data_writer> data_writer);
 
     /** **/
-    bool init_reader(int sn, INT64 startIS);
+    bool init_reader(int sn, int64_t startIS);
 
     /**
      *  Set the start time and the duration of the correlation.
      *  NGHK: DISCUSS: Is this function needed? 
      *  DelayCorrection can find the start time in the data?
      **/
-    void set_start_time(INT64 us_start);
+    void set_start_time(int64_t us_start);
 
     /** Correlates all the segments (Nsegm2Avg) in the time slice.
     \pre startIS: start time of current integration slice in usec wrt 00:00
@@ -64,7 +64,7 @@ class Integration_slice
     Log_writer &get_log_writer();
 
   private:
-    INT32           Nsegm2Avg; //nr of segments to average
+    int32_t           Nsegm2Avg; //nr of segments to average
     DelayCorrection dc;//class
     CorrelationCore cc;//class
     bool            parameters_set; // For debugging

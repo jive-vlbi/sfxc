@@ -157,7 +157,7 @@ TCP_Connection::do_connect(const char *hostname, unsigned short int port) {
 }
 
 int 
-TCP_Connection::do_connect(UINT64 ip, unsigned short int port) {
+TCP_Connection::do_connect(uint64_t ip, unsigned short int port) {
   struct in_addr addr;
   addr.s_addr = ip;
 
@@ -237,7 +237,7 @@ TCP_Connection::get_ip_addresses(std::vector<std::string> &addr) {
 }
 
 void 
-TCP_Connection::get_ip_addresses(std::vector<UINT64>  &addr) {
+TCP_Connection::get_ip_addresses(std::vector<uint64_t>  &addr) {
   std::vector<std::string> tmp_addr;
   get_ip_addresses(tmp_addr);
   

@@ -111,7 +111,7 @@ int DelayTable::readDelayTable(char *delayTableName)
 {
   int    retval = 0;
   FILE   *fp;
-  INT64  t0,t1,t2; // time of day in micro seconds
+  int64_t  t0,t1,t2; // time of day in micro seconds
   double c0,c1,c2; // various delay contributions in micro seconds 
   double m0,m1,m2; 
   double r0,r1,r2;
@@ -168,9 +168,9 @@ int DelayTable::readDelayTable(char *delayTableName)
 
 //calculates the delay for the delayType at time in microseconds
 //get the next line from the delay table file
-double DelayTable::calcDelay(INT64 time, int delayType) const
+double DelayTable::calcDelay(int64_t time, int delayType) const
 {
-  INT64 index;
+  int64_t index;
   double A,B,C,delay;
    
    //set start time scale to zero
@@ -223,7 +223,7 @@ double DelayTable::calcDelay(INT64 time, int delayType) const
 //m: tangential motion model
 //r: radial motion model
 //f: sum of c, m, r
-int DelayTable::getDelayLine(FILE *fp, INT64 &t, 
+int DelayTable::getDelayLine(FILE *fp, int64_t &t, 
   double &c, double &m, double &r, double &f)
 {
   int   retval = 0;
@@ -233,7 +233,7 @@ int DelayTable::getDelayLine(FILE *fp, INT64 &t,
   if (feof(fp)) return 1;
 
   if (fgets(sB,256,fp) == NULL) return 1;
-  t = (INT64)(atof(strtok(sB,sep))*1000000); //from sec to usec
+  t = (int64_t)(atof(strtok(sB,sep))*1000000); //from sec to usec
   c = atof(strtok((char*)0,sep)); 
   m = atof(strtok((char*)0,sep));
   r = atof(strtok((char*)0,sep));
@@ -245,7 +245,7 @@ int DelayTable::getDelayLine(FILE *fp, INT64 &t,
 
 //calculate the parabolic coefficients A, B and C
 //delay = A*t*t + B*t + C
-int DelayTable::parabCoefs (INT64 t0,INT64 t1,INT64 t2,
+int DelayTable::parabCoefs (int64_t t0,int64_t t1,int64_t t2,
   double d0,double d1,double d2,
   double& A,double& B,double& C)
 {

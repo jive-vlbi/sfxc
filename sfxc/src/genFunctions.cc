@@ -51,13 +51,13 @@ int getLongVal(char *key, char *val, char *skey, int& sval, Log_writer &log_writ
 //*****************************************************************************
 //
 //*****************************************************************************
-int getINT64Val(char *key, char *val, char *skey, INT64& sval, Log_writer &log_writer)
+int getint64_tVal(char *key, char *val, char *skey, int64_t& sval, Log_writer &log_writer)
 {
   char *endp;
   
   if (!strcmp(key,skey)) {
     sval = strtoll(val, &endp, 10);
-    log_writer(2) << "getINT64Val: " << skey <<" "<< sval << endl;
+    log_writer(2) << "getint64_tVal: " << skey <<" "<< sval << endl;
     if (endp == val) {
       log_writer(0) << "**** Unable to convert string for key " << key << " into long\n";
       return -1;
@@ -147,8 +147,8 @@ long str_to_long (std::string inString, int pos, int length)
 //  See Numerical Recipes
 //  primitive polynomial mod 2 of order n produces 2^n - 1 random bits
 //*****************************************************************************
-UINT32 iseed;
-void set_seed(UINT32 seed_) {
+uint32_t iseed;
+void set_seed(uint32_t seed_) {
   iseed = seed_;
 }
 int irbit2()

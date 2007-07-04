@@ -144,7 +144,7 @@ Data_reader_mark5::~Data_reader_mark5() {
 }
 
 size_t Data_reader_mark5::do_get_bytes(size_t nBytes, char*out) {
-  UINT64 size = 0, last;
+  uint64_t size = 0, last;
   size = last = recv(sock, (void *) out, nBytes, 0);
   while (size < nBytes) {
     last = recv(sock, (void *) (out+size), nBytes-size, 0);

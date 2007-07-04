@@ -37,17 +37,17 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
 
       int size;
-      MPI_Get_elements(&status, MPI_UINT64, &size);
+      MPI_Get_elements(&status, MPI_INT64, &size);
       assert(size >= 3); // [ip-addr]+, port, rank
-      UINT64 ip_addr[size];
-      MPI_Recv(&ip_addr, size, MPI_UINT64, status.MPI_SOURCE,
+      uint64_t ip_addr[size];
+      MPI_Recv(&ip_addr, size, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      UINT64 port = ip_addr[size-2];
-      INT64 stream_nr = ip_addr[size-1];
+      uint64_t port = ip_addr[size-2];
+      int64_t stream_nr = ip_addr[size-1];
       
       boost::shared_ptr<Data_reader> 
         reader(new Data_reader_tcp(ip_addr, size-2, port));
@@ -61,35 +61,28 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_ADD_DATA_READER_FILE:
     {
-      assert(false);
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
 
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 1); // rank + filename
-      DEBUG_MSG(size);
       char msg[size];
-      DEBUG_MSG("");
       MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      DEBUG_MSG("");
 
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
       int corr_node = (int)msg[0];
       char *filename = msg+1;
-      DEBUG_MSG(corr_node << " " << filename);
       
       boost::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
       add_data_reader(corr_node, reader);
 
-      DEBUG_MSG("");
-      INT64 return_msg = 0;
+      int64_t return_msg = 0;
       MPI_Send(&return_msg, 1, MPI_INT64, 
                status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
-      DEBUG_MSG("");
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
@@ -152,7 +145,7 @@ Multiple_data_readers_controller::add_data_reader
   if (data_readers.size() <= (unsigned int)i) {
     data_readers.resize(i+1, NULL);
   }
-  assert((UINT32)i < data_readers.size());
+  assert((uint32_t)i < data_readers.size());
 
   if (data_readers[i] == NULL) {
     data_readers[i] = new Data_reader2buffer<value_type>();

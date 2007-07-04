@@ -55,7 +55,7 @@ int   GenP::get_mst()        const { return mst; }
 int   GenP::get_sst()        const { return sst; }
 
 int   GenP::get_duration()   const { return duration; }
-INT64 GenP::get_usDur()      const { return duration*1000000; }
+int64_t GenP::get_usDur()      const { return duration*1000000; }
 
 int   GenP::get_nstations()  const { return nstations; }
 char* GenP::get_outdir()     const { return outdir;}
@@ -79,16 +79,16 @@ int    GenP::get_ovrfl()      const { return ovrfl;}
 int   GenP::get_n2fft()      const { return n2fft;}
 float GenP::get_ovrlp()      const { return ovrlp;}
 float GenP::get_time2avg()   const { return time2avg;}
-INT64 GenP::get_usTime2Avg() const { return (INT64)(time2avg*1000000);}
+int64_t GenP::get_usTime2Avg() const { return (int64_t)(time2avg*1000000);}
 int   GenP::get_pad()        const { return pad;}
 
 int   GenP::get_sideband()   const { return sideband;}
 
 
-INT64 GenP::get_usStart()  const {  return usStart;}
+int64_t GenP::get_usStart()  const {  return usStart;}
 
 
-void GenP::set_usStart(INT64 start) { usStart = start; }
+void GenP::set_usStart(int64_t start) { usStart = start; }
 void GenP::set_duration(int dur) { duration = dur; }
 
 

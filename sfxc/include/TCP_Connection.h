@@ -27,19 +27,19 @@ public:
   unsigned int open_connection(int socket);
   
   /// Client side connect
-  int do_connect(UINT64, unsigned short int port);
+  int do_connect(uint64_t, unsigned short int port);
   int do_connect(const char *hostname, unsigned short int port);
   
-  void get_ip_addresses(std::vector<UINT64> &addr);
+  void get_ip_addresses(std::vector<uint64_t> &addr);
   void get_ip_addresses(std::vector<std::string> &addr);
   
-  bool is_localhost(UINT64 ip_addr) {
+  bool is_localhost(uint64_t ip_addr) {
     return (ip_addr == 0x100007f);
   }
   bool is_localhost(const char *hostname) {
     return (hostname == "127.0.0.1");
   }
-  std::string ip_addr(UINT64 ip) {
+  std::string ip_addr(uint64_t ip) {
     char addr[16];
     sprintf(addr, "%d.%d.%d.%d", 
             (int)ip&255, (int)(ip>>8)&255, (int)(ip>>16)&255, (int)ip>>24);

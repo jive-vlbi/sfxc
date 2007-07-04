@@ -35,7 +35,7 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, int buff_size)
   add_controller(&data_readers_ctrl);
   add_controller(&data_writer_ctrl);
   
-  INT32 msg;
+  int32_t msg;
   MPI_Send(&msg, 1, MPI_INT32, 
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
   
@@ -113,15 +113,15 @@ void Correlator_node::start()
 
               // Finish processing a time slice:
               status = STOPPED;
-              UINT64 i[] = {get_correlate_node_number(), 
-                            get_data_writer().data_counter()};
+              int64_t i[] = {get_correlate_node_number(), 
+                             get_data_writer().data_counter()};
               get_data_writer().reset_data_counter();
               // Notify output node: 
-              MPI_Send(&i, 2, MPI_UINT64, RANK_OUTPUT_NODE,
+              MPI_Send(&i, 2, MPI_INT64, RANK_OUTPUT_NODE,
                        MPI_TAG_OUTPUT_STREAM_TIME_SLICE_FINISHED, 
                        MPI_COMM_WORLD);
               // Notify manager node:
-              INT32 msg = 0;
+              int32_t msg = 0;
               MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
                        MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, 
                        MPI_COMM_WORLD);
@@ -137,7 +137,7 @@ void Correlator_node::start()
   }
 }
 
-void Correlator_node::start_correlating(INT64 us_start, INT64 duration) {
+void Correlator_node::start_correlating(int64_t us_start, int64_t duration) {
   assert(status != CORRELATING); 
   
   GenPrms.set_usStart(us_start);

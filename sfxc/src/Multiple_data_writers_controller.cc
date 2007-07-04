@@ -11,6 +11,7 @@
 #include <sfxc_mpi.h>
 #include <Data_writer_file.h>
 #include <Data_writer_tcp.h>
+#include <Data_writer_void.h>
 #include <TCP_Connection.h>
 
 #include <Semaphore_buffer.h>
@@ -41,24 +42,23 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_ADD_OUTPUT_CONNECTION_SINGLE_INPUT_TCP: 
     {
-//      std::cout << "--- " << node.get_rank() << " " << __FILE__ << "," << __LINE__ << std::endl;
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       
       MPI_Status status2;
-      INT32 corr_node;
+      int32_t corr_node;
       MPI_Recv(&corr_node, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       Data_writer_tcp *data_writer = new Data_writer_tcp(1233); 
 
       TCP_Connection tcp_connection;
-      std::vector<UINT64>  ip_addresses;
+      std::vector<uint64_t>  ip_addresses;
       tcp_connection.get_ip_addresses(ip_addresses);
 
       // Add port
       ip_addresses.push_back(data_writer->get_port());
       
-      MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_UINT64, 
+      MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_INT64, 
                corr_node, MPI_TAG_SET_DATA_READER_TCP, MPI_COMM_WORLD);
       
       data_writer->open_connection();
@@ -67,7 +67,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       boost::shared_ptr<Data_writer> writer(data_writer);
       add_data_writer(corr_node, writer, corr_node, 0);
 
-      INT64 return_msg = 0;
+      int64_t return_msg = 0;
       MPI_Recv(&return_msg, 1, MPI_INT64, corr_node,
                MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status2);
       MPI_Send(&return_msg, 1, MPI_INT64, 
@@ -78,23 +78,22 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP: 
     {
-//      std::cout << "--- " << node.get_rank() << " " << __FILE__ << "," << __LINE__ << std::endl;
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       
       MPI_Status status2;
 
-      /* - INT32: stream number for the data writer
-       * - INT32: stream number for the data reader
-       * - INT32: rank of the data_reader
+      /* - int32_t: stream number for the data writer
+       * - int32_t: stream number for the data reader
+       * - int32_t: rank of the data_reader
        */
-      INT32 ranks[3]; 
+      int32_t ranks[3]; 
       MPI_Recv(ranks, 3, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       Data_writer_tcp *data_writer = new Data_writer_tcp(1233); 
 
       TCP_Connection tcp_connection;
-      std::vector<UINT64>  ip_addresses;
+      std::vector<uint64_t>  ip_addresses;
       tcp_connection.get_ip_addresses(ip_addresses);
 
       // Add port
@@ -102,7 +101,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       // Add number of the data stream:
       ip_addresses.push_back(ranks[1]);
       
-      MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_UINT64, 
+      MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_INT64, 
                ranks[2], MPI_TAG_ADD_DATA_READER_TCP, MPI_COMM_WORLD);
 
       data_writer->open_connection();
@@ -110,7 +109,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       boost::shared_ptr<Data_writer> writer(data_writer);
       add_data_writer(ranks[0], writer, ranks[2], ranks[1]);
 
-      INT64 return_msg = 0;
+      int64_t return_msg = 0;
       MPI_Recv(&return_msg, 1, MPI_INT64, ranks[2],
                MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status2);
       MPI_Send(&return_msg, 1, MPI_INT64, 
@@ -121,7 +120,6 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_ADD_DATA_WRITER_FILE: 
     {
-//      std::cout << "--- " << node.get_rank() << " " << __FILE__ << "," << __LINE__ << std::endl;
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       
       MPI_Status status2;
@@ -140,7 +138,30 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 
       add_data_writer((int)buffer[0], data_writer, -1, -1);
 
-      INT64 return_msg=0;
+      int64_t return_msg=0;
+      MPI_Send(&return_msg, 1, MPI_INT64, 
+               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+               MPI_COMM_WORLD);
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+  case MPI_TAG_ADD_DATA_WRITER_VOID: 
+    {
+      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      
+      MPI_Status status2;
+      int32_t msg;
+      MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
+               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+      
+      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+      assert(status.MPI_TAG == status2.MPI_TAG);
+
+      boost::shared_ptr<Data_writer> data_writer(new Data_writer_void()); 
+
+      add_data_writer(msg, data_writer, -1, -1);
+
+      int64_t return_msg=0;
       MPI_Send(&return_msg, 1, MPI_INT64, 
                status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);

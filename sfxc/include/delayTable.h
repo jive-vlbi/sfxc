@@ -36,7 +36,7 @@ class DelayTable
     int readDelayTable(char *delayTableName);
 
     //calculate the delay for the delayType at time in microseconds
-    double calcDelay(INT64 time, int delayType) const;
+    double calcDelay(int64_t time, int delayType) const;
 
     enum delayType {Cdel, Mdel, Rdel, Fdel};
 
@@ -46,18 +46,18 @@ class DelayTable
     void reserve_data();
 
     //get the next line from the delay table file
-    int getDelayLine(FILE *fp, INT64 &t, 
+    int getDelayLine(FILE *fp, int64_t &t, 
       double &c, double &m, double &r, double &f);
 
     //calculate the parabolic coefficients A, B and C
-    int parabCoefs (INT64 t0,INT64 t1,INT64 t2,
+    int parabCoefs (int64_t t0,int64_t t1,int64_t t2,
       double d1,double d2,double d3,
       double& A,double& B,double& C);
 
-    INT64  ndel; // number of parabolic delay functions covering start until stop
+    int64_t  ndel; // number of parabolic delay functions covering start until stop
     
-    INT64  startDT;       // start time delaytable in micro seconds
-    INT64  stepDT;        // time step in delaytable in micro seconds
+    int64_t  startDT;       // start time delaytable in micro seconds
+    int64_t  stepDT;        // time step in delaytable in micro seconds
     double one_over_stepDT;
     std::vector<double> cA, cB, cC; // Y = aX^2 + bX + c
     std::vector<double> mA, mB, mC; // per read delay line one series of these coefficients

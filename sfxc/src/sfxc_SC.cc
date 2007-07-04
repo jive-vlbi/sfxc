@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
   
   //initialise start of first integration slice,
   //which is start of scan wrt to 00:00 in usec
-  INT64 startIS=GenPrms.get_usStart();
+  int64_t startIS=GenPrms.get_usStart();
 
   bool result;
 

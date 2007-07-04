@@ -18,12 +18,15 @@ public:
   Channel_extractor() : Data_reader() {
   }
   
-  virtual int goto_time(INT64 time) = 0;
-  virtual INT64 get_current_time() = 0;
+  virtual int goto_time(int64_t time) = 0;
+  virtual int64_t get_current_time() = 0;
 
   /** Returns a number of samples, one sample per character. **/
   virtual size_t get_samples(size_t nSamples, double *bit_samples, 
                              const double *val_array) = 0;
+
+  /** Returns the data rate of a channel in bytes per second **/
+  virtual int get_data_rate(int channel) = 0;
 };
 
 #endif /*CHANNEL_EXTRACTOR_H_*/

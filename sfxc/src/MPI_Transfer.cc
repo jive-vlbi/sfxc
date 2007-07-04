@@ -20,10 +20,10 @@
 //extern RunP  RunPrms;
 //extern GenP  GenPrms;
 //extern StaP  StaPrms[NstationsMax];
-extern INT64 sliceStartByte[NstationsMax][NprocessesMax];
-extern INT64 sliceStartTime [NprocessesMax];
-extern INT64 sliceStopTime  [NprocessesMax];
-extern INT64 sliceTime;
+extern int64_t sliceStartByte[NstationsMax][NprocessesMax];
+extern int64_t sliceStartTime [NprocessesMax];
+extern int64_t sliceStopTime  [NprocessesMax];
+extern int64_t sliceTime;
 
 MPI_Transfer::MPI_Transfer() {
 }
@@ -207,7 +207,7 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
 
 void 
 MPI_Transfer::send_delay_table(DelayTable &table, int sn, int rank) {
-  int size = 3*sizeof(INT64) + 4*sizeof(INT32) + table.ndel*12*sizeof(double); 
+  int size = 3*sizeof(int64_t) + 4*sizeof(int32_t) + table.ndel*12*sizeof(double); 
   int position=0;
   char buffer[size];
 

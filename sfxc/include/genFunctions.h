@@ -14,7 +14,7 @@
 
 int getLongVal(char *key, char *val, char *skey, int& sval, Log_writer &log_writer);
 
-int getINT64Val(char *key, char *val, char *skey, INT64& sval, Log_writer &log_writer);
+int getint64_tVal(char *key, char *val, char *skey, int64_t& sval, Log_writer &log_writer);
 
 int getFloatVal(char *key, char *val, char *skey, float& sval, Log_writer &log_writer);
 
@@ -24,5 +24,5 @@ int str2int(char *val, int& sval);
 
 long str_to_long (std::string inString, int pos, int length);
 
-void set_seed(UINT32 seed_);
+void set_seed(uint32_t seed_);
 int irbit2();

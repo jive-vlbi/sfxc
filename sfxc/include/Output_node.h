@@ -22,7 +22,7 @@ class Output_node;
 /// Controller for output node specific commands
 class Output_node_controller : public Controller {
 public:
-  typedef std::map<UINT32, int>                 Input_stream_priority_map;
+  typedef std::map<uint32_t, int>                 Input_stream_priority_map;
   typedef Input_stream_priority_map::value_type Input_stream_priority_map_value;
 
   Output_node_controller(Output_node &node);
@@ -46,7 +46,7 @@ private:
 class Output_node : public Node {
 public:
   typedef Buffer_element<char,131072>           value_type;
-  typedef std::map<INT32, int>                  Input_stream_priority_map;
+  typedef std::map<int32_t, int>                  Input_stream_priority_map;
   typedef Input_stream_priority_map::value_type Input_stream_priority_map_value;
   typedef Buffer<value_type>                    Buffer;
   
@@ -55,7 +55,7 @@ public:
    **/
   class Input_stream {
   public:
-    Input_stream(Data_reader *reader);
+    Input_stream(boost::shared_ptr<Data_reader> reader);
     
     /** Fills the buffer with as much data as possible and returns the number of
      * bytes written.
@@ -64,20 +64,18 @@ public:
     /** returns whether we reached the end of the current time slice
      **/
     bool end_of_slice();
-    /** returns whether there is data available
-     **/
-    bool has_data();
     
     /** sets the length of a new time slice
      **/
-    void set_length_time_slice(UINT64 nBytes);
+    void set_length_time_slice(int64_t nBytes);
+
+    /** Goto the next data slice **/
+    void goto_next_slice();
   private:
     // Data_reader from which the input data can be read
-    Data_reader *reader;
-    // The number of bytes left in the current slice
-    int curr_bytes;
+    boost::shared_ptr<Data_reader> reader;
     // list with sizes of the time slices
-    std::queue<UINT64> slice_size;
+    std::queue<int64_t> slice_size;
   };
 
   Output_node(int rank, Log_writer *writer, int buffer_size = 10);
@@ -90,14 +88,14 @@ public:
 
   enum STATUS {
     STOPPED=0,
+    START_NEW_SLICE,
     WRITE_OUTPUT,
+    END_SLICE,
     END_NODE
   };
   
-  void set_status();
-
-  void set_weight_of_input_stream(int num, UINT64 weight);
-  void time_slice_finished(int rank, UINT64 nBytes);      
+  void set_weight_of_input_stream(int num, int64_t weight, size_t size);
+  void time_slice_finished(int rank, int64_t nBytes);      
   
   void set_number_of_time_slices(int n_time_slices);
 
@@ -106,7 +104,6 @@ public:
   void hook_added_data_writer(size_t writer);
 
 private:
-  bool data_available();
   void write_output();
 
 
@@ -124,15 +121,7 @@ private:
   // One input stream for every correlate node
   std::vector<Input_stream *>         input_streams;
   
-  /** List of streams that stores whether a time slice is transferred.
-   * The stream is not finished, if input_streams_finished[i]==0
-   * if input_streams_finished[i]>0 then the stream is finished and specifies
-   * the number of bytes belonging to the slice
-   **/
-  INT32 curr_slice,number_of_time_slices;
-//  std::vector<UINT64>                 input_streams_finished;
-  /// the data_readers read the data from the buffers in the data_readers_ctrl.
-//  std::vector<Data_reader *>          data_readers;
+  int32_t curr_slice, number_of_time_slices, curr_stream;
 };
 
 #endif // OUTPUT_NODE_H

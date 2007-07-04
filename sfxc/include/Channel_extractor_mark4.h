@@ -19,7 +19,7 @@
 #include <vector>
 
 // Templated by the type of the element from which the samples are extracted
-// Either INT32 (n_head_stacks == 1) or INT64 (n_head_stacks == 2)
+// Either int32_t (n_head_stacks == 1) or int64_t (n_head_stacks == 2)
 template <class T>
 class Channel_extractor_mark4_implementation;
 
@@ -38,12 +38,14 @@ public:
                           bool insert_random_headers_,
                           DEBUG_LEVEL debug_level = CHECK_PERIODIC_HEADERS);
   
-  int goto_time(INT64 time);
-  INT64 get_current_time();
+  int goto_time(int64_t time);
+  int64_t get_current_time();
 
   /** Returns a number of samples, one sample per character. **/
   size_t get_samples(size_t nSamples, double *bit_samples, 
                      const double *val_array);
+
+  int get_data_rate(int channel);
 
   bool eof();
 
@@ -53,7 +55,7 @@ public:
   int headstack(int track);
   int track(int track);
 private:
-  int find_header(char *buffer, boost::shared_ptr<Data_reader>reader);
+  int find_header(char *buffer, boost::shared_ptr<Data_reader> reader);
 
   size_t do_get_bytes(size_t nBytes, char *buff);
   

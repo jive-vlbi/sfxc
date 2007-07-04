@@ -58,7 +58,7 @@ public:
      boost::shared_ptr<Bits_to_float_converter> data_reader_); 
 
   /** Go to desired position in input reader.**/
-  bool init_reader(int sn, INT64 startIS); 
+  bool init_reader(int sn, int64_t startIS); 
   
   /** fills the next segment to be processed by correlator core**/
   bool fill_segment();
@@ -70,7 +70,7 @@ public:
   bool set_delay_table(int sn, DelayTable &delay_table);
 
   /** Set the start time and the duration of the correlation **/
-  void set_start_time(INT64 us_start);
+  void set_start_time(int64_t us_start);
 
 private:
 
@@ -89,15 +89,15 @@ private:
   Log_writer &log_writer;
   StaP       *StaPrms;
   
-  INT64  timePtr;     //time in usec wrt 00:00 used for delay table
+  int64_t  timePtr;     //time in usec wrt 00:00 used for delay table
   double **segm;      //nstation data buffer ready for correlation
   double **Bufs;      //nstations buffers with delay corrected
   double **dcBufs;    //buffers with data for delay correction
   double **dcBufPrev; //previous buffers with data for delay correction
-  INT32  BufSize;     //size of one buffer in Bufs
-  INT32  BufPtr;      //read pointer in Bufs array
+  int32_t  BufSize;     //size of one buffer in Bufs
+  int32_t  BufPtr;      //read pointer in Bufs array
   int    n2fftDC;     //FFT length in delay correction (segment length)
-  INT32  Nsegm2DC;    //nr of FFT segments in delay correction
+  int32_t  Nsegm2DC;    //nr of FFT segments in delay correction
   int    nstations;   //nr of stations
   
   double SR;          //sample rate

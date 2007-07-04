@@ -21,24 +21,15 @@ class Data_reader_tcp : public Data_reader {
 public:
   /**
      Constructor.
-     @param[in] port: the port number on which the reader should
-                listen for a connection
-   **/
-  //Data_reader_tcp(int port = 2630);
-//  void open_connection();
-
-  /**
-     Constructor.
      @param[in] ip_addr: A list of ip-numbers of the Data_writer to which the reader connects
      @param[in] nAddr: Number of ip-numbers in ip_addr
      @param[in] port: the port number on which the reader should
                 listen for a connection
    **/
-  Data_reader_tcp(UINT64 *ip_addr, int nAddr, unsigned short int port);
+  Data_reader_tcp(uint64_t *ip_addr, int nAddr, unsigned short int port);
   
   ~Data_reader_tcp();
 
-//  UINT64 move_forward(UINT64 nBytes);
   unsigned int get_port();
   
   bool eof() { return socket < 0; }  
@@ -46,7 +37,6 @@ private:
   size_t do_get_bytes(size_t nBytes, char *out);
 
 
-//  std::vector<char> buffer;
   int connection_socket, socket;
   int port;
 };

@@ -5,7 +5,7 @@
 #  
 # Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
 # 
-# $Id$
+# $Id: test_Output_node.py 251 2007-06-12 13:56:30Z kruithof $
 
 import sys, os,time, filecmp;
 
@@ -15,17 +15,17 @@ if os.path.isfile(RC_FILE):
   execfile(RC_FILE)
 
 if (os.environ.get("MAKE")):
-  status = os.system('$MAKE test_Input_node')
+  status = os.system('$MAKE test_Output_node')
 else:
-  status = os.system("make test_Input_node")
+  status = os.system("make test_Output_node")
 if (status != 0): 
   sys.exit(1)
 
 for control_file in controlfiles:
-  status = os.system("mpirun -np 4 ./test_Input_node " +
+  status = os.system("mpirun -np 3 ./test_Output_node " +
                      control_file+" "+tmp_output_directory)
   if (status != 0):
-    print "test_Input_node: returned error."
+    print "test_Output_node: returned error."
     sys.exit(1);
 
 sys.exit(0);

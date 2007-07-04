@@ -45,7 +45,7 @@ void Output_node_without_buffering::initialise() {
   add_controller(&Output_node_without_buffering_ctrl);
   add_controller(&data_writer_ctrl);
   
-  INT32 msg;
+  int32_t msg;
   MPI_Send(&msg, 1, MPI_INT32, 
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
            
@@ -114,7 +114,7 @@ void Output_node_without_buffering::create_buffer(int num) {
 
 }
 
-void Output_node_without_buffering::set_weight_of_input_stream(int num, UINT64 weight) {
+void Output_node_without_buffering::set_weight_of_input_stream(int num, uint64_t weight) {
   assert(num >= 0);
   
     // Add the weight to the priority queue:
@@ -123,7 +123,7 @@ void Output_node_without_buffering::set_weight_of_input_stream(int num, UINT64 w
   input_streams_order.insert(Input_stream_priority_map_value(weight,num));
 }
 
-void Output_node_without_buffering::time_slice_finished(int rank, UINT64 nBytes) {
+void Output_node_without_buffering::time_slice_finished(int rank, uint64_t nBytes) {
 }
 
 void Output_node_without_buffering::set_status() {

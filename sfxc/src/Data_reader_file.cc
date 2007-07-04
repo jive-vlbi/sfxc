@@ -12,13 +12,14 @@
 #include <iostream>
 #include <algorithm>
 
-#include <fcntl.h> // file control
+#include <utils.h>
 
 Data_reader_file::Data_reader_file(char *filename) : 
   Data_reader()
 {
   file.open(filename, std::ios::in | std::ios::binary);
   assert(file.is_open() );
+  assert(file.good());
 }
 
 Data_reader_file::~Data_reader_file() {
@@ -27,10 +28,11 @@ Data_reader_file::~Data_reader_file() {
 
 size_t
 Data_reader_file::do_get_bytes(size_t nBytes, char*out) {
+  assert(file.good());
   if (out == NULL) {
-    UINT64 pos = file.tellg();
+    uint64_t pos = file.tellg();
     file.seekg (nBytes, std::ios::cur);
-    UINT64 pos2 = file.tellg();
+    uint64_t pos2 = file.tellg();
     return pos2 - pos;
   }
   file.read(out, nBytes);

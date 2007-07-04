@@ -20,8 +20,10 @@
 
 
 #ifdef SFXC_PRINT_DEBUG
+// RANK_OF_NODE has to be set in the program.
+extern int RANK_OF_NODE; // Rank of the current node
 #define DEBUG_MSG(msg) \
-    std::cout << __FILE__ << "," << __LINE__ << ": " << msg << std::endl; 
+    std::cout << "#" << RANK_OF_NODE << " " << __FILE__ << "," << __LINE__ << ": " << msg << std::endl << std::flush; 
 #else
 #define DEBUG_MSG(msg) 
 #endif
@@ -41,7 +43,7 @@ void get_ip_address(std::list<Interface_pair> &addresses,
  * get the time in micro seconds from an array (year, day, hour, minute, second).
  * @returns a list of Interface_pair.
  **/ 
-INT64 get_us_time(int time[]);
+int64_t get_us_time(int time[]);
 
 
 /** Initialises the global control files, this should be removed at some point.

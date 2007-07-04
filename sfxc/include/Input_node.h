@@ -65,8 +65,8 @@ class Input_node : public Node {
   typedef Single_data_reader_controller::value_type     value_type;
   typedef Semaphore_buffer<value_type>     Buffer;
 public:
-  Input_node(int rank, Log_writer *log_writer);
-  Input_node(int rank);
+  Input_node(int rank, int station_number, Log_writer *log_writer);
+  Input_node(int rank, int station_number);
   ~Input_node();
   
   /// Generic constructor function, that is called in the body of every constructor
@@ -82,19 +82,13 @@ public:
     END_NODE ///< The input node is shutting down
   };
   
-  /// Automatically determine the status of the state machine
-  void set_status();
-  
   /// Set the start and stop time of an output stream 
-  void set_priority(int stream, UINT64 start, UINT64 stop);
+  void set_priority(int stream, int slicenr, uint64_t start, uint64_t stop);
 
-  /// Update the current time stamp
-  void set_time_stamp(INT64 const &t);
-  
   /// Get the current time stamp  
-  UINT64 get_time_stamp() { return time_stamp; }
+  int64_t get_time_stamp();
   
-  void set_stop_time(INT64 stop_time);
+  void set_stop_time(int64_t stop_time);
   
   /// Check whether we need to start or stop output streams:  
   void update_active_list();
@@ -119,15 +113,16 @@ private:
   /// An Input_node has several data streams for output.
   Multiple_data_writers_controller             data_writers_ctrl;
 
+  /// The channel extractor
   boost::shared_ptr<Channel_extractor> channel_extractor;
 
   
-  /// Two queues for starting and stopping of output streams
-  std::multimap<UINT64, int>                   start_queue, stop_queue;
   /// The input stream is redirected to the streams in the active list: 
   std::list<int>                               active_list;
+  /// Two queues for starting and stopping of output streams
+  std::multimap<int64_t, int>                  start_queue;
   /// Current timestamp, used for starting and stopping output streams:
-  UINT64                                       time_stamp;
+  int64_t                                      time_stamp;
   
   /// Number of elements in a buffer
   int                                          buffer_size;
@@ -148,7 +143,7 @@ private:
   /// multichannel version.
   char ch_buffer[ch_buffer_size];
   
-  INT64 stop_time;
+  int64_t stop_time;
 
 public:
   RunP RunPrms;

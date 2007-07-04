@@ -22,7 +22,7 @@ class Output_node_without_buffering;
 /// Controller for output node specific commands
 class Output_node_without_buffering_controller : public Controller {
 public:
-  typedef std::map<UINT32, int>                 Input_stream_priority_map;
+  typedef std::map<uint32_t, int>                 Input_stream_priority_map;
   typedef Input_stream_priority_map::value_type Input_stream_priority_map_value;
 
   Output_node_without_buffering_controller(Output_node_without_buffering &node);
@@ -46,7 +46,7 @@ private:
 class Output_node_without_buffering : public Node {
 public:
   typedef Buffer_element<char,131072>           value_type;
-  typedef std::map<INT32, int>                  Input_stream_priority_map;
+  typedef std::map<int32_t, int>                  Input_stream_priority_map;
   typedef Input_stream_priority_map::value_type Input_stream_priority_map_value;
   typedef Buffer<value_type>                    Buffer;
   
@@ -68,8 +68,8 @@ public:
 
   void create_buffer(int num);
 
-  void set_weight_of_input_stream(int num, UINT64 weight);
-  void time_slice_finished(int rank, UINT64 nBytes);      
+  void set_weight_of_input_stream(int num, uint64_t weight);
+  void time_slice_finished(int rank, uint64_t nBytes);      
   
   void set_number_of_time_slices(int n_time_slices);
 
@@ -100,7 +100,7 @@ private:
    * if input_streams_finished[i]>0 then the stream is finished and specifies
    * the number of bytes belonging to the slice
    **/
-  INT32 curr_slice,number_of_time_slices;
+  int32_t curr_slice,number_of_time_slices;
 };
 
 #endif // OUTPUT_NODE_WITHOUT_BUFFERING_H

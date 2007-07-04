@@ -22,7 +22,7 @@ GenP GenPrms;
 //station parameters class, declaration and default settings
 StaP StaPrms[NstationsMax];
 // used for randomising numbers for Headers in Mk4 file
-UINT32 seed;
+uint32_t seed;
 
 
 #include <iostream> 
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
   MPI_Status status;
-  INT32 msg;
+  int32_t msg;
   MPI_Recv(&msg, 1, MPI_INT32, 
            RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
   assert(status.MPI_TAG == MPI_TAG_SET_CORRELATOR_NODE); 

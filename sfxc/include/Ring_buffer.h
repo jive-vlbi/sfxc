@@ -34,7 +34,7 @@ public:
   bool full() { return (ptr_full >= ptr_empty+Base::size); }
 
 private:
-  INT64 ptr_empty, ptr_full;
+  int64_t ptr_empty, ptr_full;
 };
 
 

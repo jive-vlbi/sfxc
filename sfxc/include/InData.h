@@ -24,13 +24,13 @@ void set_log_writer(Log_writer &log_writer_);
 
 Log_writer &get_log_writer();
 
-void show_MK4_header(Data_reader *data_reader, INT64 startIS, 
+void show_MK4_header(Data_reader *data_reader, int64_t startIS, 
   StaP &StaPrms, GenP &GenPrms);
 
 int  fill_Mk4frame(int sn, Bits_to_float_converter &reader, double **Mk4frame, 
   StaP &StaPrms);
 
 int  FindHeaderMk4(Data_reader &reader, int& jsynch,
-  INT64& usTime, INT64 usStart, StaP &StaPrms);
+  int64_t& usTime, int64_t usStart, StaP &StaPrms);
 
 #endif // INDATA_H

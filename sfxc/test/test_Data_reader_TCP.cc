@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     Data_writer_tcp *data_writer = new Data_writer_tcp(1233); 
 
     TCP_Connection tcp_connection;
-    std::vector<UINT64>  ip_addresses;
+    std::vector<uint64_t>  ip_addresses;
     tcp_connection.get_ip_addresses(ip_addresses);
     ip_addresses.push_back(data_writer->get_port());
     
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     int buffsize = 100, nread;
     char buff[buffsize];
     while ((nread = reader_file->get_bytes(buffsize, buff)) > 0) {
-      INT64 nwritten = data_writer->put_bytes(nread, buff);
+      int64_t nwritten = data_writer->put_bytes(nread, buff);
       assert(nwritten == nread);
     }
     
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     MPI_Get_elements(&status, MPI_UINT64, &size);
     assert(size > 0);
-    UINT64 ip_addr[size];
+    uint64_t ip_addr[size];
     MPI_Recv(&ip_addr, size, MPI_UINT64, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
     
