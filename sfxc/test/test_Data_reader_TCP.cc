@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     tcp_connection.get_ip_addresses(ip_addresses);
     ip_addresses.push_back(data_writer->get_port());
     
-    MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_UINT64, 
+    MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_INT64, 
              1, MPI_TAG_ADD_DATA_READER_TCP, MPI_COMM_WORLD);
 
     data_writer->open_connection();
@@ -89,10 +89,10 @@ int main(int argc, char *argv[]) {
     
     
     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    MPI_Get_elements(&status, MPI_UINT64, &size);
+    MPI_Get_elements(&status, MPI_INT64, &size);
     assert(size > 0);
     uint64_t ip_addr[size];
-    MPI_Recv(&ip_addr, size, MPI_UINT64, status.MPI_SOURCE,
+    MPI_Recv(&ip_addr, size, MPI_INT64, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
     
     assert(status.MPI_SOURCE == status2.MPI_SOURCE);

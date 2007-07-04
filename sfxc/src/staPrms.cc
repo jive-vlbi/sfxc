@@ -86,6 +86,11 @@ StaP::StaP()
   for (j=0; j<fomax; j++) {
     signBS[j]=magnBS[j]=-1;
   }
+  stname[0] = (char)0;
+  mk4file[0] = (char)0;
+  modpat[0] = (char)0;
+  delaytable[0] = (char)0;
+  phasetable[0] = (char)0;
 
 }
 
