@@ -153,6 +153,11 @@ enum MPI_TAG {
    **/
   MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY,
   
+  /** Goto the specified time in the stream.
+   * - int64_t: Time in microseconds
+   **/
+  MPI_TAG_INPUT_NODE_GOTO_TIME,
+
   /** Returns a message with the same tag back with the current time stamp in 
    *  the channel extractor
    * - int64_t: the timestamp in microseconds
@@ -291,6 +296,8 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_ADD_DATA_WRITER_TCP"; }
     case MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY:
       { return "MPI_TAG_INPUT_STREAM_SET_PRIORITY"; }
+    case MPI_TAG_INPUT_NODE_GOTO_TIME:
+      { return "MPI_TAG_INPUT_NODE_GOTO_TIME"; }
     case MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP:
       { return "MPI_TAG_GET_CURRENT_TIMESTAMP"; }
     case MPI_TAG_INPUT_NODE_STOP_TIME:

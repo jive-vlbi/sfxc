@@ -10,7 +10,7 @@
 
 //sfxc includes
 #include "CorrelationCore.h"
-#include <assert.h>
+#include <utils.h>
 
 CorrelationCore::CorrelationCore()
 {

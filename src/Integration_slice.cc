@@ -10,6 +10,7 @@
 
 //sfxc includes
 #include "Integration_slice.h"
+#include "utils.h"
 
 // Initialise the correlation for one integration slice
 Integration_slice::Integration_slice(Log_writer &lg_wrtr)
@@ -93,7 +94,6 @@ bool Integration_slice::correlate()
 
   float TenPct=Nsegm2Avg/10.0, i=0;
   log_writer(1) << "Nsegm2Avg " << Nsegm2Avg << endl;
-  
   //zero accumulation accxps array and norms array.
   result = cc.init_time_slice();
 

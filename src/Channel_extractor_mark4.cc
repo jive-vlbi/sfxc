@@ -676,5 +676,5 @@ template <class T>
 int
 Channel_extractor_mark4_implementation<T>::
 get_data_rate(int channel) {
-  return (TBR * tracks.size()) / 8;
+  return (TBR * tracks.size())*1024000 / 8;
 }

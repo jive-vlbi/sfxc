@@ -109,11 +109,7 @@ test_Correlator_node_SOURCES = \
   ../src/InData.cc
 
 test_Log_writer_mpi_SOURCES = \
-  test_Log_writer_mpi.cc \
-  ../src/Node.cc \
-  ../src/Log_writer.cc ../src/Log_writer_cout.cc \
-  ../src/Log_writer_mpi.cc  ../src/Log_writer_file.cc \
-  ../src/Controller.cc ../src/Log_node_controller.cc  ../src/Log_node.cc
+  $(OBJ) test_Log_writer_mpi.cc
 
 test_TCP_connection_SOURCES = \
   test_TCP_connection.cc \

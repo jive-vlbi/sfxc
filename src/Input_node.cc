@@ -171,25 +171,12 @@ set_priority(int stream, int slicenr, uint64_t start, uint64_t stop) {
   assert(data_writers_ctrl.get_data_writer(stream)->get_size_dataslice()<=0);
   int bytes;
   if (stop > 0) {
-    bytes = (stop-start)*channel_extractor->get_data_rate(0);
+    bytes = ((stop-start)*channel_extractor->get_data_rate(0))/1000000;
   } else {
     bytes = -1;
   }
   data_writers_ctrl.get_data_writer(stream)->set_size_dataslice(bytes);
 
-  if (data_writers_ctrl.get_rank_node_reader(stream) >= 0) {
-    // Data is not written to file but sent to another node.
-    int64_t msg[] =
-      {data_writers_ctrl.get_stream_number_reader(stream),
-       slicenr,
-       bytes
-       };
-    MPI_Send(&msg, 3, MPI_INT64,
-             data_writers_ctrl.get_rank_node_reader(stream),
-             MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
-             MPI_COMM_WORLD);
-  }
-  
   update_active_list();
 }
 
@@ -198,6 +185,7 @@ void Input_node::update_active_list() {
   while ((!start_queue.empty()) &&
          (start_queue.begin()->first <= get_time_stamp())) {
     assert(start_queue.begin()->first == get_time_stamp());
+    assert(data_writers_ctrl.get_data_writer(start_queue.begin()->second)->get_size_dataslice()!=0);
     add_to_active_list(start_queue.begin()->second);
     start_queue.erase(start_queue.begin());
   }
@@ -259,4 +247,11 @@ void Input_node::hook_added_data_writer(size_t writer) {
 
 void Input_node::set_stop_time(int64_t stop_time_) {
   stop_time = stop_time_;
+}
+
+void Input_node::goto_time(int64_t new_time) {
+  assert(get_time_stamp() <= new_time);
+  channel_extractor->goto_time(new_time);
+  time_stamp = channel_extractor->get_current_time();
+  assert(get_time_stamp() == new_time);
 }
