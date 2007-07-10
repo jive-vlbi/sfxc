@@ -14,12 +14,6 @@ AC_PROG_MAKE_SET
 
 AC_LANG_CPLUSPLUS
 
-dnl Checks for sizes of types:
-
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(long long)
-
 dnl Checks for libraries.
 
 dnl --- fftw3 ---

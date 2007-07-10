@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
         int32_t msg;
         MPI_Recv(&msg, 1, MPI_INT32, 
                  RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        Input_node input_node(rank);
+        Input_node input_node(rank, msg);
         input_node.start();
         break;
       }

@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 
   {
     // msg is the number of the input node
-    Input_node input_node(rank);
+    Input_node input_node(rank, msg);
     input_node.start();
   } // Make sure the destructor is called
 
