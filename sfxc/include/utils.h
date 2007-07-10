@@ -20,10 +20,12 @@
 
 
 #ifdef SFXC_PRINT_DEBUG
-// RANK_OF_NODE has to be set in the program.
 extern int RANK_OF_NODE; // Rank of the current node
 #define DEBUG_MSG(msg) \
-    std::cout << "#" << RANK_OF_NODE << " " << __FILE__ << "," << __LINE__ << ": " << msg << std::endl << std::flush; 
+    { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
+      std::cout << "#" << RANK_OF_NODE << " " \
+                << __FILE__ << "," << __LINE__ << ": " \
+                << msg << std::endl << std::flush; }
 #else
 #define DEBUG_MSG(msg) 
 #endif

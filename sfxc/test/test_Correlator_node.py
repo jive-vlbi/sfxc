@@ -14,7 +14,10 @@ RC_FILE = os.path.join(os.environ.get('HOME'), ".sfxcrc")
 if os.path.isfile(RC_FILE):
   execfile(RC_FILE)
 
-status = os.system("make test_Correlator_node")
+if (os.environ.get("MAKE")):
+  status = os.system('$MAKE test_Correlator_node')
+else:
+  status = os.system("make test_Correlator_node")
 if (status != 0): sys.exit(1)
 
 for ctrlfile in controlfiles:

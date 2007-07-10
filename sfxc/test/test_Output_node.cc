@@ -93,8 +93,6 @@ void test_output_node(int rank, int numtasks,
              output_node, MPI_TAG_ADD_DATA_READER_FILE, MPI_COMM_WORLD);
     wait_for_setting_up_channel(output_node);
 
-
-    std::cout << "output_file: " << output_file<< std::endl;
     MPI_Send(output_file, strlen(output_file)+1, MPI_CHAR, 
              output_node, MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
     wait_for_setting_up_channel(output_node);
@@ -159,8 +157,6 @@ void test_output_node(int rank, int numtasks,
   }
 }
 
-int RANK_OF_NODE;
-
 int main(int argc, char *argv[]) {
   assert(output_node+RANK_MANAGER_NODE+RANK_LOG_NODE == 3);
 
@@ -177,10 +173,9 @@ int main(int argc, char *argv[]) {
   MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  RANK_OF_NODE = rank;
   assert(numtasks == 3);
   
-  std::cout << "#" << rank << " pid = " << getpid() << std::endl;
+  DEBUG_MSG(" pid = " << getpid());
 
   assert(argc == 3);
   const char *control_file = argv[1];
@@ -196,7 +191,6 @@ int main(int argc, char *argv[]) {
            output_directory, output_file_to_disk);
 
   {
-    std::cout << output_file1 << std::endl;
     // 0: controller
     // 1: log node
     // 2: output node

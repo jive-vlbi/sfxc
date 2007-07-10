@@ -89,6 +89,8 @@ public:
   int64_t get_time_stamp();
   
   void set_stop_time(int64_t stop_time);
+
+  void goto_time(int64_t new_time);
   
   /// Check whether we need to start or stop output streams:  
   void update_active_list();

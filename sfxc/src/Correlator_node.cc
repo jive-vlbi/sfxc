@@ -93,40 +93,39 @@ void Correlator_node::start()
               correlate_state = CORRELATE_INTEGRATION_SLICE;
               break;
             }
-            case CORRELATE_INTEGRATION_SLICE: {
-              get_log_writer()(2) << " correlate_state = CORRELATE_INTEGRATION_SLICE" << std::endl;
-              // Do one integration step:
-              //while still time slices and data are available
-              if (startIS >= GenPrms.get_usStart() + GenPrms.get_usDur()) {
-                correlate_state = END_TIME_SLICE;
-                break;
-              }
-                             
-              //process the next time slice:
-              get_integration_slice().correlate();
-              //set start of next time slice to: start of time slice + time to average
-              startIS += GenPrms.get_usTime2Avg(); //in usec
+          case CORRELATE_INTEGRATION_SLICE: {
+            get_log_writer()(2) << " correlate_state = CORRELATE_INTEGRATION_SLICE" << std::endl;
+            // Do one integration step:
+            //while still time slices and data are available
+            if (startIS >= GenPrms.get_usStart() + GenPrms.get_usDur()) {
+              correlate_state = END_TIME_SLICE;
               break;
             }
-            case END_TIME_SLICE: {
-              get_log_writer()(2) << " correlate_state = END_TIME_SLICE" << std::endl;
+                             
+            //process the next time slice:
+            get_integration_slice().correlate();
+            //set start of next time slice to: start of time slice + time to average
+            startIS += GenPrms.get_usTime2Avg(); //in usec
+            break;
+          }
+          case END_TIME_SLICE: {
+            get_log_writer()(2) << " correlate_state = END_TIME_SLICE" << std::endl;
 
-              // Finish processing a time slice:
-              status = STOPPED;
-              assert(get_data_writer().data_counter() ==
-                     number_of_integration_steps() * 
-                     output_size_of_one_integration_step());
-              get_data_writer().reset_data_counter();
-              // Notify manager node:
-              int32_t msg = 0;
-              MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
-                       MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, 
-                       MPI_COMM_WORLD);
+            // Finish processing a time slice:
+            status = STOPPED;
+
+            // NGHK: Maybe a check on the data size here??
+            get_data_writer().reset_data_counter();
+            // Notify manager node:
+            int32_t msg = 0;
+            MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
+                     MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, 
+                     MPI_COMM_WORLD);
                        
   
                        
-              break;
-            }
+            break;
+          }
           }
         }
       }
@@ -185,22 +184,17 @@ void Correlator_node::set_slice_number(int sliceNr_) {
 void *Correlator_node::start_init_reader(void * self_) {
   Init_reader_struct *ir_struct = static_cast<Init_reader_struct *>(self_);
   Correlator_node *node = ir_struct->corr_node;
-//  node->channel_extractors[ir_struct->sn]->goto_time(ir_struct->startIS);
   node->get_integration_slice().init_reader(ir_struct->sn,ir_struct->startIS);
   return NULL;
 }
 
 
 /** Number of integration steps done in the current time slice **/
-int Correlator_node::number_of_integration_steps() {
-  // NGHK: NYI
-  assert(false);
-  return -1;
+int Correlator_node::number_of_integration_steps_in_time_slice() {
+  return (int32_t) (GenPrms.get_duration()/GenPrms.get_time2avg());
 }
 
 /** Size in bytes of the output of one integration step **/
 int Correlator_node::output_size_of_one_integration_step() {
-  // NGHK: NYI
-  assert(false);
-  return -1;
+  return sizeof(fftw_complex)*((GenPrms.get_n2fft()*GenPrms.get_pad())/2+1);
 }
