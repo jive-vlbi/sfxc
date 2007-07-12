@@ -13,10 +13,13 @@
 #include <types.h>
 #include <list>
 #include <string>
+#include <assert.h>
 #include "Log_writer.h"
 #include "runPrms.h"
 #include "genPrms.h"
 #include "staPrms.h"
+
+#include <sfxc_mpi.h>
 
 
 #ifdef SFXC_PRINT_DEBUG

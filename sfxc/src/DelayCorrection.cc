@@ -7,6 +7,7 @@
  *
  */
 
+#include <utils.h>
 #include "DelayCorrection.h"
 
 //Allocate arrays, initialise parameters
@@ -128,9 +129,18 @@ bool DelayCorrection::init_reader(int sn, int64_t startIS)
 
   //initialise dcBufPrev with data from input channel (can be Mk4 file)
   int bytes_to_read = 2*BufSize;
-  int status = sample_reader[sn]->get_data(bytes_to_read,
-					   &dcBufPrev[sn][0]);
-  return (status == bytes_to_read);
+  int bytes_read = 0;
+  while (bytes_read != bytes_to_read) {
+    int status = sample_reader[sn]->get_data(bytes_to_read-bytes_read,
+                                             &dcBufPrev[sn][bytes_read]);
+    if (status <= 0) {
+      assert(false);
+      return false;
+    }
+    bytes_read += status;
+  }
+  assert(bytes_read == bytes_to_read);
+  return true;
 }
 
 
@@ -211,9 +221,15 @@ bool DelayCorrection::fill_data_before_delay_correction() {
     memcpy(&dcBufs[station][0], &dcBufPrev[station][0], 2*BufSize*sizeof(double));
     
     int bytes_to_read = BufSize;
-    int status = sample_reader[station]->get_data(bytes_to_read,
-					     &dcBufs[station][2*BufSize]);
-    if (status != bytes_to_read) {
+    int bytes_read = 0, status = 1;
+    while ((status > 0) && (bytes_read != bytes_to_read)) {
+      status = 
+        sample_reader[station]->get_data(bytes_to_read-bytes_read,
+	   		                                 &dcBufs[station][2*BufSize]+bytes_read);
+      bytes_read += status;
+    }
+                                                  
+    if (bytes_read != bytes_to_read) {
       std::cout << "status != bytes_to_read, with station = " << station 
                 << std::endl;
       return false;

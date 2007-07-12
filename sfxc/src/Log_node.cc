@@ -18,7 +18,7 @@
 #include <assert.h>
 
 Log_node::Log_node(int rank, int nNodes) 
-  : Node(rank), log_node_ctrl(*this, rank, nNodes)
+  : Node(rank), log_node_ctrl(*this, nNodes)
 {
   add_controller(&log_node_ctrl);
 

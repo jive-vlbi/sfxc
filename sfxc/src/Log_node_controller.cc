@@ -13,7 +13,7 @@
 #include "Log_writer_cout.h"
 #include "Log_writer_file.h"
 
-Log_node_controller::Log_node_controller(Node &node, int rank, int nNodes)
+Log_node_controller::Log_node_controller(Node &node, int nNodes)
  : Controller(node), 
    log_writer_output(NULL),
    nConnections(nNodes-1)

@@ -91,7 +91,7 @@ Node::check_and_process_message() {
 
 Node::MESSAGE_RESULT 
 Node::process_event(MPI_Status &status) {
-  DEBUG_MSG("--- " << get_rank() << ", " << print_MPI_TAG(status.MPI_TAG));
+//  DEBUG_MSG("--- " << get_rank() << ", " << print_MPI_TAG(status.MPI_TAG));
   if (status.MPI_TAG == MPI_TAG_END_NODE) {
     MPI_Status status2; int msg;
     MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,

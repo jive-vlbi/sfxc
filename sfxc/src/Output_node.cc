@@ -212,8 +212,9 @@ Output_node::Input_stream::Input_stream(boost::shared_ptr<Data_reader> reader)
 
 int 
 Output_node::Input_stream::write_bytes(value_type &elem) {
-  return reader->get_bytes(min(elem.size(), reader->get_size_dataslice()),
-                           elem.buffer());
+  assert(reader != boost::shared_ptr<Data_reader>());
+  size_t nBytes = min(elem.size(), reader->get_size_dataslice());
+  return reader->get_bytes(nBytes, elem.buffer());
 }
 
 

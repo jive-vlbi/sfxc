@@ -12,7 +12,6 @@
 #include "Data_reader_buffer.h"
 #include "Data_writer_buffer.h"
 #include "InData.h"
-#include <Channel_extractor_mark4.h>
 
 Correlator_node::Correlator_node(int rank, int nr_corr_node, int buff_size)
  : Node(rank),
@@ -46,6 +45,7 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, int buff_size)
 
 Correlator_node::~Correlator_node()
 {
+  assert(output_buffer.empty());
 }
 
 void Correlator_node::start()
@@ -70,62 +70,81 @@ void Correlator_node::start()
         
         if (status==CORRELATING) {
           switch(correlate_state) {
-            case INITIALISE_TIME_SLICE: {
-              get_log_writer()(2) << " correlate_state = INITIALISE_TIME_SLICE" << std::endl;
-              // Initialise the correlator for a new time slice:
-              
-              startIS=GenPrms.get_usStart();
-
-              //initialise readers to proper position
-              Init_reader_struct init_readers[GenPrms.get_nstations()];
-              for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
-                init_readers[sn].corr_node = this;
-                init_readers[sn].startIS = startIS;
-                init_readers[sn].sn = sn;
-
-                pthread_create(&init_readers[sn].thread, NULL, 
-                               start_init_reader, static_cast<void*>(&init_readers[sn]));
-              }
-              for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
-                pthread_join(init_readers[sn].thread, NULL);
-              }
-              
-              correlate_state = CORRELATE_INTEGRATION_SLICE;
-              break;
-            }
-          case CORRELATE_INTEGRATION_SLICE: {
-            get_log_writer()(2) << " correlate_state = CORRELATE_INTEGRATION_SLICE" << std::endl;
-            // Do one integration step:
-            //while still time slices and data are available
-            if (startIS >= GenPrms.get_usStart() + GenPrms.get_usDur()) {
-              correlate_state = END_TIME_SLICE;
-              break;
-            }
-                             
-            //process the next time slice:
-            get_integration_slice().correlate();
-            //set start of next time slice to: start of time slice + time to average
-            startIS += GenPrms.get_usTime2Avg(); //in usec
-            break;
-          }
-          case END_TIME_SLICE: {
-            get_log_writer()(2) << " correlate_state = END_TIME_SLICE" << std::endl;
-
-            // Finish processing a time slice:
-            status = STOPPED;
-
-            // NGHK: Maybe a check on the data size here??
-            get_data_writer().reset_data_counter();
-            // Notify manager node:
-            int32_t msg = 0;
-            MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
-                     MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, 
-                     MPI_COMM_WORLD);
-                       
+            case INITIALISE_TIME_SLICE: 
+              {
+                assert(data_readers_ctrl.get_data_reader(0)->data_counter()==0);
+                get_log_writer()(2) << " correlate_state = INITIALISE_TIME_SLICE" << std::endl;
+                // Initialise the correlator for a new time slice:
+                
+                startIS=GenPrms.get_usStart();
   
-                       
-            break;
-          }
+                //initialise readers to proper position
+                Init_reader_struct init_readers[GenPrms.get_nstations()];
+                
+                // NGHK: remove this is done by the buffered input readers
+                for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
+                  init_readers[sn].corr_node = this;
+                  init_readers[sn].startIS = startIS;
+                  init_readers[sn].sn = sn;
+  
+                  pthread_create(&init_readers[sn].thread, NULL, 
+                                 start_init_reader, static_cast<void*>(&init_readers[sn]));
+                }
+                for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
+                  pthread_join(init_readers[sn].thread, NULL);
+                }
+                correlate_state = CORRELATE_INTEGRATION_SLICE;
+                break;
+              }
+          case CORRELATE_INTEGRATION_SLICE: 
+            {
+              get_log_writer()(2) << " correlate_state = CORRELATE_INTEGRATION_SLICE" << std::endl;
+              // Do one integration step:
+              //while still time slices and data are available
+              if (startIS >= GenPrms.get_usStart() + GenPrms.get_usDur()) {
+                correlate_state = END_TIME_SLICE;
+                break;
+              }
+                               
+              //process the next time slice:
+              get_integration_slice().correlate();
+              //set start of next time slice to: start of time slice + time to average
+              startIS += GenPrms.get_usTime2Avg(); //in usec
+              
+              
+              break;
+            }
+          case END_TIME_SLICE: 
+            {
+              get_log_writer()(2) << " correlate_state = END_TIME_SLICE" << std::endl;
+              
+              // Finish processing a time slice:
+              status = STOPPED;
+
+              for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
+                int bytes_to_read =
+                  data_readers_ctrl.get_data_reader(sn)->get_size_dataslice();
+                int bytes_read = 0;
+                while (bytes_to_read != bytes_read) {
+                  int status=data_readers_ctrl.get_data_reader(sn)->get_bytes(
+                    bytes_to_read-bytes_read,
+                    NULL);
+                 assert(status > 0);
+                 bytes_read+=status;
+                }
+                assert(
+                  data_readers_ctrl.get_data_reader(sn)->end_of_dataslice());
+              }
+  
+              // NGHK: Maybe a check on the data writer byte-size here??
+              get_data_writer().reset_data_counter();
+              // Notify manager node:
+              int32_t msg = 0;
+              MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
+                       MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, 
+                       MPI_COMM_WORLD);
+              break;
+            }
           }
         }
       }
@@ -139,8 +158,17 @@ void Correlator_node::start_correlating(int64_t us_start, int64_t duration) {
   GenPrms.set_usStart(us_start);
   GenPrms.set_duration(duration);
 
-  get_integration_slice().set_start_time(us_start);
+  // 2*bwfl is the Nyquist sample rate
+  // two bits sampling, hence 4 samples per byte
+  int bits_per_sample = 2;
+  int NYQUIST = 2;
+  int bytes = (int)((BufTime*4 + duration*1000000)* 
+                    (GenPrms.get_bwfl()*NYQUIST*bits_per_sample)/8/1000000);
+  for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
+    data_readers_ctrl.get_data_reader(sn)->set_size_dataslice(bytes);
+  }
 
+  get_integration_slice().set_start_time(us_start);
 
   status=CORRELATING; 
   correlate_state = INITIALISE_TIME_SLICE; 

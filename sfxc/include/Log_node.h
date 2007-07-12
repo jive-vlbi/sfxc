@@ -19,7 +19,7 @@ class Log_node;
 class Log_node_controller : public Controller
 {
 public:
-  Log_node_controller(Node &node, int rank, int nNodes);
+  Log_node_controller(Node &node, int nNodes);
 
   Process_event_status process_event(MPI_Status &status);
 

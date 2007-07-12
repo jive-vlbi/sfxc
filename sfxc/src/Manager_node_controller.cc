@@ -9,7 +9,7 @@
 
 #include "Manager_node.h"
 
-#include <assert.h>
+#include <utils.h>
 
 Manager_node_controller::Manager_node_controller(Manager_node &node)
  : Controller(node), node(node)
@@ -31,6 +31,20 @@ Manager_node_controller::process_event(MPI_Status &status) {
 
       node.set_correlating_state(status.MPI_SOURCE, Manager_node::READY);
       
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+    case MPI_TAG_DATASTREAM_EMPTY:
+    {
+      int32_t stream;
+      MPI_Recv(&stream, 1, MPI_INT32, status.MPI_SOURCE,
+               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+      
+      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
+      assert(status.MPI_TAG == status2.MPI_TAG);
+
+      DEBUG_MSG("Stream nr " << stream << " ended, terminating correlation");
+      assert(false);
+
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   }

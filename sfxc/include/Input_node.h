@@ -140,7 +140,7 @@ private:
 
   /// size of the buffer, this should be at least big enough to contain the
   /// overlap in the time slices
-  static const size_t ch_buffer_size = 131072;
+  static const size_t ch_buffer_size = frameMk4;
   /// The buffer for one channel. This should become an array of buffers in the
   /// multichannel version.
   char ch_buffer[ch_buffer_size];
