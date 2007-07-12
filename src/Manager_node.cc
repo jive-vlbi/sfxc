@@ -14,6 +14,7 @@
 #include "sfxc_mpi.h"
 #include "utils.h"
 #include "MPI_Transfer.h"
+#include <fftw3.h>
 
 // NGHK: Global variables
 #include <runPrms.h>
@@ -190,7 +191,8 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
                MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
       assert(status.MPI_SOURCE == j+START_CORRELATE_NODES);               
 #else
-      int32_t ranks[3] = {i, j, j+START_CORRELATE_NODES};
+      // Writer_stream_nr, reader_stream_nr, output_node
+      int32_t ranks[3] = {j, i, j+START_CORRELATE_NODES};
       MPI_Send(ranks, 3, MPI_INT32, 
                i + START_INPUT_NODES,
                MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
@@ -211,12 +213,11 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
 
 void Manager_node::start() {
 #ifndef READ_DATA_FOR_CORRELATE_NODES_FROM_FILE
-  for (int input_node=0; input_node<GenPrms.get_nstations(); input_node++) {
-    for (int corr_node=0; corr_node<N_CORRELATE_NODES; corr_node++) {
-      // Stream, start time, stop time
-      int64_t msg[3] = {corr_node, 0, 0};
-      MPI_Send(&msg, 3, MPI_INT64, input_node+START_INPUT_NODES,
-               MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY, MPI_COMM_WORLD);
+  {
+    for (int i=0; i<N_INPUT_NODES; i++) {
+      assert(GenPrms.get_usStart() >= get_start_time(i));
+      goto_start_time(i, GenPrms.get_usStart());
+      assert(GenPrms.get_usStart() == get_start_time(i));
     }
   }
 #endif
@@ -242,17 +243,56 @@ void Manager_node::start() {
         searching = false;
         last_correlator_node = i;
 
+        // Initialise the slice on the correlator node
         int64_t times[] = {slicenr,
-                         GenPrms.get_usStart(),
-                         min(GenPrms.get_duration(), slice_duration)};
-        MPI_Send(times, 3, MPI_INT64, i,
+                           GenPrms.get_usStart(),
+                           min(GenPrms.get_duration(), slice_duration)};
+        MPI_Send(times, 3, MPI_INT64, last_correlator_node,
                  MPI_TAG_CORRELATE_TIME_SLICE, MPI_COMM_WORLD);
-        get_log_writer()(0) << "Start a new time slice "
-                            << " sliceNr: " << times[0]
-                            << ", corr.node: " << i
-                            << ", start: " << times[1]
-                            << ", dur: " << times[2] 
-                            << std::endl;
+
+        // Initialise the slice on the input node
+        int64_t priority_in[] = {last_correlator_node-START_CORRELATE_NODES, 
+                                 slicenr, 
+                                 times[1],
+                                 times[1]+times[2]*1000000};
+
+        for (int input_node = 0; input_node < N_INPUT_NODES; input_node++) {
+          MPI_Send(&priority_in, 4, MPI_INT64, 
+                   START_INPUT_NODES+input_node, 
+                   MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY, 
+                   MPI_COMM_WORLD);
+        }
+
+        // Initialise the slice on the output node
+        int nstations = GenPrms.get_nstations();
+        int size_of_baseline = 
+          sizeof(fftw_complex)*(GenPrms.get_n2fft()*GenPrms.get_pad()/2+1);
+        int integration_steps = (int)(slice_duration/GenPrms.get_time2avg());
+        int nr_baselines = -1;
+        if (0 <= RunPrms.get_ref_station(0) && 
+            RunPrms.get_ref_station(0) < nstations) {
+          //use a reference station
+          if (0 <= RunPrms.get_ref_station(1) && 
+              RunPrms.get_ref_station(1) < nstations) {
+            nr_baselines    = 3*nstations-2;
+          } else {
+            nr_baselines    = 2*nstations-1;
+          }
+        } else {
+          //correlate all baselines
+          nr_baselines    = nstations*(nstations-1)/2 + nstations;
+        }
+        
+        int64_t msg_output_node[] =
+          {last_correlator_node-START_CORRELATE_NODES, 
+           slicenr,
+           integration_steps * nr_baselines * size_of_baseline};
+        MPI_Send(&msg_output_node, 3, MPI_INT64,
+                 RANK_OUTPUT_NODE,
+                 MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
+                 MPI_COMM_WORLD);
+
+
         // Only one time slice for now
         GenPrms.set_duration(GenPrms.get_duration()-times[2]);
         GenPrms.set_usStart(GenPrms.get_usStart()+times[2]*1000000);
@@ -270,30 +310,46 @@ void Manager_node::start() {
     }    
   }
   
+
+
+  // Close connections: First receive all waiting messages
+  int result;
+  while ((result = check_and_process_waiting_message()) != NO_MESSAGE) {
+    if (result == TERMINATE_NODE) {
+      return;
+    }
+  }
+
   // Wait untill all correlation nodes are finished
   bool finished;
   do {
     finished = true; 
     for (int i=0; (i<numtasks); i++) {
-      if (state_correlate_nodes[i] == INITIALISING) {
-        // The node was no correlate node, no need to terminate
-        state_correlate_nodes[i] = FINISHED;
-      } else if (state_correlate_nodes[i] == READY) {
-        // Terminate the correlate node
-        int type = 0;
-        MPI_Send(&type, 1, MPI_INT32, 
-                 i, MPI_TAG_END_NODE, MPI_COMM_WORLD);
-        state_correlate_nodes[i] = FINISHED;
-      }
-      
-      finished &= (state_correlate_nodes[i] == FINISHED);
+      finished &= (state_correlate_nodes[i] != CORRELATING);
     }
     if (!finished) {
       // Nothing will happen until the next MPI message arrives: 
       check_and_process_message();
     }
   } while (!finished);
+
+  // Terminate the correlate node
+  for (int i=0; i<N_CORRELATE_NODES; i++) {
+    int type = 0;
+    MPI_Send(&type, 1, MPI_INT32, 
+             START_CORRELATE_NODES+i, MPI_TAG_END_NODE, MPI_COMM_WORLD);
+  }
   
+  // Terminate the output node  
+  MPI_Send(&slicenr, 1, MPI_INT32, RANK_OUTPUT_NODE, 
+           MPI_TAG_OUTPUT_NODE_CORRELATION_READY, MPI_COMM_WORLD);
+  
+  // Terminate the correlator nodes
+  for (int i=0; i<N_INPUT_NODES; i++) {
+    int64_t stop_time = GenPrms.get_usStart() + GenPrms.get_usDur();
+    MPI_Send(&stop_time, 1, MPI_INT64, 
+             START_INPUT_NODES+i, MPI_TAG_INPUT_NODE_STOP_TIME, MPI_COMM_WORLD);
+  }
   // Terminate the input nodes
   int type = 0;
   for (int i=0; i<N_INPUT_NODES; i++) {
@@ -301,9 +357,6 @@ void Manager_node::start() {
              MPI_TAG_END_NODE, MPI_COMM_WORLD);
   }
 
-  // Terminate the output node  
-  MPI_Send(&slicenr, 1, MPI_INT32, RANK_OUTPUT_NODE, 
-           MPI_TAG_OUTPUT_NODE_CORRELATION_READY, MPI_COMM_WORLD);
 }
 
 int Manager_node::read_control_file(char *control_file) {
@@ -316,14 +369,6 @@ int Manager_node::read_control_file(char *control_file) {
 }
 
 int Manager_node::send_control_parameters_to_controller_node(int node) {
-  // Send the filename of the data files directly to the correlator nodes:
-//  // strlen+1 so that \0 gets transmitted as well
-//  for (int i=0; i<GenPrms.get_nstations(); i++) {
-//    char *infile_data = StaPrms[i].get_mk4file();
-//    MPI_Send(infile_data, strlen(infile_data)+1, MPI_CHAR, node,
-//             MPI_TAG_SET_INPUT_NODE_FILE, MPI_COMM_WORLD);
-//  }
-
   // Send the necessary control parameters:
   MPI_Transfer mpi_transfer;
   mpi_transfer.send_general_parameters(node, RunPrms, GenPrms, StaPrms);
@@ -341,11 +386,6 @@ int Manager_node::send_control_parameters_to_controller_node(int node) {
     mpi_transfer.send_delay_table(delay, sn, node);
   }
 
-  // Send the name of the correlator product file:
-//  const char *outfile_data = GenPrms.get_corfile();
-//  MPI_Send((void *)outfile_data, strlen(outfile_data)+1, MPI_CHAR, node,
-//           MPI_TAG_SET_OUTPUT_NODE_FILE, MPI_COMM_WORLD);
-           
   return 0;
 }
 
@@ -360,3 +400,27 @@ void Manager_node::set_correlating_state(int node, CORRELATING_STATE state) {
   assert ((node >= 0) && (((size_t)node) < state_correlate_nodes.size()));
   state_correlate_nodes[node] = state;
 }
+
+int64_t Manager_node::get_start_time(int input_node_nr) {
+  assert(input_node_nr >= 0);
+  assert(input_node_nr < N_INPUT_NODES);
+  int64_t time;
+  // Get initial start time
+  MPI_Send(&time, 1, MPI_INT64, 
+           START_INPUT_NODES+input_node_nr, MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP, 
+           MPI_COMM_WORLD);
+  MPI_Status status;           
+  MPI_Recv(&time, 1, MPI_INT64, 
+           START_INPUT_NODES+input_node_nr, MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP, 
+           MPI_COMM_WORLD, &status);
+  return time;
+}
+
+void Manager_node::goto_start_time(int input_node_nr, int64_t time) {
+  assert(input_node_nr >= 0);
+  assert(input_node_nr < N_INPUT_NODES);
+  MPI_Send(&time, 1, MPI_INT64, 
+           START_INPUT_NODES+input_node_nr, MPI_TAG_INPUT_NODE_GOTO_TIME, 
+           MPI_COMM_WORLD);
+}
+

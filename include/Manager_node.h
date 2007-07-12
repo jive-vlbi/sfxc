@@ -76,6 +76,9 @@ public:
   
 private:
 
+  int64_t get_start_time(int input_node_nr);
+  void goto_start_time(int input_node_nr, int64_t time);
+
   int read_control_file(char *control_file);
   int send_control_parameters_to_controller_node(int rank);
 

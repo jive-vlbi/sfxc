@@ -144,9 +144,10 @@ void Input_node::start() {
         break;
       }
     }
-
-    if ((stop_time >= 0) && (stop_time <= get_time_stamp())) {
-      status = END_NODE;
+    if (active_list.empty()) {
+      if ((stop_time >= 0) && (stop_time <= get_time_stamp())) {
+        status = END_NODE;
+      }
     }
   }
 
@@ -169,11 +170,14 @@ set_priority(int stream, int slicenr, uint64_t start, uint64_t stop) {
   start_queue.insert(std::pair<int64_t,int>(start, stream));
   // if stop == 0, then output to the stream until the end
   assert(data_writers_ctrl.get_data_writer(stream)->get_size_dataslice()<=0);
-  int bytes;
+  int bytes = -1;
   if (stop > 0) {
-    bytes = ((stop-start)*channel_extractor->get_data_rate(0))/1000000;
-  } else {
-    bytes = -1;
+    // 2*bwfl is the Nyquist sample rate
+    // two bits sampling, hence 4 samples per byte
+    int bits_per_sample = 2;
+    int NYQUIST = 2;
+    bytes = (int)((BufTime*4 + (stop-start))* 
+                  (GenPrms.get_bwfl()*NYQUIST*bits_per_sample/8)/1000000);
   }
   data_writers_ctrl.get_data_writer(stream)->set_size_dataslice(bytes);
 

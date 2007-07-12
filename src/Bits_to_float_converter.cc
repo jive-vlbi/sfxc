@@ -65,10 +65,10 @@ get_data_from_data_reader(size_t nSamples, double *buffer) {
   assert(data_reader != NULL);
   if (bits_per_sample == 2) {
     char bit_samples[nSamples/4];
-    nSamples = data_reader->get_bytes(nSamples/4, bit_samples);
+    size_t bytes_read = data_reader->get_bytes(nSamples/4, bit_samples);
 
     int sample = 0;    
-    for (size_t byte = 0; byte < nSamples; byte++) {
+    for (size_t byte = 0; byte < bytes_read; byte++) {
       buffer[sample] = sample_value_ms[ bit_samples[byte]&3 ];
       sample++; 
       buffer[sample] = sample_value_ms[ (bit_samples[byte]>>2)&3 ];
@@ -78,9 +78,10 @@ get_data_from_data_reader(size_t nSamples, double *buffer) {
       buffer[sample] = sample_value_ms[ (bit_samples[byte]>>6)&3 ];
       sample++; 
     }
+    return sample;
   } else {
     std::cout << "Not yet implemented" << std::endl;
     assert(false);
   }
-  return nSamples*4;
+  return 0;
 }

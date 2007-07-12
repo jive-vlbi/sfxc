@@ -240,13 +240,12 @@ bool CorrelationCore::write_time_slice()
 {
   //write normalized correlation results to output file
   //NGHK: Make arrays consecutive to be able to write all data at once
+  uint64_t nWrite = sizeof(fftw_complex)*(n2fftcorr*padding/2+1);
   for (int bsln = 0; bsln < nbslns; bsln++){
-    uint64_t nWrite = sizeof(fftw_complex)*(n2fftcorr*padding/2+1); 
     uint64_t written = get_data_writer().
       put_bytes(nWrite, (char *)(accxps[bsln]));
     if (nWrite != written) return false;
   }
-
   return true;
 }
 
