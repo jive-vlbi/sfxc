@@ -208,6 +208,11 @@ void Input_node::add_to_active_list(int stream) {
 }
 
 void Input_node::remove_from_active_list(int stream) {
+  if (get_rank() == 4) {
+    get_log_writer()(0)
+      << "Finished transfer of data to node " 
+      << stream << std::endl;
+  }
   bool found = false;
   for (std::list<int>::iterator it = active_list.begin();
        it != active_list.end(); it++) {

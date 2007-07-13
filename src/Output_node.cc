@@ -176,19 +176,16 @@ void Output_node::write_output() {
 
 void Output_node::hook_added_data_reader(size_t reader) {
   // Create an output buffer:
-  assert(data_readers_ctrl.get_buffer(reader) == NULL);
   boost::shared_ptr<Buffer> new_buffer(new Semaphore_buffer<value_type>(10));
   data_readers_ctrl.set_buffer(reader, new_buffer);
-  data_readers_ctrl.get_data_reader2buffer(reader)->try_start();
   
   // Create the data_stream:
   if (input_streams.size() <= reader) {
     input_streams.resize(reader+1, NULL);
   }
-  assert(input_streams[reader] == NULL);
-  boost::shared_ptr<Data_reader> 
-    reader_from_buffer(new Data_reader_buffer(new_buffer));
-  input_streams[reader] = new Input_stream(reader_from_buffer);
+
+  input_streams[reader] = 
+    new Input_stream(data_readers_ctrl.get_data_reader(reader));
 }
 
 void Output_node::hook_added_data_writer(size_t writer) {
