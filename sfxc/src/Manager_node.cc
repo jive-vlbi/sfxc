@@ -243,6 +243,8 @@ void Manager_node::start() {
         searching = false;
         last_correlator_node = i;
 
+        get_log_writer()(0) << "Time slice: " << slicenr 
+                            << " to " << i-START_CORRELATE_NODES << std::endl;
         // Initialise the slice on the correlator node
         int64_t times[] = {slicenr,
                            GenPrms.get_usStart(),

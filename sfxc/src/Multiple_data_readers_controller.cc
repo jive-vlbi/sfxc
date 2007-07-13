@@ -90,38 +90,37 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }
 
-boost::shared_ptr<Multiple_data_readers_controller::Buffer>
-Multiple_data_readers_controller::get_buffer(unsigned int i) {
-  if (i >= data_readers.size()) 
-    return boost::shared_ptr<Multiple_data_readers_controller::Buffer>();
-  if (data_readers[i] == NULL) 
-    return boost::shared_ptr<Multiple_data_readers_controller::Buffer>();
-  return data_readers[i]->get_buffer();
-}
-
 void 
-Multiple_data_readers_controller::set_buffer(unsigned int i, 
-                                             boost::shared_ptr<Buffer> buffer) {
+Multiple_data_readers_controller::
+set_buffer(unsigned int i, 
+           boost::shared_ptr<Buffer> buffer) {
   assert(i < data_readers.size());
   assert(data_readers[i] != NULL);
   assert(data_readers[i]->get_data_reader() != NULL);
+  assert(data_readers[i]->get_buffer() == NULL);
   assert(buffer != NULL);
+
+  // Make sure a pointer to the data reader has not been returned 
+  assert(!reader_known[i]);
   
   data_readers[i]->set_buffer(buffer);
   data_readers[i]->start();
+  
+  buffer_readers[i] = 
+    boost::shared_ptr<Data_reader_buffer>(new Data_reader_buffer(buffer));
 }
 
 boost::shared_ptr<Data_reader>
 Multiple_data_readers_controller::get_data_reader(int i) {
   assert((size_t)i < data_readers.size());
   assert(data_readers[i] != NULL);
+  
+  reader_known[i] = true;
+  
+  if (buffer_readers[i] != boost::shared_ptr<Data_reader_buffer>()) {
+    return buffer_readers[i];
+  }
   return data_readers[i]->get_data_reader();
-}
-
-Multiple_data_readers_controller::Reader2buffer *
-Multiple_data_readers_controller::get_data_reader2buffer(int i) {
-  assert((size_t)i < data_readers.size());
-  return data_readers[i];
 }
 
 bool Multiple_data_readers_controller::initialised(unsigned int i) {
@@ -144,6 +143,8 @@ Multiple_data_readers_controller::add_data_reader
   
   if (data_readers.size() <= (unsigned int)i) {
     data_readers.resize(i+1, NULL);
+    reader_known.resize(i+1, false);
+    buffer_readers.resize(i+1, boost::shared_ptr<Data_reader_buffer>());
   }
   assert((uint32_t)i < data_readers.size());
 

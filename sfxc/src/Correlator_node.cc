@@ -72,6 +72,9 @@ void Correlator_node::start()
           switch(correlate_state) {
             case INITIALISE_TIME_SLICE: 
               {
+                if (data_readers_ctrl.get_data_reader(0)->data_counter()!=0) {
+                  DEBUG_MSG("data_readers_ctrl.get_data_reader(0)->data_counter()!=0");
+                }
                 assert(data_readers_ctrl.get_data_reader(0)->data_counter()==0);
                 get_log_writer()(2) << " correlate_state = INITIALISE_TIME_SLICE" << std::endl;
                 // Initialise the correlator for a new time slice:
@@ -134,6 +137,7 @@ void Correlator_node::start()
                 }
                 assert(
                   data_readers_ctrl.get_data_reader(sn)->end_of_dataslice());
+                data_readers_ctrl.get_data_reader(sn)->reset_data_counter();
               }
   
               // NGHK: Maybe a check on the data writer byte-size here??
@@ -187,6 +191,11 @@ void Correlator_node::set_parameters(RunP &runPrms, GenP &genPrms, StaP *staPrms
 
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
+  // NGHK: TODO: Make sure a time slice fits
+  boost::shared_ptr< Semaphore_buffer<input_value_type> > 
+    buffer(new Semaphore_buffer<input_value_type>(25));
+  data_readers_ctrl.set_buffer(stream_nr, buffer);
+  
   boost::shared_ptr<Bits_to_float_converter> 
     sample_reader(new Bits_to_float_converter());
   sample_reader->set_bits_per_sample(StaPrms->get_bps());
