@@ -1,0 +1,149 @@
+===========================
+ example sfxc-control file
+===========================
+
+The sfxc-control file is a json file (www.json.org) that provides the
+data needed to correlate the experiment.
+
+{
+  "exper_name": "N06C2", 
+
+  "start": "2007y156d14h07m56s",
+  "stop":  "2007y156d14h08m00s",
+
+  "stations": [ "Cm", "Wb", "Jb", "On", "Sh"  ],
+  "reference_station": "Jb",
+
+  "cross_polarize" : true,
+
+  "number_channels": 1024,
+  "integr_time": 1.,
+  "message_level": 0,
+
+  "delay_directory":  "file:///data2/jops/kruithof/f07l2/delay",
+  "output_file": "file:///data2/jops/kruithof/f07l2/output/n06c2.cor",
+
+  "data_sources": {
+    "Cm": ["file:///data2/jops/kruithof/f07l2/mk4/f07l2_cm_no0001.m5a",
+           "file:///data2/jops/kruithof/f07l2/mk4/f07l2_cm_no0002.m5a"],
+    "Wb": ["file:///data2/jops/kruithof/f07l2/mk4/f07l2_wb_no0001.m5a",
+           "file:///data2/jops/kruithof/f07l2/mk4/f07l2_wb_no0002.m5a"]
+  },
+
+  "frequencies": [ {"frequency": 4974.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "R"},
+                   {"frequency": 4974.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "L"},
+                   {"frequency": 4982.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "R"},
+                   {"frequency": 4982.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "L"},
+                   {"frequency": 4990.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "R"},
+                   {"frequency": 4990.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "L"},
+                   {"frequency": 4998.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "R"},
+                   {"frequency": 4998.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "L"}
+                 ],
+
+  "site_position": {
+    "Ef": [4033947.3387, 486990.6873, 4900430.8871],
+    "Wb": [3828445.5310, 445223.7612 , 5064921.6506],
+    "Jb": [3822846.6493, -153802.1188, 5086285.9880],
+    "On": [3370965.9893, 711466.0908 , 5349664.1170],
+    "Mc": [4461369.8114, 919597.0138 , 4449559.2860],
+    "Nt": [4934562.9528, 1321201.4444, 3806484.6182],
+    "Tr": [3638558.3586, 1221969.8756, 5077036.8311],
+    "Ur": [228310.4233 , 4631922.7527, 4367064.0097],
+    "Sh": [-2831687.2469, 4675733.5693, 3275327.5663],
+    "Hh": [5085442.7522, 2668263.6856, -2768696.8881],
+    "Cm": [3920356.0363, 2542.1834, 5014284.5088],
+    "Ar": [2390486.9441, -5564731.4198, 1994720.4949]
+  }
+}
+
+======================================
+ description of the sfxc-control file
+======================================
+
+
+start: The start time of the correlation job.
+       The format is the same as in the vex-file.
+stop:  The stop time of the correlation job.
+       The format is the same as in the vex-file.
+
+stations: A list of the telescopes from which the data is correlated
+          This should be a subset of the telescopes described in the
+          vex-file.
+
+reference_station: [optional] 
+                   All baselines are correlated if the reference
+                   station is not specified. If the reference_station
+                   is specified, it is one of the stations specified
+                   in "stations", which is used as a reference
+                   station.
+
+cross_polarize: Defines whether all cross polarisation pairs are
+                computed or not.
+
+number_channels: The number of frequency channels. This should be a
+                 power of two, generally between 32 and 4096.
+
+integr_time: The integration time in seconds. This should be a value
+             in the range [0.25, 0.5, 1., 2., 4.]
+
+message_level: The amount of log-messages the correlator should produce.
+ - 0 no output
+ - 1 some output
+ - 2 debugging
+
+delay_directory: [optional] 
+                 The directory containing the delay tables. The delay
+                 tables are pre-generated so that they can be used for
+                 multiple experiments.
+
+output_file: The file in which the output of the correlator is stored.
+
+data_sources: An associative array containing the data sources for the
+              correlation. Each field maps a station to an array of
+              data sources. The data sources are subsequently read
+              during the correlation.
+              The data sources can be specified as a file
+              "file://<path>/<filename>", a tcp connection (the host
+              and port of the receiving side) "tcp://<host>:<port>" 
+              "udp://<host>:<port>"
+
+
+--- 
+The following fields are present in the control file for the work flow
+manager. They are not used by the correlator.
+---
+
+exper_name: The name of the experiment. This is the name taken from
+            the vex-file and is not used by the correlator.
+
+frequencies: An array of frequencies at which the telescopes observe.
+             Each element contains the fields frequency, bandwidth,
+             sideband and polarisation.
+
+site_position: An associative array of the position of the
+               telescopes. These positions are taken from the
+               vex-file.
