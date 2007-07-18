@@ -38,17 +38,17 @@ using namespace std;
 //get functions
 char* StaP::get_stname()     const { return stname; }
 int   StaP::get_datatype()   const { return datatype; }
-int   StaP::get_tbr()        const { return tbr; }
-int   StaP::get_fo()         const { return fo; }
-int   StaP::get_bps()        const { return bps; }
-int   StaP::get_nhs()        const { return nhs; }
-int   StaP::get_headstack_sign() const { return hs; }
-int   StaP::get_headstack_magn() const { return hm; }
-int   StaP::get_tphs()       const { return tphs; }
-int   StaP::get_boff()       const { return boff; }
-int   StaP::get_synhs1()     const { return synhs1; }
-int   StaP::get_synhs2()     const { return synhs2; }
-int   StaP::get_mod()        const { return mod; }
+int   StaP::get_tbr()        const { assert(tbr > 0); return tbr; }
+int   StaP::get_fo()         const { assert(fo > 0); return fo; }
+int   StaP::get_bps()        const { assert(bps > 0); return bps; }
+int   StaP::get_nhs()        const { assert(nhs > 0); return nhs; }
+int   StaP::get_headstack_sign() const { assert(hs >= 0); return hs; }
+int   StaP::get_headstack_magn() const { assert(hm >= 0); return hm; }
+int   StaP::get_tphs()       const { assert(tphs > 0); return tphs; }
+int   StaP::get_boff()       const { assert(boff >= 0); return boff; }
+int   StaP::get_synhs1()     const { assert(synhs1 >= 0); return synhs1; }
+int   StaP::get_synhs2()     const { assert(synhs2 >= 0); return synhs2; }
+int   StaP::get_mod()        const { assert(mod >= 0); return mod; }
 char* StaP::get_mk4file()    const { return mk4file; }
 char* StaP::get_modpat()     const { return modpat; }
 char* StaP::get_delaytable() const { return delaytable; }
@@ -62,29 +62,33 @@ const int*  StaP::get_magnBS()     const { return magnBS;}
 //default constructor, set default values
 //for station specific control parameters
 StaP::StaP()
+  : stname(NULL),
+    datatype(-5),
+    tbr(8), // This is a constant :)
+    fo(-5),
+    bps(-5),
+    nhs(-5),
+    tphs(32), // This is a constant :)
+    boff(-5),
+    synhs1(-5),
+    synhs2(-5),
+    mod(0), // Initialise to false
+    mk4file(NULL),
+    modpat(NULL),
+    hs(-5),
+    hm(-5),
+    delaytable(NULL),
+    phasetable(NULL),
+    loobs(-5)
 {
-  int j;
-//   char *home;
-
-  tbr     =  8;
-  fo      =  4;
-  bps     =  2;
-  nhs     =  -1;
-  tphs    = 32;
-  boff    =  0;
-  synhs1  =  1;
-  synhs2  =  1;
-  mod     =  0;
   stname     = new char[256];
-  datatype   = DATATYPE_UNDEFINED;
   mk4file    = new char[256];
   modpat     = new char[256];
   delaytable = new char[256];
   phasetable = new char[256];
   
-  hs=hm=-1;
-  for (j=0; j<fomax; j++) {
-    signBS[j]=magnBS[j]=-1;
+  for (int j=0; j<fomax; j++) {
+    signBS[j]=magnBS[j]=-5;
   }
   stname[0] = (char)0;
   mk4file[0] = (char)0;

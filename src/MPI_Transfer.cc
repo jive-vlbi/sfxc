@@ -74,6 +74,8 @@ MPI_Transfer::send_general_parameters(int rank,
   
   MPI_Pack(&GenPrms.usStart, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
 
+  MPI_Pack(&GenPrms.sideband, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+
   // add data for the stations:
   for (int station=0; station<GenPrms.get_nstations(); station++) {
     MPI_Pack(&(StaPrms[station].datatype), 1, MPI_INT32, 
@@ -168,6 +170,8 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
 
 
   MPI_Unpack(buffer, size, &position, &GenPrms.usStart, 1, MPI_INT64, MPI_COMM_WORLD);
+
+  MPI_Unpack(buffer, size, &position, &GenPrms.sideband, 1, MPI_INT32, MPI_COMM_WORLD);
   
   for (int station=0; station<GenPrms.get_nstations(); station++) {
     MPI_Unpack(buffer, size, &position, &(StaPrms[station].datatype), 1, MPI_INT32, 

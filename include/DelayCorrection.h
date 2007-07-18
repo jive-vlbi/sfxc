@@ -122,5 +122,7 @@ private:
   std::vector< boost::shared_ptr<Bits_to_float_converter> > sample_reader;
 
   int sideband;
+
+  bool parameters_set;
 };
 #endif //DELAYCORRECTION_H

@@ -15,7 +15,7 @@
 // Initialise the correlation for one integration slice
 Integration_slice::Integration_slice(Log_writer &lg_wrtr)
   //member initialisations
-  :dc(lg_wrtr), cc(), parameters_set(false), log_writer(lg_wrtr)
+  :dc(lg_wrtr), cc(lg_wrtr), parameters_set(false), log_writer(lg_wrtr)
 {
 }
 
@@ -27,7 +27,7 @@ Integration_slice::Integration_slice(
   int ref_station1,
   int ref_station2)
   //member initialisations
-  :dc(lg_wrtr), cc(), parameters_set(false), log_writer(lg_wrtr)
+  :dc(lg_wrtr), cc(lg_wrtr), parameters_set(false), log_writer(lg_wrtr)
 {
   set_parameters(GenPrms,StaPrms, ref_station1, ref_station2);
 }

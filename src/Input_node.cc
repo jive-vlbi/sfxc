@@ -79,6 +79,14 @@ int64_t Input_node::get_time_stamp() {
   return time_stamp;
 }
 
+int32_t Input_node::get_delta_time() {
+  // NGHK: CHANGE THIS IMMEDIATELY make it dependent on the fan out and the number of tracks
+  assert(ch_buffer_size*10000%(2*frameMk4)==0); 
+  return ch_buffer_size*10000/(2*frameMk4); 
+}
+
+
+
 void Input_node::start() {
   while (status != END_NODE) {
     switch (status) {
@@ -114,16 +122,21 @@ void Input_node::start() {
             writer = data_writers_ctrl.get_data_writer(*it);
           assert(writer != boost::shared_ptr<Data_writer>());
           size_t bytes_to_write = writer->get_size_dataslice();
-          if (bytes_to_write > ch_buffer_size) {
-            size_t result = ch_buffer_size;
-            do {
-              result -= writer->put_bytes(result, ch_buffer);
-            } while (result != 0);
+          if (bytes_to_write >= ch_buffer_size) {
+            size_t result = 0;
+            while (result != ch_buffer_size) {
+              result += writer->put_bytes(ch_buffer_size-result, 
+                                          ch_buffer+result);
+            };
           } else {
-            size_t result = bytes_to_write;
-            do {
-              result -= writer->put_bytes(result, ch_buffer);
-            } while (result != 0);
+            // Delete stream
+            if (bytes_to_write != 0) {
+              size_t result = 0;
+              while (result != bytes_to_write) {
+                result += writer->put_bytes(bytes_to_write-result, 
+                                            ch_buffer+result);
+              };
+            }
 
             assert(writer->end_of_dataslice());
             std::list<int>::iterator tmp = it;
@@ -133,11 +146,21 @@ void Input_node::start() {
           }
         }
 
-        // refill the buffer and set the current time stamp:
-        fill_channel_buffer();
+        // Add new streams
+        if (active_list.empty()) {
+          // Duplicate update_active_list() is needed,
+          // because of fill_channel_buffer()
+          update_active_list();
+          if (active_list.empty()) status = STOPPED;
+        } else {
+          // Duplicate update_active_list() is needed,
+          // because of fill_channel_buffer()
+          update_active_list();
+          // refill the buffer and set the current time stamp:
+          fill_channel_buffer();
+        }
 
-        update_active_list();
-        if (active_list.empty()) status = STOPPED;
+
         break;
       }
       case END_NODE: { // For completeness sake, is caught by the while loop
@@ -186,33 +209,64 @@ set_priority(int stream, int slicenr, uint64_t start, uint64_t stop) {
 
 void Input_node::update_active_list() {
   // Check start_queue:
+  bool do_fill_buffer = false;
+
   while ((!start_queue.empty()) &&
-         (start_queue.begin()->first <= get_time_stamp())) {
-    assert(start_queue.begin()->first == get_time_stamp());
-    assert(data_writers_ctrl.get_data_writer(start_queue.begin()->second)->get_size_dataslice()!=0);
-    add_to_active_list(start_queue.begin()->second);
+         (start_queue.begin()->first < (get_time_stamp()+get_delta_time()))) {
+
+    if (active_list.empty()) {
+      do_fill_buffer = true;
+    }
+
+    add_to_active_list(start_queue.begin()->first, 
+                       start_queue.begin()->second);
+
     start_queue.erase(start_queue.begin());
+  }
+  
+  if (do_fill_buffer) {
+    fill_channel_buffer();
   }
 }  
 
-void Input_node::add_to_active_list(int stream) {
+void Input_node::add_to_active_list(int64_t start_time, int stream) {
+  assert(start_time >= get_time_stamp());
+  assert(start_time < get_time_stamp() + get_delta_time());
+
+
   // Debugging code:
   for (std::list<int>::iterator it = active_list.begin();
        it != active_list.end(); it++) {
     assert(*it != stream);
   }
   
+  // make sure the start falls on an integer byte
+  assert((ch_buffer_size*(start_time-get_time_stamp())) % get_delta_time()
+         == 0);
+
+  int start_byte = 
+    (ch_buffer_size*(start_time-get_time_stamp())) / get_delta_time();
+  assert(start_byte >= 0);
+  assert(start_byte < ch_buffer_size);
+
+  boost::shared_ptr<Data_writer> 
+    writer = data_writers_ctrl.get_data_writer(stream);
+
+  int bytes_to_write = ch_buffer_size-start_byte;
+  assert(bytes_to_write > 0);
+  assert(bytes_to_write < writer->get_size_dataslice());
+
+  int result = 0;
+  do {
+    result += writer->put_bytes(bytes_to_write-result, 
+                                &ch_buffer[start_byte+result]);
+  } while (result != bytes_to_write);
+
+  // add the stream to the list of active streams
   active_list.push_back(stream);
-  
-  assert(data_writers_ctrl.buffer(stream) == NULL);
 }
 
 void Input_node::remove_from_active_list(int stream) {
-  if (get_rank() == 4) {
-    get_log_writer()(0)
-      << "Finished transfer of data to node " 
-      << stream << std::endl;
-  }
   bool found = false;
   for (std::list<int>::iterator it = active_list.begin();
        it != active_list.end(); it++) {
@@ -242,10 +296,22 @@ void Input_node::fill_channel_buffer() {
   // No input buffer:
   assert(data_reader_ctrl.buffer() == NULL);
 
-  // fill the buffer and set the current time stamp:
+  // fill the buffer and set the current time stamp
+#if 0 // Check delta time
+  int64_t new_time = channel_extractor->get_current_time();
+  if (new_time-time_stamp != get_delta_time()) {
+    DEBUG_MSG("Delta time not correct: " 
+              << new_time-time_stamp << " != " << get_delta_time())
+  }
+  time_stamp = new_time;
+#else 
   time_stamp = channel_extractor->get_current_time();
+#endif
+
+
   size_t size = channel_extractor->get_bytes(ch_buffer_size, ch_buffer);
   if (size != ch_buffer_size) {
+    assert(false);
     status = END_NODE;
     // do write the remaining bytes
   }
@@ -259,8 +325,10 @@ void Input_node::set_stop_time(int64_t stop_time_) {
 }
 
 void Input_node::goto_time(int64_t new_time) {
+  // NGHK: CHECK FOR DURATION OF THE CHANNEL BUFFER
   assert(get_time_stamp() <= new_time);
   channel_extractor->goto_time(new_time);
-  time_stamp = channel_extractor->get_current_time();
+  assert(channel_extractor->get_current_time() == new_time);
+  fill_channel_buffer();
   assert(get_time_stamp() == new_time);
 }

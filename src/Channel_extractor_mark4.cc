@@ -14,7 +14,6 @@
 #include <assert.h>
 #include <utils.h>
 
-
 // Templated by the type of the element from which the samples are extracted
 // Either int32_t (n_head_stacks == 1) or int64_t (n_head_stacks == 2)
 template <class T>
@@ -469,7 +468,11 @@ template <class T>
 size_t
 Channel_extractor_mark4_implementation<T>::
 do_get_bytes(size_t nOutputBytes, char *output_buffer) {
+  assert(nOutputBytes % (8/n_bits_per_sample) == 0);
+
   uint64_t bytes_processed = 0;
+
+  memset(output_buffer, 0, nOutputBytes);
   
   while (bytes_processed < nOutputBytes) {
     // Fill the output buffer

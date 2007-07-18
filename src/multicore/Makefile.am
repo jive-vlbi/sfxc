@@ -4,7 +4,7 @@ AM_CPPFLAGS = -I../../include
 AM_CXXFLAGS = 
 
 bin_PROGRAMS = \
-  manager_node manager_node_reading_from_file \
+  manager_node \
   input_node correlator_node output_node log_node
 
 OBJ= \
@@ -26,9 +26,6 @@ OBJ= \
 
 manager_node_SOURCES = $(OBJ) manager.cc \
   ../Manager_node.cc ../Manager_node_controller.cc
-
-manager_node_reading_from_file_SOURCES = $(OBJ) manager.cc \
-  ../Manager_node_reading_from_file.cc ../Manager_node_controller.cc
 
 log_node_SOURCES = $(OBJ) log.cc \
   ../Log_node.cc ../Log_node_controller.cc \

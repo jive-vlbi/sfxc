@@ -24,5 +24,5 @@ int str2int(char *val, int& sval);
 
 long str_to_long (std::string inString, int pos, int length);
 
-void set_seed(uint32_t seed_);
+void set_seed(unsigned long seed_);
 int irbit2();

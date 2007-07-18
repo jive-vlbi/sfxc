@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 //c++ includes
 #include <iostream>
@@ -147,10 +148,12 @@ long str_to_long (std::string inString, int pos, int length)
 //  See Numerical Recipes
 //  primitive polynomial mod 2 of order n produces 2^n - 1 random bits
 //*****************************************************************************
-uint32_t iseed;
-void set_seed(uint32_t seed_) {
+unsigned long iseed = 42;
+void set_seed(unsigned long seed_) {
+  assert(seed_ != 0);
   iseed = seed_;
 }
+
 int irbit2()
 {
   #define IB1 1

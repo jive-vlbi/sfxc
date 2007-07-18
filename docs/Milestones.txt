@@ -1,0 +1,3 @@
+- Mar 2007: First ftp-fringe test done with the software correlator
+            Single-core, single-channel version used
+- Jul 2007: Multicore time slice version for a single channel
