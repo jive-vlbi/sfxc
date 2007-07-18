@@ -13,8 +13,17 @@
 #include <Channel_extractor_mark4.h>
 #include <Bits_to_float_converter.h>
 
+#ifdef SFXC_PRINT_DEBUG
+extern int RANK_OF_NODE;
+#endif
+
 int main(int argc, char *argv[])
 {
+#ifdef SFXC_PRINT_DEBUG
+  // for DEBUG_MSG
+  RANK_OF_NODE = 0;
+#endif
+
   //initialise log writer for run time messages
   Log_writer_cout log_writer(0,false);
   set_log_writer(log_writer);
@@ -191,8 +200,7 @@ int main(int argc, char *argv[])
     int nIS=GenPrms.get_usDur()/GenPrms.get_usTime2Avg(), IS=0;
     
     //while still integration slices and data are available
-    while (startIS < GenPrms.get_usStart() + GenPrms.get_usDur()
-          )
+    while (startIS < GenPrms.get_usStart() + GenPrms.get_usDur())
     {
       log_writer(1) << "\nIS/nIS=" << ++IS << "/" << nIS 
                     << " startIS=" << startIS << " usec"<< endl;

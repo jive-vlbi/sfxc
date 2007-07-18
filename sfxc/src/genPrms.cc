@@ -9,6 +9,7 @@
  */
 
 #include <types.h>
+#include <utils.h>
 
 //standard c includes
 #include <stdio.h>
@@ -46,46 +47,46 @@ using namespace std;
 char* GenP::get_experiment() const { return experiment; }
 char* GenP::get_job() const { return job; }
 
-int   GenP::get_rndhdr()     const { return rndhdr; }
+int   GenP::get_rndhdr()     const { assert(rndhdr >= 0); return rndhdr; }
 
-int   GenP::get_yst()        const { return yst; }
-int   GenP::get_dst()        const { return dst; }
-int   GenP::get_hst()        const { return hst; }
-int   GenP::get_mst()        const { return mst; }
-int   GenP::get_sst()        const { return sst; }
+int   GenP::get_yst()        const { assert(yst >= 0); return yst; }
+int   GenP::get_dst()        const { assert(dst >= 0); return dst; }
+int   GenP::get_hst()        const { assert(hst >= 0); return hst; }
+int   GenP::get_mst()        const { assert(mst >= 0); return mst; }
+int   GenP::get_sst()        const { assert(sst >= 0); return sst; }
 
-int   GenP::get_duration()   const { return duration; }
-int64_t GenP::get_usDur()      const { return duration*1000000; }
+int   GenP::get_duration()   const { assert(duration >= 0); return duration; }
+int64_t GenP::get_usDur()      const { assert(duration >= 0); return duration*1000000; }
 
-int   GenP::get_nstations()  const { return nstations; }
+int   GenP::get_nstations()  const { assert(nstations >= 0); return nstations; }
 char* GenP::get_outdir()     const { return outdir;}
 char* GenP::get_logfile()    const { return logfile;}
 const char* GenP::get_corfile()    const { return corfile.c_str();}
 
-double GenP::get_skyfreq()    const { return skyfreq;}
-double GenP::get_bwin()       const { return bwin;}
-int    GenP::get_lsegm()      const { return lsegm;}
-double GenP::get_foffset()    const { return foffset;}
-int    GenP::get_cde()        const { return cde;}
-int    GenP::get_mde()        const { return mde;}
-int    GenP::get_rde()        const { return rde;}
+double GenP::get_skyfreq()    const { assert(skyfreq >= 0); return skyfreq;}
+double GenP::get_bwin()       const { assert(bwin >= 0); return bwin;}
+int    GenP::get_lsegm()      const { assert(lsegm >= 0); return lsegm;}
+double GenP::get_foffset()    const { assert(foffset >= 0); return foffset;}
+int    GenP::get_cde()        const { assert(cde >= 0); return cde;}
+int    GenP::get_mde()        const { assert(mde >= 0); return mde;}
+int    GenP::get_rde()        const { assert(rde >= 0); return rde;}
 
-int    GenP::get_filter()     const { return filter;}
-double GenP::get_bwfl()       const { return bwfl;}
-double GenP::get_startf()     const { return startf;}
-double GenP::get_deltaf()     const { return deltaf;}
-int    GenP::get_ovrfl()      const { return ovrfl;}
+int    GenP::get_filter()     const { assert(filter >= 0); return filter;}
+double GenP::get_bwfl()       const { assert(bwfl >= 0); return bwfl;}
+double GenP::get_startf()     const { assert(startf >= 0); return startf;}
+double GenP::get_deltaf()     const { assert(deltaf >= 0); return deltaf;}
+int    GenP::get_ovrfl()      const { assert(ovrfl >= 0); return ovrfl;}
 
-int   GenP::get_n2fft()      const { return n2fft;}
-float GenP::get_ovrlp()      const { return ovrlp;}
-float GenP::get_time2avg()   const { return time2avg;}
-int64_t GenP::get_usTime2Avg() const { return (int64_t)(time2avg*1000000);}
-int   GenP::get_pad()        const { return pad;}
+int   GenP::get_n2fft()      const { assert(n2fft >= 0); return n2fft;}
+float GenP::get_ovrlp()      const { assert(ovrlp >= 0); return ovrlp;}
+float GenP::get_time2avg()   const { assert(time2avg >= 0); return time2avg;}
+int64_t GenP::get_usTime2Avg() const { assert(time2avg >= 0); return (int64_t)(time2avg*1000000);}
+int   GenP::get_pad()        const { assert(pad >= 0); return pad;}
 
-int   GenP::get_sideband()   const { return sideband;}
+int   GenP::get_sideband()   const { assert(sideband >= 0); return sideband;}
 
 
-int64_t GenP::get_usStart()  const {  return usStart;}
+int64_t GenP::get_usStart()  const {  assert(usStart >= 0); return usStart;}
 
 
 void GenP::set_usStart(int64_t start) { usStart = start; }
@@ -94,44 +95,47 @@ void GenP::set_duration(int dur) { duration = dur; }
 
 //default constructor, set default values for general control parameters
 GenP::GenP()
+  : rndhdr(-2),
+    experiment(NULL),
+    job(NULL),
+    yst(-5),
+    dst(-5),
+    hst(-5),
+    mst(-5),
+    sst(-5),
+    milisst(-5),
+    duration(-5),
+    usDur(-5),
+    nstations(-5),
+    outdir(NULL),
+    logfile(NULL),
+    corfile(""),
+    skyfreq(-5),
+    bwin(-5),
+    lsegm(-5),
+    foffset(0), // Kind of constant, is not set anywhere.
+    cde(-5),
+    mde(-5),
+    rde(-5),
+    filter(-5),
+    bwfl(-5),
+    startf(-5),
+    deltaf(-5),
+    ovrfl(-5),
+    n2fft(-5),
+    ovrlp(-5),
+    time2avg(-5),
+    usTime2Avg(-5),
+    pad(-5),
+    usStart(-5),
+    sideband(-5)
 {
   experiment = new char[256];
   strcpy(experiment,"DefExp");
   job = new char[256];
   strcpy(job,"No Job");
-  yst=dst=hst=mst=sst=0;
-  duration=0;
-  nstations = 0;
   outdir  = new char[256];
-  outdir = getcwd(NULL, 256);//current working directory
   logfile  = new char[256];
-  strcpy(logfile,outdir);
-  strcat(logfile,"/DefExp.log");
-  corfile = outdir;
-  corfile.append("/DefExp.cor");
-
-  rndhdr  = 1;
-
-  bwin    = 16000000;
-  lsegm   = 2048;
-  foffset = 0;
-  cde     = 1;
-  mde     = 1;
-  rde     = 1;
-
-  filter = 0;
-  bwfl   = bwin;
-  startf = 0;
-  deltaf = 1;
-  ovrfl  = 1;
-
-  n2fft     = 512;
-  ovrlp     = 0.0;
-  time2avg  = 0.5;
-  pad       = 2;
-  
-  sideband = 0;
-  
 }
 
 
@@ -237,7 +241,6 @@ int GenP::parse_ctrlFile(const char *ctrlFile, Log_writer&log_writer)
   corfile.append("/");
   corfile.append(corname);
 
-  // NGHK: From check_params until the end:
   if (!filter) {
     bwfl = bwin;
     startf = 0;
@@ -302,16 +305,6 @@ int GenP::check_params(Log_writer &log_writer) const
     retval = -1;
   }
   
-//   fl = fopen(corfile.c_str(),"w");
-//   if (!fl) {
-//     log_writer(0) << "ERROR: Cannot create file in directory: " << outdir << endl;
-//     retval =-1;
-//   } else {
-//     fclose(fl);
-//     //delete empty file
-//     remove(corfile.c_str());
-//   }
-
   if (lsegm > 63) {
     FFTlength = lsegm;
     while (1){
@@ -364,7 +357,7 @@ int GenP::check_params(Log_writer &log_writer) const
   }
 
   //check if the sideband is set
-  if( sideband == 0 ) {
+  if( (sideband != -1) && (sideband != 1) ) {
     cerr << "Sideband not set\n";
     retval=-1;
   }

@@ -146,6 +146,10 @@ void check_control_parameters() {
     if (GenPrms.get_rndhdr() != GenPrms2.get_rndhdr()) {
       std::cout << "MPI GenPrms: rndhdr differs" << std::endl;
     }
+    if (GenPrms.get_sideband() != GenPrms2.get_sideband()) {
+      std::cout << "MPI GenPrms: sideband differs" << std::endl;
+      assert(false);
+    }
     
     for (int i=0; i<GenPrms.get_nstations(); i++) {
       if (strcmp(StaPrms[i].get_stname(), StaPrms2[i].get_stname())) {

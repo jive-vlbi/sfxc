@@ -10,7 +10,7 @@
 
 import sys, os,time, filecmp, getopt;
 
-numProcesses = 5
+numProcesses = 10
 
 def usage():
   print sys.argv[0]

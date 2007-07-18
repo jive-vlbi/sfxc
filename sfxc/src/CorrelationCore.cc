@@ -12,17 +12,20 @@
 #include "CorrelationCore.h"
 #include <utils.h>
 
-CorrelationCore::CorrelationCore()
+CorrelationCore::CorrelationCore(Log_writer &lw) 
+  : log_writer(lw), parameters_set(false)
 {
 }
 
-CorrelationCore::CorrelationCore(GenP& GenPrms, int ref_sn1, int ref_sn2)
+CorrelationCore::CorrelationCore(Log_writer &lw, GenP& GenPrms, int ref_sn1, int ref_sn2)
+  : log_writer(lw), parameters_set(false)
 {
   set_parameters(GenPrms, ref_sn1, ref_sn2);
 }
 
 void CorrelationCore::set_parameters(GenP& GenPrms, int ref_sn1, int ref_sn2)
 {
+  parameters_set = true;
   nstations = GenPrms.get_nstations();
   if (0 <= ref_sn1 && ref_sn1 < nstations) {
     //use a reference station
@@ -109,18 +112,16 @@ bool CorrelationCore::init_time_slice()
 
 
 void CorrelationCore::correlate_baseline(int station1, int station2, int bsln) {
-
   for (int j = 0 ; j < n2fftcorr*padding/2 + 1 ; j++){
     //accxps[bsln][j] += xps[station1][j]*conj(xps[station2][j])
     
-    accxps[bsln][j][0] = accxps[bsln][j][0] +
+    accxps[bsln][j][0] +=
     (xps[station1][j][0] * xps[station2][j][0]) +
     (xps[station1][j][1] * xps[station2][j][1]);
     
-    accxps[bsln][j][1] = accxps[bsln][j][1] +
+    accxps[bsln][j][1] +=
     (xps[station1][j][1] * xps[station2][j][0]) -
     (xps[station1][j][0] * xps[station2][j][1]);
-    
   }
 }
 
@@ -128,6 +129,7 @@ void CorrelationCore::correlate_baseline(int station1, int station2, int bsln) {
 
 bool CorrelationCore::correlate_segment(double** in_segm)
 {
+  assert(parameters_set);
   int bsln = 0; //initialise basline number    
   
   // FWD FFT each station + calculate the auto products
@@ -138,10 +140,11 @@ bool CorrelationCore::correlate_segment(double** in_segm)
     fftw_execute(p_r2c[sn]);
     for (int j = 0 ; j < n2fftcorr*padding/2 + 1 ; j++){
       //accxps[bsln][j] += xps[sn][j]*conj(xps[sn][j]);
-      accxps[bsln][j][0] = accxps[bsln][j][0] +
-      (xps[sn][j][0] * xps[sn][j][0]) + (xps[sn][j][1] * xps[sn][j][1]);
+      accxps[bsln][j][0] += 
+        (xps[sn][j][0] * xps[sn][j][0]) + (xps[sn][j][1] * xps[sn][j][1]);
       //accxps[bsln][j][1] imaginary part stays zero
     }
+
     bsln++;
   }
 

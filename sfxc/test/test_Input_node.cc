@@ -76,6 +76,7 @@ void initialise(const char *control_file) {
 void test_writing_data_to_file(int rank, int numtasks,
                                const char *control_file,
                                const char *output_file) {
+  set_seed(42);
   MPI_Status status;
   
   if (rank == RANK_MANAGER_NODE) {
@@ -207,6 +208,7 @@ void test_writing_data_to_file(int rank, int numtasks,
 void test_writing_data_to_output_node_using_TCP(int rank, int numtasks,
                                                 const char *control_file,
                                                 const char *output_file) {
+  set_seed(42);
   MPI_Status status;
   
   if (rank == RANK_MANAGER_NODE) {

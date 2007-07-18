@@ -30,6 +30,8 @@ StaP StaPrms[NstationsMax];
 #include <iostream> 
 #include <assert.h>
 
+#include <genFunctions.h>
+
 
 int main(int argc, char *argv[]) {
   // MPI
@@ -46,7 +48,7 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-  std::cout << "#" << rank << " pid = " << getpid() << std::endl;
+  //std::cout << "#" << rank << " pid = " << getpid() << std::endl;
 
   ///////////////////////////
   //  The real work

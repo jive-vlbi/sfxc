@@ -88,6 +88,9 @@ public:
   /// Get the current time stamp  
   int64_t get_time_stamp();
   
+  /// Return the time between two calls of fill_channel_buffer()
+  int32_t get_delta_time();
+
   void set_stop_time(int64_t stop_time);
 
   void goto_time(int64_t new_time);
@@ -95,7 +98,7 @@ public:
   /// Check whether we need to start or stop output streams:  
   void update_active_list();
   /// Add an output stream to the list of active output streams
-  void add_to_active_list(int stream);
+  void add_to_active_list(int64_t time, int stream);
   /// Remove an output stream from the list of active output streams
   void remove_from_active_list(int stream);
 
@@ -140,7 +143,7 @@ private:
 
   /// size of the buffer, this should be at least big enough to contain the
   /// overlap in the time slices
-  static const size_t ch_buffer_size = frameMk4;
+  static const size_t ch_buffer_size = 20*frameMk4;
   /// The buffer for one channel. This should become an array of buffers in the
   /// multichannel version.
   char ch_buffer[ch_buffer_size];

@@ -12,14 +12,14 @@
 
 //Allocate arrays, initialise parameters
 DelayCorrection::DelayCorrection(Log_writer &lg_wrtr)
-  : log_writer(lg_wrtr)
+  : log_writer(lg_wrtr), parameters_set(false)
 {
 }
 //Allocate arrays, initialise parameters
 DelayCorrection::DelayCorrection(GenP &GenPrms_, 
                                  StaP *StaPrms_, 
                                  Log_writer &lg_wrtr)
-  : log_writer(lg_wrtr)
+  : log_writer(lg_wrtr), parameters_set(false)
 {
   set_parameters(GenPrms_, StaPrms_);
 }
@@ -27,6 +27,8 @@ DelayCorrection::DelayCorrection(GenP &GenPrms_,
 //Allocate arrays, initialise parameters
 void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
 {
+  parameters_set = true;
+
   StaPrms     = StaPrms_;
 
   nstations   = GenPrms.get_nstations();
@@ -172,6 +174,7 @@ double **DelayCorrection::get_segment()
 }
 
 bool DelayCorrection::delay_correct() {
+  assert(parameters_set);
   int64_t  Time; //time in micro seconds
   double Cdel_start, Cdel_end;
   int jshift; //address shift due to signal delay wrt Earth center
@@ -185,10 +188,10 @@ bool DelayCorrection::delay_correct() {
       // micro sec 
       Time = timePtr + (int64_t)(jsegm*(time_of_one_correlation_segment)); 
       Cdel_end = delTbl[stations].calcDelay(Time, DelayTable::Cdel);
-      
+
       // 1)calculate the address shift due to time delay for the current segment
       jshift = (int)(Cdel_start/tbs+0.5);
-      
+
       int32_t offset = 2*BufSize + jshift + jsegm*n2fftDC;
       assert(offset >= 0);
       assert(offset <= 3*BufSize-n2fftDC);
@@ -208,7 +211,9 @@ bool DelayCorrection::delay_correct() {
     
     //fill dcBufsPrev with part 2 and 3 from dcBufs.
     //in other words: remember for filling the next Bufs
-    memcpy(&dcBufPrev[stations][0], &dcBufs[stations][BufSize], 2*BufSize*sizeof(double));
+    memcpy(&dcBufPrev[stations][0], 
+           &dcBufs[stations][BufSize], 
+           2*BufSize*sizeof(double));
 
   }
 
@@ -228,7 +233,7 @@ bool DelayCorrection::fill_data_before_delay_correction() {
 	   		                                 &dcBufs[station][2*BufSize]+bytes_read);
       bytes_read += status;
     }
-                                                  
+
     if (bytes_read != bytes_to_read) {
       std::cout << "status != bytes_to_read, with station = " << station 
                 << std::endl;
@@ -252,6 +257,7 @@ bool DelayCorrection::fractional_bit_shift(double const delay,
       
   // 4b)multiply element 0 and n2fftDC/2 by 0.5
   //    to avoid jumps at segment borders
+
   sls_freq[0] *= 0.5;
   sls_freq[n2fftDC/2] *= 0.5;//Nyquist
       
@@ -260,7 +266,6 @@ bool DelayCorrection::fractional_bit_shift(double const delay,
     sls_freq[jl] = 0.0;
   }
 
-      
   // 5a)calculate the fract bit shift (=phase corrections in freq domain)
   double dfs  = delay/tbs - integer_shift;
 
@@ -273,7 +278,7 @@ bool DelayCorrection::fractional_bit_shift(double const delay,
     std::complex<double> tmp(cos(phi),sin(phi));
     sls_freq[jf] *= tmp;
   }
-      
+
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
   fftw_execute(planF2T);
@@ -289,7 +294,7 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
   int64_t time = timePtr + (int64_t)(jsegm*n2fftDC*tbs*1000000);
   int64_t delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
   assert(delta_time > 0);
-  double phi, cosPhi, sinPhi, deltaCosPhi, deltaSinPhi;
+  double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
   double phi_end = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
     delTbl[station].calcDelay(time, DelayTable::Fdel);
   double cosPhi_end = cos(phi_end);
@@ -312,6 +317,7 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
     }
     
     // 6b)apply normalization and multiply by 2.0
+    // NHGK: Why only the real part
     sls[sample].real() *= 2.0;
         
     // 7)subtract dopplers and put real part in Bufs for the current segment
@@ -336,7 +342,6 @@ bool DelayCorrection::fill_Bufs()
     assert(false);
     return false;
   }
-//   if (!fringe_stopping()) return false;
 
   return true;
 }

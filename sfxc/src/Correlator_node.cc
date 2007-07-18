@@ -81,21 +81,10 @@ void Correlator_node::start()
                 
                 startIS=GenPrms.get_usStart();
   
-                //initialise readers to proper position
-                Init_reader_struct init_readers[GenPrms.get_nstations()];
-                
-                // NGHK: remove this is done by the buffered input readers
                 for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
-                  init_readers[sn].corr_node = this;
-                  init_readers[sn].startIS = startIS;
-                  init_readers[sn].sn = sn;
-  
-                  pthread_create(&init_readers[sn].thread, NULL, 
-                                 start_init_reader, static_cast<void*>(&init_readers[sn]));
+                  get_integration_slice().init_reader(sn,startIS);
                 }
-                for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
-                  pthread_join(init_readers[sn].thread, NULL);
-                }
+
                 correlate_state = CORRELATE_INTEGRATION_SLICE;
                 break;
               }
@@ -217,14 +206,6 @@ int Correlator_node::get_correlate_node_number() {
 void Correlator_node::set_slice_number(int sliceNr_) {
   sliceNr = sliceNr_;
 }
-
-void *Correlator_node::start_init_reader(void * self_) {
-  Init_reader_struct *ir_struct = static_cast<Init_reader_struct *>(self_);
-  Correlator_node *node = ir_struct->corr_node;
-  node->get_integration_slice().init_reader(ir_struct->sn,ir_struct->startIS);
-  return NULL;
-}
-
 
 /** Number of integration steps done in the current time slice **/
 int Correlator_node::number_of_integration_steps_in_time_slice() {

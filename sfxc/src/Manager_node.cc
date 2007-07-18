@@ -66,7 +66,7 @@ Manager_node::Manager_node(int numtasks, int rank, char * control_file)
   START_CORRELATE_NODES = START_INPUT_NODES + N_INPUT_NODES;
   N_CORRELATE_NODES = numtasks - START_CORRELATE_NODES;
 
-  assert(N_CORRELATE_NODES > 1);
+  assert(N_CORRELATE_NODES >= 1);
 
   { // Initialise the output node
     assert (RANK_OUTPUT_NODE == 2);
@@ -238,6 +238,12 @@ void Manager_node::start() {
     
     // Duration of one time slice in seconds:
     int slice_duration = 1;
+    if (N_CORRELATE_NODES == 1) {
+      get_log_writer()(0) << "Only one correlate node, only one time slice"
+                          << std::endl;
+      slice_duration = GenPrms.get_duration();
+    }
+
     for (int i=0; (i<numtasks) && (GenPrms.get_duration()>0); i++) {
       if ((state_correlate_nodes[i] == READY) && (last_correlator_node != i)) {
         searching = false;

@@ -180,7 +180,7 @@ class GenP
 
     int64_t  usStart;    //start time in micro seconds without year and day
 
-    int sideband;
+    int32_t sideband;
 
 };
 
