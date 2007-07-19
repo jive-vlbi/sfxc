@@ -1,2 +1,2 @@
-SUBDIRS = src include doc test utils
+SUBDIRS = lib src include doc test utils
 

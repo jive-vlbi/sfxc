@@ -1,12 +1,14 @@
+SUBDIRS = vex_parser
+
+# disable all libraries for delmo
+LIBS =
+
 EXTRA_DIST = 
 
 AM_CPPFLAGS = -L/usr/lib
 AM_CXXFLAGS = -I../include
 
-bin_PROGRAMS = vex_parser/libvex.a \
-               vex_parser/sfxc_vex2ccf \
-               vex_parser/sfxc_vex2dcf \
-               delmo/src/delmo \
+bin_PROGRAMS = delmo1 \
                create_delay_function \
                produce_fringe \
                analyse_fringes \
@@ -15,23 +17,11 @@ bin_PROGRAMS = vex_parser/libvex.a \
                produce_html_plotpage \
                make_sfxc_experiment_makefile
 
-vex_parser/libvex.a$(EXEEXT):
-	cd vex_parser; make
-
-vex_parser/sfxc_vex2ccf$(EXEEXT): vex_parser/libvex.a
-	cd vex_parser; make -f Makefile.v2c sfxc_vex2ccf
-
-vex_parser/sfxc_vex2dcf$(EXEEXT): vex_parser/libvex.a
-	cd vex_parser; make -f Makefile.v2c sfxc_vex2dcf
-
-delmo/src/delmo$(EXEEXT):
-	cd delmo/lib; make
-	cd delmo/src; make delmo
-
 create_delay_function_SOURCES = create_delay_function.cc
 create_delay_function_LDFLAGS = -lgsl -lgslcblas
 
 produce_fringe_SOURCES = produce_fringe.cc
+produce_fringe_LDFLAGS = -lfftw3 -lm
 
 print_headers_SOURCES = print_headers.cc \
   ../src/staPrms.cc ../src/genPrms.cc \
@@ -42,6 +32,7 @@ print_headers_SOURCES = print_headers.cc \
   ../src/utils.cc
 
 analyse_fringes_SOURCES = analyse_fringes.cc
+analyse_fringes_LDFLAGS = -lfftw3 -lm
 
 analyse_mark4_file_SOURCES = \
   analyse_mark4_file.cc \
@@ -56,8 +47,16 @@ produce_html_plotpage_SOURCES = produce_html_plotpage.cc \
 	../src/runPrms.cc ../src/genFunctions.cc \
 	../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/utils.cc \
 	gnuplot_i.cc
+produce_html_plotpage_LDFLAGS = -lfftw3 -lm
 
 make_sfxc_experiment_makefile_SOURCES = make_sfxc_experiment_makefile.cc \
-	vex_parser/vexplus.cc
-make_sfxc_experiment_makefile_LDFLAGS = -Lvex_parser -lvex -lfl -ljson
+	@top_srcdir@/lib/vex_parser/vexplus.cc
+make_sfxc_experiment_makefile_CXXFLAGS = -I@top_srcdir@/lib/vex_parser
+make_sfxc_experiment_makefile_LDFLAGS = \
+  @top_srcdir@/lib/vex_parser/libvex.a -lfl -ljson
 
+
+#disable fftw for delmo
+delmo1_SOURCES=delmo.c
+delmo1_CFLAGS =-I@top_srcdir@/lib/calc10/include -m32 -std=c99
+delmo1_LDFLAGS=-lg2c  -m32 -std=c99 @top_srcdir@/lib/calc10/lib/libfcalc.a
