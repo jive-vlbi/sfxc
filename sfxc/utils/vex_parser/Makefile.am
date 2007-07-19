@@ -1,6 +1,5 @@
 AM_CXXFLAGS = -I@top_srcdir@/lib/vex_parser
-LDADD = @top_srcdir@/lib/vex_parser/libvex.a
-LIBS = -lfl -ljson
+LDADD = @top_srcdir@/lib/vex_parser/libvex.a @LEXLIB@
 
 bin_PROGRAMS = sfxc_vex2ccf sfxc_vex2dcf
 

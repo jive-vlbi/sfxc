@@ -7,11 +7,8 @@ AM_INIT_AUTOMAKE(sfxc, 0.0.2)
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_CXX
-AC_PROG_CPP
 AC_PROG_F77
 AC_PROG_INSTALL
-AC_PROG_LN_S
-AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 AC_PROG_YACC
 
@@ -20,11 +17,23 @@ AM_PROG_LEX
 AC_LANG_CPLUSPLUS
 
 dnl Checks for libraries.
-
-dnl --- fftw3 ---
 AC_CHECK_LIB(fftw3, fftw_execute)
 AC_CHECK_LIB(m, sin)
-   
+
+dnl --- json ---
+LIBS="$LIBS -ljson"
+AC_CHECK_HEADERS(json/json.h,,AC_MSG_ERROR([json/json.h header not found.]))
+
+AC_MSG_CHECKING(for the json library)
+AC_TRY_LINK([
+#include <json/json.h>
+],[
+Json::Value root;
+],AC_MSG_RESULT(yes),AC_MSG_ERROR([
+Unable to link to jsoncpp library. If you
+just installed it: try running ldconfig
+as root]))
+
 dnl export these variable (so Makefile substitutions
 dnl can be made. 
 AC_SUBST(CXXFLAGS)
