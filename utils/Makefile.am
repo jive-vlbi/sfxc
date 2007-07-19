@@ -53,7 +53,8 @@ make_sfxc_experiment_makefile_SOURCES = make_sfxc_experiment_makefile.cc \
 	@top_srcdir@/lib/vex_parser/vexplus.cc
 make_sfxc_experiment_makefile_CXXFLAGS = -I@top_srcdir@/lib/vex_parser
 make_sfxc_experiment_makefile_LDFLAGS = \
-  @top_srcdir@/lib/vex_parser/libvex.a -lfl -ljson
+  @top_srcdir@/lib/vex_parser/libvex.a @LEXLIB@ -ljson
+
 
 delmo_SOURCES=delmo.c
 delmo_CFLAGS =-I@top_srcdir@/lib/calc10/include -m32 -std=c99
