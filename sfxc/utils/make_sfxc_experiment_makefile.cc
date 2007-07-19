@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <vex_parser/vexplus.h>
+#include <vexplus.h>
 #include <json/json.h>
 #include <basic.h>
 #include <assert.h>
