@@ -8,7 +8,7 @@ EXTRA_DIST =
 AM_CPPFLAGS = -L/usr/lib
 AM_CXXFLAGS = -I../include
 
-bin_PROGRAMS = delmo1 \
+bin_PROGRAMS = delmo \
                create_delay_function \
                produce_fringe \
                analyse_fringes \
@@ -55,8 +55,6 @@ make_sfxc_experiment_makefile_CXXFLAGS = -I@top_srcdir@/lib/vex_parser
 make_sfxc_experiment_makefile_LDFLAGS = \
   @top_srcdir@/lib/vex_parser/libvex.a -lfl -ljson
 
-
-#disable fftw for delmo
-delmo1_SOURCES=delmo.c
-delmo1_CFLAGS =-I@top_srcdir@/lib/calc10/include -m32 -std=c99
-delmo1_LDFLAGS=-lg2c  -m32 -std=c99 @top_srcdir@/lib/calc10/lib/libfcalc.a
+delmo_SOURCES=delmo.c
+delmo_CFLAGS =-I@top_srcdir@/lib/calc10/include -m32 -std=c99
+delmo_LDFLAGS=-lg2c  -m32 -std=c99 @top_srcdir@/lib/calc10/lib/libfcalc.a
