@@ -1,0 +1,74 @@
+{
+  "exper_name": "N06C2", 
+
+  "start": "2006y168d14h07m56s",
+  "stop":  "2006y168d14h08m00s",
+
+  "stations": [ "Cm", "Wb", "Jb", "On", "Sh"  ],
+  "reference_station": "Jb",
+
+  "cross_polarize" : true,
+
+  "number_channels": 1024,
+  "integr_time": 1.,
+  "message_level": 0,
+
+  "delay_directory":  "file:///data2/jops/kruithof/f07l2/delay",
+  "output_file": "file:///data2/jops/kruithof/f07l2/output/n06c2.cor",
+
+  "data_sources": {
+    "Cm": ["file:///data2/jops/kruithof/f07l2/mk4/f07l2_cm_no0001.m5a",
+           "file:///data2/jops/kruithof/f07l2/mk4/f07l2_cm_no0002.m5a"],
+    "Wb": ["file:///data2/jops/kruithof/f07l2/mk4/f07l2_wb_no0001.m5a",
+           "file:///data2/jops/kruithof/f07l2/mk4/f07l2_wb_no0002.m5a"]
+  },
+
+  "frequencies": [ {"frequency": 4974.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "R"},
+                   {"frequency": 4974.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "L"},
+                   {"frequency": 4982.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "R"},
+                   {"frequency": 4982.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "L"},
+                   {"frequency": 4990.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "R"},
+                   {"frequency": 4990.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "L"},
+                   {"frequency": 4998.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "R"},
+                   {"frequency": 4998.49e6, 
+                    "bandwidth": 8e6, 
+                    "sideband": "USB",
+                    "polarisation": "L"}
+                 ],
+
+  "site_position": {
+    "Ef": [4033947.3387, 486990.6873, 4900430.8871],
+    "Wb": [3828445.5310, 445223.7612 , 5064921.6506],
+    "Jb": [3822846.6493, -153802.1188, 5086285.9880],
+    "On": [3370965.9893, 711466.0908 , 5349664.1170],
+    "Mc": [4461369.8114, 919597.0138 , 4449559.2860],
+    "Nt": [4934562.9528, 1321201.4444, 3806484.6182],
+    "Tr": [3638558.3586, 1221969.8756, 5077036.8311],
+    "Ur": [228310.4233 , 4631922.7527, 4367064.0097],
+    "Sh": [-2831687.2469, 4675733.5693, 3275327.5663],
+    "Hh": [5085442.7522, 2668263.6856, -2768696.8881],
+    "Cm": [3920356.0363, 2542.1834, 5014284.5088],
+    "Ar": [2390486.9441, -5564731.4198, 1994720.4949]
+  }
+}

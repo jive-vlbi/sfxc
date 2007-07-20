@@ -5,6 +5,7 @@ AM_CXXFLAGS =
 
 
 check_PROGRAMS = \
+  test_Control_parameters \
   test_mpi \
   test_buffer \
   test_Transfer_control_parameters \
@@ -18,6 +19,7 @@ check_PROGRAMS = \
   test_TCP_connection
 
 TESTS           = \
+  test_Control_parameters \
   test_mpi.py \
   test_Transfer_control_parameters.py \
   test_Correlator_node.py \
@@ -114,3 +116,11 @@ test_Log_writer_mpi_SOURCES = \
 test_TCP_connection_SOURCES = \
   test_TCP_connection.cc \
   ../src/TCP_Connection.cc
+
+test_Control_parameters_SOURCES = \
+  test_Control_parameters.cc \
+  ../src/Log_writer_cout.cc ../src/Log_writer.cc \
+  ../src/Control_parameters.cc \
+  @top_srcdir@/lib/vex_parser/vexplus.cc
+test_Control_parameters_CXXFLAGS =  -I@top_srcdir@/lib/vex_parser/
+test_Control_parameters_LDADD = @top_srcdir@/lib/vex_parser/libvex.a @LEXLIB@
