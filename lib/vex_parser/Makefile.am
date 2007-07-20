@@ -9,4 +9,6 @@ libvex_a_SOURCES = vex.c vex.yy.c vex_util.c print_vex.c vex_get.c
 vex.c: vex.y
 	$(YACC) $(YFLAGS) $(AM_YFLAGS) vex.y
 	cp -f y.tab.c vex.c
-	
+
+vex.yy.c: vex.yy.l
+	$(LEX) -t vex.yy.l > vex.yy.c
