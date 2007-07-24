@@ -512,8 +512,13 @@ public:
                     const int& icount) const;
 
 
+    std::string ScanStart(const int& icount ) const;
+
     
 protected:
+
+    Llist* Scan( const int& icount ) const;
+
     
     std::string filename;
     struct vex *vexp;

@@ -15,5 +15,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   
+  log_writer << parameters << std::endl;
+  
   return 0;
 }

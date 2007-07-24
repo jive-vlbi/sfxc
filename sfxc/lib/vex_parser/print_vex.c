@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "vex.h"
 #include "y.tab.h"
@@ -94,7 +95,7 @@ void print_def_block(struct llist *items,void func())
       fprintf(fp, "\n  scan ");
       print_svalue(def->name);
       fprintf(fp, ";");
-
+        
       func(def->refs);
 
       fprintf(fp, "\n  endscan;");

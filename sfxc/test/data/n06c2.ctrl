@@ -17,10 +17,12 @@
   "output_file": "file:///data2/jops/kruithof/f07l2/output/n06c2.cor",
 
   "data_sources": {
-    "Cm": ["file:///data2/jops/kruithof/f07l2/mk4/f07l2_cm_no0001.m5a",
-           "file:///data2/jops/kruithof/f07l2/mk4/f07l2_cm_no0002.m5a"],
-    "Wb": ["file:///data2/jops/kruithof/f07l2/mk4/f07l2_wb_no0001.m5a",
-           "file:///data2/jops/kruithof/f07l2/mk4/f07l2_wb_no0002.m5a"]
+    "Cm": ["file:///data2/jops/kruithof/f07l2/mk4/f07l2_cm_no0001.m5a"],
+    "Wb": ["file:///data2/jops/kruithof/f07l2/mk4/f07l2_wb_no0001.m5a"],
+    "Jb": ["file:///data2/jops/kruithof/f07l2/mk4/f07l2_jb_no0001.m5a"],
+    "On": ["file:///data2/jops/kruithof/f07l2/mk4/f07l2_on_no0001.m5a"],
+    "Sh": ["file:///data2/jops/kruithof/f07l2/mk4/f07l2_sh_no0001.m5a",
+           "file:///data2/jops/kruithof/f07l2/mk4/f07l2_sh_no0001_2.m5a"]
   },
 
   "frequencies": [ {"frequency": 4974.49e6, 

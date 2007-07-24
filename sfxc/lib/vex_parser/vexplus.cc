@@ -10,6 +10,7 @@
 //-----------------------------------------------------------------------------
 
 #include "vexplus.h"
+#include <assert.h>
 #include <string.h>
 
 static char rcsid[]="@(#)$Id: vexplus.C,v 3.6 2006/01/16 11:21:29 jive_cc Exp $";
@@ -2895,7 +2896,7 @@ string VexPlus::ScanName(const string& stat, const int& icount ) const {
 //------------------------------------------------------------------------
 string VexPlus::ScanName(const int& icount ) const {
 
-  void* ptr;
+  void* ptr = NULL;
   char* scanname;
 
   get_scan(&scanname, vexp );
@@ -2943,6 +2944,55 @@ string VexPlus::ScanStart(const string& stat, const int& icount ) const {
   return string((char*)ptr);
 
 }
+
+//------------------------------------------------------------------------
+// Method:        ScanStart // NGHK
+// Description:   Return the starttime for icount+1st scan
+// Input:         icount the scan number -1 in the list 
+// Output:        .
+// Return value:  null-string, error
+//                string of time
+//               
+// Side effects: 
+//------------------------------------------------------------------------
+string VexPlus::ScanStart(const int& icount ) const {
+  Llist *scan = Scan(icount);
+  void *ptr;
+  
+  if( !(ptr = get_scan_start(scan)) ) 
+    return string("");    
+  
+  return string((char*)ptr);
+
+}
+
+
+//------------------------------------------------------------------------
+// Method:        ScanName // NGHK
+// Description:   Return the icount+1st scan
+// Input:         icount the scan number -1 in the list 
+// Output:        .
+// Return value:  a pointer to the scan or NULL on error
+//               
+// Side effects: 
+//------------------------------------------------------------------------
+Llist* VexPlus::Scan( const int& icount ) const {
+  void* ptr = NULL;
+  char* scanname;
+
+  get_scan(&scanname, vexp );
+  if( icount ) {
+    for( int i = 0; i < icount; i++ ) {
+      if( !(ptr = get_scan_next(&scanname)) ) {
+        std::cout << i << " " << string(scanname) << std::endl;
+        return NULL;
+      }
+    }
+  }
+
+  return (Llist*)ptr;
+}
+
 
 //------------------------------------------------------------------------
 // Method:        ScanMode

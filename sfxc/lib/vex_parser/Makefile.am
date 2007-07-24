@@ -1,5 +1,5 @@
 AM_YFLAGS = -d
-AM_CFLAGS=-fPIC
+#AM_CFLAGS=-fPIC
 
 noinst_LIBRARIES = libvex.a
 
