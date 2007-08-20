@@ -34,8 +34,9 @@
       save ipoint
 !
 !  Somewhat arbitrarily we start with 51.
+!  NGHK: changed iumax from 60 to 6000
 !
-      data ipoint/50/,if7/7/,iutot/3/,iumax/60/
+      data ipoint/50/,if7/7/,iutot/3/,iumax/6000/
 !
   100 ipoint = ipoint+1
       iutot = iutot + 1

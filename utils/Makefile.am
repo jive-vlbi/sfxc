@@ -3,12 +3,9 @@ SUBDIRS = vex_parser
 # disable all libraries for delmo
 LIBS =
 
-EXTRA_DIST = 
+AM_CXXFLAGS = -I@top_srcdir@/lib/vex_parser/ -I@top_srcdir@/include
 
-AM_CPPFLAGS = -L/usr/lib
-AM_CXXFLAGS = -I../include
-
-bin_PROGRAMS = delmo \
+bin_PROGRAMS = generate_delay_model \
                create_delay_function \
                produce_fringe \
                analyse_fringes \
@@ -56,6 +53,14 @@ make_sfxc_experiment_makefile_LDFLAGS = \
   @top_srcdir@/lib/vex_parser/libvex.a @LEXLIB@ -ljson
 
 
-delmo_SOURCES=delmo.c
-delmo_CFLAGS =-I@top_srcdir@/lib/calc10/include -m32 -std=c99
-delmo_LDFLAGS=-lg2c  -m32 -std=c99 @top_srcdir@/lib/calc10/lib/libfcalc.a
+generate_delay_model_SOURCES=\
+  generate_delay_model.cc \
+  generate_delay_model_calc.c \
+  @top_srcdir@/lib/vex_parser/vexplus.cc \
+  @top_srcdir@/lib/vex_parser/vex.c \
+  @top_srcdir@/lib/vex_parser/vex.yy.c \
+  @top_srcdir@/lib/vex_parser/vex_util.c \
+  @top_srcdir@/lib/vex_parser/vex_get.c
+generate_delay_model_CFLAGS =-I@top_srcdir@/lib -m32 -std=c99
+generate_delay_model_CXXFLAGS =-I@top_srcdir@/lib -m32 -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
+generate_delay_model_LDFLAGS=-m32 @top_srcdir@/lib/calc10/lib/libfcalc.a -lg2c 
