@@ -7,12 +7,15 @@
  *
  */
 
+#include <utils.h>
 #include "Channel_extractor_mark4.h"
 #include <genFunctions.h>
 #include "Mark4_header.h"
 
 #include <assert.h>
-#include <utils.h>
+
+
+using namespace std;
 
 // Templated by the type of the element from which the samples are extracted
 // Either int32_t (n_head_stacks == 1) or int64_t (n_head_stacks == 2)
@@ -480,8 +483,8 @@ do_get_bytes(size_t nOutputBytes, char *output_buffer) {
       // We reading data from the header, generate random data
       // Get the number of bytes to read from the header:
       int nbytes_from_header = 
-        min(nOutputBytes-bytes_processed, 
-            ((160-curr_pos_in_block)*tracks.size())/8);
+        std::min((int)(nOutputBytes-bytes_processed), 
+                 (int)(((160-curr_pos_in_block)*tracks.size())/8));
       assert (nbytes_from_header > 0);
       curr_pos_in_block += (nbytes_from_header*8)/tracks.size();
 
@@ -502,8 +505,8 @@ do_get_bytes(size_t nOutputBytes, char *output_buffer) {
       // We are reading from the data block.
       // Filled from least to most significant bit
       int nbytes_from_data_block = 
-        min(nOutputBytes-bytes_processed, 
-            ((frameMk4-curr_pos_in_block)*tracks.size())/8);
+        min((int)(nOutputBytes-bytes_processed),
+            (int)(((frameMk4-curr_pos_in_block)*tracks.size())/8));
       for (;nbytes_from_data_block > 0; nbytes_from_data_block--) {
         output_buffer[bytes_processed] = 0;
         for (int bit=0; bit<8;) {

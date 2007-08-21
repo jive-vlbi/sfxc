@@ -1,9 +1,6 @@
 SUBDIRS = multicore
 
-EXTRA_DIST = 
-
 AM_CPPFLAGS = -I../include
-AM_CXXFLAGS = 
 
 bin_PROGRAMS = sfxc sfxc_SC
 
