@@ -428,20 +428,22 @@ stai(void)
 void mvrec(short *ntoc, short *kmode, short *knum, short *err)
 {
 
+  double offset;
+  
   if (!isnan(delay[0])) {
     //delay[0]=delay, delay[1]=delay_rate
     //delay record for "Huygens type" delay correction
-    double offset;
     offset = station_data.clock_early + 
       station_data.clock_rate*((scan_data[scan_nr].scan_start
                                 + interval*delta_time
                                 - station_data.clock_epoch));
     fprintf(output_file,"%12.6f  %19.16f  %3.1f  %3.1f  \n", 
             scan_data[scan_nr].sec_of_day, delay[0] + offset, 0.0, 0.0);
-    delay[0] = NAN;
+//    delay[0] = NAN;
   }
 
   if (interval < scan_data[scan_nr].nr_of_intervals) {
+	 delay[0] = NAN;
     *err = 0;
     interval++;
     scan_data[scan_nr].sec = 
@@ -450,6 +452,10 @@ void mvrec(short *ntoc, short *kmode, short *knum, short *err)
       scan_data[scan_nr].sec_of_day + delta_time ;
     return;
   }
+
+  fprintf(output_file,"%12.6f  %19.16f  %3.1f  %3.1f  \n", 
+			 scan_data[scan_nr].sec_of_day, delay[0] + offset, 0.0, 0.0);
+  delay[0] = NAN;
 
   *err = 1;
 }
