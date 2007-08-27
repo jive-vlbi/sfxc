@@ -22,6 +22,7 @@ AC_CHECK_LIB(mpich, MPI_Init)
 LDFLAGS="$LDFLAGS -lmpich"
 AC_CHECK_LIB(gsl,gsl_interp_accel_alloc)
 AC_CHECK_LIB(m, sin)
+AC_CHECK_LIB(vex_parser, parse_vex)
 AC_CHECK_HEADERS(boost/shared_ptr.hpp,,AC_MSG_ERROR([boost/shared_ptr.hpp header not found.]))
 
 LIBS="$LIBS -ljson"

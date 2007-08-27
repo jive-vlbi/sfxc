@@ -12,7 +12,8 @@ bin_PROGRAMS = generate_delay_model \
                analyse_mark4_file \
                print_headers \
                produce_html_plotpage \
-               make_sfxc_experiment_makefile
+               make_sfxc_experiment_makefile \
+               vex2ccf
 
 create_delay_function_SOURCES = create_delay_function.cc
 create_delay_function_LDFLAGS = -lgsl -lgslcblas
@@ -64,3 +65,6 @@ generate_delay_model_SOURCES=\
 generate_delay_model_CFLAGS =-I@top_srcdir@/lib -m32 -std=c99
 generate_delay_model_CXXFLAGS =-I@top_srcdir@/lib -m32 -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
 generate_delay_model_LDFLAGS=-m32 @top_srcdir@/lib/calc10/lib/libfcalc.a -lg2c 
+
+vex2ccf_SOURCES=vex2ccf.cc
+vex2ccf_LDFLAGS=-lvex_parser -lantlr3c -ljson
