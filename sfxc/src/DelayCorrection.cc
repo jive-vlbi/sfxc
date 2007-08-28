@@ -183,11 +183,11 @@ bool DelayCorrection::delay_correct() {
   for (int stations=0; stations<nstations; stations++){
     //apply delay and phase corrections for all segments (n2fftDC long)
     //in other words process data in dcBufs, output in Bufs
-    Cdel_start = delTbl[stations].calcDelay(timePtr, DelayTable::Cdel);
+    Cdel_start = delTbl[stations].delay(timePtr, Delay_table_akima::Cdel);
     for (int jsegm=0; jsegm<Nsegm2DC; jsegm++) {
       // micro sec 
       Time = timePtr + (int64_t)(jsegm*(time_of_one_correlation_segment)); 
-      Cdel_end = delTbl[stations].calcDelay(Time, DelayTable::Cdel);
+      Cdel_end = delTbl[stations].delay(Time, Delay_table_akima::Cdel);
 
       // 1)calculate the address shift due to time delay for the current segment
       jshift = (int)(Cdel_start/tbs+0.5);
@@ -296,7 +296,7 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
   assert(delta_time > 0);
   double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
   double phi_end = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-    delTbl[station].calcDelay(time, DelayTable::Fdel);
+    delTbl[station].delay(time, Delay_table_akima::Fdel);
   double cosPhi_end = cos(phi_end);
   double sinPhi_end = sin(phi_end);
 
@@ -308,7 +308,7 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
 
       time += delta_time;
       phi_end = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-	delTbl[station].calcDelay(time, DelayTable::Fdel);
+	delTbl[station].delay(time, Delay_table_akima::Fdel);
       cosPhi_end = cos(phi_end);
       sinPhi_end = sin(phi_end);
 
@@ -354,7 +354,7 @@ Log_writer& DelayCorrection::get_log_writer()
 }
 
 //set local delay table parameter
-bool DelayCorrection::set_delay_table(int stations, DelayTable &delay_table)
+bool DelayCorrection::set_delay_table(int stations, Delay_table_akima &delay_table)
 {
   assert(stations >= 0);
   assert((size_t)stations < delTbl.size());

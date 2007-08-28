@@ -11,7 +11,7 @@ TESTS           = \
 OBJ=runPrms.cc genPrms.cc staPrms.cc \
   genFunctions.cc \
   utils.cc \
-  InData.cc delayTable.cc \
+  InData.cc Delay_table_akima.cc \
   Data_writer.cc Data_reader.cc \
   Data_reader_file.cc Data_writer_file.cc \
   Data_writer_void.cc \
@@ -37,4 +37,3 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   Single_data_reader_controller.cc
 
 sfxc_SC_SOURCES = $(OBJ) sfxc_SC.cc
-

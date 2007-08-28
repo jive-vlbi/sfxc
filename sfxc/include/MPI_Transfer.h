@@ -12,7 +12,7 @@
 
 #include "types.h"
 #include "sfxc_mpi.h"
-#include "delayTable.h"
+#include "Delay_table_akima.h"
 #include "runPrms.h"
 #include "genPrms.h"
 #include "staPrms.h"
