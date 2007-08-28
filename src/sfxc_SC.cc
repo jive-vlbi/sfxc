@@ -135,11 +135,11 @@ int main(int argc, char *argv[])
   for (int sn=0; sn< nstations; sn++) {
 
     //Delay table initialisations
-    DelayTable delay_table;
+    Delay_table_akima delay_table;
     delay_table.set_cmr(GenPrms);//set delay table column switches
     string msg = string("DelTbl: ")+StaPrms[sn].get_delaytable();
     get_log_writer().message(2,msg);
-    int retval = delay_table.readDelayTable(StaPrms[sn].get_delaytable());
+    int retval = delay_table.open(StaPrms[sn].get_delaytable());
     if (retval != 0) {
       get_log_writer().message(0,"ERROR: when reading delay table.\n");
       return -1;

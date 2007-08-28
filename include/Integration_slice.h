@@ -34,7 +34,7 @@ class Integration_slice
       
 
     /** assigns delay table for station number sn**/
-    bool set_delay_table(int sn, DelayTable &delay_table);
+    bool set_delay_table(int sn, Delay_table_akima &delay_table);
 
     /** **/
     void set_sample_reader(

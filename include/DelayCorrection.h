@@ -31,7 +31,7 @@ using namespace std;
 #include "genPrms.h"
 #include "staPrms.h"
 #include "InData.h"
-#include "delayTable.h"
+#include "Delay_table_akima.h"
 #include <Bits_to_float_converter.h>
 #include <Log_writer.h>
 
@@ -67,7 +67,7 @@ public:
   double** get_segment();
 
   /** assigns delay table for station number sn**/
-  bool set_delay_table(int sn, DelayTable &delay_table);
+  bool set_delay_table(int sn, Delay_table_akima &delay_table);
 
   /** Set the start time and the duration of the correlation **/
   void set_start_time(int64_t us_start);
@@ -118,7 +118,7 @@ private:
 
   double skyfreq;       //channel sky frequency
   
-  std::vector<DelayTable>    delTbl;
+  std::vector<Delay_table_akima>    delTbl;
   std::vector< boost::shared_ptr<Bits_to_float_converter> > sample_reader;
 
   int sideband;

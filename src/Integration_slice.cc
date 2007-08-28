@@ -54,7 +54,7 @@ Integration_slice::set_parameters(
 
 
 //pass the delay table
-bool Integration_slice::set_delay_table(int i, DelayTable &delay_table)
+bool Integration_slice::set_delay_table(int i, Delay_table_akima &delay_table)
 {
   return dc.set_delay_table(i,delay_table);
 }
