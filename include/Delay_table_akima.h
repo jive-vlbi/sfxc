@@ -9,8 +9,8 @@
  *
  * Class definitions for delay table
  */
-#ifndef DELAYTABLE_H
-#define DELAYTABLE_H
+#ifndef DELAY_TABLE_AKIMA_H
+#define DELAY_TABLE_AKIMA_H
 
 #include <types.h>
 #include <vector>
@@ -42,19 +42,22 @@ public:
   int open(char *delayTableName);
 
   //calculate the delay for the delayType at time in microseconds
-  double delay(int64_t time, int delayType) const;
+  double delay(int64_t time, int delayType);
 
   enum delayType {Cdel, Mdel, Rdel, Fdel};
 
-
-
+  /// A spline only interpolates one scan. 
+  /// This functions preprocesses the spline for the next scan.
+  void initialise_spline_for_next_scan();
 private:
+  // Last entry of the previous scan
+  size_t end_scan;
   std::vector<double> times, delays;
   gsl_interp_accel *acc;
   gsl_spline *splineakima;
 
-  int cde, mde, rde; //switches which determine which columns of delay table are used
+  int32_t cde, mde, rde; //switches which determine which columns of delay table are used
 };
 
 
-#endif // DELAYTABLE_H
+#endif // DELAY_TABLE_AKIMA_H

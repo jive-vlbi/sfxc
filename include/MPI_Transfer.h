@@ -28,8 +28,8 @@ public:
   void receive_general_parameters(MPI_Status &status, 
                                   RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]);
   
-  void send_delay_table(DelayTable &table, int sn, int rank);
-  void receive_delay_table(MPI_Status &status, DelayTable &table, int &sn);
+  void send_delay_table(Delay_table_akima &table, int sn, int rank);
+  void receive_delay_table(MPI_Status &status, Delay_table_akima &table, int &sn);
 };
 
 #endif /*MPI_TRANSFER_H_*/

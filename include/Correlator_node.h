@@ -95,7 +95,7 @@ public:
   /// Callback function for adding a data_writer:
   void hook_added_data_writer(size_t writer);
 
-  void add_delay_table(int sn, DelayTable &table);
+  void add_delay_table(int sn, Delay_table_akima &table);
     
 
   /// Get the Integration_slice (the class doing the actual work)

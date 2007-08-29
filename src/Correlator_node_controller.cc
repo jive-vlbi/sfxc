@@ -17,6 +17,7 @@
 
 #include <Data_writer_file.h>
 #include <Data_writer_tcp.h>
+#include <Delay_table_akima.h>
 
 #include <utils.h>
 
@@ -68,7 +69,7 @@ Correlator_node_controller::process_event(MPI_Status &status) {
     {
       get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
       MPI_Transfer mpi_transfer;
-      DelayTable table;
+      Delay_table_akima table;
       int sn;
       mpi_transfer.receive_delay_table(status, table, sn);
       node.add_delay_table(sn, table);

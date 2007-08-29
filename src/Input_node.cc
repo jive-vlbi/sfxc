@@ -244,7 +244,7 @@ void Input_node::add_to_active_list(int64_t start_time, int stream) {
   assert((ch_buffer_size*(start_time-get_time_stamp())) % get_delta_time()
          == 0);
 
-  int start_byte = 
+  uint32_t start_byte = 
     (ch_buffer_size*(start_time-get_time_stamp())) / get_delta_time();
   assert(start_byte >= 0);
   assert(start_byte < ch_buffer_size);
