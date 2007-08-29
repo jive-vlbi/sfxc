@@ -167,7 +167,7 @@ void Correlator_node::start_correlating(int64_t us_start, int64_t duration) {
   correlate_state = INITIALISE_TIME_SLICE; 
 }
 
-void Correlator_node::add_delay_table(int sn, DelayTable &table) {
+void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
   get_integration_slice().set_delay_table(sn, table);
 }
 

@@ -210,45 +210,38 @@ MPI_Transfer::receive_general_parameters(MPI_Status &status,
 }
 
 void 
-MPI_Transfer::send_delay_table(DelayTable &table, int sn, int rank) {
-  int size = 3*sizeof(int64_t) + 4*sizeof(int32_t) + table.ndel*12*sizeof(double); 
+MPI_Transfer::
+send_delay_table(Delay_table_akima &table, int sn, int rank) {
+  uint32_t n_datapoints = table.times.size();
+  int size = 4*sizeof(int32_t) + 2*n_datapoints*sizeof(double);
   int position=0;
   char buffer[size];
 
-  // First, set the station number
+  // First integer is the station number
   MPI_Pack(&sn, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
-
+  
   // Scalars
-  MPI_Pack(&table.ndel, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD); 
-  MPI_Pack(&table.startDT, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD); 
-  MPI_Pack(&table.stepDT, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD); 
-
   MPI_Pack(&table.cde, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
   MPI_Pack(&table.mde, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
   MPI_Pack(&table.rde, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
 
   // Arrays
-  for (int i=0; i<table.ndel; i++) {
-    MPI_Pack(&(table.cA[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&(table.cB[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&(table.cC[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&(table.mA[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&(table.mB[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&(table.mC[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&(table.rA[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&(table.rB[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&(table.rC[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&(table.fA[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&(table.fB[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&(table.fC[i]), 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD); 
-  }
+  // Send the length for convenience
+  MPI_Pack(&n_datapoints, 1, MPI_UINT32, buffer, size, 
+           &position, MPI_COMM_WORLD); 
+  MPI_Pack(&table.times[0], n_datapoints, MPI_DOUBLE,
+           buffer, size, &position, MPI_COMM_WORLD); 
+  MPI_Pack(&table.delays[0], n_datapoints, MPI_DOUBLE,
+           buffer, size, &position, MPI_COMM_WORLD); 
   assert(position <= size);
 
-  MPI_Send(buffer, position, MPI_PACKED, rank, MPI_TAG_DELAY_TABLE, MPI_COMM_WORLD);
+  MPI_Send(buffer, position, MPI_PACKED, rank, 
+           MPI_TAG_DELAY_TABLE, MPI_COMM_WORLD);
 }
 
 void 
-MPI_Transfer::receive_delay_table(MPI_Status &status, DelayTable &table, int &sn) {
+MPI_Transfer::
+receive_delay_table(MPI_Status &status, Delay_table_akima &table, int &sn) {
   MPI_Status status2;
   
   int size;
@@ -262,33 +255,29 @@ MPI_Transfer::receive_delay_table(MPI_Status &status, DelayTable &table, int &sn
 
   // First, get the station number
   MPI_Unpack(buffer, size, &position, &sn, 1, MPI_INT32, MPI_COMM_WORLD);
+
   
-
   // Scalars
-  MPI_Unpack(buffer, size, &position, &table.ndel, 1, MPI_INT64, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &table.startDT, 1, MPI_INT64, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &table.stepDT, 1, MPI_INT64, MPI_COMM_WORLD);
-
-  MPI_Unpack(buffer, size, &position, &table.cde, 1, MPI_INT32, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &table.mde, 1, MPI_INT32, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &table.rde, 1, MPI_INT32, MPI_COMM_WORLD);
-
-  table.reserve_data();
+  MPI_Unpack(buffer, size, &position, &table.cde, 
+             1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &table.mde, 
+             1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &table.rde, 
+             1, MPI_INT32, MPI_COMM_WORLD);
   
   // Arrays
-  for (int i=0; i<table.ndel; i++) {
-    MPI_Unpack(buffer, size, &position, &table.cA[i], 1, MPI_DOUBLE, MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, &table.cB[i], 1, MPI_DOUBLE, MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, &table.cC[i], 1, MPI_DOUBLE, MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, &table.mA[i], 1, MPI_DOUBLE, MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, &table.mB[i], 1, MPI_DOUBLE, MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, &table.mC[i], 1, MPI_DOUBLE, MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, &table.rA[i], 1, MPI_DOUBLE, MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, &table.rB[i], 1, MPI_DOUBLE, MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, &table.rC[i], 1, MPI_DOUBLE, MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, &table.fA[i], 1, MPI_DOUBLE, MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, &table.fB[i], 1, MPI_DOUBLE, MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, &table.fC[i], 1, MPI_DOUBLE, MPI_COMM_WORLD); 
-  }
+  // first the size of the array
+  uint32_t n_datapoints;
+  MPI_Pack(&n_datapoints, 1, MPI_UINT32, buffer, size, 
+           &position, MPI_COMM_WORLD); 
+  table.times.resize(n_datapoints);
+  table.delays.resize(n_datapoints);
+  MPI_Unpack(buffer, size, &position, &table.times[0], 
+             n_datapoints, MPI_DOUBLE, MPI_COMM_WORLD); 
+  assert(table.times.size() == n_datapoints);
+  MPI_Unpack(buffer, size, &position, &table.delays[0], 
+             n_datapoints, MPI_DOUBLE, MPI_COMM_WORLD); 
+  assert(table.delays.size() == n_datapoints);
+
   assert(position == size);
 }

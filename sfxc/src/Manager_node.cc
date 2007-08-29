@@ -383,10 +383,10 @@ int Manager_node::send_control_parameters_to_controller_node(int node) {
 
   // Send the delay tables:
   for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
-    DelayTable delay; 
+    Delay_table_akima delay; 
     get_log_writer() << StaPrms[sn].get_delaytable() << std::endl;
     delay.set_cmr(GenPrms);
-    int retval = delay.readDelayTable(StaPrms[sn].get_delaytable());
+    int retval = delay.open(StaPrms[sn].get_delaytable());
     if (retval != 0) {
       get_log_writer().error("error while reading delay table.");
       return retval;
