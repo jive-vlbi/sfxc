@@ -124,5 +124,11 @@ private:
   int sideband;
 
   bool parameters_set;
+
+  // For fringe stopping we do a linear approximation
+  // maximal_phase_change is the maximal angle between two
+  // sample points
+  static const double maximal_phase_change = 0.1; // 5.7 degrees
+  int n_recompute_delay;
 };
 #endif //DELAYCORRECTION_H

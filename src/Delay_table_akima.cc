@@ -35,6 +35,7 @@ using namespace std;
 #include "staPrms.h"
 #include "genFunctions.h"
 #include "Delay_table_akima.h"
+#include <utils.h>
 
 //*****************************************************************************
 //function definitions
@@ -117,6 +118,6 @@ void Delay_table_akima::initialise_spline_for_next_scan() {
 //calculates the delay for the delayType at time in microseconds
 //get the next line from the delay table file
 double Delay_table_akima::delay(int64_t time, int delayType) {
-  if (times[end_scan] < time) initialise_spline_for_next_scan();
+  while (times[end_scan] < time) initialise_spline_for_next_scan();
   return gsl_spline_eval (splineakima, time, acc);
 }

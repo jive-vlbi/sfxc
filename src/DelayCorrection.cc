@@ -87,6 +87,23 @@ void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
   //set vector sizes
   delTbl.resize(nstations);//delay tables 
   sample_reader.resize(nstations);//sample_readers
+
+  /* This is the theoretical analysis, which is too restrictive.
+  // Linear integration for the phase drift
+  // Maximal delay rate is (circumference_of_earth/24h)/speed_of_light = 
+  //   (40.000.000/24*60*60)/299792458 = 1.5 microsecond/second
+  // The phase rate is 2 Pi freq * delta delay =
+  //                   2 Pi freq * 1.55e-6 * delta time =
+  // Hence, delta time (in sec) < maximal_phase_change/(2 Pi freq * 1.55e-6) 
+  n_recompute_delay = // in microseconds
+    (int)(maximal_phase_change / 
+          (2.0*M_PI * (skyfreq + startf + sideband*bwfl*0.5) * 1.55e-12));
+  // We can compute the delay on microsecond precision
+  // So trunkate to milisecond precision:
+  n_recompute_delay -= (n_recompute_delay%(int)(SR/1000000));
+  assert(n_recompute_delay > 0);
+  */
+  n_recompute_delay = (int)(SR/1000000);
 }
 
 
@@ -286,11 +303,6 @@ bool DelayCorrection::fractional_bit_shift(double const delay,
 }
 
 bool DelayCorrection::fringe_stopping(int station, int jsegm) {
-  // FYI: phi_end-phi is approximately .3 for 256 lags
-
-  // Optimized: compute a delay after n_recompute samples
-  const int n_recompute_delay = (256 < n2fftDC ? 256 : n2fftDC);
-
   int64_t time = timePtr + (int64_t)(jsegm*n2fftDC*tbs*1000000);
   int64_t delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
   assert(delta_time > 0);
@@ -306,9 +318,38 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
       cosPhi = cosPhi_end;
       sinPhi = sinPhi_end;
 
+      phi_end = 
+        -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
+        delTbl[station].delay(time+delta_time, 
+                              Delay_table_akima::Fdel);
+
+      if (std::abs(phi_end-phi) < 0.4*maximal_phase_change) {
+        // Sampling is too dense
+        n_recompute_delay *= 2;
+        delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
+
+        phi_end = 
+          -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
+          delTbl[station].delay(time+delta_time, 
+                                Delay_table_akima::Fdel);
+      }
+
+      while (std::abs(phi_end-phi) > maximal_phase_change) {
+        // Sampling is not dense enough
+        n_recompute_delay /= 2;
+        if (n_recompute_delay < (int)(SR/1000000)) {
+          n_recompute_delay = (int)(SR/1000000);
+        }
+        delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
+
+        phi_end = 
+          -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
+          delTbl[station].delay(time+delta_time, 
+                                Delay_table_akima::Fdel);
+
+      } 
       time += delta_time;
-      phi_end = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-	delTbl[station].delay(time, Delay_table_akima::Fdel);
+      
       cosPhi_end = cos(phi_end);
       sinPhi_end = sin(phi_end);
 
