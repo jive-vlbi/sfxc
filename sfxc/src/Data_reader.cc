@@ -22,7 +22,7 @@ Data_reader::get_bytes(size_t nBytes, char *buff) {
   assert((data_slice==-1) || (nBytes <= (size_t)data_slice));
   size_t result = do_get_bytes(nBytes, buff);
   _data_counter += result;
-  data_slice -= result;
+  if (data_slice != -1) data_slice -= result;
   return result;
 }
   

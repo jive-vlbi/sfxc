@@ -33,6 +33,14 @@ FILE *output_file;
 // function to compute the delay correction
 void calc();
 
+void write_line(double time, double delay) {
+/*   fprintf(output_file,"%12.6f  %19.16f  %3.1f  %3.1f  \n",   */
+/*           time, delay, 0.0, 0.0); */
+   fwrite(&time, sizeof(double), /*nitems*/ 1, output_file);
+   fwrite(&delay, sizeof(double), /*nitems*/ 1, output_file);
+}
+
+
 int scan_nr = 0;    // Number of the scan being processed
 int interval = 0;   // Interval number in the current scan
 
@@ -437,8 +445,9 @@ void mvrec(short *ntoc, short *kmode, short *knum, short *err)
       station_data.clock_rate*((scan_data[scan_nr].scan_start
                                 + interval*delta_time
                                 - station_data.clock_epoch));
-    fprintf(output_file,"%12.6f  %19.16f  %3.1f  %3.1f  \n", 
-            scan_data[scan_nr].sec_of_day, delay[0] + offset, 0.0, 0.0);
+  write_line(scan_data[scan_nr].sec_of_day, delay[0] + offset);
+/*     fprintf(output_file,"%12.6f  %19.16f  %3.1f  %3.1f  \n",  */
+/*             scan_data[scan_nr].sec_of_day, delay[0] + offset, 0.0, 0.0); */
 //    delay[0] = NAN;
   }
 
@@ -452,9 +461,10 @@ void mvrec(short *ntoc, short *kmode, short *knum, short *err)
       scan_data[scan_nr].sec_of_day + delta_time ;
     return;
   }
-
-  fprintf(output_file,"%12.6f  %19.16f  %3.1f  %3.1f  \n", 
-			 scan_data[scan_nr].sec_of_day, delay[0] + offset, 0.0, 0.0);
+  
+  write_line(scan_data[scan_nr].sec_of_day, delay[0] + offset);
+/*   fprintf(output_file,"%12.6f  %19.16f  %3.1f  %3.1f  \n",  */
+/* 			 scan_data[scan_nr].sec_of_day, delay[0] + offset, 0.0, 0.0); */
   delay[0] = NAN;
 
   *err = 1;

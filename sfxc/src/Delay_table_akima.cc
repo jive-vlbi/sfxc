@@ -72,7 +72,11 @@ int Delay_table_akima::open(char *delayTableName)
 {
   std::ifstream in(delayTableName);
   double time, delay, tmp1, tmp2;
-  while (in >> time >> delay >> tmp1 >> tmp2) {
+   
+  // while (in >> time >> delay >> tmp1 >> tmp2) {
+  while (in
+         .read(reinterpret_cast < char * > (&time), sizeof(double))
+         .read(reinterpret_cast < char * > (&delay), sizeof(double))) {
     // The time read from file is in seconds, whereas the software correlator
     // works with times in microseconds
     times.push_back(time*1000000);
