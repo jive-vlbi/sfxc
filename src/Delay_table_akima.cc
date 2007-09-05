@@ -71,9 +71,24 @@ void Delay_table_akima::set_cmr(GenP GenPrms)
 int Delay_table_akima::open(char *delayTableName)
 {
   std::ifstream in(delayTableName);
-  double time, delay, tmp1, tmp2;
+  double line[5];
+	int32_t hsize;
+	
+
+	in.read(reinterpret_cast < char * > (&hsize), sizeof(int32_t));
+	char station[hsize];
+	in.read(reinterpret_cast < char * > (station), hsize*sizeof(char));
    
   // while (in >> time >> delay >> tmp1 >> tmp2) {
+	
+	while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))){
+    // The time read from file is in seconds, whereas the software correlator
+    // works with times in microseconds
+    times.push_back(line[0]*1000000);
+    delays.push_back(line[4]);
+					}
+
+/* Nico's routine
   while (in
          .read(reinterpret_cast < char * > (&time), sizeof(double))
          .read(reinterpret_cast < char * > (&delay), sizeof(double))) {
@@ -82,7 +97,7 @@ int Delay_table_akima::open(char *delayTableName)
     times.push_back(time*1000000);
     delays.push_back(delay);
   }
-
+*/
   initialise_spline_for_next_scan();
 
   return 0;

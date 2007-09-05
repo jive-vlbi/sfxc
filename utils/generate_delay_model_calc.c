@@ -33,14 +33,6 @@ FILE *output_file;
 // function to compute the delay correction
 void calc();
 
-void write_line(double time, double delay) {
-/*   fprintf(output_file,"%12.6f  %19.16f  %3.1f  %3.1f  \n",   */
-/*           time, delay, 0.0, 0.0); */
-   fwrite(&time, sizeof(double), /*nitems*/ 1, output_file);
-   fwrite(&delay, sizeof(double), /*nitems*/ 1, output_file);
-}
-
-
 int scan_nr = 0;    // Number of the scan being processed
 int interval = 0;   // Interval number in the current scan
 
@@ -386,15 +378,17 @@ put4(const char *name, double *value, short *n1, short *n2, short *n3)
     return;
   }
 
-#if 0
+/*#if 0*/
   if (strncmp(name, "UVW", 3) == 0) {
     assert (*n1 == 3); 
     assert (*n2 == 2); 
-    printf("%.8s: (%e, %e, %e) (%e, %e, %e)\n", name, value[0],
-           value[1], value[2], value[4], value[5], value[6]);
+		fwrite(&scan_data[scan_nr].sec_of_day,1,sizeof(double), output_file);
+		fwrite(value,3,sizeof(double), output_file);
+//    fprintf(output_file,"%15.14e %15.14e %15.14e %15.14e", 
+//		       scan_data[scan_nr].sec_of_day, value[0], value[1], value[2]);
     return;
   }
-#endif
+/*#endif*/
 
 #if 0
   printf("%s: %.8s(%d, %d, %d)\n", __func__, name, *n1, *n2, *n3);
@@ -445,9 +439,12 @@ void mvrec(short *ntoc, short *kmode, short *knum, short *err)
       station_data.clock_rate*((scan_data[scan_nr].scan_start
                                 + interval*delta_time
                                 - station_data.clock_epoch));
-  write_line(scan_data[scan_nr].sec_of_day, delay[0] + offset);
-/*     fprintf(output_file,"%12.6f  %19.16f  %3.1f  %3.1f  \n",  */
-/*             scan_data[scan_nr].sec_of_day, delay[0] + offset, 0.0, 0.0); */
+		double delaytime = delay[0]+offset;
+		
+		fwrite(&delaytime, 1, sizeof(double), output_file);
+//    fprintf(output_file," %15.14e\n", 
+//            delay[0] + offset);
+
 //    delay[0] = NAN;
   }
 
@@ -461,10 +458,9 @@ void mvrec(short *ntoc, short *kmode, short *knum, short *err)
       scan_data[scan_nr].sec_of_day + delta_time ;
     return;
   }
-  
-  write_line(scan_data[scan_nr].sec_of_day, delay[0] + offset);
-/*   fprintf(output_file,"%12.6f  %19.16f  %3.1f  %3.1f  \n",  */
-/* 			 scan_data[scan_nr].sec_of_day, delay[0] + offset, 0.0, 0.0); */
+	double emptyline[]={0,0,0,0,0};
+  fwrite(emptyline,5,sizeof(double),output_file);
+//  fprintf(output_file,"0 0 0 0 0\n");
   delay[0] = NAN;
 
   *err = 1;
@@ -648,8 +644,16 @@ get_eop_data(FILE* ctrlP, int num_eop_points)
 
 //below this line developed by Nico Kruithof
 
-void generate_delay_tables(FILE *output) {
+void generate_delay_tables(FILE *output, char *stationname) {
   output_file = output;
+
+	assert(stationname[2]=='\0');
+	
+	int32_t header_size=3;
+	fwrite(&header_size, 1, sizeof(int32_t), output_file);
+	fwrite(stationname, 3, sizeof(char), output_file);
+	
+//fprintf(output_file, "%s\n", argv[2]);	
 
   // scan_nr is a global variable
   for (scan_nr=0; scan_nr<n_scans; scan_nr++) {
