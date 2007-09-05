@@ -23,10 +23,10 @@
 #include <utils.h>
 #include "stdio.h"
 
-extern "C" void generate_delay_tables(FILE *output);
+extern "C" void generate_delay_tables(FILE *output, char *stationname);
 
 // Time between sample points
-const double delta_time = 1.; // in seconds
+const double delta_time = 10; // in seconds
 
 // Data needed to generate the delay table
 struct Station_data station_data;
@@ -58,7 +58,7 @@ main(int argc, char *argv[]) {
   // Open the output file
   FILE *output_file = fopen(argv[3], "w");
   assert(output_file!=NULL);
-
+	
   // Change to the CALC-directory
   // Goto the location of calc-10 files ocean.dat, tilt.dat and DE405_le.jpl
   char *dir = getenv("CALC_DIR");
@@ -68,7 +68,7 @@ main(int argc, char *argv[]) {
   }
   
   // call the c-function that calls the FORTRAN calc code
-  generate_delay_tables(output_file);
+  generate_delay_tables(output_file, argv[2]);
 
   return EXIT_SUCCESS;
 }
