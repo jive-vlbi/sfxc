@@ -13,7 +13,8 @@ bin_PROGRAMS = generate_delay_model \
                print_headers \
                produce_html_plotpage \
                make_sfxc_experiment_makefile \
-               vex2ccf
+               vex2ccf \
+							 generate_uvw_coordinates
 
 create_delay_function_SOURCES = create_delay_function.cc
 create_delay_function_LDFLAGS = -lgsl -lgslcblas
@@ -68,3 +69,7 @@ generate_delay_model_LDFLAGS=-m32 @top_srcdir@/lib/calc10/lib/libfcalc.a -lg2c
 
 vex2ccf_SOURCES=vex2ccf.cc
 vex2ccf_LDFLAGS=-lvex_parser -lantlr3c -ljson
+
+generate_uvw_coordinates_SOURCES=generate_uvw_coordinates.cc \
+	../src/Uvw_model.cc
+generate_uvw_coordinates_LDFLAGS=-lgsl -lgslcblas
