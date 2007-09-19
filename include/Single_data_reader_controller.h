@@ -34,7 +34,7 @@ public:
   boost::shared_ptr<Buffer> buffer();
   void set_buffer(boost::shared_ptr<Buffer> buffer);
 
-  boost::shared_ptr<Data_reader> get_data_reader();
+  boost::shared_ptr<Data_reader> get_data_reader(int i=0);
 private:
   void set_data_reader(boost::shared_ptr<Data_reader> reader);
   

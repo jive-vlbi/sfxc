@@ -22,14 +22,14 @@ Manager_node_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
     case MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED:
     {
-      int i;
-      MPI_Recv(&i, 1, MPI_INT32, status.MPI_SOURCE,
+      int correlator;
+      MPI_Recv(&correlator, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
 
-      node.set_correlating_state(status.MPI_SOURCE, Manager_node::READY);
+      node.set_correlating_state(correlator, Manager_node::READY);
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

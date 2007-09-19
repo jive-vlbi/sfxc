@@ -36,13 +36,13 @@ Output_node::Output_node(int rank, Log_writer *writer, int size)
     output_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
+    status(STOPPED),
     curr_slice(0), number_of_time_slices(-1), curr_stream(-1)
 {
   initialise(); 
 }
 
 void Output_node::initialise() {
-  get_log_writer() << "Output_node()" << std::endl;
   add_controller(&data_readers_ctrl);
   add_controller(&output_node_ctrl);
   add_controller(&data_writer_ctrl);
@@ -74,8 +74,8 @@ void Output_node::start() {
         assert(curr_stream == -1);
         // blocking:
         if (check_and_process_message() == TERMINATE_NODE) {
-          assert(false);
           status = END_NODE;
+          break;
         }
         if (curr_slice == number_of_time_slices) {
           status = END_NODE;
@@ -210,7 +210,7 @@ Output_node::Input_stream::Input_stream(boost::shared_ptr<Data_reader> reader)
 int 
 Output_node::Input_stream::write_bytes(value_type &elem) {
   assert(reader != boost::shared_ptr<Data_reader>());
-  size_t nBytes = min(elem.size(), reader->get_size_dataslice());
+  size_t nBytes = std::min(elem.size(), reader->get_size_dataslice());
   return reader->get_bytes(nBytes, elem.buffer());
 }
 

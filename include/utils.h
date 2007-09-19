@@ -21,6 +21,15 @@
 
 #include <sfxc_mpi.h>
 
+/// Constants
+#define SIZE_MK4_FRAME           20000
+// Maximal track bit rate
+#define MAX_MARK4_TRACK_BIT_RATE 16
+// Maximal delay in milliseconds, should be an integer number of Mark4 blocks
+#define MAX_DELAY                5
+// The amount of padding in the correlator (could be 1, not tested though)
+#define PADDING                  2
+
 
 #ifdef SFXC_PRINT_DEBUG
 extern int RANK_OF_NODE; // Rank of the current node

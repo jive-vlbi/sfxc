@@ -124,7 +124,7 @@ int RunP::check_params(Log_writer &log_writer) const
 
   int retval = 0;
   //display run parameters
-  log_writer.set_current_messagelevel(1);
+  log_writer.set_messagelevel(1);
   log_writer <<
     "--------------------------------------------------------------------------------\n";
   log_writer <<

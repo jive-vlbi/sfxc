@@ -238,31 +238,31 @@ void check_delay_table(char *filename_delay_table) {
   }
 
   // Read delay_table:
-  DelayTable delayTable;
+  Delay_table_akima delayTable;
   delayTable.set_cmr(GenPrms);
-  delayTable.readDelayTable(filename_delay_table);
+  delayTable.open(filename_delay_table);
   int sn = 134; // Some random value
 
   MPI_Transfer transfer;
   if (rank==0) {
     { // assignment
-      DelayTable delayTable2 = delayTable;
+      Delay_table_akima delayTable2 = delayTable;
       assert(delayTable == delayTable2);
     }
   
     { // copy constructor
-      DelayTable delayTable2(delayTable);
+      Delay_table_akima delayTable2(delayTable);
       assert(delayTable == delayTable2);
     }
     
-    transfer.send_delay_table(delayTable,sn,1);
+    transfer.send(delayTable,sn,1);
   } else {
-    DelayTable delayTable2;
+    Delay_table_akima delayTable2;
     delayTable2.set_cmr(GenPrms);
     MPI_Status status;
     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     int sn2;
-    transfer.receive_delay_table(status,delayTable2,sn2);
+    transfer.receive(status,delayTable2,sn2);
     assert(delayTable == delayTable2);
     assert(sn == sn2);
   }

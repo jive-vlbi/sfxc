@@ -9,6 +9,7 @@
 
 #include <Log_node.h>
 
+#include <utils.h>
 #include <types.h>
 #include <Log_writer.h>
 #include <Log_writer_cout.h>
@@ -20,9 +21,20 @@
 Log_node::Log_node(int rank, int nNodes) 
   : Node(rank), log_node_ctrl(*this, nNodes)
 {
+  get_log_writer() << "Log_node()" << std::endl;
   add_controller(&log_node_ctrl);
 
+  int32_t msg;
+  MPI_Send(&msg, 1, MPI_INT32, 
+           RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
+}
+
+Log_node::Log_node(int rank, int nNodes, Log_writer *writer) 
+  : Node(rank, writer), log_node_ctrl(*this, nNodes)
+{
+  DEBUG_MSG("Log_node()");
   get_log_writer() << "Log_node()" << std::endl;
+  add_controller(&log_node_ctrl);
 
   int32_t msg;
   MPI_Send(&msg, 1, MPI_INT32, 

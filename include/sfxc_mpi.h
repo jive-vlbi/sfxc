@@ -22,6 +22,8 @@
 #define MPI_UINT32 MPI_UNSIGNED
 #define MPI_INT64  MPI_LONG_LONG
 
+void start_node();
+
 enum MPI_TAG {
   // INITIALISATION OF THE DIFFERENT TYPES OF NODES:
   //------------------------------------------------------------------------
@@ -47,6 +49,12 @@ enum MPI_TAG {
    * - MPI_INT32: no content
    **/
   MPI_TAG_NODE_INITIALISED,
+
+
+  /** Get the status of the node
+   * - MPI_INT32: status
+   **/
+  MPI_TAG_GET_STATUS,
 
   // DATA COMMUNICATION, SET is for a single connection, ADD for multiple
   //--------------------------------------------------------------------------
@@ -84,7 +92,8 @@ enum MPI_TAG {
    **/
   MPI_TAG_ADD_DATA_READER_TCP,
   /** Add a data writer to a file
-   * - ?
+   * - int32_t: channel number
+   * - char[]: filename
    **/
   MPI_TAG_ADD_DATA_WRITER_FILE,
   /** Add a void data writer
@@ -145,14 +154,6 @@ enum MPI_TAG {
   // Input node specific commands
   //-------------------------------------------------------------------------//
 
-  /** Set the priority of the input stream
-   * Three values of int64_t: {StreamNr, StartTag, StopTag}
-   * - int64_t: StreamNr
-   * - int64_t: StartTag
-   * - int64_t: StopTag
-   **/
-  MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY,
-  
   /** Goto the specified time in the stream.
    * - int64_t: Time in microseconds
    **/
@@ -168,6 +169,14 @@ enum MPI_TAG {
    * - int64_t: Time in microseconds
    **/
   MPI_TAG_INPUT_NODE_STOP_TIME,
+
+  /** Adds a new writer to a time slicer
+   * - int32_t: channel
+   * - int32_t: stream
+   * - int32_t: start time (milliseconds)
+   * - int32_t: stop time (milliseconds)
+   **/
+  MPI_TAG_INPUT_NODE_ADD_TIME_SLICE,
    
   // Output node specific commands
   //-------------------------------------------------------------------------//
@@ -182,10 +191,10 @@ enum MPI_TAG {
   // Correlate node specific commands
   //-------------------------------------------------------------------------//
 
-  /** Send the control parameters for a correlator node
+  /** Send the Track parameters defined in Control_parameters.h
    * - ?
    **/
-  MPI_TAG_CONTROL_PARAM,
+  MPI_TAG_TRACK_PARAMETERS,
   /** Send a delay table
    * - ?
    **/
@@ -282,6 +291,8 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_SET_LOG_NODE"; }
     case MPI_TAG_NODE_INITIALISED:
       { return "MPI_TAG_NODE_INITIALISED"; }
+    case MPI_TAG_GET_STATUS:
+      { return "MPI_TAG_GET_STATUS"; }
     case MPI_TAG_SET_DATA_READER_FILE:
       { return "MPI_TAG_SET_DATA_READER_FILE"; }
     case MPI_TAG_SET_DATA_READER_TCP:
@@ -294,18 +305,18 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_ADD_DATA_READER_TCP"; }
     case MPI_TAG_ADD_DATA_WRITER_TCP:
       { return "MPI_TAG_ADD_DATA_WRITER_TCP"; }
-    case MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY:
-      { return "MPI_TAG_INPUT_STREAM_SET_PRIORITY"; }
     case MPI_TAG_INPUT_NODE_GOTO_TIME:
       { return "MPI_TAG_INPUT_NODE_GOTO_TIME"; }
     case MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP:
       { return "MPI_TAG_GET_CURRENT_TIMESTAMP"; }
     case MPI_TAG_INPUT_NODE_STOP_TIME:
       { return "MPI_TAG_INPUT_NODE_STOP_TIME"; }
+    case MPI_TAG_INPUT_NODE_ADD_TIME_SLICE:
+      { return "MPI_TAG_INPUT_NODE_ADD_TIME_SLICE"; }
     case MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY:
       { return "MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY"; }
-    case MPI_TAG_CONTROL_PARAM:
-      { return "MPI_TAG_CONTROL_PARAM"; }
+    case MPI_TAG_TRACK_PARAMETERS:
+      { return "MPI_TAG_TRACK_PARAMETERS"; }
     case MPI_TAG_DELAY_TABLE:
       { return "MPI_TAG_DELAY_TABLE"; }
     case MPI_TAG_CORRELATE_TIME_SLICE:

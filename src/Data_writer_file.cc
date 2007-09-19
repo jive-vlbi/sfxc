@@ -8,6 +8,7 @@
  */
 
 #include <Data_writer_file.h>
+#include <utils.h>
 #include <assert.h>
 #include <iostream>
 #include <algorithm>
@@ -17,7 +18,8 @@
 Data_writer_file::Data_writer_file(const char *filename) : 
   Data_writer()
 {
-  file.open(filename, std::ios::out | std::ios::binary);
+  assert(strncmp(filename, "file://", 7)==0);
+  file.open(filename+7, std::ios::out | std::ios::binary);
   assert(file.is_open() );
 }
 

@@ -114,8 +114,6 @@ initialise_control(const char *filename, Log_writer &log_writer,
     return -1;
   }
   
-  log_writer.ask_continue();
-
   //parse control file for general parameters
   if (GenPrms.parse_ctrlFile(filename,log_writer) != 0) {
     log_writer << "ERROR: Control file "<< filename <<", program aborted.\n";
@@ -128,8 +126,6 @@ initialise_control(const char *filename, Log_writer &log_writer,
     return -1;
   }
   
-  log_writer.ask_continue();
-
   //get the number of stations
   Nstations = GenPrms.get_nstations();
   
@@ -146,7 +142,6 @@ initialise_control(const char *filename, Log_writer &log_writer,
       return -1;
     }
     
-    log_writer.ask_continue();
   }
   
   return 0;  

@@ -23,7 +23,7 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_SET_DATA_READER_FILE:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
@@ -100,7 +100,8 @@ set_buffer(boost::shared_ptr<Single_data_reader_controller::Buffer> buff)
 }
 
 boost::shared_ptr<Data_reader>
-Single_data_reader_controller::get_data_reader() {
+Single_data_reader_controller::get_data_reader(int reader) {
+  assert(reader == 0);
   assert(reader2buffer.get_data_reader() != NULL);
   return reader2buffer.get_data_reader();
 }

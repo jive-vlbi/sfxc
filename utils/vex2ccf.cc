@@ -26,10 +26,10 @@ std::string add_time(std::string &time, int delta) {
   return std::string(result);
 }
 
-std::string get_start(Vex &vex) {
+std::string get_start(const Vexpp_node &vex) {
   std::string result = "";
-  Vex::iterator sched = vex["SCHED"];
-  for (Vex::iterator scan_it = sched->begin();
+  Vex::Node::const_iterator sched = vex["SCHED"];
+  for (Vex::Node::const_iterator scan_it = sched->begin();
        scan_it != sched->end(); ++scan_it) {
     if (result == "") {
       result = scan_it["start"]->to_string();
@@ -40,10 +40,10 @@ std::string get_start(Vex &vex) {
   return result;
 }
 
-std::string get_endtime_of_scan(Vex &scan) {
+std::string get_endtime_of_scan(const Vexpp_node &scan) {
   std::string start = scan["start"]->to_string();
   int duration = 0;
-  for (Vex::iterator it = scan.begin("station");
+  for (Vex::Node::const_iterator it = scan.begin("station");
        it != scan.end("station"); ++it) {
     int curr_duration;
     sscanf(it[2]->to_string().c_str(),"%d sec", &curr_duration);
@@ -52,10 +52,10 @@ std::string get_endtime_of_scan(Vex &scan) {
   return add_time(start, duration);
 }
 
-std::string get_stop(Vex &vex) {
+std::string get_stop(const Vexpp_node &vex) {
   std::string result = "";
-  Vex::iterator sched = vex["SCHED"];
-  for (Vex::iterator scan_it = sched->begin();
+  Vex::Node::const_iterator sched = vex["SCHED"];
+  for (Vex::Node::const_iterator scan_it = sched->begin();
        scan_it != sched->end(); ++scan_it) {
     std::string curr = get_endtime_of_scan(*scan_it);
     if (result == "") {
@@ -67,13 +67,13 @@ std::string get_stop(Vex &vex) {
   return result;
 }
 
-Json::Value get_frequency(Vex &vex,
-			  Vex_iterator channel,
+Json::Value get_frequency(const Vexpp_node &vex,
+			  Vexpp_node::const_iterator channel,
 			  const std::string &BBC,
 			  const std::string &IF) {
   Json::Value result;
   std::string if_def;
-  for (Vex::iterator bbc = vex["BBC"][BBC]->begin("BBC_assign");
+  for (Vex::Node::const_iterator bbc = vex["BBC"][BBC]->begin("BBC_assign");
        bbc != vex["BBC"][BBC]->end("BBC_assign"); ++bbc) {
     if (bbc[0]->to_string() == channel[5]->to_string()) {
       if_def = bbc[2]->to_string();
@@ -89,7 +89,7 @@ Json::Value get_frequency(Vex &vex,
   result["frequency"] = freq*1000000;
   result["bandwidth"] = bandwidth*1000000;
   result["sideband"]  = channel[2]->to_string()+"SB";
-  for (Vex::iterator if_def_it = vex["IF"][IF]->begin("if_def");
+  for (Vex::Node::const_iterator if_def_it = vex["IF"][IF]->begin("if_def");
        if_def_it != vex["IF"][IF]->end("if_def"); ++if_def_it) {
     if (if_def_it[0]->to_string() == if_def) {
       result["polarisation"] = if_def_it[2]->to_string();
@@ -119,16 +119,16 @@ Json::Value get_frequency(Vex &vex,
 
 }
 
-Json::Value get_frequencies(Vex &vex) {
+Json::Value get_frequencies(const Vexpp_node &vex) {
   // Find the right BBC and IF
   std::string mode = vex["MODE"]->begin().key();
   std::string IF = vex["MODE"][mode]["IF"][0]->to_string();
   std::string ref_station = vex["MODE"][mode]["IF"][1]->to_string();
   std::string BBC = "";
   // Find the corresponding BBC:
-  for (Vex::iterator bbc = vex["MODE"][mode]->begin("BBC");
+  for (Vex::Node::const_iterator bbc = vex["MODE"][mode]->begin("BBC");
        bbc != vex["MODE"][mode]->end("BBC"); ++bbc) {
-    for (Vex::iterator station = ++(bbc->begin()); 
+    for (Vex::Node::const_iterator station = ++(bbc->begin()); 
 	 station != (*bbc).end(); ++station) {
       if (ref_station == station->to_string()) {
 	BBC = bbc[0]->to_string();
@@ -137,7 +137,7 @@ Json::Value get_frequencies(Vex &vex) {
   }
 
   Json::Value result;
-  for (Vex::iterator channel = vex["FREQ"]->begin()->begin("chan_def");
+  for (Vex::Node::const_iterator channel = vex["FREQ"]->begin()->begin("chan_def");
        channel != vex["FREQ"]->begin()->end("chan_def"); ++channel) {
     result.append(get_frequency(vex, channel, BBC, IF));
   }
@@ -149,13 +149,13 @@ Json::Value get_frequencies(Vex &vex) {
   return result;
 }
 
-Json::Value site_position(Vex &vex,
+Json::Value site_position(const Vexpp_node &vex,
 			  const std::string &station) {
   Json::Value result;
 
-  Vex::iterator position = 
+  Vex::Node::const_iterator position = 
     vex["SITE"][vex["STATION"][station]["SITE"]->to_string()]["site_position"];
-  for (Vex::iterator site = position->begin();
+  for (Vex::Node::const_iterator site = position->begin();
        site != position->end(); ++site) {
     double pos;
     int err = sscanf(site->to_string().c_str(), "%lf m", &pos);
@@ -168,18 +168,18 @@ Json::Value site_position(Vex &vex,
 int main(int argc, char *argv[]) {
   assert(argc == 2);
 
-  struct Vex_node *cvex = parse_vex(argv[1]);
-  Vex vex(cvex);
+  Vex vex(argv[1]);
   
   Json::Value json_output;
-  json_output["exper_name"] = (*vex["GLOBAL"]["EXPER"]).to_string();
-  json_output["start"] = get_start(vex);
-  json_output["stop"] = get_stop(vex);
-  for (Vex::iterator it = vex["STATION"]->begin();
-       it != vex["STATION"]->end(); ++it) {
+  json_output["exper_name"] = 
+    vex.get_root_node()["GLOBAL"]["EXPER"]->to_string();
+  json_output["start"] = get_start(vex.get_root_node());
+  json_output["stop"] = get_stop(vex.get_root_node());
+  for (Vex::Node::const_iterator it = vex.get_root_node()["STATION"]->begin();
+       it != vex.get_root_node()["STATION"]->end(); ++it) {
     json_output["stations"].append(it.key());
     json_output["data_sources"][it.key()] = Json::Value(Json::arrayValue);
-    json_output["site_position"][it.key()] = site_position(vex, it.key());
+    json_output["site_position"][it.key()] = site_position(vex.get_root_node(), it.key());
   }
   json_output["reference_station"] = "";
   json_output["cross_polarize"]    = false;
@@ -188,7 +188,7 @@ int main(int argc, char *argv[]) {
   json_output["message_level"]     = 0;
   json_output["delay_directory"]   = "";
   json_output["output_file"]       = "";
-  json_output["subbands"]          = get_frequencies(vex);
+  json_output["subbands"]          = get_frequencies(vex.get_root_node());
 
   std::cout << json_output << std::endl;
   return 0;

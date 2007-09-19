@@ -68,7 +68,7 @@ void Delay_table_akima::set_cmr(GenP GenPrms)
 
 //read the delay table, do some checks and
 //calculate coefficients for parabolic interpolation
-int Delay_table_akima::open(char *delayTableName)
+int Delay_table_akima::open(const char *delayTableName)
 {
   std::ifstream in(delayTableName);
   double line[5];

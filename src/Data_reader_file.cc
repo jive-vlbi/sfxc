@@ -14,10 +14,11 @@
 
 #include <utils.h>
 
-Data_reader_file::Data_reader_file(char *filename) : 
+Data_reader_file::Data_reader_file(const char *filename) : 
   Data_reader()
 {
-  file.open(filename, std::ios::in | std::ios::binary);
+  assert(strncmp(filename, "file://", 7)==0);
+  file.open(filename+7, std::ios::in | std::ios::binary);
   assert(file.is_open() );
   assert(file.good());
 }

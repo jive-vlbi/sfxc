@@ -61,14 +61,14 @@ void initialise_correlator_node(int rank_correlator_node,
     for (int station_nr = 0; 
          station_nr < GenPrms.get_nstations(); 
          station_nr++) {
-      DelayTable delay; 
+      Delay_table_akima delay; 
       delay.set_cmr(GenPrms);
-      int retval = delay.readDelayTable(StaPrms[station_nr].get_delaytable());
+      int retval = delay.open(StaPrms[station_nr].get_delaytable());
       if (retval != 0) {
-        get_log_writer().error("error while reading delay table.");
+        get_log_writer()(0) << "Error while reading delay table." << std::endl;
         return;
       }
-      mpi_transfer.send_delay_table(delay, station_nr, rank_correlator_node);
+      mpi_transfer.send(delay, station_nr, rank_correlator_node);
     }
   }
   { // Set the data readers and writer
@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
       switch (status.MPI_TAG) {
       case MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED:
         {
-          log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
+          log_writer(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
           // Terminate data node
           int32_t i=0;
@@ -177,7 +177,7 @@ int main(int argc, char *argv[]) {
         }
       case MPI_TAG_TEXT_MESSAGE:
         {
-          log_writer.MPI(2, print_MPI_TAG(status.MPI_TAG));
+          log_writer(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
           int size;
           MPI_Get_elements(&status, MPI_CHAR, &size);
           assert(size > 0);
@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
       default: {
         char err[80];
         snprintf(err, 80, "Unknown event %s", print_MPI_TAG(status.MPI_TAG));
-        log_writer.error(err);
+        log_writer(0) << err << std::endl;
 
         // Remove event:  
         int size;

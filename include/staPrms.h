@@ -17,6 +17,9 @@
 #include "Log_writer.h"
 #include "genPrms.h"
 
+// NGHK: 
+
+
 const int chmax      =     8; //max nr of channels, nch*fo <=32
 const int fomax      =     4; //maximum fan out
 //frame length in bits mk4 file on mk5 disk

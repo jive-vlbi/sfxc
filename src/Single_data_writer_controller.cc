@@ -31,7 +31,7 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_SET_DATA_WRITER_FILE:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 0);
@@ -54,7 +54,7 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_SET_DATA_WRITER_VOID:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       int32_t msg;
       MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -74,7 +74,7 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_SET_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP: 
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       
       MPI_Status status2;
       int32_t ranks[2]; // Rank of reader and writer:

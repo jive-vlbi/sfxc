@@ -13,12 +13,24 @@
 #include <utils.h>
 
 CorrelationCore::CorrelationCore(Log_writer &lw) 
-  : log_writer(lw), parameters_set(false)
+  : accxps(NULL),
+    segm(NULL),
+    xps(NULL),
+    norms(NULL),
+    p_r2c(NULL), 
+    log_writer(lw),
+    parameters_set(false)
 {
 }
 
 CorrelationCore::CorrelationCore(Log_writer &lw, GenP& GenPrms, int ref_sn1, int ref_sn2)
-  : log_writer(lw), parameters_set(false)
+  : accxps(NULL),
+    segm(NULL),
+    xps(NULL),
+    norms(NULL),
+    p_r2c(NULL),
+    log_writer(lw),
+    parameters_set(false)
 {
   set_parameters(GenPrms, ref_sn1, ref_sn2);
 }
@@ -76,23 +88,31 @@ void CorrelationCore::set_parameters(GenP& GenPrms, int ref_sn1, int ref_sn2)
 
 CorrelationCore::~CorrelationCore()
 {
-
-  delete [] norms;
-  for (int j=0; j<nbslns; j++)
-    delete [] accxps[j];
-  delete [] accxps;
-  
-  for (int sn=0; sn<nstations; sn++){
-    delete [] segm[sn];
-    delete [] xps[sn];
+  if (norms != NULL) {
+    delete [] norms;
   }
-  delete [] segm;
-  delete [] xps;
-  
-  for (int sn=0; sn<nstations; sn++)
-    fftw_destroy_plan(p_r2c[sn]);
-  delete [] p_r2c;
-  
+  if (accxps != NULL) {
+    for (int j=0; j<nbslns; j++)
+      delete [] accxps[j];
+    delete [] accxps;
+  }
+  if (segm != NULL) {
+    for (int sn=0; sn<nstations; sn++){
+      delete [] segm[sn];
+    }
+    delete [] segm;
+  }
+  if (xps != NULL) {
+    for (int sn=0; sn<nstations; sn++){
+      delete [] xps[sn];
+    }
+    delete [] xps;
+  }
+  if (p_r2c != NULL) {
+    for (int sn=0; sn<nstations; sn++)
+      fftw_destroy_plan(p_r2c[sn]);
+    delete [] p_r2c;
+  }
 }
 
 

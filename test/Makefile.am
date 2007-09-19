@@ -8,6 +8,7 @@ check_PROGRAMS = \
   test_Control_parameters \
   test_mpi \
   test_buffer \
+  test_Time_slicer \
   test_Transfer_control_parameters \
   test_Data_reader_file \
   test_Data_reader_mark5 \
@@ -16,7 +17,9 @@ check_PROGRAMS = \
   test_Output_node \
   test_Correlator_node \
   test_Log_writer_mpi \
-  test_TCP_connection
+  test_TCP_connection \
+  tasklet \
+  test_Channel_extractor
 
 TESTS           = \
   test_Control_parameters \
@@ -24,13 +27,14 @@ TESTS           = \
   test_Transfer_control_parameters.py \
   test_Correlator_node.py \
   test_buffer \
+  test_Time_slicer \
   test_Data_reader_file \
   test_Data_reader_mark5.py \
   test_Data_reader_TCP.py \
   test_Output_node.py \
   test_Input_node.py \
-  test_Log_writer_mpi.py
-
+  test_Log_writer_mpi.py \
+  test_Channel_extractor
 
 OBJ = ../src/utils.cc \
       ../src/Timer.cc \
@@ -40,7 +44,8 @@ OBJ = ../src/utils.cc \
       ../src/genPrms.cc \
       ../src/staPrms.cc \
       ../src/genFunctions.cc \
-      ../src/delayTable.cc \
+      ../src/Control_parameters.cc \
+      ../src/Delay_table_akima.cc \
       ../src/Channel_extractor_mark4.cc \
       ../src/Bits_to_float_converter.cc \
       \
@@ -60,24 +65,35 @@ OBJ = ../src/utils.cc \
       ../src/Log_writer_mpi.cc\
       \
       ../src/Node.cc \
+      ../src/Correlator_node.cc \
+      ../src/Abstract_manager_node.cc \
       ../src/Input_node.cc \
       ../src/Output_node.cc \
       ../src/Log_node.cc \
       \
       ../src/Controller.cc \
+      ../src/Correlator_node_controller.cc \
       ../src/Output_node_controller.cc \
       ../src/Input_node_controller.cc \
       ../src/Log_node_controller.cc \
       ../src/Single_data_reader_controller.cc \
       ../src/Multiple_data_readers_controller.cc \
       ../src/Single_data_writer_controller.cc \
-      ../src/Multiple_data_writers_controller.cc
+      ../src/Multiple_data_writers_controller.cc \
+      ../src/sfxc_mpi.cc \
+      ../src/Integration_slice.cc \
+      ../src/DelayCorrection.cc \
+      ../src/CorrelationCore.cc
 
 test_mpi_SOURCES = \
   test_mpi.cc
 
 test_buffer_SOURCES = \
   test_buffer.cc
+
+test_Time_slicer_SOURCES = \
+  test_Time_slicer.cc \
+  ../src/Data_writer.cc ../src/Data_writer_file.cc
 
 test_Transfer_control_parameters_SOURCES = \
   $(OBJ) test_Transfer_control_parameters.cc 
@@ -94,7 +110,10 @@ test_Data_reader_TCP_SOURCES = \
   ../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/Data_reader_buffer.cc
 
 test_Data_reader_mark5_SOURCES = \
-  test_Data_reader_mark5.cc ../src/Data_reader.cc ../src/Data_reader_mark5.cc
+  test_Data_reader_mark5.cc ../src/Data_reader_mark5.cc $(OBJ)
+
+test_Channel_extractor_SOURCES = \
+  test_Channel_extractor.cc $(OBJ)
 
 test_Input_node_SOURCES = \
   $(OBJ) test_Input_node.cc
@@ -120,7 +139,12 @@ test_TCP_connection_SOURCES = \
 test_Control_parameters_SOURCES = \
   test_Control_parameters.cc \
   ../src/Log_writer_cout.cc ../src/Log_writer.cc \
-  ../src/Control_parameters.cc \
-  @top_srcdir@/lib/vex_parser/vexplus.cc
-test_Control_parameters_CXXFLAGS =  -I@top_srcdir@/lib/vex_parser/
-test_Control_parameters_LDADD = @top_srcdir@/lib/vex_parser/libvex.a @LEXLIB@
+  ../src/Control_parameters.cc
+
+tasklet_SOURCES = \
+  tasklet.cc \
+  ../src/Tasklet/Tasklet.cc \
+  ../src/Tasklet/Tasklet_manager.cc \
+  ../src/Tasklet/Tasklet_pool.cc \
+  ../src/Tasklet/Tasklet_worker.cc \
+  ../src/Tasklet/Thread.cc

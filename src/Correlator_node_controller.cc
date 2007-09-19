@@ -29,7 +29,6 @@ Correlator_node_controller::Correlator_node_controller(Correlator_node &node)
  : Controller(node), 
    node(node)
 {
-   GenPrms.set_usStart(0);
 }
 
 Correlator_node_controller::~Correlator_node_controller()
@@ -42,7 +41,7 @@ Correlator_node_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_CORRELATE_TIME_SLICE:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       int64_t time[3]; // slice number, start, duration
       MPI_Recv(&time, 3, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -50,28 +49,20 @@ Correlator_node_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
 
-      node.start_correlating(time[1], time[2]);
-      node.set_slice_number(time[0]);           
+      assert(false);
 
-      return PROCESS_EVENT_STATUS_SUCCEEDED;
-    }
-  case MPI_TAG_CONTROL_PARAM:
-    {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
-      MPI_Transfer mpi_transfer;
-      mpi_transfer.receive_general_parameters(status,RunPrms,GenPrms,StaPrms);
-      
-      node.set_parameters(RunPrms, GenPrms, StaPrms);
-      
+//       node.start_correlating(time[1], time[2]);
+//       node.set_slice_number(time[0]);           
+
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_DELAY_TABLE:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       MPI_Transfer mpi_transfer;
       Delay_table_akima table;
       int sn;
-      mpi_transfer.receive_delay_table(status, table, sn);
+      mpi_transfer.receive(status, table, sn);
       node.add_delay_table(sn, table);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

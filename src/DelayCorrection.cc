@@ -12,14 +12,26 @@
 
 //Allocate arrays, initialise parameters
 DelayCorrection::DelayCorrection(Log_writer &lg_wrtr)
-  : log_writer(lg_wrtr), parameters_set(false)
+  : log_writer(lg_wrtr),
+    StaPrms(NULL),
+    segm(NULL),
+    Bufs(NULL),
+    dcBufs(NULL),
+    dcBufPrev(NULL), 
+    parameters_set(false)
 {
 }
 //Allocate arrays, initialise parameters
 DelayCorrection::DelayCorrection(GenP &GenPrms_, 
                                  StaP *StaPrms_, 
                                  Log_writer &lg_wrtr)
-  : log_writer(lg_wrtr), parameters_set(false)
+  : log_writer(lg_wrtr),
+    StaPrms(NULL),
+    segm(NULL),
+    Bufs(NULL),
+    dcBufs(NULL),
+    dcBufPrev(NULL), 
+    parameters_set(false)
 {
   set_parameters(GenPrms_, StaPrms_);
 }
@@ -110,19 +122,27 @@ void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
 //De-allocate arrays and destroy plans
 DelayCorrection::~DelayCorrection()
 {
-
-  for (int sn=0; sn<nstations; sn++){
-    delete [] segm[sn];
-    delete [] Bufs[sn];
-    delete [] dcBufs[sn];
+  if (segm != NULL) {
+    for (int sn=0; sn<nstations; sn++){
+      delete [] segm[sn];
+    }
+    delete [] segm;  
   }
-  delete [] segm;  
-  delete [] Bufs;
-  delete [] dcBufs;
+  if (Bufs != NULL) {
+    for (int sn=0; sn<nstations; sn++){
+      delete [] Bufs[sn];
+    }
+    delete [] Bufs;
+  }
+  if (dcBufs != NULL) {
+    for (int sn=0; sn<nstations; sn++){
+      delete [] dcBufs[sn];
+    }
+    delete [] dcBufs;
+  }
 
-  fftw_destroy_plan(planF2T);
-  fftw_destroy_plan(planT2F);
-  
+//   fftw_destroy_plan(planF2T);
+//   fftw_destroy_plan(planT2F);
 }
 
 

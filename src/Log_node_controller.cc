@@ -48,7 +48,6 @@ Log_node_controller::Log_node_controller(Node &node, int nNodes)
       initialised = true;
     }
     // Check for initialisation message
-    // Check for output to a file:
     MPI_Iprobe(RANK_MANAGER_NODE, MPI_TAG_SET_LOG_NODE, 
                MPI_COMM_WORLD, &result, &status);
     if (result) {
@@ -74,7 +73,7 @@ Log_node_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      get_log_writer_output() << message << std::endl;
+      get_log_writer_output() << message << std::flush;
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
     case MPI_TAG_LOG_MESSAGES_ENDED: {
@@ -87,7 +86,7 @@ Log_node_controller::process_event(MPI_Status &status) {
       
       // Use the default mpi log writer:
       get_log_writer_output() << "  *** Node " << status.MPI_SOURCE
-                       << " finished." << std::endl;
+                              << " finished." << std::endl;
       
       nConnections --;
       return PROCESS_EVENT_STATUS_SUCCEEDED;

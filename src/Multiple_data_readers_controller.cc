@@ -34,7 +34,7 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_ADD_DATA_READER_TCP:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
       int size;
       MPI_Get_elements(&status, MPI_INT64, &size);
@@ -61,7 +61,7 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_ADD_DATA_READER_FILE:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);

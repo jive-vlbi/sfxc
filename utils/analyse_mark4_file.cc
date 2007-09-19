@@ -14,9 +14,6 @@
 #include <Data_reader_file.h>
 #include <Channel_extractor_mark4.h>
 
-#include <genFunctions.h>
-#include <constPrms.h>
-
 #include <utils.h>
 
 uint32_t seed;
@@ -48,12 +45,12 @@ int NGHK_FindHeaderMk4(Data_reader &reader, int& jsynch,
   nhs = StaPrms.get_nhs();
   if (nhs==1) {
     if (read32datafile(reader, tracks) != 0) {
-      get_log_writer().error("error in read32datafile.");
+      get_log_writer()(0) << "Error in read32datafile." << std::endl;
       return -1;
     }
   } else {
     if (read64datafile(reader, tracks) != 0) {
-      get_log_writer().error("error in read64datafile.");
+      get_log_writer()(0) << "Error in read64datafile." << std::endl;
       return -1;
     }
   }
@@ -100,35 +97,28 @@ int NGHK_FindHeaderMk4(Data_reader &reader, int& jsynch,
 
 int main(int argc, char *argv[]) {
   Log_writer_cout log_writer(0);
-  set_log_writer(log_writer);
   
-  if (argc != 3) {
-    std::cout << "usage: " << argv[0] << " <ccf-file> <station_nr>" << std::endl;
+  if (argc != 4) {
+    std::cout << "usage: " << argv[0]
+              << " <vex-file> <ctrl-file> <station_name>" << std::endl;
     return 1;
   }
 
   int station_nr;
   str2int(argv[2], station_nr);
-  
-  RunP runPrms;
-  GenP genPrms;
-  StaP staPrms[NstationsMax];
-  
-  if (initialise_control(argv[1], log_writer,
-                         runPrms, genPrms, staPrms) != 0) {
-    log_writer.error("Initialisation using control file failed");
-    return 1;
-  }
 
-  {
+  Control_parameters control_parameters;
+  control_parameters.initialise(argv[1], argv[2], log_writer);
+
+  { // NGHK: TODO
     boost::shared_ptr<Data_reader> 
       data_reader(new Data_reader_file(staPrms[station_nr].get_mk4file()));
     Channel_extractor_mark4 
       ch_extractor(data_reader, 
-                   staPrms[station_nr], 
+                   /* insert_random_header */ false, 
                    Channel_extractor_mark4::CHECK_ALL_HEADERS);
     ch_extractor.print_header(log_writer(0), 0);
-    for (int i=0; i<ch_extractor.number_of_tracks(); i++) {
+    for (int i=0; i<ch_extractor.n_tracks(); i++) {
       std::cout << "Track: " 
                 << i << " \t"
                 << ch_extractor.headstack(i) << " \t"
@@ -140,9 +130,11 @@ int main(int argc, char *argv[]) {
       (frameMk4*staPrms[station_nr].get_fo()*staPrms[station_nr].get_bps())/8;
     char data_frame[nBytes];
     
+    std::vector<char *> output;
+    output.resize(
     for (int i=nBytes; i==nBytes; ) {
       i = ch_extractor.get_bytes(nBytes, data_frame);
-//       ch_extractor.print_header(log_writer(0), 0);
+      ch_extractor.goto_next_block();
     }
   }
 }

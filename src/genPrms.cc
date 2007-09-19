@@ -294,7 +294,8 @@ int GenP::check_params(Log_writer &log_writer) const
   "Segment overlap      = " << ovrlp << endl <<
   "Time to average (sec)= " << time2avg << endl <<
   "Padding with zeros   = " << pad << endl << endl;
-  log_writer.message(1,msg);
+  log_writer.set_messagelevel(1);
+  log_writer << msg << std::endl;
 
 
   //check control parameters and show faulty ones
