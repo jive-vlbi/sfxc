@@ -195,6 +195,10 @@ enum MPI_TAG {
    * - ?
    **/
   MPI_TAG_TRACK_PARAMETERS,
+  /** Send the Correlation parameters defined in Control_parameters.h
+   * - ?
+   **/
+  MPI_TAG_CORR_PARAMETERS,
   /** Send a delay table
    * - ?
    **/
@@ -317,6 +321,8 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY"; }
     case MPI_TAG_TRACK_PARAMETERS:
       { return "MPI_TAG_TRACK_PARAMETERS"; }
+    case   MPI_TAG_CORR_PARAMETERS:
+      { return "MPI_TAG_CORR_PARAMETERS"; }
     case MPI_TAG_DELAY_TABLE:
       { return "MPI_TAG_DELAY_TABLE"; }
     case MPI_TAG_CORRELATE_TIME_SLICE:

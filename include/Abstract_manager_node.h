@@ -25,7 +25,7 @@ public:
                         const Control_parameters &param);
   virtual ~Abstract_manager_node();
 
-  void start_input_node(int rank);
+  void start_input_node(int rank, const std::string &station);
   void start_output_node(int rank);
   void start_correlator_node(int rank);
   void start_log_node(int rank);
@@ -53,14 +53,15 @@ public:
   /// Interface to Input node
 
   // Sets the track parameters for a station:
-  void input_node_set(int station, Track_parameters &track_params);
+  void input_node_set(const std::string &station,
+                      Track_parameters &track_params);
   /// Returns the time in milliseconds since midnight on the start-day
-  int32_t input_node_get_current_time(int station);
-  void input_node_goto_time(int station, int32_t time);
-  void input_node_set_stop_time(int station, int32_t time);
+  int32_t input_node_get_current_time(const std::string &station);
+  void input_node_goto_time(const std::string &station, int32_t time);
+  void input_node_set_stop_time(const std::string &station, int32_t time);
   
   // Send a new time slice, start and stop time are in milliseconds
-  void input_node_set_time_slice(int station, int32_t channel, 
+  void input_node_set_time_slice(const std::string &station, int32_t channel, 
                                  int32_t stream_nr, 
                                  int32_t start_time, int32_t stop_time);
 
@@ -71,7 +72,7 @@ public:
   const Control_parameters &get_control_parameters() const;
 
   size_t number_correlator_nodes() const;
-  int input_rank(size_t station);
+  int input_rank(const std::string &station);
   int correlator_rank(int correlator);
   void correlator_node_set_all(Correlation_parameters &parameters);
   void correlator_node_set_all(Delay_table_akima &delay_table);
@@ -84,7 +85,7 @@ protected:
   int numtasks;
 
   // Contains the MPI_rank for an input_node
-  std::vector<int> input_node_rank;
+  std::map<std::string, int> input_node_rank;
   // Contains the MPI_rank for a correlator_node
   std::vector<int> correlator_node_rank;
 };

@@ -16,6 +16,8 @@ public:
         magn_headstack(-1) {
     }
 
+    bool operator==(const Channel_parameters &other) const;
+
     // Bits_per_sample is 1 if magn_tracks.size() == 0, otherwise 2
     int bits_per_sample() const;      ///< Number of bits to encode one sample
     int32_t         sign_headstack;   ///< The headstack for the sign bits
@@ -29,28 +31,42 @@ public:
   typedef Channel_map::const_iterator              Channel_const_iterator;
 
   int number_of_channels() const;
+  bool operator==(const Track_parameters &other) const;
+
+  // data
   int                                         sample_rate; // in Ms/s
-  std::map<std::string,Channel_parameters>    channels;
+  Channel_map                                 channels;
 };
 
 
 /** Information about the mark4 tracks needed by the input node. **/
 class Correlation_parameters {
 public:
+  bool operator==(const Correlation_parameters& other) const;
+
+  class Station_parameters {
+  public:
+    bool 
+    operator==(const Correlation_parameters::Station_parameters& other) const;
+    
+    int32_t station_stream; // input stream
+    int32_t start_time;      // Start and stop time for the station
+    int32_t stop_time;
+  };
+
+  typedef std::vector<Station_parameters> Station_list;
+  typedef Station_list::iterator          Station_iterator;
+
+  // Data members
   int32_t start_time;       // Start of the slice in milliseconds
   int32_t stop_time;        // End of the slice in milliseconds
   int32_t integration_time; // In milliseconds
   int32_t number_channels;  // number of frequency channels
 
-  int32_t data_rate;        // Bytes per second
+  int32_t sample_rate;      // #Samples per second
   int32_t bits_per_sample;  // For all stations equal
 
-  class Station_parameters {
-    int32_t station_streams; // input stream
-    int32_t start_time;      // Start and stop time for the station
-    int32_t stop_time;
-  };
-  std::vector<Station_parameters> station_streams; // input streams used
+  Station_list                     station_streams; // input streams used
 };
 
 
@@ -77,7 +93,21 @@ public:
   std::string station(int i) const;
   size_t number_stations() const;
 
+  int integration_time() const; // Integration time in miliseconds
+  int number_channels() const;
+
+
   // Get functions from the vex file:
+  int bits_per_sample() const;
+
+  std::string scan(int i) const;
+  size_t number_scans() const;
+
+  std::string station_in_scan(const std::string& scan, int i) const;
+  size_t number_stations_in_scan(const std::string& scan) const;
+
+  int station_in_scan(const std::string& scan, 
+                      const std::string &station) const;
 
   // Return the track parameters needed by the input node
   Track_parameters 
@@ -85,7 +115,9 @@ public:
   
   // Return the correlation parameters needed by a correlator node
   Correlation_parameters 
-  get_correlation_parameters(const std::string &scan_name) const;
+  get_correlation_parameters(const std::string &scan_name,
+                             const std::map<std::string, int> 
+                             &correlator_node_station_to_input) const;
 
   std::string get_delay_table_name(const std::string &station_name) const;
 

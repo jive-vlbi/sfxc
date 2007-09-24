@@ -29,12 +29,11 @@ Abstract_manager_node::~Abstract_manager_node() {
 // Start nodes:
 void 
 Abstract_manager_node::
-start_input_node(int rank) {
-  int input_node_nr = input_node_rank.size();
-  input_node_rank.push_back(rank);
+start_input_node(int rank, const std::string &station) {
+  input_node_rank[station] = rank;
 
   // starting an input reader
-  MPI_Send(&input_node_nr, 1, MPI_INT32, 
+  MPI_Send(&rank, 1, MPI_INT32, 
            rank, MPI_TAG_SET_INPUT_NODE, MPI_COMM_WORLD);
 
   MPI_Status status;
@@ -157,14 +156,14 @@ set_multiple_data_writer(int rank, int stream_nr,
 
 void 
 Abstract_manager_node::
-input_node_set(int station, Track_parameters &track_params) {
+input_node_set(const std::string &station, Track_parameters &track_params) {
   MPI_Transfer transfer;
   transfer.send(track_params, input_rank(station));
 }
 
 int32_t
 Abstract_manager_node::
-input_node_get_current_time(int station) {
+input_node_get_current_time(const std::string &station) {
   int rank = input_rank(station);
   int32_t result;
   MPI_Send(&result, 1, MPI_INT32, 
@@ -177,26 +176,26 @@ input_node_get_current_time(int station) {
 
 void
 Abstract_manager_node::
-input_node_goto_time(int station, int32_t time) {
+input_node_goto_time(const std::string &station, int32_t time) {
   MPI_Send(&time, 1, MPI_INT32, 
            input_rank(station), MPI_TAG_INPUT_NODE_GOTO_TIME, MPI_COMM_WORLD);
 }
 
 void
 Abstract_manager_node::
-input_node_set_stop_time(int station, int32_t time) {
+input_node_set_stop_time(const std::string &station, int32_t time) {
   MPI_Send(&time, 1, MPI_INT32, 
            input_rank(station), MPI_TAG_INPUT_NODE_STOP_TIME, MPI_COMM_WORLD);
 }
 
 void
 Abstract_manager_node::
-input_node_set_time_slice(int input_node_nr, 
+input_node_set_time_slice(const std::string &station, 
                           int32_t channel, int32_t stream_nr,
                           int32_t start_time, int32_t stop_time) {
   int32_t message[] = {channel, stream_nr, start_time, stop_time};
   MPI_Send(&message, 4, MPI_INT32, 
-           input_rank(input_node_nr),
+           input_rank(station),
            MPI_TAG_INPUT_NODE_ADD_TIME_SLICE, MPI_COMM_WORLD);
 }
 
@@ -234,8 +233,8 @@ number_correlator_nodes() const {
 
 int 
 Abstract_manager_node::
-input_rank(size_t station) {
-  assert(station<input_node_rank.size());
+input_rank(const std::string &station) {
+  assert(input_node_rank.find(station) != input_node_rank.end());
   return input_node_rank[station];
 }
 

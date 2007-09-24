@@ -37,7 +37,6 @@ TESTS           = \
   test_Channel_extractor
 
 OBJ = ../src/utils.cc \
-      ../src/Timer.cc \
       ../src/TCP_Connection.cc \
       ../src/MPI_Transfer.cc \
       ../src/runPrms.cc \
@@ -138,6 +137,7 @@ test_TCP_connection_SOURCES = \
 
 test_Control_parameters_SOURCES = \
   test_Control_parameters.cc \
+  ../src/utils.cc  \
   ../src/Log_writer_cout.cc ../src/Log_writer.cc \
   ../src/Control_parameters.cc
 

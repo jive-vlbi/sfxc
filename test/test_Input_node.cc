@@ -21,7 +21,6 @@
 
 #include "genFunctions.h"
 #include "InData.h"
-#include "delayTable.h"
 #include "MPI_Transfer.h"
 
 
@@ -82,11 +81,11 @@ Test_manager_node(int rank, int numtasks,
 void Test_manager_node::start() {
   get_log_writer()(0) << "Starting nodes" << std::endl;
   start_log_node(RANK_LOG_NODE);
-  start_input_node(input_node);
 
   get_log_writer()(0) << "Initialising the Input_node" << std::endl;
   // setting the first data-source of the first station
   const std::string &station_name = control_parameters.station(0);
+  start_input_node(input_node, station_name);
   std::string filename = control_parameters.data_sources(station_name)[0];
   set_single_data_reader(input_node, filename);
 
@@ -99,7 +98,7 @@ void Test_manager_node::start() {
     control_parameters.get_vex().get_track(mode, station_name);
   Track_parameters track_param =
     control_parameters.get_track_parameters(track);
-  input_node_set(/* input node nr */ 0, track_param);
+  input_node_set(station_name, track_param);
 
   // Set the output nodes
   {
@@ -119,14 +118,14 @@ void Test_manager_node::start() {
   get_log_writer()(0) << "Opened the output streams" << std::endl;
 
   // Setting the start time
-  int64_t current_time = input_node_get_current_time(/* input node nr */ 0);
+  int64_t current_time = input_node_get_current_time(station_name);
   int32_t start_time = control_parameters.get_start_time().to_miliseconds();
   int32_t stop_time = start_time + 2000; // add two seconds
   assert(current_time < start_time);
   // goto the start time 
-  input_node_goto_time(/* input node nr */ 0, start_time);
+  input_node_goto_time(station_name, start_time);
   // set the stop time
-  input_node_set_stop_time(/* input node nr */ 0, stop_time);
+  input_node_set_stop_time(station_name, stop_time);
 
   get_log_writer()(0) << "Writing a time slice" << std::endl;
   {
@@ -137,7 +136,7 @@ void Test_manager_node::start() {
       for (Track_parameters::Channel_iterator 
              chan_it = track_param.channels.begin();
            chan_it != track_param.channels.end(); chan_it++, channel_nr++) {
-        input_node_set_time_slice(/* input node nr */ 0, 
+        input_node_set_time_slice(station_name, 
                                   channel_nr%track_param.channels.size(),
                                   /*stream*/channel_nr,
                                   start_time+time_slice*delta_time, 
@@ -147,7 +146,7 @@ void Test_manager_node::start() {
     for (Track_parameters::Channel_iterator 
            chan_it = track_param.channels.begin();
          chan_it != track_param.channels.end(); chan_it++, channel_nr++) {
-      input_node_set_time_slice(/* input node nr */ 0, 
+      input_node_set_time_slice(station_name, 
                                 channel_nr%track_param.channels.size(),
                                 /*stream*/channel_nr,
                                 start_time+(nr_time_slices-1)*delta_time,

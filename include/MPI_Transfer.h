@@ -28,6 +28,9 @@ public:
 
   void send(Track_parameters &track_param, int rank);
   void receive(MPI_Status &status, Track_parameters &track_param);
+
+  void send(Correlation_parameters &corr_param, int rank);
+  void receive(MPI_Status &status, Correlation_parameters &corr_param);
 };
 
 #endif /*MPI_TRANSFER_H_*/
