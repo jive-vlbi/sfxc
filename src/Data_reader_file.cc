@@ -20,7 +20,6 @@ Data_reader_file::Data_reader_file(const char *filename) :
   assert(strncmp(filename, "file://", 7)==0);
   file.open(filename+7, std::ios::in | std::ios::binary);
   assert(file.is_open() );
-  assert(file.good());
 }
 
 Data_reader_file::~Data_reader_file() {
@@ -29,7 +28,6 @@ Data_reader_file::~Data_reader_file() {
 
 size_t
 Data_reader_file::do_get_bytes(size_t nBytes, char*out) {
-  assert(file.good());
   if (out == NULL) {
     uint64_t pos = file.tellg();
     file.seekg (nBytes, std::ios::cur);

@@ -13,33 +13,16 @@
 #include <types.h>
 #include <utils.h>
 
-/// TODO: NGHK: REMOVE THESE: <------------ FROM HERE
-#include "constPrms.h"
-#include "runPrms.h"
-#include "genPrms.h"
-#include "staPrms.h"
-#include "genFunctions.h"
-#include "InData.h"
-#include "delayTable.h"
-//global variables
-//declaration and default settings run parameters
-RunP RunPrms;
-//declaration and default settings general parameters
-GenP GenPrms;
-//station parameters class, declaration and default settings
-StaP StaPrms[NstationsMax];
-// used for randomising numbers for Headers in Mk4 file
-uint32_t seed;
-/// TODO: NGHK: REMOVE THESE <------------ UNTIL HERE
-
 #include <MPI_Transfer.h>
 #include <Log_writer_cout.h>
 #include <Log_writer_void.h>
 
 void initialise_correlator_node(int rank_correlator_node, 
-                                char *ctrl_file,
+                                Control_parameters control_parameters,
                                 Log_writer &log_writer) {
-  initialise_control(ctrl_file, log_writer, RunPrms, GenPrms, StaPrms);
+#ifdef SFXC_PRINT_DEBUG
+  RANK_OF_NODE = 0;
+#endif
 
   MPI_Status status;
 
@@ -53,33 +36,39 @@ void initialise_correlator_node(int rank_correlator_node,
              &status);
 
     // Transfer the control parameters
-    MPI_Transfer mpi_transfer;
-    mpi_transfer.send_general_parameters(rank_correlator_node, 
-                                         RunPrms, GenPrms, StaPrms);
+    DEBUG_MSG("SEND CORRELATION PARAMETERS");
+    assert(false);
+//     MPI_Transfer mpi_transfer;
+//     mpi_transfer.send(rank_correlator_node, 
+//                       control_parameters.);
 
-    // Transfer the delay tables
-    for (int station_nr = 0; 
-         station_nr < GenPrms.get_nstations(); 
-         station_nr++) {
-      Delay_table_akima delay; 
-      delay.set_cmr(GenPrms);
-      int retval = delay.open(StaPrms[station_nr].get_delaytable());
-      if (retval != 0) {
-        get_log_writer()(0) << "Error while reading delay table." << std::endl;
-        return;
-      }
-      mpi_transfer.send(delay, station_nr, rank_correlator_node);
-    }
+//     // Transfer the delay tables
+//     for (int station_nr = 0; 
+//          station_nr < GenPrms.get_nstations(); 
+//          station_nr++) {
+//       Delay_table_akima delay; 
+//       delay.set_cmr(GenPrms);
+//       int retval = delay.open(StaPrms[station_nr].get_delaytable());
+//       if (retval != 0) {
+//         get_log_writer()(0) << "Error while reading delay table." << std::endl;
+//         return;
+//       }
+//       mpi_transfer.send(delay, station_nr, rank_correlator_node);
+//     }
   }
   { // Set the data readers and writer
     int64_t return_msg;
-    for (int station_nr = 0; 
-         station_nr < GenPrms.get_nstations(); 
+    for (size_t station_nr = 0; 
+         station_nr < control_parameters.number_stations(); 
          station_nr++) {
-      int length = strlen(StaPrms[station_nr].get_mk4file())+2;
+      std::vector<std::string> data_sources = 
+        control_parameters.
+        data_sources(control_parameters.station(station_nr));
+
+      int length = data_sources[0].size()+2;
       char filename[length];
       snprintf(filename, length, "%c%s", 
-               (char)station_nr, StaPrms[station_nr].get_mk4file());
+               (char)station_nr, data_sources[0].c_str());
       // strlen+1 so that \0 gets transmitted as well
       MPI_Send(filename, length, MPI_CHAR, 
                rank_correlator_node, 
@@ -91,8 +80,10 @@ void initialise_correlator_node(int rank_correlator_node,
                MPI_COMM_WORLD, &status);
     }
 
-    const char *filename = GenPrms.get_corfile();
-    MPI_Send((void *)filename, strlen(filename)+1, MPI_CHAR, 
+    const std::string &filename = control_parameters.get_output_file();
+    char filename_char[filename.size()+1];
+    strcpy(filename_char, filename.c_str());
+    MPI_Send((void *)filename_char, filename.size()+1, MPI_CHAR, 
              rank_correlator_node, MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
     MPI_Recv(&return_msg, 1, MPI_INT64, 
              rank_correlator_node, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
@@ -142,8 +133,15 @@ int main(int argc, char *argv[]) {
     }  
 
     Log_writer_mpi log_writer(RANK_MANAGER_NODE);
+    char *ctrl_file = argv[1];
+    char *vex_file = argv[2];
+    Control_parameters control_parameters;
+    if (!control_parameters.initialise(ctrl_file, vex_file, log_writer)) {
+      return 1;
+    }
+
     initialise_correlator_node(rank_correlator_node, 
-                               argv[1],
+                               control_parameters,
                                log_writer);
 
     { // Start a single time slice
@@ -153,8 +151,9 @@ int main(int argc, char *argv[]) {
                &status2);
 
       int64_t times[] = {0, // Slice number
-                         GenPrms.get_usStart(),
-                         GenPrms.get_duration()};
+                         control_parameters.get_start_time().to_miliseconds(),
+                         control_parameters.get_stop_time().to_miliseconds() -
+                         control_parameters.get_start_time().to_miliseconds()};
       MPI_Send(times, 3, MPI_INT64, rank_correlator_node,
                MPI_TAG_CORRELATE_TIME_SLICE, MPI_COMM_WORLD);
     }

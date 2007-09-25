@@ -68,6 +68,11 @@ Control_parameters::data_sources(const std::string &station) const {
   return result;
 }
 
+std::string
+Control_parameters::get_output_file() const {
+  return ctrl["output_file"].asString();
+}
+
 std::string 
 Control_parameters::station(int i) const {
   return ctrl["stations"][i].asString();

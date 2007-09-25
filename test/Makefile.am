@@ -18,7 +18,6 @@ check_PROGRAMS = \
   test_Correlator_node \
   test_Log_writer_mpi \
   test_TCP_connection \
-  tasklet \
   test_Channel_extractor
 
 TESTS           = \
@@ -34,7 +33,7 @@ TESTS           = \
   test_Output_node.py \
   test_Input_node.py \
   test_Log_writer_mpi.py \
-  test_Channel_extractor
+  test_Channel_extractor.py
 
 OBJ = ../src/utils.cc \
       ../src/TCP_Connection.cc \
@@ -121,12 +120,7 @@ test_Output_node_SOURCES = \
   $(OBJ) test_Output_node.cc
 
 test_Correlator_node_SOURCES = \
-  $(OBJ) test_Correlator_node.cc \
-  ../src/Correlator_node.cc ../src/Correlator_node_controller.cc \
-  ../src/Integration_slice.cc \
-  ../src/CorrelationCore.cc \
-  ../src/DelayCorrection.cc \
-  ../src/InData.cc
+  $(OBJ) test_Correlator_node.cc
 
 test_Log_writer_mpi_SOURCES = \
   $(OBJ) test_Log_writer_mpi.cc
@@ -141,10 +135,3 @@ test_Control_parameters_SOURCES = \
   ../src/Log_writer_cout.cc ../src/Log_writer.cc \
   ../src/Control_parameters.cc
 
-tasklet_SOURCES = \
-  tasklet.cc \
-  ../src/Tasklet/Tasklet.cc \
-  ../src/Tasklet/Tasklet_manager.cc \
-  ../src/Tasklet/Tasklet_pool.cc \
-  ../src/Tasklet/Tasklet_worker.cc \
-  ../src/Tasklet/Thread.cc

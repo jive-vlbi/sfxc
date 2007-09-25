@@ -13,8 +13,8 @@
 
 #include <assert.h>
 
-char *infile = "data/input.txt";
-char *outfile = "output.txt";
+char *infile = "file://data/input.txt";
+char *outfile = "file://output.txt";
 #define BUFFSIZE 1000
 
 #include <sfxc_mpi.h>
@@ -27,11 +27,6 @@ char *outfile = "output.txt";
 #include <TCP_Connection.h>
 
 int main(int argc, char *argv[]) {
-  if (argc >= 3) {
-    infile  = argv[1];
-    outfile = argv[2];
-  }
-  
   int numtasks, rank;
   { // MPI stuff
     int status = MPI_Init(&argc,&argv);

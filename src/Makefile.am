@@ -20,7 +20,6 @@ OBJ=runPrms.cc genPrms.cc staPrms.cc \
   Log_writer.cc Log_writer_cout.cc Log_writer_void.cc \
   Log_writer_file.cc \
   Integration_slice.cc CorrelationCore.cc DelayCorrection.cc \
-  Timer.cc \
   Channel_extractor_mark4.cc \
   Bits_to_float_converter.cc
 

@@ -28,7 +28,7 @@ int main() {
     produce(slicer);
   }
 
-  boost::shared_ptr<Data_writer> out(new Data_writer_file("1.txt"));
+  boost::shared_ptr<Data_writer> out(new Data_writer_file("file://1.txt"));
   out->set_size_dataslice(60);
   slicer.add(out, /* start byte */0);
 
@@ -37,7 +37,7 @@ int main() {
     produce(slicer);
   }
 
-  boost::shared_ptr<Data_writer> out2(new Data_writer_file("2.txt"));
+  boost::shared_ptr<Data_writer> out2(new Data_writer_file("file://2.txt"));
   out2->set_size_dataslice(12);
   slicer.add(out2, /* start byte */0);
 

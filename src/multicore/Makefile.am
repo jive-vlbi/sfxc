@@ -21,7 +21,7 @@ OBJ= \
     ../Data_writer_buffer.cc \
 	../Log_writer.cc ../Log_writer_mpi.cc \
   ../runPrms.cc ../genPrms.cc ../staPrms.cc ../genFunctions.cc \
-	../utils.cc ../Timer.cc \
+	../utils.cc \
   ../MPI_Transfer.cc ../Delay_table_akima.cc ../TCP_Connection.cc \
   ../Bits_to_float_converter.cc ../Channel_extractor_mark4.cc \
   ../Data_writer_void.cc \

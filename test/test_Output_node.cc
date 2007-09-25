@@ -19,13 +19,7 @@
 #include <iostream>
 #include <stdlib.h>
 
-#include "constPrms.h"
-#include "runPrms.h"
-#include "genPrms.h"
-#include "staPrms.h"
-#include "genFunctions.h"
 #include "InData.h"
-#include "delayTable.h"
 #include "MPI_Transfer.h"
 
 
@@ -177,17 +171,21 @@ int main(int argc, char *argv[]) {
   
   DEBUG_MSG(" pid = " << getpid());
 
-  assert(argc == 3);
-  const char *control_file = argv[1];
-  const char *output_directory = argv[2];
+  assert(argc == 4);
+  const char *ctrl_file = argv[1];
+  //const char *vex_file = argv[2];
+
+  char input_file[strlen(ctrl_file)+8];
+  sprintf(input_file, "file://%s", ctrl_file);
+  const char *output_directory = argv[3];
   
   // First test
-  int len = strlen(output_directory)+strlen(output_file_to_disk)+4;
+  int len = strlen(output_directory)+strlen(output_file_to_disk)+11;
   char output_file1[len];
   char output_file2[len];
-  snprintf(output_file1, len, "%s/%s.1", 
+  snprintf(output_file1, len, "file://%s/%s.1", 
            output_directory, output_file_to_disk);
-  snprintf(output_file2, len, "%s/%s.2", 
+  snprintf(output_file2, len, "file://%s/%s.2", 
            output_directory, output_file_to_disk);
 
   {
@@ -195,15 +193,16 @@ int main(int argc, char *argv[]) {
     // 1: log node
     // 2: output node
     
-    test_output_node(rank, numtasks, control_file, output_file1);
+    test_output_node(rank, numtasks, input_file, output_file1);
     MPI_Barrier( MPI_COMM_WORLD );
-    test_output_node(rank, numtasks, control_file, output_file2);
+    test_output_node(rank, numtasks, input_file, output_file2);
     MPI_Barrier( MPI_COMM_WORLD );
   
     if (rank == output_node) {
       sync();
       std::stringstream cmd; 
-      cmd << "cmp " << output_file1 << " " << output_file2;
+      // +7 to remove file://
+      cmd << "cmp " << output_file1+7 << " " << output_file2+7;
       if (system(cmd.str().c_str())) {
         std::cout << "cmp file output failed" << std::endl;
         return 1;
