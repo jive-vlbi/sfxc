@@ -71,33 +71,25 @@ void Delay_table_akima::set_cmr(GenP GenPrms)
 int Delay_table_akima::open(char *delayTableName)
 {
   std::ifstream in(delayTableName);
-  double line[5];
-	int32_t hsize;
+  assert(in.is_open());
+  int32_t header_size;
 	
-
-	in.read(reinterpret_cast < char * > (&hsize), sizeof(int32_t));
-	char station[hsize];
-	in.read(reinterpret_cast < char * > (station), hsize*sizeof(char));
+  // Read the header
+  in.read(reinterpret_cast < char * > (&header_size), sizeof(int32_t));
+  char header[header_size];
+  in.read(reinterpret_cast < char * > (header), header_size*sizeof(char));
    
-  // while (in >> time >> delay >> tmp1 >> tmp2) {
-	
-	while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))){
+  // Read the data
+  double line[5];
+  while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))){
     // The time read from file is in seconds, whereas the software correlator
     // works with times in microseconds
     times.push_back(line[0]*1000000);
     delays.push_back(line[4]);
-					}
-
-/* Nico's routine
-  while (in
-         .read(reinterpret_cast < char * > (&time), sizeof(double))
-         .read(reinterpret_cast < char * > (&delay), sizeof(double))) {
-    // The time read from file is in seconds, whereas the software correlator
-    // works with times in microseconds
-    times.push_back(time*1000000);
-    delays.push_back(delay);
   }
-*/
+
+  // Initialise
+  end_scan = 0;
   initialise_spline_for_next_scan();
 
   return 0;
@@ -105,11 +97,17 @@ int Delay_table_akima::open(char *delayTableName)
 
 void Delay_table_akima::initialise_spline_for_next_scan() {
   assert(end_scan < times.size()-1);
-  size_t next_end_scan = end_scan+2;
-  while ((next_end_scan < times.size()-1) && 
-         (times[next_end_scan-1] != times[next_end_scan])) {
+
+  // make end_scan point to the start of the next scan
+  if (end_scan != 0) end_scan += 2;
+
+  // next_end_scan is the past-the-end iterator of the next scan
+  size_t next_end_scan = end_scan;
+  while ((next_end_scan < times.size()) && 
+         (times[next_end_scan] != 0)) {
     next_end_scan ++;
   }
+  assert(next_end_scan < times.size());
 
   if (splineakima != NULL) {
     gsl_spline_free(splineakima);
@@ -118,8 +116,9 @@ void Delay_table_akima::initialise_spline_for_next_scan() {
 
   // Initialise the Akima spline
   acc = gsl_interp_accel_alloc();
-  if (end_scan != 0) end_scan++;
-  int n_pts = next_end_scan-end_scan;
+  int n_pts = next_end_scan - end_scan;
+  // at least 4 sample points for a spline
+  assert(n_pts >= 4);
 
   // End scan now points to the beginning of the next scan and 
   // the next scan has n_pts data points
@@ -130,7 +129,7 @@ void Delay_table_akima::initialise_spline_for_next_scan() {
                   &delays[end_scan], 
                   n_pts);
   
-  end_scan = next_end_scan;
+  end_scan = next_end_scan-1;
 }
 
 
