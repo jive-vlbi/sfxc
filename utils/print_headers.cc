@@ -13,9 +13,6 @@
 #include <Data_reader_file.h>
 #include <Channel_extractor_mark4.h>
 
-#include <genFunctions.h>
-#include <constPrms.h>
-
 #include <utils.h>
 #include <Mark4_header.h>
 
@@ -28,8 +25,8 @@ int main(int argc, char *argv[]) {
   }
 
   Data_reader_file data_reader(argv[1]);
-  int nBytes = frameMk4*sizeof(int64_t);
-  int32_t data_frame[frameMk4];
+  int nBytes = SIZE_MK4_FRAME*sizeof(int64_t);
+  int32_t data_frame[SIZE_MK4_FRAME];
   
   data_reader.get_bytes(nBytes, (char*)data_frame);
   
@@ -43,7 +40,8 @@ int main(int argc, char *argv[]) {
               << header.hour(i) << "h"
               << header.minute(i) << "m"
               << header.second(i) << "s"
-              << header.microsecond(i) << "ms"
+              << header.milisecond(i) << "ms"
+              << header.microsecond(i, header.milisecond(i)) << "us"
               << std::endl;
   }
   std::cout << std::endl;
