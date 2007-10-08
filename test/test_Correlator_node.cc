@@ -57,7 +57,6 @@ void initialise_correlator_node(int rank_correlator_node,
 //     }
   }
   { // Set the data readers and writer
-    int64_t return_msg;
     for (size_t station_nr = 0; 
          station_nr < control_parameters.number_stations(); 
          station_nr++) {
@@ -65,28 +64,31 @@ void initialise_correlator_node(int rank_correlator_node,
         control_parameters.
         data_sources(control_parameters.station(station_nr));
 
-      int length = data_sources[0].size()+2;
+      int length = sizeof(int32_t)+data_sources[0].size()+1;
       char filename[length];
-      snprintf(filename, length, "%c%s", 
-               (char)station_nr, data_sources[0].c_str());
+      snprintf(filename, length, "%d%s", 
+               (int)station_nr, data_sources[0].c_str());
       // strlen+1 so that \0 gets transmitted as well
       MPI_Send(filename, length, MPI_CHAR, 
                rank_correlator_node, 
-               MPI_TAG_ADD_DATA_READER_FILE, 
+               MPI_TAG_ADD_DATA_READER_FILE2, 
                MPI_COMM_WORLD);
     
-      MPI_Recv(&return_msg, 1, MPI_INT64, 
-               rank_correlator_node, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+      int32_t return_msg;
+      MPI_Recv(&return_msg, 1, MPI_INT32, 
+               rank_correlator_node, MPI_TAG_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD, &status);
     }
 
     const std::string &filename = control_parameters.get_output_file();
-    char filename_char[filename.size()+1];
-    strcpy(filename_char, filename.c_str());
-    MPI_Send((void *)filename_char, filename.size()+1, MPI_CHAR, 
-             rank_correlator_node, MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
-    MPI_Recv(&return_msg, 1, MPI_INT64, 
-             rank_correlator_node, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+    char msg[sizeof(int32_t)+filename.size()+1];
+    int stream = 0;
+    sprintf(msg, "%d%s", stream, filename.c_str());
+    MPI_Send((void *)msg, strlen(msg), MPI_CHAR, 
+             rank_correlator_node, MPI_TAG_ADD_DATA_WRITER_FILE2, MPI_COMM_WORLD);
+    int32_t return_msg;
+    MPI_Recv(&return_msg, 1, MPI_INT32, 
+             rank_correlator_node, MPI_TAG_CONNECTION_ESTABLISHED, 
              MPI_COMM_WORLD, &status);
   }
 }

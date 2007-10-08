@@ -72,9 +72,10 @@ void Log_writer_cout_buffer::put_buffer() {
       strncpy(buffer, pbase(), len);
       buffer[len] = '\0';
 
-      if (current_level <= max_level)
-        std::cout << buffer;
-        
+      if (current_level <= max_level) {
+        std::cout << buffer << std::flush;
+      }
+      
       setp(pbase(), epptr());
       delete [] buffer;
     }

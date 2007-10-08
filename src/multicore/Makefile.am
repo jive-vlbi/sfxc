@@ -20,7 +20,6 @@ OBJ= \
 	../Data_writer.cc ../Data_writer_file.cc ../Data_writer_tcp.cc \
     ../Data_writer_buffer.cc \
 	../Log_writer.cc ../Log_writer_mpi.cc \
-  ../runPrms.cc ../genPrms.cc ../staPrms.cc ../genFunctions.cc \
 	../utils.cc \
   ../MPI_Transfer.cc ../Delay_table_akima.cc ../TCP_Connection.cc \
   ../Bits_to_float_converter.cc ../Channel_extractor_mark4.cc \
@@ -39,7 +38,6 @@ input_node_SOURCES = $(OBJ) input.cc \
 
 correlator_node_SOURCES = $(OBJ) correlator.cc \
   ../Correlator_node.cc ../Correlator_node_controller.cc \
-  ../InData.cc \
   ../Integration_slice.cc ../CorrelationCore.cc ../DelayCorrection.cc
 
 output_node_SOURCES = $(OBJ) output.cc \

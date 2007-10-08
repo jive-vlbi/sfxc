@@ -19,26 +19,13 @@
 #include <assert.h>
 
 
-#include <genFunctions.h>
 #include <iostream>
-using namespace std;
-//constants
-#include "constPrms.h"
-
-//class and function definitions
-#include "genFunctions.h"
-#include "InData.h"
 
 #include <Data_reader_file.h>
-
-#define SEED 10
 
 #ifdef SFXC_PRINT_DEBUG
 int RANK_OF_NODE = -1; // Rank of the current node
 #endif
-
-// used for randomising numbers for Headers in Mk4 file
-extern uint32_t seed;
 
 int64_t get_us_time(int time[]) {
   int64_t result = 0;
@@ -87,4 +74,42 @@ void get_ip_address(std::list<Interface_pair> &addresses,
   freeifaddrs (ifa);
 }
 
+//*****************************************************************************
+//  irbit2: random seeding
+//  See Numerical Recipes
+//  primitive polynomial mod 2 of order n produces 2^n - 1 random bits
+//*****************************************************************************
+unsigned long iseed = 42;
+void set_seed(unsigned long seed_) {
+  assert(seed_ != 0);
+  iseed = seed_;
+}
 
+int irbit2()
+{
+  #define IB1 1
+  //  #define IB2 2
+  #define IB4 8
+  //  #define IB5 16
+  #define IB6 32 
+  //  #define IB18 131072
+  #define IB30 536870912
+  #define MASK (IB1+IB4+IB6)
+ 
+    
+  if (iseed & IB30) {
+    iseed=((iseed ^ MASK) << 1) | IB1;
+    return 1;
+  } else {
+    iseed <<= 1;
+    return 0;
+  }
+  #undef MASK
+  #undef IB30
+  //  #undef IB18
+  #undef IB6
+  //  #undef IB5
+  #undef IB4
+  //  #undef IB2
+  #undef IB1
+}

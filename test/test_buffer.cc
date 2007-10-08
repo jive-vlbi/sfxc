@@ -60,6 +60,9 @@ typedef Semaphore_buffer<T> Sem_buffer;
 typedef Ring_buffer<T> Rng_buffer;
 
 int main(int argc, char*argv) {
+#ifdef SFXC_PRINT_DEBUG
+  RANK_OF_NODE = 0;
+#endif
 
   pthread_t prod_thread, cons_thread;
   {

@@ -31,7 +31,7 @@ public:
   void set_buffer(boost::shared_ptr<Buffer> buffer);
   boost::shared_ptr<Data_writer> get_data_writer(int i);
 private:
-  void set_data_writer(boost::shared_ptr<Data_writer> writer);
+  void set_data_writer(int streamnr, boost::shared_ptr<Data_writer> writer);
 
   Buffer2data_writer<value_type>                 buffer2writer;
 };

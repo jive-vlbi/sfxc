@@ -63,6 +63,8 @@ Input_node_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_INPUT_NODE_ADD_TIME_SLICE:
     {
+      get_log_writer()(0) << "Input_node_controller: MPI_TAG_INPUT_NODE_ADD_TIME_SLICE"
+                          << std::endl;
       int32_t message[4];
       MPI_Recv(&message, 4, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);

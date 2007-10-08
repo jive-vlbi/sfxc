@@ -89,10 +89,6 @@ Node::check_and_process_message() {
 
 Node::MESSAGE_RESULT 
 Node::process_event(MPI_Status &status) {
-  if (rank == 0) {
-    DEBUG_MSG(status.MPI_SOURCE);
-    DEBUG_MSG(print_MPI_TAG(status.MPI_TAG));
-  }
   if (status.MPI_TAG == MPI_TAG_END_NODE) {
     
     MPI_Status status2; int msg;

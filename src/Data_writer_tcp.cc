@@ -48,6 +48,7 @@ Data_writer_tcp::do_put_bytes(size_t nBytes, char *buff) {
   size_t bytes_written = 0;
   while (bytes_written != nBytes) {
     ssize_t result = write(socket, buff+bytes_written, nBytes-bytes_written);
+    
     if (result <= 0) {
       return bytes_written;
     }

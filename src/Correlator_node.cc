@@ -11,7 +11,6 @@
 
 #include "Data_reader_buffer.h"
 #include "Data_writer_buffer.h"
-#include "InData.h"
 
 Correlator_node::Correlator_node(int rank, int nr_corr_node, int buff_size)
  : Node(rank),
@@ -26,11 +25,8 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, int buff_size)
    nr_corr_node(nr_corr_node),
    startIS(-1)
 {
-  get_log_writer() << "Correlator_node()" << std::endl;;
+  get_log_writer() << "Correlator_node(" << nr_corr_node << ")" << std::endl;
   
-  // set the log writer for ProcessData:
-  //::set_log_writer(get_log_writer());
-
   add_controller(&correlator_node_ctrl);
   add_controller(&data_readers_ctrl);
   add_controller(&data_writer_ctrl);
@@ -40,8 +36,7 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, int buff_size)
   MPI_Send(&msg, 1, MPI_INT32, 
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
   
-  int i=0;
-  MPI_Send(&i, 1, MPI_INT32, 
+  MPI_Send(&nr_corr_node, 1, MPI_INT32, 
            RANK_MANAGER_NODE, MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, 
            MPI_COMM_WORLD);
 }
@@ -54,98 +49,128 @@ Correlator_node::~Correlator_node()
 void Correlator_node::start()
 {
   while (true) {
+    if (nr_corr_node ==0) {
+      get_log_writer() << "Correlator node, status = " << status << std::endl;
+    }
+    DEBUG_MSG("Correlator node, status = " << status);
     switch (status) {
-      case END_CORRELATING: {
-        return;
-      }
       case STOPPED: {
         // blocking:
+        if (nr_corr_node ==0) {
+          get_log_writer() << "Correlator node, STOPPED" << std::endl;
+        }
         if (check_and_process_message()==TERMINATE_NODE) {
           status = END_CORRELATING;
+        }
+        if (nr_corr_node ==0) {
+          get_log_writer() << "Correlator node, /STOPPED" << std::endl;
         }
         break;
       }
       case CORRELATING: {
+        MPI_DEBUG_MSG("CORRELATING");
         get_log_writer()(2) << " status = CORRELATING" << std::endl;
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           status = END_CORRELATING;
         }
-        
-        if (status==CORRELATING) {
-//           switch(correlate_state) {
-//             case INITIALISE_TIME_SLICE: 
-//               {
-//                 if (data_readers_ctrl.get_data_reader(0)->data_counter()!=0) {
-//                   DEBUG_MSG("data_readers_ctrl.get_data_reader(0)->data_counter()!=0");
-//                 }
-//                 assert(data_readers_ctrl.get_data_reader(0)->data_counter()==0);
-//                 get_log_writer()(2) << " correlate_state = INITIALISE_TIME_SLICE" << std::endl;
-//                 // Initialise the correlator for a new time slice:
-                
-//                 startIS=correlation_parameters.start_time;
-  
-//                 for (size_t sn=0; 
-//                      sn<data_readers_ctrl.number_of_data_readers(); sn++) {
-//                   get_integration_slice().init_reader(sn,startIS);
-//                 }
-                
-//                 correlate_state = CORRELATE_INTEGRATION_SLICE;
-//                 break;
-//               }
-//           case CORRELATE_INTEGRATION_SLICE: 
-//             {
-//               get_log_writer()(2) << " correlate_state = CORRELATE_INTEGRATION_SLICE" << std::endl;
-//               // Do one integration step:
-//               //while still time slices and data are available
-//               if (startIS >= correlation_parameters.stop_time) {
-//                 correlate_state = END_TIME_SLICE;
-//                 break;
-//               }
-                               
-//               //process the next time slice:
-//               get_integration_slice().correlate();
-//               //set start of next time slice to: start of time slice + time to average
-//               assert(correlation_parameters.integration_time > 0);
-//               startIS += correlation_parameters.integration_time; //in usec
-              
-              
-//               break;
-//             }
-//           case END_TIME_SLICE: 
-//             {
-//               get_log_writer()(2) << " correlate_state = END_TIME_SLICE" << std::endl;
-              
-//               // Finish processing a time slice:
-//               status = STOPPED;
 
-//               for (size_t sn=0; 
-//                    sn<data_readers_ctrl.number_of_data_readers(); sn++) {
-//                 int bytes_to_read =
-//                   data_readers_ctrl.get_data_reader(sn)->get_size_dataslice();
-//                 int bytes_read = 0;
-//                 while (bytes_to_read != bytes_read) {
-//                   int status=data_readers_ctrl.get_data_reader(sn)->get_bytes(
-//                     bytes_to_read-bytes_read,
-//                     NULL);
-//                  assert(status > 0);
-//                  bytes_read+=status;
-//                 }
-//                 assert(
-//                   data_readers_ctrl.get_data_reader(sn)->end_of_dataslice());
-//                 data_readers_ctrl.get_data_reader(sn)->reset_data_counter();
-//               }
-  
-//               // NGHK: Maybe a check on the data writer byte-size here??
-//               get_data_writer().reset_data_counter();
-//               // Notify manager node:
-//               int32_t msg = 0;
-//               MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
-//                        MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, 
-//                        MPI_COMM_WORLD);
-//               break;
-//             }
-//           }
+        if (status==CORRELATING) {
+          DEBUG_MSG("correlate_state: " << correlate_state);
+          switch(correlate_state) {
+            case INITIALISE_TIME_SLICE: 
+            {
+              DEBUG_MSG("correlate_state: INITIALISE_TIME_SLICE");
+              if (data_readers_ctrl.get_data_reader(0)->data_counter()!=0) {
+                DEBUG_MSG("data_readers_ctrl.get_data_reader(0)->data_counter()!=0");
+              }
+              assert(data_readers_ctrl.get_data_reader(0)->data_counter()==0);
+              get_log_writer()(2) << " correlate_state = INITIALISE_TIME_SLICE" << std::endl;
+              // Initialise the correlator for a new time slice:
+
+              startIS=correlation_parameters.start_time;
+              DEBUG_MSG("startIS = " << startIS);
+
+              for (size_t sn=0; 
+                   sn<data_readers_ctrl.number_of_data_readers(); sn++) {
+                get_integration_slice().init_reader(sn,startIS);
+              }
+              correlate_state = CORRELATE_INTEGRATION_SLICE;
+              break;
+            }
+            case CORRELATE_INTEGRATION_SLICE: 
+            {
+              get_log_writer()(2) << " correlate_state = CORRELATE_INTEGRATION_SLICE" << std::endl;
+              DEBUG_MSG("correlate_state: CORRELATE_INTEGRATION_SLICE");
+              // Do one integration step:
+              //while still time slices and data are available
+              DEBUG_MSG("end of timeslice? " << startIS << " < " << correlation_parameters.stop_time);
+              if (startIS >= correlation_parameters.stop_time) {
+                correlate_state = END_TIME_SLICE;
+                break;
+              }
+
+              //process the next time slice:
+              get_integration_slice().correlate();
+              
+              for (size_t i=0; i<correlation_parameters.station_streams.size(); i++) {
+                int stream_nr = correlation_parameters.station_streams[i].station_stream;
+                assert(stream_nr < data_readers_ctrl.number_of_data_readers());
+                DEBUG_MSG("DATA_COUNTER: " 
+                          << data_readers_ctrl.get_data_reader(stream_nr)->data_counter());
+              }
+
+              DEBUG_MSG("CORRELATE_INTEGRATION_SLICE");
+              //set start of next time slice to: start of time slice + time to average
+              assert(correlation_parameters.integration_time > 0);
+              startIS += correlation_parameters.integration_time; //in usec
+              DEBUG_MSG("CORRELATE_INTEGRATION_SLICE");
+
+              break;
+            }
+            case END_TIME_SLICE: 
+            {
+              get_log_writer()(2) << " correlate_state = END_TIME_SLICE" << std::endl;
+              DEBUG_MSG("correlate_state: END_TIME_SLICE");
+              // Finish processing a time slice:
+              for (size_t sn=0; 
+                   sn<data_readers_ctrl.number_of_data_readers(); sn++) {
+                int bytes_to_read =
+                  data_readers_ctrl.get_data_reader(sn)->get_size_dataslice();
+                int bytes_read = 0;
+                // NGHK: TODO: get this from the sample_reader instead of directly from the data_reader
+                while (bytes_to_read > 0) {
+                  bytes_read =
+                    data_readers_ctrl.get_data_reader(sn)->get_bytes(bytes_to_read-bytes_read,
+                                                                     NULL);
+                  assert(bytes_read > 0);
+                  bytes_to_read -= bytes_read;
+                }
+                DEBUG_MSG("Data_counter: " << data_readers_ctrl.get_data_reader(sn)->data_counter());
+                assert(data_readers_ctrl.get_data_reader(sn)->end_of_dataslice());
+                data_readers_ctrl.get_data_reader(sn)->reset_data_counter();
+              }
+
+              // NGHK: Maybe a check on the data writer byte-size here??
+              DEBUG_MSG("Data_counter of the output_node: " 
+                        << data_writer_ctrl.get_data_writer(0)->data_counter());
+              data_writer_ctrl.get_data_writer(0)->reset_data_counter();
+              // Notify manager node:
+              int32_t msg = get_correlate_node_number();
+              MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
+                       MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, 
+                       MPI_COMM_WORLD);
+
+              status = STOPPED;
+              correlate_state = INITIALISE_TIME_SLICE;
+
+              break;
+            }
+          }
         }
+        break;
+      }
+      case END_CORRELATING: {
+        return;
       }
     }
   }
@@ -153,68 +178,86 @@ void Correlator_node::start()
 
 void Correlator_node::start_correlating(Correlation_parameters &param) {
   assert(status != CORRELATING); 
+
   
-  assert(false);
+  correlation_parameters = param;
+  get_integration_slice().set_parameters(correlation_parameters, -1, -1);
 
-//   // 2*bwfl is the Nyquist sample rate
-//   // two bits sampling, hence 4 samples per byte
-//   int bits_per_sample = 2;
-//   int NYQUIST = 2;
-//   int bytes = (int)((BufTime*4 + duration*1000000)* 
-//                     (GenPrms.get_bwfl()*NYQUIST*bits_per_sample)/8/1000000);
-//   for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
-//     data_readers_ctrl.get_data_reader(sn)->set_size_dataslice(bytes);
-//   }
+  int bytes = 
+    ((int64_t)(correlation_parameters.stop_time-
+               (correlation_parameters.start_time-MAX_DELAY)) *
+    correlation_parameters.sample_rate *
+    correlation_parameters.bits_per_sample) / 8000;
 
-//   get_integration_slice().set_start_time(us_start);
+  DEBUG_MSG("TIME_SLICE: bytes = " << bytes);
+  
+  for (size_t i=0; i<correlation_parameters.station_streams.size(); i++) {
+    int stream_nr = correlation_parameters.station_streams[i].station_stream;
+    assert(stream_nr < data_readers_ctrl.number_of_data_readers());
+    data_readers_ctrl.get_data_reader(stream_nr)->set_size_dataslice(bytes);
+  }
 
-//   status=CORRELATING; 
-//   correlate_state = INITIALISE_TIME_SLICE; 
+  for (int i=0; i<bits2float_converters.size(); i++) {
+     if (bits2float_converters[i] != 
+         boost::shared_ptr<Bits_to_float_converter>()) {
+       bits2float_converters[i]->set_bits_per_sample(correlation_parameters.bits_per_sample);
+     }
+   }
+
+   get_integration_slice().set_start_time(correlation_parameters.start_time);
+
+   status=CORRELATING; 
+   correlate_state = INITIALISE_TIME_SLICE; 
 }
 
 void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
-  assert(false);
-//   get_integration_slice().set_delay_table(sn, table);
+  //assert(false);
+  DEBUG_MSG("Set_delay_table: " << sn);
+  get_integration_slice().set_delay_table(sn, table);
 }
 
 
-void Correlator_node::set_parameters(RunP &runPrms, GenP &genPrms, StaP *staPrms) {
-  assert(false);
-//   get_integration_slice().set_parameters(genPrms, staPrms, 
-// 					 runPrms.get_ref_station(0),
-// 					 runPrms.get_ref_station(1));
-}
+//void
+//Correlator_node::
+//set_parameters(Correlation_parameters &correlation_parameters_) {
+//  // NGHK: No reference stations for now
+//  correlation_parameters = correlation_parameters_;
+//  get_integration_slice().set_parameters(correlation_parameters, -1, -1);
+//}
 
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
-  assert(false);
-//   // NGHK: TODO: Make sure a time slice fits
-//   boost::shared_ptr< Semaphore_buffer<input_value_type> > 
-//     buffer(new Semaphore_buffer<input_value_type>(25));
-//   data_readers_ctrl.set_buffer(stream_nr, buffer);
+   // NGHK: TODO: Make sure a time slice fits
+   boost::shared_ptr< Semaphore_buffer<input_value_type> > 
+     buffer(new Semaphore_buffer<input_value_type>(25));
+   data_readers_ctrl.set_buffer(stream_nr, buffer);
   
-//   boost::shared_ptr<Bits_to_float_converter> 
-//     sample_reader(new Bits_to_float_converter());
-//   sample_reader->set_bits_per_sample(correlation_parameters.bits_per_sample);
-//   sample_reader->set_data_reader(data_readers_ctrl.get_data_reader(stream_nr));
-  
-//   get_integration_slice().set_sample_reader(stream_nr,sample_reader);
+   boost::shared_ptr<Bits_to_float_converter> 
+     sample_reader(new Bits_to_float_converter());
+   sample_reader->set_data_reader(data_readers_ctrl.get_data_reader(stream_nr));
+   
+   if (bits2float_converters.size() <= stream_nr) {
+     bits2float_converters.resize(stream_nr+1, 
+                                  boost::shared_ptr<Bits_to_float_converter>());
+   }
+   bits2float_converters[stream_nr] = sample_reader;
+
+   get_integration_slice().set_sample_reader(stream_nr,sample_reader);
 }
 
 void Correlator_node::hook_added_data_writer(size_t i) {
-  assert(false);
-//   assert(i == 0);
+  assert(i == 0);
 
-//   get_integration_slice().set_data_writer(data_writer_ctrl.get_data_writer(i));
+  get_integration_slice().set_data_writer(data_writer_ctrl.get_data_writer(i));
 }
 
 int Correlator_node::get_correlate_node_number() {
   return nr_corr_node;
 }
 
-void Correlator_node::set_slice_number(int sliceNr_) {
-  sliceNr = sliceNr_;
-}
+//void Correlator_node::set_slice_number(int sliceNr_) {
+//  sliceNr = sliceNr_;
+//}
 
 /** Number of integration steps done in the current time slice **/
 int Correlator_node::number_of_integration_steps_in_time_slice() {

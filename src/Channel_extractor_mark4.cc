@@ -9,7 +9,6 @@
 
 #include "Channel_extractor_mark4.h"
 #include "Mark4_header.h"
-#include <genFunctions.h>
 
 #include <assert.h>
 #include <utils.h>

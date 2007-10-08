@@ -19,7 +19,6 @@
 #include <iostream>
 #include <stdlib.h>
 
-#include "InData.h"
 #include "MPI_Transfer.h"
 
 
@@ -43,13 +42,13 @@ int64_t stop_time  = -1;
 
 void wait_for_setting_up_channel(int rank) {
   MPI_Status status;
-  int64_t channel;
+  int32_t channel;
   if (rank >= 0) {
-    MPI_Recv(&channel, 1, MPI_INT64, rank,
-             MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
+    MPI_Recv(&channel, 1, MPI_INT32, rank,
+             MPI_TAG_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
   } else {
-    MPI_Recv(&channel, 1, MPI_INT64, MPI_ANY_SOURCE,
-             MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
+    MPI_Recv(&channel, 1, MPI_INT32, MPI_ANY_SOURCE,
+             MPI_TAG_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
   }
 }
 
@@ -80,16 +79,25 @@ void test_output_node(int rank, int numtasks,
 
     // Input data:
     int reader_stream_nr = 3;
-    char infile_msg[strlen(input_file)+1];
-    sprintf(infile_msg, "%c%s", (char)reader_stream_nr, input_file);
-    MPI_Send(infile_msg, strlen(infile_msg)+1, 
-             MPI_CHAR, 
-             output_node, MPI_TAG_ADD_DATA_READER_FILE, MPI_COMM_WORLD);
-    wait_for_setting_up_channel(output_node);
-
-    MPI_Send(output_file, strlen(output_file)+1, MPI_CHAR, 
-             output_node, MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
-    wait_for_setting_up_channel(output_node);
+    {
+      int size = sizeof(int32_t)+strlen(input_file)+1; 
+      char msg[size];
+      memcpy(msg,&reader_stream_nr,sizeof(int32_t));
+      memcpy(msg+sizeof(int32_t), input_file, strlen(input_file)+1);
+      MPI_Send(msg, size, MPI_CHAR, 
+               output_node, MPI_TAG_ADD_DATA_READER_FILE2, MPI_COMM_WORLD);
+      wait_for_setting_up_channel(output_node);
+    }
+    {
+      int writer_stream_nr = 0;
+      int size = sizeof(int32_t)+strlen(output_file)+1;
+      char msg[size];
+      memcpy(msg,&writer_stream_nr,sizeof(int32_t));
+      memcpy(msg+sizeof(int32_t), output_file, strlen(output_file)+1);
+      MPI_Send(msg, size, MPI_CHAR, 
+               output_node, MPI_TAG_ADD_DATA_WRITER_FILE2, MPI_COMM_WORLD);
+      wait_for_setting_up_channel(output_node);
+    }
 
     int slicenr = 0;
     {
@@ -169,7 +177,7 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   assert(numtasks == 3);
   
-  DEBUG_MSG(" pid = " << getpid());
+//  DEBUG_MSG(" pid = " << getpid());
 
   assert(argc == 4);
   const char *ctrl_file = argv[1];

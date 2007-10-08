@@ -23,7 +23,9 @@ CorrelationCore::CorrelationCore(Log_writer &lw)
 {
 }
 
-CorrelationCore::CorrelationCore(Log_writer &lw, GenP& GenPrms, int ref_sn1, int ref_sn2)
+CorrelationCore::CorrelationCore(Log_writer &lw, 
+                                 Correlation_parameters &corr_param, 
+                                 int ref_sn1, int ref_sn2)
   : accxps(NULL),
     segm(NULL),
     xps(NULL),
@@ -32,13 +34,14 @@ CorrelationCore::CorrelationCore(Log_writer &lw, GenP& GenPrms, int ref_sn1, int
     log_writer(lw),
     parameters_set(false)
 {
-  set_parameters(GenPrms, ref_sn1, ref_sn2);
+  set_parameters(corr_param, ref_sn1, ref_sn2);
 }
 
-void CorrelationCore::set_parameters(GenP& GenPrms, int ref_sn1, int ref_sn2)
+void CorrelationCore::set_parameters(Correlation_parameters &corr_param,
+                                     int ref_sn1, int ref_sn2)
 {
   parameters_set = true;
-  nstations = GenPrms.get_nstations();
+  nstations = corr_param.station_streams.size();
   if (0 <= ref_sn1 && ref_sn1 < nstations) {
     //use a reference station
     if (0 <= ref_sn2 && ref_sn2 < nstations) {
@@ -50,8 +53,8 @@ void CorrelationCore::set_parameters(GenP& GenPrms, int ref_sn1, int ref_sn2)
     //correlate all baselines
     nbslns    = nstations*(nstations-1)/2 + nstations;
   }
-  n2fftcorr = GenPrms.get_n2fft();
-  padding   = GenPrms.get_pad();
+  n2fftcorr = corr_param.number_channels;
+  padding   = PADDING;
 
 
   segm = new double*[nstations];
@@ -264,6 +267,8 @@ bool CorrelationCore::write_time_slice()
   //write normalized correlation results to output file
   //NGHK: Make arrays consecutive to be able to write all data at once
   uint64_t nWrite = sizeof(fftw_complex)*(n2fftcorr*padding/2+1);
+  DEBUG_MSG("sizeof one fft: " << sizeof(fftw_complex)*(n2fftcorr*padding/2+1));
+  DEBUG_MSG("nbaselines    : " << nbslns);
   for (int bsln = 0; bsln < nbslns; bsln++){
     uint64_t written = get_data_writer().
       put_bytes(nWrite, (char *)(accxps[bsln]));

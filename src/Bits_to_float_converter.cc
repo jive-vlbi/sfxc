@@ -57,3 +57,12 @@ Bits_to_float_converter::set_data_reader(boost::shared_ptr<Data_reader> data_rea
   data_reader = data_reader_;
 }
  
+uint64_t 
+Bits_to_float_converter::data_counter() {
+  return (data_reader->data_counter()*8)/bits_per_sample;
+}
+
+int 
+Bits_to_float_converter::get_size_dataslice() {
+  return (data_reader->get_size_dataslice()*8)/bits_per_sample;
+}

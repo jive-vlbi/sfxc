@@ -23,14 +23,14 @@ class MPI_Transfer
 public:
   MPI_Transfer();
   
-  void send(Delay_table_akima &table, int sn, int rank);
-  void receive(MPI_Status &status, Delay_table_akima &table, int &sn);
+  static void send(Delay_table_akima &table, int sn, int rank);
+  static void receive(MPI_Status &status, Delay_table_akima &table, int &sn);
 
-  void send(Track_parameters &track_param, int rank);
-  void receive(MPI_Status &status, Track_parameters &track_param);
+  static void send(Track_parameters &track_param, int rank);
+  static void receive(MPI_Status &status, Track_parameters &track_param);
 
-  void send(Correlation_parameters &corr_param, int rank);
-  void receive(MPI_Status &status, Correlation_parameters &corr_param);
+  static void send(Correlation_parameters &corr_param, int rank);
+  static void receive(MPI_Status &status, Correlation_parameters &corr_param);
 };
 
 #endif /*MPI_TRANSFER_H_*/

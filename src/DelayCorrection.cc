@@ -13,7 +13,6 @@
 //Allocate arrays, initialise parameters
 DelayCorrection::DelayCorrection(Log_writer &lg_wrtr)
   : log_writer(lg_wrtr),
-    StaPrms(NULL),
     segm(NULL),
     Bufs(NULL),
     dcBufs(NULL),
@@ -22,35 +21,40 @@ DelayCorrection::DelayCorrection(Log_writer &lg_wrtr)
 {
 }
 //Allocate arrays, initialise parameters
-DelayCorrection::DelayCorrection(GenP &GenPrms_, 
-                                 StaP *StaPrms_, 
+DelayCorrection::DelayCorrection(Correlation_parameters &corr_param,
                                  Log_writer &lg_wrtr)
   : log_writer(lg_wrtr),
-    StaPrms(NULL),
     segm(NULL),
     Bufs(NULL),
     dcBufs(NULL),
     dcBufPrev(NULL), 
     parameters_set(false)
 {
-  set_parameters(GenPrms_, StaPrms_);
+  set_parameters(corr_param);
 }
 
 //Allocate arrays, initialise parameters
-void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
+void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
 {
   parameters_set = true;
 
-  StaPrms     = StaPrms_;
+  corr_param = corr_param_;
 
-  nstations   = GenPrms.get_nstations();
-  n2fftDC     = GenPrms.get_lsegm();
-  SR          = 2.0*GenPrms.get_bwfl()*GenPrms.get_ovrfl();
+  nstations   = corr_param.station_streams.size();
+  n2fftDC     = corr_param.number_channels;
+  SR          = corr_param.sample_rate; // was 2.0*GenPrms.get_bwfl()*GenPrms.get_ovrfl();
   BufSize     = BufTime * (int)(SR/1000000.0);
   tbs         = 1.0/SR;
   Nsegm2DC    = BufSize/n2fftDC;
-
-  sideband    = GenPrms.get_sideband();
+  
+  if (corr_param.sideband == 'U') {
+    sideband    = 1;
+  } else {
+    if (corr_param.sideband != 'L') {
+      assert(corr_param.sideband == 'L');
+    }
+    sideband    = -1;
+  }
 
   Nf          = n2fftDC/2+1; //number of frequencies
   double dfr  = 1.0/(n2fftDC*tbs); // delta frequency
@@ -58,16 +62,17 @@ void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
 
   for (int jf=0; jf<Nf; jf++) {
     //frequency scale in the segment
-    fs[jf]=sideband*(jf*dfr-0.5*GenPrms.get_bwfl()-GenPrms.get_foffset());
+    //fs[jf]=sideband*(jf*dfr-0.5*GenPrms.get_bwfl()-GenPrms.get_foffset());
+    fs[jf]=sideband*(jf*dfr-0.5*corr_param.bandwidth);
   }
 
-  foffset     = GenPrms.get_foffset();
-  bwfl        = GenPrms.get_bwfl();
-  ovrfl       = GenPrms.get_ovrfl();
-  startf      = GenPrms.get_startf();
-  skyfreq     = GenPrms.get_skyfreq();
-
-  n2fftcorr   = GenPrms.get_n2fft();
+  foffset     = 0; //GenPrms.get_foffset();
+  bwfl        = corr_param.bandwidth;//GenPrms.get_bwfl();
+  ovrfl       = 0; //GenPrms.get_ovrfl();
+  startf      = corr_param.channel_freq; //GenPrms.get_startf();
+  skyfreq     = corr_param.channel_freq; //GenPrms.get_skyfreq();
+  
+  n2fftcorr   = corr_param.number_channels;
   
   segm = new double*[nstations];
   Bufs = new double*[nstations];
@@ -80,7 +85,7 @@ void DelayCorrection::set_parameters(GenP &GenPrms, StaP *StaPrms_)
     dcBufPrev[sn] = new double[2*BufSize];
   }
   
-  timePtr = GenPrms.get_usStart();//set timePtr to start for delay
+  timePtr = ((int64_t)corr_param.start_time)*1000;//set timePtr to start for delay (usec)
   BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
   
   //arrays and plans for delay correction
@@ -149,13 +154,16 @@ DelayCorrection::~DelayCorrection()
 
 //set local data reader parameter
 void DelayCorrection::set_sample_reader
-  (int sn, boost::shared_ptr<Bits_to_float_converter> sample_reader_)
+  (size_t sn, boost::shared_ptr<Bits_to_float_converter> sample_reader_)
 {
+  if (sn >= sample_reader.size()) {
+    sample_reader.resize(sn+1, boost::shared_ptr<Bits_to_float_converter>());
+  }
   sample_reader[sn]=sample_reader_;
 }
 
-void DelayCorrection::set_start_time(int64_t us_start) {
-  timePtr = us_start;//set timePtr to start for delay
+void DelayCorrection::set_start_time(int64_t ms_start) {
+  timePtr = ms_start*1000;//set timePtr to start for delay
 }
 
 
@@ -167,8 +175,16 @@ bool DelayCorrection::init_reader(int sn, int64_t startIS)
   BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
 
   //initialise dcBufPrev with data from input channel (can be Mk4 file)
-  int bytes_to_read = 2*BufSize;
-  int bytes_read = 0;
+  //int bytes_to_read = 2*BufSize;
+  int bytes_to_read = 
+    ((int64_t)(MAX_DELAY) *
+    corr_param.sample_rate *
+    corr_param.bits_per_sample) / 8000;
+
+  // read in samples [2*BufSize-bytes_read, 2*BufSize)
+  int bytes_read = 2*BufSize-bytes_to_read;
+  bytes_to_read = 2*BufSize;
+  
   while (bytes_read != bytes_to_read) {
     int status = sample_reader[sn]->get_data(bytes_to_read-bytes_read,
                                              &dcBufPrev[sn][bytes_read]);
@@ -217,14 +233,16 @@ bool DelayCorrection::delay_correct() {
   int jshift; //address shift due to signal delay wrt Earth center
   double time_of_one_correlation_segment = n2fftDC*tbs*1000000;
 
-  for (int stations=0; stations<nstations; stations++){
+  for (size_t stations=0; stations<nstations; stations++){
     //apply delay and phase corrections for all segments (n2fftDC long)
     //in other words process data in dcBufs, output in Bufs
-    Cdel_start = delTbl[stations].delay(timePtr, Delay_table_akima::Cdel);
+    assert(stations < delTbl.size());
+    Cdel_start = delTbl[stations].delay(timePtr);
     for (int jsegm=0; jsegm<Nsegm2DC; jsegm++) {
+
       // micro sec 
-      Time = timePtr + (int64_t)(jsegm*(time_of_one_correlation_segment)); 
-      Cdel_end = delTbl[stations].delay(Time, Delay_table_akima::Cdel);
+      Time = timePtr + (int64_t)(jsegm*(time_of_one_correlation_segment));
+      Cdel_end = delTbl[stations].delay(Time);
 
       // 1)calculate the address shift due to time delay for the current segment
       jshift = (int)(Cdel_start/tbs+0.5);
@@ -263,15 +281,24 @@ bool DelayCorrection::fill_data_before_delay_correction() {
     memcpy(&dcBufs[station][0], &dcBufPrev[station][0], 2*BufSize*sizeof(double));
     
     int bytes_to_read = BufSize;
+    if (bytes_to_read > sample_reader[station]->get_size_dataslice()) {
+      DEBUG_MSG(" ** CHECKING DATA_COUNTER: "
+                << bytes_to_read << " < " 
+                << sample_reader[station]->get_size_dataslice());
+      bytes_to_read = sample_reader[station]->get_size_dataslice();
+    }
+    assert(bytes_to_read > 0);
     int bytes_read = 0, status = 1;
     while ((status > 0) && (bytes_read != bytes_to_read)) {
       status = 
         sample_reader[station]->get_data(bytes_to_read-bytes_read,
-	   		                                 &dcBufs[station][2*BufSize]+bytes_read);
+                                         &dcBufs[station][2*BufSize]+bytes_read);
       bytes_read += status;
     }
 
     if (bytes_read != bytes_to_read) {
+      std::cout << "bytes_read:    " << bytes_read << std::endl;
+      std::cout << "bytes_to_read: " << bytes_to_read << std::endl;
       std::cout << "status != bytes_to_read, with station = " << station 
                 << std::endl;
       return false;
@@ -328,20 +355,19 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
   assert(delta_time > 0);
   double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
   double phi_end = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-    delTbl[station].delay(time, Delay_table_akima::Fdel);
+    delTbl[station].delay(time);
   double cosPhi_end = cos(phi_end);
   double sinPhi_end = sin(phi_end);
 
   for (int sample=0; sample<n2fftDC; sample++) {
-    if (((int)sample % n_recompute_delay) == 0) {
+    if ((sample % n_recompute_delay) == 0) {
       phi = phi_end;
       cosPhi = cosPhi_end;
       sinPhi = sinPhi_end;
 
       phi_end = 
         -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-        delTbl[station].delay(time+delta_time, 
-                              Delay_table_akima::Fdel);
+        delTbl[station].delay(time+delta_time);
 
       if (std::abs(phi_end-phi) < 0.4*maximal_phase_change) {
         // Sampling is too dense
@@ -350,8 +376,7 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
 
         phi_end = 
           -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-          delTbl[station].delay(time+delta_time, 
-                                Delay_table_akima::Fdel);
+          delTbl[station].delay(time+delta_time);
       }
 
       while (std::abs(phi_end-phi) > maximal_phase_change) {
@@ -364,8 +389,7 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
 
         phi_end = 
           -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-          delTbl[station].delay(time+delta_time, 
-                                Delay_table_akima::Fdel);
+          delTbl[station].delay(time+delta_time);
 
       } 
       time += delta_time;
@@ -395,6 +419,7 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
 //every time all data in Bufs are processed.
 bool DelayCorrection::fill_Bufs()
 {
+  assert(parameters_set);
   if (!fill_data_before_delay_correction()) {
     assert(false);
     return false;
@@ -418,7 +443,9 @@ Log_writer& DelayCorrection::get_log_writer()
 bool DelayCorrection::set_delay_table(int stations, Delay_table_akima &delay_table)
 {
   assert(stations >= 0);
-  assert((size_t)stations < delTbl.size());
+  if ((size_t)stations >= delTbl.size()) {
+    delTbl.resize(stations+1);
+  }
   delTbl[stations]=delay_table;
   
   return true;

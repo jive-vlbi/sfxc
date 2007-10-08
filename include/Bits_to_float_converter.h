@@ -30,6 +30,9 @@ public:
    **/
   void set_data_reader(boost::shared_ptr<Data_reader> data_reader);
   
+  uint64_t data_counter();
+  int get_size_dataslice();
+
 private:
   int bits_per_sample;
 

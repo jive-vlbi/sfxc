@@ -88,9 +88,11 @@ int64_t Input_node::get_time_stamp() {
 
 void Input_node::start() {
   while (status != END_NODE) {
+    if (get_rank() == 6) get_log_writer() << "Status: " << status << std::endl;
     switch (status) {
     case WAITING:
       { // Wait until we can start sending new data
+        DEBUG_MSG("STATUS = WAITING");
         if (channel_extractor != 
             boost::shared_ptr<Channel_extractor_mark4>()) {
           if (channel_extractor->get_current_time() < stop_time) {
@@ -112,16 +114,18 @@ void Input_node::start() {
       }
     case INITIALISING: 
       { // Wait untill a data writer has been connected to all channels
-        if (check_and_process_message() == TERMINATE_NODE) {
-          status = END_NODE;
-          break;
-        }
+        DEBUG_MSG("STATUS = INITIALISING");
         bool ready = true;
         for (int i=0; i<channel_extractor->n_channels(); i++) {
           ready &= !time_slicers[i].finished();
         }
         if (ready) {
           status = WRITING;
+        } else {
+          // Block until the next message arrives
+          if (check_and_process_message() == TERMINATE_NODE) {
+            status = END_NODE;
+          }
         }
         break;
       }
@@ -173,6 +177,7 @@ void Input_node::start() {
       }
     }
   }
+  DEBUG_MSG("STATUS = END_NODE");
 
   while (!data_writers_ctrl.ready()) usleep(100000); // .1 second:
 
@@ -198,7 +203,11 @@ void Input_node::set_stop_time(int64_t stop_time_) {
 
 void Input_node::goto_time(int64_t new_time) {
   // NGHK: CHECK FOR DURATION OF THE CHANNEL BUFFER
-  assert(get_time_stamp() <= new_time);
+  if (get_time_stamp() > new_time) {
+    DEBUG_MSG(get_time_stamp());
+    DEBUG_MSG(new_time);
+    assert(get_time_stamp() <= new_time);
+  }
   channel_extractor->goto_time(new_time-MAX_DELAY);
   start_time = new_time-MAX_DELAY;
   // NGHK: TODO: Somehow empty the time slicers
@@ -209,6 +218,13 @@ void
 Input_node::
 add_time_slice(int channel, int stream, 
                int starttime_slice, int stoptime_slice) {
+  if (get_rank() == 3) {
+    get_log_writer() << "Input node: add_time_slice()" << std::endl; 
+    get_log_writer() << "          : channel         " << channel << std::endl; 
+    get_log_writer() << "          : stream          " << stream  << std::endl; 
+    get_log_writer() << "          : starttime_slice " << starttime_slice << std::endl; 
+    get_log_writer() << "          : stoptime_slice  " << stoptime_slice << std::endl;
+  }
   starttime_slice -= MAX_DELAY; // Needed for the delay correction
   int start_byte = 
     ((starttime_slice-start_time) * 
@@ -217,6 +233,7 @@ add_time_slice(int channel, int stream,
     ((stoptime_slice-starttime_slice) * 
      ((channel_extractor->bit_rate()/channel_extractor->n_channels())/8000));
 
+  assert(data_writers_ctrl.get_data_writer(stream) != NULL);
   assert(data_writers_ctrl.get_data_writer(stream)->get_size_dataslice() <= 0);
 
   data_writers_ctrl.get_data_writer(stream)->

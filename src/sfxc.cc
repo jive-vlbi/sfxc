@@ -20,9 +20,7 @@
 #include <iostream>
 #include <stdlib.h>
 
-#include "genFunctions.h"
-#include "InData.h"
-#include "delayTable.h"
+#include "Delay_table_akima.h"
 #include "MPI_Transfer.h"
 
 
@@ -53,7 +51,9 @@ int main(int argc, char *argv[]) {
   MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  
+
+  DEBUG_MSG(" pid = " << getpid());
+
   assert(argc == 3);
   char *ctrl_file = argv[1];
   char *vex_file = argv[2];

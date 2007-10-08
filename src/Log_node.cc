@@ -42,7 +42,8 @@ Log_node::Log_node(int rank, int nNodes, Log_writer *writer)
 }
 
 Log_node::~Log_node() {
-  assert(check_and_process_waiting_message() == NO_MESSAGE);
+  sleep(1);
+  check_and_process_waiting_message();
 }
 
 void Log_node::start() {

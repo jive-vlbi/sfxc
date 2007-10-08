@@ -19,18 +19,13 @@ void
 MPI_Transfer::
 send(Delay_table_akima &table, int sn, int rank) {
   uint32_t n_datapoints = table.times.size();
-  int size = 4*sizeof(int32_t) + 2*n_datapoints*sizeof(double);
+  int size = 2*sizeof(int32_t) + 2*n_datapoints*sizeof(double);
   int position=0;
   char buffer[size];
 
   // First integer is the station number
   MPI_Pack(&sn, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
   
-  // Scalars
-  MPI_Pack(&table.cde, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
-  MPI_Pack(&table.mde, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
-  MPI_Pack(&table.rde, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD); 
-
   // Arrays
   // Send the length for convenience
   MPI_Pack(&n_datapoints, 1, MPI_UINT32, buffer, size, 
@@ -39,7 +34,7 @@ send(Delay_table_akima &table, int sn, int rank) {
            buffer, size, &position, MPI_COMM_WORLD); 
   MPI_Pack(&table.delays[0], n_datapoints, MPI_DOUBLE,
            buffer, size, &position, MPI_COMM_WORLD); 
-  assert(position <= size);
+  assert(position == size);
 
   MPI_Send(buffer, position, MPI_PACKED, rank, 
            MPI_TAG_DELAY_TABLE, MPI_COMM_WORLD);
@@ -62,15 +57,6 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
   // First, get the station number
   MPI_Unpack(buffer, size, &position, &sn, 1, MPI_INT32, MPI_COMM_WORLD);
 
-  
-  // Scalars
-  MPI_Unpack(buffer, size, &position, &table.cde, 
-             1, MPI_INT32, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &table.mde, 
-             1, MPI_INT32, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &table.rde, 
-             1, MPI_INT32, MPI_COMM_WORLD);
-  
   // Arrays
   // first the size of the array
   uint32_t n_datapoints;
@@ -86,6 +72,11 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
   assert(table.delays.size() == n_datapoints);
 
   assert(position == size);
+
+  table.begin_scan = 0;
+  table.end_scan   = 0;
+  bool result = table.initialise_next_scan();
+  assert(result);
 }
 
 void 
@@ -219,7 +210,7 @@ void
 MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   int size = 0;
   size = 
-    6*sizeof(int32_t) + 
+    8*sizeof(int32_t) + sizeof(int64_t) + sizeof(char) +  
     corr_param.station_streams.size()*3*sizeof(int32_t);
   
   int position = 0; 
@@ -233,9 +224,19 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
            message_buffer, size, &position, MPI_COMM_WORLD); 
   MPI_Pack(&corr_param.number_channels, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD); 
+  MPI_Pack(&corr_param.slice_nr, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD); 
+  
   MPI_Pack(&corr_param.sample_rate, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD); 
   MPI_Pack(&corr_param.bits_per_sample, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD); 
+  
+  MPI_Pack(&corr_param.channel_freq, 1, MPI_INT64,
+           message_buffer, size, &position, MPI_COMM_WORLD); 
+  MPI_Pack(&corr_param.bandwidth, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD); 
+  MPI_Pack(&corr_param.sideband, 1, MPI_CHAR,
            message_buffer, size, &position, MPI_COMM_WORLD); 
   
   for (Correlation_parameters::Station_iterator station = 
@@ -282,10 +283,24 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
              &corr_param.number_channels, 1, MPI_INT32, 
              MPI_COMM_WORLD); 
   MPI_Unpack(buffer, size, &position, 
+             &corr_param.slice_nr, 1, MPI_INT32, 
+             MPI_COMM_WORLD); 
+
+  MPI_Unpack(buffer, size, &position, 
              &corr_param.sample_rate, 1, MPI_INT32, 
              MPI_COMM_WORLD); 
   MPI_Unpack(buffer, size, &position, 
              &corr_param.bits_per_sample, 1, MPI_INT32, 
+             MPI_COMM_WORLD); 
+
+  MPI_Unpack(buffer, size, &position, 
+             &corr_param.channel_freq, 1, MPI_INT64, 
+             MPI_COMM_WORLD); 
+  MPI_Unpack(buffer, size, &position, 
+             &corr_param.bandwidth, 1, MPI_INT32, 
+             MPI_COMM_WORLD); 
+  MPI_Unpack(buffer, size, &position, 
+             &corr_param.sideband, 1, MPI_CHAR, 
              MPI_COMM_WORLD); 
 
   while (position < size) {

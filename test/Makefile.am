@@ -38,10 +38,6 @@ TESTS           = \
 OBJ = ../src/utils.cc \
       ../src/TCP_Connection.cc \
       ../src/MPI_Transfer.cc \
-      ../src/runPrms.cc \
-      ../src/genPrms.cc \
-      ../src/staPrms.cc \
-      ../src/genFunctions.cc \
       ../src/Control_parameters.cc \
       ../src/Delay_table_akima.cc \
       ../src/Channel_extractor_mark4.cc \
@@ -84,34 +80,34 @@ OBJ = ../src/utils.cc \
       ../src/CorrelationCore.cc
 
 test_mpi_SOURCES = \
-  test_mpi.cc
+  test_mpi.cc ../src/utils.cc
 
 test_buffer_SOURCES = \
-  test_buffer.cc
+  test_buffer.cc ../src/utils.cc
 
 test_Time_slicer_SOURCES = \
   test_Time_slicer.cc \
-  ../src/Data_writer.cc ../src/Data_writer_file.cc
-
-test_Transfer_control_parameters_SOURCES = \
-  $(OBJ) test_Transfer_control_parameters.cc 
+  ../src/Data_writer.cc ../src/Data_writer_file.cc ../src/utils.cc
 
 test_Data_reader_file_SOURCES = \
   test_Data_reader_file.cc ../src/Data_reader.cc \
   ../src/Data_reader_file.cc ../src/Data_writer.cc \
   ../src/Data_writer_file.cc \
-  ../src/Log_writer.cc ../src/Log_writer_cout.cc
+  ../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/utils.cc
 
 test_Data_reader_TCP_SOURCES = \
   test_Data_reader_TCP.cc ../src/Data_reader_tcp.cc ../src/Data_writer.cc \
   ../src/Data_writer_tcp.cc ../src/Data_reader.cc ../src/TCP_Connection.cc ../src/Data_reader_file.cc \
-  ../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/Data_reader_buffer.cc
+  ../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/Data_reader_buffer.cc ../src/utils.cc
+
+test_Transfer_control_parameters_SOURCES = \
+  $(OBJ) test_Transfer_control_parameters.cc
 
 test_Data_reader_mark5_SOURCES = \
-  test_Data_reader_mark5.cc ../src/Data_reader_mark5.cc $(OBJ)
+  $(OBJ) test_Data_reader_mark5.cc ../src/Data_reader_mark5.cc
 
 test_Channel_extractor_SOURCES = \
-  test_Channel_extractor.cc $(OBJ)
+  $(OBJ) test_Channel_extractor.cc
 
 test_Input_node_SOURCES = \
   $(OBJ) test_Input_node.cc

@@ -23,6 +23,7 @@ int main(int argc, char *argv[]) {
   // Get Track_parameters for every scan x station
   std::vector<std::string> scans;
   control_parameters.get_vex().get_scans(std::back_inserter(scans));
+  
   for (size_t i=0; i<scans.size(); i++) {
     // Get all stations for a certain scan
     std::vector<std::string> stations;
@@ -46,10 +47,19 @@ int main(int argc, char *argv[]) {
   }
 
   for (size_t i=0; i<scans.size(); i++) {
-    // Check the correlation parameters
-    Correlation_parameters correlation_param = 
-      control_parameters.get_correlation_parameters(scans[i], 
+    const Vex::Node &root_node = 
+      control_parameters.get_vex().get_root_node(); 
+    std::string mode = root_node["SCHED"][scans[i]]["mode"]->to_string();
+    std::string freq = root_node["MODE"][mode]["FREQ"][0]->to_string();
+    
+    for (Vex::Node::const_iterator 
+         station = root_node["FREQ"][freq]->begin("chan_def");
+         station != root_node["FREQ"][freq]->end("chan_def"); ++station) {
+      // Check the correlation parameters
+      control_parameters.get_correlation_parameters(scans[i],
+                                                    station[4]->to_string(),
                                                     station_streams);
+    }
   }
   return 0;
 }

@@ -33,12 +33,12 @@ void check_control_parameters(int rank,
     }
   }
 
-  if (rank==0) {
-//     { // Test copy constructor:
-//       Control_parameters parameters2 = control_parameters;
-//       assert(control_parameters == parameters2);
-//     }
+  Vex::Node::const_iterator freqs = 
+    control_parameters.get_vex().get_root_node()["FREQ"];
+  std::string channel_name = 
+    freqs->begin()["chan_def"][4]->to_string();
 
+  if (rank==0) {
     MPI_Transfer mpi_transfer;
 
 
@@ -62,8 +62,10 @@ void check_control_parameters(int rank,
 
       // Check the correlation parameters
       Correlation_parameters correlation_param = 
-        control_parameters.get_correlation_parameters(control_parameters.scan(i), 
-                                                      station_streams);
+        control_parameters.
+        get_correlation_parameters(control_parameters.scan(i),
+                                   channel_name,
+                                   station_streams);
       mpi_transfer.send(correlation_param, 1);
     
     }
@@ -103,10 +105,12 @@ void check_control_parameters(int rank,
       // Check the correlation parameters
       Correlation_parameters correlation_param = 
         control_parameters.get_correlation_parameters(control_parameters.scan(i), 
+                                                      channel_name,
                                                       station_streams);
       // Double extraction
       Correlation_parameters correlation_param2 = 
         control_parameters.get_correlation_parameters(control_parameters.scan(i), 
+                                                      channel_name,
                                                       station_streams);
       assert(correlation_param == correlation_param2);
       // Copy constructor
@@ -121,41 +125,34 @@ void check_control_parameters(int rank,
   }
 }
 
-void check_delay_table(int rank, char *filename_delay_table) {
-  std::cout << "NOT CHECKING THE DELAY TABLE" << std::endl;
-  //  if (rank==0) {
-  //    std::cout << "check delay: " << filename_delay_table << std::endl;
-  //  }
-  //
-  //  // Read delay_table:
-  //  DelayTable delayTable;
-  //  delayTable.set_cmr(GenPrms);
-  //  delayTable.readDelayTable(filename_delay_table);
-  //  int sn = 134; // Some random value
-  //
-  //  MPI_Transfer transfer;
-  //  if (rank==0) {
-  //    { // assignment
-  //      DelayTable delayTable2 = delayTable;
-  //      assert(delayTable == delayTable2);
-  //    }
-  //  
-  //    { // copy constructor
-  //      DelayTable delayTable2(delayTable);
-  //      assert(delayTable == delayTable2);
-  //    }
-  //    
-  //    transfer.send_delay_table(delayTable,sn,1);
-  //  } else {
-  //    DelayTable delayTable2;
-  //    delayTable2.set_cmr(GenPrms);
-  //    MPI_Status status;
-  //    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-  //    int sn2;
-  //    transfer.receive_delay_table(status,delayTable2,sn2);
-  //    assert(delayTable == delayTable2);
-  //    assert(sn == sn2);
-  //  }
+void check_delay_table(int rank, const std::string &filename_delay_table) {
+   // Read delay_table:
+   Delay_table_akima delayTable;
+   delayTable.open(filename_delay_table.c_str());
+   int sn = 134; // Some random value
+  
+   MPI_Transfer transfer;
+   if (rank==0) {
+     { // assignment
+       Delay_table_akima delayTable2 = delayTable;
+       assert(delayTable == delayTable2);
+     }
+   
+     { // copy constructor
+       Delay_table_akima delayTable2(delayTable);
+       assert(delayTable == delayTable2);
+     }
+     
+     transfer.send(delayTable,sn,1);
+   } else {
+     Delay_table_akima delayTable2;
+     MPI_Status status;
+     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+     int sn2;
+     transfer.receive(status,delayTable2,sn2);
+     assert(delayTable == delayTable2);
+     assert(sn == sn2);
+   }
 }
 
 
@@ -185,12 +182,14 @@ int main(int argc, char *argv[]) {
   
   check_control_parameters(rank, parameters);
 
-  DEBUG_MSG("Delay table not tested");
-
-  //  for (int i=0; i<GenPrms.get_nstations(); i++) {
-  //    MPI_Barrier( MPI_COMM_WORLD );
-  //    check_delay_table(rank, StaPrms[i].get_delaytable());
-  //  }
+  for (size_t station_nr=0; 
+       station_nr<parameters.number_stations();
+       station_nr++) {
+    MPI_Barrier( MPI_COMM_WORLD );
+    std::string delay_table = 
+      parameters.get_delay_table_name(parameters.station(station_nr));
+    check_delay_table(rank, delay_table);
+  }
 
   //close the mpi stuff
   MPI_Barrier( MPI_COMM_WORLD );

@@ -19,10 +19,7 @@
 #include <iostream>
 #include <stdlib.h>
 
-#include "genFunctions.h"
-#include "InData.h"
 #include "MPI_Transfer.h"
-
 
 #include <Node.h>
 #include <Data_reader2buffer.h>
@@ -87,7 +84,7 @@ void Test_manager_node::start() {
   const std::string &station_name = control_parameters.station(0);
   start_input_node(input_node, station_name);
   std::string filename = control_parameters.data_sources(station_name)[0];
-  set_single_data_reader(input_node, filename);
+  set_data_reader(input_node, /*stream_nr*/0, filename);
 
   // Send the track parameters
   std::vector<std::string> scans;

@@ -35,22 +35,22 @@ private:
 class Manager_node : public Abstract_manager_node {
 public:
   enum Status {
-    START_NEW_SCAN,       ///< Initialisation of a new scan
-    START_NEW_TIME_SLICE, ///< Initialisation of a new time slice
-    END_NODE              ///< Terminate the node
+    /// Initialisation of a new scan
+    START_NEW_SCAN=0,
+    /// Start the correlation of the time slice
+    START_CORRELATION_TIME_SLICE,
+    /// Acquiring correlator nodes for the next time slice
+    START_CORRELATOR_NODES_FOR_TIME_SLICE,
+    /// Everything has been set for the time slice, continue to the next.
+    GOTO_NEXT_TIMESLICE,
+    /// Stop the correlator, wait for the nodes to finish
+    STOP_CORRELATING,
+    /// Stop the correlator, wait for the nodes to finish
+    WAIT_FOR_OUTPUT_NODE,
+    /// Terminate the node 
+    END_NODE
   };
   /// Different states a correlator node can have
-  enum Correlating_state {
-    /// The correlator node is being initialised
-    INITIALISING = 0,
-    /// The correlator node is currently correlating a time slice
-    CORRELATING,
-    /// The correlator node is ready to process a time slice
-    READY,
-    /// The correlator node is terminated
-    FINISHED
-  };
-
   Manager_node(int rank, int numtasks,
                Log_writer *log_writer,
                const Control_parameters &control_parameters);
@@ -58,15 +58,40 @@ public:
 
   void start();
 
-  void set_correlating_state(size_t correlator_nr, Correlating_state state);
+  /// Initialise is called from start() to initialise the correlation process. 
+  void initialise();
 
   void hook_added_data_reader(size_t reader) {};
   void hook_added_data_writer(size_t writer) {};
 
+  /// Called when the output_node is finished
+  void end_correlation();
 private:
   Manager_node_controller manager_controller;
   Status status;
   std::vector<Correlating_state> state_correlator_node;
+  
+  static const int duration_time_slice = 1000; // Duration in miliseconds
+  
+  /// Start day of the experiment
+  int32_t start_day;
+  
+  /// Start time of the experiment in miliseconds from midnight on the startday
+  int32_t start_time;
+  /// Stop time of the experiment in miliseconds from midnight on the startday
+  int32_t stop_time;
+  /// Stop time of the scan in miliseconds from midnight on the startday
+  int32_t stop_time_scan;
+  /// Stop time of the integration slice in miliseconds from midnight 
+  /// on the startday
+  int32_t stoptime_timeslice;
+  /// The number of the current stream
+//  int32_t stream_nr;
+  /// The number of the integration slice
+  int32_t slice_nr;
+
+  // A list of all scan names.
+  std::list<std::string> scans;
 };
 
 

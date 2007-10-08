@@ -5,16 +5,18 @@
 #include <Vex++.h>
 
 
+
 /** Information about the mark4 tracks needed by the input node. **/
 class Track_parameters {
 public:
-  Track_parameters() {}
+  Track_parameters() : sample_rate(0) {
+  }
+ 
   class Channel_parameters {
   public:
-    Channel_parameters()
-      : sign_headstack(-1), 
-        magn_headstack(-1) {
+    Channel_parameters() : sign_headstack(-1), magn_headstack(-1) {
     }
+
 
     bool operator==(const Channel_parameters &other) const;
 
@@ -39,9 +41,16 @@ public:
 };
 
 
-/** Information about the mark4 tracks needed by the input node. **/
+/** Information about the correlation neede by the correlator node. **/
 class Correlation_parameters {
 public:
+  Correlation_parameters()
+    : start_time(0), stop_time(0), integration_time(0),
+      number_channels(0), slice_nr(-1), sample_rate(0), 
+      bits_per_sample(0), channel_freq(0), bandwidth(0), sideband('n') {
+  }     
+
+  
   bool operator==(const Correlation_parameters& other) const;
 
   class Station_parameters {
@@ -62,11 +71,16 @@ public:
   int32_t stop_time;        // End of the slice in milliseconds
   int32_t integration_time; // In milliseconds
   int32_t number_channels;  // number of frequency channels
+  int32_t slice_nr;         // Number of the integration slice
 
   int32_t sample_rate;      // #Samples per second
   int32_t bits_per_sample;  // For all stations equal
 
-  Station_list                     station_streams; // input streams used
+  int64_t channel_freq;     // Center frequency of the band in Hz
+  int32_t bandwidth;        // Bandwidth of the channel in Hz
+  char    sideband;         // U or L
+
+  Station_list station_streams; // input streams used
 };
 
 
@@ -117,13 +131,21 @@ public:
   // Return the correlation parameters needed by a correlator node
   Correlation_parameters 
   get_correlation_parameters(const std::string &scan_name,
+                             const std::string &channel_name,
                              const std::map<std::string, int> 
                              &correlator_node_station_to_input) const;
 
+  // Return the Frequency channels from the VEX file, filtered by the ctrl file
+  size_t number_frequency_channels();
+  std::string frequency_channel(size_t i);
+  
   std::string get_delay_table_name(const std::string &station_name) const;
 
   const Vex &get_vex() const;
 private:
+  std::string ctrl_filename;
+  std::string vex_filename;
+
   Json::Value ctrl;        // Correlator control file
   Vex         vex;         // Vex file
   bool        initialised; // The control parameters are initialised

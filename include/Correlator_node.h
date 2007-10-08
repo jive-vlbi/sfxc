@@ -90,17 +90,17 @@ public:
     
 
   /// Get the Integration_slice (the class doing the actual work)
-//   Integration_slice &get_integration_slice() {
-//     return integration_slice;
-//   }
+   Integration_slice &get_integration_slice() {
+     return integration_slice;
+   }
 //   Data_writer &get_data_writer() {
 //     return get_integration_slice().get_data_writer();
 //   }
   
   int get_correlate_node_number();
-  void set_parameters(RunP &runPrms, GenP &genPrms, StaP *staPrms);
+//  void set_parameters(Correlation_parameters &corr_param);
   
-  void set_slice_number(int sliceNr);
+//  void set_slice_number(int sliceNr);
 
   /** Number of integration steps done in the current time slice **/
   int number_of_integration_steps_in_time_slice();
@@ -129,6 +129,8 @@ private:
   int sliceNr;
 
   Correlation_parameters correlation_parameters;
+  
+  std::vector< boost::shared_ptr<Bits_to_float_converter> > bits2float_converters;
 };
 
 #endif // CORRELATOR_NODE_H

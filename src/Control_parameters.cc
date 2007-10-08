@@ -18,11 +18,14 @@ Control_parameters::Control_parameters(const char *ctrl_file,
 
 bool 
 Control_parameters::
-initialise(const char *ctrl_filename, const char *vex_filename, 
+initialise(const char *ctrl_file, const char *vex_file, 
            std::ostream& log_writer) {
+  ctrl_filename = ctrl_file;
+  vex_filename = vex_file; 
+  
   { // parse the control file
     Json::Reader reader;
-    std::ifstream in(ctrl_filename);
+    std::ifstream in(ctrl_file);
     if (!in.is_open()) {
       log_writer << "Could not open control file" << std::endl;
       return false;
@@ -38,7 +41,9 @@ initialise(const char *ctrl_filename, const char *vex_filename,
   }
 
   { // parse the vex file
-    if (!vex.open(vex_filename)) return false;
+    if (!vex.open(vex_file)) return false;
+    // NGHK: TODO: Make the Frequency channels array a 2D array
+    // NGHK: TODO: set the Frequency channels if the array is empty
   }
 
   initialised = true;
@@ -168,6 +173,16 @@ Control_parameters::number_stations_in_scan(const std::string& scan) const {
   return n_scans;
 }
 
+size_t 
+Control_parameters::number_frequency_channels() {
+  return ctrl["channels"].size();
+}
+std::string
+Control_parameters::frequency_channel(size_t channel) {
+  assert(channel < number_frequency_channels());
+  return ctrl["channels"][channel].asString();
+}
+
 const Vex &
 Control_parameters::get_vex() const {
   assert(initialised);
@@ -230,6 +245,7 @@ Control_parameters::get_track_parameters(const std::string &track_name) const {
 Correlation_parameters 
 Control_parameters::
 get_correlation_parameters(const std::string &scan_name,
+                           const std::string &channel_name,
                            const std::map<std::string, int> 
                            &correlator_node_station_to_input) const {
   Vex::Node::const_iterator scan = 
@@ -252,6 +268,19 @@ get_correlation_parameters(const std::string &scan_name,
   // assumes the same bits per sample for all stations
   corr_param.bits_per_sample = bits_per_sample();
 
+  corr_param.sideband = ' ';
+  for (Vex::Node::const_iterator ch_it = freq->begin("chan_def");
+       ch_it != freq->end("chan_def");
+       ++ch_it) {
+    if (ch_it[4]->to_string() == channel_name) {
+      corr_param.channel_freq = (int64_t)ch_it[1]->to_double_amount("MHz")*1000000;
+      corr_param.bandwidth = (int)ch_it[3]->to_double_amount("MHz")*1000000;
+      corr_param.sideband = ch_it[2]->to_char();
+    }
+  }
+  assert(corr_param.sideband != ' ');
+  assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');
+  
   // now get the station streams
   for (Vex::Node::const_iterator station = scan->begin("station");
        station != scan->end("station"); ++station) {
@@ -274,7 +303,29 @@ get_correlation_parameters(const std::string &scan_name,
 std::string
 Control_parameters::
 get_delay_table_name(const std::string &station_name) const {
-  assert(false);
+  assert(strncmp(ctrl["delay_directory"].asString().c_str(),"file://",7)==0);
+  std::string delay_table_name = 
+    std::string(ctrl["delay_directory"].asString().c_str()+7) + 
+    "/" + ctrl["exper_name"].asString() +
+    "_" +station_name + ".del";
+  if (access(delay_table_name.c_str(), R_OK) == 0) {
+    return delay_table_name;
+  }
+  DEBUG_MSG("Need to generate delay table: " << delay_table_name);
+  std::string cmd = 
+    "generate_delay_model "+vex_filename+
+    " "+station_name+
+    " "+delay_table_name;
+  DEBUG_MSG(cmd);
+  int result = system(cmd.c_str());
+  if (result != 0) {
+    DEBUG_MSG("generation of the Delay table failed");
+    assert(false);
+  }
+  if (access(delay_table_name.c_str(), R_OK) == 0) {
+    return delay_table_name;
+  }
+    assert(false);
   return std::string("");
 }
 
@@ -309,8 +360,15 @@ Correlation_parameters::operator==(const Correlation_parameters& other) const {
   if (stop_time != other.stop_time) return false;
   if (integration_time != other.integration_time) return false;
   if (number_channels != other.number_channels) return false;
+  if (slice_nr != other.slice_nr) return false;
+
   if (sample_rate != other.sample_rate) return false;
   if (bits_per_sample != other.bits_per_sample) return false;
+
+  if (channel_freq != other.channel_freq) return false;
+  if (bandwidth != other.bandwidth) return false;
+  if (sideband != other.sideband) return false;
+
   if (station_streams != station_streams) return false;
   return true;
 }
@@ -324,3 +382,4 @@ operator==(const Correlation_parameters::Station_parameters& other) const {
 
   return true;
 }
+

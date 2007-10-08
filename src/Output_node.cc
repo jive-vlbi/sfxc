@@ -71,6 +71,7 @@ void Output_node::start() {
     switch (status) {
     case STOPPED: 
       {
+        DEBUG_MSG("status: STOPPED");
         assert(curr_stream == -1);
         // blocking:
         if (check_and_process_message() == TERMINATE_NODE) {
@@ -80,6 +81,8 @@ void Output_node::start() {
         if (curr_slice == number_of_time_slices) {
           status = END_NODE;
         } else if (!input_streams_order.empty()) {
+          DEBUG_MSG("HERE? " << input_streams_order.begin()->first 
+                    << " == " << curr_slice);
           if (input_streams_order.begin()->first == curr_slice) {
             status = START_NEW_SLICE;
           }
@@ -88,11 +91,13 @@ void Output_node::start() {
       }
     case START_NEW_SLICE:
       {
+        DEBUG_MSG("status: START_NEW_SLICE");
         assert(curr_stream == -1);
 
         assert(!input_streams_order.empty());
         assert(input_streams_order.begin()->first == curr_slice);
         curr_stream = input_streams_order.begin()->second;
+        assert(curr_stream >= 0);
         input_streams_order.erase(input_streams_order.begin());
         input_streams[curr_stream]->goto_next_slice();
 
@@ -101,12 +106,14 @@ void Output_node::start() {
       }
     case WRITE_OUTPUT: 
       {
+        DEBUG_MSG("status: WRITE_OUTPUT");
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           assert(false);
           status = END_NODE;
           break;
         }
         
+        DEBUG_MSG(curr_stream);
         write_output();
 
         // Check whether we arrived at the end of the slice
@@ -119,9 +126,12 @@ void Output_node::start() {
       }
     case END_SLICE: 
       {
+        DEBUG_MSG("status: END_SLICE");
         curr_stream = -1;
         curr_slice ++;
+        DEBUG_MSG("Slice nr: " << curr_slice << " of " << number_of_time_slices);
         if (curr_slice == number_of_time_slices) {
+          DEBUG_MSG("Slice nr: " << curr_slice << " of " << number_of_time_slices);
           status = END_NODE;
         } else if (input_streams_order.empty()) {
           status = STOPPED;
@@ -134,29 +144,36 @@ void Output_node::start() {
       }
     case END_NODE:
       { // For completeness sake
+        assert(false);
         break;
       }
     }
   }
+  // End the node;
+  DEBUG_MSG("status: END_NODE");
+  int32_t msg=0;
+  MPI_Send(&msg, 1, MPI_INT32, 
+           RANK_MANAGER_NODE, MPI_TAG_OUTPUT_NODE_FINISHED, MPI_COMM_WORLD);
 }
 
 void 
 Output_node::
-set_weight_of_input_stream(int num, int64_t weight, size_t size) {
-  assert(num >= 0);
+set_weight_of_input_stream(int stream, int64_t weight, size_t size) {
+  DEBUG_MSG("set_weight_of_input_stream " << stream << " " << weight << " " << size);
+  assert(stream >= 0);
   
-  assert(num < (int)input_streams.size());
+  assert(stream < (int)input_streams.size());
   // Check that the weight does not exist yet:
   assert(input_streams_order.find(weight) == input_streams_order.end());
 
   // Add the weight to the priority queue:
-  input_streams_order.insert(Input_stream_priority_map_value(weight,num));
+  input_streams_order.insert(Input_stream_priority_map_value(weight,stream));
 
   // Add the weight to the priority queue:
-  input_streams[num]->set_length_time_slice(size);
+  input_streams[stream]->set_length_time_slice(size);
 
   assert(status != END_NODE);
-  status = WRITE_OUTPUT;
+//  status = WRITE_OUTPUT;
 }
 
 void Output_node::time_slice_finished(int rank, int64_t nBytes) {
@@ -170,8 +187,10 @@ void Output_node::write_output() {
   assert(input_streams[curr_stream] != NULL);
   // Write data ...
   value_type &out_elem = data_writer_ctrl.buffer()->produce();
+  DEBUG_MSG("curr_stream: " << curr_stream);
   int nBytes = input_streams[curr_stream]->write_bytes(out_elem);
   data_writer_ctrl.buffer()->produced(nBytes);
+  DEBUG_MSG("Wrote: " << nBytes);
 }
 
 void Output_node::hook_added_data_reader(size_t reader) {

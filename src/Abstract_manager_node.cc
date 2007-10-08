@@ -30,7 +30,8 @@ Abstract_manager_node::~Abstract_manager_node() {
 void 
 Abstract_manager_node::
 start_input_node(int rank, const std::string &station) {
-  input_node_rank[station] = rank;
+  input_node_map[station] = input_node_rank.size();
+  input_node_rank.push_back(rank);
 
   // starting an input reader
   MPI_Send(&rank, 1, MPI_INT32, 
@@ -59,7 +60,10 @@ start_output_node(int rank) {
 void
 Abstract_manager_node::
 start_correlator_node(int rank) {
-  int correlator_node_nr = correlator_node_rank.size();
+  size_t correlator_node_nr = correlator_node_rank.size();
+  state_correlator_node.resize(correlator_node_nr+1);
+  assert(correlator_node_nr < state_correlator_node.size());
+  state_correlator_node[correlator_node_nr] = INITIALISING;
   correlator_node_rank.push_back(rank);
 
   // starting a correlator node
@@ -71,7 +75,9 @@ start_correlator_node(int rank) {
   MPI_Recv(&msg, 1, MPI_INT32,
            rank, MPI_TAG_NODE_INITIALISED, 
            MPI_COMM_WORLD, &status);
+  
 }
+
 void
 Abstract_manager_node::
 start_log_node(int rank) {
@@ -87,6 +93,23 @@ start_log_node(int rank) {
   MPI_Recv(&msg, 1, MPI_INT32, 
            RANK_LOG_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
 }
+
+void
+Abstract_manager_node::
+start_log_node(int rank, char *filename) {
+  assert(rank == RANK_LOG_NODE);
+  int msg=0;
+  // Log node:
+  MPI_Send(&msg, 1, MPI_INT32, 
+           RANK_LOG_NODE, MPI_TAG_SET_LOG_NODE, MPI_COMM_WORLD);
+  MPI_Send(filename, strlen(filename)+1, MPI_CHAR, 
+           RANK_LOG_NODE, MPI_TAG_LOG_NODE_SET_OUTPUT_FILE, MPI_COMM_WORLD);
+
+  MPI_Status status;
+  MPI_Recv(&msg, 1, MPI_INT32, 
+           RANK_LOG_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
+}
+
 void
 Abstract_manager_node::
 end_node(int rank) {
@@ -109,33 +132,26 @@ get_status(int rank) {
 }
 
 /// Setting of the data readers/writers
-void 
+void
 Abstract_manager_node::
-set_single_data_reader(int rank, 
-                       const std::string &filename) {
-  int len = filename.size() +1; // for \0
-  char c_filename[len];
-  strcpy(c_filename, filename.c_str());
-  c_filename[len-1] = '\0';
-  
-  MPI_Send(c_filename, len, MPI_CHAR, 
-           rank, MPI_TAG_SET_DATA_READER_FILE, MPI_COMM_WORLD);
-  
+set_data_reader(int rank, int32_t stream_nr, 
+                const std::string &filename) {
+  int len = sizeof(int32_t)+filename.size() +1; // for \0
+  char msg[len];
+  memcpy(msg,&stream_nr,sizeof(int32_t));
+  memcpy(msg+sizeof(int32_t), filename.c_str(), filename.size()+1);
+
+  MPI_Send(msg, len, MPI_CHAR,
+           rank, MPI_TAG_ADD_DATA_READER_FILE2, MPI_COMM_WORLD);
+
   wait_for_setting_up_channel(rank);
 }
 
-void
-Abstract_manager_node::
-set_multiple_data_reader(int rank, int stream_nr, 
-                         const std::string &filename) {
-  assert(false);
-}
-
-void
-Abstract_manager_node::
-set_single_data_writer(int rank, 
-                       const std::string &filename) {
-  assert(false);
+void Abstract_manager_node::
+set_data_writer_void(int writer_rank, int writer_stream_nr) {
+  MPI_Send(&writer_stream_nr, 1, MPI_INT32,
+           writer_rank, MPI_TAG_ADD_DATA_WRITER_VOID2, MPI_COMM_WORLD);
+  wait_for_setting_up_channel(writer_rank);
 }
 
 void
@@ -143,22 +159,32 @@ Abstract_manager_node::
 set_multiple_data_writer(int rank, int stream_nr, 
                          const std::string &filename) {
   assert(strncmp(filename.c_str(), "file://", 7) == 0);
-  int len = 1 + filename.size() +1; // for \0
-  char c_filename[len];
-  snprintf(c_filename, len, "%c%s", (char)stream_nr, filename.c_str());
-  assert(c_filename[len-1] == '\0');
+  int len = sizeof(int32_t) + filename.size() +1; // for \0
+  char msg[len];
+  memcpy(msg,&stream_nr,sizeof(int32_t));
+  memcpy(msg+sizeof(int32_t), filename.c_str(), filename.size()+1);
+  assert(msg[len-1] == '\0');
   
-  MPI_Send(c_filename, len, MPI_CHAR, 
-           rank, MPI_TAG_ADD_DATA_WRITER_FILE, MPI_COMM_WORLD);
+  MPI_Send(msg, len, MPI_CHAR, 
+           rank, MPI_TAG_ADD_DATA_WRITER_FILE2, MPI_COMM_WORLD);
   
   wait_for_setting_up_channel(rank);
+}
+
+void
+Abstract_manager_node::set_TCP(int writer_rank, int writer_stream_nr,
+                               int reader_rank, int reader_stream) {
+  int32_t msg[3] = {writer_stream_nr, reader_rank, reader_stream};
+  MPI_Send(msg, 3, MPI_INT32, 
+           writer_rank, MPI_TAG_ADD_TCP, MPI_COMM_WORLD);
+  
+  wait_for_setting_up_channel(writer_rank);
 }
 
 void 
 Abstract_manager_node::
 input_node_set(const std::string &station, Track_parameters &track_params) {
-  MPI_Transfer transfer;
-  transfer.send(track_params, input_rank(station));
+  MPI_Transfer::send(track_params, input_rank(station));
 }
 
 int32_t
@@ -203,13 +229,13 @@ void
 Abstract_manager_node::
 wait_for_setting_up_channel(int rank) {
   MPI_Status status;
-  int64_t channel;
+  int32_t channel;
   if (rank >= 0) {
-    MPI_Recv(&channel, 1, MPI_INT64, rank,
-             MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
+    MPI_Recv(&channel, 1, MPI_INT32, rank,
+             MPI_TAG_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
   } else {
-    MPI_Recv(&channel, 1, MPI_INT64, MPI_ANY_SOURCE,
-             MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
+    MPI_Recv(&channel, 1, MPI_INT32, MPI_ANY_SOURCE,
+             MPI_TAG_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
   }
 }
 
@@ -231,21 +257,82 @@ number_correlator_nodes() const {
   return correlator_node_rank.size();
 }
 
-int 
+size_t
 Abstract_manager_node::
-input_rank(const std::string &station) {
-  assert(input_node_rank.find(station) != input_node_rank.end());
-  return input_node_rank[station];
+input_node(const std::string &station) const {
+  std::map<std::string, int>::const_iterator it = input_node_map.find(station); 
+  assert(it != input_node_map.end());
+  return it->second;
+}
+size_t
+Abstract_manager_node::
+input_rank(size_t input_node_nr) const {
+  assert(input_node_nr < input_node_rank.size());
+  return input_node_rank[input_node_nr];
+}
+size_t
+Abstract_manager_node::
+input_rank(const std::string &station_name) const {
+  return input_rank(input_node(station_name));
 }
 
 void
 Abstract_manager_node::
-correlator_node_set_all(Correlation_parameters &parameters) {
-  assert(false);
+correlator_node_set(Correlation_parameters &parameters,
+                    int corr_node_nr) {
+  MPI_Transfer::send(parameters,correlator_node_rank[corr_node_nr]);
 }
 
 void
 Abstract_manager_node::
-correlator_node_set_all(Delay_table_akima &delay_table) {
+correlator_node_set_all(Delay_table_akima &delay_table,
+                        const std::string &station_name) {
+  for (size_t i=0; i<correlator_node_rank.size(); i++) {
+    MPI_Transfer::send(delay_table, 
+                       input_node(station_name), 
+                       correlator_node_rank[i]);
+  }
+}
+
+void
+Abstract_manager_node::
+set_correlating_state(size_t correlator_nr, Correlating_state state) {
+  assert(correlator_nr < state_correlator_node.size());
+  DEBUG_MSG("Set correlating state node=" << correlator_nr << " state: " << state);
+  state_correlator_node[correlator_nr] = state;
+}
+Abstract_manager_node::Correlating_state 
+Abstract_manager_node::
+get_correlating_state(size_t correlator_nr) {
+  assert(correlator_nr < state_correlator_node.size());
+  return state_correlator_node[correlator_nr];
+}
+
+const std::map<std::string, int> &
+Abstract_manager_node::get_input_node_map() const {
+  return input_node_map;
+}
+
+size_t 
+Abstract_manager_node::get_channel(const std::string &channel) {
+  for (size_t channel_nr = 0;
+       channel_nr < control_parameters.number_frequency_channels();
+       channel_nr++) {
+    if (channel == control_parameters.frequency_channel(channel_nr)) {
+      return channel_nr;
+    }
+  }
+  // error message
   assert(false);
+  return control_parameters.number_frequency_channels();
+}
+
+void
+Abstract_manager_node::
+output_node_set_timeslice(int slice_nr, int stream_nr, int bytes) {
+  int32_t msg_output_node[] = {stream_nr, slice_nr, bytes};
+  MPI_Send(&msg_output_node, 3, MPI_INT32,
+           RANK_OUTPUT_NODE,
+           MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
+           MPI_COMM_WORLD);
 }

@@ -7,6 +7,7 @@
  *
  */
 
+#include "utils.h"
 #include "Log_writer_file.h"
 #include <fstream>
 #include <assert.h>
@@ -41,7 +42,8 @@ Log_writer_file_buffer::Log_writer_file_buffer(char *filename,
                                                int message_level,
                                                int buffer_size)
  : Log_writer_buffer(message_level, buffer_size),
-   out(filename) {
+   out(filename+7) {
+  assert(strncmp(filename, "file://", 7)==0);
   assert(out.is_open());
 }
 
@@ -80,7 +82,7 @@ void Log_writer_file_buffer::put_buffer() {
       buffer[len] = 0;
 
       if (current_level <= max_level)
-        out << buffer;
+        out << buffer << std::flush;
         
       setp(pbase(), epptr());
       delete [] buffer;
