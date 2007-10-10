@@ -98,6 +98,32 @@ Control_parameters::number_channels() const {
   return ctrl["number_channels"].asInt();
 }
 
+std::string
+Control_parameters::sideband(int i) const {
+  return ctrl["subbands"][i]["sideband"].asString();
+}
+
+std::string
+Control_parameters::reference_station() const {
+  return ctrl["reference_station"].asString();
+}
+
+std::string
+Control_parameters::experiment() const {
+  return ctrl["exper_name"].asString();
+}
+
+std::string 
+Control_parameters::channel(int i) const {
+  return ctrl["channels"][i].asString();
+}
+
+size_t
+Control_parameters::channels_size() const {
+  return ctrl["channels"].size();
+}
+
+
 int
 Control_parameters::bits_per_sample() const {
   Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"]->begin();

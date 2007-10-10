@@ -110,6 +110,10 @@ public:
 
   int integration_time() const; // Integration time in miliseconds
   int number_channels() const;
+	
+	std::string sideband(int i) const;
+	std::string reference_station() const;
+	std::string experiment() const;
 
 
   // Get functions from the vex file:
@@ -118,6 +122,9 @@ public:
   std::string scan(int i) const;
   size_t number_scans() const;
 
+  std::string channel(int i) const;
+  size_t channels_size() const;
+	
   std::string station_in_scan(const std::string& scan, int i) const;
   size_t number_stations_in_scan(const std::string& scan) const;
 

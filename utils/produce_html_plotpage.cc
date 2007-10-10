@@ -8,7 +8,6 @@
 #include <complex>
 #include <stdio.h>
 #include <fstream>
-#include <assert.h>
 #include <fftw3.h>
 #include <math.h>
 #include <iomanip>
@@ -16,19 +15,13 @@
 #include <string>
 #include <vector>
 
-#include <utils.h>
 #include <complex>
 #include <Log_writer_cout.h>
 #include <gnuplot_i.h>
 
-#include <runPrms.h>
-#include <genPrms.h>
-#include <staPrms.h>
-#include <constPrms.h>
+#include <Control_parameters.h>
 
-RunP RunPrms;
-GenP GenPrms;
-StaP StaPrms[NstationsMax];
+Control_parameters ConPrms;
 
 struct Plot_data {
   std::string job_name;
@@ -76,14 +69,13 @@ private:
 Plot_generator::Plot_generator(char *filename)
 {
   Log_writer_cout log_writer;
-
   int err = 
     initialise_control(filename, log_writer, RunPrms, GenPrms, StaPrms);
   if (err != 0) return;
 
   log_writer(0) << GenPrms.get_corfile() << std::endl;
   
-  nLags =GenPrms.get_n2fft()+1;
+  nLags =ConPrms.ctrl["number_channels"]+1;
   in.resize(nLags);
   out.resize(nLags);
   magnitude.resize(nLags);
@@ -101,6 +93,8 @@ Plot_generator::Plot_generator(char *filename)
   // Auto correlations
   int nstations = GenPrms.get_nstations();
   // Cross correlations
+
+
   if (RunPrms.get_ref_station(0) == -1) {
     Plot_data plot_data;
     set_plot_data(plot_data);
