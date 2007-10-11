@@ -10,7 +10,7 @@ bin_PROGRAMS = generate_delay_model \
                produce_fringe \
                analyse_fringes \
                print_headers \
-               produce_html_testparams \
+               produce_html_plotpage \
                make_sfxc_experiment_makefile \
                vex2ccf \
 							 generate_uvw_coordinates \
@@ -33,14 +33,14 @@ print_headers_LDFLAGS = \
 analyse_fringes_SOURCES = analyse_fringes.cc
 analyse_fringes_LDFLAGS = -lfftw3 -lm
 
-produce_html_testparams_SOURCES = produce_html_testparams.cc \
+produce_html_plotpage_SOURCES = produce_html_plotpage.cc \
 	../src/Control_parameters.cc \
 	../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/utils.cc \
 	gnuplot_i.cc
-produce_html_testparams_LDFLAGS = -lfftw3 -lm -lvex_parser -lantlr3c -ljson
+produce_html_plotpage_LDFLAGS = -lfftw3 -lm -lvex_parser -lantlr3c -ljson
 
-produce_html_testparams_CFLAGS =-I@top_srcdir@/lib -m32 -std=c99
-produce_html_testparams_CXXFLAGS =-I@top_srcdir@/lib -m32 -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
+produce_html_plotpage_CFLAGS =-I@top_srcdir@/lib -m32 -std=c99
+produce_html_plotpage_CXXFLAGS =-I@top_srcdir@/lib -m32 -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
 
 make_sfxc_experiment_makefile_SOURCES = make_sfxc_experiment_makefile.cc \
 	@top_srcdir@/lib/vex_parser/vexplus.cc
