@@ -9,7 +9,7 @@
 /** Information about the mark4 tracks needed by the input node. **/
 class Track_parameters {
 public:
-  Track_parameters() : sample_rate(0) {
+  Track_parameters() : track_bit_rate(0) {
   }
  
   class Channel_parameters {
@@ -36,7 +36,7 @@ public:
   bool operator==(const Track_parameters &other) const;
 
   // data
-  int                                         sample_rate; // in Ms/s
+  int                                         track_bit_rate; // in Ms/s
   Channel_map                                 channels;
 };
 
@@ -99,7 +99,9 @@ public:
                   const char *vex_filename, 
                   std::ostream& log_writer);
 
-  // Get functions from the correlation control file:
+  /****************************************************/
+  /* Get functions from the correlation control file: */
+  /****************************************************/
   Date get_start_time();
   Date get_stop_time();
   std::vector<std::string> data_sources(const std::string &station) const;
@@ -111,26 +113,43 @@ public:
   int integration_time() const; // Integration time in miliseconds
   int number_channels() const;
 	
-	std::string sideband(int i) const;
-	std::string reference_station() const;
-	std::string experiment() const;
+  std::string sideband(int i) const;
+  std::string reference_station() const;
+  std::string experiment() const;
+  
+  std::string get_delay_table_name(const std::string &station_name) const;
 
+  std::string channel(int i) const;
+  size_t channels_size() const;
 
-  // Get functions from the vex file:
+  
+
+  /****************************************************/
+  /* Get functions from the vex file:                 */
+  /****************************************************/
   int bits_per_sample() const;
 
   std::string scan(int i) const;
   size_t number_scans() const;
 
-  std::string channel(int i) const;
-  size_t channels_size() const;
 	
   std::string station_in_scan(const std::string& scan, int i) const;
   size_t number_stations_in_scan(const std::string& scan) const;
-
   int station_in_scan(const std::string& scan, 
                       const std::string &station) const;
 
+  // Return the Frequency channels from the VEX file, filtered by the ctrl file
+  size_t number_frequency_channels() const;
+  std::string frequency_channel(size_t channel_nr) const;
+
+  char polarisation(const std::string &if_node, 
+                    const std::string &if_ref) const;
+  
+  
+  /****************************************************/
+  /* Extract structs for the correlation:             */
+  /****************************************************/
+  
   // Return the track parameters needed by the input node
   Track_parameters 
   get_track_parameters(const std::string &track_name) const;
@@ -141,12 +160,6 @@ public:
                              const std::string &channel_name,
                              const std::map<std::string, int> 
                              &correlator_node_station_to_input) const;
-
-  // Return the Frequency channels from the VEX file, filtered by the ctrl file
-  size_t number_frequency_channels();
-  std::string frequency_channel(size_t i);
-  
-  std::string get_delay_table_name(const std::string &station_name) const;
 
   const Vex &get_vex() const;
 private:

@@ -28,20 +28,28 @@ initialise(const char *ctrl_file, const char *vex_file,
     std::ifstream in(ctrl_file);
     if (!in.is_open()) {
       log_writer << "Could not open control file" << std::endl;
+      DEBUG_MSG("Could not open control file");
+      assert(false);
       return false;
     }
     bool ok = reader.parse(in, ctrl);
     if ( !ok ) {
       // report to the user the failure and their locations in the document.
+      DEBUG_MSG("Failed to parse configuration");
+      DEBUG_MSG(reader.getFormatedErrorMessages());
       log_writer  << "Failed to parse configuration\n"
                   << reader.getFormatedErrorMessages()
                   << std::endl;
+      assert(false);
       return false;
     }
   }
 
   { // parse the vex file
-    if (!vex.open(vex_file)) return false;
+    if (!vex.open(vex_file)) {
+      assert(false);
+      return false;
+    }
     // NGHK: TODO: Make the Frequency channels array a 2D array
     // NGHK: TODO: set the Frequency channels if the array is empty
   }
@@ -200,13 +208,14 @@ Control_parameters::number_stations_in_scan(const std::string& scan) const {
 }
 
 size_t 
-Control_parameters::number_frequency_channels() {
+Control_parameters::number_frequency_channels() const {
   return ctrl["channels"].size();
 }
+
 std::string
-Control_parameters::frequency_channel(size_t channel) {
-  assert(channel < number_frequency_channels());
-  return ctrl["channels"][channel].asString();
+Control_parameters::frequency_channel(size_t channel_nr) const {
+  assert(channel_nr < number_frequency_channels());
+  return ctrl["channels"][channel_nr].asString();
 }
 
 const Vex &
@@ -221,51 +230,93 @@ Control_parameters::get_vex() const {
 Track_parameters 
 Control_parameters::get_track_parameters(const std::string &track_name) const {
   Track_parameters result;
-  result.sample_rate = -1;
+  result.track_bit_rate = -1;
   Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
 
-  for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
-       fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
-    const std::string &channel_name = fanout_def_it[1]->to_string();
-    // sample_rate
-    for (Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"]->begin();
-         freq != vex.get_root_node()["FREQ"]->end(); ++freq) {
-      for (Vex::Node::const_iterator chan = freq->begin("chan_def");
-           chan != freq->end("chan_def"); ++chan) {
-        if (chan[4]->to_string() == channel_name) {
-          if (result.sample_rate == -1) {
-            result.sample_rate = 
-              (int)(freq["sample_rate"]->to_double_amount("Ms/sec"));
-          } else {
-            assert(result.sample_rate ==
-                   (int)(freq["sample_rate"]->to_double_amount("Ms/sec")));
+  for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
+    const std::string &channel_name = frequency_channel(ch_nr);
+
+    // tracks
+    Track_parameters::Channel_parameters &channel_param
+      = result.channels[channel_name];
+    
+    for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
+         fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
+      if (channel_name == fanout_def_it[1]->to_string()) {
+        // sample_rate
+        for (Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"]->begin();
+             freq != vex.get_root_node()["FREQ"]->end(); ++freq) {
+          for (Vex::Node::const_iterator chan = freq->begin("chan_def");
+               chan != freq->end("chan_def"); ++chan) {
+            if (chan[4]->to_string() == channel_name) {
+              if (result.track_bit_rate == -1) {
+                result.track_bit_rate = 
+                  (int)(freq["sample_rate"]->to_double_amount("Ms/sec")*1000000)
+                       / (fanout_def_it->size()-4);
+              } else {
+                assert(result.track_bit_rate ==
+                  (int)(freq["sample_rate"]->to_double_amount("Ms/sec")*1000000)
+                       / (fanout_def_it->size()-4));
+              }
+            }
+          }
+        }
+
+        Vex::Node::const_iterator it = fanout_def_it->begin();
+        ++it; ++it; ++it;
+        if (fanout_def_it[2]->to_string() == "sign") {
+          channel_param.sign_headstack = it->to_int();
+          ++it;
+          for (; it != fanout_def_it->end(); ++it) {
+            channel_param.sign_tracks.push_back(it->to_int());
+          }
+        } else {
+          assert(fanout_def_it[2]->to_string() == "mag");
+          channel_param.magn_headstack = it->to_int();
+          ++it;
+          for (; it != fanout_def_it->end(); ++it) {
+            channel_param.magn_tracks.push_back(it->to_int());
           }
         }
       }
     }
-
-    // tracks
-    Track_parameters::Channel_parameters &channel_param
-      = result.channels[fanout_def_it[1]->to_string()];
-    Vex::Node::const_iterator it = fanout_def_it->begin();
-    ++it; ++it; ++it;
-    if (fanout_def_it[2]->to_string() == "sign") {
-      channel_param.sign_headstack = it->to_int();
-      ++it;
-      for (; it != fanout_def_it->end(); ++it) {
-        channel_param.sign_tracks.push_back(it->to_int());
-      }
-    } else {
-      assert(fanout_def_it[2]->to_string() == "mag");
-      channel_param.magn_headstack = it->to_int();
-      ++it;
-      for (; it != fanout_def_it->end(); ++it) {
-        channel_param.magn_tracks.push_back(it->to_int());
-      }
-    }
   }
-
+  
   return result;
+}
+
+char 
+Control_parameters::
+polarisation(const std::string &if_node, 
+             const std::string &if_ref) const {
+  return vex.polarisation(if_node, if_ref);
+//  char polarisation = ' ';
+//  for (Vex::Node::const_iterator bbc_block = vex.get_root_node()["BBC"]->begin();
+//       bbc_block != vex.get_root_node()["BBC"]->end(); ++bbc_block) {
+//    for (Vex::Node::const_iterator bbc_it = bbc_block->begin("BBC_assign");
+//         bbc_it != bbc_block->end("BBC_assign"); ++bbc_it) {
+//      if (bbc_it[0]->to_string() == BBC) {
+//        std::string IF_name = bbc_it[2]->to_string();
+//        // Now check the IF section:
+//        for (Vex::Node::const_iterator if_block = vex.get_root_node()["IF"]->begin();
+//            if_block != vex.get_root_node()["IF"]->end(); ++if_block) {
+//          for (Vex::Node::const_iterator if_it = bbc_block->begin("if_def");
+//              if_it != bbc_block->end("if_def"); ++if_it) {
+//            if (if_it[0]->to_string() == IF_name) {
+//              // Check polarisation
+//              if (polarisation == ' ') {
+//                polarisation = if_it[2]->to_char();
+//              } else {
+//                assert(polarisation == if_it[2]->to_char());
+//              }
+//            }
+//          }
+//        }
+//      }
+//    }
+//  }
+//  assert(polarisation != ' ');
+//  return polarisation;
 }
 
 Correlation_parameters 
@@ -357,7 +408,7 @@ get_delay_table_name(const std::string &station_name) const {
 
 bool 
 Track_parameters::operator==(const Track_parameters &other) const {
-  if (sample_rate != other.sample_rate) return false;
+  if (track_bit_rate != other.track_bit_rate) return false;
   if (channels != other.channels) return false;
 
   return true;
