@@ -1,1 +1,17 @@
-aclocal && autoheader && autoconf && automake --add-missing && ./configure
+#
+# SFXC software Correlator
+#   modified version for SuperComputing 2007 demo
+# 
+#  
+# In order to compile this software you need
+#  fftw3
+#  jsoncpp
+# if jsoncpp is in an system-wide everything shoud go fine 
+# if not... please considering to install it into the localusr/ subdir
+#
+# libtool can be outdated ... in this case you have to run
+# "libtoolize" in the base dir
+#
+#then run the 
+./compile.sh
+
