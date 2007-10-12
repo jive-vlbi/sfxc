@@ -24,6 +24,14 @@ Log_writer::get_messagelevel() {
   return buffer->get_messagelevel();
 }
 
+void Log_writer::set_maxlevel(int level) {
+  buffer->set_maxlevel(level);
+}
+
+int Log_writer::get_maxlevel() {
+  return buffer->get_maxlevel();
+}
+
 Log_writer_buffer::Log_writer_buffer(int message_level, int buffer_size)
   : std::streambuf(), max_level(message_level), current_level(message_level)
 {
@@ -50,4 +58,12 @@ Log_writer_buffer::set_messagelevel(int i) {
 int
 Log_writer_buffer::get_messagelevel() {
   return current_level;
+}
+
+void Log_writer_buffer::set_maxlevel(int level) {
+  max_level = level;
+}
+
+int Log_writer_buffer::get_maxlevel() {
+  return max_level;
 }

@@ -8,7 +8,6 @@
  */
 
 #include <Abstract_manager_node.h>
-#include <utils.h>
 #include <MPI_Transfer.h>
 #include <assert.h>
 
@@ -42,6 +41,8 @@ start_input_node(int rank, const std::string &station) {
   MPI_Recv(&msg, 1, MPI_INT32, 
            rank, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD,
            &status);
+
+  set_message_level(rank, get_log_writer().get_maxlevel());
 }
 void 
 Abstract_manager_node::
@@ -56,6 +57,8 @@ start_output_node(int rank) {
   MPI_Recv(&msg, 1, MPI_INT32, 
            rank, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD,
            &status);
+
+  set_message_level(rank, get_log_writer().get_maxlevel());
 }
 void
 Abstract_manager_node::
@@ -76,6 +79,7 @@ start_correlator_node(int rank) {
            rank, MPI_TAG_NODE_INITIALISED, 
            MPI_COMM_WORLD, &status);
   
+  set_message_level(rank, get_log_writer().get_maxlevel());
 }
 
 void
@@ -92,6 +96,7 @@ start_log_node(int rank) {
   MPI_Status status;
   MPI_Recv(&msg, 1, MPI_INT32, 
            RANK_LOG_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
+  set_message_level(rank, get_log_writer().get_maxlevel());
 }
 
 void
@@ -108,6 +113,14 @@ start_log_node(int rank, char *filename) {
   MPI_Status status;
   MPI_Recv(&msg, 1, MPI_INT32, 
            RANK_LOG_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
+
+  set_message_level(rank, get_log_writer().get_maxlevel());
+}
+
+void 
+Abstract_manager_node::set_message_level(int rank, int32_t messagelevel) {
+  MPI_Send(&messagelevel, 1, MPI_INT32, 
+           rank, MPI_TAG_SET_MESSAGELEVEL, MPI_COMM_WORLD);
 }
 
 void
@@ -298,7 +311,6 @@ void
 Abstract_manager_node::
 set_correlating_state(size_t correlator_nr, Correlating_state state) {
   assert(correlator_nr < state_correlator_node.size());
-  DEBUG_MSG("Set correlating state node=" << correlator_nr << " state: " << state);
   state_correlator_node[correlator_nr] = state;
 }
 Abstract_manager_node::Correlating_state 

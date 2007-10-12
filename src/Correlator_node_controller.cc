@@ -25,8 +25,7 @@
 #include <MPI_Transfer.h>
 
 Correlator_node_controller::Correlator_node_controller(Correlator_node &node)
-: Controller(node), 
-node(node)
+: Controller(node), node(node)
 {
 }
 

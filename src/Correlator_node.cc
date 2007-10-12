@@ -49,37 +49,24 @@ Correlator_node::~Correlator_node()
 void Correlator_node::start()
 {
   while (true) {
-    if (nr_corr_node ==0) {
-      get_log_writer() << "Correlator node, status = " << status << std::endl;
-    }
-    DEBUG_MSG("Correlator node, status = " << status);
     switch (status) {
       case STOPPED: {
         // blocking:
-        if (nr_corr_node ==0) {
-          get_log_writer() << "Correlator node, STOPPED" << std::endl;
-        }
         if (check_and_process_message()==TERMINATE_NODE) {
           status = END_CORRELATING;
-        }
-        if (nr_corr_node ==0) {
-          get_log_writer() << "Correlator node, /STOPPED" << std::endl;
         }
         break;
       }
       case CORRELATING: {
-        MPI_DEBUG_MSG("CORRELATING");
         get_log_writer()(2) << " status = CORRELATING" << std::endl;
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           status = END_CORRELATING;
         }
 
         if (status==CORRELATING) {
-          DEBUG_MSG("correlate_state: " << correlate_state);
           switch(correlate_state) {
             case INITIALISE_TIME_SLICE: 
             {
-              DEBUG_MSG("correlate_state: INITIALISE_TIME_SLICE");
               if (data_readers_ctrl.get_data_reader(0)->data_counter()!=0) {
                 DEBUG_MSG("data_readers_ctrl.get_data_reader(0)->data_counter()!=0");
               }
@@ -88,7 +75,6 @@ void Correlator_node::start()
               // Initialise the correlator for a new time slice:
 
               startIS=correlation_parameters.start_time;
-              DEBUG_MSG("startIS = " << startIS);
 
               for (size_t sn=0; 
                    sn<data_readers_ctrl.number_of_data_readers(); sn++) {
@@ -100,10 +86,8 @@ void Correlator_node::start()
             case CORRELATE_INTEGRATION_SLICE: 
             {
               get_log_writer()(2) << " correlate_state = CORRELATE_INTEGRATION_SLICE" << std::endl;
-              DEBUG_MSG("correlate_state: CORRELATE_INTEGRATION_SLICE");
               // Do one integration step:
               //while still time slices and data are available
-              DEBUG_MSG("end of timeslice? " << startIS << " < " << correlation_parameters.stop_time);
               if (startIS >= correlation_parameters.stop_time) {
                 correlate_state = END_TIME_SLICE;
                 break;
@@ -115,22 +99,17 @@ void Correlator_node::start()
               for (size_t i=0; i<correlation_parameters.station_streams.size(); i++) {
                 int stream_nr = correlation_parameters.station_streams[i].station_stream;
                 assert(stream_nr < data_readers_ctrl.number_of_data_readers());
-                DEBUG_MSG("DATA_COUNTER: " 
-                          << data_readers_ctrl.get_data_reader(stream_nr)->data_counter());
               }
 
-              DEBUG_MSG("CORRELATE_INTEGRATION_SLICE");
               //set start of next time slice to: start of time slice + time to average
               assert(correlation_parameters.integration_time > 0);
               startIS += correlation_parameters.integration_time; //in usec
-              DEBUG_MSG("CORRELATE_INTEGRATION_SLICE");
 
               break;
             }
             case END_TIME_SLICE: 
             {
               get_log_writer()(2) << " correlate_state = END_TIME_SLICE" << std::endl;
-              DEBUG_MSG("correlate_state: END_TIME_SLICE");
               // Finish processing a time slice:
               for (size_t sn=0; 
                    sn<data_readers_ctrl.number_of_data_readers(); sn++) {
@@ -145,14 +124,11 @@ void Correlator_node::start()
                   assert(bytes_read > 0);
                   bytes_to_read -= bytes_read;
                 }
-                DEBUG_MSG("Data_counter: " << data_readers_ctrl.get_data_reader(sn)->data_counter());
                 assert(data_readers_ctrl.get_data_reader(sn)->end_of_dataslice());
                 data_readers_ctrl.get_data_reader(sn)->reset_data_counter();
               }
 
               // NGHK: Maybe a check on the data writer byte-size here??
-              DEBUG_MSG("Data_counter of the output_node: " 
-                        << data_writer_ctrl.get_data_writer(0)->data_counter());
               data_writer_ctrl.get_data_writer(0)->reset_data_counter();
               // Notify manager node:
               int32_t msg = get_correlate_node_number();
@@ -189,14 +165,11 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
     correlation_parameters.sample_rate *
     correlation_parameters.bits_per_sample) / 8000;
 
-  DEBUG_MSG("TIME_SLICE: bytes = " << bytes);
   
   for (size_t i=0; i<correlation_parameters.station_streams.size(); i++) {
     int stream_nr = correlation_parameters.station_streams[i].station_stream;
     assert(stream_nr < data_readers_ctrl.number_of_data_readers());
     
-    DEBUG_MSG("size of the dataslice: " << bytes);
-
     data_readers_ctrl.get_data_reader(stream_nr)->set_size_dataslice(bytes);
   }
 
@@ -214,8 +187,6 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
 }
 
 void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
-  //assert(false);
-  DEBUG_MSG("Set_delay_table: " << sn);
   get_integration_slice().set_delay_table(sn, table);
 }
 

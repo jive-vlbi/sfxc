@@ -105,7 +105,6 @@ Channel_extractor_mark4(boost::shared_ptr<Data_reader> reader,
   char block[SIZE_MK4_FRAME];
   total_tracks = find_header(block, reader);
 
-  DEBUG_MSG("total_tracks:" << total_tracks);
   switch (total_tracks) {
   case 8:
     {
@@ -388,7 +387,6 @@ Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader,
    debug_level(debug_level),
    block_count(0)
 { 
-  DEBUG_MSG("HERE?");
   memcpy(block, first_data_block, SIZE_MK4_FRAME);
   // Make sure the header starts on the first byte:
   size_t result = reader->get_bytes(SIZE_MK4_FRAME*(sizeof(T)-1), 
@@ -397,19 +395,11 @@ Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader,
   
   mark4_header.set_header(block);
   mark4_header.check_header();
-  {
-    DEBUG_MSG("Time, track 0: " << mark4_header.get_time_str(0));
-    DEBUG_MSG("Time, track 6: " << mark4_header.get_time_str(6));
-    DEBUG_MSG("Time, track 4: " << mark4_header.get_time_str(4));
-    DEBUG_MSG("Time, track 2: " << mark4_header.get_time_str(2));
-    DEBUG_MSG("Time, track 7: " << mark4_header.get_time_str(7));
-  }
   start_day = mark4_header.day(0);
   start_microtime = mark4_header.get_time_in_ms(0);
   start_microtime = 
     start_microtime*1000 + mark4_header.microsecond(0, start_microtime);
   reader->reset_data_counter();
-  DEBUG_MSG("/HERE?");
 }
 
 template <class T>
@@ -447,14 +437,6 @@ set_track_parameters(const Track_parameters &parameters) {
         track++;
       }
     }
-    {
-      std::stringstream msg;
-      msg << "TRACKS:";
-      for (size_t i=0; i<tracks[curr_channel].size(); i++) {
-        msg << " " << tracks[curr_channel][i];
-      }
-      DEBUG_MSG(msg.str().c_str());
-    }
   }
   return true;
 }
@@ -463,7 +445,6 @@ template <class T>
 int 
 Channel_extractor_mark4_implementation<T>::
 goto_time(int64_t _time) {
-  DEBUG_MSG("Goto_time() "<<_time);
   // convert time to microseconds:
   int64_t microtime = _time*1000 + mark4_header.microsecond(0, _time);
 
@@ -482,15 +463,10 @@ goto_time(int64_t _time) {
     return 0;
   }
 
-  DEBUG_MSG("read_n_bytes delta:" << (microtime-current_microtime));
-  DEBUG_MSG("read_n_bytes bit_rate:" << track_bit_rate());
   size_t read_n_bytes = 
     (microtime-current_microtime)*track_bit_rate()*sizeof(T)/1000000 -
     SIZE_MK4_FRAME*sizeof(T);
   
-  DEBUG_MSG("read_n_bytes:" << read_n_bytes);
-  DEBUG_MSG("read_n_bytes delta:" << (microtime-current_microtime));
-  DEBUG_MSG("read_n_bytes bit_rate:" << track_bit_rate());
   assert(read_n_bytes > 0);
   // Read an integer number of frames
   assert(read_n_bytes %(SIZE_MK4_FRAME*sizeof(T))==0);
@@ -555,8 +531,7 @@ get_bytes(std::vector< char* > &output_buffer) {
     if (output_buffer[channel] == NULL) continue;
     int data_position = 0; // Position in the mark4 data block
     size_t output_position = 0;
-    if (insert_random_headers && false) {
-      assert(false);
+    if (insert_random_headers) {
       // there are 160 bits in the header
       while (data_position < 160) {
         output_buffer[channel][output_position] = // 8 random bits:
@@ -634,7 +609,6 @@ check_time_stamp() {
     (reader->data_counter()*1000000/(sizeof(T)*delta_time));
   
   if (computed_TBR != track_bit_rate()) {
-    DEBUG_MSG("Change in time: " << computed_TBR << " - " << track_bit_rate());
     return false;
   }
   return true;

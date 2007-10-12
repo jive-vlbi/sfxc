@@ -122,7 +122,7 @@ public:
   std::string channel(int i) const;
   size_t channels_size() const;
 
-  
+  int message_level() const;
 
   /****************************************************/
   /* Get functions from the vex file:                 */

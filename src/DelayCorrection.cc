@@ -343,10 +343,6 @@ bool DelayCorrection::fill_data_before_delay_correction() {
     }
 
     if (bytes_read != bytes_to_read) {
-      std::cout << "bytes_read:    " << bytes_read << std::endl;
-      std::cout << "bytes_to_read: " << bytes_to_read << std::endl;
-      std::cout << "status != bytes_to_read, with station = " << station 
-                << std::endl;
       return false;
     }
   }
@@ -387,10 +383,7 @@ bool DelayCorrection::fractional_bit_shift(double const delay,
     double phi  = tmp1*fs[jf] + tmp2;
     std::complex<double> tmp(cos(phi),sin(phi));
     sls_freq[jf] *= tmp;
-    
-//    std::cout << sls_freq[jf] << std::endl;
   }
-//  assert(false);
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
   fftw_execute(planF2T);
@@ -398,90 +391,17 @@ bool DelayCorrection::fractional_bit_shift(double const delay,
 }
 
 bool DelayCorrection::fringe_stopping(int station, int jsegm) {
-//  int64_t time = timePtr + (int64_t)(jsegm*n2fftDC*tbs*1000000);
-//  int64_t delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
-//  assert(delta_time > 0);
-//  double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
-//  double phi_end = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-//    delTbl[station].delay(time);
-//  double cosPhi_end = cos(phi_end);
-//  double sinPhi_end = sin(phi_end);
-//
-//  for (int sample=0; sample<n2fftDC; sample++) {
-//    if ((sample % n_recompute_delay) == 0) {
-//      phi = phi_end;
-//      cosPhi = cosPhi_end;
-//      sinPhi = sinPhi_end;
-//
-//      phi_end = 
-//        -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-//        delTbl[station].delay(time+delta_time);
-//
-//      if (std::abs(phi_end-phi) < 0.4*maximal_phase_change) {
-//        // Sampling is too dense
-//        n_recompute_delay *= 2;
-//        delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
-//
-//        phi_end = 
-//          -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-//          delTbl[station].delay(time+delta_time);
-//      }
-//
-//      while (std::abs(phi_end-phi) > maximal_phase_change) {
-//        // Sampling is not dense enough
-//        n_recompute_delay /= 2;
-//        if (n_recompute_delay < (int)(SR/1000000)) {
-//          n_recompute_delay = (int)(SR/1000000);
-//        }
-//        delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
-//
-//        phi_end = 
-//          -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-//          delTbl[station].delay(time+delta_time);
-//
-//      } 
-//      time += delta_time;
-//      
-//      cosPhi_end = cos(phi_end);
-//      sinPhi_end = sin(phi_end);
-//
-//      deltaCosPhi = (cosPhi_end-cosPhi)/n_recompute_delay;
-//      deltaSinPhi = (sinPhi_end-sinPhi)/n_recompute_delay;
-//    }
-//    
-//    // 6b)apply normalization and multiply by 2.0
-//    // NHGK: Why only the real part
-//    sls[sample].real() *= 2.0;
-//        
-//    // 7)subtract dopplers and put real part in Bufs for the current segment
-//    Bufs[station][n2fftDC*jsegm+sample] = 
-//      sls[sample].real()*cosPhi - sls[sample].imag()*sinPhi;
-//    cosPhi += deltaCosPhi;
-//    sinPhi += deltaSinPhi;
-//
-//    std::cout << Bufs[station][n2fftDC*jsegm+sample] << std::endl;
-//  }
-//  assert(false);
   int64_t time = timePtr + (int64_t)(jsegm*n2fftDC*tbs*1000000);
   int64_t delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
   assert(delta_time > 0);
-//  DEBUG_MSG(time);
-//  DEBUG_MSG(delta_time);
   double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
   double phi_end = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
     delTbl[station].delay(time);
-//  std::cout.precision(20);
-//  DEBUG_MSG(skyfreq);
-//  DEBUG_MSG(startf);
-//  DEBUG_MSG(sideband);
-//  DEBUG_MSG(bwfl);
-//  DEBUG_MSG(delTbl[station].delay(time));
-//  DEBUG_MSG(phi_end);
   double cosPhi_end = cos(phi_end);
   double sinPhi_end = sin(phi_end);
 
   for (int sample=0; sample<n2fftDC; sample++) {
-    if (((int)sample % n_recompute_delay) == 0) {
+    if ((sample % n_recompute_delay) == 0) {
       phi = phi_end;
       cosPhi = cosPhi_end;
       sinPhi = sinPhi_end;
@@ -521,8 +441,7 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
       deltaCosPhi = (cosPhi_end-cosPhi)/n_recompute_delay;
       deltaSinPhi = (sinPhi_end-sinPhi)/n_recompute_delay;
     }
-//    std::cout.precision(20);
-//    std::cout << phi << std::endl;
+    
     // 6b)apply normalization and multiply by 2.0
     // NHGK: Why only the real part
     sls[sample].real() *= 2.0;
@@ -532,9 +451,7 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
       sls[sample].real()*cosPhi - sls[sample].imag()*sinPhi;
     cosPhi += deltaCosPhi;
     sinPhi += deltaSinPhi;
-//    std::cout << Bufs[station][n2fftDC*jsegm+sample] << std::endl;
   }
-//  assert(false);
   return true;
 }
 

@@ -91,12 +91,20 @@ Node::MESSAGE_RESULT
 Node::process_event(MPI_Status &status) {
   if (status.MPI_TAG == MPI_TAG_END_NODE) {
     
-    MPI_Status status2; int msg;
+    MPI_Status status2; int32_t msg;
     MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
     
     return TERMINATE_NODE;
+  } else if (status.MPI_TAG == MPI_TAG_SET_MESSAGELEVEL) {
+    MPI_Status status2; int32_t msg;
+    MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
+             status.MPI_TAG, MPI_COMM_WORLD, &status2);
+
+    get_log_writer().set_maxlevel(msg);
+    return MESSAGE_PROCESSED;
   }
+  
   for (Controller_iterator it = controllers.begin();
        it != controllers.end();
        it++) {

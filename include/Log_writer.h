@@ -24,6 +24,9 @@ public:
   void set_messagelevel(int i);
   int  get_messagelevel();
 
+  void set_maxlevel(int level);
+  int get_maxlevel();
+
 protected:
   int max_level, current_level;
   virtual int	sync()=0;
@@ -41,6 +44,8 @@ public:
   void set_messagelevel(int level);
   int  get_messagelevel();
 
+  void set_maxlevel(int level);
+  int  get_maxlevel();
 private:
   Log_writer_buffer *buffer;
 };

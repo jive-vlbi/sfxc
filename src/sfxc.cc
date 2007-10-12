@@ -59,9 +59,12 @@ int main(int argc, char *argv[]) {
   char *vex_file = argv[2];
 
   if (rank == RANK_MANAGER_NODE) {
-    Log_writer_mpi log_writer(rank, 1);
     Control_parameters control_parameters;
-    control_parameters.initialise(ctrl_file, vex_file, log_writer);
+    {
+      Log_writer_cout log_writer(10);
+      control_parameters.initialise(ctrl_file, vex_file, log_writer);
+    }
+    Log_writer_mpi log_writer(rank, control_parameters.message_level());
     Manager_node node(rank, numtasks, &log_writer, control_parameters);
     node.start();
   } else {

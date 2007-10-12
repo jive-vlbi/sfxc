@@ -76,7 +76,6 @@ Log_node_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      //DEBUG_MSG("'" << message << "'");
       get_log_writer_output() << message << std::flush;
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

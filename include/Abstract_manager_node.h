@@ -45,6 +45,7 @@ public:
   void end_node(int rank);
 
   int get_status(int rank);
+  void set_message_level(int rank, int32_t messagelevel);
 
   /* set Data_readers */
   // for files

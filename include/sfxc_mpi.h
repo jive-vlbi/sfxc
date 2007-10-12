@@ -59,6 +59,11 @@ enum MPI_TAG {
    **/
   MPI_TAG_GET_STATUS,
 
+  /** Set the messagelevel of the node
+   * - MPI_INT32: message level
+   **/
+  MPI_TAG_SET_MESSAGELEVEL,
+  
   // DATA COMMUNICATION, SET is for a single connection, ADD for multiple
   //--------------------------------------------------------------------------
 
@@ -294,22 +299,8 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_ADD_DATA_WRITER_VOID"; }
     case MPI_TAG_ADD_TCP:
       { return "MPI_TAG_ADD_TCP"; }
-//    case MPI_TAG_ADD_OUTPUT_CONNECTION_SINGLE_INPUT_TCP:
-//      { return "MPI_TAG_ADD_OUTPUT_CONNECTION_SINGLE_INPUT_TCP"; }
-//    case MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP:
-//      { return "MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP"; }
-//    case MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_MPI:
-//      { return "MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_MPI"; }
-//    case MPI_TAG_SET_OUTPUT_CONNECTION_SINGLE_INPUT_TCP:
-//      { return "MPI_TAG_SET_OUTPUT_CONNECTION_SINGLE_INPUT_TCP"; }
-//    case MPI_TAG_SET_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP:
-//      { return "MPI_TAG_SET_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP"; }
     case MPI_TAG_CONNECTION_ESTABLISHED:
       { return "MPI_TAG_CONNECTION_ESTABLISHED"; }
-//    case MPI_TAG_SET_DATA_WRITER_FILE:
-//      { return "MPI_TAG_SET_DATA_WRITER_FILE"; }
-//    case MPI_TAG_SET_DATA_WRITER_VOID:
-//      { return "MPI_TAG_SET_DATA_WRITER_VOID"; }
     case MPI_TAG_SET_INPUT_NODE:
       { return "MPI_TAG_SET_INPUT_NODE"; }
     case MPI_TAG_SET_CORRELATOR_NODE:
@@ -322,18 +313,12 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_NODE_INITIALISED"; }
     case MPI_TAG_GET_STATUS:
       { return "MPI_TAG_GET_STATUS"; }
-//    case MPI_TAG_SET_DATA_READER_FILE:
-//      { return "MPI_TAG_SET_DATA_READER_FILE"; }
-//    case MPI_TAG_SET_DATA_READER_TCP:
-//      { return "MPI_TAG_SET_DATA_READER_TCP"; }
-//    case MPI_TAG_SET_DATA_WRITER_TCP:
-//      { return "MPI_TAG_SET_DATA_WRITER_TCP"; }
+    case MPI_TAG_SET_MESSAGELEVEL:
+      { return "MPI_TAG_SET_MESSAGELEVEL"; }
     case MPI_TAG_ADD_DATA_READER_FILE2:
       { return "MPI_TAG_ADD_DATA_READER_FILE"; }
     case MPI_TAG_ADD_DATA_READER_TCP2:
       { return "MPI_TAG_ADD_DATA_READER_TCP"; }
-//    case MPI_TAG_ADD_DATA_WRITER_TCP:
-//      { return "MPI_TAG_ADD_DATA_WRITER_TCP"; }
     case MPI_TAG_INPUT_NODE_GOTO_TIME:
       { return "MPI_TAG_INPUT_NODE_GOTO_TIME"; }
     case MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP:
@@ -350,8 +335,6 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_CORR_PARAMETERS"; }
     case MPI_TAG_DELAY_TABLE:
       { return "MPI_TAG_DELAY_TABLE"; }
-//    case MPI_TAG_CORRELATE_TIME_SLICE:
-//      { return "MPI_TAG_CORRELATE_TIME_SLICE"; }
     case MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED:
       { return "MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED"; }
     case MPI_TAG_END_NODE:

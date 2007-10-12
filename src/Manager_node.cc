@@ -123,7 +123,6 @@ void Manager_node::start() {
         stop_time_scan =
           control_parameters.get_vex().stop_of_scan(*scans.begin()).to_miliseconds(start_day);
 
-        DEBUG_MSG("Manager_node: goto_time " << start_time);
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
           input_node_goto_time(control_parameters.station(station),
@@ -158,9 +157,6 @@ void Manager_node::start() {
             get_log_writer() << "start " << start_time << ", channel " 
                              << current_channel << " to correlation node " 
                              << i << std::endl;
-            DEBUG_MSG("start " << start_time << ", channel " 
-                      << current_channel << " to correlation node " 
-                      << i);
 
             std::string channel_name =
               control_parameters.frequency_channel(current_channel);
@@ -191,8 +187,6 @@ void Manager_node::start() {
             int nBaselines = nStations + nStations*(nStations-1)/2;
             int size_of_one_baseline = sizeof(fftw_complex)*
               (correlation_parameters.number_channels*PADDING/2+1);
-            DEBUG_MSG("sizeof one fft: " << size_of_one_baseline);
-            DEBUG_MSG("nbaselines    : " << nBaselines);
             output_node_set_timeslice(slice_nr, i, 
                                       size_of_one_baseline*nBaselines);
             
@@ -302,9 +296,9 @@ Manager_node::initialise() {
   stop_time  = 
     control_parameters.get_stop_time().to_miliseconds(start_day);
 
-  get_log_writer() << "start_day  : " << start_day << std::endl;
-  get_log_writer() << "start_time : " << start_time << std::endl;
-  get_log_writer() << "stop_time  : " << stop_time << std::endl;
+  get_log_writer()(2) << "start_day  : " << start_day << std::endl;
+  get_log_writer()(2) << "start_time : " << start_time << std::endl;
+  get_log_writer()(2) << "stop_time  : " << stop_time << std::endl;
 
   {  // Iterate over all the scans to find the first scan to correlate
     const Vex &vex = control_parameters.get_vex();
@@ -326,13 +320,12 @@ Manager_node::initialise() {
   
   slice_nr  = 0;
   
-  get_log_writer() << "start scan : " << *scans.begin() << std::endl;
+  get_log_writer()(2) << "start scan : " << *scans.begin() << std::endl;
 
-  get_log_writer() << "Starting correlation" << std::endl;
+  get_log_writer()(2) << "Starting correlation" << std::endl;
 }
 
 void Manager_node::end_correlation() {
-  DEBUG_MSG("status: " << status << " == " << WAIT_FOR_OUTPUT_NODE);
   assert(status == WAIT_FOR_OUTPUT_NODE);
   status = END_NODE;
 }

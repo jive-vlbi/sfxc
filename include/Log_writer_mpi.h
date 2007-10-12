@@ -15,12 +15,12 @@
 
 #include <Log_writer.h>
 #include <fstream>
+#include <assert.h>
 
 class Log_writer_mpi : public Log_writer
 {
 public:
   Log_writer_mpi(int rank, int message_level=0);
-
 };
 
 #endif /*LOG_WRITER_MPI_H_*/

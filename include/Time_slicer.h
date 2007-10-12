@@ -133,18 +133,17 @@ bool Time_slicer<T>::do_task() {
       }
       while ((!writers.empty()) && 
 	     (writers.begin()->second->get_size_dataslice()==0)) {
-        DEBUG_MSG("Remove writer from the Time_slicer");
 	writers.erase(writers.begin());
       }
       data_counter += size;
       slicer_consumed();
     } else {
-      DEBUG_MSG("No output stream available");
+      //DEBUG_MSG("No output stream available");
       return false;
     }
     return true;
   } else {
-    DEBUG_MSG("Buffer empty");
+    //DEBUG_MSG("Buffer empty");
     return false;
   }
 }

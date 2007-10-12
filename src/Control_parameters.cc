@@ -28,15 +28,12 @@ initialise(const char *ctrl_file, const char *vex_file,
     std::ifstream in(ctrl_file);
     if (!in.is_open()) {
       log_writer << "Could not open control file" << std::endl;
-      DEBUG_MSG("Could not open control file");
       assert(false);
       return false;
     }
     bool ok = reader.parse(in, ctrl);
     if ( !ok ) {
       // report to the user the failure and their locations in the document.
-      DEBUG_MSG("Failed to parse configuration");
-      DEBUG_MSG(reader.getFormatedErrorMessages());
       log_writer  << "Failed to parse configuration\n"
                   << reader.getFormatedErrorMessages()
                   << std::endl;
@@ -131,6 +128,9 @@ Control_parameters::channels_size() const {
   return ctrl["channels"].size();
 }
 
+int Control_parameters::message_level() const {
+  return ctrl["message_level"].asInt();
+}
 
 int
 Control_parameters::bits_per_sample() const {
@@ -528,15 +528,12 @@ get_delay_table_name(const std::string &station_name) const {
   if (access(delay_table_name.c_str(), R_OK) == 0) {
     return delay_table_name;
   }
-  DEBUG_MSG("Need to generate delay table: " << delay_table_name);
   std::string cmd = 
     "generate_delay_model "+vex_filename+
     " "+station_name+
     " "+delay_table_name;
-  DEBUG_MSG(cmd);
   int result = system(cmd.c_str());
   if (result != 0) {
-    DEBUG_MSG("generation of the Delay table failed");
     assert(false);
   }
   if (access(delay_table_name.c_str(), R_OK) == 0) {
