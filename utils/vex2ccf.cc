@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <string>
 #include <stdio.h>
+#include <fstream>
+#include <set>
 
 #include <json/json.h>
 
@@ -141,8 +143,29 @@ Json::Value site_position(const Vexpp_node &vex,
   return result;
 }
 
+Json::Value get_channels(const Vex &vex){
+	std::set<std::string> result_set;
+	Json::Value result;
+	
+  for (Vex::Node::const_iterator frq_block = vex.get_root_node()["FREQ"]->begin();
+       frq_block != vex.get_root_node()["FREQ"]->end(); ++frq_block) {
+  	for (Vex::Node::const_iterator freq_it = frq_block->begin("chan_def");
+         freq_it != frq_block->end("chan_def"); ++freq_it) {
+			result_set.insert(freq_it[4]->to_string());
+		}
+	}
+	for (std::set<std::string>::const_iterator set_it = result_set.begin();
+				set_it != result_set.end(); ++set_it){
+		result.append(*set_it);
+	}
+	return result;
+}
+
+
 int main(int argc, char *argv[]) {
-  assert(argc == 2);
+  assert(argc == 3);
+
+	std::ofstream outfile(argv[2], std::ios::out);
 
   Vex vex(argv[1]);
   
@@ -157,6 +180,8 @@ int main(int argc, char *argv[]) {
     json_output["data_sources"][it.key()] = Json::Value(Json::arrayValue);
     json_output["site_position"][it.key()] = site_position(vex.get_root_node(), it.key());
   }
+
+	json_output["channels"] =  get_channels(vex);
   json_output["reference_station"] = "";
   json_output["cross_polarize"]    = false;
   json_output["number_channels"]   = 1024;
@@ -166,6 +191,6 @@ int main(int argc, char *argv[]) {
   json_output["output_file"]       = "";
   json_output["subbands"]          = get_frequencies(vex);
 
-  std::cout << json_output << std::endl;
+  outfile << json_output << std::endl;
   return 0;
 } 
