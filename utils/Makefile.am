@@ -40,8 +40,8 @@ produce_html_plotpage_SOURCES = produce_html_plotpage.cc \
 	gnuplot_i.cc
 produce_html_plotpage_LDFLAGS = -lfftw3 -lm -lvex_parser -lantlr3c -ljson
 
-produce_html_plotpage_CFLAGS =-I@top_srcdir@/lib -m32 -std=c99
-produce_html_plotpage_CXXFLAGS =-I@top_srcdir@/lib -m32 -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
+produce_html_plotpage_CFLAGS =-I@top_srcdir@/lib
+produce_html_plotpage_CXXFLAGS =-I@top_srcdir@/lib -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
 
 cpp_parser_SOURCES = cpp_parser.cc
 

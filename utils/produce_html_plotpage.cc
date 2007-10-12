@@ -19,6 +19,7 @@
 #include <complex>
 #include <Log_writer_cout.h>
 #include <gnuplot_i.h>
+#include <utils.h>
 
 #include <Control_parameters.h>
 
@@ -494,17 +495,24 @@ void print_html(const Control_parameters &ConPrms) {
 //main
 int main(int argc, char *argv[])
 {
-	Control_parameters ConPrms;
-	Log_writer_cout logg;
+#ifdef SFXC_PRINT_DEBUG
+  RANK_OF_NODE = 0;
+#endif
+
+
+  Control_parameters ConPrms;
+  Log_writer_cout logg;
 	
-	ConPrms.initialise(argv[1], argv[2], logg);
-	
-	std::ifstream infile(ConPrms.get_output_file().c_str(), std::ios::in | std::ios::binary);
+  ConPrms.initialise(argv[1], argv[2], logg);
+
+  assert(strncmp(ConPrms.get_output_file().c_str(), "file://", 7) == 0);
+  std::ifstream infile(ConPrms.get_output_file().c_str()+7, 
+                       std::ios::in | std::ios::binary);
   assert(infile.is_open());
 
   for (int i=0; i<ConPrms.channels_size(); i++) {
-		Plot_generator(infile, ConPrms, i);
-	}
+    Plot_generator(infile, ConPrms, i);
+  }
 
   print_html(ConPrms);
 
