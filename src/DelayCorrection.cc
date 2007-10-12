@@ -72,7 +72,7 @@ void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
   foffset     = 0; //GenPrms.get_foffset();
   bwfl        = corr_param.bandwidth;//GenPrms.get_bwfl();
   ovrfl       = 1; //GenPrms.get_ovrfl();
-  startf      = corr_param.channel_freq; //GenPrms.get_startf();
+  startf      = 0; //GenPrms.get_startf();
   skyfreq     = corr_param.channel_freq; //GenPrms.get_skyfreq();
   
   n2fftcorr   = corr_param.number_channels;
@@ -177,26 +177,11 @@ bool DelayCorrection::init_reader(int sn, int64_t startIS)
          boost::shared_ptr<Bits_to_float_converter>());
   BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
 
-//  //initialise dcBufPrev with data from input channel (can be Mk4 file)
-//  //int bytes_to_read = 2*BufSize;
-//  int bytes_to_read = 
-//    ((int64_t)(MAX_DELAY) *
-//    corr_param.sample_rate *
-//    corr_param.bits_per_sample) / 8000;
-//
-//  assert(bytes_to_read <= 2*BufSize);
-//  // Fill the beginning of the buffer with zeros
-//  int bytes_read;
-//  for (bytes_read=0; bytes_read<2*BufSize-bytes_to_read; bytes_read++) {
-//    //dcBufPrev[sn][bytes_read] = sample_value_ms[irbit2()*2+irbit2()];
-//    dcBufPrev[sn][bytes_read] = 0;
-//  }
+  //initialise dcBufPrev with data from input channel (can be Mk4 file)
+  int bytes_to_read = 2*BufSize;
   int bytes_read = 0;
-  // read in samples [bytes_read, 2*BufSize)
-  while (bytes_read != 2*BufSize) {
-    DEBUG_MSG("bytes_read: " << bytes_read);
-    DEBUG_MSG("reading:    " << 2*BufSize-bytes_read);
-    int status = sample_reader[sn]->get_data(2*BufSize-bytes_read,
+  while (bytes_read != bytes_to_read) {
+    int status = sample_reader[sn]->get_data(bytes_to_read-bytes_read,
                                              &dcBufPrev[sn][bytes_read]);
     if (status <= 0) {
       assert(false);
@@ -206,14 +191,55 @@ bool DelayCorrection::init_reader(int sn, int64_t startIS)
   }
   if (sn==3) {
     std::stringstream filename;
-    filename << "samples" << RANK_OF_NODE << ".txt"; 
+    filename << "samples.txt"; 
     std::ofstream out(filename.str().c_str());
     for (int i=0; i<2*BufSize; i++) {
       out << dcBufPrev[sn][i] << std::endl;
     }
   }
-  assert(bytes_read == 2*BufSize);
+  assert(bytes_read == bytes_to_read);
   return true;
+//  assert(sample_reader[sn] != 
+//         boost::shared_ptr<Bits_to_float_converter>());
+//  BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
+//
+////  //initialise dcBufPrev with data from input channel (can be Mk4 file)
+////  //int bytes_to_read = 2*BufSize;
+////  int bytes_to_read = 
+////    ((int64_t)(MAX_DELAY) *
+////    corr_param.sample_rate *
+////    corr_param.bits_per_sample) / 8000;
+////
+////  assert(bytes_to_read <= 2*BufSize);
+////  // Fill the beginning of the buffer with zeros
+////  int bytes_read;
+////  for (bytes_read=0; bytes_read<2*BufSize-bytes_to_read; bytes_read++) {
+////    //dcBufPrev[sn][bytes_read] = sample_value_ms[irbit2()*2+irbit2()];
+////    dcBufPrev[sn][bytes_read] = 0;
+////  }
+//  int bytes_read = 0;
+//  // read in samples [bytes_read, 2*BufSize)
+//  while (bytes_read != 2*BufSize) {
+//    DEBUG_MSG("bytes_read: " << bytes_read);
+//    DEBUG_MSG("reading:    " << 2*BufSize-bytes_read);
+//    int status = sample_reader[sn]->get_data(2*BufSize-bytes_read,
+//                                             &dcBufPrev[sn][bytes_read]);
+//    if (status <= 0) {
+//      assert(false);
+//      return false;
+//    }
+//    bytes_read += status;
+//  }
+//  if (sn==3) {
+//    std::stringstream filename;
+//    filename << "samples" << RANK_OF_NODE << ".txt"; 
+//    std::ofstream out(filename.str().c_str());
+//    for (int i=0; i<2*BufSize; i++) {
+//      out << dcBufPrev[sn][i] << std::endl;
+//    }
+//  }
+//  assert(bytes_read == 2*BufSize);
+//  return true;
 }
 
 
@@ -274,7 +300,6 @@ bool DelayCorrection::delay_correct() {
         sls[jl].real() = dcBufs[stations][offset + jl];
         sls[jl].imag() = 0.0;
       }
-
       // Take the average for the fractional bit shift
       fractional_bit_shift((Cdel_start+Cdel_end)/2, jshift);
 
@@ -362,8 +387,10 @@ bool DelayCorrection::fractional_bit_shift(double const delay,
     double phi  = tmp1*fs[jf] + tmp2;
     std::complex<double> tmp(cos(phi),sin(phi));
     sls_freq[jf] *= tmp;
+    
+//    std::cout << sls_freq[jf] << std::endl;
   }
-
+//  assert(false);
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
   fftw_execute(planF2T);
@@ -371,17 +398,90 @@ bool DelayCorrection::fractional_bit_shift(double const delay,
 }
 
 bool DelayCorrection::fringe_stopping(int station, int jsegm) {
+//  int64_t time = timePtr + (int64_t)(jsegm*n2fftDC*tbs*1000000);
+//  int64_t delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
+//  assert(delta_time > 0);
+//  double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
+//  double phi_end = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
+//    delTbl[station].delay(time);
+//  double cosPhi_end = cos(phi_end);
+//  double sinPhi_end = sin(phi_end);
+//
+//  for (int sample=0; sample<n2fftDC; sample++) {
+//    if ((sample % n_recompute_delay) == 0) {
+//      phi = phi_end;
+//      cosPhi = cosPhi_end;
+//      sinPhi = sinPhi_end;
+//
+//      phi_end = 
+//        -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
+//        delTbl[station].delay(time+delta_time);
+//
+//      if (std::abs(phi_end-phi) < 0.4*maximal_phase_change) {
+//        // Sampling is too dense
+//        n_recompute_delay *= 2;
+//        delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
+//
+//        phi_end = 
+//          -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
+//          delTbl[station].delay(time+delta_time);
+//      }
+//
+//      while (std::abs(phi_end-phi) > maximal_phase_change) {
+//        // Sampling is not dense enough
+//        n_recompute_delay /= 2;
+//        if (n_recompute_delay < (int)(SR/1000000)) {
+//          n_recompute_delay = (int)(SR/1000000);
+//        }
+//        delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
+//
+//        phi_end = 
+//          -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
+//          delTbl[station].delay(time+delta_time);
+//
+//      } 
+//      time += delta_time;
+//      
+//      cosPhi_end = cos(phi_end);
+//      sinPhi_end = sin(phi_end);
+//
+//      deltaCosPhi = (cosPhi_end-cosPhi)/n_recompute_delay;
+//      deltaSinPhi = (sinPhi_end-sinPhi)/n_recompute_delay;
+//    }
+//    
+//    // 6b)apply normalization and multiply by 2.0
+//    // NHGK: Why only the real part
+//    sls[sample].real() *= 2.0;
+//        
+//    // 7)subtract dopplers and put real part in Bufs for the current segment
+//    Bufs[station][n2fftDC*jsegm+sample] = 
+//      sls[sample].real()*cosPhi - sls[sample].imag()*sinPhi;
+//    cosPhi += deltaCosPhi;
+//    sinPhi += deltaSinPhi;
+//
+//    std::cout << Bufs[station][n2fftDC*jsegm+sample] << std::endl;
+//  }
+//  assert(false);
   int64_t time = timePtr + (int64_t)(jsegm*n2fftDC*tbs*1000000);
   int64_t delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
   assert(delta_time > 0);
+//  DEBUG_MSG(time);
+//  DEBUG_MSG(delta_time);
   double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
   double phi_end = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
     delTbl[station].delay(time);
+//  std::cout.precision(20);
+//  DEBUG_MSG(skyfreq);
+//  DEBUG_MSG(startf);
+//  DEBUG_MSG(sideband);
+//  DEBUG_MSG(bwfl);
+//  DEBUG_MSG(delTbl[station].delay(time));
+//  DEBUG_MSG(phi_end);
   double cosPhi_end = cos(phi_end);
   double sinPhi_end = sin(phi_end);
 
   for (int sample=0; sample<n2fftDC; sample++) {
-    if ((sample % n_recompute_delay) == 0) {
+    if (((int)sample % n_recompute_delay) == 0) {
       phi = phi_end;
       cosPhi = cosPhi_end;
       sinPhi = sinPhi_end;
@@ -421,7 +521,8 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
       deltaCosPhi = (cosPhi_end-cosPhi)/n_recompute_delay;
       deltaSinPhi = (sinPhi_end-sinPhi)/n_recompute_delay;
     }
-    
+//    std::cout.precision(20);
+//    std::cout << phi << std::endl;
     // 6b)apply normalization and multiply by 2.0
     // NHGK: Why only the real part
     sls[sample].real() *= 2.0;
@@ -431,8 +532,9 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
       sls[sample].real()*cosPhi - sls[sample].imag()*sinPhi;
     cosPhi += deltaCosPhi;
     sinPhi += deltaSinPhi;
-
+//    std::cout << Bufs[station][n2fftDC*jsegm+sample] << std::endl;
   }
+//  assert(false);
   return true;
 }
 

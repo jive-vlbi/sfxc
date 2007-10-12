@@ -323,8 +323,8 @@ get_correlation_parameters(const std::string &scan_name,
        ch_it != freq->end("chan_def");
        ++ch_it) {
     if (ch_it[4]->to_string() == channel_name) {
-      corr_param.channel_freq = (int64_t)ch_it[1]->to_double_amount("MHz")*1000000;
-      corr_param.bandwidth = (int)ch_it[3]->to_double_amount("MHz")*1000000;
+      corr_param.channel_freq = (int64_t)(ch_it[1]->to_double_amount("MHz")*1000000);
+      corr_param.bandwidth = (int)(ch_it[3]->to_double_amount("MHz")*1000000);
       corr_param.sideband = ch_it[2]->to_char();
     }
   }
