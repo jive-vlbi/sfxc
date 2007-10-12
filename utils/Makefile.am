@@ -14,8 +14,9 @@ bin_PROGRAMS = generate_delay_model \
                make_sfxc_experiment_makefile \
                vex2ccf \
 							 generate_uvw_coordinates \
-							 plot_delay_table
-
+							 plot_delay_table \
+							 cpp_parser.cc
+							 
 create_delay_function_SOURCES = create_delay_function.cc
 create_delay_function_LDFLAGS = -lgsl -lgslcblas
 
@@ -41,6 +42,13 @@ produce_html_plotpage_LDFLAGS = -lfftw3 -lm -lvex_parser -lantlr3c -ljson
 
 produce_html_plotpage_CFLAGS =-I@top_srcdir@/lib -m32 -std=c99
 produce_html_plotpage_CXXFLAGS =-I@top_srcdir@/lib -m32 -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
+
+cpp_parser_SOURCES = cpp_parser.cc
+
+cpp_parser_LDFLAGS = -lfftw3 -lm -lvex_parser -lantlr3c -ljson
+
+cpp_parser_CFLAGS =-I@top_srcdir@/lib -m32 -std=c99
+cpp_parser_CXXFLAGS =-I@top_srcdir@/lib -m32 -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
 
 make_sfxc_experiment_makefile_SOURCES = make_sfxc_experiment_makefile.cc \
 	@top_srcdir@/lib/vex_parser/vexplus.cc

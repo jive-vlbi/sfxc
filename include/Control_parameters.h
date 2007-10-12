@@ -144,8 +144,13 @@ public:
 
   char polarisation(const std::string &if_node, 
                     const std::string &if_ref) const;
+
+  std::string frequency(const std::string &if_node, 
+                    const std::string &if_ref) const;
   
-  
+  char sideband(const std::string &if_node, 
+                    const std::string &if_ref) const;
+						 
   /****************************************************/
   /* Extract structs for the correlation:             */
   /****************************************************/

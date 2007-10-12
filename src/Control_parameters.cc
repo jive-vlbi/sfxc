@@ -285,12 +285,179 @@ Control_parameters::get_track_parameters(const std::string &track_name) const {
   return result;
 }
 
-char 
+char
 Control_parameters::
 polarisation(const std::string &if_node, 
              const std::string &if_ref) const {
-  return vex.polarisation(if_node, if_ref);
+  std::string if_mode_freq;
+  std::string if_node_Node;
+	std::string if_ref_BBC;
+	std::string if_ref_BBCnr;
+	std::string if_ref_Ref;
+	
+	for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin();
+       mod_block != vex.get_root_node()["MODE"]->end(); ++mod_block) {
+		for (Vex::Node::const_iterator if_it = mod_block->begin("FREQ");
+         if_it != mod_block->end("FREQ"); ++if_it) {
+  		for (Vex::Node::const_iterator elem_it = if_it->begin();
+           elem_it != if_it->end(); ++elem_it) {
+				if (elem_it->to_string() == if_ref) {
+					if_mode_freq = if_it[0]->to_string();
+        }
+		  }
+		}
+		for (Vex::Node::const_iterator if_it = mod_block->begin("IF");
+         if_it != mod_block->end("IF"); ++if_it) {
+  		for (Vex::Node::const_iterator elem_it = if_it->begin();
+           elem_it != if_it->end(); ++elem_it) {
+				if (elem_it->to_string() == if_ref) {
+					if_node_Node = if_it[0]->to_string();
+        }
+		  }
+		}
+		for (Vex::Node::const_iterator bbc_it = mod_block->begin("BBC");
+         bbc_it != mod_block->end("BBC"); ++bbc_it) {
+			for (int i=1; i<bbc_it->size(); i++){
+				if (bbc_it[i]->to_string() == if_ref) {
+					if_ref_BBC = bbc_it[0]->to_string();
+				}
+			}
+		}
+	}
+
+  for (Vex::Node::const_iterator frq_block = vex.get_root_node()["FREQ"][if_mode_freq]->begin("chan_def");
+       frq_block != vex.get_root_node()["FREQ"][if_mode_freq]->end("chan_def"); ++frq_block) {
+  	for (Vex::Node::const_iterator elem_it = frq_block->begin();
+         elem_it != frq_block->end(); ++elem_it) {
+			if (elem_it->to_string() == if_node) {
+				if_ref_BBCnr = frq_block[5]->to_string();
+			}
+		}
+	}
+
+  for (Vex::Node::const_iterator bbc_block = vex.get_root_node()["BBC"][if_ref_BBC]->begin();
+       bbc_block != vex.get_root_node()["BBC"][if_ref_BBC]->end(); ++bbc_block) {
+		for (Vex::Node::const_iterator bbcnr_it = bbc_block->begin();
+         bbcnr_it != bbc_block->end(); ++bbcnr_it) {
+			if (bbcnr_it->to_string() == if_ref_BBCnr) {
+				if_ref_Ref = bbc_block[2]->to_string();
+			}
+		}
+	}
+	
+	return vex.polarisation(if_node_Node, if_ref_Ref);
 }
+
+std::string
+Control_parameters::
+frequency(const std::string &if_node, 
+             const std::string &if_ref) const {
+		
+  std::string if_mode_freq;
+  std::string if_node_Node;
+	std::string if_ref_BBC;
+	std::string if_ref_BBCnr;
+	std::string if_ref_Ref;
+	std::string frequen;
+	
+	for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin();
+       mod_block != vex.get_root_node()["MODE"]->end(); ++mod_block) {
+		for (Vex::Node::const_iterator if_it = mod_block->begin("FREQ");
+         if_it != mod_block->end("FREQ"); ++if_it) {
+  		for (Vex::Node::const_iterator elem_it = if_it->begin();
+           elem_it != if_it->end(); ++elem_it) {
+				if (elem_it->to_string() == if_ref) {
+					if_mode_freq = if_it[0]->to_string();
+        }
+		  }
+		}
+		for (Vex::Node::const_iterator if_it = mod_block->begin("IF");
+         if_it != mod_block->end("IF"); ++if_it) {
+  		for (Vex::Node::const_iterator elem_it = if_it->begin();
+           elem_it != if_it->end(); ++elem_it) {
+				if (elem_it->to_string() == if_ref) {
+					if_node_Node = if_it[0]->to_string();
+        }
+		  }
+		}
+		for (Vex::Node::const_iterator bbc_it = mod_block->begin("BBC");
+         bbc_it != mod_block->end("BBC"); ++bbc_it) {
+			for (int i=1; i<bbc_it->size(); i++){
+				if (bbc_it[i]->to_string() == if_ref) {
+					if_ref_BBC = bbc_it[0]->to_string();
+				}
+			}
+		}
+	}
+
+  for (Vex::Node::const_iterator frq_block = vex.get_root_node()["FREQ"][if_mode_freq]->begin("chan_def");
+       frq_block != vex.get_root_node()["FREQ"][if_mode_freq]->end("chan_def"); ++frq_block) {
+  	for (Vex::Node::const_iterator elem_it = frq_block->begin();
+         elem_it != frq_block->end(); ++elem_it) {
+			if (elem_it->to_string() == if_node) {
+				frequen = frq_block[1]->to_string();
+			}
+		}
+	}
+
+	return frequen;
+}
+
+char
+Control_parameters::
+sideband(const std::string &if_node, 
+             const std::string &if_ref) const {
+		
+  std::string if_mode_freq;
+  std::string if_node_Node;
+	std::string if_ref_BBC;
+	std::string if_ref_BBCnr;
+	std::string if_ref_Ref;
+	char sband;
+	
+	for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin();
+       mod_block != vex.get_root_node()["MODE"]->end(); ++mod_block) {
+		for (Vex::Node::const_iterator if_it = mod_block->begin("FREQ");
+         if_it != mod_block->end("FREQ"); ++if_it) {
+  		for (Vex::Node::const_iterator elem_it = if_it->begin();
+           elem_it != if_it->end(); ++elem_it) {
+				if (elem_it->to_string() == if_ref) {
+					if_mode_freq = if_it[0]->to_string();
+        }
+		  }
+		}
+		for (Vex::Node::const_iterator if_it = mod_block->begin("IF");
+         if_it != mod_block->end("IF"); ++if_it) {
+  		for (Vex::Node::const_iterator elem_it = if_it->begin();
+           elem_it != if_it->end(); ++elem_it) {
+				if (elem_it->to_string() == if_ref) {
+					if_node_Node = if_it[0]->to_string();
+        }
+		  }
+		}
+		for (Vex::Node::const_iterator bbc_it = mod_block->begin("BBC");
+         bbc_it != mod_block->end("BBC"); ++bbc_it) {
+			for (int i=1; i<bbc_it->size(); i++){
+				if (bbc_it[i]->to_string() == if_ref) {
+					if_ref_BBC = bbc_it[0]->to_string();
+				}
+			}
+		}
+	}
+
+  for (Vex::Node::const_iterator frq_block = vex.get_root_node()["FREQ"][if_mode_freq]->begin("chan_def");
+       frq_block != vex.get_root_node()["FREQ"][if_mode_freq]->end("chan_def"); ++frq_block) {
+  	for (Vex::Node::const_iterator elem_it = frq_block->begin();
+         elem_it != frq_block->end(); ++elem_it) {
+			if (elem_it->to_string() == if_node) {
+				sband = frq_block[2]->to_char();
+			}
+		}
+	}
+	
+	return sband;
+}
+
 
 Correlation_parameters 
 Control_parameters::

@@ -177,7 +177,25 @@ void Plot_generator::set_plot_data(Plot_data & data,
 																	const Control_parameters &ConPrms,
 																	int count_channel) {
 
-  data.job_name = ConPrms.experiment()+"_"+ConPrms.channel(count_channel);
+	for (int i=0; i<ConPrms.channels_size(); i++){
+		for (int j=1; j<ConPrms.number_stations(); j++){
+			if(ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(j)) 
+								!= ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(0))){
+			 	std::cout << "error in polarisation values" << std::endl;
+			} else if (ConPrms.frequency(ConPrms.channel(i),ConPrms.station(j)) 
+								!= ConPrms.frequency(ConPrms.channel(i),ConPrms.station(0))){
+			 	std::cout << "error in frequency values" << std::endl;
+			} else if (ConPrms.sideband(ConPrms.channel(i),ConPrms.station(j)) 
+								!= ConPrms.sideband(ConPrms.channel(i),ConPrms.station(0))){
+			 	std::cout << "error in sideband values" << std::endl;
+			}
+		}
+	}
+	
+  data.job_name = ConPrms.experiment()+"_"+ConPrms.channel(count_channel)
+									+ "_" + ConPrms.polarisation(ConPrms.channel(count_channel),ConPrms.station(0)) 
+									+ "cp_" + ConPrms.frequency(ConPrms.channel(count_channel), ConPrms.station(0))
+									+ "_" + ConPrms.sideband(ConPrms.channel(count_channel), ConPrms.station(0)) + "sb";
   data.frequency = 0; //not used at this moment HO
   data.sideband = 'L'; //not used at this moment (GenPrms.get_sideband()-1 ? 'L' : 'U');
 }
