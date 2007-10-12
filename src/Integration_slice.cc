@@ -53,14 +53,14 @@ Integration_slice::set_parameters(
     // bytes per seconds
     Nsegm2Avg * corr_param.number_channels * corr_param.bits_per_sample / 8
     ;
-  DEBUG_MSG("Time slice: constant " 
-            << ((int64_t)(MAX_DELAY) * corr_param.sample_rate * 
-                corr_param.bits_per_sample) / 8000);
-  DEBUG_MSG("Time slice: variable "
-            <<  (Nsegm2Avg * corr_param.number_channels * 
-            corr_param.bits_per_sample) / 8);
-  DEBUG_MSG("Time slice: total    "
-            <<  bytes_in_integration);
+//  DEBUG_MSG("Time slice: constant " 
+//            << ((int64_t)(MAX_DELAY) * corr_param.sample_rate * 
+//                corr_param.bits_per_sample) / 8000);
+//  DEBUG_MSG("Time slice: variable "
+//            <<  (Nsegm2Avg * corr_param.number_channels * 
+//            corr_param.bits_per_sample) / 8);
+//  DEBUG_MSG("Time slice: total    "
+//            <<  bytes_in_integration);
 
   DEBUG_MSG("integration_time: " << corr_param.integration_time);
   DEBUG_MSG("sample_rate:      " << corr_param.sample_rate);

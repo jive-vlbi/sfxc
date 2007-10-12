@@ -290,33 +290,6 @@ Control_parameters::
 polarisation(const std::string &if_node, 
              const std::string &if_ref) const {
   return vex.polarisation(if_node, if_ref);
-//  char polarisation = ' ';
-//  for (Vex::Node::const_iterator bbc_block = vex.get_root_node()["BBC"]->begin();
-//       bbc_block != vex.get_root_node()["BBC"]->end(); ++bbc_block) {
-//    for (Vex::Node::const_iterator bbc_it = bbc_block->begin("BBC_assign");
-//         bbc_it != bbc_block->end("BBC_assign"); ++bbc_it) {
-//      if (bbc_it[0]->to_string() == BBC) {
-//        std::string IF_name = bbc_it[2]->to_string();
-//        // Now check the IF section:
-//        for (Vex::Node::const_iterator if_block = vex.get_root_node()["IF"]->begin();
-//            if_block != vex.get_root_node()["IF"]->end(); ++if_block) {
-//          for (Vex::Node::const_iterator if_it = bbc_block->begin("if_def");
-//              if_it != bbc_block->end("if_def"); ++if_it) {
-//            if (if_it[0]->to_string() == IF_name) {
-//              // Check polarisation
-//              if (polarisation == ' ') {
-//                polarisation = if_it[2]->to_char();
-//              } else {
-//                assert(polarisation == if_it[2]->to_char());
-//              }
-//            }
-//          }
-//        }
-//      }
-//    }
-//  }
-//  assert(polarisation != ' ');
-//  return polarisation;
 }
 
 Correlation_parameters 

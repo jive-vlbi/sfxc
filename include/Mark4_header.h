@@ -93,10 +93,12 @@ bool Mark4_header<T>::is_valid() {
     assert(T(-1)^T(0) == T(-1));
     if (header[i] != T(-1)) {
       char word[8*sizeof(T)];
-      itoa(header[i], word, 2);
-      printf(" Word:     %16s\n", word);
-      itoa(T(-1), word, 2);
-      printf(" Syncword: %16s\n", word);
+      for (int j=64; j<96; j++) {
+        itoa(header[j], word, 2);
+        printf(" Word: %03d %16s\n", j, word);
+      }
+//      itoa(T(-1), word, 2);
+//      printf(" Syncword: %16s\n", word);
       std::cout << " No synchword found " << i << std::endl;
       return false;
     }

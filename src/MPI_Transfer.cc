@@ -100,7 +100,7 @@ MPI_Transfer::send(Track_parameters &track_param, int rank) {
   int position = 0; int32_t length;
   char message_buffer[size];
 
-  MPI_Pack(&track_param.sample_rate, 1, MPI_DOUBLE,
+  MPI_Pack(&track_param.track_bit_rate, 1, MPI_DOUBLE,
            message_buffer, size, &position, MPI_COMM_WORLD); 
   
   for (Track_parameters::Channel_iterator channel = 
@@ -155,7 +155,7 @@ MPI_Transfer::receive(MPI_Status &status, Track_parameters &track_param) {
   int32_t length; int position = 0;
 
   MPI_Unpack(buffer, size, &position, 
-             &track_param.sample_rate, 1, MPI_DOUBLE, 
+             &track_param.track_bit_rate, 1, MPI_DOUBLE, 
              MPI_COMM_WORLD); 
 
   while (position < size) {

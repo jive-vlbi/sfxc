@@ -194,6 +194,9 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
   for (size_t i=0; i<correlation_parameters.station_streams.size(); i++) {
     int stream_nr = correlation_parameters.station_streams[i].station_stream;
     assert(stream_nr < data_readers_ctrl.number_of_data_readers());
+    
+    DEBUG_MSG("size of the dataslice: " << bytes);
+
     data_readers_ctrl.get_data_reader(stream_nr)->set_size_dataslice(bytes);
   }
 

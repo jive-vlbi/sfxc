@@ -38,7 +38,7 @@ Manager_node(int rank, int numtasks,
   // initialise the output node
   start_output_node(RANK_OUTPUT_NODE);
   set_multiple_data_writer(RANK_OUTPUT_NODE, 0, 
-                           "file://./output.cor");
+                           control_parameters.get_output_file());
 
 
   // Input nodes:
@@ -74,8 +74,6 @@ Manager_node(int rank, int numtasks,
     }
 
     // Set up the connection to the output node:
-    // NGHK: TODO: remove void replace TCP
-//        set_data_writer_void(correlator_rank, 0);
     set_TCP(correlator_rank, 0,
             RANK_OUTPUT_NODE, correlator_nr);
   }
@@ -125,6 +123,7 @@ void Manager_node::start() {
         stop_time_scan =
           control_parameters.get_vex().stop_of_scan(*scans.begin()).to_miliseconds(start_day);
 
+        DEBUG_MSG("Manager_node: goto_time " << start_time);
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
           input_node_goto_time(control_parameters.station(station),
@@ -156,7 +155,12 @@ void Manager_node::start() {
              i++) {
           if (get_correlating_state(i) == READY) {
             // Initialise the correlator nodes
-            get_log_writer() << "channel " << current_channel << " to correlation node " << i << std::endl;
+            get_log_writer() << "start " << start_time << ", channel " 
+                             << current_channel << " to correlation node " 
+                             << i << std::endl;
+            DEBUG_MSG("start " << start_time << ", channel " 
+                      << current_channel << " to correlation node " 
+                      << i);
 
             std::string channel_name =
               control_parameters.frequency_channel(current_channel);
@@ -321,13 +325,10 @@ Manager_node::initialise() {
   assert(!scans.empty());
   
   slice_nr  = 0;
-//  stream_nr = 0;
   
   get_log_writer() << "start scan : " << *scans.begin() << std::endl;
 
   get_log_writer() << "Starting correlation" << std::endl;
-
-  
 }
 
 void Manager_node::end_correlation() {

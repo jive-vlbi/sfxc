@@ -137,7 +137,6 @@ bool CorrelationCore::init_time_slice()
 void CorrelationCore::correlate_baseline(int station1, int station2, int bsln) {
   for (int j = 0 ; j < n2fftcorr*padding/2 + 1 ; j++){
     //accxps[bsln][j] += xps[station1][j]*conj(xps[station2][j])
-    
     accxps[bsln][j][0] +=
     (xps[station1][j][0] * xps[station2][j][0]) +
     (xps[station1][j][1] * xps[station2][j][1]);
@@ -160,8 +159,10 @@ bool CorrelationCore::correlate_segment(double** in_segm)
     //fill the local segment with data from the relevant station
     for (int i=0; i< n2fftcorr; i++) segm[sn][i]=in_segm[sn][i];
     //execute FFT real to complex. input: segm -> result: xps
+    assert(segm[sn][0] == segm[sn][0]); // Not NaN
     fftw_execute(p_r2c[sn]);
     for (int j = 0 ; j < n2fftcorr*padding/2 + 1 ; j++){
+      assert(xps[sn][j][0] == xps[sn][j][0]); // Not NaN
       //accxps[bsln][j] += xps[sn][j]*conj(xps[sn][j]);
       accxps[bsln][j][0] += 
         (xps[sn][j][0] * xps[sn][j][0]) + (xps[sn][j][1] * xps[sn][j][1]);
@@ -220,12 +221,12 @@ bool CorrelationCore::average_time_slice()
   int bsln = 0;//initialise baseline counter
   //auto product normalisation, mean pwr = 1
   for (int sn = 0 ; sn < nstations ; sn++){
-    for (int j = 0; j < n2fftcorr*padding/2 + 1; j++){
-      norms[bsln] = norms[bsln] + accxps[bsln][j][0];
+    for (int j = 0; j < n2fftcorr*padding/2 + 1; j++) {
+      norms[bsln] += accxps[bsln][j][0];
     }
     norms[bsln] = norms[bsln] / (double)(n2fftcorr*padding/2 + 1);
     for (int j = 0; j < n2fftcorr*padding/2 + 1; j++){
-      accxps[bsln][j][0] = accxps[bsln][j][0] / norms[bsln];
+      accxps[bsln][j][0] /= norms[bsln];
     }
     bsln++;
   }
@@ -267,8 +268,8 @@ bool CorrelationCore::write_time_slice()
   //write normalized correlation results to output file
   //NGHK: Make arrays consecutive to be able to write all data at once
   uint64_t nWrite = sizeof(fftw_complex)*(n2fftcorr*padding/2+1);
-  DEBUG_MSG("sizeof one fft: " << sizeof(fftw_complex)*(n2fftcorr*padding/2+1));
-  DEBUG_MSG("nbaselines    : " << nbslns);
+//  DEBUG_MSG("sizeof one fft: " << sizeof(fftw_complex)*(n2fftcorr*padding/2+1));
+//  DEBUG_MSG("nbaselines    : " << nbslns);
   for (int bsln = 0; bsln < nbslns; bsln++){
     uint64_t written = get_data_writer().
       put_bytes(nWrite, (char *)(accxps[bsln]));

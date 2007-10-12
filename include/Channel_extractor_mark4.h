@@ -66,7 +66,8 @@ public:
   int n_channels();
   int n_tracks(int channel);
 
-  int bit_rate();
+  int track_bit_rate() const;
+  int bit_rate(int channel) const;
   
 private:
   int find_header(char *buffer, boost::shared_ptr<Data_reader> reader);

@@ -26,7 +26,7 @@
 extern "C" void generate_delay_tables(FILE *output, char *stationname);
 
 // Time between sample points
-const double delta_time = 10; // in seconds
+const double delta_time = 3; // in seconds
 
 // Data needed to generate the delay table
 struct Station_data station_data;

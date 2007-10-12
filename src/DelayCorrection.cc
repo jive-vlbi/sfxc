@@ -10,6 +10,9 @@
 #include <utils.h>
 #include "DelayCorrection.h"
 
+const double sample_value_ms[] = {-7, -2, 2, 7};
+
+
 //Allocate arrays, initialise parameters
 DelayCorrection::DelayCorrection(Log_writer &lg_wrtr)
   : log_writer(lg_wrtr),
@@ -68,7 +71,7 @@ void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
 
   foffset     = 0; //GenPrms.get_foffset();
   bwfl        = corr_param.bandwidth;//GenPrms.get_bwfl();
-  ovrfl       = 0; //GenPrms.get_ovrfl();
+  ovrfl       = 1; //GenPrms.get_ovrfl();
   startf      = corr_param.channel_freq; //GenPrms.get_startf();
   skyfreq     = corr_param.channel_freq; //GenPrms.get_skyfreq();
   
@@ -174,19 +177,26 @@ bool DelayCorrection::init_reader(int sn, int64_t startIS)
          boost::shared_ptr<Bits_to_float_converter>());
   BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
 
-  //initialise dcBufPrev with data from input channel (can be Mk4 file)
-  //int bytes_to_read = 2*BufSize;
-  int bytes_to_read = 
-    ((int64_t)(MAX_DELAY) *
-    corr_param.sample_rate *
-    corr_param.bits_per_sample) / 8000;
-
-  // read in samples [2*BufSize-bytes_read, 2*BufSize)
-  int bytes_read = 2*BufSize-bytes_to_read;
-  bytes_to_read = 2*BufSize;
-  
-  while (bytes_read != bytes_to_read) {
-    int status = sample_reader[sn]->get_data(bytes_to_read-bytes_read,
+//  //initialise dcBufPrev with data from input channel (can be Mk4 file)
+//  //int bytes_to_read = 2*BufSize;
+//  int bytes_to_read = 
+//    ((int64_t)(MAX_DELAY) *
+//    corr_param.sample_rate *
+//    corr_param.bits_per_sample) / 8000;
+//
+//  assert(bytes_to_read <= 2*BufSize);
+//  // Fill the beginning of the buffer with zeros
+//  int bytes_read;
+//  for (bytes_read=0; bytes_read<2*BufSize-bytes_to_read; bytes_read++) {
+//    //dcBufPrev[sn][bytes_read] = sample_value_ms[irbit2()*2+irbit2()];
+//    dcBufPrev[sn][bytes_read] = 0;
+//  }
+  int bytes_read = 0;
+  // read in samples [bytes_read, 2*BufSize)
+  while (bytes_read != 2*BufSize) {
+    DEBUG_MSG("bytes_read: " << bytes_read);
+    DEBUG_MSG("reading:    " << 2*BufSize-bytes_read);
+    int status = sample_reader[sn]->get_data(2*BufSize-bytes_read,
                                              &dcBufPrev[sn][bytes_read]);
     if (status <= 0) {
       assert(false);
@@ -194,7 +204,15 @@ bool DelayCorrection::init_reader(int sn, int64_t startIS)
     }
     bytes_read += status;
   }
-  assert(bytes_read == bytes_to_read);
+  if (sn==3) {
+    std::stringstream filename;
+    filename << "samples" << RANK_OF_NODE << ".txt"; 
+    std::ofstream out(filename.str().c_str());
+    for (int i=0; i<2*BufSize; i++) {
+      out << dcBufPrev[sn][i] << std::endl;
+    }
+  }
+  assert(bytes_read == 2*BufSize);
   return true;
 }
 
@@ -211,6 +229,7 @@ bool DelayCorrection::fill_segment()
   //fill segm using delay corrected data in Bufs
   for (int i = 0; i < nstations; i++){
     for (int j = 0; j < n2fftcorr; j++){
+      assert(Bufs[i][j+ BufPtr] == Bufs[i][j+ BufPtr]);
       segm[i][j] = Bufs[i][j+ BufPtr];
     }
   }
@@ -269,7 +288,6 @@ bool DelayCorrection::delay_correct() {
     memcpy(&dcBufPrev[stations][0], 
            &dcBufs[stations][BufSize], 
            2*BufSize*sizeof(double));
-
   }
 
   return true;
@@ -286,6 +304,9 @@ bool DelayCorrection::fill_data_before_delay_correction() {
                 << bytes_to_read << " < " 
                 << sample_reader[station]->get_size_dataslice());
       bytes_to_read = sample_reader[station]->get_size_dataslice();
+    }
+    if (bytes_to_read == 0) {
+      return true;
     }
     assert(bytes_to_read > 0);
     int bytes_read = 0, status = 1;

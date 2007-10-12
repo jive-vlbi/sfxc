@@ -42,7 +42,7 @@ if (status != 0): sys.exit(1)
 # run the executable on all ccf files
 for ctrlfile in controlfiles:
   cmd = "mpirun -np "+str(numProcesses)+" sfxc "+" ".join(ctrlfile)
-  print cmd
+  os.system("echo "+cmd)
   status = os.system(cmd)
   if (status != 0): sys.exit(1)
   
