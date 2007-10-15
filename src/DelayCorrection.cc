@@ -10,6 +10,8 @@
 #include <utils.h>
 #include "DelayCorrection.h"
 
+const double DelayCorrection::maximal_phase_change;
+
 const double sample_value_ms[] = {-7, -2, 2, 7};
 
 
