@@ -234,24 +234,14 @@ int Correlator_node::get_correlate_node_number() {
   return nr_corr_node;
 }
 
-//void Correlator_node::set_slice_number(int sliceNr_) {
-//  sliceNr = sliceNr_;
-//}
-
 /** Number of integration steps done in the current time slice **/
 int Correlator_node::number_of_integration_steps_in_time_slice() {
   assert(false);
   return 0;
-//   return
-//     (correlation_parameters.stop_time-correlation_parameters.start_time) /
-//     correlation_parameters.integration_time;
 }
 
 /** Size in bytes of the output of one integration step **/
 int Correlator_node::output_size_of_one_integration_step() {
   assert(false);
   return 0;
-//   return 
-//     sizeof(fftw_complex) *
-//     (correlation_parameters.number_channels * PADDING+1);
 }

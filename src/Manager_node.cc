@@ -37,8 +37,8 @@ Manager_node(int rank, int numtasks,
   
   // initialise the output node
   start_output_node(RANK_OUTPUT_NODE);
-  set_multiple_data_writer(RANK_OUTPUT_NODE, 0, 
-                           control_parameters.get_output_file());
+  set_data_writer(RANK_OUTPUT_NODE, 0, 
+                  control_parameters.get_output_file());
 
 
   // Input nodes:

@@ -34,36 +34,6 @@ Data_reader_mark5::Data_reader_mark5(char *protocol, int port)
     exit(1);
   }
 
-  //   /* If tcp, then we set keep-alive in case a firewall needs it */ 
-  //   if (type == SOCK_STREAM) { 
-  //     if(setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &tof, sizeof(int)) < 0) { 
-  //       (void) fprintf(stderr, 
-  //             "ERROR: setsockopt() SO_KEEPALIVE returned ", me); 
-  //       perror("error"); 
-  //       return(-5);  
-  //     } 
-  //   } 
-
-  /* SO_RCVBUF sets or gets the maximum socket receive buffer in bytes.
-   * The default value is set by the rmem_default sysctl, and the
-   * maximum allowed value is set by the rmem_max sysctl. */ 
-  // NGHK: Set later:
-//   if (rcvbufs > 0) {
-//     if(setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (void *) &rcvbufs,
-//                   sizeof(rcvbufs)) < 0) {
-//       if (msglev < 2) { 
-//         std::cerr << "WARNING:  setsockopt() SO_RCVBUF " << rcvbufs
-//                   << " returned" << std::endl;
-//         perror("error"); 
-//       }
-//     }
-//   }
-  
-//   int optlen = sizeof(unsigned int);
-//   (void) getsockopt(unconnected_sock, SOL_SOCKET, SO_RCVBUF, 
-//                     (void *) &rcvbuf, &optlen); /* Socket receive-buffer size */ 
-//   std::cerr << "DEBUG: rcvbufs is " << rcvbuf << "bytes" << std::endl; 
-  
   /* Get service number for socket service */
   /* Allow reuse of the local socket address in bind() */
   bool on = true;

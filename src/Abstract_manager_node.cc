@@ -169,8 +169,8 @@ set_data_writer_void(int writer_rank, int writer_stream_nr) {
 
 void
 Abstract_manager_node::
-set_multiple_data_writer(int rank, int stream_nr, 
-                         const std::string &filename) {
+set_data_writer(int rank, int stream_nr, 
+                const std::string &filename) {
   assert(strncmp(filename.c_str(), "file://", 7) == 0);
   int len = sizeof(int32_t) + filename.size() +1; // for \0
   char msg[len];

@@ -33,7 +33,4 @@ Data_writer_file::do_put_bytes(size_t nBytes, char *buff) {
   file.write(buff, nBytes);
   if (file.good()) return nBytes;
   return 0;
-//   uint64_t result = fwrite(buff, 1, nBytes, file);
-//   assert(result == (uint64_t)nBytes);
-//   return result;
 }

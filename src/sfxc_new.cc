@@ -197,7 +197,6 @@ int main(int argc, char *argv[]) {
   char *output_directory = argv[3];
 
   Log_writer_mpi log_writer(rank, 1);
-  //Log_writer_cout log_writer(1);
   if (rank == RANK_MANAGER_NODE) {
     Control_parameters control_parameters;
     control_parameters.initialise(ctrl_file, vex_file, log_writer);

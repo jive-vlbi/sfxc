@@ -97,8 +97,6 @@ bool Mark4_header<T>::is_valid() {
         itoa(header[j], word, 2);
         printf(" Word: %03d %16s\n", j, word);
       }
-//      itoa(T(-1), word, 2);
-//      printf(" Syncword: %16s\n", word);
       std::cout << " No synchword found " << i << std::endl;
       return false;
     }

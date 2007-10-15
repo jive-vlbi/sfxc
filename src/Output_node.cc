@@ -162,7 +162,6 @@ set_weight_of_input_stream(int stream, int64_t weight, size_t size) {
   input_streams[stream]->set_length_time_slice(size);
 
   assert(status != END_NODE);
-//  status = WRITE_OUTPUT;
 }
 
 void Output_node::time_slice_finished(int rank, int64_t nBytes) {

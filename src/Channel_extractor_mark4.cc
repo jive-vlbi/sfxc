@@ -35,10 +35,6 @@ public:
   // Writes a block of data to all output streams
   size_t get_bytes(std::vector< char* > &buff);
 
-//   /** Returns a number of samples, one sample per character. **/
-//   size_t get_samples(int channel, double *bit_samples, 
-//                      const double *val_array, bool NGHK_NEW_FUNCTION);
-  
   bool eof();
 
   bool check_track_bit_statistics();  

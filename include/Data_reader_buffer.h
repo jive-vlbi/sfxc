@@ -38,10 +38,7 @@ private:
   boost::shared_ptr<Buffer> buffer;
   // Number of bytes left in the current buffer-element
   int          bytes_left;
-  // element: pointer to the beginning of the buffer
-  // data_start: current read pointer
-  //value_type   *element;
-  char *data_start;
+  char         *data_start;
   // Is there more data arriving in the buffer:
   bool         end_of_file;
 };

@@ -51,15 +51,6 @@ bool Delay_table_akima::operator==(const Delay_table_akima &other) const
   return true;
 }
 
-// //set values for delay table columns
-// void Delay_table_akima::set_cmr(GenP GenPrms)
-// {
-//   cde = GenPrms.get_cde();
-//   mde = GenPrms.get_mde();  
-//   rde = GenPrms.get_rde();  
-// }
-
-
 //read the delay table, do some checks and
 //calculate coefficients for parabolic interpolation
 int Delay_table_akima::open(const char *delayTableName)

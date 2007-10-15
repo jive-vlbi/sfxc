@@ -12,9 +12,6 @@
 
 const double DelayCorrection::maximal_phase_change;
 
-const double sample_value_ms[] = {-7, -2, 2, 7};
-
-
 //Allocate arrays, initialise parameters
 DelayCorrection::DelayCorrection(Log_writer &lg_wrtr)
   : log_writer(lg_wrtr),
@@ -151,8 +148,8 @@ DelayCorrection::~DelayCorrection()
     delete [] dcBufs;
   }
 
-//   fftw_destroy_plan(planF2T);
-//   fftw_destroy_plan(planT2F);
+  fftw_destroy_plan(planF2T);
+  fftw_destroy_plan(planT2F);
 }
 
 
@@ -201,47 +198,6 @@ bool DelayCorrection::init_reader(int sn, int64_t startIS)
   }
   assert(bytes_read == bytes_to_read);
   return true;
-//  assert(sample_reader[sn] != 
-//         boost::shared_ptr<Bits_to_float_converter>());
-//  BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
-//
-////  //initialise dcBufPrev with data from input channel (can be Mk4 file)
-////  //int bytes_to_read = 2*BufSize;
-////  int bytes_to_read = 
-////    ((int64_t)(MAX_DELAY) *
-////    corr_param.sample_rate *
-////    corr_param.bits_per_sample) / 8000;
-////
-////  assert(bytes_to_read <= 2*BufSize);
-////  // Fill the beginning of the buffer with zeros
-////  int bytes_read;
-////  for (bytes_read=0; bytes_read<2*BufSize-bytes_to_read; bytes_read++) {
-////    //dcBufPrev[sn][bytes_read] = sample_value_ms[irbit2()*2+irbit2()];
-////    dcBufPrev[sn][bytes_read] = 0;
-////  }
-//  int bytes_read = 0;
-//  // read in samples [bytes_read, 2*BufSize)
-//  while (bytes_read != 2*BufSize) {
-//    DEBUG_MSG("bytes_read: " << bytes_read);
-//    DEBUG_MSG("reading:    " << 2*BufSize-bytes_read);
-//    int status = sample_reader[sn]->get_data(2*BufSize-bytes_read,
-//                                             &dcBufPrev[sn][bytes_read]);
-//    if (status <= 0) {
-//      assert(false);
-//      return false;
-//    }
-//    bytes_read += status;
-//  }
-//  if (sn==3) {
-//    std::stringstream filename;
-//    filename << "samples" << RANK_OF_NODE << ".txt"; 
-//    std::ofstream out(filename.str().c_str());
-//    for (int i=0; i<2*BufSize; i++) {
-//      out << dcBufPrev[sn][i] << std::endl;
-//    }
-//  }
-//  assert(bytes_read == 2*BufSize);
-//  return true;
 }
 
 

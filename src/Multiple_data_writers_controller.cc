@@ -41,42 +41,6 @@ Multiple_data_writers_controller::get_data_writer(size_t i) {
 Multiple_data_writers_controller::Process_event_status
 Multiple_data_writers_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
-//  case MPI_TAG_ADD_OUTPUT_CONNECTION_SINGLE_INPUT_TCP: 
-//    {
-//      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
-//      
-//      MPI_Status status2;
-//      int32_t corr_node;
-//      MPI_Recv(&corr_node, 1, MPI_INT32, status.MPI_SOURCE,
-//               status.MPI_TAG, MPI_COMM_WORLD, &status2);
-//
-//      Data_writer_tcp *data_writer = new Data_writer_tcp(1233); 
-//
-//      TCP_Connection tcp_connection;
-//      std::vector<uint64_t>  ip_addresses;
-//      tcp_connection.get_ip_addresses(ip_addresses);
-//
-//      // Add port
-//      ip_addresses.push_back(data_writer->get_port());
-//      
-//      MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_INT64, 
-//               corr_node, MPI_TAG_SET_DATA_READER_TCP, MPI_COMM_WORLD);
-//      
-//      data_writer->open_connection();
-//
-//      assert(false); // NGHK: Do not always connect to corr_node: send two integers
-//      boost::shared_ptr<Data_writer> writer(data_writer);
-//      add_data_writer(corr_node, writer, corr_node, 0);
-//
-//      int64_t return_msg = 0;
-//      MPI_Recv(&return_msg, 1, MPI_INT64, corr_node,
-//               MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status2);
-//      MPI_Send(&return_msg, 1, MPI_INT64, 
-//               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
-//               MPI_COMM_WORLD);
-//      
-//      return PROCESS_EVENT_STATUS_SUCCEEDED;
-//    }
   case MPI_TAG_ADD_TCP: 
     {
       get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;

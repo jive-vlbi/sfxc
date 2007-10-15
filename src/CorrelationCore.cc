@@ -268,8 +268,6 @@ bool CorrelationCore::write_time_slice()
   //write normalized correlation results to output file
   //NGHK: Make arrays consecutive to be able to write all data at once
   uint64_t nWrite = sizeof(fftw_complex)*(n2fftcorr*padding/2+1);
-//  DEBUG_MSG("sizeof one fft: " << sizeof(fftw_complex)*(n2fftcorr*padding/2+1));
-//  DEBUG_MSG("nbaselines    : " << nbslns);
   for (int bsln = 0; bsln < nbslns; bsln++){
     uint64_t written = get_data_writer().
       put_bytes(nWrite, (char *)(accxps[bsln]));

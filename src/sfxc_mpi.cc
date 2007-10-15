@@ -49,15 +49,6 @@ void start_node() {
       input_node.start();
       break;
     }
-//   case MPI_TAG_SET_CORRELATOR_NODE: 
-//     {
-//       int32_t msg;
-//       MPI_Recv(&msg, 1, MPI_INT32, 
-//                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-//       Correlator_node correlator(rank, msg, 10);
-//       correlator.start();
-//       break;
-//     }
   case MPI_TAG_SET_OUTPUT_NODE: 
     {
       int32_t msg;

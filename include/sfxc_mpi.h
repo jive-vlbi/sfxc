@@ -67,28 +67,6 @@ enum MPI_TAG {
   // DATA COMMUNICATION, SET is for a single connection, ADD for multiple
   //--------------------------------------------------------------------------
 
-  /** Create a data reader from a file
-   * - ?
-   **/
-//  MPI_TAG_SET_DATA_READER_FILE,
-  /** Create a data reader from a TCP connection
-   * - ?
-   **/
-//  MPI_TAG_SET_DATA_READER_TCP,
-  /** Create a data writer to a file
-   * - ?
-   **/
-//  MPI_TAG_SET_DATA_WRITER_FILE,
-  /** Create a void data writer
-   * - int32_t: no content
-   **/
-//  MPI_TAG_SET_DATA_WRITER_VOID,
-  /** Create a data writer to a TCP connection, the input is 
-   * - uint64_t+: ip_addresses
-   * - uint64_t port
-   **/
-//  MPI_TAG_SET_DATA_WRITER_TCP,
-
   /** Create a data reader stream for incoming data using TCP
    * - INT32_t: stream number
    * - CHAR+: filename
@@ -113,11 +91,6 @@ enum MPI_TAG {
    **/
   MPI_TAG_ADD_DATA_WRITER_VOID2,
   
-  /** Set the output stream for a correlate node
-   * - uint64_t+ ip_addresses,
-   * - uint64_t port
-   **/
-//  MPI_TAG_ADD_DATA_WRITER_TCP,
 
   /** This message is sent to the sending node, which creates the connection to the
    * receiving node, message contains the number of the MPI-node
@@ -128,35 +101,10 @@ enum MPI_TAG {
    **/
   MPI_TAG_ADD_TCP,
 
-/** This message is sent to the sending node, which creates the connection to the
-   * receiving node, message contains the number of the MPI-node (many -> many)
-   * - int32_t: Rank of the stream for the data reader
-   * - int32_t: Rank of the stream for the data writer
-   **/
-//  MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP,
-
-  /** This message sets up the communication between two nodes using MPI 
-   * - int32_t: stream number for the data writer
-   * - int32_t: stream number for the data reader
-   * - int32_t: rank of the data_reader
-   **/   
-//  MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_MPI,
-  
   /** Acknowledge that an input connection is set up properly (for synchronisation)
    * - int32_t: Rank of the stream for the data reader
    **/
   MPI_TAG_CONNECTION_ESTABLISHED,
-  
-  /** This message is sent to the sending node, which creates the connection to
-   * the receiving node, message contains the number of the MPI-node 
-   * (one -> one)
-   * - ?
-   **/
-//  MPI_TAG_SET_OUTPUT_CONNECTION_SINGLE_INPUT_TCP,
-  /** one -> many (correlator node -> log node / output node)
-   * - ?
-   **/
-//  MPI_TAG_SET_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP,
   
   // Node specific commands 
   //-------------------------------------------------------------------------//
@@ -219,14 +167,6 @@ enum MPI_TAG {
    * - ?
    **/
   MPI_TAG_DELAY_TABLE,
-  
-//  /** All settings are set for the correlation, start correlating
-//   * Send the slice number, start time and duration to a correlate_node
-//   * - int32_t: slice_nr 
-//   * - int32_t: start time in miliseconds since midnight on the start_day 
-//   * - int32_t: stop time in miliseconds since midnight on the start_day
-//   **/
-//  MPI_TAG_CORRELATE_TIME_SLICE,
   
   /** The correlation node is ready to process data
    * - ?

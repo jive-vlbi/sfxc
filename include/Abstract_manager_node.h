@@ -49,10 +49,8 @@ public:
 
   /* set Data_readers */
   // for files
-//  void set_single_data_reader(int rank, 
-//                              const std::string &filename);
   void set_data_reader(int rank, int stream_nr, 
-                                const std::string &filename);
+                       const std::string &filename);
   // for tcp
   void set_TCP(int writer_rank, int writer_stream_nr, 
                int reader_rank, int reader_stream_nr);
@@ -63,8 +61,7 @@ public:
 
   /* set Data_writers */
   // for files
-  void set_multiple_data_writer(int rank, int stream_nr, 
-                                const std::string &filename);
+  void set_data_writer(int rank, int stream_nr, const std::string &filename);
 
   /// Interface to Input node
 
@@ -112,13 +109,14 @@ protected:
   Control_parameters control_parameters;
   int numtasks;
 
-  // Contains the Input_node number for a station
+  // Map from a station name to the Input_node number
   std::map<std::string, int> input_node_map;
-  // Contains the MPI_rank for an input_node number
+  // Map from the input node number to the MPI_rank
   std::vector<int> input_node_rank;
-  // Contains the MPI_rank for a correlator_node
+  // Map from the correlator node number to the MPI_rank
   std::vector<int> correlator_node_rank;
   
+  /// Status of the correlation node
   std::vector<Correlating_state> state_correlator_node;
 };
 
