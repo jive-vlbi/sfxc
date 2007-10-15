@@ -42,13 +42,6 @@ produce_html_plotpage_LDFLAGS = -lfftw3 -lm -lvex_parser -lantlr3c -ljson
 produce_html_plotpage_CFLAGS =-I@top_srcdir@/lib
 produce_html_plotpage_CXXFLAGS =-I@top_srcdir@/lib -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
 
-cpp_parser_SOURCES = cpp_parser.cc
-
-cpp_parser_LDFLAGS = -lfftw3 -lm -lvex_parser -lantlr3c -ljson
-
-cpp_parser_CFLAGS =-I@top_srcdir@/lib -m32 -std=c99
-cpp_parser_CXXFLAGS =-I@top_srcdir@/lib -m32 -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
-
 make_sfxc_experiment_makefile_SOURCES = make_sfxc_experiment_makefile.cc \
 	@top_srcdir@/lib/vex_parser/vexplus.cc
 make_sfxc_experiment_makefile_CXXFLAGS = -I@top_srcdir@/lib/vex_parser
@@ -64,9 +57,10 @@ generate_delay_model_SOURCES=\
   @top_srcdir@/lib/vex_parser/vex.yy.c \
   @top_srcdir@/lib/vex_parser/vex_util.c \
   @top_srcdir@/lib/vex_parser/vex_get.c
-generate_delay_model_CFLAGS =-I@top_srcdir@/lib -m32 -std=c99
-generate_delay_model_CXXFLAGS =-I@top_srcdir@/lib -m32 -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
-generate_delay_model_LDFLAGS=-m32 @top_srcdir@/lib/calc10/lib/libfcalc.a -lg2c 
+generate_delay_model_CFLAGS  = -I@top_srcdir@/lib -m32 -std=c99
+generate_delay_model_CXXFLAGS=-m32 -I@top_srcdir@/lib -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
+generate_delay_model_LDFLAGS = -m32
+generate_delay_model_LDADD   = -L@top_srcdir@/lib/calc10/lib/ -lfcalc -lg2c
 
 vex2ccf_SOURCES=vex2ccf.cc
 vex2ccf_LDFLAGS=-lvex_parser -lantlr3c -ljson
