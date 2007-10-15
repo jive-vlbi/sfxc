@@ -48,7 +48,12 @@ Correlator_node::~Correlator_node()
 
 void Correlator_node::start()
 {
+  static int prev_status = -1;
   while (true) {
+    if (status != prev_status) {
+      DEBUG_MSG("Correlator_node::status: " << status);
+      prev_status = status;
+    }
     switch (status) {
       case STOPPED: {
         // blocking:

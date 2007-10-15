@@ -13,10 +13,9 @@ bin_PROGRAMS = generate_delay_model \
                produce_html_plotpage \
                make_sfxc_experiment_makefile \
                vex2ccf \
-							 generate_uvw_coordinates \
-							 plot_delay_table \
-							 cpp_parser.cc
-							 
+	       generate_uvw_coordinates \
+	       plot_delay_table
+
 create_delay_function_SOURCES = create_delay_function.cc
 create_delay_function_LDFLAGS = -lgsl -lgslcblas
 

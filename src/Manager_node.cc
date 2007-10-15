@@ -56,6 +56,19 @@ Manager_node(int rank, int numtasks,
 
 
   // correlator nodes:
+  if (numtasks-(n_stations+3) <
+      control_parameters.number_frequency_channels()) {
+    std::cout << "#correlator nodes < #freq. channels, use at least "
+              << n_stations+3+control_parameters.number_frequency_channels()
+              << " nodes." << std::endl
+              << "Exiting now." << std::endl;
+    get_log_writer()(0)
+              << "#correlator nodes < #freq. channels, use at least "
+              << n_stations+3+control_parameters.number_frequency_channels()
+              << " nodes." << std::endl
+              << "Exiting now." << std::endl;
+    exit(1);
+  }
   for (int correlator_nr = 0; 
        correlator_nr < numtasks-(n_stations+3); 
        correlator_nr++) {
@@ -319,7 +332,9 @@ Manager_node::initialise() {
   assert(!scans.empty());
   
   slice_nr  = 0;
-  
+
+  get_log_writer()(0) << "Initialisation finished" << std::endl;
+
   get_log_writer()(2) << "start scan : " << *scans.begin() << std::endl;
 
   get_log_writer()(2) << "Starting correlation" << std::endl;
