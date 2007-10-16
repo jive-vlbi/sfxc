@@ -20,33 +20,36 @@ Integration_slice::Integration_slice(Log_writer &lg_wrtr)
 }
 
 
-Integration_slice::Integration_slice(
-  GenP &GenPrms, 
-  StaP *StaPrms,
-  Log_writer &lg_wrtr,
-  int ref_station1,
-  int ref_station2)
-  //member initialisations
-  :dc(lg_wrtr), cc(lg_wrtr), parameters_set(false), log_writer(lg_wrtr)
+Integration_slice::Integration_slice(Correlation_parameters &corr_param, 
+                                     Log_writer &lg_wrtr,
+                                     int ref_station1,
+                                     int ref_station2)
+  : dc(lg_wrtr), cc(lg_wrtr), parameters_set(false), log_writer(lg_wrtr)
 {
-  set_parameters(GenPrms,StaPrms, ref_station1, ref_station2);
+  set_parameters(corr_param, ref_station1, ref_station2);
 }
 
 void
 Integration_slice::set_parameters(
-  GenP &GenPrms, 
-  StaP *StaPrms, 
+  Correlation_parameters &corr_param, 
   int ref_station1, int ref_station2)
 {
   // Only set the parameters once, otherwise the arrays get constructed twice
   assert( !parameters_set );
   parameters_set = true;
   
-  dc.set_parameters(GenPrms, StaPrms);
-  cc.set_parameters(GenPrms, ref_station1, ref_station2);
+  dc.set_parameters(corr_param);
+  cc.set_parameters(corr_param, ref_station1, ref_station2);
   
-  Nsegm2Avg = int32_t (2 * GenPrms.get_bwfl() / GenPrms.get_n2fft());
-  Nsegm2Avg = (int32_t) (GenPrms.get_time2avg() * Nsegm2Avg);
+  Nsegm2Avg = 
+    (corr_param.sample_rate / 1000) * corr_param.integration_time
+    / corr_param.number_channels;
+  
+  int bytes_in_integration = 
+    // Offset for delay
+    ((int64_t)(MAX_DELAY) * corr_param.sample_rate * corr_param.bits_per_sample) / 8000 +
+    // bytes per seconds
+    Nsegm2Avg * corr_param.number_channels * corr_param.bits_per_sample / 8;
 }
 
 
@@ -92,26 +95,25 @@ bool Integration_slice::correlate()
 {  
   bool result = true;
 
-  float TenPct=Nsegm2Avg/10.0, i=0;
-  log_writer(1) << "Nsegm2Avg " << Nsegm2Avg << endl;
+  int TenPct=Nsegm2Avg/10;
+  log_writer(2) << "Nsegm2Avg " << Nsegm2Avg << endl;
   //zero accumulation accxps array and norms array.
   result = cc.init_time_slice();
 
-
   //process all the segments in the Time Slice (=Time to Average)
   for (int32_t segm = 0 ; result && (segm < Nsegm2Avg) ; segm++){
-
     //fill the current segment in cc with delay corrected data from dc
     result &= dc.fill_segment();
     //do the correlation for current segment.
     result &= cc.correlate_segment(dc.get_segment());
 
-    if ( floor((segm+1)/TenPct) == i+1 ){
-      i++;
-      log_writer(1) << "segm=" << segm << "\t " << i*10 << 
-      " % of current Integration Slice processed\n";
+    if ( segm%TenPct == 0 ){
+      log_writer(1) << "segm=" << segm << "\t " << segm*100/Nsegm2Avg 
+                    << " % of current Integration Slice processed"
+                    << std::endl;
+//      DEBUG_MSG("segm=" << segm << "\t " << segm*100/Nsegm2Avg 
+//                << " % of current Integration Slice processed");
     }
-
   }
 
   if (!result) {

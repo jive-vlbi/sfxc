@@ -15,12 +15,7 @@
 class Log_writer_void : public Log_writer
 {
 public:
-  Log_writer_void(int messagelevel=0, bool interactive=false);
-  
-  void set_interactive(int i) { }
-  int  get_interactive()      { return false; }
-private:
-  void write_message(const char buff[]);
+  Log_writer_void(int interactive=0);
 };
 
 #endif /*LOG_WRITER_VOID_H*/

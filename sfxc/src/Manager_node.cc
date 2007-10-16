@@ -16,419 +16,332 @@
 #include "MPI_Transfer.h"
 #include <fftw3.h>
 
-// NGHK: Global variables
-#include <runPrms.h>
-#include <genPrms.h>
-#include <staPrms.h>
-#include <constPrms.h>
-extern RunP RunPrms;
-extern GenP GenPrms;
-extern StaP StaPrms[NstationsMax];
+#include <Log_writer_cout.h>
 
-Manager_node::Manager_node(int numtasks, int rank, char * control_file) 
-  : Node(rank), numtasks(numtasks), slicenr(0), 
-    manager_controller(*this)
-{
-  get_log_writer() << "Manager_node()" << std::endl;
-  MPI_Status status;
-  
-  assert(rank == 0);
+Manager_node::
+Manager_node(int rank, int numtasks,
+    Log_writer *log_writer,
+    const Control_parameters &control_parameters)
+: Abstract_manager_node(rank, numtasks,
+                        log_writer,
+                        control_parameters),
+                        manager_controller(*this) {
+  assert(rank == RANK_MANAGER_NODE);
 
   add_controller(&manager_controller);
 
-  { // Initialise the log node, otherwise no error messages can be sent.
-    assert (RANK_LOG_NODE == 1);
+  get_log_writer()(0) << "Starting nodes" << std::endl;
+
+  // initialise the log node
+  start_log_node(RANK_LOG_NODE, "file://./output.txt");
+  //start_log_node(RANK_LOG_NODE);
+  
+  // initialise the output node
+  start_output_node(RANK_OUTPUT_NODE);
+  set_data_writer(RANK_OUTPUT_NODE, 0, 
+                  control_parameters.get_output_file());
+
+
+  // Input nodes:
+  int n_stations = get_control_parameters().number_stations();
+  for (int input_node=0; input_node<n_stations; input_node++) {
+    assert(input_node+3 != RANK_MANAGER_NODE);
+    assert(input_node+3 != RANK_LOG_NODE);
+    assert(input_node+3 != RANK_OUTPUT_NODE);
+    assert(input_node+3 < numtasks);
+
+    start_input_node(/*rank_nr*/ input_node+3, 
+        get_control_parameters().station(input_node));
+  }
+  assert(n_stations > 0);
+
+
+  // correlator nodes:
+  if (numtasks-(n_stations+3) <
+      control_parameters.number_frequency_channels()) {
+    std::cout << "#correlator nodes < #freq. channels, use at least "
+              << n_stations+3+control_parameters.number_frequency_channels()
+              << " nodes." << std::endl
+              << "Exiting now." << std::endl;
+    get_log_writer()(0)
+              << "#correlator nodes < #freq. channels, use at least "
+              << n_stations+3+control_parameters.number_frequency_channels()
+              << " nodes." << std::endl
+              << "Exiting now." << std::endl;
+    exit(1);
+  }
+  for (int correlator_nr = 0; 
+       correlator_nr < numtasks-(n_stations+3); 
+       correlator_nr++) {
+    int correlator_rank = correlator_nr + n_stations+3;
+    assert(correlator_rank != RANK_MANAGER_NODE);
+    assert(correlator_rank != RANK_LOG_NODE);
+    assert(correlator_rank != RANK_OUTPUT_NODE);
+
+    start_correlator_node(/*rank_nr*/ correlator_rank);
     
-    int msg=0;
-    // Log node:
-    MPI_Send(&msg, 1, MPI_INT32, 
-             RANK_LOG_NODE, MPI_TAG_SET_LOG_NODE, MPI_COMM_WORLD);
-    MPI_Send(&msg, 1, MPI_INT32, 
-             RANK_LOG_NODE, MPI_TAG_LOG_NODE_SET_OUTPUT_COUT, MPI_COMM_WORLD);
-    MPI_Recv(&msg, 1, MPI_INT32, 
-             RANK_LOG_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
-  }  
-
-  
-  int err;
-  err = read_control_file(control_file);
-  if (err != 0) return;
-
-  START_INPUT_NODES = 3;
-#ifdef READ_DATA_FOR_CORRELATE_NODES_FROM_FILE
-  // Reading from file does not need input nodes:
-  N_INPUT_NODES = 0;
-#else
-  N_INPUT_NODES = GenPrms.get_nstations();
-  assert(N_INPUT_NODES > 0);
-#endif
-  
-  START_CORRELATE_NODES = START_INPUT_NODES + N_INPUT_NODES;
-  N_CORRELATE_NODES = numtasks - START_CORRELATE_NODES;
-
-  assert(N_CORRELATE_NODES >= 1);
-
-  { // Initialise the output node
-    assert (RANK_OUTPUT_NODE == 2);
-    
-    int msg=0;
-    const char *filename = GenPrms.get_corfile();
-    MPI_Send(&msg, 1, MPI_INT32, 
-             RANK_OUTPUT_NODE, MPI_TAG_SET_OUTPUT_NODE, MPI_COMM_WORLD);
-    MPI_Send((void *)filename, strlen(filename)+1, MPI_CHAR, 
-             RANK_OUTPUT_NODE, MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
-
-    int64_t channel;
-    MPI_Recv(&channel, 1, MPI_INT64, MPI_ANY_SOURCE,
-             MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
-    assert((int)status.MPI_SOURCE == RANK_OUTPUT_NODE);               
-
-    MPI_Recv(&msg, 1, MPI_INT32, 
-             RANK_OUTPUT_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
-  }  
-
-  // set all nodes to INITIALISING:
-  state_correlate_nodes.resize(numtasks, INITIALISING);
-
-  // Nstations+3 and later are correlate nodes
-  {
-    int n_nodes_initialised=0;
-    bool connection[numtasks];
-    for (int i=0; i<numtasks; i++) connection[i] = false;
-
-    for (int i=0; i<N_CORRELATE_NODES; i++) {
-      // starting a correlator node
-      MPI_Send(&i, 1, MPI_INT32, i+START_CORRELATE_NODES, 
-               MPI_TAG_SET_CORRELATOR_NODE, MPI_COMM_WORLD);
-      int msg;
-      MPI_Recv(&msg, 1, MPI_INT32, 
-               i+START_CORRELATE_NODES, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD, &status);
-  
-      err = send_control_parameters_to_controller_node(i+START_CORRELATE_NODES);
-      if (err != 0) return;
-  
-      
-      // Set the output node:
-#ifdef USE_FILES_FOR_OUTPUT                
-      char output_filename[80];
-      sprintf(output_filename, "%s.%d", GenPrms.get_corfile(), i);
-      MPI_Send(output_filename, strlen(output_filename)+1, MPI_CHAR,
-               i+START_CORRELATE_NODES, MPI_TAG_SET_DATA_WRITER_FILE, MPI_COMM_WORLD);
-#else
-      int32_t ranks[2] = {i, RANK_OUTPUT_NODE};
-      MPI_Send(ranks, 2, MPI_INT32, 
-               i+START_CORRELATE_NODES, 
-               MPI_TAG_SET_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
-#endif
-
-      int result;
-      MPI_Status stat;
-      MPI_Iprobe(MPI_ANY_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &result, &stat);
-      while (result) { // Wait until all connections are set up properly
-        int64_t channel;
-        MPI_Recv(&channel, 1, MPI_INT64, MPI_ANY_SOURCE,
-                 MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &stat);
-        assert((int)channel < N_CORRELATE_NODES);               
-        assert(!connection[channel]);
-        connection[channel] = true;
-        n_nodes_initialised++;
-
-        MPI_Iprobe(MPI_ANY_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &result, &stat);
-      }
+    // Set up the connection to the input nodes:
+    for (int station_nr=0; station_nr<n_stations; station_nr++) {
+      set_TCP(input_rank(get_control_parameters().station(station_nr)), 
+              correlator_nr,
+              correlator_rank, station_nr);
     }
-    while (n_nodes_initialised < N_CORRELATE_NODES) {
-      MPI_Status stat;
-      int64_t channel;
-      MPI_Recv(&channel, 1, MPI_INT64, MPI_ANY_SOURCE,
-               MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &stat);
-      assert(!connection[channel]);
-      connection[channel] = true;
-      n_nodes_initialised++;
-    }
+
+    // Set up the connection to the output node:
+    set_TCP(correlator_rank, 0,
+            RANK_OUTPUT_NODE, correlator_nr);
   }
 
-  // Initialise input nodes
-  for (int i=0; i<N_INPUT_NODES; i++) {
-#ifndef READ_DATA_FOR_CORRELATE_NODES_FROM_FILE
-    // starting an input reader
-    MPI_Send(&i, 1, MPI_INT32, 
-             i+START_INPUT_NODES, MPI_TAG_SET_INPUT_NODE, MPI_COMM_WORLD);
+  assert(number_correlator_nodes() > 0);
+  state_correlator_node.resize(number_correlator_nodes());
+}
 
-    // Send the necessary control parameters:
-    MPI_Transfer mpi_transfer;
-    mpi_transfer.send_general_parameters(i+START_INPUT_NODES, RunPrms, GenPrms, StaPrms);
-
-    int msg;
-    MPI_Recv(&msg, 1, MPI_INT32, 
-             i+START_INPUT_NODES, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD,
-             &status);
-
-    char *filename = StaPrms[i].get_mk4file();
-    // strlen+1 so that \0 gets transmitted as well
-    MPI_Send(filename, strlen(filename)+1, MPI_CHAR, 
-             i+START_INPUT_NODES, MPI_TAG_SET_DATA_READER_FILE, MPI_COMM_WORLD);
-
-    { // Wait for the connection to be established
-      int64_t msg;
-      MPI_Recv(&msg, 1, MPI_INT64, MPI_ANY_SOURCE,
-               MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
-      assert(status.MPI_SOURCE == i+START_INPUT_NODES);
-    }
-#endif
-
-    // Add correlator nodes to the input readers:
-    for (int j=0; j<N_CORRELATE_NODES; j++) {
-
-#ifdef READ_DATA_FOR_CORRELATE_NODES_FROM_FILE
-      char filename[strlen(StaPrms[i].get_mk4file())+1];
-      sprintf(filename, "%c%s", (char)i, StaPrms[i].get_mk4file());
-      // strlen+1 so that \0 gets transmitted as well
-      MPI_Send(filename, strlen(filename+1)+2, MPI_CHAR, 
-               j+START_CORRELATE_NODES, MPI_TAG_ADD_DATA_READER_FILE, MPI_COMM_WORLD);
-      // Wait until the connection is set up:
-      int64_t msg;
-      MPI_Recv(&msg, 1, MPI_INT64, MPI_ANY_SOURCE,
-               MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
-      assert(status.MPI_SOURCE == j+START_CORRELATE_NODES);               
-#else
-      // Writer_stream_nr, reader_stream_nr, output_node
-      int32_t ranks[3] = {j, i, j+START_CORRELATE_NODES};
-      MPI_Send(ranks, 3, MPI_INT32, 
-               i + START_INPUT_NODES,
-               MPI_TAG_ADD_OUTPUT_CONNECTION_MULTIPLE_INPUT_TCP, MPI_COMM_WORLD);
-      // Wait until the connection is set up:
-      int64_t msg;
-      MPI_Recv(&msg, 1, MPI_INT64, MPI_ANY_SOURCE,
-               MPI_TAG_INPUT_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
-      assert(status.MPI_SOURCE == i + START_INPUT_NODES);               
-#endif
+Manager_node::~Manager_node() {
+  for (int rank=0; rank < numtasks; rank++) {
+    if ((rank != RANK_MANAGER_NODE) && 
+        (rank != RANK_LOG_NODE)) {
+      end_node(rank);
     }
   }
-
-  if (err != 0) return;
-  
-  // set manager_controller:
-  get_log_writer().MPI(1,"Initialisation ready");
 }
 
 void Manager_node::start() {
-#ifndef READ_DATA_FOR_CORRELATE_NODES_FROM_FILE
-  {
-    for (int i=0; i<N_INPUT_NODES; i++) {
-      assert(GenPrms.get_usStart() >= get_start_time(i));
-      goto_start_time(i, GenPrms.get_usStart());
-      assert(GenPrms.get_usStart() == get_start_time(i));
-    }
-  }
-#endif
+  get_log_writer()(0) << "Manager_node::start()" << std::endl;
+
+  initialise();
   
-  
-  int last_correlator_node = -1;
-  while (GenPrms.get_duration() > 0) {
-    // Check for MPI messages
-    int result;
-    while ((result = check_and_process_waiting_message()) != NO_MESSAGE) {
-      if (result == TERMINATE_NODE) {
-        return;
+  status = START_NEW_SCAN;
+
+  size_t current_channel;
+  while (status != END_NODE) {
+    process_all_waiting_messages();
+    switch (status) {
+      case START_NEW_SCAN:
+      {
+        get_log_writer() << "START_NEW_SCAN" << std::endl;
+        // Set the input nodes to the proper start time
+        get_log_writer() << "START_TIME:" << start_time << std::endl;
+        for (size_t station=0; station < control_parameters.number_stations();
+             station++) {
+          int station_time = 
+            input_node_get_current_time(control_parameters.station(station));
+          if (station_time > start_time) {
+            get_log_writer() << "START_TIME: " << start_time << std::endl;
+            get_log_writer() << "STATION_TIME: (" << control_parameters.station(station) 
+                             << "): " << station_time << std::endl;
+            start_time = (station_time/1000)*1000;
+            if (station_time%1000 != 0) start_time += 1000;
+            get_log_writer() << "new START_TIME: " << start_time << std::endl;
+          }
+        }
+        stop_time_scan =
+          control_parameters.get_vex().stop_of_scan(*scans.begin()).to_miliseconds(start_day);
+
+        for (size_t station=0; station < control_parameters.number_stations();
+             station++) {
+          input_node_goto_time(control_parameters.station(station),
+                               start_time);
+          input_node_set_stop_time(control_parameters.station(station),
+                                   stop_time_scan);
+        }
+        status = START_CORRELATION_TIME_SLICE;
+        break;
       }
-    }
-    
-    // Check if there are Correlate nodes waiting:
-    bool searching = true;
-    
-    // Duration of one time slice in seconds:
-    int slice_duration = 1;
-    if (N_CORRELATE_NODES == 1) {
-      get_log_writer()(0) << "Only one correlate node, only one time slice"
-                          << std::endl;
-      slice_duration = GenPrms.get_duration();
-    }
+      case START_CORRELATION_TIME_SLICE: 
+      {
+        get_log_writer() << "START_CORRELATION_TIME_SLICE" << std::endl;
+        stoptime_timeslice = start_time+duration_time_slice;
+        if (stop_time_scan < stoptime_timeslice) {
+          stoptime_timeslice = stop_time_scan;
+        }
+        current_channel = 0;
+        status = START_CORRELATOR_NODES_FOR_TIME_SLICE;
+        break;
+      }
+      case START_CORRELATOR_NODES_FOR_TIME_SLICE:
+      {
+        get_log_writer() << "START_CORRELATOR_NODES_FOR_TIME_SLICE" << std::endl;
+        bool added_correlator_node = false;
+        for (size_t i=0; 
+             (current_channel<control_parameters.number_frequency_channels())
+             && (i<number_correlator_nodes());
+             i++) {
+          if (get_correlating_state(i) == READY) {
+            // Initialise the correlator nodes
+            get_log_writer() << "start " << start_time << ", channel " 
+                             << current_channel << " to correlation node " 
+                             << i << std::endl;
 
-    for (int i=0; (i<numtasks) && (GenPrms.get_duration()>0); i++) {
-      if ((state_correlate_nodes[i] == READY) && (last_correlator_node != i)) {
-        searching = false;
-        last_correlator_node = i;
+            std::string channel_name =
+              control_parameters.frequency_channel(current_channel);
+            Correlation_parameters correlation_parameters = 
+              control_parameters.
+              get_correlation_parameters(*scans.begin(),
+                                         channel_name,
+                                         get_input_node_map());
+            correlation_parameters.start_time = start_time;
+            correlation_parameters.stop_time  = stoptime_timeslice;
+            correlation_parameters.slice_nr = slice_nr;
+            correlator_node_set(correlation_parameters, i);
 
-        get_log_writer()(0) << "Time slice: " << slicenr 
-                            << " to " << i-START_CORRELATE_NODES << std::endl;
-        // Initialise the slice on the correlator node
-        int64_t times[] = {slicenr,
-                           GenPrms.get_usStart(),
-                           min(GenPrms.get_duration(), slice_duration)};
-        MPI_Send(times, 3, MPI_INT64, last_correlator_node,
-                 MPI_TAG_CORRELATE_TIME_SLICE, MPI_COMM_WORLD);
+            // set the input streams
+            int nStations = control_parameters.number_stations();
+            for (size_t station_nr=0; 
+                 station_nr< nStations;
+                 station_nr++) {
+              input_node_set_time_slice(control_parameters.station(station_nr),
+                                        current_channel,
+                                        /*stream*/i,
+                                        start_time,
+                                        stoptime_timeslice);
+            }
+            
+            // set the output stream
+            //               autos       crosses
+            int nBaselines = nStations + nStations*(nStations-1)/2;
+            int size_of_one_baseline = sizeof(fftw_complex)*
+              (correlation_parameters.number_channels*PADDING/2+1);
+            output_node_set_timeslice(slice_nr, i, 
+                                      size_of_one_baseline*nBaselines);
+            
+            set_correlating_state(i, CORRELATING);
 
-        // Initialise the slice on the input node
-        int64_t priority_in[] = {last_correlator_node-START_CORRELATE_NODES, 
-                                 slicenr, 
-                                 times[1],
-                                 times[1]+times[2]*1000000};
-
-        for (int input_node = 0; input_node < N_INPUT_NODES; input_node++) {
-          MPI_Send(&priority_in, 4, MPI_INT64, 
-                   START_INPUT_NODES+input_node, 
-                   MPI_TAG_INPUT_NODE_INPUT_STREAM_SET_PRIORITY, 
-                   MPI_COMM_WORLD);
+            added_correlator_node = true;
+            current_channel ++;
+            slice_nr++;
+          }
         }
 
-        // Initialise the slice on the output node
-        int nstations = GenPrms.get_nstations();
-        int size_of_baseline = 
-          sizeof(fftw_complex)*(GenPrms.get_n2fft()*GenPrms.get_pad()/2+1);
-        int integration_steps = (int)(slice_duration/GenPrms.get_time2avg());
-        int nr_baselines = -1;
-        if (0 <= RunPrms.get_ref_station(0) && 
-            RunPrms.get_ref_station(0) < nstations) {
-          //use a reference station
-          if (0 <= RunPrms.get_ref_station(1) && 
-              RunPrms.get_ref_station(1) < nstations) {
-            nr_baselines    = 3*nstations-2;
-          } else {
-            nr_baselines    = 2*nstations-1;
+        if (added_correlator_node) {
+          if (current_channel == control_parameters.number_frequency_channels()) {
+            status = GOTO_NEXT_TIMESLICE;
           }
         } else {
-          //correlate all baselines
-          nr_baselines    = nstations*(nstations-1)/2 + nstations;
+          // No correlator node added, wait for the next message
+          check_and_process_message();
         }
-        
-        int64_t msg_output_node[] =
-          {last_correlator_node-START_CORRELATE_NODES, 
-           slicenr,
-           integration_steps * nr_baselines * size_of_baseline};
-        MPI_Send(&msg_output_node, 3, MPI_INT64,
-                 RANK_OUTPUT_NODE,
-                 MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
+
+        break;
+      }
+      case GOTO_NEXT_TIMESLICE:
+      {
+        // NGHK: todo check for new scan
+        start_time = stoptime_timeslice;
+        if (start_time < stop_time) {
+          status = START_CORRELATION_TIME_SLICE;
+        } else {
+          status = STOP_CORRELATING;
+        }
+        break;
+      }
+      case STOP_CORRELATING:
+      {
+        // The status is set to END_NODE as soon as the output_node is ready
+        MPI_Send(&slice_nr, 1, MPI_INT32, 
+                 RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_CORRELATION_READY,
                  MPI_COMM_WORLD);
 
-
-        // Only one time slice for now
-        GenPrms.set_duration(GenPrms.get_duration()-times[2]);
-        GenPrms.set_usStart(GenPrms.get_usStart()+times[2]*1000000);
-
-        slicenr ++;
-
-        // The node is now correlating:
-        state_correlate_nodes[i] = CORRELATING;
+        status = WAIT_FOR_OUTPUT_NODE;
+        break;
+      }
+      case WAIT_FOR_OUTPUT_NODE:
+      {
+        // The status is set to END_NODE as soon as the output_node is ready
+        check_and_process_message();
+        break;
+      }
+      case END_NODE:
+      {
+        get_log_writer() << "END_NODE" << std::endl;
+        break;
       }
     }
-    
-    if (searching) {
-      // Nothing will happen until the next MPI message arrives: 
-      check_and_process_message();
-    }    
-  }
-  
-
-
-  // Close connections: First receive all waiting messages
-  int result;
-  while ((result = check_and_process_waiting_message()) != NO_MESSAGE) {
-    if (result == TERMINATE_NODE) {
-      return;
-    }
   }
 
-  // Wait untill all correlation nodes are finished
-  bool finished;
-  do {
-    finished = true; 
-    for (int i=0; (i<numtasks); i++) {
-      finished &= (state_correlate_nodes[i] != CORRELATING);
-    }
-    if (!finished) {
-      // Nothing will happen until the next MPI message arrives: 
-      check_and_process_message();
-    }
-  } while (!finished);
-
-  // Terminate the correlate node
-  for (int i=0; i<N_CORRELATE_NODES; i++) {
-    int type = 0;
-    MPI_Send(&type, 1, MPI_INT32, 
-             START_CORRELATE_NODES+i, MPI_TAG_END_NODE, MPI_COMM_WORLD);
-  }
-  
-  // Terminate the output node  
-  MPI_Send(&slicenr, 1, MPI_INT32, RANK_OUTPUT_NODE, 
-           MPI_TAG_OUTPUT_NODE_CORRELATION_READY, MPI_COMM_WORLD);
-  
-  // Terminate the correlator nodes
-  for (int i=0; i<N_INPUT_NODES; i++) {
-    int64_t stop_time = GenPrms.get_usStart() + GenPrms.get_usDur();
-    MPI_Send(&stop_time, 1, MPI_INT64, 
-             START_INPUT_NODES+i, MPI_TAG_INPUT_NODE_STOP_TIME, MPI_COMM_WORLD);
-  }
-  // Terminate the input nodes
-  int type = 0;
-  for (int i=0; i<N_INPUT_NODES; i++) {
-    MPI_Send(&type, 1, MPI_INT32, i+START_INPUT_NODES, 
-             MPI_TAG_END_NODE, MPI_COMM_WORLD);
-  }
-
+  get_log_writer()(0) << "Terminating nodes" << std::endl;
 }
 
-int Manager_node::read_control_file(char *control_file) {
-  if (initialise_control(control_file, get_log_writer(),
-                         RunPrms, GenPrms, StaPrms) != 0) {
-    get_log_writer().error("Initialisation using control file failed");
-    return 1;
+void
+Manager_node::initialise() {
+  get_log_writer()(0) << "Initialising the Input_nodes" << std::endl;
+  for (size_t station=0; 
+  station<control_parameters.number_stations(); station++) {
+    // setting the first data-source of the first station
+    const std::string &station_name = control_parameters.station(station);
+    std::string filename = control_parameters.data_sources(station_name)[0];
+    set_data_reader(input_rank(station_name), 0, filename);
   }
-  return 0;
-}
 
-int Manager_node::send_control_parameters_to_controller_node(int node) {
-  // Send the necessary control parameters:
-  MPI_Transfer mpi_transfer;
-  mpi_transfer.send_general_parameters(node, RunPrms, GenPrms, StaPrms);
+  // Get a list of all scan names
+  control_parameters.get_vex().get_scans(std::back_inserter(scans));
+
+  // Send the track parameters
+  // PRECONDITION: they are the same for the entire experiment
+  get_log_writer() << "Set Track_parameters" << std::endl;
+  for (size_t station=0; 
+       station<control_parameters.number_stations(); station++) {
+    const std::string &mode = 
+      control_parameters.get_vex().get_mode(*scans.begin());
+    const std::string &station_name = 
+      control_parameters.station(station);
+    const std::string &track = 
+      control_parameters.get_vex().get_track(mode, station_name);
+
+    Track_parameters track_param =
+      control_parameters.get_track_parameters(track);
+    input_node_set(station_name, track_param);
+  }
 
   // Send the delay tables:
-  for (int sn=0; sn<GenPrms.get_nstations(); sn++) {
-    Delay_table_akima delay; 
-    get_log_writer() << StaPrms[sn].get_delaytable() << std::endl;
-    delay.set_cmr(GenPrms);
-    int retval = delay.open(StaPrms[sn].get_delaytable());
-    if (retval != 0) {
-      get_log_writer().error("error while reading delay table.");
-      return retval;
-    }
-    mpi_transfer.send_delay_table(delay, sn, node);
+  get_log_writer() << "Set delay_table" << std::endl;
+  for (size_t station=0; 
+       station<control_parameters.number_stations(); station++) {
+    Delay_table_akima delay_table;
+    const std::string &station_name = control_parameters.station(station);
+    const std::string &delay_file = 
+      control_parameters.get_delay_table_name(station_name);
+    delay_table.open(delay_file.c_str());
+
+    correlator_node_set_all(delay_table, station_name);
   }
 
-  return 0;
+  start_day  = control_parameters.get_start_time().day;
+  start_time = control_parameters.get_start_time().to_miliseconds();
+  stop_time  = 
+    control_parameters.get_stop_time().to_miliseconds(start_day);
+
+  get_log_writer()(2) << "start_day  : " << start_day << std::endl;
+  get_log_writer()(2) << "start_time : " << start_time << std::endl;
+  get_log_writer()(2) << "stop_time  : " << stop_time << std::endl;
+
+  {  // Iterate over all the scans to find the first scan to correlate
+    const Vex &vex = control_parameters.get_vex();
+
+    const std::string &mode = 
+      control_parameters.get_vex().get_mode(*scans.begin());
+    while (!scans.empty()) {
+      // assume the same mode, hence the same track parameters
+      assert(mode == control_parameters.get_vex().get_mode(*scans.begin()));
+
+      if (vex.stop_of_scan(*scans.begin()).to_miliseconds(start_day) > 
+          start_time) {
+        break;
+      }
+      scans.erase(scans.begin());
+    }
+  }
+  assert(!scans.empty());
+  
+  slice_nr  = 0;
+
+  get_log_writer()(0) << "Initialisation finished" << std::endl;
+
+  get_log_writer()(2) << "start scan : " << *scans.begin() << std::endl;
+
+  get_log_writer()(2) << "Starting correlation" << std::endl;
 }
 
-
-void Manager_node::hook_added_data_reader(size_t reader) {
+void Manager_node::end_correlation() {
+  assert(status == WAIT_FOR_OUTPUT_NODE);
+  status = END_NODE;
 }
-
-void Manager_node::hook_added_data_writer(size_t writer) {
-}
-
-void Manager_node::set_correlating_state(int node, CORRELATING_STATE state) {
-  assert ((node >= 0) && (((size_t)node) < state_correlate_nodes.size()));
-  state_correlate_nodes[node] = state;
-}
-
-int64_t Manager_node::get_start_time(int input_node_nr) {
-  assert(input_node_nr >= 0);
-  assert(input_node_nr < N_INPUT_NODES);
-  int64_t time;
-  // Get initial start time
-  MPI_Send(&time, 1, MPI_INT64, 
-           START_INPUT_NODES+input_node_nr, MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP, 
-           MPI_COMM_WORLD);
-  MPI_Status status;           
-  MPI_Recv(&time, 1, MPI_INT64, 
-           START_INPUT_NODES+input_node_nr, MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP, 
-           MPI_COMM_WORLD, &status);
-  return time;
-}
-
-void Manager_node::goto_start_time(int input_node_nr, int64_t time) {
-  assert(input_node_nr >= 0);
-  assert(input_node_nr < N_INPUT_NODES);
-  MPI_Send(&time, 1, MPI_INT64, 
-           START_INPUT_NODES+input_node_nr, MPI_TAG_INPUT_NODE_GOTO_TIME, 
-           MPI_COMM_WORLD);
-}
-

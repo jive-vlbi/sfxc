@@ -14,7 +14,6 @@
 
 #include <types.h>
 #include <vector>
-#include <genPrms.h>
 
 // GSL includes
 #include <gsl/gsl_spline.h>
@@ -35,28 +34,25 @@ public:
     
   bool operator==(const Delay_table_akima &other) const;
 
-  void set_cmr(GenP GenPrms);
-
   //read the delay table, do some checks and
   //calculate coefficients for parabolic interpolation
-  int open(char *delayTableName);
+  int open(const char *delayTableName);
 
   //calculate the delay for the delayType at time in microseconds
-  double delay(int64_t time, int delayType);
-
-  enum delayType {Cdel, Mdel, Rdel, Fdel};
+  double delay(int64_t time);
 
   /// A spline only interpolates one scan. 
   /// This functions preprocesses the spline for the next scan.
-  void initialise_spline_for_next_scan();
+  bool initialise_next_scan();
+  
+  int64_t start_time_scan();
+  int64_t stop_time_scan();
 private:
-  // Last entry of the previous scan
-  size_t end_scan;
+  // Beginning of the scan and past the end pointer
+  size_t begin_scan, end_scan;
   std::vector<double> times, delays;
   gsl_interp_accel *acc;
   gsl_spline *splineakima;
-
-  int32_t cde, mde, rde; //switches which determine which columns of delay table are used
 };
 
 

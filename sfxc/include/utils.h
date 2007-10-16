@@ -15,22 +15,38 @@
 #include <string>
 #include <assert.h>
 #include "Log_writer.h"
-#include "runPrms.h"
-#include "genPrms.h"
-#include "staPrms.h"
 
 #include <sfxc_mpi.h>
+
+/// Constants
+#define SIZE_MK4_FRAME           20000
+// Maximal track bit rate
+#define MAX_MARK4_TRACK_BIT_RATE 16
+// Maximal delay in milliseconds, should be an integer number of Mark4 blocks
+// 5 should be enough
+#define MAX_DELAY                5
+// The amount of padding in the correlator (could be 1, not tested though)
+#define PADDING                  2
+
+// NGHK: remove?
+const int   BufTime       =   16384; //delta time for Bufs in micro seconds
 
 
 #ifdef SFXC_PRINT_DEBUG
 extern int RANK_OF_NODE; // Rank of the current node
+#define FORMAT_MSG(msg) \
+    "#" << RANK_OF_NODE << " " \
+    << __FILE__ << "," << __LINE__ << ": " \
+    << msg
 #define DEBUG_MSG(msg) \
     { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
-      std::cout << "#" << RANK_OF_NODE << " " \
-                << __FILE__ << "," << __LINE__ << ": " \
-                << msg << std::endl << std::flush; }
+      std::cout << FORMAT_MSG(msg) << std::endl << std::flush; }
+#define MPI_DEBUG_MSG(msg) \
+    { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
+      get_log_writer()(0) << FORMAT_MSG(msg) << std::endl << std::flush; }
 #else
 #define DEBUG_MSG(msg) 
+#define MPI_DEBUG_MSG(msg) 
 #endif
 
 /// Interface_pair is a pair of two strings 
@@ -51,11 +67,6 @@ void get_ip_address(std::list<Interface_pair> &addresses,
 int64_t get_us_time(int time[]);
 
 
-/** Initialises the global control files, this should be removed at some point.
-  **/
-int initialise_control(const char *filename, Log_writer &log_writer, 
-  RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]);
-                    
 ///** Constructs an array containing all control data for a correlate node (Gen and Run).
 // *  @returns the size of the array
 //  **/
@@ -64,5 +75,15 @@ int initialise_control(const char *filename, Log_writer &log_writer,
 ///** Stores all control data for a correlate node (Gen and Run).
 //  **/
 //void receive_control_data(MPI_Status &status);
+
+
+//*****************************************************************************
+//  irbit2: random seeding
+//  See Numerical Recipes
+//  primitive polynomial mod 2 of order n produces 2^n - 1 random bits
+//*****************************************************************************
+void set_seed(unsigned long seed_);
+int irbit2();
+
                     
 #endif // UTILS_H

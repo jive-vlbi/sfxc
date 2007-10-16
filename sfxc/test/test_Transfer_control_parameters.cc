@@ -11,291 +11,184 @@
 #include <iostream>
 #include <assert.h>
 
-#include "delayTable.h"
+#include "Delay_table_akima.h"
 #include <MPI_Transfer.h>
-
-// Defines bufTime
-#include "constPrms.h"
 
 #include <utils.h>
 #include "Log_writer_cout.h"
 
-#include <constPrms.h>
-#include <runPrms.h>
-#include <genPrms.h>
-#include <staPrms.h>
-RunP  RunPrms;
-GenP  GenPrms;
-StaP  StaPrms[NstationsMax];
-int64_t sliceStartByte[NstationsMax][NprocessesMax];
-int64_t sliceStartTime [NprocessesMax];
-int64_t sliceStopTime  [NprocessesMax];
-int64_t sliceTime;
-int seed;
+Log_writer_cout log_writer;
+  
 
-// MPI
-int numtasks, rank;
+void check_control_parameters(int rank,
+                              Control_parameters &control_parameters) {
+  std::map<std::string, int> station_streams;
+  { // Get station map:
+    for (size_t station_nr=0; 
+         station_nr<control_parameters.number_stations();
+         station_nr++) {
+      const std::string &station_name = 
+        control_parameters.station(station_nr);
+      station_streams[station_name] = station_nr;
+    }
+  }
 
-void check_control_parameters() {
+  Vex::Node::const_iterator freqs = 
+    control_parameters.get_vex().get_root_node()["FREQ"];
+  std::string channel_name = 
+    freqs->begin()["chan_def"][4]->to_string();
+
   if (rank==0) {
-    //std::cout << "check_control_parameters()" << std::endl;
     MPI_Transfer mpi_transfer;
-    mpi_transfer.send_general_parameters(1, RunPrms, GenPrms, StaPrms);
+
+
+    // Get Track_parameters for every scan x station
+    std::vector<std::string> scans;
+    control_parameters.get_vex().get_scans(std::back_inserter(scans));
+    for (size_t i=0; i<scans.size(); i++) {
+      // Get all stations for a certain scan
+      std::vector<std::string> stations;
+      control_parameters.get_vex().get_stations(scans[i], std::back_inserter(stations));
+      for (size_t j=0; j<stations.size(); j++) {
+        const std::string &track = 
+          control_parameters.get_vex().get_track(control_parameters.get_vex().get_mode(scans[i]),
+                                                 stations[j]);
+        Track_parameters track_param = 
+          control_parameters.get_track_parameters(track);
+
+        // Sending data
+        mpi_transfer.send(track_param, 1);
+      }
+
+      // Check the correlation parameters
+      Correlation_parameters correlation_param = 
+        control_parameters.
+        get_correlation_parameters(control_parameters.scan(i),
+                                   channel_name,
+                                   station_streams);
+      mpi_transfer.send(correlation_param, 1);
     
-  } else {
-    RunP  RunPrms2 = RunPrms;
-    GenP  GenPrms2 = GenPrms;
-    StaP  StaPrms2[NstationsMax];
-    
+    }
+
+  } else { // Receiving side
     MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    
-    assert(status.MPI_TAG == MPI_TAG_CONTROL_PARAM);
-
     MPI_Transfer mpi_transfer;
-    mpi_transfer.receive_general_parameters(status, RunPrms2, GenPrms2, StaPrms2);
 
-    // RunPrms
-    if (RunPrms.get_messagelvl() != RunPrms2.get_messagelvl()) {
-      std::cout << "MPI RunPrms: messagelevel differs" << std::endl;
-    }
-    if (RunPrms.get_interactive() != RunPrms2.get_interactive()) {
-      std::cout << "MPI RunPrms: interactive differs" << std::endl;
-    }
-    if (RunPrms.get_runoption() != RunPrms2.get_runoption()) {
-      std::cout << "MPI RunPrms: interactive differs" << std::endl;
-    }
+    // Get Track_parameters for every scan x station
+    std::vector<std::string> scans;
+    control_parameters.get_vex().get_scans(std::back_inserter(scans));
+    for (size_t i=0; i<scans.size(); i++) {
+      // Get all stations for a certain scan
+      std::vector<std::string> stations;
+      control_parameters.get_vex().get_stations(scans[i], std::back_inserter(stations));
+      for (size_t j=0; j<stations.size(); j++) {
+        const std::string &track = 
+          control_parameters.get_vex().get_track(control_parameters.get_vex().get_mode(scans[i]),
+                                                 stations[j]);
+        Track_parameters track_param = 
+          control_parameters.get_track_parameters(track);
 
-    // GenPrms
-    if (strcmp(GenPrms.get_experiment(), GenPrms2.get_experiment())) {
-      std::cout << "MPI GenPrms: experiment differs" << std::endl;
-    }
-    if (GenPrms.get_yst() != GenPrms2.get_yst()) {
-      std::cout << "MPI GenPrms: yst differs" << std::endl;
-    }
-    if (GenPrms.get_dst() != GenPrms2.get_dst()) {
-      std::cout << "MPI GenPrms: dst differs" << std::endl;
-    }
-    if (GenPrms.get_hst() != GenPrms2.get_hst()) {
-      std::cout << "MPI GenPrms: hst differs" << std::endl;
-    }
-    if (GenPrms.get_mst() != GenPrms2.get_mst()) {
-      std::cout << "MPI GenPrms: mst differs" << std::endl;
-    }
-    if (GenPrms.get_sst() != GenPrms2.get_sst()) {
-      std::cout << "MPI GenPrms: sst differs" << std::endl;
-    }
-    if (strcmp(GenPrms.get_outdir(), GenPrms2.get_outdir())) {
-      std::cout << "MPI GenPrms: outdir differs" << std::endl;
-    }
-    if (strcmp(GenPrms.get_logfile(), GenPrms2.get_logfile())) {
-      std::cout << "MPI GenPrms: logfile differs" << std::endl;
-    }
-    if (strcmp(GenPrms.get_corfile(), GenPrms2.get_corfile())) {
-      std::cout << "MPI GenPrms: corfile differs" << std::endl;
-    }
-    
-    if (GenPrms.get_bwin() != GenPrms2.get_bwin()) {
-      std::cout << "MPI GenPrms: bwin differs" << std::endl;
-    }
-    if (GenPrms.get_lsegm() != GenPrms2.get_lsegm()) {
-      std::cout << "MPI GenPrms: lsegm differs" << std::endl;
-    }
-    if (GenPrms.get_foffset() != GenPrms2.get_foffset()) {
-      std::cout << "MPI GenPrms: foffset differs" << std::endl;
-    }
-    if (GenPrms.get_cde() != GenPrms2.get_cde()) {
-      std::cout << "MPI GenPrms: cde differs" << std::endl;
-    }
-    if (GenPrms.get_mde() != GenPrms2.get_mde()) {
-      std::cout << "MPI GenPrms: mde differs" << std::endl;
-    }
-    if (GenPrms.get_rde() != GenPrms2.get_rde()) {
-      std::cout << "MPI GenPrms: rde differs" << std::endl;
-    }
+        Track_parameters track_param2 =
+          control_parameters.get_track_parameters(track);
+        // Double extraction
+        assert(track_param == track_param2);
+        // copy constructor
+        track_param2 = track_param;
+        assert(track_param == track_param2);
+        // sending data
+        MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        mpi_transfer.receive(status, track_param2);
 
-    if (GenPrms.get_filter() != GenPrms2.get_filter()) {
-      std::cout << "MPI GenPrms: filter differs" << std::endl;
-    }
-    if (GenPrms.get_bwfl() != GenPrms2.get_bwfl()) {
-      std::cout << "MPI GenPrms: bwfl differs" << std::endl;
-    }
-    if (GenPrms.get_startf() != GenPrms2.get_startf()) {
-      std::cout << "MPI GenPrms: startf differs" << std::endl;
-    }
-    if (GenPrms.get_deltaf() != GenPrms2.get_deltaf()) {
-      std::cout << "MPI GenPrms: deltaf differs" << std::endl;
-    }
-    if (GenPrms.get_ovrfl() != GenPrms2.get_ovrfl()) {
-      std::cout << "MPI GenPrms: overfl differs" << std::endl;
-    }
-
-    if (GenPrms.get_n2fft() != GenPrms2.get_n2fft()) {
-      std::cout << "MPI GenPrms: n2fft differs" << std::endl;
-    }
-    if (GenPrms.get_ovrlp() != GenPrms2.get_ovrlp()) {
-      std::cout << "MPI GenPrms: overlp differs" << std::endl;
-    }
-    if (GenPrms.get_pad() != GenPrms2.get_pad()) {
-      std::cout << "MPI GenPrms: pad differs" << std::endl;
-    }
-
-    if (GenPrms.get_usStart() != GenPrms2.get_usStart()) {
-      std::cout << "MPI GenPrms: usStart differs" << std::endl;
-    }
-    if (GenPrms.get_rndhdr() != GenPrms2.get_rndhdr()) {
-      std::cout << "MPI GenPrms: rndhdr differs" << std::endl;
-    }
-    if (GenPrms.get_sideband() != GenPrms2.get_sideband()) {
-      std::cout << "MPI GenPrms: sideband differs" << std::endl;
-      assert(false);
-    }
-    
-    for (int i=0; i<GenPrms.get_nstations(); i++) {
-      if (strcmp(StaPrms[i].get_stname(), StaPrms2[i].get_stname())) {
-        std::cout << "MPI StaPrms[" << i << "]: stname differs" << std::endl;
-        std::cout << "stname: \"" 
-                  << StaPrms[i].get_stname() << "\" vs. \""  
-                  << StaPrms2[i].get_stname() << "\"" << std::endl;
+        assert(track_param == track_param2);
       }
 
-      if (StaPrms[i].get_datatype() != StaPrms2[i].get_datatype()) {
-        std::cout << "MPI StaPrms[" << i << "]: datatype differs" << std::endl;
-      }
-      if (StaPrms[i].get_tbr() != StaPrms2[i].get_tbr()) {
-        std::cout << "MPI StaPrms[" << i << "]: tbr differs" << std::endl;
-      }
-      if (StaPrms[i].get_fo() != StaPrms2[i].get_fo()) {
-        std::cout << "MPI StaPrms[" << i << "]: fo differs" << std::endl;
-      }
-      if (StaPrms[i].get_bps() != StaPrms2[i].get_bps()) {
-        std::cout << "MPI StaPrms[" << i << "]: bps differs" << std::endl;
-      }
-      if (StaPrms[i].get_tphs() != StaPrms2[i].get_tphs()) {
-        std::cout << "MPI StaPrms[" << i << "]: tphs differs" << std::endl;
-      }
-      if (StaPrms[i].get_nhs() != StaPrms2[i].get_nhs()) {
-        std::cout << "MPI StaPrms[" << i << "]: nhs differs" << std::endl;
-      }
-      if (StaPrms[i].get_boff() != StaPrms2[i].get_boff()) {
-        std::cout << "MPI StaPrms[" << i << "]: boff differs" << std::endl;
-      }
-      if (StaPrms[i].get_synhs1() != StaPrms2[i].get_synhs1()) {
-        std::cout << "MPI StaPrms[" << i << "]: synhs1 differs" << std::endl;
-      }
-      if (StaPrms[i].get_synhs2() != StaPrms2[i].get_synhs2()) {
-        std::cout << "MPI StaPrms[" << i << "]: synhs2 differs" << std::endl;
-      }
-      if (StaPrms[i].get_mod() != StaPrms2[i].get_mod()) {
-        std::cout << "MPI StaPrms[" << i << "]: mod differs" << std::endl;
-      }
+      // Check the correlation parameters
+      Correlation_parameters correlation_param = 
+        control_parameters.get_correlation_parameters(control_parameters.scan(i), 
+                                                      channel_name,
+                                                      station_streams);
+      // Double extraction
+      Correlation_parameters correlation_param2 = 
+        control_parameters.get_correlation_parameters(control_parameters.scan(i), 
+                                                      channel_name,
+                                                      station_streams);
+      assert(correlation_param == correlation_param2);
+      // Copy constructor
+      correlation_param2 = correlation_param;
+      assert(correlation_param == correlation_param2);
+      // sending data
+      MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-      if (strcmp(StaPrms[i].get_mk4file(), StaPrms2[i].get_mk4file())) {
-        std::cout << "MPI StaPrms[" << i << "]: mk4file differs" << std::endl;
-        std::cout << "mk4file: \"" 
-                  << StaPrms[i].get_mk4file() << "\" vs. \""  
-                  << StaPrms2[i].get_mk4file() << "\"" << std::endl;
-      }
-      if (strcmp(StaPrms[i].get_modpat(), StaPrms2[i].get_modpat())) {
-        std::cout << "MPI StaPrms[" << i << "]: modpat differs" << std::endl;
-        std::cout << "modpat: \"" 
-                  << StaPrms[i].get_modpat() << "\" vs. " << std::endl
-                  << "        \""  
-                  << StaPrms2[i].get_modpat() << "\"" << std::endl;
-      }
-      if (strcmp(StaPrms[i].get_delaytable(), StaPrms2[i].get_delaytable())) {
-        std::cout << "MPI StaPrms[" << i << "]: delaytable differs" << std::endl;
-        std::cout << "delaytable: \"" 
-                  << StaPrms[i].get_delaytable() << "\" vs. \"" 
-                  << StaPrms2[i].get_delaytable() << "\"" << std::endl;
-      }
-      if (strcmp(StaPrms[i].get_phasetable(), StaPrms2[i].get_phasetable())) {
-        std::cout << "MPI StaPrms[" << i << "]: phasetable differs" << std::endl;
-        std::cout << "phasetable: \"" 
-                  << StaPrms[i].get_phasetable() << "\" vs. " << std::endl
-                  << "            \"" 
-                  << StaPrms2[i].get_phasetable() << "\"" << std::endl;
-      }
-
-      if (StaPrms[i].get_loobs() != StaPrms2[i].get_loobs()) {
-        std::cout << "MPI StaPrms[" << i << "]: loobs differs" << std::endl;
-      }
-      for (int j=0; j<fomax; j++) {
-        if (StaPrms[i].get_signBS()[j] != StaPrms2[i].get_signBS()[j]) {
-          std::cout << "MPI StaPrms[" << i << "]: signBS()[j] differs" << std::endl;
-        }
-        if (StaPrms[i].get_magnBS()[j] != StaPrms2[i].get_magnBS()[j]) {
-          std::cout << "MPI StaPrms[" << i << "]: magnBS()[j] differs" << std::endl;
-        }
-      }
+      mpi_transfer.receive(status, correlation_param2);
+      assert(correlation_param == correlation_param2);
     }
   }
 }
 
-void check_delay_table(char *filename_delay_table) {
-  if (rank==0) {
-    std::cout << "check delay: " << filename_delay_table << std::endl;
-  }
-
-  // Read delay_table:
-  DelayTable delayTable;
-  delayTable.set_cmr(GenPrms);
-  delayTable.readDelayTable(filename_delay_table);
-  int sn = 134; // Some random value
-
-  MPI_Transfer transfer;
-  if (rank==0) {
-    { // assignment
-      DelayTable delayTable2 = delayTable;
-      assert(delayTable == delayTable2);
-    }
+void check_delay_table(int rank, const std::string &filename_delay_table) {
+   // Read delay_table:
+   Delay_table_akima delayTable;
+   delayTable.open(filename_delay_table.c_str());
+   int sn = 134; // Some random value
   
-    { // copy constructor
-      DelayTable delayTable2(delayTable);
-      assert(delayTable == delayTable2);
-    }
-    
-    transfer.send_delay_table(delayTable,sn,1);
-  } else {
-    DelayTable delayTable2;
-    delayTable2.set_cmr(GenPrms);
-    MPI_Status status;
-    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    int sn2;
-    transfer.receive_delay_table(status,delayTable2,sn2);
-    assert(delayTable == delayTable2);
-    assert(sn == sn2);
-  }
+   MPI_Transfer transfer;
+   if (rank==0) {
+     { // assignment
+       Delay_table_akima delayTable2 = delayTable;
+       assert(delayTable == delayTable2);
+     }
+   
+     { // copy constructor
+       Delay_table_akima delayTable2(delayTable);
+       assert(delayTable == delayTable2);
+     }
+     
+     transfer.send(delayTable,sn,1);
+   } else {
+     Delay_table_akima delayTable2;
+     MPI_Status status;
+     MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+     int sn2;
+     transfer.receive(status,delayTable2,sn2);
+     assert(delayTable == delayTable2);
+     assert(sn == sn2);
+   }
 }
 
 
 int main(int argc, char *argv[]) {
-  Log_writer_cout log_writer(-1);
+  // MPI
+  int numtasks, rank;
   //initialisation
-  int status = MPI_Init(&argc,&argv);
-  if (status != MPI_SUCCESS) {
+  
+  int stat = MPI_Init(&argc,&argv);
+  if (stat != MPI_SUCCESS) {
     std::cout << "Error starting MPI program. Terminating.\n";
-    MPI_Abort(MPI_COMM_WORLD, status);
+    MPI_Abort(MPI_COMM_WORLD, stat);
   }
-
+  
   // get the number of tasks set at commandline (= number of processors)
   MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-  // Initialise correlator node
-  assert(argc==2);
-  char *control_file = argv[1];
-  if (initialise_control(control_file, log_writer, RunPrms, GenPrms, StaPrms) != 0) {
-    std::cout << "Initialisation using control file failed" << std::endl;
-    return 1;
-  }
-  
-  check_control_parameters();
+  assert(argc==3);
 
-  for (int i=0; i<GenPrms.get_nstations(); i++) {
+  char            *ctrl_file = argv[1];
+  char            *vex_file = argv[2];
+
+  Control_parameters parameters;
+  parameters.initialise(ctrl_file, vex_file, std::cout);
+  
+  check_control_parameters(rank, parameters);
+
+  for (size_t station_nr=0; 
+       station_nr<parameters.number_stations();
+       station_nr++) {
     MPI_Barrier( MPI_COMM_WORLD );
-    check_delay_table(StaPrms[i].get_delaytable());
+    std::string delay_table = 
+      parameters.get_delay_table_name(parameters.station(station_nr));
+    check_delay_table(rank, delay_table);
   }
 
   //close the mpi stuff

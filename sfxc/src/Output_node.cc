@@ -36,13 +36,13 @@ Output_node::Output_node(int rank, Log_writer *writer, int size)
     output_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
+    status(STOPPED),
     curr_slice(0), number_of_time_slices(-1), curr_stream(-1)
 {
   initialise(); 
 }
 
 void Output_node::initialise() {
-  get_log_writer() << "Output_node()" << std::endl;
   add_controller(&data_readers_ctrl);
   add_controller(&output_node_ctrl);
   add_controller(&data_writer_ctrl);
@@ -74,8 +74,8 @@ void Output_node::start() {
         assert(curr_stream == -1);
         // blocking:
         if (check_and_process_message() == TERMINATE_NODE) {
-          assert(false);
           status = END_NODE;
+          break;
         }
         if (curr_slice == number_of_time_slices) {
           status = END_NODE;
@@ -93,6 +93,7 @@ void Output_node::start() {
         assert(!input_streams_order.empty());
         assert(input_streams_order.begin()->first == curr_slice);
         curr_stream = input_streams_order.begin()->second;
+        assert(curr_stream >= 0);
         input_streams_order.erase(input_streams_order.begin());
         input_streams[curr_stream]->goto_next_slice();
 
@@ -134,29 +135,33 @@ void Output_node::start() {
       }
     case END_NODE:
       { // For completeness sake
+        assert(false);
         break;
       }
     }
   }
+  // End the node;
+  int32_t msg=0;
+  MPI_Send(&msg, 1, MPI_INT32, 
+           RANK_MANAGER_NODE, MPI_TAG_OUTPUT_NODE_FINISHED, MPI_COMM_WORLD);
 }
 
 void 
 Output_node::
-set_weight_of_input_stream(int num, int64_t weight, size_t size) {
-  assert(num >= 0);
+set_weight_of_input_stream(int stream, int64_t weight, size_t size) {
+  assert(stream >= 0);
   
-  assert(num < (int)input_streams.size());
+  assert(stream < (int)input_streams.size());
   // Check that the weight does not exist yet:
   assert(input_streams_order.find(weight) == input_streams_order.end());
 
   // Add the weight to the priority queue:
-  input_streams_order.insert(Input_stream_priority_map_value(weight,num));
+  input_streams_order.insert(Input_stream_priority_map_value(weight,stream));
 
   // Add the weight to the priority queue:
-  input_streams[num]->set_length_time_slice(size);
+  input_streams[stream]->set_length_time_slice(size);
 
   assert(status != END_NODE);
-  status = WRITE_OUTPUT;
 }
 
 void Output_node::time_slice_finished(int rank, int64_t nBytes) {
@@ -210,7 +215,7 @@ Output_node::Input_stream::Input_stream(boost::shared_ptr<Data_reader> reader)
 int 
 Output_node::Input_stream::write_bytes(value_type &elem) {
   assert(reader != boost::shared_ptr<Data_reader>());
-  size_t nBytes = min(elem.size(), reader->get_size_dataslice());
+  size_t nBytes = std::min(elem.size(), reader->get_size_dataslice());
   return reader->get_bytes(nBytes, elem.buffer());
 }
 

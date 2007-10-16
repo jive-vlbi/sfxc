@@ -7,15 +7,17 @@
  *
  */
 
-#ifndef MARK4_CHANNEL_EXTRACTOR_H_
-#define MARK4_CHANNEL_EXTRACTOR_H_
+#ifndef CHANNEL_EXTRACTOR_MARK4_H_
+#define CHANNEL_EXTRACTOR_MARK4_H_
 
 #include <Channel_extractor.h>
+#include <Data_reader.h>
 #include <Data_writer.h>
 
-#include <staPrms.h>
 #include <boost/shared_ptr.hpp>
+#include <Log_writer.h>
 
+#include <Control_parameters.h>
 #include <vector>
 
 // Templated by the type of the element from which the samples are extracted
@@ -26,7 +28,7 @@ class Channel_extractor_mark4_implementation;
 class Channel_extractor_mark4 : public Channel_extractor
 {
 public:
-  enum DEBUG_LEVEL {
+  enum Debug_level {
     NO_CHECKS = 0,
     CHECK_PERIODIC_HEADERS,
     CHECK_ALL_HEADERS,
@@ -34,33 +36,45 @@ public:
   };
 
   Channel_extractor_mark4(boost::shared_ptr<Data_reader> reader, 
-                          StaP &StaPrms, 
                           bool insert_random_headers_,
-                          DEBUG_LEVEL debug_level = CHECK_PERIODIC_HEADERS);
+                          Debug_level debug_level = CHECK_ALL_HEADERS);
+
+  bool set_track_parameters(const Track_parameters &parameters);
   
   int goto_time(int64_t time);
   int64_t get_current_time();
 
-  /** Returns a number of samples, one sample per character. **/
-  size_t get_samples(size_t nSamples, double *bit_samples, 
-                     const double *val_array);
-
-  int get_data_rate(int channel);
-
+  /// Gets the data for the channel from the current mark4 block.
+  /// Buff contains a buffer for every channel or NULL if no output is requested.
+  size_t get_bytes(std::vector< char* > &buff);
+  
+  // Returns 0 if ok
+  int goto_next_block();
+  
+  // returns the number of bytes for each channel returned by one get_samples
+  // call
+  int number_of_bytes_per_block();
+  
   bool eof();
 
   void print_header(Log_writer &writer, int track=0);
 
-  int number_of_tracks();
+  int n_tracks();
   int headstack(int track);
   int track(int track);
+  
+  int n_channels();
+  int n_tracks(int channel);
+
+  int track_bit_rate() const;
+  int bit_rate(int channel) const;
+  
 private:
   int find_header(char *buffer, boost::shared_ptr<Data_reader> reader);
 
-  size_t do_get_bytes(size_t nBytes, char *buff);
   
   /** The number of tracks, determined from the data **/
-  int n_tracks;
+  int total_tracks;
   
   // Different implementations based on the number of head stacks:
   Channel_extractor_mark4_implementation<uint8_t>     *ch_extractor_8_tracks;
@@ -69,4 +83,4 @@ private:
   Channel_extractor_mark4_implementation<uint64_t>    *ch_extractor_64_tracks;
 };
 
-#endif /*MARK4_CHANNEL_EXTRACTOR_H_*/
+#endif /*CHANNEL_EXTRACTOR_MARK4_H_*/

@@ -16,8 +16,8 @@
 #include <stdio.h>
 #include <iostream>
 
-char *infile = "data/input.txt";
-char *outfile = "output.txt";
+char *infile = "file://data/input.txt";
+char *outfile = "file://output.txt";
 #define BUFFSIZE 1000
 
 #include <Semaphore_buffer.h>
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
   
     //check output:
     std::string command = "diff ";
-    command += infile; command += " "; command += outfile;
+    command += infile+7; command += " "; command += outfile+7;
     int result = system(command.c_str());
   
     if (result != 0) {
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
   
     //check output:
     std::string command = "diff ";
-    command += infile; command += " "; command += outfile;
+    command += infile+7; command += " "; command += outfile+7;
     int result = system(command.c_str());
   
     if (result != 0) {

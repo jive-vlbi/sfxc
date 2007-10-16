@@ -48,7 +48,7 @@ public:
   bool initialised(unsigned int i);
   
   /** The number of input readers **/
-  unsigned int number_of_data_readers();
+  size_t number_of_data_readers();
 private:
 
   void add_data_reader(int i, boost::shared_ptr<Data_reader> reader);

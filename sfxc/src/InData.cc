@@ -118,7 +118,6 @@ void show_MK4_header(Data_reader *data_reader, int64_t startIS,
 
   //find first header in data file
   FindHeaderMk4(*data_reader, jsynch ,usTime, startIS, StaPrms);
-  get_log_writer().ask_continue();
 }
 
 
@@ -172,12 +171,14 @@ int FindHeaderMk4(Data_reader &reader, int& jsynch,
   nhs = StaPrms.get_nhs();
   if (nhs==1) {
     if (read32datafile(reader, tracks) != 0) {
-      get_log_writer().error("error in read32datafile.");
+      get_log_writer().set_messagelevel(0);
+      get_log_writer() << "error in read32datafile." << std::endl;
       return -1;
     }
   } else {
     if (read64datafile(reader, tracks) != 0) {
-      get_log_writer().error("error in read64datafile.");
+      get_log_writer().set_messagelevel(0);
+      get_log_writer() << "error in read64datafile." << std::endl;
       return -1;
     }
   }
@@ -241,13 +242,15 @@ int FindHeaderMk4(Data_reader &reader, int& jsynch,
 //        setw(4) << GenPrms.get_yst() << "y " << setw(3) << GenPrms.get_dst() << "d " <<
         setw(2) << hr << "h " << setw(2) << min << "m " <<
         setw(2) << sec << "s " << setw(3) << milis << "ms";
-      get_log_writer().message(1, msg);
+      get_log_writer().set_messagelevel(1);
+      get_log_writer() << msg << std::endl;
     }
   }
 
   if( usStart < usTime  ) {
-    get_log_writer().message(0,
-      "Warning  Requested start time is earlier than start time in data file:");
+    get_log_writer()(0)
+      << "Warning  Requested start time is earlier than start time in data file:"
+      << std::endl;
     get_log_writer()(0) << "  * " << usStart << " < " << usTime << std::endl;
   }
 
@@ -540,10 +543,13 @@ void timeComps(char tracks[][frameMk4*nfrms],int jsynch,int synchtrack,int headS
   //printing the first found TOT (stdout)
   char buff[80];
   snprintf(buff,80,"TCD on track%2d headstack %1d TOT%1d= ",synchtrack,headS,headS);
-  get_log_writer().message(1,buff);
+  get_log_writer().set_messagelevel(0);
+  get_log_writer() << buff << std::endl;
+
   snprintf(buff,80,"200%1dy %03dd %02dh %02dm %02ds %03d.%03dms\n",
            *year,*day,*hh,*mm,*ss,*ms,*us);
-  get_log_writer().message(1,buff);
+  get_log_writer().set_messagelevel(1);
+  get_log_writer() << buff << std::endl;
 }    
 
 

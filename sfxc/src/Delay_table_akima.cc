@@ -28,12 +28,6 @@
 #include <string>
 using namespace std;
 
-//the class definitions and function definitions
-#include "constPrms.h"
-#include "runPrms.h"
-#include "genPrms.h"
-#include "staPrms.h"
-#include "genFunctions.h"
 #include "Delay_table_akima.h"
 #include <utils.h>
 
@@ -43,7 +37,7 @@ using namespace std;
 
 //default constructor, set default values
 Delay_table_akima::Delay_table_akima() 
-  : end_scan(0), acc(NULL), splineakima(NULL)
+  : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL)
 {
 }
 
@@ -57,18 +51,9 @@ bool Delay_table_akima::operator==(const Delay_table_akima &other) const
   return true;
 }
 
-//set values for delay table columns
-void Delay_table_akima::set_cmr(GenP GenPrms)
-{
-  cde = GenPrms.get_cde();
-  mde = GenPrms.get_mde();  
-  rde = GenPrms.get_rde();  
-}
-
-
 //read the delay table, do some checks and
 //calculate coefficients for parabolic interpolation
-int Delay_table_akima::open(char *delayTableName)
+int Delay_table_akima::open(const char *delayTableName)
 {
   std::ifstream in(delayTableName);
   assert(in.is_open());
@@ -82,6 +67,7 @@ int Delay_table_akima::open(char *delayTableName)
   // Read the data
   double line[5];
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))){
+    assert(line[4] <= 0);
     // The time read from file is in seconds, whereas the software correlator
     // works with times in microseconds
     times.push_back(line[0]*1000000);
@@ -89,25 +75,27 @@ int Delay_table_akima::open(char *delayTableName)
   }
 
   // Initialise
-  end_scan = 0;
-  initialise_spline_for_next_scan();
+  begin_scan = 0;
+  end_scan   = 0;
+  bool result = initialise_next_scan();
+  assert(result);
 
   return 0;
 }
 
-void Delay_table_akima::initialise_spline_for_next_scan() {
-  assert(end_scan < times.size()-1);
-
+bool Delay_table_akima::initialise_next_scan() {
   // make end_scan point to the start of the next scan
   if (end_scan != 0) end_scan += 2;
+  begin_scan = end_scan;
+
+  if (end_scan >= times.size()) return false;
 
   // next_end_scan is the past-the-end iterator of the next scan
-  size_t next_end_scan = end_scan;
-  while ((next_end_scan < times.size()) && 
-         (times[next_end_scan] != 0)) {
-    next_end_scan ++;
+  while ((end_scan < times.size()) && (times[end_scan] != 0)) {
+    assert(delays[end_scan] <= 0);
+    end_scan ++;
   }
-  assert(next_end_scan < times.size());
+  if (end_scan >= times.size()) return false;
 
   if (splineakima != NULL) {
     gsl_spline_free(splineakima);
@@ -116,26 +104,42 @@ void Delay_table_akima::initialise_spline_for_next_scan() {
 
   // Initialise the Akima spline
   acc = gsl_interp_accel_alloc();
-  int n_pts = next_end_scan - end_scan;
+  int n_pts = end_scan - begin_scan-1;
   // at least 4 sample points for a spline
-  assert(n_pts >= 4);
+  if (n_pts <= 4) return false;
 
   // End scan now points to the beginning of the next scan and 
   // the next scan has n_pts data points
   splineakima = gsl_spline_alloc(gsl_interp_akima, n_pts);
 
+  assert(delays[begin_scan] != 0);
+  assert(delays[begin_scan+n_pts] != 0);
   gsl_spline_init(splineakima,
-                  &times[end_scan], 
-                  &delays[end_scan], 
+                  &times[begin_scan], 
+                  &delays[begin_scan], 
                   n_pts);
   
-  end_scan = next_end_scan-1;
+  return true;
 }
 
 
 //calculates the delay for the delayType at time in microseconds
 //get the next line from the delay table file
-double Delay_table_akima::delay(int64_t time, int delayType) {
-  while (times[end_scan] < time) initialise_spline_for_next_scan();
+double Delay_table_akima::delay(int64_t time) {
+  assert(!times.empty());
+  while (times[end_scan-1] < time) {
+    bool result = initialise_next_scan();
+    assert(result);
+  }
+  assert(splineakima != NULL);
   return gsl_spline_eval (splineakima, time, acc);
+}
+
+int64_t Delay_table_akima::start_time_scan() {
+  assert(begin_scan<times.size());
+  return (int64_t)times[begin_scan];
+}
+int64_t Delay_table_akima::stop_time_scan() {
+  assert(end_scan<times.size());
+  return (int64_t)times[end_scan-1];
 }

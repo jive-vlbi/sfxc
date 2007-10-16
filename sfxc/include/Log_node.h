@@ -38,6 +38,7 @@ private:
 class Log_node : public Node {
 public:
   Log_node(int rank, int nNodes);
+  Log_node(int rank, int nNodes, Log_writer *writer);
   ~Log_node();
 
   void start();

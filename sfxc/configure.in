@@ -9,7 +9,7 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_F77
 AC_PROG_INSTALL
-AC_PROG_LIBTOOL
+AC_PROG_RANLIB
 AC_PROG_YACC
 
 AM_PROG_LEX
@@ -20,8 +20,11 @@ dnl Checks for libraries.
 AC_CHECK_LIB(fftw3, fftw_execute)
 AC_CHECK_LIB(mpich, MPI_Init)
 AC_CHECK_LIB(m, sin)
+AC_CHECK_LIB(antlr3c, antlr3AsciiFileStreamNew)
 AC_CHECK_LIB(vex_parser, parse_vex)
-AC_CHECK_HEADERS(boost/shared_ptr.hpp,,AC_MSG_ERROR([boost/shared_ptr.hpp header not found.]))
+AC_CHECK_HEADERS(boost/shared_ptr.hpp,
+                 ,
+                 AC_MSG_ERROR([boost/shared_ptr.hpp header not found.]))
 
 LIBS="$LIBS -ljson"
 AC_CHECK_HEADERS(json/json.h,, \
@@ -36,11 +39,9 @@ Unable to link to jsoncpp library. If you
 just installed it: try running ldconfig
 as root]))
 
-
 LIBS="$LIBS -lgsl -lgslcblas"
 AC_CHECK_HEADERS(gsl/gsl_spline.h,, \
                  AC_MSG_ERROR([gsl/gsl_spline.h header not found.]))
-
 
 dnl export these variable (so Makefile substitutions
 dnl can be made. 

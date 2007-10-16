@@ -21,9 +21,9 @@ else:
 if (status != 0): 
   sys.exit(1)
 
-for control_file in controlfiles:
-  status = os.system("mpirun -np 4 ./test_Input_node " +
-                     control_file+" "+tmp_output_directory)
+for [ctrl_file,vex_file] in controlfiles:
+  status = os.system("mpirun -np 3 ./test_Input_node " +
+                     ctrl_file+" "+vex_file+" "+tmp_output_directory)
   if (status != 0):
     print "test_Input_node: returned error."
     sys.exit(1);

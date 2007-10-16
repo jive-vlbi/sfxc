@@ -1,140 +1,180 @@
 #ifndef CONTROL_PARAMETERS_H_
 #define CONTROL_PARAMETERS_H_
 
-#include <Log_writer.h>
-#include <string>
-#include <map>
-#include <list>
-#include <vexplus.h>
+#include <json/json.h>
+#include <Vex++.h>
 
-/** A class containing information about one station. **/
-class Station_parameters {
+
+
+/** Information about the mark4 tracks needed by the input node. **/
+class Track_parameters {
 public:
-  Station_parameters();
-  void add_data_source(const std::string &source);
+  Track_parameters() : track_bit_rate(0) {
+  }
+ 
+  class Channel_parameters {
+  public:
+    Channel_parameters() : sign_headstack(-1), magn_headstack(-1) {
+    }
 
-  Log_writer &operator<<(Log_writer &log_writer);
-  
-private:
-  std::list<std::string> data_sources;
-};
 
-/** A class containing information about one scan. **/
-class Scan_parameters {
-public:
-  struct Scan_station_parameters {
-    std::string station_name;
-    int start_second, stop_second;
-    std::string frequency;
+    bool operator==(const Channel_parameters &other) const;
 
-    Log_writer &operator<<(Log_writer &log_writer);
+    // Bits_per_sample is 1 if magn_tracks.size() == 0, otherwise 2
+    int bits_per_sample() const;      ///< Number of bits to encode one sample
+    int32_t         sign_headstack;   ///< The headstack for the sign bits
+    std::vector<int32_t> sign_tracks; ///< A list of the track numbers for sign
+    int32_t         magn_headstack;   ///< The headstack for the magn bits
+    std::vector<int32_t> magn_tracks; ///< A list of the track numbers for magn
   };
 
-  Scan_parameters() {}
-  
-  void set_name(std::string new_name) { name = new_name; }
-  
-  Log_writer &operator<<(Log_writer &log_writer);
+  typedef std::map<std::string,Channel_parameters> Channel_map;
+  typedef Channel_map::iterator                    Channel_iterator;
+  typedef Channel_map::const_iterator              Channel_const_iterator;
 
-  std::string name;
-  int         start;
-  
-  std::list<Scan_station_parameters> stations;
+  int number_of_channels() const;
+  bool operator==(const Track_parameters &other) const;
+
+  // data
+  int                                         track_bit_rate; // in Ms/s
+  Channel_map                                 channels;
 };
 
-/** A class containing information about a frequency setup. **/
-class Frequency_parameters {
+
+/** Information about the correlation neede by the correlator node. **/
+class Correlation_parameters {
 public:
-  struct Frequency_channel_parameters {
-    std::string channel_name; ///< Name of the channel
-    double      frequency;    ///< Frequency
-    char        sideband;     ///< Upper or lower sideband (U or L)
-    char        polarisation; ///< The polarisation (L or R)
-    double      band_width;   ///< Width of the frequency channel
-    int         sign_headstack;    ///< The headstack for the sign bits
-    std::list<int> sign_tracks;    ///< A list of the track numbers for sign
-    int         magn_headstack;    ///< The headstack for the magn bits
-    std::list<int> magn_tracks;    ///< A list of the track numbers for magn
+  Correlation_parameters()
+    : start_time(0), stop_time(0), integration_time(0),
+      number_channels(0), slice_nr(-1), sample_rate(0), 
+      bits_per_sample(0), channel_freq(0), bandwidth(0), sideband('n') {
+  }     
+
+  
+  bool operator==(const Correlation_parameters& other) const;
+
+  class Station_parameters {
+  public:
+    bool 
+    operator==(const Correlation_parameters::Station_parameters& other) const;
     
-    Log_writer &operator<<(Log_writer &log_writer);
+    int32_t station_stream; // input stream
+    int32_t start_time;      // Start and stop time for the station
+    int32_t stop_time;
   };
-  
-  Frequency_parameters() {}
-  
-  Log_writer &operator<<(Log_writer &log_writer);
-  
-  std::string                             frequency_name; 
-  int                                     sample_rate;
-  std::list<Frequency_channel_parameters> channels;
-  
+
+  typedef std::vector<Station_parameters> Station_list;
+  typedef Station_list::iterator          Station_iterator;
+
+  // Data members
+  int32_t start_time;       // Start of the slice in milliseconds
+  int32_t stop_time;        // End of the slice in milliseconds
+  int32_t integration_time; // In milliseconds
+  int32_t number_channels;  // number of frequency channels
+  int32_t slice_nr;         // Number of the integration slice
+
+  int32_t sample_rate;      // #Samples per second
+  int32_t bits_per_sample;  // For all stations equal
+
+  int64_t channel_freq;     // Center frequency of the band in Hz
+  int32_t bandwidth;        // Bandwidth of the channel in Hz
+  char    sideband;         // U or L
+
+  Station_list station_streams; // input streams used
 };
+
 
 /** Class containing all control variables needed for the experiment **/
 class Control_parameters
 {
-  typedef std::map<std::string, Station_parameters>   Station_map;
-  typedef Station_map::iterator                       Station_map_it;
-  typedef std::map<int, Scan_parameters>              Scan_map;
-  typedef Scan_map::iterator                          Scan_map_it;
-  typedef std::map<std::string, Frequency_parameters> Frequency_map;
-  typedef Frequency_map::iterator                     Frequency_map_it;
 public:
+  typedef Vex::Date                Date;
+
+
   Control_parameters();
+  Control_parameters(const char *ctrl_file, const char *vex_file, 
+                     std::ostream& log_writer);
   
-  bool initialise(char *ctrl_file, char *vex_file, Log_writer& log_writer);
+  bool initialise(const char *ctrl_filename,
+                  const char *vex_filename, 
+                  std::ostream& log_writer);
 
-  // Access operators
-  bool is_station(const std::string &station);
-  Station_parameters & get_station(const std::string &station);
+  /****************************************************/
+  /* Get functions from the correlation control file: */
+  /****************************************************/
+  Date get_start_time();
+  Date get_stop_time();
+  std::vector<std::string> data_sources(const std::string &station) const;
+  std::string get_output_file() const;
 
+  std::string station(int i) const;
+  size_t number_stations() const;
+
+  int integration_time() const; // Integration time in miliseconds
+  int number_channels() const;
+	
+  std::string sideband(int i) const;
+  std::string reference_station() const;
+  std::string experiment() const;
   
-  Log_writer &operator<<(Log_writer &log_writer);
+  std::string get_delay_table_name(const std::string &station_name) const;
+
+  std::string channel(int i) const;
+  size_t channels_size() const;
+
+  int message_level() const;
+
+  /****************************************************/
+  /* Get functions from the vex file:                 */
+  /****************************************************/
+  int bits_per_sample() const;
+
+  std::string scan(int i) const;
+  size_t number_scans() const;
+
+	
+  std::string station_in_scan(const std::string& scan, int i) const;
+  size_t number_stations_in_scan(const std::string& scan) const;
+  int station_in_scan(const std::string& scan, 
+                      const std::string &station) const;
+
+  // Return the Frequency channels from the VEX file, filtered by the ctrl file
+  size_t number_frequency_channels() const;
+  std::string frequency_channel(size_t channel_nr) const;
+
+  char polarisation(const std::string &if_node, 
+                    const std::string &if_ref) const;
+
+  std::string frequency(const std::string &if_node, 
+                    const std::string &if_ref) const;
+  
+  char sideband(const std::string &if_node, 
+                    const std::string &if_ref) const;
+						 
+  /****************************************************/
+  /* Extract structs for the correlation:             */
+  /****************************************************/
+  
+  // Return the track parameters needed by the input node
+  Track_parameters 
+  get_track_parameters(const std::string &track_name) const;
+  
+  // Return the correlation parameters needed by a correlator node
+  Correlation_parameters 
+  get_correlation_parameters(const std::string &scan_name,
+                             const std::string &channel_name,
+                             const std::map<std::string, int> 
+                             &correlator_node_station_to_input) const;
+
+  const Vex &get_vex() const;
 private:
-  bool parse_control_file(char *ctrl_filename, Log_writer& log_writer);
-  bool parse_vex_file(char *vex_filename, Log_writer& log_writer);
-  
-  bool set_scan_information(VexPlus &vex_file, Log_writer &log_writer); 
-  
-  
-  int get_day(const char *time);
-  int get_time(const char *time);
-  
-  // General
-  std::string exper_name; // Name of the experiment
-  int start_day;       // Day the experiment starts in MJD
-  int start_time;      // Start time in miliseconds from midnight on start_day
-  int stop_time;       // Stop time in miliseconds from midnight on start_day
-  int message_level;   // The message level of the correlator
+  std::string ctrl_filename;
+  std::string vex_filename;
 
-  // Station
-  Station_map stations;           // Map from the stations to station data
-  std::string reference_station;  // The reference station, if defined 
-  
-  // Scans
-  Scan_map scans;                 // A map for the scans
-  Frequency_map frequencies;      // A map of the frequencies and tracks
-  
-  // Correlation
-  bool cross_polarize;            // Compute cross polarisation pairs
-  int number_channels;            // Number of frequency channels
-  double integr_time;             // The integration time in seconds
-
-  // Data  
-  std::string delay_directory;    // The directory containing the delay files
-  std::string output_file;        // The file to store the output to
-
-  
-  bool initialised; // The control parameters are initialised
+  Json::Value ctrl;        // Correlator control file
+  Vex         vex;         // Vex file
+  bool        initialised; // The control parameters are initialised
 };
 
-Log_writer &operator<<(Log_writer &log_writer, Control_parameters &control);
-Log_writer &operator<<(Log_writer &log_writer, Station_parameters &station);
-Log_writer &operator<<(Log_writer &log_writer, Scan_parameters &scan);
-Log_writer &operator<<(Log_writer &log_writer, 
-                       Scan_parameters::Scan_station_parameters &scan);
-Log_writer &operator<<(Log_writer &log_writer, Frequency_parameters &scan);
-Log_writer &
-operator<<(Log_writer &log_writer, 
-           Frequency_parameters::Frequency_channel_parameters &scan);
 
 #endif /*CONTROL_PARAMETERS_H_*/

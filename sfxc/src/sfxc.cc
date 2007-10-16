@@ -5,116 +5,70 @@
  * 
  * $Id$
  *
+ *  Tests reading a file from disk and then writing it back using a Data_node
  */
 
 #include <types.h>
-#include <Manager_node.h>
 #include <Input_node.h>
 #include <Output_node.h>
-#include <Correlator_node.h>
 #include <Log_node.h>
+#include <Log_writer_cout.h>
 
-//global variables
-#include <runPrms.h>
-#include <genPrms.h>
-#include <staPrms.h>
-#include <constPrms.h>
-//declaration and default settings run parameters
-RunP RunPrms;
-//declaration and default settings general parameters
-GenP GenPrms;
-//station parameters class, declaration and default settings
-StaP StaPrms[NstationsMax];
-
-
-#include <iostream> 
+#include <fstream>
 #include <assert.h>
+#include <stdio.h>
+#include <iostream>
+#include <stdlib.h>
 
-#include <genFunctions.h>
+#include "Delay_table_akima.h"
+#include "MPI_Transfer.h"
 
+
+#include <Node.h>
+#include <Data_reader2buffer.h>
+#include <TCP_Connection.h>
+#include <Buffer2data_writer.h>
+#include <Data_writer.h>
+#include <Data_writer_file.h>
+#include <Data_reader_file.h>
+#include <Data_reader_tcp.h>
+#include <Channel_extractor_mark4.h>
+#include <utils.h>
+
+#include <Manager_node.h>
 
 int main(int argc, char *argv[]) {
-  // MPI
-  int rank;
-
   //initialisation
-  int status = MPI_Init(&argc,&argv);
-  if (status != MPI_SUCCESS) {
+  int stat = MPI_Init(&argc,&argv);
+  if (stat != MPI_SUCCESS) {
     std::cout << "Error starting MPI program. Terminating.\n";
-    MPI_Abort(MPI_COMM_WORLD, status);
-    return 1;
+    MPI_Abort(MPI_COMM_WORLD, stat);
   }
 
+  // MPI
+  int numtasks, rank;
+  // get the number of tasks set at commandline (= number of processors)
+  MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-  //std::cout << "#" << rank << " pid = " << getpid() << std::endl;
+  DEBUG_MSG(" pid = " << getpid());
 
-  ///////////////////////////
-  //  The real work
-  ///////////////////////////
+  assert(argc == 3);
+  char *ctrl_file = argv[1];
+  char *vex_file = argv[2];
+
   if (rank == RANK_MANAGER_NODE) {
-    // get the number of tasks set at commandline (= number of processors)
-    int numtasks;
-    MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
-    
-    Manager_node manager(numtasks, rank, argv[1]);
-    manager.start();
-  } else {
-    MPI_Status status;
-    MPI_Probe(RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    switch (status.MPI_TAG) {
-    case MPI_TAG_SET_LOG_NODE:
-      { 
-        int32_t msg;
-        MPI_Recv(&msg, 1, MPI_INT32, 
-                 RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        // No break
-      }
-    case MPI_TAG_LOG_MESSAGE: 
-      {
-        assert (RANK_LOG_NODE == rank);
-        int numtasks;
-        MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
-        Log_node log_node(rank,numtasks);
-        log_node.start();
-        break;
-      }
-    case MPI_TAG_SET_INPUT_NODE: 
-      {
-        // The integer is the number of the input_reader:
-        int32_t msg;
-        MPI_Recv(&msg, 1, MPI_INT32, 
-                 RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        Input_node input_node(rank, msg);
-        input_node.start();
-        break;
-      }
-    case MPI_TAG_SET_CORRELATOR_NODE: 
-      {
-        int32_t msg;
-        MPI_Recv(&msg, 1, MPI_INT32, 
-                 RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        Correlator_node correlator(rank, msg, 10);
-        correlator.start();
-        break;
-      }
-    case MPI_TAG_SET_OUTPUT_NODE: 
-      {
-        int32_t msg;
-        MPI_Recv(&msg, 1, MPI_INT32, 
-                 RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        Output_node node(rank);
-        node.start();
-        break;
-      }
-    default:
-      {
-        std::cout << "Unknown node type " << status.MPI_TAG << std::endl;
-        assert(false);
-        return 1;
-      }
+    Control_parameters control_parameters;
+    {
+      Log_writer_cout log_writer(10);
+      control_parameters.initialise(ctrl_file, vex_file, log_writer);
     }
+    Log_writer_mpi log_writer(rank, control_parameters.message_level());
+    Manager_node node(rank, numtasks, &log_writer, control_parameters);
+    node.start();
+  } else {
+    start_node();
   }
 
   //close the mpi stuff

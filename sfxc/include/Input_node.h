@@ -14,7 +14,8 @@
 #include <Single_data_reader_controller.h>
 #include <Multiple_data_writers_controller.h>
 
-#include <Channel_extractor.h>
+#include <Channel_extractor_mark4.h>
+#include <Time_slicer.h>
 
 #include <Data_reader2buffer.h>
 
@@ -24,17 +25,6 @@
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
-
-#include <constPrms.h>
-#include <runPrms.h>
-#include <genPrms.h>
-#include <staPrms.h>
-
-extern RunP  RunPrms;
-extern GenP  GenPrms;
-extern StaP  StaPrms[NstationsMax];
-
-
 
 class Input_node;
 
@@ -63,53 +53,51 @@ class Input_node : public Node {
   typedef Input_node                       Self;
   
   typedef Single_data_reader_controller::value_type     value_type;
-  typedef Semaphore_buffer<value_type>     Buffer;
+  typedef Semaphore_buffer<value_type>                  Buffer;
+
+  // assume at most 8 tracks:
+  typedef Time_slicer< Buffer_element_large<char, SIZE_MK4_FRAME> >    Slicer;
 public:
   Input_node(int rank, int station_number, Log_writer *log_writer);
   Input_node(int rank, int station_number);
   ~Input_node();
   
-  /// Generic constructor function, that is called in the body of every constructor
+  /** Generic constructor function, that is called in the body of
+      every constructor.
+  **/
   void initialise();
+
+  /** Sets the track parameters **/
+  void set_track_parameters(const Track_parameters &track_param);
+
   
   /// Start the state machine
   void start();
 
   /// Status of the state machine
-  enum STATUS {
-    STOPPED=0, ///< The input node is waiting
-    SEND_OUTPUT, ///< The input node is forwarding data
-    END_NODE ///< The input node is shutting down
+  enum Status {
+    WAITING=0,    ///< The input node is waiting
+    INITIALISING, ///< Waiting for all channels to get connected
+    WRITING,      ///< Writing the output of the current channel
+    END_NODE      ///< Terminate the node
   };
   
-  /// Set the start and stop time of an output stream 
-  void set_priority(int stream, int slicenr, uint64_t start, uint64_t stop);
-
   /// Get the current time stamp  
   int64_t get_time_stamp();
   
-  /// Return the time between two calls of fill_channel_buffer()
-  int32_t get_delta_time();
-
   void set_stop_time(int64_t stop_time);
 
   void goto_time(int64_t new_time);
-  
-  /// Check whether we need to start or stop output streams:  
-  void update_active_list();
-  /// Add an output stream to the list of active output streams
-  void add_to_active_list(int64_t time, int stream);
-  /// Remove an output stream from the list of active output streams
-  void remove_from_active_list(int stream);
 
+  void add_time_slice(int channel, int stream, int starttime, int stoptime);
+
+  int get_status();
+  
   // Callback functions:
   void hook_added_data_reader(size_t reader);
   void hook_added_data_writer(size_t writer);
 
 private:
-
-  // refill the buffer and set the current time stamp:
-  void fill_channel_buffer();
 
   /// Controller for the input node (messages specific for the input node).
   Input_node_controller                        input_node_ctrl;
@@ -119,41 +107,15 @@ private:
   Multiple_data_writers_controller             data_writers_ctrl;
 
   /// The channel extractor
-  boost::shared_ptr<Channel_extractor> channel_extractor;
-
+  boost::shared_ptr<Channel_extractor_mark4> channel_extractor;
+  /// A list of time slicers, one per channel
+  std::vector< Slicer >                      time_slicers;
   
-  /// The input stream is redirected to the streams in the active list: 
-  std::list<int>                               active_list;
-  /// Two queues for starting and stopping of output streams
-  std::multimap<int64_t, int>                  start_queue;
-  /// Current timestamp, used for starting and stopping output streams:
-  int64_t                                      time_stamp;
-  
-  /// Number of elements in a buffer
-  int                                          buffer_size;
-  
-  /// Number of the input reader (input readers should be numbered 0..N)
-  int nr_input_reader;
-  int get_input_node_number() {
-    return nr_input_reader;
-  }
-  /// Status of the state machine
-  STATUS                                       status;
+  Status status;
 
-
-  /// size of the buffer, this should be at least big enough to contain the
-  /// overlap in the time slices
-  static const size_t ch_buffer_size = 20*frameMk4;
-  /// The buffer for one channel. This should become an array of buffers in the
-  /// multichannel version.
-  char ch_buffer[ch_buffer_size];
+  int32_t start_time;
   
   int64_t stop_time;
-
-public:
-  RunP RunPrms;
-  GenP GenPrms;
-  StaP StaPrms[NstationsMax];
 };
 
 #endif // INPUT_NODE_H

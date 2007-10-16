@@ -1,5 +1,5 @@
 noinst_LIBRARIES = libfcalc.a
-FFLAGS = -ffixed-line-length-80 -fno-underscoring -m32 -I../include
+AM_FFLAGS = -ffixed-line-length-80 -fno-underscoring -m32 -I../include
 libfcalc_a_SOURCES = \
                 cwobm.f         \
                 cutcu.f         \

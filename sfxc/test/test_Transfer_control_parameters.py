@@ -16,9 +16,12 @@ if os.path.isfile(RC_FILE):
 status = os.system("make test_Transfer_control_parameters")
 if (status != 0): sys.exit(1)
 
-for ctrlfile in controlfiles:
-  print "Control file: "+ctrlfile
-  status = os.system("mpirun -np 2 test_Transfer_control_parameters "+ctrlfile)
+for [ctrl_file,vex_file] in controlfiles:
+  print
+  print "Control file: "+ctrl_file
+  print
+  status = os.system("mpirun -np 2 test_Transfer_control_parameters "+
+                     ctrl_file+" "+vex_file)
   if (status != 0): sys.exit(1)
   
 sys.exit(0);

@@ -37,7 +37,7 @@ public:
   
   bool ready();
   
-  boost::shared_ptr<Data_writer> get_data_writer(int i);
+  boost::shared_ptr<Data_writer> get_data_writer(size_t i);
     
   int get_rank_node_reader(int i) {
     assert((0<=i) && (i < (int)data_writers.size()));

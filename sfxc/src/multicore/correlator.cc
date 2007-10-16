@@ -10,21 +10,6 @@
 #include <types.h>
 #include <Correlator_node.h>
 
-//global variables
-#include <runPrms.h>
-#include <genPrms.h>
-#include <staPrms.h>
-#include <constPrms.h>
-//declaration and default settings run parameters
-RunP RunPrms;
-//declaration and default settings general parameters
-GenP GenPrms;
-//station parameters class, declaration and default settings
-StaP StaPrms[NstationsMax];
-// used for randomising numbers for Headers in Mk4 file
-uint32_t seed;
-
-
 #include <iostream> 
 #include <assert.h>
 

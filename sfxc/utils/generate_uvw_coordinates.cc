@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <Uvw_model.h>
-#include <genFunctions.h>
 
 
 int main(int argc, char *argv[]) {

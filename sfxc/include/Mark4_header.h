@@ -11,6 +11,7 @@
 #define MARK4_HEADER_H
 
 #include <assert.h>
+#include <utils.h>
 
 /** Mark IV frame header in byte chunks, without parity bits. */
 template <class T>
@@ -33,12 +34,13 @@ public:
   int hour(int track);
   int minute(int track);
   int second(int track);
-  int microsecond(int track);
+  int milisecond(int track);
+  // Track is not used, just to make the function idiot proof ( me :) )
+  int microsecond(int track, int milisecond);
 
   int find_track(int headstack, int track);
   
-  int64_t get_microtime_difference(int32_t day, int64_t utime, int track); 
-  int64_t get_microtime(int track);
+  int get_time_in_ms(int track);
   std::string get_time_str(int track);
 
   bool checkCRC();
@@ -63,7 +65,7 @@ private:
 
 template <class T>
 const int Mark4_header<T>::microsecond_offset[] = 
-    {0, 1250, 2500, 3750, -1, 5000, 6250, 7500, 8750, -1};
+  {0, 250, 500, 750, /*invalid*/-1, 0, 250, 500, 750, /*invalid*/-1};
 
 
 template <class T>
@@ -91,10 +93,10 @@ bool Mark4_header<T>::is_valid() {
     assert(T(-1)^T(0) == T(-1));
     if (header[i] != T(-1)) {
       char word[8*sizeof(T)];
-      itoa(header[i], word, 2);
-      printf(" Word:     %16s\n", word);
-      itoa(T(-1), word, 2);
-      printf(" Syncword: %16s\n", word);
+      for (int j=64; j<96; j++) {
+        itoa(header[j], word, 2);
+        printf(" Word: %03d %16s\n", j, word);
+      }
       std::cout << " No synchword found " << i << std::endl;
       return false;
     }
@@ -136,13 +138,18 @@ int Mark4_header<T>::second(int track) {
 }
 
 template <class T>
-int Mark4_header<T>::microsecond(int track) {
-  int64_t milisec = BCD(header + 96+40, track)*100000 + 
-                  BCD(header + 96+44, track)*10000;
-  int unit =      BCD(header + 96+48, track);
+int Mark4_header<T>::milisecond(int track) {
+  int unit = BCD(header + 96+48, track);
   assert(unit != 4);
   assert(unit != 9);
-  return milisec + microsecond_offset[unit];
+  return BCD(header + 96+40, track)*100 + BCD(header + 96+44, track)*10 + unit;
+}
+template <class T>
+int Mark4_header<T>::microsecond(int track, int milisec) {
+  int unit = milisec%10;
+  assert(unit != 4);
+  assert(unit != 9);
+  return microsecond_offset[unit];
 }
 
 template <class T>
@@ -265,33 +272,31 @@ Mark4_header<T>::BCD(T *start, int track) {
 }
 
 template <class T>
-int64_t
-Mark4_header<T>::get_microtime(int track) {
-  return microsecond(track) + 
-         1000000*(second(track) + 
-                  60 * (minute(track) + 
-                        60*(int64_t)hour(track)));
+int
+Mark4_header<T>::get_time_in_ms(int track) {
+  int result = 
+    milisecond(track) + 
+    1000*(second(track) + 
+          60 * (minute(track) + 
+                60*(int64_t)hour(track)));
+//   DEBUG_MSG("time: " << result);
+  return result;
 } 
 
 template <class T>
 std::string
 Mark4_header<T>::get_time_str(int track) {
   char time_str[40];
-  snprintf(time_str,40, "%04dy%03dd%02dh%02dm%02ds%06dus",
+  snprintf(time_str,40, "%04dy%03dd%02dh%02dm%02ds%03dms%03dus",
 	   year(track),
 	   day(track),
 	   hour(track),
 	   minute(track),
 	   second(track),
-	   microsecond(track));
+           milisecond(track),
+	   microsecond(track, milisecond(track)));
   return std::string(time_str);
 }
-
-template <class T>
-int64_t 
-Mark4_header<T>::get_microtime_difference(int32_t start_day, int64_t start_microtime, int track) {
-  return get_microtime(track) + (day(track) - start_day)*1000*60*60*24 - start_microtime;
-} 
 
 template <class T>
 Log_writer &
