@@ -33,8 +33,8 @@ Manager_node(int rank, int numtasks,
   get_log_writer()(0) << "Starting nodes" << std::endl;
 
   // initialise the log node
-  start_log_node(RANK_LOG_NODE, "file://./output.txt");
-  //start_log_node(RANK_LOG_NODE);
+  //start_log_node(RANK_LOG_NODE, "file://./output.txt");
+  start_log_node(RANK_LOG_NODE);
   
   // initialise the output node
   start_output_node(RANK_OUTPUT_NODE);

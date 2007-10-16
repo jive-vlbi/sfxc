@@ -102,8 +102,8 @@ void test_output_node(int rank, int numtasks,
     int slicenr = 0;
     {
       int nBytes = 1000;
-      int64_t priority[] = {reader_stream_nr, slicenr, nBytes};
-      MPI_Send(&priority, 3, MPI_INT64, 
+      int32_t priority[] = {reader_stream_nr, slicenr, nBytes};
+      MPI_Send(&priority, 3, MPI_INT32, 
                output_node, MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY, 
                MPI_COMM_WORLD);
       slicenr++;
@@ -177,8 +177,6 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   assert(numtasks == 3);
   
-//  DEBUG_MSG(" pid = " << getpid());
-
   assert(argc == 4);
   const char *ctrl_file = argv[1];
   //const char *vex_file = argv[2];
@@ -205,7 +203,7 @@ int main(int argc, char *argv[]) {
     MPI_Barrier( MPI_COMM_WORLD );
     test_output_node(rank, numtasks, input_file, output_file2);
     MPI_Barrier( MPI_COMM_WORLD );
-  
+
     if (rank == output_node) {
       sync();
       std::stringstream cmd; 

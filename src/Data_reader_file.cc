@@ -17,7 +17,10 @@
 Data_reader_file::Data_reader_file(const char *filename) : 
   Data_reader()
 {
-  assert(strncmp(filename, "file://", 7)==0);
+  if (strncmp(filename, "file://", 7) != 0) {
+    DEBUG_MSG("Filename '" << filename << "' doesn't start with file://");
+    assert(strncmp(filename, "file://", 7) == 0);
+  }
   file.open(filename+7, std::ios::in | std::ios::binary);
   assert(file.is_open() );
 }

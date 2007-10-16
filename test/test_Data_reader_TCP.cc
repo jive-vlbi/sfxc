@@ -46,11 +46,12 @@ int main(int argc, char *argv[]) {
 
   if (rank == 0) { // Sending node:
     // strlen+1 so that \0 gets transmitted as well
-    char message[sizeof(int32_t)+strlen(infile)+1];
+    int size = sizeof(int32_t)+strlen(infile)+1;
+    char message[size];
     int32_t stream_nr=0;
-    memcpy(msg,&stream_nr,sizeof(int32_t));
-    memcpy(msg+sizeof(int32_t), infile, strlen(infile)+1);
-    MPI_Send(message, strlen(message)+1, MPI_CHAR, 
+    memcpy(message,&stream_nr,sizeof(int32_t));
+    memcpy(message+sizeof(int32_t), infile, strlen(infile)+1);
+    MPI_Send(message, size, MPI_CHAR, 
              1, MPI_TAG_ADD_DATA_READER_FILE2, MPI_COMM_WORLD);
     
     Data_writer_tcp *data_writer = new Data_writer_tcp(1233); 
@@ -77,7 +78,8 @@ int main(int argc, char *argv[]) {
     
   } else { // Receiving node:
     MPI_Status status, status2;
-    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Probe(MPI_ANY_SOURCE, MPI_TAG_ADD_DATA_READER_FILE2,
+              MPI_COMM_WORLD, &status);
     int size;
     MPI_Get_elements(&status, MPI_CHAR, &size);
     assert(size > 0);
@@ -91,7 +93,8 @@ int main(int argc, char *argv[]) {
     Data_reader *reader_file = new Data_reader_file(filename);
     
     
-    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    MPI_Probe(MPI_ANY_SOURCE, MPI_TAG_ADD_DATA_READER_TCP2,
+              MPI_COMM_WORLD, &status);
     MPI_Get_elements(&status, MPI_INT64, &size);
     assert(size > 0);
     uint64_t ip_addr[size];

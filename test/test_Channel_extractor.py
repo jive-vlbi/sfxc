@@ -5,7 +5,7 @@
 #  
 # Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
 # 
-# $Id$
+# $Id: test_Channel_extractor.py 278 2007-07-04 07:27:05Z kruithof $
 
 import sys, os,time, filecmp;
 
@@ -15,19 +15,16 @@ if os.path.isfile(RC_FILE):
   execfile(RC_FILE)
 
 if (os.environ.get("MAKE")):
-  status = os.system('$MAKE test_Input_node')
+  status = os.system('$MAKE test_Channel_extractor')
 else:
-  status = os.system("make test_Input_node")
+  status = os.system("make test_Channel_extractor")
 if (status != 0): 
   sys.exit(1)
 
 for [ctrl_file,vex_file] in controlfiles:
-  cmd = "mpirun -np 3 ./test_Input_node " + \
-                     ctrl_file+" "+vex_file+" "+tmp_output_directory
-  print cmd
-  status = os.system(cmd)
+  status = os.system("./test_Channel_extractor " + ctrl_file+" "+vex_file)
   if (status != 0):
-    print "test_Input_node: returned error."
+    print "test_Channel_extractor: returned error."
     sys.exit(1);
 
 sys.exit(0);
