@@ -34,7 +34,7 @@ initialise(const char *ctrl_file, const char *vex_file,
     bool ok = reader.parse(in, ctrl);
     if ( !ok ) {
       // report to the user the failure and their locations in the document.
-      log_writer  << "Failed to parse configuration\n"
+      log_writer  << "Failed to parse control file\n"
                   << reader.getFormatedErrorMessages()
                   << std::endl;
       assert(false);
