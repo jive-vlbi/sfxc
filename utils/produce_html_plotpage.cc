@@ -1,5 +1,5 @@
 /* author : N.G.H. Kruithof
-*/
+ */
 
 #define MAX_SNR_VALUE 8
 #define MIN_SNR_VALUE 3
@@ -40,27 +40,27 @@ int plot_nr=0;
 class Plot_generator {
 public:
   Plot_generator(std::ifstream &infile, const Control_parameters &ConPrms,
-									int count_channel);
+                 int count_channel);
   
 private:
   // sets the data of plot_data except for the plots
   void set_plot_data(Plot_data &data, const Control_parameters &ConPrms,
-											int count_channel);
+                     int count_channel);
   void generate_auto_plots(std::ifstream &in,
                            int stations_start,
                            int stations_end,
                            Plot_data &plot_data,
-													 const Control_parameters &ConPrms);
+                           const Control_parameters &ConPrms);
   void generate_cross_plots(std::ifstream &in,
                             int nStations,
                             const std::string &ref_station,
-														Plot_data &plot_data,
-														const Control_parameters &ConPrms);
+                            Plot_data &plot_data,
+                            const Control_parameters &ConPrms);
   void generate_cross_plot(std::ifstream &in,
                            const std::string &ref_station,
-													 int station2,
-													 Plot_data &plot_data,
-													 const Control_parameters &ConPrms);
+                           int station2,
+                           Plot_data &plot_data,
+                           const Control_parameters &ConPrms);
   void plot(char *filename, int nPts, char *title);
 
   double signal_to_noise_ratio(std::vector< std::complex<double> > &data);
@@ -73,15 +73,15 @@ private:
 };
 
 Plot_generator::Plot_generator(std::ifstream &infile, 
-								const Control_parameters &ConPrms,
-								int count_channel)
+                               const Control_parameters &ConPrms,
+                               int count_channel)
 {
   Log_writer_cout log_writer;
 
-/*  int err = 
-    initialise_control(filename, log_writer, ConPrms);
-  if (err != 0) return;
-*/
+  /*  int err = 
+      initialise_control(filename, log_writer, ConPrms);
+      if (err != 0) return;
+  */
   log_writer(0) << ConPrms.get_output_file() << std::endl;
   
   nLags =ConPrms.number_channels()+1;
@@ -96,12 +96,12 @@ Plot_generator::Plot_generator(std::ifstream &infile,
                      FFTW_BACKWARD, 
                      FFTW_ESTIMATE);
 
-//	std::ifstream infile(ConPrms.get_output_file().c_str(), std::ios::in | std::ios::binary);
-//  assert(infile.is_open());
+  //	std::ifstream infile(ConPrms.get_output_file().c_str(), std::ios::in | std::ios::binary);
+  //  assert(infile.is_open());
   // Auto correlations
   int nstations = ConPrms.number_stations();
-	std::string ref_station1=ConPrms.reference_station();
-	std::string ref_station2="";
+  std::string ref_station1=ConPrms.reference_station();
+  std::string ref_station2="";
   // Cross correlations
   if (ref_station1 == "") {
     Plot_data plot_data;
@@ -109,94 +109,94 @@ Plot_generator::Plot_generator(std::ifstream &infile,
 
     generate_auto_plots(infile, 0, nstations, plot_data, ConPrms);
     generate_cross_plots(infile, nstations, ConPrms.reference_station(), plot_data,
-												ConPrms);
+                         ConPrms);
 
     plot_data_channels.push_back(plot_data);
   } else 
 	
-		if (ref_station2 == "") {
-    // One reference station
-    Plot_data plot_data;
-    set_plot_data(plot_data, ConPrms, count_channel);
+    if (ref_station2 == "") {
+      // One reference station
+      Plot_data plot_data;
+      set_plot_data(plot_data, ConPrms, count_channel);
 
-    generate_auto_plots(infile, 0, nstations, plot_data, ConPrms);
-    generate_cross_plots(infile, nstations, ConPrms.reference_station(), plot_data,
-												ConPrms);
+      generate_auto_plots(infile, 0, nstations, plot_data, ConPrms);
+      generate_cross_plots(infile, nstations, ConPrms.reference_station(), plot_data,
+                           ConPrms);
 
-    plot_data_channels.push_back(plot_data);
-  } else {
-	    // Two reference stations, 
-    // devide over four plot-data's (parallel and cross)
-    Plot_data plot_data1, plot_data2, plot_data3, plot_data4;
-    set_plot_data(plot_data1, ConPrms, count_channel);
-    set_plot_data(plot_data2, ConPrms, count_channel);
-    set_plot_data(plot_data3, ConPrms, count_channel);
-    set_plot_data(plot_data4, ConPrms, count_channel);
+      plot_data_channels.push_back(plot_data);
+    } else {
+      // Two reference stations, 
+      // devide over four plot-data's (parallel and cross)
+      Plot_data plot_data1, plot_data2, plot_data3, plot_data4;
+      set_plot_data(plot_data1, ConPrms, count_channel);
+      set_plot_data(plot_data2, ConPrms, count_channel);
+      set_plot_data(plot_data3, ConPrms, count_channel);
+      set_plot_data(plot_data4, ConPrms, count_channel);
 
-    // reset job names
-    int job_name_length = plot_data1.job_name.length();
-    std::string job_name_core = 
-      plot_data1.job_name.substr(0, job_name_length-10);
-    std::string job_name_ch1 = 
-      plot_data1.job_name.substr(job_name_length-9, 4);
-    std::string job_name_ch2 = 
-      plot_data1.job_name.substr(job_name_length-4, 4);
-    plot_data1.job_name = job_name_core+" "+job_name_ch1+" parallel";
-    plot_data2.job_name = job_name_core+" "+job_name_ch1+" cross";
-    plot_data3.job_name = job_name_core+" "+job_name_ch2+" parallel";
-    plot_data4.job_name = job_name_core+" "+job_name_ch2+" cross";
+      // reset job names
+      int job_name_length = plot_data1.job_name.length();
+      std::string job_name_core = 
+        plot_data1.job_name.substr(0, job_name_length-10);
+      std::string job_name_ch1 = 
+        plot_data1.job_name.substr(job_name_length-9, 4);
+      std::string job_name_ch2 = 
+        plot_data1.job_name.substr(job_name_length-4, 4);
+      plot_data1.job_name = job_name_core+" "+job_name_ch1+" parallel";
+      plot_data2.job_name = job_name_core+" "+job_name_ch1+" cross";
+      plot_data3.job_name = job_name_core+" "+job_name_ch2+" parallel";
+      plot_data4.job_name = job_name_core+" "+job_name_ch2+" cross";
 
-    generate_auto_plots(infile, 0, nstations/2, plot_data1, ConPrms);
-    generate_auto_plots(infile, nstations/2, nstations, plot_data3, ConPrms);
+      generate_auto_plots(infile, 0, nstations/2, plot_data1, ConPrms);
+      generate_auto_plots(infile, nstations/2, nstations, plot_data3, ConPrms);
 
-    // parallel polarisation 1
-    generate_cross_plots(infile, nstations/2, 
-                         ConPrms.reference_station(),
-                         plot_data1, ConPrms);
-    // cross polarisation 1
-    generate_cross_plots(infile, nstations/2, 
-                         ConPrms.reference_station(),
-                         plot_data2, ConPrms);
-    // cross polarisation 2
-    generate_cross_plots(infile, nstations/2,
-                         ConPrms.reference_station(),
-                         plot_data4, ConPrms);
-    // parallel polarisation 1
-    generate_cross_plots(infile, nstations/2,
-                         ConPrms.reference_station(),
-                         plot_data3, ConPrms);
+      // parallel polarisation 1
+      generate_cross_plots(infile, nstations/2, 
+                           ConPrms.reference_station(),
+                           plot_data1, ConPrms);
+      // cross polarisation 1
+      generate_cross_plots(infile, nstations/2, 
+                           ConPrms.reference_station(),
+                           plot_data2, ConPrms);
+      // cross polarisation 2
+      generate_cross_plots(infile, nstations/2,
+                           ConPrms.reference_station(),
+                           plot_data4, ConPrms);
+      // parallel polarisation 1
+      generate_cross_plots(infile, nstations/2,
+                           ConPrms.reference_station(),
+                           plot_data3, ConPrms);
 
-    plot_data_channels.push_back(plot_data1);
-    plot_data_channels.push_back(plot_data2);
-    plot_data_channels.push_back(plot_data3);
-    plot_data_channels.push_back(plot_data4);
-  }  
+      plot_data_channels.push_back(plot_data1);
+      plot_data_channels.push_back(plot_data2);
+      plot_data_channels.push_back(plot_data3);
+      plot_data_channels.push_back(plot_data4);
+    }  
   fftw_destroy_plan(visibilities2lags);
 }
 
 void Plot_generator::set_plot_data(Plot_data & data, 
-																	const Control_parameters &ConPrms,
-																	int count_channel) {
+                                   const Control_parameters &ConPrms,
+                                   int count_channel) {
 
-	for (int i=0; i<ConPrms.channels_size(); i++){
-		for (int j=1; j<ConPrms.number_stations(); j++){
-			if(ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(j)) 
-								!= ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(0))){
-			 	std::cout << "error in polarisation values" << std::endl;
-			} else if (ConPrms.frequency(ConPrms.channel(i),ConPrms.station(j)) 
-								!= ConPrms.frequency(ConPrms.channel(i),ConPrms.station(0))){
-			 	std::cout << "error in frequency values" << std::endl;
-			} else if (ConPrms.sideband(ConPrms.channel(i),ConPrms.station(j)) 
-								!= ConPrms.sideband(ConPrms.channel(i),ConPrms.station(0))){
-			 	std::cout << "error in sideband values" << std::endl;
-			}
-		}
-	}
+  for (int i=0; i<ConPrms.channels_size(); i++){
+    for (int j=1; j<ConPrms.number_stations(); j++){
+      if(ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(j)) 
+         != ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(0))){
+        std::cout << "error in polarisation values" << std::endl;
+      } else if (ConPrms.frequency(ConPrms.channel(i),ConPrms.station(j)) 
+                 != ConPrms.frequency(ConPrms.channel(i),ConPrms.station(0))){
+        std::cout << "error in frequency values" << std::endl;
+      } else if (ConPrms.sideband(ConPrms.channel(i),ConPrms.station(j)) 
+                 != ConPrms.sideband(ConPrms.channel(i),ConPrms.station(0))){
+        std::cout << "error in sideband values" << std::endl;
+      }
+    }
+  }
 	
   data.job_name = ConPrms.experiment()+"_"+ConPrms.channel(count_channel)
-									+ "_" + ConPrms.polarisation(ConPrms.channel(count_channel),ConPrms.station(0)) 
-									+ "cp_" + ConPrms.frequency(ConPrms.channel(count_channel), ConPrms.station(0))
-									+ "_" + ConPrms.sideband(ConPrms.channel(count_channel), ConPrms.station(0)) + "sb";
+    + "_" + ConPrms.polarisation(ConPrms.channel(count_channel),ConPrms.station(0)) 
+    + "cp_" + ConPrms.frequency(ConPrms.channel(count_channel), ConPrms.station(0))
+    + "_" + ConPrms.sideband(ConPrms.channel(count_channel), ConPrms.station(0)) + "sb";
   data.frequency = 0; //not used at this moment HO
   data.sideband = 'L'; //not used at this moment (GenPrms.get_sideband()-1 ? 'L' : 'U');
 }
@@ -207,7 +207,7 @@ Plot_generator::generate_auto_plots(std::ifstream &infile,
                                     int stations_start,
                                     int stations_end,
                                     Plot_data &plot_data,
-																		 const Control_parameters &ConPrms) {
+                                    const Control_parameters &ConPrms) {
 
   for (int station=stations_start; station<stations_end; station++) {
     infile.read((char *)&in[0], 2*in.size()*sizeof(double));
@@ -232,7 +232,7 @@ Plot_generator::generate_cross_plots(std::ifstream &in,
                                      int nStations,
                                      const std::string &ref_station,
                                      Plot_data &plot_data,
-																		 const Control_parameters &ConPrms) {
+                                     const Control_parameters &ConPrms) {
   if (ref_station == "") {
     // Computed all cross products
     for (int i=0; i<nStations; i++) {
@@ -256,7 +256,7 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
                                     const std::string &ref_station,
                                     int station2,
                                     Plot_data &plot_data,
-																		const Control_parameters &ConPrms) {
+                                    const Control_parameters &ConPrms) {
   infile.read((char *)&in[0], 2*in.size()*sizeof(double));
   fftw_execute(visibilities2lags);
   for  (int lag=0; lag<nLags; lag++) {
@@ -329,7 +329,7 @@ Plot_generator::signal_to_noise_ratio(std::vector< std::complex<double> > &data)
 
 void print_html(const Control_parameters &ConPrms) {
   for (int show_plots = 0; show_plots <2; show_plots++) {
-		Log_writer_cout logg;
+    Log_writer_cout logg;
     std::ofstream html_output;
     if (show_plots) {
       html_output.open("plots.html");
@@ -498,6 +498,12 @@ int main(int argc, char *argv[])
 #ifdef SFXC_PRINT_DEBUG
   RANK_OF_NODE = 0;
 #endif
+
+  if (argc != 3){
+    std::cout << "usage: " << argv[0] << " <ctrl-file> <vex-file>" 
+              << std::endl;
+    exit(1);
+  }
 
 
   Control_parameters ConPrms;
