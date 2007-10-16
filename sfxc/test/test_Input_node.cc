@@ -34,7 +34,7 @@
 
 #include <Abstract_manager_node.h>
 
-const int input_node = 2;
+const int rank_input_node = 2;
 const char output_file_to_disk[] = "output_file_to_disk.dat";
 
 int64_t start_time = -1;
@@ -82,9 +82,9 @@ void Test_manager_node::start() {
   get_log_writer()(0) << "Initialising the Input_node" << std::endl;
   // setting the first data-source of the first station
   const std::string &station_name = control_parameters.station(0);
-  start_input_node(input_node, station_name);
+  start_input_node(rank_input_node, station_name);
   std::string filename = control_parameters.data_sources(station_name)[0];
-  set_data_reader(input_node, /*stream_nr*/0, filename);
+  set_data_reader(rank_input_node, /*stream_nr*/0, filename);
 
   // Send the track parameters
   std::vector<std::string> scans;
@@ -107,7 +107,7 @@ void Test_manager_node::start() {
         char filename[80];
         snprintf(filename, 80, "file://%s/%s_%02d_%02d.out",
                  tmp_dir, file_basename, channel_nr, time_slice);
-        set_multiple_data_writer(input_node, channel_nr, filename);
+        set_data_writer(rank_input_node, channel_nr, filename);
       }
     }
   }
@@ -118,7 +118,7 @@ void Test_manager_node::start() {
   int64_t current_time = input_node_get_current_time(station_name);
   int32_t start_time = control_parameters.get_start_time().to_miliseconds();
   int32_t stop_time = start_time + 2000; // add two seconds
-  assert(current_time < start_time);
+  assert(current_time <= start_time);
   // goto the start time 
   input_node_goto_time(station_name, start_time);
   // set the stop time
@@ -152,24 +152,24 @@ void Test_manager_node::start() {
   }
 
   // Waiting for the input node to finish
-  int status=get_status(input_node);
+  int status=get_status(rank_input_node);
   while (status != Input_node::WRITING) {
     usleep(100000); // .1 second
-    status = get_status(input_node);
+    status = get_status(rank_input_node);
   }
 
   while (status == Input_node::WRITING) {
     usleep(100000); // .1 second
-    status = get_status(input_node);
+    status = get_status(rank_input_node);
   }
   
   get_log_writer()(0) << "Terminating nodes" << std::endl;
-  end_node(input_node);
+  end_node(rank_input_node);
   end_node(RANK_LOG_NODE);
 }
 
 int main(int argc, char *argv[]) {
-  assert(input_node+RANK_MANAGER_NODE+RANK_LOG_NODE == 3);
+  assert(rank_input_node+RANK_MANAGER_NODE+RANK_LOG_NODE == 3);
 
   //initialisation
   int stat = MPI_Init(&argc,&argv);
