@@ -15,7 +15,6 @@ check_PROGRAMS = \
   test_Data_reader_TCP \
   test_Input_node \
   test_Output_node \
-  test_Correlator_node \
   test_Log_writer_mpi \
   test_TCP_connection \
   test_Channel_extractor
@@ -24,7 +23,6 @@ TESTS           = \
   test_Control_parameters \
   test_mpi.py \
   test_Transfer_control_parameters.py \
-  test_Correlator_node.py \
   test_buffer \
   test_Time_slicer \
   test_Data_reader_file \
@@ -114,9 +112,6 @@ test_Input_node_SOURCES = \
 
 test_Output_node_SOURCES = \
   $(OBJ) test_Output_node.cc
-
-test_Correlator_node_SOURCES = \
-  $(OBJ) test_Correlator_node.cc
 
 test_Log_writer_mpi_SOURCES = \
   $(OBJ) test_Log_writer_mpi.cc
