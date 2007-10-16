@@ -16,6 +16,8 @@ bin_PROGRAMS = generate_delay_model \
 	       generate_uvw_coordinates \
 	       plot_delay_table
 
+bin_SCRIPTS= run_sfxc.py
+
 create_delay_function_SOURCES = create_delay_function.cc
 create_delay_function_LDADD = -lgsl -lgslcblas
 

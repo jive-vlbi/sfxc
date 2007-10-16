@@ -7,7 +7,7 @@
 # 
 # $Id: test_Channel_extractor.py 278 2007-07-04 07:27:05Z kruithof $
 
-import sys, os,time, filecmp;
+import sys, os, time, filecmp;
 
 # Load the ccf files for testing:
 RC_FILE = os.path.join(os.environ.get('HOME'), ".sfxcrc")
