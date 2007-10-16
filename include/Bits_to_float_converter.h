@@ -25,22 +25,17 @@ public:
   /// Set the number of bits per data sample
   void set_bits_per_sample(int nbits);
   
-  /** Sets the input for the Bits_to_float_converter to a channel extractor
-   **/
-  void set_channel_extractor(boost::shared_ptr<Channel_extractor> ch_extractor);
-
   /** Sets the input for the Bits_to_float_converter to a data reader.
    * This assumes that the samples are encoded in bytes
    **/
   void set_data_reader(boost::shared_ptr<Data_reader> data_reader);
   
+  uint64_t data_counter();
+  int get_size_dataslice();
+
 private:
-  size_t get_data_from_channel_extractor(size_t nSamples, double *buffer); 
-  size_t get_data_from_data_reader(size_t nSamples, double *buffer); 
-  
   int bits_per_sample;
 
-  boost::shared_ptr<Channel_extractor> ch_extractor;
   boost::shared_ptr<Data_reader>       data_reader;
 };
 

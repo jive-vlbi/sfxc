@@ -26,7 +26,7 @@ using namespace std;
 
 #include "Log_writer.h"
 #include <Data_writer.h>
-#include "genPrms.h"
+#include <Control_parameters.h>
 
 /**
  * Functions and data necessary to correlate one Time Slice.
@@ -38,13 +38,15 @@ public:
   /** Initialise the correlator with proper values, allocate arrays,
       createFFTW plans.**/
   CorrelationCore(Log_writer &log_writer);
-  CorrelationCore(Log_writer &log_writer, GenP&, int ref_sn1, int ref_sn2);
+  CorrelationCore(Log_writer &log_writer, Correlation_parameters &corr_param, 
+                  int ref_sn1, int ref_sn2);
 
   /** De-allocate correlator arrays, destroy FFTW plans.**/
   ~CorrelationCore();
 
   /** Sets the parameters for the correlation **/
-  void set_parameters(GenP &GenPrms, int ref_sn1, int ref_sn2);
+  void set_parameters(Correlation_parameters &corr_param, 
+                      int ref_sn1, int ref_sn2);
 
   /** Initialise array values to zero before the correlation
       of the time slice.**/

@@ -20,7 +20,7 @@ if (status != 0):
 
 for control_file in controlfiles:
   status = os.system("mpirun -np 2 ./test_mpi " +
-                     control_file+" "+tmp_output_directory)
+                     (" ".join(control_file))+" "+tmp_output_directory)
   if (status != 0):
     print "test_mpi: returned error."
     sys.exit(1);

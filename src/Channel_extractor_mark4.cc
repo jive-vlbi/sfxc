@@ -7,38 +7,34 @@
  *
  */
 
-#include <utils.h>
 #include "Channel_extractor_mark4.h"
-#include <genFunctions.h>
 #include "Mark4_header.h"
+#include "Log_writer_cout.h"
 
 #include <assert.h>
-
-
-using namespace std;
+#include <utils.h>
 
 // Templated by the type of the element from which the samples are extracted
 // Either int32_t (n_head_stacks == 1) or int64_t (n_head_stacks == 2)
 template <class T>
 class Channel_extractor_mark4_implementation {
 public:
-  typedef Channel_extractor_mark4::DEBUG_LEVEL  DEBUG_LEVEL;
+  typedef Channel_extractor_mark4::Debug_level  Debug_level;
 
-  Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader, 
+  Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader,
                                          char *first_data_block,
-                                         StaP &staPrms,
                                          bool insert_random_headers_,
-                                         DEBUG_LEVEL debug_level);
+                                         Debug_level debug_level);
+  bool set_track_parameters(const Track_parameters &parameters);
+  
 
   int goto_time(int64_t time);
   int64_t get_current_time();
   std::string time2string(int64_t time);
 
-  size_t do_get_bytes(size_t nBytes, char *buff);
+  // Writes a block of data to all output streams
+  size_t get_bytes(std::vector< char* > &buff);
 
-  size_t get_samples(size_t nSamples, double *bit_samples, 
-                     const double *val_array);
-  
   bool eof();
 
   bool check_track_bit_statistics();  
@@ -49,87 +45,89 @@ public:
     return mark4_header;
   }
 
-  int get_data_rate(int channel);
+  // bits/second per track
+  int track_bit_rate() const;
 
+  // bits/second per channel
+  int bit_rate(int channel) const;
+
+  // Number of channels
+  int n_channels();
+  // Number of tracks
+  int n_tracks(int channel);
+
+  // Proceeds to the next block
+  int read_new_block();
+
+  // Returns the number of bytes per block that are returned for one channel.
+  int number_of_bytes_per_block();
 private:
 
-  bool increase_current_position_in_block();
-
-  int read_new_block();
-  
   bool check_time_stamp();
   
   boost::shared_ptr<Data_reader> reader;
   
-  /// The number of samples per 32/64 bit integer
-  int fan_out;
-
-  /// Number of bits per sample (sign or sign+magn)
-  int n_bits_per_sample;
-  
-  /// Bit positions for the sign and magnitude bits 
-  std::vector<int> tracks;
+  /// Bit positions for the sign and magnitude bits, per channel
+  std::vector< std::vector<int> > tracks;
 
   /// Insertion of random bits for the headers, to remove a false signal
   bool insert_random_headers; 
 
   /// The data
-  T block[frameMk4];
-  
-  /// Read pointer in the data (an index)
-  int curr_pos_in_block;
+  T block[SIZE_MK4_FRAME];
   
   Mark4_header<T> mark4_header;
   
   int32_t start_day;
   int64_t start_microtime;
-  int32_t TBR;
-  DEBUG_LEVEL debug_level;
+
+  Debug_level debug_level;
   int block_count;
+
+  int _track_bit_rate;
 };
 
 
 Channel_extractor_mark4::
 Channel_extractor_mark4(boost::shared_ptr<Data_reader> reader, 
-                        StaP &staPrms, 
                         bool insert_random_headers_,
-                        DEBUG_LEVEL debug_level)
+                        Debug_level debug_level)
  : Channel_extractor(),
    ch_extractor_8_tracks(NULL),
    ch_extractor_16_tracks(NULL),
    ch_extractor_32_tracks(NULL),
    ch_extractor_64_tracks(NULL)
 {
-  char block[frameMk4];
-  n_tracks = find_header(block, reader);
+  char block[SIZE_MK4_FRAME];
+  total_tracks = find_header(block, reader);
 
-  switch (n_tracks) {
+  switch (total_tracks) {
   case 8:
     {
       ch_extractor_8_tracks = 
         new Channel_extractor_mark4_implementation<uint8_t>
-        (reader, block, staPrms, insert_random_headers_, debug_level);
+        (reader, block, insert_random_headers_, debug_level);
       break;
     }
   case 16:
     {
       ch_extractor_16_tracks = 
         new Channel_extractor_mark4_implementation<uint16_t>
-        (reader, block, staPrms, insert_random_headers_, debug_level);
+        (reader, block, insert_random_headers_, debug_level);
       break;
     }
   case 32:
     {
       ch_extractor_32_tracks = 
         new Channel_extractor_mark4_implementation<uint32_t>
-        (reader, block, staPrms, insert_random_headers_, debug_level);
+        (reader, block, insert_random_headers_, debug_level);
       break;
     }
   case 64:
     {
       ch_extractor_64_tracks = 
         new Channel_extractor_mark4_implementation<uint64_t>
-        (reader, block, staPrms, insert_random_headers_, debug_level);
+        (reader, block, insert_random_headers_, debug_level);
       break;
     }
   default: 
@@ -142,21 +140,24 @@ Channel_extractor_mark4(boost::shared_ptr<Data_reader> reader,
 int 
 Channel_extractor_mark4::find_header(char *buffer,
                                      boost::shared_ptr<Data_reader> reader) {
-  size_t bytes_read = reader->get_bytes(frameMk4/2, buffer+frameMk4/2);
-  assert (bytes_read == frameMk4/2);
+  // buffer is an array of SIZE_MK4_FRAME bytes (8 is the smallest number of tracks).
+  // We fill the buffer and then look for the header
+  // if we don't find a header, read in another half block and continue.
+  size_t bytes_read = reader->get_bytes(SIZE_MK4_FRAME/2, buffer+SIZE_MK4_FRAME/2);
+  assert (bytes_read == SIZE_MK4_FRAME/2);
 
   int nOnes=0, header_start=-1, nTracks8 = -1;
   for (int block=0; (block<16) && (header_start<0); block++) {
     // Move the last half to the first half and read frameMk4/2 bytes:
-    memcpy(buffer, buffer+frameMk4/2, frameMk4/2);
-    size_t bytes_read = reader->get_bytes(frameMk4/2, buffer+frameMk4/2);
-    assert (bytes_read == frameMk4/2);
+    memcpy(buffer, buffer+SIZE_MK4_FRAME/2, SIZE_MK4_FRAME/2);
+    size_t bytes_read = reader->get_bytes(SIZE_MK4_FRAME/2, buffer+SIZE_MK4_FRAME/2);
+    assert (bytes_read == SIZE_MK4_FRAME/2);
 
 
     // the header contains 64 bits before the syncword and
     //                     64 bits after the syncword.
     // We skip those bytes since we want to find an entire syncword
-    for (int byte=64; (byte<frameMk4-64*8) && (header_start<0); byte++) {
+    for (int byte=0; (byte<SIZE_MK4_FRAME-64*8) && (header_start<0); byte++) {
       if (buffer[byte] == (char)(~0)) {
         nOnes ++;
       } else {
@@ -165,6 +166,7 @@ Channel_extractor_mark4::find_header(char *buffer,
           // syncword is 32 samples, auxiliary data field 64 samples
           header_start = byte - nOnes*3;
           if (header_start >= 0) {
+            // We found a complete header
             nTracks8 = nOnes/32;
             switch (nTracks8) {
             case 1: 
@@ -217,18 +219,29 @@ Channel_extractor_mark4::find_header(char *buffer,
   if (header_start < 0) return -1;
   if (header_start == 0) return nTracks8*8;
 
-  memmove(buffer, buffer+header_start, frameMk4-header_start);
-  reader->get_bytes(header_start, buffer+frameMk4-header_start);
+  memmove(buffer, buffer+header_start, SIZE_MK4_FRAME-header_start);
+  reader->get_bytes(header_start, buffer+SIZE_MK4_FRAME-header_start);
 
   return nTracks8*8;
 }
 
-int Channel_extractor_mark4::number_of_tracks() {
-  return n_tracks;
+int Channel_extractor_mark4::n_channels() {
+  switch (total_tracks) {
+  case  8: return ch_extractor_8_tracks->n_channels();
+  case 16: return ch_extractor_16_tracks->n_channels();
+  case 32: return ch_extractor_32_tracks->n_channels();
+  case 64: return ch_extractor_64_tracks->n_channels();
+  default: assert(false);
+  }
+  return false;
+}
+
+int Channel_extractor_mark4::n_tracks() {
+  return total_tracks;
 }
 
 int Channel_extractor_mark4::track(int track) {
-  switch (n_tracks) {
+  switch (total_tracks) {
   case  8: return ch_extractor_8_tracks->header().track(track);
   case 16: return ch_extractor_16_tracks->header().track(track);
   case 32: return ch_extractor_32_tracks->header().track(track);
@@ -238,7 +251,7 @@ int Channel_extractor_mark4::track(int track) {
 }
 
 int Channel_extractor_mark4::headstack(int track) {
-  switch (n_tracks) {
+  switch (total_tracks) {
   case  8: return ch_extractor_8_tracks->header().headstack(track);
   case 16: return ch_extractor_16_tracks->header().headstack(track);
   case 32: return ch_extractor_32_tracks->header().headstack(track);
@@ -249,7 +262,7 @@ int Channel_extractor_mark4::headstack(int track) {
 
 int 
 Channel_extractor_mark4::goto_time(int64_t time) {
-  switch (n_tracks) {
+  switch (total_tracks) {
   case  8: return ch_extractor_8_tracks->goto_time(time);
   case 16: return ch_extractor_16_tracks->goto_time(time);
   case 32: return ch_extractor_32_tracks->goto_time(time);
@@ -260,7 +273,7 @@ Channel_extractor_mark4::goto_time(int64_t time) {
 }
 int64_t 
 Channel_extractor_mark4::get_current_time() {
-  switch (n_tracks) {
+  switch (total_tracks) {
   case  8: return ch_extractor_8_tracks->get_current_time();
   case 16: return ch_extractor_16_tracks->get_current_time();
   case 32: return ch_extractor_32_tracks->get_current_time();
@@ -271,55 +284,30 @@ Channel_extractor_mark4::get_current_time() {
 }
 
 size_t 
-Channel_extractor_mark4::
-get_samples(size_t nSamples, double *bit_samples, const double *val_array) {
-  switch (n_tracks) {
-  case  8: 
-    return ch_extractor_8_tracks->get_samples(nSamples,bit_samples,val_array);
-  case 16: 
-    return ch_extractor_16_tracks->get_samples(nSamples,bit_samples,val_array);
-  case 32:
-    return ch_extractor_32_tracks->get_samples(nSamples,bit_samples,val_array);
-  case 64:
-    return ch_extractor_64_tracks->get_samples(nSamples,bit_samples,val_array);
-  default: assert(false);
-  }
-  return 0;
-}
-
-size_t 
-Channel_extractor_mark4::do_get_bytes(size_t nBytes, char *buff) {
-  switch (n_tracks) {
-  case  8: 
-    return ch_extractor_8_tracks->do_get_bytes(nBytes, buff);
-  case 16: 
-    return ch_extractor_16_tracks->do_get_bytes(nBytes, buff);
-  case 32:
-    return ch_extractor_32_tracks->do_get_bytes(nBytes, buff);
-  case 64:
-    return ch_extractor_64_tracks->do_get_bytes(nBytes, buff);
+Channel_extractor_mark4::get_bytes(std::vector< char* > &buff) {
+  switch (total_tracks) {
+  case  8: return ch_extractor_8_tracks->get_bytes(buff);
+  case 16: return ch_extractor_16_tracks->get_bytes(buff);
+  case 32: return ch_extractor_32_tracks->get_bytes(buff);
+  case 64: return ch_extractor_64_tracks->get_bytes(buff);
   default: assert(false);
   }
   return 0;
 }
 
 bool Channel_extractor_mark4::eof() {
-  switch (n_tracks) {
-  case  8: 
-    return ch_extractor_8_tracks->eof();
-  case 16: 
-    return ch_extractor_16_tracks->eof();
-  case 32:
-    return ch_extractor_32_tracks->eof();
-  case 64:
-    return ch_extractor_64_tracks->eof();
+  switch (total_tracks) {
+  case  8: return ch_extractor_8_tracks->eof();
+  case 16: return ch_extractor_16_tracks->eof();
+  case 32: return ch_extractor_32_tracks->eof();
+  case 64: return ch_extractor_64_tracks->eof();
   default: assert(false);
   }
   return false;
 }
 
 void Channel_extractor_mark4::print_header(Log_writer &writer, int track) {
-  switch (n_tracks) {
+  switch (total_tracks) {
   case  8: 
     return ch_extractor_8_tracks->print_header(writer, track);
   case 16: 
@@ -332,16 +320,50 @@ void Channel_extractor_mark4::print_header(Log_writer &writer, int track) {
   }
 }
 
-int Channel_extractor_mark4::get_data_rate(int channel) {
-  switch (n_tracks) {
-  case  8: 
-    return ch_extractor_8_tracks->get_data_rate(channel);
-  case 16: 
-    return ch_extractor_16_tracks->get_data_rate(channel);
-  case 32:
-    return ch_extractor_32_tracks->get_data_rate(channel);
-  case 64:
-    return ch_extractor_64_tracks->get_data_rate(channel);
+int Channel_extractor_mark4::track_bit_rate() const {
+  switch (total_tracks) {
+  case  8: return ch_extractor_8_tracks->track_bit_rate();
+  case 16: return ch_extractor_16_tracks->track_bit_rate();
+  case 32: return ch_extractor_32_tracks->track_bit_rate();
+  case 64: return ch_extractor_64_tracks->track_bit_rate();
+  default: assert(false);
+  }
+}
+
+int Channel_extractor_mark4::bit_rate(int channel) const {
+  switch (total_tracks) {
+  case  8: return ch_extractor_8_tracks->bit_rate(channel);
+  case 16: return ch_extractor_16_tracks->bit_rate(channel);
+  case 32: return ch_extractor_32_tracks->bit_rate(channel);
+  case 64: return ch_extractor_64_tracks->bit_rate(channel);
+  default: assert(false);
+  }
+}
+int Channel_extractor_mark4::number_of_bytes_per_block() {
+  switch (total_tracks) {
+  case  8: return ch_extractor_8_tracks->number_of_bytes_per_block();
+  case 16: return ch_extractor_16_tracks->number_of_bytes_per_block();
+  case 32: return ch_extractor_32_tracks->number_of_bytes_per_block();
+  case 64: return ch_extractor_64_tracks->number_of_bytes_per_block();
+  default: assert(false);
+  }
+}
+int Channel_extractor_mark4::goto_next_block() {
+  switch (total_tracks) {
+  case  8: return ch_extractor_8_tracks->read_new_block();
+  case 16: return ch_extractor_16_tracks->read_new_block();
+  case 32: return ch_extractor_32_tracks->read_new_block();
+  case 64: return ch_extractor_64_tracks->read_new_block();
+  default: assert(false);
+  }
+}
+bool 
+Channel_extractor_mark4::set_track_parameters(const Track_parameters &param) {
+  switch (total_tracks) {
+  case  8: return ch_extractor_8_tracks->set_track_parameters(param);
+  case 16: return ch_extractor_16_tracks->set_track_parameters(param);
+  case 32: return ch_extractor_32_tracks->set_track_parameters(param);
+  case 64: return ch_extractor_64_tracks->set_track_parameters(param);
   default: assert(false);
   }
 }
@@ -354,91 +376,108 @@ template <class T>
 Channel_extractor_mark4_implementation<T>::
 Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader, 
                                        char *first_data_block,
-                                       StaP &staPrms, 
                                        bool insert_random_headers_,
-                                       DEBUG_LEVEL debug_level)
+                                       Debug_level debug_level)
  : reader(reader),
-   fan_out(staPrms.get_fo()), 
-   n_bits_per_sample(staPrms.get_bps()),
    insert_random_headers(insert_random_headers_),
-   curr_pos_in_block(0),
-   TBR(staPrms.get_tbr()),
    debug_level(debug_level),
    block_count(0)
 { 
-  memcpy(block, first_data_block, frameMk4);
+  memcpy(block, first_data_block, SIZE_MK4_FRAME);
   // Make sure the header starts on the first byte:
-  size_t result = reader->get_bytes(frameMk4*(sizeof(T)-1), 
-                                   ((char *)block)+frameMk4);
-  assert(result == frameMk4*(sizeof(T)-1));
+  size_t result = reader->get_bytes(SIZE_MK4_FRAME*(sizeof(T)-1), 
+                                   ((char *)block)+SIZE_MK4_FRAME);
+  assert(result == SIZE_MK4_FRAME*(sizeof(T)-1));
   
   mark4_header.set_header(block);
   mark4_header.check_header();
-  
   start_day = mark4_header.day(0);
-  start_microtime = mark4_header.get_microtime(0);
+  start_microtime = mark4_header.get_time_in_ms(0);
+  start_microtime = 
+    start_microtime*1000 + mark4_header.microsecond(0, start_microtime);
   reader->reset_data_counter();
+}
 
+template <class T>
+bool
+Channel_extractor_mark4_implementation<T>::
+set_track_parameters(const Track_parameters &parameters) {
+  _track_bit_rate = parameters.track_bit_rate;
+  tracks.resize(parameters.channels.size());
+  int curr_channel =0;
   // Store a list of tracks: first magnitude (optional), then sign 
-  tracks.resize(n_bits_per_sample*fan_out);
-  assert(tracks.size() <= 8);
-  int track = 0;
-  for (int i=0; i<fan_out; i++) {
-    if (n_bits_per_sample > 1) {
-      tracks[track] = mark4_header.find_track(staPrms.get_headstack_magn(),
-                                              staPrms.get_magnBS()[i]);
-      assert(mark4_header.headstack(tracks[track]) == 
-             staPrms.get_headstack_magn());
-      assert(mark4_header.track(tracks[track]) == 
-             staPrms.get_magnBS()[i]);
-//       if (mark4_header.is_sign(tracks[track]))
-//         std::cout << "Track " << tracks[track] << " is not a magn track" 
-//                   << std::endl;
-
+  for (Track_parameters::Channel_const_iterator channel = 
+         parameters.channels.begin();
+       channel != parameters.channels.end(); channel++, curr_channel++) {
+    tracks[curr_channel].resize(channel->second.bits_per_sample() *
+                                channel->second.sign_tracks.size());
+    
+    int track =0;
+    for (size_t i=0; i<channel->second.sign_tracks.size(); i++) {
+      tracks[curr_channel][track] =
+        mark4_header.find_track(channel->second.sign_headstack-1,
+                                channel->second.sign_tracks[i]);
+      assert(mark4_header.headstack(tracks[curr_channel][track]) == 
+             channel->second.sign_headstack-1);
+      assert(mark4_header.track(tracks[curr_channel][track]) == 
+             channel->second.sign_tracks[i]);
       track++;
+      if (channel->second.bits_per_sample() == 2) {
+        tracks[curr_channel][track] = 
+          mark4_header.find_track(channel->second.magn_headstack-1,
+                                  channel->second.magn_tracks[i]);
+        assert(mark4_header.headstack(tracks[curr_channel][track]) == 
+               channel->second.magn_headstack-1);
+        assert(mark4_header.track(tracks[curr_channel][track]) == 
+               channel->second.magn_tracks[i]);
+        track++;
+      }
     }
-    tracks[track] = mark4_header.find_track(staPrms.get_headstack_sign(),
-                                            staPrms.get_signBS()[i]);
-    assert(mark4_header.headstack(tracks[track]) == 
-           staPrms.get_headstack_sign());
-    assert(mark4_header.track(tracks[track]) == 
-           staPrms.get_signBS()[i]);
-//     if (mark4_header.is_magn(tracks[track]))
-//       std::cout << "Track " << tracks[track] << " is not a sign track" 
-//                 << std::endl;
-    track++;
   }
+  return true;
 }
 
 template <class T>
 int 
 Channel_extractor_mark4_implementation<T>::
-goto_time(int64_t time) {
-  int64_t current_time = get_current_time();
-  if (time < current_time) {
+goto_time(int64_t _time) {
+  // convert time to microseconds:
+  int64_t microtime = _time*1000 + mark4_header.microsecond(0, _time);
+
+  int64_t current_microtime;
+  current_microtime = mark4_header.get_time_in_ms(0);
+  current_microtime = 
+    current_microtime*1000 + mark4_header.microsecond(0, current_microtime);
+
+  if (microtime < current_microtime) {
     std::cout << "time in past, current time is: " 
-              << time2string(current_time) << std::endl;
+              << time2string(current_microtime) << std::endl;
     std::cout << "            requested time is: " 
-              << time2string(time) << std::endl;
+              << time2string(microtime) << std::endl;
     return -1;
-  } else if (time == current_time) {
+  } else if (microtime == current_microtime) {
     return 0;
   }
-  size_t read_n_bytes = (time-current_time) * sizeof(T)* TBR - 
-                         frameMk4*sizeof(T);
+
+  size_t read_n_bytes = 
+    (microtime-current_microtime)*track_bit_rate()*sizeof(T)/1000000 -
+    SIZE_MK4_FRAME*sizeof(T);
   
-  if (read_n_bytes == 0) {
-    return 0;
-  }
+  assert(read_n_bytes > 0);
+  // Read an integer number of frames
+  assert(read_n_bytes %(SIZE_MK4_FRAME*sizeof(T))==0);
+
   size_t result = reader->get_bytes(read_n_bytes,NULL);
-  if (result != read_n_bytes) return result;
+  if (result != read_n_bytes) {
+    assert(false);
+    return result;
+  }
 
   // Need to read the data to check the header
-  read_new_block();
+  result = read_new_block();
+  if (result != SIZE_MK4_FRAME) return read_n_bytes+result;
 
-  assert(get_current_time() == time);
-  // reset read pointer:
-  curr_pos_in_block = 0;
+  assert(get_current_time() == _time);
   return 0;
 }
 
@@ -446,7 +485,9 @@ template <class T>
 int64_t
 Channel_extractor_mark4_implementation<T>::
 get_current_time() {
-  return mark4_header.get_microtime(tracks[0]);
+  return
+    (mark4_header.day(0)-start_day)*24*60*60*1000 + 
+    mark4_header.get_time_in_ms(0);
 }
 
 template <class T>
@@ -470,26 +511,26 @@ time2string(int64_t time) {
 template <class T>
 size_t
 Channel_extractor_mark4_implementation<T>::
-do_get_bytes(size_t nOutputBytes, char *output_buffer) {
-  assert(nOutputBytes % (8/n_bits_per_sample) == 0);
+get_bytes(std::vector< char* > &output_buffer) {
+  assert(output_buffer.size() == tracks.size());
 
-  uint64_t bytes_processed = 0;
+  // The fan out is the same for all channels
+  int fan_out = tracks[0].size();
+  int n_channels = output_buffer.size();
 
-  memset(output_buffer, 0, nOutputBytes);
+  for (int i=0; i<n_channels; i++) {
+    memset(&output_buffer[i][0], 0, SIZE_MK4_FRAME*fan_out/8);
+  }
   
-  while (bytes_processed < nOutputBytes) {
-    // Fill the output buffer
-    if (insert_random_headers && (curr_pos_in_block < 160)) {
-      // We reading data from the header, generate random data
-      // Get the number of bytes to read from the header:
-      int nbytes_from_header = 
-        std::min((int)(nOutputBytes-bytes_processed), 
-                 (int)(((160-curr_pos_in_block)*tracks.size())/8));
-      assert (nbytes_from_header > 0);
-      curr_pos_in_block += (nbytes_from_header*8)/tracks.size();
-
-      for (;nbytes_from_header > 0; nbytes_from_header--) {
-        output_buffer[bytes_processed] = // 8 random bits:
+  for (int channel =0; channel<n_channels; channel++) {
+  
+    if (output_buffer[channel] == NULL) continue;
+    int data_position = 0; // Position in the mark4 data block
+    size_t output_position = 0;
+    if (insert_random_headers) {
+      // there are 160 bits in the header
+      while (data_position < 160) {
+        output_buffer[channel][output_position] = // 8 random bits:
           irbit2() + 
           2*(irbit2() + 
              2*(irbit2() + 
@@ -498,109 +539,38 @@ do_get_bytes(size_t nOutputBytes, char *output_buffer) {
                       2*(irbit2() + 
                          2*(irbit2() + 
                             2*(irbit2())))))));
-        bytes_processed ++;
+          output_position++;
+        data_position+=8/fan_out;
       }
-      assert(curr_pos_in_block < frameMk4);
-    } else {
-      // We are reading from the data block.
-      // Filled from least to most significant bit
-      int nbytes_from_data_block = 
-        min((int)(nOutputBytes-bytes_processed),
-            (int)(((frameMk4-curr_pos_in_block)*tracks.size())/8));
-      for (;nbytes_from_data_block > 0; nbytes_from_data_block--) {
-        output_buffer[bytes_processed] = 0;
-        for (int bit=0; bit<8;) {
-          for (size_t track_it=0; track_it<tracks.size(); track_it++) {
-            // insert the bit into the output buffer
-            output_buffer[bytes_processed] |= 
-              ((( block[curr_pos_in_block]>>tracks[track_it] ) & 1) << bit);
-            // Shift a position in the output buffer
-            bit ++;
-          }
-          curr_pos_in_block++;
-        }
-        bytes_processed++;
-      }
-      if (curr_pos_in_block == frameMk4) {
-        int result = read_new_block();
-        if (result != frameMk4) {
-          // Could not read a new block: terminating
-          curr_pos_in_block = frameMk4-1;
-          return bytes_processed;
-        }
-        curr_pos_in_block = 0;
-      }
-      assert(curr_pos_in_block < frameMk4);
+      assert(output_position == (size_t)(160/8)*fan_out);
     }
+    while (data_position < SIZE_MK4_FRAME) {
+      for (int bit=0; bit<8;) {
+        assert(!tracks[channel].empty());
+        for (size_t track_it=0; track_it<tracks[channel].size(); track_it++) {
+          // insert the bit into the output buffer
+          output_buffer[channel][output_position] |= 
+            (((block[data_position]>>tracks[channel][track_it])&1) << bit);
+          // Shift a position in the output buffer
+          bit ++;
+        }
+        assert(bit <= 8);
+        data_position++;
+      }
+      output_position++;
+    }
+    assert(output_position == (SIZE_MK4_FRAME*tracks[channel].size())/8);
   }
-  return bytes_processed;
+  return (SIZE_MK4_FRAME*tracks[0].size())/8;
 }
 
-template <class T>
-size_t
-Channel_extractor_mark4_implementation<T>::
-get_samples(size_t nSamples, double *samples, const double *val_array) {
-  assert(nSamples%(fan_out) == 0);
-
-  size_t samples_processed = 0;
-
-  if (n_bits_per_sample == 1) {
-    // Not yet implemented
-    assert (false);
-  } else {
-    while (samples_processed < nSamples) {
-      // skip every second position!
-      int bit_sample;
-      for (size_t track_it=0; track_it<tracks.size(); track_it+=2) {
-        //get sign and magnitude bit for all channels
-        // we need to multiply with 2 since tracks[track_it+1] can be zero
-        // and a >> of a negative value does not work
-        if ((curr_pos_in_block < 160) && insert_random_headers) {
-          bit_sample = irbit2() + 2*irbit2();
-        } else {
-          // set sign and magnitude:
-          bit_sample =
-            (( block[curr_pos_in_block]>> tracks[track_it] ) & 1)
-            +
-            (( block[curr_pos_in_block]>>tracks[track_it+1] ) & 1)*2;
-        }
-        samples[samples_processed] = val_array[bit_sample];
-
-        samples_processed++;
-      }
-      if (!increase_current_position_in_block()) {
-        // End of data
-        return samples_processed;
-      }
-    }
-  }
-
-  return samples_processed;
-}  
-  
-template <class T>
-bool
-Channel_extractor_mark4_implementation<T>::
-increase_current_position_in_block() {
-  curr_pos_in_block++;
-  if (curr_pos_in_block == frameMk4) {
-    int result = read_new_block();
-    if (result != frameMk4) {
-      // Could not read a new block: terminating
-      curr_pos_in_block = frameMk4-1;
-      return false;
-    }
-    curr_pos_in_block = 0;
-  }
-  return true;
-}
   
 template <class T>
 int
 Channel_extractor_mark4_implementation<T>::
 read_new_block() {
-  int result = reader->get_bytes(frameMk4*sizeof(T),(char *)block)/sizeof(T);
-  if (result != frameMk4) {
+  int result = reader->get_bytes(SIZE_MK4_FRAME*sizeof(T),(char *)block)/sizeof(T);
+  if (result != SIZE_MK4_FRAME) {
     return result;
   }
 
@@ -609,7 +579,7 @@ read_new_block() {
         ((++block_count % 100) == 0)) {
       mark4_header.check_header();
       check_time_stamp();
-      if (Channel_extractor_mark4::CHECK_BIT_STATISTICS) {
+      if (debug_level >= Channel_extractor_mark4::CHECK_BIT_STATISTICS) {
         if (!check_track_bit_statistics()) {
           std::cout << "Track bit statistics are off." << std::endl;
         }
@@ -624,14 +594,17 @@ template <class T>
 bool
 Channel_extractor_mark4_implementation<T>::
 check_time_stamp() {
-  double delta_time = 
-    mark4_header.get_microtime_difference(start_day, start_microtime, tracks[0])/1000000.;
+  int64_t militime = mark4_header.get_time_in_ms(0);
+  int64_t delta_time = 
+    (mark4_header.day(0)-start_day)*24*60*60*1000000 + 
+    militime*1000 + mark4_header.microsecond(0, militime)
+    - start_microtime;
+
+  assert(delta_time > 0);
+  int64_t computed_TBR =
+    (reader->data_counter()*1000000/(sizeof(T)*delta_time));
   
-  double computed_TBR = (reader->data_counter()*8/1000000.) / 
-                        (delta_time * sizeof(T) * 8);
-  
-  if (computed_TBR != TBR) {
-    std::cout << "Change in time: " << computed_TBR-TBR << std::endl;
+  if (computed_TBR != track_bit_rate()) {
     return false;
   }
   return true;
@@ -645,6 +618,13 @@ eof() {
 }
 
 template <class T>
+int
+Channel_extractor_mark4_implementation<T>::
+n_channels() {
+  return tracks.size();
+}
+
+template <class T>
 bool
 Channel_extractor_mark4_implementation<T>::
 check_track_bit_statistics() {
@@ -653,14 +633,14 @@ check_track_bit_statistics() {
     track_bit_statistics[track]=0;
   }
   
-  for (int i=160; i<frameMk4; i++) {
+  for (int i=160; i<SIZE_MK4_FRAME; i++) {
     for (size_t track=0; track<sizeof(T)*8; track++) {
       track_bit_statistics[track] += (block[i] >> track) &1;
     }
   }
   
   for (size_t track=0; track<sizeof(T)*8; track++) {
-    track_bit_statistics[track] /= frameMk4;
+    track_bit_statistics[track] /= SIZE_MK4_FRAME;
     if ((track_bit_statistics[track] < .45) ||
         (track_bit_statistics[track] > .55)) {
       return false;
@@ -681,6 +661,22 @@ print_header(Log_writer &writer, int track) {
 template <class T>
 int
 Channel_extractor_mark4_implementation<T>::
-get_data_rate(int channel) {
-  return (TBR * tracks.size())*1024000 / 8;
+track_bit_rate() const {
+  return _track_bit_rate;
 }
+
+template <class T>
+int
+Channel_extractor_mark4_implementation<T>::
+bit_rate(int channel) const {
+  return track_bit_rate()*tracks[channel].size();
+}
+
+template <class T>
+int
+Channel_extractor_mark4_implementation<T>::
+number_of_bytes_per_block() {
+  assert(!tracks.empty());
+  return SIZE_MK4_FRAME*tracks[0].size()/8;
+}
+

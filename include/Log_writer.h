@@ -15,7 +15,40 @@
 #include <iostream>
 #include "types.h"
 
-using namespace std;
+class Log_writer_buffer : public std::streambuf {
+public:
+  Log_writer_buffer(int max_level,
+                    int buffer_size=160);
+  ~Log_writer_buffer();
+
+  void set_messagelevel(int i);
+  int  get_messagelevel();
+
+  void set_maxlevel(int level);
+  int get_maxlevel();
+
+protected:
+  int max_level, current_level;
+  virtual int	sync()=0;
+
+};
+
+
+class Log_writer : public std::ostream {
+public:
+  Log_writer(Log_writer_buffer *str_buffer);
+  virtual ~Log_writer();
+  
+  /// Sets message level
+  Log_writer &operator()(int i) {set_messagelevel(i); return *this;};
+  void set_messagelevel(int level);
+  int  get_messagelevel();
+
+  void set_maxlevel(int level);
+  int  get_maxlevel();
+private:
+  Log_writer_buffer *buffer;
+};
 
 /// Conversion of an integer-type to a character.
 template <class T>
@@ -25,15 +58,21 @@ char* itoa(T value, char* result, int base ) {
   
   char* out = result;
   T quotient = value;
+  int sign = 1;
+
+  if (quotient != (T)abs(quotient)) {
+    sign = -1;
+    quotient = - quotient;
+  }
 
   do {
-    *out = "0123456789abcdef"[ (quotient<T(0) ? -1 : 1)*(quotient % base) ];
+    *out = "0123456789abcdef"[ quotient % base ];
     ++out;
     quotient /= base;
   } while ( quotient );
   
   // Only apply negative sign for base 10
-  if ( (value < T(0)) && (base == 10) ) *out++ = '-';
+  if ( (sign == -1) && (base == 10) ) *out++ = '-';
   
   std::reverse( result, out );
   *out = 0;
@@ -41,80 +80,5 @@ char* itoa(T value, char* result, int base ) {
   return result;
 }
 
-class Log_writer {
-public:
-  Log_writer(int messagelevel=0, bool interactive=false);
-  
-  virtual ~Log_writer();
-  
-  /** Writes a message if messagelevel is greater than the set level
-  **/ 
-  void message(int messagelevel, const char buff[]);
-  /** Writes a message if messagelevel is greater than the set level
-  **/ 
-  void message(int messagelevel, std::string const &msg);
-  /** Writes a message if messagelevel is greater than the set level
-  **/ 
-  void message(int messagelevel, std::stringstream const &msg);
-  
-  /** Writes a warning **/ 
-  void warning(const char buff[]);
-  /** Writes a warning **/ 
-  void warning(std::string const &msg);
-  /** Writes a warning **/ 
-  void warning(std::stringstream const &msg);
-
-  /** Writes a error **/ 
-  void error(const char buff[]);
-  /** Writes a error **/ 
-  void error(std::string const &msg);
-  /** Writes a error **/ 
-  void error(std::stringstream const &msg);
-  
-  /** Writes a MPI message **/ 
-  void MPI(int level, const char buff[]);
-  /** Writes a MPI message **/ 
-  void MPI(int level, std::string const &msg);
-  /** Writes a MPI message **/ 
-  void MPI(int level, std::stringstream const &msg);
-  
-
-  /** << operators **/
-  Log_writer &operator()(int i) {current_level = i; return *this;};
-  
-  Log_writer &operator<<(int i);
-  Log_writer &operator<<(unsigned int i);
-  Log_writer &operator<<(long int i);
-  Log_writer &operator<<(unsigned long int i);
-  Log_writer &operator<<(long long int i);
-  Log_writer &operator<<(unsigned long long int i);
-  Log_writer &operator<<(double d);
-  Log_writer &operator<<(char ch[]);
-  Log_writer &operator<<(std::string str);
-  // for std::endl
-  Log_writer &operator<<(std::ostream& (*f)(std::ostream&) ); 
-
-
-  /// Sets all message levels to level
-  void set_messagelevel(int level);
-  int get_messagelevel() { return main_level; }
-
-  /** Set the message level for the coming messages:
-  **/ 
-  void set_current_messagelevel(int level);
-
-  void set_interactive(int i) { _interactive = i; }
-  int  get_interactive()      { return _interactive; }
-
-  void set_mpilevel(int level) { mpi_level = level; }
-  int  get_mpilevel()          { return mpi_level; }
-
-  /** Ask the user to proceed to the next correlation step. **/ 
-  virtual void ask_continue();
-private:
-  virtual void write_message(const char buff[])=0;
-  int main_level, current_level;
-  int mpi_level, _interactive;
-};
 
 #endif /*LOG_WRITER_H_*/

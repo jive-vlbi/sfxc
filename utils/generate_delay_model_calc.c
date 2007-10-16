@@ -458,7 +458,7 @@ void mvrec(short *ntoc, short *kmode, short *knum, short *err)
       scan_data[scan_nr].sec_of_day + delta_time ;
     return;
   }
-	double emptyline[]={0,0,0,0,0};
+  double emptyline[]={0,0,0,0,0};
   fwrite(emptyline,5,sizeof(double),output_file);
 //  fprintf(output_file,"0 0 0 0 0\n");
   delay[0] = NAN;
@@ -647,12 +647,12 @@ get_eop_data(FILE* ctrlP, int num_eop_points)
 void generate_delay_tables(FILE *output, char *stationname) {
   output_file = output;
 
-	assert(stationname[2]=='\0');
-	
-	int32_t header_size=3;
-	fwrite(&header_size, 1, sizeof(int32_t), output_file);
-	fwrite(stationname, 3, sizeof(char), output_file);
-	
+  assert(stationname[2]=='\0');
+
+  int32_t header_size=3;
+  fwrite(&header_size, 1, sizeof(int32_t), output_file);
+  fwrite(stationname, 3, sizeof(char), output_file);
+
 //fprintf(output_file, "%s\n", argv[2]);	
 
   // scan_nr is a global variable

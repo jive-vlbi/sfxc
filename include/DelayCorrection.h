@@ -27,13 +27,11 @@ using namespace std;
 //sfxc includes
 #include <types.h>
 #include "Timer.h"
-#include "constPrms.h"
-#include "genPrms.h"
-#include "staPrms.h"
-#include "InData.h"
 #include "Delay_table_akima.h"
 #include <Bits_to_float_converter.h>
 #include <Log_writer.h>
+
+#include <Control_parameters.h>
 
 
 /** Functions and data necessary to do the delay correction
@@ -45,16 +43,16 @@ public:
   /** Allocate arrays, initialise parameters. **/
   DelayCorrection(Log_writer &lg_wrtr);
 
-  DelayCorrection(GenP &GenPrms_, StaP* StaPrms_, Log_writer &lg_wrtr);
+  DelayCorrection(Correlation_parameters &corr_param, Log_writer &lg_wrtr);
 
   /** De-allocate arrays and destroy plans. **/
   ~DelayCorrection();
 
-  void set_parameters(GenP &GenPrms, StaP* StaPrms);
+  void set_parameters(Correlation_parameters &corr_param);
 
   /** **/    
   void set_sample_reader
-    (int sn, 
+    (size_t sn, 
      boost::shared_ptr<Bits_to_float_converter> data_reader_); 
 
   /** Go to desired position in input reader.**/
@@ -70,7 +68,7 @@ public:
   bool set_delay_table(int sn, Delay_table_akima &delay_table);
 
   /** Set the start time and the duration of the correlation **/
-  void set_start_time(int64_t us_start);
+  void set_start_time(int64_t ms_start);
 
 private:
 
@@ -87,7 +85,7 @@ private:
 
   //data members
   Log_writer &log_writer;
-  StaP       *StaPrms;
+  Correlation_parameters corr_param;
   
   int64_t  timePtr;     //time in usec wrt 00:00 used for delay table
   double **segm;      //nstation data buffer ready for correlation
@@ -128,7 +126,7 @@ private:
   // For fringe stopping we do a linear approximation
   // maximal_phase_change is the maximal angle between two
   // sample points
-  static const double maximal_phase_change = 0.1; // 5.7 degrees
+  static const double maximal_phase_change = 0.2; // 5.7 degrees
   int n_recompute_delay;
 };
 #endif //DELAYCORRECTION_H

@@ -12,11 +12,9 @@
 #include <assert.h>
 
 Node::Node(int rank) : rank(rank), log_writer(new Log_writer_mpi(rank, 0)) {
-  log_writer->set_mpilevel(1);
 }
 
 Node::Node(int rank, Log_writer *writer) : rank(rank), log_writer(writer) {
-  log_writer->set_mpilevel(1);
 }
 
 Node::~Node() {
@@ -51,7 +49,7 @@ void Node::start() {
         return;
       }
       case ERROR_IN_PROCESSING: {
-        get_log_writer().error("Error, failed to process message");
+        get_log_writer()(0) << "Error, failed to process message" << std::endl;
         break;
       }
       case MESSAGE_UNKNOWN: {
@@ -91,15 +89,22 @@ Node::check_and_process_message() {
 
 Node::MESSAGE_RESULT 
 Node::process_event(MPI_Status &status) {
-//  DEBUG_MSG("--- " << get_rank() << ", " << print_MPI_TAG(status.MPI_TAG));
   if (status.MPI_TAG == MPI_TAG_END_NODE) {
-    MPI_Status status2; int msg;
+    
+    MPI_Status status2; int32_t msg;
     MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
     
-    get_log_writer().MPI(0, print_MPI_TAG(status.MPI_TAG));
     return TERMINATE_NODE;
+  } else if (status.MPI_TAG == MPI_TAG_SET_MESSAGELEVEL) {
+    MPI_Status status2; int32_t msg;
+    MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
+             status.MPI_TAG, MPI_COMM_WORLD, &status2);
+
+    get_log_writer().set_maxlevel(msg);
+    return MESSAGE_PROCESSED;
   }
+  
   for (Controller_iterator it = controllers.begin();
        it != controllers.end();
        it++) {
@@ -125,7 +130,10 @@ Node::process_event(MPI_Status &status) {
   {
     char msg[80];
     snprintf(msg, 80, "Unknown event %s", print_MPI_TAG(status.MPI_TAG));
-    get_log_writer().error(msg);
+    get_log_writer()(0) << msg << std::endl;
+    DEBUG_MSG("Source: " << status.MPI_SOURCE);
+    DEBUG_MSG(print_MPI_TAG(status.MPI_TAG));
+    assert(false);
   }
   
   // Remove event:  

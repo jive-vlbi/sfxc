@@ -13,23 +13,24 @@
 #include "types.h"
 #include "sfxc_mpi.h"
 #include "Delay_table_akima.h"
-#include "runPrms.h"
-#include "genPrms.h"
-#include "staPrms.h"
+
+#include <Control_parameters.h>
+
 /** Transfer special classes for the sfxc using MPI
  **/
 class MPI_Transfer
 {
 public:
-	MPI_Transfer();
-	
-  void send_general_parameters(int rank,
-                               RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]);
-  void receive_general_parameters(MPI_Status &status, 
-                                  RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]);
+  MPI_Transfer();
   
-  void send_delay_table(Delay_table_akima &table, int sn, int rank);
-  void receive_delay_table(MPI_Status &status, Delay_table_akima &table, int &sn);
+  static void send(Delay_table_akima &table, int sn, int rank);
+  static void receive(MPI_Status &status, Delay_table_akima &table, int &sn);
+
+  static void send(Track_parameters &track_param, int rank);
+  static void receive(MPI_Status &status, Track_parameters &track_param);
+
+  static void send(Correlation_parameters &corr_param, int rank);
+  static void receive(MPI_Status &status, Correlation_parameters &corr_param);
 };
 
 #endif /*MPI_TRANSFER_H_*/

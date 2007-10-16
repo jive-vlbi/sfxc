@@ -9,185 +9,61 @@
 
 #include <Log_writer.h>
 
-Log_writer::Log_writer(int messagelevel, bool interactive)
- : main_level(messagelevel), current_level(0), mpi_level(main_level), _interactive(interactive) 
+Log_writer::Log_writer(Log_writer_buffer *str_buffer)
+  : std::ostream(str_buffer), buffer(str_buffer)
 {}
 
 Log_writer::~Log_writer() {}
 
-void Log_writer::message(int messagelevel, const char buff[]) {
-  if (main_level >= messagelevel) {
-    write_message(buff);
-    write_message("\n");
-  } 
-}
-
-void Log_writer::message(int messagelevel, std::string const &msg) {
-  if (main_level >= messagelevel) {
-    write_message(msg.c_str());
-    write_message("\n");
-  } 
-}
-
-void Log_writer::message(int messagelevel, std::stringstream const &msg) {
-  if (main_level >= messagelevel) {
-    write_message(msg.str().c_str());
-    write_message("\n");
-  } 
-}
-
-/* WARNING */
-void Log_writer::warning(const char buff[]) {
-  write_message("WARNING: ");
-  write_message(buff);
-  write_message("\n");
-}
-void Log_writer::warning(std::string const &msg) {
-  write_message("WARNING: ");
-  write_message(msg.c_str());
-  write_message("\n");
-}
-void Log_writer::warning(std::stringstream const &msg) {
-  write_message("WARNING: ");
-  write_message(msg.str().c_str());
-  write_message("\n");
-}
-
-/* ERROR */
-void Log_writer::error(const char buff[]) {
-  write_message("ERROR: ");
-  write_message(buff);
-  write_message("\n");
-}
-void Log_writer::error(std::string const &msg) {
-  write_message("ERROR: ");
-  write_message(msg.c_str());
-  write_message("\n");
-}
-void Log_writer::error(std::stringstream const &msg) {
-  write_message("ERROR: ");
-  write_message(msg.str().c_str());
-  write_message("\n");
-}
-
-/* MPI */
-void Log_writer::MPI(int level, const char buff[]) {
-  if (mpi_level >= level) {
-    write_message("MPI: ");
-    write_message(buff);
-    write_message("\n");
-  }
-}
-void Log_writer::MPI(int level, std::string const &msg) {
-  if (mpi_level >= level) {
-    write_message("MPI: ");
-    write_message(msg.c_str());
-    write_message("\n");
-  }
-}
-void Log_writer::MPI(int level, std::stringstream const &msg) {
-  if (mpi_level >= level) {
-    write_message("MPI: ");
-    write_message(msg.str().c_str());
-    write_message("\n");
-  }
-}
-
-void Log_writer::set_current_messagelevel(int level) {
-  current_level = level;
-}
-
 void Log_writer::set_messagelevel(int level) {
-  main_level = level;
-  current_level = level;
-  mpi_level = level;
+  buffer->set_messagelevel(level);
 }
 
-Log_writer &Log_writer::operator<<(int i) {
-  if (main_level >= current_level) {
-    char str[20];
-    sprintf(str, "%d", i);
-    write_message(str);
-  }
-  return *this;
+int
+Log_writer::get_messagelevel() {
+  return buffer->get_messagelevel();
 }
 
-Log_writer &Log_writer::operator<<(unsigned int i) {
-  if (main_level >= current_level) {
-    char str[20];
-    sprintf(str, "%u", i);
-    write_message(str);
-  }
-  return *this;
+void Log_writer::set_maxlevel(int level) {
+  buffer->set_maxlevel(level);
 }
 
-Log_writer &Log_writer::operator<<(long int i) {
-  if (main_level >= current_level) {
-    char str[20];
-    snprintf(str,20, "%ld", i);
-    write_message(str);
-  }
-  return *this;
+int Log_writer::get_maxlevel() {
+  return buffer->get_maxlevel();
 }
 
-Log_writer &Log_writer::operator<<(unsigned long int i) {
-  if (main_level >= current_level) {
-    char str[20];
-    snprintf(str,20, "%lu", i);
-    write_message(str);
+Log_writer_buffer::Log_writer_buffer(int message_level, int buffer_size)
+  : std::streambuf(), max_level(message_level), current_level(message_level)
+{
+  if (buffer_size) {
+    char *ptr = new char[buffer_size];
+    setp(ptr, ptr + buffer_size);
+  } else {
+    setp(0, 0);
   }
-  return *this;
+        
+  setg(0, 0, 0);
+}
+Log_writer_buffer::~Log_writer_buffer()
+{
+  delete[] pbase();
 }
 
-Log_writer &Log_writer::operator<<(long long int i) {
-  if (main_level >= current_level) {
-    char str[20];
-    snprintf(str,20, "%lld", i);
-    write_message(str);
-  }
-  return *this;
+void 
+Log_writer_buffer::set_messagelevel(int i) {
+  sync();
+  current_level = i;
 }
 
-Log_writer &Log_writer::operator<<(unsigned long long int i) {
-  if (main_level >= current_level) {
-    char str[20];
-    snprintf(str,20, "%llu", i);
-    write_message(str);
-  }
-  return *this;
+int
+Log_writer_buffer::get_messagelevel() {
+  return current_level;
 }
 
-Log_writer &Log_writer::operator<<(double d) {
-  if (main_level >= current_level) {
-    char str[20];
-    sprintf(str, "%f", d);
-    write_message(str);
-  }
-  return *this;
+void Log_writer_buffer::set_maxlevel(int level) {
+  max_level = level;
 }
 
-Log_writer &Log_writer::operator<<(char ch[]) {
-  if (main_level >= current_level) {
-    write_message(ch);
-  }
-  return *this;
+int Log_writer_buffer::get_maxlevel() {
+  return max_level;
 }
-
-Log_writer &Log_writer::operator<<(std::string str) {
-  if (main_level >= current_level) {
-    write_message(str.c_str());
-  }
-  return *this;
-}
-
-Log_writer &
-Log_writer::operator<<(std::ostream& (*f)(std::ostream&)) {
-  if (main_level >= current_level) {
-    write_message("\n");
-  }
-  return *this;
-} 
-
-
-
-void Log_writer::ask_continue() {}

@@ -21,8 +21,9 @@ else:
 if (status != 0): sys.exit(1)
 
 for ctrlfile in controlfiles:
-  print "Control file: "+ctrlfile
-  status = os.system("mpirun -np 3 test_Correlator_node "+ctrlfile)
+  print "Control file: "+(" ".join(ctrlfile))
+  status = os.system("mpirun -np 3 test_Correlator_node "+
+                     (" ".join(ctrlfile)))
   if (status != 0): sys.exit(1)
   
 sys.exit(0);

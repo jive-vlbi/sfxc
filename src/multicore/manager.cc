@@ -14,20 +14,7 @@
 #include <Correlator_node.h>
 #include <Log_node.h>
 
-//global variables
-#include <runPrms.h>
-#include <genPrms.h>
-#include <staPrms.h>
-#include <constPrms.h>
-//declaration and default settings run parameters
-RunP RunPrms;
-//declaration and default settings general parameters
-GenP GenPrms;
-//station parameters class, declaration and default settings
-StaP StaPrms[NstationsMax];
-// used for randomising numbers for Headers in Mk4 file
-uint32_t seed;
-
+#include <Control_parameters.h>
 
 #include <iostream> 
 #include <assert.h>
@@ -45,6 +32,10 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  assert(argc == 3);
+  char *vex_file = argv[1];
+  char *ctrl_file = argv[2];
+
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
@@ -58,7 +49,11 @@ int main(int argc, char *argv[]) {
   MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
 
   {  
-    Manager_node manager(numtasks, rank, argv[1]);
+    Log_writer_mpi log_writer(rank);
+    Control_parameters control_parameters;
+    control_parameters.initialise(vex_file, ctrl_file, log_writer);
+    
+    Manager_node manager(rank, numtasks, &log_writer, control_parameters);
     manager.start();
   }
 

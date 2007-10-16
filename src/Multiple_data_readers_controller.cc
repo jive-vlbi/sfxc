@@ -32,13 +32,13 @@ Multiple_data_readers_controller::Process_event_status
 Multiple_data_readers_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
-  case MPI_TAG_ADD_DATA_READER_TCP:
+  case MPI_TAG_ADD_DATA_READER_TCP2:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
-
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      
       int size;
       MPI_Get_elements(&status, MPI_INT64, &size);
-      assert(size >= 3); // [ip-addr]+, port, rank
+      assert(size >= 3); // stream_nr, [ip-addr]+, port
       uint64_t ip_addr[size];
       MPI_Recv(&ip_addr, size, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -46,42 +46,41 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      uint64_t port = ip_addr[size-2];
-      int64_t stream_nr = ip_addr[size-1];
+      int32_t stream_nr = ip_addr[0];
+      uint64_t port = ip_addr[size-1];
       
       boost::shared_ptr<Data_reader> 
-        reader(new Data_reader_tcp(ip_addr, size-2, port));
+        reader(new Data_reader_tcp(ip_addr+1, size-2, port));
       add_data_reader(stream_nr, reader);
 
-      MPI_Send(&stream_nr, 1, MPI_INT64, 
-               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+      MPI_Send(&stream_nr, 1, MPI_INT32, 
+               status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-  case MPI_TAG_ADD_DATA_READER_FILE:
+  case MPI_TAG_ADD_DATA_READER_FILE2:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
-      assert(size > 1); // rank + filename
+      assert((size_t)size > sizeof(int32_t)); // rank + filename
       char msg[size];
       MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
-
+      int32_t stream_nr;
+      memcpy(&stream_nr, msg, sizeof(int32_t));
+      char *filename = msg+sizeof(int32_t);
+      
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      int corr_node = (int)msg[0];
-      char *filename = msg+1;
-      
       boost::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
-      add_data_reader(corr_node, reader);
+      add_data_reader(stream_nr, reader);
 
-      int64_t return_msg = 0;
-      MPI_Send(&return_msg, 1, MPI_INT64, 
-               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+      MPI_Send(&stream_nr, 1, MPI_INT32, 
+               status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
@@ -129,7 +128,7 @@ bool Multiple_data_readers_controller::initialised(unsigned int i) {
   return (data_readers[i]->get_data_reader() != NULL);
 }
 
-unsigned int Multiple_data_readers_controller::number_of_data_readers() {
+size_t Multiple_data_readers_controller::number_of_data_readers() {
   return data_readers.size();
 }
 

@@ -30,23 +30,22 @@ Output_node_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
-      int64_t weight[3]; // stream, slicenr, size (in bytes)
-      MPI_Recv(&weight, 3, MPI_INT64, status.MPI_SOURCE,
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      int32_t weight[3]; // stream, slicenr, size (in bytes)
+      MPI_Recv(&weight, 3, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
 
       // Create an output buffer:
-      assert((int64_t)((int)weight[2]) == weight[2]);
       node.set_weight_of_input_stream(weight[0], weight[1], weight[2]);
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_OUTPUT_NODE_CORRELATION_READY:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       int32_t nr_of_time_slices;
       MPI_Recv(&nr_of_time_slices, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);

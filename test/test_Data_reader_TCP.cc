@@ -13,8 +13,8 @@
 
 #include <assert.h>
 
-char *infile = "data/input.txt";
-char *outfile = "output.txt";
+char *infile = "file://data/input.txt";
+char *outfile = "file://output.txt";
 #define BUFFSIZE 1000
 
 #include <sfxc_mpi.h>
@@ -27,11 +27,6 @@ char *outfile = "output.txt";
 #include <TCP_Connection.h>
 
 int main(int argc, char *argv[]) {
-  if (argc >= 3) {
-    infile  = argv[1];
-    outfile = argv[2];
-  }
-  
   int numtasks, rank;
   { // MPI stuff
     int status = MPI_Init(&argc,&argv);
@@ -51,18 +46,23 @@ int main(int argc, char *argv[]) {
 
   if (rank == 0) { // Sending node:
     // strlen+1 so that \0 gets transmitted as well
-    MPI_Send(infile, strlen(infile)+1, MPI_CHAR, 
-             1, MPI_TAG_SET_DATA_READER_FILE, MPI_COMM_WORLD);
+    char message[sizeof(int32_t)+strlen(infile)+1];
+    int32_t stream_nr=0;
+    memcpy(msg,&stream_nr,sizeof(int32_t));
+    memcpy(msg+sizeof(int32_t), infile, strlen(infile)+1);
+    MPI_Send(message, strlen(message)+1, MPI_CHAR, 
+             1, MPI_TAG_ADD_DATA_READER_FILE2, MPI_COMM_WORLD);
     
     Data_writer_tcp *data_writer = new Data_writer_tcp(1233); 
 
     TCP_Connection tcp_connection;
     std::vector<uint64_t>  ip_addresses;
+    ip_addresses.push_back(0); // stream number
     tcp_connection.get_ip_addresses(ip_addresses);
     ip_addresses.push_back(data_writer->get_port());
     
     MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_INT64, 
-             1, MPI_TAG_ADD_DATA_READER_TCP, MPI_COMM_WORLD);
+             1, MPI_TAG_ADD_DATA_READER_TCP2, MPI_COMM_WORLD);
 
     data_writer->open_connection();
     
@@ -81,9 +81,12 @@ int main(int argc, char *argv[]) {
     int size;
     MPI_Get_elements(&status, MPI_CHAR, &size);
     assert(size > 0);
-    char filename[size];
-    MPI_Recv(&filename, size, MPI_CHAR, status.MPI_SOURCE,
+    char msg[size];
+    MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
+    int stream_nr;
+    memcpy(&stream_nr, msg, sizeof(int32_t));
+    char *filename = msg+sizeof(int32_t);
 
     Data_reader *reader_file = new Data_reader_file(filename);
     

@@ -7,6 +7,7 @@
  *
  */
 
+#include <utils.h>
 #include "Log_node.h"
 #include <assert.h>
 
@@ -31,6 +32,7 @@ Log_node_controller::Log_node_controller(Node &node, int nNodes)
       MPI_Recv(&msg, 1, MPI_INT, 
                status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, &status2);
       set_log_writer_output(new Log_writer_cout());
+      get_log_writer() << "Output to std::cout" << std::endl;
       initialised = true;
     }
     // Check for output to a file:
@@ -45,6 +47,7 @@ Log_node_controller::Log_node_controller(Node &node, int nNodes)
                status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, &status2);
       
       set_log_writer_output(new Log_writer_file(filename));
+      get_log_writer() << "Output to file" << std::endl;
       initialised = true;
     }
     // Check for initialisation message
@@ -74,7 +77,7 @@ Log_node_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      get_log_writer_output() << message << std::endl;
+      get_log_writer_output() << message << std::flush;
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
     case MPI_TAG_LOG_MESSAGES_ENDED: {
@@ -104,7 +107,7 @@ Log_writer &Log_node_controller::get_log_writer_output() {
 
 void Log_node_controller::set_log_writer_output(Log_writer *writer) {
   assert(log_writer_output == NULL);
-  //if (log_writer != NULL) delete log_writer;
+  if (log_writer_output != NULL) delete log_writer_output;
   log_writer_output = writer;
 }
 

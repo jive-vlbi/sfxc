@@ -19,26 +19,13 @@
 #include <assert.h>
 
 
-#include <genFunctions.h>
 #include <iostream>
-using namespace std;
-//constants
-#include "constPrms.h"
-
-//class and function definitions
-#include "genFunctions.h"
-#include "InData.h"
 
 #include <Data_reader_file.h>
-
-#define SEED 10
 
 #ifdef SFXC_PRINT_DEBUG
 int RANK_OF_NODE = -1; // Rank of the current node
 #endif
-
-// used for randomising numbers for Headers in Mk4 file
-extern uint32_t seed;
 
 int64_t get_us_time(int time[]) {
   int64_t result = 0;
@@ -87,67 +74,41 @@ void get_ip_address(std::list<Interface_pair> &addresses,
   freeifaddrs (ifa);
 }
 
+//*****************************************************************************
+//  irbit2: random seeding
+//  See Numerical Recipes
+//  primitive polynomial mod 2 of order n produces 2^n - 1 random bits
+//*****************************************************************************
+unsigned long iseed = 42;
+void set_seed(unsigned long seed_) {
+  assert(seed_ != 0);
+  iseed = seed_;
+}
 
-/** Initialises the global control files, this should be removed at some point.
- **/
-int
-initialise_control(const char *filename, Log_writer &log_writer, 
-  RunP &RunPrms, GenP &GenPrms, StaP StaPrms[]) 
+int irbit2()
 {
-  int    i, Nstations;
-  
-  //parse control file for run parameters
-  if (RunPrms.parse_ctrlFile(filename, log_writer) != 0) {
-    cerr << "ERROR: Control file "<< filename <<", program aborted.\n";
-    return -1;
+  #define IB1 1
+  //  #define IB2 2
+  #define IB4 8
+  //  #define IB5 16
+  #define IB6 32 
+  //  #define IB18 131072
+  #define IB30 536870912
+  #define MASK (IB1+IB4+IB6)
+ 
+  if (iseed & IB30) {
+    iseed=((iseed ^ MASK) << 1) | IB1;
+    return 1;
+  } else {
+    iseed <<= 1;
+    return 0;
   }
-
-  //show version information and control file info
-  if (RunPrms.get_messagelvl() > 0)
-    log_writer << "Source " << __FILE__ << " compiled at: "
-         << __DATE__ << " " <<__TIME__ << "\n"
-         << "Control file name "  <<  filename << "\n";
-  
-  //check control parameters, optionally show them
-  if (RunPrms.check_params(log_writer) != 0) {
-    log_writer << "ERROR: Run control parameter, program aborted.\n";
-    return -1;
-  }
-  
-  log_writer.ask_continue();
-
-  //parse control file for general parameters
-  if (GenPrms.parse_ctrlFile(filename,log_writer) != 0) {
-    log_writer << "ERROR: Control file "<< filename <<", program aborted.\n";
-    return -1;
-  }
-
-  //check general control parameters, optionally show them
-  if (GenPrms.check_params(log_writer) != 0) {
-    cerr << "ERROR: General control parameter, program aborted.\n";
-    return -1;
-  }
-  
-  log_writer.ask_continue();
-
-  //get the number of stations
-  Nstations = GenPrms.get_nstations();
-  
-  //parse the control file for all station parameters
-  for (i=0; i<Nstations; i++) {
-    if (StaPrms[i].parse_ctrlFile(filename,i, log_writer) != 0 ) {
-      log_writer << "ERROR: Control file "<< filename <<", program aborted.\n";
-      return -1;
-    }
-    
-    //check station control parameters, optionally show them
-    if (StaPrms[i].check_params(log_writer) != 0 ) {
-      log_writer << "ERROR: Station control parameter, program aborted.\n";
-      return -1;
-    }
-    
-    log_writer.ask_continue();
-  }
-  
-  return 0;  
+  #undef MASK
+  #undef IB30
+  //  #undef IB18
+  #undef IB6
+  //  #undef IB5
+  #undef IB4
+  //  #undef IB2
+  #undef IB1
 }

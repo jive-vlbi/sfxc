@@ -29,11 +29,6 @@
 using namespace std;
 
 //the class definitions and function definitions
-#include "constPrms.h"
-#include "runPrms.h"
-#include "genPrms.h"
-#include "staPrms.h"
-#include "genFunctions.h"
 #include "Uvw_model.h"
 #include <utils.h>
 
@@ -44,7 +39,7 @@ using namespace std;
 //default constructor, set default values
 Uvw_model::Uvw_model() 
   : end_scan(0), acc(NULL), splineakima_u(NULL), splineakima_v(NULL), 
-	  splineakima_w(NULL)
+    splineakima_w(NULL)
 {
 }
 
@@ -64,28 +59,28 @@ int Uvw_model::open(char *delayTableName)
 {
   std::ifstream in(delayTableName);
   double line[5];
-	int32_t hsize;
+  int32_t hsize;
 	
 
-	in.read(reinterpret_cast < char * > (&hsize), sizeof(int32_t));
-	char station[hsize];
-	in.read(reinterpret_cast < char * > (station), hsize*sizeof(char));
+  in.read(reinterpret_cast < char * > (&hsize), sizeof(int32_t));
+  char station[hsize];
+  in.read(reinterpret_cast < char * > (station), hsize*sizeof(char));
    
-	while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))){
+  while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))){
     // The time read from file is in seconds, whereas the software correlator
     // works with times in microseconds
     times.push_back(line[0]*1000000);
     u.push_back(line[1]);
     v.push_back(line[2]);
     w.push_back(line[3]);
-					}
+  }
   initialise_spline_for_next_scan();
 
   return 0;
 }
 
 void Uvw_model::initialise_spline_for_next_scan() {
-	cout << times[end_scan] << " " << end_scan << std::endl;
+  cout << times[end_scan] << " " << end_scan << std::endl;
   assert(end_scan < times.size()-1);
   size_t next_end_scan = end_scan+2;
   while ((next_end_scan < times.size()-1) && 
@@ -137,22 +132,22 @@ void Uvw_model::initialise_spline_for_next_scan() {
 //calculates the delay for the delayType at time in microseconds
 //get the next line from the delay table file
 std::ofstream& Uvw_model::uvw_values(std::ofstream &output, int64_t starttime, 
-													int64_t stoptime, double inttime) {
-	int64_t time=starttime + inttime*1000/2;
-	double gsl_u, gsl_v, gsl_w;
-	output.precision(14);
-	while (time < stoptime){
-  	while (times[end_scan] < time) initialise_spline_for_next_scan();
-		gsl_u = gsl_spline_eval (splineakima_u, time, acc);
-		gsl_v = gsl_spline_eval (splineakima_v, time, acc);
-		gsl_w = gsl_spline_eval (splineakima_w, time, acc);
-		double ttime  = time/1000;
+                                     int64_t stoptime, double inttime) {
+  int64_t time=starttime + inttime*1000/2;
+  double gsl_u, gsl_v, gsl_w;
+  output.precision(14);
+  while (time < stoptime){
+    while (times[end_scan] < time) initialise_spline_for_next_scan();
+    gsl_u = gsl_spline_eval (splineakima_u, time, acc);
+    gsl_v = gsl_spline_eval (splineakima_v, time, acc);
+    gsl_w = gsl_spline_eval (splineakima_w, time, acc);
+    double ttime  = time/1000;
 		
-		output.write(reinterpret_cast < char * > (&ttime), sizeof(double)); 
-		output.write(reinterpret_cast < char * > (&gsl_u), sizeof(double)); 
-		output.write(reinterpret_cast < char * > (&gsl_v), sizeof(double)); 
-		output.write(reinterpret_cast < char * > (&gsl_w), sizeof(double)); 
-		time += inttime*1000;
-	}
-	return output;
+    output.write(reinterpret_cast < char * > (&ttime), sizeof(double)); 
+    output.write(reinterpret_cast < char * > (&gsl_u), sizeof(double)); 
+    output.write(reinterpret_cast < char * > (&gsl_v), sizeof(double)); 
+    output.write(reinterpret_cast < char * > (&gsl_w), sizeof(double)); 
+    time += inttime*1000;
+  }
+  return output;
 }

@@ -14,7 +14,6 @@
 
 #include <types.h>
 #include <vector>
-#include <genPrms.h>
 
 // GSL includes
 #include <gsl/gsl_spline.h>

@@ -11,6 +11,7 @@
 #define BUFFER_H
 
 #include <vector>
+#include <utils.h>
 #include <assert.h>
 
 /// Use this element for the buffer class if you want to store an array
@@ -41,21 +42,21 @@ public:
   typedef T value_type;
   int size() { return N; }
 
-    Buffer_element_large(){
-            //std::cout << "Building array of size" << N << std::endl;
-            _buffer = new T[N];
-    }
+  Buffer_element_large(){
+    //std::cout << "Building array of size" << N << std::endl;
+    _buffer = new T[N];
+  }
 
-    Buffer_element_large(const Buffer_element_large& src){
-            //std::cout << "Building by copy an array of size" << N << std::endl;
-            _buffer = new T[N];
-            memcpy(_buffer, src._buffer, sizeof(T)*N );
-    }
+  Buffer_element_large(const Buffer_element_large& src){
+    //std::cout << "Building by copy an array of size" << N << std::endl;
+    _buffer = new T[N];
+    memcpy(_buffer, src._buffer, sizeof(T)*N );
+  }
 
-    ~Buffer_element_large(){
-           //std::cout << "Deleting array of size" << N << std::endl;
-            delete[] _buffer;
-    }
+  ~Buffer_element_large(){
+    //std::cout << "Deleting array of size" << N << std::endl;
+    delete[] _buffer;
+  }
 
   T &operator[](int i) {
     assert(i >= 0);
@@ -106,10 +107,17 @@ protected:
     stat = status[front];
     return buffer[front];
   }
+  T& get_cons_elem_prev(int &stat, int prev) {
+    assert(prev > 0);
+    assert(prev < size);
+    stat = status[(front-prev+size)%size];
+    return buffer[(front-prev+size)%size];
+  }
   void succ_cons() {
     front = (front+1)%size;
   }
 
+protected:
   // Children are allowed to access the buffer size;
   int size;
 
@@ -127,6 +135,7 @@ Buffer(int size)
   : size(size),
     front(0), rear(0)
 {
+  if (size <= 0) { DEBUG_MSG(size); }
   assert(size > 0);
   buffer.resize(size);
   status.resize(size);

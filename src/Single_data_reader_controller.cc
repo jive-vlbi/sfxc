@@ -21,52 +21,57 @@ Single_data_reader_controller::Process_event_status
 Single_data_reader_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
-  case MPI_TAG_SET_DATA_READER_FILE:
+  case MPI_TAG_ADD_DATA_READER_FILE2:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
       assert(size > 0);
-      char filename[size];
-      MPI_Recv(&filename, size, MPI_CHAR, status.MPI_SOURCE,
+      char msg[size];
+      MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
-               
-      
+      int32_t stream_nr;
+      memcpy(&stream_nr, msg, sizeof(int32_t));
+      char *filename = msg+sizeof(int32_t);
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
       boost::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
-      set_data_reader(reader);
+      set_data_reader(stream_nr, reader);
 
-      int64_t msg = 0;
-      MPI_Send(&msg, 1, MPI_INT64, 
-               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+      MPI_Send(&stream_nr, 1, MPI_INT32, 
+               status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-  case MPI_TAG_SET_DATA_READER_TCP:
+       
+  case MPI_TAG_ADD_DATA_READER_TCP2:
     {
+      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+
       int size;
       MPI_Get_elements(&status, MPI_INT64, &size);
-      assert(size > 0);
+      assert(size >= 3); // stream_nr, [ip-addr]+, port
       uint64_t ip_addr[size];
       MPI_Recv(&ip_addr, size, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      
+
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
-
+      
+      int32_t stream_nr = ip_addr[0];
+      uint64_t port = ip_addr[size-1];
+      
       boost::shared_ptr<Data_reader> 
-        reader(new Data_reader_tcp(ip_addr, size-1, ip_addr[size-1]));
-      set_data_reader(reader);
+        reader(new Data_reader_tcp(ip_addr+1, size-2, port));
+      set_data_reader(stream_nr, reader);
 
-      int64_t msg = status.MPI_SOURCE;
-      MPI_Send(&msg, 1, MPI_INT64, 
-               status.MPI_SOURCE, MPI_TAG_INPUT_CONNECTION_ESTABLISHED, 
+      MPI_Send(&stream_nr, 1, MPI_INT32, 
+               status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED, 
                MPI_COMM_WORLD);
-
+      
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   }
@@ -100,15 +105,17 @@ set_buffer(boost::shared_ptr<Single_data_reader_controller::Buffer> buff)
 }
 
 boost::shared_ptr<Data_reader>
-Single_data_reader_controller::get_data_reader() {
+Single_data_reader_controller::get_data_reader(int reader) {
+  assert(reader == 0);
   assert(reader2buffer.get_data_reader() != NULL);
   return reader2buffer.get_data_reader();
 }
 
 void 
 Single_data_reader_controller::
-set_data_reader(boost::shared_ptr<Data_reader> reader) 
+set_data_reader(int stream_nr, boost::shared_ptr<Data_reader> reader) 
 {
+  assert(stream_nr == 0);
   assert(reader2buffer.get_data_reader() == NULL);
 
   reader2buffer.set_data_reader(reader);

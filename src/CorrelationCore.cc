@@ -13,20 +13,35 @@
 #include <utils.h>
 
 CorrelationCore::CorrelationCore(Log_writer &lw) 
-  : log_writer(lw), parameters_set(false)
+  : accxps(NULL),
+    segm(NULL),
+    xps(NULL),
+    norms(NULL),
+    p_r2c(NULL), 
+    log_writer(lw),
+    parameters_set(false)
 {
 }
 
-CorrelationCore::CorrelationCore(Log_writer &lw, GenP& GenPrms, int ref_sn1, int ref_sn2)
-  : log_writer(lw), parameters_set(false)
+CorrelationCore::CorrelationCore(Log_writer &lw, 
+                                 Correlation_parameters &corr_param, 
+                                 int ref_sn1, int ref_sn2)
+  : accxps(NULL),
+    segm(NULL),
+    xps(NULL),
+    norms(NULL),
+    p_r2c(NULL),
+    log_writer(lw),
+    parameters_set(false)
 {
-  set_parameters(GenPrms, ref_sn1, ref_sn2);
+  set_parameters(corr_param, ref_sn1, ref_sn2);
 }
 
-void CorrelationCore::set_parameters(GenP& GenPrms, int ref_sn1, int ref_sn2)
+void CorrelationCore::set_parameters(Correlation_parameters &corr_param,
+                                     int ref_sn1, int ref_sn2)
 {
   parameters_set = true;
-  nstations = GenPrms.get_nstations();
+  nstations = corr_param.station_streams.size();
   if (0 <= ref_sn1 && ref_sn1 < nstations) {
     //use a reference station
     if (0 <= ref_sn2 && ref_sn2 < nstations) {
@@ -38,8 +53,8 @@ void CorrelationCore::set_parameters(GenP& GenPrms, int ref_sn1, int ref_sn2)
     //correlate all baselines
     nbslns    = nstations*(nstations-1)/2 + nstations;
   }
-  n2fftcorr = GenPrms.get_n2fft();
-  padding   = GenPrms.get_pad();
+  n2fftcorr = corr_param.number_channels;
+  padding   = PADDING;
 
 
   segm = new double*[nstations];
@@ -76,23 +91,31 @@ void CorrelationCore::set_parameters(GenP& GenPrms, int ref_sn1, int ref_sn2)
 
 CorrelationCore::~CorrelationCore()
 {
-
-  delete [] norms;
-  for (int j=0; j<nbslns; j++)
-    delete [] accxps[j];
-  delete [] accxps;
-  
-  for (int sn=0; sn<nstations; sn++){
-    delete [] segm[sn];
-    delete [] xps[sn];
+  if (norms != NULL) {
+    delete [] norms;
   }
-  delete [] segm;
-  delete [] xps;
-  
-  for (int sn=0; sn<nstations; sn++)
-    fftw_destroy_plan(p_r2c[sn]);
-  delete [] p_r2c;
-  
+  if (accxps != NULL) {
+    for (int j=0; j<nbslns; j++)
+      delete [] accxps[j];
+    delete [] accxps;
+  }
+  if (segm != NULL) {
+    for (int sn=0; sn<nstations; sn++){
+      delete [] segm[sn];
+    }
+    delete [] segm;
+  }
+  if (xps != NULL) {
+    for (int sn=0; sn<nstations; sn++){
+      delete [] xps[sn];
+    }
+    delete [] xps;
+  }
+  if (p_r2c != NULL) {
+    for (int sn=0; sn<nstations; sn++)
+      fftw_destroy_plan(p_r2c[sn]);
+    delete [] p_r2c;
+  }
 }
 
 
@@ -114,7 +137,6 @@ bool CorrelationCore::init_time_slice()
 void CorrelationCore::correlate_baseline(int station1, int station2, int bsln) {
   for (int j = 0 ; j < n2fftcorr*padding/2 + 1 ; j++){
     //accxps[bsln][j] += xps[station1][j]*conj(xps[station2][j])
-    
     accxps[bsln][j][0] +=
     (xps[station1][j][0] * xps[station2][j][0]) +
     (xps[station1][j][1] * xps[station2][j][1]);
@@ -137,8 +159,10 @@ bool CorrelationCore::correlate_segment(double** in_segm)
     //fill the local segment with data from the relevant station
     for (int i=0; i< n2fftcorr; i++) segm[sn][i]=in_segm[sn][i];
     //execute FFT real to complex. input: segm -> result: xps
+    assert(segm[sn][0] == segm[sn][0]); // Not NaN
     fftw_execute(p_r2c[sn]);
     for (int j = 0 ; j < n2fftcorr*padding/2 + 1 ; j++){
+      assert(xps[sn][j][0] == xps[sn][j][0]); // Not NaN
       //accxps[bsln][j] += xps[sn][j]*conj(xps[sn][j]);
       accxps[bsln][j][0] += 
         (xps[sn][j][0] * xps[sn][j][0]) + (xps[sn][j][1] * xps[sn][j][1]);
@@ -197,12 +221,12 @@ bool CorrelationCore::average_time_slice()
   int bsln = 0;//initialise baseline counter
   //auto product normalisation, mean pwr = 1
   for (int sn = 0 ; sn < nstations ; sn++){
-    for (int j = 0; j < n2fftcorr*padding/2 + 1; j++){
-      norms[bsln] = norms[bsln] + accxps[bsln][j][0];
+    for (int j = 0; j < n2fftcorr*padding/2 + 1; j++) {
+      norms[bsln] += accxps[bsln][j][0];
     }
     norms[bsln] = norms[bsln] / (double)(n2fftcorr*padding/2 + 1);
     for (int j = 0; j < n2fftcorr*padding/2 + 1; j++){
-      accxps[bsln][j][0] = accxps[bsln][j][0] / norms[bsln];
+      accxps[bsln][j][0] /= norms[bsln];
     }
     bsln++;
   }

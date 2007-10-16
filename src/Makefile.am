@@ -2,23 +2,23 @@ SUBDIRS = multicore
 
 AM_CPPFLAGS = -I../include
 
-bin_PROGRAMS = sfxc sfxc_SC
+bin_PROGRAMS = sfxc
 
 TESTS           = \
-	test_sfxc.py \
-	test_sfxc_SC.py
+	test_sfxc.py
 
-OBJ=runPrms.cc genPrms.cc staPrms.cc \
-  genFunctions.cc \
+OBJ=\
+  Abstract_manager_node.cc \
+  Control_parameters.cc \
+  sfxc_mpi.cc \
   utils.cc \
-  InData.cc Delay_table_akima.cc \
+  Delay_table_akima.cc \
   Data_writer.cc Data_reader.cc \
   Data_reader_file.cc Data_writer_file.cc \
   Data_writer_void.cc \
   Log_writer.cc Log_writer_cout.cc Log_writer_void.cc \
   Log_writer_file.cc \
   Integration_slice.cc CorrelationCore.cc DelayCorrection.cc \
-  Timer.cc \
   Channel_extractor_mark4.cc \
   Bits_to_float_converter.cc
 
@@ -36,4 +36,3 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   Single_data_writer_controller.cc \
   Single_data_reader_controller.cc
 
-sfxc_SC_SOURCES = $(OBJ) sfxc_SC.cc

@@ -52,7 +52,10 @@ int main(int argc, char *argv[]) {
              RANK_LOG_NODE, MPI_TAG_LOG_NODE_SET_OUTPUT_COUT, MPI_COMM_WORLD);
 
     Log_writer_mpi writer(rank);
-    writer << "a\nb\nc\n";
+    writer << "a" << std::endl;
+    writer << "b" << std::endl;
+    writer << "c" << std::endl;
+    writer << std::endl;
     MPI_Send(&i, 1, MPI_INT32, 
              RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
   } else {

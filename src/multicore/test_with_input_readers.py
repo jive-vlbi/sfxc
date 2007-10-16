@@ -22,9 +22,9 @@ status = os.system("make all")
 if (status != 0): sys.exit(1)
 
 # run the executable on all ccf files
-for ctrlfile in controlfiles:
-  print "Control file: "+ctrlfile
-  status = os.system("time mpirun -p4pg PI_with_input_readers manager_node "+ctrlfile)
+for [ctrlfile,vexfile] in controlfiles:
+  status = os.system("time mpirun -p4pg PI_with_input_readers manager_node "+
+                     ctrlfile+" "+vexfile)
   if (status != 0): sys.exit(1)
   
 sys.exit(0);

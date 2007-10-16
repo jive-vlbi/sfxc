@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <string>
 #include <stdio.h>
+#include <fstream>
+#include <set>
 
 #include <json/json.h>
 
@@ -26,10 +28,10 @@ std::string add_time(std::string &time, int delta) {
   return std::string(result);
 }
 
-std::string get_start(Vex &vex) {
+std::string get_start(const Vexpp_node &vex) {
   std::string result = "";
-  Vex::iterator sched = vex["SCHED"];
-  for (Vex::iterator scan_it = sched->begin();
+  Vex::Node::const_iterator sched = vex["SCHED"];
+  for (Vex::Node::const_iterator scan_it = sched->begin();
        scan_it != sched->end(); ++scan_it) {
     if (result == "") {
       result = scan_it["start"]->to_string();
@@ -40,10 +42,10 @@ std::string get_start(Vex &vex) {
   return result;
 }
 
-std::string get_endtime_of_scan(Vex &scan) {
+std::string get_endtime_of_scan(const Vexpp_node &scan) {
   std::string start = scan["start"]->to_string();
   int duration = 0;
-  for (Vex::iterator it = scan.begin("station");
+  for (Vex::Node::const_iterator it = scan.begin("station");
        it != scan.end("station"); ++it) {
     int curr_duration;
     sscanf(it[2]->to_string().c_str(),"%d sec", &curr_duration);
@@ -52,10 +54,10 @@ std::string get_endtime_of_scan(Vex &scan) {
   return add_time(start, duration);
 }
 
-std::string get_stop(Vex &vex) {
+std::string get_stop(const Vexpp_node &vex) {
   std::string result = "";
-  Vex::iterator sched = vex["SCHED"];
-  for (Vex::iterator scan_it = sched->begin();
+  Vex::Node::const_iterator sched = vex["SCHED"];
+  for (Vex::Node::const_iterator scan_it = sched->begin();
        scan_it != sched->end(); ++scan_it) {
     std::string curr = get_endtime_of_scan(*scan_it);
     if (result == "") {
@@ -67,16 +69,18 @@ std::string get_stop(Vex &vex) {
   return result;
 }
 
-Json::Value get_frequency(Vex &vex,
-			  Vex_iterator channel,
-			  const std::string &BBC,
-			  const std::string &IF) {
+Json::Value get_frequency(const Vex &vex,
+                          Vexpp_node::const_iterator channel,
+                          const std::string &ref_station, 
+                          const std::string &BBC_block,
+                          const std::string &IF_block) {
   Json::Value result;
-  std::string if_def;
-  for (Vex::iterator bbc = vex["BBC"][BBC]->begin("BBC_assign");
-       bbc != vex["BBC"][BBC]->end("BBC_assign"); ++bbc) {
+  std::string if_ref;
+  for (Vex::Node::const_iterator bbc = 
+         vex.get_root_node()["BBC"][BBC_block]->begin("BBC_assign");
+       bbc != vex.get_root_node()["BBC"][BBC_block]->end("BBC_assign"); ++bbc) {
     if (bbc[0]->to_string() == channel[5]->to_string()) {
-      if_def = bbc[2]->to_string();
+      if_ref = bbc[2]->to_string();
     }
   }
 
@@ -89,57 +93,31 @@ Json::Value get_frequency(Vex &vex,
   result["frequency"] = freq*1000000;
   result["bandwidth"] = bandwidth*1000000;
   result["sideband"]  = channel[2]->to_string()+"SB";
-  for (Vex::iterator if_def_it = vex["IF"][IF]->begin("if_def");
-       if_def_it != vex["IF"][IF]->end("if_def"); ++if_def_it) {
-    if (if_def_it[0]->to_string() == if_def) {
-      result["polarisation"] = if_def_it[2]->to_string();
-    }
-  }
-//   result["polarisation"] = vex["IF"][IF];
-//   for if_def_it in vex["IF"][IF].getall("if_def"):
-//     if if_def_it[0] == if_def:
-//       result["polarisation"] = if_def_it[2]
-//   return result
+  result["polarisation"]  = std::string(1,vex.polarisation(IF_block, if_ref));
   return result;
-
-//   global vex
-//   if_def = ""
-//   for bbc in vex["BBC"][BBC].getall("BBC_assign"):
-//     if bbc[0] == channel[5]:
-//       if_def = bbc[2]
-  
-//   result = dict()
-//   result["frequency"]    = float(channel[1].split()[0])*1000000
-//   result["bandwidth"]    = float(channel[3].split()[0])*1000000
-//   result["sideband"]     = channel[2]+"SB"
-//   for if_def_it in vex["IF"][IF].getall("if_def"):
-//     if if_def_it[0] == if_def:
-//       result["polarisation"] = if_def_it[2]
-//   return result
-
 }
 
-Json::Value get_frequencies(Vex &vex) {
+Json::Value get_frequencies(const Vex &vex) {
   // Find the right BBC and IF
-  std::string mode = vex["MODE"]->begin().key();
-  std::string IF = vex["MODE"][mode]["IF"][0]->to_string();
-  std::string ref_station = vex["MODE"][mode]["IF"][1]->to_string();
-  std::string BBC = "";
-  // Find the corresponding BBC:
-  for (Vex::iterator bbc = vex["MODE"][mode]->begin("BBC");
-       bbc != vex["MODE"][mode]->end("BBC"); ++bbc) {
-    for (Vex::iterator station = ++(bbc->begin()); 
+  std::string mode = vex.get_root_node()["MODE"]->begin().key();
+  std::string IF_block = vex.get_root_node()["MODE"][mode]["IF"][0]->to_string();
+  std::string ref_station = vex.get_root_node()["MODE"][mode]["IF"][1]->to_string();
+  std::string BBC_block = "";
+  // Find the corresponding BBC block:
+  for (Vex::Node::const_iterator bbc = vex.get_root_node()["MODE"][mode]->begin("BBC");
+       bbc != vex.get_root_node()["MODE"][mode]->end("BBC"); ++bbc) {
+    for (Vex::Node::const_iterator station = ++(bbc->begin()); 
 	 station != (*bbc).end(); ++station) {
       if (ref_station == station->to_string()) {
-	BBC = bbc[0]->to_string();
+	BBC_block = bbc[0]->to_string();
       }
     }
   }
 
   Json::Value result;
-  for (Vex::iterator channel = vex["FREQ"]->begin()->begin("chan_def");
-       channel != vex["FREQ"]->begin()->end("chan_def"); ++channel) {
-    result.append(get_frequency(vex, channel, BBC, IF));
+  for (Vex::Node::const_iterator channel = vex.get_root_node()["FREQ"]->begin()->begin("chan_def");
+       channel != vex.get_root_node()["FREQ"]->begin()->end("chan_def"); ++channel) {
+    result.append(get_frequency(vex, channel, ref_station, BBC_block, IF_block));
   }
 //   result = []
 //   for freq in vex["FREQ"]:
@@ -149,13 +127,13 @@ Json::Value get_frequencies(Vex &vex) {
   return result;
 }
 
-Json::Value site_position(Vex &vex,
+Json::Value site_position(const Vexpp_node &vex,
 			  const std::string &station) {
   Json::Value result;
 
-  Vex::iterator position = 
+  Vex::Node::const_iterator position = 
     vex["SITE"][vex["STATION"][station]["SITE"]->to_string()]["site_position"];
-  for (Vex::iterator site = position->begin();
+  for (Vex::Node::const_iterator site = position->begin();
        site != position->end(); ++site) {
     double pos;
     int err = sscanf(site->to_string().c_str(), "%lf m", &pos);
@@ -165,22 +143,45 @@ Json::Value site_position(Vex &vex,
   return result;
 }
 
-int main(int argc, char *argv[]) {
-  assert(argc == 2);
+Json::Value get_channels(const Vex &vex){
+	std::set<std::string> result_set;
+	Json::Value result;
+	
+  for (Vex::Node::const_iterator frq_block = vex.get_root_node()["FREQ"]->begin();
+       frq_block != vex.get_root_node()["FREQ"]->end(); ++frq_block) {
+  	for (Vex::Node::const_iterator freq_it = frq_block->begin("chan_def");
+         freq_it != frq_block->end("chan_def"); ++freq_it) {
+			result_set.insert(freq_it[4]->to_string());
+		}
+	}
+	for (std::set<std::string>::const_iterator set_it = result_set.begin();
+				set_it != result_set.end(); ++set_it){
+		result.append(*set_it);
+	}
+	return result;
+}
 
-  struct Vex_node *cvex = parse_vex(argv[1]);
-  Vex vex(cvex);
+
+int main(int argc, char *argv[]) {
+  assert(argc == 3);
+
+	std::ofstream outfile(argv[2], std::ios::out);
+
+  Vex vex(argv[1]);
   
   Json::Value json_output;
-  json_output["exper_name"] = (*vex["GLOBAL"]["EXPER"]).to_string();
-  json_output["start"] = get_start(vex);
-  json_output["stop"] = get_stop(vex);
-  for (Vex::iterator it = vex["STATION"]->begin();
-       it != vex["STATION"]->end(); ++it) {
+  json_output["exper_name"] = 
+    vex.get_root_node()["GLOBAL"]["EXPER"]->to_string();
+  json_output["start"] = get_start(vex.get_root_node());
+  json_output["stop"] = get_stop(vex.get_root_node());
+  for (Vex::Node::const_iterator it = vex.get_root_node()["STATION"]->begin();
+       it != vex.get_root_node()["STATION"]->end(); ++it) {
     json_output["stations"].append(it.key());
     json_output["data_sources"][it.key()] = Json::Value(Json::arrayValue);
-    json_output["site_position"][it.key()] = site_position(vex, it.key());
+    json_output["site_position"][it.key()] = site_position(vex.get_root_node(), it.key());
   }
+
+	json_output["channels"] =  get_channels(vex);
   json_output["reference_station"] = "";
   json_output["cross_polarize"]    = false;
   json_output["number_channels"]   = 1024;
@@ -190,6 +191,6 @@ int main(int argc, char *argv[]) {
   json_output["output_file"]       = "";
   json_output["subbands"]          = get_frequencies(vex);
 
-  std::cout << json_output << std::endl;
+  outfile << json_output << std::endl;
   return 0;
 } 
