@@ -305,6 +305,16 @@ correlator_node_set_all(Delay_table_akima &delay_table,
                        input_node(station_name), 
                        correlator_node_rank[i]);
   }
+
+  // Cross polarize?
+  if (control_parameters.cross_polarize()) {
+    int nStations = control_parameters.number_stations();
+    for (size_t i=0; i<correlator_node_rank.size(); i++) {
+      MPI_Transfer::send(delay_table, 
+                         input_node(station_name)+nStations,
+                         correlator_node_rank[i]);
+    }
+  }
 }
 
 void

@@ -126,6 +126,9 @@ bool Delay_table_akima::initialise_next_scan() {
 //calculates the delay for the delayType at time in microseconds
 //get the next line from the delay table file
 double Delay_table_akima::delay(int64_t time) {
+  if (times.empty()) {
+    DEBUG_MSG("times.empty()");
+  }
   assert(!times.empty());
   while (times[end_scan-1] < time) {
     bool result = initialise_next_scan();

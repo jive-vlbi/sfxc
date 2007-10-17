@@ -22,6 +22,7 @@ Manager_node_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
     case MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED:
     {
+      DEBUG_MSG("MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED");
       int correlator;
       MPI_Recv(&correlator, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -35,6 +36,7 @@ Manager_node_controller::process_event(MPI_Status &status) {
     }
     case MPI_TAG_DATASTREAM_EMPTY:
     {
+      DEBUG_MSG("MPI_TAG_DATASTREAM_EMPTY");
       int32_t stream;
       MPI_Recv(&stream, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -49,6 +51,7 @@ Manager_node_controller::process_event(MPI_Status &status) {
     }
     case MPI_TAG_OUTPUT_NODE_FINISHED:
     {
+      DEBUG_MSG("MPI_TAG_OUTPUT_NODE_FINISHED");
       int32_t msg;
       MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);

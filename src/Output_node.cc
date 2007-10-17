@@ -98,7 +98,7 @@ void Output_node::start() {
         input_streams[curr_stream]->goto_next_slice();
 
         status = WRITE_OUTPUT;
-        // No break;
+        break;
       }
     case WRITE_OUTPUT: 
       {

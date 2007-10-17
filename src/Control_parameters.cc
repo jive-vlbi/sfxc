@@ -285,6 +285,32 @@ Control_parameters::get_track_parameters(const std::string &track_name) const {
   return result;
 }
 
+bool 
+Control_parameters::cross_polarize() const {
+  return ctrl["cross_polarize"].asBool();
+}
+
+int
+Control_parameters::
+cross_polarisation(int channel_nr) const {
+  if (channel_nr >= number_frequency_channels()) return -1;
+  std::string freq = frequency(channel(channel_nr), station(0));
+  char side = sideband(channel(channel_nr), station(0));
+  char pol  = polarisation(channel(channel_nr), station(0));
+
+  for (size_t i=0; i<number_frequency_channels(); i++) {
+    if (i != channel_nr) {
+      if ((freq == frequency(channel(i), station(0))) &&
+          (side == sideband(channel(i), station(0))) &&
+          (pol != polarisation(channel(i), station(0)))) {
+        return i;
+      }
+    }
+  }
+
+  return -1;
+}
+
 char
 Control_parameters::
 polarisation(const std::string &if_node, 
@@ -497,6 +523,10 @@ get_correlation_parameters(const std::string &scan_name,
   }
   assert(corr_param.sideband != ' ');
   assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');
+
+  corr_param.cross_polarize = cross_polarize();
+  assert(reference_station()=="");
+  corr_param.reference_station = -1;
   
   // now get the station streams
   for (Vex::Node::const_iterator station = scan->begin("station");

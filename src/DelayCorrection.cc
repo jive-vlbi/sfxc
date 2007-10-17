@@ -129,6 +129,7 @@ void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
 //De-allocate arrays and destroy plans
 DelayCorrection::~DelayCorrection()
 {
+  if (!parameters_set) return;
   if (segm != NULL) {
     for (int sn=0; sn<nstations; sn++){
       delete [] segm[sn];
