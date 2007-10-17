@@ -162,7 +162,7 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
 
   
   correlation_parameters = param;
-  get_integration_slice().set_parameters(correlation_parameters, -1, -1);
+  get_integration_slice().set_parameters(correlation_parameters);
 
   int bytes = 
     ((int64_t)(correlation_parameters.stop_time-

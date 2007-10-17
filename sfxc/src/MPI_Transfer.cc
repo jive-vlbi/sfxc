@@ -210,7 +210,7 @@ void
 MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   int size = 0;
   size = 
-    8*sizeof(int32_t) + sizeof(int64_t) + sizeof(char) +  
+    9*sizeof(int32_t) + sizeof(int64_t) + 2*sizeof(char) +  
     corr_param.station_streams.size()*3*sizeof(int32_t);
   
   int position = 0; 
@@ -237,6 +237,16 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   MPI_Pack(&corr_param.bandwidth, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD); 
   MPI_Pack(&corr_param.sideband, 1, MPI_CHAR,
+           message_buffer, size, &position, MPI_COMM_WORLD); 
+  char cross_polarize;
+  if (corr_param.cross_polarize) {
+    cross_polarize='y';
+  } else {
+    cross_polarize='n';
+  }
+  MPI_Pack(&cross_polarize, 1, MPI_CHAR,
+           message_buffer, size, &position, MPI_COMM_WORLD); 
+  MPI_Pack(&corr_param.reference_station, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD); 
   
   for (Correlation_parameters::Station_iterator station = 
@@ -301,6 +311,19 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
              MPI_COMM_WORLD); 
   MPI_Unpack(buffer, size, &position, 
              &corr_param.sideband, 1, MPI_CHAR, 
+             MPI_COMM_WORLD); 
+  char cross_polarize;
+  MPI_Unpack(buffer, size, &position, 
+             &cross_polarize, 1, MPI_CHAR, 
+             MPI_COMM_WORLD); 
+  if (cross_polarize=='y') {
+    corr_param.cross_polarize = true;
+  } else {
+    assert(cross_polarize=='n');
+    corr_param.cross_polarize = false;
+  }
+  MPI_Unpack(buffer, size, &position, 
+             &corr_param.reference_station, 1, MPI_INT32, 
              MPI_COMM_WORLD); 
 
   while (position < size) {

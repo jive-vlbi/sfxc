@@ -11,18 +11,18 @@
 import sys, os, time, filecmp;
 
 def which (filename):
-    if not os.environ.has_key('PATH') or os.environ['PATH'] == '':
-        p = os.defpath
-    else:
-        p = os.environ['PATH']
+  if not os.environ.has_key('PATH') or os.environ['PATH'] == '':
+    p = os.defpath
+  else:
+    p = os.environ['PATH']
 
-    pathlist = p.split (os.pathsep)
+  pathlist = p.split (os.pathsep)
 
-    for path in pathlist:
-        f = os.path.join(path, filename)
-        if os.access(f, os.X_OK):
-            return f
-    return None
+  for path in pathlist:
+    f = os.path.join(path, filename)
+    if os.access(f, os.X_OK):
+      return f
+  return None
 
 
 ######### MAIN CODE
@@ -42,11 +42,11 @@ if not os.path.exists(ctrl_file):
     print "vex2ccf: returned error."
     sys.exit(1);
 
-# allow the user to edit the ctrl file
-status = os.system("emacs "+vex_file+" "+ctrl_file)
-if (status != 0):
-  print "emacs: returned error."
-  sys.exit(1);
+  # allow the user to edit the ctrl file
+  status = os.system("emacs "+vex_file+" "+ctrl_file)
+  if (status != 0):
+    print "emacs: returned error."
+    sys.exit(1);
 
 # allow the user to set the number of nodes
 print "enter the number of nodes, 10 by default"
@@ -64,21 +64,12 @@ if (status != 0):
   print "sfxc: returned error."
   sys.exit(1);
 
-# run the software correlator
+sys.exit(0);
+
+# run the html generator
 status = os.system("produce_html_plotpage "+ctrl_file+" "+vex_file)
 if (status != 0):
   print "produce_html_plotpage: returned error."
   sys.exit(1);
 
 sys.exit(0)
-
-
-
-
-
-
-
-
-
-
-

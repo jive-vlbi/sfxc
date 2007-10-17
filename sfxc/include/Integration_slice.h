@@ -24,11 +24,9 @@ public:
   /** Initialise the Time Slice correlator.  **/
   Integration_slice(Log_writer &lg_wrtr);
 
-  Integration_slice(Correlation_parameters &corr_param, Log_writer &lg_wrtr, 
-                    int ref_station1, int ref_station2);
+  Integration_slice(Correlation_parameters &corr_param, Log_writer &lg_wrtr);
 
-  void set_parameters(Correlation_parameters &corr_param,  
-                      int ref_station1, int ref_station2);
+  void set_parameters(Correlation_parameters &corr_param);
       
 
   /** assigns delay table for station number sn**/

@@ -38,15 +38,13 @@ public:
   /** Initialise the correlator with proper values, allocate arrays,
       createFFTW plans.**/
   CorrelationCore(Log_writer &log_writer);
-  CorrelationCore(Log_writer &log_writer, Correlation_parameters &corr_param, 
-                  int ref_sn1, int ref_sn2);
+  CorrelationCore(Log_writer &log_writer, Correlation_parameters &corr_param);
 
   /** De-allocate correlator arrays, destroy FFTW plans.**/
   ~CorrelationCore();
 
   /** Sets the parameters for the correlation **/
-  void set_parameters(Correlation_parameters &corr_param, 
-                      int ref_sn1, int ref_sn2);
+  void set_parameters(Correlation_parameters &corr_param);
 
   /** Initialise array values to zero before the correlation
       of the time slice.**/
@@ -91,6 +89,7 @@ private:
   void correlate_baseline(int station1, int station2, int bsln);
   void normalise_correlation(int station1, int station2, int bsln);
 
+  bool cross_polarize;
   int ref_station1, ref_station2;
 
   Log_writer &log_writer;

@@ -25,23 +25,29 @@
 
 Control_parameters ConPrms;
 
-struct Plot_data {
+class Plot_data {
+public:
   std::string job_name;
   double frequency;
   char sideband;
   std::vector<std::string> autos, crosses;
   std::vector<double> snr_crosses; // Signal to noise ratio for the crosses
+
+  void set_size_crosses(int size_cross) {
+    crosses.resize(size_cross);
+    snr_crosses.resize(size_cross);
+  }
 };
 
 
 std::vector< Plot_data > plot_data_channels;
-int plot_nr=0;
+int plot_count=0;
 
 class Plot_generator {
 public:
   Plot_generator(std::ifstream &infile, const Control_parameters &ConPrms,
                  int count_channel);
-  
+
 private:
   // sets the data of plot_data except for the plots
   void set_plot_data(Plot_data &data, const Control_parameters &ConPrms,
@@ -51,15 +57,11 @@ private:
                            int stations_end,
                            Plot_data &plot_data,
                            const Control_parameters &ConPrms);
-  void generate_cross_plots(std::ifstream &in,
-                            int nStations,
-                            const std::string &ref_station,
-                            Plot_data &plot_data,
-                            const Control_parameters &ConPrms);
   void generate_cross_plot(std::ifstream &in,
-                           const std::string &ref_station,
+                           int station,
                            int station2,
                            Plot_data &plot_data,
+                           int plot_nr,
                            const Control_parameters &ConPrms);
   void plot(char *filename, int nPts, char *title);
 
@@ -78,17 +80,11 @@ Plot_generator::Plot_generator(std::ifstream &infile,
 {
   Log_writer_cout log_writer;
 
-  /*  int err = 
-      initialise_control(filename, log_writer, ConPrms);
-      if (err != 0) return;
-  */
-  log_writer(0) << ConPrms.get_output_file() << std::endl;
-  
   nLags =ConPrms.number_channels()+1;
   in.resize(nLags);
   out.resize(nLags);
   magnitude.resize(nLags);
-  
+
   visibilities2lags = 
     fftw_plan_dft_1d(nLags, 
                      reinterpret_cast<fftw_complex*>(&in[0]),
@@ -96,81 +92,114 @@ Plot_generator::Plot_generator(std::ifstream &infile,
                      FFTW_BACKWARD, 
                      FFTW_ESTIMATE);
 
-  //	std::ifstream infile(ConPrms.get_output_file().c_str(), std::ios::in | std::ios::binary);
-  //  assert(infile.is_open());
-  // Auto correlations
-  int nstations = ConPrms.number_stations();
-  std::string ref_station1=ConPrms.reference_station();
-  std::string ref_station2="";
+  std::string ref_station = ConPrms.reference_station();
+  int nStations = ConPrms.number_stations();
+  int cross_channel = -1;
+  if (ConPrms.cross_polarize()) {
+    cross_channel = ConPrms.cross_polarisation(count_channel);
+    assert((cross_channel == -1) ||
+           (cross_channel > count_channel));
+  }
+
+
+  Plot_data plot_data[4];
+
+  // Read the auto correlations
+  if (cross_channel == -1) {
+    generate_auto_plots(infile, 0, nStations, plot_data[0], ConPrms);
+    plot_data[0].job_name = 
+      ConPrms.channel(count_channel)+ ", " +
+      ConPrms.frequency(ConPrms.channel(count_channel), 
+                        ConPrms.station(0)) + ", " +
+      ConPrms.sideband(ConPrms.channel(count_channel), 
+                       ConPrms.station(0))+"SB, "+
+      ConPrms.polarisation(ConPrms.channel(count_channel),
+                           ConPrms.station(0)) + "cp ";
+
+  } else {
+    generate_auto_plots(infile, 0, nStations, plot_data[0], ConPrms);
+    generate_auto_plots(infile, 0, nStations, plot_data[2], ConPrms);
+
+    plot_data[0].job_name = 
+      ConPrms.channel(count_channel)+ ", " +
+      ConPrms.frequency(ConPrms.channel(count_channel), 
+                        ConPrms.station(0)) + ", " +
+      ConPrms.sideband(ConPrms.channel(count_channel), 
+                       ConPrms.station(0))+"SB, "+
+      ConPrms.polarisation(ConPrms.channel(count_channel),
+                           ConPrms.station(0)) + "cp ";
+    plot_data[2].job_name = 
+      ConPrms.channel(cross_channel)+ ", " +
+      ConPrms.frequency(ConPrms.channel(cross_channel), 
+                        ConPrms.station(0)) + ", " +
+      ConPrms.sideband(ConPrms.channel(cross_channel), 
+                       ConPrms.station(0))+"SB, "+
+      ConPrms.polarisation(ConPrms.channel(cross_channel),
+                           ConPrms.station(0)) + "cp ";
+  }
+  
   // Cross correlations
-  if (ref_station1 == "") {
-    Plot_data plot_data;
-    set_plot_data(plot_data, ConPrms, count_channel);
 
-    generate_auto_plots(infile, 0, nstations, plot_data, ConPrms);
-    generate_cross_plots(infile, nstations, ConPrms.reference_station(), plot_data,
-                         ConPrms);
+  // reference station not yet implemented
+  assert(ref_station == "");
 
-    plot_data_channels.push_back(plot_data);
-  } else 
-	
-    if (ref_station2 == "") {
-      // One reference station
-      Plot_data plot_data;
-      set_plot_data(plot_data, ConPrms, count_channel);
+  if (cross_channel == -1) {
+    // Generate the cross plots
+    plot_data[0].set_size_crosses(nStations*(nStations-1)/2);
+    int plot_nr=0;
+    for (int i=0; i<nStations; i++) {
+      for (int j=i+1; j<nStations; j++) {
+        generate_cross_plot(infile, i, j, plot_data[0], plot_nr, ConPrms);
+        plot_nr++;
+      }    
+    }
+  } else {
+    for (int i=0; i<4; i++) {
+      plot_data[i].set_size_crosses(nStations*(nStations-1)/2);
+    }
+    // also generating the cross correlations
+    for (int i=0; i<2*nStations; i++) {
+      for (int j=i+1; j<2*nStations; j++) {
+        if (i+nStations != j) {
+          // don't generate the "auto" cross polarisations.
+          int data_nr=0;
+          
+          int plot_nr = 
+            nStations*(nStations-1)/2 - 
+            (nStations-(i%nStations))*((nStations-(i%nStations))-1)/2 +
+            ((j-i)%nStations)-1;
+          if ((i<nStations) && (j<nStations)) {
+            data_nr = 0;
+          } else if ((i>=nStations) && (j>=nStations)) {
+            data_nr = 2;
+          } else {
+            assert(i%nStations != j%nStations);
+            if (i%nStations < j%nStations) {
+              data_nr = 1;
+            } else {
+              data_nr = 3;
+              int iprime = j%nStations;
+              int jprime = i%nStations;
+              plot_nr = 
+                nStations*(nStations-1)/2 - 
+                (nStations-(iprime%nStations))*((nStations-(iprime%nStations))-1)/2 +
+                ((jprime-iprime)%nStations)-1;
+            }
+          }
+          generate_cross_plot(infile, i, j,
+                              plot_data[data_nr], plot_nr, ConPrms);
+        }
+      }    
+    }
+  }
 
-      generate_auto_plots(infile, 0, nstations, plot_data, ConPrms);
-      generate_cross_plots(infile, nstations, ConPrms.reference_station(), plot_data,
-                           ConPrms);
-
-      plot_data_channels.push_back(plot_data);
-    } else {
-      // Two reference stations, 
-      // devide over four plot-data's (parallel and cross)
-      Plot_data plot_data1, plot_data2, plot_data3, plot_data4;
-      set_plot_data(plot_data1, ConPrms, count_channel);
-      set_plot_data(plot_data2, ConPrms, count_channel);
-      set_plot_data(plot_data3, ConPrms, count_channel);
-      set_plot_data(plot_data4, ConPrms, count_channel);
-
-      // reset job names
-      int job_name_length = plot_data1.job_name.length();
-      std::string job_name_core = 
-        plot_data1.job_name.substr(0, job_name_length-10);
-      std::string job_name_ch1 = 
-        plot_data1.job_name.substr(job_name_length-9, 4);
-      std::string job_name_ch2 = 
-        plot_data1.job_name.substr(job_name_length-4, 4);
-      plot_data1.job_name = job_name_core+" "+job_name_ch1+" parallel";
-      plot_data2.job_name = job_name_core+" "+job_name_ch1+" cross";
-      plot_data3.job_name = job_name_core+" "+job_name_ch2+" parallel";
-      plot_data4.job_name = job_name_core+" "+job_name_ch2+" cross";
-
-      generate_auto_plots(infile, 0, nstations/2, plot_data1, ConPrms);
-      generate_auto_plots(infile, nstations/2, nstations, plot_data3, ConPrms);
-
-      // parallel polarisation 1
-      generate_cross_plots(infile, nstations/2, 
-                           ConPrms.reference_station(),
-                           plot_data1, ConPrms);
-      // cross polarisation 1
-      generate_cross_plots(infile, nstations/2, 
-                           ConPrms.reference_station(),
-                           plot_data2, ConPrms);
-      // cross polarisation 2
-      generate_cross_plots(infile, nstations/2,
-                           ConPrms.reference_station(),
-                           plot_data4, ConPrms);
-      // parallel polarisation 1
-      generate_cross_plots(infile, nstations/2,
-                           ConPrms.reference_station(),
-                           plot_data3, ConPrms);
-
-      plot_data_channels.push_back(plot_data1);
-      plot_data_channels.push_back(plot_data2);
-      plot_data_channels.push_back(plot_data3);
-      plot_data_channels.push_back(plot_data4);
-    }  
+  if (cross_channel == -1) {
+    plot_data_channels.push_back(plot_data[0]);
+  } else {
+    for (int i=0; i<4; i++) {
+      plot_data_channels.push_back(plot_data[i]);
+    }
+  }  
   fftw_destroy_plan(visibilities2lags);
 }
 
@@ -192,7 +221,7 @@ void Plot_generator::set_plot_data(Plot_data & data,
       }
     }
   }
-	
+
   data.job_name = ConPrms.experiment()+"_"+ConPrms.channel(count_channel)
     + "_" + ConPrms.polarisation(ConPrms.channel(count_channel),ConPrms.station(0)) 
     + "cp_" + ConPrms.frequency(ConPrms.channel(count_channel), ConPrms.station(0))
@@ -216,65 +245,61 @@ Plot_generator::generate_auto_plots(std::ifstream &infile,
       magnitude[lag] = abs(in[lag]);
     }
     char title[80], filename[80];
-    
+
     snprintf(title, 80, "Auto %s", ConPrms.station(station).c_str());
+    DEBUG_MSG(ConPrms.station(station).c_str());
     snprintf(filename, 80, "%s_%s_%d.png", 
-             ConPrms.experiment().c_str(), ConPrms.station(station).c_str(), plot_nr);
+             ConPrms.experiment().c_str(), 
+             ConPrms.station(station).c_str(), 
+             plot_count);
     plot_data.autos.push_back(filename);
-    plot_nr++;
-    
+    plot_count++;
+
     plot(filename, nLags, title);    
   }
 }
 
 void 
-Plot_generator::generate_cross_plots(std::ifstream &in,
-                                     int nStations,
-                                     const std::string &ref_station,
-                                     Plot_data &plot_data,
-                                     const Control_parameters &ConPrms) {
-  if (ref_station == "") {
-    // Computed all cross products
-    for (int i=0; i<nStations; i++) {
-      for (int j=i+1; j<nStations; j++) {
-        generate_cross_plot(in, ConPrms.station(i), j, plot_data, ConPrms);
-      }    
-    }
-  } else {
-    // Computed crosses w.r.t. one reference station
-    // Computed all cross products
-    for (int station=0; station<nStations; station++) {
-      if (ref_station != ConPrms.station(station)) {
-        generate_cross_plot(in, ref_station, station, plot_data, ConPrms);
-      }
-    }
-  }
-}
-
-void 
 Plot_generator::generate_cross_plot(std::ifstream &infile,
-                                    const std::string &ref_station,
+                                    int station,
                                     int station2,
                                     Plot_data &plot_data,
+                                    int plot_nr,
                                     const Control_parameters &ConPrms) {
+  int nStations = ConPrms.number_stations();
+
   infile.read((char *)&in[0], 2*in.size()*sizeof(double));
   fftw_execute(visibilities2lags);
   for  (int lag=0; lag<nLags; lag++) {
     magnitude[lag] = abs(out[(lag+nLags/2)%nLags])/nLags;
   }
-      
+
   char title[80], filename[80];
+  int tmp1=0, tmp2=0;
+  if (station>=nStations) {
+    tmp1 = 1;
+    station -= nStations;
+  }
+  if (station2>=nStations) {
+    tmp2 = 1;
+    station2 -= nStations;
+  }
   snprintf(title, 80, "Cross %s vs. %s", 
-           ref_station.c_str(), 
+           ConPrms.station(station).c_str(),
            ConPrms.station(station2).c_str());
-  snprintf(filename, 80, "%s_%s-%s_%d.png", 
+  
+  snprintf(filename, 80, "%s_%s%d-%s%d_%d.png", 
            ConPrms.experiment().c_str(), 
-           ref_station.c_str(), 
+           ConPrms.station(station).c_str(),
+           tmp1,
            ConPrms.station(station2).c_str(),
-           plot_nr);
-  plot_data.crosses.push_back(filename);
-  plot_data.snr_crosses.push_back(signal_to_noise_ratio(out));
-  plot_nr++;
+           tmp2,
+           plot_count);
+  DEBUG_MSG("plot_nr: " << plot_nr << " < " << plot_data.crosses.size());
+  assert(plot_nr < plot_data.crosses.size());
+  plot_data.crosses[plot_nr] = filename;
+  plot_data.snr_crosses[plot_nr] = signal_to_noise_ratio(out);
+  plot_count++;
 
   plot(filename, nLags, title);
 }
@@ -363,7 +388,9 @@ void print_html(const Control_parameters &ConPrms) {
 
     if (ref_station2 == "") {
       // First row
-      html_output << "<tr><td></td>"
+      html_output << "<tr><td>"
+                  << ConPrms.experiment()
+                  << "</td>"
                   << "<th colspan='" << nStations << "'>Auto correlation</th>";
       if (ref_station1 == "") {
         // Crosses
@@ -377,7 +404,7 @@ void print_html(const Control_parameters &ConPrms) {
                     << "\" name=\"plot_image\"></td>" << std::endl;
       }
       html_output << "</tr>";
-      
+
       // Second row
       html_output << "<tr><td></td>";
       for (int station = 0; station < nStations; station++) {
@@ -403,7 +430,7 @@ void print_html(const Control_parameters &ConPrms) {
     } else {
       // Two reference stations
       assert(ref_station1 != "");
-      nStations /= 2;
+      //      nStations /= 2;
       // First row
       html_output
         << "<tr><td></td>"
@@ -480,7 +507,7 @@ void print_html(const Control_parameters &ConPrms) {
                       << data.snr_crosses[col] << "</a></td>";
         }
       }
-    
+
       html_output << "</tr>\n";
 
 
@@ -499,25 +526,37 @@ int main(int argc, char *argv[])
   RANK_OF_NODE = 0;
 #endif
 
-  if (argc != 3){
-    std::cout << "usage: " << argv[0] << " <ctrl-file> <vex-file>" 
-              << std::endl;
-    exit(1);
-  }
-
 
   Control_parameters ConPrms;
   Log_writer_cout logg;
-	
+
   ConPrms.initialise(argv[1], argv[2], logg);
 
   assert(strncmp(ConPrms.get_output_file().c_str(), "file://", 7) == 0);
   std::ifstream infile(ConPrms.get_output_file().c_str()+7, 
                        std::ios::in | std::ios::binary);
   assert(infile.is_open());
+  
+  for (int channel=0; channel<ConPrms.channels_size();) {
+    DEBUG_MSG("Channel: " << channel);
+    // generate plots for the channel
+    Plot_generator(infile, ConPrms, channel);
 
-  for (int i=0; i<ConPrms.channels_size(); i++) {
-    Plot_generator(infile, ConPrms, i);
+    // find the next channel
+    if (ConPrms.cross_polarize()) {
+      channel ++;
+      int cross_channel = 
+        ConPrms.cross_polarisation(channel);
+      while ((channel <
+              ConPrms.number_frequency_channels()) &&
+             (cross_channel >= 0) && (cross_channel < channel)) {
+        channel ++;
+        cross_channel = 
+          ConPrms.cross_polarisation(channel);
+      }
+    } else {
+      channel++;
+    }
   }
 
   print_html(ConPrms);

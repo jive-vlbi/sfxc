@@ -70,8 +70,9 @@ Manager_node(int rank, int numtasks,
               << "Exiting now." << std::endl;
     exit(1);
   }
+  n_corr_nodes = numtasks-(n_stations+3);
   for (int correlator_nr = 0; 
-       correlator_nr < numtasks-(n_stations+3); 
+       correlator_nr < n_corr_nodes; 
        correlator_nr++) {
     int correlator_rank = correlator_nr + n_stations+3;
     assert(correlator_rank != RANK_MANAGER_NODE);
@@ -86,6 +87,16 @@ Manager_node(int rank, int numtasks,
               correlator_nr,
               correlator_rank, station_nr);
     }
+
+    if (control_parameters.cross_polarize()) {
+      // duplicate all stations:
+      for (int station_nr=0; station_nr<n_stations; station_nr++) {
+        set_TCP(input_rank(get_control_parameters().station(station_nr)), 
+                correlator_nr+n_corr_nodes,
+                correlator_rank, station_nr+n_stations);
+      }
+    }
+
 
     // Set up the connection to the output node:
     set_TCP(correlator_rank, 0,
@@ -112,7 +123,6 @@ void Manager_node::start() {
   
   status = START_NEW_SCAN;
 
-  size_t current_channel;
   while (status != END_NODE) {
     process_all_waiting_messages();
     switch (status) {
@@ -167,48 +177,8 @@ void Manager_node::start() {
              && (i<number_correlator_nodes());
              i++) {
           if (get_correlating_state(i) == READY) {
-            // Initialise the correlator nodes
-            get_log_writer() << "start " << start_time << ", channel " 
-                             << current_channel << " to correlation node " 
-                             << i << std::endl;
-
-            std::string channel_name =
-              control_parameters.frequency_channel(current_channel);
-            Correlation_parameters correlation_parameters = 
-              control_parameters.
-              get_correlation_parameters(*scans.begin(),
-                                         channel_name,
-                                         get_input_node_map());
-            correlation_parameters.start_time = start_time;
-            correlation_parameters.stop_time  = stoptime_timeslice;
-            correlation_parameters.slice_nr = slice_nr;
-            correlator_node_set(correlation_parameters, i);
-
-            // set the input streams
-            int nStations = control_parameters.number_stations();
-            for (size_t station_nr=0; 
-                 station_nr< nStations;
-                 station_nr++) {
-              input_node_set_time_slice(control_parameters.station(station_nr),
-                                        current_channel,
-                                        /*stream*/i,
-                                        start_time,
-                                        stoptime_timeslice);
-            }
-            
-            // set the output stream
-            //               autos       crosses
-            int nBaselines = nStations + nStations*(nStations-1)/2;
-            int size_of_one_baseline = sizeof(fftw_complex)*
-              (correlation_parameters.number_channels*PADDING/2+1);
-            output_node_set_timeslice(slice_nr, i, 
-                                      size_of_one_baseline*nBaselines);
-            
-            set_correlating_state(i, CORRELATING);
-
+            start_next_timeslice_on_node(i);
             added_correlator_node = true;
-            current_channel ++;
-            slice_nr++;
           }
         }
 
@@ -261,11 +231,112 @@ void Manager_node::start() {
   get_log_writer()(0) << "Terminating nodes" << std::endl;
 }
 
+void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
+  int cross_channel = -1;
+  if (control_parameters.cross_polarize()) {
+    cross_channel = control_parameters.cross_polarisation(current_channel);
+    assert((cross_channel == -1) || (cross_channel > current_channel));
+  }
+
+  // Initialise the correlator node
+  if (cross_channel == -1) {
+    get_log_writer() << "start " << start_time << ", channel " 
+                     << current_channel << " to correlation node " 
+                     << corr_node_nr << std::endl;
+  } else {
+    get_log_writer() << "start " << start_time << ", channel " 
+                     << current_channel << "," 
+                     << cross_channel << " to correlation node " 
+                     << corr_node_nr << std::endl;
+  }
+
+  std::string channel_name =
+    control_parameters.frequency_channel(current_channel);
+  Correlation_parameters correlation_parameters = 
+    control_parameters.
+    get_correlation_parameters(*scans.begin(),
+                               channel_name,
+                               get_input_node_map());
+  correlation_parameters.start_time = start_time;
+  correlation_parameters.stop_time  = stoptime_timeslice;
+  correlation_parameters.slice_nr = slice_nr;
+
+  // Check the cross polarisation
+  if (cross_channel != -1) {
+    int n_stations = control_parameters.number_stations();
+    int n_streams = correlation_parameters.station_streams.size();
+    assert(n_stations == n_streams);
+    // Add the cross polarisations
+    for (int i=0; i<n_stations; i++) {
+      Correlation_parameters::Station_parameters stream = 
+        correlation_parameters.station_streams[i];
+      stream.station_stream += n_stations;
+      correlation_parameters.station_streams.push_back(stream);
+    }
+  }
+
+  correlator_node_set(correlation_parameters, corr_node_nr);
+
+  // set the input streams
+  int nStations = control_parameters.number_stations();
+  for (size_t station_nr=0; 
+       station_nr< nStations;
+       station_nr++) {
+    input_node_set_time_slice(control_parameters.station(station_nr),
+                              current_channel,
+                              /*stream*/corr_node_nr,
+                              start_time,
+                              stoptime_timeslice);
+
+    if (cross_channel != -1) {
+      // Add the cross polarisation channel
+      input_node_set_time_slice(control_parameters.station(station_nr),
+                                cross_channel,
+                                /*stream*/corr_node_nr+n_corr_nodes,
+                                start_time,
+                                stoptime_timeslice);
+    }
+  }
+            
+  // set the output stream
+  //               autos       crosses
+  int nAutos = nStations;
+  int nCrosses = nStations*(nStations-1)/2;
+  int nBaselines;
+  if (cross_channel == -1) {
+    nBaselines = nAutos + nCrosses;
+  } else {
+    // Doing cross polarisations
+    nBaselines = 2*nAutos + 4*nCrosses;
+  }
+  int size_of_one_baseline = sizeof(fftw_complex)*
+    (correlation_parameters.number_channels*PADDING/2+1);
+  output_node_set_timeslice(slice_nr, corr_node_nr, 
+                            size_of_one_baseline*nBaselines);
+
+  set_correlating_state(corr_node_nr, CORRELATING);
+
+  current_channel ++;
+  if (control_parameters.cross_polarize()) {
+    // Go to the next channel.
+    int cross_channel = 
+      control_parameters.cross_polarisation(current_channel);
+    while ((current_channel <
+            control_parameters.number_frequency_channels()) &&
+           (cross_channel >= 0) && (cross_channel < current_channel)) {
+      current_channel ++;
+      cross_channel = 
+        control_parameters.cross_polarisation(current_channel);
+    }
+  }
+  slice_nr++;
+}
+
 void
 Manager_node::initialise() {
   get_log_writer()(0) << "Initialising the Input_nodes" << std::endl;
   for (size_t station=0; 
-  station<control_parameters.number_stations(); station++) {
+       station<control_parameters.number_stations(); station++) {
     // setting the first data-source of the first station
     const std::string &station_name = control_parameters.station(station);
     std::string filename = control_parameters.data_sources(station_name)[0];

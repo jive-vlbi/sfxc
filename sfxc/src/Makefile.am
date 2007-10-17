@@ -2,7 +2,7 @@ SUBDIRS = multicore
 
 AM_CPPFLAGS = -I../include
 
-bin_PROGRAMS = sfxc
+bin_PROGRAMS = sfxc test
 
 TESTS           = \
 	test_sfxc.py
@@ -36,3 +36,4 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   Single_data_writer_controller.cc \
   Single_data_reader_controller.cc
 
+test_SOURCES = test.cc Control_parameters.cc Log_writer_cout.cc Log_writer.cc

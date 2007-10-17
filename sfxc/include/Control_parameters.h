@@ -79,6 +79,9 @@ public:
   int64_t channel_freq;     // Center frequency of the band in Hz
   int32_t bandwidth;        // Bandwidth of the channel in Hz
   char    sideband;         // U or L
+  
+  bool    cross_polarize;   // do the cross polarisations
+  int32_t reference_station;// use a reference station
 
   Station_list station_streams; // input streams used
 };
@@ -141,6 +144,9 @@ public:
   // Return the Frequency channels from the VEX file, filtered by the ctrl file
   size_t number_frequency_channels() const;
   std::string frequency_channel(size_t channel_nr) const;
+
+  bool cross_polarize() const;
+  int cross_polarisation(int channel_nr) const;
 
   char polarisation(const std::string &if_node, 
                     const std::string &if_ref) const;

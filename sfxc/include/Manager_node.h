@@ -55,6 +55,8 @@ public:
 
   void start();
 
+  void start_next_timeslice_on_node(int corr_node_nr);
+
   /// Initialise is called from start() to initialise the correlation process. 
   void initialise();
 
@@ -89,6 +91,11 @@ private:
 
   // A list of all scan names.
   std::list<std::string> scans;
+
+  /// the current channel to correlate by a free correlator node
+  size_t current_channel;
+
+  int n_corr_nodes;
 };
 
 #endif // CONTROLLER_NODE_H
