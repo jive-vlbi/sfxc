@@ -247,7 +247,6 @@ Plot_generator::generate_auto_plots(std::ifstream &infile,
     char title[80], filename[80];
 
     snprintf(title, 80, "Auto %s", ConPrms.station(station).c_str());
-    DEBUG_MSG(ConPrms.station(station).c_str());
     snprintf(filename, 80, "%s_%s_%d.png", 
              ConPrms.experiment().c_str(), 
              ConPrms.station(station).c_str(), 
@@ -295,7 +294,6 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
            ConPrms.station(station2).c_str(),
            tmp2,
            plot_count);
-  DEBUG_MSG("plot_nr: " << plot_nr << " < " << plot_data.crosses.size());
   assert(plot_nr < plot_data.crosses.size());
   plot_data.crosses[plot_nr] = filename;
   plot_data.snr_crosses[plot_nr] = signal_to_noise_ratio(out);
@@ -538,7 +536,6 @@ int main(int argc, char *argv[])
   assert(infile.is_open());
   
   for (int channel=0; channel<ConPrms.channels_size();) {
-    DEBUG_MSG("Channel: " << channel);
     // generate plots for the channel
     Plot_generator(infile, ConPrms, channel);
 
