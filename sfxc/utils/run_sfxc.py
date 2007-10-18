@@ -64,8 +64,6 @@ if (status != 0):
   print "sfxc: returned error."
   sys.exit(1);
 
-sys.exit(0);
-
 # run the html generator
 status = os.system("produce_html_plotpage "+ctrl_file+" "+vex_file)
 if (status != 0):

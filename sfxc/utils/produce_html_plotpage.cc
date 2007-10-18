@@ -136,6 +136,11 @@ Plot_generator::Plot_generator(std::ifstream &infile,
                        ConPrms.station(0))+"SB, "+
       ConPrms.polarisation(ConPrms.channel(cross_channel),
                            ConPrms.station(0)) + "cp ";
+
+    plot_data[0].job_name += ", parallel";
+    plot_data[1].job_name += "<div align=right>cross</div>";
+    plot_data[2].job_name += ", parallel";
+    plot_data[3].job_name += "<div align=right>cross</div>";
   }
   
   // Cross correlations
@@ -524,6 +529,11 @@ int main(int argc, char *argv[])
   RANK_OF_NODE = 0;
 #endif
 
+  if (argc != 3) {
+    std::cout << "usage: " << argv[0] << " <ctrl-file> <vex-file>" 
+              << std::endl;
+    exit(1);
+  }
 
   Control_parameters ConPrms;
   Log_writer_cout logg;
