@@ -26,18 +26,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-class Input_node;
-
-/// Controller for input node specific commands
-class Input_node_controller : public Controller {
-public:
-  Input_node_controller(Input_node &node);
-  
-  Process_event_status process_event(MPI_Status &status);
-  
-private:
-  Input_node &node;
-};
+#include "tasklet/tasklet_manager.h"
 
 /**
  * The input node opens a controller for reading data and one for
@@ -50,72 +39,51 @@ private:
  * \ingroup Node
  **/
 class Input_node : public Node {
-  typedef Input_node                       Self;
+  typedef Input_node                                    Self;
   
   typedef Single_data_reader_controller::value_type     value_type;
   typedef Semaphore_buffer<value_type>                  Buffer;
 
-  // assume at most 8 tracks:
   typedef Time_slicer< Buffer_element_large<char, SIZE_MK4_FRAME> >    Slicer;
 public:
   Input_node(int rank, int station_number, Log_writer *log_writer);
   Input_node(int rank, int station_number);
   ~Input_node();
   
+  
   /** Generic constructor function, that is called in the body of
       every constructor.
   **/
   void initialise();
 
-  /** Sets the track parameters **/
-  void set_track_parameters(const Track_parameters &track_param);
-
-  
-  /// Start the state machine
-  void start();
-
-  /// Status of the state machine
-  enum Status {
-    WAITING=0,    ///< The input node is waiting
-    INITIALISING, ///< Waiting for all channels to get connected
-    WRITING,      ///< Writing the output of the current channel
-    END_NODE      ///< Terminate the node
-  };
-  
-  /// Get the current time stamp  
-  int64_t get_time_stamp();
-  
-  void set_stop_time(int64_t stop_time);
-
-  void goto_time(int64_t new_time);
-
-  void add_time_slice(int channel, int stream, int starttime, int stoptime);
-
-  int get_status();
-  
-  // Callback functions:
-  void hook_added_data_reader(size_t reader);
-  void hook_added_data_writer(size_t writer);
+  void hook_added_data_reader(size_t reader) {}
+  /** Callback function after adding a data_reader to the input streams.
+   * Reader = 0 for a Single_data_reader_controller
+   **/
+  void hook_added_data_writer(size_t writer) {}
 
 private:
+  TaskletManager tasklet_manager;
 
-  /// Controller for the input node (messages specific for the input node).
-  Input_node_controller                        input_node_ctrl;
-  /// An Input_node has one data stream coming in.
-  Single_data_reader_controller                data_reader_ctrl;
-  /// An Input_node has several data streams for output.
-  Multiple_data_writers_controller             data_writers_ctrl;
-
-  /// The channel extractor
-  boost::shared_ptr<Channel_extractor_mark4> channel_extractor;
-  /// A list of time slicers, one per channel
-  std::vector< Slicer >                      time_slicers;
   
-  Status status;
 
-  int32_t start_time;
+//   /// Controller for the input node (messages specific for the input node).
+//   Input_node_controller                        input_node_ctrl;
+//   /// An Input_node has one data stream coming in.
+//   Single_data_reader_controller                data_reader_ctrl;
+//   /// An Input_node has several data streams for output.
+//   Multiple_data_writers_controller             data_writers_ctrl;
+
+//   /// The channel extractor
+//   boost::shared_ptr<Channel_extractor_mark4> channel_extractor;
+//   /// A list of time slicers, one per channel
+//   std::vector< Slicer >                      time_slicers;
   
-  int64_t stop_time;
+//   Status status;
+
+//   int32_t start_time;
+  
+//   int64_t stop_time;
 };
 
 #endif // INPUT_NODE_H

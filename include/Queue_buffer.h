@@ -10,11 +10,13 @@
 #ifndef QUEUE_BUFFER_H
 #define QUEUE_BUFFER_H
 
-#include <Buffer.h>
 #include <semaphore.h>
 #include <assert.h>
 #include <iostream>
 #include <queue>
+
+#include "Buffer.h"
+#include "tasklet/mutex.h"
 
 template <class T>
 class Queue_buffer : public Buffer<T> {
@@ -36,8 +38,8 @@ public:
   bool full() { return false; }
 
 private:
-  // One semaphores to avoid reading from an empty queue:
-  sem_t empty_sem;
+  Condition empty_cond;
+  
   
   // Override the buffer and status from base:
   std::queue<T *> buffer;
@@ -55,10 +57,6 @@ Queue_buffer<T>::
 Queue_buffer() 
   : Base(1)
 {
-  if ( sem_init(&empty_sem, 1, 0) == -1 ) {
-    std::cout << "Failed to initialise the \"empty_sem\" semaphore" << std::endl;
-    exit(1);
-  }
 }
 
 template <class T>
@@ -68,6 +66,7 @@ Queue_buffer<T>::~Queue_buffer() {
 template <class T>
 T &
 Queue_buffer<T>::produce() {
+  RAIIMutex block_mutex(empty_cond);
   buffer.push(new T());
   return *buffer.back();
 }
@@ -75,21 +74,30 @@ Queue_buffer<T>::produce() {
 template <class T>
 void
 Queue_buffer<T>::produced(int nelem) {
+  RAIIMutex block_mutex(empty_cond);
+
   status.push(nelem);
-  sem_post(&empty_sem);
+  empty_cond.signal();
+
+  // destructor of block_mutex releases the mutex
 }
   
 template <class T>
 T &
 Queue_buffer<T>::consume(int &nelem) {
-  sem_wait(&empty_sem);
+  RAIIMutex block_mutex(empty_cond);
+  if (buffer.empty()) empty_cond.wait();
+
   nelem = status.front();
   return *buffer.front();
+
+  // destructor of block_mutex releases the mutex
 }
 
 template <class T>
 void
 Queue_buffer<T>::consumed() {
+  RAIIMutex block_mutex(empty_cond);
   status.pop();
   delete buffer.front();
   buffer.pop();
@@ -98,9 +106,8 @@ Queue_buffer<T>::consumed() {
 template <class T>
 bool
 Queue_buffer<T>::empty() {
-  int val;
-  sem_getvalue(&empty_sem, &val);
-  return (val == 0);
+  RAIIMutex block_mutex(empty_cond);
+  return buffer.empty();
 }
 
 #endif // QUEUE_BUFFER_H

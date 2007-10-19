@@ -2,7 +2,7 @@ SUBDIRS = multicore
 
 AM_CPPFLAGS = -I../include
 
-bin_PROGRAMS = sfxc test
+bin_PROGRAMS = sfxc test_input_node_tasklet
 
 TESTS           = \
 	test_sfxc.py
@@ -36,4 +36,26 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   Single_data_writer_controller.cc \
   Single_data_reader_controller.cc
 
-test_SOURCES = test.cc Control_parameters.cc Log_writer_cout.cc Log_writer.cc
+test_input_node_tasklet_SOURCES=\
+  Node.cc \
+  test_input_node_tasklet.cc \
+  Log_writer_cout.cc \
+  Log_writer_mpi.cc \
+  Log_writer.cc \
+  Log_writer_void.cc \
+  Input_node.cc \
+  tasklet/tasklet_manager.cc \
+  tasklet/tasklet_pool.cc \
+  tasklet/tasklet_worker.cc \
+  tasklet/tasklet.cc \
+  tasklet/thread.cc \
+  tasklet/mutex.cc \
+  input_reader.cc \
+  output_writer.cc \
+  component.cc \
+  Data_reader_file.cc \
+  Data_reader.cc \
+  Data_writer_file.cc \
+  Data_writer.cc \
+  utils.cc
+
