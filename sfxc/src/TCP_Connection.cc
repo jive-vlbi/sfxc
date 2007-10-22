@@ -38,11 +38,11 @@ TCP_Connection::open_port(unsigned short int port) {
   // Create socket for listening for client connection requests.
 
   listenSocket = socket(AF_INET, SOCK_STREAM, 0);
-  DEBUG_MSG("listenSocket=" << listenSocket);
   if (listenSocket < 0) {
-    std::cout << "cannot create listen socket on port " << port << std::endl;
-    std::cout << "error message: " << strerror(errno) << std::endl;
-    sleep(1);
+    if (verbose) {
+      std::cout << "cannot create listen socket on port " << port << std::endl;
+      std::cout << "error message: " << strerror(errno) << std::endl;
+    }
     return -1;
   }
   
@@ -59,8 +59,11 @@ TCP_Connection::open_port(unsigned short int port) {
   if (bind(listenSocket,
            (struct sockaddr *) &serverAddress,
            sizeof(serverAddress)) < 0) {
-    if (verbose) 
+    if (verbose) {
       std::cout << "cannot bind socket to port " << port << std::endl;
+      std::cout << "error message: " << strerror(errno) << std::endl;
+    }
+    close(listenSocket);
     return -1;
   }
   

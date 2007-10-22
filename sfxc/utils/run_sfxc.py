@@ -65,7 +65,9 @@ if (status != 0):
   sys.exit(1);
 
 # run the html generator
-status = os.system("produce_html_plotpage "+ctrl_file+" "+vex_file)
+cmd = "produce_html_plotpage "+ctrl_file+" "+vex_file
+print cmd
+status = os.system(cmd)
 if (status != 0):
   print "produce_html_plotpage: returned error."
   sys.exit(1);
