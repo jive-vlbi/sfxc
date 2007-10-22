@@ -36,7 +36,8 @@ TCP_Connection::open_port(unsigned short int port) {
 
   listenSocket = socket(AF_INET, SOCK_STREAM, 0);
   if (listenSocket < 0) {
-    std::cout << "cannot create listen socket" << std::endl;
+    std::cout << "cannot create listen socket on port " << port << std::endl;
+    sleep(1);
     return -1;
   }
   
