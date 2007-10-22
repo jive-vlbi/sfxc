@@ -17,6 +17,9 @@
 #include <iostream>
 
 #include <ifaddrs.h>
+#include <errno.h>
+
+#include "utils.h"
 
 
 TCP_Connection::TCP_Connection(bool verbose) : verbose(verbose)
@@ -35,8 +38,10 @@ TCP_Connection::open_port(unsigned short int port) {
   // Create socket for listening for client connection requests.
 
   listenSocket = socket(AF_INET, SOCK_STREAM, 0);
+  DEBUG_MSG("listenSocket=" << listenSocket);
   if (listenSocket < 0) {
     std::cout << "cannot create listen socket on port " << port << std::endl;
+    std::cout << "error message: " << strerror(errno) << std::endl;
     sleep(1);
     return -1;
   }
