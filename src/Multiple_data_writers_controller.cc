@@ -55,7 +55,9 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       MPI_Recv(ranks, 3, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
+      DEBUG_MSG("HERE?");
       Data_writer_tcp *data_writer = new Data_writer_tcp(1233); 
+      DEBUG_MSG("HERE?");
 
       TCP_Connection tcp_connection;
       std::vector<uint64_t>  ip_addresses;

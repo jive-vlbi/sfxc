@@ -52,9 +52,7 @@ void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
   if (corr_param.sideband == 'U') {
     sideband    = 1;
   } else {
-    if (corr_param.sideband != 'L') {
-      assert(corr_param.sideband == 'L');
-    }
+    assert(corr_param.sideband == 'L');
     sideband    = -1;
   }
 
@@ -249,7 +247,7 @@ bool DelayCorrection::delay_correct() {
       Cdel_end = delTbl[stations].delay(Time);
 
       // 1)calculate the address shift due to time delay for the current segment
-      jshift = (int)(Cdel_start/tbs+0.5);
+      jshift = (int)floor(Cdel_start/tbs+.5);
 
       int32_t offset = 2*BufSize + jshift + jsegm*n2fftDC;
       assert(offset >= 0);
@@ -350,12 +348,12 @@ bool DelayCorrection::fractional_bit_shift(double const delay,
 }
 
 bool DelayCorrection::fringe_stopping(int station, int jsegm) {
+  double mult_factor_phi = -sideband*2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5);
   int64_t time = timePtr + (int64_t)(jsegm*n2fftDC*tbs*1000000);
   int64_t delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
   assert(delta_time > 0);
   double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
-  double phi_end = -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-    delTbl[station].delay(time);
+  double phi_end = mult_factor_phi * delTbl[station].delay(time);
   double cosPhi_end = cos(phi_end);
   double sinPhi_end = sin(phi_end);
 
@@ -366,8 +364,7 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
       sinPhi = sinPhi_end;
 
       phi_end = 
-        -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-        delTbl[station].delay(time+delta_time);
+        mult_factor_phi * delTbl[station].delay(time+delta_time);
 
       if (std::abs(phi_end-phi) < 0.4*maximal_phase_change) {
         // Sampling is too dense
@@ -375,8 +372,7 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
         delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
 
         phi_end = 
-          -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-          delTbl[station].delay(time+delta_time);
+          mult_factor_phi * delTbl[station].delay(time+delta_time);
       }
 
       while (std::abs(phi_end-phi) > maximal_phase_change) {
@@ -387,9 +383,7 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
         }
         delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
 
-        phi_end = 
-          -2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5)*
-          delTbl[station].delay(time+delta_time);
+        phi_end =  mult_factor_phi * delTbl[station].delay(time+delta_time);
 
       } 
       time += delta_time;

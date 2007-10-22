@@ -562,6 +562,7 @@ get_delay_table_name(const std::string &station_name) const {
     "generate_delay_model "+vex_filename+
     " "+station_name+
     " "+delay_table_name;
+  DEBUG_MSG(cmd);
   int result = system(cmd.c_str());
   if (result != 0) {
     assert(false);
