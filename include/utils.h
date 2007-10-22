@@ -32,11 +32,20 @@
 const int   BufTime       =   16384; //delta time for Bufs in micro seconds
 
 
+#define RED(str) "[\033[31m"+str+"\033[30m]"
+#define GREEN(str) "[\033[32m"+str+"\033[30m]"
+#define YELLOW(str) "[\033[33m"+str+"\033[30m]"
+#define CYAN(str) "[\033[36m"+str+"\033[30m]"
+
 #ifdef SFXC_PRINT_DEBUG
 extern int RANK_OF_NODE; // Rank of the current node
+//#define FORMAT_MSG(msg) \
+//    "\033[32m#" << RANK_OF_NODE << " " \
+//    << __PRETTY_FUNCTION__ << "," << __LINE__ << "\033[30m: " \
+//    << msg
 #define FORMAT_MSG(msg) \
-    "#" << RANK_OF_NODE << " " \
-    << __FILE__ << "," << __LINE__ << ": " \
+    "\033[32m#" << RANK_OF_NODE << " " \
+    << __FILE__ << ", " << __LINE__ << "\033[30m: " \
     << msg
 #define DEBUG_MSG(msg) \
     { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \

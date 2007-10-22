@@ -2,6 +2,7 @@
 #define BASIC_H
 
 #include <string>
+#include <vector>
 #include <assert.h>
 
 std::string generate_ccf_filename(const std::string &path,
