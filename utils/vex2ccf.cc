@@ -163,11 +163,31 @@ Json::Value get_channels(const Vex &vex){
 
 
 int main(int argc, char *argv[]) {
-  assert(argc == 3);
+  char *vex_file = NULL, *ctrl_file = NULL;
+  bool full=false;
+  int vex_count, ctrl_count;
+  
+  for (int i=1; i<argc; i++) {
+    if (strcmp(argv[i],"--full") == 0) {
+      full = true;
+    } else if (strcmp(argv[i],"-f") == 0) {
+      full = true;
+    } else {
+      if (vex_file == NULL) {
+        vex_file = argv[i];
+	vex_count = i;
+      } else {
+        assert(ctrl_file == NULL);
+        ctrl_file = argv[i];
+	ctrl_count = i;
+      }
+    }
+  }
+  assert(ctrl_file != NULL);
 
-	std::ofstream outfile(argv[2], std::ios::out);
+  std::ofstream outfile(argv[ctrl_count], std::ios::out);
 
-  Vex vex(argv[1]);
+  Vex vex(argv[vex_count]);
   
   Json::Value json_output;
   json_output["exper_name"] = 
@@ -178,19 +198,24 @@ int main(int argc, char *argv[]) {
        it != vex.get_root_node()["STATION"]->end(); ++it) {
     json_output["stations"].append(it.key());
     json_output["data_sources"][it.key()] = Json::Value(Json::arrayValue);
-    json_output["site_position"][it.key()] = site_position(vex.get_root_node(), it.key());
+    if(full == true){
+      json_output["site_position"][it.key()] = site_position(vex.get_root_node(), it.key());
+    }
   }
 
-	json_output["channels"] =  get_channels(vex);
+  json_output["channels"] =  get_channels(vex);
   json_output["reference_station"] = "";
   json_output["cross_polarize"]    = false;
   json_output["number_channels"]   = 1024;
   json_output["integr_time"]       = 1;
   json_output["message_level"]     = 0;
-  json_output["delay_directory"]   = "";
+  if(full == true){
+   json_output["delay_directory"]   = "";
+  }
   json_output["output_file"]       = "";
-  json_output["subbands"]          = get_frequencies(vex);
-
+  if(full == true){
+    json_output["subbands"]          = get_frequencies(vex);
+  }
   outfile << json_output << std::endl;
   return 0;
 } 
