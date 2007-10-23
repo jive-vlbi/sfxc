@@ -20,6 +20,8 @@
 #include <iostream>
 #include <assert.h>
 
+#include "utils.h"
+
 int main(int argc, char *argv[]) {
   // MPI
   int numtasks, rank;
@@ -39,19 +41,16 @@ int main(int argc, char *argv[]) {
 
   assert(numtasks==2);
 
-  TCP_Connection connection;  
+  TCP_Connection connection(true);
   if (rank==0) {
     char out_buff[100], in_buff[100];
 
     int port = 1233;
-    int listenSocket=0;
-    while (listenSocket <= 0) {
-      listenSocket = connection.open_port(port);
+    while (!connection.open_port(port, MAX_TCP_CONNECTIONS)) {
       port ++;
     }
-    std::cout << "listenSocket: " << listenSocket << " " << port << std::endl;
-    assert(listenSocket > 0);
-    int connectSocket = connection.open_connection(listenSocket);
+    std::cout << "using port: " << port << std::endl;
+    int connectSocket = connection.open_connection();
 
     assert(connectSocket > 0);
 
@@ -64,7 +63,7 @@ int main(int argc, char *argv[]) {
     }
     shutdown(connectSocket, 2);
     
-    connectSocket = connection.open_connection(listenSocket);
+    connectSocket = connection.open_connection();
 
     assert(connectSocket > 0);
 

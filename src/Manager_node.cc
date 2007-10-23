@@ -30,7 +30,7 @@ Manager_node(int rank, int numtasks,
 
   add_controller(&manager_controller);
 
-  get_log_writer()(0) << "Starting nodes" << std::endl;
+  get_log_writer()(1) << "Starting nodes" << std::endl;
 
   // initialise the log node
   //start_log_node(RANK_LOG_NODE, "file://./output.txt");
@@ -63,7 +63,7 @@ Manager_node(int rank, int numtasks,
               << n_stations+3+control_parameters.number_frequency_channels()
               << " nodes." << std::endl
               << "Exiting now." << std::endl;
-    get_log_writer()(0)
+    get_log_writer()(1)
               << "#correlator nodes < #freq. channels, use at least "
               << n_stations+3+control_parameters.number_frequency_channels()
               << " nodes." << std::endl
@@ -117,7 +117,7 @@ Manager_node::~Manager_node() {
 }
 
 void Manager_node::start() {
-  get_log_writer()(0) << "Manager_node::start()" << std::endl;
+  get_log_writer()(1) << "Manager_node::start()" << std::endl;
 
   initialise();
   
@@ -228,7 +228,7 @@ void Manager_node::start() {
     }
   }
 
-  get_log_writer()(0) << "Terminating nodes" << std::endl;
+  get_log_writer()(1) << "Terminating nodes" << std::endl;
 }
 
 void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
@@ -334,7 +334,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
 
 void
 Manager_node::initialise() {
-  get_log_writer()(0) << "Initialising the Input_nodes" << std::endl;
+  get_log_writer()(1) << "Initialising the Input_nodes" << std::endl;
   for (size_t station=0; 
        station<control_parameters.number_stations(); station++) {
     // setting the first data-source of the first station
@@ -405,7 +405,7 @@ Manager_node::initialise() {
   
   slice_nr  = 0;
 
-  get_log_writer()(0) << "Initialisation finished" << std::endl;
+  get_log_writer()(1) << "Initialisation finished" << std::endl;
 
   get_log_writer()(2) << "start scan : " << *scans.begin() << std::endl;
 

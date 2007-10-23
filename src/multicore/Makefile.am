@@ -20,11 +20,11 @@ OBJ= \
   ../Data_writer.cc ../Data_writer_file.cc ../Data_writer_tcp.cc \
   ../Data_writer_buffer.cc \
   ../Log_writer.cc ../Log_writer_mpi.cc \
-  ../utils.cc \
   ../MPI_Transfer.cc ../Delay_table_akima.cc ../TCP_Connection.cc \
   ../Bits_to_float_converter.cc ../Channel_extractor_mark4.cc \
   ../Data_writer_void.cc \
-  ../Control_parameters.cc
+  ../Control_parameters.cc \
+  ../utils.cc
 
 manager_node_SOURCES = $(OBJ) manager.cc \
   ../Manager_node.cc ../Manager_node_controller.cc

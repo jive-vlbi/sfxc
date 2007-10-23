@@ -11,24 +11,22 @@
 #define DATA_WRITER_TCP_H
 
 #include <Data_writer.h>
+#include <TCP_Connection.h>
 
 #include <vector>
 
 class Data_writer_tcp : public Data_writer {
 public:
-  Data_writer_tcp(int port = 2630);
-  void open_connection();
+  Data_writer_tcp();
+  void open_connection(TCP_Connection &tcp_connection);
 
   ~Data_writer_tcp();
   
-  unsigned int get_port();  
-
   void flush();
 private:
   size_t do_put_bytes(size_t nBytes, char *buff);
 
-  int connection_socket, socket;
-  int port;
+  int socket;
 };
 
 #endif // DATA_WRITER_TCP_H
