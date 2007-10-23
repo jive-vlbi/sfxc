@@ -118,7 +118,8 @@ test_Log_writer_mpi_SOURCES = \
 
 test_TCP_connection_SOURCES = \
   test_TCP_connection.cc \
-  ../src/TCP_Connection.cc
+  ../src/TCP_Connection.cc \
+  ../src/utils.cc
 
 test_Control_parameters_SOURCES = \
   test_Control_parameters.cc \

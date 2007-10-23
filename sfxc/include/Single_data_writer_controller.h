@@ -15,6 +15,8 @@
 #include <Data_writer.h>
 #include <Semaphore_buffer.h>
 #include <Buffer2data_writer.h>
+#include "TCP_Connection.h"
+
 
 class Single_data_writer_controller : public Controller {
   typedef Single_data_writer_controller  Self;
@@ -34,6 +36,8 @@ private:
   void set_data_writer(int streamnr, boost::shared_ptr<Data_writer> writer);
 
   Buffer2data_writer<value_type>                 buffer2writer;
+  
+  TCP_Connection tcp_connection;
 };
 
 #endif /* SINGLE_DATA_WRITER_CONTROLLER_H */

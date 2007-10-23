@@ -18,13 +18,14 @@
 class TCP_Connection
 {
 public:
-	TCP_Connection(bool verbose = false);
-	virtual ~TCP_Connection();
+  TCP_Connection(bool verbose = false);
+  virtual ~TCP_Connection();
   
-  /// Open a port on the server size
-  int open_port(unsigned short int port);
+  /// Open a port on the server side
+  bool open_port(unsigned short int port,
+                 int connections);
   /// Open a connection on the server size
-  unsigned int open_connection(int socket);
+  unsigned int open_connection();
   
   /// Client side connect
   int do_connect(uint64_t, unsigned short int port);
@@ -45,8 +46,12 @@ public:
             (int)ip&255, (int)(ip>>8)&255, (int)(ip>>16)&255, (int)ip>>24);
     return std::string(addr);
   }
+  
+  int get_port();
 private:
   bool verbose;
+  int connection_socket;
+  int port_nr;
 };
 
 #endif /*TCP_CONNECTION_H_*/

@@ -8,6 +8,7 @@
  */
 
 #include <Input_node.h>
+#include "utils.h"
 
 #include <types.h>
 #include <Semaphore_buffer.h>
@@ -20,13 +21,13 @@
 #include <time.h>
 #include <math.h>
 
-#include <MPI_Transfer.h>
+#include "MPI_Transfer.h"
 
 Input_node::Input_node(int rank, int station_number, Log_writer *log_writer) 
   : Node(rank, log_writer), 
     input_node_ctrl(*this),
     data_reader_ctrl(*this),
-    data_writers_ctrl(*this),
+    data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
     status(WAITING),
     stop_time(-1)
 {
@@ -36,14 +37,14 @@ Input_node::Input_node(int rank, int station_number)
   : Node(rank), 
     input_node_ctrl(*this),
     data_reader_ctrl(*this),
-    data_writers_ctrl(*this),
+    data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
     status(WAITING),
     stop_time(-1)
 {
   initialise();
 }
 void Input_node::initialise()  {
-  get_log_writer() << "Input_node()" << std::endl;
+  get_log_writer()(1) << "Input_node()" << std::endl;
   add_controller(&input_node_ctrl);
   add_controller(&data_reader_ctrl);
   add_controller(&data_writers_ctrl);
@@ -86,12 +87,7 @@ int64_t Input_node::get_time_stamp() {
 }
 
 void Input_node::start() {
-  static int prev_status = -1;
   while (status != END_NODE) {
-    if (status != prev_status) {
-      DEBUG_MSG("Input_node::status: " << status);
-      prev_status = status;
-    }
     switch (status) {
     case WAITING:
       { // Wait until we can start sending new data

@@ -18,6 +18,10 @@
 Single_data_writer_controller::
 Single_data_writer_controller(Node &node) 
   : Controller(node) {
+  int port = SFXC_PORT;
+  while (!tcp_connection.open_port(port, /*max_connections*/1)) {
+    port++;
+  }
 }
 
 Single_data_writer_controller::
@@ -76,46 +80,96 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
   case MPI_TAG_ADD_TCP: 
     {
       get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
-      
+
       MPI_Status status2;
 
-      /* - int32_t: stream number for the data writer
-       * - int32_t: stream number for the data reader
-       * - int32_t: rank of the data_reader
+      /* - int32_t: stream number for the data writer                                                                                                               
+       * - int32_t: stream number for the data reader                                                                                                               
+       * - int32_t: rank of the data_reader                                                                                                                         
        */
-      int32_t ranks[3]; 
+      int32_t ranks[3];
       MPI_Recv(ranks, 3, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      Data_writer_tcp *data_writer = new Data_writer_tcp(1233); 
+      Data_writer_tcp *data_writer = new Data_writer_tcp();
 
-      TCP_Connection tcp_connection;
+      if (tcp_connection.get_port() < 0) {
+        tcp_connection.open_port(SFXC_PORT, MAX_TCP_CONNECTIONS);
+      }
+      assert(tcp_connection.get_port() > 0);
+
       std::vector<uint64_t>  ip_addresses;
-      // Add number of the data stream:
+      // Add number of the data stream:                                                                                                                             
       ip_addresses.push_back(ranks[2]);
-      // Add the ip addresses
+      // Add the ip addresses                                                                                                                                       
       tcp_connection.get_ip_addresses(ip_addresses);
 
-      // Add port
-      ip_addresses.push_back(data_writer->get_port());
-      
-      MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_INT64, 
+      // Add port                                                                                                                                                   
+      ip_addresses.push_back(tcp_connection.get_port());
+
+      MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_INT64,
                ranks[1], MPI_TAG_ADD_DATA_READER_TCP2, MPI_COMM_WORLD);
 
-      data_writer->open_connection();
+      data_writer->open_connection(tcp_connection);
 
       boost::shared_ptr<Data_writer> writer(data_writer);
-      set_data_writer(ranks[0], writer);
+      set_data_writer(ranks[0], writer);      
+      //add_data_writer(ranks[0], writer, ranks[2], ranks[1]);
 
       int32_t return_msg = 0;
       MPI_Recv(&return_msg, 1, MPI_INT32, ranks[1],
                MPI_TAG_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status2);
 
-      MPI_Send(&ranks[0], 1, MPI_INT32, 
-               status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED, 
+      MPI_Send(&ranks[0], 1, MPI_INT32,
+               status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
                MPI_COMM_WORLD);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
+//       get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      
+//       MPI_Status status2;
+
+//       /* - int32_t: stream number for the data writer
+//        * - int32_t: stream number for the data reader
+//        * - int32_t: rank of the data_reader
+//        */
+//       int32_t ranks[3]; 
+//       MPI_Recv(ranks, 3, MPI_INT32, status.MPI_SOURCE,
+//                status.MPI_TAG, MPI_COMM_WORLD, &status2);
+
+//       Data_writer_tcp *data_writer = new Data_writer_tcp();
+      
+//       if (tcp_connection.get_port() < 0) {
+//         tcp_connection.open_port(SFXC_PORT, MAX_TCP_CONNECTIONS);
+//       }
+//       assert(tcp_connection.get_port() > 0);
+
+//       std::vector<uint64_t>  ip_addresses;
+//       // Add number of the data stream:
+//       ip_addresses.push_back(ranks[2]);
+//       // Add the ip addresses
+//       tcp_connection.get_ip_addresses(ip_addresses);
+
+//       // Add port
+//       ip_addresses.push_back(tcp_connection.get_port());
+      
+//       MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_INT64, 
+//                ranks[1], MPI_TAG_ADD_DATA_READER_TCP2, MPI_COMM_WORLD);
+
+//       data_writer->open_connection(tcp_connection);
+
+//       boost::shared_ptr<Data_writer> writer(data_writer);
+//       set_data_writer(ranks[0], writer);
+
+//       int32_t return_msg = 0;
+//       MPI_Recv(&return_msg, 1, MPI_INT32, ranks[1],
+//                MPI_TAG_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status2);
+
+//       MPI_Send(&ranks[0], 1, MPI_INT32, 
+//                status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED, 
+//                MPI_COMM_WORLD);
+
+//       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   }
   return PROCESS_EVENT_STATUS_UNKNOWN;
