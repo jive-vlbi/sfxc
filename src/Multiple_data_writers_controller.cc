@@ -17,8 +17,12 @@
 #include <Semaphore_buffer.h>
 
 Multiple_data_writers_controller::
-Multiple_data_writers_controller(Node &node) 
+Multiple_data_writers_controller(Node &node, int max_connections) 
   : Controller(node) {
+  int port = SFXC_PORT;
+  while (!tcp_connection.open_port(port, max_connections)) {
+    port++;
+  }
 }
 
 Multiple_data_writers_controller::
@@ -55,11 +59,13 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       MPI_Recv(ranks, 3, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      DEBUG_MSG("HERE?");
-      Data_writer_tcp *data_writer = new Data_writer_tcp(1233); 
-      DEBUG_MSG("HERE?");
+      Data_writer_tcp *data_writer = new Data_writer_tcp();
+      
+      if (tcp_connection.get_port() < 0) {
+        tcp_connection.open_port(SFXC_PORT, MAX_TCP_CONNECTIONS);
+      }
+      assert(tcp_connection.get_port() > 0);
 
-      TCP_Connection tcp_connection;
       std::vector<uint64_t>  ip_addresses;
       // Add number of the data stream:
       ip_addresses.push_back(ranks[2]);
@@ -67,12 +73,12 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       tcp_connection.get_ip_addresses(ip_addresses);
 
       // Add port
-      ip_addresses.push_back(data_writer->get_port());
+      ip_addresses.push_back(tcp_connection.get_port());
       
       MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_INT64, 
                ranks[1], MPI_TAG_ADD_DATA_READER_TCP2, MPI_COMM_WORLD);
 
-      data_writer->open_connection();
+      data_writer->open_connection(tcp_connection);
 
       boost::shared_ptr<Data_writer> writer(data_writer);
       add_data_writer(ranks[0], writer, ranks[2], ranks[1]);

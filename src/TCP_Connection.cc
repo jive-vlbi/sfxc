@@ -21,8 +21,8 @@
 
 #include "utils.h"
 
-
-TCP_Connection::TCP_Connection(bool verbose) : verbose(verbose)
+TCP_Connection::TCP_Connection(bool verbose)
+: verbose(verbose), connection_socket(-1), port_nr(-1)
 {
 }
 
@@ -30,20 +30,22 @@ TCP_Connection::~TCP_Connection()
 {
 }
 
-int 
-TCP_Connection::open_port(unsigned short int port) {
-  int listenSocket;
-//  socklen_t clientAddressLength;
+bool
+TCP_Connection::open_port(unsigned short int port, int connections) {
+  assert(connection_socket < 0);
+
+  port_nr = port;
+
   struct sockaddr_in serverAddress;
   // Create socket for listening for client connection requests.
 
-  listenSocket = socket(AF_INET, SOCK_STREAM, 0);
-  if (listenSocket < 0) {
+  connection_socket = socket(AF_INET, SOCK_STREAM, 0);
+  if (connection_socket  < 0) {
     if (verbose) {
       std::cout << "cannot create listen socket on port " << port << std::endl;
       std::cout << "error message: " << strerror(errno) << std::endl;
     }
-    return -1;
+    return false;
   }
   
   // Bind listen socket to listen port.  First set various fields in
@@ -56,15 +58,16 @@ TCP_Connection::open_port(unsigned short int port) {
   serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
   serverAddress.sin_port = htons(port);
   
-  if (bind(listenSocket,
+  if (bind(connection_socket,
            (struct sockaddr *) &serverAddress,
            sizeof(serverAddress)) < 0) {
     if (verbose) {
       std::cout << "cannot bind socket to port " << port << std::endl;
       std::cout << "error message: " << strerror(errno) << std::endl;
     }
-    close(listenSocket);
-    return -1;
+    close(connection_socket);
+    connection_socket = -1;
+    return false;
   }
   
   if (verbose)
@@ -74,19 +77,22 @@ TCP_Connection::open_port(unsigned short int port) {
   // This is a non-blocking call; i.e., it registers this program with
   // the system as expecting connections on this socket, and then
   // this thread of execution continues on.
-  listen(listenSocket, 1);
+  listen(connection_socket, connections);
+
+  assert(connection_socket >= 0);
   
-  return listenSocket;
+  return true;
 }
 
 unsigned int 
-TCP_Connection::open_connection(int socket) {
+TCP_Connection::open_connection() {
+  assert(connection_socket >= 0);
   int connectSocket;
   socklen_t clientAddressLength;
   struct sockaddr_in clientAddress;
 
   if (verbose)
-    std::cout << "Waiting for TCP connection on port " << socket << " ...\n";
+    std::cout << "Waiting for TCP connection on port " << connection_socket << " ...\n";
 
   // Accept a connection with a client that is requesting one.  The
   // accept() call is a blocking call; i.e., this thread of
@@ -96,7 +102,7 @@ TCP_Connection::open_connection(int socket) {
   // connections on listenSocket, before connectSocket is closed,
   // but this program doesn't do that.
   clientAddressLength = sizeof(clientAddress);
-  connectSocket = accept(socket,
+  connectSocket = accept(connection_socket,
                          (struct sockaddr *) &clientAddress,
                          &clientAddressLength);
   if (connectSocket < 0) {
@@ -122,7 +128,7 @@ TCP_Connection::open_connection(int socket) {
 
 int 
 TCP_Connection::do_connect(const char *hostname, unsigned short int port) {
-  int socketDescriptor;
+  int output_socket;
   struct sockaddr_in serverAddress;
   struct hostent *hostInfo;
 
@@ -132,7 +138,7 @@ TCP_Connection::do_connect(const char *hostname, unsigned short int port) {
   // structure is actually composed of.
   hostInfo = gethostbyname(hostname);
   if (hostInfo == NULL) {
-    std::cout << "problem interpreting host: " << hostname << "\n";
+    std::cout << "problem interpreting host: " << hostname << std::endl;
     return -1;
   }
 
@@ -140,9 +146,9 @@ TCP_Connection::do_connect(const char *hostname, unsigned short int port) {
   // "SOCK_STREAM" means it will be a reliable connection (i.e., TCP;
   // for UDP use SOCK_DGRAM), and I'm not sure what the 0 for the last
   // parameter means, but it seems to work.
-  socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
-  if (socketDescriptor < 0) {
-    std::cout << "cannot create socket\n";
+  output_socket = socket(AF_INET, SOCK_STREAM, 0);
+  if (output_socket < 0) {
+    std::cout << "cannot create socket" << std::endl;
     return -1;
   }
 
@@ -154,15 +160,16 @@ TCP_Connection::do_connect(const char *hostname, unsigned short int port) {
          hostInfo->h_addr_list[0], hostInfo->h_length);
   serverAddress.sin_port = htons(port);
         
-  if (connect(socketDescriptor,
+  if (connect(output_socket,
               (struct sockaddr *) &serverAddress,
               sizeof(serverAddress)) < 0) {
-    std::cout << "cannot connect to port " << port << "\n";
-    close(socketDescriptor);
+    std::cout << "cannot connect to port " << port << std::endl;
+    close(output_socket);
     return -1;
   }
 
-  return socketDescriptor;
+  assert (output_socket >= 0);
+  return output_socket;
 }
 
 int 
@@ -256,4 +263,8 @@ TCP_Connection::get_ip_addresses(std::vector<uint64_t>  &addr) {
     inet_aton(it->c_str(), &address);
     addr.push_back(address.s_addr);
   }      
+}
+
+int TCP_Connection::get_port() {
+  return port_nr;
 }

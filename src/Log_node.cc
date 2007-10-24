@@ -21,7 +21,7 @@
 Log_node::Log_node(int rank, int nNodes) 
   : Node(rank), log_node_ctrl(*this, nNodes)
 {
-  get_log_writer() << "Log_node()" << std::endl;
+  get_log_writer()(1) << "Log_node()" << std::endl;
   add_controller(&log_node_ctrl);
 
   int32_t msg;
@@ -32,7 +32,7 @@ Log_node::Log_node(int rank, int nNodes)
 Log_node::Log_node(int rank, int nNodes, Log_writer *writer) 
   : Node(rank, writer), log_node_ctrl(*this, nNodes)
 {
-  get_log_writer() << "Log_node()" << std::endl;
+  get_log_writer()(1) << "Log_node()" << std::endl;
   add_controller(&log_node_ctrl);
 
   int32_t msg;

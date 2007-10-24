@@ -28,6 +28,9 @@
 // The amount of padding in the correlator (could be 1, not tested though)
 #define PADDING                  2
 
+#define SFXC_PORT                1233
+#define MAX_TCP_CONNECTIONS      16
+
 // NGHK: remove?
 const int   BufTime       =   16384; //delta time for Bufs in micro seconds
 
@@ -39,13 +42,15 @@ const int   BufTime       =   16384; //delta time for Bufs in micro seconds
 
 #ifdef SFXC_PRINT_DEBUG
 extern int RANK_OF_NODE; // Rank of the current node
-//#define FORMAT_MSG(msg) \
-//    "\033[32m#" << RANK_OF_NODE << " " \
-//    << __PRETTY_FUNCTION__ << "," << __LINE__ << "\033[30m: " \
-//    << msg
+/*
 #define FORMAT_MSG(msg) \
     "\033[32m#" << RANK_OF_NODE << " " \
-    << __FILE__ << ", " << __LINE__ << "\033[30m: " \
+    << __PRETTY_FUNCTION__ << "," << __LINE__ << "\033[30m: " \
+    << msg
+*/
+#define FORMAT_MSG(msg) \
+    "#" << RANK_OF_NODE << " " \
+    << __FILE__ << ", " << __LINE__ << ": " \
     << msg
 #define DEBUG_MSG(msg) \
     { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \

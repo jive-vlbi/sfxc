@@ -19,21 +19,13 @@
 #include <errno.h>
 #include <utils.h>
 
-Data_writer_tcp::Data_writer_tcp(int _port) 
-: connection_socket(-1), socket(-1), port(_port)
+Data_writer_tcp::Data_writer_tcp() 
+: socket(-1)
 {
-  TCP_Connection connection;
-
-  connection_socket = connection.open_port(port);
-  while (connection_socket <= 0) {
-    port ++;
-    connection_socket = connection.open_port(port);
-  }
 }
 
-void Data_writer_tcp::open_connection() {
-  TCP_Connection connection;
-  socket = connection.open_connection(connection_socket);
+void Data_writer_tcp::open_connection(TCP_Connection &tcp_connection) {
+  socket = tcp_connection.open_connection();
   assert(socket > 0);
 }
 
@@ -57,9 +49,3 @@ Data_writer_tcp::do_put_bytes(size_t nBytes, char *buff) {
   assert(bytes_written == nBytes);
   return bytes_written;
 }
-
-
-unsigned int Data_writer_tcp::get_port() {
-  return port;
-}  
-

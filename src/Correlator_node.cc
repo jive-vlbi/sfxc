@@ -11,6 +11,7 @@
 
 #include "Data_reader_buffer.h"
 #include "Data_writer_buffer.h"
+#include "utils.h"
 
 Correlator_node::Correlator_node(int rank, int nr_corr_node, int buff_size)
  : Node(rank),
@@ -25,7 +26,7 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, int buff_size)
    nr_corr_node(nr_corr_node),
    startIS(-1)
 {
-  get_log_writer() << "Correlator_node(" << nr_corr_node << ")" << std::endl;
+  get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;
   
   add_controller(&correlator_node_ctrl);
   add_controller(&data_readers_ctrl);
@@ -48,12 +49,7 @@ Correlator_node::~Correlator_node()
 
 void Correlator_node::start()
 {
-  static int prev_status = -1;
   while (true) {
-    if (status != prev_status) {
-      DEBUG_MSG("Correlator_node::status: " << status);
-      prev_status = status;
-    }
     switch (status) {
       case STOPPED: {
         // blocking:
