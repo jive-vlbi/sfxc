@@ -351,6 +351,8 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
   double mult_factor_phi = -sideband*2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5);
   int64_t time = timePtr + (int64_t)(jsegm*n2fftDC*tbs*1000000);
   int64_t delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
+  // NGHK: TODO: For rounding off errors, make tbs into an int
+  if (delta_time == 0) delta_time = 1;
   assert(delta_time > 0);
   double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
   double phi_end = mult_factor_phi * delTbl[station].delay(time);
