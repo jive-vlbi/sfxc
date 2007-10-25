@@ -155,7 +155,6 @@ void Correlator_node::start()
 
 void Correlator_node::start_correlating(Correlation_parameters &param) {
   assert(status != CORRELATING); 
-
   
   correlation_parameters = param;
   get_integration_slice().set_parameters(correlation_parameters);

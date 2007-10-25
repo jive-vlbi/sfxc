@@ -529,8 +529,8 @@ int main(int argc, char *argv[])
   RANK_OF_NODE = 0;
 #endif
 
-  if (argc != 3) {
-    std::cout << "usage: " << argv[0] << " <ctrl-file> <vex-file>" 
+  if (!((argc == 3) || (argc == 4))) {
+    std::cout << "usage: " << argv[0] << " <ctrl-file> <vex-file> [<output_directory>]" 
               << std::endl;
     exit(1);
   }
@@ -544,6 +544,13 @@ int main(int argc, char *argv[])
   std::ifstream infile(ConPrms.get_output_file().c_str()+7, 
                        std::ios::in | std::ios::binary);
   assert(infile.is_open());
+  
+  if (argc== 4) {
+    // Goto the output directory
+    int err = chdir(argv[3]);
+    // Make sure it exists
+    assert(err == 0);
+  }
   
   for (int channel=0; channel<ConPrms.channels_size();) {
     // generate plots for the channel

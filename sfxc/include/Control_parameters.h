@@ -102,6 +102,8 @@ public:
                   const char *vex_filename, 
                   std::ostream& log_writer);
 
+  bool check(std::ostream &log_writer) const;
+
   /****************************************************/
   /* Get functions from the correlation control file: */
   /****************************************************/
@@ -119,7 +121,8 @@ public:
   std::string sideband(int i) const;
   std::string reference_station() const;
   std::string experiment() const;
-  
+
+  std::string get_delay_directory() const;
   std::string get_delay_table_name(const std::string &station_name) const;
 
   std::string channel(int i) const;

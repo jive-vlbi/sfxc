@@ -68,10 +68,23 @@ void start_node() {
       node.start();
       break;
     }
+  case MPI_TAG_END_NODE: 
+    {
+      DEBUG_MSG("MPI_TAG_END_NODE");
+      int32_t msg;
+      MPI_Recv(&msg, 1, MPI_INT32, 
+               RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      break;
+    }
   default:
     {
       std::cout << "Unknown node type " << status.MPI_TAG << std::endl;
       assert(false);
     }
   }
+}
+
+void end_node(int32_t rank) {
+  MPI_Send(&rank, 1, MPI_INT32, 
+           rank, MPI_TAG_END_NODE, MPI_COMM_WORLD);
 }
