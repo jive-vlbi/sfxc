@@ -144,21 +144,21 @@ Json::Value site_position(const Vexpp_node &vex,
 }
 
 Json::Value get_channels(const Vex &vex){
-	std::set<std::string> result_set;
-	Json::Value result;
-	
+  std::set<std::string> result_set;
+  Json::Value result;
+
   for (Vex::Node::const_iterator frq_block = vex.get_root_node()["FREQ"]->begin();
        frq_block != vex.get_root_node()["FREQ"]->end(); ++frq_block) {
-  	for (Vex::Node::const_iterator freq_it = frq_block->begin("chan_def");
-         freq_it != frq_block->end("chan_def"); ++freq_it) {
-			result_set.insert(freq_it[4]->to_string());
-		}
-	}
-	for (std::set<std::string>::const_iterator set_it = result_set.begin();
-				set_it != result_set.end(); ++set_it){
-		result.append(*set_it);
-	}
-	return result;
+    for (Vex::Node::const_iterator freq_it = frq_block->begin("chan_def");
+    freq_it != frq_block->end("chan_def"); ++freq_it) {
+      result_set.insert(freq_it[4]->to_string());
+    }
+  }
+  for (std::set<std::string>::const_iterator set_it = result_set.begin();
+       set_it != result_set.end(); ++set_it){
+    result.append(*set_it);
+  }
+  return result;
 }
 
 
