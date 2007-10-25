@@ -12,7 +12,7 @@
 
 struct Station_data {
   // Station information.
-  char   site_name[8];
+  char   site_name[9];
   double site_position[3]; // m
   int    axis_type; // az : el
   double axis_offset; // m
@@ -38,7 +38,7 @@ struct Scan_data {
   int nr_of_intervals;
 
   // Source information.
-  char   source_name[80];
+  char   source_name[81];
   double ra; // rad
   double dec; // rad
 };
