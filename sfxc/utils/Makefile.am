@@ -56,7 +56,7 @@ generate_delay_model_SOURCES=\
 generate_delay_model_CFLAGS  = -I@top_srcdir@/lib -m32 -std=c99
 generate_delay_model_CXXFLAGS=-m32 -I@top_srcdir@/lib -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
 generate_delay_model_LDFLAGS=-m32
-generate_delay_model_LDADD = -L@top_srcdir@/lib/calc10/lib/ -lfcalc -lg2c
+generate_delay_model_LDADD = -L@top_srcdir@/lib/calc10/lib/ -lfcalc -lg2c -lvex_parser -lantlr3c
 
 vex2ccf_SOURCES=vex2ccf.cc
 vex2ccf_LDADD=-lvex_parser -lantlr3c -ljson
