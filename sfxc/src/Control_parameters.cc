@@ -124,32 +124,6 @@ Control_parameters::check(std::ostream &writer) const {
     }
   }
 
-  { // check data sources
-    if (ctrl["data_sources"] != Json::Value()) {
-      for (Json::Value::const_iterator station_it = ctrl["data_sources"].begin();
-           station_it != ctrl["data_sources"].end(); ++station_it) {
-        for (Json::Value::const_iterator source_it = (*station_it).begin();
-             source_it != (*station_it).end(); ++source_it) {
-          const char *filename = (*source_it).asString().c_str();
-          if (strncmp(filename, "file://", 7)!=0) {
-            ok = false;
-            writer << "Ctrl-file: Data source should start with 'file://'"
-                   << std::endl;
-          }
-          std::ifstream in(filename+7);
-          if (!in.is_open()) {
-            ok = false;
-            writer << "Ctrl-file: Could not open data source: " 
-                   << (*source_it).asString() << std::endl;
-          }
-        }
-      }
-    } else {
-      ok = false;
-      writer << "Ctrl-file: Data sources not found" << std::endl;
-    }
-  }
-  
   { // Check stations and reference station
     if (ctrl["stations"] != Json::Value()) {
       for (size_t station_nr = 0; 
@@ -159,12 +133,31 @@ Control_parameters::check(std::ostream &writer) const {
           ok = false;
           writer << "Ctrl-file: No data source defined for " 
                  << station_name << std::endl;
+        } else if (ctrl["data_sources"][station_name].size()==0) {
+          ok = false;
+          writer << "Ctrl-file: Empty list of data sources for " 
+                 << ctrl["data_sources"][station_name]
+                 << std::endl;
         } else {
-          if (ctrl["data_sources"][station_name].size()==0) {
-            ok = false;
-            writer << "Ctrl-file: Empty list of data sources for " 
-                   << ctrl["data_sources"][station_name]
-                   << std::endl;
+          const Json::Value data_source_it =
+            ctrl["data_sources"][station_name];
+          for (Json::Value::const_iterator source_it =
+                 data_source_it.begin();
+               source_it != data_source_it.end(); ++source_it) {
+
+            const char *filename = (*source_it).asString().c_str();
+            if (strncmp(filename, "file://", 7)!=0) {
+              ok = false;
+              writer << "Ctrl-file: Data source should start with 'file://'"
+                     << std::endl;
+            } else {
+              std::ifstream in(filename+7);
+              if (!in.is_open()) {
+                ok = false;
+                writer << "Ctrl-file: Could not open data source: " 
+                       << (*source_it).asString() << std::endl;
+              }
+            }
           }
         }
       }
