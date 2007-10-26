@@ -1,0 +1,17 @@
+/*
+The wsdl2py tool should be used with a correct sequence and command line options.
+
+example:
+
+to generate the *services.py and *services_type.py files:
+
+wsdl2py -bu .wsdl
+
+to generate the *services_server.py file:
+
+wsdl2dispatch --file .wsdl
+
+then you can run a service (you should write one service python file) which 
+simply runs and waits for an input from another python code that sends requests to
+the running services.
+

@@ -1,0 +1,59 @@
+<wsdl:definitions xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:xsd="http://tr.remote.expres.psnc.pl/xsd" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:nsTr="http://tr.remote.expres.psnc.pl" targetNamespace="http://tr.remote.expres.psnc.pl">
+	<wsdl:types>
+		<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://tr.remote.expres.psnc.pl/xsd">
+			<xs:element name="startTranslationJob">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="param0" nillable="true" type="xsd:JobInfo"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="JobInfo" type="xsd:JobInfo"/>
+			<xs:complexType name="JobInfo">
+				<xs:sequence>
+					<xs:element name="brokerIPAddress" nillable="true" type="xs:string"/>
+					<xs:element name="chunkSize" type="xs:long"/>
+					<xs:element name="endTime" nillable="true" type="xs:string"/>
+					<xs:element name="startTime" nillable="true" type="xs:string"/>
+					<xs:element name="stationName" nillable="true" type="xs:string"/>
+					<xs:element name="experimentName" nillable="true" type="xs:string"/>
+				</xs:sequence>
+			</xs:complexType>
+		</xs:schema>
+	</wsdl:types>
+	<wsdl:message name="startTranslationJobMessage">
+		<wsdl:part name="part1" element="xsd:startTranslationJob"/>
+	</wsdl:message>
+	<wsdl:portType name="TranslationNodePortType">
+		<wsdl:operation name="startTranslationJob">
+			<wsdl:input message="nsTr:startTranslationJobMessage" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" wsaw:Action="urn:startTranslationJob"/>
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="TranslationNodeSOAP11Binding" type="nsTr:TranslationNodePortType">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<wsdl:operation name="startTranslationJob">
+			<soap:operation soapAction="urn:startTranslationJob" style="document"/>
+			<wsdl:input>
+				<soap:body use="literal"/>
+			</wsdl:input>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:binding name="TranslationNodeSOAP12Binding" type="nsTr:TranslationNodePortType">
+		<soap12:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+		<wsdl:operation name="startTranslationJob">
+			<soap12:operation soapAction="urn:startTranslationJob" style="document"/>
+			<wsdl:input>
+				<soap12:body use="literal"/>
+			</wsdl:input>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="TranslationNode">
+		<wsdl:port name="TranslationNodeSOAP11port" binding="nsTr:TranslationNodeSOAP11Binding">
+			<soap:address location="http://localhost:8080/axis2/services/TranslationNode"/>
+		</wsdl:port>
+		<wsdl:port name="TranslationNodeSOAP12port" binding="nsTr:TranslationNodeSOAP12Binding">
+			<soap12:address location="http://localhost:8080/axis2/services/TranslationNode"/>
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>
+
