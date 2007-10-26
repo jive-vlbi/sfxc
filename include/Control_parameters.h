@@ -120,6 +120,7 @@ public:
 	
   std::string sideband(int i) const;
   std::string reference_station() const;
+  int reference_station_number() const;
   std::string experiment() const;
 
   std::string get_delay_directory() const;
@@ -150,6 +151,7 @@ public:
 
   bool cross_polarize() const;
   int cross_polarisation(int channel_nr) const;
+  int cross_polarisation(const std::string &channel_nr) const;
 
   char polarisation(const std::string &if_node, 
                     const std::string &if_ref) const;

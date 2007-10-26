@@ -125,6 +125,9 @@ private:
   Correlation_parameters correlation_parameters;
   
   std::vector< boost::shared_ptr<Bits_to_float_converter> > bits2float_converters;
+
+  // the number of channels to correlate
+  int nChannels;
 };
 
 #endif // CORRELATOR_NODE_H

@@ -90,7 +90,7 @@ private:
   void normalise_correlation(int station1, int station2, int bsln);
 
   bool cross_polarize;
-  int ref_station1, ref_station2;
+  int reference_station;
 
   Log_writer &log_writer;
 

@@ -77,8 +77,7 @@ void Correlator_node::start()
 
               startIS=correlation_parameters.start_time;
 
-              for (size_t sn=0; 
-                   sn<data_readers_ctrl.number_of_data_readers(); sn++) {
+              for (size_t sn=0; sn<nChannels; sn++) {
                 get_integration_slice().init_reader(sn,startIS);
               }
               correlate_state = CORRELATE_INTEGRATION_SLICE;
@@ -113,7 +112,7 @@ void Correlator_node::start()
               get_log_writer()(2) << " correlate_state = END_TIME_SLICE" << std::endl;
               // Finish processing a time slice:
               for (size_t sn=0; 
-                   sn<data_readers_ctrl.number_of_data_readers(); sn++) {
+                   sn<nChannels; sn++) {
                 int bytes_to_read =
                   data_readers_ctrl.get_data_reader(sn)->get_size_dataslice();
                 int bytes_read = 0;
@@ -158,6 +157,7 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
   
   correlation_parameters = param;
   get_integration_slice().set_parameters(correlation_parameters);
+  nChannels = correlation_parameters.station_streams.size();
 
   int bytes = 
     ((int64_t)(correlation_parameters.stop_time-

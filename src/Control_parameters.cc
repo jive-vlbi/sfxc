@@ -85,6 +85,22 @@ initialise(const char *ctrl_file, const char *vex_file,
   return true;
 }
 
+int
+Control_parameters::reference_station_number() const {
+  if (ctrl["reference_station"] == Json::Value()) return -1;
+  std::string reference_station = ctrl["reference_station"].asString();
+  if (reference_station == "") return -1;
+
+  for (size_t station_nr = 0; 
+       station_nr < ctrl["stations"].size(); ++station_nr) {
+    if (ctrl["stations"][station_nr].asString() == reference_station) {
+      return station_nr;
+    }
+  }
+  std::cout << "Reference station not found" << std::endl;
+  return -1;
+}
+
 bool
 Control_parameters::check(std::ostream &writer) const {
   typedef Json::Value::const_iterator                    Value_it;
@@ -159,8 +175,7 @@ Control_parameters::check(std::ostream &writer) const {
     
     if (ctrl["reference_station"] != Json::Value()) {
       if (ctrl["reference_station"].asString() != "") {
-        if (ctrl["stations"][ctrl["reference_station"].asString()] == 
-            Json::Value()) {
+        if (reference_station_number() == -1) {
           ok = false;
           writer 
             << "Ctrl-file: Reference station not one of the input stations" 
@@ -435,12 +450,18 @@ int
 Control_parameters::
 cross_polarisation(int channel_nr) const {
   if (channel_nr >= number_frequency_channels()) return -1;
-  std::string freq = frequency(channel(channel_nr), station(0));
-  char side = sideband(channel(channel_nr), station(0));
-  char pol  = polarisation(channel(channel_nr), station(0));
+  return cross_polarisation(channel(channel_nr));
+}
+
+int
+Control_parameters::
+cross_polarisation(const std::string &channel_name) const {
+  std::string freq = frequency(channel_name, station(0));
+  char side = sideband(channel_name, station(0));
+  char pol  = polarisation(channel_name, station(0));
 
   for (size_t i=0; i<number_frequency_channels(); i++) {
-    if (i != channel_nr) {
+    if (channel(i) != channel_name) {
       if ((freq == frequency(channel(i), station(0))) &&
           (side == sideband(channel(i), station(0))) &&
           (pol != polarisation(channel(i), station(0)))) {
@@ -666,8 +687,20 @@ get_correlation_parameters(const std::string &scan_name,
   assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');
 
   corr_param.cross_polarize = cross_polarize();
-  assert(reference_station()=="");
+  if (cross_polarisation(channel_name) == -1) {
+    corr_param.cross_polarize = false;
+  }
+
+
   corr_param.reference_station = -1;
+  if (reference_station() != "") {
+    for (int station_nr=0; station_nr < number_stations(); station_nr++) {
+      if (reference_station() == station(station_nr)) {
+        corr_param.reference_station = station_nr;
+      }
+    }
+    assert(corr_param.reference_station != -1);
+  }
   
   // now get the station streams
   for (Vex::Node::const_iterator station = scan->begin("station");
