@@ -38,7 +38,7 @@ Correlator_node_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
     case MPI_TAG_DELAY_TABLE:
     {
-      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       MPI_Transfer mpi_transfer;
       Delay_table_akima table;
       int sn;
@@ -48,7 +48,7 @@ Correlator_node_controller::process_event(MPI_Status &status) {
     }
     case MPI_TAG_CORR_PARAMETERS:
     {
-      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       Correlation_parameters parameters;
       MPI_Transfer::receive(status, parameters);
 

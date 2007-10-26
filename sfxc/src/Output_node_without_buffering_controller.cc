@@ -30,7 +30,7 @@ Output_node_without_buffering_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_OUTPUT_STREAM_SET_PRIORITY:
     {
-      get_log_writer().MPI(2, print_MPI_TAG(status.MPI_TAG));
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       int64_t weight[2];
       MPI_Recv(&weight, 2, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -51,7 +51,7 @@ Output_node_without_buffering_controller::process_event(MPI_Status &status) {
       MPI_Recv(&rank, 2, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG)
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG)
                           << " From: corr.node " << rank[0] <<", bytes " << rank[1] << std::endl;;
 
       

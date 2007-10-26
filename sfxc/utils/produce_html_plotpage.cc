@@ -92,7 +92,16 @@ Plot_generator::Plot_generator(std::ifstream &infile,
                      FFTW_BACKWARD, 
                      FFTW_ESTIMATE);
 
-  std::string ref_station = ConPrms.reference_station();
+  int reference_station = -1;
+  if (ConPrms.reference_station() != "") {
+    for (int i=0; i<ConPrms.number_stations(); i++) {
+      if (ConPrms.station(i) == ConPrms.reference_station()) {
+        reference_station = i;
+      }
+    }
+    assert(reference_station >= 0);
+  }
+
   int nStations = ConPrms.number_stations();
   int cross_channel = -1;
   if (ConPrms.cross_polarize()) {
@@ -144,57 +153,85 @@ Plot_generator::Plot_generator(std::ifstream &infile,
   }
   
   // Cross correlations
-
-  // reference station not yet implemented
-  assert(ref_station == "");
-
   if (cross_channel == -1) {
-    // Generate the cross plots
-    plot_data[0].set_size_crosses(nStations*(nStations-1)/2);
-    int plot_nr=0;
-    for (int i=0; i<nStations; i++) {
-      for (int j=i+1; j<nStations; j++) {
-        generate_cross_plot(infile, i, j, plot_data[0], plot_nr, ConPrms);
-        plot_nr++;
-      }    
+    if (ConPrms.reference_station() == "") {
+      // no cross channel and no reference station
+      plot_data[0].set_size_crosses(nStations*(nStations-1)/2);
+      int plot_nr=0;
+      for (int i=0; i<nStations; i++) {
+        for (int j=i+1; j<nStations; j++) {
+          generate_cross_plot(infile, i, j, plot_data[0], plot_nr, ConPrms);
+          plot_nr++;
+        }    
+      }
+    } else {
+      // no cross channel and a reference station
+      plot_data[0].set_size_crosses(nStations-1);
+      int plot_nr=0;
+      for (int i=0; i<nStations; i++) {
+        if (i != reference_station) {
+          generate_cross_plot(infile, i, reference_station, plot_data[0], 
+                              plot_nr, ConPrms);
+          plot_nr++;
+        }
+      }
     }
   } else {
-    for (int i=0; i<4; i++) {
-      plot_data[i].set_size_crosses(nStations*(nStations-1)/2);
-    }
-    // also generating the cross correlations
-    for (int i=0; i<2*nStations; i++) {
-      for (int j=i+1; j<2*nStations; j++) {
-        if (i+nStations != j) {
-          // don't generate the "auto" cross polarisations.
-          int data_nr=0;
+    if (ConPrms.reference_station() == "") {
+      for (int i=0; i<4; i++) {
+        plot_data[i].set_size_crosses(nStations*(nStations-1)/2);
+      }
+      // also generating the cross correlations
+      for (int i=0; i<2*nStations; i++) {
+        for (int j=i+1; j<2*nStations; j++) {
+          if (i+nStations != j) {
+            // don't generate the "auto" cross polarisations.
+            int data_nr=0;
           
-          int plot_nr = 
-            nStations*(nStations-1)/2 - 
-            (nStations-(i%nStations))*((nStations-(i%nStations))-1)/2 +
-            ((j-i)%nStations)-1;
-          if ((i<nStations) && (j<nStations)) {
-            data_nr = 0;
-          } else if ((i>=nStations) && (j>=nStations)) {
-            data_nr = 2;
-          } else {
-            assert(i%nStations != j%nStations);
-            if (i%nStations < j%nStations) {
-              data_nr = 1;
+            int plot_nr = 
+              nStations*(nStations-1)/2 - 
+              (nStations-(i%nStations))*((nStations-(i%nStations))-1)/2 +
+              ((j-i)%nStations)-1;
+            if ((i<nStations) && (j<nStations)) {
+              data_nr = 0;
+            } else if ((i>=nStations) && (j>=nStations)) {
+              data_nr = 2;
             } else {
-              data_nr = 3;
-              int iprime = j%nStations;
-              int jprime = i%nStations;
-              plot_nr = 
-                nStations*(nStations-1)/2 - 
-                (nStations-(iprime%nStations))*((nStations-(iprime%nStations))-1)/2 +
-                ((jprime-iprime)%nStations)-1;
+              assert(i%nStations != j%nStations);
+              if (i%nStations < j%nStations) {
+                data_nr = 1;
+              } else {
+                data_nr = 3;
+                int iprime = j%nStations;
+                int jprime = i%nStations;
+                plot_nr = 
+                  nStations*(nStations-1)/2 - 
+                  (nStations-(iprime%nStations))*((nStations-(iprime%nStations))-1)/2 +
+                  ((jprime-iprime)%nStations)-1;
+              }
             }
+            generate_cross_plot(infile, i, j,
+                                plot_data[data_nr], plot_nr, ConPrms);
           }
-          generate_cross_plot(infile, i, j,
-                              plot_data[data_nr], plot_nr, ConPrms);
+        }    
+      }
+    } else {
+      // cross channel and a reference station
+      for (int i=0; i<4; i++) {
+        plot_data[i].set_size_crosses(nStations-1);
+      }
+      int row_map[] = {0, 1, 3, 2};
+      for (int row=0; row < 4; row++) {
+        int plot_nr=0;
+        for (int i=0; i<nStations; i++) {
+          if (i != reference_station) {
+            generate_cross_plot(infile, i, reference_station, 
+                                plot_data[row_map[row]], 
+                                plot_nr, ConPrms);
+            plot_nr++;
+          }
         }
-      }    
+      }
     }
   }
 
@@ -356,7 +393,16 @@ Plot_generator::signal_to_noise_ratio(std::vector< std::complex<double> > &data)
 }
 
 void print_html(const Control_parameters &ConPrms) {
+  std::string reference_station = ConPrms.reference_station();
+
+  int nAutos   = ConPrms.number_stations();
+  int nCrosses = ConPrms.number_stations() -1;
+  if (reference_station == "") {
+    nCrosses = ConPrms.number_stations()*(ConPrms.number_stations()-1)/2;
+  }
+
   for (int show_plots = 0; show_plots <2; show_plots++) {
+
     Log_writer_cout logg;
     std::ofstream html_output;
     if (show_plots) {
@@ -386,81 +432,49 @@ void print_html(const Control_parameters &ConPrms) {
 
     html_output << "<table border=1 bgcolor='#dddddd' cellspacing=0>\n";
     int nStations = ConPrms.number_stations();
-    std::string ref_station1 = ConPrms.reference_station();
-    std::string ref_station2 = "";
 
-    if (ref_station2 == "") {
-      // First row
-      html_output << "<tr><td>"
-                  << ConPrms.experiment()
-                  << "</td>"
-                  << "<th colspan='" << nStations << "'>Auto correlation</th>";
-      if (ref_station1 == "") {
-        // Crosses
-        html_output << "<th colspan='" << nStations*(nStations-1)/2 << "'>Cross correlation</th>";
-      } else {
-        html_output << "<th colspan='" << nStations-1 << "'>Cross correlation</th>";
-      }
-      if (!show_plots) {
-        html_output << "<td rowspan=99><img src=\"" 
-                    << plot_data_channels[0].autos[0] 
-                    << "\" name=\"plot_image\"></td>" << std::endl;
-      }
-      html_output << "</tr>";
+    // First row
+    html_output
+      << "<tr><td></td>"
+      << "<th colspan='" << nAutos << "'>Auto correlation</th>"
+      << "<th colspan='" << nCrosses << "'>Cross correlation</th>";
 
-      // Second row
-      html_output << "<tr><td></td>";
-      for (int station = 0; station < nStations; station++) {
-        html_output << "<th>" << ConPrms.station(station)
-                    << "</th>";
-      }
-      if (ref_station1 == "") {
-        for (int i=0; i<nStations; i++) {
-          for (int j=i+1; j<nStations; j++) {
-            html_output << "<th>" << ConPrms.station(i) << "-" 
-                        << ConPrms.station(j) << "</th>\n";
-          }    
-        }
-      } else {
-        for (int i=0; i<nStations; i++) {
-          if (ConPrms.station(i) != ref_station1) {
-            html_output << "<th>" << ref_station1
-                        << "-" << ConPrms.station(i) << "</th>\n";
-          }    
-        }
-      }
-      html_output << "</tr>\n";
-    } else {
-      // Two reference stations
-      assert(ref_station1 != "");
-      //      nStations /= 2;
-      // First row
-      html_output
-        << "<tr><td></td>"
-        << "<th colspan='" << nStations << "'>Auto correlation</th>"
-        << "<th colspan='" << nStations-1 << "'>Cross correlation</th>";
-      if (!show_plots) {
-        html_output << "<td rowspan=99><img src=\"" 
-                    << plot_data_channels[0].autos[0] 
-                    << "\" name=\"plot_image\"></td>" << std::endl;
-      }
-      html_output << "</tr>\n";
-      // Second row
-      html_output << "<tr><td></td>";
-      for (int station = 0; station < nStations; station++) {
-        html_output << "<th>" << ConPrms.station(station)
-                    << "</th>";
-      }
+    if (!show_plots) {
+      html_output << "<td rowspan=99><img src=\"" 
+                  << plot_data_channels[0].autos[0] 
+                  << "\" name=\"plot_image\"></td>" << std::endl;
+    }
+    html_output << "</tr>\n";
 
+    // Second row
+    html_output << "<tr><td></td>";
+    // Print stations for the auto correlations
+    for (int station = 0; station < nStations; station++) {
+      html_output << "<th>" << ConPrms.station(station)
+                  << "</th>";
+    }
+    // Print cross correlations
+    if (reference_station == "") {
       for (int i=0; i<nStations; i++) {
-        if ((ConPrms.station(i) != ref_station1) && (ConPrms.station(i) != ref_station2)) {
-          html_output << "<th>" << ref_station1
+        for (int j=i+1; j<nStations; j++) {
+          html_output << "<th>" 
+                      << ConPrms.station(i)
+                      << "-"
+                      << ConPrms.station(j) << "</th>\n";
+        }    
+      }
+      html_output << "</tr>\n";
+      
+    } else {
+      for (int i=0; i<nStations; i++) {
+        if ((ConPrms.station(i) != reference_station)) {
+          html_output << "<th>" << reference_station
                       << "-" << ConPrms.station(i) << "</th>\n";
         }    
       }
       html_output << "</tr>\n";
-
     }
+
 
     // Data
     size_t auto_size=0;
@@ -487,6 +501,8 @@ void print_html(const Control_parameters &ConPrms) {
       } else {
         html_output << "<td colspan=" << auto_size << "></td>\n";
       }
+
+      // crosses
       assert(data.crosses.size() == data.snr_crosses.size()); 
       for (size_t col=0; col<data.crosses.size(); col++) {
         int color_val = (int)(255*(data.snr_crosses[col]-MIN_SNR_VALUE) /

@@ -240,11 +240,11 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
 
   // Initialise the correlator node
   if (cross_channel == -1) {
-    get_log_writer() << "start " << start_time << ", channel " 
+    get_log_writer()(1) << "start " << start_time << ", channel " 
                      << current_channel << " to correlation node " 
                      << corr_node_nr << std::endl;
   } else {
-    get_log_writer() << "start " << start_time << ", channel " 
+    get_log_writer()(1) << "start " << start_time << ", channel " 
                      << current_channel << "," 
                      << cross_channel << " to correlation node " 
                      << corr_node_nr << std::endl;
@@ -260,6 +260,8 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
   correlation_parameters.slice_nr = slice_nr;
+
+  assert ((cross_channel != -1) == correlation_parameters.cross_polarize);
 
   // Check the cross polarisation
   if (cross_channel != -1) {
@@ -303,11 +305,18 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   int nAutos = nStations;
   int nCrosses = nStations*(nStations-1)/2;
   int nBaselines;
-  if (cross_channel == -1) {
-    nBaselines = nAutos + nCrosses;
+  if (cross_channel != -1) { // do cross polarisation
+    if (control_parameters.reference_station() == "") {
+      nBaselines = 2*nAutos + 4*nCrosses;
+    } else {
+      nBaselines = 2*nAutos + 4*(nAutos-1);
+    }
   } else {
-    // Doing cross polarisations
-    nBaselines = 2*nAutos + 4*nCrosses;
+    if (control_parameters.reference_station() == "") {
+      nBaselines = nAutos + nCrosses;
+    } else {
+      nBaselines = 2*nAutos - 1;
+    }
   }
   int size_of_one_baseline = sizeof(fftw_complex)*
     (correlation_parameters.number_channels*PADDING/2+1);
