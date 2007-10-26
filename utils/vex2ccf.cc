@@ -177,13 +177,23 @@ int main(int argc, char *argv[]) {
         vex_file = argv[i];
 	vex_count = i;
       } else {
-        assert(ctrl_file == NULL);
+        if (ctrl_file != NULL) {
+          std::cout << "usage: " << argv[0]
+                    << " [--full|-f] <vex-file> <ctrl-file>"
+                    << std::endl;
+          exit(1);
+        }
         ctrl_file = argv[i];
 	ctrl_count = i;
       }
     }
   }
-  assert(ctrl_file != NULL);
+  if (ctrl_file == NULL) {
+    std::cout << "usage: " << argv[0]
+              << " [--full|-f] <vex-file> <ctrl-file>"
+              << std::endl;
+    exit(1);
+  }
 
   std::ofstream outfile(argv[ctrl_count], std::ios::out);
 
@@ -208,7 +218,7 @@ int main(int argc, char *argv[]) {
   json_output["cross_polarize"]    = false;
   json_output["number_channels"]   = 1024;
   json_output["integr_time"]       = 1;
-  json_output["message_level"]     = 0;
+  json_output["message_level"]     = 1;
   if(full == true){
     json_output["delay_directory"]   = "";
   }
