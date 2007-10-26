@@ -1,0 +1,762 @@
+!SESSION 2007-10-26 08:56:20.092 -----------------------------------------------
+eclipse.buildId=M20070921-1145
+java.version=1.5.0_13
+java.vendor=Sun Microsystems Inc.
+BootLoader constants: OS=linux, ARCH=x86, WS=gtk, NL=en_US
+Command-line arguments:  -os linux -ws gtk -arch x86 -data /auto/jive/ozdemir/jive/code/translationnode
+
+!ENTRY org.eclipse.osgi 4 0 2007-10-26 08:56:20.885
+!MESSAGE Error reading configuration: An error occurred while locking file "/auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/org.eclipse.osgi/.manager/.fileTableLock": "Input/output error". A common reason is that the file system or Runtime Environment does not support file locking for that location. Please choose a different location, or disable file locking passing "-Dosgi.locking=none" as a VM argument.
+!STACK 0
+java.io.IOException: An error occurred while locking file "/auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/org.eclipse.osgi/.manager/.fileTableLock": "Input/output error". A common reason is that the file system or Runtime Environment does not support file locking for that location. Please choose a different location, or disable file locking passing "-Dosgi.locking=none" as a VM argument.
+	at org.eclipse.core.runtime.internal.adaptor.Locker_JavaNio.lock(Locker_JavaNio.java:41)
+	at org.eclipse.osgi.storagemanager.StorageManager.lock(StorageManager.java:388)
+	at org.eclipse.osgi.storagemanager.StorageManager.open(StorageManager.java:695)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.initFileManager(BaseStorage.java:162)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.initialize(BaseStorage.java:139)
+	at org.eclipse.osgi.baseadaptor.BaseAdaptor.initializeStorage(BaseAdaptor.java:124)
+	at org.eclipse.osgi.framework.internal.core.Framework.initialize(Framework.java:174)
+	at org.eclipse.osgi.framework.internal.core.Framework.<init>(Framework.java:147)
+	at org.eclipse.osgi.framework.internal.core.OSGi.createFramework(OSGi.java:90)
+	at org.eclipse.osgi.framework.internal.core.OSGi.<init>(OSGi.java:31)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.startup(EclipseStarter.java:283)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:172)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:585)
+	at org.eclipse.equinox.launcher.Main.invokeFramework(Main.java:508)
+	at org.eclipse.equinox.launcher.Main.basicRun(Main.java:447)
+	at org.eclipse.equinox.launcher.Main.run(Main.java:1173)
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.549
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.mortbay.jetty_5.1.11.v200706111724.jar   Bundle "org.mortbay.jetty" version "5.1.11.v200706111724" has already been installed from: update@plugins/org.mortbay.jetty_5.1.11.v200706111724.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.566
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.compare_3.3.1.r33x_20070906.jar   Bundle "org.eclipse.compare" version "3.3.1.r33x_20070906" has already been installed from: update@plugins/org.eclipse.compare_3.3.1.r33x_20070906.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.581
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.debug.ui_3.3.1.v20070731_r331.jar   Bundle "org.eclipse.debug.ui" version "3.3.1.v20070731_r331" has already been installed from: update@plugins/org.eclipse.debug.ui_3.3.1.v20070731_r331.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.588
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.forms_3.3.0.v20070511.jar   Bundle "org.eclipse.ui.forms" version "3.3.0.v20070511" has already been installed from: update@plugins/org.eclipse.ui.forms_3.3.0.v20070511.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.604
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/com.ibm.icu_3.6.1.v20070906.jar   Bundle "com.ibm.icu" version "3.6.1.v20070906" has already been installed from: update@plugins/com.ibm.icu_3.6.1.v20070906.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.613
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.swt.gtk.linux.x86_3.3.1.v3346i.jar   Bundle "org.eclipse.swt.gtk.linux.x86" version "3.3.1.v3346i" has already been installed from: update@plugins/org.eclipse.swt.gtk.linux.x86_3.3.1.v3346i.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.620
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.team.core_3.3.1.r33x_20070807.jar   Bundle "org.eclipse.team.core" version "3.3.1.r33x_20070807" has already been installed from: update@plugins/org.eclipse.team.core_3.3.1.r33x_20070807.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.627
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ltk.core.refactoring_3.3.1.r331_v20070829.jar   Bundle "org.eclipse.ltk.core.refactoring" version "3.3.1.r331_v20070829" has already been installed from: update@plugins/org.eclipse.ltk.core.refactoring_3.3.1.r331_v20070829.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.632
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.jobs_3.3.1.R33x_v20070709.jar   Bundle "org.eclipse.core.jobs" version "3.3.1.R33x_v20070709" has already been installed from: update@plugins/org.eclipse.core.jobs_3.3.1.R33x_v20070709.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.647
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.presentations.r21_3.2.100.I20070605-0010.jar   Bundle "org.eclipse.ui.presentations.r21" version "3.2.100.I20070605-0010" has already been installed from: update@plugins/org.eclipse.ui.presentations.r21_3.2.100.I20070605-0010.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.653
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.jface.databinding_1.1.1.M20070910-0800b.jar   Bundle "org.eclipse.jface.databinding" version "1.1.1.M20070910-0800b" has already been installed from: update@plugins/org.eclipse.jface.databinding_1.1.1.M20070910-0800b.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.662
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.text_3.3.0.v20070606-0010.jar   Bundle "org.eclipse.text" version "3.3.0.v20070606-0010" has already been installed from: update@plugins/org.eclipse.text_3.3.0.v20070606-0010.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.669
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.variables_3.2.0.v20070426.jar   Bundle "org.eclipse.core.variables" version "3.2.0.v20070426" has already been installed from: update@plugins/org.eclipse.core.variables_3.2.0.v20070426.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.675
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui_3.3.1.M20070910-0800b.jar   Bundle "org.eclipse.ui" version "3.3.1.M20070910-0800b" has already been installed from: update@plugins/org.eclipse.ui_3.3.1.M20070910-0800b.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.686
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.platform.doc.user_3.3.0.M20070913-1400.jar   Bundle "org.eclipse.platform.doc.user" version "3.3.0.M20070913-1400" has already been installed from: update@plugins/org.eclipse.platform.doc.user_3.3.0.M20070913-1400.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.699
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.apache.jasper_5.5.17.v200706111724.jar   Bundle "org.apache.jasper" version "5.5.17.v200706111724" has already been installed from: update@plugins/org.apache.jasper_5.5.17.v200706111724.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.707
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.intro_3.2.101.v20070827_33x.jar   Bundle "org.eclipse.ui.intro" version "3.2.101.v20070827_33x" has already been installed from: update@plugins/org.eclipse.ui.intro_3.2.101.v20070827_33x.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.714
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.cheatsheets_3.3.0.v20070507.jar   Bundle "org.eclipse.ui.cheatsheets" version "3.3.0.v20070507" has already been installed from: update@plugins/org.eclipse.ui.cheatsheets_3.3.0.v20070507.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.721
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.boot_3.1.100.v20060603.jar   Bundle "org.eclipse.core.boot" version "3.1.100.v20060603" has already been installed from: update@plugins/org.eclipse.core.boot_3.1.100.v20060603.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.730
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.apache.lucene_1.9.1.v200706111724.jar   Bundle "org.apache.lucene" version "1.9.1.v200706111724" has already been installed from: update@plugins/org.apache.lucene_1.9.1.v200706111724.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.736
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.apache.lucene.analysis_1.9.1.v200706181610.jar   Bundle "org.apache.lucene.analysis" version "1.9.1.v200706181610" has already been installed from: update@plugins/org.apache.lucene.analysis_1.9.1.v200706181610.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.743
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.update.core_3.2.101.R33x_v20070911.jar   Bundle "org.eclipse.update.core" version "3.2.101.R33x_v20070911" has already been installed from: update@plugins/org.eclipse.update.core_3.2.101.R33x_v20070911.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.754
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.net_1.0.0.I20070516.jar   Bundle "org.eclipse.ui.net" version "1.0.0.I20070516" has already been installed from: update@plugins/org.eclipse.ui.net_1.0.0.I20070516.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.761
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.platform_3.3.1.M20070725/   Bundle "org.eclipse.platform" version "3.3.1.M20070725" has already been installed from: update@plugins/org.eclipse.platform_3.3.1.M20070725/
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.767
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.jsch.ui_1.0.1.r33x_20070709.jar   Bundle "org.eclipse.jsch.ui" version "1.0.1.r33x_20070709" has already been installed from: update@plugins/org.eclipse.jsch.ui_1.0.1.r33x_20070709.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.773
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.cvs_1.0.0.v20070606.jar   Bundle "org.eclipse.cvs" version "1.0.0.v20070606" has already been installed from: update@plugins/org.eclipse.cvs_1.0.0.v20070606.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.779
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/javax.servlet_2.4.0.v200706111738.jar   Bundle "javax.servlet" version "2.4.0.v200706111738" has already been installed from: update@plugins/javax.servlet_2.4.0.v200706111738.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.794
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.ide.application_1.0.0.I20070530-0100.jar   Bundle "org.eclipse.ui.ide.application" version "1.0.0.I20070530-0100" has already been installed from: update@plugins/org.eclipse.ui.ide.application_1.0.0.I20070530-0100.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.800
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.equinox.registry_3.3.1.R33x_v20070802.jar   Bundle "org.eclipse.equinox.registry" version "3.3.1.R33x_v20070802" has already been installed from: update@plugins/org.eclipse.equinox.registry_3.3.1.R33x_v20070802.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.818
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.team.cvs.ssh2_3.2.100.I20070604.jar   Bundle "org.eclipse.team.cvs.ssh2" version "3.2.100.I20070604" has already been installed from: update@plugins/org.eclipse.team.cvs.ssh2_3.2.100.I20070604.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.827
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.equinox.preferences_3.2.100.v20070522.jar   Bundle "org.eclipse.equinox.preferences" version "3.2.100.v20070522" has already been installed from: update@plugins/org.eclipse.equinox.preferences_3.2.100.v20070522.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.840
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.filebuffers_3.3.1.r331_v20070829.jar   Bundle "org.eclipse.core.filebuffers" version "3.3.1.r331_v20070829" has already been installed from: update@plugins/org.eclipse.core.filebuffers_3.3.1.r331_v20070829.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.848
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.tomcat_4.1.230.v20070531/   Bundle "org.eclipse.tomcat" version "4.1.230.v20070531" has already been installed from: update@plugins/org.eclipse.tomcat_4.1.230.v20070531/
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.854
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.rcp_3.2.0.v20070612.jar   Bundle "org.eclipse.rcp" version "3.2.0.v20070612" has already been installed from: update@plugins/org.eclipse.rcp_3.2.0.v20070612.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.866
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.team.ui_3.3.1.r33x_20070730.jar   Bundle "org.eclipse.team.ui" version "3.3.1.r33x_20070730" has already been installed from: update@plugins/org.eclipse.team.ui_3.3.1.r33x_20070730.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.872
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.equinox.http.registry_1.0.0.v20070608.jar   Bundle "org.eclipse.equinox.http.registry" version "1.0.0.v20070608" has already been installed from: update@plugins/org.eclipse.equinox.http.registry_1.0.0.v20070608.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.881
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.filesystem.linux.x86_1.1.0.v20070416.jar   Bundle "org.eclipse.core.filesystem.linux.x86" version "1.1.0.v20070416" has already been installed from: update@plugins/org.eclipse.core.filesystem.linux.x86_1.1.0.v20070416.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.888
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.contenttype_3.2.100.v20070319.jar   Bundle "org.eclipse.core.contenttype" version "3.2.100.v20070319" has already been installed from: update@plugins/org.eclipse.core.contenttype_3.2.100.v20070319.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.904
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.apache.ant_1.7.0.v200706080842/   Bundle "org.apache.ant" version "1.7.0.v200706080842" has already been installed from: update@plugins/org.apache.ant_1.7.0.v200706080842/
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.911
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.help.ui_3.3.1.v20070726_33x.jar   Bundle "org.eclipse.help.ui" version "3.3.1.v20070726_33x" has already been installed from: update@plugins/org.eclipse.help.ui_3.3.1.v20070726_33x.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.921
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.help.appserver_3.1.200.v20070510.jar   Bundle "org.eclipse.help.appserver" version "3.1.200.v20070510" has already been installed from: update@plugins/org.eclipse.help.appserver_3.1.200.v20070510.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.928
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.help.webapp_3.3.1.v20070823_33x.jar   Bundle "org.eclipse.help.webapp" version "3.3.1.v20070823_33x" has already been installed from: update@plugins/org.eclipse.help.webapp_3.3.1.v20070823_33x.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.936
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.editors_3.3.1.r331_v20070629.jar   Bundle "org.eclipse.ui.editors" version "3.3.1.r331_v20070629" has already been installed from: update@plugins/org.eclipse.ui.editors_3.3.1.r331_v20070629.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.944
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.filesystem_1.1.0.v20070606.jar   Bundle "org.eclipse.core.filesystem" version "1.1.0.v20070606" has already been installed from: update@plugins/org.eclipse.core.filesystem_1.1.0.v20070606.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.949
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/com.jcraft.jsch_0.1.31.jar   Bundle "com.jcraft.jsch" version "0.1.31" has already been installed from: update@plugins/com.jcraft.jsch_0.1.31.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.958
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.net_1.0.1.r33x_20070709.jar   Bundle "org.eclipse.core.net" version "1.0.1.r33x_20070709" has already been installed from: update@plugins/org.eclipse.core.net_1.0.1.r33x_20070709.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.967
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.team.cvs.ssh_3.2.100.I20061208.jar   Bundle "org.eclipse.team.cvs.ssh" version "3.2.100.I20061208" has already been installed from: update@plugins/org.eclipse.team.cvs.ssh_3.2.100.I20061208.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.977
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.team.cvs.ui_3.3.1.r33x_20070807.jar   Bundle "org.eclipse.team.cvs.ui" version "3.3.1.r33x_20070807" has already been installed from: update@plugins/org.eclipse.team.cvs.ui_3.3.1.r33x_20070807.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.983
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.views.properties.tabbed_3.3.1.M20070831-0800.jar   Bundle "org.eclipse.ui.views.properties.tabbed" version "3.3.1.M20070831-0800" has already been installed from: update@plugins/org.eclipse.ui.views.properties.tabbed_3.3.1.M20070831-0800.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:29.991
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.update.ui_3.2.100.v20070615.jar   Bundle "org.eclipse.update.ui" version "3.2.100.v20070615" has already been installed from: update@plugins/org.eclipse.update.ui_3.2.100.v20070615.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.002
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.debug.core_3.3.1.v20070731_r331.jar   Bundle "org.eclipse.debug.core" version "3.3.1.v20070731_r331" has already been installed from: update@plugins/org.eclipse.debug.core_3.3.1.v20070731_r331.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.007
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.databinding.beans_1.0.1.M20070910-0800b.jar   Bundle "org.eclipse.core.databinding.beans" version "1.0.1.M20070910-0800b" has already been installed from: update@plugins/org.eclipse.core.databinding.beans_1.0.1.M20070910-0800b.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.016
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.jface.text_3.3.1.r331_v20070629.jar   Bundle "org.eclipse.jface.text" version "3.3.1.r331_v20070629" has already been installed from: update@plugins/org.eclipse.jface.text_3.3.1.r331_v20070629.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.021
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.swt_3.3.1.v3346j.jar   Bundle "org.eclipse.swt" version "3.3.1.v3346j" has already been installed from: update@plugins/org.eclipse.swt_3.3.1.v3346j.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.031
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.intro.universal_3.2.100.v20070530A/   Bundle "org.eclipse.ui.intro.universal" version "3.2.100.v20070530A" has already been installed from: update@plugins/org.eclipse.ui.intro.universal_3.2.100.v20070530A/
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.037
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.equinox.app_1.0.1.R33x_v20070828.jar   Bundle "org.eclipse.equinox.app" version "1.0.1.R33x_v20070828" has already been installed from: update@plugins/org.eclipse.equinox.app_1.0.1.R33x_v20070828.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.042
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.update.core.linux_3.2.0.v20070615.jar   Bundle "org.eclipse.update.core.linux" version "3.2.0.v20070615" has already been installed from: update@plugins/org.eclipse.update.core.linux_3.2.0.v20070615.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.047
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.jsch.core_1.0.0.I20070426.jar   Bundle "org.eclipse.jsch.core" version "1.0.0.I20070426" has already been installed from: update@plugins/org.eclipse.jsch.core_1.0.0.I20070426.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.058
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.commands_3.3.0.I20070605-0010.jar   Bundle "org.eclipse.core.commands" version "3.3.0.I20070605-0010" has already been installed from: update@plugins/org.eclipse.core.commands_3.3.0.I20070605-0010.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.064
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.equinox.http.servlet_1.0.1.R33x_v20070816.jar   Bundle "org.eclipse.equinox.http.servlet" version "1.0.1.R33x_v20070816" has already been installed from: update@plugins/org.eclipse.equinox.http.servlet_1.0.1.R33x_v20070816.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.072
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.console_3.2.1.v20070824_r331.jar   Bundle "org.eclipse.ui.console" version "3.2.1.v20070824_r331" has already been installed from: update@plugins/org.eclipse.ui.console_3.2.1.v20070824_r331.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.079
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.team.cvs.core_3.3.1.r33x_20070724.jar   Bundle "org.eclipse.team.cvs.core" version "3.3.1.r33x_20070724" has already been installed from: update@plugins/org.eclipse.team.cvs.core_3.3.1.r33x_20070724.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.088
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.workbench.texteditor_3.3.1.r331_v20070806.jar   Bundle "org.eclipse.ui.workbench.texteditor" version "3.3.1.r331_v20070806" has already been installed from: update@plugins/org.eclipse.ui.workbench.texteditor_3.3.1.r331_v20070806.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.093
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.equinox.jsp.jasper.registry_1.0.0.v20070607.jar   Bundle "org.eclipse.equinox.jsp.jasper.registry" version "1.0.0.v20070607" has already been installed from: update@plugins/org.eclipse.equinox.jsp.jasper.registry_1.0.0.v20070607.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.103
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.expressions_3.3.0.v20070606-0010.jar   Bundle "org.eclipse.core.expressions" version "3.3.0.v20070606-0010" has already been installed from: update@plugins/org.eclipse.core.expressions_3.3.0.v20070606-0010.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.111
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.help.base_3.3.1.v20070813_33x.jar   Bundle "org.eclipse.help.base" version "3.3.1.v20070813_33x" has already been installed from: update@plugins/org.eclipse.help.base_3.3.1.v20070813_33x.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.120
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.workbench.compatibility_3.2.0.I20070319-0010/   Bundle "org.eclipse.ui.workbench.compatibility" version "3.2.0.I20070319-0010" has already been installed from: update@plugins/org.eclipse.ui.workbench.compatibility_3.2.0.I20070319-0010/
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.130
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.ide_3.3.1.M20070910-0800b.jar   Bundle "org.eclipse.ui.ide" version "3.3.1.M20070910-0800b" has already been installed from: update@plugins/org.eclipse.ui.ide_3.3.1.M20070910-0800b.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.137
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.equinox.launcher.gtk.linux.x86_1.0.1.R33x_v20070828/   Bundle "org.eclipse.equinox.launcher.gtk.linux.x86" version "1.0.1.R33x_v20070828" has already been installed from: update@plugins/org.eclipse.equinox.launcher.gtk.linux.x86_1.0.1.R33x_v20070828/
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.142
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.equinox.launcher_1.0.1.R33x_v20070828.jar   Bundle "org.eclipse.equinox.launcher" version "1.0.1.R33x_v20070828" has already been installed from: update@plugins/org.eclipse.equinox.launcher_1.0.1.R33x_v20070828.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.152
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.databinding_1.0.1.M20070822-0800.jar   Bundle "org.eclipse.core.databinding" version "1.0.1.M20070822-0800" has already been installed from: update@plugins/org.eclipse.core.databinding_1.0.1.M20070822-0800.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.161
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.update.scheduler_3.2.100.v20070615.jar   Bundle "org.eclipse.update.scheduler" version "3.2.100.v20070615" has already been installed from: update@plugins/org.eclipse.update.scheduler_3.2.100.v20070615.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.169
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.apache.commons.el_1.0.0.v200706111724.jar   Bundle "org.apache.commons.el" version "1.0.0.v200706111724" has already been installed from: update@plugins/org.apache.commons.el_1.0.0.v200706111724.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.176
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.equinox.jsp.jasper_1.0.1.R33x_v20070816.jar   Bundle "org.eclipse.equinox.jsp.jasper" version "1.0.1.R33x_v20070816" has already been installed from: update@plugins/org.eclipse.equinox.jsp.jasper_1.0.1.R33x_v20070816.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.184
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.help_3.3.1.v20070726_33x.jar   Bundle "org.eclipse.help" version "3.3.1.v20070726_33x" has already been installed from: update@plugins/org.eclipse.help_3.3.1.v20070726_33x.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.190
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ant.core_3.1.200.v20070522.jar   Bundle "org.eclipse.ant.core" version "3.1.200.v20070522" has already been installed from: update@plugins/org.eclipse.ant.core_3.1.200.v20070522.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.196
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.apache.commons.logging_1.0.4.v200706111724.jar   Bundle "org.apache.commons.logging" version "1.0.4.v200706111724" has already been installed from: update@plugins/org.apache.commons.logging_1.0.4.v200706111724.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.202
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.browser_3.2.100.v20070524A.jar   Bundle "org.eclipse.ui.browser" version "3.2.100.v20070524A" has already been installed from: update@plugins/org.eclipse.ui.browser_3.2.100.v20070524A.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.211
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.jface_3.3.1.M20070910-0800b.jar   Bundle "org.eclipse.jface" version "3.3.1.M20070910-0800b" has already been installed from: update@plugins/org.eclipse.jface_3.3.1.M20070910-0800b.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.217
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.externaltools_3.1.200.v20070416.jar   Bundle "org.eclipse.ui.externaltools" version "3.1.200.v20070416" has already been installed from: update@plugins/org.eclipse.ui.externaltools_3.1.200.v20070416.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.235
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.workbench_3.3.1.M20070921-1200.jar   Bundle "org.eclipse.ui.workbench" version "3.3.1.M20070921-1200" has already been installed from: update@plugins/org.eclipse.ui.workbench_3.3.1.M20070921-1200.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.241
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.navigator.resources_3.3.1.M20070831-2000.jar   Bundle "org.eclipse.ui.navigator.resources" version "3.3.1.M20070831-2000" has already been installed from: update@plugins/org.eclipse.ui.navigator.resources_3.3.1.M20070831-2000.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.249
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ltk.ui.refactoring_3.3.1.r331_v20070829.jar   Bundle "org.eclipse.ltk.ui.refactoring" version "3.3.1.r331_v20070829" has already been installed from: update@plugins/org.eclipse.ltk.ui.refactoring_3.3.1.r331_v20070829.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.257
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.search_3.3.1.r331_v20070831-0800.jar   Bundle "org.eclipse.search" version "3.3.1.r331_v20070831-0800" has already been installed from: update@plugins/org.eclipse.search_3.3.1.r331_v20070831-0800.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.262
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.equinox.http.jetty_1.0.1.R33x_v20070816.jar   Bundle "org.eclipse.equinox.http.jetty" version "1.0.1.R33x_v20070816" has already been installed from: update@plugins/org.eclipse.equinox.http.jetty_1.0.1.R33x_v20070816.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.270
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.resources_3.3.0.v20070604.jar   Bundle "org.eclipse.core.resources" version "3.3.0.v20070604" has already been installed from: update@plugins/org.eclipse.core.resources_3.3.0.v20070604.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.278
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.core.resources.compatibility_3.2.100.v20070502.jar   Bundle "org.eclipse.core.resources.compatibility" version "3.2.100.v20070502" has already been installed from: update@plugins/org.eclipse.core.resources.compatibility_3.2.100.v20070502.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.316
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.views_3.2.101.M20070910-0800b.jar   Bundle "org.eclipse.ui.views" version "3.2.101.M20070910-0800b" has already been installed from: update@plugins/org.eclipse.ui.views_3.2.101.M20070910-0800b.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.327
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/javax.servlet.jsp_2.0.0.v200706191603.jar   Bundle "javax.servlet.jsp" version "2.0.0.v200706191603" has already been installed from: update@plugins/javax.servlet.jsp_2.0.0.v200706191603.jar
+
+!ENTRY org.eclipse.update.configurator 2007-10-26 08:56:30.334
+!MESSAGE Could not install bundle ../../../auto/jive/ozdemir/.eclipse/org.eclipse.platform_3.3.0_185596441/configuration/eclipse/plugins/org.eclipse.ui.navigator_3.3.1.M20070831-2000.jar   Bundle "org.eclipse.ui.navigator" version "3.3.1.M20070831-2000" has already been installed from: update@plugins/org.eclipse.ui.navigator_3.3.1.M20070831-2000.jar
+
+!ENTRY org.eclipse.ui 4 4 2007-10-26 08:56:35.818
+!MESSAGE The proxied handler for 'de.babe.eclipse.plugins.multiClipboard.handlers.ClipboardHandler:selectAll' could not be loaded
+
+!ENTRY org.eclipse.ui 4 0 2007-10-26 08:56:35.818
+!MESSAGE The proxied handler for 'de.babe.eclipse.plugins.multiClipboard.handlers.ClipboardHandler:selectAll' could not be loaded
+!STACK 1
+org.eclipse.core.runtime.CoreException: Plug-in de.babe.eclipse.plugins.MultiClipboard was unable to load class de.babe.eclipse.plugins.multiClipboard.handlers.ClipboardHandler.
+	at org.eclipse.core.internal.registry.osgi.RegistryStrategyOSGI.throwException(RegistryStrategyOSGI.java:180)
+	at org.eclipse.core.internal.registry.osgi.RegistryStrategyOSGI.createExecutableExtension(RegistryStrategyOSGI.java:162)
+	at org.eclipse.core.internal.registry.ExtensionRegistry.createExecutableExtension(ExtensionRegistry.java:788)
+	at org.eclipse.core.internal.registry.ConfigurationElement.createExecutableExtension(ConfigurationElement.java:243)
+	at org.eclipse.core.internal.registry.ConfigurationElementHandle.createExecutableExtension(ConfigurationElementHandle.java:51)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerProxy.loadHandler(LegacyHandlerProxy.java:116)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerProxy.getAttributeValuesByName(LegacyHandlerProxy.java:97)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerWrapper.isEnabled(LegacyHandlerWrapper.java:120)
+	at org.eclipse.core.commands.Command.isEnabled(Command.java:831)
+	at org.eclipse.core.commands.Command.setHandler(Command.java:969)
+	at org.eclipse.ui.internal.handlers.HandlerAuthority.updateCommand(HandlerAuthority.java:537)
+	at org.eclipse.ui.internal.handlers.HandlerAuthority.activateHandler(HandlerAuthority.java:186)
+	at org.eclipse.ui.internal.handlers.HandlerService.activateHandler(HandlerService.java:117)
+	at org.eclipse.ui.internal.handlers.HandlerService.activateHandler(HandlerService.java:109)
+	at org.eclipse.ui.internal.handlers.HandlerService.activateHandler(HandlerService.java:104)
+	at org.eclipse.ui.internal.handlers.HandlerPersistence.readHandlerSubmissionsFromRegistry(HandlerPersistence.java:332)
+	at org.eclipse.ui.internal.handlers.HandlerPersistence.read(HandlerPersistence.java:191)
+	at org.eclipse.ui.internal.handlers.HandlerService.readRegistry(HandlerService.java:182)
+	at org.eclipse.ui.internal.Workbench$37.runWithException(Workbench.java:1575)
+	at org.eclipse.ui.internal.StartupThreading$StartupRunnable.run(StartupThreading.java:31)
+	at org.eclipse.swt.widgets.RunnableLock.run(RunnableLock.java:35)
+	at org.eclipse.swt.widgets.Synchronizer.runAsyncMessages(Synchronizer.java:123)
+	at org.eclipse.swt.widgets.Display.runAsyncMessages(Display.java:3296)
+	at org.eclipse.swt.widgets.Display.readAndDispatch(Display.java:2974)
+	at org.eclipse.ui.internal.Workbench.runUI(Workbench.java:2309)
+	at org.eclipse.ui.internal.Workbench.access$4(Workbench.java:2219)
+	at org.eclipse.ui.internal.Workbench$4.run(Workbench.java:466)
+	at org.eclipse.core.databinding.observable.Realm.runWithDefault(Realm.java:289)
+	at org.eclipse.ui.internal.Workbench.createAndRunWorkbench(Workbench.java:461)
+	at org.eclipse.ui.PlatformUI.createAndRunWorkbench(PlatformUI.java:149)
+	at org.eclipse.ui.internal.ide.application.IDEApplication.start(IDEApplication.java:106)
+	at org.eclipse.equinox.internal.app.EclipseAppHandle.run(EclipseAppHandle.java:169)
+	at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.runApplication(EclipseAppLauncher.java:106)
+	at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.start(EclipseAppLauncher.java:76)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:363)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:176)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:585)
+	at org.eclipse.equinox.launcher.Main.invokeFramework(Main.java:508)
+	at org.eclipse.equinox.launcher.Main.basicRun(Main.java:447)
+	at org.eclipse.equinox.launcher.Main.run(Main.java:1173)
+org.eclipse.core.runtime.CoreException[1]: java.lang.ClassNotFoundException: de.babe.eclipse.plugins.multiClipboard.handlers.ClipboardHandler
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.findClassInternal(BundleLoader.java:434)
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.findClass(BundleLoader.java:369)
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.findClass(BundleLoader.java:357)
+	at org.eclipse.osgi.internal.baseadaptor.DefaultClassLoader.loadClass(DefaultClassLoader.java:83)
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:251)
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.loadClass(BundleLoader.java:289)
+	at org.eclipse.osgi.framework.internal.core.BundleHost.loadClass(BundleHost.java:227)
+	at org.eclipse.osgi.framework.internal.core.AbstractBundle.loadClass(AbstractBundle.java:1269)
+	at org.eclipse.core.internal.registry.osgi.RegistryStrategyOSGI.createExecutableExtension(RegistryStrategyOSGI.java:160)
+	at org.eclipse.core.internal.registry.ExtensionRegistry.createExecutableExtension(ExtensionRegistry.java:788)
+	at org.eclipse.core.internal.registry.ConfigurationElement.createExecutableExtension(ConfigurationElement.java:243)
+	at org.eclipse.core.internal.registry.ConfigurationElementHandle.createExecutableExtension(ConfigurationElementHandle.java:51)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerProxy.loadHandler(LegacyHandlerProxy.java:116)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerProxy.getAttributeValuesByName(LegacyHandlerProxy.java:97)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerWrapper.isEnabled(LegacyHandlerWrapper.java:120)
+	at org.eclipse.core.commands.Command.isEnabled(Command.java:831)
+	at org.eclipse.core.commands.Command.setHandler(Command.java:969)
+	at org.eclipse.ui.internal.handlers.HandlerAuthority.updateCommand(HandlerAuthority.java:537)
+	at org.eclipse.ui.internal.handlers.HandlerAuthority.activateHandler(HandlerAuthority.java:186)
+	at org.eclipse.ui.internal.handlers.HandlerService.activateHandler(HandlerService.java:117)
+	at org.eclipse.ui.internal.handlers.HandlerService.activateHandler(HandlerService.java:109)
+	at org.eclipse.ui.internal.handlers.HandlerService.activateHandler(HandlerService.java:104)
+	at org.eclipse.ui.internal.handlers.HandlerPersistence.readHandlerSubmissionsFromRegistry(HandlerPersistence.java:332)
+	at org.eclipse.ui.internal.handlers.HandlerPersistence.read(HandlerPersistence.java:191)
+	at org.eclipse.ui.internal.handlers.HandlerService.readRegistry(HandlerService.java:182)
+	at org.eclipse.ui.internal.Workbench$37.runWithException(Workbench.java:1575)
+	at org.eclipse.ui.internal.StartupThreading$StartupRunnable.run(StartupThreading.java:31)
+	at org.eclipse.swt.widgets.RunnableLock.run(RunnableLock.java:35)
+	at org.eclipse.swt.widgets.Synchronizer.runAsyncMessages(Synchronizer.java:123)
+	at org.eclipse.swt.widgets.Display.runAsyncMessages(Display.java:3296)
+	at org.eclipse.swt.widgets.Display.readAndDispatch(Display.java:2974)
+	at org.eclipse.ui.internal.Workbench.runUI(Workbench.java:2309)
+	at org.eclipse.ui.internal.Workbench.access$4(Workbench.java:2219)
+	at org.eclipse.ui.internal.Workbench$4.run(Workbench.java:466)
+	at org.eclipse.core.databinding.observable.Realm.runWithDefault(Realm.java:289)
+	at org.eclipse.ui.internal.Workbench.createAndRunWorkbench(Workbench.java:461)
+	at org.eclipse.ui.PlatformUI.createAndRunWorkbench(PlatformUI.java:149)
+	at org.eclipse.ui.internal.ide.application.IDEApplication.start(IDEApplication.java:106)
+	at org.eclipse.equinox.internal.app.EclipseAppHandle.run(EclipseAppHandle.java:169)
+	at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.runApplication(EclipseAppLauncher.java:106)
+	at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.start(EclipseAppLauncher.java:76)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:363)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:176)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:585)
+	at org.eclipse.equinox.launcher.Main.invokeFramework(Main.java:508)
+	at org.eclipse.equinox.launcher.Main.basicRun(Main.java:447)
+	at org.eclipse.equinox.launcher.Main.run(Main.java:1173)
+!SUBENTRY 1 org.eclipse.equinox.registry 4 1 2007-10-26 08:56:35.820
+!MESSAGE Plug-in de.babe.eclipse.plugins.MultiClipboard was unable to load class de.babe.eclipse.plugins.multiClipboard.handlers.ClipboardHandler.
+!STACK 0
+java.lang.ClassNotFoundException: de.babe.eclipse.plugins.multiClipboard.handlers.ClipboardHandler
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.findClassInternal(BundleLoader.java:434)
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.findClass(BundleLoader.java:369)
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.findClass(BundleLoader.java:357)
+	at org.eclipse.osgi.internal.baseadaptor.DefaultClassLoader.loadClass(DefaultClassLoader.java:83)
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:251)
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.loadClass(BundleLoader.java:289)
+	at org.eclipse.osgi.framework.internal.core.BundleHost.loadClass(BundleHost.java:227)
+	at org.eclipse.osgi.framework.internal.core.AbstractBundle.loadClass(AbstractBundle.java:1269)
+	at org.eclipse.core.internal.registry.osgi.RegistryStrategyOSGI.createExecutableExtension(RegistryStrategyOSGI.java:160)
+	at org.eclipse.core.internal.registry.ExtensionRegistry.createExecutableExtension(ExtensionRegistry.java:788)
+	at org.eclipse.core.internal.registry.ConfigurationElement.createExecutableExtension(ConfigurationElement.java:243)
+	at org.eclipse.core.internal.registry.ConfigurationElementHandle.createExecutableExtension(ConfigurationElementHandle.java:51)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerProxy.loadHandler(LegacyHandlerProxy.java:116)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerProxy.getAttributeValuesByName(LegacyHandlerProxy.java:97)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerWrapper.isEnabled(LegacyHandlerWrapper.java:120)
+	at org.eclipse.core.commands.Command.isEnabled(Command.java:831)
+	at org.eclipse.core.commands.Command.setHandler(Command.java:969)
+	at org.eclipse.ui.internal.handlers.HandlerAuthority.updateCommand(HandlerAuthority.java:537)
+	at org.eclipse.ui.internal.handlers.HandlerAuthority.activateHandler(HandlerAuthority.java:186)
+	at org.eclipse.ui.internal.handlers.HandlerService.activateHandler(HandlerService.java:117)
+	at org.eclipse.ui.internal.handlers.HandlerService.activateHandler(HandlerService.java:109)
+	at org.eclipse.ui.internal.handlers.HandlerService.activateHandler(HandlerService.java:104)
+	at org.eclipse.ui.internal.handlers.HandlerPersistence.readHandlerSubmissionsFromRegistry(HandlerPersistence.java:332)
+	at org.eclipse.ui.internal.handlers.HandlerPersistence.read(HandlerPersistence.java:191)
+	at org.eclipse.ui.internal.handlers.HandlerService.readRegistry(HandlerService.java:182)
+	at org.eclipse.ui.internal.Workbench$37.runWithException(Workbench.java:1575)
+	at org.eclipse.ui.internal.StartupThreading$StartupRunnable.run(StartupThreading.java:31)
+	at org.eclipse.swt.widgets.RunnableLock.run(RunnableLock.java:35)
+	at org.eclipse.swt.widgets.Synchronizer.runAsyncMessages(Synchronizer.java:123)
+	at org.eclipse.swt.widgets.Display.runAsyncMessages(Display.java:3296)
+	at org.eclipse.swt.widgets.Display.readAndDispatch(Display.java:2974)
+	at org.eclipse.ui.internal.Workbench.runUI(Workbench.java:2309)
+	at org.eclipse.ui.internal.Workbench.access$4(Workbench.java:2219)
+	at org.eclipse.ui.internal.Workbench$4.run(Workbench.java:466)
+	at org.eclipse.core.databinding.observable.Realm.runWithDefault(Realm.java:289)
+	at org.eclipse.ui.internal.Workbench.createAndRunWorkbench(Workbench.java:461)
+	at org.eclipse.ui.PlatformUI.createAndRunWorkbench(PlatformUI.java:149)
+	at org.eclipse.ui.internal.ide.application.IDEApplication.start(IDEApplication.java:106)
+	at org.eclipse.equinox.internal.app.EclipseAppHandle.run(EclipseAppHandle.java:169)
+	at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.runApplication(EclipseAppLauncher.java:106)
+	at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.start(EclipseAppLauncher.java:76)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:363)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:176)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:585)
+	at org.eclipse.equinox.launcher.Main.invokeFramework(Main.java:508)
+	at org.eclipse.equinox.launcher.Main.basicRun(Main.java:447)
+	at org.eclipse.equinox.launcher.Main.run(Main.java:1173)
+
+!ENTRY org.eclipse.osgi 4 0 2007-10-26 08:57:01.312
+!MESSAGE 
+!STACK 0
+java.io.IOException: Manager is not opened.
+	at org.eclipse.osgi.storagemanager.StorageManager.add(StorageManager.java:217)
+	at org.eclipse.osgi.storagemanager.StorageManager.closeOutputStream(StorageManager.java:892)
+	at org.eclipse.osgi.storagemanager.ManagedOutputStream.close(ManagedOutputStream.java:52)
+	at java.io.FilterOutputStream.close(FilterOutputStream.java:143)
+	at java.io.FilterOutputStream.close(FilterOutputStream.java:143)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.saveBundleDatas(BaseStorage.java:515)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.saveAllData(BaseStorage.java:382)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.access$1(BaseStorage.java:372)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage$StateSaver.run(BaseStorage.java:1115)
+	at java.lang.Thread.run(Thread.java:595)
+
+!ENTRY org.eclipse.osgi 4 0 2007-10-26 08:57:01.485
+!MESSAGE 
+!STACK 0
+java.io.IOException: Manager is not opened.
+	at org.eclipse.osgi.storagemanager.StorageManager.lookup(StorageManager.java:425)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.saveStateData(BaseStorage.java:547)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.saveAllData(BaseStorage.java:383)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.access$1(BaseStorage.java:372)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage$StateSaver.run(BaseStorage.java:1115)
+	at java.lang.Thread.run(Thread.java:595)
+
+!ENTRY org.eclipse.ui.workbench 2 0 2007-10-26 08:57:02.957
+!MESSAGE A handler conflict occurred.  This may disable some commands.
+!SUBENTRY 1 org.eclipse.ui.workbench 2 0 2007-10-26 08:57:02.958
+!MESSAGE Conflict for 'AUTOGEN:::net.sourceforge.phpeclipse.actions.popupShowAction/net.sourceforge.phpeclipse.actions.showAction':
+HandlerActivation(commandId=AUTOGEN:::net.sourceforge.phpeclipse.actions.popupShowAction/net.sourceforge.phpeclipse.actions.showAction,
+	handler=ActionDelegateHandlerProxy(null,net.sourceforge.phpeclipse.actions.PHPEclipseShowAction),
+	expression=WorkbenchWindowExpression(org.eclipse.ui.internal.WorkbenchWindow@1474ea),sourcePriority=16384)
+HandlerActivation(commandId=AUTOGEN:::net.sourceforge.phpeclipse.actions.popupShowAction/net.sourceforge.phpeclipse.actions.showAction,
+	handler=ActionDelegateHandlerProxy(null,net.sourceforge.phpeclipse.actions.PHPEclipseShowAction),
+	expression=WorkbenchWindowExpression(org.eclipse.ui.internal.WorkbenchWindow@1474ea),sourcePriority=16384)
+!SUBENTRY 1 org.eclipse.ui.workbench 2 0 2007-10-26 08:57:02.958
+!MESSAGE Conflict for 'AUTOGEN:::net.sourceforge.phpdt.externaltools.actions.externalParserAction/net.sourceforge.phpdt.externaltools.actions.externalParserAction':
+HandlerActivation(commandId=AUTOGEN:::net.sourceforge.phpdt.externaltools.actions.externalParserAction/net.sourceforge.phpdt.externaltools.actions.externalParserAction,
+	handler=ActionDelegateHandlerProxy(null,net.sourceforge.phpdt.externaltools.actions.PHPExternalParserAction),
+	expression=WorkbenchWindowExpression(org.eclipse.ui.internal.WorkbenchWindow@1474ea),sourcePriority=16384)
+HandlerActivation(commandId=AUTOGEN:::net.sourceforge.phpdt.externaltools.actions.externalParserAction/net.sourceforge.phpdt.externaltools.actions.externalParserAction,
+	handler=ActionDelegateHandlerProxy(null,net.sourceforge.phpdt.externaltools.actions.PHPExternalParserAction),
+	expression=WorkbenchWindowExpression(org.eclipse.ui.internal.WorkbenchWindow@1474ea),sourcePriority=16384)
+
+!ENTRY org.eclipse.ui 4 4 2007-10-26 08:57:19.122
+!MESSAGE The proxied handler for 'de.babe.eclipse.plugins.multiClipboard.handlers.ClipboardHandler:selectAll' could not be loaded
+
+!ENTRY org.eclipse.ui 4 0 2007-10-26 08:57:19.122
+!MESSAGE The proxied handler for 'de.babe.eclipse.plugins.multiClipboard.handlers.ClipboardHandler:selectAll' could not be loaded
+!STACK 1
+org.eclipse.core.runtime.CoreException: Plug-in de.babe.eclipse.plugins.MultiClipboard was unable to load class de.babe.eclipse.plugins.multiClipboard.handlers.ClipboardHandler.
+	at org.eclipse.core.internal.registry.osgi.RegistryStrategyOSGI.throwException(RegistryStrategyOSGI.java:180)
+	at org.eclipse.core.internal.registry.osgi.RegistryStrategyOSGI.createExecutableExtension(RegistryStrategyOSGI.java:162)
+	at org.eclipse.core.internal.registry.ExtensionRegistry.createExecutableExtension(ExtensionRegistry.java:788)
+	at org.eclipse.core.internal.registry.ConfigurationElement.createExecutableExtension(ConfigurationElement.java:243)
+	at org.eclipse.core.internal.registry.ConfigurationElementHandle.createExecutableExtension(ConfigurationElementHandle.java:51)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerProxy.loadHandler(LegacyHandlerProxy.java:116)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerProxy.getAttributeValuesByName(LegacyHandlerProxy.java:97)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerWrapper.isEnabled(LegacyHandlerWrapper.java:120)
+	at org.eclipse.core.commands.Command.isEnabled(Command.java:831)
+	at org.eclipse.core.commands.Command.setHandler(Command.java:938)
+	at org.eclipse.ui.internal.handlers.HandlerAuthority.updateCommand(HandlerAuthority.java:535)
+	at org.eclipse.ui.internal.handlers.HandlerAuthority.deactivateHandler(HandlerAuthority.java:256)
+	at org.eclipse.ui.internal.handlers.HandlerService.deactivateHandler(HandlerService.java:144)
+	at org.eclipse.ui.internal.handlers.HandlerService.deactivateHandlers(HandlerService.java:153)
+	at org.eclipse.ui.internal.handlers.HandlerPersistence.clearActivations(HandlerPersistence.java:101)
+	at org.eclipse.ui.internal.handlers.HandlerPersistence.dispose(HandlerPersistence.java:107)
+	at org.eclipse.ui.internal.handlers.HandlerService.dispose(HandlerService.java:159)
+	at org.eclipse.ui.internal.services.ServiceLocator.dispose(ServiceLocator.java:95)
+	at org.eclipse.ui.internal.Workbench.shutdown(Workbench.java:2730)
+	at org.eclipse.ui.internal.Workbench.busyClose(Workbench.java:917)
+	at org.eclipse.ui.internal.Workbench.access$15(Workbench.java:834)
+	at org.eclipse.ui.internal.Workbench$22.run(Workbench.java:1078)
+	at org.eclipse.swt.custom.BusyIndicator.showWhile(BusyIndicator.java:67)
+	at org.eclipse.ui.internal.Workbench.close(Workbench.java:1076)
+	at org.eclipse.ui.internal.Workbench.restart(Workbench.java:2075)
+	at org.eclipse.ui.internal.ide.actions.OpenWorkspaceAction.restart(OpenWorkspaceAction.java:237)
+	at org.eclipse.ui.internal.ide.actions.OpenWorkspaceAction.access$0(OpenWorkspaceAction.java:229)
+	at org.eclipse.ui.internal.ide.actions.OpenWorkspaceAction$WorkspaceMRUAction.run(OpenWorkspaceAction.java:94)
+	at org.eclipse.jface.action.Action.runWithEvent(Action.java:498)
+	at org.eclipse.jface.action.ActionContributionItem.handleWidgetSelection(ActionContributionItem.java:546)
+	at org.eclipse.jface.action.ActionContributionItem.access$2(ActionContributionItem.java:490)
+	at org.eclipse.jface.action.ActionContributionItem$5.handleEvent(ActionContributionItem.java:402)
+	at org.eclipse.swt.widgets.EventTable.sendEvent(EventTable.java:66)
+	at org.eclipse.swt.widgets.Widget.sendEvent(Widget.java:1101)
+	at org.eclipse.swt.widgets.Display.runDeferredEvents(Display.java:3319)
+	at org.eclipse.swt.widgets.Display.readAndDispatch(Display.java:2971)
+	at org.eclipse.ui.internal.Workbench.runEventLoop(Workbench.java:2389)
+	at org.eclipse.ui.internal.Workbench.runUI(Workbench.java:2353)
+	at org.eclipse.ui.internal.Workbench.access$4(Workbench.java:2219)
+	at org.eclipse.ui.internal.Workbench$4.run(Workbench.java:466)
+	at org.eclipse.core.databinding.observable.Realm.runWithDefault(Realm.java:289)
+	at org.eclipse.ui.internal.Workbench.createAndRunWorkbench(Workbench.java:461)
+	at org.eclipse.ui.PlatformUI.createAndRunWorkbench(PlatformUI.java:149)
+	at org.eclipse.ui.internal.ide.application.IDEApplication.start(IDEApplication.java:106)
+	at org.eclipse.equinox.internal.app.EclipseAppHandle.run(EclipseAppHandle.java:169)
+	at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.runApplication(EclipseAppLauncher.java:106)
+	at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.start(EclipseAppLauncher.java:76)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:363)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:176)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:585)
+	at org.eclipse.equinox.launcher.Main.invokeFramework(Main.java:508)
+	at org.eclipse.equinox.launcher.Main.basicRun(Main.java:447)
+	at org.eclipse.equinox.launcher.Main.run(Main.java:1173)
+org.eclipse.core.runtime.CoreException[1]: java.lang.ClassNotFoundException: de.babe.eclipse.plugins.multiClipboard.handlers.ClipboardHandler
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.findClassInternal(BundleLoader.java:434)
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.findClass(BundleLoader.java:369)
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.findClass(BundleLoader.java:357)
+	at org.eclipse.osgi.internal.baseadaptor.DefaultClassLoader.loadClass(DefaultClassLoader.java:83)
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:251)
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.loadClass(BundleLoader.java:289)
+	at org.eclipse.osgi.framework.internal.core.BundleHost.loadClass(BundleHost.java:227)
+	at org.eclipse.osgi.framework.internal.core.AbstractBundle.loadClass(AbstractBundle.java:1269)
+	at org.eclipse.core.internal.registry.osgi.RegistryStrategyOSGI.createExecutableExtension(RegistryStrategyOSGI.java:160)
+	at org.eclipse.core.internal.registry.ExtensionRegistry.createExecutableExtension(ExtensionRegistry.java:788)
+	at org.eclipse.core.internal.registry.ConfigurationElement.createExecutableExtension(ConfigurationElement.java:243)
+	at org.eclipse.core.internal.registry.ConfigurationElementHandle.createExecutableExtension(ConfigurationElementHandle.java:51)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerProxy.loadHandler(LegacyHandlerProxy.java:116)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerProxy.getAttributeValuesByName(LegacyHandlerProxy.java:97)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerWrapper.isEnabled(LegacyHandlerWrapper.java:120)
+	at org.eclipse.core.commands.Command.isEnabled(Command.java:831)
+	at org.eclipse.core.commands.Command.setHandler(Command.java:938)
+	at org.eclipse.ui.internal.handlers.HandlerAuthority.updateCommand(HandlerAuthority.java:535)
+	at org.eclipse.ui.internal.handlers.HandlerAuthority.deactivateHandler(HandlerAuthority.java:256)
+	at org.eclipse.ui.internal.handlers.HandlerService.deactivateHandler(HandlerService.java:144)
+	at org.eclipse.ui.internal.handlers.HandlerService.deactivateHandlers(HandlerService.java:153)
+	at org.eclipse.ui.internal.handlers.HandlerPersistence.clearActivations(HandlerPersistence.java:101)
+	at org.eclipse.ui.internal.handlers.HandlerPersistence.dispose(HandlerPersistence.java:107)
+	at org.eclipse.ui.internal.handlers.HandlerService.dispose(HandlerService.java:159)
+	at org.eclipse.ui.internal.services.ServiceLocator.dispose(ServiceLocator.java:95)
+	at org.eclipse.ui.internal.Workbench.shutdown(Workbench.java:2730)
+	at org.eclipse.ui.internal.Workbench.busyClose(Workbench.java:917)
+	at org.eclipse.ui.internal.Workbench.access$15(Workbench.java:834)
+	at org.eclipse.ui.internal.Workbench$22.run(Workbench.java:1078)
+	at org.eclipse.swt.custom.BusyIndicator.showWhile(BusyIndicator.java:67)
+	at org.eclipse.ui.internal.Workbench.close(Workbench.java:1076)
+	at org.eclipse.ui.internal.Workbench.restart(Workbench.java:2075)
+	at org.eclipse.ui.internal.ide.actions.OpenWorkspaceAction.restart(OpenWorkspaceAction.java:237)
+	at org.eclipse.ui.internal.ide.actions.OpenWorkspaceAction.access$0(OpenWorkspaceAction.java:229)
+	at org.eclipse.ui.internal.ide.actions.OpenWorkspaceAction$WorkspaceMRUAction.run(OpenWorkspaceAction.java:94)
+	at org.eclipse.jface.action.Action.runWithEvent(Action.java:498)
+	at org.eclipse.jface.action.ActionContributionItem.handleWidgetSelection(ActionContributionItem.java:546)
+	at org.eclipse.jface.action.ActionContributionItem.access$2(ActionContributionItem.java:490)
+	at org.eclipse.jface.action.ActionContributionItem$5.handleEvent(ActionContributionItem.java:402)
+	at org.eclipse.swt.widgets.EventTable.sendEvent(EventTable.java:66)
+	at org.eclipse.swt.widgets.Widget.sendEvent(Widget.java:1101)
+	at org.eclipse.swt.widgets.Display.runDeferredEvents(Display.java:3319)
+	at org.eclipse.swt.widgets.Display.readAndDispatch(Display.java:2971)
+	at org.eclipse.ui.internal.Workbench.runEventLoop(Workbench.java:2389)
+	at org.eclipse.ui.internal.Workbench.runUI(Workbench.java:2353)
+	at org.eclipse.ui.internal.Workbench.access$4(Workbench.java:2219)
+	at org.eclipse.ui.internal.Workbench$4.run(Workbench.java:466)
+	at org.eclipse.core.databinding.observable.Realm.runWithDefault(Realm.java:289)
+	at org.eclipse.ui.internal.Workbench.createAndRunWorkbench(Workbench.java:461)
+	at org.eclipse.ui.PlatformUI.createAndRunWorkbench(PlatformUI.java:149)
+	at org.eclipse.ui.internal.ide.application.IDEApplication.start(IDEApplication.java:106)
+	at org.eclipse.equinox.internal.app.EclipseAppHandle.run(EclipseAppHandle.java:169)
+	at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.runApplication(EclipseAppLauncher.java:106)
+	at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.start(EclipseAppLauncher.java:76)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:363)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:176)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:585)
+	at org.eclipse.equinox.launcher.Main.invokeFramework(Main.java:508)
+	at org.eclipse.equinox.launcher.Main.basicRun(Main.java:447)
+	at org.eclipse.equinox.launcher.Main.run(Main.java:1173)
+!SUBENTRY 1 org.eclipse.equinox.registry 4 1 2007-10-26 08:57:19.126
+!MESSAGE Plug-in de.babe.eclipse.plugins.MultiClipboard was unable to load class de.babe.eclipse.plugins.multiClipboard.handlers.ClipboardHandler.
+!STACK 0
+java.lang.ClassNotFoundException: de.babe.eclipse.plugins.multiClipboard.handlers.ClipboardHandler
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.findClassInternal(BundleLoader.java:434)
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.findClass(BundleLoader.java:369)
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.findClass(BundleLoader.java:357)
+	at org.eclipse.osgi.internal.baseadaptor.DefaultClassLoader.loadClass(DefaultClassLoader.java:83)
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:251)
+	at org.eclipse.osgi.framework.internal.core.BundleLoader.loadClass(BundleLoader.java:289)
+	at org.eclipse.osgi.framework.internal.core.BundleHost.loadClass(BundleHost.java:227)
+	at org.eclipse.osgi.framework.internal.core.AbstractBundle.loadClass(AbstractBundle.java:1269)
+	at org.eclipse.core.internal.registry.osgi.RegistryStrategyOSGI.createExecutableExtension(RegistryStrategyOSGI.java:160)
+	at org.eclipse.core.internal.registry.ExtensionRegistry.createExecutableExtension(ExtensionRegistry.java:788)
+	at org.eclipse.core.internal.registry.ConfigurationElement.createExecutableExtension(ConfigurationElement.java:243)
+	at org.eclipse.core.internal.registry.ConfigurationElementHandle.createExecutableExtension(ConfigurationElementHandle.java:51)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerProxy.loadHandler(LegacyHandlerProxy.java:116)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerProxy.getAttributeValuesByName(LegacyHandlerProxy.java:97)
+	at org.eclipse.ui.internal.handlers.LegacyHandlerWrapper.isEnabled(LegacyHandlerWrapper.java:120)
+	at org.eclipse.core.commands.Command.isEnabled(Command.java:831)
+	at org.eclipse.core.commands.Command.setHandler(Command.java:938)
+	at org.eclipse.ui.internal.handlers.HandlerAuthority.updateCommand(HandlerAuthority.java:535)
+	at org.eclipse.ui.internal.handlers.HandlerAuthority.deactivateHandler(HandlerAuthority.java:256)
+	at org.eclipse.ui.internal.handlers.HandlerService.deactivateHandler(HandlerService.java:144)
+	at org.eclipse.ui.internal.handlers.HandlerService.deactivateHandlers(HandlerService.java:153)
+	at org.eclipse.ui.internal.handlers.HandlerPersistence.clearActivations(HandlerPersistence.java:101)
+	at org.eclipse.ui.internal.handlers.HandlerPersistence.dispose(HandlerPersistence.java:107)
+	at org.eclipse.ui.internal.handlers.HandlerService.dispose(HandlerService.java:159)
+	at org.eclipse.ui.internal.services.ServiceLocator.dispose(ServiceLocator.java:95)
+	at org.eclipse.ui.internal.Workbench.shutdown(Workbench.java:2730)
+	at org.eclipse.ui.internal.Workbench.busyClose(Workbench.java:917)
+	at org.eclipse.ui.internal.Workbench.access$15(Workbench.java:834)
+	at org.eclipse.ui.internal.Workbench$22.run(Workbench.java:1078)
+	at org.eclipse.swt.custom.BusyIndicator.showWhile(BusyIndicator.java:67)
+	at org.eclipse.ui.internal.Workbench.close(Workbench.java:1076)
+	at org.eclipse.ui.internal.Workbench.restart(Workbench.java:2075)
+	at org.eclipse.ui.internal.ide.actions.OpenWorkspaceAction.restart(OpenWorkspaceAction.java:237)
+	at org.eclipse.ui.internal.ide.actions.OpenWorkspaceAction.access$0(OpenWorkspaceAction.java:229)
+	at org.eclipse.ui.internal.ide.actions.OpenWorkspaceAction$WorkspaceMRUAction.run(OpenWorkspaceAction.java:94)
+	at org.eclipse.jface.action.Action.runWithEvent(Action.java:498)
+	at org.eclipse.jface.action.ActionContributionItem.handleWidgetSelection(ActionContributionItem.java:546)
+	at org.eclipse.jface.action.ActionContributionItem.access$2(ActionContributionItem.java:490)
+	at org.eclipse.jface.action.ActionContributionItem$5.handleEvent(ActionContributionItem.java:402)
+	at org.eclipse.swt.widgets.EventTable.sendEvent(EventTable.java:66)
+	at org.eclipse.swt.widgets.Widget.sendEvent(Widget.java:1101)
+	at org.eclipse.swt.widgets.Display.runDeferredEvents(Display.java:3319)
+	at org.eclipse.swt.widgets.Display.readAndDispatch(Display.java:2971)
+	at org.eclipse.ui.internal.Workbench.runEventLoop(Workbench.java:2389)
+	at org.eclipse.ui.internal.Workbench.runUI(Workbench.java:2353)
+	at org.eclipse.ui.internal.Workbench.access$4(Workbench.java:2219)
+	at org.eclipse.ui.internal.Workbench$4.run(Workbench.java:466)
+	at org.eclipse.core.databinding.observable.Realm.runWithDefault(Realm.java:289)
+	at org.eclipse.ui.internal.Workbench.createAndRunWorkbench(Workbench.java:461)
+	at org.eclipse.ui.PlatformUI.createAndRunWorkbench(PlatformUI.java:149)
+	at org.eclipse.ui.internal.ide.application.IDEApplication.start(IDEApplication.java:106)
+	at org.eclipse.equinox.internal.app.EclipseAppHandle.run(EclipseAppHandle.java:169)
+	at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.runApplication(EclipseAppLauncher.java:106)
+	at org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher.start(EclipseAppLauncher.java:76)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:363)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:176)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:585)
+	at org.eclipse.equinox.launcher.Main.invokeFramework(Main.java:508)
+	at org.eclipse.equinox.launcher.Main.basicRun(Main.java:447)
+	at org.eclipse.equinox.launcher.Main.run(Main.java:1173)
+
+!ENTRY org.eclipse.osgi 4 0 2007-10-26 08:57:19.369
+!MESSAGE 
+!STACK 0
+java.io.IOException: Manager is not opened.
+	at org.eclipse.osgi.storagemanager.StorageManager.add(StorageManager.java:217)
+	at org.eclipse.osgi.storagemanager.StorageManager.closeOutputStream(StorageManager.java:892)
+	at org.eclipse.osgi.storagemanager.ManagedOutputStream.close(ManagedOutputStream.java:52)
+	at java.io.FilterOutputStream.close(FilterOutputStream.java:143)
+	at java.io.FilterOutputStream.close(FilterOutputStream.java:143)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.saveBundleDatas(BaseStorage.java:515)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.saveAllData(BaseStorage.java:382)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.frameworkStop(BaseStorage.java:772)
+	at org.eclipse.osgi.baseadaptor.BaseAdaptor.frameworkStop(BaseAdaptor.java:273)
+	at org.eclipse.osgi.framework.internal.core.SystemBundleActivator.stop(SystemBundleActivator.java:64)
+	at org.eclipse.osgi.framework.internal.core.BundleContextImpl$3.run(BundleContextImpl.java:1040)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at org.eclipse.osgi.framework.internal.core.BundleContextImpl.stop(BundleContextImpl.java:1036)
+	at org.eclipse.osgi.framework.internal.core.StartLevelManager.suspendAllBundles(StartLevelManager.java:705)
+	at org.eclipse.osgi.framework.internal.core.StartLevelManager.decFWSL(StartLevelManager.java:658)
+	at org.eclipse.osgi.framework.internal.core.StartLevelManager.doSetStartLevel(StartLevelManager.java:291)
+	at org.eclipse.osgi.framework.internal.core.StartLevelManager.shutdown(StartLevelManager.java:261)
+	at org.eclipse.osgi.framework.internal.core.SystemBundle.suspend(SystemBundle.java:188)
+	at org.eclipse.osgi.framework.internal.core.Framework.shutdown(Framework.java:622)
+	at org.eclipse.osgi.framework.internal.core.Framework.close(Framework.java:525)
+	at org.eclipse.osgi.framework.internal.core.OSGi.close(OSGi.java:41)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.shutdown(EclipseStarter.java:399)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:197)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:585)
+	at org.eclipse.equinox.launcher.Main.invokeFramework(Main.java:508)
+	at org.eclipse.equinox.launcher.Main.basicRun(Main.java:447)
+	at org.eclipse.equinox.launcher.Main.run(Main.java:1173)
+
+!ENTRY org.eclipse.osgi 4 0 2007-10-26 08:57:19.498
+!MESSAGE 
+!STACK 0
+java.io.IOException: Manager is not opened.
+	at org.eclipse.osgi.storagemanager.StorageManager.lookup(StorageManager.java:425)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.saveStateData(BaseStorage.java:547)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.saveAllData(BaseStorage.java:383)
+	at org.eclipse.osgi.internal.baseadaptor.BaseStorage.frameworkStop(BaseStorage.java:772)
+	at org.eclipse.osgi.baseadaptor.BaseAdaptor.frameworkStop(BaseAdaptor.java:273)
+	at org.eclipse.osgi.framework.internal.core.SystemBundleActivator.stop(SystemBundleActivator.java:64)
+	at org.eclipse.osgi.framework.internal.core.BundleContextImpl$3.run(BundleContextImpl.java:1040)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at org.eclipse.osgi.framework.internal.core.BundleContextImpl.stop(BundleContextImpl.java:1036)
+	at org.eclipse.osgi.framework.internal.core.StartLevelManager.suspendAllBundles(StartLevelManager.java:705)
+	at org.eclipse.osgi.framework.internal.core.StartLevelManager.decFWSL(StartLevelManager.java:658)
+	at org.eclipse.osgi.framework.internal.core.StartLevelManager.doSetStartLevel(StartLevelManager.java:291)
+	at org.eclipse.osgi.framework.internal.core.StartLevelManager.shutdown(StartLevelManager.java:261)
+	at org.eclipse.osgi.framework.internal.core.SystemBundle.suspend(SystemBundle.java:188)
+	at org.eclipse.osgi.framework.internal.core.Framework.shutdown(Framework.java:622)
+	at org.eclipse.osgi.framework.internal.core.Framework.close(Framework.java:525)
+	at org.eclipse.osgi.framework.internal.core.OSGi.close(OSGi.java:41)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.shutdown(EclipseStarter.java:399)
+	at org.eclipse.core.runtime.adaptor.EclipseStarter.run(EclipseStarter.java:197)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:39)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:25)
+	at java.lang.reflect.Method.invoke(Method.java:585)
+	at org.eclipse.equinox.launcher.Main.invokeFramework(Main.java:508)
+	at org.eclipse.equinox.launcher.Main.basicRun(Main.java:447)
+	at org.eclipse.equinox.launcher.Main.run(Main.java:1173)
