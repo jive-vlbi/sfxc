@@ -129,6 +129,10 @@ void Manager_node::start() {
       case START_NEW_SCAN:
       {
         get_log_writer() << "START_NEW_SCAN" << std::endl;
+        
+        // set track information
+        initialise_scan(scans.front());
+        
         // Set the input nodes to the proper start time
         get_log_writer() << "START_TIME:" << start_time << std::endl;
         for (size_t station=0; station < control_parameters.number_stations();
@@ -195,12 +199,14 @@ void Manager_node::start() {
       }
       case GOTO_NEXT_TIMESLICE:
       {
-        // NGHK: todo check for new scan
-        start_time = stoptime_timeslice;
-        if (start_time < stop_time) {
-          status = START_CORRELATION_TIME_SLICE;
-        } else {
+        if (start_time >= stop_time) {
           status = STOP_CORRELATING;
+        } else if (scans.empty()) {
+          status = STOP_CORRELATING;
+        } else {
+          scans.pop_front();
+          initialise_scan(scans.front());
+          status = START_CORRELATION_TIME_SLICE;
         }
         break;
       }
@@ -355,23 +361,6 @@ Manager_node::initialise() {
   // Get a list of all scan names
   control_parameters.get_vex().get_scans(std::back_inserter(scans));
 
-  // Send the track parameters
-  // PRECONDITION: they are the same for the entire experiment
-  get_log_writer() << "Set Track_parameters" << std::endl;
-  for (size_t station=0; 
-       station<control_parameters.number_stations(); station++) {
-    const std::string &mode = 
-      control_parameters.get_vex().get_mode(*scans.begin());
-    const std::string &station_name = 
-      control_parameters.station(station);
-    const std::string &track = 
-      control_parameters.get_vex().get_track(mode, station_name);
-
-    Track_parameters track_param =
-      control_parameters.get_track_parameters(track);
-    input_node_set(station_name, track_param);
-  }
-
   // Send the delay tables:
   get_log_writer() << "Set delay_table" << std::endl;
   for (size_t station=0; 
@@ -419,6 +408,35 @@ Manager_node::initialise() {
   get_log_writer()(2) << "start scan : " << *scans.begin() << std::endl;
 
   get_log_writer()(2) << "Starting correlation" << std::endl;
+}
+
+void Manager_node::initialise_scan(const std::string &scan) {
+  get_log_writer() << "Set Track_parameters" << std::endl;
+  
+  // set the start time to the beginning of the scan
+  if (start_time < 
+      control_parameters.get_vex().start_of_scan(scans.front()).to_miliseconds(start_day)) {
+    start_time =
+      control_parameters.get_vex().start_of_scan(scans.front()).to_miliseconds(start_day);
+  }
+  
+
+  
+  // Send the track parameters
+  get_log_writer() << "Set Track_parameters" << std::endl;
+  const std::string &mode = 
+    control_parameters.get_vex().get_mode(scan);
+  for (size_t station=0; 
+       station<control_parameters.number_stations(); station++) {
+    const std::string &station_name = 
+      control_parameters.station(station);
+    const std::string &track = 
+      control_parameters.get_vex().get_track(mode, station_name);
+
+    Track_parameters track_param =
+      control_parameters.get_track_parameters(track);
+    input_node_set(station_name, track_param);
+  }
 }
 
 void Manager_node::end_correlation() {
