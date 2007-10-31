@@ -59,6 +59,9 @@ public:
 
   /// Initialise is called from start() to initialise the correlation process. 
   void initialise();
+  
+  /// Initialises the processing of a certain scan
+  void initialise_scan(const std::string &scan);
 
   void hook_added_data_reader(size_t reader) {};
   void hook_added_data_writer(size_t writer) {};
