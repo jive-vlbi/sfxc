@@ -32,10 +32,12 @@ public:
   char sideband;
   std::vector<std::string> autos, crosses;
   std::vector<double> snr_crosses; // Signal to noise ratio for the crosses
+  std::vector<double> offset; // Offset of the maximum value of a cross with the midpoint
 
   void set_size_crosses(int size_cross) {
     crosses.resize(size_cross);
     snr_crosses.resize(size_cross);
+    offset.resize(size_cross);
   }
 };
 
@@ -66,6 +68,7 @@ private:
   void plot(char *filename, int nPts, char *title);
 
   double signal_to_noise_ratio(std::vector< std::complex<double> > &data);
+  double max_value_offset(std::vector< std::complex<double> > &data);
 
 private:
   int nLags;
@@ -311,10 +314,10 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
 
   infile.read((char *)&in[0], 2*in.size()*sizeof(double));
   fftw_execute(visibilities2lags);
+
   for  (int lag=0; lag<nLags; lag++) {
     magnitude[lag] = abs(out[(lag+nLags/2)%nLags])/nLags;
   }
-
   char title[80], filename[80];
   int tmp1=0, tmp2=0;
   if (station>=nStations) {
@@ -339,8 +342,8 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
   assert(plot_nr < plot_data.crosses.size());
   plot_data.crosses[plot_nr] = filename;
   plot_data.snr_crosses[plot_nr] = signal_to_noise_ratio(out);
+  plot_data.offset[plot_nr] = max_value_offset(out);
   plot_count++;
-
   plot(filename, nLags, title);
 }
 
@@ -357,6 +360,26 @@ Plot_generator::plot(char *filename, int nPts, char *title) {
   gnuplot_close(g);
 }
 
+double
+Plot_generator::max_value_offset(std::vector< std::complex<double> > &data)
+{
+  int index_max = 0;
+  for (size_t i=1; i<data.size(); i++) {
+    if (norm(data[i]) > norm(data[index_max])) index_max = i;
+  }
+
+  double maxval = 0.0;
+  int maxval_loc = 0;
+  for  (int lag=0; lag<data.size(); lag++) {
+    magnitude[lag] = abs(data[(lag+data.size()/2)%data.size()])/data.size();
+    if(magnitude[lag] > maxval){
+      maxval = magnitude[lag];
+      maxval_loc =lag -  (data.size()/2);
+    }
+  }
+  
+  return maxval_loc;
+}
 double 
 Plot_generator::signal_to_noise_ratio(std::vector< std::complex<double> > &data)
 {
@@ -519,11 +542,13 @@ void print_html(const Control_parameters &ConPrms) {
         html_output.precision(4);
         if (show_plots) {
           html_output << "<img src='" << data.crosses[col] << "'> " 
-                      << data.crosses[col] << " - " << data.snr_crosses[col] << std::endl;
+                      << data.crosses[col] << " - " << data.snr_crosses[col] << " - offset: " 
+                      << data.offset[col] << std::endl;
         } else {
           html_output << "<A href = '" << data.crosses[col] << "' "
                       << "OnMouseOver=\"show('" << data.crosses[col] << "');\">" 
-                      << data.snr_crosses[col] << "</a></td>";
+                      << data.snr_crosses[col] <<  " <br><font size='-3'>offset: " 
+                      << data.offset[col] << "</font></a></td>";
         }
       }
 
