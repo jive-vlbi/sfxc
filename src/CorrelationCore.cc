@@ -41,30 +41,29 @@ void CorrelationCore::set_parameters(Correlation_parameters &corr_param)
   parameters_set = true;
 
   cross_polarize = corr_param.cross_polarize;
+  reference_station = corr_param.reference_station;
 
   nstations = corr_param.station_streams.size();
 
   //int nbslns;
-  nbslns = /* #Autos */ nstations + 
-           /* #Crosses */ nstations*(nstations-1)/2;
   if (cross_polarize) {
-    assert(nstations%2 == 0);
-    // Doing cross polarisations
-    nbslns -= nstations/2;
-    assert(nbslns > 0);
+    int nAutos = nstations/2;
+    int nCrosses = nstations/2*(nstations/2-1)/2;
+    if (reference_station >= 0) {
+      nbslns = 2*nAutos + 4*(nAutos-1);
+    } else {
+      nbslns = 2*nAutos + 4*nCrosses;
+    }
+  } else {
+    int nAutos = nstations;
+    int nCrosses = nstations*(nstations-1)/2;
+    if (reference_station >= 0) {
+      nbslns = 2*nAutos - 1;
+    } else {
+      nbslns = nAutos + nCrosses;
+    }
   }
 
-//   if (0 <= ref_sn1 && ref_sn1 < nstations) {
-//     //use a reference station
-//     if (0 <= ref_sn2 && ref_sn2 < nstations) {
-//       nbslns    = 3*nstations-2;
-//     } else {
-//       nbslns    = 2*nstations-1;
-//     }
-//   } else {
-//     //correlate all baselines
-//     nbslns    = nstations*(nstations-1)/2 + nstations;
-//   }
   n2fftcorr = corr_param.number_channels;
   padding   = PADDING;
 
@@ -93,10 +92,7 @@ void CorrelationCore::set_parameters(Correlation_parameters &corr_param)
   for (int sn = 0; sn < nstations; sn++){
     p_r2c[sn] =
       fftw_plan_dft_r2c_1d(n2fftcorr*padding,segm[sn],xps[sn],FFTW_EXHAUSTIVE);
-  }  
- 
-  ref_station1 = -1; 
-  ref_station2 = -1;
+  }
 }
 
 
@@ -187,26 +183,29 @@ bool CorrelationCore::correlate_segment(double** in_segm)
     bsln++;
   }
 
-  if (0 <= ref_station1 && ref_station1 < nstations) {
-    //calculate the correlations using one or two reference stations
-    for (int sno = 0; sno < nstations ; sno ++){
-      if ((sno != ref_station1) && (sno != ref_station2)) {
-        correlate_baseline(ref_station1, sno, bsln);
-        bsln++;
+  if (cross_polarize) {
+    int nstations_2 = nstations/2;
+    if (reference_station >= 0) {
+      // cross polarize with a reference station
+
+      for (int sn = 0 ; sn < nstations; sn++){
+        if ((sn != reference_station) && 
+            (sn != (reference_station+nstations_2))) {
+          correlate_baseline(sn, reference_station, bsln);
+          bsln++;
+          assert(bsln <= nbslns);
+        }
       }
-    }
-    if (0 <= ref_station2 && ref_station2 < nstations) {
-      for (int sno = 0; sno < nstations ; sno ++){
-	if ((sno != ref_station1) && (sno != ref_station2)) {
-	  correlate_baseline(ref_station2, sno, bsln);
-	  bsln++;
-	}
+      for (int sn = 0 ; sn < nstations; sn++){
+        if ((sn != reference_station) && 
+            (sn != (reference_station+nstations_2))) {
+          correlate_baseline(sn, reference_station+nstations_2, bsln);
+          bsln++;
+          assert(bsln <= nbslns);
+        }
       }
-    }
-  } else {
-    if (cross_polarize) {
-      int nstations_2 = nstations/2;
-      //calculate the correlations for all base lines
+    } else {
+      // cross polarize without a reference station
       for (int sn = 0 ; sn < nstations - 1; sn++){
         for (int sno = sn + 1; sno < nstations ; sno ++){
           if (sn+nstations_2 != sno) {
@@ -218,8 +217,21 @@ bool CorrelationCore::correlate_segment(double** in_segm)
           }
         }
       }
+    }
+  } else {
+    if (reference_station >= 0) {
+      // no cross polarisation with a reference station
+
+      for (int sn = 0 ; sn < nstations; sn++){
+        if (sn != reference_station) {
+          correlate_baseline(sn, reference_station, bsln);
+          bsln++;
+          assert(bsln <= nbslns);
+        }
+      }
     } else {
-      //calculate the correlations for all base lines
+      // no cross polarisation without a reference station
+
       for (int sn = 0 ; sn < nstations - 1; sn++){
         for (int sno = sn + 1; sno < nstations ; sno ++){
           correlate_baseline(sn, sno, bsln);
@@ -265,25 +277,34 @@ bool CorrelationCore::average_time_slice()
   }
 
 
-  if (0 <= ref_station1 && ref_station1 < nstations) {
-    //calculate the correlations using one or two reference stations
-    for (int sno = 0; sno < nstations ; sno ++){
-      if ((sno != ref_station1) && (sno != ref_station2)) {
-        normalise_correlation(ref_station1,sno,bsln);
-        bsln++;
+  //cross product normalisation for all possible base lines
+  if (cross_polarize) {
+    int nstations_2 = nstations/2;
+    if (reference_station >= 0) {
+      // cross polarize with a reference station
+      int nstations_2 = nstations/2;
+      for (int sn = 0 ; sn < nstations; sn++){
+        if ((sn != reference_station) && 
+            (sn != reference_station+nstations_2)) {
+          // Do not cross correlate the 
+          // two polarisations of the same station
+          normalise_correlation(sn,reference_station,bsln);
+          bsln++;
+          assert(bsln <= nbslns);
+        }
       }
-    }
-    if (0 <= ref_station2 && ref_station2 < nstations) {
-      for (int sno = 0; sno < nstations ; sno ++){
-	if ((sno != ref_station1) && (sno != ref_station2)) {
-	  normalise_correlation(ref_station2,sno,bsln);
-	  bsln++;
-	}
+      for (int sn = 0 ; sn < nstations; sn++){
+        if ((sn != reference_station) && 
+            (sn != reference_station+nstations_2)) {
+          // Do not cross correlate the 
+          // two polarisations of the same station
+          normalise_correlation(sn,reference_station+nstations_2,bsln);
+          bsln++;
+          assert(bsln <= nbslns);
+        }
       }
-    }
-  } else {
-    //cross product normalisation for all possible base lines
-    if (cross_polarize) {
+    } else {
+      // cross polarize without a reference station
       int nstations_2 = nstations/2;
       for (int sn = 0 ; sn < nstations - 1; sn++){
         for (int sno = sn + 1; sno < nstations ; sno ++){
@@ -296,7 +317,22 @@ bool CorrelationCore::average_time_slice()
           }
         }
       }
+    }
+  } else {
+    if (reference_station >= 0) {
+      // no cross polarisation with a reference station
+      for (int sn = 0 ; sn < nstations; sn++){
+        if (sn != reference_station) {
+          // Do not cross correlate the 
+          // two polarisations of the same station
+          normalise_correlation(sn,reference_station,bsln);
+          bsln++;
+          assert(bsln <= nbslns);
+        }
+      }
     } else {
+      // no cross polarisation without a reference station
+
       for (int sn = 0 ; sn < nstations - 1; sn++){
         for (int sno = sn + 1; sno < nstations ; sno ++){
           normalise_correlation(sn,sno,bsln);
@@ -323,6 +359,7 @@ bool CorrelationCore::write_time_slice()
       put_bytes(nWrite, (char *)(accxps[bsln]));
     if (nWrite != written) return false;
   }
+  DEBUG_MSG("Size of time slice: " << nWrite*nbslns);
   return true;
 }
 

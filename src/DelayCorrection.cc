@@ -288,19 +288,28 @@ bool DelayCorrection::fill_data_before_delay_correction() {
       bytes_to_read = sample_reader[station]->get_size_dataslice();
     }
     if (bytes_to_read == 0) {
-      return true;
-    }
-    assert(bytes_to_read > 0);
-    int bytes_read = 0, status = 1;
-    while ((status > 0) && (bytes_read != bytes_to_read)) {
-      status = 
-        sample_reader[station]->get_data(bytes_to_read-bytes_read,
-                                         &dcBufs[station][2*BufSize]+bytes_read);
-      bytes_read += status;
-    }
-
-    if (bytes_read != bytes_to_read) {
-      return false;
+      // reset buffer
+      for (int i=0; i<BufSize; i++) {
+        dcBufs[station][2*BufSize+i] = 0;
+      }
+      continue;
+    } else {
+      assert(bytes_to_read > 0);
+      int bytes_read = 0, status = 1;
+      while ((status > 0) && (bytes_read != bytes_to_read)) {
+        status = 
+          sample_reader[station]->get_data(bytes_to_read-bytes_read,
+                                           &dcBufs[station][2*BufSize]+bytes_read);
+        bytes_read += status;
+      }
+      // reset buffer
+      for (int i = bytes_to_read; i<BufSize; i++) {
+        dcBufs[station][2*BufSize+i] = 0;
+      }
+      
+      if (bytes_read != bytes_to_read) {
+        return false;
+      }
     }
   }
   return true;

@@ -47,7 +47,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
   case MPI_TAG_ADD_TCP: 
     {
-      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       
       MPI_Status status2;
 
@@ -95,7 +95,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_ADD_DATA_WRITER_FILE2: 
     {
-      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       
       MPI_Status status2;
       int size;
@@ -124,7 +124,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_ADD_DATA_WRITER_VOID2: 
     {
-      get_log_writer()(2) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       
       MPI_Status status2;
       int32_t msg;

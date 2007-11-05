@@ -23,6 +23,7 @@
 #define MPI_INT64  MPI_LONG_LONG
 
 void start_node();
+void end_node(int32_t rank);
 
 enum MPI_TAG {
   // INITIALISATION OF THE DIFFERENT TYPES OF NODES:

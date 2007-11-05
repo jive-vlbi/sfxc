@@ -60,13 +60,20 @@ int main(int argc, char *argv[]) {
 
   if (rank == RANK_MANAGER_NODE) {
     Control_parameters control_parameters;
-    {
-      Log_writer_cout log_writer(10);
-      control_parameters.initialise(ctrl_file, vex_file, log_writer);
+
+    Log_writer_cout log_writer(10);
+    control_parameters.initialise(ctrl_file, vex_file, log_writer);
+    if (!control_parameters.check(std::cout)) {
+      for (int i=0; i<numtasks; i++) {
+        if (i != RANK_MANAGER_NODE) {
+          end_node(i);
+        }
+      }
+    } else {
+      Log_writer_mpi log_writer(rank, control_parameters.message_level());
+      Manager_node node(rank, numtasks, &log_writer, control_parameters);
+      node.start();
     }
-    Log_writer_mpi log_writer(rank, control_parameters.message_level());
-    Manager_node node(rank, numtasks, &log_writer, control_parameters);
-    node.start();
   } else {
     start_node();
   }

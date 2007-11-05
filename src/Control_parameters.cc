@@ -1,6 +1,7 @@
 #include "Control_parameters.h"
 #include <fstream>
 #include <assert.h>
+#include <set>
 #include <json/json.h>
 
 #include <utils.h>
@@ -44,16 +45,164 @@ initialise(const char *ctrl_file, const char *vex_file,
 
   { // parse the vex file
     if (!vex.open(vex_file)) {
+      log_writer << "Could not open vex file" << std::endl;
       assert(false);
       return false;
     }
-    // NGHK: TODO: Make the Frequency channels array a 2D array
-    // NGHK: TODO: set the Frequency channels if the array is empty
   }
+  
+  // set to the default
+  if (ctrl["delay_directory"] == Json::Value()) {
+    ctrl["delay_directory"] = "file:///tmp/";
+  }
+
+  // set the subbands
+  if (ctrl["channels"] == Json::Value()) {
+    std::set<std::string> result_set;
+
+    // insert all channels
+    for (Vex::Node::const_iterator frq_block = vex.get_root_node()["FREQ"]->begin();
+         frq_block != vex.get_root_node()["FREQ"]->end(); ++frq_block) {
+      for (Vex::Node::const_iterator freq_it = frq_block->begin("chan_def");
+           freq_it != frq_block->end("chan_def"); ++freq_it) {
+        result_set.insert(freq_it[4]->to_string());
+      }
+    }
+    for (std::set<std::string>::const_iterator set_it = result_set.begin();
+         set_it != result_set.end(); ++set_it){
+      ctrl["channels"].append(*set_it);
+    }
+  }
+  
+  // Checking reference station
+  if (ctrl["reference_station"] == Json::Value()) {
+    ctrl["reference_station"] = "";
+  }
+  
 
   initialised = true;
 
   return true;
+}
+
+int
+Control_parameters::reference_station_number() const {
+  if (ctrl["reference_station"] == Json::Value()) return -1;
+  std::string reference_station = ctrl["reference_station"].asString();
+  if (reference_station == "") return -1;
+
+  for (size_t station_nr = 0; 
+       station_nr < ctrl["stations"].size(); ++station_nr) {
+    if (ctrl["stations"][station_nr].asString() == reference_station) {
+      return station_nr;
+    }
+  }
+  std::cout << "Reference station not found" << std::endl;
+  return -1;
+}
+
+bool
+Control_parameters::check(std::ostream &writer) const {
+  typedef Json::Value::const_iterator                    Value_it;
+  bool ok = true;
+
+  // check start and stop time
+  if (ctrl["start"] == Json::Value()) {
+    ok = false;
+    writer << "Ctrl-file: start time not defined" << std::endl;
+  } else {
+    if (ctrl["stop"] == Json::Value()) {
+      ok = false;
+      writer << "Ctrl-file: stop time not defined" << std::endl;
+    } else {
+      Date start(ctrl["start"].asString());
+      Date stop(ctrl["stop"].asString());
+      if (stop <= start) {
+        ok = false;
+        writer << "Ctrl-file: stop time before start time" << std::endl;
+      }
+    }
+  }
+
+  { // Check stations and reference station
+    if (ctrl["stations"] != Json::Value()) {
+      for (size_t station_nr = 0; 
+           station_nr < ctrl["stations"].size(); ++station_nr) {
+        std::string station_name = ctrl["stations"][station_nr].asString();
+        if (ctrl["data_sources"][station_name] == Json::Value()) {
+          ok = false;
+          writer << "Ctrl-file: No data source defined for " 
+                 << station_name << std::endl;
+        } else if (ctrl["data_sources"][station_name].size()==0) {
+          ok = false;
+          writer << "Ctrl-file: Empty list of data sources for " 
+                 << ctrl["data_sources"][station_name]
+                 << std::endl;
+        } else {
+          const Json::Value data_source_it =
+            ctrl["data_sources"][station_name];
+          for (Json::Value::const_iterator source_it =
+                 data_source_it.begin();
+               source_it != data_source_it.end(); ++source_it) {
+
+            const char *filename = (*source_it).asString().c_str();
+            if (strncmp(filename, "file://", 7)!=0) {
+              ok = false;
+              writer << "Ctrl-file: Data source should start with 'file://'"
+                     << std::endl;
+            } else {
+              std::ifstream in(filename+7);
+              if (!in.is_open()) {
+                ok = false;
+                writer << "Ctrl-file: Could not open data source: " 
+                       << (*source_it).asString() << std::endl;
+              }
+            }
+          }
+        }
+      }
+    } else {
+      ok = false;
+      writer << "Ctrl-file: Stations not found" << std::endl;
+    }
+    
+    if (ctrl["reference_station"] != Json::Value()) {
+      if (ctrl["reference_station"].asString() != "") {
+        if (reference_station_number() == -1) {
+          ok = false;
+          writer 
+            << "Ctrl-file: Reference station not one of the input stations" 
+            << std::endl;
+        }
+      }
+    } else {
+      ok = false;
+      writer << "Ctrl-file: Reference station not found" << std::endl;
+    }
+  }
+
+  { // chenking the output file
+    if (ctrl["output_file"] != Json::Value()) {
+      std::string output_file = ctrl["output_file"].asString();
+      if (strncmp(output_file.c_str(), "file://", 7) != 0) {
+        ok = false;
+        writer << "Ctrl-file: Data source should start with 'file://'"
+               << std::endl;
+      } else {
+        std::ofstream out(output_file.c_str()+7);
+        if (!out.is_open()) {
+          ok = false;
+          writer << "Ctrl-file: Could not open output file: " 
+                 << output_file << std::endl;
+        }
+      }
+    } else {
+      ok = false;
+      writer << "ctrl-file: output file not defined" << std::endl;
+    }
+  }
+  
+  return ok;
 }
 
 Control_parameters::Date 
@@ -294,12 +443,18 @@ int
 Control_parameters::
 cross_polarisation(int channel_nr) const {
   if (channel_nr >= number_frequency_channels()) return -1;
-  std::string freq = frequency(channel(channel_nr), station(0));
-  char side = sideband(channel(channel_nr), station(0));
-  char pol  = polarisation(channel(channel_nr), station(0));
+  return cross_polarisation(channel(channel_nr));
+}
+
+int
+Control_parameters::
+cross_polarisation(const std::string &channel_name) const {
+  std::string freq = frequency(channel_name, station(0));
+  char side = sideband(channel_name, station(0));
+  char pol  = polarisation(channel_name, station(0));
 
   for (size_t i=0; i<number_frequency_channels(); i++) {
-    if (i != channel_nr) {
+    if (channel(i) != channel_name) {
       if ((freq == frequency(channel(i), station(0))) &&
           (side == sideband(channel(i), station(0))) &&
           (pol != polarisation(channel(i), station(0)))) {
@@ -525,8 +680,20 @@ get_correlation_parameters(const std::string &scan_name,
   assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');
 
   corr_param.cross_polarize = cross_polarize();
-  assert(reference_station()=="");
+  if (cross_polarisation(channel_name) == -1) {
+    corr_param.cross_polarize = false;
+  }
+
+
   corr_param.reference_station = -1;
+  if (reference_station() != "") {
+    for (int station_nr=0; station_nr < number_stations(); station_nr++) {
+      if (reference_station() == station(station_nr)) {
+        corr_param.reference_station = station_nr;
+      }
+    }
+    assert(corr_param.reference_station != -1);
+  }
   
   // now get the station streams
   for (Vex::Node::const_iterator station = scan->begin("station");
@@ -545,6 +712,15 @@ get_correlation_parameters(const std::string &scan_name,
   }
 
   return corr_param;
+}
+
+std::string 
+Control_parameters::get_delay_directory() const {
+  if (ctrl["delay_directory"] == Json::Value()) {
+    return "file:///tmp";
+  } else {
+    return ctrl["delay_directory"].asString();
+  }
 }
 
 std::string

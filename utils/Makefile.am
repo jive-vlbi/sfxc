@@ -40,7 +40,6 @@ produce_html_plotpage_SOURCES = produce_html_plotpage.cc \
 	../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/utils.cc \
 	gnuplot_i.cc
 produce_html_plotpage_LDADD= -lfftw3 -lm -lvex_parser -lantlr3c -ljson -lmpich
-
 produce_html_plotpage_CFLAGS =-I@top_srcdir@/lib
 produce_html_plotpage_CXXFLAGS =-I@top_srcdir@/lib -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
 
@@ -60,7 +59,7 @@ generate_delay_model_SOURCES=\
   @top_srcdir@/lib/vex_parser/vex_util.c \
   @top_srcdir@/lib/vex_parser/vex_get.c
 generate_delay_model_CFLAGS  = -I@top_srcdir@/lib -m32 -std=c99
-generate_delay_model_CXXFLAGS=-m32 -I@top_srcdir@/lib -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
+generate_delay_model_CXXFLAGS=-m32 -I@top_srcdir@/lib -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include
 generate_delay_model_LDFLAGS=-m32
 generate_delay_model_LDADD = -L@top_srcdir@/lib/calc10/lib/ -lfcalc -lg2c
 

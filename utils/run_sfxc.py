@@ -8,7 +8,8 @@
 # $Id: test_Channel_extractor.py 278 2007-07-04 07:27:05Z kruithof $
 
 
-import sys, os, time, filecmp;
+import sys, os, time, filecmp
+import simplejson
 
 def which (filename):
   if not os.environ.has_key('PATH') or os.environ['PATH'] == '':
@@ -27,13 +28,18 @@ def which (filename):
 
 ######### MAIN CODE
 
+# check for the vex file
 if len(sys.argv) == 1:
   print "Usage", sys.argv[0], " <vex-file>"
   sys.exit(1)
 
 vex_file = sys.argv[1]
-(base,ext) = os.path.splitext(os.path.basename(vex_file))
-ctrl_file = base+".ctrl"
+if not os.path.exists(vex_file):
+  print "Vex file does not exist"
+  sys.exit(1)
+
+#construct the ctrl-filename from the vex file-name
+ctrl_file = os.path.splitext(os.path.basename(vex_file))[0]+".ctrl"
 
 # check if ctrl file exists, and create it if not
 if not os.path.exists(ctrl_file):
@@ -48,12 +54,9 @@ if not os.path.exists(ctrl_file):
     print "emacs: returned error."
     sys.exit(1);
 
-# allow the user to set the number of nodes
-print "enter the number of nodes, 10 by default"
-try:
-  number_of_processes = int(sys.stdin.readline())
-except ValueError:
-  number_of_processes = 10
+# compute the number of processes needed from the control file
+ctrl = simplejson.load(open(ctrl_file, "r"))
+number_of_processes = 3 + len(ctrl["channels"]) + len(ctrl["stations"])
 
 # run the software correlator
 cmd="mpirun -np "+str(number_of_processes)+" "+which("sfxc")+\
@@ -64,8 +67,19 @@ if (status != 0):
   print "sfxc: returned error."
   sys.exit(1);
 
+# check if the output file is empty
+output_file = ctrl["output_file"][7:]
+if not os.path.exists(output_file):
+  sys.exit(1)
+if os.stat(output_file)[6] == 0:
+  sys.exit(1)
+
+html_directory = "."
+if os.path.exists("../html"):
+  html_directory = "../html";
+
 # run the html generator
-cmd = "produce_html_plotpage "+ctrl_file+" "+vex_file
+cmd = "produce_html_plotpage "+ctrl_file+" "+vex_file+" "+html_directory
 print cmd
 status = os.system(cmd)
 if (status != 0):
