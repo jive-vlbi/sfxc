@@ -159,6 +159,8 @@ public:
   std::string frequency(const std::string &if_node, 
                     const std::string &if_ref) const;
   
+  double sample_rate(const std::string &if_ref) const;
+  
   char sideband(const std::string &if_node, 
                     const std::string &if_ref) const;
 						 
