@@ -342,7 +342,8 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
   assert(plot_nr < plot_data.crosses.size());
   plot_data.crosses[plot_nr] = filename;
   plot_data.snr_crosses[plot_nr] = signal_to_noise_ratio(out);
-  plot_data.offset[plot_nr] = max_value_offset(out);
+  plot_data.offset[plot_nr] = max_value_offset(out)
+                *(ConPrms.sample_rate(ConPrms.station(station)));
   plot_count++;
   plot(filename, nLags, title);
 }
@@ -543,12 +544,12 @@ void print_html(const Control_parameters &ConPrms) {
         if (show_plots) {
           html_output << "<img src='" << data.crosses[col] << "'> " 
                       << data.crosses[col] << " - " << data.snr_crosses[col] << " - offset: " 
-                      << data.offset[col] << std::endl;
+                      << data.offset[col] << " ms" << std::endl;
         } else {
           html_output << "<A href = '" << data.crosses[col] << "' "
                       << "OnMouseOver=\"show('" << data.crosses[col] << "');\">" 
                       << data.snr_crosses[col] <<  " <br><font size='-3'>offset: " 
-                      << data.offset[col] << "</font></a></td>";
+                      << data.offset[col] << " ms</font></a></td>";
         }
       }
 
