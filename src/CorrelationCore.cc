@@ -68,11 +68,11 @@ void CorrelationCore::set_parameters(Correlation_parameters &corr_param)
   padding   = PADDING;
 
 
-  segm = new double*[nstations];
-  xps = new fftw_complex*[nstations];
+  segm = new float*[nstations]; 
+  xps = new fftwf_complex*[nstations];
   for (int sn=0; sn<nstations; sn++){
-    segm[sn] = new double[n2fftcorr*padding];
-    xps[sn] = new fftw_complex[n2fftcorr*padding/2+1];
+    segm[sn] = new float[n2fftcorr*padding];
+    xps[sn] = new fftwf_complex[n2fftcorr*padding/2+1];
     for (int j=0; j < n2fftcorr*padding; j++) segm[sn][j]=0;
     for (int j=0; j < n2fftcorr*padding/2+1; j++){
       xps[sn][j][0] = 0.0; xps[sn][j][1] = 0.0;
@@ -80,18 +80,18 @@ void CorrelationCore::set_parameters(Correlation_parameters &corr_param)
   }
   
   
-  norms = new double[nbslns];
-  accxps = new fftw_complex*[nbslns];
+  norms = new float[nbslns];
+  accxps = new fftwf_complex*[nbslns];
   for (int j=0; j<nbslns; j++){
-    accxps[j] =  new fftw_complex[n2fftcorr*padding/2+1];
+    accxps[j] =  new fftwf_complex[n2fftcorr*padding/2+1];
   }
 
 
-  p_r2c = new fftw_plan[nstations];
+  p_r2c = new fftwf_plan[nstations];
   //plan the FFTs
   for (int sn = 0; sn < nstations; sn++){
     p_r2c[sn] =
-      fftw_plan_dft_r2c_1d(n2fftcorr*padding,segm[sn],xps[sn],FFTW_EXHAUSTIVE);
+      fftwf_plan_dft_r2c_1d(n2fftcorr*padding,segm[sn],xps[sn],FFTW_EXHAUSTIVE);
   }
 }
 
@@ -124,7 +124,7 @@ CorrelationCore::~CorrelationCore()
   }
   if (p_r2c != NULL) {
     for (int sn=0; sn<nstations; sn++)
-      fftw_destroy_plan(p_r2c[sn]);
+      fftwf_destroy_plan(p_r2c[sn]);
     delete [] p_r2c;
   }
 }
@@ -160,7 +160,7 @@ void CorrelationCore::correlate_baseline(int station1, int station2, int bsln) {
 
 
 
-bool CorrelationCore::correlate_segment(double** in_segm)
+bool CorrelationCore::correlate_segment(float** in_segm)
 {
   assert(parameters_set);
   int bsln = 0; //initialise basline number    
@@ -171,7 +171,7 @@ bool CorrelationCore::correlate_segment(double** in_segm)
     for (int i=0; i< n2fftcorr; i++) segm[sn][i]=in_segm[sn][i];
     //execute FFT real to complex. input: segm -> result: xps
     assert(segm[sn][0] == segm[sn][0]); // Not NaN
-    fftw_execute(p_r2c[sn]);
+    fftwf_execute(p_r2c[sn]);
     for (int j = 0 ; j < n2fftcorr*padding/2 + 1 ; j++){
       assert(xps[sn][j][0] == xps[sn][j][0]); // Not NaN
       //accxps[bsln][j] += xps[sn][j]*conj(xps[sn][j]);
@@ -269,7 +269,7 @@ bool CorrelationCore::average_time_slice()
     for (int j = 0; j < n2fftcorr*padding/2 + 1; j++) {
       norms[bsln] += accxps[bsln][j][0];
     }
-    norms[bsln] = norms[bsln] / (double)(n2fftcorr*padding/2 + 1);
+    norms[bsln] = norms[bsln] / (float)(n2fftcorr*padding/2 + 1);
     for (int j = 0; j < n2fftcorr*padding/2 + 1; j++){
       accxps[bsln][j][0] /= norms[bsln];
     }
@@ -353,7 +353,7 @@ bool CorrelationCore::write_time_slice()
 {
   //write normalized correlation results to output file
   //NGHK: Make arrays consecutive to be able to write all data at once
-  uint64_t nWrite = sizeof(fftw_complex)*(n2fftcorr*padding/2+1);
+  uint64_t nWrite = sizeof(fftwf_complex)*(n2fftcorr*padding/2+1);
   for (int bsln = 0; bsln < nbslns; bsln++){
     uint64_t written = get_data_writer().
       put_bytes(nWrite, (char *)(accxps[bsln]));

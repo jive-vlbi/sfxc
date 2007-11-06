@@ -51,7 +51,7 @@ public:
   bool init_time_slice();
     
   /** Calculate FFT, Auto and Cross correlations for current segment.**/
-  bool correlate_segment(double** in_segm);
+  bool correlate_segment(float** in_segm);
     
   /** Average correlation results in the current time slice. **/
   bool average_time_slice();
@@ -73,17 +73,17 @@ private:
   //data members
   boost::shared_ptr<Data_writer> data_writer;
 
-  fftw_complex **accxps; //accumulated fftw_complex accxps[nbslns][];
-  double **segm;        //input segments for FFT operation, one per station
-  fftw_complex **xps;    //xps: result vectors from FFT
-  double *norms;         //normalization coeffs
+  fftwf_complex **accxps; //accumulated fftwf_complex accxps[nbslns][];
+  float **segm;        //input segments for FFT operation, one per station
+  fftwf_complex **xps;    //xps: result vectors from FFT
+  float *norms;         //normalization coeffs
   
   int   n2fftcorr; //FFT length in correlation
   int   nbslns;    //nr of baselines: autos + cross
   int   nstations; //nr of stations
   int   padding;   //padding factor in FFT
 
-  fftw_plan *p_r2c; //FFT plans
+  fftwf_plan *p_r2c; //FFT plans
 
   //function members
   void correlate_baseline(int station1, int station2, int bsln);

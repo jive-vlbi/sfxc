@@ -58,6 +58,8 @@ void Input_node::initialise()  {
 void 
 Input_node::
 set_track_parameters(const Track_parameters &track_param) {
+  assert(status != WRITING);
+
   assert(channel_extractor != 
          boost::shared_ptr<Channel_extractor_mark4>());
   channel_extractor->set_track_parameters(track_param);
@@ -91,35 +93,26 @@ void Input_node::start() {
     switch (status) {
     case WAITING:
       { // Wait until we can start sending new data
-        if (channel_extractor != 
-            boost::shared_ptr<Channel_extractor_mark4>()) {
-          if (channel_extractor->get_current_time() < stop_time) {
-            status = INITIALISING;
-          } else {
-            if (check_and_process_message() == TERMINATE_NODE) {
-              status = END_NODE;
-              break;
-            }
-          }
-        } else {
-          // Wait for data_source to become ready
-          if (check_and_process_message() == TERMINATE_NODE) {
-            status = END_NODE;
-            break;
-          }
-        }
-        break;
-      }
-    case INITIALISING: 
-      { // Wait untill a data writer has been connected to all channels
         bool ready = true;
-        for (int i=0; i<channel_extractor->n_channels(); i++) {
-          ready &= !time_slicers[i].finished();
+        if (channel_extractor == 
+            boost::shared_ptr<Channel_extractor_mark4>()) {
+          ready = false;
         }
         if (ready) {
+          if (channel_extractor->get_current_time() >= stop_time) {
+            ready = false;
+          }
+        }
+        if (ready) {
+          for (int i=0; i<channel_extractor->n_channels(); i++) {
+            ready &= !time_slicers[i].finished();
+          }
+        }
+
+        if (ready) {
+          DEBUG_MSG("status = WRITING;");
           status = WRITING;
         } else {
-          // Block until the next message arrives
           if (check_and_process_message() == TERMINATE_NODE) {
             status = END_NODE;
           }
@@ -163,8 +156,7 @@ void Input_node::start() {
           wrote &= time_slicers[i].do_task();
         }
         if (!wrote) {
-          if (!read) status = WAITING;
-          status = INITIALISING;
+          status = WAITING;
         }
         break;
       }
@@ -198,6 +190,8 @@ void Input_node::set_stop_time(int64_t stop_time_) {
 }
 
 void Input_node::goto_time(int64_t new_time) {
+  assert(status != WRITING);
+
   // NGHK: CHECK FOR DURATION OF THE CHANNEL BUFFER
   assert(get_time_stamp() <= new_time);
   
@@ -220,6 +214,8 @@ add_time_slice(int channel, int stream,
     ((stoptime_slice-starttime_slice) * 
      (channel_extractor->bit_rate(channel)/8000));
 
+  DEBUG_MSG("bytes_in_slice: " << bytes_in_slice);
+
   assert(data_writers_ctrl.get_data_writer(stream) != NULL);
   assert(data_writers_ctrl.get_data_writer(stream)->get_size_dataslice() <= 0);
 
@@ -227,6 +223,7 @@ add_time_slice(int channel, int stream,
     set_size_dataslice(bytes_in_slice);
   time_slicers[channel].add(data_writers_ctrl.get_data_writer(stream), 
                             start_byte);
+
 }
 
 int Input_node::get_status() {

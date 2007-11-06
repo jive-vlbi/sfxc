@@ -62,7 +62,7 @@ public:
   bool fill_segment();
 
   /** get the segment filled with delay corrected data. **/
-  double** get_segment();
+  float** get_segment();
 
   /** assigns delay table for station number sn**/
   bool set_delay_table(int sn, Delay_table_akima &delay_table);
@@ -77,7 +77,7 @@ private:
   bool fill_Bufs();
   bool fill_data_before_delay_correction();
   bool delay_correct();
-  bool fractional_bit_shift(double const delay, int const integer_shift);
+  bool fractional_bit_shift(float const delay, int const integer_shift);
   bool fringe_stopping(int station, int jsegm);
   
   
@@ -88,33 +88,33 @@ private:
   Correlation_parameters corr_param;
   
   int64_t  timePtr;     //time in usec wrt 00:00 used for delay table
-  double **segm;      //nstation data buffer ready for correlation
-  double **Bufs;      //nstations buffers with delay corrected
-  double **dcBufs;    //buffers with data for delay correction
-  double **dcBufPrev; //previous buffers with data for delay correction
+  float **segm;      //nstation data buffer ready for correlation
+  float **Bufs;      //nstations buffers with delay corrected
+  float **dcBufs;    //buffers with data for delay correction
+  float **dcBufPrev; //previous buffers with data for delay correction
   int32_t  BufSize;     //size of one buffer in Bufs
   int32_t  BufPtr;      //read pointer in Bufs array
   int    n2fftDC;     //FFT length in delay correction (segment length)
   int32_t  Nsegm2DC;    //nr of FFT segments in delay correction
   int    nstations;   //nr of stations
   
-  double SR;          //sample rate
-  double tbs;         //time between samples
+  float SR;          //sample rate
+  float tbs;         //time between samples
   int    Nf;          //nr of frequencies in frequency scale
-  std::vector<double> fs; //delta frequency in frequency scale, frequency scale
-  double foffset;     //frequency offset in Hertz
-  double bwfl;        //band width after filter 
-  double startf;      //start frequency
+  std::vector<float> fs; //delta frequency in frequency scale, frequency scale
+  float foffset;     //frequency offset in Hertz
+  float bwfl;        //band width after filter 
+  float startf;      //start frequency
   int    ovrfl;       //oversampling in filter
 
   int    n2fftcorr;   //FFT length in correlation
   
-  std::vector< std::complex<double> >  sls;      //FW:in; BW: out
-  std::vector< std::complex<double> >  sls_freq; //FW:out; BW: in
-  fftw_plan    planT2F;//plan for complex FFT Time to Frequeny
-  fftw_plan    planF2T;//plan for complex FFT Frequency to Time
+  std::vector< std::complex<float> >  sls;      //FW:in; BW: out
+  std::vector< std::complex<float> >  sls_freq; //FW:out; BW: in
+  fftwf_plan    planT2F;//plan for complex FFT Time to Frequeny
+  fftwf_plan    planF2T;//plan for complex FFT Frequency to Time
 
-  double skyfreq;       //channel sky frequency
+  float skyfreq;       //channel sky frequency
   
   std::vector<Delay_table_akima>    delTbl;
   std::vector< boost::shared_ptr<Bits_to_float_converter> > sample_reader;
@@ -126,7 +126,7 @@ private:
   // For fringe stopping we do a linear approximation
   // maximal_phase_change is the maximal angle between two
   // sample points
-  static const double maximal_phase_change = 0.2; // 5.7 degrees
+  static const float maximal_phase_change = 0.2; // 5.7 degrees
   int n_recompute_delay;
 };
 #endif //DELAYCORRECTION_H

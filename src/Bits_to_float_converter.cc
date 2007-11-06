@@ -10,8 +10,8 @@
 #include <Bits_to_float_converter.h>
 #include <assert.h>
 
-const double sample_value_ms[] = {-7, 2, -2, 7};
-const double sample_value_m[]  = {-5,  5};
+const float sample_value_ms[] = {-7, 2, -2, 7};
+const float sample_value_m[]  = {-5,  5};
 
 Bits_to_float_converter::Bits_to_float_converter()
  : bits_per_sample(0)
@@ -21,7 +21,7 @@ Bits_to_float_converter::Bits_to_float_converter()
 
 
 size_t 
-Bits_to_float_converter::get_data(size_t nSamples, double *buffer) {
+Bits_to_float_converter::get_data(size_t nSamples, float *buffer) {
   assert(bits_per_sample > 0);
   assert(data_reader != NULL);
   if (bits_per_sample == 2) {

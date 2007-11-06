@@ -17,7 +17,7 @@ AM_PROG_LEX
 AC_LANG_CPLUSPLUS
 
 dnl Checks for libraries.
-AC_CHECK_LIB(fftw3, fftw_execute)
+AC_CHECK_LIB(fftw3f, fftwf_execute)
 AC_CHECK_LIB(mpich, MPI_Init)
 AC_CHECK_LIB(m, sin)
 AC_CHECK_LIB(antlr3c, antlr3AsciiFileStreamNew)

@@ -38,7 +38,7 @@ public:
     START_CORRELATION_TIME_SLICE,
     /// Acquiring correlator nodes for the next time slice
     START_CORRELATOR_NODES_FOR_TIME_SLICE,
-    /// Everything has been set for the time slice, continue to the next.
+    /// Everything has been aquired for the time slice, continue to the next.
     GOTO_NEXT_TIMESLICE,
     /// Stop the correlator, wait for the nodes to finish
     STOP_CORRELATING,
@@ -73,7 +73,7 @@ private:
   Status status;
   std::vector<Correlating_state> state_correlator_node;
   
-  static const int duration_time_slice = 1000; // Duration in miliseconds
+  int duration_time_slice; // Duration in miliseconds
   
   /// Start day of the experiment
   int32_t start_day;

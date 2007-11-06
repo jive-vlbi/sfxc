@@ -25,7 +25,9 @@ Manager_node(int rank, int numtasks,
 : Abstract_manager_node(rank, numtasks,
                         log_writer,
                         control_parameters),
-                        manager_controller(*this) {
+                        manager_controller(*this),
+  duration_time_slice(1000) 
+{
   assert(rank == RANK_MANAGER_NODE);
 
   add_controller(&manager_controller);
@@ -105,6 +107,11 @@ Manager_node(int rank, int numtasks,
 
   assert(number_correlator_nodes() > 0);
   state_correlator_node.resize(number_correlator_nodes());
+
+  // time slice should at least be one integration time
+  if (duration_time_slice < control_parameters.integration_time()) {
+    duration_time_slice = control_parameters.integration_time();
+  }
 }
 
 Manager_node::~Manager_node() {
@@ -131,6 +138,7 @@ void Manager_node::start() {
         get_log_writer() << "START_NEW_SCAN" << std::endl;
         
         // set track information
+        DEBUG_MSG("HERE?");
         initialise_scan(scans.front());
         
         // Set the input nodes to the proper start time
@@ -140,24 +148,24 @@ void Manager_node::start() {
           int station_time = 
             input_node_get_current_time(control_parameters.station(station));
           if (station_time > start_time) {
-            get_log_writer() << "START_TIME: " << start_time << std::endl;
-            get_log_writer() << "STATION_TIME: (" << control_parameters.station(station) 
-                             << "): " << station_time << std::endl;
+            // start on the next integer second
             start_time = (station_time/1000)*1000;
             if (station_time%1000 != 0) start_time += 1000;
-            get_log_writer() << "new START_TIME: " << start_time << std::endl;
           }
         }
+
         stop_time_scan =
-          control_parameters.get_vex().stop_of_scan(*scans.begin()).to_miliseconds(start_day);
+          control_parameters.get_vex().stop_of_scan(*scans.begin()).
+          to_miliseconds(start_day);
+
+        assert(start_time <stop_time_scan);
 
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
           input_node_goto_time(control_parameters.station(station),
                                start_time);
-          input_node_set_stop_time(control_parameters.station(station),
-                                   stop_time_scan);
         }
+    
         status = START_CORRELATION_TIME_SLICE;
         break;
       }
@@ -199,11 +207,14 @@ void Manager_node::start() {
       }
       case GOTO_NEXT_TIMESLICE:
       {
+        start_time += duration_time_slice;
         if (start_time >= stop_time) {
           status = STOP_CORRELATING;
         } else if (scans.empty()) {
+          assert(false);
           status = STOP_CORRELATING;
         } else {
+          DEBUG_MSG("Goto next time slice");
           scans.pop_front();
           initialise_scan(scans.front());
           status = START_CORRELATION_TIME_SLICE;
@@ -307,7 +318,6 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   }
             
   // set the output stream
-  //               autos       crosses
   int nAutos = nStations;
   int nCrosses = nStations*(nStations-1)/2;
   int nBaselines;
@@ -324,7 +334,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
       nBaselines = 2*nAutos - 1;
     }
   }
-  int size_of_one_baseline = sizeof(fftw_complex)*
+  int size_of_one_baseline = sizeof(fftwf_complex)*
     (correlation_parameters.number_channels*PADDING/2+1);
   output_node_set_timeslice(slice_nr, corr_node_nr, 
                             size_of_one_baseline*nBaselines);
@@ -349,31 +359,6 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
 
 void
 Manager_node::initialise() {
-  get_log_writer()(1) << "Initialising the Input_nodes" << std::endl;
-  for (size_t station=0; 
-       station<control_parameters.number_stations(); station++) {
-    // setting the first data-source of the first station
-    const std::string &station_name = control_parameters.station(station);
-    std::string filename = control_parameters.data_sources(station_name)[0];
-    set_data_reader(input_rank(station_name), 0, filename);
-  }
-
-  // Get a list of all scan names
-  control_parameters.get_vex().get_scans(std::back_inserter(scans));
-
-  // Send the delay tables:
-  get_log_writer() << "Set delay_table" << std::endl;
-  for (size_t station=0; 
-       station<control_parameters.number_stations(); station++) {
-    Delay_table_akima delay_table;
-    const std::string &station_name = control_parameters.station(station);
-    const std::string &delay_file = 
-      control_parameters.get_delay_table_name(station_name);
-    delay_table.open(delay_file.c_str());
-
-    correlator_node_set_all(delay_table, station_name);
-  }
-
   start_day  = control_parameters.get_start_time().day;
   start_time = control_parameters.get_start_time().to_miliseconds();
   stop_time  = 
@@ -382,6 +367,9 @@ Manager_node::initialise() {
   get_log_writer()(2) << "start_day  : " << start_day << std::endl;
   get_log_writer()(2) << "start_time : " << start_time << std::endl;
   get_log_writer()(2) << "stop_time  : " << stop_time << std::endl;
+
+  // Get a list of all scan names
+  control_parameters.get_vex().get_scans(std::back_inserter(scans));
 
   {  // Iterate over all the scans to find the first scan to correlate
     const Vex &vex = control_parameters.get_vex();
@@ -400,6 +388,32 @@ Manager_node::initialise() {
     }
   }
   assert(!scans.empty());
+
+
+  get_log_writer()(1) << "Initialising the Input_nodes" << std::endl;
+  for (size_t station=0; 
+       station<control_parameters.number_stations(); station++) {
+    // setting the first data-source of the first station
+    const std::string &station_name = control_parameters.station(station);
+    std::string filename = control_parameters.data_sources(station_name)[0];
+    set_data_reader(input_rank(station_name), 0, filename);
+//     input_node_set_stop_time(control_parameters.station(station),
+//                              start_time);
+  }
+
+  // Send the delay tables:
+  get_log_writer() << "Set delay_table" << std::endl;
+  for (size_t station=0; 
+       station<control_parameters.number_stations(); station++) {
+    Delay_table_akima delay_table;
+    const std::string &station_name = control_parameters.station(station);
+    const std::string &delay_file = 
+      control_parameters.get_delay_table_name(station_name);
+    delay_table.open(delay_file.c_str());
+
+    correlator_node_set_all(delay_table, station_name);
+  }
+
   
   slice_nr  = 0;
 
@@ -411,6 +425,7 @@ Manager_node::initialise() {
 }
 
 void Manager_node::initialise_scan(const std::string &scan) {
+  DEBUG_MSG("initialise_scan: " << scan);
   get_log_writer() << "Set Track_parameters" << std::endl;
   
   // set the start time to the beginning of the scan
@@ -436,6 +451,8 @@ void Manager_node::initialise_scan(const std::string &scan) {
     Track_parameters track_param =
       control_parameters.get_track_parameters(track);
     input_node_set(station_name, track_param);
+    input_node_set_stop_time(control_parameters.station(station),
+                             stop_time);
   }
 }
 

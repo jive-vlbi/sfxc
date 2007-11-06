@@ -31,8 +31,8 @@ public:
   double frequency;
   char sideband;
   std::vector<std::string> autos, crosses;
-  std::vector<double> snr_crosses; // Signal to noise ratio for the crosses
-
+  std::vector<float> snr_crosses; // Signal to noise ratio for the crosses
+  
   void set_size_crosses(int size_cross) {
     crosses.resize(size_cross);
     snr_crosses.resize(size_cross);
@@ -65,13 +65,13 @@ private:
                            const Control_parameters &ConPrms);
   void plot(char *filename, int nPts, char *title);
 
-  double signal_to_noise_ratio(std::vector< std::complex<double> > &data);
+  float signal_to_noise_ratio(std::vector< std::complex<float> > &data);
 
 private:
   int nLags;
-  std::vector< std::complex<double> > in, out;
-  std::vector< double > magnitude;
-  fftw_plan visibilities2lags; 
+  std::vector< std::complex<float> > in, out;
+  std::vector< float > magnitude;
+  fftwf_plan visibilities2lags; 
 };
 
 Plot_generator::Plot_generator(std::ifstream &infile, 
@@ -86,9 +86,9 @@ Plot_generator::Plot_generator(std::ifstream &infile,
   magnitude.resize(nLags);
 
   visibilities2lags = 
-    fftw_plan_dft_1d(nLags, 
-                     reinterpret_cast<fftw_complex*>(&in[0]),
-                     reinterpret_cast<fftw_complex*>(&out[0]),
+    fftwf_plan_dft_1d(nLags, 
+                     reinterpret_cast<fftwf_complex*>(&in[0]),
+                     reinterpret_cast<fftwf_complex*>(&out[0]),
                      FFTW_BACKWARD, 
                      FFTW_ESTIMATE);
 
@@ -242,7 +242,7 @@ Plot_generator::Plot_generator(std::ifstream &infile,
       plot_data_channels.push_back(plot_data[i]);
     }
   }  
-  fftw_destroy_plan(visibilities2lags);
+  fftwf_destroy_plan(visibilities2lags);
 }
 
 void Plot_generator::set_plot_data(Plot_data & data, 
@@ -281,7 +281,7 @@ Plot_generator::generate_auto_plots(std::ifstream &infile,
                                     const Control_parameters &ConPrms) {
 
   for (int station=stations_start; station<stations_end; station++) {
-    infile.read((char *)&in[0], 2*in.size()*sizeof(double));
+    infile.read((char *)&in[0], 2*in.size()*sizeof(float));
 
     for  (int lag=0; lag<nLags; lag++) {
       magnitude[lag] = abs(in[lag]);
@@ -309,8 +309,8 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
                                     const Control_parameters &ConPrms) {
   int nStations = ConPrms.number_stations();
 
-  infile.read((char *)&in[0], 2*in.size()*sizeof(double));
-  fftw_execute(visibilities2lags);
+  infile.read((char *)&in[0], 2*in.size()*sizeof(float));
+  fftwf_execute(visibilities2lags);
   for  (int lag=0; lag<nLags; lag++) {
     magnitude[lag] = abs(out[(lag+nLags/2)%nLags])/nLags;
   }
@@ -357,8 +357,8 @@ Plot_generator::plot(char *filename, int nPts, char *title) {
   gnuplot_close(g);
 }
 
-double 
-Plot_generator::signal_to_noise_ratio(std::vector< std::complex<double> > &data)
+float
+Plot_generator::signal_to_noise_ratio(std::vector< std::complex<float> > &data)
 {
   int index_max = 0;
   for (size_t i=1; i<data.size(); i++) {
@@ -366,7 +366,7 @@ Plot_generator::signal_to_noise_ratio(std::vector< std::complex<double> > &data)
   }
 
   //return noise rms in array, skip 10 % around maximum
-  std::complex<double> mean(0,0);
+  std::complex<float> mean(0,0);
   int ll=index_max - data.size()/20;//5% of range to left
   int ul=index_max + data.size()/20;//5% of range to right
   int n2avg=0;
@@ -382,7 +382,7 @@ Plot_generator::signal_to_noise_ratio(std::vector< std::complex<double> > &data)
 
   mean /= n2avg;
 
-  double sum = 0;
+  float sum = 0;
   for (size_t i=0 ; i< data.size() ; i++){
     if (((int)i < ll) || ((int)i > ul)) {
       sum += norm(data[i]-mean);

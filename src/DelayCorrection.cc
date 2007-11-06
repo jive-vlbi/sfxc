@@ -10,7 +10,7 @@
 #include <utils.h>
 #include "DelayCorrection.h"
 
-const double DelayCorrection::maximal_phase_change;
+const float DelayCorrection::maximal_phase_change;
 
 //Allocate arrays, initialise parameters
 DelayCorrection::DelayCorrection(Log_writer &lg_wrtr)
@@ -57,7 +57,7 @@ void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
   }
 
   Nf          = n2fftDC/2+1; //number of frequencies
-  double dfr  = 1.0/(n2fftDC*tbs); // delta frequency
+  float dfr  = 1.0/(n2fftDC*tbs); // delta frequency
   fs.resize(Nf); // frequency array
 
   for (int jf=0; jf<Nf; jf++) {
@@ -74,15 +74,15 @@ void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
   
   n2fftcorr   = corr_param.number_channels;
   
-  segm = new double*[nstations];
-  Bufs = new double*[nstations];
-  dcBufs = new double*[nstations];
-  dcBufPrev =new double*[nstations];
+  segm = new float*[nstations];
+  Bufs = new float*[nstations];
+  dcBufs = new float*[nstations];
+  dcBufPrev =new float*[nstations];
   for (int sn=0; sn<nstations; sn++){
-    segm[sn] = new double[n2fftcorr];
-    Bufs[sn] = new double[BufSize];
-    dcBufs[sn] = new double[3*BufSize];
-    dcBufPrev[sn] = new double[2*BufSize];
+    segm[sn] = new float[n2fftcorr];
+    Bufs[sn] = new float[BufSize];
+    dcBufs[sn] = new float[3*BufSize];
+    dcBufPrev[sn] = new float[2*BufSize];
   }
   
   timePtr = ((int64_t)corr_param.start_time)*1000;//set timePtr to start for delay (usec)
@@ -91,13 +91,13 @@ void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
   //arrays and plans for delay correction
   sls.resize(n2fftDC);
   sls_freq.resize(n2fftDC);
-  planT2F = fftw_plan_dft_1d(n2fftDC, 
-			     (fftw_complex *)&sls[0], (fftw_complex *)&sls_freq[0], 
+  planT2F = fftwf_plan_dft_1d(n2fftDC, 
+			     (fftwf_complex *)&sls[0], (fftwf_complex *)&sls_freq[0], 
 			     FFTW_BACKWARD, FFTW_ESTIMATE);
-  planF2T = fftw_plan_dft_1d(n2fftDC, 
-			     (fftw_complex *)&sls_freq[0], (fftw_complex *)&sls[0], 
+  planF2T = fftwf_plan_dft_1d(n2fftDC, 
+			     (fftwf_complex *)&sls_freq[0], (fftwf_complex *)&sls[0], 
 			     FFTW_FORWARD,  FFTW_ESTIMATE);
-  //TODO RHJO: ask SP why not use fftw_plan_r2c_1d and fftw_plan_c2r_1d. Try!
+  //TODO RHJO: ask SP why not use fftwf_plan_r2c_1d and fftwf_plan_c2r_1d. Try!
   //4b) and 4c) probably not necessary anymore
 
 
@@ -147,8 +147,8 @@ DelayCorrection::~DelayCorrection()
     delete [] dcBufs;
   }
 
-  fftw_destroy_plan(planF2T);
-  fftw_destroy_plan(planT2F);
+  fftwf_destroy_plan(planF2T);
+  fftwf_destroy_plan(planT2F);
 }
 
 
@@ -223,7 +223,7 @@ bool DelayCorrection::fill_segment()
 
 
 // returns pointer to segment with delay corrected data.
-double **DelayCorrection::get_segment()
+float **DelayCorrection::get_segment()
 {
   return segm;
 }
@@ -231,9 +231,9 @@ double **DelayCorrection::get_segment()
 bool DelayCorrection::delay_correct() {
   assert(parameters_set);
   int64_t  Time; //time in micro seconds
-  double Cdel_start, Cdel_end;
+  float Cdel_start, Cdel_end;
   int jshift; //address shift due to signal delay wrt Earth center
-  double time_of_one_correlation_segment = n2fftDC*tbs*1000000;
+  float time_of_one_correlation_segment = n2fftDC*tbs*1000000;
 
   for (size_t stations=0; stations<nstations; stations++){
     //apply delay and phase corrections for all segments (n2fftDC long)
@@ -269,7 +269,7 @@ bool DelayCorrection::delay_correct() {
     //in other words: remember for filling the next Bufs
     memcpy(&dcBufPrev[stations][0], 
            &dcBufs[stations][BufSize], 
-           2*BufSize*sizeof(double));
+           2*BufSize*sizeof(float));
   }
 
   return true;
@@ -278,7 +278,7 @@ bool DelayCorrection::delay_correct() {
 bool DelayCorrection::fill_data_before_delay_correction() {
   for (int station=0; station<nstations; station++) {
     //fill part 1 and 2 of dcBufs with data from dcBufPrev
-    memcpy(&dcBufs[station][0], &dcBufPrev[station][0], 2*BufSize*sizeof(double));
+    memcpy(&dcBufs[station][0], &dcBufPrev[station][0], 2*BufSize*sizeof(float));
     
     int bytes_to_read = BufSize;
     if (bytes_to_read > sample_reader[station]->get_size_dataslice()) {
@@ -315,11 +315,11 @@ bool DelayCorrection::fill_data_before_delay_correction() {
   return true;
 }
 
-bool DelayCorrection::fractional_bit_shift(double const delay,
+bool DelayCorrection::fractional_bit_shift(float const delay,
 					   int const integer_shift) {
   // 3) execute the complex to complex FFT, from Time to Frequency domain
   //    input: sls. output sls_freq
-  fftw_execute(planT2F);
+  fftwf_execute(planT2F);
       
   // 4a)apply normalization : 
   // not needed will be cancelled by the normalisation of the autocorrelation
@@ -339,20 +339,22 @@ bool DelayCorrection::fractional_bit_shift(double const delay,
   }
 
   // 5a)calculate the fract bit shift (=phase corrections in freq domain)
-  double dfs  = delay/tbs - integer_shift;
+  float dfs  = delay/tbs - integer_shift;
 
   double tmp1 = -2.0*M_PI*dfs*tbs;
   double tmp2 = 0.5*M_PI*integer_shift/ovrfl;
+//  float tmp1 = -2.0*M_PI*dfs*tbs;
+//  float tmp2 = 0.5*M_PI*integer_shift/ovrfl;
   // 5b)apply phase correction in frequency range
   for (int jf = 0; jf < Nf; jf++){
     //phi  = -2.0*M_PI*dfs*tbs*fs[jf] + 0.5*M_PI*integer_shift/ovrfl;
     double phi  = tmp1*fs[jf] + tmp2;
-    std::complex<double> tmp(cos(phi),sin(phi));
+    std::complex<float> tmp(cos(phi),sin(phi));
     sls_freq[jf] *= tmp;
   }
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
-  fftw_execute(planF2T);
+  fftwf_execute(planF2T);
   return true;
 }
 

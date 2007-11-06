@@ -56,7 +56,7 @@ class Input_node : public Node {
   typedef Semaphore_buffer<value_type>                  Buffer;
 
   // assume at most 8 tracks:
-  typedef Time_slicer< Buffer_element_large<char, SIZE_MK4_FRAME> >    Slicer;
+  typedef Time_slicer< Buffer_element<char, SIZE_MK4_FRAME> >    Slicer;
 public:
   Input_node(int rank, int station_number, Log_writer *log_writer);
   Input_node(int rank, int station_number);
@@ -77,7 +77,7 @@ public:
   /// Status of the state machine
   enum Status {
     WAITING=0,    ///< The input node is waiting
-    INITIALISING, ///< Waiting for all channels to get connected
+    //INITIALISING, ///< Waiting for all channels to get connected
     WRITING,      ///< Writing the output of the current channel
     END_NODE      ///< Terminate the node
   };

@@ -20,7 +20,7 @@ public:
 	Bits_to_float_converter();
   
   /** Read a number of samples from input **/
-  size_t get_data(size_t nSamples, double *buffer); 
+  size_t get_data(size_t nSamples, float *buffer); 
 
   /// Set the number of bits per data sample
   void set_bits_per_sample(int nbits);

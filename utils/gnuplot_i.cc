@@ -388,7 +388,7 @@ void gnuplot_resetplot(gnuplot_ctrl * h)
 
 void gnuplot_plot_x(
     gnuplot_ctrl    *   handle,
-    double          *   d,
+    float          *   d,
     int                 n,
     char            *   title
 )
@@ -483,8 +483,8 @@ void gnuplot_plot_x(
 
 void gnuplot_plot_xy(
     gnuplot_ctrl    *   handle,
-	double			*	x,
-	double			*	y,
+        float                  *       x,
+        float                  *       y,
     int                 n,
     char            *   title
 )
@@ -570,8 +570,8 @@ void gnuplot_plot_once(
 	char	*	style,
 	char	*	label_x,
 	char	*	label_y,
-	double	*	x,
-	double	*	y,
+        float  *       x,
+        float  *       y,
 	int			n
 )
 {
@@ -638,8 +638,8 @@ void gnuplot_plot_once(
 
 void gnuplot_plot_slope(
     gnuplot_ctrl    *   handle,
-    double              a,
-    double              b,
+    float              a,
+    float              b,
     char            *   title
 )
 {
