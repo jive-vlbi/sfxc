@@ -544,12 +544,12 @@ void print_html(const Control_parameters &ConPrms) {
         if (show_plots) {
           html_output << "<img src='" << data.crosses[col] << "'> " 
                       << data.crosses[col] << " - " << data.snr_crosses[col] << " - offset: " 
-                      << data.offset[col] << " ms" << std::endl;
+                      << data.offset[col] << " &mu;s" << std::endl;
         } else {
           html_output << "<A href = '" << data.crosses[col] << "' "
                       << "OnMouseOver=\"show('" << data.crosses[col] << "');\">" 
                       << data.snr_crosses[col] <<  " <br><font size='-3'>offset: " 
-                      << data.offset[col] << " ms</font></a></td>";
+                      << data.offset[col] << " &mu;s</font></a></td>";
         }
       }
 
