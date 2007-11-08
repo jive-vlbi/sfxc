@@ -145,7 +145,8 @@ Control_parameters::check(std::ostream &writer) const {
                  data_source_it.begin();
                source_it != data_source_it.end(); ++source_it) {
 
-            const char *filename = (*source_it).asString().c_str();
+            char filename[(*source_it).asString().size()];
+            strcpy(filename, (*source_it).asString().c_str());
             if (strncmp(filename, "file://", 7)!=0) {
               ok = false;
               writer << "Ctrl-file: Data source should start with 'file://'"
@@ -377,10 +378,18 @@ Control_parameters::get_vex() const {
 
 
 Track_parameters 
-Control_parameters::get_track_parameters(const std::string &track_name) const {
+Control_parameters::
+get_track_parameters(const std::string &mode_name,
+                     const std::string &station_name) const {
+  const std::string &track_name = 
+    get_vex().get_track(mode_name, station_name);
+  const std::string &freq_name = 
+    get_vex().get_frequency(mode_name, station_name);
+  Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
+  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
+
   Track_parameters result;
   result.track_bit_rate = -1;
-  Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
 
   for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
     const std::string &channel_name = frequency_channel(ch_nr);
@@ -393,20 +402,18 @@ Control_parameters::get_track_parameters(const std::string &track_name) const {
          fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
       if (channel_name == fanout_def_it[1]->to_string()) {
         // sample_rate
-        for (Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"]->begin();
-             freq != vex.get_root_node()["FREQ"]->end(); ++freq) {
-          for (Vex::Node::const_iterator chan = freq->begin("chan_def");
-               chan != freq->end("chan_def"); ++chan) {
-            if (chan[4]->to_string() == channel_name) {
-              if (result.track_bit_rate == -1) {
-                result.track_bit_rate = 
-                  (int)(freq["sample_rate"]->to_double_amount("Ms/sec")*1000000)
-                       / (fanout_def_it->size()-4);
-              } else {
-                assert(result.track_bit_rate ==
-                  (int)(freq["sample_rate"]->to_double_amount("Ms/sec")*1000000)
-                       / (fanout_def_it->size()-4));
-              }
+        for (Vex::Node::const_iterator chan = freq->begin("chan_def");
+             chan != freq->end("chan_def"); ++chan) {
+          if (chan[4]->to_string() == channel_name) {
+            if (result.track_bit_rate == -1) {
+              result.track_bit_rate = 
+                (int)(freq["sample_rate"]->to_double_amount("Ms/sec")*1000000)
+                / (fanout_def_it->size()-4);
+            } else {
+              assert(result.track_bit_rate == 
+                     (int)(freq["sample_rate"]->to_double_amount("Ms/sec") *
+                           1000000)
+                     / (fanout_def_it->size()-4));
             }
           }
         }

@@ -2,7 +2,7 @@
 #define CONTROL_PARAMETERS_H_
 
 #include <json/json.h>
-#include <Vex++.h>
+#include <vex/Vex++.h>
 
 
 
@@ -168,7 +168,8 @@ public:
   
   // Return the track parameters needed by the input node
   Track_parameters 
-  get_track_parameters(const std::string &track_name) const;
+  get_track_parameters(const std::string &mode_name,
+                       const std::string &station_name) const;
   
   // Return the correlation parameters needed by a correlator node
   Correlation_parameters 
