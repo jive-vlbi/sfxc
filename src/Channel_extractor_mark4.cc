@@ -383,6 +383,7 @@ Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader,
    debug_level(debug_level),
    block_count(0)
 { 
+//  insert_random_headers = false;
   memcpy(block, first_data_block, SIZE_MK4_FRAME);
   // Make sure the header starts on the first byte:
   size_t result = reader->get_bytes(SIZE_MK4_FRAME*(sizeof(T)-1), 

@@ -159,7 +159,7 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
   get_integration_slice().set_parameters(correlation_parameters);
   nChannels = correlation_parameters.station_streams.size();
 
-  int bytes = 
+  int input_bytes = 
     ((int64_t)(correlation_parameters.stop_time-
                (correlation_parameters.start_time-MAX_DELAY)) *
     correlation_parameters.sample_rate *
@@ -170,7 +170,7 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
     int stream_nr = correlation_parameters.station_streams[i].station_stream;
     assert(stream_nr < data_readers_ctrl.number_of_data_readers());
     
-    data_readers_ctrl.get_data_reader(stream_nr)->set_size_dataslice(bytes);
+    data_readers_ctrl.get_data_reader(stream_nr)->set_size_dataslice(input_bytes);
   }
 
   for (int i=0; i<bits2float_converters.size(); i++) {
@@ -182,9 +182,43 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
 
    get_integration_slice().set_start_time(correlation_parameters.start_time);
 
+   // set the output stream
+   int nAutos = param.station_streams.size();
+   int nCrosses = nAutos*(nAutos-1)/2;
+   int nBaselines;
+   if (param.cross_polarize) { // do cross polarisation
+     if (param.reference_station < 0) {
+       nBaselines = 2*nAutos + 4*nCrosses;
+     } else {
+       nBaselines = 2*nAutos + 4*(nAutos-1);
+     }
+   } else {
+     if (param.reference_station < 0) {
+       nBaselines = nAutos + nCrosses;
+     } else {
+       nBaselines = 2*nAutos - 1;
+     }
+   }
+   int size_of_one_baseline = sizeof(fftwf_complex)*
+     (param.number_channels*PADDING/2+1);
+   output_node_set_timeslice(param.slice_nr, get_correlate_node_number(), 
+                             size_of_one_baseline*nBaselines);
+   //end of set output stream
+   
    status=CORRELATING; 
    correlate_state = INITIALISE_TIME_SLICE; 
 }
+
+void
+Correlator_node::
+output_node_set_timeslice(int slice_nr, int stream_nr, int bytes) {
+  int32_t msg_output_node[] = {stream_nr, slice_nr, bytes};
+  MPI_Send(&msg_output_node, 3, MPI_INT32,
+           RANK_OUTPUT_NODE,
+           MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
+           MPI_COMM_WORLD);
+}
+
 
 void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
   get_integration_slice().set_delay_table(sn, table);

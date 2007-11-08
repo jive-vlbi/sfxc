@@ -316,28 +316,6 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
                                 stoptime_timeslice);
     }
   }
-            
-  // set the output stream
-  int nAutos = nStations;
-  int nCrosses = nStations*(nStations-1)/2;
-  int nBaselines;
-  if (cross_channel != -1) { // do cross polarisation
-    if (control_parameters.reference_station() == "") {
-      nBaselines = 2*nAutos + 4*nCrosses;
-    } else {
-      nBaselines = 2*nAutos + 4*(nAutos-1);
-    }
-  } else {
-    if (control_parameters.reference_station() == "") {
-      nBaselines = nAutos + nCrosses;
-    } else {
-      nBaselines = 2*nAutos - 1;
-    }
-  }
-  int size_of_one_baseline = sizeof(fftwf_complex)*
-    (correlation_parameters.number_channels*PADDING/2+1);
-  output_node_set_timeslice(slice_nr, corr_node_nr, 
-                            size_of_one_baseline*nBaselines);
 
   set_correlating_state(corr_node_nr, CORRELATING);
 
