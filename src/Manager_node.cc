@@ -134,7 +134,7 @@ void Manager_node::start() {
         initialise_scan(scans.front());
         
         // Set the input nodes to the proper start time
-        get_log_writer() << "START_TIME:" << start_time << std::endl;
+        get_log_writer() << __LINE__ << " START_TIME:" << start_time << std::endl;
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
           int station_time = 
@@ -148,8 +148,6 @@ void Manager_node::start() {
             get_log_writer() << "new START_TIME: " << start_time << std::endl;
           }
         }
-        stop_time_scan =
-          control_parameters.get_vex().stop_of_scan(*scans.begin()).to_miliseconds(start_day);
 
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
@@ -199,14 +197,14 @@ void Manager_node::start() {
       }
       case GOTO_NEXT_TIMESLICE:
       {
+        start_time += duration_time_slice;
         if (start_time >= stop_time) {
           status = STOP_CORRELATING;
         } else if (scans.empty()) {
           status = STOP_CORRELATING;
         } else {
           scans.pop_front();
-          initialise_scan(scans.front());
-          status = START_CORRELATION_TIME_SLICE;
+          status = START_NEW_SCAN;
         }
         break;
       }
@@ -358,9 +356,6 @@ Manager_node::initialise() {
     set_data_reader(input_rank(station_name), 0, filename);
   }
 
-  // Get a list of all scan names
-  control_parameters.get_vex().get_scans(std::back_inserter(scans));
-
   // Send the delay tables:
   get_log_writer() << "Set delay_table" << std::endl;
   for (size_t station=0; 
@@ -383,6 +378,8 @@ Manager_node::initialise() {
   get_log_writer()(2) << "start_time : " << start_time << std::endl;
   get_log_writer()(2) << "stop_time  : " << stop_time << std::endl;
 
+  // Get a list of all scan names
+  control_parameters.get_vex().get_scans(std::back_inserter(scans));
   {  // Iterate over all the scans to find the first scan to correlate
     const Vex &vex = control_parameters.get_vex();
 
@@ -392,8 +389,10 @@ Manager_node::initialise() {
       // assume the same mode, hence the same track parameters
       assert(mode == control_parameters.get_vex().get_mode(*scans.begin()));
 
-      if (vex.stop_of_scan(*scans.begin()).to_miliseconds(start_day) > 
-          start_time) {
+      if ((start_time >=
+          vex.start_of_scan(*scans.begin()).to_miliseconds(start_day)) &&
+          (start_time <
+          vex.stop_of_scan(*scans.begin()).to_miliseconds(start_day))) {
         break;
       }
       scans.erase(scans.begin());
@@ -404,37 +403,38 @@ Manager_node::initialise() {
   slice_nr  = 0;
 
   get_log_writer()(1) << "Initialisation finished" << std::endl;
-
   get_log_writer()(2) << "start scan : " << *scans.begin() << std::endl;
-
   get_log_writer()(2) << "Starting correlation" << std::endl;
 }
 
 void Manager_node::initialise_scan(const std::string &scan) {
   get_log_writer() << "Set Track_parameters" << std::endl;
   
+  Vex::Date start_of_scan = 
+    control_parameters.get_vex().start_of_scan(scans.front());
+
   // set the start time to the beginning of the scan
-  if (start_time < 
-      control_parameters.get_vex().start_of_scan(scans.front()).to_miliseconds(start_day)) {
-    start_time =
-      control_parameters.get_vex().start_of_scan(scans.front()).to_miliseconds(start_day);
+  if (start_time < start_of_scan.to_miliseconds(start_day)) {
+    start_time = start_of_scan.to_miliseconds(start_day);
   }
-  
+  stop_time_scan =
+    control_parameters.get_vex().stop_of_scan(*scans.begin())
+    .to_miliseconds(start_day);
 
   
-  // Send the track parameters
+  // Send the track parameters to the input nodes
   get_log_writer() << "Set Track_parameters" << std::endl;
-  const std::string &mode = 
+  const std::string &mode_name = 
     control_parameters.get_vex().get_mode(scan);
   for (size_t station=0; 
        station<control_parameters.number_stations(); station++) {
     const std::string &station_name = 
       control_parameters.station(station);
     const std::string &track = 
-      control_parameters.get_vex().get_track(mode, station_name);
+      control_parameters.get_vex().get_track(mode_name, station_name);
 
     Track_parameters track_param =
-      control_parameters.get_track_parameters(track);
+      control_parameters.get_track_parameters(mode_name, station_name);
     input_node_set(station_name, track_param);
   }
 }
