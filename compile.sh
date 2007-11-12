@@ -1,1 +1,1 @@
-aclocal && autoheader && autoconf && automake --add-missing && ./configure
+aclocal && autoheader && autoconf && automake --add-missing
