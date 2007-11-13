@@ -100,7 +100,7 @@ Channel_extractor_mark4(boost::shared_ptr<Data_reader> reader,
 {
   char block[SIZE_MK4_FRAME];
   total_tracks = find_header(block, reader);
-
+  
   switch (total_tracks) {
   case 8:
     {
@@ -477,7 +477,11 @@ goto_time(int64_t _time) {
   result = read_new_block();
   if (result != SIZE_MK4_FRAME) return read_n_bytes+result;
 
-  assert(get_current_time() == _time);
+  if (get_current_time() != _time) {
+    DEBUG_MSG("_time:        " << _time);
+    DEBUG_MSG("current time: " << get_current_time());
+    assert(get_current_time() == _time);
+  }
   return 0;
 }
 
@@ -600,7 +604,10 @@ check_time_stamp() {
     militime*1000 + mark4_header.microsecond(0, militime)
     - start_microtime;
 
-  assert(delta_time > 0);
+  if (delta_time <= 0) {
+    DEBUG_MSG("delta_time: " << delta_time)
+    assert(delta_time > 0);
+  }
   int64_t computed_TBR =
     (reader->data_counter()*1000000/(sizeof(T)*delta_time));
   

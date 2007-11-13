@@ -37,11 +37,14 @@ produce_html_plotpage_SOURCES = \
   ../src/utils.cc \
   gnuplot_i.cc
 
-vex2ccf_SOURCES = vex2ccf.cc
+vex2ccf_SOURCES = \
+  vex2ccf.cc \
+  ../src/utils.cc
 
 generate_uvw_coordinates_SOURCES = \
   generate_uvw_coordinates.cc \
-  ../src/Uvw_model.cc
+  ../src/Uvw_model.cc \
+  ../src/utils.cc
 
 plot_delay_table_SOURCES = \
   plot_delay_table.cc \

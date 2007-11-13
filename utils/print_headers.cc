@@ -17,6 +17,10 @@
 #include <Mark4_header.h>
 
 int main(int argc, char *argv[]) {
+#ifdef SFXC_PRINT_DEBUG
+  RANK_OF_NODE = 0;
+#endif
+
   Log_writer_cout log_writer(0);
   
   if (argc != 2) {
@@ -24,26 +28,19 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  Data_reader_file data_reader(argv[1]);
-  int nBytes = SIZE_MK4_FRAME*sizeof(int64_t);
-  int32_t data_frame[SIZE_MK4_FRAME];
   
-  data_reader.get_bytes(nBytes, (char*)data_frame);
+  boost::shared_ptr<Data_reader> reader(new Data_reader_file(argv[1]));
   
-  Mark4_header<int32_t> header;
-  header.set_header(data_frame);
-  header.check_header();
-  
-  for (int i=0; i<1; i++) {
-    std::cout << header.year(i) << "y"
-              << header.day(i) << "d"
-              << header.hour(i) << "h"
-              << header.minute(i) << "m"
-              << header.second(i) << "s"
-              << header.milisecond(i) << "ms"
-              << header.microsecond(i, header.milisecond(i)) << "us"
-              << std::endl;
-  }
-  std::cout << std::endl;
+  Channel_extractor_mark4 
+    extractor(reader, 
+              false /* insert_random_headers */, 
+              Channel_extractor_mark4::CHECK_ALL_HEADERS);
 
+  // print first header
+  extractor.print_header(log_writer,0);
+  
+  extractor.goto_next_block();
+
+  // print second header
+  extractor.print_header(log_writer,0);
 }

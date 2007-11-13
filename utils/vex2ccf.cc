@@ -1,5 +1,3 @@
-#include <vex/Vex++.h>
-
 #include <assert.h>
 #include <string>
 #include <stdio.h>
@@ -7,6 +5,9 @@
 #include <set>
 
 #include <json/json.h>
+#include <vex/Vex++.h>
+
+#include "utils.h"
 
 std::string add_time(std::string &time, int delta) {
   int year, day, hour, minute, second;
@@ -163,6 +164,10 @@ Json::Value get_channels(const Vex &vex){
 
 
 int main(int argc, char *argv[]) {
+#ifdef SFXC_PRINT_DEBUG
+  RANK_OF_NODE = 0;
+#endif
+
   char *vex_file = NULL, *ctrl_file = NULL;
   bool full=false;
   int vex_count, ctrl_count;

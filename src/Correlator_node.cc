@@ -136,6 +136,7 @@ void Correlator_node::start()
                        MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, 
                        MPI_COMM_WORLD);
 
+              DEBUG_MSG("Time slice finished.");
               status = STOPPED;
               correlate_state = INITIALISE_TIME_SLICE;
 
@@ -161,7 +162,7 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
 
   int bytes = 
     ((int64_t)(correlation_parameters.stop_time-
-               (correlation_parameters.start_time-MAX_DELAY)) *
+               (correlation_parameters.start_time)) *
     correlation_parameters.sample_rate *
     correlation_parameters.bits_per_sample) / 8000;
 
@@ -173,7 +174,7 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
     data_readers_ctrl.get_data_reader(stream_nr)->set_size_dataslice(bytes);
   }
 
-  for (int i=0; i<bits2float_converters.size(); i++) {
+  for (size_t i=0; i<bits2float_converters.size(); i++) {
      if (bits2float_converters[i] != 
          boost::shared_ptr<Bits_to_float_converter>()) {
        bits2float_converters[i]->set_bits_per_sample(correlation_parameters.bits_per_sample);

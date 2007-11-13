@@ -80,9 +80,13 @@ void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
   dcBufPrev =new double*[nstations];
   for (int sn=0; sn<nstations; sn++){
     segm[sn] = new double[n2fftcorr];
+    memset(segm[sn], 0, n2fftcorr*sizeof(double));
     Bufs[sn] = new double[BufSize];
+    memset(Bufs[sn], 0, BufSize*sizeof(double));
     dcBufs[sn] = new double[3*BufSize];
+    memset(dcBufs[sn], 0, 3*BufSize*sizeof(double));
     dcBufPrev[sn] = new double[2*BufSize];
+    memset(dcBufPrev[sn], 0, 2*BufSize*sizeof(double));
   }
   
   timePtr = ((int64_t)corr_param.start_time)*1000;//set timePtr to start for delay (usec)
@@ -175,27 +179,20 @@ bool DelayCorrection::init_reader(int sn, int64_t startIS)
          boost::shared_ptr<Bits_to_float_converter>());
   BufPtr = BufSize;//set read pointer to end of Bufs, because Bufs not filled
 
+  memset(&dcBufPrev[sn][0], 0, sizeof(double)*2*BufSize);
   //initialise dcBufPrev with data from input channel (can be Mk4 file)
-  int bytes_to_read = 2*BufSize;
-  int bytes_read = 0;
-  while (bytes_read != bytes_to_read) {
-    int status = sample_reader[sn]->get_data(bytes_to_read-bytes_read,
-                                             &dcBufPrev[sn][bytes_read]);
-    if (status <= 0) {
-      assert(false);
-      return false;
-    }
-    bytes_read += status;
-  }
-  if (sn==3) {
-    std::stringstream filename;
-    filename << "samples.txt"; 
-    std::ofstream out(filename.str().c_str());
-    for (int i=0; i<2*BufSize; i++) {
-      out << dcBufPrev[sn][i] << std::endl;
-    }
-  }
-  assert(bytes_read == bytes_to_read);
+//  int bytes_to_read = 2*BufSize;
+//  int bytes_read = 0;
+//  while (bytes_read != bytes_to_read) {
+//    int status = sample_reader[sn]->get_data(bytes_to_read-bytes_read,
+//                                             &dcBufPrev[sn][bytes_read]);
+//    if (status <= 0) {
+//      assert(false);
+//      return false;
+//    }
+//    bytes_read += status;
+//  }
+//  assert(bytes_read == bytes_to_read);
   return true;
 }
 

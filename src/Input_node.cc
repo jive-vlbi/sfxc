@@ -7,19 +7,19 @@
  *
  */
 
-#include <Input_node.h>
-#include "utils.h"
-
-#include <types.h>
-#include <Semaphore_buffer.h>
-
-#include <Data_reader_buffer.h>
-#include <Channel_extractor_mark4.h>
-
 #include <iostream>
 #include <assert.h>
 #include <time.h>
 #include <math.h>
+
+#include "Input_node.h"
+#include "utils.h"
+
+#include "types.h"
+#include "Semaphore_buffer.h"
+
+#include "Data_reader_buffer.h"
+#include "Channel_extractor_mark4.h"
 
 #include "MPI_Transfer.h"
 
@@ -58,6 +58,9 @@ void Input_node::initialise()  {
 void 
 Input_node::
 set_track_parameters(const Track_parameters &track_param) {
+  for (size_t i=0; i<time_slicers.size(); i++) {
+    assert(time_slicers[i].finished());
+  }
   assert(channel_extractor != 
          boost::shared_ptr<Channel_extractor_mark4>());
   channel_extractor->set_track_parameters(track_param);
@@ -67,7 +70,7 @@ set_track_parameters(const Track_parameters &track_param) {
     static_cast<int>(ceil((MAX_DELAY * 1. *
                            ((channel_extractor->track_bit_rate()/8)) / 
                            channel_extractor->number_of_bytes_per_block()) /
-                          1000));
+                          1000))+2;
   int total_elements = buffered_elements + 5;
 
   // remove old time slicers:
@@ -163,8 +166,8 @@ void Input_node::start() {
           wrote &= time_slicers[i].do_task();
         }
         if (!wrote) {
-          if (!read) status = WAITING;
           status = INITIALISING;
+          if (!read) status = WAITING;
         }
         break;
       }
@@ -212,7 +215,7 @@ Input_node::
 add_time_slice(int channel, int stream, 
                int starttime_slice, int stoptime_slice) {
   //starttime_slice -= MAX_DELAY; // Needed for the delay correction
-  stoptime_slice += MAX_DELAY; // Needed for the delay correction
+  //stoptime_slice += MAX_DELAY; // Needed for the delay correction
   int start_byte = 
     ((starttime_slice-start_time) * 
      (channel_extractor->bit_rate(channel)/8000));
@@ -227,6 +230,7 @@ add_time_slice(int channel, int stream,
     set_size_dataslice(bytes_in_slice);
   time_slicers[channel].add(data_writers_ctrl.get_data_writer(stream), 
                             start_byte);
+  assert(!time_slicers[channel].finished());
 }
 
 int Input_node::get_status() {
