@@ -30,22 +30,18 @@ Integration_slice::Integration_slice(Correlation_parameters &corr_param,
 void
 Integration_slice::set_parameters(Correlation_parameters &corr_param)
 {
+  if ( !parameters_set ) {
+    dc.set_parameters(corr_param);
+    cc.set_parameters(corr_param);
+  }
+
   // Only set the parameters once, otherwise the arrays get constructed twice
-  assert( !parameters_set );
   parameters_set = true;
   
-  dc.set_parameters(corr_param);
-  cc.set_parameters(corr_param);
-  
+
   Nsegm2Avg = 
     (corr_param.sample_rate / 1000) * corr_param.integration_time
     / corr_param.number_channels;
-  
-  int bytes_in_integration = 
-    // Offset for delay
-    ((int64_t)(MAX_DELAY) * corr_param.sample_rate * corr_param.bits_per_sample) / 8000 +
-    // bytes per seconds
-    Nsegm2Avg * corr_param.number_channels * corr_param.bits_per_sample / 8;
 }
 
 
@@ -104,7 +100,7 @@ bool Integration_slice::correlate()
     result &= cc.correlate_segment(dc.get_segment());
 
     if ( segm%TenPct == 0 ){
-      log_writer(1) << "segm=" << segm << "\t " << segm*100/Nsegm2Avg 
+      log_writer(2) << "segm=" << segm << "\t " << segm*100/Nsegm2Avg 
                     << " % of current Integration Slice processed"
                     << std::endl;
     }
@@ -118,7 +114,6 @@ bool Integration_slice::correlate()
   //normalise the accumulated correlation results
   result = cc.average_time_slice();
 
-  DEBUG_MSG("after average_time_slice");
   if (!result) {
     log_writer(0) << "Error in averaging the integration" << std::endl;
     return false;
@@ -126,7 +121,7 @@ bool Integration_slice::correlate()
 
   //write the correlation result for the current time slice
   result = cc.write_time_slice();
-  DEBUG_MSG("after write_time_slice");
+  DEBUG_MSG("Integration slice finished");
   return result;
 }
 

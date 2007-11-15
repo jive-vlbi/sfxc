@@ -17,7 +17,7 @@ class Time_slicer : Buffer<T> {
 public:
   typedef T                                       value_type;
   typedef Buffer<T>                               Base;
-  typedef Time_slicer<T>                     Self;
+  typedef Time_slicer<T>                          Self;
 
   Time_slicer(int size, int backup_elements);
   ~Time_slicer();
@@ -122,8 +122,13 @@ add(boost::shared_ptr<Data_writer> writer, int64_t start) {
 template <class T>
 bool Time_slicer<T>::do_task() {
   if (!empty()) {
-    if ((!writers.empty()) && 
-	(writers.begin()->first <= data_counter)) {
+    if (writers.empty()) {
+      DEBUG_MSG("No output stream available");
+      return false;
+    } else if (writers.begin()->first > data_counter) {
+      DEBUG_MSG("Output starts after current time");
+      return false;
+    } else {
       int size;
       T &elem = slicer_consume(size);
       for (Writer_iterator it = writers.begin(); 
@@ -133,17 +138,15 @@ bool Time_slicer<T>::do_task() {
       }
       while ((!writers.empty()) && 
 	     (writers.begin()->second->get_size_dataslice()==0)) {
+        DEBUG_MSG("Writers.erase(begin);");
 	writers.erase(writers.begin());
       }
       data_counter += size;
       slicer_consumed();
-    } else {
-      //DEBUG_MSG("No output stream available");
-      return false;
     }
     return true;
   } else {
-    //DEBUG_MSG("Buffer empty");
+    DEBUG_MSG("Buffer empty");
     return false;
   }
 }
