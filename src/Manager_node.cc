@@ -25,7 +25,9 @@ Manager_node(int rank, int numtasks,
 : Abstract_manager_node(rank, numtasks,
                         log_writer,
                         control_parameters),
-                        manager_controller(*this) {
+                        manager_controller(*this),
+  duration_time_slice(1000)
+{
   assert(rank == RANK_MANAGER_NODE);
 
   add_controller(&manager_controller);
@@ -105,6 +107,10 @@ Manager_node(int rank, int numtasks,
 
   assert(number_correlator_nodes() > 0);
   state_correlator_node.resize(number_correlator_nodes());
+  
+  if (duration_time_slice < control_parameters.integration_time()) {
+    duration_time_slice = control_parameters.integration_time();
+  }
 }
 
 Manager_node::~Manager_node() {
@@ -161,7 +167,6 @@ void Manager_node::start() {
       }
       case START_CORRELATION_TIME_SLICE: 
       {
-        get_log_writer() << "START_CORRELATION_TIME_SLICE" << std::endl;
         stoptime_timeslice = start_time+duration_time_slice;
         if (stop_time_scan < stoptime_timeslice) {
           stoptime_timeslice = stop_time_scan;
@@ -172,7 +177,6 @@ void Manager_node::start() {
       }
       case START_CORRELATOR_NODES_FOR_TIME_SLICE:
       {
-        get_log_writer() << "START_CORRELATOR_NODES_FOR_TIME_SLICE" << std::endl;
         bool added_correlator_node = false;
         for (size_t i=0; 
              (current_channel<control_parameters.number_frequency_channels())
@@ -198,13 +202,22 @@ void Manager_node::start() {
       case GOTO_NEXT_TIMESLICE:
       {
         start_time += duration_time_slice;
+
         if (start_time >= stop_time) {
           status = STOP_CORRELATING;
+        } else if (start_time >= stop_time_scan) {
+          if (scans.empty()) {
+            status = STOP_CORRELATING;
+          } else {
+            scans.pop_front();
+            status = START_NEW_SCAN;
+            DEBUG_MSG("NGHK: TODO: No next scan yet");
+            status = STOP_CORRELATING;
+          }
         } else if (scans.empty()) {
           status = STOP_CORRELATING;
         } else {
-          scans.pop_front();
-          status = START_NEW_SCAN;
+          status = START_CORRELATION_TIME_SLICE;
         }
         break;
       }
@@ -239,19 +252,24 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   int cross_channel = -1;
   if (control_parameters.cross_polarize()) {
     cross_channel = control_parameters.cross_polarisation(current_channel);
-    assert((cross_channel == -1) || (cross_channel > current_channel));
+    assert((cross_channel == -1) || (cross_channel > (int)current_channel));
   }
 
   // Initialise the correlator node
   if (cross_channel == -1) {
-    get_log_writer()(1) << "start " << start_time << ", channel " 
-                     << current_channel << " to correlation node " 
-                     << corr_node_nr << std::endl;
+    get_log_writer()(1)
+      << "start "
+      << Vex::Date(start_year, start_day, start_time/1000).to_string()
+      << ", channel " << current_channel << " to correlation node " 
+      << corr_node_nr << std::endl;
   } else {
-    get_log_writer()(1) << "start " << start_time << ", channel " 
-                     << current_channel << "," 
-                     << cross_channel << " to correlation node " 
-                     << corr_node_nr << std::endl;
+    get_log_writer()(1) 
+      << "start "
+      << Vex::Date(start_year, start_day, start_time/1000).to_string()
+      << ", channel " 
+      << current_channel << "," 
+      << cross_channel << " to correlation node " 
+      << corr_node_nr << std::endl;
   }
 
   std::string channel_name =
@@ -325,6 +343,8 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   int size_of_one_baseline = sizeof(fftw_complex)*
     (correlation_parameters.number_channels*PADDING/2+1);
   output_node_set_timeslice(slice_nr, corr_node_nr, 
+                            (duration_time_slice /
+                             control_parameters.integration_time()) *
                             size_of_one_baseline*nBaselines);
 
   set_correlating_state(corr_node_nr, CORRELATING);
@@ -332,7 +352,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   current_channel ++;
   if (control_parameters.cross_polarize()) {
     // Go to the next channel.
-    int cross_channel = 
+    size_t cross_channel = 
       control_parameters.cross_polarisation(current_channel);
     while ((current_channel <
             control_parameters.number_frequency_channels()) &&
@@ -369,6 +389,7 @@ Manager_node::initialise() {
     correlator_node_set_all(delay_table, station_name);
   }
 
+  start_year = control_parameters.get_start_time().year, 
   start_day  = control_parameters.get_start_time().day;
   start_time = control_parameters.get_start_time().to_miliseconds();
   stop_time  = 
@@ -402,14 +423,10 @@ Manager_node::initialise() {
   
   slice_nr  = 0;
 
-  get_log_writer()(1) << "Initialisation finished" << std::endl;
-  get_log_writer()(2) << "start scan : " << *scans.begin() << std::endl;
-  get_log_writer()(2) << "Starting correlation" << std::endl;
+  get_log_writer()(1) << "Starting correlation" << std::endl;
 }
 
 void Manager_node::initialise_scan(const std::string &scan) {
-  get_log_writer() << "Set Track_parameters" << std::endl;
-  
   Vex::Date start_of_scan = 
     control_parameters.get_vex().start_of_scan(scans.front());
 
@@ -430,8 +447,6 @@ void Manager_node::initialise_scan(const std::string &scan) {
        station<control_parameters.number_stations(); station++) {
     const std::string &station_name = 
       control_parameters.station(station);
-    const std::string &track = 
-      control_parameters.get_vex().get_track(mode_name, station_name);
 
     Track_parameters track_param =
       control_parameters.get_track_parameters(mode_name, station_name);
