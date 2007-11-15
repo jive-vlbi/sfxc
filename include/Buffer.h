@@ -11,8 +11,9 @@
 #define BUFFER_H
 
 #include <vector>
-#include <utils.h>
 #include <assert.h>
+
+#include "utils.h"
 
 /// Use this element for the buffer class if you want to store an array
 /// on every position.
@@ -70,6 +71,39 @@ private:
   T* _buffer;
 };
 
+/// Use this class if you want to allocate large number of element
+/// static array declaration may fails if the array is too large...
+template <class T>
+class Buffer_element_vector {
+public:
+  typedef T value_type;
+  int size() { return _buffer.size(); }
+
+  Buffer_element_vector() {
+  }
+
+  ~Buffer_element_vector(){
+    DEBUG_MSG("Deleting array element of size " << size());
+  }
+
+  void resize(int size) {
+//    DEBUG_MSG("resizing from " << _buffer.size() << " to " << size);
+    _buffer.resize(size);
+  }
+
+
+  T &operator[](int i) {
+    assert(i >= 0);
+    assert(i < _buffer.size());
+    return _buffer[i];
+  }
+  T *buffer() {
+    return &_buffer[0];
+  }
+private:
+  std::vector<T> _buffer;
+};
+
 
 /** Generic buffer class.
  * Precondition T is default constructible
@@ -81,6 +115,7 @@ public:
   typedef Buffer<T>                               Self;
 
   Buffer(int size);
+  Buffer(int size, const T &element);
   virtual ~Buffer();
 
   virtual T &produce() = 0;
@@ -138,6 +173,18 @@ Buffer(int size)
   if (size <= 0) { DEBUG_MSG(size); }
   assert(size > 0);
   buffer.resize(size);
+  status.resize(size);
+}
+
+template <class T>
+Buffer<T>::
+Buffer(int size, const T &element)
+  : size(size),
+    front(0), rear(0)
+{
+  if (size <= 0) { DEBUG_MSG(size); }
+  assert(size > 0);
+  buffer.resize(size, element);
   status.resize(size);
 }
 

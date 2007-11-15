@@ -10,33 +10,51 @@
 #ifndef BITS_TO_FLOAT_CONVERTER_H_
 #define BITS_TO_FLOAT_CONVERTER_H_
 
-#include <Channel_extractor.h>
-#include <Data_reader.h>
 #include <boost/shared_ptr.hpp>
 
-class Bits_to_float_converter
+#include "Channel_extractor.h"
+#include "Data_reader.h"
+#include "Semaphore_buffer.h"
+#include "tasklet/tasklet.h"
+
+class Bits_to_float_converter : public Tasklet
 {
 public:
-	Bits_to_float_converter();
-  
-  /** Read a number of samples from input **/
-  size_t get_data(size_t nSamples, double *buffer); 
+  typedef Buffer_element_vector<double>             Output_buffer_element;
+  typedef Semaphore_buffer< Output_buffer_element > Output_buffer;
+  typedef boost::shared_ptr<Output_buffer>          Output_buffer_ptr;
 
+  Bits_to_float_converter();
+  
   /// Set the number of bits per data sample
-  void set_bits_per_sample(int nbits);
+  void set_parameters(int nbits_per_sample, 
+                      int size_output_slice);
+
+  void do_task();
+  
+//  /** Read a number of samples from input **/
+//  size_t get_data(size_t nSamples, double *buffer); 
+
   
   /** Sets the input for the Bits_to_float_converter to a data reader.
    * This assumes that the samples are encoded in bytes
    **/
   void set_data_reader(boost::shared_ptr<Data_reader> data_reader);
   
-  uint64_t data_counter();
-  int get_size_dataslice();
-
+  Output_buffer_ptr get_output_buffer();
+//  
+//  uint64_t data_counter();
+//  int get_size_dataslice();
+//
 private:
   int bits_per_sample;
+  int size_output_slice;
+  
+  Output_buffer_ptr  output_buffer;
 
   boost::shared_ptr<Data_reader>       data_reader;
+  // NGHK: TODO: remove once we are reading from a buffer
+  std::vector<char>                    intermediate_buffer;
 };
 
 #endif /* BITS_TO_FLOAT_CONVERTER_H_ */

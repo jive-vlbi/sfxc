@@ -79,6 +79,7 @@ public:
   int64_t channel_freq;     // Center frequency of the band in Hz
   int32_t bandwidth;        // Bandwidth of the channel in Hz
   char    sideband;         // U or L
+  std::vector<char> polarisations;
   
   bool    cross_polarize;   // do the cross polarisations
   int32_t reference_station;// use a reference station

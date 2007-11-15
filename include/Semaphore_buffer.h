@@ -23,6 +23,7 @@ public:
   typedef Semaphore_buffer<T>                     Self;
 
   Semaphore_buffer(int size);
+  Semaphore_buffer(int size, const T& element);
   ~Semaphore_buffer();
 
   // NGHK: add a mutex in produce (multiple producers)
@@ -65,7 +66,25 @@ Semaphore_buffer(int size)
 }
 
 template <class T>
+Semaphore_buffer<T>::
+Semaphore_buffer(int size, const T& element)
+  : Base(size, element), consuming(false), producing(false)
+{
+  assert(size > 0);
+  if ( sem_init(&empty_sem, 1, 0) == -1 ) {
+    std::cout << "Failed to initialise the \"empty\" semaphore" << std::endl;
+    exit(1);
+  }
+  if ( sem_init(&full_sem, 1, size) == -1 ) {
+    std::cout << "Failed to initialise the \"full\" semaphore" << std::endl;
+    exit(1);
+  }
+}
+
+
+template <class T>
 Semaphore_buffer<T>::~Semaphore_buffer() {
+  DEBUG_MSG("~Semaphore_buffer()");
 }
 
 template <class T>

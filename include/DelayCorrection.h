@@ -25,20 +25,26 @@
 using namespace std;
 
 //sfxc includes
-#include <types.h>
+#include "types.h"
 #include "Timer.h"
 #include "Delay_table_akima.h"
-#include <Bits_to_float_converter.h>
-#include <Log_writer.h>
+#include "Bits_to_float_converter.h"
+#include "Log_writer.h"
 
-#include <Control_parameters.h>
+#include "Control_parameters.h"
+#include "tasklet/tasklet.h"
+#include "Semaphore_buffer.h"
 
 
 /** Functions and data necessary to do the delay correction
     for each station.**/
-class DelayCorrection
+class DelayCorrection : public Tasklet
 {
 public:
+  typedef Buffer_element_vector<char>                    Output_buffer_element;
+  typedef Semaphore_buffer< Output_buffer_element >      Output_buffer;
+  typedef boost::shared_ptr<Output_buffer>               Output_buffer_ptr;
+
 
   /** Allocate arrays, initialise parameters. **/
   DelayCorrection(Log_writer &lg_wrtr);
@@ -47,8 +53,14 @@ public:
 
   /** De-allocate arrays and destroy plans. **/
   ~DelayCorrection();
-
+  
   void set_parameters(Correlation_parameters &corr_param);
+
+  
+  // For Tasklet
+  void do_task();
+  
+  Output_buffer_ptr get_output_buffer();
 
   /** **/    
   void set_sample_reader
@@ -88,6 +100,7 @@ private:
   Correlation_parameters corr_param;
   
   int64_t  timePtr;     //time in usec wrt 00:00 used for delay table
+  // these are the output buffers
   double **segm;      //nstation data buffer ready for correlation
   double **Bufs;      //nstations buffers with delay corrected
   double **dcBufs;    //buffers with data for delay correction
@@ -128,5 +141,7 @@ private:
   // sample points
   static const double maximal_phase_change = 0.2; // 5.7 degrees
   int n_recompute_delay;
+  
+  Output_buffer_ptr output_buffer;
 };
 #endif //DELAYCORRECTION_H

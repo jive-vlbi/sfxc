@@ -1,5 +1,3 @@
-SUBDIRS = multicore
-
 AM_CPPFLAGS = -I../include
 
 bin_PROGRAMS = sfxc
@@ -18,9 +16,17 @@ OBJ=\
   Data_writer_void.cc \
   Log_writer.cc Log_writer_cout.cc Log_writer_void.cc \
   Log_writer_file.cc \
-  Integration_slice.cc CorrelationCore.cc DelayCorrection.cc \
+  correlation_core.cc \
+  delay_correction.cc \
   Channel_extractor_mark4.cc \
-  Bits_to_float_converter.cc
+  Bits_to_float_converter.cc \
+  tasklet/mutex.cc \
+  tasklet/tasklet.cc \
+  tasklet/tasklet_manager.cc \
+  tasklet/tasklet_pool.cc \
+  tasklet/tasklet_worker.cc \
+  tasklet/thread.cc
+  
 
 
 sfxc_SOURCES = $(OBJ) sfxc.cc \

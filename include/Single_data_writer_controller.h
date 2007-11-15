@@ -21,7 +21,7 @@
 class Single_data_writer_controller : public Controller {
   typedef Single_data_writer_controller  Self;
 public:
-  typedef Buffer_element<char,131072>      value_type;
+  typedef Buffer_element<char, 131072>     value_type;
   typedef Buffer<value_type>               Buffer;
   
   Single_data_writer_controller(Node &node);

@@ -45,10 +45,10 @@ private:
  **/
 class Output_node : public Node {
 public:
-  typedef Buffer_element<char,131072>           value_type;
-  typedef std::map<int32_t, int>                  Input_stream_priority_map;
-  typedef Input_stream_priority_map::value_type Input_stream_priority_map_value;
-  typedef Buffer<value_type>                    Buffer;
+  typedef Single_data_writer_controller::value_type value_type;
+  typedef std::map<int32_t, int>                    Input_stream_priority_map;
+  typedef Input_stream_priority_map::value_type     Input_stream_priority_map_value;
+  typedef Buffer<value_type>                        Buffer;
   
   /** Manages the input from one correlator node.
    * The input stream is used to maintain the data 

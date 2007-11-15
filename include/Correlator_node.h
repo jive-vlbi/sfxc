@@ -10,17 +10,21 @@
 #ifndef CORRELATOR_NODE_H
 #define CORRELATOR_NODE_H
 
-#include <Node.h>
+#include "Node.h"
 
-#include <Multiple_data_readers_controller.h>
-#include <Single_data_writer_controller.h>
+#include "Multiple_data_readers_controller.h"
+#include "Single_data_writer_controller.h"
 
-#include <Integration_slice.h>
-#include <Semaphore_buffer.h>
+#include "Integration_slice.h"
+#include "Semaphore_buffer.h"
 
-#include <Control_parameters.h>
+#include "Control_parameters.h"
+#include "Bits_to_float_converter.h"
 
 #include "Log_writer_mpi.h"
+#include "correlation_core.h"
+#include "delay_correction.h"
+#include "tasklet/tasklet_manager.h"
 
 // Declare the correlator controller:
 class Correlator_node;
@@ -52,10 +56,15 @@ private:
 class Correlator_node : public Node
 {
 public:
-  typedef Correlator_node                Self;
-  typedef Buffer_element<char,131072>    input_value_type;
-  typedef Buffer_element<char,131072>    output_value_type;
-
+  typedef Correlator_node                        Self;
+  typedef Buffer_element<char, 131072>           Input_buffer_element;
+  typedef Semaphore_buffer<Input_buffer_element> Input_buffer;
+  typedef Buffer_element_vector<char>            output_value_type;
+  
+private:
+  typedef boost::shared_ptr<Bits_to_float_converter>  Bits2float_ptr;
+  typedef boost::shared_ptr<Delay_correction>         Delay_correction_ptr;
+public:
   enum Status {
     // Initialise the Correlate node
     STOPPED=0,
@@ -73,13 +82,10 @@ public:
     END_TIME_SLICE
   };
   
-  Correlator_node(int rank, int nr_corr_node, int buff_size);
+  Correlator_node(int rank, int nr_corr_node);
   ~Correlator_node();
   
   void start();
-
-  /// Starts the correlation process.  
-  void start_correlating(Correlation_parameters &param);
 
   /// Callback function for adding a data_reader:
   void hook_added_data_reader(size_t reader);
@@ -87,13 +93,10 @@ public:
   void hook_added_data_writer(size_t writer);
 
   void add_delay_table(int sn, Delay_table_akima &table);
-    
 
-  /// Get the Integration_slice (the class doing the actual work)
-   Integration_slice &get_integration_slice() {
-     return integration_slice;
-   }
+  void set_parameters(const Correlation_parameters &parameters);
   
+
   int get_correlate_node_number();
 
   /** Number of integration steps done in the current time slice **/
@@ -102,32 +105,26 @@ public:
   /** Size in bytes of the output of one integration step **/
   int output_size_of_one_integration_step();
 private:
+  void correlate();
 
-  // Buffer for the output, input is directly handled by the Correlator_controller
-  Semaphore_buffer<output_value_type> output_buffer;
-
+  
+private:
   Correlator_node_controller       correlator_node_ctrl;
   Multiple_data_readers_controller data_readers_ctrl;
   Single_data_writer_controller    data_writer_ctrl;
-
-  // The actual correlator code:
-  Integration_slice integration_slice;
   
   // State variables:
   CORRELATE_STEPS correlate_state;
   Status status;
-  /// Number of elements in a buffer
-  int buffer_size, nr_corr_node;
 
-  int64_t startIS;
-  int sliceNr;
+  /// Number of the correlator node
+  int nr_corr_node;
 
-  Correlation_parameters correlation_parameters;
+  std::vector< Bits2float_ptr >              bits2float_converters;
+  std::vector< Delay_correction_ptr >        delay_modules;
+  Correlation_core                           correlation_core;
   
-  std::vector< boost::shared_ptr<Bits_to_float_converter> > bits2float_converters;
-
-  // the number of channels to correlate
-  int nChannels;
+  int n_integration_slice_in_time_slice;
 };
 
 #endif // CORRELATOR_NODE_H

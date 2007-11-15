@@ -64,7 +64,7 @@ void start_node() {
       MPI_Recv(&msg, 1, MPI_INT32, 
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-      Correlator_node node(rank, msg, /* buffer size */ 10);
+      Correlator_node node(rank, msg);
       node.start();
       break;
     }

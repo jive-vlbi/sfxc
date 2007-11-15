@@ -279,7 +279,6 @@ bool CorrelationCore::average_time_slice()
 
   //cross product normalisation for all possible base lines
   if (cross_polarize) {
-    int nstations_2 = nstations/2;
     if (reference_station >= 0) {
       // cross polarize with a reference station
       int nstations_2 = nstations/2;
@@ -374,4 +373,9 @@ Data_writer& CorrelationCore::get_data_writer()
 void CorrelationCore::set_data_writer(boost::shared_ptr<Data_writer> data_writer_)
 {
   data_writer=data_writer_;
+}
+
+void CorrelationCore::do_task() {
+  // NYI
+  assert(false);
 }

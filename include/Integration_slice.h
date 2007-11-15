@@ -12,9 +12,10 @@
 
 #include <types.h>
 #include "Timer.h"
-#include "DelayCorrection.h"
+#include "delay_correction.h"
 #include "CorrelationCore.h"
-#include <Data_reader_file.h>
+#include "Data_reader_file.h"
+#include "Bits_to_float_converter.h"
 
 /** TScorrlelator correlates one time slice of data for all stations. **/
 class Integration_slice
@@ -61,7 +62,7 @@ public:
 
 private:
   int32_t           Nsegm2Avg; //nr of segments to average
-  DelayCorrection dc;//class
+  Delay_correction dc;//class
   CorrelationCore cc;//class
   bool            parameters_set; // For debugging
 

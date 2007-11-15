@@ -50,7 +50,6 @@ AC_OUTPUT(Makefile
           lib/calc10/lib/Makefile
           lib/calc10/src/Makefile
           src/Makefile
-          src/multicore/Makefile
           test/Makefile
           include/Makefile
           utils/Makefile

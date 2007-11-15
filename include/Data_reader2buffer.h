@@ -177,7 +177,8 @@ Data_reader2buffer<T>::read() {
         usleep(10000); // .01 second:
       } else {
         T &elem = buffer->produce();
-        int size = data_reader->get_bytes(sizeof(T),(char*)&elem);
+        assert(elem.size() > 0);
+        int size = data_reader->get_bytes(elem.size(), elem.buffer());
         buffer->produced(size);
       }
     }

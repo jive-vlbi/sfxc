@@ -233,7 +233,7 @@ Control_parameters::get_output_file() const {
   return ctrl["output_file"].asString();
 }
 
-std::string 
+std::string
 Control_parameters::station(int i) const {
   return ctrl["stations"][i].asString();
 }
@@ -347,14 +347,14 @@ station_in_scan(const std::string& scan, int station_nr) const {
 
 size_t 
 Control_parameters::number_stations_in_scan(const std::string& scan) const {
-  size_t n_scans=0;
+  size_t n_stations=0;
   for (Vex::Node::const_iterator it = 
          vex.get_root_node()["SCHED"][scan]->begin("station");
        it != vex.get_root_node()["SCHED"][scan]->end("station");
        ++it) {
-    n_scans++;
+    n_stations++;
   }
-  return n_scans;
+  return n_stations;
 }
 
 size_t 

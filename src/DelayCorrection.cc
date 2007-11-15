@@ -96,11 +96,11 @@ void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
   sls.resize(n2fftDC);
   sls_freq.resize(n2fftDC);
   planT2F = fftw_plan_dft_1d(n2fftDC, 
-			     (fftw_complex *)&sls[0], (fftw_complex *)&sls_freq[0], 
-			     FFTW_BACKWARD, FFTW_ESTIMATE);
+                             (fftw_complex *)&sls[0], (fftw_complex *)&sls_freq[0], 
+                             FFTW_BACKWARD, FFTW_ESTIMATE);
   planF2T = fftw_plan_dft_1d(n2fftDC, 
-			     (fftw_complex *)&sls_freq[0], (fftw_complex *)&sls[0], 
-			     FFTW_FORWARD,  FFTW_ESTIMATE);
+                             (fftw_complex *)&sls_freq[0], (fftw_complex *)&sls[0], 
+                             FFTW_FORWARD,  FFTW_ESTIMATE);
   //TODO RHJO: ask SP why not use fftw_plan_r2c_1d and fftw_plan_c2r_1d. Try!
   //4b) and 4c) probably not necessary anymore
 
@@ -452,3 +452,7 @@ bool DelayCorrection::set_delay_table(int stations, Delay_table_akima &delay_tab
   return true;
 }
 
+void DelayCorrection::do_task() {
+  // NYI
+  assert(false);
+}

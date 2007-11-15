@@ -22,29 +22,44 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
-using namespace std;
 
 #include "Log_writer.h"
-#include <Data_writer.h>
-#include <Control_parameters.h>
+#include "Data_writer.h"
+#include "Control_parameters.h"
+#include "delay_correction.h"
+#include "tasklet/component.h"
+#include "Semaphore_buffer.h"
 
 /**
  * Functions and data necessary to correlate one Time Slice.
  **/
-class CorrelationCore
+class CorrelationCore : public Tasklet
 {
 public:
+  typedef Delay_correction::Output_buffer_element   Input_buffer_element;
+  typedef Delay_correction::Output_buffer           Input_buffer;
+  typedef Delay_correction::Output_buffer_ptr       Input_buffer_ptr;
+  
+  typedef Input_buffer_element                      Output_buffer_element;
+  typedef Semaphore_buffer< Output_buffer_element > Output_buffer;
+  typedef boost::shared_ptr<Output_buffer>          Output_buffer_ptr;
 
   /** Initialise the correlator with proper values, allocate arrays,
       createFFTW plans.**/
   CorrelationCore(Log_writer &log_writer);
   CorrelationCore(Log_writer &log_writer, Correlation_parameters &corr_param);
 
+  /** Sets the parameters for the correlation **/
+  void set_parameters(Correlation_parameters &corr_param);
+
   /** De-allocate correlator arrays, destroy FFTW plans.**/
   ~CorrelationCore();
 
-  /** Sets the parameters for the correlation **/
-  void set_parameters(Correlation_parameters &corr_param);
+  // For Tasklet
+  void do_task();
+  
+  // Return the output buffer
+  Output_buffer_ptr get_output_buffer();
 
   /** Initialise array values to zero before the correlation
       of the time slice.**/
