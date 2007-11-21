@@ -53,7 +53,7 @@ public:
   /** Correlates all the segments (Nsegm2Avg) in the time slice.
       \pre startIS: start time of current integration slice in usec wrt 00:00
   **/
-  bool correlate();
+  bool correlate(Correlation_parameters &corr_param);
     
   Data_writer &get_data_writer();
 

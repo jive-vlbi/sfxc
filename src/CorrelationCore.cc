@@ -36,8 +36,9 @@ CorrelationCore::CorrelationCore(Log_writer &lw,
   set_parameters(corr_param);
 }
 
-void CorrelationCore::set_parameters(Correlation_parameters &corr_param)
+void CorrelationCore::set_parameters(Correlation_parameters &corr_param_)
 {
+  corr_param = corr_param_;
   parameters_set = true;
 
   cross_polarize = corr_param.cross_polarize;
@@ -66,7 +67,6 @@ void CorrelationCore::set_parameters(Correlation_parameters &corr_param)
 
   n2fftcorr = corr_param.number_channels;
   padding   = PADDING;
-
 
   segm = new float*[nstations]; 
   xps = new fftwf_complex*[nstations];
@@ -179,7 +179,6 @@ bool CorrelationCore::correlate_segment(float** in_segm)
         (xps[sn][j][0] * xps[sn][j][0]) + (xps[sn][j][1] * xps[sn][j][1]);
       //accxps[bsln][j][1] imaginary part stays zero
     }
-
     bsln++;
   }
 
@@ -347,19 +346,186 @@ bool CorrelationCore::average_time_slice()
   return true;
 }
 
-
-
 bool CorrelationCore::write_time_slice()
 {
+  // write a header per channel and
+  // write a header per baseline
+  struct Output_header_timeslice {
+    int32_t integration_slice; // Integration slice number
+    int32_t number_baselines;  // The number of baselines that follow
+    int32_t number_uvw_coordinates; // The number of uvw coordinates that follow
+  };
+
+  struct Output_header_baseline {
+    int32_t weight;       // The number of good samples
+    uint8_t station_nr1;  // Station number in the vex-file
+    uint8_t station_nr2;  // Station number in the vex-file
+    unsigned char polarisation1:1; // Polarisation for the first station
+                          // (RCP: 0, LCP: 1)
+    unsigned char polarisation2:1; // Polarisation for the second station
+    unsigned char sideband:1;      // Upper or lower sideband
+                          // (LSB: 0, USB: 1)
+    unsigned char channel:5;       // The number of the channel in the vex-file,
+                          // sorted increasingly
+    // 1 byte left:
+    char empty;
+  };
+
+  DEBUG_MSG("Output_header_timeslice: " << sizeof(Output_header_timeslice));
+  DEBUG_MSG("Output_header_baseline:  " << sizeof(Output_header_baseline));
+  
+  DEBUG_MSG("integration time " << corr_param.integration_time);
+  DEBUG_MSG("integration start time " << corr_param.start_time);
+  DEBUG_MSG("integration stop time " << corr_param.stop_time);
+  DEBUG_MSG("number of channels " << corr_param.number_channels);
+  DEBUG_MSG("sideband " << corr_param.sideband);
+  int nr_corr = (corr_param.stop_time-corr_param.start_time)/corr_param.integration_time;
+  DEBUG_MSG("number of correlations " << nr_corr);
+  DEBUG_MSG("station number 1 " << corr_param.station_streams[0].station_stream);
+  DEBUG_MSG("station number 1 " << corr_param.station_streams[1].station_stream);
+  DEBUG_MSG("station number 1 " << corr_param.station_streams[2].station_stream);
+  DEBUG_MSG("slice number " << corr_param.slice_nr);
+
+  int bsln = 0;//initialise baseline counter
+  int station1_bsln[nbslns];
+  int station2_bsln[nbslns];
+  //auto product normalisation, mean pwr = 1
+  for (int sn = 0 ; sn < nstations ; sn++){
+    DEBUG_MSG("========= 1. auto coorelation ========");
+    DEBUG_MSG("station --> : " << sn);
+    station1_bsln[bsln] = sn;
+    station2_bsln[bsln] = sn;
+    bsln++;
+  }
+  //cross product normalisation for all possible base lines
+  if (cross_polarize) {
+    int nstations_2 = nstations/2;
+    if (reference_station >= 0) {
+      // cross polarize with a reference station
+      int nstations_2 = nstations/2;
+      for (int sn = 0 ; sn < nstations; sn++){
+        if ((sn != reference_station) && 
+            (sn != reference_station+nstations_2)) {
+          // Do not cross correlate the 
+          // two polarisations of the same station
+          bsln++;
+          assert(bsln <= nbslns);
+        }
+        DEBUG_MSG("========= 2. cross with ref ========");
+        DEBUG_MSG("station --> : " << sn);
+        DEBUG_MSG("reference station --> : " << reference_station);
+        station1_bsln[bsln] = sn;
+        station2_bsln[bsln] = reference_station;
+      }
+      for (int sn = 0 ; sn < nstations; sn++){
+        if ((sn != reference_station) && 
+            (sn != reference_station+nstations_2)) {
+          // Do not cross correlate the 
+          // two polarisations of the same station
+          bsln++;
+          assert(bsln <= nbslns);
+        }
+        DEBUG_MSG("========= 2. cross with ref ========");
+        DEBUG_MSG("station --> : " << sn);
+        DEBUG_MSG("reference station --> : " << reference_station);
+        station1_bsln[bsln] = sn;
+        station2_bsln[bsln] = reference_station;    
+      }
+    } else {
+      // cross polarize without a reference station
+      int nstations_2 = nstations/2;
+      for (int sn = 0 ; sn < nstations - 1; sn++){
+        for (int sno = sn + 1; sno < nstations ; sno ++){
+          if (sn + nstations_2 != sno) {
+            // Do not cross correlate the 
+            // two polarisations of the same station
+            bsln++;
+            assert(bsln <= nbslns);
+          }
+          DEBUG_MSG("========= 3. cross no ref ========");
+          DEBUG_MSG("station --> : " << sn);
+          DEBUG_MSG("reference station --> : " << sno);
+          station1_bsln[bsln] = sn;
+          station2_bsln[bsln] = sno;
+        }
+      }
+    }
+  } else {
+    if (reference_station >= 0) {
+      // no cross polarisation with a reference station
+      for (int sn = 0 ; sn < nstations; sn++){
+        if (sn != reference_station) {
+          // Do not cross correlate the 
+          // two polarisations of the same station
+          bsln++;
+          assert(bsln <= nbslns);
+        }
+        DEBUG_MSG("========= 4. no cross with ref ========");
+        DEBUG_MSG("station --> : " << sn);
+        DEBUG_MSG("reference station --> : " << reference_station);
+        station1_bsln[bsln] = sn;
+        station2_bsln[bsln] = reference_station;
+      }
+    } else {
+      // no cross polarisation without a reference station
+
+      for (int sn = 0 ; sn < nstations - 1; sn++){
+        for (int sno = sn + 1; sno < nstations ; sno ++){
+          bsln++;
+          assert(bsln <= nbslns);
+          DEBUG_MSG("========= 5. no cross no ref ========");
+          DEBUG_MSG("station --> : " << sn);
+          DEBUG_MSG("reference station --> : " << sno);
+          station1_bsln[bsln] = sn;
+          station2_bsln[bsln] = sno;
+        }
+      }
+    }
+  }
+  assert(bsln == nbslns);
+  
+  Output_header_timeslice htimeslice;
+  Output_header_baseline hbaseline;
+  
+  htimeslice.number_baselines = bsln;
+  htimeslice.integration_slice = (corr_param.stop_time - corr_param.start_time)
+                                  / corr_param.integration_time;
+  htimeslice.number_uvw_coordinates = 3;
+  
   //write normalized correlation results to output file
   //NGHK: Make arrays consecutive to be able to write all data at once
-  uint64_t nWrite = sizeof(fftwf_complex)*(n2fftcorr*padding/2+1);
+  
+  uint64_t nWrite = sizeof(htimeslice);
+  uint64_t written = get_data_writer().put_bytes(nWrite, (char *)&htimeslice);
+
   for (int bsln = 0; bsln < nbslns; bsln++){
-    uint64_t written = get_data_writer().
+    hbaseline.weight = 0;       // The number of good samples
+    hbaseline.station_nr1 = station1_bsln[bsln];  // Station number in the vex-file
+    hbaseline.station_nr2 = station2_bsln[bsln];  // Station number in the vex-file
+    hbaseline.polarisation1 = 1; // Polarisation for the first station
+                            // (RCP: 0, LCP: 1)
+    hbaseline.polarisation2 = 1; // Polarisation for the second station
+    if(corr_param.sideband=='U'){
+      hbaseline.sideband = 0;      // Upper or lower sideband (LSB: 0, USB: 1)
+    }else if(corr_param.sideband=='L'){
+      hbaseline.sideband = 1;
+    }
+    hbaseline.channel = corr_param.channel_nr;       // The number of the channel in the vex-file,
+                            // sorted increasingly
+      // 1 byte left:
+    hbaseline.empty = ' ';
+    nWrite = sizeof(hbaseline);
+    written = get_data_writer().put_bytes(nWrite, (char *)&hbaseline);
+    nWrite = sizeof(fftwf_complex)*(n2fftcorr*padding/2+1);
+    written = get_data_writer().
       put_bytes(nWrite, (char *)(accxps[bsln]));
     if (nWrite != written) return false;
   }
-  DEBUG_MSG("Size of time slice: " << nWrite*nbslns);
+  DEBUG_MSG("Size of time slice -->: " << nWrite*nbslns);
+  DEBUG_MSG("number of baselines --> : " << nbslns);
+  DEBUG_MSG("n2fftcorr --> : " << n2fftcorr);
+  DEBUG_MSG("padding --> : " << padding);
+  DEBUG_MSG("size of one baseline is --> : " << sizeof(fftwf_complex)*(n2fftcorr*padding/2+1));
   return true;
 }
 

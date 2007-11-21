@@ -47,7 +47,8 @@ public:
   Correlation_parameters()
     : start_time(0), stop_time(0), integration_time(0),
       number_channels(0), slice_nr(-1), sample_rate(0), 
-      bits_per_sample(0), channel_freq(0), bandwidth(0), sideband('n') {
+      bits_per_sample(0), channel_freq(0), bandwidth(0), 
+      sideband('n'), channel_nr(0) {
   }     
 
   
@@ -75,13 +76,15 @@ public:
 
   int32_t sample_rate;      // #Samples per second
   int32_t bits_per_sample;  // For all stations equal
-
+  int32_t channel_nr;          // channel number ordered in the list
   int64_t channel_freq;     // Center frequency of the band in Hz
   int32_t bandwidth;        // Bandwidth of the channel in Hz
   char    sideband;         // U or L
+  char    polarisation;         // L or R
   
   bool    cross_polarize;   // do the cross polarisations
   int32_t reference_station;// use a reference station
+  
 
   Station_list station_streams; // input streams used
 };
@@ -107,7 +110,7 @@ public:
   /****************************************************/
   /* Get functions from the correlation control file: */
   /****************************************************/
-  Date get_start_time();
+  Date get_start_time() const;
   Date get_stop_time();
   std::vector<std::string> data_sources(const std::string &station) const;
   std::string get_output_file() const;

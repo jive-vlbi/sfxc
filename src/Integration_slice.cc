@@ -40,7 +40,6 @@ Integration_slice::set_parameters(Correlation_parameters &corr_param)
   Nsegm2Avg = 
     (corr_param.sample_rate / 1000) * corr_param.integration_time
     / corr_param.number_channels;
-  
   int bytes_in_integration = 
     // Offset for delay
     ((int64_t)(MAX_DELAY) * corr_param.sample_rate * corr_param.bits_per_sample) / 8000 +
@@ -87,10 +86,9 @@ bool Integration_slice::init_reader(int sn, int64_t startIS)
 
 
 // Correlates all the segments (Nsegm2Avg) in the integration slice.
-bool Integration_slice::correlate()
+bool Integration_slice::correlate(Correlation_parameters &corr_param)
 {  
   bool result = true;
-
   int TenPct=Nsegm2Avg/10;
   log_writer(2) << "Nsegm2Avg " << Nsegm2Avg << endl;
   //zero accumulation accxps array and norms array.

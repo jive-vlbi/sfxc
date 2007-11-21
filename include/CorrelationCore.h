@@ -95,5 +95,6 @@ private:
   Log_writer &log_writer;
 
   bool parameters_set;
+  Correlation_parameters corr_param;
 };
 #endif // CORRELATIONCORE_H

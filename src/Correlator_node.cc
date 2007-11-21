@@ -94,7 +94,7 @@ void Correlator_node::start()
               }
 
               //process the next time slice:
-              get_integration_slice().correlate();
+              get_integration_slice().correlate(correlation_parameters);
               
               for (size_t i=0; i<correlation_parameters.station_streams.size(); i++) {
                 int stream_nr = correlation_parameters.station_streams[i].station_stream;
@@ -199,12 +199,53 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
        nBaselines = 2*nAutos - 1;
      }
    }
+   
+   struct Output_header_timeslice {
+     int32_t integration_slice; // Integration slice number
+     int32_t number_baselines;  // The number of baselines that follow
+     int32_t number_uvw_coordinates; // The number of uvw coordinates that follow
+   };
+
+   struct Output_uvw_coordinates {
+     int32_t station_nr; // The station number in the vex-file
+     double u, v, w;     // The u, v and w coordinates
+   };
+
+   struct Output_header_baseline {
+     int32_t weight;       // The number of good samples
+     uint8_t station_nr1;  // Station number in the vex-file
+     uint8_t station_nr2;  // Station number in the vex-file
+     unsigned char polarisation1:1; // Polarisation for the first station
+                           // (RCP: 0, LCP: 1)
+     unsigned char polarisation2:1; // Polarisation for the second station
+     unsigned char sideband:1;      // Upper or lower sideband
+                           // (LSB: 0, USB: 1)
+     unsigned char channel:5;       // The number of the channel in the vex-file,
+                           // sorted increasingly
+     // 1 byte left:
+     char empty;
+   };
+
+      
    int size_of_one_baseline = sizeof(fftwf_complex)*
      (param.number_channels*PADDING/2+1);
-   output_node_set_timeslice(param.slice_nr, get_correlate_node_number(), 
-                             size_of_one_baseline*nBaselines);
+   output_node_set_timeslice(param.slice_nr, get_correlate_node_number(),
+         ((param.stop_time - param.start_time) / param.integration_time) 
+         * size_of_one_baseline*nBaselines+
+         ((param.stop_time - param.start_time) / param.integration_time)
+         * sizeof(Output_header_timeslice)
+         + ((param.stop_time - param.start_time) / param.integration_time)
+         * sizeof(Output_header_baseline)*nBaselines);
    //end of set output stream
-   
+   DEBUG_MSG("reference station is ---> " << param.reference_station);
+   DEBUG_MSG("size of one time slice ----> " << 
+         (((param.stop_time - param.start_time) / param.integration_time) 
+             * size_of_one_baseline*nBaselines+
+             ((param.stop_time - param.start_time) / param.integration_time)
+             * sizeof(Output_header_timeslice)
+             + ((param.stop_time - param.start_time) / param.integration_time)
+             * sizeof(Output_header_baseline)*nBaselines));
+
    status=CORRELATING; 
    correlate_state = INITIALISE_TIME_SLICE; 
 }

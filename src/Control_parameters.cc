@@ -206,7 +206,7 @@ Control_parameters::check(std::ostream &writer) const {
 }
 
 Control_parameters::Date 
-Control_parameters::get_start_time() {
+Control_parameters::get_start_time() const {
   return Date(ctrl["start"].asString());
 }
 
@@ -656,7 +656,7 @@ get_correlation_parameters(const std::string &scan_name,
   corr_param.stop_time = vex.stop_of_scan(scan_name).to_miliseconds();
   corr_param.integration_time = integration_time();
   corr_param.number_channels = number_channels();
-
+  
   // Assumption: sample rate the the same for all stations:
   Vex::Node::const_iterator freq = 
     vex.get_root_node()["FREQ"][mode["FREQ"][0]->to_string()];

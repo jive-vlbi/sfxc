@@ -43,7 +43,39 @@ Manager_node(int rank, int numtasks,
   set_data_writer(RANK_OUTPUT_NODE, 0, 
                   control_parameters.get_output_file());
 
+  // Send the global header
+  Global_header_output header_msg;
+  header_msg.header_size = sizeof(Global_header_output);
+  char* exper="nc07l2";
 
+  strcpy(header_msg.experiment,exper);      // Name of the experiment
+  header_msg.start_year = 2007;       // Start year of the experiment
+  header_msg.start_day = 161;        // Start day of the experiment (day of year)
+  header_msg.start_time = control_parameters.get_start_time().to_miliseconds()/1000;
+                            // Start time of the correlation in seconds since
+                            // midnight
+  header_msg.number_channels = control_parameters.number_channels();  // Number of frequency channels
+  header_msg.integration_time = control_parameters.integration_time();// Integration time: 2^integration_time seconds
+  // 3 bytes left:
+  int int_time_temp=0;
+  header_msg.integration_time /= 1000;
+  while(header_msg.integration_time > 2){
+    header_msg.integration_time = header_msg.integration_time/2;
+    int_time_temp++;
+  }
+  header_msg.integration_time = int_time_temp;
+  header_msg.empty[0] = 0;
+  header_msg.empty[1] = 0;
+  header_msg.empty[2] = 0;
+
+    
+  output_node_set_global_header((char *)&header_msg, sizeof(Global_header_output));
+
+  DEBUG_MSG("header size = " << header_msg.header_size);
+  DEBUG_MSG("start_time = " << header_msg.start_time);
+  DEBUG_MSG("integration time = " << header_msg.integration_time);
+  DEBUG_MSG("number of channels = " << header_msg.number_channels);
+  
   // Input nodes:
   int n_stations = get_control_parameters().number_stations();
   for (int input_node=0; input_node<n_stations; input_node++) {
@@ -138,7 +170,6 @@ void Manager_node::start() {
         get_log_writer() << "START_NEW_SCAN" << std::endl;
         
         // set track information
-        DEBUG_MSG("HERE?");
         initialise_scan(scans.front());
         
         // Set the input nodes to the proper start time
@@ -277,7 +308,8 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
   correlation_parameters.slice_nr = slice_nr;
-
+  DEBUG_MSG("///////// channel name is ////////// --> " << channel_name);
+  correlation_parameters.channel_nr = current_channel;
   assert ((cross_channel != -1) == correlation_parameters.cross_polarize);
 
   // Check the cross polarisation
@@ -392,7 +424,6 @@ Manager_node::initialise() {
     correlator_node_set_all(delay_table, station_name);
   }
 
-  
   slice_nr  = 0;
 
   get_log_writer()(1) << "Initialisation finished" << std::endl;
@@ -400,6 +431,11 @@ Manager_node::initialise() {
   get_log_writer()(2) << "start scan : " << *scans.begin() << std::endl;
 
   get_log_writer()(2) << "Starting correlation" << std::endl;
+
+
+  DEBUG_MSG("number of stations is ---> " << control_parameters.number_stations());
+
+
 }
 
 void Manager_node::initialise_scan(const std::string &scan) {

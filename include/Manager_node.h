@@ -47,6 +47,22 @@ public:
     /// Terminate the node 
     END_NODE
   };
+  
+  /// Global header for the output format
+  struct Global_header_output {
+    int32_t header_size;      // Size of the global header in bytes
+    char experiment[32];      // Name of the experiment
+    int32_t start_year;       // Start year of the experiment
+    int32_t start_day;        // Start day of the experiment (day of year)
+    int32_t start_time;       // Start time of the correlation in seconds since
+                              // midnight
+    int32_t number_channels;  // Number of frequency channels
+    int8_t  integration_time; // Integration time: 2^integration_time seconds
+    // 3 bytes left:
+    int8_t empty[3];
+  };
+
+  
   /// Different states a correlator node can have
   Manager_node(int rank, int numtasks,
                Log_writer *log_writer,
