@@ -531,7 +531,7 @@ get_bytes(std::vector< char* > &output_buffer) {
     if (output_buffer[channel] == NULL) continue;
     int data_position = 0; // Position in the mark4 data block
     size_t output_position = 0;
-    if (insert_random_headers) {
+    if (insert_random_headers && false) {
       // there are 160 bits in the header
       while (data_position < 160) {
         output_buffer[channel][output_position] = // 8 random bits:

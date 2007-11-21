@@ -224,6 +224,7 @@ add_time_slice(int channel, int stream,
      (channel_extractor->bit_rate(channel)/8000));
 
   assert(data_writers_ctrl.get_data_writer(stream) != NULL);
+  DEBUG_MSG(data_writers_ctrl.get_data_writer(stream)->get_size_dataslice());
   assert(data_writers_ctrl.get_data_writer(stream)->get_size_dataslice() <= 0);
 
   data_writers_ctrl.get_data_writer(stream)->

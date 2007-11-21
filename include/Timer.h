@@ -24,6 +24,7 @@ class Timer
 
   void start(const char* msg = 0);
   void restart(const char* msg = 0);
+  void resume(const char* msg = 0);
   void stop(const char* msg = 0);
   void check(const char* msg = 0);
 
@@ -75,6 +76,24 @@ inline void Timer::restart(const char* msg)
   // Set timer status to running, reset accumulated time, and set start time
   running = true;
   acc_time = 0;
+  start_clock = clock();
+  start_time = time(0);
+
+} // Timer::restart
+
+//===========================================================================
+// Turn the timer on again.  Print an optional message.
+
+inline void Timer::resume(const char* msg)
+{
+  // Print an optional message, something like "Restarting timer t";
+  if (msg) std::cout << msg << std::endl;
+
+  // Return immediately if the timer is already running
+  if (running) return;
+
+  // Set timer status to running, reset accumulated time, and set start time
+  running = true;
   start_clock = clock();
   start_time = time(0);
 

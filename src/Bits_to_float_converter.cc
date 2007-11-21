@@ -91,8 +91,12 @@ void Bits_to_float_converter::do_task() {
            size_output_slice/(8/bits_per_sample));
     
     if (bits_per_sample == 2) {
-      size_t bytes_read = data_reader->get_bytes(size_output_slice/4, 
-                                                 &intermediate_buffer[0]);
+      size_t bytes_read = 0;
+      while (bytes_read != size_output_slice/4) {
+        bytes_read += data_reader->get_bytes(size_output_slice/4-bytes_read, 
+                                             &intermediate_buffer[bytes_read]);
+      }
+      
       assert(bytes_read == size_output_slice/4);
 
       int sample = 0;    

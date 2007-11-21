@@ -342,6 +342,15 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   }
   int size_of_one_baseline = sizeof(fftw_complex)*
     (correlation_parameters.number_channels*PADDING/2+1);
+  DEBUG_MSG("Size of timeslice: "
+            << (duration_time_slice /
+                control_parameters.integration_time()) *
+                size_of_one_baseline*nBaselines);
+  DEBUG_MSG("nBaselines: " << nBaselines);
+  DEBUG_MSG("size_of_one_baseline: " << size_of_one_baseline);
+  DEBUG_MSG("#integration slices: " 
+            << (duration_time_slice /
+                control_parameters.integration_time()));
   output_node_set_timeslice(slice_nr, corr_node_nr, 
                             (duration_time_slice /
                              control_parameters.integration_time()) *

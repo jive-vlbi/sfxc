@@ -136,8 +136,8 @@ double Delay_table_akima::delay(int64_t time) {
   }
   assert(splineakima != NULL);
   double result = gsl_spline_eval (splineakima, time, acc);
-  assert(result >= 0);
-  assert(result < MAX_DELAY);
+  assert(result < 0);
+  assert(result >= -MAX_DELAY);
   return result;
 }
 

@@ -68,6 +68,11 @@ void Correlator_node::start()
           n_integration_slice_in_time_slice--;
           if (n_integration_slice_in_time_slice==0) {
             DEBUG_MSG("Finished timeslice");
+            // Notify manager node:
+            int32_t msg = get_correlate_node_number();
+            MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
+                     MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
+                     MPI_COMM_WORLD);
             status = STOPPED;
           }
         }
@@ -112,6 +117,9 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   }
   delay_modules[stream_nr] = 
     boost::shared_ptr<Delay_correction>(new Delay_correction());
+  if (stream_nr==0) {
+    delay_modules[stream_nr]->verbose = true;
+  }
 
   // Connect the delay_correction to the bits2float_converter
   delay_modules[stream_nr]->connect_to(sample_reader->get_output_buffer());
@@ -148,17 +156,21 @@ void Correlator_node::correlate() {
   for (size_t i=0; i<bits2float_converters.size(); i++) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
       bits2float_converters[i]->do_task();
+      bits2float_converters[i]->do_task();
     }
   }
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
       delay_modules[i]->do_task();
+      delay_modules[i]->do_task();
     }
   }
+  correlation_core.do_task();
   correlation_core.do_task();
 }
 
 void Correlator_node::set_parameters(const Correlation_parameters &parameters) {
+  assert(status == STOPPED);
   DEBUG_MSG(__PRETTY_FUNCTION__);
 
   for (size_t i=0; i<bits2float_converters.size(); i++) {

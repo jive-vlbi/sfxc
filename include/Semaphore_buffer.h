@@ -84,7 +84,7 @@ Semaphore_buffer(int size, const T& element)
 
 template <class T>
 Semaphore_buffer<T>::~Semaphore_buffer() {
-  DEBUG_MSG("~Semaphore_buffer()");
+//  DEBUG_MSG("~Semaphore_buffer()");
 }
 
 template <class T>

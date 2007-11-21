@@ -83,7 +83,7 @@ public:
   }
 
   ~Buffer_element_vector(){
-    DEBUG_MSG("Deleting array element of size " << size());
+//    DEBUG_MSG("Deleting array element of size " << size());
   }
 
   void resize(int size) {
