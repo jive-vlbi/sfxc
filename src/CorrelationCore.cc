@@ -269,7 +269,6 @@ bool CorrelationCore::average_time_slice()
     for (int j = 0; j < n2fftcorr*padding/2 + 1; j++) {
       norms[bsln] += accxps[bsln][j][0];
     }
-    norms[bsln] = norms[bsln] / (double)(n2fftcorr*padding/2 + 1);
     for (int j = 0; j < n2fftcorr*padding/2 + 1; j++){
       accxps[bsln][j][0] /= norms[bsln];
     }

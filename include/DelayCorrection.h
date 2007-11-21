@@ -99,7 +99,6 @@ private:
   int    nstations;   //nr of stations
   
   double SR;          //sample rate
-  double tbs;         //time between samples
   int    Nf;          //nr of frequencies in frequency scale
   std::vector<double> fs; //delta frequency in frequency scale, frequency scale
   double foffset;     //frequency offset in Hertz

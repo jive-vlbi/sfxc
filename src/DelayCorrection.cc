@@ -46,7 +46,6 @@ void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
   n2fftDC     = corr_param.number_channels;
   SR          = corr_param.sample_rate; // was 2.0*GenPrms.get_bwfl()*GenPrms.get_ovrfl();
   BufSize     = BufTime * (int)(SR/1000000.0);
-  tbs         = 1.0/SR;
   Nsegm2DC    = BufSize/n2fftDC;
   
   if (corr_param.sideband == 'U') {
@@ -57,7 +56,7 @@ void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
   }
 
   Nf          = n2fftDC/2+1; //number of frequencies
-  double dfr  = 1.0/(n2fftDC*tbs); // delta frequency
+  double dfr  = 1.0/(n2fftDC/SR); // delta frequency
   fs.resize(Nf); // frequency array
 
   for (int jf=0; jf<Nf; jf++) {
@@ -96,10 +95,12 @@ void DelayCorrection::set_parameters(Correlation_parameters &corr_param_)
   sls.resize(n2fftDC);
   sls_freq.resize(n2fftDC);
   planT2F = fftw_plan_dft_1d(n2fftDC, 
-			     (fftw_complex *)&sls[0], (fftw_complex *)&sls_freq[0], 
+			     (fftw_complex *)&sls[0],
+                             (fftw_complex *)&sls_freq[0], 
 			     FFTW_BACKWARD, FFTW_ESTIMATE);
   planF2T = fftw_plan_dft_1d(n2fftDC, 
-			     (fftw_complex *)&sls_freq[0], (fftw_complex *)&sls[0], 
+			     (fftw_complex *)&sls_freq[0],
+                             (fftw_complex *)&sls[0], 
 			     FFTW_FORWARD,  FFTW_ESTIMATE);
   //TODO RHJO: ask SP why not use fftw_plan_r2c_1d and fftw_plan_c2r_1d. Try!
   //4b) and 4c) probably not necessary anymore
@@ -230,7 +231,7 @@ bool DelayCorrection::delay_correct() {
   int64_t  Time; //time in micro seconds
   double Cdel_start, Cdel_end;
   int jshift; //address shift due to signal delay wrt Earth center
-  double time_of_one_correlation_segment = n2fftDC*tbs*1000000;
+  double time_of_one_correlation_segment = n2fftDC/SR*1000000;
 
   for (size_t stations=0; stations<nstations; stations++){
     //apply delay and phase corrections for all segments (n2fftDC long)
@@ -240,11 +241,11 @@ bool DelayCorrection::delay_correct() {
     for (int jsegm=0; jsegm<Nsegm2DC; jsegm++) {
 
       // micro sec 
-      Time = timePtr + (int64_t)(jsegm*(time_of_one_correlation_segment));
+      Time = timePtr + (int64_t)((jsegm+1)*(time_of_one_correlation_segment));
       Cdel_end = delTbl[stations].delay(Time);
 
       // 1)calculate the address shift due to time delay for the current segment
-      jshift = (int)floor(Cdel_start/tbs+.5);
+      jshift = (int)floor(((Cdel_start+Cdel_end)/2)*SR+.5);
 
       int32_t offset = 2*BufSize + jshift + jsegm*n2fftDC;
       assert(offset >= 0);
@@ -336,9 +337,9 @@ bool DelayCorrection::fractional_bit_shift(double const delay,
   }
 
   // 5a)calculate the fract bit shift (=phase corrections in freq domain)
-  double dfs  = delay/tbs - integer_shift;
+  double dfs  = delay*SR - integer_shift;
 
-  double tmp1 = -2.0*M_PI*dfs*tbs;
+  double tmp1 = -2.0*M_PI*dfs/SR;
   double tmp2 = 0.5*M_PI*integer_shift/ovrfl;
   // 5b)apply phase correction in frequency range
   for (int jf = 0; jf < Nf; jf++){
@@ -355,8 +356,10 @@ bool DelayCorrection::fractional_bit_shift(double const delay,
 
 bool DelayCorrection::fringe_stopping(int station, int jsegm) {
   double mult_factor_phi = -sideband*2.0*M_PI*(skyfreq + startf + sideband*bwfl*0.5);
-  int64_t time = timePtr + (int64_t)(jsegm*n2fftDC*tbs*1000000);
-  int64_t delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
+  int64_t time = timePtr + ((((int64_t)jsegm)*n2fftDC*1000000)/SR);
+
+  int64_t delta_time = (((int64_t)n_recompute_delay)*1000000)/SR;
+
   // NGHK: TODO: For rounding off errors, make tbs into an int
   if (delta_time == 0) delta_time = 1;
   assert(delta_time > 0);
@@ -377,19 +380,17 @@ bool DelayCorrection::fringe_stopping(int station, int jsegm) {
       if (std::abs(phi_end-phi) < 0.4*maximal_phase_change) {
         // Sampling is too dense
         n_recompute_delay *= 2;
-        delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
+        delta_time = (int64_t)(n_recompute_delay/SR*1000000);
 
         phi_end = 
           mult_factor_phi * delTbl[station].delay(time+delta_time);
       }
 
-      while (std::abs(phi_end-phi) > maximal_phase_change) {
+      while ((std::abs(phi_end-phi) > maximal_phase_change) &&
+             n_recompute_delay >= (int)(2*SR/1000000)) {
         // Sampling is not dense enough
         n_recompute_delay /= 2;
-        if (n_recompute_delay < (int)(SR/1000000)) {
-          n_recompute_delay = (int)(SR/1000000);
-        }
-        delta_time = (int64_t)(n_recompute_delay*tbs*1000000);
+        delta_time = (int64_t)(n_recompute_delay/SR*1000000);
 
         phi_end =  mult_factor_phi * delTbl[station].delay(time+delta_time);
 
