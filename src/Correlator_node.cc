@@ -12,6 +12,7 @@
 #include "Data_reader_buffer.h"
 #include "Data_writer_buffer.h"
 #include "utils.h"
+#include "Output_header.h"
 
 Correlator_node::Correlator_node(int rank, int nr_corr_node, int buff_size)
  : Node(rank),
@@ -199,34 +200,7 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
        nBaselines = 2*nAutos - 1;
      }
    }
-   
-   struct Output_header_timeslice {
-     int32_t integration_slice; // Integration slice number
-     int32_t number_baselines;  // The number of baselines that follow
-     int32_t number_uvw_coordinates; // The number of uvw coordinates that follow
-   };
-
-   struct Output_uvw_coordinates {
-     int32_t station_nr; // The station number in the vex-file
-     double u, v, w;     // The u, v and w coordinates
-   };
-
-   struct Output_header_baseline {
-     int32_t weight;       // The number of good samples
-     uint8_t station_nr1;  // Station number in the vex-file
-     uint8_t station_nr2;  // Station number in the vex-file
-     unsigned char polarisation1:1; // Polarisation for the first station
-                           // (RCP: 0, LCP: 1)
-     unsigned char polarisation2:1; // Polarisation for the second station
-     unsigned char sideband:1;      // Upper or lower sideband
-                           // (LSB: 0, USB: 1)
-     unsigned char channel:5;       // The number of the channel in the vex-file,
-                           // sorted increasingly
-     // 1 byte left:
-     char empty;
-   };
-
-      
+        
    int size_of_one_baseline = sizeof(fftwf_complex)*
      (param.number_channels*PADDING/2+1);
    output_node_set_timeslice(param.slice_nr, get_correlate_node_number(),

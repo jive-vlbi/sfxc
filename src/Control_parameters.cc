@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <set>
 #include <json/json.h>
+#include <algorithm>
 
 #include <utils.h>
 
@@ -646,6 +647,9 @@ get_correlation_parameters(const std::string &scan_name,
                            const std::string &channel_name,
                            const std::map<std::string, int> 
                            &correlator_node_station_to_input) const {
+  std::set<std::string> freq_set;
+  std::set<std::string>::const_iterator freq_set_it;
+
   Vex::Node::const_iterator scan = 
     vex.get_root_node()["SCHED"][scan_name];
   Vex::Node::const_iterator mode = 
@@ -667,6 +671,7 @@ get_correlation_parameters(const std::string &scan_name,
   corr_param.bits_per_sample = bits_per_sample();
 
   corr_param.sideband = ' ';
+  std::string freq_temp;
   for (Vex::Node::const_iterator ch_it = freq->begin("chan_def");
        ch_it != freq->end("chan_def");
        ++ch_it) {
@@ -674,8 +679,24 @@ get_correlation_parameters(const std::string &scan_name,
       corr_param.channel_freq = (int64_t)(ch_it[1]->to_double_amount("MHz")*1000000);
       corr_param.bandwidth = (int)(ch_it[3]->to_double_amount("MHz")*1000000);
       corr_param.sideband = ch_it[2]->to_char();
+      freq_temp = ch_it[1]->to_string();
     }
+    freq_set.insert(ch_it[1]->to_string());
   }
+ 
+  int count = 0;
+  for (freq_set_it = freq_set.begin();
+      freq_set_it != freq_set.end(); ++freq_set_it){
+    if (*freq_set_it == freq_temp){
+      corr_param.channel_nr = count;
+      DEBUG_MSG("@@@@@@@ corr_param.channel_nr : " << corr_param.channel_nr << " and count is " << count);
+    }
+    DEBUG_MSG("@@@@@@@ freq_temp is : " << freq_temp);
+    DEBUG_MSG("@@@@@@@ freq_set_it is : " << *freq_set_it);
+    DEBUG_MSG("@@@@@@@ count is : " << count);
+    count++;
+  }
+  
   assert(corr_param.sideband != ' ');
   assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');
 

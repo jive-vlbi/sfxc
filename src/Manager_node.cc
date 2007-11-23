@@ -44,8 +44,8 @@ Manager_node(int rank, int numtasks,
                   control_parameters.get_output_file());
 
   // Send the global header
-  Global_header_output header_msg;
-  header_msg.header_size = sizeof(Global_header_output);
+  Output_header_global header_msg;
+  header_msg.header_size = sizeof(Output_header_global);
   char* exper="nc07l2";
 
   strcpy(header_msg.experiment,exper);      // Name of the experiment
@@ -69,7 +69,7 @@ Manager_node(int rank, int numtasks,
   header_msg.empty[2] = 0;
 
     
-  output_node_set_global_header((char *)&header_msg, sizeof(Global_header_output));
+  output_node_set_global_header((char *)&header_msg, sizeof(Output_header_global));
 
   DEBUG_MSG("header size = " << header_msg.header_size);
   DEBUG_MSG("start_time = " << header_msg.start_time);
@@ -309,7 +309,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   correlation_parameters.stop_time  = stoptime_timeslice;
   correlation_parameters.slice_nr = slice_nr;
   DEBUG_MSG("///////// channel name is ////////// --> " << channel_name);
-  correlation_parameters.channel_nr = current_channel;
+//  correlation_parameters.channel_nr = current_channel;
   assert ((cross_channel != -1) == correlation_parameters.cross_polarize);
 
   // Check the cross polarisation

@@ -10,6 +10,7 @@
 
 //sfxc includes
 #include "CorrelationCore.h"
+#include "Output_header.h"
 #include <utils.h>
 
 CorrelationCore::CorrelationCore(Log_writer &lw) 
@@ -350,26 +351,6 @@ bool CorrelationCore::write_time_slice()
 {
   // write a header per channel and
   // write a header per baseline
-  struct Output_header_timeslice {
-    int32_t integration_slice; // Integration slice number
-    int32_t number_baselines;  // The number of baselines that follow
-    int32_t number_uvw_coordinates; // The number of uvw coordinates that follow
-  };
-
-  struct Output_header_baseline {
-    int32_t weight;       // The number of good samples
-    uint8_t station_nr1;  // Station number in the vex-file
-    uint8_t station_nr2;  // Station number in the vex-file
-    unsigned char polarisation1:1; // Polarisation for the first station
-                          // (RCP: 0, LCP: 1)
-    unsigned char polarisation2:1; // Polarisation for the second station
-    unsigned char sideband:1;      // Upper or lower sideband
-                          // (LSB: 0, USB: 1)
-    unsigned char channel:5;       // The number of the channel in the vex-file,
-                          // sorted increasingly
-    // 1 byte left:
-    char empty;
-  };
 
   DEBUG_MSG("Output_header_timeslice: " << sizeof(Output_header_timeslice));
   DEBUG_MSG("Output_header_baseline:  " << sizeof(Output_header_baseline));
@@ -510,7 +491,7 @@ bool CorrelationCore::write_time_slice()
     }else if(corr_param.sideband=='L'){
       hbaseline.sideband = 1;
     }
-    hbaseline.channel = corr_param.channel_nr;       // The number of the channel in the vex-file,
+    hbaseline.frequency_nr = corr_param.channel_nr;       // The number of the channel in the vex-file,
                             // sorted increasingly
       // 1 byte left:
     hbaseline.empty = ' ';
