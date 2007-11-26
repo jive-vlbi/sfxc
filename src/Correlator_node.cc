@@ -22,7 +22,6 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node)
    status(STOPPED),
    nr_corr_node(nr_corr_node)
 {
-  DEBUG_MSG(__PRETTY_FUNCTION__);
   get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;
   
   add_controller(&correlator_node_ctrl);
@@ -37,7 +36,6 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node)
   MPI_Send(&nr_corr_node, 1, MPI_INT32, 
            RANK_MANAGER_NODE, MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, 
            MPI_COMM_WORLD);
-  DEBUG_MSG("/" << __PRETTY_FUNCTION__);
 }
 
 Correlator_node::~Correlator_node()
@@ -46,7 +44,6 @@ Correlator_node::~Correlator_node()
 
 void Correlator_node::start()
 {
-  DEBUG_MSG(__PRETTY_FUNCTION__);
   while (true) {
     switch (status) {
       case STOPPED: {
@@ -67,7 +64,6 @@ void Correlator_node::start()
         if (correlation_core.finished()) {
           n_integration_slice_in_time_slice--;
           if (n_integration_slice_in_time_slice==0) {
-            DEBUG_MSG("Finished timeslice");
             // Notify manager node:
             int32_t msg = get_correlate_node_number();
             MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
@@ -83,7 +79,6 @@ void Correlator_node::start()
       }
     }
   }
-  DEBUG_MSG("/" << __PRETTY_FUNCTION__);
 }
 
 
@@ -91,13 +86,11 @@ void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
   assert((size_t)sn < delay_modules.size());
   assert(integer_delay_modules[sn] != Integer_delay_correction_ptr());
   assert(delay_modules[sn] != Delay_correction_ptr());
-  DEBUG_MSG("Setting delay table for " << sn)
   integer_delay_modules[sn]->set_delay_table(table);
   delay_modules[sn]->set_delay_table(table);
 }
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
-  DEBUG_MSG("added input stream: " << stream_nr);
   // NGHK: TODO: Make sure a time slice fits
   
   boost::shared_ptr< Input_buffer > buffer(new Input_buffer(25));
@@ -192,24 +185,20 @@ void Correlator_node::correlate() {
 
 void Correlator_node::set_parameters(const Correlation_parameters &parameters) {
   assert(status == STOPPED);
-  DEBUG_MSG(__PRETTY_FUNCTION__);
 
   for (size_t i=0; i<bits2float_converters.size(); i++) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
-      DEBUG_MSG("Bit2float: Setting parameters for stream " << i);
       bits2float_converters[i]->set_parameters(parameters.bits_per_sample,
                                                parameters.number_channels);
     }
   }
   for (size_t i=0; i<integer_delay_modules.size(); i++) {
     if (integer_delay_modules[i] != Integer_delay_correction_ptr()) {
-      DEBUG_MSG("Integer delay: Setting parameters for stream " << i);
       integer_delay_modules[i]->set_parameters(parameters);
     }
   }
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
-      DEBUG_MSG("Delay: Setting parameters for stream " << i);
       delay_modules[i]->set_parameters(parameters);
     }
   }
@@ -220,7 +209,4 @@ void Correlator_node::set_parameters(const Correlation_parameters &parameters) {
   
   n_integration_slice_in_time_slice = 
     (parameters.stop_time-parameters.start_time) / parameters.integration_time;
-  
-  DEBUG_MSG(n_integration_slice_in_time_slice);
-  DEBUG_MSG("/" << __PRETTY_FUNCTION__);
 }

@@ -67,18 +67,12 @@ void Integer_delay_correction::do_task() {
       input_reader->get_bytes(correlation_parameters.number_channels,
                               (char *)output.buffer());
     } else if (new_delay == current_delay-1) {
-      if (verbose) {
-        DEBUG_MSG("Reuse last element");
-      }
       // Reuse last element
       output[0] = buffered_element;
       input_reader->get_bytes(correlation_parameters.number_channels-1,
                               (char *)&output[1]);
       current_delay = new_delay;
     } else if (new_delay == current_delay+1) {
-      if (verbose) {
-        DEBUG_MSG("Skip one element");
-      }
       // Skip one element
       input_reader->get_bytes(1, (char *)output.buffer());
       input_reader->get_bytes(correlation_parameters.number_channels,

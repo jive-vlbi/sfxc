@@ -232,7 +232,7 @@ int Delay_correction::length_of_one_fft() {
 }
 int Delay_correction::sideband() {
   assert((correlation_parameters.sideband == 'L') ||
-         (correlation_parameters.sideband == 'R'));
+         (correlation_parameters.sideband == 'U'));
   return (correlation_parameters.sideband == 'L' ? -1 : 1);
 }
 int64_t Delay_correction::channel_freq() {
