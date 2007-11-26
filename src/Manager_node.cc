@@ -300,10 +300,12 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
 
   std::string channel_name =
     control_parameters.frequency_channel(current_channel);
+  std::string station_name = "Wb";
   Correlation_parameters correlation_parameters = 
     control_parameters.
     get_correlation_parameters(*scans.begin(),
                                channel_name,
+                               station_name,
                                get_input_node_map());
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;

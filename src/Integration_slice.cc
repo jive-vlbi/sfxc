@@ -129,9 +129,6 @@ bool Integration_slice::correlate(Correlation_parameters &corr_param)
 }
 
 
-
-
-
 Data_writer &Integration_slice::get_data_writer() {
   return cc.get_data_writer();
 }

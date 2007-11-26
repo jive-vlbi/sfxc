@@ -2,7 +2,7 @@
 #define CONTROL_PARAMETERS_H_
 
 #include <json/json.h>
-#include <Vex++.h>
+#include <vex/Vex++.h>
 
 
 
@@ -177,6 +177,7 @@ public:
   Correlation_parameters 
   get_correlation_parameters(const std::string &scan_name,
                              const std::string &channel_name,
+                             const std::string &station_name,
                              const std::map<std::string, int> 
                              &correlator_node_station_to_input) const;
 

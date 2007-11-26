@@ -1,4 +1,4 @@
-#include <Vex++.h>
+#include <vex/Vex++.h>
 
 #include <assert.h>
 #include <string>
