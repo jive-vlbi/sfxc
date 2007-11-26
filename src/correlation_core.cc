@@ -20,7 +20,7 @@ Correlation_core::get_output_buffer() {
 void Correlation_core::do_task() {
   timer.resume();
   if (is_ready_for_do_task()) {
-    if (current_fft == 0) {
+    if (current_fft%number_ffts_in_integration == 0) {
       integration_initialise();
     }
     
@@ -35,14 +35,13 @@ void Correlation_core::do_task() {
     if (current_fft == number_ffts_in_integration) {
       integration_average();
       integration_write();
-      current_fft = 0;
     }
   }
   timer.stop();
 }
 
 bool Correlation_core::finished() {
-  return current_fft == 0;
+  return current_fft == number_ffts_in_integration;
 }
 
 void Correlation_core::connect_to(size_t stream, Input_buffer_ptr buffer) {
@@ -143,6 +142,8 @@ void Correlation_core::integration_initialise() {
   for (size_t i=0; i<accumulation_buffers.size(); i++) {
     accumulation_buffers[i] = 0;
   }
+  
+  current_fft = 0;
 }
 
 void Correlation_core::integration_step() {
@@ -173,10 +174,10 @@ void Correlation_core::integration_step() {
     // Auto correlations
     std::pair<int,int> &stations = baselines[i];
     assert(stations.first == stations.second);
-    auto_correlate_baseline
-      (/* in1 */ &frequency_buffer[stations.first][0],
-       /* out */ &accumulation_buffers[i*(size_of_fft()/2+1)]);
-    
+    auto_correlate_baseline(/* in1 */ 
+                            &frequency_buffer[stations.first][0],
+                            /* out */ 
+                            &accumulation_buffers[i*(size_of_fft()/2+1)]);
   }
   
   for (size_t i=input_buffers.size(); i < baselines.size(); i++) {
@@ -230,9 +231,8 @@ Correlation_core::
 auto_correlate_baseline(std::complex<double> in[],
                         std::complex<double> out[]) {
   for (size_t i=0; i<size_of_fft()/2+1; i++) {
-    out[i].real() += 
-      in[i].real()*in[i].real() +
-      in[i].imag()*in[i].imag();
+    out[i].real() += in[i].real()*in[i].real() +
+                     in[i].imag()*in[i].imag();
     out[i].imag() = 0;
   }
 }

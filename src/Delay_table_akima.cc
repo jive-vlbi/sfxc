@@ -26,28 +26,41 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
-using namespace std;
 
 #include "Delay_table_akima.h"
-#include <utils.h>
+#include "utils.h"
 
 //*****************************************************************************
 //function definitions
 //*****************************************************************************
 
-//default constructor, set default values
+// Default constructor
 Delay_table_akima::Delay_table_akima() 
-  : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL)
-{
+  : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL) {
 }
 
-//destructor
-Delay_table_akima::~Delay_table_akima()
-{
+// Copy constructor
+Delay_table_akima::Delay_table_akima(const Delay_table_akima &other) {
+  Delay_table_akima();
+  assert(splineakima == NULL);
+  times = other.times;
+  delays = other.delays;
+}
+
+// Destructor
+Delay_table_akima::~Delay_table_akima() {
+}
+
+void Delay_table_akima::operator=(const Delay_table_akima &other) {
+  Delay_table_akima();
+  assert(splineakima == NULL);
+  times = other.times;
+  delays = other.delays;
 }
 
 bool Delay_table_akima::operator==(const Delay_table_akima &other) const
 {
+  assert(false);
   return true;
 }
 
@@ -98,15 +111,20 @@ bool Delay_table_akima::initialise_next_scan() {
   if (end_scan >= times.size()) return false;
 
   if (splineakima != NULL) {
+    assert(acc != NULL);
     gsl_spline_free(splineakima);
     gsl_interp_accel_free(acc);
+    splineakima = NULL;
   }
 
   // Initialise the Akima spline
   acc = gsl_interp_accel_alloc();
   int n_pts = end_scan - begin_scan-1;
   // at least 4 sample points for a spline
-  if (n_pts <= 4) return false;
+  if (n_pts <= 4) {
+    assert(false);
+    return false;
+  }
 
   // End scan now points to the beginning of the next scan and 
   // the next scan has n_pts data points
@@ -128,8 +146,8 @@ bool Delay_table_akima::initialise_next_scan() {
 double Delay_table_akima::delay(int64_t time) {
   if (times.empty()) {
     DEBUG_MSG("times.empty()");
+    assert(!times.empty());
   }
-  assert(!times.empty());
   while (times[end_scan-1] < time) {
     bool result = initialise_next_scan();
     assert(result);

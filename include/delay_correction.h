@@ -50,12 +50,6 @@ private:
                        double output[]);
 
 private:
-  Input_buffer_ptr    input_buffer;
-  Output_buffer_ptr   output_buffer;
-  
-  int64_t             current_time; // In microseconds
-  Correlation_parameters correlation_parameters;
-  
   // access functions to the correlation parameters
   int number_channels();
   int sample_rate();
@@ -63,6 +57,15 @@ private:
   int length_of_one_fft(); // Length of one fft in microseconds 
   int sideband();
   int64_t channel_freq();
+  double get_delay(int64_t time);
+
+private:
+  Input_buffer_ptr    input_buffer;
+  Output_buffer_ptr   output_buffer;
+  
+  int64_t             current_time; // In microseconds
+  Correlation_parameters correlation_parameters;
+  
 
   fftw_plan           plan_t2f_orig, plan_f2t_orig, plan_t2f, plan_f2t;
   std::vector<double> freq_scale; // frequency scale for the fractional bit shift
@@ -72,7 +75,7 @@ private:
   static const double maximal_phase_change = 0.2; // 5.7 degrees
   int n_recompute_delay;
      
-  bool                delay_table_set;
+  bool delay_table_set;
   Delay_table_akima   delay_table;
   
   // You need this one because the input and output are doubles (not complex)
@@ -81,9 +84,9 @@ private:
   // Buffer for the integer bit shift
   std::vector<double> intermediate_buffer;
   
+  Timer delay_timer;
 public:
   bool verbose;
-  Timer delay_timer;
 };
 
 #endif /*DELAY_CORRECTION_H*/

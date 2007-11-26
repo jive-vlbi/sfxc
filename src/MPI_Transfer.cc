@@ -73,10 +73,10 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
 
   assert(position == size);
 
-  table.begin_scan = 0;
-  table.end_scan   = 0;
-  bool result = table.initialise_next_scan();
-  assert(result);
+  table.begin_scan  = 0;
+  table.end_scan    = 0;
+  table.acc         = NULL;
+  table.splineakima = NULL;
 }
 
 void 

@@ -25,6 +25,7 @@
 #include "correlation_core.h"
 #include "delay_correction.h"
 #include "tasklet/tasklet_manager.h"
+#include "integer_delay_correction.h"
 
 // Declare the correlator controller:
 class Correlator_node;
@@ -64,6 +65,8 @@ public:
 private:
   typedef boost::shared_ptr<Bits_to_float_converter>  Bits2float_ptr;
   typedef boost::shared_ptr<Delay_correction>         Delay_correction_ptr;
+  typedef boost::shared_ptr<Integer_delay_correction> 
+                                              Integer_delay_correction_ptr;
 public:
   enum Status {
     // Initialise the Correlate node
@@ -120,9 +123,10 @@ private:
   /// Number of the correlator node
   int nr_corr_node;
 
-  std::vector< Bits2float_ptr >              bits2float_converters;
-  std::vector< Delay_correction_ptr >        delay_modules;
-  Correlation_core                           correlation_core;
+  std::vector< Bits2float_ptr >               bits2float_converters;
+  std::vector< Integer_delay_correction_ptr > integer_delay_modules;
+  std::vector< Delay_correction_ptr >         delay_modules;
+  Correlation_core                            correlation_core;
   
   int n_integration_slice_in_time_slice;
 };

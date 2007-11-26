@@ -18,6 +18,7 @@ OBJ=\
   Log_writer_file.cc \
   correlation_core.cc \
   delay_correction.cc \
+  integer_delay_correction.cc \
   Channel_extractor_mark4.cc \
   Bits_to_float_converter.cc \
   tasklet/mutex.cc \
@@ -36,7 +37,7 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   Correlator_node_controller.cc Manager_node_controller.cc Log_node_controller.cc \
   MPI_Transfer.cc TCP_Connection.cc \
   Log_writer_mpi.cc Data_reader_tcp.cc  Data_writer_tcp.cc \
-  Data_writer_buffer.cc Data_reader_buffer.cc \
+  Data_writer_buffer.cc \
   Multiple_data_readers_controller.cc \
   Multiple_data_writers_controller.cc \
   Single_data_writer_controller.cc \

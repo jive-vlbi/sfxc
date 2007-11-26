@@ -22,10 +22,10 @@
 class Multiple_data_readers_controller : public Controller {
   typedef Multiple_data_readers_controller  Self;
 public:
-  /// TODO: NGHK: Make this type global?
   typedef Buffer_element<char,131072>      value_type;
   typedef Data_reader2buffer<value_type>   Reader2buffer;
   typedef Buffer<value_type>               Buffer;
+  typedef Data_reader_buffer<value_type>   Reader_buffer;
   
   Multiple_data_readers_controller(Node &node);
   ~Multiple_data_readers_controller();
@@ -58,7 +58,7 @@ private:
   // copy construct all the elements and then destroy the old 
   // elements and we can't copy construct the extra threads.
   std::vector< Reader2buffer * >        data_readers;
-  std::vector< boost::shared_ptr<Data_reader_buffer> > 
+  std::vector< boost::shared_ptr<Reader_buffer> > 
                                         buffer_readers;
   std::vector< bool >                   reader_known;
 };

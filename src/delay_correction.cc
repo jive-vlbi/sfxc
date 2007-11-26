@@ -22,63 +22,51 @@ void Delay_correction::set_delay_table(const Delay_table_akima &delay_table_) {
   delay_table = delay_table_;
 }
 
-void Delay_correction::do_task() {
-  delay_timer.resume();
+double Delay_correction::get_delay(int64_t time) {
   assert(delay_table_set);
-  assert(current_time >= 0);
+  return delay_table.delay(time);
+}
 
-  int input_size;
-  Input_buffer_element &input = input_buffer->consume(input_size);
-  Output_buffer_element &output = output_buffer->produce();
-  assert(input_size == number_channels());
-  assert(input.size() == number_channels());
+void Delay_correction::do_task() {
+  if (is_ready_for_do_task()) {
+    delay_timer.resume();
+    assert(current_time >= 0);
 
-  // A factor of 2 for padding
-  if (output.size() < input_size*2) {
-    output.resize(input_size*2);
+    int input_size;
+    Input_buffer_element &input = input_buffer->consume(input_size);
+    Output_buffer_element &output = output_buffer->produce();
+
+    // A factor of 2 for padding
+    assert(input_size == number_channels());
+    assert(input.size() == number_channels());
+
+    if (output.size() < input_size) {
+      output.resize(input_size*2);
+    }
+
+    double delay = get_delay(current_time+length_of_one_fft()/2);
+    double delay_in_samples = delay*sample_rate();
+    int integer_delay = (int)std::floor(delay_in_samples+.5);
+
+    for (int i = 0; i < number_channels(); i++) {
+      // Implicit double to complex conversion
+      frequency_buffer[i] = input[i];
+    }
+
+    fractional_bit_shift(&frequency_buffer[0], 
+                         integer_delay,
+                         delay_in_samples - integer_delay);
+
+    fringe_stopping(&frequency_buffer[0],
+                    output.buffer());
+
+    current_time += length_of_one_fft();
+
+    input_buffer->consumed();
+    output_buffer->produced(2*number_channels());
+
+    delay_timer.stop();
   }
-
-  // Get the input data into a temporary buffer
-  memmove(&intermediate_buffer[0], 
-          &intermediate_buffer[number_channels()],
-          (intermediate_buffer.size()-number_channels())*sizeof(double));
-  for (int in = 0, out = intermediate_buffer.size()-number_channels();
-       in < number_channels(); 
-       in++, out++) {
-//    assert(out < intermediate_buffer.size());
-    intermediate_buffer[out] = input[in];
-  }
-
-  double delay = delay_table.delay(current_time+length_of_one_fft()/2);
-
-
-  // Do the integer delay correction
-  double delay_in_samples = delay*sample_rate();
-  int integer_delay = (int)std::floor(delay_in_samples+.5);
-  assert(integer_delay <= 0);
-  assert(-(intermediate_buffer.size()-number_channels()) <= integer_delay);
-  assert(frequency_buffer.size() == number_channels()*2);
-  for (int in = intermediate_buffer.size()-number_channels()+integer_delay, out = 0;
-       out < number_channels(); 
-       in++, out++) {
-    // Implicit double to complex conversion
-    frequency_buffer[out] = intermediate_buffer[in];
-  }
-  
-
-  fractional_bit_shift(&frequency_buffer[0], 
-                       integer_delay,
-                       delay_in_samples - integer_delay);
-
-  fringe_stopping(&frequency_buffer[0],
-                  output.buffer());
-
-  current_time += length_of_one_fft();
-  
-  input_buffer->consumed();
-  output_buffer->produced(2*number_channels());
-
-  delay_timer.stop();
 }
 
 
@@ -132,7 +120,7 @@ void Delay_correction::fringe_stopping(std::complex<double> input[],
   if (delta_time < 1) delta_time = 1;
   double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
   // Initialise the end values
-  double phi_end = mult_factor_phi * delay_table.delay(time);
+  double phi_end = mult_factor_phi * get_delay(time);
   double cosPhi_end = cos(phi_end);
   double sinPhi_end = sin(phi_end);
 
@@ -143,7 +131,7 @@ void Delay_correction::fringe_stopping(std::complex<double> input[],
       sinPhi = sinPhi_end;
 
       phi_end = 
-        mult_factor_phi * delay_table.delay(time+delta_time);
+        mult_factor_phi * get_delay(time+delta_time);
 
       if (std::abs(phi_end-phi) < 0.4*maximal_phase_change) {
         // Sampling is too dense
@@ -151,7 +139,7 @@ void Delay_correction::fringe_stopping(std::complex<double> input[],
         delta_time = (((int64_t)n_recompute_delay)*1000000)/sample_rate();
 
         phi_end = 
-          mult_factor_phi * delay_table.delay(time+delta_time);
+          mult_factor_phi * get_delay(time+delta_time);
       }
 
       while ((std::abs(phi_end-phi) > maximal_phase_change) &&
@@ -160,7 +148,7 @@ void Delay_correction::fringe_stopping(std::complex<double> input[],
         n_recompute_delay /= 2;
         delta_time = (((int64_t)n_recompute_delay)*1000000)/sample_rate();
 
-        phi_end =  mult_factor_phi * delay_table.delay(time+delta_time);
+        phi_end =  mult_factor_phi * get_delay(time+delta_time);
       }
       
       time += delta_time;

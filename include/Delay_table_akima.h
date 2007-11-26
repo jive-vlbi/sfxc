@@ -26,12 +26,19 @@ class Delay_table_akima
   friend class MPI_Transfer;
   
 public:
-  //constructor, set default values 
+  // Constructor 
   Delay_table_akima();
 
-  //destructor
+  // Constructor 
+  Delay_table_akima(const Delay_table_akima &other);
+
+  // Destructor
   ~Delay_table_akima();
-    
+
+  // Assignment 
+  void operator=(const Delay_table_akima &other);
+
+  // Equality test
   bool operator==(const Delay_table_akima &other) const;
 
   //read the delay table, do some checks and
