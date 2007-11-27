@@ -211,8 +211,6 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
          + ((param.stop_time - param.start_time) / param.integration_time)
          * sizeof(Output_header_baseline)*nBaselines);
    //end of set output stream
-   DEBUG_MSG("reference station is ---> " << param.reference_station);
-   DEBUG_MSG("size of one time slice ----> " << 
          (((param.stop_time - param.start_time) / param.integration_time) 
              * size_of_one_baseline*nBaselines+
              ((param.stop_time - param.start_time) / param.integration_time)

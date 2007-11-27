@@ -660,7 +660,6 @@ get_correlation_parameters(const std::string &scan_name,
   Vex::Node::const_iterator mode = 
     vex.get_root_node()["MODE"][scan["mode"]->to_string()];
   station_name = scan["station"][0]->to_string();
-  DEBUG_MSG("Correlation core station name ===> " << station_name);
     
   Correlation_parameters corr_param;
   corr_param.start_time = vex.start_of_scan(scan_name).to_miliseconds();
@@ -697,11 +696,7 @@ get_correlation_parameters(const std::string &scan_name,
   freq_set_it != freq_set.end(); ++freq_set_it){
     if (*freq_set_it == freq_temp){
       corr_param.channel_nr = count;
-      DEBUG_MSG("@@@@@@@ corr_param.channel_nr : " << corr_param.channel_nr << " and count is " << count);
     }
-    DEBUG_MSG("@@@@@@@ freq_temp is : " << freq_temp);
-    DEBUG_MSG("@@@@@@@ freq_set_it is : " << *freq_set_it);
-    DEBUG_MSG("@@@@@@@ count is : " << count);
     count++;
   }
 
@@ -735,8 +730,6 @@ get_correlation_parameters(const std::string &scan_name,
 
   corr_param.polarisation = vex.polarisation(if_mode, if_nr);
   
-  DEBUG_MSG("Correlator parameters polarisation " << corr_param.polarisation);
-
   assert(corr_param.sideband != ' ');
   assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');
 

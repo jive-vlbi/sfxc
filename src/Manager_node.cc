@@ -312,7 +312,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
   correlation_parameters.slice_nr = slice_nr;
-  DEBUG_MSG("///////// channel name is ////////// --> " << channel_name);
+  DEBUG_MSG("channel name --> " << channel_name);
 //  correlation_parameters.channel_nr = current_channel;
   assert ((cross_channel != -1) == correlation_parameters.cross_polarize);
 
@@ -435,11 +435,6 @@ Manager_node::initialise() {
   get_log_writer()(2) << "start scan : " << *scans.begin() << std::endl;
 
   get_log_writer()(2) << "Starting correlation" << std::endl;
-
-
-  DEBUG_MSG("number of stations is ---> " << control_parameters.number_stations());
-
-
 }
 
 void Manager_node::initialise_scan(const std::string &scan) {

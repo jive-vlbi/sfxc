@@ -355,17 +355,7 @@ bool CorrelationCore::write_time_slice()
   DEBUG_MSG("Output_header_timeslice: " << sizeof(Output_header_timeslice));
   DEBUG_MSG("Output_header_baseline:  " << sizeof(Output_header_baseline));
   
-  DEBUG_MSG("integration time " << corr_param.integration_time);
-  DEBUG_MSG("integration start time " << corr_param.start_time);
-  DEBUG_MSG("integration stop time " << corr_param.stop_time);
-  DEBUG_MSG("number of channels " << corr_param.number_channels);
-  DEBUG_MSG("sideband " << corr_param.sideband);
   int nr_corr = (corr_param.stop_time-corr_param.start_time)/corr_param.integration_time;
-  DEBUG_MSG("number of correlations " << nr_corr);
-  DEBUG_MSG("station number 1 " << corr_param.station_streams[0].station_stream);
-  DEBUG_MSG("station number 1 " << corr_param.station_streams[1].station_stream);
-  DEBUG_MSG("station number 1 " << corr_param.station_streams[2].station_stream);
-  DEBUG_MSG("slice number " << corr_param.slice_nr);
 
   int bsln = 0;//initialise baseline counter
   int station1_bsln[nbslns];
@@ -378,9 +368,6 @@ bool CorrelationCore::write_time_slice()
   } else if (corr_param.polarisation == 'L'){
     corr_param_polarisation =1;
   }
-
-  DEBUG_MSG("Correlation core polarisation " << corr_param.polarisation);
-  DEBUG_MSG("Correlation core polarisation " << corr_param_polarisation);
 
   //auto product normalisation, mean pwr = 1
   for (int sn = 0 ; sn < nstations ; sn++){
@@ -574,11 +561,6 @@ bool CorrelationCore::write_time_slice()
       put_bytes(nWrite, (char *)(accxps[bsln]));
     if (nWrite != written) return false;
   }
-  DEBUG_MSG("Size of time slice -->: " << nWrite*nbslns);
-  DEBUG_MSG("number of baselines --> : " << nbslns);
-  DEBUG_MSG("n2fftcorr --> : " << n2fftcorr);
-  DEBUG_MSG("padding --> : " << padding);
-  DEBUG_MSG("size of one baseline is --> : " << sizeof(fftwf_complex)*(n2fftcorr*padding/2+1));
   return true;
 }
 
