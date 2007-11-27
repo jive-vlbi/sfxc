@@ -645,7 +645,6 @@ Correlation_parameters
 Control_parameters::
 get_correlation_parameters(const std::string &scan_name,
                            const std::string &channel_name, 
-                           const std::string &station_name,
                            const std::map<std::string, int> &correlator_node_station_to_input) 
                            const {
   std::set<std::string> freq_set;
@@ -654,12 +653,15 @@ get_correlation_parameters(const std::string &scan_name,
   std::string bbc_mode;
   std::string if_nr;
   std::string if_mode;
+  std::string station_name;
 
   Vex::Node::const_iterator scan = 
     vex.get_root_node()["SCHED"][scan_name];
   Vex::Node::const_iterator mode = 
     vex.get_root_node()["MODE"][scan["mode"]->to_string()];
-
+  station_name = scan["station"][0]->to_string();
+  DEBUG_MSG("Correlation core station name ===> " << station_name);
+    
   Correlation_parameters corr_param;
   corr_param.start_time = vex.start_of_scan(scan_name).to_miliseconds();
   corr_param.stop_time = vex.stop_of_scan(scan_name).to_miliseconds();
@@ -732,6 +734,8 @@ get_correlation_parameters(const std::string &scan_name,
   }
 
   corr_param.polarisation = vex.polarisation(if_mode, if_nr);
+  
+  DEBUG_MSG("Correlator parameters polarisation " << corr_param.polarisation);
 
   assert(corr_param.sideband != ' ');
   assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');

@@ -22,6 +22,7 @@
 #include <utils.h>
 
 #include <Control_parameters.h>
+#include <Output_header.h>
 
 Control_parameters ConPrms;
 
@@ -280,8 +281,22 @@ Plot_generator::generate_auto_plots(std::ifstream &infile,
                                     Plot_data &plot_data,
                                     const Control_parameters &ConPrms) {
 
+  //read-in the header of the baselines
+  Output_header_baseline baseline;
+  infile.read((char*)&baseline, sizeof(Output_header_baseline));
+  std::cout << "weight " << baseline.weight << std::endl;
+  std::cout << "station1 " << (int)baseline.station_nr1 << std::endl;
+  std::cout << "station2 " << (int)baseline.station_nr2 << std::endl;
+  std::cout << "polarisation1 " << (int)baseline.polarisation1 << std::endl;
+  std::cout << "polarisation2 " << (int)baseline.polarisation2 << std::endl;
+  std::cout << "sideband " << (int)baseline.sideband << std::endl;
+  std::cout << "channel " << (int)baseline.frequency_nr << std::endl;
+  std::cout << "empty " <<(char)baseline.empty << std::endl;
+
   for (int station=stations_start; station<stations_end; station++) {
+    //read data for this baseline
     infile.read((char *)&in[0], 2*in.size()*sizeof(float));
+//    infile.read((char *)&in[0], sizeof(fftwf_complex));
 
     for  (int lag=0; lag<nLags; lag++) {
       magnitude[lag] = abs(in[lag]);
@@ -308,8 +323,21 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
                                     int plot_nr,
                                     const Control_parameters &ConPrms) {
   int nStations = ConPrms.number_stations();
+  Output_header_baseline baseline;
+  //read-in the header of the baselines
+  infile.read((char*)&baseline, sizeof(Output_header_baseline));
+  std::cout << "weight " << baseline.weight << std::endl;
+  std::cout << "station1 " << (int)baseline.station_nr1 << std::endl;
+  std::cout << "station2 " << (int)baseline.station_nr2 << std::endl;
+  std::cout << "polarisation1 " << (int)baseline.polarisation1 << std::endl;
+  std::cout << "polarisation2 " << (int)baseline.polarisation2 << std::endl;
+  std::cout << "sideband " << (int)baseline.sideband << std::endl;
+  std::cout << "channel " << (int)baseline.frequency_nr << std::endl;
+  std::cout << "empty " <<(char)baseline.empty << std::endl;
 
+  //read data for this baseline
   infile.read((char *)&in[0], 2*in.size()*sizeof(float));
+//  infile.read((char *)&in[0], sizeof(fftwf_complex));
   fftwf_execute(visibilities2lags);
   for  (int lag=0; lag<nLags; lag++) {
     magnitude[lag] = abs(out[(lag+nLags/2)%nLags])/nLags;
@@ -568,7 +596,32 @@ int main(int argc, char *argv[])
     assert(err == 0);
   }
   
+  Output_header_global header;
+  Output_header_timeslice timeslice;
+
+  std::cout << "size of global is -> " << sizeof(Output_header_global) 
+    << std::endl;
+  std::cout << "size of timeslice is -> " << sizeof(Output_header_timeslice) 
+    << std::endl;
+  std::cout << "size of baselines is -> " << sizeof(Output_header_baseline) 
+    << std::endl;
+
+  //read-in the global header 
+  infile.read((char*)&header, sizeof(Output_header_global));
+  std::cout << "experiment name '" << header.experiment << "'" << std::endl;     
+  std::cout << "start year '" << header.start_year << "'" << std::endl;  
+  std::cout << "start day '" << header.start_day << "'" << std::endl;    
+  std::cout << "start time '" << header.start_time << "'" << std::endl;  
+  std::cout << "integration time '" << header.integration_time << "'" << std::endl;      
+  std::cout << "number of channels '" << header.number_channels << "'" << std::endl;     
+    
   for (int channel=0; channel<ConPrms.channels_size();) {
+    //read-in the header of the time-slice
+    infile.read((char*)&timeslice, sizeof(Output_header_timeslice));
+    std::cout << "integration_slice " << timeslice.integration_slice << std::endl;
+     std::cout << "number of baselines " << timeslice.number_baselines << std::endl;
+     std::cout << "number of uvw coord. " << timeslice.number_uvw_coordinates << std::endl;
+     std::cout << "nchannel = " << channel << std::endl;
     // generate plots for the channel
     Plot_generator(infile, ConPrms, channel);
 

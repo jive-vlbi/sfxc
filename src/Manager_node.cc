@@ -46,24 +46,24 @@ Manager_node(int rank, int numtasks,
   // Send the global header
   Output_header_global header_msg;
   header_msg.header_size = sizeof(Output_header_global);
-  char* exper="nc07l2";
 
-  strcpy(header_msg.experiment,exper);      // Name of the experiment
-  header_msg.start_year = 2007;       // Start year of the experiment
-  header_msg.start_day = 161;        // Start day of the experiment (day of year)
+  strcpy(header_msg.experiment,control_parameters.experiment().c_str());      // Name of the experiment
+  header_msg.start_year = control_parameters.get_start_time().year;       // Start year of the experiment
+  header_msg.start_day = control_parameters.get_start_time().day;        // Start day of the experiment (day of year)
   header_msg.start_time = control_parameters.get_start_time().to_miliseconds()/1000;
                             // Start time of the correlation in seconds since
                             // midnight
   header_msg.number_channels = control_parameters.number_channels();  // Number of frequency channels
-  header_msg.integration_time = control_parameters.integration_time();// Integration time: 2^integration_time seconds
   // 3 bytes left:
-  int int_time_temp=0;
-  header_msg.integration_time /= 1000;
-  while(header_msg.integration_time > 2){
-    header_msg.integration_time = header_msg.integration_time/2;
-    int_time_temp++;
+  int int_time_tmp=0;
+  int int_time_count=0;
+  int_time_tmp = control_parameters.integration_time();// Integration time: 2^integration_time seconds
+  int_time_tmp /= 1000;
+  while(int_time_tmp > 2){
+    int_time_tmp = int_time_tmp/2;
+    int_time_count++;
   }
-  header_msg.integration_time = int_time_temp;
+  header_msg.integration_time = (int8_t)(int_time_count);
   header_msg.empty[0] = 0;
   header_msg.empty[1] = 0;
   header_msg.empty[2] = 0;
@@ -72,9 +72,12 @@ Manager_node(int rank, int numtasks,
   output_node_set_global_header((char *)&header_msg, sizeof(Output_header_global));
 
   DEBUG_MSG("header size = " << header_msg.header_size);
+  DEBUG_MSG("experiment name = " << header_msg.experiment);
+  DEBUG_MSG("start year = " << header_msg.start_year);
+  DEBUG_MSG("start day = " << header_msg.start_day);
   DEBUG_MSG("start_time = " << header_msg.start_time);
-  DEBUG_MSG("integration time = " << header_msg.integration_time);
   DEBUG_MSG("number of channels = " << header_msg.number_channels);
+  DEBUG_MSG("integration time = " << (int)header_msg.integration_time);
   
   // Input nodes:
   int n_stations = get_control_parameters().number_stations();
@@ -305,7 +308,6 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     control_parameters.
     get_correlation_parameters(*scans.begin(),
                                channel_name,
-                               station_name,
                                get_input_node_map());
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
