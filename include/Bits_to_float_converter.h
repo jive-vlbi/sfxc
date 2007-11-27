@@ -23,17 +23,16 @@ public:
   typedef Buffer_element_vector<double>             Output_buffer_element;
   typedef Semaphore_buffer< Output_buffer_element > Output_buffer;
   typedef boost::shared_ptr<Output_buffer>          Output_buffer_ptr;
+  typedef boost::shared_ptr<Data_reader>            Data_reader_ptr;
 
   Bits_to_float_converter();
   
   /// Set the number of bits per data sample
   void set_parameters(int nbits_per_sample, 
+                      int size_input_slice, 
                       int size_output_slice);
 
   void do_task();
-  
-//  /** Read a number of samples from input **/
-//  size_t get_data(size_t nSamples, double *buffer); 
 
   
   /** Sets the input for the Bits_to_float_converter to a data reader.
@@ -42,17 +41,14 @@ public:
   void set_data_reader(boost::shared_ptr<Data_reader> data_reader);
   
   Output_buffer_ptr get_output_buffer();
-//  
-//  uint64_t data_counter();
-//  int get_size_dataslice();
-//
+
 private:
   int bits_per_sample;
   int size_output_slice;
   
   Output_buffer_ptr  output_buffer;
 
-  boost::shared_ptr<Data_reader>       data_reader;
+  Data_reader_ptr                      data_reader;
   // NGHK: TODO: remove once we are reading from a buffer
   std::vector<char>                    intermediate_buffer;
 };

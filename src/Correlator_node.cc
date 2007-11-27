@@ -186,9 +186,16 @@ void Correlator_node::correlate() {
 void Correlator_node::set_parameters(const Correlation_parameters &parameters) {
   assert(status == STOPPED);
 
+  int size_input_slice = (int)(
+    (parameters.stop_time-parameters.start_time)/1000 *
+    parameters.sample_rate * parameters.bits_per_sample / 8);
+
+  assert(size_input_slice > 0);
+
   for (size_t i=0; i<bits2float_converters.size(); i++) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
       bits2float_converters[i]->set_parameters(parameters.bits_per_sample,
+                                               size_input_slice,
                                                parameters.number_channels);
     }
   }
