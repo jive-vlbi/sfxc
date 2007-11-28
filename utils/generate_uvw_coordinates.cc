@@ -16,6 +16,7 @@ int main(int argc, char *argv[]) {
 
   int64_t start_time=strtoll(argv[2], 0, 10);
   int64_t stop_time=strtoll(argv[3], 0, 10);
+  // the following should be double
   double integration_time; sscanf(argv[4], "%lf", &integration_time);
   
   std::cout << start_time << " "

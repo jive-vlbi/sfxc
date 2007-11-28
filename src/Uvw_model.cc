@@ -58,6 +58,7 @@ bool Uvw_model::operator==(const Uvw_model &other) const
 int Uvw_model::open(char *delayTableName)
 {
   std::ifstream in(delayTableName);
+  // the following should be double
   double line[5];
   int32_t hsize;
 	
@@ -66,6 +67,7 @@ int Uvw_model::open(char *delayTableName)
   char station[hsize];
   in.read(reinterpret_cast < char * > (station), hsize*sizeof(char));
    
+  // the following should be double
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))){
     // The time read from file is in seconds, whereas the software correlator
     // works with times in microseconds
@@ -131,9 +133,11 @@ void Uvw_model::initialise_spline_for_next_scan() {
 
 //calculates the delay for the delayType at time in microseconds
 //get the next line from the delay table file
+// the following should be double
 std::ofstream& Uvw_model::uvw_values(std::ofstream &output, int64_t starttime, 
                                      int64_t stoptime, double inttime) {
   int64_t time=starttime + inttime*1000/2;
+  // the following should be double
   double gsl_u, gsl_v, gsl_w;
   output.precision(14);
   while (time < stoptime){
@@ -141,8 +145,10 @@ std::ofstream& Uvw_model::uvw_values(std::ofstream &output, int64_t starttime,
     gsl_u = gsl_spline_eval (splineakima_u, time, acc);
     gsl_v = gsl_spline_eval (splineakima_v, time, acc);
     gsl_w = gsl_spline_eval (splineakima_w, time, acc);
+    // the following should be double
     double ttime  = time/1000;
 		
+    // the following should be double
     output.write(reinterpret_cast < char * > (&ttime), sizeof(double)); 
     output.write(reinterpret_cast < char * > (&gsl_u), sizeof(double)); 
     output.write(reinterpret_cast < char * > (&gsl_v), sizeof(double)); 

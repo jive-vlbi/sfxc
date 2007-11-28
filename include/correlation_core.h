@@ -15,7 +15,7 @@ public:
   typedef Delay_correction::Output_buffer_ptr            Input_buffer_ptr;
 
   typedef Buffer_element<char,131072>                    Output_buffer_element;
-  //typedef Buffer_element_large<double,131072>          Output_buffer_element;
+  //typedef Buffer_element_large<DOUBLE,131072>          Output_buffer_element;
   typedef Semaphore_buffer<Output_buffer_element>        Output_buffer;
   typedef boost::shared_ptr<Output_buffer>               Output_buffer_ptr;
   
@@ -42,12 +42,12 @@ private:
   void integration_average();
   void integration_write();
 
-  void auto_correlate_baseline(std::complex<double> in[],
-                               std::complex<double> out[]);
+  void auto_correlate_baseline(std::complex<DOUBLE> in[],
+                               std::complex<DOUBLE> out[]);
 
-  void correlate_baseline(std::complex<double> in1[],
-                          std::complex<double> in2[],
-                          std::complex<double> out[]);
+  void correlate_baseline(std::complex<DOUBLE> in1[],
+                          std::complex<DOUBLE> in2[],
+                          std::complex<DOUBLE> out[]);
 
   
   size_t size_of_fft();
@@ -63,8 +63,8 @@ private:
   
   Correlation_parameters             correlation_parameters;
   
-  std::vector< std::vector< std::complex<double> > > frequency_buffer;
-  std::vector< std::complex<double> > accumulation_buffers;
+  std::vector< std::vector< std::complex<DOUBLE> > > frequency_buffer;
+  std::vector< std::complex<DOUBLE> > accumulation_buffers;
   std::vector< std::pair<int, int> >  baselines;
   
   boost::shared_ptr<Data_writer>      writer;

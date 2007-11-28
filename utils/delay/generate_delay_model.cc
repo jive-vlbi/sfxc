@@ -10,7 +10,7 @@
 
 
   TODO RHJO
-  1) eop_ref_epoch (Julian Day) in double or long?
+  1) eop_ref_epoch (Julian Day) in DOUBLE or long?
 
 */
 

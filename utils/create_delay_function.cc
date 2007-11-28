@@ -60,10 +60,12 @@ main (int argc, char *argv[])
 
   std::cout.precision(20);
 
+  // the following should be double
   std::vector<double> times, delays;
 
   // Read the data:
   int time;
+  // the following should be double
   double c[nColumns-1];
   while (infile >> time) {
     for (int i=0; i<nColumns-1; i++) {
@@ -96,7 +98,9 @@ main (int argc, char *argv[])
     gsl_spline_init (spline, &(times[0]), &(delays[0]), times.size());
     
     // add 3 seconds:
+    // the following should be double
     for (double xi = times[0]-3000; xi <= times.back()+3000; xi += 125) {
+      // the following should be double
       double yi = gsl_spline_eval (spline, xi, acc);
       // Print with high precision:
       // xi is time in second miliseconds from the beginning of the day

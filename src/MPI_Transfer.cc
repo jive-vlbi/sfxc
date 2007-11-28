@@ -19,6 +19,7 @@ void
 MPI_Transfer::
 send(Delay_table_akima &table, int sn, int rank) {
   uint32_t n_datapoints = table.times.size();
+  // the following should be double
   int size = 2*sizeof(int32_t) + 2*n_datapoints*sizeof(double);
   int position=0;
   char buffer[size];
@@ -82,6 +83,7 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
 void 
 MPI_Transfer::send(Track_parameters &track_param, int rank) {
   int size = 0;
+  // the following should be double
   size = sizeof(double);
   for (Track_parameters::Channel_iterator channel = 
          track_param.channels.begin();

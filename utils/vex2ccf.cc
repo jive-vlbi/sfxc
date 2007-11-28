@@ -85,6 +85,7 @@ Json::Value get_frequency(const Vex &vex,
     }
   }
 
+  // the following should be double
   double freq, bandwidth;
   int err = sscanf(channel[1]->to_string().c_str(), "%lf MHz", &freq);
   assert(err == 1);
@@ -136,6 +137,7 @@ Json::Value site_position(const Vexpp_node &vex,
     vex["SITE"][vex["STATION"][station]["SITE"]->to_string()]["site_position"];
   for (Vex::Node::const_iterator site = position->begin();
        site != position->end(); ++site) {
+    // the following should be double
     double pos;
     int err = sscanf(site->to_string().c_str(), "%lf m", &pos);
     assert(err == 1);

@@ -41,6 +41,7 @@ void Timer::stop(Log_writer &log_writer)
   Tend=time(NULL);
   CPUend=clock();
   
+  // the following should be double
   CPU_elapsed=((double) (CPUend - CPUbegin))/CLOCKS_PER_SEC;
   T_elapsed=difftime(Tend, Tbegin);
   log_writer << "\n\n***** Timer for " << ID << " stopped.\n";
@@ -55,6 +56,7 @@ void Timer::stop_accumulate()
   Tend=time(NULL);
   CPUend=clock();
   
+  // the following should be double
   CPU_elapsed=((double) (CPUend - CPUbegin))/CLOCKS_PER_SEC;
   T_elapsed=difftime(Tend, Tbegin);
 

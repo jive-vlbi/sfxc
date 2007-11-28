@@ -15,7 +15,6 @@
 #include "Multiple_data_readers_controller.h"
 #include "Single_data_writer_controller.h"
 
-#include "Integration_slice.h"
 #include "Semaphore_buffer.h"
 
 #include "Control_parameters.h"
