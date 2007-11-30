@@ -39,7 +39,7 @@ public:
   int open(char *delayTableName);
 
 	std::ofstream& uvw_values(std::ofstream &, int64_t starttime, int64_t stoptime,
-	  												double inttime);
+	  		double inttime);
 
   /// A spline only interpolates one scan. 
   /// This functions preprocesses the spline for the next scan.

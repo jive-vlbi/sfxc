@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 int i_for_max(float *array, int length)
 {
   int    iForMax=0;
-  double Max=array[iForMax];
+  float Max=array[iForMax];
   for (int i=1; i<length ; i++) {
     if (array[i] > Max) {
       iForMax=i;

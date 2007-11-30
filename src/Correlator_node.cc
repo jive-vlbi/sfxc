@@ -211,12 +211,6 @@ void Correlator_node::start_correlating(Correlation_parameters &param) {
          + ((param.stop_time - param.start_time) / param.integration_time)
          * sizeof(Output_header_baseline)*nBaselines);
    //end of set output stream
-         (((param.stop_time - param.start_time) / param.integration_time) 
-             * size_of_one_baseline*nBaselines+
-             ((param.stop_time - param.start_time) / param.integration_time)
-             * sizeof(Output_header_timeslice)
-             + ((param.stop_time - param.start_time) / param.integration_time)
-             * sizeof(Output_header_baseline)*nBaselines));
 
    status=CORRELATING; 
    correlate_state = INITIALISE_TIME_SLICE; 

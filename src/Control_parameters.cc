@@ -27,21 +27,21 @@ initialise(const char *ctrl_file, const char *vex_file,
 
   { // parse the control file
     Json::Reader reader;
-  std::ifstream in(ctrl_file);
-  if (!in.is_open()) {
-    log_writer << "Could not open control file" << std::endl;
-    assert(false);
-    return false;
-  }
-  bool ok = reader.parse(in, ctrl);
-  if ( !ok ) {
-    // report to the user the failure and their locations in the document.
-    log_writer  << "Failed to parse control file\n"
-    << reader.getFormatedErrorMessages()
-    << std::endl;
-    assert(false);
-    return false;
-  }
+    std::ifstream in(ctrl_file);
+    if (!in.is_open()) {
+      log_writer << "Could not open control file" << std::endl;
+      assert(false);
+      return false;
+    }
+    bool ok = reader.parse(in, ctrl);
+    if ( !ok ) {
+      // report to the user the failure and their locations in the document.
+      log_writer  << "Failed to parse control file\n"
+      << reader.getFormatedErrorMessages()
+      << std::endl;
+      assert(false);
+      return false;
+    }
   }
 
   { // parse the vex file
@@ -644,9 +644,8 @@ sideband(const std::string &if_node,
 Correlation_parameters 
 Control_parameters::
 get_correlation_parameters(const std::string &scan_name,
-                           const std::string &channel_name, 
-                           const std::map<std::string, int> &correlator_node_station_to_input) 
-                           const {
+    const std::string &channel_name, 
+    const std::map<std::string, int> &correlator_node_station_to_input) const {
   std::set<std::string> freq_set;
   std::set<std::string>::const_iterator freq_set_it;
   std::string bbc_nr;
@@ -660,7 +659,7 @@ get_correlation_parameters(const std::string &scan_name,
   Vex::Node::const_iterator mode = 
     vex.get_root_node()["MODE"][scan["mode"]->to_string()];
   station_name = scan["station"][0]->to_string();
-    
+
   Correlation_parameters corr_param;
   corr_param.start_time = vex.start_of_scan(scan_name).to_miliseconds();
   corr_param.stop_time = vex.stop_of_scan(scan_name).to_miliseconds();
@@ -729,7 +728,7 @@ get_correlation_parameters(const std::string &scan_name,
   }
 
   corr_param.polarisation = vex.polarisation(if_mode, if_nr);
-  
+
   assert(corr_param.sideband != ' ');
   assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');
 
