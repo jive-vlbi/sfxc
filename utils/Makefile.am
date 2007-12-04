@@ -9,7 +9,8 @@ bin_PROGRAMS = create_delay_function \
                produce_html_plotpage \
                vex2ccf \
 	       generate_uvw_coordinates \
-	       plot_delay_table
+	       plot_delay_table \
+               produce_output_graphs
 
 bin_SCRIPTS  = run_sfxc.py
 
@@ -50,3 +51,6 @@ plot_delay_table_SOURCES = \
   plot_delay_table.cc \
   ../src/Delay_table_akima.cc \
   ../src/utils.cc
+
+produce_output_graphs_SOURCES = \
+  produce_output_graphs.cc

@@ -358,7 +358,6 @@ bool CorrelationCore::write_time_slice()
       put_bytes(nWrite, (char *)(accxps[bsln]));
     if (nWrite != written) return false;
   }
-  DEBUG_MSG("Size of time slice: " << nWrite*nbslns);
   return true;
 }
 

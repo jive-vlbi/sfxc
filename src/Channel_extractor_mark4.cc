@@ -573,7 +573,8 @@ template <class T>
 int
 Channel_extractor_mark4_implementation<T>::
 read_new_block() {
-  int result = reader->get_bytes(SIZE_MK4_FRAME*sizeof(T),(char *)block)/sizeof(T);
+  int result = reader->get_bytes(SIZE_MK4_FRAME*sizeof(T),(char *)block) /
+               sizeof(T);
   if (result != SIZE_MK4_FRAME) {
     return result;
   }
@@ -591,7 +592,7 @@ read_new_block() {
     }
   }
 
-  return result;
+  return SIZE_MK4_FRAME;
 }
 
 template <class T>
@@ -605,8 +606,8 @@ check_time_stamp() {
     - start_microtime;
 
   if (delta_time <= 0) {
-    DEBUG_MSG("delta_time: " << delta_time)
-    assert(delta_time > 0);
+    DEBUG_MSG("delta_time: " << delta_time);
+    return false;
   }
   int64_t computed_TBR =
     (reader->data_counter()*1000000/(sizeof(T)*delta_time));
