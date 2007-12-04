@@ -19,6 +19,9 @@
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_errno.h>
 
+#include "utils.h"
+
+
 class MPI_Transfer;
 
 class Uvw_model
@@ -39,7 +42,7 @@ public:
   int open(char *delayTableName);
 
 	std::ofstream& uvw_values(std::ofstream &, int64_t starttime, int64_t stoptime,
-	  												double inttime);
+	  		double inttime);
 
   /// A spline only interpolates one scan. 
   /// This functions preprocesses the spline for the next scan.

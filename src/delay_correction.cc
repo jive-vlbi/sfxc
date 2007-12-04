@@ -22,7 +22,7 @@ void Delay_correction::set_delay_table(const Delay_table_akima &delay_table_) {
   delay_table = delay_table_;
 }
 
-double Delay_correction::get_delay(int64_t time) {
+DOUBLE Delay_correction::get_delay(int64_t time) {
   assert(delay_table_set);
   return delay_table.delay(time);
 }
@@ -44,12 +44,12 @@ void Delay_correction::do_task() {
       output.resize(input_size*2);
     }
 
-    double delay = get_delay(current_time+length_of_one_fft()/2);
-    double delay_in_samples = delay*sample_rate();
+    DOUBLE delay = get_delay(current_time+length_of_one_fft()/2);
+    DOUBLE delay_in_samples = delay*sample_rate();
     int integer_delay = (int)std::floor(delay_in_samples+.5);
 
     for (int i = 0; i < number_channels(); i++) {
-      // Implicit double to complex conversion
+      // Implicit DOUBLE to complex conversion
       frequency_buffer[i] = input[i];
     }
 
@@ -70,20 +70,20 @@ void Delay_correction::do_task() {
 }
 
 
-void Delay_correction::fractional_bit_shift(std::complex<double> output[],
+void Delay_correction::fractional_bit_shift(std::complex<DOUBLE> output[],
                                             int integer_shift,
-                                            double fractional_delay) {
+                                            DOUBLE fractional_delay) {
   // create the fft-plans
-  plan_t2f = fftw_plan_dft_1d(number_channels(), 
-                              (fftw_complex *)output, (fftw_complex *)output, 
+  plan_t2f = FFTW_PLAN_DFT_1D(number_channels(), 
+                              (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output, 
                               FFTW_BACKWARD, FFTW_ESTIMATE);
-  plan_f2t = fftw_plan_dft_1d(number_channels(), 
-                              (fftw_complex *)output, (fftw_complex *)output, 
+  plan_f2t = FFTW_PLAN_DFT_1D(number_channels(), 
+                              (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output, 
                               FFTW_FORWARD,  FFTW_ESTIMATE);
 
   // 3) execute the complex to complex FFT, from Time to Frequency domain
   //    input: sls. output sls_freq
-  fftw_execute(plan_t2f);
+  FFTW_EXECUTE(plan_t2f);
 
   output[0] *= 0.5;
   output[number_channels()/2] *= 0.5;//Nyquist
@@ -94,23 +94,25 @@ void Delay_correction::fractional_bit_shift(std::complex<double> output[],
   }
 
   // 5a)calculate the fract bit shift (=phase corrections in freq domain)
+  // the following should be double
   double tmp1 = -2.0*M_PI*fractional_delay/sample_rate();
   double tmp2 = 0.5*M_PI*integer_shift;/* was: / ovrfl */
   // 5b)apply phase correction in frequency range
   //assert(freq_scale.size() == number_channels()+1);
   for (size_t i = 0; i < freq_scale.size(); i++){
     //phi  = -2.0*M_PI*dfs*tbs*fs[jf] + 0.5*M_PI*integer_shift/ovrfl;
+    // the following should be double
     double phi  = tmp1*freq_scale[i] + tmp2;
-    std::complex<double> tmp(cos(phi),sin(phi));
+    std::complex<DOUBLE> tmp(cos(phi),sin(phi));
     output[i] *= tmp;
   }
   
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
-  fftw_execute(plan_f2t);
+  FFTW_EXECUTE(plan_f2t);
 }
-void Delay_correction::fringe_stopping(std::complex<double> input[],
-                                       double output[]) {
+void Delay_correction::fringe_stopping(std::complex<DOUBLE> input[],
+                                       DOUBLE output[]) {
   double mult_factor_phi =
     -sideband()*2.0*M_PI*(channel_freq() + sideband()*bandwidth()*0.5);
   
@@ -196,8 +198,8 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   // NHGK: TODO: Check if it is big enough, 20 milisecond
   intermediate_buffer.resize((int)(.02*sample_rate()),0);
 
-  //double dfr  = 1.0/(n2fftDC*tbs); // delta frequency
-  double dfr  = sample_rate()*1.0/number_channels(); // delta frequency
+  //DOUBLE dfr  = 1.0/(n2fftDC*tbs); // delta frequency
+  DOUBLE dfr  = sample_rate()*1.0/number_channels(); // delta frequency
   freq_scale.resize(number_channels()/2+1);
   
   for (size_t i=0; i<freq_scale.size(); i++) {
@@ -210,11 +212,11 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   
   frequency_buffer.resize(number_channels()*2);
   
-  plan_t2f_orig = fftw_plan_dft_1d(number_channels(), 
-                                   (fftw_complex *)NULL, (fftw_complex *)NULL, 
+  plan_t2f_orig = FFTW_PLAN_DFT_1D(number_channels(), 
+                                   (FFTW_COMPLEX *)NULL, (FFTW_COMPLEX *)NULL, 
                                    FFTW_BACKWARD, FFTW_ESTIMATE);
-  plan_f2t_orig = fftw_plan_dft_1d(number_channels(), 
-                                   (fftw_complex *)NULL, (fftw_complex *)NULL, 
+  plan_f2t_orig = FFTW_PLAN_DFT_1D(number_channels(), 
+                                   (FFTW_COMPLEX *)NULL, (FFTW_COMPLEX *)NULL, 
                                    FFTW_FORWARD,  FFTW_ESTIMATE);
 }
 

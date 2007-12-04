@@ -157,16 +157,16 @@ void Correlation_core::integration_step() {
   }
   
   // Do the fft from time to frequency:
-  fftw_plan           plan;
+  FFTW_PLAN           plan;
   assert(frequency_buffer.size() == 
          correlation_parameters.station_streams.size());
   for (size_t i=0; i<input_buffers.size(); i++) {
     assert(frequency_buffer[i].size() == size_of_fft()/2+1);
-    plan = fftw_plan_dft_r2c_1d(size_of_fft(), 
-                                (double *)input_elements[i]->buffer(),
-                                (fftw_complex *)&frequency_buffer[i][0],
+    plan = FFTW_PLAN_DFT_R2C_1D(size_of_fft(), 
+                                (DOUBLE *)input_elements[i]->buffer(),
+                                (FFTW_COMPLEX *)&frequency_buffer[i][0],
                                 FFTW_ESTIMATE);
-    fftw_execute(plan);
+    FFTW_EXECUTE(plan);
   }
 
   // do the correlation
@@ -196,7 +196,7 @@ void Correlation_core::integration_step() {
 }
 
 void Correlation_core::integration_average() {
-  std::vector<double> norms;
+  std::vector<DOUBLE> norms;
   norms.resize(n_stations(), 0);
   
   // Average the auto correlations
@@ -213,7 +213,7 @@ void Correlation_core::integration_average() {
   // Average the cross correlations
   for (size_t station=n_stations(); station < baselines.size(); station++) {
     std::pair<int,int> &stations = baselines[station];
-    double norm = sqrt(norms[stations.first]*norms[stations.second]);
+    DOUBLE norm = sqrt(norms[stations.first]*norms[stations.second]);
     for (size_t i = 0 ; i < size_of_fft()/2+1; i++){
       accumulation_buffers[station*(size_of_fft()/2+1)+i] /= norm;
     }
@@ -222,14 +222,14 @@ void Correlation_core::integration_average() {
 
 void Correlation_core::integration_write() {
   assert(writer != boost::shared_ptr<Data_writer>());
-  writer->put_bytes(accumulation_buffers.size()*sizeof(std::complex<double>),
+  writer->put_bytes(accumulation_buffers.size()*sizeof(std::complex<DOUBLE>),
                     ((char*)&accumulation_buffers[0]));
 }
 
 void 
 Correlation_core::
-auto_correlate_baseline(std::complex<double> in[],
-                        std::complex<double> out[]) {
+auto_correlate_baseline(std::complex<DOUBLE> in[],
+                        std::complex<DOUBLE> out[]) {
   for (size_t i=0; i<size_of_fft()/2+1; i++) {
     out[i].real() += in[i].real()*in[i].real() +
                      in[i].imag()*in[i].imag();
@@ -239,9 +239,9 @@ auto_correlate_baseline(std::complex<double> in[],
 
 void 
 Correlation_core::
-correlate_baseline(std::complex<double> in1[],
-                   std::complex<double> in2[],
-                   std::complex<double> out[]) {
+correlate_baseline(std::complex<DOUBLE> in1[],
+                   std::complex<DOUBLE> in2[],
+                   std::complex<DOUBLE> out[]) {
   // NGHK: TODO: expand and optimize
   for (size_t i=0; i<size_of_fft()/2+1; i++) {
     //out[i] += in1[i]*std::conj(in2[i]);

@@ -15,7 +15,7 @@ public:
   typedef Bits_to_float_converter::Output_buffer         Input_buffer;
   typedef Bits_to_float_converter::Output_buffer_ptr     Input_buffer_ptr;
 
-  typedef Buffer_element_vector<double>                  Output_buffer_element;
+  typedef Buffer_element_vector<DOUBLE>                  Output_buffer_element;
   typedef Semaphore_buffer<Output_buffer_element>        Output_buffer;
   typedef boost::shared_ptr<Output_buffer>               Output_buffer_ptr;
   

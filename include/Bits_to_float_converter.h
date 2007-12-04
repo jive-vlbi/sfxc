@@ -20,7 +20,7 @@
 class Bits_to_float_converter : public Tasklet
 {
 public:
-  typedef Buffer_element_vector<double>             Output_buffer_element;
+  typedef Buffer_element_vector<DOUBLE>             Output_buffer_element;
   typedef Semaphore_buffer< Output_buffer_element > Output_buffer;
   typedef boost::shared_ptr<Output_buffer>          Output_buffer_ptr;
   typedef boost::shared_ptr<Data_reader>            Data_reader_ptr;
