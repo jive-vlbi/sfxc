@@ -3,13 +3,12 @@
  * 
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
- * $Id$
+ * $Id: Manager_node_controller.cc 344 2007-10-22 13:21:36Z kruithof $
  *
  */
 
-#include "Manager_node.h"
-
-#include <utils.h>
+#include "manager_node.h"
+#include "utils.h"
 
 Manager_node_controller::Manager_node_controller(Manager_node &node)
  : Controller(node), node(node)
