@@ -34,6 +34,7 @@ public:
 
   void do_task();
 
+  void read_remaining_bit_of_slice();
   
   /** Sets the input for the Bits_to_float_converter to a data reader.
    * This assumes that the samples are encoded in bytes

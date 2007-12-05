@@ -64,6 +64,14 @@ void Correlator_node::start()
         if (correlation_core.finished()) {
           n_integration_slice_in_time_slice--;
           if (n_integration_slice_in_time_slice==0) {
+            // NGHK: TODO BUGFIX: read all remaining data
+            for (size_t i=0; i<bits2float_converters.size(); i++) {
+              if (bits2float_converters[i] != Bits2float_ptr()) {
+                bits2float_converters[i]->
+                  read_remaining_bit_of_slice();
+              }
+            }
+
             // Notify manager node:
             int32_t msg = get_correlate_node_number();
             MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
@@ -189,6 +197,8 @@ void Correlator_node::set_parameters(const Correlation_parameters &parameters) {
   int size_input_slice = (int)(
     (parameters.stop_time-parameters.start_time)/1000 *
     parameters.sample_rate * parameters.bits_per_sample / 8);
+
+  DEBUG_MSG("correlator_node: bytes_in_slice: " << size_input_slice);
 
   assert(size_input_slice > 0);
 

@@ -214,8 +214,6 @@ void
 Input_node::
 add_time_slice(int channel, int stream, 
                int starttime_slice, int stoptime_slice) {
-  //starttime_slice -= MAX_DELAY; // Needed for the delay correction
-  //stoptime_slice += MAX_DELAY; // Needed for the delay correction
   int start_byte = 
     ((starttime_slice-start_time) * 
      (channel_extractor->bit_rate(channel)/8000));
@@ -225,6 +223,8 @@ add_time_slice(int channel, int stream,
 
   assert(data_writers_ctrl.get_data_writer(stream) != NULL);
   assert(data_writers_ctrl.get_data_writer(stream)->get_size_dataslice() <= 0);
+
+  DEBUG_MSG("Input_node: bytes_in_slice: " << bytes_in_slice);
 
   data_writers_ctrl.get_data_writer(stream)->
     set_size_dataslice(bytes_in_slice);

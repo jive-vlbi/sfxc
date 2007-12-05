@@ -30,13 +30,17 @@ Bits_to_float_converter::set_parameters(int bits_per_sample_,
 
   assert(data_reader != Data_reader_ptr());
 
-  // NGHK: TODO BugFix, not a real fix
-  if (data_reader->get_size_dataslice() > 0) {
-    data_reader->get_bytes(data_reader->get_size_dataslice(), NULL);
-  }
-
   assert(data_reader->get_size_dataslice() <= 0);
   data_reader->set_size_dataslice(size_input_slice_);
+}
+
+void 
+Bits_to_float_converter::read_remaining_bit_of_slice() {
+  // NGHK: TODO BugFix, not a real fix
+  while (data_reader->get_size_dataslice() > 0) {
+    int size = data_reader->get_bytes(data_reader->get_size_dataslice(), NULL);
+    assert(size > 0);
+  }
 }
 
 void 
