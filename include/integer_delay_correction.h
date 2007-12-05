@@ -2,11 +2,11 @@
 #define INTEGER_DELAY_CORRECTION_H
 
 #include "tasklet/tasklet.h"
-#include "Bits_to_float_converter.h"
-#include "Semaphore_buffer.h"
-#include "Delay_table_akima.h"
-#include "Control_parameters.h"
-#include "Data_reader_buffer.h"
+#include "bits_to_float_converter.h"
+#include "semaphore_buffer.h"
+#include "delay_table_akima.h"
+#include "control_parameters.h"
+#include "data_reader_buffer.h"
 
 class Integer_delay_correction : public Tasklet
 {
@@ -15,7 +15,7 @@ public:
   typedef Bits_to_float_converter::Output_buffer         Input_buffer;
   typedef Bits_to_float_converter::Output_buffer_ptr     Input_buffer_ptr;
 
-  typedef Buffer_element_vector<DOUBLE>                  Output_buffer_element;
+  typedef Buffer_element_vector<FLOAT>                  Output_buffer_element;
   typedef Semaphore_buffer<Output_buffer_element>        Output_buffer;
   typedef boost::shared_ptr<Output_buffer>               Output_buffer_ptr;
   

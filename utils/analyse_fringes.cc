@@ -21,8 +21,8 @@ using namespace std;
 
 
 //function prototypes
-int i_for_max(DOUBLE *array, int length);
-DOUBLE noise_rms(complex<DOUBLE> *array, int length, int imax);
+int i_for_max(FLOAT *array, int length);
+FLOAT noise_rms(complex<FLOAT> *array, int length, int imax);
 
 //main
 int main(int argc, char *argv[])
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
   assert(infile.is_open());
 
   int n2fft=atoi(argv[3]) + 1;//FFT length + 1 in correlation
-  DOUBLE ampl[n2fft]; //fringe amplitude
+  FLOAT ampl[n2fft]; //fringe amplitude
   
 
   //output file for auto and cross correlation fringes
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 
   
   //frequency to lag FFT
-  complex<DOUBLE> in[n2fft], out[n2fft], outR[n2fft];
+  complex<FLOAT> in[n2fft], out[n2fft], outR[n2fft];
   FFTW_PLAN F2L; 
   F2L = FFTW_PLAN_DFT_1D(n2fft, 
                        reinterpret_cast<FFTW_COMPLEX*>(&in),
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
     }
     // read in one fourier segment
     for  (int i=0; i<n2fft; i++) {
-      infile.read((char *)&in[i], 2*sizeof(DOUBLE));
+      infile.read((char *)&in[i], 2*sizeof(FLOAT));
     }
     // check whether we are finished
     finished = infile.eof();
@@ -137,13 +137,13 @@ int main(int argc, char *argv[])
         //find lag for max amplitude
         int iForMax = i_for_max(ampl,n2fft);
         //calculate max amplitude
-        DOUBLE amplMax=ampl[iForMax];
+        FLOAT amplMax=ampl[iForMax];
         //calculate phase at max amplitude
-        DOUBLE argAmplMax=arg(outR[iForMax]);
+        FLOAT argAmplMax=arg(outR[iForMax]);
         //calculate noise RMS
-        DOUBLE noiseRMS = noise_rms(outR,n2fft,iForMax);
+        FLOAT noiseRMS = noise_rms(outR,n2fft,iForMax);
         //signal noise ratio
-        DOUBLE SNR=amplMax/noiseRMS;
+        FLOAT SNR=amplMax/noiseRMS;
         //append to end of file, one output file per cross cor baseline
         Aout[Cbsln] << 
           setw(5) << nT << " " << 
@@ -169,11 +169,11 @@ int main(int argc, char *argv[])
 
 
 //return array index for which value is max
-int i_for_max(DOUBLE *array, int length)
+int i_for_max(FLOAT *array, int length)
 {
   int    iForMax=0;
   // the following should be double
-  DOUBLE Max=array[iForMax];
+  FLOAT Max=array[iForMax];
   for (int i=1; i<length ; i++) {
     if (array[i] > Max) {
       iForMax=i;
@@ -185,12 +185,12 @@ int i_for_max(DOUBLE *array, int length)
 
 
 //return noise rms in array, skip 10 % around maximum
-DOUBLE noise_rms(complex<DOUBLE> *array, int length, int imax)
+FLOAT noise_rms(complex<FLOAT> *array, int length, int imax)
 {
-  DOUBLE noiseRMS;
-  DOUBLE meanR=0.0;
-  DOUBLE meanI=0.0;
-  DOUBLE sum=0.0;
+  FLOAT noiseRMS;
+  FLOAT meanR=0.0;
+  FLOAT meanI=0.0;
+  FLOAT sum=0.0;
   int ll=imax - length/20;//5% of range to left
   int ul=imax + length/20;//5% of range to right
   int n2avg=0;
@@ -209,7 +209,7 @@ DOUBLE noise_rms(complex<DOUBLE> *array, int length, int imax)
 
   for (int i=0 ; i< length ; i++){
     if ((i < ll) || (i > ul)) {
-      sum += pow( (array[i].real()-meanR),DOUBLE(2.0) ) + pow( (array[i].imag()-meanI),DOUBLE(2.0) );
+      sum += pow( (array[i].real()-meanR),FLOAT(2.0) ) + pow( (array[i].imag()-meanI),FLOAT(2.0) );
     }
   }
 

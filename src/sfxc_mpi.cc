@@ -7,12 +7,12 @@
  *
  */
 
-#include <utils.h>
-#include <sfxc_mpi.h>
-#include <Log_node.h>
-#include <Input_node.h>
-#include <Output_node.h>
-#include <Correlator_node.h>
+#include "utils.h"
+#include "sfxc_mpi.h"
+#include "log_node.h"
+#include "input_node.h"
+#include "output_node.h"
+#include "correlator_node.h"
 
 void start_node() {
   int rank;

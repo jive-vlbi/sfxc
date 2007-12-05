@@ -5,11 +5,11 @@
 #include <fftw3.h>
 
 #include "tasklet/tasklet.h"
-#include "Delay_table_akima.h"
-#include "Bits_to_float_converter.h"
-#include "Control_parameters.h"
+#include "delay_table_akima.h"
+#include "bits_to_float_converter.h"
+#include "control_parameters.h"
 
-#include "Timer.h"
+#include "timer.h"
 
 class Delay_correction : public Tasklet
 {
@@ -18,7 +18,7 @@ public:
   typedef Bits_to_float_converter::Output_buffer         Input_buffer;
   typedef Bits_to_float_converter::Output_buffer_ptr     Input_buffer_ptr;
 
-  typedef Buffer_element_vector<DOUBLE>                  Output_buffer_element;
+  typedef Buffer_element_vector<FLOAT>                  Output_buffer_element;
   typedef Semaphore_buffer<Output_buffer_element>        Output_buffer;
   typedef boost::shared_ptr<Output_buffer>               Output_buffer_ptr;
 
@@ -43,11 +43,11 @@ public:
   bool is_ready_for_do_task();
   
 private:
-  void fractional_bit_shift(std::complex<DOUBLE> output[],
+  void fractional_bit_shift(std::complex<FLOAT> output[],
                             int integer_shift,
-                            DOUBLE fractional_delay);
-  void fringe_stopping(std::complex<DOUBLE> intput[],
-                       DOUBLE output[]);
+                            FLOAT fractional_delay);
+  void fringe_stopping(std::complex<FLOAT> intput[],
+                       FLOAT output[]);
 
 private:
   // access functions to the correlation parameters
@@ -57,7 +57,7 @@ private:
   int length_of_one_fft(); // Length of one fft in microseconds 
   int sideband();
   int64_t channel_freq();
-  DOUBLE get_delay(int64_t time);
+  FLOAT get_delay(int64_t time);
 
 private:
   Input_buffer_ptr    input_buffer;
@@ -68,21 +68,21 @@ private:
   
 
   FFTW_PLAN           plan_t2f_orig, plan_f2t_orig, plan_t2f, plan_f2t;
-  std::vector<DOUBLE> freq_scale; // frequency scale for the fractional bit shift
+  std::vector<FLOAT> freq_scale; // frequency scale for the fractional bit shift
   // For fringe stopping we do a linear approximation
   // maximal_phase_change is the maximal angle between two
   // sample points
-  static const DOUBLE maximal_phase_change = 0.2; // 5.7 degrees
+  static const FLOAT maximal_phase_change = 0.2; // 5.7 degrees
   int n_recompute_delay;
      
   bool delay_table_set;
   Delay_table_akima   delay_table;
   
-  // You need this one because the input and output are DOUBLEs (not complex)
-  std::vector<std::complex<DOUBLE> > frequency_buffer;
+  // You need this one because the input and output are FLOATs (not complex)
+  std::vector<std::complex<FLOAT> > frequency_buffer;
   
   // Buffer for the integer bit shift
-  std::vector<DOUBLE> intermediate_buffer;
+  std::vector<FLOAT> intermediate_buffer;
   
   Timer delay_timer;
 public:

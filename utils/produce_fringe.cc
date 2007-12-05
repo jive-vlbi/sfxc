@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
   assert(argc == 2);
 
   // Example of a fourier transform
-  complex<DOUBLE> in[N+1], out[N+1];
+  complex<FLOAT> in[N+1], out[N+1];
   FFTW_PLAN p;
   
   std::ifstream infile(argv[1], std::ios::in | std::ios::binary);
@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
   while (!finished) {
     // read in one fourier segment
     for  (int i=0; i<N+1; i++) {
-      infile.read((char *)&in[i], 2*sizeof(DOUBLE));
+      infile.read((char *)&in[i], 2*sizeof(FLOAT));
     }
     // check whether we are finished
     finished = infile.eof();

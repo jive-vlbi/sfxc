@@ -6,8 +6,6 @@
  * $Id$
  */
 
-#include "utils.h"
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -15,13 +13,11 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
-
 #include <assert.h>
-
-
 #include <iostream>
 
-#include <Data_reader_file.h>
+#include "utils.h"
+#include <data_reader_file.h>
 
 #ifdef SFXC_PRINT_DEBUG
 int RANK_OF_NODE = -1; // Rank of the current node

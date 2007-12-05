@@ -19,21 +19,21 @@ produce_fringe_SOURCES = produce_fringe.cc
 
 print_headers_SOURCES = \
   print_headers.cc \
-  ../src/Log_writer.cc \
-  ../src/Log_writer_cout.cc \
-  ../src/Data_reader.cc \
-  ../src/Data_reader_file.cc \
-  ../src/Channel_extractor_mark4.cc \
+  ../src/log_writer.cc \
+  ../src/log_writer_cout.cc \
+  ../src/data_reader.cc \
+  ../src/data_reader_file.cc \
+  ../src/channel_extractor_mark4.cc \
   ../src/utils.cc \
-  ../src/Control_parameters.cc
+  ../src/control_parameters.cc
 
 analyse_fringes_SOURCES = analyse_fringes.cc
 
 produce_html_plotpage_SOURCES = \
   produce_html_plotpage.cc \
-  ../src/Control_parameters.cc \
-  ../src/Log_writer.cc \
-  ../src/Log_writer_cout.cc \
+  ../src/control_parameters.cc \
+  ../src/log_writer.cc \
+  ../src/log_writer_cout.cc \
   ../src/utils.cc \
   gnuplot_i.cc
 
@@ -43,10 +43,10 @@ vex2ccf_SOURCES = \
 
 generate_uvw_coordinates_SOURCES = \
   generate_uvw_coordinates.cc \
-  ../src/Uvw_model.cc \
+  ../src/uvw_model.cc \
   ../src/utils.cc
 
 plot_delay_table_SOURCES = \
   plot_delay_table.cc \
-  ../src/Delay_table_akima.cc \
+  ../src/delay_table_akima.cc \
   ../src/utils.cc

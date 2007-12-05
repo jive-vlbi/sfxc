@@ -22,7 +22,7 @@ void Delay_correction::set_delay_table(const Delay_table_akima &delay_table_) {
   delay_table = delay_table_;
 }
 
-DOUBLE Delay_correction::get_delay(int64_t time) {
+FLOAT Delay_correction::get_delay(int64_t time) {
   assert(delay_table_set);
   return delay_table.delay(time);
 }
@@ -44,12 +44,12 @@ void Delay_correction::do_task() {
       output.resize(input_size*2);
     }
 
-    DOUBLE delay = get_delay(current_time+length_of_one_fft()/2);
-    DOUBLE delay_in_samples = delay*sample_rate();
+    FLOAT delay = get_delay(current_time+length_of_one_fft()/2);
+    FLOAT delay_in_samples = delay*sample_rate();
     int integer_delay = (int)std::floor(delay_in_samples+.5);
 
     for (int i = 0; i < number_channels(); i++) {
-      // Implicit DOUBLE to complex conversion
+      // Implicit FLOAT to complex conversion
       frequency_buffer[i] = input[i];
     }
 
@@ -70,9 +70,9 @@ void Delay_correction::do_task() {
 }
 
 
-void Delay_correction::fractional_bit_shift(std::complex<DOUBLE> output[],
+void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
                                             int integer_shift,
-                                            DOUBLE fractional_delay) {
+                                            FLOAT fractional_delay) {
   // create the fft-plans
   plan_t2f = FFTW_PLAN_DFT_1D(number_channels(), 
                               (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output, 
@@ -103,7 +103,7 @@ void Delay_correction::fractional_bit_shift(std::complex<DOUBLE> output[],
     //phi  = -2.0*M_PI*dfs*tbs*fs[jf] + 0.5*M_PI*integer_shift/ovrfl;
     // the following should be double
     double phi  = tmp1*freq_scale[i] + tmp2;
-    std::complex<DOUBLE> tmp(cos(phi),sin(phi));
+    std::complex<FLOAT> tmp(cos(phi),sin(phi));
     output[i] *= tmp;
   }
   
@@ -111,8 +111,8 @@ void Delay_correction::fractional_bit_shift(std::complex<DOUBLE> output[],
   //    input: sls_freq. output sls
   FFTW_EXECUTE(plan_f2t);
 }
-void Delay_correction::fringe_stopping(std::complex<DOUBLE> input[],
-                                       DOUBLE output[]) {
+void Delay_correction::fringe_stopping(std::complex<FLOAT> input[],
+                                       FLOAT output[]) {
   double mult_factor_phi =
     -sideband()*2.0*M_PI*(channel_freq() + sideband()*bandwidth()*0.5);
   
@@ -198,8 +198,8 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   // NHGK: TODO: Check if it is big enough, 20 milisecond
   intermediate_buffer.resize((int)(.02*sample_rate()),0);
 
-  //DOUBLE dfr  = 1.0/(n2fftDC*tbs); // delta frequency
-  DOUBLE dfr  = sample_rate()*1.0/number_channels(); // delta frequency
+  //FLOAT dfr  = 1.0/(n2fftDC*tbs); // delta frequency
+  FLOAT dfr  = sample_rate()*1.0/number_channels(); // delta frequency
   freq_scale.resize(number_channels()/2+1);
   
   for (size_t i=0; i<freq_scale.size(); i++) {

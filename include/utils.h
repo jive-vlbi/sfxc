@@ -10,13 +10,14 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <types.h>
 #include <list>
 #include <string>
 #include <assert.h>
-#include "Log_writer.h"
 
-#include <sfxc_mpi.h>
+#include "types.h"
+#include "log_writer.h"
+
+#include "sfxc_mpi.h"
 
 /// Constants
 #define SIZE_MK4_FRAME           20000
@@ -31,10 +32,10 @@
 #define SFXC_PORT                1233
 #define MAX_TCP_CONNECTIONS      16
 
-#define USE_DOUBLE
+#define USE_FLOAT
 
-#ifdef USE_DOUBLE
-# define DOUBLE               double
+#ifdef USE_FLOAT
+# define FLOAT               double
 # define FFTW_COMPLEX         fftw_complex
 # define FFTW_PLAN            fftw_plan
 # define FFTW_PLAN_DFT_1D     fftw_plan_dft_1d
@@ -42,14 +43,14 @@
 # define FFTW_EXECUTE         fftw_execute
 # define FFTW_DESTROY_PLAN    fftw_destroy_plan
 #else // USE_FLOAT
-# define DOUBLE               float
+# define FLOAT               float
 # define FFTW_COMPLEX         fftwf_complex
 # define FFTW_PLAN            fftwf_plan
 # define FFTW_PLAN_DFT_1D     fftwf_plan_dft_1d
 # define FFTW_PLAN_DFT_R2C_1D fftwf_plan_dft_r2c_1d
 # define FFTW_EXECUTE         fftwf_execute
 # define FFTW_DESTROY_PLAN    fftwf_destroy_plan
-#endif // USE_DOUBLE
+#endif // USE_FLOAT
 
 // NGHK: remove?
 const int   BufTime       =   16384; //delta time for Bufs in micro seconds
