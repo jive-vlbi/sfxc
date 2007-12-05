@@ -1,5 +1,7 @@
 #include "delay_correction.h"
 
+const FLOAT Delay_correction::maximal_phase_change = 0.2; // 5.7 degrees
+
 Delay_correction::Delay_correction()
   : output_buffer(Output_buffer_ptr(new Output_buffer(10))),
     current_time(-1),
