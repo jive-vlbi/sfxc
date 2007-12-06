@@ -224,8 +224,6 @@ add_time_slice(int channel, int stream,
   assert(data_writers_ctrl.get_data_writer(stream) != NULL);
   assert(data_writers_ctrl.get_data_writer(stream)->get_size_dataslice() <= 0);
 
-  DEBUG_MSG("Input_node: bytes_in_slice: " << bytes_in_slice);
-
   data_writers_ctrl.get_data_writer(stream)->
     set_size_dataslice(bytes_in_slice);
   time_slicers[channel].add(data_writers_ctrl.get_data_writer(stream), 

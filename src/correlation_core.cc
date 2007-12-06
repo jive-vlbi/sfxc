@@ -23,10 +23,12 @@ void Correlation_core::do_task() {
     if (current_fft%number_ffts_in_integration == 0) {
       integration_initialise();
     }
-    
-    if (current_fft % 1000 == 0) {
+
+#if 1
+    if (current_fft % 2500 == 0) {
       DEBUG_MSG(current_fft << " of " << number_ffts_in_integration);
     }
+#endif
     
     // Process the data of the current fft
     integration_step();

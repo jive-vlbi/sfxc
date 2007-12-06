@@ -23,6 +23,7 @@ class Data_reader_file : public Data_reader {
   /** Constructor, reads from file
    **/
   Data_reader_file(const char * filename);
+  Data_reader_file(const std::string &filename);
 
   ~Data_reader_file();
 

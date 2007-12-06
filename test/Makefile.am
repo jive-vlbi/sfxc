@@ -17,22 +17,10 @@ check_PROGRAMS = \
   test_output_node \
   test_log_writer_mpi \
   test_tcp_connection \
-  test_channel_extractor
+  test_channel_extractor \
+  test_input_node_with_delay_correction
 
-bin_PROGRAMS = \
-  test_control_parameters \
-  test_mpi \
-  test_buffer \
-  test_time_slicer \
-  test_transfer_control_parameters \
-  test_data_reader_file \
-  test_data_reader_mark5 \
-  test_data_reader_tcp \
-  test_input_node \
-  test_output_node \
-  test_log_writer_mpi \
-  test_tcp_connection \
-  test_channel_extractor
+bin_PROGRAMS = $(check_PROGRAMS)
 
 TESTS           = \
   test_control_parameters \
@@ -46,7 +34,8 @@ TESTS           = \
   test_output_node.py \
   test_input_node.py \
   test_log_writer_mpi.py \
-  test_channel_extractor.py
+  test_channel_extractor.py \
+  test_input_node_with_delay_correction.py
 
 OBJ = ../src/utils.cc \
       ../src/tcp_connection.cc \
@@ -143,3 +132,8 @@ test_control_parameters_SOURCES = \
   ../src/log_writer_cout.cc ../src/log_writer.cc \
   ../src/control_parameters.cc
 
+test_input_node_with_delay_correction_SOURCES = \
+  $(OBJ) \
+  test_input_node_with_delay_correction.cc \
+  ../src/input_node_tasklet.cc
+  

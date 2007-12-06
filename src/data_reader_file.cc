@@ -28,6 +28,20 @@ Data_reader_file::Data_reader_file(const char *filename) :
   }
 }
 
+Data_reader_file::Data_reader_file(const std::string &filename) : 
+  Data_reader()
+{
+  if (strncmp(filename.c_str(), "file://", 7) != 0) {
+    DEBUG_MSG("Filename '" << filename << "' doesn't start with file://");
+    assert(strncmp(filename.c_str(), "file://", 7) == 0);
+  }
+  file.open(filename.c_str()+7, std::ios::in | std::ios::binary);
+  if (!file.is_open()) {
+    DEBUG_MSG("Filename '" << filename << "' doesn't exist");
+    assert(file.is_open());
+  }
+}
+
 Data_reader_file::~Data_reader_file() {
   file.close();
 }

@@ -198,8 +198,6 @@ void Correlator_node::set_parameters(const Correlation_parameters &parameters) {
     (parameters.stop_time-parameters.start_time)/1000 *
     parameters.sample_rate * parameters.bits_per_sample / 8);
 
-  DEBUG_MSG("correlator_node: bytes_in_slice: " << size_input_slice);
-
   assert(size_input_slice > 0);
 
   for (size_t i=0; i<bits2float_converters.size(); i++) {
@@ -209,6 +207,9 @@ void Correlator_node::set_parameters(const Correlation_parameters &parameters) {
                                                parameters.number_channels);
     }
   }
+  // set verbosity
+  bits2float_converters[0]->verbose = true;
+  
   for (size_t i=0; i<integer_delay_modules.size(); i++) {
     if (integer_delay_modules[i] != Integer_delay_correction_ptr()) {
       integer_delay_modules[i]->set_parameters(parameters);

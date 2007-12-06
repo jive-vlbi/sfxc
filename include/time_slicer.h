@@ -124,7 +124,7 @@ template <class T>
 bool Time_slicer<T>::do_task() {
   if (!empty()) {
     if (writers.empty()) {
-      DEBUG_MSG("No output stream available");
+      //DEBUG_MSG("No output stream available");
       return false;
     } else if (writers.begin()->first > data_counter) {
       DEBUG_MSG("Output starts after current time");
@@ -139,7 +139,7 @@ bool Time_slicer<T>::do_task() {
       }
       while ((!writers.empty()) && 
 	     (writers.begin()->second->get_size_dataslice()==0)) {
-        DEBUG_MSG("Writers.erase(begin);");
+        //DEBUG_MSG("Writers.erase(begin);");
 	writers.erase(writers.begin());
       }
       data_counter += size;

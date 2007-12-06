@@ -16,6 +16,7 @@
 #include "data_reader.h"
 #include "semaphore_buffer.h"
 #include "tasklet/tasklet.h"
+#include <fstream>
 
 class Bits_to_float_converter : public Tasklet
 {
@@ -52,6 +53,10 @@ private:
   Data_reader_ptr                      data_reader;
   // NGHK: TODO: remove once we are reading from a buffer
   std::vector<char>                    intermediate_buffer;
+  
+public: // For debugging
+  bool verbose;
+  std::ofstream samples_out;
 };
 
 #endif /* BITS_TO_FLOAT_CONVERTER_H_ */

@@ -16,7 +16,8 @@ const FLOAT sample_value_m[]  = {-5,  5};
 
 Bits_to_float_converter::Bits_to_float_converter()
  : bits_per_sample(-1), size_output_slice(-1),
-   output_buffer(Output_buffer_ptr(new Output_buffer(10)))
+   output_buffer(Output_buffer_ptr(new Output_buffer(10))),
+   verbose(false)
 {
 }
 
@@ -89,6 +90,16 @@ void Bits_to_float_converter::do_task() {
         sample++; 
       }
 
+#if 1
+      if (verbose) {
+        if (!samples_out.is_open()) {
+          samples_out.open("before_integer_bit_shift.txt");
+        }
+        for (int i=0; i<sample; i++) {
+          samples_out << buffer[i] << std::endl;
+        }
+      }
+#endif
       assert(sample == size_output_slice);
     } else {
       std::cout << "Not yet implemented" << std::endl;
