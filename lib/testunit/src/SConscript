@@ -1,0 +1,15 @@
+Import('env')
+
+sources = Split('Test_aninterface.cc Test_exception.cc Testable.cc Test_manager.cc Test_aclass.cc Test_unit.cc')
+
+# COMPILATION OF THE LIBRARY
+testunit_static = env.Library('#lib/testunit', sources)
+testunit_shared = env.SharedLibrary('#lib/testunit', sources)
+
+# What have to be installed... the .h and the source
+env.installer.AddLibrary(testunit_static)
+env.installer.AddLibrary(testunit_shared)
+env.installer.AddHeaders( "./", "*.h" )
+
+env.SetOption('implicit_cache',1)
+

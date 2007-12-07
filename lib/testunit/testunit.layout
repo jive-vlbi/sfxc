@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="all" />
+	<File name="Makefile" open="0" top="0" tabpos="0">
+		<Cursor position="68" topLine="0" />
+	</File>
+	<File name="SConstruct" open="1" top="0" tabpos="1">
+		<Cursor position="219" topLine="0" />
+	</File>
+	<File name="src/SConscript" open="0" top="0" tabpos="0">
+		<Cursor position="266" topLine="0" />
+	</File>
+	<File name="src/Test_aclass.cc" open="0" top="0" tabpos="16">
+		<Cursor position="49" topLine="0" />
+	</File>
+	<File name="src/Test_aclass.h" open="0" top="0" tabpos="3">
+		<Cursor position="535" topLine="15" />
+	</File>
+	<File name="src/Test_aninterface.cc" open="0" top="0" tabpos="15">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="src/Test_aninterface.h" open="0" top="0" tabpos="13">
+		<Cursor position="248" topLine="0" />
+	</File>
+	<File name="src/Test_exception.cc" open="0" top="0" tabpos="5">
+		<Cursor position="342" topLine="0" />
+	</File>
+	<File name="src/Test_exception.h" open="0" top="0" tabpos="4">
+		<Cursor position="1119" topLine="12" />
+	</File>
+	<File name="src/Test_manager.cc" open="0" top="0" tabpos="1">
+		<Cursor position="199" topLine="1" />
+	</File>
+	<File name="src/Test_manager.h" open="0" top="0" tabpos="6">
+		<Cursor position="284" topLine="0" />
+	</File>
+	<File name="src/Test_unit.h" open="0" top="0" tabpos="8">
+		<Cursor position="0" topLine="0" />
+	</File>
+	<File name="src/Testable.h" open="0" top="0" tabpos="2">
+		<Cursor position="0" topLine="0" />
+	</File>
+</CodeBlocks_layout_file>
