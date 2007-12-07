@@ -1,0 +1,14 @@
+Import('env')
+
+env.Append(LIBS='netlib')
+env.ParseConfig('pkg-config --cflags --libs common')
+env.ParseConfig('pkg-config --cflags --libs testunit')
+env.ParseConfig('pkg-config --cflags --libs testunit')
+
+sources = Split('main_test.cc')
+
+test_dataaccess = env.Program('#test_libnetlib', sources)
+env.Depends(test_dataaccess, '#lib/libnetlib.a')
+
+env.SetOption('implicit_cache',1)
+

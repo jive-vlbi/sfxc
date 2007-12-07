@@ -1,0 +1,113 @@
+!<arch>
+network.h/      1195747111  1000  1000  100644  2822      `
+#ifndef NETWORK_HH
+#define NETWORK_HH
+
+#include <vector>
+#include <string>
+#include "TCP_Connection.h"
+#include "common.h"
+
+class Interface;
+class InterfaceIP;
+class Connexion;
+class ConnexionListener;
+class Network;
+
+class Connexion
+{
+    int m_socket;
+    public:
+        Connexion(int socket){ m_socket = socket; }
+
+        int get_socket(){ return m_socket; }
+        int socket(){ return m_socket; }
+};
+
+class Interface
+{
+    std::string m_name;
+
+    public:
+        Interface(const std::string& name)
+        {
+                m_name = name;
+        }
+
+        const std::string& name(){return m_name;}
+};
+
+class InterfaceIP : public Interface
+{
+    std::string m_address;
+    TCP_Connection m_connection;
+public:
+    InterfaceIP(const std::string& name, const std::string& ip) :
+            Interface(name)
+        {
+             m_address=ip;
+        }
+
+    const std::string& ip(){return m_address;}
+
+    friend std::ostream& operator<<(std::ostream& out, InterfaceIP&);
+    friend std::ostream& operator<<(std::ostream& out, InterfaceIP*);
+
+    // return a valid connexion listener to this interface with the given port
+    ConnexionListener* create_listener(const int port);
+
+    //ConnexionListener* create_listener();
+
+    // return a valid connexion to the esthablished endpoint
+    Connexion* connect_to(const std::string& ipaddress, const std::string& port);
+    Connexion* connect_to(const std::string& ipaddress, unsigned short port);
+};
+
+
+class ConnexionListener
+{
+    int m_serversocket;
+    TCP_Connection m_connection;
+
+    // The interface to which is bind the listener
+    InterfaceIP* m_interface;
+
+    // The port...
+    int m_port;
+
+    public:
+        ConnexionListener(unsigned int m_serversocket, int port, InterfaceIP* interface);
+
+        int open_connexion();
+
+        int port(){ return m_port; }
+
+        const std::string& address(){ return m_interface->ip(); }
+
+    friend std::ostream& operator<<(std::ostream& out, ConnexionListener&);
+    friend std::ostream& operator<<(std::ostream& out, ConnexionListener*);
+
+};
+
+class Network
+{
+    public:
+        static void get_interfaces(std::vector<InterfaceIP*>& intf);
+        static InterfaceIP* get_interface_by_name(const std::string& name);
+        static InterfaceIP* get_interface_by_preffered(Vector_string& prefferedif);
+        static InterfaceIP* get_first_interface();
+
+        static InterfaceIP* scan_interfaces_for_dest(const std::string& ip);
+        static InterfaceIP* scan_interfaces();
+    protected:
+
+    private:
+};
+
+typedef Interface* pInterface;
+typedef InterfaceIP* pInterfaceIP;
+typedef ConnexionListener* pConnexionListener;
+typedef Connexion* pConnexion;
+#define noInterface NULL
+
+#endif // NETWORK_HH

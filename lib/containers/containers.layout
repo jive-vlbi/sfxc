@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="all" />
+	<File name="SConstruct" open="0" top="0" tabpos="0">
+		<Cursor position="396" topLine="4" />
+	</File>
+	<File name="containers.pc.in" open="0" top="0" tabpos="0">
+		<Cursor position="185" topLine="0" />
+	</File>
+	<File name="options.conf" open="0" top="0" tabpos="0">
+		<Cursor position="101" topLine="0" />
+	</File>
+	<File name="src/SConscript" open="0" top="0" tabpos="7">
+		<Cursor position="50" topLine="0" />
+	</File>
+	<File name="src/allocator.h" open="0" top="0" tabpos="5">
+		<Cursor position="221" topLine="0" />
+	</File>
+	<File name="src/default_allocator.cc" open="0" top="0" tabpos="4">
+		<Cursor position="31" topLine="0" />
+	</File>
+	<File name="src/default_allocator.h" open="0" top="0" tabpos="3">
+		<Cursor position="517" topLine="0" />
+	</File>
+	<File name="src/memory_pool.cc" open="0" top="0" tabpos="1">
+		<Cursor position="23" topLine="0" />
+	</File>
+	<File name="src/memory_pool.h" open="0" top="0" tabpos="2">
+		<Cursor position="8077" topLine="275" />
+	</File>
+	<File name="src/threadsafe_queue.h" open="0" top="0" tabpos="6">
+		<Cursor position="2567" topLine="76" />
+	</File>
+	<File name="test/SConscript" open="0" top="0" tabpos="0">
+		<Cursor position="174" topLine="0" />
+	</File>
+	<File name="test/main_test.cc" open="0" top="0" tabpos="0">
+		<Cursor position="336" topLine="0" />
+	</File>
+</CodeBlocks_layout_file>
