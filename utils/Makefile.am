@@ -42,7 +42,8 @@ produce_html_plotpage_CXXFLAGS =-I@top_srcdir@/lib -I@top_srcdir@/include
 
 generate_delay_model_SOURCES=\
   generate_delay_model.cc \
-  generate_delay_model_calc.c
+  generate_delay_model_calc.c \
+  ../src/utils.cc 
 generate_delay_model_CFLAGS  = -I@top_srcdir@/lib -m32 -std=c99
 generate_delay_model_CXXFLAGS=-m32 -I@top_srcdir@/lib -I@top_srcdir@/include
 generate_delay_model_LDFLAGS=-m32
