@@ -1,1 +1,1 @@
-SUBDIRS = calc10 vex_parser
+SUBDIRS = calc10

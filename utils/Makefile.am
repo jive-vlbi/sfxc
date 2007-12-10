@@ -1,9 +1,7 @@
-SUBDIRS = vex_parser
-
 # disable all libraries for delmo
-LIBS =
+LIBS = -lvex_parser
 
-AM_CXXFLAGS = -I@top_srcdir@/lib/vex_parser/ -I@top_srcdir@/include
+AM_CXXFLAGS = -I@top_srcdir@/include
 
 bin_PROGRAMS = generate_delay_model \
                create_delay_function \
@@ -11,7 +9,6 @@ bin_PROGRAMS = generate_delay_model \
                analyse_fringes \
                print_headers \
                produce_html_plotpage \
-               make_sfxc_experiment_makefile \
                vex2ccf \
 	       generate_uvw_coordinates \
 	       plot_delay_table
@@ -41,25 +38,13 @@ produce_html_plotpage_SOURCES = produce_html_plotpage.cc \
 	gnuplot_i.cc
 produce_html_plotpage_LDADD= -lfftw3f -lm -lvex_parser -lantlr3c -ljson -lmpich
 produce_html_plotpage_CFLAGS =-I@top_srcdir@/lib
-produce_html_plotpage_CXXFLAGS =-I@top_srcdir@/lib -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include 
-
-make_sfxc_experiment_makefile_SOURCES = make_sfxc_experiment_makefile.cc \
-	@top_srcdir@/lib/vex_parser/vexplus.cc
-make_sfxc_experiment_makefile_CXXFLAGS = -I@top_srcdir@/lib/vex_parser
-make_sfxc_experiment_makefile_LDADD = \
-  @top_srcdir@/lib/vex_parser/libvex.a @LEXLIB@ -ljson
-
+produce_html_plotpage_CXXFLAGS =-I@top_srcdir@/lib -I@top_srcdir@/include 
 
 generate_delay_model_SOURCES=\
   generate_delay_model.cc \
-  generate_delay_model_calc.c \
-  @top_srcdir@/lib/vex_parser/vexplus.cc \
-  @top_srcdir@/lib/vex_parser/vex.c \
-  @top_srcdir@/lib/vex_parser/vex.yy.c \
-  @top_srcdir@/lib/vex_parser/vex_util.c \
-  @top_srcdir@/lib/vex_parser/vex_get.c
+  generate_delay_model_calc.c
 generate_delay_model_CFLAGS  = -I@top_srcdir@/lib -m32 -std=c99
-generate_delay_model_CXXFLAGS=-m32 -I@top_srcdir@/lib -I@top_srcdir@/lib/vex_parser -I@top_srcdir@/include
+generate_delay_model_CXXFLAGS=-m32 -I@top_srcdir@/lib -I@top_srcdir@/include
 generate_delay_model_LDFLAGS=-m32
 generate_delay_model_LDADD = -L@top_srcdir@/lib/calc10/lib/ -lfcalc -lg2c
 
