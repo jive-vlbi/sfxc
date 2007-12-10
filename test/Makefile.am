@@ -1,8 +1,8 @@
-EXTRA_DIST = 
-
-AM_CPPFLAGS = -Iinclude -I../include -g
-AM_CXXFLAGS = 
-
+AM_CXXFLAGS = \
+  -I@top_srcdir@/include \
+  -I@prefix@/include
+AM_LDFLAGS = \
+  -L@prefix@/lib -lcommon -ltestunit -lnetlib -lcontainers
 
 check_PROGRAMS = \
   test_control_parameters \
@@ -46,13 +46,18 @@ OBJ = ../src/utils.cc \
       ../src/bits_to_float_converter.cc \
       \
       ../src/data_reader.cc \
-      ../src/data_reader_file.cc \
       ../src/data_reader_tcp.cc \
+      ../src/data_reader_file.cc \
+      ../src/data_reader_factory.cc \
+      ../src/data_reader_dnfp.cc \
+      ../src/data_reader_blocking.cc \
+      ../src/data_reader_socket.cc \
       ../src/data_writer.cc \
       ../src/data_writer_file.cc \
       ../src/data_writer_tcp.cc \
       ../src/data_writer_buffer.cc \
       ../src/data_writer_void.cc \
+      ../src/data_writer_socket.cc \
       ../src/log_writer.cc \
       ../src/log_writer_file.cc \
       ../src/log_writer_cout.cc \

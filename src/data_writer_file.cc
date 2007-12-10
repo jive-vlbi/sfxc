@@ -29,7 +29,7 @@ Data_writer_file::~Data_writer_file() {
 }
   
 size_t 
-Data_writer_file::do_put_bytes(size_t nBytes, char *buff) {
+Data_writer_file::do_put_bytes(size_t nBytes, const char *buff) {
   assert(file.good());
   file.write(buff, nBytes);
   if (file.good()) return nBytes;

@@ -151,7 +151,7 @@ Control_parameters::check(std::ostream &writer) const {
             char filename[(*source_it).asString().size()];
             strcpy(filename, (*source_it).asString().c_str());
             if (strncmp(filename, "file://", 7)!=0) {
-              ok = false;
+//               ok = false;
               writer << "Ctrl-file: Data source should start with 'file://'"
                      << std::endl;
             } else {
@@ -766,14 +766,17 @@ get_delay_table_name(const std::string &station_name) const {
 
 std::string 
 Control_parameters::create_path(const std::string &path) const {
-  assert(strncmp(path.c_str(), "file://", 7) == 0);
-  std::string result = "file://";
-  char c_ctrl_filename[ctrl_filename.size()+1];
-  strcpy(c_ctrl_filename, ctrl_filename.c_str());
-  result += dirname(c_ctrl_filename);
-  result += "/";
-  result += path.c_str()+7;
-  return result;
+  if (strncmp(path.c_str(), "file://", 7) == 0) {
+    std::string result = "file://";
+    char c_ctrl_filename[ctrl_filename.size()+1];
+    strcpy(c_ctrl_filename, ctrl_filename.c_str());
+    result += dirname(c_ctrl_filename);
+    result += "/";
+    result += path.c_str()+7;
+    return result;
+  } else {
+    return path;
+  }
 }
 
 bool 

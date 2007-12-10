@@ -8,6 +8,7 @@
  */
 
 #include <assert.h>
+#include <netinet/in.h>
 
 #include "data_writer.h"
 #include "utils.h"
@@ -19,7 +20,7 @@ Data_writer::~Data_writer() {
 }
   
 size_t
-Data_writer::put_bytes(size_t nBytes, char *buff) {
+Data_writer::put_bytes(size_t nBytes, const char *buff) {
   assert((data_slice==-1) || (nBytes <= (size_t)data_slice));
   size_t result = do_put_bytes(nBytes, buff);
   _data_counter += (int64_t)result;
@@ -52,4 +53,28 @@ Data_writer::get_size_dataslice() {
 bool 
 Data_writer::end_of_dataslice() {
   return data_slice == 0;
+}
+
+Data_writer& operator<<(Data_writer& dr, const std::string& str)
+{
+    uint32_t size=str.size();
+    dr.put_bytes(sizeof(uint32_t), (char*)&size);
+    dr.put_bytes(size+1, str.c_str() );
+    return  dr;
+}
+
+
+Data_writer& operator<<(Data_writer& dr, uint32_t value)
+{
+    value = htonl(value);
+    dr.put_bytes(sizeof(uint32_t), (char*)&value);
+    return  dr;
+}
+
+
+Data_writer& operator<<(Data_writer& dr, int32_t value)
+{
+    value = htonl(value);
+    dr.put_bytes(sizeof(int32_t), (char*)&value);
+    return  dr;
 }

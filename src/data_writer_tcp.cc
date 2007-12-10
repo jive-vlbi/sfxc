@@ -33,7 +33,7 @@ Data_writer_tcp::~Data_writer_tcp() {
 }
 
 size_t
-Data_writer_tcp::do_put_bytes(size_t nBytes, char *buff) {
+Data_writer_tcp::do_put_bytes(size_t nBytes, const char *buff) {
   if (socket <= 0) return 0;
   assert(nBytes > 0);
   size_t bytes_written = 0;

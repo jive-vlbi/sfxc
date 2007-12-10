@@ -9,7 +9,7 @@
 
 #include "single_data_reader_controller.h"
 #include "sfxc_mpi.h"
-#include "data_reader_file.h"
+#include "data_reader_factory.h"
 #include "data_reader_tcp.h"
 
 Single_data_reader_controller::
@@ -37,7 +37,9 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
       
-      boost::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
+      boost::shared_ptr<Data_reader> 
+        reader(Data_reader_factory::get_reader(filename));
+
       set_data_reader(stream_nr, reader);
 
       MPI_Send(&stream_nr, 1, MPI_INT32, 

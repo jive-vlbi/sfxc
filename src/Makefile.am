@@ -1,4 +1,14 @@
-AM_CPPFLAGS = -I../include
+AM_CXXFLAGS = \
+  -I@top_srcdir@/include \
+  -I@top_srcdir@/lib/common/src \
+  -I@top_srcdir@/lib/containers/src \
+  -I@top_srcdir@/lib/netlib/src \
+  -I@top_srcdir@/lib/testunit/src
+AM_LDFLAGS = \
+  -L@top_srcdir@/lib/common/lib -lcommon \
+  -L@top_srcdir@/lib/testunit/lib -ltestunit \
+  -L@top_srcdir@/lib/netlib/lib -lnetlib \
+  -L@top_srcdir@/lib/containers/lib -lcontainers
 
 bin_PROGRAMS = sfxc
 
@@ -12,6 +22,11 @@ OBJ=\
   utils.cc \
   delay_table_akima.cc \
   data_writer.cc data_reader.cc \
+  data_reader_factory.cc \
+  data_reader_dnfp.cc \
+  data_reader_blocking.cc \
+  data_reader_socket.cc \
+  data_writer_socket.cc \
   data_reader_file.cc data_writer_file.cc \
   data_writer_void.cc \
   log_writer.cc log_writer_cout.cc log_writer_void.cc \

@@ -88,6 +88,7 @@ protected:
     if ( !(condi) )  \
     {                                       \
         Backtrace bt;      \
+        std::cout << bt << std::endl; sleep(1); \
         throw Exception(#condi, bt);  \
     }
 
@@ -99,6 +100,7 @@ protected:
 #define MTHROW( text )    \
     {                                       \
         Backtrace bt;      \
+        std::cout << bt << std::endl; sleep(1); \
         throw Exception(text, bt);  \
     }
 

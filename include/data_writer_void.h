@@ -17,7 +17,7 @@ public:
   Data_writer_void();
   ~Data_writer_void();
   
-  size_t do_put_bytes(size_t nBytes, char *buff);
+  size_t do_put_bytes(size_t nBytes, const char *buff);
 };
 
 #endif // DATA_WRITER_VOID_H

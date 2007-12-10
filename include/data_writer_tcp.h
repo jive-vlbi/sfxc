@@ -24,7 +24,7 @@ public:
   
   void flush();
 private:
-  size_t do_put_bytes(size_t nBytes, char *buff);
+  size_t do_put_bytes(size_t nBytes, const char *buff);
 
   int socket;
 };

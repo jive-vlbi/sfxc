@@ -12,6 +12,7 @@
 
 #include <types.h>
 #include <stddef.h> // defines size_t
+#include <string>
 
 class Data_writer {
 public:
@@ -23,7 +24,7 @@ public:
       \return the number of bytes read into the buffer.
       \pre buff is allocated. nBytes >= 0
   **/ 
-  size_t put_bytes(size_t nBytes, char *buff);
+  size_t put_bytes(size_t nBytes, const char *buff);
   
   /** Returns the number of bytes written
    **/
@@ -54,10 +55,14 @@ public:
 private:
   /** Function that actually writes the data to the output device.
   **/ 
-  virtual size_t do_put_bytes(size_t nBytes, char *buff) = 0;
+  virtual size_t do_put_bytes(size_t nBytes, const char *buff) = 0;
   
   uint64_t _data_counter;
   int data_slice;
 };
+
+Data_writer& operator<<(Data_writer& dr, const std::string& str);
+Data_writer& operator<<(Data_writer& dr, uint32_t value);
+Data_writer& operator<<(Data_writer& dr, int32_t value);
 
 #endif // DATA_WRITER_H
