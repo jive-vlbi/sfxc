@@ -4,7 +4,7 @@
 #include "integer_delay_correction.h"
 
 Integer_delay_correction::Integer_delay_correction() :
-  output_buffer(Output_buffer_ptr(new Output_buffer(10))),
+  output_buffer(Output_buffer_ptr(new Output_buffer(2))),
   verbose(false)
 {
 }

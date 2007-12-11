@@ -59,15 +59,19 @@ private:
   Output_buffer_ptr              output_buffer;
   Output_buffer_element          *output_element;
 
+  // Used in integration_step(), avoids contruction and destroying the vectors
+  std::vector<Input_buffer_element *>               input_elements;
+
+
   int number_ffts_in_integration, current_fft;
   
-  Correlation_parameters             correlation_parameters;
+  Correlation_parameters                            correlation_parameters;
   
   std::vector< std::vector< std::complex<FLOAT> > > frequency_buffer;
-  std::vector< std::complex<FLOAT> > accumulation_buffers;
-  std::vector< std::pair<int, int> >  baselines;
+  std::vector< std::complex<FLOAT> >                accumulation_buffers;
+  std::vector< std::pair<int, int> >                baselines;
   
-  boost::shared_ptr<Data_writer>      writer;
+  boost::shared_ptr<Data_writer>                    writer;
 
   Timer timer;
 };

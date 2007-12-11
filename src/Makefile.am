@@ -4,11 +4,6 @@ AM_CXXFLAGS = \
   -I@top_srcdir@/lib/containers/src \
   -I@top_srcdir@/lib/netlib/src \
   -I@top_srcdir@/lib/testunit/src
-AM_LDFLAGS = \
-  -L@top_srcdir@/lib/common/lib -lcommon \
-  -L@top_srcdir@/lib/testunit/lib -ltestunit \
-  -L@top_srcdir@/lib/netlib/lib -lnetlib \
-  -L@top_srcdir@/lib/containers/lib -lcontainers
 
 bin_PROGRAMS = sfxc
 
@@ -47,7 +42,8 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   node.cc manager_node.cc log_node.cc \
   correlator_node.cc input_node.cc output_node.cc \
   controller.cc input_node_controller.cc output_node_controller.cc \
-  correlator_node_controller.cc manager_node_controller.cc log_node_controller.cc \
+  correlator_node_controller.cc manager_node_controller.cc \
+  log_node_controller.cc \
   mpi_transfer.cc tcp_connection.cc \
   log_writer_mpi.cc data_reader_tcp.cc  data_writer_tcp.cc \
   data_writer_buffer.cc \
@@ -55,3 +51,8 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   multiple_data_writers_controller.cc \
   single_data_writer_controller.cc \
   single_data_reader_controller.cc
+sfxc_LDADD = \
+  -L@top_srcdir@/lib/testunit -ltestunit \
+  -L@top_srcdir@/lib/netlib -lnetlib \
+  -L@top_srcdir@/lib/containers -lcontainers \
+  -L@top_srcdir@/lib/common -lcommon

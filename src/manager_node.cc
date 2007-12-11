@@ -133,7 +133,7 @@ void Manager_node::start() {
     switch (status) {
       case START_NEW_SCAN:
       {
-        get_log_writer() << "START_NEW_SCAN" << std::endl;
+        get_log_writer()(1) << "START_NEW_SCAN" << std::endl;
         
         // set track information
         initialise_scan(scans.front());
@@ -238,7 +238,6 @@ void Manager_node::start() {
       }
       case END_NODE:
       {
-        get_log_writer() << "END_NODE" << std::endl;
         break;
       }
     }

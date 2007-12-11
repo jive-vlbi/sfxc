@@ -35,6 +35,8 @@ void start_node() {
       assert (RANK_LOG_NODE == rank);
       int numtasks;
       MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
+      DEBUG_MSG("Log node, pid = " << getpid());
+
       Log_node log_node(rank,numtasks);
       log_node.start();
       break;
@@ -45,6 +47,8 @@ void start_node() {
       int32_t msg;
       MPI_Recv(&msg, 1, MPI_INT32, 
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+      DEBUG_MSG("Input node, pid = " << getpid());
       Input_node input_node(rank, msg);
       input_node.start();
       break;
@@ -54,6 +58,8 @@ void start_node() {
       int32_t msg;
       MPI_Recv(&msg, 1, MPI_INT32, 
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+      DEBUG_MSG("Output node, pid = " << getpid());
       Output_node node(rank);
       node.start();
       break;
@@ -64,6 +70,7 @@ void start_node() {
       MPI_Recv(&msg, 1, MPI_INT32, 
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
+      DEBUG_MSG("Correlator node, pid = " << getpid());
       Correlator_node node(rank, msg);
       node.start();
       break;

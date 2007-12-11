@@ -67,7 +67,7 @@ private:
   Correlation_parameters correlation_parameters;
   
 
-  FFTW_PLAN           plan_t2f_orig, plan_f2t_orig, plan_t2f, plan_f2t;
+  FFTW_PLAN          plan_t2f, plan_f2t;
   std::vector<FLOAT> freq_scale; // frequency scale for the fractional bit shift
   // For fringe stopping we do a linear approximation
   // maximal_phase_change is the maximal angle between two

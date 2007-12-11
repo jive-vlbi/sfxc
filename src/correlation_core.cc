@@ -139,7 +139,10 @@ bool Correlation_core::is_ready_for_do_task() {
 }
 
 void Correlation_core::integration_initialise() {
-  accumulation_buffers.resize((size_of_fft()/2+1) * baselines.size());
+  int size = (size_of_fft()/2+1) * baselines.size();
+  if (accumulation_buffers.size() != size) {
+    accumulation_buffers.resize(size);
+  }
   
   for (size_t i=0; i<accumulation_buffers.size(); i++) {
     accumulation_buffers[i] = 0;
@@ -149,8 +152,9 @@ void Correlation_core::integration_initialise() {
 }
 
 void Correlation_core::integration_step() {
-  std::vector<Input_buffer_element *> input_elements;
-  input_elements.resize(input_buffers.size());
+  if (input_elements.size() != input_buffers.size()) {
+    input_elements.resize(input_buffers.size());
+  }
   for (size_t i=0; i<input_buffers.size(); i++) {
     int size;
     input_elements[i] = &input_buffers[i]->consume(size);
@@ -169,6 +173,7 @@ void Correlation_core::integration_step() {
                                 (FFTW_COMPLEX *)&frequency_buffer[i][0],
                                 FFTW_ESTIMATE);
     FFTW_EXECUTE(plan);
+    FFTW_DESTROY_PLAN(plan);
   }
 
   // do the correlation
@@ -232,7 +237,8 @@ void
 Correlation_core::
 auto_correlate_baseline(std::complex<FLOAT> in[],
                         std::complex<FLOAT> out[]) {
-  for (size_t i=0; i<size_of_fft()/2+1; i++) {
+  int size = size_of_fft()/2+1;
+  for (size_t i=0; i<size; i++) {
     out[i].real() += in[i].real()*in[i].real() +
                      in[i].imag()*in[i].imag();
     out[i].imag() = 0;
@@ -245,10 +251,15 @@ correlate_baseline(std::complex<FLOAT> in1[],
                    std::complex<FLOAT> in2[],
                    std::complex<FLOAT> out[]) {
   // NGHK: TODO: expand and optimize
-  for (size_t i=0; i<size_of_fft()/2+1; i++) {
+  int size = size_of_fft()/2+1;
+  for (size_t i=0; i<size; i++) {
     //out[i] += in1[i]*std::conj(in2[i]);
-    out[i].real() += in1[i].real() * in2[i].real() + in1[i].imag() * in2[i].imag();
-    out[i].imag() += in1[i].imag() * in2[i].real() - in1[i].real() * in2[i].imag();
+    out[i].real() += 
+      in1[i].real() * in2[i].real() + 
+      in1[i].imag() * in2[i].imag();
+    out[i].imag() += 
+      in1[i].imag() * in2[i].real() - 
+      in1[i].real() * in2[i].imag();
   }
 }
 

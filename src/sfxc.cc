@@ -52,8 +52,6 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-  DEBUG_MSG(" pid = " << getpid());
-
   assert(argc == 3);
   char *ctrl_file = argv[1];
   char *vex_file = argv[2];
@@ -71,6 +69,8 @@ int main(int argc, char *argv[]) {
       }
     } else {
       Log_writer_mpi log_writer(rank, control_parameters.message_level());
+
+      DEBUG_MSG("Manager node, pid = " << getpid());
       Manager_node node(rank, numtasks, &log_writer, control_parameters);
       node.start();
     }

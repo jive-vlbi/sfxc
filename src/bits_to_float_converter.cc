@@ -25,9 +25,12 @@ void
 Bits_to_float_converter::set_parameters(int bits_per_sample_,
                                         int size_input_slice_,
                                         int size_output_slice_) {
-  bits_per_sample = bits_per_sample_;
-  size_output_slice = size_output_slice_;
-  intermediate_buffer.resize(size_output_slice/(8/bits_per_sample));
+  if ((bits_per_sample != bits_per_sample_) ||
+      (size_output_slice != size_output_slice_)) {
+    bits_per_sample = bits_per_sample_;
+    size_output_slice = size_output_slice_;
+    intermediate_buffer.resize(size_output_slice/(8/bits_per_sample));
+  }
 
   assert(data_reader != Data_reader_ptr());
 

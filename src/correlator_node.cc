@@ -100,9 +100,10 @@ void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   // NGHK: TODO: Make sure a time slice fits
-  
-  boost::shared_ptr< Input_buffer > buffer(new Input_buffer(25));
-  data_readers_ctrl.set_buffer(stream_nr, buffer);
+
+  // NGHK: These buffers do not work
+//   boost::shared_ptr< Input_buffer > buffer(new Input_buffer(25));
+//   data_readers_ctrl.set_buffer(stream_nr, buffer);
 
   boost::shared_ptr<Bits_to_float_converter> sample_reader(new Bits_to_float_converter());
   sample_reader->set_data_reader(data_readers_ctrl.get_data_reader(stream_nr));

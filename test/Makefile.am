@@ -1,8 +1,14 @@
 AM_CXXFLAGS = \
   -I@top_srcdir@/include \
-  -I@prefix@/include
+  -I@top_srcdir@/lib/common/src \
+  -I@top_srcdir@/lib/containers/src \
+  -I@top_srcdir@/lib/netlib/src \
+  -I@top_srcdir@/lib/testunit/src
 AM_LDFLAGS = \
-  -L@prefix@/lib -lcommon -ltestunit -lnetlib -lcontainers
+  -L@top_srcdir@/lib/testunit -ltestunit \
+  -L@top_srcdir@/lib/netlib -lnetlib \
+  -L@top_srcdir@/lib/containers -lcontainers \
+  -L@top_srcdir@/lib/common -lcommon
 
 check_PROGRAMS = \
   test_control_parameters \
@@ -141,4 +147,3 @@ test_input_node_with_delay_correction_SOURCES = \
   $(OBJ) \
   test_input_node_with_delay_correction.cc \
   ../src/input_node_tasklet.cc
-  
