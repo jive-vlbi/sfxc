@@ -11,6 +11,7 @@
 #define CONTROLLER_NODE_H
 
 #include <Abstract_manager_node.h>
+#include "Output_header.h"
 #include <Controller.h>
 #include <vector>
 

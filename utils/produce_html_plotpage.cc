@@ -22,6 +22,7 @@
 #include <utils.h>
 
 #include <Control_parameters.h>
+#include "Output_header.h"
 
 Control_parameters ConPrms;
 

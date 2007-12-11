@@ -1,4 +1,5 @@
 #include "correlation_core.h"
+#include "Output_header.h"
 
 Correlation_core::Correlation_core()
 : output_buffer(Output_buffer_ptr(new Output_buffer(10))),
@@ -167,6 +168,7 @@ void Correlation_core::integration_step() {
                                 (FFTW_COMPLEX *)&frequency_buffer[i][0],
                                 FFTW_ESTIMATE);
     FFTW_EXECUTE(plan);
+    FFTW_DESTROY_PLAN(plan);    
   }
 
   // do the correlation
@@ -222,8 +224,16 @@ void Correlation_core::integration_average() {
 
 void Correlation_core::integration_write() {
   assert(writer != boost::shared_ptr<Data_writer>());
+  assert(accumulation_buffers.size() ==
+    baselines.size()*(size_of_fft()/2+1));
+  for (int i=0; i<baselines.size(); i++) {
+    writer->put_bytes((size_of_fft()/2+1)*sizeof(std::complex<DOUBLE>),
+        ((char*)&accumulation_buffers[i*(size_of_fft()/2+1)]));
+  }
+/*
   writer->put_bytes(accumulation_buffers.size()*sizeof(std::complex<DOUBLE>),
                     ((char*)&accumulation_buffers[0]));
+*/
 }
 
 void 

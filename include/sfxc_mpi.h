@@ -197,6 +197,11 @@ enum MPI_TAG {
    **/
   MPI_TAG_LOG_NODE_SET_OUTPUT_FILE,
 
+  /** Global header message for the output file
+   * - char[]: header
+   **/
+  MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER,
+
   // General messages
   //-------------------------------------------------------------------------//
 
@@ -288,6 +293,8 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_LOG_NODE_SET_OUTPUT_COUT"; }
     case MPI_TAG_LOG_NODE_SET_OUTPUT_FILE:
       { return "MPI_TAG_LOG_NODE_SET_OUTPUT_FILE"; }
+    case MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER:
+      { return "MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER"; }
     case MPI_TAG_DATASTREAM_EMPTY:
       { return "MPI_TAG_DATASTREAM_EMPTY"; }
     case MPI_TAG_CORRELATE_ENDED:

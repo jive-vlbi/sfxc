@@ -12,6 +12,7 @@
 #include "Data_reader_buffer.h"
 #include "Data_writer_buffer.h"
 #include "utils.h"
+#include "Output_header.h"
 
 Correlator_node::Correlator_node(int rank, int nr_corr_node)
  : Node(rank),
@@ -54,7 +55,6 @@ void Correlator_node::start()
         break;
       }
       case CORRELATING: {
-        get_log_writer()(2) << " status = CORRELATING" << std::endl;
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           status = END_CORRELATING;
         }

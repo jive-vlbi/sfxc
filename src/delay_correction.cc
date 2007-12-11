@@ -110,6 +110,8 @@ void Delay_correction::fractional_bit_shift(std::complex<DOUBLE> output[],
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
   FFTW_EXECUTE(plan_f2t);
+  FFTW_DESTROY_PLAN(plan_f2t);
+  FFTW_DESTROY_PLAN(plan_t2f);
 }
 void Delay_correction::fringe_stopping(std::complex<DOUBLE> input[],
                                        DOUBLE output[]) {
