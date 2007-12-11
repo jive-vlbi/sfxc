@@ -1,9 +1,15 @@
 SUBDIRS = calc10
 
 prefix=@prefix@
-pkg_config_path=@prefix@/lib/pkgconfig
+pkg_config_path=@top_srcdir@/lib/pkgconfig
 
 all-local:
+	make -C common 
+	make -C testunit 
+	make -C netlib 
+	make -C containers 
+
+install-exec-local:
 	echo installing common library
 	make -C common install prefix=${prefix} PKG_CONFIG_PATH=${pkg_config_path}
 	echo installing testunit library

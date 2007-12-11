@@ -46,75 +46,96 @@
 ***********************************************/
 template<class T>
 class Threadsafe_queue
-{
-  public:
-    typedef T   Type;
-    typedef T* pType;
+  {
+    public:
+      typedef T   Type;
 
-    Threadsafe_queue(){}
-    virtual ~Threadsafe_queue(){}
+      Threadsafe_queue(){}
+      virtual ~Threadsafe_queue(){}
 
-    void push( pType element ){
-      RAIIMutex rc(m_queuecond);
-      m_queue.push(element);
-      if( m_queue.size() != 0 ) m_queuecond.signal();
-    }
-
-    pType pop(){
+      void push( Type element )
+      {
         RAIIMutex rc(m_queuecond);
-        if( m_queue.size() == 0 ) m_queuecond.wait();
+        m_queue.push(element);
+        if ( m_queue.size() != 0 ) m_queuecond.signal();
+      }
+
+      Type& front()
+      {
+        RAIIMutex rc(m_queuecond);
+        if ( m_queue.size() == 0 ) m_queuecond.wait();
+        return m_queue.front();
+      }
+
+      void pop()
+      {
+        RAIIMutex rc(m_queuecond);
+        if ( m_queue.size() == 0 ) m_queuecond.wait();
+        m_queue.pop();
+      }
+
+      Type front_and_pop()
+      {
+        RAIIMutex rc(m_queuecond);
+        if ( m_queue.size() == 0 ) m_queuecond.wait();
         Type element = m_queue.front();
         m_queue.pop();
         return element;
-    }
+      }
 
-    pType pop_non_blocking(){
+      Type front_and_pop_non_blocking()
+      {
         RAIIMutex rc(m_queuecond);
-        if( m_queue.size() == 0 ) MTHROW("Trying to pop from on empty queue.");
-        pType element = m_queue.front();
+        if ( m_queue.size() == 0 ) MTHROW("Trying to pop from an empty queue.");
+        Type element = m_queue.front();
         m_queue.pop();
         return element;
-    }
+      }
 
-    bool empty(){
-      RAIIMutex rc(m_queuecond);
-      return m_queue.size()==0;
-    }
+      bool empty()
+      {
+        RAIIMutex rc(m_queuecond);
+        return m_queue.size()==0;
+      }
 
-    #ifdef ENABLE_TEST_UNIT
+#ifdef ENABLE_TEST_UNIT
     class Test : public Test_aclass<Threadsafe_queue>
-    {
-			public:
-				void tests();
-    };
-    #endif // ENABLE_TEST_UNIT
+        {
+          public:
+            void tests();
+        };
+#endif // ENABLE_TEST_UNIT
 
-  private:
-    std::queue<pType> m_queue;
-    Condition m_queuecond;
-};
+    private:
+      std::queue<Type> m_queue;
+      Condition m_queuecond;
+  };
 
 /////////////////// IMPLEMENTATION (I hate c++ template) ///////////////
 #ifdef ENABLE_TEST_UNIT
 template<class T>
 void Threadsafe_queue<T>::Test::tests()
 {
-	Threadsafe_queue<T> queue;
-	T obj;
-	T *pobj=NULL;
+  Threadsafe_queue<T*> queue;
+  T obj;
+  T* pobj=NULL;
 
-	TEST_ASSERT( queue.empty() );
-	TEST_EXCEPTION_THROW( queue.pop_non_blocking() );
-	TEST_EXCEPTION_NTHROW( queue.push( &obj ) );
-	TEST_EXCEPTION_NTHROW ( queue.push( NULL ) );
-	TEST_ASSERT( !queue.empty() );
-	TEST_EXCEPTION_NTHROW( pobj = queue.pop_non_blocking() );
-	TEST_ASSERT( pobj == &obj );
-	TEST_EXCEPTION_NTHROW( pobj = queue.pop_non_blocking() );
-	TEST_ASSERT( pobj ==  NULL );
-	TEST_ASSERT( queue.empty() );
-	TEST_EXCEPTION_THROW( queue.pop_non_blocking() );
-	TEST_ASSERT( queue.empty() );
+  TEST_ASSERT( queue.empty() );
+  TEST_EXCEPTION_THROW( queue.front_and_pop_non_blocking() );
+  TEST_EXCEPTION_NTHROW( queue.push( &obj ) );
+  TEST_EXCEPTION_NTHROW ( queue.push( NULL ) );
+  TEST_ASSERT( !queue.empty() );
+  TEST_EXCEPTION_NTHROW( pobj = queue.front_and_pop_non_blocking() );
+  TEST_ASSERT( pobj == &obj );
+  TEST_EXCEPTION_NTHROW( pobj = queue.front_and_pop_non_blocking() );
+  TEST_ASSERT( pobj ==  NULL );
+  TEST_ASSERT( queue.empty() );
+  TEST_EXCEPTION_THROW( queue.front_and_pop_non_blocking() );
+  TEST_ASSERT( queue.empty() );
+  TEST_EXCEPTION_NTHROW( queue.push( &obj ) );
+  TEST_ASSERT( !queue.empty() );
+  TEST_EXCEPTION_NTHROW( queue.pop() );
+  TEST_ASSERT( queue.empty() );
 }
 #endif // ENABLE_TEST_UNIT
 
