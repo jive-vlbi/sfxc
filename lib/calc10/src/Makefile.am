@@ -1,5 +1,6 @@
-# Don't link with the fftw3 library
+# Don't link with the mpi/fftw3 library
 LIBS = 
+LDFLAGS = 
 
 
 bin_PROGRAMS = calc
