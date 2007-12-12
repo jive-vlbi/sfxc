@@ -71,6 +71,9 @@ Manager_node(int rank, int numtasks,
     
   output_node_set_global_header((char *)&header_msg, sizeof(Output_header_global));
 
+  DEBUG_MSG("size of DOUBLE is -> " << sizeof(DOUBLE));
+  DEBUG_MSG("size of double is -> " << sizeof(double));
+  DEBUG_MSG("size of float is -> " << sizeof(float));
   DEBUG_MSG("header size = " << header_msg.header_size);
   DEBUG_MSG("experiment name = " << header_msg.experiment);
   DEBUG_MSG("start year = " << header_msg.start_year);
@@ -318,7 +321,8 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
   correlation_parameters.slice_nr = slice_nr;
-
+  DEBUG_MSG("channel name --> " << channel_name);
+  //  correlation_parameters.channel_nr = current_channel;
   assert ((cross_channel != -1) == correlation_parameters.cross_polarize);
 
   // Check the cross polarisation
@@ -357,40 +361,6 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
                                 stoptime_timeslice);
     }
   }
-            
-  // set the output stream
-  //               autos       crosses
-  int nAutos = nStations;
-  int nCrosses = nStations*(nStations-1)/2;
-  int nBaselines;
-  if (cross_channel != -1) { // do cross polarisation
-    if (control_parameters.reference_station() == "") {
-      nBaselines = 2*nAutos + 4*nCrosses;
-    } else {
-      nBaselines = 2*nAutos + 4*(nAutos-1);
-    }
-  } else {
-    if (control_parameters.reference_station() == "") {
-      nBaselines = nAutos + nCrosses;
-    } else {
-      nBaselines = 2*nAutos - 1;
-    }
-  }
-  int size_of_one_baseline = sizeof(FFTW_COMPLEX)*
-    (correlation_parameters.number_channels*PADDING/2+1);
-  DEBUG_MSG("Size of timeslice: "
-            << (duration_time_slice /
-                control_parameters.integration_time()) *
-                size_of_one_baseline*nBaselines);
-  DEBUG_MSG("nBaselines: " << nBaselines);
-  DEBUG_MSG("size_of_one_baseline: " << size_of_one_baseline);
-  DEBUG_MSG("#integration slices: " 
-            << (duration_time_slice /
-                control_parameters.integration_time()));
-  output_node_set_timeslice(slice_nr, corr_node_nr, 
-                            (duration_time_slice /
-                             control_parameters.integration_time()) *
-                            size_of_one_baseline*nBaselines);
 
   set_correlating_state(corr_node_nr, CORRELATING);
 
