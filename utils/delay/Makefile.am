@@ -1,5 +1,7 @@
 # disable all libraries for delmo
+LIBS =
 LDFLAGS =
+
 AM_CFLAGS   = -I@top_srcdir@/lib/vex_parser/install/include -I@top_srcdir@/lib -m32 -std=c99
 AM_CXXFLAGS = -m32 -I@top_srcdir@/lib/vex_parser/install/include -I@top_srcdir@/lib -I@top_srcdir@/include
 AM_LDFLAGS  = -m32
