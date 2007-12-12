@@ -28,8 +28,8 @@ AC_ARG_ENABLE(debug,
               USE_DEBUG="$enableval", USE_DEBUG="no")
 
 if test $USE_DEBUG = "yes"; then 
-  CFLAGS+=" -g -DSFXC_PRINT_DEBUG -rdynamic"
-  CXXFLAGS+=" -g -DSFXC_PRINT_DEBUG -rdynamic"
+  CFLAGS="$CFLAGS -g -DSFXC_PRINT_DEBUG -rdynamic"
+  CXXFLAGS="$CXXFLAGS -g -DSFXC_PRINT_DEBUG -rdynamic"
 fi
 
 
@@ -39,8 +39,8 @@ AC_ARG_ENABLE(optimization,
               USE_OPTIMIZATION="$enableval", USE_OPTIMIZATION="no")
 
 if test $USE_OPTIMIZATION = "yes"; then 
-  CFLAGS+=" -O2"
-  CXXFLAGS+=" -O2"
+  CFLAGS="$CFLAGS -O2"
+  CXXFLAGS="$CFLAGS -O2"
 fi
 
 
