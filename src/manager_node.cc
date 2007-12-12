@@ -140,6 +140,7 @@ void Manager_node::start() {
         
         // Set the input nodes to the proper start time
         get_log_writer() << __LINE__ << " START_TIME:" << start_time << std::endl;
+        assert(duration_time_slice >= 1000);
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
           int station_time = 
@@ -148,8 +149,11 @@ void Manager_node::start() {
             get_log_writer() << "START_TIME: " << start_time << std::endl;
             get_log_writer() << "STATION_TIME: (" << control_parameters.station(station) 
                              << "): " << station_time << std::endl;
-            start_time = (station_time/1000)*1000;
-            if (station_time%1000 != 0) start_time += 1000;
+            start_time = 
+              (station_time/duration_time_slice) * duration_time_slice;
+            if (station_time%1000 != 0) {
+              start_time += duration_time_slice;
+            }
             get_log_writer() << "new START_TIME: " << start_time << std::endl;
           }
         }
@@ -202,7 +206,7 @@ void Manager_node::start() {
       {
         start_time += duration_time_slice;
 
-        if (start_time >= stop_time) {
+        if (start_time+duration_time_slice > stop_time) {
           status = STOP_CORRELATING;
         } else if (start_time >= stop_time_scan) {
           if (scans.empty()) {

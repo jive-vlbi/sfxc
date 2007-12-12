@@ -76,16 +76,16 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
                                             int integer_shift,
                                             FLOAT fractional_delay) {
   // create the fft-plans
-  plan_t2f = FFTW_PLAN_DFT_1D(number_channels(), 
-                              (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output, 
-                              FFTW_BACKWARD, FFTW_ESTIMATE);
-  plan_f2t = FFTW_PLAN_DFT_1D(number_channels(), 
-                              (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output, 
-                              FFTW_FORWARD,  FFTW_ESTIMATE);
+//   plan_t2f = FFTW_PLAN_DFT_1D(number_channels(), 
+//                               (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output, 
+//                               FFTW_BACKWARD, FFTW_ESTIMATE);
+//   plan_f2t = FFTW_PLAN_DFT_1D(number_channels(), 
+//                               (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output, 
+//                               FFTW_FORWARD,  FFTW_ESTIMATE);
 
   // 3) execute the complex to complex FFT, from Time to Frequency domain
   //    input: sls. output sls_freq
-  FFTW_EXECUTE(plan_t2f);
+  FFTW_EXECUTE_DFT(plan_t2f, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
 
   output[0] *= 0.5;
   output[number_channels()/2] *= 0.5;//Nyquist
@@ -111,10 +111,11 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
   
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
-  FFTW_EXECUTE(plan_f2t);
+  FFTW_EXECUTE_DFT(plan_f2t, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
+//   FFTW_EXECUTE(plan_f2t);
 
-  FFTW_DESTROY_PLAN(plan_f2t);
-  FFTW_DESTROY_PLAN(plan_t2f);
+//   FFTW_DESTROY_PLAN(plan_f2t);
+//   FFTW_DESTROY_PLAN(plan_t2f);
 
 }
 void Delay_correction::fringe_stopping(std::complex<FLOAT> input[],
@@ -217,6 +218,17 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   n_recompute_delay = sample_rate()/1000000;
   
   frequency_buffer.resize(number_channels()*2);
+
+  buffer.resize(number_channels());
+  
+  plan_t2f = FFTW_PLAN_DFT_1D(number_channels(), 
+                              (FFTW_COMPLEX *)&buffer[0], 
+                              (FFTW_COMPLEX *)&buffer[0],
+                              FFTW_BACKWARD, FFTW_MEASURE);
+  plan_f2t = FFTW_PLAN_DFT_1D(number_channels(), 
+                              (FFTW_COMPLEX *)&buffer[0],
+                              (FFTW_COMPLEX *)&buffer[0],
+                              FFTW_FORWARD,  FFTW_MEASURE);
 }
 
 int Delay_correction::number_channels() {

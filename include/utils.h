@@ -21,8 +21,8 @@
 
 /// Constants
 #define SIZE_MK4_FRAME           20000
-// The bit rate for a mark4 track in samples/second
-#define MARK4_TRACK_BIT_RATE     8000000
+// Track bit rate
+#define MARK4_TRACK_BIT_RATE 16
 // Maximal delay in milliseconds, should be an integer number of Mark4 blocks
 // 5 should be enough
 #define MAX_DELAY                5
@@ -35,21 +35,25 @@
 #define USE_DOUBLE
 
 #ifdef USE_DOUBLE
-# define FLOAT                double
-# define FFTW_COMPLEX         fftw_complex
-# define FFTW_PLAN            fftw_plan
-# define FFTW_PLAN_DFT_1D     fftw_plan_dft_1d
-# define FFTW_PLAN_DFT_R2C_1D fftw_plan_dft_r2c_1d
-# define FFTW_EXECUTE         fftw_execute
-# define FFTW_DESTROY_PLAN    fftw_destroy_plan
+# define FLOAT                   double
+# define FFTW_COMPLEX            fftw_complex
+# define FFTW_PLAN               fftw_plan
+# define FFTW_PLAN_DFT_1D        fftw_plan_dft_1d
+# define FFTW_PLAN_DFT_R2C_1D    fftw_plan_dft_r2c_1d
+# define FFTW_EXECUTE            fftw_execute
+# define FFTW_EXECUTE_DFT        fftw_execute_dft
+# define FFTW_EXECUTE_DFT_R2C    fftw_execute_dft_r2c 
+# define FFTW_DESTROY_PLAN       fftw_destroy_plan
 #else // !USE_DOUBLE
-# define FLOAT                float
-# define FFTW_COMPLEX         fftwf_complex
-# define FFTW_PLAN            fftwf_plan
-# define FFTW_PLAN_DFT_1D     fftwf_plan_dft_1d
-# define FFTW_PLAN_DFT_R2C_1D fftwf_plan_dft_r2c_1d
-# define FFTW_EXECUTE         fftwf_execute
-# define FFTW_DESTROY_PLAN    fftwf_destroy_plan
+# define FLOAT                   float
+# define FFTW_COMPLEX            fftwf_complex
+# define FFTW_PLAN               fftwf_plan
+# define FFTW_PLAN_DFT_1D        fftwf_plan_dft_1d
+# define FFTW_PLAN_DFT_R2C_1D    fftwf_plan_dft_r2c_1d
+# define FFTW_EXECUTE            fftwf_execute
+# define FFTW_EXECUTE_DFT        fftwf_execute_dft
+# define FFTW_EXECUTE_DFT_R2C    fftwf_execute_dft_r2c 
+# define FFTW_DESTROY_PLAN       fftwf_destroy_plan
 #endif // USE_FLOAT
 
 // NGHK: remove?

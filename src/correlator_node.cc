@@ -54,7 +54,6 @@ void Correlator_node::start()
         break;
       }
       case CORRELATING: {
-        get_log_writer()(2) << " status = CORRELATING" << std::endl;
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           status = END_CORRELATING;
         }

@@ -3,12 +3,18 @@ AM_CXXFLAGS = \
   -I@top_srcdir@/lib/common/src \
   -I@top_srcdir@/lib/containers/src \
   -I@top_srcdir@/lib/netlib/src \
-  -I@top_srcdir@/lib/testunit/src
-AM_LDFLAGS = \
+  -I@top_srcdir@/lib/testunit/src \
+  -I@top_srcdir@/lib/jsoncpp/include \
+  -I@top_srcdir@/lib/gsl/install/include \
+  -I@top_srcdir@/lib/vex_parser/install/include
+LDADD = \
   -L@top_srcdir@/lib/testunit -ltestunit \
   -L@top_srcdir@/lib/netlib -lnetlib \
   -L@top_srcdir@/lib/containers -lcontainers \
-  -L@top_srcdir@/lib/common -lcommon
+  -L@top_srcdir@/lib/common -lcommon \
+  -L@top_srcdir@/lib/jsoncpp -ljsoncpp \
+  -L@top_srcdir@/lib/gsl/install/lib -lgsl -lgslcblas \
+  -L@top_srcdir@/lib/vex_parser/install/lib -lvex_parser
 
 check_PROGRAMS = \
   test_control_parameters \

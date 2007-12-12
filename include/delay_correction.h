@@ -68,6 +68,9 @@ private:
   
 
   FFTW_PLAN          plan_t2f, plan_f2t;
+  // buffer used for the plan
+  std::vector<std::complex<FLOAT> > buffer;
+
   std::vector<FLOAT> freq_scale; // frequency scale for the fractional bit shift
   // For fringe stopping we do a linear approximation
   // maximal_phase_change is the maximal angle between two

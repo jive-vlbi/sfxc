@@ -64,6 +64,10 @@ private:
 
 
   int number_ffts_in_integration, current_fft;
+
+  FFTW_PLAN                          plan;
+  std::vector< FLOAT >               plan_input_buffer;
+  std::vector< std::complex<FLOAT> > plan_output_buffer;
   
   Correlation_parameters                            correlation_parameters;
   

@@ -1,9 +1,5 @@
-AM_CXXFLAGS = \
-  -I@top_srcdir@/include \
-  -I@top_srcdir@/lib/common/src \
-  -I@top_srcdir@/lib/containers/src \
-  -I@top_srcdir@/lib/netlib/src \
-  -I@top_srcdir@/lib/testunit/src
+AM_CXXFLAGS = $(SFXC_CXXFLAGS)
+LDADD = $(SFXC_LDADD)
 
 bin_PROGRAMS = sfxc
 
@@ -51,8 +47,3 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   multiple_data_writers_controller.cc \
   single_data_writer_controller.cc \
   single_data_reader_controller.cc
-sfxc_LDADD = \
-  -L@top_srcdir@/lib/testunit -ltestunit \
-  -L@top_srcdir@/lib/netlib -lnetlib \
-  -L@top_srcdir@/lib/containers -lcontainers \
-  -L@top_srcdir@/lib/common -lcommon

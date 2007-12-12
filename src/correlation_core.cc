@@ -24,8 +24,8 @@ void Correlation_core::do_task() {
       integration_initialise();
     }
 
-#if 1
-    if (current_fft % 2500 == 0) {
+#if 0
+    if (current_fft % 1000 == 0) {
       DEBUG_MSG(current_fft << " of " << number_ffts_in_integration);
     }
 #endif
@@ -118,6 +118,13 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters) {
   for (size_t i=0; i < frequency_buffer.size(); i++) {
     frequency_buffer[i].resize(size_of_fft()/2+1);
   }
+
+  plan_input_buffer.resize(size_of_fft());
+  plan_output_buffer.resize(size_of_fft()/2+1);
+  plan = FFTW_PLAN_DFT_R2C_1D(size_of_fft(), 
+                              (FLOAT *)&plan_input_buffer[0],
+                              (FFTW_COMPLEX *)&plan_output_buffer[0],
+                              FFTW_MEASURE);
 }
 
 void 
@@ -163,17 +170,13 @@ void Correlation_core::integration_step() {
   }
   
   // Do the fft from time to frequency:
-  FFTW_PLAN           plan;
   assert(frequency_buffer.size() == 
          correlation_parameters.station_streams.size());
   for (size_t i=0; i<input_buffers.size(); i++) {
     assert(frequency_buffer[i].size() == size_of_fft()/2+1);
-    plan = FFTW_PLAN_DFT_R2C_1D(size_of_fft(), 
-                                (FLOAT *)input_elements[i]->buffer(),
-                                (FFTW_COMPLEX *)&frequency_buffer[i][0],
-                                FFTW_ESTIMATE);
-    FFTW_EXECUTE(plan);
-    FFTW_DESTROY_PLAN(plan);
+    FFTW_EXECUTE_DFT_R2C(plan, 
+                         (FLOAT *)input_elements[i]->buffer(),
+                         (FFTW_COMPLEX *)&frequency_buffer[i][0]);
   }
 
   // do the correlation
