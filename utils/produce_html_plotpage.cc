@@ -1,4 +1,12 @@
 /* author : N.G.H. Kruithof
+* 
+ * Note (H. Ozdemir):
+ * At the moment we loop through the stations and  produce the html output
+ * assuming that the baselines are output in the correct order in the .cor file.
+ * Instead we should read the baseline header and decide weather it is auto or cross
+ * depending on the station1 and station2 written in that baseline header.
+ * In this case we have to write the html table in the corrected order.
+ * 
  */
 
 #define MAX_SNR_VALUE 8
@@ -16,11 +24,11 @@
 #include <vector>
 #include <assert.h>
 #include <complex>
-
 #include "log_writer_cout.h"
 #include "gnuplot_i.h"
 #include "utils.h"
 #include "control_parameters.h"
+#include "output_header.h"
 
 Control_parameters ConPrms;
 
@@ -283,8 +291,30 @@ Plot_generator::generate_auto_plots(std::ifstream &infile,
                                     Plot_data &plot_data,
                                     const Control_parameters &ConPrms) {
 
+  //read-in the header of the baselines
+  Output_header_baseline baseline;
+  //the following loop is also over baselines since 
+  //in auto correlation the number of 
+  //baselines equals to number of stations.
   for (int station=stations_start; station<stations_end; station++) {
+    infile.read((char*)&baseline, sizeof(Output_header_baseline));
+    DEBUG_MSG("weight " << (int)baseline.weight );
+    DEBUG_MSG("station1 " << (int)baseline.station_nr1 );
+    DEBUG_MSG("station2 " << (int)baseline.station_nr2 );
+    DEBUG_MSG("polarisation1 " << (int)baseline.polarisation1 );
+    DEBUG_MSG("polarisation2 " << (int)baseline.polarisation2 );
+    DEBUG_MSG("sideband " << (int)baseline.sideband );
+    DEBUG_MSG("channel " << (int)baseline.frequency_nr );
+    DEBUG_MSG("empty " <<(char)baseline.empty );
+
+    DEBUG_MSG("station number in loop " << station );
+    
+    assert(station == (int)baseline.station_nr1);
+    assert(station == (int)baseline.station_nr2);
+    
+    //read data for this baseline
     infile.read((char *)&in[0], 2*in.size()*sizeof(FLOAT));
+//    infile.read((char *)&in[0], sizeof(fftwf_complex));
 
     for  (int lag=0; lag<nLags; lag++) {
       magnitude[lag] = abs(in[lag]);
@@ -311,8 +341,27 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
                                     int plot_nr,
                                     const Control_parameters &ConPrms) {
   int nStations = ConPrms.number_stations();
+  Output_header_baseline baseline;
+  //read-in the header of the baselines
+  infile.read((char*)&baseline, sizeof(Output_header_baseline));
+  DEBUG_MSG("weight " << (int)baseline.weight);
+  DEBUG_MSG("station1 " << (int)baseline.station_nr1 );
+  DEBUG_MSG("station2 " << (int)baseline.station_nr2 );
+  DEBUG_MSG("polarisation1 " << (int)baseline.polarisation1 );
+  DEBUG_MSG("polarisation2 " << (int)baseline.polarisation2 );
+  DEBUG_MSG("sideband " << (int)baseline.sideband );
+  DEBUG_MSG("channel " << (int)baseline.frequency_nr );
+  DEBUG_MSG("empty " <<(char)baseline.empty );
 
+  DEBUG_MSG("station number 1 in loop " << station );
+  DEBUG_MSG("station number 2 in loop " << station2 );
+
+  assert(station == (int)baseline.station_nr1);
+  assert(station2 == (int)baseline.station_nr2);
+
+  //read data for this baseline
   infile.read((char *)&in[0], 2*in.size()*sizeof(FLOAT));
+//  infile.read((char *)&in[0], sizeof(fftwf_complex));
   FFTW_EXECUTE(visibilities2lags);
 
   for  (int lag=0; lag<nLags; lag++) {
@@ -593,7 +642,32 @@ int main(int argc, char *argv[])
     assert(err == 0);
   }
   
+  Output_header_global header;
+  Output_header_timeslice timeslice;
+
+  DEBUG_MSG("size of global is -> " << sizeof(Output_header_global));
+  DEBUG_MSG("size of timeslice is -> " << sizeof(Output_header_timeslice));
+  DEBUG_MSG("size of baselines is -> " << sizeof(Output_header_baseline));
+  DEBUG_MSG("size of FLOAT is -> " << sizeof(FLOAT));
+  DEBUG_MSG("size of double is -> " << sizeof(double));
+  DEBUG_MSG("size of float is -> " << sizeof(float));
+
+  //read-in the global header 
+  infile.read((char*)&header, sizeof(Output_header_global));
+  DEBUG_MSG("experiment name '" << header.experiment << "'" );     
+  DEBUG_MSG("start year '" << header.start_year << "'" );  
+  DEBUG_MSG("start day '" << header.start_day << "'" );    
+  DEBUG_MSG("start time '" << header.start_time << "'" );  
+  DEBUG_MSG("integration time '" << header.integration_time << "'" );      
+  DEBUG_MSG("number of channels '" << header.number_channels << "'" );     
+    
   for (int channel=0; channel<ConPrms.channels_size();) {
+    //read-in the header of the time-slice
+    infile.read((char*)&timeslice, sizeof(Output_header_timeslice));
+    DEBUG_MSG("integration_slice " << timeslice.integration_slice );
+     DEBUG_MSG("number of baselines " << timeslice.number_baselines );
+     DEBUG_MSG("number of uvw coord. " << timeslice.number_uvw_coordinates );
+     DEBUG_MSG("nchannel = " << channel );
     // generate plots for the channel
     Plot_generator(infile, ConPrms, channel);
 

@@ -14,6 +14,7 @@
 
 #include "abstract_manager_node.h"
 #include "controller.h"
+#include "output_header.h"
 
 class Manager_node;
 

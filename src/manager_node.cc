@@ -42,6 +42,42 @@ Manager_node(int rank, int numtasks,
   set_data_writer(RANK_OUTPUT_NODE, 0, 
                   control_parameters.get_output_file());
 
+  // Send the global header
+  Output_header_global header_msg;
+  header_msg.header_size = sizeof(Output_header_global);
+
+  strcpy(header_msg.experiment,control_parameters.experiment().c_str());      // Name of the experiment
+  header_msg.start_year = control_parameters.get_start_time().year;       // Start year of the experiment
+  header_msg.start_day = control_parameters.get_start_time().day;        // Start day of the experiment (day of year)
+  header_msg.start_time = control_parameters.get_start_time().to_miliseconds()/1000;
+                            // Start time of the correlation in seconds since
+                            // midnight
+  header_msg.number_channels = control_parameters.number_channels();  // Number of frequency channels
+  // 3 bytes left:
+  int int_time_tmp=0;
+  int int_time_count=0;
+  int_time_tmp = control_parameters.integration_time();// Integration time: 2^integration_time seconds
+  int_time_tmp /= 1000;
+  while(int_time_tmp > 2){
+    int_time_tmp = int_time_tmp/2;
+    int_time_count++;
+  }
+  header_msg.integration_time = (int8_t)(int_time_count);
+  header_msg.empty[0] = 0;
+  header_msg.empty[1] = 0;
+  header_msg.empty[2] = 0;
+
+    
+  output_node_set_global_header((char *)&header_msg, sizeof(Output_header_global));
+
+  DEBUG_MSG("header size = " << header_msg.header_size);
+  DEBUG_MSG("experiment name = " << header_msg.experiment);
+  DEBUG_MSG("start year = " << header_msg.start_year);
+  DEBUG_MSG("start day = " << header_msg.start_day);
+  DEBUG_MSG("start_time = " << header_msg.start_time);
+  DEBUG_MSG("number of channels = " << header_msg.number_channels);
+  DEBUG_MSG("integration time = " << (int)header_msg.integration_time);
+  
 
   // Input nodes:
   int n_stations = get_control_parameters().number_stations();
@@ -276,6 +312,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
 
   std::string channel_name =
     control_parameters.frequency_channel(current_channel);
+  std::string station_name = "Wb";
   Correlation_parameters correlation_parameters = 
     control_parameters.
     get_correlation_parameters(*scans.begin(),
@@ -284,6 +321,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
   correlation_parameters.slice_nr = slice_nr;
+  DEBUG_MSG("channel name --> " << channel_name);
 
   assert ((cross_channel != -1) == correlation_parameters.cross_polarize);
 
@@ -324,32 +362,6 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     }
   }
             
-  // set the output stream
-  //               autos       crosses
-  int nAutos = nStations;
-  int nCrosses = nStations*(nStations-1)/2;
-  int nBaselines;
-  if (cross_channel != -1) { // do cross polarisation
-    if (control_parameters.reference_station() == "") {
-      nBaselines = 2*nAutos + 4*nCrosses;
-    } else {
-      nBaselines = 2*nAutos + 4*(nAutos-1);
-    }
-  } else {
-    if (control_parameters.reference_station() == "") {
-      nBaselines = nAutos + nCrosses;
-    } else {
-      nBaselines = 2*nAutos - 1;
-    }
-  }
-  int size_of_one_baseline = sizeof(FFTW_COMPLEX)*
-    (correlation_parameters.number_channels*PADDING/2+1);
-
-  output_node_set_timeslice(slice_nr, corr_node_nr, 
-                            (duration_time_slice /
-                             control_parameters.integration_time()) *
-                            size_of_one_baseline*nBaselines);
-
   set_correlating_state(corr_node_nr, CORRELATING);
 
   current_channel ++;

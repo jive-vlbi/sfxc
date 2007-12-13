@@ -81,6 +81,7 @@ public:
 
 
   void output_node_set_timeslice(int slice_nr, int stream_nr, int bytes);
+  void output_node_set_global_header(char* header_msg, int size);
 
   int get_number_of_processes() const;
   const Control_parameters &get_control_parameters() const;

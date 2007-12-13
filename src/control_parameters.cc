@@ -5,6 +5,7 @@
 #include <libgen.h>
 
 #include <json/json.h>
+#include <algorithm>
 
 #include "control_parameters.h"
 #include "utils.h"
@@ -210,7 +211,7 @@ Control_parameters::check(std::ostream &writer) const {
 }
 
 Control_parameters::Date 
-Control_parameters::get_start_time() {
+Control_parameters::get_start_time() const{
   return Date(ctrl["start"].asString());
 }
 
@@ -657,13 +658,21 @@ sideband(const std::string &if_node,
 Correlation_parameters 
 Control_parameters::
 get_correlation_parameters(const std::string &scan_name,
-                           const std::string &channel_name,
-                           const std::map<std::string, int> 
-                           &correlator_node_station_to_input) const {
+    const std::string &channel_name, 
+    const std::map<std::string, int> &correlator_node_station_to_input) const {
+  std::set<std::string> freq_set;
+  std::set<std::string>::const_iterator freq_set_it;
+  std::string bbc_nr;
+  std::string bbc_mode;
+  std::string if_nr;
+  std::string if_mode;
+  std::string station_name;
+
   Vex::Node::const_iterator scan = 
     vex.get_root_node()["SCHED"][scan_name];
   Vex::Node::const_iterator mode = 
     vex.get_root_node()["MODE"][scan["mode"]->to_string()];
+  station_name = scan["station"][0]->to_string();
 
   Correlation_parameters corr_param;
   corr_param.start_time = vex.start_of_scan(scan_name).to_miliseconds();
@@ -676,20 +685,64 @@ get_correlation_parameters(const std::string &scan_name,
     vex.get_root_node()["FREQ"][mode["FREQ"][0]->to_string()];
   corr_param.sample_rate =
     (int)(1000000*freq["sample_rate"]->to_double_amount("Ms/sec"));
-  
+
   // assumes the same bits per sample for all stations
   corr_param.bits_per_sample = bits_per_sample();
 
   corr_param.sideband = ' ';
+  std::string freq_temp;
   for (Vex::Node::const_iterator ch_it = freq->begin("chan_def");
-       ch_it != freq->end("chan_def");
-       ++ch_it) {
+  ch_it != freq->end("chan_def");
+  ++ch_it) {
     if (ch_it[4]->to_string() == channel_name) {
       corr_param.channel_freq = (int64_t)(ch_it[1]->to_double_amount("MHz")*1000000);
       corr_param.bandwidth = (int)(ch_it[3]->to_double_amount("MHz")*1000000);
       corr_param.sideband = ch_it[2]->to_char();
+      freq_temp = ch_it[1]->to_string();
+      bbc_nr = ch_it[5]->to_string();
+    }
+    freq_set.insert(ch_it[1]->to_string());
+  }
+
+  int count = 0;
+  for (freq_set_it = freq_set.begin();
+  freq_set_it != freq_set.end(); ++freq_set_it){
+    if (*freq_set_it == freq_temp){
+      corr_param.channel_nr = count;
+    }
+    count++;
+  }
+
+  for (Vex::Node::const_iterator if_it = mode->begin("IF");
+  if_it != mode->end("IF"); ++if_it) {
+    for (Vex::Node::const_iterator elem_it = if_it->begin();
+    elem_it != if_it->end(); ++elem_it) {
+      if (elem_it->to_string() == station_name) {
+        if_mode = if_it[0]->to_string();
+      }
     }
   }
+  for (Vex::Node::const_iterator bbc_it = mode->begin("BBC");
+  bbc_it != mode->end("BBC"); ++bbc_it) {
+    for (int i=1; i<bbc_it->size(); i++){
+      if (bbc_it[i]->to_string() == station_name) {
+        bbc_mode = bbc_it[0]->to_string();
+      }
+    }
+  }
+
+  for (Vex::Node::const_iterator bbc_block = vex.get_root_node()["BBC"][bbc_mode]->begin();
+  bbc_block != vex.get_root_node()["BBC"][bbc_mode]->end(); ++bbc_block) {
+    for (Vex::Node::const_iterator bbcnr_it = bbc_block->begin();
+    bbcnr_it != bbc_block->end(); ++bbcnr_it) {
+      if (bbcnr_it->to_string() == bbc_nr) {
+        if_nr = bbc_block[2]->to_string();
+      }
+    }
+  }
+
+  corr_param.polarisation = vex.polarisation(if_mode, if_nr);
+
   assert(corr_param.sideband != ' ');
   assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');
 
@@ -708,10 +761,10 @@ get_correlation_parameters(const std::string &scan_name,
     }
     assert(corr_param.reference_station != -1);
   }
-  
+
   // now get the station streams
   for (Vex::Node::const_iterator station = scan->begin("station");
-       station != scan->end("station"); ++station) {
+  station != scan->end("station"); ++station) {
     std::map<std::string, int>::const_iterator station_nr_it =
       correlator_node_station_to_input.find(station[0]->to_string());
     if (station_nr_it != correlator_node_station_to_input.end()) {
