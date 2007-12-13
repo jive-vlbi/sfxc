@@ -68,7 +68,7 @@ def run_sfxc(vex_file, ctrl_file):
       sys.exit(1)
 
   html_directory = "."
-  if ctrl["html_output"]:
+  if ctrl.has_key("html_output"):
     html_directory = ctrl["html_output"]
     if html_directory[:7] != "file://":
       print "html_output should start with file://"

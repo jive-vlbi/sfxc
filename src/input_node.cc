@@ -89,6 +89,7 @@ int64_t Input_node::get_time_stamp() {
   return channel_extractor->get_current_time();
 }
 
+int mark4_time=0;
 void Input_node::start() {
   while (status != END_NODE) {
     switch (status) {
@@ -158,6 +159,13 @@ void Input_node::start() {
               time_slicers[i].produced(bytes);
             }
             read = true;
+          }
+          if (get_rank() == 3) {
+            int new_time = channel_extractor->get_current_time()/1000;
+            if (mark4_time != new_time) {
+              mark4_time = new_time;
+              channel_extractor->print_header(get_log_writer()(1));
+            }
           }
         }
         // Write the output
