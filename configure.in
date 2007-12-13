@@ -40,7 +40,7 @@ AC_ARG_ENABLE(optimization,
 
 if test $USE_OPTIMIZATION = "yes"; then 
   CFLAGS="$CFLAGS -O2"
-  CXXFLAGS="$CFLAGS -O2"
+  CXXFLAGS="$CXXFLAGS -O2"
 fi
 
 

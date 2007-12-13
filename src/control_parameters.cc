@@ -767,13 +767,17 @@ get_delay_table_name(const std::string &station_name) const {
 std::string 
 Control_parameters::create_path(const std::string &path) const {
   if (strncmp(path.c_str(), "file://", 7) == 0) {
-    std::string result = "file://";
-    char c_ctrl_filename[ctrl_filename.size()+1];
-    strcpy(c_ctrl_filename, ctrl_filename.c_str());
-    result += dirname(c_ctrl_filename);
-    result += "/";
-    result += path.c_str()+7;
-    return result;
+    if (path[8] != '/') {
+      std::string result = "file://";
+      char c_ctrl_filename[ctrl_filename.size()+1];
+      strcpy(c_ctrl_filename, ctrl_filename.c_str());
+      result += dirname(c_ctrl_filename);
+      result += "/";
+      result += path.c_str()+7;
+      return result;
+    } else {
+      return path;
+    }
   } else {
     return path;
   }
