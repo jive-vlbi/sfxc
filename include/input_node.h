@@ -32,9 +32,9 @@ class Input_node;
 class Input_node_controller : public Controller {
 public:
   Input_node_controller(Input_node &node);
-  
+
   Process_event_status process_event(MPI_Status &status);
-  
+
 private:
   Input_node &node;
 };
@@ -51,7 +51,7 @@ private:
  **/
 class Input_node : public Node {
   typedef Input_node                       Self;
-  
+
   typedef Single_data_reader_controller::value_type     value_type;
   typedef Semaphore_buffer<value_type>                  Buffer;
 
@@ -61,7 +61,7 @@ public:
   Input_node(int rank, int station_number, Log_writer *log_writer);
   Input_node(int rank, int station_number);
   ~Input_node();
-  
+
   /** Generic constructor function, that is called in the body of
       every constructor.
   **/
@@ -70,7 +70,7 @@ public:
   /** Sets the track parameters **/
   void set_track_parameters(const Track_parameters &track_param);
 
-  
+
   /// Start the state machine
   void start();
 
@@ -81,10 +81,10 @@ public:
     WRITING,      ///< Writing the output of the current channel
     END_NODE      ///< Terminate the node
   };
-  
-  /// Get the current time stamp  
+
+  /// Get the current time stamp
   int64_t get_time_stamp();
-  
+
   void set_stop_time(int64_t stop_time);
 
   void goto_time(int64_t new_time);
@@ -92,7 +92,7 @@ public:
   void add_time_slice(int channel, int stream, int starttime, int stoptime);
 
   int get_status();
-  
+
   // Callback functions:
   void hook_added_data_reader(size_t reader);
   void hook_added_data_writer(size_t writer);
@@ -110,11 +110,11 @@ private:
   boost::shared_ptr<Channel_extractor_mark4> channel_extractor;
   /// A list of time slicers, one per channel
   std::vector< Slicer >                      time_slicers;
-  
+
   Status status;
 
   int32_t start_time;
-  
+
   int64_t stop_time;
 };
 

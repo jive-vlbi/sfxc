@@ -5,10 +5,13 @@
 #include "mark4_reader.h"
 #include "utils.h"
 
+#include "memory_pool.h"
+
 template <class Type>
 class Input_node_tasklet_implementation : public Input_node_tasklet {
 public:
-
+  typedef Memory_pool<Type>                             Input_memory_pool;
+  
   Input_node_tasklet_implementation(Mark4_reader<Type> *mark4_reader);
   
   void do_task();
@@ -21,6 +24,8 @@ private:
   
   
   std::list<Time_slice> time_slices;
+  
+  Memory_pool<Type>      *memory_pool;
 };
 
 
@@ -38,18 +43,22 @@ template <class Type>
 void
 Input_node_tasklet_implementation<Type>::
 do_task() {
+  assert(mark4_reader != NULL);
   assert(false);
+  //mark4_reader->do_task();
 }
 
 template <class Type>
 int
 Input_node_tasklet_implementation<Type>::
 goto_time(int time) {
-  int new_time = mark4_reader->goto_time(time);
-  if (time != new_time) {
-    DEBUG_MSG("New time " << time << " not found. Current time is " << new_time);
-  }
-  return new_time;
+  assert(false);
+//  input_element->release();
+//  int new_time = mark4_reader->goto_time(time, input_element);
+//  if (time != new_time) {
+//    DEBUG_MSG("New time " << time << " not found. Current time is " << new_time);
+//  }
+//  return new_time;
 }
 
 template <class Type>

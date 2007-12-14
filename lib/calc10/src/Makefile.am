@@ -1,8 +1,3 @@
-# Don't link with the mpi/fftw3 library
-LIBS = 
-LDFLAGS = 
-
-
 bin_PROGRAMS = calc
 
 calc_SOURCES = calc.c

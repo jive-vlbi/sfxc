@@ -9,23 +9,21 @@
 /** Information about the mark4 tracks needed by the input node. **/
 class Track_parameters {
 public:
-  Track_parameters() : track_bit_rate(0) {
-  }
- 
+  Track_parameters() : track_bit_rate(0) {}
+
   class Channel_parameters {
   public:
-    Channel_parameters() : sign_headstack(-1), magn_headstack(-1) {
-    }
+    Channel_parameters() : sign_headstack(-1), magn_headstack(-1) {}
 
 
     bool operator==(const Channel_parameters &other) const;
 
     // Bits_per_sample is 1 if magn_tracks.size() == 0, otherwise 2
-    int bits_per_sample() const;      ///< Number of bits to encode one sample
-    int32_t         sign_headstack;   ///< The headstack for the sign bits
-    std::vector<int32_t> sign_tracks; ///< A list of the track numbers for sign
-    int32_t         magn_headstack;   ///< The headstack for the magn bits
-    std::vector<int32_t> magn_tracks; ///< A list of the track numbers for magn
+    int bits_per_sample() const;            ///< Number of bits to encode one sample
+    int32_t              sign_headstack;   ///< The headstack for the sign bits
+    std::vector<int32_t> sign_tracks;      ///< A list of the track numbers for sign
+    int32_t              magn_headstack;   ///< The headstack for the magn bits
+    std::vector<int32_t> magn_tracks;      ///< A list of the track numbers for magn
   };
 
   typedef std::map<std::string,Channel_parameters> Channel_map;
@@ -45,19 +43,18 @@ public:
 class Correlation_parameters {
 public:
   Correlation_parameters()
-    : start_time(0), stop_time(0), integration_time(0),
-      number_channels(0), slice_nr(-1), sample_rate(0), 
-      bits_per_sample(0), channel_freq(0), bandwidth(0), sideband('n') {
-  }     
+      : start_time(0), stop_time(0), integration_time(0),
+      number_channels(0), slice_nr(-1), sample_rate(0),
+  bits_per_sample(0), channel_freq(0), bandwidth(0), sideband('n') {}
 
-  
+
   bool operator==(const Correlation_parameters& other) const;
 
   class Station_parameters {
   public:
-    bool 
+    bool
     operator==(const Correlation_parameters::Station_parameters& other) const;
-    
+
     int32_t station_stream; // input stream
     int32_t start_time;      // Start and stop time for the station
     int32_t stop_time;
@@ -80,7 +77,7 @@ public:
   int32_t bandwidth;        // Bandwidth of the channel in Hz
   char    sideband;         // U or L
   std::vector<char> polarisations;
-  
+
   bool    cross_polarize;   // do the cross polarisations
   int32_t reference_station;// use a reference station
 
@@ -89,18 +86,17 @@ public:
 
 
 /** Class containing all control variables needed for the experiment **/
-class Control_parameters
-{
+class Control_parameters {
 public:
   typedef Vex::Date                Date;
 
 
   Control_parameters();
-  Control_parameters(const char *ctrl_file, const char *vex_file, 
+  Control_parameters(const char *ctrl_file, const char *vex_file,
                      std::ostream& log_writer);
-  
+
   bool initialise(const char *ctrl_filename,
-                  const char *vex_filename, 
+                  const char *vex_filename,
                   std::ostream& log_writer);
 
   bool check(std::ostream &log_writer) const;
@@ -118,7 +114,7 @@ public:
 
   int integration_time() const; // Integration time in miliseconds
   int number_channels() const;
-	
+
   std::string sideband(int i) const;
   std::string reference_station() const;
   int reference_station_number() const;
@@ -140,10 +136,10 @@ public:
   std::string scan(int i) const;
   size_t number_scans() const;
 
-	
+
   std::string station_in_scan(const std::string& scan, int i) const;
   size_t number_stations_in_scan(const std::string& scan) const;
-  int station_in_scan(const std::string& scan, 
+  int station_in_scan(const std::string& scan,
                       const std::string &station) const;
 
   // Return the Frequency channels from the VEX file, filtered by the ctrl file
@@ -154,29 +150,29 @@ public:
   int cross_polarisation(int channel_nr) const;
   int cross_polarisation(const std::string &channel_nr) const;
 
-  char polarisation(const std::string &if_node, 
+  char polarisation(const std::string &if_node,
                     const std::string &if_ref) const;
 
-  std::string frequency(const std::string &if_node, 
-                    const std::string &if_ref) const;
-  
-  char sideband(const std::string &if_node, 
-                    const std::string &if_ref) const;
-						 
+  std::string frequency(const std::string &if_node,
+                        const std::string &if_ref) const;
+
+  char sideband(const std::string &if_node,
+                const std::string &if_ref) const;
+
   /****************************************************/
   /* Extract structs for the correlation:             */
   /****************************************************/
-  
+
   // Return the track parameters needed by the input node
-  Track_parameters 
+  Track_parameters
   get_track_parameters(const std::string &mode_name,
                        const std::string &station_name) const;
-  
+
   // Return the correlation parameters needed by a correlator node
-  Correlation_parameters 
+  Correlation_parameters
   get_correlation_parameters(const std::string &scan_name,
                              const std::string &channel_name,
-                             const std::map<std::string, int> 
+                             const std::map<std::string, int>
                              &correlator_node_station_to_input) const;
 
   const Vex &get_vex() const;
