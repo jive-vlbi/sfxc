@@ -22,7 +22,9 @@ if (status != 0):
   sys.exit(1)
 
 for [ctrl_file,vex_file] in controlfiles:
-  status = os.system("./test_input_node_with_delay_correction " + ctrl_file+" "+vex_file)
+  cmd = "./test_input_node_with_delay_correction " + ctrl_file+" "+vex_file
+  print cmd
+  status = os.system(cmd)
   if (status != 0):
     print "test_input_node_with_delay_correction: returned error."
     sys.exit(1);

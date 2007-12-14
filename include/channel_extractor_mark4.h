@@ -21,7 +21,7 @@
 
 // Templated by the type of the element from which the samples are extracted
 // Either int32_t (n_head_stacks == 1) or int64_t (n_head_stacks == 2)
-template <class T>
+template <class Type>
 class Channel_extractor_mark4_implementation;
 
 class Channel_extractor_mark4 : public Channel_extractor

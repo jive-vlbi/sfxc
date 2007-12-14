@@ -18,7 +18,7 @@
 
 // Templated by the type of the element from which the samples are extracted
 // Either int32_t (n_head_stacks == 1) or int64_t (n_head_stacks == 2)
-template <class T>
+template <class Type>
 class Channel_extractor_mark4_implementation {
 public:
   typedef Channel_extractor_mark4::Debug_level  Debug_level;
@@ -43,7 +43,7 @@ public:
   
   void print_header(Log_writer &writer, int track);
 
-  Mark4_header<T> &header() {
+  Mark4_header<Type> &header() {
     return mark4_header;
   }
 
@@ -76,9 +76,9 @@ private:
   bool insert_random_headers; 
 
   /// The data
-  T block[SIZE_MK4_FRAME];
+  Type block[SIZE_MK4_FRAME];
   
-  Mark4_header<T> mark4_header;
+  Mark4_header<Type> mark4_header;
   
   int32_t start_day;
   int64_t start_microtime;
@@ -374,8 +374,8 @@ Channel_extractor_mark4::set_track_parameters(const Track_parameters &param) {
  * Implementation of the Channel_extractor for Mark 4 files (32 or 64 bit)
  *********************************************************************/
 
-template <class T>
-Channel_extractor_mark4_implementation<T>::
+template <class Type>
+Channel_extractor_mark4_implementation<Type>::
 Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader, 
                                        char *first_data_block,
                                        bool insert_random_headers_,
@@ -387,9 +387,9 @@ Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader,
 { 
   memcpy(block, first_data_block, SIZE_MK4_FRAME);
   // Make sure the header starts on the first byte:
-  size_t result = reader->get_bytes(SIZE_MK4_FRAME*(sizeof(T)-1), 
+  size_t result = reader->get_bytes(SIZE_MK4_FRAME*(sizeof(Type)-1), 
                                    ((char *)block)+SIZE_MK4_FRAME);
-  assert(result == SIZE_MK4_FRAME*(sizeof(T)-1));
+  assert(result == SIZE_MK4_FRAME*(sizeof(Type)-1));
   
   mark4_header.set_header(block);
   mark4_header.check_header();
@@ -400,9 +400,9 @@ Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader,
   reader->reset_data_counter();
 }
 
-template <class T>
+template <class Type>
 bool
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 set_track_parameters(const Track_parameters &parameters) {
   _track_bit_rate = parameters.track_bit_rate;
   tracks.resize(parameters.channels.size());
@@ -439,9 +439,9 @@ set_track_parameters(const Track_parameters &parameters) {
   return true;
 }
 
-template <class T>
+template <class Type>
 int 
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 goto_time(int64_t _time) {
   // convert time to microseconds:
   int64_t microtime = _time*1000 + mark4_header.microsecond(0, _time);
@@ -462,12 +462,12 @@ goto_time(int64_t _time) {
   }
 
   size_t read_n_bytes = 
-    (microtime-current_microtime)*track_bit_rate()*sizeof(T)/1000000 -
-    SIZE_MK4_FRAME*sizeof(T);
+    (microtime-current_microtime)*track_bit_rate()*sizeof(Type)/1000000 -
+    SIZE_MK4_FRAME*sizeof(Type);
   
   assert(read_n_bytes > 0);
   // Read an integer number of frames
-  assert(read_n_bytes %(SIZE_MK4_FRAME*sizeof(T))==0);
+  assert(read_n_bytes %(SIZE_MK4_FRAME*sizeof(Type))==0);
 
   size_t result = reader->get_bytes(read_n_bytes,NULL);
   if (result != read_n_bytes) {
@@ -487,18 +487,18 @@ goto_time(int64_t _time) {
   return 0;
 }
 
-template <class T>
+template <class Type>
 int64_t
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 get_current_time() {
   return
     (mark4_header.day(0)-start_day)*24*60*60*1000 + 
     mark4_header.get_time_in_ms(0);
 }
 
-template <class T>
+template <class Type>
 std::string 
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 time2string(int64_t time) {
   char time_str[80];
   time = time/1000;
@@ -514,9 +514,9 @@ time2string(int64_t time) {
 }
 
 
-template <class T>
+template <class Type>
 size_t
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 get_bytes(std::vector< char* > &output_buffer) {
   assert(output_buffer.size() == tracks.size());
 
@@ -571,11 +571,11 @@ get_bytes(std::vector< char* > &output_buffer) {
 }
 
   
-template <class T>
+template <class Type>
 int
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 read_new_block() {
-  int result = reader->get_bytes(SIZE_MK4_FRAME*sizeof(T),(char *)block)/sizeof(T);
+  int result = reader->get_bytes(SIZE_MK4_FRAME*sizeof(Type),(char *)block)/sizeof(Type);
   if (result != SIZE_MK4_FRAME) {
     return result;
   }
@@ -596,9 +596,9 @@ read_new_block() {
   return result;
 }
 
-template <class T>
+template <class Type>
 bool
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 check_time_stamp() {
   int64_t militime = mark4_header.get_time_in_ms(0);
   int64_t delta_time = 
@@ -611,7 +611,7 @@ check_time_stamp() {
     assert(delta_time > 0);
   }
   int64_t computed_TBR =
-    (reader->data_counter()*1000000/(sizeof(T)*delta_time));
+    (reader->data_counter()*1000000/(sizeof(Type)*delta_time));
   
   if (computed_TBR != track_bit_rate()) {
     return false;
@@ -619,36 +619,36 @@ check_time_stamp() {
   return true;
 }
 
-template <class T>
+template <class Type>
 bool
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 eof() {
   return reader->eof();
 }
 
-template <class T>
+template <class Type>
 int
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 n_channels() {
   return tracks.size();
 }
 
-template <class T>
+template <class Type>
 bool
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 check_track_bit_statistics() {
-  double track_bit_statistics[sizeof(T)*8];
-  for (size_t track=0; track<sizeof(T)*8; track++) {
+  double track_bit_statistics[sizeof(Type)*8];
+  for (size_t track=0; track<sizeof(Type)*8; track++) {
     track_bit_statistics[track]=0;
   }
   
   for (int i=160; i<SIZE_MK4_FRAME; i++) {
-    for (size_t track=0; track<sizeof(T)*8; track++) {
+    for (size_t track=0; track<sizeof(Type)*8; track++) {
       track_bit_statistics[track] += (block[i] >> track) &1;
     }
   }
   
-  for (size_t track=0; track<sizeof(T)*8; track++) {
+  for (size_t track=0; track<sizeof(Type)*8; track++) {
     track_bit_statistics[track] /= SIZE_MK4_FRAME;
     if ((track_bit_statistics[track] < .45) ||
         (track_bit_statistics[track] > .55)) {
@@ -659,31 +659,31 @@ check_track_bit_statistics() {
   return true;
 }
 
-template <class T>
+template <class Type>
 void 
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 print_header(Log_writer &writer, int track) {
 //   mark4_header.print_binary_header(writer);
   writer << "time: " << mark4_header.get_time_str(track) << std::endl;
 }
 
-template <class T>
+template <class Type>
 int
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 track_bit_rate() const {
   return _track_bit_rate;
 }
 
-template <class T>
+template <class Type>
 int
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 bit_rate(int channel) const {
   return track_bit_rate()*tracks[channel].size();
 }
 
-template <class T>
+template <class Type>
 int
-Channel_extractor_mark4_implementation<T>::
+Channel_extractor_mark4_implementation<Type>::
 number_of_bytes_per_block() {
   assert(!tracks.empty());
   return SIZE_MK4_FRAME*tracks[0].size()/8;

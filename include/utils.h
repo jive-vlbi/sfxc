@@ -22,7 +22,7 @@
 /// Constants
 #define SIZE_MK4_FRAME           20000
 // Track bit rate
-#define MARK4_TRACK_BIT_RATE 16
+#define MARK4_TRACK_BIT_RATE     8000000
 // Maximal delay in milliseconds, should be an integer number of Mark4 blocks
 // 5 should be enough
 #define MAX_DELAY                5
@@ -123,6 +123,10 @@ int64_t get_us_time(int time[]);
 //*****************************************************************************
 void set_seed(unsigned long seed_);
 int irbit2();
+
+// Park-Miller random number generator for 31-bit random numbers
+void park_miller_set_seed(unsigned long seed_);
+long unsigned int park_miller_random();
 
                     
 #endif // UTILS_H

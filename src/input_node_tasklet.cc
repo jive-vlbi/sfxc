@@ -1,13 +1,20 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ * 
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * 
+ * $Id: channel_extractor.h 412 2007-12-05 12:13:20Z kruithof $
+ *
+ */
+
 #include "input_node_tasklet.h"
 #include "input_node_tasklet_impl.h"
 #include "utils.h"
 #include "mark4_reader.h"
 
-Input_node_tasklet::Input_node_tasklet() {
-}
+Input_node_tasklet::Input_node_tasklet() {}
 
-Input_node_tasklet::~Input_node_tasklet() {
-}
+Input_node_tasklet::~Input_node_tasklet() {}
 
 Input_node_tasklet *
 get_input_node_tasklet(Data_reader *reader) {
@@ -47,52 +54,39 @@ get_input_node_tasklet(Data_reader *reader) {
             reader->get_bytes(header_start, buffer+SIZE_MK4_FRAME-header_start);
 
             switch (nTracks8) {
-            case 1:
-              {
+              case 1: {
                 Mark4_header<uint8_t> header;
                 header.set_header((uint8_t*)(buffer));
                 if (!header.checkCRC()) {
                   header_start = -1;
                 }
-                Mark4_reader<int8_t> *mark4_reader = 
-                  new Mark4_reader<int8_t>(reader, buffer);
-                return new Input_node_tasklet_implementation<int8_t>(mark4_reader);
+                return new Input_node_tasklet_implementation<int8_t>(reader, buffer);
               }
-            case 2:
-              {
+              case 2: {
                 Mark4_header<uint16_t> header;
                 header.set_header((uint16_t*)(buffer));
                 if (!header.checkCRC()) {
                   header_start = -1;
                 }
-                Mark4_reader<int16_t> *mark4_reader = 
-                  new Mark4_reader<int16_t>(reader, buffer);
-                return new Input_node_tasklet_implementation<int16_t>(mark4_reader);
+                return new Input_node_tasklet_implementation<int16_t>(reader, buffer);
               }
-            case 4:
-              {
+              case 4: {
                 Mark4_header<uint32_t> header;
                 header.set_header((uint32_t*)(buffer));
                 if (!header.checkCRC()) {
                   header_start = -1;
                 }
-                Mark4_reader<int32_t> *mark4_reader = 
-                  new Mark4_reader<int32_t>(reader, buffer);
-                return new Input_node_tasklet_implementation<int32_t>(mark4_reader);
+                return new Input_node_tasklet_implementation<int32_t>(reader, buffer);
               }
-            case 8:
-              {
+              case 8: {
                 Mark4_header<uint64_t> header;
                 header.set_header((uint64_t*)(buffer));
                 if (!header.checkCRC()) {
                   header_start = -1;
                 }
-                Mark4_reader<int64_t> *mark4_reader = 
-                  new Mark4_reader<int64_t>(reader, buffer);
-                return new Input_node_tasklet_implementation<int64_t>(mark4_reader);
+                return new Input_node_tasklet_implementation<int64_t>(reader, buffer);
               }
-            default:
-              {
+              default: {
                 assert(false);
               }
             }
@@ -106,18 +100,16 @@ get_input_node_tasklet(Data_reader *reader) {
   return NULL;
 }
 
-bool 
+bool
 Input_node_tasklet::append_time_slice(int start_time,
                                       int stop_time,
                                       Data_writer *writer) {
   return append_time_slice(Time_slice(start_time, stop_time, writer));
 }
-  
+
 Input_node_tasklet::Time_slice::Time_slice() {
-  
 }
 Input_node_tasklet::Time_slice::
-Time_slice(int start_time, int stop_time, Data_writer *writer) 
-: start_time(start_time), stop_time(stop_time), writer(writer) {
-  
+Time_slice(int start_time, int stop_time, Data_writer *writer)
+    : start_time(start_time), stop_time(stop_time), writer(writer) {
 }

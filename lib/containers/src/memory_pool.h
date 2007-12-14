@@ -52,17 +52,16 @@
  *      in case of overflow.
  *************************************/
 template<class T>
-class Memory_pool
-{
+class Memory_pool {
 public:
   /************************************
    * @class Buffer_element
    * @desc This is the object return by
    * the buffer.
    *************************************/
-  class Buffer_element
-  {
+  class Buffer_element {
   public:
+    Buffer_element();
     Buffer_element(const Buffer_element& src);
 
     /***************************************
@@ -99,7 +98,6 @@ public:
     }
   private:
     friend class Memory_pool<T>;
-    Buffer_element();
     Buffer_element(Type* data, Memory_pool<T>* owner);
 
     // Pointer to the data
@@ -147,8 +145,8 @@ public:
   bool empty();
 
 #ifdef ENABLE_TEST_UNIT
-  class Test : public Test_aclass< Memory_pool<T> >
-  {
+
+class Test : public Test_aclass< Memory_pool<T> > {
   public:
     void tests();
   };
@@ -179,69 +177,65 @@ private:
 };
 
 ////////////////// IMPLEMENTATION (I Hate c++ template) ///////////////
-template<class T> int Memory_pool<T>::sid = 0;
-template<class T> typename Memory_pool<T>::Element Memory_pool<T>::Element::None;
+template<class T>
+int Memory_pool<T>::sid = 0;
+template<class T>
+typename Memory_pool<T>::Element Memory_pool<T>::Element::None;
 
-template<class T> Memory_pool<T>::Memory_pool(const Memory_pool<T>&)
-{
+template<class T>
+Memory_pool<T>::Memory_pool(const Memory_pool<T>&) {
   MASSERT(false && "Not implemented");
 }
 
-template<class T> Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>* allocator )
-{
+template<class T>
+Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>* allocator ) {
   mid = sid++;
-  for (unsigned int i=0;i<numelements;i++)
-    {
-      T* element = allocator->allocate();
-      //pType element = new Type(tmp, *this);
-      m_freequeue.push( element );
-      m_vectorelements.push_back( element );
-    }
-}
-
-template<class T> Memory_pool<T>::Memory_pool(unsigned int numelements )
-{
-  Default_allocator<T> allocator;
-  mid = sid++;
-  for (unsigned int i=0;i<numelements;i++)
-    {
-      T* tmp = allocator.allocate();
-      //pType element = new Type(tmp, *this);
-      m_freequeue.push( tmp );
-      m_vectorelements.push_back( tmp );
-    }
-}
-
-template<class T> Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>& allocator )
-{
-  mid = sid++;
-  for (unsigned int i=0;i<numelements;i++)
-    {
-      T* tmp = allocator.allocate();
-      //pType element = new Type(tmp, *this);
-      m_freequeue.push( tmp );
-      m_vectorelements.push_back( tmp );
-    }
+  for (unsigned int i=0;i<numelements;i++) {
+    T* element = allocator->allocate();
+    //pType element = new Type(tmp, *this);
+    m_freequeue.push( element );
+    m_vectorelements.push_back( element );
+  }
 }
 
 template<class T>
-size_t Memory_pool<T>::number_free_element()
-{
+Memory_pool<T>::Memory_pool(unsigned int numelements ) {
+  Default_allocator<T> allocator;
+  mid = sid++;
+  for (unsigned int i=0;i<numelements;i++) {
+    T* tmp = allocator.allocate();
+    //pType element = new Type(tmp, *this);
+    m_freequeue.push( tmp );
+    m_vectorelements.push_back( tmp );
+  }
+}
+
+template<class T>
+Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>& allocator ) {
+  mid = sid++;
+  for (unsigned int i=0;i<numelements;i++) {
+    T* tmp = allocator.allocate();
+    //pType element = new Type(tmp, *this);
+    m_freequeue.push( tmp );
+    m_vectorelements.push_back( tmp );
+  }
+}
+
+template<class T>
+size_t Memory_pool<T>::number_free_element() {
   RAIIMutex rc(m_freequeuecond);
   return m_freequeue.size();
 }
 
 // Blocking allocation of an element
 template<class T>
-typename Memory_pool<T>::Element Memory_pool<T>::allocate()
-{
+typename Memory_pool<T>::Element Memory_pool<T>::allocate() {
   RAIIMutex rc(m_freequeuecond);
   // use a while loop instead of an if to avoid
   // the spurious signal waking up.
-  while ( m_freequeue.size() == 0 )
-    {
-      m_freequeuecond.wait();
-    }
+  while ( m_freequeue.size() == 0 ) {
+    m_freequeuecond.wait();
+  }
 
   T* element = m_freequeue.front();
   m_freequeue.pop();
@@ -251,71 +245,63 @@ typename Memory_pool<T>::Element Memory_pool<T>::allocate()
 }
 
 template<class T>
-void Memory_pool<T>::release(Element& element)
-{
+void Memory_pool<T>::release(Element& element) {
   RAIIMutex rc(m_freequeuecond);
   m_freequeue.push(element.m_data);
 
   MASSERT( m_freequeue.size() <= m_vectorelements.size() );
-  if ( m_freequeue.size() == 1  )
-    {
-      m_freequeuecond.signal();
-    }
+  if ( m_freequeue.size() == 1  ) {
+    m_freequeuecond.signal();
+  }
 }
 
 template<class T>
-bool Memory_pool<T>::empty()
-{
+bool Memory_pool<T>::empty() {
   RAIIMutex rc(m_freequeuecond);
   return m_freequeue.size() == 0;
 }
 
 
 template<class T>
-Memory_pool<T>::Buffer_element::Buffer_element()
-{
+Memory_pool<T>::Buffer_element::Buffer_element() {
   m_data = NULL;
   m_owner = NULL;
 }
 
 template<class T>
-Memory_pool<T>::Buffer_element::Buffer_element(const Buffer_element& src){
+Memory_pool<T>::Buffer_element::Buffer_element(const Buffer_element& src) {
   m_owner = src.m_owner;
   m_data = src.m_data;
 }
 
 template<class T>
 Memory_pool<T>::Buffer_element::Buffer_element(Type* data, Memory_pool<T>* owner) :
-  m_owner(owner)
-{
+m_owner(owner) {
   MASSERT( data  != NULL );
   m_data = data;
 }
 
 template<class T>
-typename Memory_pool<T>::Element::Type& Memory_pool<T>::Buffer_element::data() const
-{
+typename Memory_pool<T>::Element::Type& Memory_pool<T>::Buffer_element::data() const {
   return *m_data;
 }
 
 template<class T>
-typename Memory_pool<T>::Element::Type& Memory_pool<T>::Buffer_element::operator*() const
-{
+typename Memory_pool<T>::Element::Type& Memory_pool<T>::Buffer_element::operator*() const {
   return *m_data;
 }
 
 template<class T>
-void Memory_pool<T>::Buffer_element::release()
-{
-  if( m_owner == NULL ) MTHROW("double release is forbidden");
+void Memory_pool<T>::Buffer_element::release() {
+  if( m_owner == NULL )
+    MTHROW("double release is forbidden");
   m_owner->release( *this );
   m_owner = NULL;
 }
 
 #ifdef ENABLE_TEST_UNIT
 template<class T>
-void Memory_pool<T>::Test::tests()
-{
+void Memory_pool<T>::Test::tests() {
   Memory_pool<T> t(1);
   Element elem = Element::None;
 
