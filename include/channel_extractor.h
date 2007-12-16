@@ -13,23 +13,21 @@
 #include <vector>
 
 #include "utils.h"
+#include "tasklet/Tasklet.h"
 
 // Not a data reader since it outputs multiple streams
-class Channel_extractor
+template <class Type>
+class Channel_extractor : public Tasklet
 {
 public:
   Channel_extractor() {
   }
-
   virtual ~Channel_extractor() {
   }
-
-  virtual int goto_time(int64_t time) = 0;
-  virtual int64_t get_current_time() = 0;
-
-  /** Returns a number of samples, one sample per character. **/
-  virtual size_t get_bytes(std::vector< char * > &buff)=0;
-
+  
+  void do_task();
+  
+private:
 };
 
 #endif /*CHANNEL_EXTRACTOR_H_*/

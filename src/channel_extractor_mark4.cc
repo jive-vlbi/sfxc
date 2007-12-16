@@ -94,8 +94,7 @@ Channel_extractor_mark4::
 Channel_extractor_mark4(boost::shared_ptr<Data_reader> reader, 
                         bool insert_random_headers_,
                         Debug_level debug_level)
- : Channel_extractor(),
-   ch_extractor_8_tracks(NULL),
+ : ch_extractor_8_tracks(NULL),
    ch_extractor_16_tracks(NULL),
    ch_extractor_32_tracks(NULL),
    ch_extractor_64_tracks(NULL)

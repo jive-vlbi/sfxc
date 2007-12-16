@@ -13,7 +13,6 @@
 #include <boost/shared_ptr.hpp>
 #include <vector>
 
-#include "channel_extractor.h"
 #include "data_reader.h"
 #include "data_writer.h"
 #include "log_writer.h"
@@ -24,7 +23,7 @@
 template <class Type>
 class Channel_extractor_mark4_implementation;
 
-class Channel_extractor_mark4 : public Channel_extractor
+class Channel_extractor_mark4
 {
 public:
   enum Debug_level {
