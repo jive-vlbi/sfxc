@@ -78,6 +78,7 @@ int64_t Input_node::get_time_stamp() {
 int mark4_time=0;
 void Input_node::start() {
   while (status != END_NODE) {
+    if (status != 2) { DEBUG_MSG("status: " << status); }
     switch (status) {
       case WAITING: { // Wait until we can start sending new data
         if (channel_extractor != boost::shared_ptr<Channel_extractor_mark4>()) {

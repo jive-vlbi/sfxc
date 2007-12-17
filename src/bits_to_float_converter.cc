@@ -93,7 +93,7 @@ void Bits_to_float_converter::do_task() {
         sample++; 
       }
 
-#if 1
+#if 0
       if (verbose) {
         if (!samples_out.is_open()) {
           samples_out.open("before_integer_bit_shift.txt");
