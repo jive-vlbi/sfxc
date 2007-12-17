@@ -25,7 +25,6 @@
 
 #include "generate_delay_model.h"
 #include "vex/Vex++.h"
-#include "utils.h"
 
 #define PI (3.14159265358979323846) //copied from prep_job/calc_model.h
 #define SPEED_OF_LIGHT (299792458.0)

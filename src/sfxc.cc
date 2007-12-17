@@ -71,6 +71,8 @@ int main(int argc, char *argv[]) {
       Log_writer_mpi log_writer(rank, control_parameters.message_level());
 
       DEBUG_MSG("Manager node, pid = " << getpid());
+      char hostname[255]; gethostname(hostname, 255);
+      DEBUG_MSG("Manager node, hostname = " << hostname);
       Manager_node node(rank, numtasks, &log_writer, control_parameters);
       node.start();
     }

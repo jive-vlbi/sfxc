@@ -32,16 +32,15 @@ dnl ---------------------------------------------------------------------------
 LIBS_IN=$LIBS
 
 dnl MPI and the math library
-AC_CHECK_LIB(mpich, MPI_Init, [], [
-        echo "Couldn't find mpich library."
-        exit -1
-        ])
-MPICH_CXXFLAGS=
-MPICH_LDADD=" -lmpich"
-AC_SUBST(MPICH_CXXFLAGS)
-AC_SUBST(MPICH_LDADD)
-SFXC_CXXFLAGS="$SFXC_CXXFLAGS $MPICH_CXXFLAGS"
-SFXC_LDADD="$SFXC_LDADD $MPICH_LDADD"
+dnl AC_CHECK_LIB(mpich, MPI_Init, [], [
+dnl         echo "Couldn't find mpi library."
+dnl         ])
+dnl MPICH_CXXFLAGS=
+dnl MPICH_LDADD=" -lmpich"
+dnl AC_SUBST(MPICH_CXXFLAGS)
+dnl AC_SUBST(MPICH_LDADD)
+dnl SFXC_CXXFLAGS="$SFXC_CXXFLAGS $MPICH_CXXFLAGS"
+dnl SFXC_LDADD="$SFXC_LDADD $MPICH_LDADD"
 
 dnl resetting generic flags
 CXXFLAGS=$CXXFLAGS_IN
@@ -147,7 +146,7 @@ AC_ARG_ENABLE(optimization,
 
 if test $USE_OPTIMIZATION = "yes"; then 
   CFLAGS="$CFLAGS -O2"
-  CXXFLAGS="$CFLAGS -O2"
+  CXXFLAGS="$CXXFLAGS -O2"
 fi
 
 

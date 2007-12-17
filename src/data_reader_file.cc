@@ -38,6 +38,7 @@ Data_reader_file::Data_reader_file(const std::string &filename) :
   file.open(filename.c_str()+7, std::ios::in | std::ios::binary);
   if (!file.is_open()) {
     DEBUG_MSG("Filename '" << filename << "' doesn't exist");
+    sleep(1);
     assert(file.is_open());
   }
 }

@@ -760,14 +760,14 @@ get_delay_table_name(const std::string &station_name) const {
   if (access(delay_table_name.c_str(), R_OK) == 0) {
     return delay_table_name;
   }
-    assert(false);
+  assert(false);
   return std::string("");
 }
 
 std::string 
 Control_parameters::create_path(const std::string &path) const {
   if (strncmp(path.c_str(), "file://", 7) == 0) {
-    if (path[8] != '/') {
+    if (path[7] != '/') {
       std::string result = "file://";
       char c_ctrl_filename[ctrl_filename.size()+1];
       strcpy(c_ctrl_filename, ctrl_filename.c_str());
