@@ -18,7 +18,7 @@
 // This is GCC_SPECIFIC
 #include<cxxabi.h>
 #include "demangler.h"
-#include "exception.h"
+#include "exception_common.h"
 
 Demangler::Demangler(const char* name)
 {

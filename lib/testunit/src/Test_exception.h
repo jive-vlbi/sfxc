@@ -2,7 +2,7 @@
 #define TESTEXCEPTION_H
 
 #include<stdexcept>
-#include "exception.h"
+#include "exception_common.h"
 #include "common.h"
 
 class Test_exception : public std::exception

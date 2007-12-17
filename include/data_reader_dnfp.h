@@ -3,7 +3,7 @@
 
 #include "connexion.h"
 
-#include "exception.h"
+#include "exception_common.h"
 #include "data_reader_socket.h"
 #include "data_writer_socket.h"
 #include "data_reader_blocking.h"

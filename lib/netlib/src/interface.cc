@@ -6,7 +6,7 @@
 #include <ifaddrs.h>
 
 #include "common.h"
-#include "exception.h"
+#include "exception_common.h"
 #include "interface.h"
 #include "connexion.h"
 #include "connexion_listener.h"

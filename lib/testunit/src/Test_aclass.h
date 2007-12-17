@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <iostream>
 
-#include "exception.h"
+#include "exception_common.h"
 #include "Testable.h"
 #include "Test_exception.h"
 #include "demangler.h"

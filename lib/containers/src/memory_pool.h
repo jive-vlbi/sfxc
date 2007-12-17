@@ -16,7 +16,7 @@
 
 #include <queue>
 #include <vector>
-#include "exception.h"
+#include "exception_common.h"
 
 #include "raiimutex.h"
 #include "condition.h"

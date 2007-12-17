@@ -3,7 +3,7 @@
 #include <cassert>
 
 #include "demangler.h"
-#include "exception.h"
+#include "exception_common.h"
 #include "singleton.h"
 #include "thread.h"
 #include "signal_handler.h"

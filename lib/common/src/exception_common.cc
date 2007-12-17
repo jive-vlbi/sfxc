@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include "exception.h"
+#include "exception_common.h"
 #include "demangler.h"
 
 Exception::Exception(const std::string& message, Backtrace& bt) :

@@ -11,8 +11,8 @@
  * This file contains:
  *   - The basic definition for exception object
  */
-#ifndef EXCEPTION_HH_INCLUDED
-#define EXCEPTION_HH_INCLUDED
+#ifndef EXCEPTION_COMMON_HH_INCLUDED
+#define EXCEPTION_COMMON_HH_INCLUDED
 
 #include <string.h>
 #include <stdexcept>

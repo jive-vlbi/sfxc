@@ -21,7 +21,7 @@
 #include "mutex.h"
 #include "raiimutex.h"
 #include "condition.h"
-#include "exception.h"
+#include "exception_common.h"
 #include "allocator.h"
 
 #ifdef ENABLE_TEST_UNIT

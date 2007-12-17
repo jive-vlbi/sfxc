@@ -15,7 +15,7 @@
 #ifndef EXCEPTION_INDEXOUTOFBOUND_H
 #define EXCEPTION_INDEXOUTOFBOUND_H
 
-#include "exception.h"
+#include "exception_common.h"
 
 /************************************************
 *
