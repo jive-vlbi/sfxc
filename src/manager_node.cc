@@ -131,30 +131,24 @@ void Manager_node::start() {
     process_all_waiting_messages();
     switch (status) {
     case START_NEW_SCAN: {
-      get_log_writer()(1) << "START_NEW_SCAN" << std::endl;
-
       // set track information
       initialise_scan(scans.front());
 
       // Set the input nodes to the proper start time
-      get_log_writer() << __LINE__ << " START_TIME:" << start_time << std::endl;
       assert(duration_time_slice >= 1000);
       for (size_t station=0; station < control_parameters.number_stations();
            station++) {
         int station_time =
           input_node_get_current_time(control_parameters.station(station));
         if (station_time > start_time) {
-          get_log_writer() << "START_TIME: " << start_time << std::endl;
-          get_log_writer() << "STATION_TIME: (" << control_parameters.station(station)
-                           << "): " << station_time << std::endl;
           start_time =
             (station_time/duration_time_slice) * duration_time_slice;
           if (station_time%1000 != 0) {
             start_time += duration_time_slice;
           }
-          get_log_writer() << "new START_TIME: " << start_time << std::endl;
         }
       }
+      get_log_writer() << "START_TIME: " << start_time << std::endl;
 
       for (size_t station=0; station < control_parameters.number_stations();
            station++) {
@@ -390,10 +384,6 @@ Manager_node::initialise() {
   stop_time  =
     control_parameters.get_stop_time().to_miliseconds(start_day);
 
-  get_log_writer()(2) << "start_day  : " << start_day << std::endl;
-  get_log_writer()(2) << "start_time : " << start_time << std::endl;
-  get_log_writer()(2) << "stop_time  : " << stop_time << std::endl;
-
   // Get a list of all scan names
   control_parameters.get_vex().get_scans(std::back_inserter(scans));
   {  // Iterate over all the scans to find the first scan to correlate
@@ -435,7 +425,6 @@ void Manager_node::initialise_scan(const std::string &scan) {
 
 
   // Send the track parameters to the input nodes
-  get_log_writer() << "Set Track_parameters" << std::endl;
   const std::string &mode_name =
     control_parameters.get_vex().get_mode(scan);
   for (size_t station=0;

@@ -19,7 +19,7 @@
 
 Output_node::Output_node(int rank, int size)
   : Node(rank),
-    output_buffer(new Semaphore_buffer<value_type>(1000)),
+    output_buffer(new Semaphore_buffer<output_value_type>(1)),
     output_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
@@ -31,7 +31,7 @@ Output_node::Output_node(int rank, int size)
 
 Output_node::Output_node(int rank, Log_writer *writer, int size) 
   : Node(rank, writer),
-    output_buffer(new Semaphore_buffer<value_type>(1000)),
+    output_buffer(new Semaphore_buffer<output_value_type>(1000)),
     output_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
@@ -153,6 +153,10 @@ set_weight_of_input_stream(int stream, int64_t weight, size_t size) {
   assert(stream < (int)input_streams.size());
   // Check that the weight does not exist yet:
   assert(input_streams_order.find(weight) == input_streams_order.end());
+  // Check that the ordering is right (not before the current element):
+  if (!input_streams_order.empty()) {
+    assert(weight > input_streams_order.begin()->first);
+  }
 
   // Add the weight to the priority queue:
   input_streams_order.insert(Input_stream_priority_map_value(weight,stream));
@@ -173,14 +177,14 @@ void Output_node::write_output() {
   assert(curr_stream >= 0);
   assert(input_streams[curr_stream] != NULL);
   // Write data ...
-  value_type &out_elem = data_writer_ctrl.buffer()->produce();
+  output_value_type &out_elem = data_writer_ctrl.buffer()->produce();
   int nBytes = input_streams[curr_stream]->write_bytes(out_elem);
   data_writer_ctrl.buffer()->produced(nBytes);
 }
 
 void Output_node::hook_added_data_reader(size_t reader) {
   // Create an output buffer:
-  boost::shared_ptr<Buffer> new_buffer(new Semaphore_buffer<value_type>(10));
+  boost::shared_ptr<Input_buffer> new_buffer(new Semaphore_buffer<input_value_type>(1500));
   data_readers_ctrl.set_buffer(reader, new_buffer);
   
   // Create the data_stream:
@@ -212,7 +216,7 @@ Output_node::Input_stream::Input_stream(boost::shared_ptr<Data_reader> reader)
 }
 
 int 
-Output_node::Input_stream::write_bytes(value_type &elem) {
+Output_node::Input_stream::write_bytes(output_value_type &elem) {
   assert(reader != boost::shared_ptr<Data_reader>());
   size_t nBytes = std::min(elem.size(), reader->get_size_dataslice());
   return reader->get_bytes(nBytes, elem.buffer());

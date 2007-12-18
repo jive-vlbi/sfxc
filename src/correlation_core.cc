@@ -25,8 +25,10 @@ void Correlation_core::do_task() {
     }
 
 #if 0
-    if (current_fft % 1000 == 0) {
-      DEBUG_MSG(current_fft << " of " << number_ffts_in_integration);
+    if (current_fft % 900 == 0) {
+      if (RANK_OF_NODE == 7) {
+        DEBUG_MSG(current_fft << " of " << number_ffts_in_integration);
+      }
     }
 #endif
     

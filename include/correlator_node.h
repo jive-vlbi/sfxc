@@ -57,7 +57,7 @@ class Correlator_node : public Node
 {
 public:
   typedef Correlator_node                        Self;
-  typedef Buffer_element<char, 131072>           Input_buffer_element;
+  typedef Multiple_data_readers_controller::value_type Input_buffer_element;
   typedef Semaphore_buffer<Input_buffer_element> Input_buffer;
   typedef Buffer_element_vector<char>            output_value_type;
   

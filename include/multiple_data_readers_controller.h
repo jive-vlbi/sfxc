@@ -22,7 +22,7 @@
 class Multiple_data_readers_controller : public Controller {
   typedef Multiple_data_readers_controller  Self;
 public:
-  typedef Buffer_element<char,131072>      value_type;
+  typedef Buffer_element<char,1000>      value_type;
   typedef Data_reader2buffer<value_type>   Reader2buffer;
   typedef Buffer<value_type>               Buffer;
   typedef Data_reader_buffer<value_type>   Reader_buffer;
@@ -36,6 +36,8 @@ public:
    * for it. **/    
   void set_buffer(unsigned int i, 
                   boost::shared_ptr<Buffer> buffer);
+
+  boost::shared_ptr<Buffer> get_buffer(unsigned int i);
 
   /** Returns the data reader, which is either the real reader or the
    *  buffered reader if a buffer is set. **/

@@ -178,11 +178,14 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
 
 boost::shared_ptr<Single_data_writer_controller::Buffer>
 Single_data_writer_controller::buffer() {
+  assert(buffer2writer.get_buffer() != 
+         boost::shared_ptr<Buffer>());
   return buffer2writer.get_buffer();
 }
 
-void Single_data_writer_controller::set_buffer
-  (boost::shared_ptr<Single_data_writer_controller::Buffer> buffer) {
+void 
+Single_data_writer_controller::
+set_buffer(boost::shared_ptr<Single_data_writer_controller::Buffer> buffer) {
   buffer2writer.set_buffer(buffer);
   buffer2writer.try_start();
 }
@@ -193,8 +196,9 @@ Single_data_writer_controller::get_data_writer(int i) {
 }
 
 
-void Single_data_writer_controller::set_data_writer
-  (int streamnr, boost::shared_ptr<Data_writer> writer) 
+void 
+Single_data_writer_controller::
+set_data_writer(int streamnr, boost::shared_ptr<Data_writer> writer) 
 {
   assert(streamnr == 0);
   assert(buffer2writer.get_data_writer() == NULL);

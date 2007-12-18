@@ -49,7 +49,6 @@ int main(int argc, char *argv[]) {
   const std::string & station = control_parameters.station(0);
   
   //use first station, first track
-  const Vex & root = control_parameters.get_vex();
   const std::string &mode = 
     control_parameters.get_vex().get_mode(scans[0]);
 

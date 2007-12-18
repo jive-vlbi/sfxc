@@ -80,7 +80,10 @@ extern int RANK_OF_NODE; // Rank of the current node
 #define DEBUG_MSG(msg) \
     { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
       std::cout << FORMAT_MSG(msg) << std::endl << std::flush; }
-#define MPI_DEBUG_MSG(msg) \
+#define DEBUG_MSG_RANK(rank, msg) \
+    { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
+      if (RANK_OF_NODE == rank) { std::cout << FORMAT_MSG(msg) << std::endl << std::flush; } }
+#define DEBUG_MSG_MPI(msg) \
     { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
       get_log_writer()(0) << FORMAT_MSG(msg) << std::endl << std::flush; }
 #else

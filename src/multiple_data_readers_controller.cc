@@ -109,6 +109,12 @@ set_buffer(unsigned int i,
     boost::shared_ptr<Reader_buffer>(new Reader_buffer(buffer));
 }
 
+boost::shared_ptr<Multiple_data_readers_controller::Buffer> 
+Multiple_data_readers_controller::get_buffer(unsigned int i) {
+  if (i < buffer_readers.size()) return buffer_readers[i]->get_buffer();
+  return boost::shared_ptr<Buffer>();
+}
+
 boost::shared_ptr<Data_reader>
 Multiple_data_readers_controller::get_data_reader(int i) {
   assert((size_t)i < data_readers.size());

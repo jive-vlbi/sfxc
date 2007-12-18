@@ -174,7 +174,7 @@ Data_reader2buffer<T>::read() {
       usleep(100000); // .1 second:
     } else {
       if (buffer->full()) {
-        usleep(100000); // .01 second:
+        usleep(1000000); // .1 second:
       } else if (data_reader->eof()) {
         DEBUG_MSG("data_reader->eof()");
         state = STOPPED;

@@ -25,7 +25,7 @@ class Buffer2data_writer
   
 public:
   enum State {
-    STOPPED, ///< Not running, the additional thread is not active
+    STOPPED=0, ///< Not running, the additional thread is not active
     SUSPENDED, /**< Not running, the additional thread is waiting 
                     (e.g. for a change of buffers) **/
     RUNNING    ///< The thread is writing data from the buffer
@@ -162,25 +162,18 @@ Buffer2data_writer<T>::write() {
     } else {
       int size;
       T &elem = buffer->consume(size);
-      if (size == 0) break;
-      int64_t size2 = data_writer->put_bytes(size,elem.buffer());
-      if (size2 <= 0) {
-        std::cout << "1. Error writing data, going to suspended state" << std::endl;
-        state = SUSPENDED;
-      } else {
-        char *buff = elem.buffer() + size2;
-        while ((state == RUNNING) && (size > size2)) {
-          assert(size2 > 0);
-          int64_t new_size = size - size2; 
-          new_size = data_writer->put_bytes(new_size,buff);
-          if (new_size <= 0) {
-            std::cout << "2. Error writing data, going to suspended state" << std::endl;
-            state = SUSPENDED;
-          } else {
-            size2 += new_size;
-            buff += new_size;
-          }
-        }        
+
+      int64_t size2 = 0;
+      char *buff = elem.buffer();
+      while (size != size2) {
+        int64_t new_size = data_writer->put_bytes(size,elem.buffer());
+        if (new_size <= 0) {
+          std::cout << "1. Error writing data" << std::endl;
+          usleep(100000); // .1 second:
+        } else {
+          size2 += new_size;
+          buff += new_size;
+        }
       }
       assert((state != RUNNING) || (size == size2));
       buffer->consumed();

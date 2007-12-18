@@ -45,10 +45,12 @@ private:
  **/
 class Output_node : public Node {
 public:
-  typedef Single_data_writer_controller::value_type value_type;
+  typedef Single_data_writer_controller::value_type output_value_type;
+  typedef Multiple_data_readers_controller::value_type input_value_type;
   typedef std::map<int32_t, int>                    Input_stream_priority_map;
   typedef Input_stream_priority_map::value_type     Input_stream_priority_map_value;
-  typedef Buffer<value_type>                        Buffer;
+  typedef Buffer<input_value_type>                  Input_buffer;
+  typedef Buffer<output_value_type>                 Output_buffer;
   
   /** Manages the input from one correlator node.
    * The input stream is used to maintain the data 
@@ -60,7 +62,7 @@ public:
     /** Fills the buffer with as much data as possible and returns the number of
      * bytes written.
      **/
-    int write_bytes(value_type &elem);
+    int write_bytes(output_value_type &elem);
     /** returns whether we reached the end of the current time slice
      **/
     bool end_of_slice();
@@ -108,7 +110,7 @@ private:
 
 
   // Output buffer:
-  boost::shared_ptr< Semaphore_buffer<value_type> > output_buffer;
+  boost::shared_ptr< Semaphore_buffer<output_value_type> > output_buffer;
 
   // Controllers:
   Output_node_controller              output_node_ctrl;
