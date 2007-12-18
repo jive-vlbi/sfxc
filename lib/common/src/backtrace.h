@@ -19,7 +19,7 @@
 #if !defined(WIN32)
 #include <signal.h>
 #endif
-#if !defined(WIN32) && !defined(__APPLE__)
+#if !defined(WIN32)
 #include <execinfo.h>
 #include <unistd.h>
 #endif
