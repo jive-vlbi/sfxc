@@ -40,10 +40,8 @@ template <class Buffer>
 void
 Void_consuming_tasklet<Buffer>::do_task() {
   assert(has_work());
-  int size;
-  input_buffer_->consume(size);
-  DEBUG_MSG("consumed " << size);
-  input_buffer_->consumed();
+  input_buffer_->pop();
+  DEBUG_MSG("popped");
 }
 
 template <class Buffer>

@@ -38,6 +38,8 @@ public:
   /// Goto a time in the future.
   int goto_time(int time);
   
+  std::vector< std::vector<int> > get_tracks(Track_parameters &track_param);
+  
 private:
   /// Get an element from the memory pool into input_element_
   void allocate_element();
@@ -124,4 +126,11 @@ get_output_buffer() {
   return output_buffer_;
 }
 
+template <class Type>
+std::vector< std::vector<int> >
+Mark4_reader_tasklet<Type>::
+get_tracks(Track_parameters &track_param) {
+  return mark4_reader_->get_tracks(track_param,
+                                   &input_element_.data()[0]);
+}
 #endif // MARK4_READER_TASKLET_H

@@ -76,6 +76,7 @@ public:
      ****************************************/
     Type& data() const;
     Type& operator*() const;
+    Type *operator->() const;
 
     /***************************************
      * The buffer_element is release and goes
@@ -287,8 +288,15 @@ typename Memory_pool<T>::Element::Type& Memory_pool<T>::Buffer_element::data() c
 }
 
 template<class T>
-typename Memory_pool<T>::Element::Type& Memory_pool<T>::Buffer_element::operator*() const {
+typename Memory_pool<T>::Element::Type& 
+Memory_pool<T>::Buffer_element::operator*() const {
   return *m_data;
+}
+
+template<class T>
+typename Memory_pool<T>::Element::Type * 
+Memory_pool<T>::Buffer_element::operator->() const {
+  return &operator*();
 }
 
 template<class T>

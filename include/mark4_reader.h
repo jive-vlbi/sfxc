@@ -39,6 +39,11 @@ public:
 
   /// Read another mark4-frame
   bool read_new_block(Type *mark4_block);
+
+  /// Get track information from a mark4 header
+  std::vector< std::vector<int> >
+  get_tracks(Track_parameters &track_param, Type *mark4_block);
+
 private:
   // format a time in miliseconds
   std::string time_to_string(int32_t time);
@@ -81,7 +86,7 @@ block_count_(0) {
   header.check_header();
   start_day_ = header.day(0);
   start_time_ = header.get_time_in_ms(0);
-  current_time_ = start_time_; 
+  current_time_ = start_time_;
 }
 
 template <class Type>
@@ -172,9 +177,10 @@ read_new_block(Type *mark4_block) {
     return false;
   }
 
-  Header header; header.set_header(mark4_block);
-  current_time_ = header.get_time_in_ms(0); 
-  
+  Header header;
+  header.set_header(mark4_block);
+  current_time_ = header.get_time_in_ms(0);
+
   if (debug_level_ >= CHECK_PERIODIC_HEADERS) {
     if ((debug_level_ >= CHECK_ALL_HEADERS) ||
         ((++block_count_ % 100) == 0)) {
@@ -238,6 +244,51 @@ Mark4_reader<Type>::check_track_bit_statistics(Type *mark4_block) {
     }
   }
   return true;
+}
+
+
+template <class Type>
+std::vector< std::vector<int> >
+Mark4_reader<Type>::get_tracks(Track_parameters &track_param,
+                               Type *mark4_block) {
+  Header header;
+  header.set_header(mark4_block);
+  assert(header.check_header());
+
+  std::vector< std::vector<int> > result;
+
+  result.resize(track_param.channels.size());
+  int curr_channel =0;
+  // Store a list of tracks: first magnitude (optional), then sign
+  for (Track_parameters::Channel_const_iterator channel =
+         track_param.channels.begin();
+       channel != track_param.channels.end(); channel++, curr_channel++) {
+    result[curr_channel].resize(channel->second.bits_per_sample() *
+                                channel->second.sign_tracks.size());
+
+    int track =0;
+    for (size_t i=0; i<channel->second.sign_tracks.size(); i++) {
+      result[curr_channel][track] =
+        header.find_track(channel->second.sign_headstack-1,
+                          channel->second.sign_tracks[i]);
+      assert(header.headstack(result[curr_channel][track]) ==
+             channel->second.sign_headstack-1);
+      assert(header.track(result[curr_channel][track]) ==
+             channel->second.sign_tracks[i]);
+      track++;
+      if (channel->second.bits_per_sample() == 2) {
+        result[curr_channel][track] =
+          header.find_track(channel->second.magn_headstack-1,
+                            channel->second.magn_tracks[i]);
+        assert(header.headstack(result[curr_channel][track]) ==
+               channel->second.magn_headstack-1);
+        assert(header.track(result[curr_channel][track]) ==
+               channel->second.magn_tracks[i]);
+        track++;
+      }
+    }
+  }
+  return result;
 }
 
 #endif // MARK4_READER_H

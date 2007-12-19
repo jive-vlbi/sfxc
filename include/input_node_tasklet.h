@@ -4,22 +4,30 @@
 #include "tasklet/tasklet.h"
 #include "data_reader.h"
 #include "data_writer.h"
+#include "delay_table_akima.h"
+#include "control_parameters.h"
 
-class Input_node_tasklet : public Tasklet
-{
+class Input_node_tasklet : public Tasklet {
 public:
   class Time_slice {
   public:
     Time_slice();
     Time_slice(int start_time, int stop_time, Data_writer *writer);
-    
+
     int start_time, stop_time;
     Data_writer *writer;
   };
 
   Input_node_tasklet();
   virtual ~Input_node_tasklet();
-  
+
+  /// set the delay table
+  virtual void set_delay_table(Delay_table_akima &delay)=0;
+
+  /// set the track parameters
+  virtual void set_parameters(Track_parameters &track_param)=0;
+
+
   /// goes to the specified start time in miliseconds
   /// @return: returns the new time
   virtual int goto_time(int time) = 0;
@@ -34,7 +42,7 @@ public:
                          Data_writer *writer);
 };
 
-/** Returns an input_node_tasklet for the data reader. 
+/** Returns an input_node_tasklet for the data reader.
  * It determines the number of tracks from the data
  **/
 Input_node_tasklet *

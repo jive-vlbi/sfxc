@@ -48,7 +48,8 @@ template<class T>
 class Threadsafe_queue
   {
     public:
-      typedef T   Type;
+      typedef T     Type;
+      typedef Type  value_type;
 
       Threadsafe_queue(){}
       virtual ~Threadsafe_queue(){}

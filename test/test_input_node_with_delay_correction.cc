@@ -22,18 +22,25 @@ int main(int argc, char*argv[]) {
 
   Log_writer_cout log_writer(10);
 
-  assert(argc == 3);
+  if (argc != 3) {
+    DEBUG_MSG("Usage: " << argv[0] << " <vex_file> <ctrl_file>");
+    exit(-1);
+  }
   char *ctrl_file = argv[1];
   char *vex_file = argv[2];
 
   Control_parameters control_parameters;
   control_parameters.initialise(ctrl_file, vex_file, log_writer);
-
+  // NGHK: TODO: get the right scan
+  std::string scan = control_parameters.scan(0);
+  std::string mode = control_parameters.get_vex().get_mode(scan);
   std::string station = control_parameters.station(0);
-
   std::string data_source = control_parameters.data_sources(station)[0];
+
+  // Open data reader
   Data_reader_file data_reader(data_source);
 
+  // Open input node tasklet
   Input_node_tasklet *input_node_tasklet;
   input_node_tasklet = get_input_node_tasklet(&data_reader);
 
@@ -41,11 +48,19 @@ int main(int argc, char*argv[]) {
   int32_t start_time = control_parameters.get_start_time().to_miliseconds();
   input_node_tasklet->goto_time(start_time);
 
+  // Connect to an output file
   Data_writer_file data_writer("file://test_input_node.out");
   input_node_tasklet->append_time_slice(start_time, start_time+1000,
                                         &data_writer);
 
-  input_node_tasklet->do_task();
+  // Set track parameters
+  Track_parameters track_param =
+    control_parameters.get_track_parameters(mode, station);
+  input_node_tasklet->set_parameters(track_param);
+
+  for (int i=0; i<50; i++) {
+    input_node_tasklet->do_task();
+  }
 
   std::cout << "Done." << std::endl;
   return 0;

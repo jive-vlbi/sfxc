@@ -57,8 +57,8 @@ Integer_delay_correction_all_channels<Buffer>::do_task() {
   Input_buffer_element &input_element = input_buffer_->consume(size);
   Output_buffer_element &output_element = output_buffer_->produce();
   
-  output_element.data = input_element;
-  output_element.start_index = 0;
+  output_element.data = &((*input_element)[0]);
+  output_element.offset_in_samples = 0;
   
   input_buffer_->consumed();
   output_buffer_->produced(size);

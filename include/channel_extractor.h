@@ -14,20 +14,55 @@
 
 #include "utils.h"
 #include "tasklet/tasklet.h"
+#include "input_node_types.h"
+#include "control_parameters.h"
 
 // Not a data reader since it outputs multiple streams
 template <class Type>
-class Channel_extractor : public Tasklet
-{
+class Channel_extractor : public Tasklet {
 public:
-  Channel_extractor() {
-  }
-  virtual ~Channel_extractor() {
-  }
-  
+  typedef Input_node_types<Type>                        Types;
+
+  typedef typename Types::Fft_buffer                    Input_buffer;
+  typedef typename Input_buffer::value_type             Input_buffer_element;
+  typedef boost::shared_ptr<Input_buffer>               Input_buffer_ptr;
+
+  typedef typename Types::Channel_memory_pool           Output_memory_pool;
+  typedef typename Types::Channel_buffer                Output_buffer;
+  typedef typename Output_buffer::value_type            Output_buffer_element;
+  typedef boost::shared_ptr<Output_buffer>              Output_buffer_ptr;
+
+  Channel_extractor();
+  virtual ~Channel_extractor();
+
+  /// For tasklet
+
+  /// Process one piece of data
   void do_task();
-  
+  /// Check if we can process data
+  bool has_work();
+  /// Set the input
+  void connect_to(Input_buffer_ptr new_input_buffer);
+  /// Get the output
+  Output_buffer_ptr get_output_buffer(int stream);
+
+  // Setting parameters
+  void set_parameters(const Track_parameters &track_param,
+                      const std::vector< std::vector<int> > &track_positions);
+
 private:
+  Input_buffer_ptr                input_buffer_;
+  Output_memory_pool              output_memory_pool_;
+  std::vector<Output_buffer_ptr>  output_buffers_;
+
+  /// Bit positions for the sign and magnitude bits, per channel
+  std::vector< std::vector<int> > tracks;
+  /// The number of frequency bins (#samples per data chunk)
+  int number_channels_;
+  /// The number of bits per sample
+  int bits_per_sample_;
 };
+
+#include "channel_extractor_impl.h"
 
 #endif /*CHANNEL_EXTRACTOR_H_*/

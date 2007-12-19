@@ -30,12 +30,15 @@ public:
   typedef Channel_map::iterator                    Channel_iterator;
   typedef Channel_map::const_iterator              Channel_const_iterator;
 
-  int number_of_channels() const;
+  int bits_per_sample() const;
   bool operator==(const Track_parameters &other) const;
 
   // data
-  int                                         track_bit_rate; // in Ms/s
+  int32_t                                     track_bit_rate; // in Ms/s
+  /// List of the tracks that are combined to frequency channels
   Channel_map                                 channels;
+  /// number of frequency channels (#samples per output data chunk)
+  int32_t number_channels;              
 };
 
 
