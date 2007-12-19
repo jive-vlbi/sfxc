@@ -235,9 +235,9 @@ int main(int argc, char *argv[]) {
     json_output["subbands"]          = get_frequencies(vex);
   }
   if (das3) {
-    json_output["das3"]["cluster"]["DAS3-UVA"]["nodecount"] = 16;
-    json_output["das3"]["cluster"]["DAS3-VU"]["nodecount"] = 0;
-    json_output["das3"]["cluster"]["DAS3-LEIDEN"]["nodecount"] = 0;
+    json_output["das3"]["clusters"]["DAS3-UVA"]["nodecount"] = 16;
+    json_output["das3"]["clusters"]["DAS3-VU"]["nodecount"] = 0;
+    json_output["das3"]["clusters"]["DAS3-LEIDEN"]["nodecount"] = 0;
     
     json_output["das3"]["order"].append("DAS3-UVA");
     json_output["das3"]["order"].append("DAS3-VU");
