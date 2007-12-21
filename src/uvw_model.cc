@@ -80,6 +80,9 @@ int Uvw_model::open(char *delayTableName)
 
 void Uvw_model::initialise_spline_for_next_scan() {
   std::cout << times[end_scan] << " " << end_scan << std::endl;
+  std::cout << u[end_scan] << " " << end_scan << std::endl;
+  std::cout << v[end_scan] << " " << end_scan << std::endl;
+  std::cout << w[end_scan] << " " << end_scan << std::endl;
   assert(end_scan < times.size()-1);
   size_t next_end_scan = end_scan+2;
   while ((next_end_scan < times.size()-1) && 

@@ -60,10 +60,12 @@ void check_control_parameters(int rank,
       }
 
       // Check the correlation parameters
+      std::string station_name = "Wb";      
       Correlation_parameters correlation_param = 
         control_parameters.
         get_correlation_parameters(control_parameters.scan(i),
                                    channel_name,
+                                   station_name,
                                    station_streams);
       mpi_transfer.send(correlation_param, 1);
     
@@ -100,15 +102,18 @@ void check_control_parameters(int rank,
         assert(track_param == track_param2);
       }
 
+      std::string station_name = "Wb";      
       // Check the correlation parameters
       Correlation_parameters correlation_param = 
         control_parameters.get_correlation_parameters(control_parameters.scan(i), 
                                                       channel_name,
+                                                      station_name,
                                                       station_streams);
       // Double extraction
       Correlation_parameters correlation_param2 = 
         control_parameters.get_correlation_parameters(control_parameters.scan(i), 
                                                       channel_name,
+                                                      station_name,
                                                       station_streams);
       assert(correlation_param == correlation_param2);
       // Copy constructor

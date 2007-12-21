@@ -56,8 +56,10 @@ int main(int argc, char *argv[]) {
          station = root_node["FREQ"][freq]->begin("chan_def");
          station != root_node["FREQ"][freq]->end("chan_def"); ++station) {
       // Check the correlation parameters
+      std::string station_name = "Wb";
       control_parameters.get_correlation_parameters(scans[i],
                                                     station[4]->to_string(),
+                                                    station_name,
                                                     station_streams);
     }
   }

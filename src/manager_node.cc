@@ -89,6 +89,7 @@ Manager_node(int rank, int numtasks,
 
     start_input_node(/*rank_nr*/ input_node+3, 
         get_control_parameters().station(input_node));
+    DEBUG_MSG("MANAGER NODE " << get_control_parameters().station(input_node));
   }
   assert(n_stations > 0);
 
@@ -123,6 +124,7 @@ Manager_node(int rank, int numtasks,
       set_TCP(input_rank(get_control_parameters().station(station_nr)), 
               correlator_nr,
               correlator_rank, station_nr);
+      DEBUG_MSG("MANAGER NODE " << get_control_parameters().station(station_nr));
     }
 
     if (control_parameters.cross_polarize()) {
@@ -131,6 +133,7 @@ Manager_node(int rank, int numtasks,
         set_TCP(input_rank(get_control_parameters().station(station_nr)), 
                 correlator_nr+n_corr_nodes,
                 correlator_rank, station_nr+n_stations);
+        DEBUG_MSG("MANAGER NODE " << get_control_parameters().station(station_nr));
       }
     }
 
@@ -312,12 +315,23 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
 
   std::string channel_name =
     control_parameters.frequency_channel(current_channel);
-  std::string station_name = "Wb";
-  Correlation_parameters correlation_parameters = 
-    control_parameters.
-    get_correlation_parameters(*scans.begin(),
-                               channel_name,
-                               get_input_node_map());
+  std::string station_name;
+  Correlation_parameters correlation_parameters; 
+
+  int nr_stations = control_parameters.number_stations();
+  for (int i=0; i<nr_stations; i++){
+    station_name = get_control_parameters().station(i);
+    correlation_parameters = 
+      control_parameters.
+      get_correlation_parameters(*scans.begin(),
+                                 channel_name,
+                                 station_name,
+                                 get_input_node_map());
+    
+    DEBUG_MSG("MANAGER NODE STATION NAME " << i << ", " << get_control_parameters().station(i)
+                                            << ", " << correlation_parameters.station_nr_temp);
+    correlation_parameters.station_number.push_back(correlation_parameters.station_nr_temp);
+  }
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
   correlation_parameters.slice_nr = slice_nr;
@@ -336,6 +350,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
         correlation_parameters.station_streams[i];
       stream.station_stream += n_stations;
       correlation_parameters.station_streams.push_back(stream);
+      DEBUG_MSG("MANAGER NODE STATION STREAM " << &correlation_parameters.station_streams[i]);
     }
   }
 
@@ -343,9 +358,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
 
   // set the input streams
   int nStations = control_parameters.number_stations();
-  for (size_t station_nr=0; 
-       station_nr< nStations;
-       station_nr++) {
+  for (size_t station_nr=0; station_nr< nStations; station_nr++) {
     input_node_set_time_slice(control_parameters.station(station_nr),
                               current_channel,
                               /*stream*/corr_node_nr,

@@ -69,7 +69,7 @@ private:
   std::vector< FLOAT >               plan_input_buffer;
   std::vector< std::complex<FLOAT> > plan_output_buffer;
   
-  Correlation_parameters                            correlation_parameters;
+  Correlation_parameters        correlation_parameters;
   
   std::vector< std::vector< std::complex<FLOAT> > > frequency_buffer;
   std::vector< std::complex<FLOAT> >                accumulation_buffers;

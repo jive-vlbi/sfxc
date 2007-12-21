@@ -3,6 +3,8 @@
 
 #include <json/json.h>
 #include <vex/Vex++.h>
+#include <list>
+#include <algorithm>
 
 
 
@@ -48,7 +50,8 @@ public:
     : start_time(0), stop_time(0), integration_time(0),
       number_channels(0), slice_nr(-1), sample_rate(0), 
       bits_per_sample(0), channel_freq(0), bandwidth(0), 
-      sideband('n'), channel_nr(0), polarisation('n') {
+      sideband('n'), channel_nr(0), polarisation('n'), 
+      station_nr_temp(0), station_number(0) {
   }     
 
   
@@ -84,7 +87,10 @@ public:
   
   bool    cross_polarize;   // do the cross polarisations
   int32_t reference_station;// use a reference station
-
+  int32_t station_nr_temp; //the temporary number of the station 
+  std::list<int32_t>  station_number; //the number of the station 
+                                      //according to the vex file sorted alphabathically
+  
   Station_list station_streams; // input streams used
 };
 
@@ -116,7 +122,7 @@ public:
 
   std::string station(int i) const;
   size_t number_stations() const;
-
+    
   int integration_time() const; // Integration time in miliseconds
   int number_channels() const;
 	
@@ -177,8 +183,8 @@ public:
   Correlation_parameters 
   get_correlation_parameters(const std::string &scan_name,
                              const std::string &channel_name,
-                             const std::map<std::string, int> 
-                             &correlator_node_station_to_input) const;
+                             const std::string &station_name,
+                             const std::map<std::string, int> &correlator_node_station_to_input) const;
 
   const Vex &get_vex() const;
 private:

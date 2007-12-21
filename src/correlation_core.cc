@@ -237,7 +237,6 @@ void Correlation_core::integration_write() {
   assert(accumulation_buffers.size() ==
     baselines.size()*(size_of_fft()/2+1));
   
-  
   int nr_corr = (correlation_parameters.stop_time-correlation_parameters.start_time)
                 /correlation_parameters.integration_time;
 
@@ -265,12 +264,21 @@ void Correlation_core::integration_write() {
   uint64_t nWrite = sizeof(htimeslice);
   writer->put_bytes(nWrite, (char *)&htimeslice);
  
+  int ii=0;
+  std::vector<int32_t> station_list;
+  for (std::list<int32_t>::iterator station = 
+         correlation_parameters.station_number.begin();
+       station != correlation_parameters.station_number.end(); station++) {
+    station_list[ii] = *station;
+    ii++;
+  }
+  
   for (int i=0; i<baselines.size(); i++) {
     std::pair<int,int> &stations = baselines[i];
     
     hbaseline.weight = 0;       // The number of good samples
-    hbaseline.station_nr1 = (uint8_t)stations.first;  // Station number in the vex-file
-    hbaseline.station_nr2 = (uint8_t)stations.second;  // Station number in the vex-file
+    hbaseline.station_nr1 = (uint8_t)station_list[stations.first];  // Station number in the vex-file
+    hbaseline.station_nr2 = (uint8_t)station_list[stations.second];  // Station number in the vex-file
     hbaseline.polarisation1 = (unsigned char)polarisation; // Polarisation for the first station
                             // (RCP: 0, LCP: 1)
     hbaseline.polarisation2 = (unsigned char)polarisation; // Polarisation for the second station
@@ -291,6 +299,8 @@ void Correlation_core::integration_write() {
     DEBUG_MSG("BASELINE HEADER:sideband --> : " << (int)hbaseline.sideband);
     DEBUG_MSG("BASELINE HEADER:freq_nr --> : " << (int)hbaseline.frequency_nr);
     DEBUG_MSG("BASELINE HEADER:empty --> : " << (char)hbaseline.empty);
+    
+//    DEBUG_MSG("BASELINE HEADER:STATION NUMBER --> : " << correlation_parameters.station_number);
     
     nWrite = sizeof(hbaseline);
     writer->put_bytes(nWrite, (char *)&hbaseline);
