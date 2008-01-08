@@ -43,7 +43,12 @@ Bits_to_float_converter::read_remaining_bit_of_slice() {
   // NGHK: TODO BugFix, not a real fix
   while (data_reader->get_size_dataslice() > 0) {
     int size = data_reader->get_bytes(data_reader->get_size_dataslice(), NULL);
-    assert(size > 0);
+    if (size <= 0) {
+      DEBUG_MSG("Oops read 0 bytes" << data_reader->get_size_dataslice());
+      data_reader->set_size_dataslice(0);
+      return;
+    }
+    //assert(size > 0);
   }
 }
 

@@ -127,7 +127,7 @@ bool Time_slicer<T>::do_task() {
       //DEBUG_MSG("No output stream available");
       return false;
     } else if (writers.begin()->first > data_counter) {
-      DEBUG_MSG("Output starts after current time");
+      //DEBUG_MSG("Output starts after current time");
       return false;
     } else {
       int size;
@@ -147,7 +147,7 @@ bool Time_slicer<T>::do_task() {
     }
     return true;
   } else {
-    DEBUG_MSG("Buffer empty");
+    //DEBUG_MSG("Buffer empty");
     return false;
   }
 }

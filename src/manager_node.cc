@@ -148,7 +148,13 @@ void Manager_node::start() {
           }
         }
       }
+
+      // Check whether the new start time is before the stop time
       get_log_writer() << "START_TIME: " << start_time << std::endl;
+      if (stop_time <= start_time) {
+        status = STOP_CORRELATING;
+        break;
+      }
 
       for (size_t station=0; station < control_parameters.number_stations();
            station++) {

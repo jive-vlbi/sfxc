@@ -76,6 +76,7 @@ size_t Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out_) {
       data_start = buffer->consume(bytes_left).buffer();
       if (bytes_left == 0) {
         end_of_file = true;
+        buffer->consumed();
         return nElements - elements_to_read;
       }
     }
