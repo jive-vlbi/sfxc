@@ -25,11 +25,11 @@ dnl backup of generic flags
 CXXFLAGS_IN=$CXXFLAGS
 CFLAGS_IN=$CFLAGS
 LDFLAGS_IN=$LDFLAGS
+LIBS_IN=$LIBS
 
 dnl ---------------------------------------------------------------------------
 dnl Checking external libraries
 dnl ---------------------------------------------------------------------------
-LIBS_IN=$LIBS
 
 dnl MPI and the math library
 dnl AC_CHECK_LIB(mpich, MPI_Init, [], [
@@ -96,14 +96,32 @@ SFXC_LDADD="$SFXC_LDADD $JSONCPP_LDADD"
 
 
 dnl setting gsl
+dnl first check gslcblas
+AC_CHECK_LIB([gslcblas],[cblas_dgemm])
+AC_CHECK_LIB([gsl],[gsl_blas_dgemm],
+dnl found gsl, use the global version
+GSL_CXXFLAGS=''
+GSL_LDADD='-lgsl -lgslcblas'
+HAS_GSL='yes'
+,
+dnl gsl not found, install a local copy
 GSL_CXXFLAGS='-I${top_srcdir}/lib/gsl/install/include '
 GSL_LDADD='-L${top_srcdir}/lib/gsl/install/lib -lgsl -lgslcblas'
+HAS_GSL='no'
+)
+
 AC_SUBST(GSL_CXXFLAGS)
 AC_SUBST(GSL_LDADD)
+AC_SUBST(HAS_GSL)
 
 SFXC_CXXFLAGS="$SFXC_CXXFLAGS $GSL_CXXFLAGS"
 SFXC_LDADD="$SFXC_LDADD $GSL_LDADD"
 
+dnl resetting generic flags
+CXXFLAGS=$CXXFLAGS_IN
+CFLAGS=$CFLAGS_IN
+LDFLAGS=$LDFLAGS_IN
+LIBS=$LIBS_IN
 
 dnl setting vex_parser
 VEX_PARSER_CXXFLAGS='-I${top_srcdir}/lib/vex_parser/install/include '
