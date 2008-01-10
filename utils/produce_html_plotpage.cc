@@ -309,13 +309,10 @@ Plot_generator::generate_auto_plots(std::ifstream &infile,
 
     DEBUG_MSG("station number in loop " << station );
     
-    assert(station == (int)baseline.station_nr1);
-    assert(station == (int)baseline.station_nr2);
+    assert((int)baseline.station_nr1 == (int)baseline.station_nr2);
     
     //read data for this baseline
     infile.read((char *)&in[0], 2*in.size()*sizeof(FLOAT));
-//    infile.read((char *)&in[0], sizeof(fftwf_complex));
-
     for  (int lag=0; lag<nLags; lag++) {
       magnitude[lag] = abs(in[lag]);
     }
@@ -356,12 +353,11 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
   DEBUG_MSG("station number 1 in loop " << station );
   DEBUG_MSG("station number 2 in loop " << station2 );
 
-  assert(station == (int)baseline.station_nr1);
-  assert(station2 == (int)baseline.station_nr2);
+  //assert(station == (int)baseline.station_nr1);
+  //assert(station2 == (int)baseline.station_nr2);
 
   //read data for this baseline
   infile.read((char *)&in[0], 2*in.size()*sizeof(FLOAT));
-//  infile.read((char *)&in[0], sizeof(fftwf_complex));
   FFTW_EXECUTE(visibilities2lags);
 
   for  (int lag=0; lag<nLags; lag++) {

@@ -264,13 +264,12 @@ void Correlation_core::integration_write() {
   uint64_t nWrite = sizeof(htimeslice);
   writer->put_bytes(nWrite, (char *)&htimeslice);
  
-  int ii=0;
+  DEBUG_MSG("CORRELATION CORE station_number.size() " 
+      << correlation_parameters.station_number.size());
+  
   std::vector<int32_t> station_list;
-  for (std::list<int32_t>::iterator station = 
-         correlation_parameters.station_number.begin();
-       station != correlation_parameters.station_number.end(); station++) {
-    station_list[ii] = *station;
-    ii++;
+  for (int ii=0; ii<correlation_parameters.station_number.size(); ii++){
+       station_list.push_back(correlation_parameters.station_number[ii]);
   }
   
   for (int i=0; i<baselines.size(); i++) {

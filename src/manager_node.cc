@@ -315,23 +315,28 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
 
   std::string channel_name =
     control_parameters.frequency_channel(current_channel);
-  std::string station_name;
+ 
+  std::vector<std::string> station_name;
   Correlation_parameters correlation_parameters; 
 
   int nr_stations = control_parameters.number_stations();
+
   for (int i=0; i<nr_stations; i++){
-    station_name = get_control_parameters().station(i);
-    correlation_parameters = 
-      control_parameters.
-      get_correlation_parameters(*scans.begin(),
-                                 channel_name,
-                                 station_name,
-                                 get_input_node_map());
-    
-    DEBUG_MSG("MANAGER NODE STATION NAME " << i << ", " << get_control_parameters().station(i)
-                                            << ", " << correlation_parameters.station_nr_temp);
-    correlation_parameters.station_number.push_back(correlation_parameters.station_nr_temp);
+    station_name.push_back(get_control_parameters().station(i));
   }
+
+  correlation_parameters = 
+    control_parameters.
+    get_correlation_parameters(*scans.begin(),
+        channel_name,
+        station_name,
+        get_input_node_map());
+
+  for (int i=0; i<station_name.size(); i++){
+    DEBUG_MSG("MANAGER NODE STATION NAME " << station_name[i]);
+    DEBUG_MSG("MANAGER NODE STATION NUMBER " << correlation_parameters.station_number[i]);
+  }
+
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
   correlation_parameters.slice_nr = slice_nr;

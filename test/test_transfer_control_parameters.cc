@@ -60,7 +60,8 @@ void check_control_parameters(int rank,
       }
 
       // Check the correlation parameters
-      std::string station_name = "Wb";      
+      std::vector<std::string> station_name;
+      station_name.push_back("Wb");      
       Correlation_parameters correlation_param = 
         control_parameters.
         get_correlation_parameters(control_parameters.scan(i),
@@ -102,7 +103,8 @@ void check_control_parameters(int rank,
         assert(track_param == track_param2);
       }
 
-      std::string station_name = "Wb";      
+      std::vector<std::string> station_name;
+      station_name.push_back("Wb");      
       // Check the correlation parameters
       Correlation_parameters correlation_param = 
         control_parameters.get_correlation_parameters(control_parameters.scan(i), 

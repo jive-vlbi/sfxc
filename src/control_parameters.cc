@@ -663,7 +663,7 @@ Correlation_parameters
 Control_parameters::
 get_correlation_parameters(const std::string &scan_name,
                            const std::string &channel_name,
-                           const std::string &station_name,
+                           const std::vector<std::string> &station_name,
                            const std::map<std::string, int> &correlator_node_station_to_input) const {
   std::set<std::string> freq_set;
   std::set<std::string>::const_iterator freq_set_it;
@@ -715,12 +715,13 @@ get_correlation_parameters(const std::string &scan_name,
     }
     count++;
   }
-
+//in the following two blocks (if_mode and bbc_mode) we assume only one of the
+//station name HO
   for (Vex::Node::const_iterator if_it = mode->begin("IF");
        if_it != mode->end("IF"); ++if_it) {
     for (Vex::Node::const_iterator elem_it = if_it->begin();
          elem_it != if_it->end(); ++elem_it) {
-      if (elem_it->to_string() == station_name) {
+      if (elem_it->to_string() == station_name[0]) {
         if_mode = if_it[0]->to_string();
       }
     }
@@ -728,7 +729,7 @@ get_correlation_parameters(const std::string &scan_name,
   for (Vex::Node::const_iterator bbc_it = mode->begin("BBC");
        bbc_it != mode->end("BBC"); ++bbc_it) {
     for (int i=1; i<bbc_it->size(); i++) {
-      if (bbc_it[i]->to_string() == station_name) {
+      if (bbc_it[i]->to_string() == station_name[0]) {
         bbc_mode = bbc_it[0]->to_string();
       }
     }
@@ -783,15 +784,20 @@ get_correlation_parameters(const std::string &scan_name,
 
   //the station number according to the vex file sorted alphabathically
 
+  int ii=0;
+  for (int i=0; i<station_name.size(); i++) {
     int say=0;
     for (Vex::Node::const_iterator station_it = vex.get_root_node()["STATION"]->begin();
          station_it != vex.get_root_node()["STATION"]->end(); ++station_it) {
-      if(station_it.key() == station_name){
-        corr_param.station_nr_temp = say;
+      if(station_it.key() == station_name[i]) {
+        corr_param.station_number.push_back(say);
+        DEBUG_MSG("CONTROL_PARAMETERS station number [" << ii << "] = " << say);
+        ii++;
       }
       say ++;
     }
-  
+  }
+
   return corr_param;
 }
 
