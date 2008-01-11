@@ -1,6 +1,8 @@
 #ifndef INPUT_NODE_TASKLET_H
 #define INPUT_NODE_TASKLET_H
 
+#include <boost/shared_ptr.hpp>
+
 #include "tasklet/tasklet.h"
 #include "data_reader.h"
 #include "data_writer.h"
@@ -9,6 +11,8 @@
 
 class Input_node_tasklet : public Tasklet {
 public:
+  typedef boost::shared_ptr<Data_writer>                   Data_writer_ptr_;
+
   class Time_slice {
   public:
     Time_slice();
@@ -25,12 +29,17 @@ public:
   virtual void set_delay_table(Delay_table_akima &delay)=0;
 
   /// set the track parameters
-  virtual void set_parameters(Track_parameters &track_param)=0;
+  virtual void set_parameters(Input_node_parameters &input_node_param)=0;
 
+  virtual bool has_work() = 0;
 
   /// goes to the specified start time in miliseconds
   /// @return: returns the new time
   virtual int goto_time(int time) = 0;
+
+  /// sets a specified stop time in miliseconds,
+  /// after this time, no more data is sent.
+  virtual void set_stop_time(int time) = 0;
 
   /// Adds a timeslice to the list of slices
   /// @return: returns whether succeeded
@@ -40,6 +49,11 @@ public:
   bool append_time_slice(int start_time,
                          int stop_time,
                          Data_writer *writer);
+  /// Sets the output writer for channel i
+  virtual void add_data_writer(size_t i,
+                               Data_writer_ptr_ data_writer,
+                               int nr_integrations) = 0;
+
 };
 
 /** Returns an input_node_tasklet for the data reader.

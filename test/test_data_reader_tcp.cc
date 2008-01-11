@@ -36,12 +36,12 @@ int main(int argc, char *argv[]) {
       MPI_Abort(MPI_COMM_WORLD, status);
       return 1;
     }
-  
+
     // get the number of tasks set at commandline (= number of processors)
     MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
     // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  
+
     assert(numtasks==2);
   }
 
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     int32_t stream_nr=0;
     memcpy(message,&stream_nr,sizeof(int32_t));
     memcpy(message+sizeof(int32_t), infile, strlen(infile)+1);
-    MPI_Send(message, size, MPI_CHAR, 
+    MPI_Send(message, size, MPI_CHAR,
              1, MPI_TAG_ADD_DATA_READER_FILE2, MPI_COMM_WORLD);
 
     TCP_Connection tcp_connection;
@@ -61,14 +61,14 @@ int main(int argc, char *argv[]) {
       port++;
     }
     assert(tcp_connection.get_port() > 0);
-    Data_writer_tcp *data_writer = new Data_writer_tcp(); 
+    Data_writer_tcp *data_writer = new Data_writer_tcp();
 
     std::vector<uint64_t>  ip_addresses;
     ip_addresses.push_back(0); // stream number
     tcp_connection.get_ip_addresses(ip_addresses);
     ip_addresses.push_back(tcp_connection.get_port());
 
-    MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_INT64, 
+    MPI_Send(&ip_addresses[0], ip_addresses.size(), MPI_INT64,
              1, MPI_TAG_ADD_DATA_READER_TCP2, MPI_COMM_WORLD);
 
     data_writer->open_connection(tcp_connection);
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
       int64_t nwritten = data_writer->put_bytes(nread, buff);
       assert(nwritten == nread);
     }
-    
+
   } else { // Receiving node:
     MPI_Status status, status2;
     MPI_Probe(MPI_ANY_SOURCE, MPI_TAG_ADD_DATA_READER_FILE2,
@@ -97,8 +97,8 @@ int main(int argc, char *argv[]) {
     char *filename = msg+sizeof(int32_t);
 
     Data_reader *reader_file = new Data_reader_file(filename);
-    
-    
+
+
     MPI_Probe(MPI_ANY_SOURCE, MPI_TAG_ADD_DATA_READER_TCP2,
               MPI_COMM_WORLD, &status);
     MPI_Get_elements(&status, MPI_INT64, &size);
@@ -106,30 +106,36 @@ int main(int argc, char *argv[]) {
     uint64_t ip_addr[size];
     MPI_Recv(&ip_addr, size, MPI_INT64, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
-    
+
     assert(status.MPI_SOURCE == status2.MPI_SOURCE);
     assert(status.MPI_TAG == status2.MPI_TAG);
 
     boost::shared_ptr<Data_reader_tcp>
-      reader_tcp(new Data_reader_tcp(ip_addr, size-1, ip_addr[size-1]));
-    
+    reader_tcp(new Data_reader_tcp(ip_addr, size-1, ip_addr[size-1]));
+
     Data_reader2buffer< Buffer_element<char, 131072> > data_reader2buffer;
     data_reader2buffer.set_data_reader(reader_tcp);
     boost::shared_ptr< Semaphore_buffer<> > sem_buffer(new Semaphore_buffer<>(10));
     data_reader2buffer.set_buffer(sem_buffer);
     data_reader2buffer.try_start();
     Data_reader_buffer<> reader_buffer(data_reader2buffer.get_buffer());
-    
+
     int buffsize = 10001, nread_file=1, nread_buffer;
     char buff_file[buffsize], buff_buffer[buffsize];
     while (nread_file > 0) {
       nread_file = reader_file->get_bytes(buffsize, buff_file);
-      nread_buffer  = reader_buffer.get_bytes(nread_file, buff_buffer);
-      
+      nread_buffer = 0;
+      while (nread_buffer != nread_file) {
+        int read = reader_buffer.get_bytes(nread_file-nread_buffer,
+                                           &buff_buffer[nread_buffer]);
+        assert(read >= 0);
+        nread_buffer += read;
+      }
+
       assert(nread_file == nread_buffer);
       assert(!memcmp(buff_file, buff_buffer, nread_file));
     }
   }
-  
+
   return 0;
 }

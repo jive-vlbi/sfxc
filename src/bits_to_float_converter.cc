@@ -78,7 +78,7 @@ void Bits_to_float_converter::do_task() {
            size_output_slice/(8/bits_per_sample));
     
     if (bits_per_sample == 2) {
-      size_t bytes_read = 0;
+      int bytes_read = 0;
       while (bytes_read != size_output_slice/4) {
         bytes_read += data_reader->get_bytes(size_output_slice/4-bytes_read, 
                                              &intermediate_buffer[bytes_read]);
@@ -87,7 +87,7 @@ void Bits_to_float_converter::do_task() {
       assert(bytes_read == size_output_slice/4);
 
       int sample = 0;    
-      for (size_t byte = 0; byte < bytes_read; byte++) {
+      for (int byte = 0; byte < bytes_read; byte++) {
         buffer[sample] = sample_value_ms[ intermediate_buffer[byte]&3 ];
         sample++; 
         buffer[sample] = sample_value_ms[ (intermediate_buffer[byte]>>2)&3 ];
@@ -116,4 +116,11 @@ void Bits_to_float_converter::do_task() {
 
     output_buffer->produced(size_output_slice);
   }
+}
+
+bool
+Bits_to_float_converter::has_work() {
+//  if (input_buffer->empty()) return false;
+  if (output_buffer->full()) return false;
+  return true;
 }

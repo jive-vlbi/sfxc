@@ -81,12 +81,12 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
 }
 
 void 
-MPI_Transfer::send(Track_parameters &track_param, int rank) {
+MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
   int size = 0;
-  size = sizeof(double)+sizeof(int32_t);
-  for (Track_parameters::Channel_iterator channel = 
-         track_param.channels.begin();
-       channel != track_param.channels.end(); channel++) {
+  size = 2*sizeof(int32_t);
+  for (Input_node_parameters::Channel_iterator channel = 
+         input_node_param.channels.begin();
+       channel != input_node_param.channels.end(); channel++) {
     size += 
       sizeof(int32_t) * 
       (5 +
@@ -101,14 +101,14 @@ MPI_Transfer::send(Track_parameters &track_param, int rank) {
   int position = 0; int32_t length;
   char message_buffer[size];
 
-  MPI_Pack(&track_param.track_bit_rate, 1, MPI_DOUBLE,
+  MPI_Pack(&input_node_param.track_bit_rate, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD); 
-  MPI_Pack(&track_param.number_channels, 1, MPI_INT32,
+  MPI_Pack(&input_node_param.number_channels, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD); 
   
-  for (Track_parameters::Channel_iterator channel = 
-         track_param.channels.begin();
-       channel != track_param.channels.end(); channel++) {
+  for (Input_node_parameters::Channel_iterator channel = 
+         input_node_param.channels.begin();
+       channel != input_node_param.channels.end(); channel++) {
     // Name
     length = (int32_t)channel->first.length()+1;
     MPI_Pack(&length, 1, MPI_INT32,
@@ -143,8 +143,8 @@ MPI_Transfer::send(Track_parameters &track_param, int rank) {
 }
 
 void 
-MPI_Transfer::receive(MPI_Status &status, Track_parameters &track_param) {
-  track_param.channels.clear();
+MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_param) {
+  input_node_param.channels.clear();
   
   MPI_Status status2;
   
@@ -158,10 +158,10 @@ MPI_Transfer::receive(MPI_Status &status, Track_parameters &track_param) {
   int32_t length; int position = 0;
 
   MPI_Unpack(buffer, size, &position, 
-             &track_param.track_bit_rate, 1, MPI_DOUBLE, 
+             &input_node_param.track_bit_rate, 1, MPI_INT32, 
              MPI_COMM_WORLD); 
   MPI_Unpack(buffer, size, &position, 
-             &track_param.number_channels, 1, MPI_INT32, 
+             &input_node_param.number_channels, 1, MPI_INT32, 
              MPI_COMM_WORLD); 
 
   while (position < size) {
@@ -176,7 +176,7 @@ MPI_Transfer::receive(MPI_Status &status, Track_parameters &track_param) {
                MPI_COMM_WORLD); 
     assert(name[length-1] == '\0');
 
-    Track_parameters::Channel_parameters channel_param;
+    Input_node_parameters::Channel_parameters channel_param;
     // Sign
     MPI_Unpack(buffer, size, &position, 
                &channel_param.sign_headstack, 1, MPI_INT32,
@@ -207,7 +207,7 @@ MPI_Transfer::receive(MPI_Status &status, Track_parameters &track_param) {
       channel_param.magn_tracks.push_back(tracks[i]);
     }
 
-    track_param.channels[name] = channel_param;
+    input_node_param.channels[name] = channel_param;
   }
   assert(position == size);
 }

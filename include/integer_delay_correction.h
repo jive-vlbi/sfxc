@@ -47,8 +47,9 @@ public:
 
   /// Do one delay step
   void do_task();
+  const char *name() { return __PRETTY_FUNCTION__; }
   
-  bool is_ready_for_do_task();
+  bool has_work();
   
 private:
   int get_delay_in_samples(int64_t time);

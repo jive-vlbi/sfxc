@@ -96,7 +96,13 @@ class Threadsafe_queue
       bool empty()
       {
         RAIIMutex rc(m_queuecond);
-        return m_queue.size()==0;
+        return m_queue.empty();
+      }
+
+      size_t size()
+      {
+        RAIIMutex rc(m_queuecond);
+        return m_queue.size();
       }
 
 #ifdef ENABLE_TEST_UNIT

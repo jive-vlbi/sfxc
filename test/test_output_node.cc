@@ -177,7 +177,7 @@ int main(int argc, char *argv[]) {
   assert(numtasks == 3);
   
   assert(argc == 4);
-  const char *ctrl_file = argv[1];
+  //const char *ctrl_file = argv[1];
   //const char *vex_file = argv[2];
 
   char input_file[] = "file://data/n06c2.vex";

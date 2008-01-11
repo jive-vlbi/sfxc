@@ -438,9 +438,9 @@ void Manager_node::initialise_scan(const std::string &scan) {
     const std::string &station_name =
       control_parameters.station(station);
 
-    Track_parameters track_param =
-      control_parameters.get_track_parameters(mode_name, station_name);
-    input_node_set(station_name, track_param);
+    Input_node_parameters input_node_param =
+      control_parameters.get_input_node_parameters(mode_name, station_name);
+    input_node_set(station_name, input_node_param);
   }
 }
 

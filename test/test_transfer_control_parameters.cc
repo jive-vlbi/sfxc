@@ -42,7 +42,7 @@ void check_control_parameters(int rank,
     MPI_Transfer mpi_transfer;
 
 
-    // Get Track_parameters for every scan x station
+    // Get input_node_parameters for every scan x station
     std::vector<std::string> scans;
     control_parameters.get_vex().get_scans(std::back_inserter(scans));
     for (size_t i=0; i<scans.size(); i++) {
@@ -52,11 +52,11 @@ void check_control_parameters(int rank,
       for (size_t j=0; j<stations.size(); j++) {
         const std::string &mode = 
           control_parameters.get_vex().get_mode(scans[i]);
-        Track_parameters track_param = 
-          control_parameters.get_track_parameters(mode, stations[j]);
+        Input_node_parameters input_node_param = 
+          control_parameters.get_input_node_parameters(mode, stations[j]);
 
         // Sending data
-        mpi_transfer.send(track_param, 1);
+        mpi_transfer.send(input_node_param, 1);
       }
 
       // Check the correlation parameters
@@ -73,7 +73,7 @@ void check_control_parameters(int rank,
     MPI_Status status;
     MPI_Transfer mpi_transfer;
 
-    // Get Track_parameters for every scan x station
+    // Get input_node_parameters for every scan x station
     std::vector<std::string> scans;
     control_parameters.get_vex().get_scans(std::back_inserter(scans));
     for (size_t i=0; i<scans.size(); i++) {
@@ -83,21 +83,21 @@ void check_control_parameters(int rank,
       for (size_t j=0; j<stations.size(); j++) {
         const std::string &mode = 
           control_parameters.get_vex().get_mode(scans[i]);
-        Track_parameters track_param = 
-          control_parameters.get_track_parameters(mode, stations[j]);
+        Input_node_parameters input_node_param = 
+          control_parameters.get_input_node_parameters(mode, stations[j]);
 
-        Track_parameters track_param2 = 
-          control_parameters.get_track_parameters(mode, stations[j]);
+        Input_node_parameters input_node_param2 = 
+          control_parameters.get_input_node_parameters(mode, stations[j]);
         // Double extraction
-        assert(track_param == track_param2);
+        assert(input_node_param == input_node_param2);
         // copy constructor
-        track_param2 = track_param;
-        assert(track_param == track_param2);
+        input_node_param2 = input_node_param;
+        assert(input_node_param == input_node_param2);
         // sending data
         MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        mpi_transfer.receive(status, track_param2);
+        mpi_transfer.receive(status, input_node_param2);
 
-        assert(track_param == track_param2);
+        assert(input_node_param == input_node_param2);
       }
 
       // Check the correlation parameters

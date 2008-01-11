@@ -199,8 +199,8 @@ Abstract_manager_node::set_TCP(int writer_rank, int writer_stream_nr,
 
 void 
 Abstract_manager_node::
-input_node_set(const std::string &station, Track_parameters &track_params) {
-  MPI_Transfer::send(track_params, input_rank(station));
+input_node_set(const std::string &station, Input_node_parameters &input_node_params) {
+  MPI_Transfer::send(input_node_params, input_rank(station));
 }
 
 int32_t

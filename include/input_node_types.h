@@ -15,7 +15,6 @@
 #include <threadsafe_queue.h>
 
 #include "memory_pool.h"
-#include "semaphore_buffer.h"
 
 template <class Type>
 class Input_node_types {
@@ -26,27 +25,45 @@ public:
 
   /// Buffer for mark4 data frames
   typedef Mk4_memory_pool_element                        Mk4_buffer_element;
-  typedef Semaphore_buffer<Mk4_buffer_element>           Mk4_buffer;
+  typedef Threadsafe_queue<Mk4_buffer_element>           Mk4_buffer;
   typedef boost::shared_ptr<Mk4_buffer>                  Mk4_buffer_ptr;
 
-  
+
   // Memory pool for fft's
   typedef Memory_pool<std::vector<Type> >                Fft_memory_pool;
   typedef typename Fft_memory_pool::Element              Fft_memory_pool_element;
 
   /// Buffer for fft buffers
   struct Fft_buffer_element {
-    Type *                  data;
+    typedef Type            value_type;
+
+    Fft_buffer_element()
+        : release_data1(false), number_data_samples(0), sample_offset(0), subsample_offset(0) {}
+
+    // The data for the fft can be split over two mark4 blocks
+    Mk4_memory_pool_element data1, data2;
+    // We need one extra sample because of the subsamples
+    Type                    last_sample;
+
+    bool release_data1;
+
+    // Number of data samples in the buffer(s)
+    int                     number_data_samples;
+
+    // Offset in samples of type Type
+    int                     sample_offset;
+
     // Each sample of type Type can contain multiple samples
     // Start at sample with offset "offset_in_samples"
-    int                     offset_in_samples;
+    int                     subsample_offset;
   };
-  typedef Semaphore_buffer<Fft_buffer_element>           Fft_buffer;
+  typedef Threadsafe_queue<Fft_buffer_element>           Fft_buffer;
   typedef boost::shared_ptr<Fft_buffer>                  Fft_buffer_ptr;
 
-  
+
   // Memory pool for dechannelized data
   struct Channel_memory_pool_data {
+    typedef char      value_type;
     std::vector<char> data;
     // NGHK: TODO: weights
   };

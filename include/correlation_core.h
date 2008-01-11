@@ -24,6 +24,8 @@ public:
   
   /// For Tasklet
   void do_task();
+  bool has_work();
+  const char *name() { return __PRETTY_FUNCTION__; }
   
   bool finished();
   
@@ -35,8 +37,6 @@ public:
   Output_buffer_ptr get_output_buffer();
   
 private:
-  bool is_ready_for_do_task();
-  
   void integration_initialise();
   void integration_step();
   void integration_average();

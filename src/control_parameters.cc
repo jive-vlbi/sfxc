@@ -381,10 +381,10 @@ Control_parameters::get_vex() const {
 
 
 
-Track_parameters
+Input_node_parameters
 Control_parameters::
-get_track_parameters(const std::string &mode_name,
-                     const std::string &station_name) const {
+get_input_node_parameters(const std::string &mode_name,
+                          const std::string &station_name) const {
   const std::string &track_name =
     get_vex().get_track(mode_name, station_name);
   const std::string &freq_name =
@@ -392,15 +392,16 @@ get_track_parameters(const std::string &mode_name,
   Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
   Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
 
-  Track_parameters result;
+  Input_node_parameters result;
   result.track_bit_rate = -1;
   result.number_channels = number_channels();
+  result.integr_time = integration_time();
 
   for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
     const std::string &channel_name = frequency_channel(ch_nr);
 
     // tracks
-    Track_parameters::Channel_parameters &channel_param
+    Input_node_parameters::Channel_parameters &channel_param
     = result.channels[channel_name];
 
     for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
@@ -416,8 +417,8 @@ get_track_parameters(const std::string &mode_name,
                 / (fanout_def_it->size()-4);
             } else {
               assert(result.track_bit_rate ==
-                     (size_t)(freq["sample_rate"]->to_double_amount("Ms/sec") *
-                              1000000)
+                     (freq["sample_rate"]->to_double_amount("Ms/sec") *
+                      1000000)
                      / (fanout_def_it->size()-4));
             }
           }
@@ -582,7 +583,7 @@ frequency(const std::string &if_node,
     }
     for (Vex::Node::const_iterator bbc_it = mod_block->begin("BBC");
          bbc_it != mod_block->end("BBC"); ++bbc_it) {
-      for (int i=1; i<bbc_it->size(); i++) {
+      for (size_t i=1; i<bbc_it->size(); i++) {
         if (bbc_it[i]->to_string() == if_ref) {
           if_ref_BBC = bbc_it[0]->to_string();
         }
@@ -613,7 +614,7 @@ sideband(const std::string &if_node,
   std::string if_ref_BBC;
   std::string if_ref_BBCnr;
   std::string if_ref_Ref;
-  char sband;
+  char sband = 'x';
 
   for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin();
        mod_block != vex.get_root_node()["MODE"]->end(); ++mod_block) {
@@ -637,7 +638,7 @@ sideband(const std::string &if_node,
     }
     for (Vex::Node::const_iterator bbc_it = mod_block->begin("BBC");
          bbc_it != mod_block->end("BBC"); ++bbc_it) {
-      for (int i=1; i<bbc_it->size(); i++) {
+      for (size_t i=1; i<bbc_it->size(); i++) {
         if (bbc_it[i]->to_string() == if_ref) {
           if_ref_BBC = bbc_it[0]->to_string();
         }
@@ -706,7 +707,7 @@ get_correlation_parameters(const std::string &scan_name,
 
   corr_param.reference_station = -1;
   if (reference_station() != "") {
-    for (int station_nr=0; station_nr < number_stations(); station_nr++) {
+    for (size_t station_nr=0; station_nr < number_stations(); station_nr++) {
       if (reference_station() == station(station_nr)) {
         corr_param.reference_station = station_nr;
       }
@@ -789,19 +790,21 @@ Control_parameters::create_path(const std::string &path) const {
 }
 
 bool
-Track_parameters::operator==(const Track_parameters &other) const {
+Input_node_parameters::operator==(const Input_node_parameters &other) const {
+  if (channels != other.channels)
+    return false;
   if (track_bit_rate != other.track_bit_rate)
     return false;
   if (number_channels != other.number_channels)
     return false;
-  if (channels != other.channels)
+  if (integr_time != other.integr_time)
     return false;
 
   return true;
 }
 
 int
-Track_parameters::bits_per_sample() const {
+Input_node_parameters::bits_per_sample() const {
   assert(!channels.empty());
   for (Channel_const_iterator it=channels.begin();
        it!=channels.end(); it++) {
@@ -812,14 +815,25 @@ Track_parameters::bits_per_sample() const {
 }
 
 int
-Track_parameters::Channel_parameters::bits_per_sample() const {
+Input_node_parameters::subsamples_per_sample() const {
+  assert(!channels.empty());
+  for (Channel_const_iterator it=channels.begin();
+       it!=channels.end(); it++) {
+    assert(channels.begin()->second.sign_tracks.size() ==
+           it->second.sign_tracks.size());
+  }
+  return channels.begin()->second.sign_tracks.size();
+}
+
+int
+Input_node_parameters::Channel_parameters::bits_per_sample() const {
   return (magn_tracks.size() == 0 ? 1 : 2);
 }
 
 
 bool
-Track_parameters::Channel_parameters::
-operator==(const Track_parameters::Channel_parameters &other) const {
+Input_node_parameters::Channel_parameters::
+operator==(const Input_node_parameters::Channel_parameters &other) const {
   if (sign_headstack != other.sign_headstack)
     return false;
   if (magn_headstack != other.magn_headstack)

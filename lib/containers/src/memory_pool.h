@@ -69,6 +69,7 @@ public:
      * accessible using  this Buffer_element
      ****************************************/
     typedef T Type;
+    typedef Type value_type;
 
     /***************************************
      * Returns a  to the object stores in
@@ -88,6 +89,7 @@ public:
      * release.
      ****************************************/
     void release();
+    bool released() const { return m_data == NULL; }
 
     static Buffer_element None;
 
@@ -284,12 +286,14 @@ m_owner(owner) {
 
 template<class T>
 typename Memory_pool<T>::Element::Type& Memory_pool<T>::Buffer_element::data() const {
+  MASSERT(m_data != NULL);
   return *m_data;
 }
 
 template<class T>
 typename Memory_pool<T>::Element::Type& 
 Memory_pool<T>::Buffer_element::operator*() const {
+  MASSERT(m_data != NULL);
   return *m_data;
 }
 

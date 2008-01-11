@@ -68,7 +68,7 @@ public:
   void initialise();
 
   /** Sets the track parameters **/
-  void set_track_parameters(const Track_parameters &track_param);
+  void set_input_node_parameters(const Input_node_parameters &input_node_param);
 
 
   /// Start the state machine

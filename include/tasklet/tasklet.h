@@ -12,6 +12,8 @@ class Tasklet
 public:
   virtual ~Tasklet();
   virtual void do_task() = 0;
+  virtual bool has_work() = 0;
+  virtual const char *name() = 0;
 };
 
 

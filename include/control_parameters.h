@@ -7,9 +7,9 @@
 
 
 /** Information about the mark4 tracks needed by the input node. **/
-class Track_parameters {
+class Input_node_parameters {
 public:
-  Track_parameters() : track_bit_rate(0) {}
+  Input_node_parameters() : track_bit_rate(0) {}
 
   class Channel_parameters {
   public:
@@ -31,14 +31,17 @@ public:
   typedef Channel_map::const_iterator              Channel_const_iterator;
 
   int bits_per_sample() const;
-  bool operator==(const Track_parameters &other) const;
+  int subsamples_per_sample() const;
+  bool operator==(const Input_node_parameters &other) const;
 
-  // data
-  int32_t                                     track_bit_rate; // in Ms/s
   /// List of the tracks that are combined to frequency channels
   Channel_map                                 channels;
+  // data
+  int32_t                                     track_bit_rate; // in Ms/s
   /// number of frequency channels (#samples per output data chunk)
-  int32_t number_channels;              
+  int32_t number_channels;
+  /// The integration time
+  int32_t integr_time;
 };
 
 
@@ -167,9 +170,9 @@ public:
   /****************************************************/
 
   // Return the track parameters needed by the input node
-  Track_parameters
-  get_track_parameters(const std::string &mode_name,
-                       const std::string &station_name) const;
+  Input_node_parameters
+  get_input_node_parameters(const std::string &mode_name,
+                            const std::string &station_name) const;
 
   // Return the correlation parameters needed by a correlator node
   Correlation_parameters

@@ -32,20 +32,27 @@ public:
   void do_task();
   /// For Tasklet
   bool has_work();
+  const char *name() {
+    return "Mark4_reader_tasklet";
+  }
+
   /// Get the output
   Output_buffer_ptr get_output_buffer();
 
   /// Goto a time in the future.
   int goto_time(int time);
-  
-  std::vector< std::vector<int> > get_tracks(Track_parameters &track_param);
-  
+
+  /// set a stop time (after which no data is sent)
+  void set_stop_time(int time);
+
+  std::vector< std::vector<int> > get_tracks(Input_node_parameters &input_node_param);
+
 private:
   /// Get an element from the memory pool into input_element_
   void allocate_element();
   /// Push the input_element_ to the output buffer
   void push_element();
-  
+
 private:
   /// Data stream to read from
   Mark4_reader<Type>                  *mark4_reader_;
@@ -55,17 +62,20 @@ private:
   Input_element                       input_element_;
   /// Output buffer of mark4 data blocks
   Output_buffer_ptr                   output_buffer_;
+
+  int stop_time;
 };
 
 template <class Type>
 Mark4_reader_tasklet<Type>::
 Mark4_reader_tasklet(Data_reader *reader, char *buffer)
-    : memory_pool_(10) {
-  output_buffer_ = Output_buffer_ptr(new Output_buffer(10));
+    : memory_pool_(10), stop_time(-1) {
+  output_buffer_ = Output_buffer_ptr(new Output_buffer());
   allocate_element();
   mark4_reader_ = new Mark4_reader<Type>(reader,
                                          buffer,
                                          &input_element_.data()[0]);
+
 }
 
 template <class Type>
@@ -73,7 +83,7 @@ void
 Mark4_reader_tasklet<Type>::
 do_task() {
   assert(has_work());
-  
+
   push_element();
   allocate_element();
   mark4_reader_->read_new_block(&input_element_.data()[0]);
@@ -83,8 +93,11 @@ template <class Type>
 bool
 Mark4_reader_tasklet<Type>::
 has_work() {
-  if (memory_pool_.empty()) return false;
-  if (output_buffer_->full()) return false;
+  if (memory_pool_.empty())
+    return false;
+  if ((stop_time > 0) && (stop_time <= mark4_reader_->get_current_time()))
+    return false;
+
   return true;
 }
 
@@ -92,8 +105,11 @@ template <class Type>
 void
 Mark4_reader_tasklet<Type>::
 allocate_element() {
+  assert(!memory_pool_.empty());
   input_element_ = memory_pool_.allocate();
-  if (input_element_.data().size() != SIZE_MK4_FRAME) {
+  std::vector<Type> vector_ = input_element_.data();
+  if (vector_.size() != SIZE_MK4_FRAME) {
+    vector_.resize(SIZE_MK4_FRAME);
     input_element_.data().resize(SIZE_MK4_FRAME);
   }
 }
@@ -113,10 +129,18 @@ goto_time(int time) {
 template <class Type>
 void
 Mark4_reader_tasklet<Type>::
+set_stop_time(int time) {
+  assert(mark4_reader_->get_current_time() < time);
+  stop_time = time;
+}
+
+
+
+template <class Type>
+void
+Mark4_reader_tasklet<Type>::
 push_element() {
-  Output_buffer_element &output_element = output_buffer_->produce();
-  output_element = input_element_;
-  output_buffer_->produced(0);
+  output_buffer_->push(input_element_);
 }
 
 template <class Type>
@@ -129,8 +153,8 @@ get_output_buffer() {
 template <class Type>
 std::vector< std::vector<int> >
 Mark4_reader_tasklet<Type>::
-get_tracks(Track_parameters &track_param) {
-  return mark4_reader_->get_tracks(track_param,
+get_tracks(Input_node_parameters &input_node_param) {
+  return mark4_reader_->get_tracks(input_node_param,
                                    &input_element_.data()[0]);
 }
 #endif // MARK4_READER_TASKLET_H

@@ -26,9 +26,9 @@ Input_node_controller::process_event(MPI_Status &status) {
   case MPI_TAG_TRACK_PARAMETERS: 
     {
       MPI_Transfer transfer;
-      Track_parameters track_param;
-      transfer.receive(status, track_param);
-      node.set_track_parameters(track_param);
+      Input_node_parameters input_node_param;
+      transfer.receive(status, input_node_param);
+      node.set_input_node_parameters(input_node_param);
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

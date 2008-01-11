@@ -49,7 +49,8 @@ public:
   /// Do one delay step
   void do_task();
   
-  bool is_ready_for_do_task();
+  bool has_work();
+  const char *name() { return __PRETTY_FUNCTION__; }
   
 private:
   void fractional_bit_shift(std::complex<FLOAT> output[],

@@ -10,6 +10,7 @@
 #ifndef MARK4_READER_H
 #define MARK4_READER_H
 
+#include <fstream>
 #include "mark4_header.h"
 
 template <class Type>
@@ -42,7 +43,7 @@ public:
 
   /// Get track information from a mark4 header
   std::vector< std::vector<int> >
-  get_tracks(Track_parameters &track_param, Type *mark4_block);
+  get_tracks(Input_node_parameters &input_node_param, Type *mark4_block);
 
 private:
   // format a time in miliseconds
@@ -106,9 +107,9 @@ goto_time(int32_t time,
     << time_to_string(get_current_time()) << std::endl;
     std::cout << "            requested time is: "
     << time_to_string(time) << std::endl;
-    return -1;
+    return get_current_time();
   } else if (time == get_current_time()) {
-    return 0;
+    return time;
   }
 
   size_t read_n_bytes =
@@ -173,27 +174,31 @@ Mark4_reader<Type>::
 read_new_block(Type *mark4_block) {
   int result = data_reader_->get_bytes(SIZE_MK4_FRAME*sizeof(Type),
                                        (char *)mark4_block)/sizeof(Type);
-  if (result != SIZE_MK4_FRAME) {
-    return false;
-  }
 
-  Header header;
-  header.set_header(mark4_block);
-  current_time_ = header.get_time_in_ms(0);
+  if (result > (int)(160*sizeof(Type))) {
+    // at least we read the complete header. Check it
+    Header header;
+    header.set_header(mark4_block);
+    current_time_ = header.get_time_in_ms(0);
 
-  if (debug_level_ >= CHECK_PERIODIC_HEADERS) {
-    if ((debug_level_ >= CHECK_ALL_HEADERS) ||
-        ((++block_count_ % 100) == 0)) {
-      header.check_header();
-      check_time_stamp(header);
-      if (debug_level_ >= CHECK_BIT_STATISTICS) {
-        if (!check_track_bit_statistics(mark4_block)) {
-          std::cout << "Track bit statistics are off." << std::endl;
+    if (debug_level_ >= CHECK_PERIODIC_HEADERS) {
+      if ((debug_level_ >= CHECK_ALL_HEADERS) ||
+          ((++block_count_ % 100) == 0)) {
+        header.check_header();
+        check_time_stamp(header);
+        if (debug_level_ >= CHECK_BIT_STATISTICS) {
+          if (!check_track_bit_statistics(mark4_block)) {
+            std::cout << "Track bit statistics are off." << std::endl;
+          }
         }
       }
     }
-  }
 
+    if (result != SIZE_MK4_FRAME) {
+      DEBUG_MSG("Didn't read a complete frame " << result);
+      return false;
+    }
+  }
   return true;
 }
 
@@ -201,7 +206,6 @@ read_new_block(Type *mark4_block) {
 template <class Type>
 bool
 Mark4_reader<Type>::check_time_stamp(Header &header) {
-  DEBUG_MSG(__PRETTY_FUNCTION__);
   int64_t militime = header.get_time_in_ms(0);
   int64_t delta_time =
     (header.day(0)-start_day_)*24*60*60*1000000 +
@@ -249,7 +253,7 @@ Mark4_reader<Type>::check_track_bit_statistics(Type *mark4_block) {
 
 template <class Type>
 std::vector< std::vector<int> >
-Mark4_reader<Type>::get_tracks(Track_parameters &track_param,
+Mark4_reader<Type>::get_tracks(Input_node_parameters &input_node_param,
                                Type *mark4_block) {
   Header header;
   header.set_header(mark4_block);
@@ -257,12 +261,12 @@ Mark4_reader<Type>::get_tracks(Track_parameters &track_param,
 
   std::vector< std::vector<int> > result;
 
-  result.resize(track_param.channels.size());
+  result.resize(input_node_param.channels.size());
   int curr_channel =0;
   // Store a list of tracks: first magnitude (optional), then sign
-  for (Track_parameters::Channel_const_iterator channel =
-         track_param.channels.begin();
-       channel != track_param.channels.end(); channel++, curr_channel++) {
+  for (Input_node_parameters::Channel_const_iterator channel =
+         input_node_param.channels.begin();
+       channel != input_node_param.channels.end(); channel++, curr_channel++) {
     result[curr_channel].resize(channel->second.bits_per_sample() *
                                 channel->second.sign_tracks.size());
 

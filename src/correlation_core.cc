@@ -19,7 +19,7 @@ Correlation_core::get_output_buffer() {
 
 void Correlation_core::do_task() {
   timer.resume();
-  if (is_ready_for_do_task()) {
+  if (has_work()) {
     if (current_fft%number_ffts_in_integration == 0) {
       integration_initialise();
     }
@@ -75,13 +75,13 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters) {
     assert(n_stations() % 2 == 0);
     if (ref_station >= 0) {
       // cross polarize with a reference station
-      for (size_t sn = 0 ; sn < n_stations(); sn++){
-        if ((sn != ref_station) && (sn != (ref_station+n_stations()/2))) {
+      for (int sn = 0 ; sn < (int)n_stations(); sn++){
+        if ((sn != ref_station) && (sn != (ref_station+(int)n_stations()/2))) {
           baselines.push_back(std::pair<int,int>(sn,ref_station));
         }
       }
-      for (size_t sn = 0 ; sn < n_stations(); sn++){
-        if ((sn != ref_station) && (sn != (ref_station+n_stations()/2))) {
+      for (int sn = 0 ; sn < (int)n_stations(); sn++){
+        if ((sn != ref_station) && (sn != (ref_station+(int)n_stations()/2))) {
           baselines.push_back(std::pair<int,int>(sn,ref_station+n_stations()/2));
         }
       }
@@ -100,7 +100,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters) {
   } else { // No cross_polarisation
     if (parameters.reference_station >= 0) {
       // no cross polarisation with a reference station
-      for (size_t sn = 0 ; sn < n_stations(); sn++){
+      for (int sn = 0 ; sn < (int)n_stations(); sn++){
         if (sn != ref_station) {
           baselines.push_back(std::pair<int,int>(sn,ref_station));
         }
@@ -135,7 +135,7 @@ set_data_writer(boost::shared_ptr<Data_writer> writer_) {
   writer = writer_;
 }
 
-bool Correlation_core::is_ready_for_do_task() {
+bool Correlation_core::has_work() {
   for (size_t i=0; i < input_buffers.size(); i++) {
     if (input_buffers[i]->empty()) {
       return false;
@@ -148,7 +148,7 @@ bool Correlation_core::is_ready_for_do_task() {
 }
 
 void Correlation_core::integration_initialise() {
-  int size = (size_of_fft()/2+1) * baselines.size();
+  size_t size = (size_of_fft()/2+1) * baselines.size();
   if (accumulation_buffers.size() != size) {
     accumulation_buffers.resize(size);
   }
@@ -167,7 +167,7 @@ void Correlation_core::integration_step() {
   for (size_t i=0; i<input_buffers.size(); i++) {
     int size;
     input_elements[i] = &input_buffers[i]->consume(size);
-    assert(size == size_of_fft());
+    assert(size == (int)size_of_fft());
     assert(size == input_elements[i]->size());
   }
   
@@ -243,7 +243,7 @@ Correlation_core::
 auto_correlate_baseline(std::complex<FLOAT> in[],
                         std::complex<FLOAT> out[]) {
   int size = size_of_fft()/2+1;
-  for (size_t i=0; i<size; i++) {
+  for (int i=0; i<size; i++) {
     out[i].real() += in[i].real()*in[i].real() +
                      in[i].imag()*in[i].imag();
     out[i].imag() = 0;
@@ -257,7 +257,7 @@ correlate_baseline(std::complex<FLOAT> in1[],
                    std::complex<FLOAT> out[]) {
   // NGHK: TODO: expand and optimize
   int size = size_of_fft()/2+1;
-  for (size_t i=0; i<size; i++) {
+  for (int i=0; i<size; i++) {
     //out[i] += in1[i]*std::conj(in2[i]);
     out[i].real() += 
       in1[i].real() * in2[i].real() + 

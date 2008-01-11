@@ -68,7 +68,7 @@ public:
 
   // Sets the track parameters for a station:
   void input_node_set(const std::string &station,
-                      Track_parameters &track_params);
+                      Input_node_parameters &input_node_params);
   /// Returns the time in milliseconds since midnight on the start-day
   int32_t input_node_get_current_time(const std::string &station);
   void input_node_goto_time(const std::string &station, int32_t time);

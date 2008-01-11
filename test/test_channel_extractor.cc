@@ -17,7 +17,7 @@
 class Channel_extractor_tester {
 public:
   Channel_extractor_tester(const std::string &filename, 
-                           Track_parameters &parameters);
+                           Input_node_parameters &parameters);
 
   void writer(int channel, const std::string &filename);
   
@@ -25,7 +25,7 @@ public:
   void write_block();
 private:
   boost::shared_ptr<Channel_extractor_mark4> channel_extractor;
-  Track_parameters track_parameters;
+  Input_node_parameters input_node_parameters;
   std::vector< boost::shared_ptr<Data_writer> >   output_writers;
   
   // fanout is at most 8/n_bits_per_sample
@@ -53,12 +53,12 @@ int main(int argc, char *argv[]) {
     control_parameters.get_vex().get_mode(scans[0]);
 
   { // First test
-    Track_parameters track_parameters = 
-      control_parameters.get_track_parameters(mode, station);
+    Input_node_parameters input_node_parameters = 
+      control_parameters.get_input_node_parameters(mode, station);
 
     Channel_extractor_tester 
       tester(control_parameters.data_sources(station)[0],
-             track_parameters);
+             input_node_parameters);
 
     std::string outfile0 = "file:///tmp/output_channel0_0.ch";
     std::string outfile1 = "file:///tmp/output_channel1_0.ch";
@@ -77,18 +77,18 @@ int main(int argc, char *argv[]) {
 
   { // Second test
     // Swap first two channels
-    Track_parameters track_parameters = 
-      control_parameters.get_track_parameters(mode, station);
-    Track_parameters::Channel_iterator first, second;
-    first = track_parameters.channels.begin();
+    Input_node_parameters input_node_parameters = 
+      control_parameters.get_input_node_parameters(mode, station);
+    Input_node_parameters::Channel_iterator first, second;
+    first = input_node_parameters.channels.begin();
     second = first; second++;
-    Track_parameters::Channel_parameters channel_parameters = first->second;
+    Input_node_parameters::Channel_parameters channel_parameters = first->second;
     first->second = second->second;
     second->second = channel_parameters;
 
     Channel_extractor_tester 
       tester(control_parameters.data_sources(station)[0],
-             track_parameters);
+             input_node_parameters);
 
     std::string outfile0 = "file:///tmp/output_channel1_1.ch";
     std::string outfile1 = "file:///tmp/output_channel0_1.ch";
@@ -120,21 +120,21 @@ int main(int argc, char *argv[]) {
 /** Channel_extractor_tester implementation **/
 Channel_extractor_tester::
 Channel_extractor_tester(const std::string &input_filename,
-                         Track_parameters &parameters) 
-  : track_parameters(parameters) {
+                         Input_node_parameters &parameters) 
+  : input_node_parameters(parameters) {
   boost::shared_ptr<Data_reader> 
     reader(new Data_reader_file(input_filename.c_str()));
 
   channel_extractor = boost::shared_ptr<Channel_extractor_mark4>
     (new Channel_extractor_mark4(reader, 
                                  /*random headers*/false));
-  channel_extractor->set_track_parameters(track_parameters);
+  channel_extractor->set_input_node_parameters(input_node_parameters);
 
-  buffer.resize(track_parameters.channels.size());
-  for (size_t i=0; i<track_parameters.channels.size(); i++) {
+  buffer.resize(input_node_parameters.channels.size());
+  for (size_t i=0; i<input_node_parameters.channels.size(); i++) {
     buffer[i] = new char[channel_extractor->number_of_bytes_per_block()];
   }
-  output_writers.resize(track_parameters.channels.size());
+  output_writers.resize(input_node_parameters.channels.size());
 }
 
 void 

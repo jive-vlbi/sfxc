@@ -33,7 +33,9 @@ public:
                       int size_input_slice, 
                       int size_output_slice);
 
+  const char *name() { return __PRETTY_FUNCTION__; }
   void do_task();
+  bool has_work();
 
   void read_remaining_bit_of_slice();
   

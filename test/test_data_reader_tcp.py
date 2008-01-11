@@ -14,7 +14,8 @@ infile = "data/input.txt"
 outfile = "output.txt"
 
 status = os.system("make test_data_reader_tcp")
-if (status != 0): sys.exit(1)
+if (status != 0): sys.exit(status)
 
-os.system("mpirun -np 2 ./test_data_reader_tcp "+infile+" "+outfile);
-if (status != 0): sys.exit(1)
+status = os.system("mpirun -np 2 ./test_data_reader_tcp "+infile+" "+outfile);
+print status;
+if (status != 0): sys.exit(status)

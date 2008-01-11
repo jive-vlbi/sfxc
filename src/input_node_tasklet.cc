@@ -18,6 +18,7 @@ Input_node_tasklet::~Input_node_tasklet() {}
 
 Input_node_tasklet *
 get_input_node_tasklet(Data_reader *reader) {
+  assert(SIZE_MK4_FRAME%2 == 0);
   char buffer[SIZE_MK4_FRAME];
 
   // buffer is an array of SIZE_MK4_FRAME bytes (8 is the smallest number of tracks).
@@ -32,7 +33,6 @@ get_input_node_tasklet(Data_reader *reader) {
     memcpy(buffer, buffer+SIZE_MK4_FRAME/2, SIZE_MK4_FRAME/2);
     size_t bytes_read = reader->get_bytes(SIZE_MK4_FRAME/2, buffer+SIZE_MK4_FRAME/2);
     assert (bytes_read == SIZE_MK4_FRAME/2);
-
 
     // the header contains 64 bits before the syncword and
     //                     64 bits after the syncword.
@@ -107,9 +107,7 @@ Input_node_tasklet::append_time_slice(int start_time,
   return append_time_slice(Time_slice(start_time, stop_time, writer));
 }
 
-Input_node_tasklet::Time_slice::Time_slice() {
-}
+Input_node_tasklet::Time_slice::Time_slice() {}
 Input_node_tasklet::Time_slice::
 Time_slice(int start_time, int stop_time, Data_writer *writer)
-    : start_time(start_time), stop_time(stop_time), writer(writer) {
-}
+    : start_time(start_time), stop_time(stop_time), writer(writer) {}

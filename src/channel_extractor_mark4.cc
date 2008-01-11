@@ -27,7 +27,7 @@ public:
                                          char *first_data_block,
                                          bool insert_random_headers_,
                                          Debug_level debug_level);
-  bool set_track_parameters(const Track_parameters &parameters);
+  bool set_input_node_parameters(const Input_node_parameters &parameters);
   
 
   int goto_time(int64_t time);
@@ -359,12 +359,12 @@ int Channel_extractor_mark4::goto_next_block() {
   }
 }
 bool 
-Channel_extractor_mark4::set_track_parameters(const Track_parameters &param) {
+Channel_extractor_mark4::set_input_node_parameters(const Input_node_parameters &param) {
   switch (total_tracks) {
-  case  8: return ch_extractor_8_tracks->set_track_parameters(param);
-  case 16: return ch_extractor_16_tracks->set_track_parameters(param);
-  case 32: return ch_extractor_32_tracks->set_track_parameters(param);
-  case 64: return ch_extractor_64_tracks->set_track_parameters(param);
+  case  8: return ch_extractor_8_tracks->set_input_node_parameters(param);
+  case 16: return ch_extractor_16_tracks->set_input_node_parameters(param);
+  case 32: return ch_extractor_32_tracks->set_input_node_parameters(param);
+  case 64: return ch_extractor_64_tracks->set_input_node_parameters(param);
   default: assert(false);
   }
 }
@@ -402,12 +402,12 @@ Channel_extractor_mark4_implementation(boost::shared_ptr<Data_reader> reader,
 template <class Type>
 bool
 Channel_extractor_mark4_implementation<Type>::
-set_track_parameters(const Track_parameters &parameters) {
+set_input_node_parameters(const Input_node_parameters &parameters) {
   _track_bit_rate = parameters.track_bit_rate;
   tracks.resize(parameters.channels.size());
   int curr_channel =0;
   // Store a list of tracks: first magnitude (optional), then sign 
-  for (Track_parameters::Channel_const_iterator channel = 
+  for (Input_node_parameters::Channel_const_iterator channel = 
          parameters.channels.begin();
        channel != parameters.channels.end(); channel++, curr_channel++) {
     tracks[curr_channel].resize(channel->second.bits_per_sample() *

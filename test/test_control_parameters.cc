@@ -31,8 +31,7 @@ int main(int argc, char *argv[]) {
     for (size_t j=0; j<stations.size(); j++) {
       const std::string &mode = 
         control_parameters.get_vex().get_mode(scans[i]);
-      control_parameters.get_track_parameters(mode,
-                                              stations[j]);
+      control_parameters.get_input_node_parameters(mode, stations[j]);
     }
   }
 

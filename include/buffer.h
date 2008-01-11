@@ -94,7 +94,7 @@ public:
 
   T &operator[](int i) {
     assert(i >= 0);
-    assert(i < _buffer.size());
+    assert(i < (int)_buffer.size());
     return _buffer[i];
   }
   T *buffer() {

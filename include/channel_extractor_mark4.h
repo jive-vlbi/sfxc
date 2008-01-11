@@ -37,7 +37,7 @@ public:
                           bool insert_random_headers_,
                           Debug_level debug_level = CHECK_ALL_HEADERS);
 
-  bool set_track_parameters(const Track_parameters &parameters);
+  bool set_input_node_parameters(const Input_node_parameters &parameters);
   
   int goto_time(int64_t time);
   int64_t get_current_time();

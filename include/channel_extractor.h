@@ -41,15 +41,27 @@ public:
   void do_task();
   /// Check if we can process data
   bool has_work();
+  const char *name() {
+    return "Channel_extractor";
+  }
+
   /// Set the input
   void connect_to(Input_buffer_ptr new_input_buffer);
   /// Get the output
-  Output_buffer_ptr get_output_buffer(int stream);
+  Output_buffer_ptr get_output_buffer(size_t stream);
 
   // Setting parameters
-  void set_parameters(const Track_parameters &track_param,
+  void set_parameters(const Input_node_parameters &input_node_param,
                       const std::vector< std::vector<int> > &track_positions);
-
+private:
+  // Dechannelize samples
+  void process_samples(Type *input_buffer,
+                       int n_input_samples,
+                       int start_track_nr,
+                       int end_track_nr,
+                       std::vector<char *> &output_positions,
+                       int &output_buffer_bit,
+                       int &output_buffer_byte);
 private:
   Input_buffer_ptr                input_buffer_;
   Output_memory_pool              output_memory_pool_;
@@ -57,10 +69,6 @@ private:
 
   /// Bit positions for the sign and magnitude bits, per channel
   std::vector< std::vector<int> > tracks;
-  /// The number of frequency bins (#samples per data chunk)
-  int number_channels_;
-  /// The number of bits per sample
-  int bits_per_sample_;
 };
 
 #include "channel_extractor_impl.h"

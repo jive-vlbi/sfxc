@@ -46,13 +46,13 @@ void Input_node::initialise() {
 
 }
 
-void Input_node::set_track_parameters(const Track_parameters &track_param) {
+void Input_node::set_input_node_parameters(const Input_node_parameters &input_node_param) {
   for (size_t i=0; i<time_slicers.size(); i++) {
     assert(time_slicers[i].finished());
   }
   assert(channel_extractor !=
          boost::shared_ptr<Channel_extractor_mark4>());
-  channel_extractor->set_track_parameters(track_param);
+  channel_extractor->set_input_node_parameters(input_node_param);
 
   // #buffered blocks = Max_delay * byte_rate per channel / bytes per block
   int buffered_elements = static_cast<int>(ceil((MAX_DELAY * 1.
@@ -64,7 +64,7 @@ void Input_node::set_track_parameters(const Track_parameters &track_param) {
   time_slicers.resize(0, Slicer(total_elements, buffered_elements));
 
   // create time slicers
-  time_slicers.resize(track_param.channels.size(), Slicer(total_elements,
+  time_slicers.resize(input_node_param.channels.size(), Slicer(total_elements,
                       buffered_elements));
 }
 
