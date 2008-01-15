@@ -32,7 +32,7 @@
 #define SFXC_PORT                1233
 #define MAX_TCP_CONNECTIONS      16
 
-//#define USE_DOUBLE
+#define USE_DOUBLE
 
 #ifdef USE_DOUBLE
 # define FLOAT                   double

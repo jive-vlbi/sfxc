@@ -39,8 +39,8 @@ public:
   double frequency;
   char sideband;
   std::vector<std::string> autos, crosses;
-  std::vector<FLOAT> snr_crosses; // Signal to noise ratio for the crosses
-  std::vector<FLOAT> offset; // Offset of the maximum value of a cross with the midpoint
+  std::vector<float> snr_crosses; // Signal to noise ratio for the crosses
+  std::vector<float> offset; // Offset of the maximum value of a cross with the midpoint
 
   void set_size_crosses(int size_cross) {
     crosses.resize(size_cross);
@@ -75,14 +75,14 @@ private:
                            const Control_parameters &ConPrms);
   void plot(char *filename, int nPts, char *title);
 
-  FLOAT signal_to_noise_ratio(std::vector< std::complex<FLOAT> > &data);
-  FLOAT max_value_offset(std::vector< std::complex<FLOAT> > &data);
+  float signal_to_noise_ratio(std::vector< std::complex<float> > &data);
+  float max_value_offset(std::vector< std::complex<float> > &data);
 
 private:
   int nLags;
-  std::vector< std::complex<FLOAT> > in, out;
-  std::vector< FLOAT > magnitude;
-  FFTW_PLAN visibilities2lags; 
+  std::vector< std::complex<float> > in, out;
+  std::vector<float> magnitude;
+  fftwf_plan visibilities2lags; 
 };
 
 Plot_generator::Plot_generator(std::ifstream &infile, 
@@ -97,9 +97,9 @@ Plot_generator::Plot_generator(std::ifstream &infile,
   magnitude.resize(nLags);
 
   visibilities2lags = 
-    FFTW_PLAN_DFT_1D(nLags, 
-                     reinterpret_cast<FFTW_COMPLEX*>(&in[0]),
-                     reinterpret_cast<FFTW_COMPLEX*>(&out[0]),
+    fftwf_plan_dft_1d(nLags, 
+                     reinterpret_cast<fftwf_complex*>(&in[0]),
+                     reinterpret_cast<fftwf_complex*>(&out[0]),
                      FFTW_BACKWARD, 
                      FFTW_ESTIMATE);
 
@@ -253,7 +253,7 @@ Plot_generator::Plot_generator(std::ifstream &infile,
       plot_data_channels.push_back(plot_data[i]);
     }
   }  
-  FFTW_DESTROY_PLAN(visibilities2lags);
+  fftwf_destroy_plan(visibilities2lags);
 }
 
 void Plot_generator::set_plot_data(Plot_data & data, 
@@ -298,21 +298,11 @@ Plot_generator::generate_auto_plots(std::ifstream &infile,
   //baselines equals to number of stations.
   for (int station=stations_start; station<stations_end; station++) {
     infile.read((char*)&baseline, sizeof(Output_header_baseline));
-    DEBUG_MSG("weight " << (int)baseline.weight );
-    DEBUG_MSG("station1 " << (int)baseline.station_nr1 );
-    DEBUG_MSG("station2 " << (int)baseline.station_nr2 );
-    DEBUG_MSG("polarisation1 " << (int)baseline.polarisation1 );
-    DEBUG_MSG("polarisation2 " << (int)baseline.polarisation2 );
-    DEBUG_MSG("sideband " << (int)baseline.sideband );
-    DEBUG_MSG("channel " << (int)baseline.frequency_nr );
-    DEBUG_MSG("empty " <<(char)baseline.empty );
-
-    DEBUG_MSG("station number in loop " << station );
     
     assert((int)baseline.station_nr1 == (int)baseline.station_nr2);
     
     //read data for this baseline
-    infile.read((char *)&in[0], 2*in.size()*sizeof(FLOAT));
+    infile.read((char *)&in[0], 2*in.size()*sizeof(float));
     for  (int lag=0; lag<nLags; lag++) {
       magnitude[lag] = abs(in[lag]);
     }
@@ -341,24 +331,13 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
   Output_header_baseline baseline;
   //read-in the header of the baselines
   infile.read((char*)&baseline, sizeof(Output_header_baseline));
-  DEBUG_MSG("weight " << (int)baseline.weight);
-  DEBUG_MSG("station1 " << (int)baseline.station_nr1 );
-  DEBUG_MSG("station2 " << (int)baseline.station_nr2 );
-  DEBUG_MSG("polarisation1 " << (int)baseline.polarisation1 );
-  DEBUG_MSG("polarisation2 " << (int)baseline.polarisation2 );
-  DEBUG_MSG("sideband " << (int)baseline.sideband );
-  DEBUG_MSG("channel " << (int)baseline.frequency_nr );
-  DEBUG_MSG("empty " <<(char)baseline.empty );
-
-  DEBUG_MSG("station number 1 in loop " << station );
-  DEBUG_MSG("station number 2 in loop " << station2 );
 
   //assert(station == (int)baseline.station_nr1);
   //assert(station2 == (int)baseline.station_nr2);
 
   //read data for this baseline
-  infile.read((char *)&in[0], 2*in.size()*sizeof(FLOAT));
-  FFTW_EXECUTE(visibilities2lags);
+  infile.read((char *)&in[0], 2*in.size()*sizeof(float));
+  fftwf_execute(visibilities2lags);
 
   for  (int lag=0; lag<nLags; lag++) {
     magnitude[lag] = abs(out[(lag+nLags/2)%nLags])/nLags;
@@ -405,15 +384,15 @@ Plot_generator::plot(char *filename, int nPts, char *title) {
   gnuplot_close(g);
 }
 
-FLOAT
-Plot_generator::max_value_offset(std::vector< std::complex<FLOAT> > &data)
+float
+Plot_generator::max_value_offset(std::vector< std::complex<float> > &data)
 {
   int index_max = 0;
   for (size_t i=1; i<data.size(); i++) {
     if (norm(data[i]) > norm(data[index_max])) index_max = i;
   }
 
-  FLOAT maxval = 0.0;
+  float maxval = 0.0;
   int maxval_loc = 0;
   for  (int lag=0; lag<data.size(); lag++) {
     magnitude[lag] = abs(data[(lag+data.size()/2)%data.size()])/data.size();
@@ -425,8 +404,8 @@ Plot_generator::max_value_offset(std::vector< std::complex<FLOAT> > &data)
   
   return maxval_loc;
 }
-FLOAT 
-Plot_generator::signal_to_noise_ratio(std::vector< std::complex<FLOAT> > &data)
+float 
+Plot_generator::signal_to_noise_ratio(std::vector< std::complex<float> > &data)
 {
   int index_max = 0;
   for (size_t i=1; i<data.size(); i++) {
@@ -434,7 +413,7 @@ Plot_generator::signal_to_noise_ratio(std::vector< std::complex<FLOAT> > &data)
   }
 
   //return noise rms in array, skip 10 % around maximum
-  std::complex<FLOAT> mean(0,0);
+  std::complex<float> mean(0,0);
   int ll=index_max - data.size()/20;//5% of range to left
   int ul=index_max + data.size()/20;//5% of range to right
   int n2avg=0;
@@ -450,7 +429,7 @@ Plot_generator::signal_to_noise_ratio(std::vector< std::complex<FLOAT> > &data)
 
   mean /= n2avg;
 
-  FLOAT sum = 0;
+  float sum = 0;
   for (size_t i=0 ; i< data.size() ; i++){
     if (((int)i < ll) || ((int)i > ul)) {
       sum += norm(data[i]-mean);
@@ -641,29 +620,12 @@ int main(int argc, char *argv[])
   Output_header_global header;
   Output_header_timeslice timeslice;
 
-  DEBUG_MSG("size of global is -> " << sizeof(Output_header_global));
-  DEBUG_MSG("size of timeslice is -> " << sizeof(Output_header_timeslice));
-  DEBUG_MSG("size of baselines is -> " << sizeof(Output_header_baseline));
-  DEBUG_MSG("size of FLOAT is -> " << sizeof(FLOAT));
-  DEBUG_MSG("size of double is -> " << sizeof(double));
-  DEBUG_MSG("size of float is -> " << sizeof(float));
-
   //read-in the global header 
   infile.read((char*)&header, sizeof(Output_header_global));
-  DEBUG_MSG("experiment name '" << header.experiment << "'" );     
-  DEBUG_MSG("start year '" << header.start_year << "'" );  
-  DEBUG_MSG("start day '" << header.start_day << "'" );    
-  DEBUG_MSG("start time '" << header.start_time << "'" );  
-  DEBUG_MSG("integration time '" << header.integration_time << "'" );      
-  DEBUG_MSG("number of channels '" << header.number_channels << "'" );     
     
   for (int channel=0; channel<ConPrms.channels_size();) {
     //read-in the header of the time-slice
     infile.read((char*)&timeslice, sizeof(Output_header_timeslice));
-    DEBUG_MSG("integration_slice " << timeslice.integration_slice );
-     DEBUG_MSG("number of baselines " << timeslice.number_baselines );
-     DEBUG_MSG("number of uvw coord. " << timeslice.number_uvw_coordinates );
-     DEBUG_MSG("nchannel = " << channel );
     // generate plots for the channel
     Plot_generator(infile, ConPrms, channel);
 

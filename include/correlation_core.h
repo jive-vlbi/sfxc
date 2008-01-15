@@ -72,7 +72,8 @@ private:
   Correlation_parameters        correlation_parameters;
   
   std::vector< std::vector< std::complex<FLOAT> > > frequency_buffer;
-  std::vector< std::complex<FLOAT> >                accumulation_buffers;
+  std::vector< std::complex<FLOAT> >        accumulation_buffers;  
+  std::vector< std::complex<float> >        accumulation_buffers_float;  
   std::vector< std::pair<int, int> >                baselines;
   
   boost::shared_ptr<Data_writer>                    writer;

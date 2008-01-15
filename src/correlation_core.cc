@@ -254,27 +254,26 @@ void Correlation_core::integration_write() {
   htimeslice.integration_slice = nr_corr;
   htimeslice.number_uvw_coordinates = 3;
  
-  DEBUG_MSG("TIMESLICE HEADER:number of baselines --> : " << htimeslice.number_baselines);
-  DEBUG_MSG("TIMESLICE HEADER:integration slice --> : " << htimeslice.integration_slice);
-  DEBUG_MSG("TIMESLICE HEADER:number of uvw coord. --> : " << htimeslice.number_uvw_coordinates);
-
   //write normalized correlation results to output file
   //NGHK: Make arrays consecutive to be able to write all data at once
   
   uint64_t nWrite = sizeof(htimeslice);
   writer->put_bytes(nWrite, (char *)&htimeslice);
- 
-  DEBUG_MSG("CORRELATION CORE station_number.size() " 
-      << correlation_parameters.station_number.size());
   
   std::vector<int32_t> station_list;
   for (int ii=0; ii<correlation_parameters.station_number.size(); ii++){
        station_list.push_back(correlation_parameters.station_number[ii]);
   }
   
+  accumulation_buffers_float.resize(size_of_fft()/2+1);
+  
   for (int i=0; i<baselines.size(); i++) {
     std::pair<int,int> &stations = baselines[i];
     
+    for (int ii=0; ii<size_of_fft()/2+1; ii++ ){
+      accumulation_buffers_float[ii] = accumulation_buffers[i*(size_of_fft()/2+1)+ii];
+    }
+
     hbaseline.weight = 0;       // The number of good samples
     hbaseline.station_nr1 = (uint8_t)station_list[stations.first];  // Station number in the vex-file
     hbaseline.station_nr2 = (uint8_t)station_list[stations.second];  // Station number in the vex-file
@@ -290,23 +289,11 @@ void Correlation_core::integration_write() {
                             // sorted increasingly
       // 1 byte left:
     hbaseline.empty = ' ';
-    DEBUG_MSG("BASELINE HEADER:weight --> : " << (int)hbaseline.weight);
-    DEBUG_MSG("BASELINE HEADER:station1 --> : " << (int)hbaseline.station_nr1);
-    DEBUG_MSG("BASELINE HEADER:station2 --> : " << (int)hbaseline.station_nr2);
-    DEBUG_MSG("BASELINE HEADER:polaris1 --> : " << (int)hbaseline.polarisation1);
-    DEBUG_MSG("BASELINE HEADER:polaris2 --> : " << (int)hbaseline.polarisation2);
-    DEBUG_MSG("BASELINE HEADER:sideband --> : " << (int)hbaseline.sideband);
-    DEBUG_MSG("BASELINE HEADER:freq_nr --> : " << (int)hbaseline.frequency_nr);
-    DEBUG_MSG("BASELINE HEADER:empty --> : " << (char)hbaseline.empty);
-    
-//    DEBUG_MSG("BASELINE HEADER:STATION NUMBER --> : " << correlation_parameters.station_number);
     
     nWrite = sizeof(hbaseline);
     writer->put_bytes(nWrite, (char *)&hbaseline);
-    DEBUG_MSG("BASELINE HEADER: AFTER WRITE BASELINE HEADER");
-    writer->put_bytes((size_of_fft()/2+1)*sizeof(FFTW_COMPLEX),
-        ((char*)&accumulation_buffers[i*(size_of_fft()/2+1)]));
-    DEBUG_MSG("BASELINE HEADER: AFTER WRITE DATA");
+    writer->put_bytes((size_of_fft()/2+1)*sizeof(std::complex<float>),
+        ((char*)&accumulation_buffers_float[0]));
   }
 /*
   writer->put_bytes(accumulation_buffers.size()*sizeof(std::complex<DOUBLE>),

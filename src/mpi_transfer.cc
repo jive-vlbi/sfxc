@@ -83,7 +83,7 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
 void
 MPI_Transfer::send(Track_parameters &track_param, int rank) {
   int size = 0;
-  size = sizeof(double);
+  size = sizeof(int32_t);
   for (Track_parameters::Channel_iterator channel =
          track_param.channels.begin();
        channel != track_param.channels.end(); channel++) {
@@ -102,7 +102,7 @@ MPI_Transfer::send(Track_parameters &track_param, int rank) {
   int32_t length;
   char message_buffer[size];
 
-  MPI_Pack(&track_param.track_bit_rate, 1, MPI_DOUBLE,
+  MPI_Pack(&track_param.track_bit_rate, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
 
   for (Track_parameters::Channel_iterator channel =
@@ -158,7 +158,7 @@ MPI_Transfer::receive(MPI_Status &status, Track_parameters &track_param) {
   int position = 0;
 
   MPI_Unpack(buffer, size, &position,
-             &track_param.track_bit_rate, 1, MPI_DOUBLE,
+             &track_param.track_bit_rate, 1, MPI_INT32,
              MPI_COMM_WORLD);
 
   while (position < size) {

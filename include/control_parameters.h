@@ -38,7 +38,7 @@ public:
   bool operator==(const Track_parameters &other) const;
 
   // data
-  int                                         track_bit_rate; // in Ms/s
+  int32_t                                     track_bit_rate; // in Ms/s
   Channel_map                                 channels;
 };
 

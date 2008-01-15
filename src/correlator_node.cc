@@ -246,20 +246,13 @@ void Correlator_node::set_parameters(const Correlation_parameters &parameters) {
      }
    }
         
-   int size_of_one_baseline = sizeof(FFTW_COMPLEX)*
+   int size_of_one_baseline = sizeof(fftwf_complex)*
      (parameters.number_channels*PADDING/2+1);
    
    output_node_set_timeslice(parameters.slice_nr, get_correlate_node_number(),
          n_integration_slice_in_time_slice * size_of_one_baseline*nBaselines +
          n_integration_slice_in_time_slice * sizeof(Output_header_timeslice) +
          n_integration_slice_in_time_slice * sizeof(Output_header_baseline)*nBaselines);
-   
-   DEBUG_MSG("CORRELATOR NODE SET PARAMETERS:slice nr " << parameters.slice_nr);
-   DEBUG_MSG("CORRELATOR NODE SET PARAMETERS:stream nr " << get_correlate_node_number());
-   DEBUG_MSG("CORRELATOR NODE SET PARAMETERS:bytes " << n_integration_slice_in_time_slice * size_of_one_baseline*nBaselines +
-       n_integration_slice_in_time_slice * sizeof(Output_header_timeslice) +
-       n_integration_slice_in_time_slice * sizeof(Output_header_baseline)*nBaselines);
-   
  }
 
  void
@@ -270,7 +263,4 @@ void Correlator_node::set_parameters(const Correlation_parameters &parameters) {
             RANK_OUTPUT_NODE,
             MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
             MPI_COMM_WORLD);
-   DEBUG_MSG("CORRELATOR NODE OUTPUT NODE SET TIME SLICE:slice nr " << slice_nr);
-   DEBUG_MSG("CORRELATOR NODE OUTPUT NODE SET TIME SLICE:stream nr " << stream_nr);
-   DEBUG_MSG("CORRELATOR NODE OUTPUT NODE SET TIME SLICE:bytes " << bytes);
  }

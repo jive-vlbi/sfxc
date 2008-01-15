@@ -69,16 +69,6 @@ Manager_node(int rank, int numtasks,
 
     
   output_node_set_global_header((char *)&header_msg, sizeof(Output_header_global));
-
-  DEBUG_MSG("header size = " << header_msg.header_size);
-  DEBUG_MSG("experiment name = " << header_msg.experiment);
-  DEBUG_MSG("start year = " << header_msg.start_year);
-  DEBUG_MSG("start day = " << header_msg.start_day);
-  DEBUG_MSG("start_time = " << header_msg.start_time);
-  DEBUG_MSG("number of channels = " << header_msg.number_channels);
-  DEBUG_MSG("integration time = " << (int)header_msg.integration_time);
-  
-
   // Input nodes:
   int n_stations = get_control_parameters().number_stations();
   for (int input_node=0; input_node<n_stations; input_node++) {
@@ -89,7 +79,6 @@ Manager_node(int rank, int numtasks,
 
     start_input_node(/*rank_nr*/ input_node+3, 
         get_control_parameters().station(input_node));
-    DEBUG_MSG("MANAGER NODE " << get_control_parameters().station(input_node));
   }
   assert(n_stations > 0);
 
@@ -124,7 +113,6 @@ Manager_node(int rank, int numtasks,
       set_TCP(input_rank(get_control_parameters().station(station_nr)), 
               correlator_nr,
               correlator_rank, station_nr);
-      DEBUG_MSG("MANAGER NODE " << get_control_parameters().station(station_nr));
     }
 
     if (control_parameters.cross_polarize()) {
@@ -133,7 +121,6 @@ Manager_node(int rank, int numtasks,
         set_TCP(input_rank(get_control_parameters().station(station_nr)), 
                 correlator_nr+n_corr_nodes,
                 correlator_rank, station_nr+n_stations);
-        DEBUG_MSG("MANAGER NODE " << get_control_parameters().station(station_nr));
       }
     }
 
@@ -332,15 +319,9 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
         station_name,
         get_input_node_map());
 
-  for (int i=0; i<station_name.size(); i++){
-    DEBUG_MSG("MANAGER NODE STATION NAME " << station_name[i]);
-    DEBUG_MSG("MANAGER NODE STATION NUMBER " << correlation_parameters.station_number[i]);
-  }
-
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
   correlation_parameters.slice_nr = slice_nr;
-  DEBUG_MSG("channel name --> " << channel_name);
 
   assert ((cross_channel != -1) == correlation_parameters.cross_polarize);
 
@@ -355,7 +336,6 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
         correlation_parameters.station_streams[i];
       stream.station_stream += n_stations;
       correlation_parameters.station_streams.push_back(stream);
-      DEBUG_MSG("MANAGER NODE STATION STREAM " << &correlation_parameters.station_streams[i]);
     }
   }
 

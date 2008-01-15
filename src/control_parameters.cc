@@ -791,7 +791,6 @@ get_correlation_parameters(const std::string &scan_name,
          station_it != vex.get_root_node()["STATION"]->end(); ++station_it) {
       if(station_it.key() == station_name[i]) {
         corr_param.station_number.push_back(say);
-        DEBUG_MSG("CONTROL_PARAMETERS station number [" << ii << "] = " << say);
         ii++;
       }
       say ++;
