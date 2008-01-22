@@ -25,6 +25,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <sstream>
 #include <string>
 
 //the class definitions and function definitions
@@ -37,7 +38,7 @@
 
 //default constructor, set default values
 Uvw_model::Uvw_model() 
-  : end_scan(0), acc(NULL), splineakima_u(NULL), splineakima_v(NULL), 
+  : begin_scan(0), acc(NULL), splineakima_u(NULL), splineakima_v(NULL), 
     splineakima_w(NULL)
 {
 }
@@ -64,34 +65,33 @@ int Uvw_model::open(char *delayTableName)
   in.read(reinterpret_cast < char * > (&hsize), sizeof(int32_t));
   char station[hsize];
   in.read(reinterpret_cast < char * > (station), hsize*sizeof(char));
-   
+  
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))){
     // The time read from file is in seconds, whereas the software correlator
     // works with times in microseconds
-    times.push_back(line[0]*1000000);
-    u.push_back(line[1]);
-    v.push_back(line[2]);
-    w.push_back(line[3]);
+      times.push_back(line[0]*1000000);
+      u.push_back(line[1]);
+      v.push_back(line[2]);
+      w.push_back(line[3]);
   }
+  times.push_back(0);
+  u.push_back(0);
+  v.push_back(0);
+  w.push_back(0);
+  
   initialise_spline_for_next_scan();
 
   return 0;
 }
 
 void Uvw_model::initialise_spline_for_next_scan() {
-  std::cout << times[end_scan] << " " << end_scan << std::endl;
-  std::cout << u[end_scan] << " " << end_scan << std::endl;
-  std::cout << v[end_scan] << " " << end_scan << std::endl;
-  std::cout << w[end_scan] << " " << end_scan << std::endl;
-  assert(end_scan < times.size()-1);
-  size_t next_end_scan = end_scan+2;
-  while ((next_end_scan < times.size()-1) && 
-         (times[next_end_scan-1] != 0)) {
-    next_end_scan ++;
+//  assert(begin_scan < times.size()-1);
+  size_t end_scan = begin_scan+2;
+  while ((end_scan < times.size()-1) && 
+         (times[end_scan-1] != 0)) {
+    end_scan ++;
   }
 	
-	
-
   if (splineakima_u != NULL) {
     gsl_spline_free(splineakima_u);
     gsl_interp_accel_free(acc);
@@ -105,8 +105,8 @@ void Uvw_model::initialise_spline_for_next_scan() {
 
   // Initialise the Akima spline
   acc = gsl_interp_accel_alloc();
-  if (end_scan != 0) end_scan++;
-  int n_pts = next_end_scan-end_scan;
+  if (begin_scan != 0) begin_scan++;
+  int n_pts = end_scan-begin_scan-1;
 
   // End scan now points to the beginning of the next scan and 
   // the next scan has n_pts data points
@@ -115,41 +115,67 @@ void Uvw_model::initialise_spline_for_next_scan() {
   splineakima_w = gsl_spline_alloc(gsl_interp_akima, n_pts);
 
   gsl_spline_init(splineakima_u,
-                  &times[end_scan], 
-                  &u[end_scan], 
+                  &times[begin_scan], 
+                  &u[begin_scan], 
                   n_pts);
   gsl_spline_init(splineakima_v,
-                  &times[end_scan], 
-                  &v[end_scan], 
+                  &times[begin_scan], 
+                  &v[begin_scan], 
                   n_pts);
   gsl_spline_init(splineakima_w,
-                  &times[end_scan], 
-                  &w[end_scan], 
+                  &times[begin_scan], 
+                  &w[begin_scan], 
                   n_pts);
   
-  end_scan = next_end_scan;
+  begin_scan = end_scan;
 }
 
 
 //calculates the delay for the delayType at time in microseconds
 //get the next line from the delay table file
-std::ofstream& Uvw_model::uvw_values(std::ofstream &output, int64_t starttime, 
+std::vector< std::vector<double> > Uvw_model::uvw_values(std::ofstream &output, int64_t starttime, 
                                      int64_t stoptime, double inttime) {
-  int64_t time=starttime + inttime*1000/2;
+  int64_t time=starttime; // + inttime*1000/2;
   double gsl_u, gsl_v, gsl_w;
+  std::vector< std::vector<double> > uvw;
+  std::vector<double> tv, uv, vv, wv;
+  std::ofstream outtext("uvw.txt");
+  outtext.precision(14);
   output.precision(14);
   while (time < stoptime){
-    while (times[end_scan] < time) initialise_spline_for_next_scan();
+    if (times[begin_scan-1] == 0 && times[begin_scan] == 0){
+      std::cout << "end of interpolation " << std::endl;
+    }else {
+      while (times[begin_scan-2] < time){
+        time = times[begin_scan];
+        initialise_spline_for_next_scan();
+      }
+    }
     gsl_u = gsl_spline_eval (splineakima_u, time, acc);
     gsl_v = gsl_spline_eval (splineakima_v, time, acc);
     gsl_w = gsl_spline_eval (splineakima_w, time, acc);
     double ttime  = time/1000;
-		
+
+      outtext << std::setprecision(14) << ttime/1000 << " " 
+      << std::setprecision(14) << gsl_u << " "
+      << std::setprecision(14) << gsl_v << " "
+      << std::setprecision(14) << gsl_w << " " << std::endl;
+
     output.write(reinterpret_cast < char * > (&ttime), sizeof(double)); 
     output.write(reinterpret_cast < char * > (&gsl_u), sizeof(double)); 
     output.write(reinterpret_cast < char * > (&gsl_v), sizeof(double)); 
     output.write(reinterpret_cast < char * > (&gsl_w), sizeof(double)); 
-    time += inttime*1000;
+    
+    tv.push_back(ttime);
+    uv.push_back(gsl_u);
+    vv.push_back(gsl_v);
+    wv.push_back(gsl_w);
+    
+    time += inttime*1000/2;
   }
-  return output;
+  uvw.push_back(tv);
+  uvw.push_back(uv);
+  uvw.push_back(vv);
+  uvw.push_back(wv);
+  return uvw;
 }

@@ -217,7 +217,7 @@ Control_parameters::get_start_time() const {
 }
 
 Control_parameters::Date
-Control_parameters::get_stop_time() {
+Control_parameters::get_stop_time() const {
   return Date(ctrl["stop"].asString());
 }
 

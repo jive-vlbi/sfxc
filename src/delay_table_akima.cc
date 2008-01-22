@@ -82,12 +82,25 @@ int Delay_table_akima::open(const char *delayTableName)
    
   // Read the data
   double line[5];
+  std::ofstream outtext("delay.txt");
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))){
     assert(line[4] <= 0);
     // The time read from file is in seconds, whereas the software correlator
     // works with times in microseconds
     times.push_back(line[0]*1000000);
     delays.push_back(line[4]);
+/*    std::cout << "time " << line[0] << std::endl;
+    std::cout << "u " << line[1] << std::endl;
+    std::cout << "v " << line[2] << std::endl;
+    std::cout << "w " << line[3] << std::endl;
+    std::cout << "delay " << line[4] << std::endl;
+*/
+    outtext << std::setprecision(14) << line[0] << " "
+              << std::setprecision(14) << line[1] << " "
+              << std::setprecision(14) << line[2] << " "
+              << std::setprecision(14) << line[3] << " "
+              << std::setprecision(14) << line[4] << " " << std::endl;
+
   }
 
   // Initialise

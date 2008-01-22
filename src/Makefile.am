@@ -32,7 +32,8 @@ OBJ=\
   tasklet/tasklet_manager.cc \
   tasklet/tasklet_pool.cc \
   tasklet/tasklet_worker.cc \
-  tasklet/thread.cc
+  tasklet/thread.cc \
+  uvw_model.cc
 
 sfxc_SOURCES = $(OBJ) sfxc.cc \
   node.cc manager_node.cc log_node.cc \

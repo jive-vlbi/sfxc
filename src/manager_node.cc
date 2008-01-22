@@ -16,6 +16,8 @@
 #include "utils.h"
 #include "mpi_transfer.h"
 #include "log_writer_cout.h"
+#include "uvw_model.h"
+#include <iomanip>
 
 Manager_node::
 Manager_node(int rank, int numtasks,
@@ -82,6 +84,51 @@ Manager_node(int rank, int numtasks,
   }
   assert(n_stations > 0);
 
+  //Set uvw_model
+  
+  Uvw_model model;
+
+  std::string filename = "../delay/" + control_parameters.experiment() +
+                          "_" + control_parameters.station(0) + ".del";
+  DEBUG_MSG("MANAGER NODE filename is -> " << filename);
+
+  char * filename_buffer = strdup(filename.c_str());
+  model.open(filename_buffer);
+  free(filename_buffer);
+
+  int64_t uvw_start_time = control_parameters.get_start_time().to_miliseconds()*1000;
+  int64_t uvw_stop_time = control_parameters.get_stop_time().to_miliseconds()*1000;
+  double uvw_integration_time = control_parameters.integration_time();
+  std::vector< std::vector<double> > uvw_temp;
+  
+  DEBUG_MSG("start time --> " << std::setprecision(14) << uvw_start_time);
+  DEBUG_MSG("stop time --> " << std::setprecision(14) << uvw_stop_time);
+  DEBUG_MSG("integration time --> " << std::setprecision(14) << uvw_integration_time);
+  std::ofstream uvw_output("output.delay");
+
+  uvw_temp = model.uvw_values(uvw_output, uvw_start_time, uvw_stop_time, uvw_integration_time);
+  
+  int count_front=0;
+  int count_back=0;
+  int i=0;
+  while (uvw_temp[0][i]*1000 < uvw_start_time){
+    i++;
+  }
+  count_front = i;
+  while (uvw_temp[0][i]*1000 < uvw_stop_time && i < uvw_temp[0].size()){
+    i++;
+  }
+  count_back = i;
+  
+  std::vector< std::vector<double> > uvw(4, count_back-count_front);
+  int j=0;
+  for(i=count_front; i<count_back; i++){
+    uvw[0][j] = uvw_temp[0][i];
+    uvw[1][j] = uvw_temp[1][i];
+    uvw[2][j] = uvw_temp[2][i];
+    uvw[3][j] = uvw_temp[3][i];
+    j++;
+  }
 
   // correlator nodes:
   if (numtasks-(n_stations+3) <

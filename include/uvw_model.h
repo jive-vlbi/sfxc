@@ -41,15 +41,17 @@ public:
   //calculate coefficients for parabolic interpolation
   int open(char *delayTableName);
 
-	std::ofstream& uvw_values(std::ofstream &, int64_t starttime, int64_t stoptime,
-	  		double inttime);
+//	std::ofstream& uvw_values(std::ofstream &, int64_t starttime, int64_t stoptime,
+//	  		double inttime);
+      std::vector< std::vector<double> > uvw_values(std::ofstream &, int64_t starttime, int64_t stoptime,
+                      double inttime);
 
   /// A spline only interpolates one scan. 
   /// This functions preprocesses the spline for the next scan.
   void initialise_spline_for_next_scan();
 private:
   // Last entry of the previous scan
-  size_t end_scan;
+  size_t begin_scan;
   std::vector<double> times, u, v, w;
   gsl_interp_accel *acc;
   gsl_spline *splineakima_u;

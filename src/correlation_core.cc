@@ -236,7 +236,7 @@ void Correlation_core::integration_write() {
   assert(writer != boost::shared_ptr<Data_writer>());
   assert(accumulation_buffers.size() ==
     baselines.size()*(size_of_fft()/2+1));
-  
+
   int nr_corr = (correlation_parameters.stop_time-correlation_parameters.start_time)
                 /correlation_parameters.integration_time;
 
@@ -252,8 +252,8 @@ void Correlation_core::integration_write() {
   
   htimeslice.number_baselines = baselines.size();
   htimeslice.integration_slice = nr_corr;
-  htimeslice.number_uvw_coordinates = 3;
- 
+  htimeslice.number_uvw_coordinates = 0;
+
   //write normalized correlation results to output file
   //NGHK: Make arrays consecutive to be able to write all data at once
   
@@ -281,9 +281,9 @@ void Correlation_core::integration_write() {
                             // (RCP: 0, LCP: 1)
     hbaseline.polarisation2 = (unsigned char)polarisation; // Polarisation for the second station
     if(correlation_parameters.sideband=='U'){
-      hbaseline.sideband = 0;      // Upper or lower sideband (LSB: 0, USB: 1)
+      hbaseline.sideband = 1;      // Upper or lower sideband (LSB: 0, USB: 1)
     }else if(correlation_parameters.sideband=='L'){
-      hbaseline.sideband = 1;
+      hbaseline.sideband = 0;
     }
     hbaseline.frequency_nr = (unsigned char)correlation_parameters.channel_nr;       // The number of the channel in the vex-file,
                             // sorted increasingly

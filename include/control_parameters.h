@@ -115,7 +115,7 @@ public:
   /* Get functions from the correlation control file: */
   /****************************************************/
   Date get_start_time() const;
-  Date get_stop_time();
+  Date get_stop_time() const;
   std::vector<std::string> data_sources(const std::string &station) const;
   std::string get_output_file() const;
 
