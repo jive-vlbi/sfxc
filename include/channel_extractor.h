@@ -68,7 +68,7 @@ private:
   std::vector<Output_buffer_ptr>  output_buffers_;
 
   /// Bit positions for the sign and magnitude bits, per channel
-  std::vector< std::vector<int> > tracks;
+  std::vector< std::vector<int> > tracks_in_subbands;
 };
 
 #include "channel_extractor_impl.h"

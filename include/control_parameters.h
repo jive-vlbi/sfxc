@@ -3,6 +3,7 @@
 
 #include <json/json.h>
 #include <vex/Vex++.h>
+#include "utils.h"
 
 
 
@@ -26,16 +27,16 @@ public:
     std::vector<int32_t> magn_tracks;      ///< A list of the track numbers for magn
   };
 
-  typedef std::map<std::string,Channel_parameters> Channel_map;
-  typedef Channel_map::iterator                    Channel_iterator;
-  typedef Channel_map::const_iterator              Channel_const_iterator;
+  typedef std::vector<Channel_parameters>           Channel_list;
+  typedef Channel_list::iterator                    Channel_iterator;
+  typedef Channel_list::const_iterator              Channel_const_iterator;
 
   int bits_per_sample() const;
   int subsamples_per_sample() const;
   bool operator==(const Input_node_parameters &other) const;
 
   /// List of the tracks that are combined to frequency channels
-  Channel_map                                 channels;
+  Channel_list                                 channels;
   // data
   int32_t                                     track_bit_rate; // in Ms/s
   /// number of frequency channels (#samples per output data chunk)
@@ -43,6 +44,8 @@ public:
   /// The integration time
   int32_t integr_time;
 };
+
+std::ostream &operator<<(std::ostream &out, const Input_node_parameters &param);
 
 
 /** Information about the correlation neede by the correlator node. **/
@@ -82,13 +85,14 @@ public:
   int64_t channel_freq;     // Center frequency of the band in Hz
   int32_t bandwidth;        // Bandwidth of the channel in Hz
   char    sideband;         // U or L
-  std::vector<char> polarisations;
 
   bool    cross_polarize;   // do the cross polarisations
   int32_t reference_station;// use a reference station
 
   Station_list station_streams; // input streams used
 };
+
+std::ostream &operator<<(std::ostream &out, const Correlation_parameters &param);
 
 
 /** Class containing all control variables needed for the experiment **/
@@ -140,6 +144,7 @@ public:
   int bits_per_sample() const;
 
   std::string scan(int i) const;
+  int scan(const Date &date) const;
   size_t number_scans() const;
 
 
@@ -164,6 +169,32 @@ public:
 
   char sideband(const std::string &if_node,
                 const std::string &if_ref) const;
+
+  /**
+   * Returns the number of bytes transferred for one integration slice 
+   * from the input node to the correlator node.
+   **/
+  static int nr_ffts_per_integration_slice
+  (int integration_time,
+   int data_rate,
+   int number_channels) {
+    return (integration_time * (data_rate / 1000) / number_channels);
+  }
+
+  /**
+   * Computes the number of bytes transferred from the input node to the 
+   * correlator node for one integration slice.
+   **/
+  static int nr_bytes_per_integration_slice_input_node_to_correlator_node
+  (int integration_time,
+   int data_rate,
+   int bits_per_sample,
+   int number_channels) {
+    int nr_ffts = nr_ffts_per_integration_slice(integration_time,
+                  data_rate,
+                  number_channels);
+    return nr_ffts*number_channels*bits_per_sample/8;
+  }
 
   /****************************************************/
   /* Extract structs for the correlation:             */

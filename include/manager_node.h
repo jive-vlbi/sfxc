@@ -93,8 +93,8 @@ private:
   /// The number of the integration slice
   int32_t slice_nr;
 
-  // A list of all scan names.
-  std::list<std::string> scans;
+  // The current scan number
+  size_t current_scan;
 
   /// the current channel to correlate by a free correlator node
   size_t current_channel;

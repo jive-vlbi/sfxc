@@ -67,7 +67,7 @@ private:
   int length_of_one_fft(); // Length of one fft in microseconds 
   int sideband();
   int64_t channel_freq();
-  FLOAT get_delay(int64_t time);
+  double get_delay(int64_t time);
 
 private:
   Input_buffer_ptr    input_buffer;
@@ -76,6 +76,7 @@ private:
   int64_t             current_time; // In microseconds
   Correlation_parameters correlation_parameters;
   
+  int n_ffts_per_integration, current_fft; 
 
   FFTW_PLAN          plan_t2f, plan_f2t;
   // buffer used for the plan
@@ -94,12 +95,7 @@ private:
   // You need this one because the input and output are FLOATs (not complex)
   std::vector<std::complex<FLOAT> > frequency_buffer;
   
-  // Buffer for the integer bit shift
-  std::vector<FLOAT> intermediate_buffer;
-  
   Timer delay_timer;
-public:
-  bool verbose;
 };
 
 #endif /*DELAY_CORRECTION_H*/

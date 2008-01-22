@@ -83,19 +83,15 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
 void 
 MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
   int size = 0;
-  size = 2*sizeof(int32_t);
+  size = 4*sizeof(int32_t);
   for (Input_node_parameters::Channel_iterator channel = 
          input_node_param.channels.begin();
        channel != input_node_param.channels.end(); channel++) {
     size += 
       sizeof(int32_t) * 
-      (5 +
-       channel->second.sign_tracks.size() +
-       channel->second.magn_tracks.size());
-    size +=
-      sizeof(char) *
-      (channel->first.length() + 1);
-
+      (4 +
+       channel->sign_tracks.size() +
+       channel->magn_tracks.size());
   }
   
   int position = 0; int32_t length;
@@ -105,35 +101,31 @@ MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
            message_buffer, size, &position, MPI_COMM_WORLD); 
   MPI_Pack(&input_node_param.number_channels, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD); 
+  MPI_Pack(&input_node_param.integr_time, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD); 
   
+  length = (int32_t)input_node_param.channels.size();
+  MPI_Pack(&length, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD); 
   for (Input_node_parameters::Channel_iterator channel = 
          input_node_param.channels.begin();
        channel != input_node_param.channels.end(); channel++) {
-    // Name
-    length = (int32_t)channel->first.length()+1;
-    MPI_Pack(&length, 1, MPI_INT32,
-             message_buffer, size, &position, MPI_COMM_WORLD); 
-    char name[length];
-    strcpy(name, channel->first.c_str());
-    MPI_Pack(name, length, MPI_CHAR,
-             message_buffer, size, &position, MPI_COMM_WORLD); 
-
     // Sign
-    MPI_Pack(&channel->second.sign_headstack, 1, MPI_INT32,
+    MPI_Pack(&channel->sign_headstack, 1, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD); 
-    length = (int32_t)channel->second.sign_tracks.size();
+    length = (int32_t)channel->sign_tracks.size();
     MPI_Pack(&length, 1, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&channel->second.sign_tracks[0], length, MPI_INT32,
+    MPI_Pack(&channel->sign_tracks[0], length, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD); 
     
     // Magn
-    MPI_Pack(&channel->second.magn_headstack, 1, MPI_INT32,
+    MPI_Pack(&channel->magn_headstack, 1, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD); 
-    length = (int32_t)channel->second.magn_tracks.size();
+    length = (int32_t)channel->magn_tracks.size();
     MPI_Pack(&length, 1, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD); 
-    MPI_Pack(&channel->second.magn_tracks[0], length, MPI_INT32,
+    MPI_Pack(&channel->magn_tracks[0], length, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD); 
   }
 
@@ -163,19 +155,15 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
   MPI_Unpack(buffer, size, &position, 
              &input_node_param.number_channels, 1, MPI_INT32, 
              MPI_COMM_WORLD); 
+  MPI_Unpack(buffer, size, &position, 
+             &input_node_param.integr_time, 1, MPI_INT32, 
+             MPI_COMM_WORLD); 
 
-  while (position < size) {
-    // Name
-    MPI_Unpack(buffer, size, &position, 
-               &length, 1, MPI_INT32, 
-               MPI_COMM_WORLD); 
-
-    char name[length];
-    MPI_Unpack(buffer, size, &position, 
-               &name, length, MPI_CHAR, 
-               MPI_COMM_WORLD); 
-    assert(name[length-1] == '\0');
-
+  int32_t n_channels;
+  MPI_Unpack(buffer, size, &position, 
+             &n_channels, 1, MPI_INT32, 
+             MPI_COMM_WORLD); 
+  while (n_channels > 0) {
     Input_node_parameters::Channel_parameters channel_param;
     // Sign
     MPI_Unpack(buffer, size, &position, 
@@ -207,7 +195,9 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
       channel_param.magn_tracks.push_back(tracks[i]);
     }
 
-    input_node_param.channels[name] = channel_param;
+    input_node_param.channels.push_back(channel_param);
+    
+    n_channels--;
   }
   assert(position == size);
 }

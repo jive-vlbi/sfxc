@@ -46,4 +46,5 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   multiple_data_readers_controller.cc \
   multiple_data_writers_controller.cc \
   single_data_writer_controller.cc \
-  single_data_reader_controller.cc
+  single_data_reader_controller.cc \
+  input_node_tasklet.cc

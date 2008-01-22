@@ -25,7 +25,7 @@ public:
   typedef typename Input_node_types<Type>::Mk4_buffer_element Output_buffer_element;
   typedef typename Input_node_types<Type>::Mk4_buffer_ptr     Output_buffer_ptr;
 
-  Mark4_reader_tasklet(Data_reader *reader,
+  Mark4_reader_tasklet(boost::shared_ptr<Data_reader> reader,
                        char *buffer);
 
   /// For Tasklet
@@ -42,10 +42,13 @@ public:
   /// Goto a time in the future.
   int goto_time(int time);
 
-  /// set a stop time (after which no data is sent)
-  void set_stop_time(int time);
+  /// get the current time in miliseconds
+  int get_current_time();
 
-  std::vector< std::vector<int> > get_tracks(Input_node_parameters &input_node_param);
+  /// set a stop time (after which no data is sent)
+  void set_stop_time(int64_t time);
+
+  std::vector< std::vector<int> > get_tracks(const Input_node_parameters &input_node_param);
 
 private:
   /// Get an element from the memory pool into input_element_
@@ -55,7 +58,7 @@ private:
 
 private:
   /// Data stream to read from
-  Mark4_reader<Type>                  *mark4_reader_;
+  boost::shared_ptr< Mark4_reader<Type> > mark4_reader_;
   /// Memory pool of data block that can be filled
   Input_memory_pool                   memory_pool_;
   /// Current mark4 data block
@@ -63,18 +66,20 @@ private:
   /// Output buffer of mark4 data blocks
   Output_buffer_ptr                   output_buffer_;
 
-  int stop_time;
+  /// Stop time in microseconds
+  int64_t stop_time;
 };
 
 template <class Type>
 Mark4_reader_tasklet<Type>::
-Mark4_reader_tasklet(Data_reader *reader, char *buffer)
+Mark4_reader_tasklet(boost::shared_ptr<Data_reader> reader, char *buffer)
     : memory_pool_(10), stop_time(-1) {
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
   allocate_element();
-  mark4_reader_ = new Mark4_reader<Type>(reader,
-                                         buffer,
-                                         &input_element_.data()[0]);
+  mark4_reader_ =
+    boost::shared_ptr<Mark4_reader<Type> >(new Mark4_reader<Type>(reader,
+                                           buffer,
+                                           &input_element_.data()[0]));
 
 }
 
@@ -95,6 +100,8 @@ Mark4_reader_tasklet<Type>::
 has_work() {
   if (memory_pool_.empty())
     return false;
+  // NGHK: TODO check
+//  DEBUG_MSG("time_stamp: " << mark4_reader_->get_current_time() << " < " <<  stop_time);
   if ((stop_time > 0) && (stop_time <= mark4_reader_->get_current_time()))
     return false;
 
@@ -117,19 +124,29 @@ allocate_element() {
 template <class Type>
 int
 Mark4_reader_tasklet<Type>::
-goto_time(int time) {
+goto_time(int ms_time) {
+  int64_t us_time = int64_t(1000)*ms_time;
   // NGHK: TODO: check if we need to release the current block
-  int new_time = mark4_reader_->goto_time(time, &input_element_.data()[0]);
-  if (time != new_time) {
-    DEBUG_MSG("New time " << time << " not found. Current time is " << new_time);
+  int64_t new_time =
+    mark4_reader_->goto_time(&input_element_.data()[0], us_time);
+  
+  if (us_time != new_time) {
+    DEBUG_MSG("New time " << us_time << "us not found. Current time is " << new_time);
   }
-  return new_time;
+  return new_time/1000;
+}
+
+template <class Type>
+int
+Mark4_reader_tasklet<Type>::
+get_current_time() {
+  return mark4_reader_->get_current_time();
 }
 
 template <class Type>
 void
 Mark4_reader_tasklet<Type>::
-set_stop_time(int time) {
+set_stop_time(int64_t time) {
   assert(mark4_reader_->get_current_time() < time);
   stop_time = time;
 }
@@ -140,6 +157,10 @@ template <class Type>
 void
 Mark4_reader_tasklet<Type>::
 push_element() {
+//  Mark4_header<Type>        header;
+//  header.set_header(&input_element_.data()[0]);
+//  DEBUG_MSG(header.get_time_str(0));
+
   output_buffer_->push(input_element_);
 }
 
@@ -153,7 +174,7 @@ get_output_buffer() {
 template <class Type>
 std::vector< std::vector<int> >
 Mark4_reader_tasklet<Type>::
-get_tracks(Input_node_parameters &input_node_param) {
+get_tracks(const Input_node_parameters &input_node_param) {
   return mark4_reader_->get_tracks(input_node_param,
                                    &input_element_.data()[0]);
 }

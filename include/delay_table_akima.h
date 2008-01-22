@@ -55,6 +55,10 @@ public:
   
   int64_t start_time_scan();
   int64_t stop_time_scan();
+  
+  bool initialised() const {
+    return !times.empty();
+  }
 private:
   // Beginning of the scan and past the end pointer
   size_t begin_scan, end_scan;

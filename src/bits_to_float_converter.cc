@@ -11,17 +11,18 @@
 
 #include "bits_to_float_converter.h"
 
-const FLOAT sample_value_ms[] = {-7, 2, -2, 7};
-const FLOAT sample_value_m[]  = {-5,  5};
+const FLOAT sample_value_ms[] = {
+                                  -7, -2, 2, 7
+                                };
+const FLOAT sample_value_m[]  = {
+                                  -5,  5
+                                };
 
 Bits_to_float_converter::Bits_to_float_converter()
- : bits_per_sample(-1), size_output_slice(-1),
-   output_buffer(Output_buffer_ptr(new Output_buffer(10))),
-   verbose(false)
-{
-}
+    : bits_per_sample(-1), size_output_slice(-1),
+output_buffer(Output_buffer_ptr(new Output_buffer(10))) {}
 
-void 
+void
 Bits_to_float_converter::set_parameters(int bits_per_sample_,
                                         int size_input_slice_,
                                         int size_output_slice_) {
@@ -38,89 +39,70 @@ Bits_to_float_converter::set_parameters(int bits_per_sample_,
   data_reader->set_size_dataslice(size_input_slice_);
 }
 
-void 
-Bits_to_float_converter::read_remaining_bit_of_slice() {
-  // NGHK: TODO BugFix, not a real fix
-  while (data_reader->get_size_dataslice() > 0) {
-    int size = data_reader->get_bytes(data_reader->get_size_dataslice(), NULL);
-    if (size <= 0) {
-      DEBUG_MSG("Oops read 0 bytes" << data_reader->get_size_dataslice());
-      data_reader->set_size_dataslice(0);
-      return;
-    }
-    //assert(size > 0);
-  }
-}
-
-void 
+void
 Bits_to_float_converter::set_data_reader(boost::shared_ptr<Data_reader> data_reader_) {
   data_reader = data_reader_;
 }
 
-Bits_to_float_converter::Output_buffer_ptr 
+Bits_to_float_converter::Output_buffer_ptr
 Bits_to_float_converter::get_output_buffer() {
   assert(output_buffer != Output_buffer_ptr());
   return output_buffer;
 }
 
 void Bits_to_float_converter::do_task() {
-  if (!output_buffer->full()) {
-    assert(bits_per_sample > 0);
-    assert(size_output_slice > 0);
-    assert(size_output_slice % (8/bits_per_sample) == 0);
-    Output_buffer_element &buffer = output_buffer->produce();
-    
-    if (buffer.size() < size_output_slice) {
-      buffer.resize(size_output_slice);
-    }
-    
-    assert((int)intermediate_buffer.size() == 
-           size_output_slice/(8/bits_per_sample));
-    
-    if (bits_per_sample == 2) {
-      int bytes_read = 0;
-      while (bytes_read != size_output_slice/4) {
-        bytes_read += data_reader->get_bytes(size_output_slice/4-bytes_read, 
-                                             &intermediate_buffer[bytes_read]);
-      }
-      
-      assert(bytes_read == size_output_slice/4);
+  // produce size_output_slice number of samples
 
-      int sample = 0;    
-      for (int byte = 0; byte < bytes_read; byte++) {
-        buffer[sample] = sample_value_ms[ intermediate_buffer[byte]&3 ];
-        sample++; 
-        buffer[sample] = sample_value_ms[ (intermediate_buffer[byte]>>2)&3 ];
-        sample++; 
-        buffer[sample] = sample_value_ms[ (intermediate_buffer[byte]>>4)&3 ];
-        sample++; 
-        buffer[sample] = sample_value_ms[ (intermediate_buffer[byte]>>6)&3 ];
-        sample++; 
-      }
+  assert(has_work());
 
-#if 0
-      if (verbose) {
-        if (!samples_out.is_open()) {
-          samples_out.open("before_integer_bit_shift.txt");
-        }
-        for (int i=0; i<sample; i++) {
-          samples_out << buffer[i] << std::endl;
-        }
-      }
-#endif
-      assert(sample == size_output_slice);
-    } else {
-      std::cout << "Not yet implemented" << std::endl;
-      assert(false);
-    }
+  assert(bits_per_sample > 0);
+  assert(size_output_slice > 0);
+  assert(size_output_slice % (8/bits_per_sample) == 0);
+  Output_buffer_element &buffer = output_buffer->produce();
 
-    output_buffer->produced(size_output_slice);
+  if (buffer.size() < size_output_slice) {
+    buffer.resize(size_output_slice);
   }
+
+  assert((int)intermediate_buffer.size() ==
+         size_output_slice/(8/bits_per_sample));
+
+  int bytes_to_read = size_output_slice/(8/bits_per_sample);
+  int bytes_read = 0;
+  while (bytes_read != bytes_to_read) {
+    bytes_read +=
+      data_reader->get_bytes(bytes_to_read-bytes_read,
+                             &intermediate_buffer[bytes_read]);
+  }
+
+  if (bits_per_sample == 2) {
+
+    int sample = 0;
+    for (int byte = 0; byte < bytes_read; byte++) {
+      buffer[sample] = sample_value_ms[ (intermediate_buffer[byte]>>6)&3 ];
+      sample++;
+      buffer[sample] = sample_value_ms[ (intermediate_buffer[byte]>>4)&3 ];
+      sample++;
+      buffer[sample] = sample_value_ms[ (intermediate_buffer[byte]>>2)&3 ];
+      sample++;
+      buffer[sample] = sample_value_ms[ intermediate_buffer[byte]&3 ];
+      sample++;
+    }
+    assert(sample == size_output_slice);
+  } else {
+    std::cout << "Not yet implemented" << std::endl;
+    assert(false);
+  }
+
+  output_buffer->produced(size_output_slice);
+
 }
 
 bool
 Bits_to_float_converter::has_work() {
-//  if (input_buffer->empty()) return false;
-  if (output_buffer->full()) return false;
+  //  if (input_buffer->empty())
+  //    return false;
+  if (output_buffer->full())
+    return false;
   return true;
 }

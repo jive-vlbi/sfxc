@@ -31,7 +31,7 @@ public:
   typedef Channel_extractor<Type>                          Channel_extractor_tasklet_;
   typedef Input_node_data_writer_tasklet<Type>             Data_writer_tasklet_;
 
-  Input_node_tasklet_implementation(Data_reader *reader, char *buffer);
+  Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader, char *buffer);
 
   void do_task();
   bool has_work();
@@ -43,19 +43,21 @@ public:
 
   // Inherited from Input_node_tasklet
   void set_delay_table(Delay_table_akima &delay);
-  void set_parameters(Input_node_parameters &input_node_param);
+  void set_parameters(const Input_node_parameters &input_node_param);
   int goto_time(int time);
+  int get_current_time();
   void set_stop_time(int time);
-  bool append_time_slice(const Time_slice &time_slice);
+  //  bool append_time_slice(const Time_slice &time_slice);
   void add_data_writer(size_t i,
                        Data_writer_ptr_ data_writer,
-                       int nr_integrations);
+                       int nr_seconds);
 
 private:
-  std::list<Time_slice>                time_slices_;
+  //  std::list<Time_slice>                time_slices_;
   Mark4_reader_tasklet_                mark4_reader_;
   Integer_delay_tasklet_               integer_delay_;
   Channel_extractor_tasklet_           channel_extractor_;
+  Eavesdropping_tasklet<typename Channel_extractor_tasklet_::Output_buffer> eavesdropping_;
 
   std::vector<Data_writer_tasklet_>    data_writers_;
 
@@ -67,8 +69,11 @@ private:
 
 template <class Type>
 Input_node_tasklet_implementation<Type>::
-Input_node_tasklet_implementation(Data_reader *reader, char *buffer)
-    : mark4_reader_(reader, buffer), did_work(true) {
+Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader, char *buffer)
+    : mark4_reader_(reader, buffer),
+    eavesdropping_("eavesdropping_channel.bin"), 
+    did_work(true)
+    {
   integer_delay_.connect_to(mark4_reader_.get_output_buffer());
   channel_extractor_.connect_to(integer_delay_.get_output_buffer());
 }
@@ -79,29 +84,30 @@ void
 Input_node_tasklet_implementation<Type>::
 do_task() {
   did_work = false;
-  if (mark4_reader_.has_work()) {
-    //DEBUG_MSG(mark4_reader_.name());
-    mark4_reader_.do_task();
-    did_work = true;
-  }
-  if (integer_delay_.has_work()) {
-    //DEBUG_MSG(integer_delay_.name());
-    integer_delay_.do_task();
-    did_work = true;
-  }
-  if (channel_extractor_.has_work()) {
-    //DEBUG_MSG(channel_extractor_.name());
-    channel_extractor_.do_task();
-    did_work = true;
-  }
-  for (size_t i=0; i<data_writers_.size(); i++) {
-    if (data_writers_[i].has_work()) {
-      //DEBUG_MSG(i << " " << void_consumers_[i].name());
-      data_writers_[i].do_task();
+  if (integer_delay_.time_set()) {
+    if (mark4_reader_.has_work()) {
+      mark4_reader_.do_task();
       did_work = true;
     }
+    if (integer_delay_.has_work()) {
+      integer_delay_.do_task();
+      did_work = true;
+    }
+    if (channel_extractor_.has_work()) {
+      channel_extractor_.do_task();
+      did_work = true;
+    }
+    if (eavesdropping_.has_work()) {
+      eavesdropping_.do_task();
+      did_work = true;
+    }
+    for (size_t i=0; i<data_writers_.size(); i++) {
+      if (data_writers_[i].has_work()) {
+        data_writers_[i].do_task();
+        did_work = true;
+      }
+    }
   }
-  //DEBUG_MSG("Input_node_tasklet_implementation::do_task() finished");
 }
 
 template <class Type>
@@ -121,7 +127,7 @@ set_delay_table(Delay_table_akima &table) {
 template <class Type>
 void
 Input_node_tasklet_implementation<Type>::
-set_parameters(Input_node_parameters &input_node_param) {
+set_parameters(const Input_node_parameters &input_node_param) {
   integer_delay_.set_parameters(input_node_param);
 
   channel_extractor_.set_parameters(input_node_param,
@@ -131,8 +137,14 @@ set_parameters(Input_node_parameters &input_node_param) {
   data_writers_.resize(number_frequency_channels);
 
   for (size_t i=0; i < number_frequency_channels; i++) {
-    data_writers_[i].connect_to(channel_extractor_.get_output_buffer(i));
-    data_writers_[i].set_parameters(input_node_param);
+    if (i == 0) {
+      eavesdropping_.connect_to(channel_extractor_.get_output_buffer(i));
+      data_writers_[i].connect_to(eavesdropping_.get_output_buffer());
+      data_writers_[i].set_parameters(input_node_param);
+    } else {
+      data_writers_[i].connect_to(channel_extractor_.get_output_buffer(i));
+      data_writers_[i].set_parameters(input_node_param);
+    }
   }
 }
 
@@ -141,31 +153,21 @@ int
 Input_node_tasklet_implementation<Type>::
 goto_time(int time) {
   int new_time = mark4_reader_.goto_time(time);
-  integer_delay_.set_time(new_time);
+  integer_delay_.set_time(int64_t(1000)*new_time);
   return new_time;
+}
+template <class Type>
+int
+Input_node_tasklet_implementation<Type>::
+get_current_time() {
+  return mark4_reader_.get_current_time();
 }
 template <class Type>
 void
 Input_node_tasklet_implementation<Type>::
 set_stop_time(int time) {
-  return mark4_reader_.set_stop_time(time);
-}
-
-template <class Type>
-bool
-Input_node_tasklet_implementation<Type>::
-append_time_slice(const Time_slice &time_slice) {
-  if (!time_slices_.empty()) {
-    if (time_slices_.end()->stop_time > time_slice.start_time) {
-      DEBUG_MSG("Time slice starts before the end of the last time slice.");
-      DEBUG_MSG("Not adding the time slice.");
-      return false;
-    }
-  }
-
-  time_slices_.push_back(time_slice);
-
-  return true;
+  integer_delay_.set_stop_time(int64_t(1000)*time);
+  return mark4_reader_.set_stop_time(int64_t(1000)*time);
 }
 
 template <class Type>
@@ -173,9 +175,10 @@ void
 Input_node_tasklet_implementation<Type>::
 add_data_writer(size_t i,
                 Data_writer_ptr_ data_writer,
-                int nr_integrations) {
+                int nr_seconds) {
   assert(i < data_writers_.size());
-  data_writers_[i].add_data_writer(data_writer, nr_integrations);
+  int size_slice = integer_delay_.bytes_of_output(nr_seconds);
+  data_writers_[i].add_data_writer(data_writer, size_slice);
 }
 
 #endif // INPUT_NODE_TASKLET_IMPL_H

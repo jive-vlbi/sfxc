@@ -58,6 +58,7 @@ void Delay_table_akima::operator=(const Delay_table_akima &other) {
   assert(splineakima == NULL);
   times = other.times;
   delays = other.delays;
+  initialise_next_scan();
 }
 
 bool Delay_table_akima::operator==(const Delay_table_akima &other) const

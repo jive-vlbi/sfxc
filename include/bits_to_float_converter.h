@@ -37,7 +37,9 @@ public:
   void do_task();
   bool has_work();
 
-  void read_remaining_bit_of_slice();
+  bool all_data_read() {
+    return (data_reader->get_size_dataslice() <= 0);
+  }
   
   /** Sets the input for the Bits_to_float_converter to a data reader.
    * This assumes that the samples are encoded in bytes
@@ -53,12 +55,8 @@ private:
   Output_buffer_ptr  output_buffer;
 
   Data_reader_ptr                      data_reader;
-  // NGHK: TODO: remove once we are reading from a buffer
+  // Buffer for the data samples stored in characters
   std::vector<char>                    intermediate_buffer;
-  
-public: // For debugging
-  bool verbose;
-  std::ofstream samples_out;
 };
 
 #endif /* BITS_TO_FLOAT_CONVERTER_H_ */

@@ -25,6 +25,8 @@
 
 #include "semaphore_buffer.h"
 
+#include "input_node_tasklet.h"
+
 
 class Input_node;
 
@@ -77,13 +79,12 @@ public:
   /// Status of the state machine
   enum Status {
     WAITING=0,    ///< The input node is waiting
-    INITIALISING, ///< Waiting for all channels to get connected
     WRITING,      ///< Writing the output of the current channel
     END_NODE      ///< Terminate the node
   };
 
   /// Get the current time stamp
-  int64_t get_time_stamp();
+  int32_t get_time_stamp();
 
   void set_stop_time(int64_t stop_time);
 
@@ -96,6 +97,8 @@ public:
   // Callback functions:
   void hook_added_data_reader(size_t reader);
   void hook_added_data_writer(size_t writer);
+  
+  void set_delay_table(Delay_table_akima &delay_table);
 
 private:
 
@@ -106,16 +109,9 @@ private:
   /// An Input_node has several data streams for output.
   Multiple_data_writers_controller             data_writers_ctrl;
 
-  /// The channel extractor
-  boost::shared_ptr<Channel_extractor_mark4> channel_extractor;
-  /// A list of time slicers, one per channel
-  std::vector< Slicer >                      time_slicers;
+  Input_node_tasklet *input_node_tasklet;
 
   Status status;
-
-  int32_t start_time;
-
-  int64_t stop_time;
 };
 
 #endif // INPUT_NODE_H

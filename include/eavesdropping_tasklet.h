@@ -18,6 +18,10 @@ public:
   Eavesdropping_tasklet(const char * filename) {
     output_buffer_ = Output_buffer_ptr(new Output_buffer());
     out_.open(filename, std::ios::binary);
+    assert(out_.is_open());
+  }
+  ~Eavesdropping_tasklet() {
+    out_.close();
   }
   void do_task();
 

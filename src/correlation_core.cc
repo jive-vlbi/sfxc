@@ -24,11 +24,9 @@ void Correlation_core::do_task() {
       integration_initialise();
     }
 
-#if 0
-    if (current_fft % 900 == 0) {
-      if (RANK_OF_NODE == 7) {
-        DEBUG_MSG(current_fft << " of " << number_ffts_in_integration);
-      }
+#if 1
+    if (current_fft % 1000 == 0) {
+      DEBUG_MSG(current_fft << " of " << number_ffts_in_integration);
     }
 #endif
     
@@ -61,8 +59,13 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters) {
   correlation_parameters = parameters;
   
   number_ffts_in_integration = 
-    (int)std::floor(parameters.integration_time/1000. * 
-                    parameters.sample_rate * 1./parameters.number_channels);
+    Control_parameters::nr_ffts_per_integration_slice(
+      parameters.integration_time,
+      parameters.sample_rate,
+      parameters.number_channels);
+//  number_ffts_in_integration = 
+//    (int)std::floor(parameters.integration_time/1000. * 
+//                    parameters.sample_rate * 1./parameters.number_channels);
   
   baselines.clear();
   // Autos
@@ -148,6 +151,7 @@ bool Correlation_core::has_work() {
 }
 
 void Correlation_core::integration_initialise() {
+  DEBUG_MSG("integration_initialise");
   size_t size = (size_of_fft()/2+1) * baselines.size();
   if (accumulation_buffers.size() != size) {
     accumulation_buffers.resize(size);

@@ -5,8 +5,7 @@ const FLOAT Delay_correction::maximal_phase_change = 0.2; // 5.7 degrees
 Delay_correction::Delay_correction()
     : output_buffer(Output_buffer_ptr(new Output_buffer(10))),
     current_time(-1),
-    delay_table_set(false),
-verbose(false) {}
+delay_table_set(false) {}
 
 Delay_correction::~Delay_correction() {
   DEBUG_MSG(delay_timer);
@@ -22,7 +21,7 @@ void Delay_correction::set_delay_table(const Delay_table_akima &delay_table_) {
   delay_table = delay_table_;
 }
 
-FLOAT Delay_correction::get_delay(int64_t time) {
+double Delay_correction::get_delay(int64_t time) {
   assert(delay_table_set);
   return delay_table.delay(time);
 }
@@ -32,6 +31,19 @@ void Delay_correction::do_task() {
   delay_timer.resume();
   assert(current_time >= 0);
 
+  if (n_ffts_per_integration == current_fft) {
+    assert(current_time/correlation_parameters.integration_time !=
+           (current_time+length_of_one_fft())/correlation_parameters.integration_time);
+
+    DEBUG_MSG("current_time: " << current_time);
+    current_time =
+      ((current_time+length_of_one_fft())/correlation_parameters.integration_time)*
+      correlation_parameters.integration_time;
+    DEBUG_MSG("current_time: " << current_time);
+    current_fft = 0;
+  }
+  current_fft++;
+
   int input_size;
   Input_buffer_element &input = input_buffer->consume(input_size);
   Output_buffer_element &output = output_buffer->produce();
@@ -40,12 +52,12 @@ void Delay_correction::do_task() {
   assert(input_size == number_channels());
   assert(input.size() == number_channels());
 
-  if (output.size() < input_size) {
+  if (output.size() != 2*input_size) {
     output.resize(input_size*2);
   }
 
-  FLOAT delay = get_delay(current_time+length_of_one_fft()/2);
-  FLOAT delay_in_samples = delay*sample_rate();
+  double delay = get_delay(current_time+length_of_one_fft()/2);
+  double delay_in_samples = delay*sample_rate();
   int integer_delay = (int)std::floor(delay_in_samples+.5);
 
   for (int i = 0; i < number_channels(); i++) {
@@ -200,9 +212,6 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 
   assert((((int64_t)number_channels())*1000000000)%sample_rate() == 0);
 
-  // NHGK: TODO: Check if it is big enough, 20 milisecond
-  intermediate_buffer.resize((int)(.02*sample_rate()),0);
-
   //FLOAT dfr  = 1.0/(n2fftDC*tbs); // delta frequency
   FLOAT dfr  = sample_rate()*1.0/number_channels(); // delta frequency
   freq_scale.resize(number_channels()/2+1);
@@ -227,6 +236,13 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
                               (FFTW_COMPLEX *)&buffer[0],
                               (FFTW_COMPLEX *)&buffer[0],
                               FFTW_FORWARD,  FFTW_MEASURE);
+
+  n_ffts_per_integration =
+    Control_parameters::nr_ffts_per_integration_slice(
+      parameters.integration_time,
+      parameters.sample_rate,
+      parameters.number_channels);
+  current_fft = 0;
 }
 
 int Delay_correction::number_channels() {

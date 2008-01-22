@@ -11,7 +11,19 @@
 #define MARK4_READER_H
 
 #include <fstream>
+#include <vector>
+#include <boost/shared_ptr.hpp>
+
+#include "data_reader.h"
 #include "mark4_header.h"
+#include "control_parameters.h"
+
+/**
+ * Returns the start of a mark4 header in buffer and returns the number of tracks
+ **/
+int find_start_of_header(boost::shared_ptr<Data_reader> reader,
+                         char buffer[]);
+
 
 template <class Type>
 class Mark4_reader {
@@ -26,24 +38,25 @@ public:
   typedef Mark4_header<Type>        Header;
 
   // char buffer[SIZE_MK4_FRAME] contains the beginning of a mark4-frame
-  Mark4_reader(Data_reader *data_reader,
+  Mark4_reader(boost::shared_ptr<Data_reader> data_reader,
                char *buffer,
                Type *mark4_block);
   virtual ~Mark4_reader();
 
-  /// Time in miliseconds
-  int32_t goto_time(int32_t time,
-                    Type *mark4_block);
+  /// Time in microseconds
+  /// Changed the order of the arguments when I changed from miliseconds to microseconds
+  int64_t goto_time(Type *mark4_block,
+                    int64_t us_time);
 
-  /// Get the current time in miliseconds
-  int32_t get_current_time();
+  /// Get the current time in microseconds
+  int64_t get_current_time();
 
   /// Read another mark4-frame
   bool read_new_block(Type *mark4_block);
 
   /// Get track information from a mark4 header
   std::vector< std::vector<int> >
-  get_tracks(Input_node_parameters &input_node_param, Type *mark4_block);
+  get_tracks(const Input_node_parameters &input_node_param, Type *mark4_block);
 
 private:
   // format a time in miliseconds
@@ -54,11 +67,13 @@ private:
   bool check_track_bit_statistics(Type *mark4_block);
 private:
   // Data reader: input stream
-  Data_reader        *data_reader_;
+  boost::shared_ptr<Data_reader> data_reader_;
 
   // Time information
-  int start_day_, start_time_;
-  int32_t current_time_;
+  int start_day_;
+  // start time and current time in miliseconds
+  // start time is used to check the data rate
+  int64_t start_time_, current_time_;
 
   // For testing
   Debug_level debug_level_;
@@ -69,7 +84,7 @@ private:
 
 template <class Type>
 Mark4_reader<Type>::
-Mark4_reader(Data_reader *data_reader,
+Mark4_reader(boost::shared_ptr<Data_reader> data_reader,
              char *buffer,
              Type *mark4_block)
     : data_reader_(data_reader),
@@ -86,34 +101,29 @@ block_count_(0) {
   header.set_header(mark4_block);
   header.check_header();
   start_day_ = header.day(0);
-  start_time_ = header.get_time_in_ms(0);
-  current_time_ = start_time_;
+  start_time_ = header.get_time_in_us(0);
+  current_time_ = header.get_time_in_us(0);
 }
 
 template <class Type>
 Mark4_reader<Type>::
-~Mark4_reader() {
-  assert(data_reader_ != NULL);
-  delete data_reader_;
-}
+~Mark4_reader() {}
 
 template <class Type>
-int32_t
+int64_t
 Mark4_reader<Type>::
-goto_time(int32_t time,
-          Type *mark4_block) {
-  if (time < get_current_time()) {
-    std::cout << "time in past, current time is: "
-    << time_to_string(get_current_time()) << std::endl;
-    std::cout << "            requested time is: "
-    << time_to_string(time) << std::endl;
-    return get_current_time();
-  } else if (time == get_current_time()) {
-    return time;
+goto_time(Type *mark4_block, int64_t us_time) {
+  // Compute with times in microseconds to find the exact time of the data
+  if (us_time < get_current_time()) {
+    std::cout << "time in past, current time is: " << time_to_string(get_current_time()) << std::endl;
+    std::cout << "            requested time is: " << time_to_string(us_time) << std::endl;
+    return get_current_time()/1000;
+  } else if (us_time == get_current_time()) {
+    return us_time;
   }
 
   size_t read_n_bytes =
-    (time-get_current_time())*MARK4_TRACK_BIT_RATE*sizeof(Type)/1000 -
+    (us_time-get_current_time())*MARK4_TRACK_BIT_RATE*sizeof(Type)/1000000 -
     SIZE_MK4_FRAME*sizeof(Type);
 
   // Read an integer number of frames
@@ -131,17 +141,17 @@ goto_time(int32_t time,
     return get_current_time();
   }
 
-  if (get_current_time() != time) {
-    DEBUG_MSG("time:        " << time);
+  if (get_current_time() != us_time) {
+    DEBUG_MSG("time:        " << us_time);
     DEBUG_MSG("current time: " << get_current_time());
-    assert(get_current_time() == time);
+    assert(get_current_time() == us_time);
   }
 
   return get_current_time();
 }
 
 template <class Type>
-int32_t
+int64_t
 Mark4_reader<Type>::
 get_current_time() {
   return current_time_;
@@ -179,7 +189,7 @@ read_new_block(Type *mark4_block) {
     // at least we read the complete header. Check it
     Header header;
     header.set_header(mark4_block);
-    current_time_ = header.get_time_in_ms(0);
+    current_time_ = header.get_time_in_us(0);
 
     if (debug_level_ >= CHECK_PERIODIC_HEADERS) {
       if ((debug_level_ >= CHECK_ALL_HEADERS) ||
@@ -206,11 +216,9 @@ read_new_block(Type *mark4_block) {
 template <class Type>
 bool
 Mark4_reader<Type>::check_time_stamp(Header &header) {
-  int64_t militime = header.get_time_in_ms(0);
+  int64_t time_in_us = header.get_time_in_us(0);
   int64_t delta_time =
-    (header.day(0)-start_day_)*24*60*60*1000000 +
-    militime*1000 + header.microsecond(0, militime)
-    - start_time_;
+    (header.day(0)-start_day_)*24*60*60*1000000 + time_in_us - start_time_;
 
   if (delta_time <= 0) {
     DEBUG_MSG("delta_time: " << delta_time)
@@ -228,7 +236,6 @@ Mark4_reader<Type>::check_time_stamp(Header &header) {
 template <class Type>
 bool
 Mark4_reader<Type>::check_track_bit_statistics(Type *mark4_block) {
-  DEBUG_MSG(__PRETTY_FUNCTION__);
   double track_bit_statistics[sizeof(Type)*8];
   for (size_t track=0; track<sizeof(Type)*8; track++) {
     track_bit_statistics[track]=0;
@@ -253,7 +260,7 @@ Mark4_reader<Type>::check_track_bit_statistics(Type *mark4_block) {
 
 template <class Type>
 std::vector< std::vector<int> >
-Mark4_reader<Type>::get_tracks(Input_node_parameters &input_node_param,
+Mark4_reader<Type>::get_tracks(const Input_node_parameters &input_node_param,
                                Type *mark4_block) {
   Header header;
   header.set_header(mark4_block);
@@ -267,31 +274,32 @@ Mark4_reader<Type>::get_tracks(Input_node_parameters &input_node_param,
   for (Input_node_parameters::Channel_const_iterator channel =
          input_node_param.channels.begin();
        channel != input_node_param.channels.end(); channel++, curr_channel++) {
-    result[curr_channel].resize(channel->second.bits_per_sample() *
-                                channel->second.sign_tracks.size());
+    result[curr_channel].resize(channel->bits_per_sample() *
+                                channel->sign_tracks.size());
 
     int track =0;
-    for (size_t i=0; i<channel->second.sign_tracks.size(); i++) {
+    for (size_t i=0; i<channel->sign_tracks.size(); i++) {
       result[curr_channel][track] =
-        header.find_track(channel->second.sign_headstack-1,
-                          channel->second.sign_tracks[i]);
+        header.find_track(channel->sign_headstack-1,
+                          channel->sign_tracks[i]);
       assert(header.headstack(result[curr_channel][track]) ==
-             channel->second.sign_headstack-1);
+             channel->sign_headstack-1);
       assert(header.track(result[curr_channel][track]) ==
-             channel->second.sign_tracks[i]);
+             channel->sign_tracks[i]);
       track++;
-      if (channel->second.bits_per_sample() == 2) {
+      if (channel->bits_per_sample() == 2) {
         result[curr_channel][track] =
-          header.find_track(channel->second.magn_headstack-1,
-                            channel->second.magn_tracks[i]);
+          header.find_track(channel->magn_headstack-1,
+                            channel->magn_tracks[i]);
         assert(header.headstack(result[curr_channel][track]) ==
-               channel->second.magn_headstack-1);
+               channel->magn_headstack-1);
         assert(header.track(result[curr_channel][track]) ==
-               channel->second.magn_tracks[i]);
+               channel->magn_tracks[i]);
         track++;
       }
     }
   }
+
   return result;
 }
 

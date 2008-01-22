@@ -79,12 +79,11 @@ int main(int argc, char *argv[]) {
     // Swap first two channels
     Input_node_parameters input_node_parameters = 
       control_parameters.get_input_node_parameters(mode, station);
-    Input_node_parameters::Channel_iterator first, second;
-    first = input_node_parameters.channels.begin();
-    second = first; second++;
-    Input_node_parameters::Channel_parameters channel_parameters = first->second;
-    first->second = second->second;
-    second->second = channel_parameters;
+
+    Input_node_parameters::Channel_parameters channel_parameters = 
+      input_node_parameters.channels[0];
+    input_node_parameters.channels[0] = input_node_parameters.channels[1];
+    input_node_parameters.channels[1] = channel_parameters;
 
     Channel_extractor_tester 
       tester(control_parameters.data_sources(station)[0],

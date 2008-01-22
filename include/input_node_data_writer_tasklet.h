@@ -22,10 +22,7 @@ public:
   /// Set the input
   void connect_to(Input_buffer_ptr new_input_buffer);
 
-  void add_data_writer(Data_writer_ptr data_writer, int nr_integrations);
-
-  //  /// Get the output
-  //  Output_buffer_ptr get_output_buffer();
+  void add_data_writer(Data_writer_ptr data_writer, int nr_bytes);
 
   void do_task();
   bool has_work();
@@ -33,20 +30,35 @@ public:
     return __PRETTY_FUNCTION__;
   }
 
-  void set_parameters(Input_node_parameters &input_param);
+  void set_parameters(const Input_node_parameters &input_param);
 
 private:
   Input_buffer_ptr    input_buffer_;
   Data_writer_queue    data_writers_;
-
-  int bytes_per_integration;
 };
 
 template <class Type>
 Input_node_data_writer_tasklet<Type>::Input_node_data_writer_tasklet() {}
 
 template <class Type>
-Input_node_data_writer_tasklet<Type>::~Input_node_data_writer_tasklet() {}
+Input_node_data_writer_tasklet<Type>::~Input_node_data_writer_tasklet() {
+  if (input_buffer_ != Input_buffer_ptr()) {
+    if (!input_buffer_->empty()) {
+      DEBUG_MSG("There is still data to be written. "
+                << input_buffer_->size());
+    }
+  }
+  while  (!data_writers_.empty()) {
+    if (!data_writers_.front()->get_size_dataslice() == 0) {
+      data_writers_.pop();
+    } else {
+      break;
+    }
+  }
+  if (!data_writers_.empty()) {
+    DEBUG_MSG("Data_writers are still waiting to produce output.");
+  }
+}
 
 template <class Type>
 void
@@ -79,8 +91,13 @@ do_task() {
          (input_element.data().data.size() <=
           (size_t)data_writers_.front()->get_size_dataslice()));
 
-  data_writers_.front()->put_bytes(input_element.data().data.size(),
-                                   &input_element.data().data[0]);
+  assert(input_element.data().data.size() > 0);
+  size_t nbytes =
+    data_writers_.front()->put_bytes(input_element.data().data.size(),
+                                     &input_element.data().data[0]);
+  assert(nbytes == input_element.data().data.size());
+
+  //  DEBUG_MSG("size of slice: " << data_writers_.front()->get_size_dataslice());
 
   if (data_writers_.front()->get_size_dataslice() == 0) {
     data_writers_.pop();
@@ -93,10 +110,10 @@ do_task() {
 template <class Type>
 void
 Input_node_data_writer_tasklet<Type>::
-add_data_writer(Data_writer_ptr data_writer, int nr_integrations) {
+add_data_writer(Data_writer_ptr data_writer, int nr_bytes) {
   assert(data_writer->get_size_dataslice() <= 0);
-  if (nr_integrations > 0) {
-    data_writer->set_size_dataslice(nr_integrations*bytes_per_integration);
+  if (nr_bytes > 0) {
+    data_writer->set_size_dataslice(nr_bytes);
   }
   data_writers_.push(data_writer);
 }
@@ -104,10 +121,7 @@ add_data_writer(Data_writer_ptr data_writer, int nr_integrations) {
 template <class Type>
 void
 Input_node_data_writer_tasklet<Type>::
-set_parameters(Input_node_parameters &input_param) {
-  bytes_per_integration =
-    input_param.number_channels*input_param.bits_per_sample()/8;
-}
+set_parameters(const Input_node_parameters &input_param) {}
 
 
 #endif // INPUT_NODE_DATA_WRITER_TASKLET

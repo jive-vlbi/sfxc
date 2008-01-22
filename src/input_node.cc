@@ -23,15 +23,18 @@
 
 #include "mpi_transfer.h"
 
+#include "data_writer_file.h"
+
 Input_node::Input_node(int rank, int station_number, Log_writer *log_writer) :
     Node(rank, log_writer), input_node_ctrl(*this), data_reader_ctrl(*this),
-    data_writers_ctrl(*this, MAX_TCP_CONNECTIONS), status(WAITING),
-stop_time(-1) {
+    data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
+input_node_tasklet(NULL), status(WAITING) {
   initialise();
 }
 Input_node::Input_node(int rank, int station_number) :
     Node(rank), input_node_ctrl(*this), data_reader_ctrl(*this),
-data_writers_ctrl(*this, MAX_TCP_CONNECTIONS), status(WAITING), stop_time(-1) {
+    data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
+input_node_tasklet(NULL), status(WAITING) {
   initialise();
 }
 void Input_node::initialise() {
@@ -47,32 +50,20 @@ void Input_node::initialise() {
 }
 
 void Input_node::set_input_node_parameters(const Input_node_parameters &input_node_param) {
-  for (size_t i=0; i<time_slicers.size(); i++) {
-    assert(time_slicers[i].finished());
-  }
-  assert(channel_extractor !=
-         boost::shared_ptr<Channel_extractor_mark4>());
-  channel_extractor->set_input_node_parameters(input_node_param);
-
-  // #buffered blocks = Max_delay * byte_rate per channel / bytes per block
-  int buffered_elements = static_cast<int>(ceil((MAX_DELAY * 1.
-                          * ((channel_extractor->track_bit_rate()/8))
-                          / channel_extractor->number_of_bytes_per_block()) / 1000))+2;
-  int total_elements = buffered_elements + 5;
-
-  // remove old time slicers:
-  time_slicers.resize(0, Slicer(total_elements, buffered_elements));
-
-  // create time slicers
-  time_slicers.resize(input_node_param.channels.size(), Slicer(total_elements,
-                      buffered_elements));
+  DEBUG_MSG_RANK(3, input_node_param);
+  assert(input_node_tasklet != NULL);
+  input_node_tasklet->set_parameters(input_node_param);
 }
 
-Input_node::~Input_node() {}
+Input_node::~Input_node() {
+  if (input_node_tasklet != NULL)
+    delete input_node_tasklet;
+}
 
-int64_t Input_node::get_time_stamp() {
-  assert (channel_extractor != NULL);
-  return channel_extractor->get_current_time();
+int32_t Input_node::get_time_stamp() {
+  assert(input_node_tasklet != NULL);
+  // the time in the tasklet is in micro seconds
+  return input_node_tasklet->get_current_time()/1000;
 }
 
 int mark4_time=0;
@@ -80,86 +71,20 @@ void Input_node::start() {
   while (status != END_NODE) {
     switch (status) {
       case WAITING: { // Wait until we can start sending new data
-        if (channel_extractor != boost::shared_ptr<Channel_extractor_mark4>()) {
-          if (channel_extractor->get_current_time() < stop_time) {
-            status = INITIALISING;
-          } else {
-            if (check_and_process_message() == TERMINATE_NODE) {
-              status = END_NODE;
-              break;
-            }
-          }
-        } else {
-          // Wait for data_source to become ready
-          if (check_and_process_message() == TERMINATE_NODE) {
-            status = END_NODE;
-            break;
-          }
-        }
-        break;
-      }
-      case INITIALISING: { // Wait untill a data writer has been connected to all channels
-        bool ready = true;
-        for (int i=0; i<channel_extractor->n_channels(); i++) {
-          ready &= !time_slicers[i].finished();
-        }
-        if (ready) {
-          status = WRITING;
-        } else {
-          // Block until the next message arrives
-          if (check_and_process_message() == TERMINATE_NODE) {
-            status = END_NODE;
-          }
-        }
-        break;
-      }
-      case WRITING: {
-        if (process_all_waiting_messages() == TERMINATE_NODE) {
+        // Wait for data_source to become ready
+        if (check_and_process_message() == TERMINATE_NODE) {
           status = END_NODE;
           break;
         }
-        bool read = false;
-        // Check whether we reached the end:
-        if (channel_extractor->get_current_time() < stop_time) {
-          // Check whether all buffers have storage available
-          bool storage_available = true;
-          for (int i=0; i<channel_extractor->n_channels(); i++) {
-            storage_available &= !time_slicers[i].full();
-          }
-          if (storage_available) {
-            // Process one block
-            std::vector < char *> buffers;
-            buffers.resize(channel_extractor->n_channels());
-
-            for (int i=0; i<channel_extractor->n_channels(); i++) {
-              buffers[i] = time_slicers[i].produce().buffer();
-            }
-            int bytes = channel_extractor->get_bytes(buffers);
-            channel_extractor->goto_next_block();
-            // Release the buffers
-            for (int i=0; i<channel_extractor->n_channels(); i++) {
-              time_slicers[i].produced(bytes);
-            }
-            read = true;
-          }
-          if (get_rank() == 3) {
-            int new_time = channel_extractor->get_current_time()/1000;
-            if (mark4_time != new_time) {
-              mark4_time = new_time;
-              channel_extractor->print_header(get_log_writer()(1));
-            }
-          }
-        }
-        // Write the output
-        bool wrote = true;
-        for (int i=0; i<channel_extractor->n_channels(); i++) {
-          wrote &= time_slicers[i].do_task();
-        }
-        if (!wrote) {
-          status = INITIALISING;
-          if (!read)
-            status = WAITING;
-        }
+        if (input_node_tasklet != NULL)
+          status = WRITING;
+        break;
+      }
+      case WRITING: {
+        assert(input_node_tasklet != NULL);
+        input_node_tasklet->do_task();
+        if (!input_node_tasklet->has_work())
+          status = WAITING;
         break;
       }
       case END_NODE: {
@@ -177,46 +102,41 @@ void Input_node::start() {
 }
 
 void Input_node::hook_added_data_reader(size_t stream_nr) {
-  channel_extractor =
-    boost::shared_ptr<Channel_extractor_mark4>
-    (new Channel_extractor_mark4(data_reader_ctrl.get_data_reader(stream_nr),
-                                 /*insert_random_headers*/true
-                                 /*, Debug_level debug_level*/));
+  assert(stream_nr == 0);
+  input_node_tasklet =
+    get_input_node_tasklet(data_reader_ctrl.get_data_reader(stream_nr));
 }
 
 void Input_node::hook_added_data_writer(size_t writer) {}
 
 void Input_node::set_stop_time(int64_t stop_time_) {
-  stop_time = stop_time_;
+  input_node_tasklet->set_stop_time(stop_time_);
 }
 
 void Input_node::goto_time(int64_t new_time) {
-  // NGHK: CHECK FOR DURATION OF THE CHANNEL BUFFER
-  assert(get_time_stamp() <= new_time);
-
-  channel_extractor->goto_time(new_time/*-MAX_DELAY*/);
-  start_time = new_time/*-MAX_DELAY*/;
-  // NGHK: TODO: Somehow empty the time slicers
-  assert(channel_extractor->get_current_time() == new_time/*-MAX_DELAY*/);
+  assert(input_node_tasklet != NULL);
+  input_node_tasklet->goto_time(new_time);
 }
 
 void Input_node::add_time_slice(int channel, int stream, int starttime_slice,
                                 int stoptime_slice) {
-  int start_byte = ((starttime_slice-start_time)
-                    * (channel_extractor->bit_rate(channel)/8000));
-  int bytes_in_slice = ((stoptime_slice-starttime_slice)
-                        * (channel_extractor->bit_rate(channel)/8000));
-
   assert(data_writers_ctrl.get_data_writer(stream) != NULL);
   assert(data_writers_ctrl.get_data_writer(stream)->get_size_dataslice() <= 0);
 
-  data_writers_ctrl.get_data_writer(stream)->
-  set_size_dataslice(bytes_in_slice);
-  time_slicers[channel].add(data_writers_ctrl.get_data_writer(stream),
-                            start_byte);
-  assert(!time_slicers[channel].finished());
+  assert(input_node_tasklet != NULL);
+
+  DEBUG_MSG("Channel " << channel << " to stream " << stream);
+  input_node_tasklet->add_data_writer(channel,
+                                      data_writers_ctrl.get_data_writer(stream),
+                                      stoptime_slice-starttime_slice);
 }
 
 int Input_node::get_status() {
   return status;
+}
+
+void Input_node::set_delay_table(Delay_table_akima &delay_table) {
+  DEBUG_MSG(__PRETTY_FUNCTION__);
+  assert(input_node_tasklet != NULL);
+  input_node_tasklet->set_delay_table(delay_table);
 }

@@ -21,11 +21,11 @@ Manager_node::
 Manager_node(int rank, int numtasks,
              Log_writer *log_writer,
              const Control_parameters &control_parameters)
-  : Abstract_manager_node(rank, numtasks,
-                          log_writer,
-                          control_parameters),
+    : Abstract_manager_node(rank, numtasks,
+                            log_writer,
+                            control_parameters),
     manager_controller(*this),
-    duration_time_slice(1000) {
+duration_time_slice(1000) {
   assert(rank == RANK_MANAGER_NODE);
 
   add_controller(&manager_controller);
@@ -51,23 +51,22 @@ Manager_node(int rank, int numtasks,
     assert(input_node+3 < numtasks);
 
     start_input_node(/*rank_nr*/ input_node+3,
-                     get_control_parameters().station(input_node));
+                                 get_control_parameters().station(input_node));
   }
   assert(n_stations > 0);
 
 
   // correlator nodes:
-  if (numtasks-(n_stations+3) <
-      control_parameters.number_frequency_channels()) {
+  if (numtasks-(n_stations+3) - control_parameters.number_frequency_channels() < 0) {
     std::cout << "#correlator nodes < #freq. channels, use at least "
-              << n_stations+3+control_parameters.number_frequency_channels()
-              << " nodes." << std::endl
-              << "Exiting now." << std::endl;
+    << n_stations+3+control_parameters.number_frequency_channels()
+    << " nodes." << std::endl
+    << "Exiting now." << std::endl;
     get_log_writer()(1)
-      << "#correlator nodes < #freq. channels, use at least "
-      << n_stations+3+control_parameters.number_frequency_channels()
-      << " nodes." << std::endl
-      << "Exiting now." << std::endl;
+    << "#correlator nodes < #freq. channels, use at least "
+    << n_stations+3+control_parameters.number_frequency_channels()
+    << " nodes." << std::endl
+    << "Exiting now." << std::endl;
     exit(1);
   }
   n_corr_nodes = numtasks-(n_stations+3);
@@ -87,6 +86,8 @@ Manager_node(int rank, int numtasks,
               correlator_nr,
               correlator_rank, station_nr);
     }
+
+
 
     if (control_parameters.cross_polarize()) {
       // duplicate all stations:
@@ -130,112 +131,115 @@ void Manager_node::start() {
   while (status != END_NODE) {
     process_all_waiting_messages();
     switch (status) {
-    case START_NEW_SCAN: {
-      // set track information
-      initialise_scan(scans.front());
+      case START_NEW_SCAN: {
+        // set track information
+        initialise_scan(control_parameters.scan(current_scan));
 
-      // Set the input nodes to the proper start time
-      assert(duration_time_slice >= 1000);
-      for (size_t station=0; station < control_parameters.number_stations();
-           station++) {
-        int station_time =
-          input_node_get_current_time(control_parameters.station(station));
-        if (station_time > start_time) {
-          start_time =
-            (station_time/duration_time_slice) * duration_time_slice;
-          if (station_time%1000 != 0) {
-            start_time += duration_time_slice;
+        // Set the input nodes to the proper start time
+        assert(duration_time_slice >= 1000);
+        //DEBUG_MSG("start time: " << start_time);
+        for (size_t station=0; station < control_parameters.number_stations();
+             station++) {
+          int station_time =
+            input_node_get_current_time(control_parameters.station(station));
+          if (station_time > start_time) {
+            //DEBUG_MSG("updating start time: " << station_time);
+            start_time =
+              (station_time/duration_time_slice) * duration_time_slice;
+            if (station_time%1000 != 0) {
+              start_time += duration_time_slice;
+            }
           }
         }
-      }
 
-      // Check whether the new start time is before the stop time
-      get_log_writer() << "START_TIME: " << start_time << std::endl;
-      if (stop_time <= start_time) {
-        status = STOP_CORRELATING;
+        // Check whether the new start time is before the stop time
+        get_log_writer() << "START_TIME: " << start_time << std::endl;
+        if (stop_time <= start_time) {
+          //DEBUG_MSG("Stopping correlation: " << stop_time << " <= " << start_time)
+          status = STOP_CORRELATING;
+          break;
+        }
+
+        for (size_t station=0; station < control_parameters.number_stations();
+             station++) {
+          input_node_goto_time(control_parameters.station(station),
+                               start_time);
+          input_node_set_stop_time(control_parameters.station(station),
+                                   stop_time_scan);
+        }
+        status = START_CORRELATION_TIME_SLICE;
         break;
       }
-
-      for (size_t station=0; station < control_parameters.number_stations();
-           station++) {
-        input_node_goto_time(control_parameters.station(station),
-                             start_time);
-        input_node_set_stop_time(control_parameters.station(station),
-                                 stop_time_scan);
+      case START_CORRELATION_TIME_SLICE: {
+        stoptime_timeslice = start_time+duration_time_slice;
+        if (stop_time_scan < stoptime_timeslice) {
+          stoptime_timeslice = stop_time_scan;
+        }
+        current_channel = 0;
+        status = START_CORRELATOR_NODES_FOR_TIME_SLICE;
+        break;
       }
-      status = START_CORRELATION_TIME_SLICE;
-      break;
-    }
-    case START_CORRELATION_TIME_SLICE: {
-      stoptime_timeslice = start_time+duration_time_slice;
-      if (stop_time_scan < stoptime_timeslice) {
-        stoptime_timeslice = stop_time_scan;
-      }
-      current_channel = 0;
-      status = START_CORRELATOR_NODES_FOR_TIME_SLICE;
-      break;
-    }
-    case START_CORRELATOR_NODES_FOR_TIME_SLICE: {
-      bool added_correlator_node = false;
-      for (size_t i=0;
-           (current_channel<control_parameters.number_frequency_channels())
+      case START_CORRELATOR_NODES_FOR_TIME_SLICE: {
+        bool added_correlator_node = false;
+        for (size_t i=0;
+             (current_channel<control_parameters.number_frequency_channels())
              && (i<number_correlator_nodes());
-           i++) {
-        if (get_correlating_state(i) == READY) {
-          start_next_timeslice_on_node(i);
-          added_correlator_node = true;
+             i++) {
+          if (get_correlating_state(i) == READY) {
+            start_next_timeslice_on_node(i);
+            added_correlator_node = true;
+          }
         }
-      }
 
-      if (added_correlator_node) {
-        if (current_channel == control_parameters.number_frequency_channels()) {
-          status = GOTO_NEXT_TIMESLICE;
+        if (added_correlator_node) {
+          if (current_channel == control_parameters.number_frequency_channels()) {
+            status = GOTO_NEXT_TIMESLICE;
+          }
+        } else {
+          // No correlator node added, wait for the next message
+          check_and_process_message();
         }
-      } else {
-        // No correlator node added, wait for the next message
-        check_and_process_message();
+
+        break;
       }
+      case GOTO_NEXT_TIMESLICE: {
+        start_time += duration_time_slice;
 
-      break;
-    }
-    case GOTO_NEXT_TIMESLICE: {
-      start_time += duration_time_slice;
-
-      if (start_time+duration_time_slice > stop_time) {
-        status = STOP_CORRELATING;
-      } else if (start_time >= stop_time_scan) {
-        if (scans.empty()) {
+        if (start_time+duration_time_slice > stop_time) {
+          status = STOP_CORRELATING;
+        } else if (start_time >= stop_time_scan) {
+          if (current_scan == control_parameters.number_scans()) {
+            status = STOP_CORRELATING;
+          } else {
+            current_scan++;
+            status = START_NEW_SCAN;
+            DEBUG_MSG("NGHK: TODO: No next scan yet");
+            status = STOP_CORRELATING;
+          }
+        } else if (current_scan == control_parameters.number_scans()) {
           status = STOP_CORRELATING;
         } else {
-          scans.pop_front();
-          status = START_NEW_SCAN;
-          DEBUG_MSG("NGHK: TODO: No next scan yet");
-          status = STOP_CORRELATING;
+          status = START_CORRELATION_TIME_SLICE;
         }
-      } else if (scans.empty()) {
-        status = STOP_CORRELATING;
-      } else {
-        status = START_CORRELATION_TIME_SLICE;
+        break;
       }
-      break;
-    }
-    case STOP_CORRELATING: {
-      // The status is set to END_NODE as soon as the output_node is ready
-      MPI_Send(&slice_nr, 1, MPI_INT32,
-               RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_CORRELATION_READY,
-               MPI_COMM_WORLD);
+      case STOP_CORRELATING: {
+        // The status is set to END_NODE as soon as the output_node is ready
+        MPI_Send(&slice_nr, 1, MPI_INT32,
+                 RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_CORRELATION_READY,
+                 MPI_COMM_WORLD);
 
-      status = WAIT_FOR_OUTPUT_NODE;
-      break;
-    }
-    case WAIT_FOR_OUTPUT_NODE: {
-      // The status is set to END_NODE as soon as the output_node is ready
-      check_and_process_message();
-      break;
-    }
-    case END_NODE: {
-      break;
-    }
+        status = WAIT_FOR_OUTPUT_NODE;
+        break;
+      }
+      case WAIT_FOR_OUTPUT_NODE: {
+        // The status is set to END_NODE as soon as the output_node is ready
+        check_and_process_message();
+        break;
+      }
+      case END_NODE: {
+        break;
+      }
     }
   }
 
@@ -252,25 +256,25 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   // Initialise the correlator node
   if (cross_channel == -1) {
     get_log_writer()(1)
-      << "start "
-      << Vex::Date(start_year, start_day, start_time/1000).to_string()
-      << ", channel " << current_channel << " to correlation node "
-      << corr_node_nr << std::endl;
+    << "start "
+    << Vex::Date(start_year, start_day, start_time/1000).to_string()
+    << ", channel " << current_channel << " to correlation node "
+    << corr_node_nr << std::endl;
   } else {
     get_log_writer()(1)
-      << "start "
-      << Vex::Date(start_year, start_day, start_time/1000).to_string()
-      << ", channel "
-      << current_channel << ","
-      << cross_channel << " to correlation node "
-      << corr_node_nr << std::endl;
+    << "start "
+    << Vex::Date(start_year, start_day, start_time/1000).to_string()
+    << ", channel "
+    << current_channel << ","
+    << cross_channel << " to correlation node "
+    << corr_node_nr << std::endl;
   }
 
   std::string channel_name =
     control_parameters.frequency_channel(current_channel);
   Correlation_parameters correlation_parameters =
     control_parameters.
-    get_correlation_parameters(*scans.begin(),
+    get_correlation_parameters(control_parameters.scan(current_scan),
                                channel_name,
                                get_input_node_map());
   correlation_parameters.start_time = start_time;
@@ -296,7 +300,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   correlator_node_set(correlation_parameters, corr_node_nr);
 
   // set the input streams
-  int nStations = control_parameters.number_stations();
+  size_t nStations = control_parameters.number_stations();
   for (size_t station_nr=0;
        station_nr< nStations;
        station_nr++) {
@@ -335,12 +339,12 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     }
   }
   int size_of_one_baseline = sizeof(FFTW_COMPLEX)*
-    (correlation_parameters.number_channels*PADDING/2+1);
+                             (correlation_parameters.number_channels*PADDING/2+1);
 
-  output_node_set_timeslice(slice_nr, corr_node_nr,
-                            (duration_time_slice /
-                             control_parameters.integration_time()) *
+  output_node_set_timeslice(slice_nr,
+                            corr_node_nr,
                             size_of_one_baseline*nBaselines);
+  slice_nr++;
 
   set_correlating_state(corr_node_nr, CORRELATING);
 
@@ -357,7 +361,6 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
         control_parameters.cross_polarisation(current_channel);
     }
   }
-  slice_nr++;
 }
 
 void
@@ -374,43 +377,28 @@ Manager_node::initialise() {
   // Send the delay tables:
   get_log_writer() << "Set delay_table" << std::endl;
   for (size_t station=0;
-       station<control_parameters.number_stations(); station++) {
+       station < control_parameters.number_stations(); station++) {
     Delay_table_akima delay_table;
     const std::string &station_name = control_parameters.station(station);
     const std::string &delay_file =
       control_parameters.get_delay_table_name(station_name);
     delay_table.open(delay_file.c_str());
 
+    send(delay_table, /* station_nr */ 0, input_rank(station));
     correlator_node_set_all(delay_table, station_name);
   }
 
-  start_year = control_parameters.get_start_time().year,
-    start_day  = control_parameters.get_start_time().day;
-  start_time = control_parameters.get_start_time().to_miliseconds();
+  Control_parameters::Date start = control_parameters.get_start_time();
+  start_year = start.year;
+  start_day  = start.day;
+  start_time = start.to_miliseconds();
   stop_time  =
     control_parameters.get_stop_time().to_miliseconds(start_day);
 
   // Get a list of all scan names
-  control_parameters.get_vex().get_scans(std::back_inserter(scans));
-  {  // Iterate over all the scans to find the first scan to correlate
-    const Vex &vex = control_parameters.get_vex();
-
-    const std::string &mode =
-      control_parameters.get_vex().get_mode(*scans.begin());
-    while (!scans.empty()) {
-      // assume the same mode, hence the same track parameters
-      assert(mode == control_parameters.get_vex().get_mode(*scans.begin()));
-
-      if ((start_time >=
-           vex.start_of_scan(*scans.begin()).to_miliseconds(start_day)) &&
-          (start_time <
-           vex.stop_of_scan(*scans.begin()).to_miliseconds(start_day))) {
-        break;
-      }
-      scans.erase(scans.begin());
-    }
-  }
-  assert(!scans.empty());
+  current_scan = control_parameters.scan(start);
+  assert(current_scan >= 0);
+  assert((size_t)current_scan < control_parameters.number_scans());
 
   slice_nr  = 0;
 
@@ -419,15 +407,14 @@ Manager_node::initialise() {
 
 void Manager_node::initialise_scan(const std::string &scan) {
   Vex::Date start_of_scan =
-    control_parameters.get_vex().start_of_scan(scans.front());
+    control_parameters.get_vex().start_of_scan(scan);
 
   // set the start time to the beginning of the scan
   if (start_time < start_of_scan.to_miliseconds(start_day)) {
     start_time = start_of_scan.to_miliseconds(start_day);
   }
   stop_time_scan =
-    control_parameters.get_vex().stop_of_scan(*scans.begin())
-    .to_miliseconds(start_day);
+    control_parameters.get_vex().stop_of_scan(scan).to_miliseconds(start_day);
 
 
   // Send the track parameters to the input nodes

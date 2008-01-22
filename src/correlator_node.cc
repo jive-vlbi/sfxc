@@ -14,36 +14,34 @@
 #include "utils.h"
 
 Correlator_node::Correlator_node(int rank, int nr_corr_node)
- : Node(rank),
-   correlator_node_ctrl(*this),
-   data_readers_ctrl(*this),
-   data_writer_ctrl(*this),
-   correlate_state(INITIALISE_TIME_SLICE),
-   status(STOPPED),
-   nr_corr_node(nr_corr_node)
-{
+    : Node(rank),
+    correlator_node_ctrl(*this),
+    data_readers_ctrl(*this),
+    data_writer_ctrl(*this),
+    correlate_state(INITIALISE_TIME_SLICE),
+    status(STOPPED),
+nr_corr_node(nr_corr_node) {
   get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;
-  
+
   add_controller(&correlator_node_ctrl);
   add_controller(&data_readers_ctrl);
   add_controller(&data_writer_ctrl);
 
-  
+
   int32_t msg;
-  MPI_Send(&msg, 1, MPI_INT32, 
+  MPI_Send(&msg, 1, MPI_INT32,
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
-  
-  MPI_Send(&nr_corr_node, 1, MPI_INT32, 
-           RANK_MANAGER_NODE, MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED, 
+
+  MPI_Send(&nr_corr_node, 1, MPI_INT32,
+           RANK_MANAGER_NODE, MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
            MPI_COMM_WORLD);
 }
 
-Correlator_node::~Correlator_node()
-{
+Correlator_node::~Correlator_node() {
+  DEBUG_MSG(__PRETTY_FUNCTION__);
 }
 
-void Correlator_node::start()
-{
+void Correlator_node::start() {
   while (true) {
     switch (status) {
       case STOPPED: {
@@ -57,7 +55,7 @@ void Correlator_node::start()
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           status = END_CORRELATING;
         }
-        
+
         correlate();
 
         if (correlation_core.finished()) {
@@ -66,8 +64,7 @@ void Correlator_node::start()
             // NGHK: TODO BUGFIX: read all remaining data
             for (size_t i=0; i<bits2float_converters.size(); i++) {
               if (bits2float_converters[i] != Bits2float_ptr()) {
-                bits2float_converters[i]->
-                  read_remaining_bit_of_slice();
+                assert(bits2float_converters[i]->all_data_read());
               }
             }
 
@@ -91,61 +88,39 @@ void Correlator_node::start()
 
 void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
   assert((size_t)sn < delay_modules.size());
-  assert(integer_delay_modules[sn] != Integer_delay_correction_ptr());
+  //  assert(integer_delay_modules[sn] != Integer_delay_correction_ptr());
   assert(delay_modules[sn] != Delay_correction_ptr());
-  integer_delay_modules[sn]->set_delay_table(table);
+  //  integer_delay_modules[sn]->set_delay_table(table);
   delay_modules[sn]->set_delay_table(table);
 }
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   // NGHK: TODO: Make sure a time slice fits
 
-  // NGHK: These buffers do not work
-  boost::shared_ptr< Input_buffer > buffer(new Input_buffer(10000));
-  data_readers_ctrl.set_buffer(stream_nr, buffer);
-
   boost::shared_ptr<Bits_to_float_converter> sample_reader(new Bits_to_float_converter());
   sample_reader->set_data_reader(data_readers_ctrl.get_data_reader(stream_nr));
 
   // create the bits to float converters
   if (bits2float_converters.size() <= stream_nr) {
-    bits2float_converters.resize(stream_nr+1, 
+    bits2float_converters.resize(stream_nr+1,
                                  boost::shared_ptr<Bits_to_float_converter>());
   }
   bits2float_converters[stream_nr] = sample_reader;
 
-  { // create the integer delay modules
-    if (integer_delay_modules.size() <= stream_nr) {
-      integer_delay_modules.resize(stream_nr+1, 
-                                   Integer_delay_correction_ptr());
-    }
-    integer_delay_modules[stream_nr] = 
-      Integer_delay_correction_ptr(new Integer_delay_correction());
-    if (stream_nr == 1) {
-      integer_delay_modules[stream_nr]->verbose = true;
-    }
-
-    // Connect the delay_correction to the bits2float_converter
-    integer_delay_modules[stream_nr]->connect_to(sample_reader->get_output_buffer());
-  }
-
   { // create the delay modules
     if (delay_modules.size() <= stream_nr) {
-      delay_modules.resize(stream_nr+1, 
+      delay_modules.resize(stream_nr+1,
                            boost::shared_ptr<Delay_correction>());
     }
-    delay_modules[stream_nr] = 
+    delay_modules[stream_nr] =
       Delay_correction_ptr(new Delay_correction());
-    if (stream_nr == 1) {
-      delay_modules[stream_nr]->verbose = true;
-    }
 
     // Connect the delay_correction to the bits2float_converter
-    delay_modules[stream_nr]->connect_to(integer_delay_modules[stream_nr]->get_output_buffer());
+    delay_modules[stream_nr]->connect_to(bits2float_converters[stream_nr]->get_output_buffer());
   }
 
   // Connect the correlation_core to delay_correction
-  correlation_core.connect_to(stream_nr, 
+  correlation_core.connect_to(stream_nr,
                               delay_modules[stream_nr]->get_output_buffer());
 }
 
@@ -175,14 +150,15 @@ void Correlator_node::correlate() {
   // Execute all tasklets:
   for (size_t i=0; i<bits2float_converters.size(); i++) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
-      bits2float_converters[i]->do_task();
+      if (bits2float_converters[i]->has_work())
+        bits2float_converters[i]->do_task();
     }
   }
-  for (size_t i=0; i<integer_delay_modules.size(); i++) {
-    if (integer_delay_modules[i] != Integer_delay_correction_ptr()) {
-      integer_delay_modules[i]->do_task();
-    }
-  }
+  //  for (size_t i=0; i<integer_delay_modules.size(); i++) {
+  //    if (integer_delay_modules[i] != Integer_delay_correction_ptr()) {
+  //      integer_delay_modules[i]->do_task();
+  //    }
+  //  }
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
       delay_modules[i]->do_task();
@@ -192,27 +168,28 @@ void Correlator_node::correlate() {
 }
 
 void Correlator_node::set_parameters(const Correlation_parameters &parameters) {
+  DEBUG_MSG("channel_freq  " << parameters.channel_freq);
+  DEBUG_MSG("sideband      " << parameters.sideband);
+
   assert(status == STOPPED);
 
-  int size_input_slice = (int)(
-    (parameters.stop_time-parameters.start_time)/1000 *
-    parameters.sample_rate * parameters.bits_per_sample / 8);
+  int size_input_slice =
+    Control_parameters::nr_bytes_per_integration_slice_input_node_to_correlator_node
+    (parameters.integration_time,
+     parameters.sample_rate,
+     parameters.bits_per_sample,
+     parameters.number_channels);
+
+  int nr_integrations =
+    (parameters.stop_time-parameters.start_time)/parameters.integration_time;
 
   assert(size_input_slice > 0);
 
   for (size_t i=0; i<bits2float_converters.size(); i++) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
       bits2float_converters[i]->set_parameters(parameters.bits_per_sample,
-                                               size_input_slice,
-                                               parameters.number_channels);
-    }
-  }
-  // set verbosity
-  bits2float_converters[0]->verbose = true;
-  
-  for (size_t i=0; i<integer_delay_modules.size(); i++) {
-    if (integer_delay_modules[i] != Integer_delay_correction_ptr()) {
-      integer_delay_modules[i]->set_parameters(parameters);
+          size_input_slice*nr_integrations,
+          parameters.number_channels);
     }
   }
   for (size_t i=0; i<delay_modules.size(); i++) {
@@ -222,9 +199,9 @@ void Correlator_node::set_parameters(const Correlation_parameters &parameters) {
   }
   correlation_core.set_parameters(parameters);
 
-  
+
   status = CORRELATING;
-  
-  n_integration_slice_in_time_slice = 
+
+  n_integration_slice_in_time_slice =
     (parameters.stop_time-parameters.start_time) / parameters.integration_time;
 }

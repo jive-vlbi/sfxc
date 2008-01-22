@@ -17,7 +17,7 @@ check_PROGRAMS = \
   test_channel_extractor \
   test_input_node_with_delay_correction
 
-bin_PROGRAMS = $(check_PROGRAMS)
+bin_PROGRAMS = $(check_PROGRAMS) do_channel_extractor
 
 TESTS           = \
   test_control_parameters \
@@ -82,7 +82,8 @@ OBJ = ../src/utils.cc \
       ../src/correlation_core.cc \
       ../src/integer_delay_correction.cc \
       \
-      ../src/tasklet/tasklet.cc
+      ../src/tasklet/tasklet.cc \
+      ../src/input_node_tasklet.cc
 
 test_mpi_SOURCES = \
   test_mpi.cc ../src/utils.cc
@@ -136,5 +137,12 @@ test_control_parameters_SOURCES = \
 
 test_input_node_with_delay_correction_SOURCES = \
   $(OBJ) \
-  test_input_node_with_delay_correction.cc \
-  ../src/input_node_tasklet.cc
+  test_input_node_with_delay_correction.cc
+
+do_channel_extractor_SOURCES = \
+  do_channel_extractor.cc \
+  ../src/utils.cc \
+  ../src/mark4_reader.cc \
+  ../src/data_reader.cc \
+  ../src/data_reader_file.cc \
+  ../src/control_parameters.cc

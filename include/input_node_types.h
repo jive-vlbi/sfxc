@@ -38,14 +38,15 @@ public:
     typedef Type            value_type;
 
     Fft_buffer_element()
-        : release_data1(false), number_data_samples(0), sample_offset(0), subsample_offset(0) {}
+        : only_release_data1(false), number_data_samples(0), sample_offset(0), subsample_offset(0) {}
 
     // The data for the fft can be split over two mark4 blocks
     Mk4_memory_pool_element data1, data2;
     // We need one extra sample because of the subsamples
     Type                    last_sample;
 
-    bool release_data1;
+    /// Do not process this block, only release the data block
+    bool only_release_data1;
 
     // Number of data samples in the buffer(s)
     int                     number_data_samples;

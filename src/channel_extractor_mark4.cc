@@ -410,27 +410,27 @@ set_input_node_parameters(const Input_node_parameters &parameters) {
   for (Input_node_parameters::Channel_const_iterator channel = 
          parameters.channels.begin();
        channel != parameters.channels.end(); channel++, curr_channel++) {
-    tracks[curr_channel].resize(channel->second.bits_per_sample() *
-                                channel->second.sign_tracks.size());
+    tracks[curr_channel].resize(channel->bits_per_sample() *
+                                channel->sign_tracks.size());
     
     int track =0;
-    for (size_t i=0; i<channel->second.sign_tracks.size(); i++) {
+    for (size_t i=0; i<channel->sign_tracks.size(); i++) {
       tracks[curr_channel][track] =
-        mark4_header.find_track(channel->second.sign_headstack-1,
-                                channel->second.sign_tracks[i]);
+        mark4_header.find_track(channel->sign_headstack-1,
+                                channel->sign_tracks[i]);
       assert(mark4_header.headstack(tracks[curr_channel][track]) == 
-             channel->second.sign_headstack-1);
+             channel->sign_headstack-1);
       assert(mark4_header.track(tracks[curr_channel][track]) == 
-             channel->second.sign_tracks[i]);
+             channel->sign_tracks[i]);
       track++;
-      if (channel->second.bits_per_sample() == 2) {
+      if (channel->bits_per_sample() == 2) {
         tracks[curr_channel][track] = 
-          mark4_header.find_track(channel->second.magn_headstack-1,
-                                  channel->second.magn_tracks[i]);
+          mark4_header.find_track(channel->magn_headstack-1,
+                                  channel->magn_tracks[i]);
         assert(mark4_header.headstack(tracks[curr_channel][track]) == 
-               channel->second.magn_headstack-1);
+               channel->magn_headstack-1);
         assert(mark4_header.track(tracks[curr_channel][track]) == 
-               channel->second.magn_tracks[i]);
+               channel->magn_tracks[i]);
         track++;
       }
     }

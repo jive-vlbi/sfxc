@@ -42,6 +42,7 @@ public:
   int find_track(int headstack, int track);
   
   int get_time_in_ms(int track);
+  int64_t get_time_in_us(int track);
   std::string get_time_str(int track);
 
   bool checkCRC();
@@ -282,6 +283,13 @@ Mark4_header<T>::get_time_in_ms(int track) {
                 60*(int64_t)hour(track)));
 //   DEBUG_MSG("time: " << result);
   return result;
+} 
+
+template <class T>
+int64_t
+Mark4_header<T>::get_time_in_us(int track) {
+  int64_t time_in_ms = get_time_in_ms(track);
+  return 1000*time_in_ms + microsecond(track, time_in_ms);
 } 
 
 template <class T>

@@ -17,16 +17,22 @@ template <class Type>
 class Integer_delay_correction_all_channels {
 public:
   typedef typename Input_node_types<Type>::Mk4_buffer    Input_buffer;
-  typedef typename Input_buffer::value_type              Input_buffer_element;
-  typedef boost::shared_ptr<Input_buffer>                Input_buffer_ptr;
+  typedef typename Input_buffer::value_type              input_buffer_element;
+  typedef boost::shared_ptr<Input_buffer>                input_buffer_ptr;
+
+  typedef typename Input_node_types<Type>::Mk4_memory_pool
+  /**/                                                   Input_memory_pool;
+  typedef typename Input_node_types<Type>::Mk4_memory_pool_element
+  /**/                                                   Input_memory_pool_element;
 
   typedef typename Input_node_types<Type>::Fft_buffer    Output_buffer;
-  typedef typename Output_buffer::value_type             Output_buffer_element;
-  typedef boost::shared_ptr<Output_buffer>               Output_buffer_ptr;
+  typedef typename Output_buffer::value_type             output_buffer_element;
+  typedef boost::shared_ptr<Output_buffer>               output_buffer_ptr;
   // Pair of the delay in samples (of type Type) and subsamples
   typedef std::pair<int,int>                             Delay_type;
 
   Integer_delay_correction_all_channels();
+  ~Integer_delay_correction_all_channels() {}
 
   /// For tasklet
 
@@ -35,26 +41,33 @@ public:
   /// Check if we can process data
   bool has_work();
   /// Set the input
-  void connect_to(Input_buffer_ptr new_input_buffer);
+  void connect_to(input_buffer_ptr new_Input_buffer);
   /// Get the output
   const char *name() {
     return "Integer_delay_correction_all_channels";
   }
 
-  Output_buffer_ptr get_output_buffer();
+  output_buffer_ptr get_output_buffer();
 
   // Set the delay table
-  void set_time(int time);
+  bool time_set() {
+    return current_time_ > 0;
+  }
+  void set_time(int64_t time);
+  void set_stop_time(int64_t time);
   void set_delay_table(Delay_table_akima &table);
-  void set_parameters(Input_node_parameters &parameters);
+  void set_parameters(const Input_node_parameters &parameters);
+
+  int bytes_of_output(int nr_seconds);
 private:
   Delay_type get_delay(int64_t time);
+  void send_release(Input_memory_pool_element &elem);
 
 private:
-  /// The input data buffer
-  Input_buffer_ptr     input_buffer_;
-  /// The output data buffer
-  Output_buffer_ptr    output_buffer_;
+  /// The input data Type
+  input_buffer_ptr     input_buffer_;
+  /// The output data Type
+  output_buffer_ptr    output_buffer_;
   /// Number of samples to output (number_channels/subsamples_per_sample)
   int                  nr_output_samples;
   /// Number of bits per subsample (1 or 2)
@@ -66,9 +79,14 @@ private:
   /// Data rate (of samples of type Type) in Hz
   int                  sample_rate;
   /// Current time in microseconds
-  int64_t              current_time;
+  int64_t              current_time_;
+  /// Stop time in microseconds
+  int64_t              stop_time_;
   /// Length of one output data block in microseconds
   int64_t              delta_time;
+
+  /// Number of bytes per integration_slice per channel
+  int nr_bytes_per_integration_slice;
 
   /// Integration time in microseconds
   int                  integration_time;
@@ -77,193 +95,305 @@ private:
 
   /// Delay table
   Delay_table_akima    delay_table;
+
+  /// Memory pool for a random data block as long as we don't have weights
+  Input_memory_pool         memory_pool_;
+  Input_memory_pool_element random_element_;
+
 };
 
-template <class Buffer>
-Integer_delay_correction_all_channels<Buffer>::Integer_delay_correction_all_channels()
+template <class Type>
+Integer_delay_correction_all_channels<Type>::Integer_delay_correction_all_channels()
     : output_buffer_(new Output_buffer()),
     nr_output_samples(-1),
     bits_per_subsample(-1),
     subsamples_per_sample(-1),
     position(-1),
     sample_rate(-1),
-    current_time(-1),
+    current_time_(-1),
+    stop_time_(-1),
     integration_time(-1),
-    current_delay(0,0)
+    current_delay(1,1),
+    memory_pool_(1)
     /**/
 {
   position = 0;
+  assert(!memory_pool_.empty());
+  random_element_ = memory_pool_.allocate();
 }
 
-template <class Buffer>
+template <class Type>
 void
-Integer_delay_correction_all_channels<Buffer>::do_task() {
+Integer_delay_correction_all_channels<Type>::do_task() {
   assert(has_work());
+  assert(current_delay.first <= 0);
 
-  // get front input element
-  Input_buffer_element &input_element = input_buffer_->front();
+  bool release_data = false;
+  output_buffer_element output_element;
 
-  // Check for the next integration slice, and skip partial fft-sizes then
-//  if (current_time/integration_time !=
-//      (current_time+delta_time)/integration_time) {
-//    int64_t start_new_slice = 
-//      ((current_time+delta_time)/integration_time)*integration_time;
-//    int samples_to_read = 
-//      (start_new_slice-current_time)*sample_rate/1000000-current_delay.first;
-//    position += samples_to_read;
-//    while (position >= (int)input_element.data().size()) {
-//      position -= input_element.data().size();
-//      input_buffer_->pop();
-//    }
-//  }
 
-  // fill the output element
-  Output_buffer_element output_element;
-  output_element.data1               = input_element;
-  output_element.number_data_samples = nr_output_samples;
-  output_element.subsample_offset    = current_delay.second*bits_per_subsample;
+  if (position >= (int)input_buffer_->front().data().size()) {
+    position -= input_buffer_->front().data().size();
 
-  if (position < 0) {
-    // Before actual data (delay at the beginning of the stream)
-    if (nr_output_samples > -position) {
-      // we can output actual data
-      // Just use data1 twice: we will use weights later on anyway to randomize the data
-      output_element.sample_offset = input_element.data().size()+position;
-      output_element.data2 = input_element;
-      output_element.last_sample = input_element.data()[nr_output_samples+1+position];
-    } else {
-      // Complete buffer of random data, just copy the current buffer
-      output_element.sample_offset = 0;
-      output_element.last_sample = 0;
-    }
+    output_element.data1 = input_buffer_->front();
+    release_data = true;
   } else {
-    // normal case where we have data
-    output_element.sample_offset = position;
 
-    int samples_in_data2 = position+nr_output_samples+1-input_element.data().size();
-    if (samples_in_data2 <= 0) {
-      // Data is contained in one data block
-      output_element.last_sample = input_element.data()[nr_output_samples+position];
-    } else {
-      // Get new data block
-      input_buffer_->pop();
-      output_element.data2 = input_buffer_->front();
+    // fill the output element
+    output_element.data1               = input_buffer_->front();
+    output_element.number_data_samples = nr_output_samples;
+    output_element.subsample_offset    = current_delay.second*bits_per_subsample;
 
-      output_element.last_sample = output_element.data2.data()[samples_in_data2];
+    if (position < 0) {
+      output_element.data1               = random_element_;
 
-      if (samples_in_data2 == 1) {
-        if (current_time/integration_time ==
-            (current_time+delta_time)/integration_time) {
-          Delay_type new_delay = get_delay(current_time+delta_time);
-          if (new_delay.first < current_delay.first) {
-            // Border case where the two blocks are used twice because of a delay change
+#if 1
 
-            // Assumption: Delay changes one subsample at most
-            assert(current_delay.second == 0);
-
-            output_buffer_->push(output_element);
-
-            // set time for the next block, it reuses the last sample of data1
-            current_time += delta_time;
-            position += nr_output_samples - 1;
-            current_delay = new_delay;
-
-            // reuse the last sample
-            assert(position == (int)output_element.data1.data().size()-1);
-            output_element.sample_offset = position;
-            output_element.subsample_offset = current_delay.second;
-            output_element.last_sample = output_element.data2.data()[nr_output_samples];
+      { // Randomize data
+        for (int i=0; i<nr_output_samples; i++) {
+          // park_miller_random generates 31 random bits
+          if (sizeof(Type) < 4) {
+            random_element_.data()[i] = (Type)park_miller_random();
+          } else if (sizeof(Type) == 4) {
+            random_element_.data()[i] =
+              (Type(park_miller_random())<<16) + park_miller_random();
+          } else {
+            assert(sizeof(Type) == 8);
+            int64_t rnd = park_miller_random();
+            rnd = (rnd << 16) + park_miller_random();
+            rnd = (rnd << 16) + park_miller_random();
+            rnd = (rnd << 16) + park_miller_random();
+            random_element_.data()[i] = rnd;
           }
         }
       }
+#endif
+
+      // Before actual data (delay at the beginning of the stream)
+      if (position < -nr_output_samples) {
+        // Complete Type of random data, just copy the current Type
+        output_element.sample_offset = 0;
+        output_element.last_sample = 0;
+      } else {
+        // This fft contains partially valid data
+        // we can output actual data
+        // Just use data1 twice: we will use weights later on anyway to randomize the data
+        output_element.sample_offset = output_element.data1.data().size()+position;
+        output_element.data2 = input_buffer_->front();
+        output_element.last_sample = input_buffer_->front().data()[nr_output_samples+position];
+      }
+    } else {
+      // normal case where we have data
+      output_element.sample_offset = position;
+
+      int samples_in_data2 = position+nr_output_samples-input_buffer_->front().data().size();
+      if (samples_in_data2 < 0) {
+        // Data is contained in one data block
+        output_element.last_sample = input_buffer_->front().data()[nr_output_samples+position];
+      } else if (samples_in_data2 == 0) {
+        // the samples come from the first block, but the extra sample from the next block
+
+        // get the last sample
+        position -= input_buffer_->front().data().size();
+        input_buffer_->pop();
+        assert(!input_buffer_->empty());
+        output_element.last_sample = input_buffer_->front().data()[0];
+
+        Delay_type new_delay = get_delay(current_time_+delta_time);
+        if (new_delay.first < current_delay.first) {
+          // Border case where the two blocks are used twice because of a delay change
+
+          // Assumption: Delay changes one subsample at most
+          assert(current_delay.second == 0);
+
+          output_buffer_->push(output_element);
+
+          // set time for the next block, it reuses the last sample of data1
+          current_time_ += delta_time;
+          position += nr_output_samples - 1;
+          current_delay = new_delay;
+
+          // reuse the last sample
+          assert(position == (int)output_element.data1.data().size()-1);
+          output_element.data2 = input_buffer_->front();
+          output_element.sample_offset = position;
+          output_element.subsample_offset = current_delay.second;
+          output_element.last_sample = output_element.data2.data()[nr_output_samples];
+        }
+
+        // We can release the data
+        release_data = true;
+      } else {
+        // Get new data block
+        position -= input_buffer_->front().data().size();
+        input_buffer_->pop();
+        assert(!input_buffer_->empty());
+        output_element.data2 = input_buffer_->front();
+
+        output_element.last_sample = output_element.data2.data()[samples_in_data2];
+
+        // We can release the data
+        release_data = true;
+      }
     }
+
+
+    // Check for the next integration slice, and skip partial fft-sizes
+    if (current_time_/integration_time !=
+        (current_time_+delta_time-1)/integration_time) {
+      int64_t start_new_slice =
+        ((current_time_+delta_time)/integration_time)*integration_time;
+      int samples_to_read =
+        (start_new_slice-current_time_)*sample_rate/1000000-current_delay.first;
+
+      position += samples_to_read - current_delay.first;
+
+      current_time_ = start_new_slice;
+      current_delay = get_delay(current_time_);
+      position += current_delay.first;
+    } else {
+      // Increase the position
+      current_time_ += delta_time;
+      position += nr_output_samples - current_delay.first;
+      current_delay = get_delay(current_time_);
+      position += current_delay.first;
+    }
+    // Push the output to the Type for further processing
+    output_buffer_->push(output_element);
   }
 
-  // Increase the position
-  current_time += delta_time;
-  position += nr_output_samples - current_delay.first;
-  current_delay = get_delay(current_time);
-  position += current_delay.first;
-
-  // Check to avoid the case where position is negative
-  if (position >= (int)input_element.data().size()) {
-    position -= input_element.data().size();
-    assert(position <= (int)output_element.data2.data().size());
-    // NGHK: TODO: Check whether we already need to release the buffer
-    output_element.release_data1 = true;
+  if (release_data) {
+    output_element.only_release_data1 = true;
+    output_buffer_->push(output_element);
+    return;
   }
 
-  // Push the output to the buffer for further processing
-  output_buffer_->push(output_element);
 }
 
-template <class Buffer>
+template <class Type>
 bool
-Integer_delay_correction_all_channels<Buffer>::has_work() {
-  assert(output_buffer_ != Output_buffer_ptr());
-  if (input_buffer_ == Input_buffer_ptr())
+Integer_delay_correction_all_channels<Type>::has_work() {
+  assert(output_buffer_ != output_buffer_ptr());
+  if ((stop_time_ > 0) && (current_time_ >= stop_time_))
+    return false;
+  if (sample_rate <= 0)
+    return false;
+  if (current_delay.first > 0)
+    return false;
+  if (input_buffer_ == input_buffer_ptr())
     return false;
 
-  if (input_buffer_->size() < 2)
+  if (input_buffer_->empty())
     return false;
+  if (size_t(position + nr_output_samples +1) > input_buffer_->front().data().size()) {
+    if (input_buffer_->size() < 2) {
+      return false;
+    }
+  }
 
   return true;
 }
 
-template <class Buffer>
+template <class Type>
 void
-Integer_delay_correction_all_channels<Buffer>::
-connect_to(Input_buffer_ptr buffer) {
+Integer_delay_correction_all_channels<Type>::
+connect_to(input_buffer_ptr buffer) {
   input_buffer_ = buffer;
 }
 
-template <class Buffer>
-typename Integer_delay_correction_all_channels<Buffer>::Output_buffer_ptr
-Integer_delay_correction_all_channels<Buffer>::
+template <class Type>
+typename Integer_delay_correction_all_channels<Type>::output_buffer_ptr
+Integer_delay_correction_all_channels<Type>::
 get_output_buffer() {
   return output_buffer_;
 }
 
-template <class Buffer>
-typename Integer_delay_correction_all_channels<Buffer>::Delay_type
-Integer_delay_correction_all_channels<Buffer>::get_delay(int64_t time) {
-  return Delay_type(0,0);
-  double delay = delay_table.delay(time);
-  double delay_in_samples = (delay*sample_rate)/1000;
-  int sample_delay = (int)std::floor(delay_in_samples);
-  int subsample_delay =
-    (int)std::floor((delay_in_samples-sample_delay)*subsamples_per_sample);
+template <class Type>
+typename Integer_delay_correction_all_channels<Type>::Delay_type
+Integer_delay_correction_all_channels<Type>::get_delay(int64_t time) {
+  assert(delay_table.initialised());
+  assert(subsamples_per_sample > 0);
+  assert(delta_time > 0);
+  assert(delta_time%2 == 0);
+  double delay = delay_table.delay(time+delta_time/2);
+  int delay_in_subsamples = (int)std::floor(delay*sample_rate*subsamples_per_sample+.5);
+
+  // All because modulo doesn't work for negative values
+  int sample_delay = -((-delay_in_subsamples)/subsamples_per_sample)-1;
+  int subsample_delay = delay_in_subsamples-sample_delay*subsamples_per_sample;
+
+  if (subsample_delay == subsamples_per_sample) {
+    sample_delay++;
+    subsample_delay = 0;
+  }
+
+  assert((0 <= subsample_delay) && (subsample_delay < subsamples_per_sample));
+  assert((sample_delay*subsamples_per_sample + subsample_delay) == delay_in_subsamples);
 
   return Delay_type(sample_delay, subsample_delay);
 }
 
-template <class Buffer>
+template <class Type>
 void
-Integer_delay_correction_all_channels<Buffer>::
+Integer_delay_correction_all_channels<Type>::
 set_delay_table(Delay_table_akima &table) {
   delay_table = table;
 }
 
-template <class Buffer>
+template <class Type>
 void
-Integer_delay_correction_all_channels<Buffer>::
-set_parameters(Input_node_parameters &parameters) {
+Integer_delay_correction_all_channels<Type>::
+set_parameters(const Input_node_parameters &parameters) {
   bits_per_subsample = parameters.bits_per_sample();
   subsamples_per_sample = parameters.subsamples_per_sample();
   assert(parameters.number_channels%subsamples_per_sample == 0);
+
   nr_output_samples = parameters.number_channels/subsamples_per_sample;
   sample_rate = parameters.track_bit_rate;
   delta_time = nr_output_samples*1000000/sample_rate;
   integration_time = parameters.integr_time*1000;
+
+  nr_bytes_per_integration_slice =
+    Control_parameters::nr_bytes_per_integration_slice_input_node_to_correlator_node
+    (parameters.integr_time,
+     sample_rate*subsamples_per_sample,
+     bits_per_subsample,
+     parameters.number_channels);
+  
+  random_element_.data().resize(nr_output_samples);
+  for (int i=0; i<nr_output_samples; i++) {
+    random_element_.data()[i] = ~Type(0);
+  }
+
 }
 
-template <class Buffer>
+template <class Type>
 void
-Integer_delay_correction_all_channels<Buffer>::
-set_time(int time) {
-  current_time = int64_t(1000)*time;
-  current_delay = get_delay(current_time);
+Integer_delay_correction_all_channels<Type>::
+set_time(int64_t time) {
+  assert(delay_table.initialised());
+  current_time_ = time;
+  current_delay = get_delay(current_time_);
   position = current_delay.first;
+}
+
+template <class Type>
+void
+Integer_delay_correction_all_channels<Type>::
+set_stop_time(int64_t time) {
+  stop_time_ = time;
+}
+
+template <class Type>
+int
+Integer_delay_correction_all_channels<Type>::
+bytes_of_output(int nr_seconds) {
+  if (nr_seconds < 0)
+    return nr_seconds;
+
+  int nr_time_slices = int64_t(1000)*nr_seconds/integration_time;
+
+  return nr_bytes_per_integration_slice * nr_time_slices;
 }
 
 #endif // INTEGER_DELAY_CORRECTION_ALL_CHANNELS_H

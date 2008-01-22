@@ -1,29 +1,14 @@
-/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
- * All rights reserved.
- * 
- * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
- * $Id: channel_extractor.h 412 2007-12-05 12:13:20Z kruithof $
- *
- */
-
-#include "input_node_tasklet.h"
-#include "input_node_tasklet_impl.h"
-#include "utils.h"
 #include "mark4_reader.h"
 
-Input_node_tasklet::Input_node_tasklet() {}
-
-Input_node_tasklet::~Input_node_tasklet() {}
-
-Input_node_tasklet *
-get_input_node_tasklet(boost::shared_ptr<Data_reader> reader) {
+int find_start_of_header(boost::shared_ptr<Data_reader> reader,
+                         char buffer[]) {
+  // PRE: buffer is of size SIZE_MK4_FRAME
   assert(SIZE_MK4_FRAME%2 == 0);
-  char buffer[SIZE_MK4_FRAME];
 
   // buffer is an array of SIZE_MK4_FRAME bytes (8 is the smallest number of tracks).
   // We fill the buffer and then look for the header
   // if we don't find a header, read in another half block and continue.
+
   size_t bytes_read = reader->get_bytes(SIZE_MK4_FRAME/2, buffer+SIZE_MK4_FRAME/2);
   assert (bytes_read == SIZE_MK4_FRAME/2);
 
@@ -59,32 +44,32 @@ get_input_node_tasklet(boost::shared_ptr<Data_reader> reader) {
                 header.set_header((uint8_t*)(buffer));
                 if (!header.checkCRC()) {
                   header_start = -1;
-                }
-                return new Input_node_tasklet_implementation<int8_t>(reader, buffer);
+                } else return nTracks8;
+                break;
               }
               case 2: {
                 Mark4_header<uint16_t> header;
                 header.set_header((uint16_t*)(buffer));
                 if (!header.checkCRC()) {
                   header_start = -1;
-                }
-                return new Input_node_tasklet_implementation<int16_t>(reader, buffer);
+                } else return nTracks8;
+                break;
               }
               case 4: {
                 Mark4_header<uint32_t> header;
                 header.set_header((uint32_t*)(buffer));
                 if (!header.checkCRC()) {
                   header_start = -1;
-                }
-                return new Input_node_tasklet_implementation<int32_t>(reader, buffer);
+                } else return nTracks8;
+                break;
               }
               case 8: {
                 Mark4_header<uint64_t> header;
                 header.set_header((uint64_t*)(buffer));
                 if (!header.checkCRC()) {
                   header_start = -1;
-                }
-                return new Input_node_tasklet_implementation<int64_t>(reader, buffer);
+                } else return nTracks8;
+                break;
               }
               default: {
                 assert(false);
@@ -97,5 +82,6 @@ get_input_node_tasklet(boost::shared_ptr<Data_reader> reader) {
     }
   }
 
-  return NULL;
+
 }
+

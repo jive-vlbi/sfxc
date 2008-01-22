@@ -16,9 +16,8 @@
 #include "data_writer_file.h"
 #include "utils.h"
 
-Data_writer_file::Data_writer_file(const char *filename) : 
-  Data_writer()
-{
+Data_writer_file::Data_writer_file(const char *filename) :
+Data_writer() {
   assert(strncmp(filename, "file://", 7)==0);
   file.open(filename+7, std::ios::out | std::ios::binary);
   assert(file.is_open() );
@@ -27,11 +26,14 @@ Data_writer_file::Data_writer_file(const char *filename) :
 Data_writer_file::~Data_writer_file() {
   file.close();
 }
-  
-size_t 
+
+size_t
 Data_writer_file::do_put_bytes(size_t nBytes, const char *buff) {
   assert(file.good());
   file.write(buff, nBytes);
-  if (file.good()) return nBytes;
+  if (file.good()) {
+//    DEBUG_MSG("Wrote nBytes: "<< nBytes);
+    return nBytes;
+  }
   return 0;
 }

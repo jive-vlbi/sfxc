@@ -30,10 +30,10 @@ public:
     FINISHED
   };
 
-  Abstract_manager_node(int rank, int numtasks, 
+  Abstract_manager_node(int rank, int numtasks,
                         const Control_parameters &param);
   Abstract_manager_node(int rank, int numtasks,
-                        Log_writer *writer, 
+                        Log_writer *writer,
                         const Control_parameters &param);
   virtual ~Abstract_manager_node();
 
@@ -42,7 +42,7 @@ public:
   void start_correlator_node(int rank);
   void start_log_node(int rank);
   void start_log_node(int rank, char *filename);
-  
+
   void end_node(int rank);
 
   int get_status(int rank);
@@ -50,10 +50,10 @@ public:
 
   /* set Data_readers */
   // for files
-  void set_data_reader(int rank, int stream_nr, 
+  void set_data_reader(int rank, int stream_nr,
                        const std::string &filename);
   // for tcp
-  void set_TCP(int writer_rank, int writer_stream_nr, 
+  void set_TCP(int writer_rank, int writer_stream_nr,
                int reader_rank, int reader_stream_nr);
   // for void
   void set_data_writer_void(int writer_rank, int writer_stream_nr);
@@ -73,10 +73,10 @@ public:
   int32_t input_node_get_current_time(const std::string &station);
   void input_node_goto_time(const std::string &station, int32_t time);
   void input_node_set_stop_time(const std::string &station, int32_t time);
-  
+
   // Send a new time slice, start and stop time are in milliseconds
-  void input_node_set_time_slice(const std::string &station, int32_t channel, 
-                                 int32_t stream_nr, 
+  void input_node_set_time_slice(const std::string &station, int32_t channel,
+                                 int32_t stream_nr,
                                  int32_t start_time, int32_t stop_time);
 
 
@@ -86,11 +86,11 @@ public:
   const Control_parameters &get_control_parameters() const;
 
   size_t number_correlator_nodes() const;
-  
+
   size_t input_node(const std::string &station) const;
   size_t input_rank(size_t input_node_nr) const;
   size_t input_rank(const std::string &station_name) const;
-  
+
   int correlator_rank(int correlator);
   void correlator_node_set(Correlation_parameters &parameters,
                            int corr_node_nr);
@@ -99,6 +99,8 @@ public:
 
   void set_correlating_state(size_t correlator_rank, Correlating_state state);
   Correlating_state get_correlating_state(size_t correlator_nr);
+
+  void send(Delay_table_akima &delay_table, int station, int to_rank);
 
   size_t get_channel(const std::string &channel);
 
@@ -116,7 +118,7 @@ protected:
   std::vector<int> input_node_rank;
   // Map from the correlator node number to the MPI_rank
   std::vector<int> correlator_node_rank;
-  
+
   /// Status of the correlation node
   std::vector<Correlating_state> state_correlator_node;
 };
