@@ -82,6 +82,7 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
     }
   }
 
-
+  assert(false);
+  return -1;
 }
 

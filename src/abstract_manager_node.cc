@@ -363,7 +363,6 @@ Abstract_manager_node::get_channel(const std::string &channel) {
 void
 Abstract_manager_node::
 output_node_set_timeslice(int slice_nr, int stream_nr, int bytes) {
-  DEBUG_MSG("output stream " << stream_nr << " sending slice " << slice_nr);
   int32_t msg_output_node[] = {stream_nr, slice_nr, bytes};
   MPI_Send(&msg_output_node, 3, MPI_INT32,
            RANK_OUTPUT_NODE,

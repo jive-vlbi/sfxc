@@ -18,7 +18,6 @@
 
 #include "mark4_reader_tasklet.h"
 #include "integer_delay_correction_all_channels.h"
-#include "eavesdropping_tasklet.h"
 #include "void_consuming_tasklet.h"
 #include "channel_extractor.h"
 #include "input_node_data_writer_tasklet.h"
@@ -57,7 +56,6 @@ private:
   Mark4_reader_tasklet_                mark4_reader_;
   Integer_delay_tasklet_               integer_delay_;
   Channel_extractor_tasklet_           channel_extractor_;
-  Eavesdropping_tasklet<typename Channel_extractor_tasklet_::Output_buffer> eavesdropping_;
 
   std::vector<Data_writer_tasklet_>    data_writers_;
 
@@ -71,7 +69,6 @@ template <class Type>
 Input_node_tasklet_implementation<Type>::
 Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader, char *buffer)
     : mark4_reader_(reader, buffer),
-    eavesdropping_("eavesdropping_channel.bin"), 
     did_work(true)
     {
   integer_delay_.connect_to(mark4_reader_.get_output_buffer());
@@ -95,10 +92,6 @@ do_task() {
     }
     if (channel_extractor_.has_work()) {
       channel_extractor_.do_task();
-      did_work = true;
-    }
-    if (eavesdropping_.has_work()) {
-      eavesdropping_.do_task();
       did_work = true;
     }
     for (size_t i=0; i<data_writers_.size(); i++) {
@@ -137,14 +130,8 @@ set_parameters(const Input_node_parameters &input_node_param) {
   data_writers_.resize(number_frequency_channels);
 
   for (size_t i=0; i < number_frequency_channels; i++) {
-    if (i == 0) {
-      eavesdropping_.connect_to(channel_extractor_.get_output_buffer(i));
-      data_writers_[i].connect_to(eavesdropping_.get_output_buffer());
-      data_writers_[i].set_parameters(input_node_param);
-    } else {
-      data_writers_[i].connect_to(channel_extractor_.get_output_buffer(i));
-      data_writers_[i].set_parameters(input_node_param);
-    }
+    data_writers_[i].connect_to(channel_extractor_.get_output_buffer(i));
+    data_writers_[i].set_parameters(input_node_param);
   }
 }
 

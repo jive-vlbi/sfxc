@@ -182,33 +182,38 @@ template <class Type>
 bool
 Mark4_reader<Type>::
 read_new_block(Type *mark4_block) {
-  int result = data_reader_->get_bytes(SIZE_MK4_FRAME*sizeof(Type),
-                                       (char *)mark4_block)/sizeof(Type);
-
-  if (result > (int)(160*sizeof(Type))) {
-    // at least we read the complete header. Check it
-    Header header;
-    header.set_header(mark4_block);
-    current_time_ = header.get_time_in_us(0);
-
-    if (debug_level_ >= CHECK_PERIODIC_HEADERS) {
-      if ((debug_level_ >= CHECK_ALL_HEADERS) ||
-          ((++block_count_ % 100) == 0)) {
-        header.check_header();
-        check_time_stamp(header);
-        if (debug_level_ >= CHECK_BIT_STATISTICS) {
-          if (!check_track_bit_statistics(mark4_block)) {
-            std::cout << "Track bit statistics are off." << std::endl;
-          }
-        }
-      }
-    }
-
-    if (result != SIZE_MK4_FRAME) {
+  int to_read = SIZE_MK4_FRAME*sizeof(Type);
+  char *buffer = (char *)mark4_block;
+  do {
+    int result = data_reader_->get_bytes(to_read, buffer);
+    if (result <= 0) {
+      DEBUG_MSG("Didn't read a complete frame read: "
+                << SIZE_MK4_FRAME-to_read/sizeof(Type));
       DEBUG_MSG("Didn't read a complete frame " << result);
       return false;
     }
+    to_read -= result;
+    buffer += result;
+  } while (to_read != 0);
+
+  // at least we read the complete header. Check it
+  Header header;
+  header.set_header(mark4_block);
+  current_time_ = header.get_time_in_us(0);
+
+  if (debug_level_ >= CHECK_PERIODIC_HEADERS) {
+    if ((debug_level_ >= CHECK_ALL_HEADERS) ||
+        ((++block_count_ % 100) == 0)) {
+      header.check_header();
+      check_time_stamp(header);
+      if (debug_level_ >= CHECK_BIT_STATISTICS) {
+        if (!check_track_bit_statistics(mark4_block)) {
+          std::cout << "Track bit statistics are off." << std::endl;
+        }
+      }
+    }
   }
+
   return true;
 }
 
