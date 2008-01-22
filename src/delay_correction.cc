@@ -35,11 +35,10 @@ void Delay_correction::do_task() {
     assert(current_time/correlation_parameters.integration_time !=
            (current_time+length_of_one_fft())/correlation_parameters.integration_time);
 
-    DEBUG_MSG("current_time: " << current_time);
     current_time =
-      ((current_time+length_of_one_fft())/correlation_parameters.integration_time)*
+      ((current_time+length_of_one_fft()) /
+       correlation_parameters.integration_time)*
       correlation_parameters.integration_time;
-    DEBUG_MSG("current_time: " << current_time);
     current_fft = 0;
   }
   current_fft++;

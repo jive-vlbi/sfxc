@@ -91,7 +91,7 @@ private:
   /// The number of the current stream
 //  int32_t stream_nr;
   /// The number of the integration slice
-  int32_t slice_nr;
+  int32_t integration_slice_nr;
 
   // The current scan number
   size_t current_scan;

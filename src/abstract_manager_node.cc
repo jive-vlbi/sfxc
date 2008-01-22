@@ -149,7 +149,7 @@ void
 Abstract_manager_node::
 set_data_reader(int rank, int32_t stream_nr,
                 const std::string &filename) {
-  DEBUG_MSG(filename << " => " << rank<< "[" << stream_nr << "]");
+  //DEBUG_MSG(filename << " => " << rank<< "[" << stream_nr << "]");
   int len = sizeof(int32_t)+filename.size() +1; // for \0
   char msg[len];
   memcpy(msg,&stream_nr,sizeof(int32_t));
@@ -163,7 +163,7 @@ set_data_reader(int rank, int32_t stream_nr,
 
 void Abstract_manager_node::
 set_data_writer_void(int writer_rank, int writer_stream_nr) {
-  DEBUG_MSG(writer_rank<< "[" << writer_stream_nr << "] => void");
+  //DEBUG_MSG(writer_rank<< "[" << writer_stream_nr << "] => void");
   MPI_Send(&writer_stream_nr, 1, MPI_INT32,
            writer_rank, MPI_TAG_ADD_DATA_WRITER_VOID2, MPI_COMM_WORLD);
   wait_for_setting_up_channel(writer_rank);
@@ -173,7 +173,7 @@ void
 Abstract_manager_node::
 set_data_writer(int rank, int stream_nr,
                 const std::string &filename) {
-  DEBUG_MSG(rank << "[" << stream_nr << "] => " << filename);
+  //DEBUG_MSG(rank << "[" << stream_nr << "] => " << filename);
   assert(strncmp(filename.c_str(), "file://", 7) == 0);
   int len = sizeof(int32_t) + filename.size() +1; // for \0
   char msg[len];
@@ -190,8 +190,8 @@ set_data_writer(int rank, int stream_nr,
 void
 Abstract_manager_node::set_TCP(int writer_rank, int writer_stream_nr,
                                int reader_rank, int reader_stream) {
-  DEBUG_MSG(writer_rank << "[" << writer_stream_nr << "] => "
-            << reader_rank << "[" << reader_stream << "]");
+  // DEBUG_MSG(writer_rank << "[" << writer_stream_nr << "] => "
+  //          << reader_rank << "[" << reader_stream << "]");
   int32_t msg[3] = {writer_stream_nr, reader_rank, reader_stream};
   MPI_Send(msg, 3, MPI_INT32,
            writer_rank, MPI_TAG_ADD_TCP, MPI_COMM_WORLD);

@@ -155,7 +155,7 @@ set_weight_of_input_stream(int stream, int64_t weight, size_t size) {
   assert(input_streams_order.find(weight) == input_streams_order.end());
   // Check that the ordering is right (not before the current element):
   if (!input_streams_order.empty()) {
-    assert(weight > input_streams_order.begin()->first);
+    assert((curr_slice == 0) || (weight > curr_slice));
   }
 
   // Add the weight to the priority queue:

@@ -53,6 +53,7 @@ void Correlator_node::start() {
       }
       case CORRELATING: {
         if (process_all_waiting_messages() == TERMINATE_NODE) {
+          DEBUG_MSG("END_CORRELATING");
           status = END_CORRELATING;
         }
 
@@ -61,13 +62,6 @@ void Correlator_node::start() {
         if (correlation_core.finished()) {
           n_integration_slice_in_time_slice--;
           if (n_integration_slice_in_time_slice==0) {
-            // NGHK: TODO BUGFIX: read all remaining data
-            for (size_t i=0; i<bits2float_converters.size(); i++) {
-              if (bits2float_converters[i] != Bits2float_ptr()) {
-                assert(bits2float_converters[i]->all_data_read());
-              }
-            }
-
             // Notify manager node:
             int32_t msg = get_correlate_node_number();
             MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
@@ -167,10 +161,8 @@ void Correlator_node::correlate() {
   correlation_core.do_task();
 }
 
-void Correlator_node::set_parameters(const Correlation_parameters &parameters) {
-  DEBUG_MSG("channel_freq  " << parameters.channel_freq);
-  DEBUG_MSG("sideband      " << parameters.sideband);
-
+void 
+Correlator_node::set_parameters(const Correlation_parameters &parameters) {
   assert(status == STOPPED);
 
   int size_input_slice =

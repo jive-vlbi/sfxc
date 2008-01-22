@@ -151,7 +151,6 @@ bool Correlation_core::has_work() {
 }
 
 void Correlation_core::integration_initialise() {
-  DEBUG_MSG("integration_initialise");
   size_t size = (size_of_fft()/2+1) * baselines.size();
   if (accumulation_buffers.size() != size) {
     accumulation_buffers.resize(size);
