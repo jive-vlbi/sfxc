@@ -348,13 +348,11 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
 
   int n_timeslices = (stoptime_timeslice-start_time) /
     control_parameters.integration_time();
-  DEBUG_MSG("n_timeslices: " << n_timeslices);
   for (int i=0; i<n_timeslices; i++) {
     int slice_nr_ = 
       (integration_slice_nr+i) *
       control_parameters.number_frequency_channels() +
       current_channel;
-    DEBUG_MSG(" ----------> " << slice_nr_);
     output_node_set_timeslice(slice_nr_,
                               corr_node_nr,
                               size_of_one_baseline*nBaselines);
