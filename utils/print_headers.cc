@@ -9,12 +9,12 @@
 
 #include <iostream>
 
-#include <Log_writer_cout.h>
-#include <Data_reader_file.h>
-#include <Channel_extractor_mark4.h>
+#include "log_writer_cout.h"
+#include "data_reader_file.h"
+#include "channel_extractor_mark4.h"
 
-#include <utils.h>
-#include <Mark4_header.h>
+#include "utils.h"
+#include "mark4_header.h"
 
 int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG

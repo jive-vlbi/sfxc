@@ -8,34 +8,34 @@
  *  Tests reading a file from disk and then writing it back using a Data_node
  */
 
-#include <types.h>
-#include <Input_node.h>
-#include <Output_node.h>
-#include <Log_node.h>
-#include <Log_writer_cout.h>
-
 #include <fstream>
 #include <assert.h>
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
 
-#include "Delay_table_akima.h"
-#include "MPI_Transfer.h"
+#include "types.h"
+#include "input_node.h"
+#include "output_node.h"
+#include "log_node.h"
+#include "log_writer_cout.h"
+
+#include "delay_table_akima.h"
+#include "mpi_transfer.h"
 
 
-#include <Node.h>
-#include <Data_reader2buffer.h>
-#include <TCP_Connection.h>
-#include <Buffer2data_writer.h>
-#include <Data_writer.h>
-#include <Data_writer_file.h>
-#include <Data_reader_file.h>
-#include <Data_reader_tcp.h>
-#include <Channel_extractor_mark4.h>
-#include <utils.h>
+#include "node.h"
+#include "data_reader2buffer.h"
+#include "tcp_connection.h"
+#include "buffer2data_writer.h"
+#include "data_writer.h"
+#include "data_writer_file.h"
+#include "data_reader_file.h"
+#include "data_reader_tcp.h"
+#include "channel_extractor_mark4.h"
+#include "utils.h"
 
-#include <Manager_node.h>
+#include "manager_node.h"
 
 int main(int argc, char *argv[]) {
   //initialisation
@@ -52,9 +52,6 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-  DEBUG_MSG(" pid = " << getpid());
-
-  assert(argc == 3);
   char *ctrl_file = argv[1];
   char *vex_file = argv[2];
 
@@ -71,6 +68,12 @@ int main(int argc, char *argv[]) {
       }
     } else {
       Log_writer_mpi log_writer(rank, control_parameters.message_level());
+
+      if (PRINT_PID) { DEBUG_MSG("Manager node, pid = " << getpid()); }
+      if (PRINT_HOST) { 
+        char hostname[255]; gethostname(hostname, 255);
+        DEBUG_MSG("Manager node, hostname = " << hostname); 
+      }
       Manager_node node(rank, numtasks, &log_writer, control_parameters);
       node.start();
     }

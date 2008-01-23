@@ -25,7 +25,6 @@
 
 #include "generate_delay_model.h"
 #include "vex/Vex++.h"
-#include "utils.h"
 
 #define PI (3.14159265358979323846) //copied from prep_job/calc_model.h
 #define SPEED_OF_LIGHT (299792458.0)
@@ -48,10 +47,6 @@ int initialise_data(const char *vex_file,
 
 int 
 main(int argc, char *argv[]) {
-#ifdef SFXC_PRINT_DEBUG
-  RANK_OF_NODE = 0;
-#endif
-
   if (argc!=4) {
     printf("\n");
     printf("Usage: generate_delay_model <vexfile> <stationname> <outputfile>\n");

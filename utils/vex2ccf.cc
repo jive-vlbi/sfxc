@@ -170,32 +170,35 @@ int main(int argc, char *argv[]) {
 
   char *vex_file = NULL, *ctrl_file = NULL;
   bool full=false;
-  int vex_count, ctrl_count;
+  bool das3=false;
+  int vex_count=-1, ctrl_count=-1;
   
   for (int i=1; i<argc; i++) {
     if (strcmp(argv[i],"--full") == 0) {
       full = true;
     } else if (strcmp(argv[i],"-f") == 0) {
       full = true;
+    } else if (strcmp(argv[i],"--das3") == 0) {
+      das3 = true;
     } else {
       if (vex_file == NULL) {
         vex_file = argv[i];
-	vex_count = i;
+        vex_count = i;
       } else {
         if (ctrl_file != NULL) {
           std::cout << "usage: " << argv[0]
-                    << " [--full|-f] <vex-file> <ctrl-file>"
+                    << " [--full|-f] [--das3] <vex-file> <ctrl-file>"
                     << std::endl;
           exit(1);
         }
         ctrl_file = argv[i];
-	ctrl_count = i;
+        ctrl_count = i;
       }
     }
   }
   if (ctrl_file == NULL) {
     std::cout << "usage: " << argv[0]
-              << " [--full|-f] <vex-file> <ctrl-file>"
+              << " [--full|-f] [--das3] <vex-file> <ctrl-file>"
               << std::endl;
     exit(1);
   }
@@ -213,7 +216,7 @@ int main(int argc, char *argv[]) {
        it != vex.get_root_node()["STATION"]->end(); ++it) {
     json_output["stations"].append(it.key());
     json_output["data_sources"][it.key()] = Json::Value(Json::arrayValue);
-    if(full == true){
+    if(full){
       json_output["site_position"][it.key()] = site_position(vex.get_root_node(), it.key());
     }
   }
@@ -224,13 +227,23 @@ int main(int argc, char *argv[]) {
   json_output["number_channels"]   = 1024;
   json_output["integr_time"]       = 1;
   json_output["message_level"]     = 1;
-  if(full == true){
+  if(full){
     json_output["delay_directory"]   = "";
   }
   json_output["output_file"]       = "";
-  if(full == true){
+  if(full){
     json_output["subbands"]          = get_frequencies(vex);
   }
+  if (das3) {
+    json_output["das3"]["clusters"]["DAS3-UVA"]["nodecount"] = 16;
+    json_output["das3"]["clusters"]["DAS3-VU"]["nodecount"] = 0;
+    json_output["das3"]["clusters"]["DAS3-LEIDEN"]["nodecount"] = 0;
+    
+    json_output["das3"]["order"].append("DAS3-UVA");
+    json_output["das3"]["order"].append("DAS3-VU");
+    json_output["das3"]["order"].append("DAS3-LEIDEN");
+  }
+
   outfile << json_output << std::endl;
   return 0;
 } 

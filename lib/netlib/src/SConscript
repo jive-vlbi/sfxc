@@ -1,0 +1,23 @@
+Import('env')
+
+sources = Split('network.cc interface.cc connexion.cc connexion_listener.cc tcp_connection.cc')
+
+env.ParseConfig('pkg-config --cflags --libs testunit')
+
+sfxcinclude = "/home/damien/code/sfxc_sc07/sfxc_nico/include"
+#sc07include = "/home/damien/code/sfxc_sc07/sfxc_nico/src/sc07/src"
+sc07include  = "./"
+
+env.Append( CCFLAGS=['-Isrc/', '-I'+sfxcinclude, '-I'+sc07include] )
+
+# COMPILATION OF THE LIBRARY
+netlib_static = env.StaticLibrary('#lib/netlib', sources)
+netlib_shared = env.SharedLibrary('#lib/netlib', sources)
+
+# What have to be installed... the .h and the source
+env.installer.AddLibrary(netlib_static)
+env.installer.AddLibrary(netlib_shared)
+env.installer.AddHeaders( "./", "*.h" )
+
+env.SetOption('implicit_cache',1)
+
