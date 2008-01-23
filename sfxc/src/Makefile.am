@@ -1,6 +1,5 @@
-SUBDIRS = multicore
-
-AM_CPPFLAGS = -I../include
+AM_CXXFLAGS = $(SFXC_CXXFLAGS)
+LDADD = $(SFXC_LDADD)
 
 bin_PROGRAMS = sfxc
 
@@ -8,30 +7,44 @@ TESTS           = \
 	test_sfxc.py
 
 OBJ=\
-  Abstract_manager_node.cc \
-  Control_parameters.cc \
+  abstract_manager_node.cc \
+  control_parameters.cc \
   sfxc_mpi.cc \
   utils.cc \
-  Delay_table_akima.cc \
-  Data_writer.cc Data_reader.cc \
-  Data_reader_file.cc Data_writer_file.cc \
-  Data_writer_void.cc \
-  Log_writer.cc Log_writer_cout.cc Log_writer_void.cc \
-  Log_writer_file.cc \
-  Integration_slice.cc CorrelationCore.cc DelayCorrection.cc \
-  Channel_extractor_mark4.cc \
-  Bits_to_float_converter.cc
-
+  delay_table_akima.cc \
+  data_writer.cc data_reader.cc \
+  data_reader_factory.cc \
+  data_reader_dnfp.cc \
+  data_reader_blocking.cc \
+  data_reader_socket.cc \
+  data_writer_socket.cc \
+  data_reader_file.cc data_writer_file.cc \
+  data_writer_void.cc \
+  log_writer.cc log_writer_cout.cc log_writer_void.cc \
+  log_writer_file.cc \
+  correlation_core.cc \
+  delay_correction.cc \
+  integer_delay_correction.cc \
+  channel_extractor_mark4.cc \
+  bits_to_float_converter.cc \
+  tasklet/mutex.cc \
+  tasklet/tasklet.cc \
+  tasklet/tasklet_manager.cc \
+  tasklet/tasklet_pool.cc \
+  tasklet/tasklet_worker.cc \
+  tasklet/thread.cc
 
 sfxc_SOURCES = $(OBJ) sfxc.cc \
-  Node.cc Manager_node.cc Log_node.cc \
-  Correlator_node.cc Input_node.cc Output_node.cc \
-  Controller.cc Input_node_controller.cc Output_node_controller.cc \
-  Correlator_node_controller.cc Manager_node_controller.cc Log_node_controller.cc \
-  MPI_Transfer.cc TCP_Connection.cc \
-  Log_writer_mpi.cc Data_reader_tcp.cc  Data_writer_tcp.cc \
-  Data_writer_buffer.cc Data_reader_buffer.cc \
-  Multiple_data_readers_controller.cc \
-  Multiple_data_writers_controller.cc \
-  Single_data_writer_controller.cc \
-  Single_data_reader_controller.cc
+  node.cc manager_node.cc log_node.cc \
+  correlator_node.cc input_node.cc output_node.cc \
+  controller.cc input_node_controller.cc output_node_controller.cc \
+  correlator_node_controller.cc manager_node_controller.cc \
+  log_node_controller.cc \
+  mpi_transfer.cc tcp_connection.cc \
+  log_writer_mpi.cc data_reader_tcp.cc  data_writer_tcp.cc \
+  data_writer_buffer.cc \
+  multiple_data_readers_controller.cc \
+  multiple_data_writers_controller.cc \
+  single_data_writer_controller.cc \
+  single_data_reader_controller.cc \
+  input_node_tasklet.cc

@@ -1,0 +1,12 @@
+Import('env')
+
+env.ParseConfig('pkg-config --cflags --libs common')
+env.ParseConfig('pkg-config --cflags --libs testunit')
+
+sources = Split('main_test.cc')
+
+test_containers = env.Program('#test_containers', sources)
+env.Depends(test_containers, '#lib/libcontainers.a')
+
+env.SetOption('implicit_cache',1)
+

@@ -1,81 +1,88 @@
-EXTRA_DIST = 
-
-AM_CPPFLAGS = -Iinclude -I../include -g
-AM_CXXFLAGS = 
-
+AM_CXXFLAGS = $(SFXC_CXXFLAGS)
+LDADD = $(SFXC_LDADD)
 
 check_PROGRAMS = \
-  test_Control_parameters \
+  test_control_parameters \
   test_mpi \
   test_buffer \
-  test_Time_slicer \
-  test_Transfer_control_parameters \
-  test_Data_reader_file \
-  test_Data_reader_mark5 \
-  test_Data_reader_TCP \
-  test_Input_node \
-  test_Output_node \
-  test_Log_writer_mpi \
-  test_TCP_connection \
-  test_Channel_extractor
+  test_time_slicer \
+  test_transfer_control_parameters \
+  test_data_reader_file \
+  test_data_reader_mark5 \
+  test_data_reader_tcp \
+  test_input_node \
+  test_output_node \
+  test_log_writer_mpi \
+  test_tcp_connection \
+  test_channel_extractor \
+  test_input_node_with_delay_correction \
+  do_channel_extractor
 
 TESTS           = \
-  test_Control_parameters \
+  test_control_parameters \
   test_mpi.py \
-  test_Transfer_control_parameters.py \
+  test_transfer_control_parameters.py \
   test_buffer \
-  test_Time_slicer \
-  test_Data_reader_file \
-  test_Data_reader_mark5.py \
-  test_Data_reader_TCP.py \
-  test_Output_node.py \
-  test_Input_node.py \
-  test_Log_writer_mpi.py \
-  test_Channel_extractor.py
+  test_time_slicer \
+  test_data_reader_file \
+  test_data_reader_mark5.py \
+  test_data_reader_tcp.py \
+  test_output_node.py \
+  test_input_node.py \
+  test_log_writer_mpi.py \
+  test_channel_extractor.py \
+  test_input_node_with_delay_correction.py
 
 OBJ = ../src/utils.cc \
-      ../src/TCP_Connection.cc \
-      ../src/MPI_Transfer.cc \
-      ../src/Control_parameters.cc \
-      ../src/Delay_table_akima.cc \
-      ../src/Channel_extractor_mark4.cc \
-      ../src/Bits_to_float_converter.cc \
+      ../src/tcp_connection.cc \
+      ../src/mpi_transfer.cc \
+      ../src/control_parameters.cc \
+      ../src/delay_table_akima.cc \
+      ../src/channel_extractor_mark4.cc \
+      ../src/bits_to_float_converter.cc \
       \
-      ../src/Data_reader.cc \
-      ../src/Data_reader_file.cc \
-      ../src/Data_reader_tcp.cc \
-      ../src/Data_reader_buffer.cc \
-      ../src/Data_writer.cc \
-      ../src/Data_writer_file.cc \
-      ../src/Data_writer_tcp.cc \
-      ../src/Data_writer_buffer.cc \
-      ../src/Data_writer_void.cc \
-      ../src/Log_writer.cc \
-      ../src/Log_writer_file.cc \
-      ../src/Log_writer_cout.cc \
-      ../src/Log_writer_void.cc \
-      ../src/Log_writer_mpi.cc\
+      ../src/data_reader.cc \
+      ../src/data_reader_tcp.cc \
+      ../src/data_reader_file.cc \
+      ../src/data_reader_factory.cc \
+      ../src/data_reader_dnfp.cc \
+      ../src/data_reader_blocking.cc \
+      ../src/data_reader_socket.cc \
+      ../src/data_writer.cc \
+      ../src/data_writer_file.cc \
+      ../src/data_writer_tcp.cc \
+      ../src/data_writer_buffer.cc \
+      ../src/data_writer_void.cc \
+      ../src/data_writer_socket.cc \
+      ../src/log_writer.cc \
+      ../src/log_writer_file.cc \
+      ../src/log_writer_cout.cc \
+      ../src/log_writer_void.cc \
+      ../src/log_writer_mpi.cc\
       \
-      ../src/Node.cc \
-      ../src/Correlator_node.cc \
-      ../src/Abstract_manager_node.cc \
-      ../src/Input_node.cc \
-      ../src/Output_node.cc \
-      ../src/Log_node.cc \
+      ../src/node.cc \
+      ../src/correlator_node.cc \
+      ../src/abstract_manager_node.cc \
+      ../src/input_node.cc \
+      ../src/output_node.cc \
+      ../src/log_node.cc \
       \
-      ../src/Controller.cc \
-      ../src/Correlator_node_controller.cc \
-      ../src/Output_node_controller.cc \
-      ../src/Input_node_controller.cc \
-      ../src/Log_node_controller.cc \
-      ../src/Single_data_reader_controller.cc \
-      ../src/Multiple_data_readers_controller.cc \
-      ../src/Single_data_writer_controller.cc \
-      ../src/Multiple_data_writers_controller.cc \
+      ../src/controller.cc \
+      ../src/correlator_node_controller.cc \
+      ../src/output_node_controller.cc \
+      ../src/input_node_controller.cc \
+      ../src/log_node_controller.cc \
+      ../src/single_data_reader_controller.cc \
+      ../src/multiple_data_readers_controller.cc \
+      ../src/single_data_writer_controller.cc \
+      ../src/multiple_data_writers_controller.cc \
       ../src/sfxc_mpi.cc \
-      ../src/Integration_slice.cc \
-      ../src/DelayCorrection.cc \
-      ../src/CorrelationCore.cc
+      ../src/delay_correction.cc \
+      ../src/correlation_core.cc \
+      ../src/integer_delay_correction.cc \
+      \
+      ../src/tasklet/tasklet.cc \
+      ../src/input_node_tasklet.cc
 
 test_mpi_SOURCES = \
   test_mpi.cc ../src/utils.cc
@@ -83,47 +90,58 @@ test_mpi_SOURCES = \
 test_buffer_SOURCES = \
   test_buffer.cc ../src/utils.cc
 
-test_Time_slicer_SOURCES = \
-  test_Time_slicer.cc \
-  ../src/Data_writer.cc ../src/Data_writer_file.cc ../src/utils.cc
+test_time_slicer_SOURCES = \
+  test_time_slicer.cc \
+  ../src/data_writer.cc ../src/data_writer_file.cc ../src/utils.cc
 
-test_Data_reader_file_SOURCES = \
-  test_Data_reader_file.cc ../src/Data_reader.cc \
-  ../src/Data_reader_file.cc ../src/Data_writer.cc \
-  ../src/Data_writer_file.cc \
-  ../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/utils.cc
+test_data_reader_file_SOURCES = \
+  test_data_reader_file.cc ../src/data_reader.cc \
+  ../src/data_reader_file.cc ../src/data_writer.cc \
+  ../src/data_writer_file.cc \
+  ../src/log_writer.cc ../src/log_writer_cout.cc ../src/utils.cc
 
-test_Data_reader_TCP_SOURCES = \
-  test_Data_reader_TCP.cc ../src/Data_reader_tcp.cc ../src/Data_writer.cc \
-  ../src/Data_writer_tcp.cc ../src/Data_reader.cc ../src/TCP_Connection.cc ../src/Data_reader_file.cc \
-  ../src/Log_writer.cc ../src/Log_writer_cout.cc ../src/Data_reader_buffer.cc ../src/utils.cc
+test_data_reader_tcp_SOURCES = \
+  test_data_reader_tcp.cc ../src/data_reader_tcp.cc ../src/data_writer.cc \
+  ../src/data_writer_tcp.cc ../src/data_reader.cc ../src/tcp_connection.cc ../src/data_reader_file.cc \
+  ../src/log_writer.cc ../src/log_writer_cout.cc ../src/utils.cc
 
-test_Transfer_control_parameters_SOURCES = \
-  $(OBJ) test_Transfer_control_parameters.cc
+test_transfer_control_parameters_SOURCES = \
+  $(OBJ) test_transfer_control_parameters.cc
 
-test_Data_reader_mark5_SOURCES = \
-  $(OBJ) test_Data_reader_mark5.cc ../src/Data_reader_mark5.cc
+test_data_reader_mark5_SOURCES = \
+  $(OBJ) test_data_reader_mark5.cc ../src/data_reader_mark5.cc
 
-test_Channel_extractor_SOURCES = \
-  $(OBJ) test_Channel_extractor.cc
+test_channel_extractor_SOURCES = \
+  $(OBJ) test_channel_extractor.cc
 
-test_Input_node_SOURCES = \
-  $(OBJ) test_Input_node.cc
+test_input_node_SOURCES = \
+  $(OBJ) test_input_node.cc
 
-test_Output_node_SOURCES = \
-  $(OBJ) test_Output_node.cc
+test_output_node_SOURCES = \
+  $(OBJ) test_output_node.cc
 
-test_Log_writer_mpi_SOURCES = \
-  $(OBJ) test_Log_writer_mpi.cc
+test_log_writer_mpi_SOURCES = \
+  $(OBJ) test_log_writer_mpi.cc
 
-test_TCP_connection_SOURCES = \
-  test_TCP_connection.cc \
-  ../src/TCP_Connection.cc \
+test_tcp_connection_SOURCES = \
+  test_tcp_connection.cc \
+  ../src/tcp_connection.cc \
   ../src/utils.cc
 
-test_Control_parameters_SOURCES = \
-  test_Control_parameters.cc \
+test_control_parameters_SOURCES = \
+  test_control_parameters.cc \
   ../src/utils.cc  \
-  ../src/Log_writer_cout.cc ../src/Log_writer.cc \
-  ../src/Control_parameters.cc
+  ../src/log_writer_cout.cc ../src/log_writer.cc \
+  ../src/control_parameters.cc
 
+test_input_node_with_delay_correction_SOURCES = \
+  $(OBJ) \
+  test_input_node_with_delay_correction.cc
+
+do_channel_extractor_SOURCES = \
+  do_channel_extractor.cc \
+  ../src/utils.cc \
+  ../src/mark4_reader.cc \
+  ../src/data_reader.cc \
+  ../src/data_reader_file.cc \
+  ../src/control_parameters.cc

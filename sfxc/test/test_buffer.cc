@@ -9,11 +9,11 @@
  */
 
 #include <iostream>
-
-
-#include <Semaphore_buffer.h>
-#include <Ring_buffer.h>
 #include <pthread.h>
+
+
+#include "semaphore_buffer.h"
+#include "ring_buffer.h"
 
 #define NElem 3
 typedef Buffer_element<int, NElem> T;

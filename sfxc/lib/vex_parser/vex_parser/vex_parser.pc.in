@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: vex_parser
+Description: A parser for vex-files using bison and flex.
+Requires:
+Version: 0.0.2
+Libs: -L${libdir} -lvex_parser
+Cflags: -I${includedir}

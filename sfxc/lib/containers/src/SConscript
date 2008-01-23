@@ -1,0 +1,21 @@
+Import('env')
+
+sources = Split('threadsafe_queue.cc memory_pool.cc default_allocator.cc')
+
+env.ParseConfig('pkg-config --cflags --libs common')
+env.ParseConfig('pkg-config --cflags --libs testunit')
+
+
+env.Append( CCFLAGS=['-Isrc/'] )
+
+# COMPILATION OF THE LIBRARY
+containers_static = env.StaticLibrary('#lib/containers', sources)
+containers_shared = env.SharedLibrary('#lib/containers', sources)
+
+# What have to be installed... the .h and the source
+env.installer.AddLibrary(containers_static)
+env.installer.AddLibrary(containers_shared)
+env.installer.AddHeaders( "./", "*.h" )
+
+env.SetOption('implicit_cache',1)
+

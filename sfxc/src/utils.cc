@@ -6,8 +6,6 @@
  * $Id$
  */
 
-#include "utils.h"
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -15,13 +13,11 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
-
 #include <assert.h>
-
-
 #include <iostream>
 
-#include <Data_reader_file.h>
+#include "utils.h"
+#include <data_reader_file.h>
 
 #ifdef SFXC_PRINT_DEBUG
 int RANK_OF_NODE = -1; // Rank of the current node
@@ -80,7 +76,7 @@ void get_ip_address(std::list<Interface_pair> &addresses,
 //  primitive polynomial mod 2 of order n produces 2^n - 1 random bits
 //*****************************************************************************
 unsigned long iseed = 42;
-void set_seed(unsigned long seed_) {
+void set_seed_1_bit(unsigned long seed_) {
   assert(seed_ != 0);
   iseed = seed_;
 }
@@ -111,4 +107,25 @@ int irbit2()
   #undef IB4
   //  #undef IB2
   #undef IB1
+}
+
+long park_miller_seed = 42;
+void park_miller_set_seed(unsigned long seed_) {
+  assert(seed_ != 0);
+  park_miller_seed = seed_;
+}
+
+// Generated 31 random bits at a time
+long unsigned int park_miller_random() {
+  long unsigned int hi, lo;
+
+  lo = 16807 * (park_miller_seed & 0xFFFF);
+  hi = 16807 * (park_miller_seed >> 16);
+
+  lo += (hi & 0x7FFF) << 16;
+  lo += hi >> 15;
+
+  if (lo > 0x7FFFFFFF) lo -= 0x7FFFFFFF;
+
+  return (park_miller_seed = (long)lo);
 }

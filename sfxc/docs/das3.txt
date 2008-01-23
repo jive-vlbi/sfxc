@@ -1,0 +1,11 @@
+module avail
+module add openmpi
+./compile.sh
+./configure CXX=mpicxx
+make -j2
+
+
+preserve -t 900 -# 20
+preserve -long-list
+
+mpirun -machinefile ~/nico/hostfile.txt ~/nico/sfxc n06c2.ctrl n06c2.vex

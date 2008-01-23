@@ -10,9 +10,14 @@
 #ifndef SFXC_MPI_H
 #define SFXC_MPI_H
 
+#include "types.h"
+
 #define RANK_MANAGER_NODE 0
 #define RANK_LOG_NODE     1
 #define RANK_OUTPUT_NODE  2
+
+#define PRINT_PID         false
+#define PRINT_HOST        false
 
 #define MPI_INT8   MPI_CHAR
 #define MPI_UINT8  MPI_UNSIGNED_CHAR

@@ -1,7 +1,8 @@
 #include <iostream>
 #include <fstream>
-#include <utils.h>
-#include <Delay_table_akima.h>
+
+#include "utils.h"
+#include "delay_table_akima.h"
 
 int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG

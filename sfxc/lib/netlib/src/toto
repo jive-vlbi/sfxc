@@ -1,0 +1,18 @@
+Command:
+ cxxchecker -Isrc/ -I/home/damien/code/sfxc_sc07/sfxc_nico/include -I./  -I/home/damien/code/usrperso/include/common -I/home/damien/code/usrperso/include/testunit interface.cc
+
+This will produce:
+connexion_listener.h:0035: Class member naming violation: Connexion_listener::m_interface
+connexion_listener.h:0031: Class member naming violation: Connexion_listener::m_serversocket
+connexion.h:0072: Class member naming violation: Connexion::m_socket
+interface.h:0033: Class member naming violation: Interface::m_name
+connexion_listener.h:0032: Class member naming violation: Connexion_listener::m_port
+interface.h:0053: Class member naming violation: InterfaceIP::m_address
+/home/damien/code/sfxc_sc07/sfxc_nico/include/TCP_Connection.h:0051: Class member naming violation: TCP_Connection::verbose
+interface.h:0052: File contains a class that doesn't match filename: InterfaceIP
+/home/damien/code/sfxc_sc07/sfxc_nico/include/TCP_Connection.h:0019: File contains a class that doesn't match filename: TCP_Connection
+interface.h:0052: Class naming violation: InterfaceIP
+/home/damien/code/sfxc_sc07/sfxc_nico/include/TCP_Connection.h:0019: Class naming violation: TCP_Connection
+/home/damien/code/sfxc_sc07/sfxc_nico/include/TCP_Connection.h:0038: Parameter name 'ip_addr' violates the style: TCP_Connection::is_localhost
+Number of style error detected: 12
+This source is not ready for commit to repository
