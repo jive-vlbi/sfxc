@@ -105,11 +105,9 @@ do_task() {
     bytes_written += nbytes;
   } while (bytes_written != bytes_to_write);
 
-  //  DEBUG_MSG("size of slice: " << data_writers_.front()->get_size_dataslice());
-
   if (data_writers_.front()->get_size_dataslice() == 0) {
     if (verbose_) {
-      DEBUG_MSG("Finished writing data slice");
+      DEBUG_MSG_RANK(3, "Finished writing data slice");
     }
     data_writers_.pop();
   }

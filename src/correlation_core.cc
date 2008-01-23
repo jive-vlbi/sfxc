@@ -8,7 +8,7 @@ Correlation_core::Correlation_core()
 
 Correlation_core::~Correlation_core()
 {
-//   DEBUG_MSG(timer);
+  DEBUG_MSG(timer);
 }
 
 Correlation_core::Output_buffer_ptr 
@@ -24,13 +24,10 @@ void Correlation_core::do_task() {
       integration_initialise();
     }
 
-#if 0
+#if 1
     if (current_fft % 1000 == 0) {
       DEBUG_MSG(current_fft << " of " << number_ffts_in_integration);
     }
-//     if (current_fft > (number_ffts_in_integration/1000)*1000) {
-//       DEBUG_MSG_RANK(11, current_fft);
-//     }
 #endif
     
     // Process the data of the current fft

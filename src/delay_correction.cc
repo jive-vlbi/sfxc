@@ -8,7 +8,7 @@ Delay_correction::Delay_correction()
 delay_table_set(false) {}
 
 Delay_correction::~Delay_correction() {
-//   DEBUG_MSG(delay_timer);
+  DEBUG_MSG(delay_timer);
 }
 
 void Delay_correction::connect_to(Input_buffer_ptr new_input_buffer) {

@@ -27,19 +27,13 @@ Multiple_data_writers_controller(Node &node, int max_connections)
 
 Multiple_data_writers_controller::
 ~Multiple_data_writers_controller() {
-  for (std::vector< Output_stream >::iterator 
-         it = data_writers.begin(); it != data_writers.end(); it++) {
-    if ((*it).buffer2writer != NULL) {
-      delete it->buffer2writer;
-    }
-  }
 }
 
 
 boost::shared_ptr<Data_writer>
 Multiple_data_writers_controller::get_data_writer(size_t i) {
   assert(i < data_writers.size());
-  return data_writers[i].buffer2writer->get_data_writer();
+  return data_writers[i].data_writer_;
 }
 
 Multiple_data_writers_controller::Process_event_status
@@ -149,19 +143,11 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 }
 
 
-Multiple_data_writers_controller::Buffer2writer &
-Multiple_data_writers_controller::get_buffer2writer(unsigned int i) {
-  assert((unsigned int)i < data_writers.size());
-  if (data_writers[i].buffer2writer == NULL) {
-    std::cout << "data_writers[i].buffer2writer == NULL: " << node.get_rank() << std::endl;
-  }
-  assert(data_writers[i].buffer2writer != NULL);
-  return *data_writers[i].buffer2writer;
-}
-
 boost::shared_ptr<Multiple_data_writers_controller::Buffer>
 Multiple_data_writers_controller::buffer(unsigned int i) {
-  return get_buffer2writer(i).get_buffer();
+  DEBUG_MSG("Not yet implemented");
+  assert(false);
+  return boost::shared_ptr<Multiple_data_writers_controller::Buffer>();
 }
 
 void 
@@ -169,31 +155,21 @@ Multiple_data_writers_controller::set_buffer
   (unsigned int i, 
    boost::shared_ptr<Multiple_data_writers_controller::Buffer> buff) 
 {
-  get_buffer2writer(i).set_buffer(buff);
-  get_buffer2writer(i).try_start();
-  
+  DEBUG_MSG("Not yet implemented");
+  assert(false);
 }
 
 
-Multiple_data_writers_controller::Buffer2writer *
+Multiple_data_writers_controller::Data_writer_ptr 
 Multiple_data_writers_controller::operator[](int i) {
+  assert(i >= 0);
   assert((size_t)i < data_writers.size());
   
-  return data_writers[i].buffer2writer;
+  return data_writers[i].data_writer_;
 }
 
 bool 
 Multiple_data_writers_controller::ready() {
-  for (size_t i=0; i<data_writers.size(); i++) {
-    if (data_writers[i].buffer2writer != NULL) {
-      if (data_writers[i].buffer2writer->get_buffer() != NULL) {
-        assert(data_writers[i].buffer2writer->get_data_writer() != NULL);
-        if (!data_writers[i].buffer2writer->get_buffer()->empty()) {
-          return false;
-        }
-      }
-    }
-  }
   return true;
 }
 
@@ -208,11 +184,8 @@ add_data_writer(unsigned int i, boost::shared_ptr<Data_writer> writer,
   
   data_writers[i].rank_node_reader = rank_node_reader_;
   data_writers[i].stream_number_reader = stream_number_reader_;
-  if (data_writers[i].buffer2writer == NULL) {
-    data_writers[i].buffer2writer = new Buffer2data_writer<value_type>();
-  }
   
-  data_writers[i].buffer2writer->set_data_writer(writer);
+  data_writers[i].data_writer_ = writer;
   
   node.hook_added_data_writer(i);
 }

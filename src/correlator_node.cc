@@ -150,11 +150,6 @@ void Correlator_node::correlate() {
         bits2float_converters[i]->do_task();
     }
   }
-  //  for (size_t i=0; i<integer_delay_modules.size(); i++) {
-  //    if (integer_delay_modules[i] != Integer_delay_correction_ptr()) {
-  //      integer_delay_modules[i]->do_task();
-  //    }
-  //  }
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
       delay_modules[i]->do_task();
