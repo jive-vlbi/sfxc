@@ -241,23 +241,19 @@ Integer_delay_correction_all_channels<Type>::do_task() {
     // Check for the next integration slice, and skip partial fft-sizes
     if (current_time_/integration_time !=
         (current_time_+delta_time-1)/integration_time) {
-      DEBUG_MSG_RANK(3, "position: " << position);
       position -= current_delay.first;
-      DEBUG_MSG_RANK(3, "position: " << position-current_delay.first);
 
       int64_t start_new_slice =
         ((current_time_+delta_time)/integration_time)*integration_time;
 
       int samples_to_read =
         (start_new_slice-current_time_)*sample_rate/1000000;
-      DEBUG_MSG_RANK(3, "Samples to read: " << samples_to_read);
 
       position += samples_to_read;
 
       current_time_ = start_new_slice;
       current_delay = get_delay(current_time_);
       position += current_delay.first;
-      DEBUG_MSG_RANK(3, "Position: " << position);
     } else {
       // Increase the position
       current_time_ += delta_time;
