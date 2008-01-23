@@ -80,6 +80,11 @@ void Input_node::start() {
         break;
       }
       case WRITING: {
+        if (process_all_waiting_messages() == TERMINATE_NODE) {
+          DEBUG_MSG("END_INPUT_NODE");
+          status = END_NODE;
+          break;
+        }
         assert(input_node_tasklet != NULL);
         input_node_tasklet->do_task();
         if (!input_node_tasklet->has_work())

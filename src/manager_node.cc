@@ -427,6 +427,7 @@ void Manager_node::initialise_scan(const std::string &scan) {
   }
   stop_time_scan =
     control_parameters.get_vex().stop_of_scan(scan).to_miliseconds(start_day);
+  if (stop_time < stop_time_scan) stop_time_scan = stop_time;
 
 
   // Send the track parameters to the input nodes

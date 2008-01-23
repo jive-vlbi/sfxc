@@ -17,8 +17,6 @@ check_PROGRAMS = \
   test_channel_extractor \
   test_input_node_with_delay_correction
 
-bin_PROGRAMS = $(check_PROGRAMS) do_channel_extractor
-
 TESTS           = \
   test_control_parameters \
   test_mpi.py \

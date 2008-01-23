@@ -38,7 +38,6 @@ nr_corr_node(nr_corr_node) {
 }
 
 Correlator_node::~Correlator_node() {
-  DEBUG_MSG(__PRETTY_FUNCTION__);
 }
 
 void Correlator_node::start() {

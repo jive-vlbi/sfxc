@@ -115,6 +115,8 @@ void
 Input_node_tasklet_implementation<Type>::
 set_delay_table(Delay_table_akima &table) {
   integer_delay_.set_delay_table(table);
+
+  did_work = true;
 }
 
 template <class Type>
@@ -133,7 +135,9 @@ set_parameters(const Input_node_parameters &input_node_param) {
     data_writers_[i].connect_to(channel_extractor_.get_output_buffer(i));
     data_writers_[i].set_parameters(input_node_param);
   }
-  data_writers_[0].verbose() = true;
+//   data_writers_[0].verbose() = true;
+
+  did_work = true;
 }
 
 template <class Type>
@@ -142,6 +146,8 @@ Input_node_tasklet_implementation<Type>::
 goto_time(int time) {
   int new_time = mark4_reader_.goto_time(time);
   integer_delay_.set_time(int64_t(1000)*new_time);
+
+  did_work = true;
   return new_time;
 }
 template <class Type>
@@ -154,6 +160,8 @@ template <class Type>
 void
 Input_node_tasklet_implementation<Type>::
 set_stop_time(int time) {
+  did_work = true;
+  
   integer_delay_.set_stop_time(int64_t(1000)*time);
   return mark4_reader_.set_stop_time(int64_t(1000)*time);
 }
@@ -164,6 +172,7 @@ Input_node_tasklet_implementation<Type>::
 add_data_writer(size_t i,
                 Data_writer_ptr_ data_writer,
                 int nr_seconds) {
+  did_work = true;
   assert(i < data_writers_.size());
   int size_slice = integer_delay_.bytes_of_output(nr_seconds);
   data_writers_[i].add_data_writer(data_writer, size_slice);

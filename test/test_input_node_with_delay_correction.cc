@@ -16,14 +16,12 @@
 #include "data_writer_void.h"
 #include <boost/shared_ptr.hpp>
 
-int NR = 0;
+int NR = 5;
 
 int main(int argc, char*argv[]) {
 #ifdef SFXC_PRINT_DEBUG
   RANK_OF_NODE = 0;
 #endif
-
-  {
   Log_writer_cout log_writer(NR);
 
   if (argc != 3) {
@@ -88,16 +86,17 @@ int main(int argc, char*argv[]) {
     assert(control_parameters.number_frequency_channels() > 0);
     boost::shared_ptr<Data_writer> data_writer;
 
-    data_writer = boost::shared_ptr<Data_writer>(new Data_writer_file("file://output.bin"));
-    input_node_tasklet->add_data_writer(0, data_writer, stop_time-start_time);
-    for (size_t i=1; i<control_parameters.number_frequency_channels(); i++) {
+    for (size_t i=0; i<control_parameters.number_frequency_channels(); i++) {
       char filename[80];
       sprintf(filename, "file://output%d.bin", (int)i);
-      data_writer = boost::shared_ptr<Data_writer>(new Data_writer_file(filename));
+      data_writer = 
+        boost::shared_ptr<Data_writer>(new Data_writer_file(filename));
       //data_writer = boost::shared_ptr<Data_writer>(new Data_writer_void());
 
       // Output all data
-      input_node_tasklet->add_data_writer(i, data_writer, stop_time-start_time);    }
+      input_node_tasklet->add_data_writer(i, data_writer, 
+                                          stop_time-start_time);
+    }
   }
 
   for (int i=0; i<NR; i++)
@@ -110,10 +109,7 @@ int main(int argc, char*argv[]) {
   for (int i=0; i<NR; i++)
     input_node_tasklet->do_task();
 
-  sleep(1);
+  delete(input_node_tasklet);
+
   std::cout << "Done." << std::endl;
-  }
-  
-  sleep(1);
-  return 0;
 }

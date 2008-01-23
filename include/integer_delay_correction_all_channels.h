@@ -32,7 +32,8 @@ public:
   typedef std::pair<int,int>                             Delay_type;
 
   Integer_delay_correction_all_channels();
-  ~Integer_delay_correction_all_channels() {}
+  ~Integer_delay_correction_all_channels() {
+  }
 
   /// For tasklet
 
@@ -99,11 +100,11 @@ private:
   /// Memory pool for a random data block as long as we don't have weights
   Input_memory_pool         memory_pool_;
   Input_memory_pool_element random_element_;
-
 };
 
 template <class Type>
-Integer_delay_correction_all_channels<Type>::Integer_delay_correction_all_channels()
+Integer_delay_correction_all_channels<Type>::
+Integer_delay_correction_all_channels()
     : output_buffer_(new Output_buffer()),
     nr_output_samples(-1),
     bits_per_subsample(-1),
@@ -238,13 +239,25 @@ Integer_delay_correction_all_channels<Type>::do_task() {
     }
 
 
+    // Push the output to the Type for further processing
+    output_buffer_->push(output_element);
+
+    // Increase the position
+    current_time_ += delta_time;
+    position += nr_output_samples - current_delay.first;
+    current_delay = get_delay(current_time_);
+    position += current_delay.first;
+
     // Check for the next integration slice, and skip partial fft-sizes
     if (current_time_/integration_time !=
         (current_time_+delta_time-1)/integration_time) {
+
       position -= current_delay.first;
 
       int64_t start_new_slice =
         ((current_time_+delta_time)/integration_time)*integration_time;
+
+      assert(start_new_slice > current_time_);
 
       int samples_to_read =
         (start_new_slice-current_time_)*sample_rate/1000000;
@@ -254,20 +267,12 @@ Integer_delay_correction_all_channels<Type>::do_task() {
       current_time_ = start_new_slice;
       current_delay = get_delay(current_time_);
       position += current_delay.first;
-    } else {
-      // Increase the position
-      current_time_ += delta_time;
-      position += nr_output_samples - current_delay.first;
-      current_delay = get_delay(current_time_);
-      position += current_delay.first;
     }
-    // Push the output to the Type for further processing
-    output_buffer_->push(output_element);
   }
 
   if (release_data) {
     output_element.only_release_data1 = true;
-    output_buffer_->push(output_element);
+    output_buffer_->push(output_element); 
     return;
   }
 
@@ -353,6 +358,8 @@ set_parameters(const Input_node_parameters &parameters) {
 
   nr_output_samples = parameters.number_channels/subsamples_per_sample;
   sample_rate = parameters.track_bit_rate;
+
+  assert(nr_output_samples*1000000%sample_rate == 0);
   delta_time = nr_output_samples*1000000/sample_rate;
   integration_time = parameters.integr_time*1000;
 
@@ -367,7 +374,6 @@ set_parameters(const Input_node_parameters &parameters) {
   for (int i=0; i<nr_output_samples; i++) {
     random_element_.data()[i] = ~Type(0);
   }
-
 }
 
 template <class Type>

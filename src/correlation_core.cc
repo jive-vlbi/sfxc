@@ -8,7 +8,7 @@ Correlation_core::Correlation_core()
 
 Correlation_core::~Correlation_core()
 {
-  DEBUG_MSG(timer);
+//   DEBUG_MSG(timer);
 }
 
 Correlation_core::Output_buffer_ptr 
@@ -24,7 +24,7 @@ void Correlation_core::do_task() {
       integration_initialise();
     }
 
-#if 1
+#if 0
     if (current_fft % 1000 == 0) {
       DEBUG_MSG(current_fft << " of " << number_ffts_in_integration);
     }

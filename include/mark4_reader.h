@@ -194,7 +194,7 @@ read_new_block(Type *mark4_block) {
     }
     to_read -= result;
     buffer += result;
-  } while (to_read != 0);
+  } while (to_read > 0);
 
   // at least we read the complete header. Check it
   Header header;

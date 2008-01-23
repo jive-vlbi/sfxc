@@ -37,17 +37,15 @@ private:
   Input_buffer_ptr    input_buffer_;
   Data_writer_queue    data_writers_;
 
-  int n_slices_written;
   bool verbose_;
 };
 
 template <class Type>
 Input_node_data_writer_tasklet<Type>::
-Input_node_data_writer_tasklet() : n_slices_written(0), verbose_(false) {}
+Input_node_data_writer_tasklet() : verbose_(false) {}
 
 template <class Type>
 Input_node_data_writer_tasklet<Type>::~Input_node_data_writer_tasklet() {
-  DEBUG_MSG("Produced " << n_slices_written << " data slices.");
   if (input_buffer_ != Input_buffer_ptr()) {
     if (!input_buffer_->empty()) {
       DEBUG_MSG("There is still data to be written. "
@@ -118,7 +116,6 @@ do_task() {
 
   input_element.release();
   input_buffer_->pop();
-  n_slices_written ++;
 }
 
 template <class Type>
