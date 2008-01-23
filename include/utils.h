@@ -88,6 +88,7 @@ extern int RANK_OF_NODE; // Rank of the current node
       get_log_writer()(0) << FORMAT_MSG(msg) << std::endl << std::flush; }
 #else
 #define DEBUG_MSG(msg) 
+#define DEBUG_MSG_RANK(rank,msg) 
 #define MPI_DEBUG_MSG(msg) 
 #endif
 

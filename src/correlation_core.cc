@@ -1,7 +1,7 @@
 #include "correlation_core.h"
 
 Correlation_core::Correlation_core()
-: output_buffer(Output_buffer_ptr(new Output_buffer(10))),
+: output_buffer(Output_buffer_ptr(new Output_buffer(2))),
   current_fft(0)
 {
 }
@@ -28,6 +28,9 @@ void Correlation_core::do_task() {
     if (current_fft % 1000 == 0) {
       DEBUG_MSG(current_fft << " of " << number_ffts_in_integration);
     }
+//     if (current_fft > (number_ffts_in_integration/1000)*1000) {
+//       DEBUG_MSG_RANK(11, current_fft);
+//     }
 #endif
     
     // Process the data of the current fft

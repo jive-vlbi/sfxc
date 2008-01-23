@@ -89,7 +89,10 @@ void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
 }
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
-  // NGHK: TODO: Make sure a time slice fits
+  // Make sure a time slice fits, at most 16000 ffts of length 1024 samples
+  Input_buffer_element elem;
+  Input_buffer_ptr buffer(new Input_buffer(16000*(1024/4)/elem.size()));
+  data_readers_ctrl.set_buffer(stream_nr, buffer);
 
   boost::shared_ptr<Bits_to_float_converter> sample_reader(new Bits_to_float_converter());
   sample_reader->set_data_reader(data_readers_ctrl.get_data_reader(stream_nr));
@@ -180,8 +183,8 @@ Correlator_node::set_parameters(const Correlation_parameters &parameters) {
   for (size_t i=0; i<bits2float_converters.size(); i++) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
       bits2float_converters[i]->set_parameters(parameters.bits_per_sample,
-          size_input_slice*nr_integrations,
-          parameters.number_channels);
+                                               size_input_slice*nr_integrations,
+                                               parameters.number_channels);
     }
   }
   for (size_t i=0; i<delay_modules.size(); i++) {

@@ -86,9 +86,9 @@ public:
 //    DEBUG_MSG("Deleting array element of size " << size());
   }
 
-  void resize(int size) {
+  void resize(size_t size) {
 //    DEBUG_MSG("resizing from " << _buffer.size() << " to " << size);
-    _buffer.resize(size);
+    if (_buffer.size() != size) _buffer.resize(size);
   }
 
 

@@ -100,8 +100,11 @@ void Bits_to_float_converter::do_task() {
 
 bool
 Bits_to_float_converter::has_work() {
-  //  if (input_buffer->empty())
-  //    return false;
+  if (data_reader->get_size_dataslice() == 0) {
+    DEBUG_MSG(__PRETTY_FUNCTION__ 
+              << " data_reader->get_size_dataslice() == 0");
+    return false;
+  }
   if (output_buffer->full())
     return false;
   return true;

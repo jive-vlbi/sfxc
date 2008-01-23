@@ -56,16 +56,15 @@ private:
 class Correlator_node : public Node
 {
 public:
-  typedef Correlator_node                        Self;
+  typedef Correlator_node                              Self;
   typedef Multiple_data_readers_controller::value_type Input_buffer_element;
-  typedef Semaphore_buffer<Input_buffer_element> Input_buffer;
-  typedef Buffer_element_vector<char>            output_value_type;
+  typedef Semaphore_buffer<Input_buffer_element>       Input_buffer;
+  typedef boost::shared_ptr<Input_buffer>              Input_buffer_ptr;
+  typedef Buffer_element_vector<char>                  output_value_type;
   
 private:
   typedef boost::shared_ptr<Bits_to_float_converter>  Bits2float_ptr;
   typedef boost::shared_ptr<Delay_correction>         Delay_correction_ptr;
-//  typedef boost::shared_ptr<Integer_delay_correction> 
-//                                              Integer_delay_correction_ptr;
 public:
   enum Status {
     // Initialise the Correlate node
@@ -123,7 +122,6 @@ private:
   int nr_corr_node;
 
   std::vector< Bits2float_ptr >               bits2float_converters;
-//  std::vector< Integer_delay_correction_ptr > integer_delay_modules;
   std::vector< Delay_correction_ptr >         delay_modules;
   Correlation_core                            correlation_core;
   

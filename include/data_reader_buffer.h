@@ -69,10 +69,10 @@ size_t Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out_) {
   element_type *out = (element_type *)out_;
   size_t elements_to_read = nElements;
   while (elements_to_read > 0) {
-    if (buffer->empty()) {
-      return nElements - elements_to_read;
-    }
     if (bytes_left == 0) {
+      if (buffer->empty()) {
+        return nElements - elements_to_read;
+      }
       data_start = buffer->consume(bytes_left).buffer();
       if (bytes_left == 0) {
         end_of_file = true;
@@ -80,7 +80,8 @@ size_t Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out_) {
         return nElements - elements_to_read;
       }
     }
-    size_t curr_read = (elements_to_read < (uint64_t)bytes_left ? elements_to_read : bytes_left);
+    size_t curr_read = 
+      (elements_to_read < (uint64_t)bytes_left ? elements_to_read : bytes_left);
     if (out != NULL) {
       memcpy(out, data_start, curr_read*sizeof(element_type));
       out += curr_read;

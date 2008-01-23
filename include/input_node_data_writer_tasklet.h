@@ -32,16 +32,22 @@ public:
 
   void set_parameters(const Input_node_parameters &input_param);
 
+  bool &verbose() { return verbose_; }
 private:
   Input_buffer_ptr    input_buffer_;
   Data_writer_queue    data_writers_;
+
+  int n_slices_written;
+  bool verbose_;
 };
 
 template <class Type>
-Input_node_data_writer_tasklet<Type>::Input_node_data_writer_tasklet() {}
+Input_node_data_writer_tasklet<Type>::
+Input_node_data_writer_tasklet() : n_slices_written(0), verbose_(false) {}
 
 template <class Type>
 Input_node_data_writer_tasklet<Type>::~Input_node_data_writer_tasklet() {
+  DEBUG_MSG("Produced " << n_slices_written << " data slices.");
   if (input_buffer_ != Input_buffer_ptr()) {
     if (!input_buffer_->empty()) {
       DEBUG_MSG("There is still data to be written. "
@@ -92,19 +98,27 @@ do_task() {
           (size_t)data_writers_.front()->get_size_dataslice()));
 
   assert(input_element.data().data.size() > 0);
-  size_t nbytes =
-    data_writers_.front()->put_bytes(input_element.data().data.size(),
-                                     &input_element.data().data[0]);
-  assert(nbytes == input_element.data().data.size());
+  int bytes_to_write = input_element.data().data.size(), bytes_written = 0;
+  do {
+    size_t nbytes =
+      data_writers_.front()->put_bytes(bytes_to_write - bytes_written,
+                                       &input_element.data().data[bytes_written]);
+    assert(nbytes > 0);
+    bytes_written += nbytes;
+  } while (bytes_written != bytes_to_write);
 
   //  DEBUG_MSG("size of slice: " << data_writers_.front()->get_size_dataslice());
 
   if (data_writers_.front()->get_size_dataslice() == 0) {
+    if (verbose_) {
+      DEBUG_MSG("Finished writing data slice");
+    }
     data_writers_.pop();
   }
 
   input_element.release();
   input_buffer_->pop();
+  n_slices_written ++;
 }
 
 template <class Type>

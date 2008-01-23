@@ -134,7 +134,6 @@ int Input_node::get_status() {
 }
 
 void Input_node::set_delay_table(Delay_table_akima &delay_table) {
-  DEBUG_MSG(__PRETTY_FUNCTION__);
   assert(input_node_tasklet != NULL);
   input_node_tasklet->set_delay_table(delay_table);
 }
