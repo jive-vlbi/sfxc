@@ -10,7 +10,8 @@
 /** Information about the mark4 tracks needed by the input node. **/
 class Input_node_parameters {
 public:
-  Input_node_parameters() : track_bit_rate(0) {}
+  Input_node_parameters() 
+    : track_bit_rate(0), number_channels(-1), integr_time(-1) {}
 
   class Channel_parameters {
   public:

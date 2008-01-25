@@ -40,7 +40,7 @@ int main(int argc, char*argv[]) {
   std::string data_source = control_parameters.data_sources(station)[0];
 
   // Open data reader
-  boost::shared_ptr<Data_reader_file> data_reader(new Data_reader_file(data_source));
+  boost::shared_ptr<Data_reader> data_reader(new Data_reader_file(data_source));
 
   // Open input node tasklet
   Input_node_tasklet *input_node_tasklet;
@@ -52,7 +52,7 @@ int main(int argc, char*argv[]) {
   // Set track parameters
   Input_node_parameters input_node_param =
     control_parameters.get_input_node_parameters(mode, station);
-  input_node_tasklet->set_parameters(input_node_param);
+  input_node_tasklet->set_parameters(input_node_param, 0);
 
   for (int i=0; i<NR; i++)
     input_node_tasklet->do_task();
@@ -89,9 +89,9 @@ int main(int argc, char*argv[]) {
     for (size_t i=0; i<control_parameters.number_frequency_channels(); i++) {
       char filename[80];
       sprintf(filename, "file://output%d.bin", (int)i);
-      data_writer = 
-        boost::shared_ptr<Data_writer>(new Data_writer_file(filename));
-      //data_writer = boost::shared_ptr<Data_writer>(new Data_writer_void());
+      //data_writer = 
+      //  boost::shared_ptr<Data_writer>(new Data_writer_file(filename));
+      data_writer = boost::shared_ptr<Data_writer>(new Data_writer_void());
 
       // Output all data
       input_node_tasklet->add_data_writer(i, data_writer, 
@@ -108,6 +108,8 @@ int main(int argc, char*argv[]) {
 
   for (int i=0; i<NR; i++)
     input_node_tasklet->do_task();
+
+  DEBUG_MSG("Read " << data_reader->data_counter() << " bytes");
 
   delete(input_node_tasklet);
 

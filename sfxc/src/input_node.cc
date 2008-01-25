@@ -51,7 +51,7 @@ void Input_node::initialise() {
 
 void Input_node::set_input_node_parameters(const Input_node_parameters &input_node_param) {
   assert(input_node_tasklet != NULL);
-  input_node_tasklet->set_parameters(input_node_param);
+  input_node_tasklet->set_parameters(input_node_param, get_rank()-3);
 }
 
 Input_node::~Input_node() {
@@ -107,8 +107,9 @@ void Input_node::start() {
 
 void Input_node::hook_added_data_reader(size_t stream_nr) {
   assert(stream_nr == 0);
-  input_node_tasklet =
-    get_input_node_tasklet(data_reader_ctrl.get_data_reader(stream_nr));
+
+   input_node_tasklet =
+     get_input_node_tasklet(data_reader_ctrl.get_data_reader(stream_nr));
 }
 
 void Input_node::hook_added_data_writer(size_t writer) {}

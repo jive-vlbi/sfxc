@@ -76,7 +76,7 @@ private:
   int64_t             current_time; // In microseconds
   Correlation_parameters correlation_parameters;
   
-  int n_ffts_per_integration, current_fft; 
+  int n_ffts_per_integration, current_fft, total_ffts; 
 
   FFTW_PLAN          plan_t2f, plan_f2t;
   // buffer used for the plan

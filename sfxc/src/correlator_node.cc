@@ -186,7 +186,7 @@ Correlator_node::set_parameters(const Correlation_parameters &parameters) {
       delay_modules[i]->set_parameters(parameters);
     }
   }
-  correlation_core.set_parameters(parameters);
+  correlation_core.set_parameters(parameters, get_correlate_node_number());
 
 
   status = CORRELATING;
