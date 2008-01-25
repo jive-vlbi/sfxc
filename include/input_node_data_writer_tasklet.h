@@ -98,10 +98,11 @@ do_task() {
   assert(input_element.data().data.size() > 0);
   int bytes_to_write = input_element.data().data.size(), bytes_written = 0;
   do {
+    assert(bytes_to_write - bytes_written > 0);
     size_t nbytes =
       data_writers_.front()->put_bytes(bytes_to_write - bytes_written,
                                        &input_element.data().data[bytes_written]);
-    assert(nbytes > 0);
+    assert(nbytes >= 0);
     bytes_written += nbytes;
   } while (bytes_written != bytes_to_write);
 

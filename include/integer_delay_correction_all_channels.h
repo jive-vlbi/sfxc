@@ -57,7 +57,8 @@ public:
   void set_time(int64_t time);
   void set_stop_time(int64_t time);
   void set_delay_table(Delay_table_akima &table);
-  void set_parameters(const Input_node_parameters &parameters);
+  void set_parameters(const Input_node_parameters &parameters,
+                      int node_nr);
 
   int bytes_of_output(int nr_seconds);
 private:
@@ -100,6 +101,8 @@ private:
   /// Memory pool for a random data block as long as we don't have weights
   Input_memory_pool         memory_pool_;
   Input_memory_pool_element random_element_;
+
+  int node_nr_;
 };
 
 template <class Type>
@@ -242,6 +245,14 @@ Integer_delay_correction_all_channels<Type>::do_task() {
     // Push the output to the Type for further processing
     output_buffer_->push(output_element);
 
+#if 1
+    if ((current_time_/integration_time) !=
+        ((current_time_+delta_time)/integration_time)) {
+      DEBUG_MSG(" PROGRESS node " << node_nr_ 
+                << ", time " << current_time_+delta_time);
+    }
+#endif
+
     // Increase the position
     current_time_ += delta_time;
     position += nr_output_samples - current_delay.first;
@@ -249,8 +260,8 @@ Integer_delay_correction_all_channels<Type>::do_task() {
     position += current_delay.first;
 
     // Check for the next integration slice, and skip partial fft-sizes
-    if (current_time_/integration_time !=
-        (current_time_+delta_time-1)/integration_time) {
+    if ((current_time_/integration_time) !=
+        ((current_time_+delta_time-1)/integration_time)) {
 
       position -= current_delay.first;
 
@@ -351,7 +362,10 @@ set_delay_table(Delay_table_akima &table) {
 template <class Type>
 void
 Integer_delay_correction_all_channels<Type>::
-set_parameters(const Input_node_parameters &parameters) {
+set_parameters(const Input_node_parameters &parameters,
+               int node_nr) {
+  node_nr_ = node_nr;
+
   bits_per_subsample = parameters.bits_per_sample();
   subsamples_per_sample = parameters.subsamples_per_sample();
   assert(parameters.number_channels%subsamples_per_sample == 0);

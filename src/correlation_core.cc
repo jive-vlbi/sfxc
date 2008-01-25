@@ -2,13 +2,20 @@
 
 Correlation_core::Correlation_core()
 : output_buffer(Output_buffer_ptr(new Output_buffer(2))),
-  current_fft(0)
+  current_fft(0), total_ffts(0)
 {
 }
 
 Correlation_core::~Correlation_core()
 {
   DEBUG_MSG(timer);
+  //double mflops(uint64_t time, int numiterations, int N) {
+  //  return 5.0*N*log2(N) * numiterations / (1.0*time);
+  //}
+  int N = size_of_fft();
+  int numiterations = total_ffts;
+  double time = timer.measured_time()*1000000;
+  DEBUG_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
 }
 
 Correlation_core::Output_buffer_ptr 
@@ -18,28 +25,29 @@ Correlation_core::get_output_buffer() {
 }
 
 void Correlation_core::do_task() {
-  timer.resume();
+#if 1
+    if (current_fft % 1000 == 0) {
+      DEBUG_MSG("PROGRESS node " << node_nr_ << ", " 
+                << current_fft << " of " << number_ffts_in_integration);
+    }
+#endif
+
+  //timer.resume();
   if (has_work()) {
     if (current_fft%number_ffts_in_integration == 0) {
       integration_initialise();
     }
-
-#if 1
-    if (current_fft % 1000 == 0) {
-      DEBUG_MSG(current_fft << " of " << number_ffts_in_integration);
-    }
-#endif
     
     // Process the data of the current fft
     integration_step();
-    current_fft ++;
+    current_fft ++; 
     
     if (current_fft == number_ffts_in_integration) {
       integration_average();
       integration_write();
     }
   }
-  timer.stop();
+  //timer.stop();
 }
 
 bool Correlation_core::finished() {
@@ -55,7 +63,11 @@ void Correlation_core::connect_to(size_t stream, Input_buffer_ptr buffer) {
 
 
 void 
-Correlation_core::set_parameters(const Correlation_parameters &parameters) {
+Correlation_core::set_parameters(const Correlation_parameters &parameters,
+                                 int node_nr) {
+  node_nr_ = node_nr;
+
+  int prev_size_of_fft = size_of_fft();
   correlation_parameters = parameters;
   
   number_ffts_in_integration = 
@@ -124,12 +136,14 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters) {
     frequency_buffer[i].resize(size_of_fft()/2+1);
   }
 
-  plan_input_buffer.resize(size_of_fft());
-  plan_output_buffer.resize(size_of_fft()/2+1);
-  plan = FFTW_PLAN_DFT_R2C_1D(size_of_fft(), 
-                              (FLOAT *)&plan_input_buffer[0],
-                              (FFTW_COMPLEX *)&plan_output_buffer[0],
-                              FFTW_MEASURE);
+  if (prev_size_of_fft != size_of_fft()) {
+    plan_input_buffer.resize(size_of_fft());
+    plan_output_buffer.resize(size_of_fft()/2+1);
+    plan = FFTW_PLAN_DFT_R2C_1D(size_of_fft(), 
+                                (FLOAT *)&plan_input_buffer[0],
+                                (FFTW_COMPLEX *)&plan_output_buffer[0],
+                                FFTW_MEASURE);
+  }
 }
 
 void 
@@ -179,9 +193,12 @@ void Correlation_core::integration_step() {
          correlation_parameters.station_streams.size());
   for (size_t i=0; i<input_buffers.size(); i++) {
     assert(frequency_buffer[i].size() == size_of_fft()/2+1);
+    timer.resume();
     FFTW_EXECUTE_DFT_R2C(plan, 
                          (FLOAT *)input_elements[i]->buffer(),
                          (FFTW_COMPLEX *)&frequency_buffer[i][0]);
+    timer.stop();
+    total_ffts++;
   }
 
   // do the correlation

@@ -28,6 +28,7 @@ class Timer
   void stop(const char* msg = 0);
   void check(const char* msg = 0);
 
+  double measured_time();
 }; // class Timer
 
 //===========================================================================
@@ -141,5 +142,9 @@ inline std::ostream& operator<<(std::ostream& os, Timer& t)
 
 //===========================================================================
 
+
+inline double Timer::measured_time() {
+  return acc_time + (running ? elapsed_time() : 0);
+}
 #endif // TIMER_H
 

@@ -9,6 +9,13 @@ delay_table_set(false) {}
 
 Delay_correction::~Delay_correction() {
   DEBUG_MSG(delay_timer);
+  //double mflops(uint64_t time, int numiterations, int N) {
+  //  return 5.0*N*log2(N) * numiterations / (1.0*time);
+  //}
+  int N = number_channels();
+  int numiterations = total_ffts;
+  double time = delay_timer.measured_time()*1000000;
+  DEBUG_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
 }
 
 void Delay_correction::connect_to(Input_buffer_ptr new_input_buffer) {
@@ -28,7 +35,7 @@ double Delay_correction::get_delay(int64_t time) {
 
 void Delay_correction::do_task() {
   assert(has_work());
-  delay_timer.resume();
+  //delay_timer.resume();
   assert(current_time >= 0);
 
   if (n_ffts_per_integration == current_fft) {
@@ -76,7 +83,7 @@ void Delay_correction::do_task() {
   input_buffer->consumed();
   output_buffer->produced(2*number_channels());
 
-  delay_timer.stop();
+  //delay_timer.stop();
 }
 
 
@@ -93,7 +100,10 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
 
   // 3) execute the complex to complex FFT, from Time to Frequency domain
   //    input: sls. output sls_freq
+  delay_timer.resume();
   FFTW_EXECUTE_DFT(plan_t2f, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
+  delay_timer.stop();
+  total_ffts++;
 
   output[0] *= 0.5;
   output[number_channels()/2] *= 0.5;//Nyquist
@@ -119,7 +129,10 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
 
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
+  delay_timer.resume();
   FFTW_EXECUTE_DFT(plan_f2t, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
+  delay_timer.stop();
+  total_ffts++;
   //   FFTW_EXECUTE(plan_f2t);
 
   //   FFTW_DESTROY_PLAN(plan_f2t);
@@ -205,6 +218,7 @@ Delay_correction::get_output_buffer() {
 
 void
 Delay_correction::set_parameters(const Correlation_parameters &parameters) {
+  int prev_number_channels = number_channels();
   correlation_parameters = parameters;
 
   current_time = parameters.start_time*(int64_t)1000;
@@ -225,16 +239,18 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 
   frequency_buffer.resize(number_channels()*2);
 
-  buffer.resize(number_channels());
+  if (prev_number_channels != number_channels()) {
+    buffer.resize(number_channels());
 
-  plan_t2f = FFTW_PLAN_DFT_1D(number_channels(),
-                              (FFTW_COMPLEX *)&buffer[0],
-                              (FFTW_COMPLEX *)&buffer[0],
-                              FFTW_BACKWARD, FFTW_MEASURE);
-  plan_f2t = FFTW_PLAN_DFT_1D(number_channels(),
-                              (FFTW_COMPLEX *)&buffer[0],
-                              (FFTW_COMPLEX *)&buffer[0],
-                              FFTW_FORWARD,  FFTW_MEASURE);
+    plan_t2f = FFTW_PLAN_DFT_1D(number_channels(),
+                                (FFTW_COMPLEX *)&buffer[0],
+                                (FFTW_COMPLEX *)&buffer[0],
+                                FFTW_BACKWARD, FFTW_MEASURE);
+    plan_f2t = FFTW_PLAN_DFT_1D(number_channels(),
+                                (FFTW_COMPLEX *)&buffer[0],
+                                (FFTW_COMPLEX *)&buffer[0],
+                                FFTW_FORWARD,  FFTW_MEASURE);
+  }
 
   n_ffts_per_integration =
     Control_parameters::nr_ffts_per_integration_slice(

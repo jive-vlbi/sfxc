@@ -31,7 +31,8 @@ public:
   
   void connect_to(size_t stream, Input_buffer_ptr buffer);
   
-  void set_parameters(const Correlation_parameters &parameters);
+  void set_parameters(const Correlation_parameters &parameters,
+                      int node_nr);
   void set_data_writer(boost::shared_ptr<Data_writer> writer);
   
   Output_buffer_ptr get_output_buffer();
@@ -63,7 +64,7 @@ private:
   std::vector<Input_buffer_element *>               input_elements;
 
 
-  int number_ffts_in_integration, current_fft;
+  int number_ffts_in_integration, current_fft, total_ffts;
 
   FFTW_PLAN                          plan;
   std::vector< FLOAT >               plan_input_buffer;
@@ -78,6 +79,8 @@ private:
   boost::shared_ptr<Data_writer>                    writer;
 
   Timer timer;
+
+  int node_nr_;
 };
 
 #endif /*CORRELATION_CORE_H_*/

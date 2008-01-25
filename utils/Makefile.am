@@ -13,7 +13,7 @@ bin_PROGRAMS = create_delay_function \
 	       plot_delay_table \
                produce_output_graphs
 
-bin_SCRIPTS  = run_sfxc.py
+bin_SCRIPTS  = run_sfxc.py vumeter.py
 
 create_delay_function_SOURCES = create_delay_function.cc
 

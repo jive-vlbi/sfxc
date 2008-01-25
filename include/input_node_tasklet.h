@@ -29,7 +29,8 @@ public:
   virtual void set_delay_table(Delay_table_akima &delay)=0;
 
   /// set the track parameters
-  virtual void set_parameters(const Input_node_parameters &input_node_param)=0;
+  virtual void set_parameters(const Input_node_parameters &input_node_param,
+                              int node_nr)=0;
 
   virtual bool has_work() = 0;
 
