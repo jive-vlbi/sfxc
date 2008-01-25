@@ -1,0 +1,24 @@
+\section{Future work}
+Within Future Arrays of Broadband Radio-telescopes on Internet
+Computing (FABRIC), which is a joint research activity in the EXPReS
+project, we are currently implementing the software correlator. The
+work flow management is designed by the the Polish Supercomputing and
+Networking Center in Poznan.
+
+In order to be able to guarantee data transfer, it might be necessary
+to add an extra node near the telescopes with guaranteed bandwidth to
+the telescope. This node could buffer the input data in case the
+transfer rates to the Grid drop temporarily. When the software
+correlator is run on a cluster of super computers, this node can also
+send large time slices directly to alternating super computers. In
+this way the network connectivity is optimized by introducing an
+additional layer of input nodes.
+
+Other research areas that need attention are found in resource
+leveling, dealing with delays in data transfers and managing
+insufficient computing power.
+
+We also want to test several networking protocols to optimize the data
+transfer. For example, we could imagine using UDP for the main data
+stream, where some data loss is acceptable and a TCP connection for
+data-headers to guarantee their proper delivery.
