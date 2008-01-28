@@ -1,71 +1,252 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%% author.tex %%%%%%%%%%%%%%%%%%%%%%%%%
+%% Version 3/21/02
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Kluwer Edited Book Template File, Edbktmpl.tex
+%%
+%% Kluwer Academic Press
+%%
+%% Prepared by Amy Hendrickson, TeXnology Inc., July 1999.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%
+%% LaTeX2e
+%% Uncomment documentclass,
+\documentclass{kapedbk} % Computer Modern font calls
+
+%% and, optionally, one or more
+%%   of the \usepackage commands below:
+
+%%%%%
+%% If you use a font encoding package, please enter it here, i.e.,
+%  \usepackage{T1enc}
+
+%%%%%
+%  If you have MathTimes and MathTimesPlus fonts, you
+%  may uncomment the line below and use them, but you are
+%  not obligated to do so, and most authors do not have
+%  these fonts. (You may need to edit m-times.sty to make the
+%  font names match those on your system)
+
+%  You must have the MathTimes fonts for this to work. They may be
+%  purchased from the Y&Y company, http://www.YandY.com.
+
+% \usepackage[mtbold,noTS1]{m-times}
+
+%%%%%
+% PostScript font calls
 %
-% sample root file for your contribution to a "contributed book"
-%
-% "contributed book"
-%
-% Use this file as a template for your own input.
-%
-%%%%%%%%%%%%%%%%%%%%%%%% Springer-Verlag %%%%%%%%%%%%%%%%%%%%%%%%%%
+% If you use the edbkps.sty font file, you may need to edit it
+% to make sure the font names match those on your system. See
+% the top of the edbkps.sty file for more info.
+
+\usepackage{edbkps}
+
+%%%%%
+% Style for inserting .eps files and rotating illustrations or tables
+
+% possible options for graphicx:
+% [dvips], [xdvi], [dvipdf], [dvipsone], [dviwindo], [emtex], [dviwin],
+% [pctexps],  [pctexwin],  [pctexhp],  [pctex32], [truetex], [tcidvi],
+% [oztex], [textures]
+
+\usepackage[dvips]{graphicx}
+
+%%%%%%%%%%%%%%%%%%%%%
+%% LaTeX209,
+%  Uncomment only one below, comment out similar commands above
+%  \documentstyle{kapedkbk} % Computer Modern fonts
+%  \documentstyle[edbkps]{kapedbk} %For PostScript fonts
+%  (The m-times.sty works only with LaTeX2e)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Commands You Can Set or Change to Customize Your Book Format: ===>>>
+
+% Running heads:
+% ==============
+
+%  Uncomment to make chapter title on left hand page
+%  and section title on right hand page
+%  \chapsectrunningheads
 
 
-% RECOMMENDED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\documentclass[12pt]{article}
-\usepackage{a4wide}
-\usepackage{graphics}
-\usepackage{epsfig}
-\usepackage{listings}
-\usepackage[english]{babel}
-\usepackage[latin1]{inputenc}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{amsfonts}
-\usepackage{tabularx}
-\usepackage{url}
-\usepackage{fancyvrb}
+% Section heads:
+% ==============
 
-\usepackage{graphicx}
-\usepackage{epsfig}
-\usepackage{psfrag}
-\usepackage{subfigure}
-\usepackage{pstricks}
+%%%
+% \chaptersection % will use chapter.section form for section heads.
+
+%%%
+% Uncomment to make section heads appear in
+%                    both upper and lower case.
+%\upperandlowercase
+
+\useuppercase % Uncomment to make section and subsection heads
+              %  appear in uppercase.
+
+%%%
+% How many levels of section head would you like numbered?
+% 0= no section numbers, 1= section, 2= subsection, 3= subsubsection
+\setcounter{secnumdepth}{2}
+
+% Table of Contents:
+% ==================
+% How many levels of section head would you like to appear in the
+%  Table of Contents?
+%  0= chapter titles, 1= section titles, 2= subsection titles,
+%  3= subsubsection titles.
+
+\setcounter{tocdepth}{1}
+
+% Equation numbering:
+% ===================
+
+%%%
+% \nochapequationnumber % will result in equation numbers that are (1)
+
+%%%
+% \sectionequationnumber % will result in equation numbers that are (1.1)
+                         % and renumber for each section
+
+% Default for kapedbk is (chapternumber.equationnumber)
+% Default for kapproc is (equation number)
+
+% Theorem numbering:
+% ==================
+% \nochaptheoremnumber % will make the theorem type environments number
+       % only with the theorem number. Default is chapter.theorem for
+       % kapedbk.
+
+% Footnotes/Endnotes:
+% ===================
+
+% Default is endnotes that appear at the end of the chapter, above
+% the references, or whereever \notes is written.
+
+%%%
+% To change footnotes to appear at bottom of page uncomment:
+% \let\footnote\savefootnote
+
+%%%
+% Uncomment if you want footnotetext to appear at the bottom of the page:
+%\let\footnotetext\savefootnotetext
+
+%%%
+% Uncomment if you want a ruled line above the footnote.
+%\let\footnoterule\savefootnoterule
+
+% Bibliography Style Settings:
+% ============================
+% Choose either kluwerbib or normallatexbib:
+
+%%%
+%\kluwerbib % will produce this kind of bibliography entry:
+
+%  Anderson, Terry L.,...
+%    continuing bib entry here
+
+%  \cite{xxx} will print without brackets around the citation.
+% \bibliographystyle{kapalike} % should be used when you use \verb+\kluwerbib+.
+
+%%%
+\normallatexbib %will produce bibliography entries as shown in the
+                % LaTeX book
+
+% [1] Anderson, Terry L.,
+%     continuing bib entry
+
+% \cite{xxx} will print with square brackets around the citation, i.e., [1].
+
+% Any \verb+\bibliographystyle{}+ may be used with \verb+\normallatexbib+, but
+% you should check with your editor to find the style preferred for
+% your book.
+
+% Change Brackets around Citation:
+% ================================
+
+%% Default with \kluwerbib is no brackets around citation.
+%% Default with \normallatexbib is square brackets around citation.
+
+% For parens around citation uncomment these:
+
+%\let\lcitebracket(
+%\let\rcitebracket)
+
+% For square brackets around citation uncomment these:
+
+%\let\lcitebracket[
+%\let\rcitebracket]
+
+% Draft Line:
+% ===========
+%  Optional, uncomment to make current time and `draft' appear at
+%  bottom of page.
+
+%\draft
+
+%%%% <<== End Formatting Commands You Can Set or Change %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \usepackage{comment}
+\usepackage{url}
+
+\def\e{{\it e}}
+\def\scarie{{SCARI\e}}
+\def\das3{\mbox{DAS-3}}
 
 
-\title{Software correlation.}
-\author{Nico Kruithof
-\footnote{Joint Institute for VLBI in Europe (JIVE),
-%  Postbus 2, 7990 AA Dwingeloo, The Netherlands
-  \texttt{Kruithof@jive.nl}}
-, Damien Marchal\footnote{University of Amsterdam (UvA),
-%  Kruislaan 403, 1098 SJ Amsterdam, The Netherlands
-  \texttt{DMarchal@science.uva.nl}
-}
-}
-\date{}
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
 
-\maketitle
 
-\abstract{Very Long Baseline Interferometry (VLBI) is a technique in
-  astronomy where several distant radio telescopes observe the same
-  source and the received signals are recorded and later correlated to
-  produce an image with a large resolution. 
+%------ article title  ------------------->>
+
+% If you use \\'s , please supply an alternate version of the title
+% in square brackets, i.e.,
+%\articletitle[Communism, Sparta, and Plato]
+%{COMMUNISM, SPARTA,\\ and PLATO}
+%\articletitle{Towards Real-time Software Correlation on Grids.}
+\articletitle{Real-time Software Correlation.}
+
+%% optional, to supply a shorter version of the title for the running head:
+%\chaptitlerunninghead{Eventual other Running Head}
+
+%\articlesubtitle{Eventual Subtitle}
+%\vspace{-0.36cm}
+
+\author{Nico Kruithof\altaffilmark{1}, Damien Marchal\altaffilmark{2}}
+\affil{\altaffilmark{1} Joint Institute for VLBI in Europe (JIVE),
+  Postbus 2, 7990 AA Dwingeloo, The Netherlands
+  Kruithof@jive.nl, \\
+\altaffilmark{2} University of Amsterdam (UvA),
+Kruislaan 403, 1098 SJ Amsterdam, The Netherlands
+\mbox{DMarchal@science.uva.nl}
+}
+
+\begin{abstract}
+  Very Long Baseline Interferometry (VLBI) is a technique in astronomy
+  where several distant radio telescopes observe the same source and
+  the received signals are recorded and later correlated to produce an
+  image with a large resolution.
 
   The primary task of JIVE is the correlation of data from the EVN
-  telescopes \cite{EVN} all around Europe. A special-purpose built
-  hardware correlator processes the experiments. We are currently
-  investigating the capabilities of a next generation software
+  telescopes~\cite{EVN} all around Europe. A special-purpose built
+  hardware correlator processes the experiments. Within \scarie\ we
+  investigate the capabilities of a next generation software
   correlator using Grid processing power. In this paper we describe
   the design of this software correlator and some experimental
-  results.}
-%
+  results.
+\end{abstract}
 
+%\begin{keywords}
+%Eventual keywords
+%\end{keywords}
+
+
+\vspace{0.64cm}
 \input{introduction.tex}
 \input{vlbi_correlation.tex}
 \input{data_flow.tex}
+\input{benchmarks.tex}
 \input{conclusion.tex}
 
 %
@@ -73,17 +254,11 @@
 % BibTeX users please use
 \bibliographystyle{plain}
 \bibliography{biblio}
-%
-% Non-BibTeX users please follow the syntax
-% the syntax of "referenc.tex" for your own citations
-%\input{referenc}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\ifodd\thepage
+\newpage
+\thispagestyle{empty}
+\centerline{\hfill}
+\fi
 \end{document}
-
-
-
-
-

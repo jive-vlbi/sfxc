@@ -1,0 +1,498 @@
+\def\pscurrentversion{October 20, 2004}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% PostScript fonts for
+%% Edited Book Style
+%% Kluwer Academic Publishers
+%%
+%% Prepared by Amy Hendrickson, TeXnology Inc.
+%% (617) 738-8029
+%%
+%% Use: \documentclass{kapedbk}
+%%      (optional font encoding) \usepackage{t1enc} or \usepackage{OT1enc}
+%%      \usepackage{edbkps}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% You may need to rename these fonts to match the
+%% names of the .tfm files on your system. If you look at
+%% the directory where the .tfm files are stored you should
+%% be able to make the appropriate substitution.
+
+%% You only need the names of ten common fonts, so this shouldn't
+%% be too difficult
+
+%% If you have problems with accents, please comment out the \endinput
+%% below
+
+%%  Change these definitions, if necessary ====>
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Times-Roman
+
+%% Dvipsone Names:
+\def\timesroman{ptmr8z}
+\def\timesbold{ptmb8z}
+\def\timesitalic{ptmri8z}
+\def\timesbolditalic{ptmbi8z}
+
+%% Karl Berry Names:
+%\def\timesroman{ptmr8t}
+%\def\timesbold{ptmb8t}
+%\def\timesitalic{ptmri8t}
+%\def\timesbolditalic{ptmbi8t}
+
+%% BlueSky or other TeX Systems, write in appropriate font name:
+%\def\timesroman{}
+%\def\timesbold{}
+%\def\timesitalic{}
+%\def\timesbolditalic{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Helvetica
+%% Dvipsone Names:
+\def\helvetica{phvr8z}
+\def\helveticaoblique{phvro8z}
+\def\helveticabold{phvb8z}
+\def\helveticaboldoblique{phvbo8z}
+\def\helveticamedium{phvr8z}
+
+%% Karl Berry Names:
+%\def\helvetica{phvr8t}
+%\def\helveticaoblique{phvro8t}
+%\def\helveticabold{phvb8t}
+%\def\helveticaboldoblique{phvbo8t}
+%\def\helveticamedium{phvr8t}
+
+%% BlueSky or other TeX Systems, write in appropriate font name:
+%\def\helvetica{}
+%\def\helveticaoblique{}
+%\def\helveticabold{}
+%\def\helveticaboldoblique{}
+%\def\helveticamedium{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Courier
+%% Computer Modern name
+\def\courier{pcrr8u}
+
+% Dvipsone name:
+%\def\courier{com}
+
+% Berry name:
+%\def\courier{pcrr8t}
+
+%% BlueSky or other TeX Systems, write in appropriate font name:
+%\def\courier{}
+
+%% <==== End of changes needed. Please do not make changes below this point.
+%% !!!!!!!!!
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% default definitions, since these fonts
+%% will not be used:
+
+\def\courieroblique{pcrro8r}
+\def\courierbold{pcrb8r}
+\def\courierboldoblique{pcrbo8r}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% switch used in documentation:
+\def\psfonts{true}
+
+\global\let\sfdefault\helvetica
+\global\let\rmdefault\timesroman
+\global\let\ttdefault\courier
+
+\typeout{^^J^^J
+PostScript Fonts for Kluwer Edited Book Style^^J
+\pscurrentversion^^J^^J
+IMPORTANT: If you use font encoding, as
+in \string\usepackage{T1enc},^^J please use it BEFORE
+\string\usepackage{edbkps}, ie:^^J
+\string\documentclass{kapedbk}^^J
+\string\usepackage{T1enc}^^J
+\string\usepackage{edbkps}^^J^^J
+}
+
+%% Times-Roman
+\xdef\timesroman{\timesroman\space}
+\xdef\timesbold{\timesbold\space}
+\xdef\timesitalic{\timesitalic\space}
+\xdef\timesbolditalic{\timesbolditalic\space}
+
+%% Helvetica
+\xdef\helvetica{\helvetica\space}
+\xdef\helveticaoblique{\helveticaoblique\space}
+\xdef\helveticabold{\helveticabold\space}
+\xdef\helveticaboldoblique{\helveticaboldoblique\space}
+\xdef\helveticamedium{\helveticamedium\space}
+
+%% Courier
+\xdef\courier{\courier\space}
+\xdef\courieroblique{\courieroblique\space}
+\xdef\courierbold{\courierbold\space}
+\xdef\courierboldoblique{\courierboldoblique\space}
+
+%% Special Use Fonts ==>>
+
+%% Table of Contents
+  \font\toctitlefont=\timesbold at 15pt % title of Table of Contents
+  \font\tocbodyfont=\timesroman at 10pt % text of table of contents
+  \font\tocauthorfont=\timesitalic at 10pt % used for introduction author
+  \font\tocarticletitlefont=\timesroman at 10pt %
+
+
+%% Running heads
+  \font\runningheadfont=\timesitalic at10pt
+  \font\foliofont=\timesroman at 11pt
+
+%% Book Title, Half title page
+  \font\halftitlefont=\helveticamedium at 18pt
+  \font\booktitlefont=\helveticamedium at 18pt
+  \font\subtitlefont=\helvetica at 12pt
+  \font\seriestitlefont=\helveticamedium at 12pt
+  \font\professorfont=\helvetica at 8pt
+  \font\seriesbookfont=\helveticamedium at 8pt
+
+  \font\editorfont=\timesroman at 11pt %% specs call for \helvetica
+  \font\editoraffilfont=\helvetica at 9pt%% specs call for \helveticamedium
+
+  \font\authorfont=\timesroman at 11pt %% specs call for \helvetica
+  \font\kluwerfont=\helveticabold at 9pt %% specs call for \helveticamedium
+  \font\locationfont=\helvetica at 9pt
+
+  \font\copyrightfont=\helveticamedium at 6pt
+  \font\copyrighttextfont=\helvetica at 6pt
+  \font\dedicationfont=\timesbolditalic at 10pt
+
+%% Part Title
+  \font\partfont=\timesroman at 16pt %\helvetica at 24pt
+  \font\partnumberfont=\timesroman at 12pt %\helvetica at 42pt
+  \font\partsubtitle=\timesitalic at 16pt %\helveticaboldoblique at 24pt
+
+  \font\affilfont=\timesitalic at 9pt %%
+  \font\emailfont=\helvetica at 8pt %% all caps
+
+
+%% Chapter Title
+  \font\chapternumberfont=\timesroman at 15pt
+  \font\chaptertitlefont=\timesbold at 15pt
+  \font\schaptertitlefont=\timesbold at 15pt
+  \font\articlesubtitlefont=\timesitalic at 15pt
+
+%% Section heads
+  \font\sectionfont=\timesbold at 13pt
+  \font\subsectionfont=\timesbold at 13pt
+  \font\subsubsectionfont=\timesbold at 11pt
+  \font\paragraphfont=\timesbold at 11pt
+
+%% Theorem fonts
+  \font\theoremfont=cmcsc10 at 11pt
+
+%% Caption
+  \font\fignumfont=\timesitalic at 9pt
+  \def\figtextfont{\small} %\timesroman at 9pt
+  \def\tabtextfont{\small} %\timesroman at 9pt
+
+%% Table fonts
+  \def\tabletitlefont{\timesroman}
+  \def\tablefontsize{\small}
+  \def\tablefootnotesize{\footnotesize}
+
+%% References/Bibliography
+\def\bibfontsize{\small}
+
+%% Text fonts
+\font\bit=\timesbolditalic at 10pt
+
+%% Fake Small Caps
+\font\bigscfont\timesroman at 9.5pt
+\font\smscfont\timesroman at 7.5pt
+
+%Filename: <encodingdefault><rmdefault>.fd
+\DeclareFontFamily{\encodingdefault}{\rmdefault}{}
+\DeclareFontShape{\encodingdefault}{\rmdefault}{b}{n}{
+   <-> \timesbold
+}{}
+
+\DeclareFontShape{\encodingdefault}{\rmdefault}{b}{sc}{
+   <-> cmcsc10
+}{}
+
+\DeclareFontShape{\encodingdefault}{\rmdefault}{b}{sl}{
+   <-> cmsl10
+}{}
+
+\DeclareFontShape{\encodingdefault}{\rmdefault}{b}{it}{
+   <-> \timesbolditalic
+}{}
+
+\DeclareFontShape{\encodingdefault}{\rmdefault}{m}{n}{
+   <-> \timesroman
+}{}
+
+\DeclareFontShape{\encodingdefault}{\rmdefault}{m}{sc}{
+   <-> cmcsc10
+}{}
+
+\DeclareFontShape{\encodingdefault}{\rmdefault}{m}{sl}{
+   <-> cmsl10
+}{}
+
+\DeclareFontShape{\encodingdefault}{\rmdefault}{m}{it}{
+   <-> \timesitalic
+}{}
+
+\DeclareFontShape{\encodingdefault}
+{\rmdefault}{bx}{n}{<->ssub * \rmdefault/b/n}{}
+
+\DeclareFontShape{\encodingdefault}
+{\rmdefault}{bx}{sc}{<->ssub * \rmdefault/b/sc}{}
+
+\DeclareFontShape{\encodingdefault}
+{\rmdefault}{bx}{sl}{<->ssub * \rmdefault/b/sl}{}
+
+\DeclareFontShape{\encodingdefault}
+{\rmdefault}{bx}{it}{<->ssub * \rmdefault/b/it}{}
+
+\DeclareFontShape{\encodingdefault}
+{\rmdefault}{l}{n}{<->ssub * \rmdefault/m/n}{}
+
+\DeclareFontShape{\encodingdefault}
+{\rmdefault}{l}{sc}{<->ssub * \rmdefault/m/sc}{}
+
+\DeclareFontShape{\encodingdefault}
+{\rmdefault}{l}{sl}{<->ssub * \rmdefault/m/sl}{}
+
+\DeclareFontShape{\encodingdefault}
+{\rmdefault}{l}{it}{<->ssub * \rmdefault/m/it}{}
+
+%%
+%\ProvidesFile{<encodingdefault><ttdefault>.fd}
+%        [1996/02/19 v2.3e Standard LaTeX font definitions]
+
+\DeclareFontFamily{\encodingdefault}{\ttdefault}{\hyphenchar \font\m@ne}
+
+\DeclareFontShape{\encodingdefault}{\ttdefault}{b}{n}{
+   <-> \courierbold
+}{}
+
+\DeclareFontShape{\encodingdefault}{\ttdefault}{b}{sc}{
+   <-> cmcsc10
+}{}
+
+\DeclareFontShape{\encodingdefault}{\ttdefault}{b}{sl}{
+   <-> \courierboldoblique
+}{}
+
+\DeclareFontShape{\encodingdefault}{\ttdefault}{b}{it}{
+   <-> \courierboldoblique
+}{}
+
+
+\DeclareFontShape{\encodingdefault}{\ttdefault}{m}{n}
+     {<-> \courier
+      }{}
+
+\DeclareFontShape{\encodingdefault}{\ttdefault}{m}{n}
+     {<-> \courier
+      }{}
+%%%%%% make sure subst shapes are available
+\DeclareFontShape{\encodingdefault}{\ttdefault}{m}{it}
+     {<-> \courieroblique
+      }{}
+\DeclareFontShape{\encodingdefault}{\ttdefault}{m}{sl}
+     {<-> \courieroblique
+      }{}
+\DeclareFontShape{\encodingdefault}{\ttdefault}{m}{sc}
+     {<-> \courier
+      }{}
+\DeclareFontShape{\encodingdefault}{\ttdefault}{m}{ui}
+  {<->sub * cmtt/m/it}{}
+\DeclareFontShape{\encodingdefault}{\ttdefault}{bx}{n}
+  {<->sub * cmtt/m/n}{}
+\DeclareFontShape{\encodingdefault}{\ttdefault}{bx}{it}
+  {<->sub * cmtt/m/it}{}
+\DeclareFontShape{\encodingdefault}{\ttdefault}{bx}{ui}
+  {<->sub * cmtt/m/it}{}
+%%
+%% End of file `<encodingdefault><ttdefault>.fd'.
+
+%Filename: <encodingdefault><sfdefault>.fd
+
+\DeclareFontFamily{\encodingdefault}{\sfdefault}{}
+
+\DeclareFontShape{\encodingdefault}{\sfdefault}{b}{n}{
+   <-> \helveticabold
+}{}
+
+\DeclareFontShape{\encodingdefault}{\sfdefault}{b}{sc}{
+   <-> cmcsc10
+}{}
+
+\DeclareFontShape{\encodingdefault}{\sfdefault}{b}{sl}{
+   <-> \helveticaboldoblique
+}{}
+
+\DeclareFontShape{\encodingdefault}{\sfdefault}{b}{it}{
+   <-> \helveticaboldoblique
+}{}
+
+\DeclareFontShape{\encodingdefault}{\sfdefault}{m}{n}{
+   <-> \helvetica
+}{}
+
+\DeclareFontShape{\encodingdefault}{\sfdefault}{m}{sc}{
+   <-> cmcsc10
+}{}
+
+\DeclareFontShape{\encodingdefault}{\sfdefault}{m}{sl}{
+   <-> \helveticaoblique
+}{}
+
+\DeclareFontShape{\encodingdefault}{\sfdefault}{m}{it}{
+   <-> \helveticaoblique
+}{}
+
+\DeclareFontShape{\encodingdefault}
+{\sfdefault}{bx}{n}{<->ssub * \sfdefault/b/n}{}
+
+\DeclareFontShape{\encodingdefault}
+{\sfdefault}{bx}{sc}{<->ssub * \sfdefault/b/sc}{}
+
+\DeclareFontShape{\encodingdefault}
+{\sfdefault}{bx}{sl}{<->ssub * \sfdefault/b/sl}{}
+
+\DeclareFontShape{\encodingdefault}
+{\sfdefault}{bx}{it}{<->ssub * \sfdefault/b/it}{}
+
+\DeclareFontShape{\encodingdefault}
+{\sfdefault}{l}{n}{<->ssub * \sfdefault/m/n}{}
+
+\DeclareFontShape{\encodingdefault}
+{\sfdefault}{l}{sc}{<->ssub * \sfdefault/m/sc}{}
+
+\DeclareFontShape{\encodingdefault}
+{\sfdefault}{l}{sl}{<->ssub * \sfdefault/m/sl}{}
+
+\DeclareFontShape{\encodingdefault}
+{\sfdefault}{l}{it}{<->ssub * \sfdefault/m/it}{}
+
+
+%% ACCENT FIXES
+
+\expandafter\font\csname cm10.95pt\endcsname =cmr10 at 10.95pt
+
+\def\currfontsizecm{%
+\expandafter\ifx\csname cm\f@size pt\endcsname\relax
+\expandafter\font\csname cm\f@size pt\endcsname =cmr10 at \f@size pt\fi%
+\expandafter\csname cm\f@size pt\endcsname}
+
+\let\saveaccten\H
+\def\H#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveaccten{\savefont#1}\savefont}
+
+\let\saveaccseven\.
+\def\.#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveaccseven{\savefont#1}\savefont}
+
+\let\saveAA\AA
+\def\AA{{\currfontsizecm\saveAA}}
+
+\let\saveslashl\l
+\def\l{{\currfontsizecm\saveslashl}}
+
+\let\saveslashL\L
+\def\L{{\currfontsizecm\saveslashL}}
+
+\let\saveslashss\ss
+\def\ss{{\currfontsizecm\saveslashss}}
+
+\let\savepounds\pounds
+\def\pounds{{\currfontsizecm$\mathrm\savepounds$}}
+
+
+%%% If you have problems with other accents, please delete \endinput, below
+\endinput
+
+%%% Font hacks to make accents use Computer Modern even tho
+%%% the rest of the text is using Times or other Adobe fonts.
+%%% Amy Hendrickson, TeXnology Inc.
+
+\let\saveaccone\`
+\def\`#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveaccone{\savefont #1}\savefont}
+
+\let\saveacctwo\'
+\def\'#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveacctwo{\savefont#1}\savefont}
+
+\let\saveaccthree\^
+\def\^#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveaccthree{\savefont#1}\savefont}
+
+\let\saveaccfour\"
+\def\"#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveaccfour{\savefont#1}\savefont}
+
+\let\saveaccfive\~
+\def\~#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveaccfive{\savefont#1}\savefont}
+
+\let\saveaccsix\=
+\def\=#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveaccsix{\savefont#1}\savefont}
+
+
+\let\saveacceight\u
+\def\u#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveacceight{\savefont#1}\savefont}
+
+\let\saveaccnine\v
+\def\v#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveaccnine{\savefont#1}\savefont}
+
+\let\saveaccelv\t
+\def\t#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveaccelv{\savefont#1}\savefont}
+
+\let\saveacctwlv\c
+\def\c#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveacctwlv{\savefont#1}\savefont}
+
+\let\saveaccthir\d
+\def\d#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveaccthir{\savefont#1}\savefont}
+
+\let\saveaccfourt\b
+\def\b#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveaccfourt{\savefont#1}\savefont}
+
+\let\saveaccfift\r
+\def\r#1{\xdef\savefont{\the\font}%
+\currfontsizecm\saveaccfift{\savefont#1}\savefont}
+
+\let\saveoe\oe
+\def\oe{{\currfontsizecm\saveoe}}
+
+\let\saveOE\OE
+\def\OE{{\currfontsizecm\saveOE}}
+
+\let\saveae\ae
+\def\ae{{\currfontsizecm\saveae}}
+
+\let\saveAE\AE
+\def\AE{{\currfontsizecm\saveAE}}
+
+\let\saveaa\aa
+\def\aa{{\currfontsizecm\saveaa}}
+
+\let\saveslasho\o
+\def\o{{\currfontsizecm\saveslasho}}
+
+\let\saveslashO\O
+\def\O{{\currfontsizecm\saveslashO}}
+
+
