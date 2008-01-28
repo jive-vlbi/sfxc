@@ -55,3 +55,5 @@ plot_delay_table_SOURCES = \
 
 produce_output_graphs_SOURCES = \
   produce_output_graphs.cc
+
+pkginclude_HEADERS = *.h *.py
