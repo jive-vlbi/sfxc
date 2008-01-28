@@ -9,20 +9,22 @@
   telescopes and the Earth Orientation Parameters (EOP).
 \end{comment}
 
-Recent Astronomical researches aims to study the deep-sky (more an more 
-far away from us) which requires higher and higher angular resolution to 
-capture all the object's details. Increasing the the size (the diameter ?) 
-of a telescope dish have the consequence to linerarly increase the angular 
-resolution. Nevertheless, due to mechanical constraints, it is difficult to 
-build telescope dishes with a size larger than 100m (?). Interferometry provide a 
-possible solution to this problem as it permit to group 
-the measurements of several telescopes to simulate a dishe of size equivalent to the 
-maximal distance between the farthest telescopes. This approach is called Very Large 
-Baseline Interferometry (VLBI) and permit us to build a virtual telescope with 
-a dish of a size of the earth (or more). Once the data have been recorded an 
-essential part of VLBI is to correlate each pairs of incoming signals. 
-In the \scarie\ project we are developing and analyzing the 
-capabilities of making such software correlator for grids. 
+Recent Astronomical researches aims to study the deep-sky (farther and
+farther away from us) which requires higher and higher angular
+resolution to capture all the details of the observed sources.
+Increasing the size of a telescope dish increases the increase the
+angular resolution of the image linearly.  Nevertheless, due to
+mechanical constraints, it is difficult to build moveable telescope
+dishes with a size much larger than 100m. Interferometry provides a
+possible solution to this problem as it permit to combine the
+measurements of several telescopes to simulate a dish of size
+equivalent to the maximal distance between the farthest telescopes.
+This approach is called Very Large Baseline Interferometry (VLBI) and
+permits us to build a virtual telescope with a dish of a size of the
+earth (or more). Once the data has been recorded, the data of each
+pair of stations has to be correlated.  In the \scarie\ project we are
+developing and analyzing the capabilities of making a software
+correlator that uses the processing power of a grid.
 
 \scarie\ is a typical example of a recent trend of the e-Science 
 community in which computation resources and scientific instruments 
@@ -65,26 +67,27 @@ present benchmarks in Section~\ref{sec:benchmarks} and conclude the
 paper with future work in Section~\ref{sec:conclusion}.
 
 
-\section{VLBI and eVLBI}
+\section{VLBI}
 In order to approximate a telescope with a larger dish, multiple
 telescopes can observe the same object, and the data can be combined
-using interferometry. The angular resolution of the VLBI array depends
-on the maximal projected distance between two telescopes, while the
-sensitivity depends on the number of telescopes and the bandwidth. To
-acquire high sensitivity data rates upto 1Gbs per telescope are used.
-The requirements on both the data streams and the computing power to
-achieve a good sensitivity are shown in Table~\ref{tab:speed}.
+using interferometry. The angular resolution of the VLBI array of
+telescopes depends on the maximal projected distance between two
+telescopes, while the sensitivity depends on the number of telescopes
+and the bandwidth. To acquire high sensitivity data rates upto 1Gbs
+per telescope are used.  The requirements on both the data streams and
+the computing power to achieve a good sensitivity are shown in
+Table~\ref{tab:speed}.
 
 Currently, JIVE is in the transition phase from traditional VLBI to
 {\it e}-VLBI. Traditionally, the data is recorded at the telescopes on
 disk packs during a VLBI experiment. After the experiment the disks
 are shipped to a central institute, e.g. the Joint Institute for VLBI
 in Europe (JIVE), for correlation. At JIVE, the data from the
-different telescopes is played back and correlated by a dedicated
-hardware correlator~\cite{EVNCorrelator}. The maximal capacity of this
-hardware correlator is 16 telescopes at a data rate of 1Gbs each.
-There can be several weeks between the experiment and the time when
-the correlated data becomes available.
+different telescopes is read from the disks and correlated by a
+dedicated hardware correlator~\cite{EVNCorrelator}. The maximal
+capacity of this hardware correlator is 16 telescopes at a data rate
+of 1Gbs each.  There can be several weeks between the experiment and
+the time when the correlated data becomes available.
 
 % \marginpar{NGHK: Check 16Mb/s in table}
 \begin{table}
