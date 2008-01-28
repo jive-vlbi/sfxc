@@ -1,5 +1,23 @@
-\section{Future work}\label{sec:conclusion}
+\section{Results and Future work}\label{sec:results}
+\subsection{Benchmarks}
+We currently have done high-perf test of sfxc using DAS3. Here are 
+the results...Nice picture..Blha-blha ...discussion on the nice looking picture
+Lorem ipsum dolor sit amet, consectetuer
+adipiscing elit. Ut purus elit, vestibulum ut, placerat ac,
+adipiscing vitae, felis. Curabitur dictum gravida mauris. Nam arcu
+libero, nonummy eget, consectetuer id, vulputate a, magna. Donec
+vehicula augue eu neque. Pellentesque habitant morbi tristique
+senectus et netus et malesuada fames ac turpis egestas. Mauris ut
+leo. Cras viverra metus rhoncus sem. Nulla et lectus vestibulum urna
+fringilla ultrices. Phasellus eu tellus sit amet tortor gravida
+placerat. Integer sapien est, iaculis in, pretium quis, viverra ac,
+nunc. Praesent eget sem vel leo ultrices bibendum. Aenean faucibus.
+Morbi dolor nulla, malesuada eu, pulvinar at, mollis ac, nulla.
+Curabitur auctor semper nulla. Donec varius orci eget risus. 
 
+\subsection{Future works}
+
+\subsubsection{Related to EXPRESS and e-VLBI}
 Within Future Arrays of Broadband Radio-telescopes on Internet
 Computing (FABRIC), which is a joint research activity in the EXPReS
 project, we are currently implementing the software correlator. The
@@ -15,16 +33,42 @@ send large time slices directly to alternating super computers. In
 this way the network connectivity is optimized by introducing an
 additional layer of input nodes.
 
-Other research areas that need attention are found in resource
+\subsubsection{SCARIe specific ?}
+\begin{itemize}
+\item real-time runing: Testing the traffic isolation features of Starplane... ie other big job running 
+in DAS-3 will not slow down sfxc and thus permit to have confidences 
+that a real-time experiment will not have to be cancel due to 
+buffer-overflow. It is also interresting to look which amount of "extra" ressource
+may be requested in case some reserved/allocated one fails during an experiment. 
+How can we provide a good level of fallback mechanisme in the context of real-time ?
+\item non real-time: Other research areas that need attention are found in resource
 leveling, dealing with delays in data transfers and managing
 insufficient computing power.
-
-We also want to test several networking protocols to optimize the data
+\item technical aspects: We also want to test several networking protocols to optimize the data
 transfer. For example, we could imagine using UDP for the main data
 stream, where some data loss is acceptable and a TCP connection for
 data-headers to guarantee their proper delivery.
+\end{itemize}
 
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: "Ingrid"
-%%% End:
+
+\section{Conclusion}
+During the first year we have laid the foundation for a flexible software correlator based on 
+the distributed computing technologies....
+Lorem ipsum dolor sit amet, consectetuer
+adipiscing elit. Ut purus elit, vestibulum ut, placerat ac,
+adipiscing vitae, felis. Curabitur dictum gravida mauris. Nam arcu
+libero, nonummy eget, consectetuer id, vulputate a, magna. Donec
+vehicula augue eu neque. Pellentesque habitant morbi tristique
+senectus et netus et malesuada fames ac turpis egestas. Mauris ut
+leo. Cras viverra metus rhoncus sem. Nulla et lectus vestibulum urna
+fringilla ultrices. Phasellus eu tellus sit amet tortor gravida
+placerat. Integer sapien est, iaculis in, pretium quis, viverra ac,
+nunc. Praesent eget sem vel leo ultrices bibendum. Aenean faucibus.
+Morbi dolor nulla, malesuada eu, pulvinar at, mollis ac, nulla.
+Curabitur auctor semper nulla. Donec varius orci eget risus. 
+
+\section{Acknowledgment}
+\scarie\ is a joint research project 
+of JIVE, the UvA and SARA funded by the Netherlands Organization for Scientific Research (NWO).
+
+

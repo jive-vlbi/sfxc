@@ -9,26 +9,63 @@
   telescopes and the Earth Orientation Parameters (EOP).
 \end{comment}
 
-Astronomical research aims to study the sky and requires high angular
-resolution. The resolution of the image increases linearly with the
-size of the telescope dish. However, it is not possible to build
-telescope dishes of arbitrary large size.  Instead, measurements of
-several telescopes can be combined using VLBI to simulate a telescope
-as large as the Earth. The signals received by the telescopes are
-combined using a technique called correlation.
+Recent Astronomical researches aims to study the deep-sky (more an more 
+far away from us) which requires higher and higher angular resolution to 
+capture all the object's details. Increasing the the size (the diameter ?) 
+of a telescope dish have the consequence to linerarly increase the angular 
+resolution. Nevertheless, due to mechanical constraints, it is difficult to 
+build telescope dishes with a size larger than 100m (?). Interferometry provide a 
+possible solution to this problem as it permit to group 
+the measurements of several telescopes to simulate a dishe of size equivalent to the 
+maximal distance between the farthest telescopes. This approach is called Very Large 
+Baseline Interferometry (VLBI) and permit us to build a virtual telescope with 
+a dish of a size of the earth (or more). Once the data have been recorded an 
+essential part of VLBI is to correlate each pairs of incoming signals. 
+In the \scarie\ project we are developing and analyzing the 
+capabilities of making such software correlator for grids. 
+
+\scarie\ is a typical example of a recent trend of the e-Science 
+community in which computation resources and scientific instruments 
+are connected worldwide through high-speed networks. We think that to 
+generalize the utilization of such world-size inter-connected facility, 
+the grids and their middlewares have to offer services that matches the three
+following user-application requirements:
+\begin{itemize}
+\item \emph{better performances}: an application is said performance
+  limited if the resources needed to run it are not large enough to
+  satisfy its needs. Performance limitations can have multiple
+  origins: insufficient computing resources, memory, high network
+  latency or low network throughput.
+  
+\item \emph{isolated environment}: there are classes of applications
+  that can only be executed if put in an isolated environment in the 
+  sense that the other users'application cannot interfere. Examples are 
+  real-time distributed application, or benchmarks that require reproducible
+  result.
+
+\item \emph{scheduling}: some application requires to be synchronized
+  with "external events" (like having radio-telescope looking at a
+  specific location in the sky at a specific date). In order to
+  execute such application it is mandatory to schedule them and
+  reserve the needed resource in advance.
+\end{itemize}
+
+In order to fully reach the \scarie\ objectivs these three requirements 
+have to be matched. As they are still hot-topics in the grid 
+communauty, especially the networking part of it, we are 
+conducting ours experiences using the experimental
+ \das3\ grids and its user-controllable network dynamic 
+photonic network called StarPlane. 
+
+The rest of the paper is organized as follows. Section~\ref{sec:vlbi}
+describes the architecture of the software correlator.
+Section~\ref{sec:data_flow} describes the data flow within the
+correlator and the use of StarPlane to optimize the efficiency. We
+present benchmarks in Section~\ref{sec:benchmarks} and conclude the
+paper with future work in Section~\ref{sec:conclusion}.
 
 
-The \scarie\ project aims at developing and analyzing the capabilities
-of a software correlator deployed on the latest Dutch supercomputer,
-\das3. \scarie\ is a joint research project of JIVE, the UvA and SARA
-funded by the Netherlands Organization for Scientific Research (NWO).
-The \das3\ supercomputer is distributed over 5 sites and connected by
-a photonic network called StarPlane. Applications using \das3\ are
-able to change the connectivity of StarPlane in realtime, hence
-optimizing the network to their needs.
-
-
-\subsection{VLBI}
+\section{VLBI and eVLBI}
 In order to approximate a telescope with a larger dish, multiple
 telescopes can observe the same object, and the data can be combined
 using interferometry. The angular resolution of the VLBI array depends
@@ -122,70 +159,6 @@ For more than two stations, each station is correlated with itself
 (auto-correlation) and every other station (cross-correlation). Note
 that the complexity is quadratic in the number of telescopes.
 
-\subsection{Platform}\label{sec:chap1}
-The \das3\ supercomputer~\cite{das3} was deployed in the summer of
-2007. It is distributed over 5 locations in the Netherlands and
-connected by an photonic network called StarPlane. StarPlane is also a
-research project funded by the Netherlands Organization for Scientific
-Research (NWO) and carried out at two Dutch Universities: the
-University of Amsterdam (UvA) and the Vrije Universiteit Amsterdam
-(VU). The goals of the project is to build an
-\textit{application-controlled photonic network}. 
-
-In the e-Science community there is more and more reliance on
-distributed collaborations where researchers cooperate remotely with
-each other and use larger and larger datasets. In order to generalize
-scientific utilization of world-size inter-connected grids, scientific
-application have three major requirements:
-\begin{itemize}
-\item \emph{better performances}: an application is said performance
-  limited if the resources needed to run it are not large enough to
-  satisfy its needs. Performance limitations can have multiple
-  origins: insufficient computing resources ormemory, high network
-  latency or low network throughput.
-  
-\item \emph{isolated environment}: there are classes of applications
-  that can only be executed if put in an isolated environment, where
-  other users'application cannot interfere. Examples are real-time
-  distributed application, or benchmarks that require reproducible
-  result.
-
-\item \emph{scheduling}: some application requires to be synchronized
-  with "external events" (like having radio-telescope looking at a
-  specific location in the sky at a specific date). In order to
-  execute such application it is mandatory to schedule them and
-  reserve the needed resource in advance.
-\end{itemize}
-
-The regular Internet best-effort Layer3 IP routing has great
-flexibility but is slow and unpredictable; on the other hand,
-dedicated \textit{lightpaths} as available in \textit{lambda
-  Grids}~\cite{eslea-2007}, with their predictable delays and
-throughputs offer good performances and guarantee on the Quality of
-Service (QoS). StarPlane tries to fill the gap between the two
-approaches by experiencing application-controlled dynamic photonic
-network. The project's vision is that applications, having direct
-control of the network paths, could make better use of the network
-than if they were managed by a third party. Giving end user an access
-to dedicated connection has been implemented in many of the current
-research and education networks. The Dutch National Resarch and
-Education network SURFnet is one of them. SURFnet6 deploys multiple
-fiber optic rings that connect the academic and research locations
-around The Netherlands. One of these rings connects the universities
-in Leiden, Delft and Amsterdam, the locations of the \das3\ clusters.
-Into this ring eight wavelengths constitute the StarPlane lightpaths.
-The distinctive features of StarPlane in comparison with other similar
-initiatives are the emphasis on fast reconfiguration times, in the
-orders of seconds or sub-seconds, the use of photonic equipment in the
-core, and the tigh coupling between the user application and the
-offered networking service.
-
-The rest of the paper is organized as follows. Section~\ref{sec:vlbi}
-describes the architecture of the software correlator.
-Section~\ref{sec:data_flow} describes the data flow within the
-correlator and the use of StarPlane to optimize the efficiency. We
-present benchmarks in Section~\ref{sec:benchmarks} and conclude the
-paper with future work in Section~\ref{sec:conclusion}.
 
 %%% Local Variables:
 %%% mode: latex

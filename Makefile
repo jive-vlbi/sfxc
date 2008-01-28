@@ -21,4 +21,4 @@ stable: compile
 	cp Ingrid.pdf fgcs08-paper.pdf
 
 clean:
-	rm -f *.aux *.ps Ingrid.pdf *~ *.log *.bbl *.mtc* *.dvi *.out *.blg
+	rm -f *.aux *.ps Ingrid.pdf *~ *.log *.bbl *.mtc* *.dvi *.out *.blg *.inx
