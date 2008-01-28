@@ -7,3 +7,5 @@ libnetlib_a_SOURCES = \
   src/interface.cc \
   src/network.cc \
   src/tcp_connection.cc
+
+pkginclude_HEADERS = src/*.h

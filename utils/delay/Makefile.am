@@ -10,3 +10,5 @@ bin_PROGRAMS = generate_delay_model
 generate_delay_model_SOURCES=\
   generate_delay_model.cc \
   generate_delay_model_calc.c
+
+pkginclude_HEADERS = *.h
