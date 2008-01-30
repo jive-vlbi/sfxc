@@ -26,6 +26,8 @@
 #include "tasklet/tasklet_manager.h"
 #include "integer_delay_correction.h"
 
+#include "timer.h"
+
 // Declare the correlator controller:
 class Correlator_node;
 
@@ -126,6 +128,8 @@ private:
   Correlation_core                            correlation_core;
   
   int n_integration_slice_in_time_slice;
+  
+  Timer bits_to_float_timer_, delay_timer_, correlation_timer_;
 };
 
 #endif // CORRELATOR_NODE_H

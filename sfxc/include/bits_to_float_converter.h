@@ -56,7 +56,10 @@ private:
 
   Data_reader_ptr                      data_reader;
   // Buffer for the data samples stored in characters
-  std::vector<char>                    intermediate_buffer;
+  std::vector<char>                    input_char_buffer;
+  
+  // only 1 bit samples
+  FLOAT lookup_table[256][4];
 };
 
 #endif /* BITS_TO_FLOAT_CONVERTER_H_ */

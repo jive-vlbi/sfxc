@@ -8,7 +8,6 @@ Delay_correction::Delay_correction()
 delay_table_set(false) {}
 
 Delay_correction::~Delay_correction() {
-  DEBUG_MSG(delay_timer);
   //double mflops(uint64_t time, int numiterations, int N) {
   //  return 5.0*N*log2(N) * numiterations / (1.0*time);
   //}

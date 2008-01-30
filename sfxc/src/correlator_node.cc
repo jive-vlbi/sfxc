@@ -38,6 +38,9 @@ nr_corr_node(nr_corr_node) {
 }
 
 Correlator_node::~Correlator_node() {
+  DEBUG_MSG("Time bits2float:  " << bits_to_float_timer_.measured_time());
+  DEBUG_MSG("Time delay:       " << delay_timer_.measured_time());
+  DEBUG_MSG("Time correlation: " << correlation_timer_.measured_time());
 }
 
 void Correlator_node::start() {
@@ -144,21 +147,29 @@ int Correlator_node::output_size_of_one_integration_step() {
 
 void Correlator_node::correlate() {
   // Execute all tasklets:
+  bits_to_float_timer_.resume();
   for (size_t i=0; i<bits2float_converters.size(); i++) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
       if (bits2float_converters[i]->has_work())
         bits2float_converters[i]->do_task();
     }
   }
+  bits_to_float_timer_.stop();
+  
+  delay_timer_.resume();
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
       delay_modules[i]->do_task();
     }
   }
+  delay_timer_.stop();
+  
+  correlation_timer_.resume();
   correlation_core.do_task();
+  correlation_timer_.stop();
 }
 
-void 
+void
 Correlator_node::set_parameters(const Correlation_parameters &parameters) {
   assert(status == STOPPED);
 
@@ -177,8 +188,8 @@ Correlator_node::set_parameters(const Correlation_parameters &parameters) {
   for (size_t i=0; i<bits2float_converters.size(); i++) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
       bits2float_converters[i]->set_parameters(parameters.bits_per_sample,
-                                               size_input_slice*nr_integrations,
-                                               parameters.number_channels);
+          size_input_slice*nr_integrations,
+          parameters.number_channels);
     }
   }
   for (size_t i=0; i<delay_modules.size(); i++) {

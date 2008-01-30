@@ -5,6 +5,7 @@
 #include "delay_correction.h"
 #include "control_parameters.h"
 #include "data_writer.h"
+
 #include "timer.h"
 
 class Correlation_core : public Tasklet
@@ -80,6 +81,7 @@ private:
 
   Timer timer;
 
+  // Needed for writing the progress messages
   int node_nr_;
 };
 

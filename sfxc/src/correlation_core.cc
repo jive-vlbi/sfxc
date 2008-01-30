@@ -8,8 +8,7 @@ Correlation_core::Correlation_core()
 
 Correlation_core::~Correlation_core()
 {
-  DEBUG_MSG(timer);
-  //double mflops(uint64_t time, int numiterations, int N) {
+   //double mflops(uint64_t time, int numiterations, int N) {
   //  return 5.0*N*log2(N) * numiterations / (1.0*time);
   //}
   int N = size_of_fft();
