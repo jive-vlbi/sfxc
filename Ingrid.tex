@@ -188,6 +188,10 @@
 \usepackage{comment}
 \usepackage{url}
 
+\input{macros.tex}
+\ENABLECOMMENTtrue
+\TOREMOVEtrue
+
 \def\e{{\it e}}
 \def\scarie{{SCARI\e}}
 \def\das3{\mbox{DAS-3}}
@@ -219,22 +223,18 @@
 \mbox{Kruithof@jive.nl}, \\
 \altaffilmark{2} University of Amsterdam (UvA),
 Kruislaan 403, 1098 SJ Amsterdam, The Netherlands
-\mbox{DMarchal@science.uva.nl}
+\mbox{dmarchal@science.uva.nl}
 }
 
 \begin{abstract}
-  Very Long Baseline Interferometry (VLBI) is a technique in astronomy
-  where several distant radio telescopes observe the same source and
-  the received signals are recorded and later correlated to produce an
-  image with a large resolution.
-
-  The primary task of JIVE is the correlation of data from the EVN
-  telescopes~\cite{EVN} all around Europe. A special-purpose built
-  hardware correlator processes the experiments. Within \scarie\ we
-  investigate the capabilities of a next generation software
-  correlator using Grid processing power. In this paper we describe
-  the design of this software correlator and some experimental
-  results.
+  In this paper we present the progress of the \scarie\ project in which 
+  we investigate the capabilities of a next generation grid based software
+  correlator for VLBI. We will mostly focus on the current design of 
+  our software correlator, and on challenges of running real-time 
+  scientific experiments on top of grids infrastructure. This paper 
+  also contains experimentals results on both software correlation 
+  as well our current experiments based on the DAS-3 grid and its 
+  user-controllable dynamic photonic network.
 \end{abstract}
 
 %\begin{keywords}

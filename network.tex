@@ -1,26 +1,54 @@
-\section{Networking challenges}
-ALTERNATIVE TITLE FOR THIS SECTION: execution and deployment on a modern grid.
+\section{Execution and deployment.}
+In section \ref{sec:introduction} are presented the two operational 
+mode we target for the software correlator: normal and real-time. 
+The first one correspond to a now rather standard: high performance computing 
+application and thus can be executed relatively easily 
+on top of existing grids middleware equipped with an 
+MPI implementation. The real-time operational mode 
+is much more challenging as we will discuss now. 
+
+\subsection{Real-time and quality of service}
+The term \emph{real-time} has a lot of meaning in the computer science community, 
+in this text we will consider that a real-time computation is a computation in which 
+\emph{the amount of buffering for an infinitely long experiment will only require 
+a finite amount of buffers}. This imply that to be able to process the incoming 
+data at the time they arrives and to have guarantee that once the application
+is started the requested quality of service will be maintained by all
+the service providers. 
 
 Networking issues are one of the most interresting challenges 
 of the SCARIe project. The first challenge is to deliver the 
 data from the radio-telescope to the computation centrer. SCARIe
 is running on a cluster-grid architecture in which computational 
-resource are connected into a large networks. In its best scenario 
+resource are connected into a large networks. 
+
+In its best scenario 
 the amount of data transmitted to correlate the signal is of the same 
 order than the one of the incoming signal. The consequence of that is that 
-the grid have to be based on a relatively fast network. The second issue 
-with SCARIe came from its real-time operational mode. Real-time has a lot 
-of meaning in the computer science communauty thus in the following 
-we will consider that a real-time computation is a computation in which 
-\emph{the amount of buffering for an infinitely long experiment will only require 
-a finite amount of buffers}. In order to reach this target we need guarantees 
-that the avreaged processing speed will be higher that the receiving speed. 
-To reach this goal it is mandatory, for each of the key resources (cpu, 
-memory, networking, disk-space), to be able to \emph{acquire} a fixed 
-amount of them and to have guarantee that the amount on which agreed 
-SCARIe and the service provider will be respected. 
+the grid have to be based on a relatively fast network.  
 
-\subsection{QoS on modern Grids}
+The regular Internet best-effort Layer3 IP routing has great
+flexibility but is slow and unpredictable; on the other hand,
+dedicated \textit{lightpaths} as available in \textit{lambda
+  Grids}~\cite{eslea-2007}, with their predictable delays and
+throughputs offer good performances and guarantee on the Quality of
+Service (QoS). 
+
+
+ (cpu, memory, networking, disk-space), to be 
+able to \emph{acquire} a fixed amount of them and to have guarantee 
+that the amount on which agreed SCARIe and the service provider 
+will be respected. 
+ 
+It is also noticeable that this complete isolation is made more and 
+more available on usual desktop technologies...CFScheduler with groups 
+in the Linux Kernel as well as Bandwidth-io control and Virtualization.
+Different research grid are also investigating the field as in 
+Grid'5000 that offer a complete node-isolation as well as extending the 
+control of the user up to the ability to install their own task-dedicated 
+operating system. 
+
+\subsection{Running SCARIe on DAS-3 and Starplane}
 The \das3\ supercomputer~\cite{das3} was deployed in the summer of
 2007. It is distributed over 5 locations in the Netherlands and
 connected by an photonic network called StarPlane. StarPlane is also a
@@ -30,12 +58,7 @@ University of Amsterdam (UvA) and the Vrije Universiteit Amsterdam
 (VU). The goals of the project is to build an
 \textit{application-controlled photonic network}. 
 
-The regular Internet best-effort Layer3 IP routing has great
-flexibility but is slow and unpredictable; on the other hand,
-dedicated \textit{lightpaths} as available in \textit{lambda
-  Grids}~\cite{eslea-2007}, with their predictable delays and
-throughputs offer good performances and guarantee on the Quality of
-Service (QoS). StarPlane tries to fill the gap between the two
+StarPlane tries to fill the gap between the two
 approaches by experiencing application-controlled dynamic photonic
 network. The project's vision is that applications, having direct
 control of the network paths, could make better use of the network
@@ -53,14 +76,7 @@ orders of seconds or sub-seconds, the use of photonic equipment in the
 core, and the tigh coupling between the user application and the
 offered networking service.
 
-
-It is also noticeable that this complete isolation is made more and 
-more available on usual desktop technologies...CFScheduler with groups 
-in the Linux Kernel as well as Bandwidth-io control and Virtualization.
-Different research grid are also investigating the field as in 
-Grid'5000 that offer a complete node-isolation as well as extending the 
-control of the user up to the ability to install their own task-dedicated 
-operating system. The Dutch grid, DAS-3 in which the StarPlane project tend
+The Dutch grid, DAS-3 in which the StarPlane project tend
 to deliver a complete nodes-to-nodes virtual network grid service over the 
 complete grid domain. 
 
@@ -80,21 +96,5 @@ A complete virtual network for an application can then be build using only
 vlan-on-mac layer 2 switches and layer-1 photonic lighpath. The other originality 
 is that the photonic lightpath can dynamically reorganized to adapt to the
 user-application requests. 
-
-\subsection{Running SCARIe on DAS-3 and Starplane}
-Lorem ipsum dolor sit amet, consectetuer
-adipiscing elit. Ut purus elit, vestibulum ut, placerat ac,
-adipiscing vitae, felis. Curabitur dictum gravida mauris. Nam arcu
-libero, nonummy eget, consectetuer id, vulputate a, magna. Donec
-vehicula augue eu neque. Pellentesque habitant morbi tristique
-senectus et netus et malesuada fames ac turpis egestas. Mauris ut
-leo. Cras viverra metus rhoncus sem. Nulla et lectus vestibulum urna
-fringilla ultrices. Phasellus eu tellus sit amet tortor gravida
-placerat. Integer sapien est, iaculis in, pretium quis, viverra ac,
-nunc. Praesent eget sem vel leo ultrices bibendum. Aenean faucibus.
-Morbi dolor nulla, malesuada eu, pulvinar at, mollis ac, nulla.
-Curabitur auctor semper nulla. Donec varius orci eget risus. 
-
-
 
 
