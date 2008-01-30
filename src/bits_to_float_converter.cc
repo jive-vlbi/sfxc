@@ -20,7 +20,14 @@ const FLOAT sample_value_m[]  = {
 
 Bits_to_float_converter::Bits_to_float_converter()
     : bits_per_sample(-1), size_output_slice(-1),
-output_buffer(Output_buffer_ptr(new Output_buffer(10))) {}
+output_buffer(Output_buffer_ptr(new Output_buffer(10))) {
+  for (int i=0; i<256; i++) {
+    lookup_table[i][0] = sample_value_ms[(i>>6) & 3];
+    lookup_table[i][1] = sample_value_ms[(i>>4) & 3];
+    lookup_table[i][2] = sample_value_ms[(i>>2) & 3];
+    lookup_table[i][3] = sample_value_ms[i & 3];
+  }
+}
 
 void
 Bits_to_float_converter::set_parameters(int bits_per_sample_,
@@ -30,9 +37,11 @@ Bits_to_float_converter::set_parameters(int bits_per_sample_,
       (size_output_slice != size_output_slice_)) {
     bits_per_sample = bits_per_sample_;
     size_output_slice = size_output_slice_;
-    intermediate_buffer.resize(size_output_slice/(8/bits_per_sample));
+    input_char_buffer.resize(size_output_slice/(8/bits_per_sample));
   }
 
+  assert(bits_per_sample_ == 2);
+  // Fill the lookup table
   assert(data_reader != Data_reader_ptr());
 
   assert(data_reader->get_size_dataslice() <= 0);
@@ -64,7 +73,7 @@ void Bits_to_float_converter::do_task() {
     buffer.resize(size_output_slice);
   }
 
-  assert((int)intermediate_buffer.size() ==
+  assert((int)input_char_buffer.size() ==
          size_output_slice/(8/bits_per_sample));
 
   int bytes_to_read = size_output_slice/(8/bits_per_sample);
@@ -72,23 +81,15 @@ void Bits_to_float_converter::do_task() {
   while (bytes_read != bytes_to_read) {
     bytes_read +=
       data_reader->get_bytes(bytes_to_read-bytes_read,
-                             &intermediate_buffer[bytes_read]);
+                             &input_char_buffer[bytes_read]);
   }
 
   if (bits_per_sample == 2) {
-
-    int sample = 0;
     for (int byte = 0; byte < bytes_read; byte++) {
-      buffer[sample] = sample_value_ms[ (intermediate_buffer[byte]>>6)&3 ];
-      sample++;
-      buffer[sample] = sample_value_ms[ (intermediate_buffer[byte]>>4)&3 ];
-      sample++;
-      buffer[sample] = sample_value_ms[ (intermediate_buffer[byte]>>2)&3 ];
-      sample++;
-      buffer[sample] = sample_value_ms[ intermediate_buffer[byte]&3 ];
-      sample++;
+      memcpy(&buffer[byte*4], // byte * 4
+             &lookup_table[(int)(unsigned char)input_char_buffer[byte]][0],
+             4*sizeof(FLOAT));
     }
-    assert(sample == size_output_slice);
   } else {
     std::cout << "Not yet implemented" << std::endl;
     assert(false);
@@ -101,7 +102,7 @@ void Bits_to_float_converter::do_task() {
 bool
 Bits_to_float_converter::has_work() {
   if (data_reader->get_size_dataslice() == 0) {
-    DEBUG_MSG(__PRETTY_FUNCTION__ 
+    DEBUG_MSG(__PRETTY_FUNCTION__
               << " data_reader->get_size_dataslice() == 0");
     return false;
   }
