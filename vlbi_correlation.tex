@@ -54,48 +54,43 @@ computing nodes.
 
 \subsection{Design}
 The software correlator is written in \verb~C++~ and uses several
-standard libraries like \verb~fftw~ \cite{FFTW05}, \verb~mpich~
-\cite{Gropp:1996:HPI}, , \verb~GSL~ \cite{GSL} and the
-standard template library.
+standard libraries like \verb~fftw~ \cite{FFTW05} for the fast Fourier
+transforms, \verb~mpich~ \cite{Gropp:1996:HPI} as the MPI
+implementation , \verb~GSL~ \cite{GSL} for cubic spline fitting and
+the standard template library.
 
-\marginpar{NGHK: Continue}
-At initialization, the manager node is created. It then starts up the input nodes, the correlator nodes and the output node each node is assigned a role: input node, correlator
-node, output node or manager node. 
+At start up, the manager node is created, which starts the other nodes
+and connects them. The manager node is the central node that controls
+the workflow of the entire software correlator. It assigns time slices
+to available correlator nodes and handles errors. After all time
+slices are processed it terminates the software correlator.
 
-\paragraph{Input node}
-The input node receives the data from a single data stream and. It then connects the two using a buffer.
-The input node will receive a message from the manager node specifying
-how to obtain the input: from file or over the network using one of
-various types of transfer protocols. It will also receive messages
-containing a start and stop time and the correlator node to send the
-data to.
+The input node receives the data from a data stream, which can either
+be a file, a TCP connection or directly from the dedicated hardware
+used to record and play back the data. On request of the manager node,
+it can extract the current time from the data stream or go to a
+specified time. When the input node gets a request to send data for a
+certain time slice to a correlator node, it seeks the right starting
+sample in the input stream and sends the data to the correlator node.
 
-\paragraph{Correlator node}
-A correlator node will initialize the correlation process and connect
-to the output node. It can receive messages from a input node asking to
-open an input connection and from the manager node to process a
-time slice. After the slice is processed the node will send a message
-to the manager node saying it is available for a next job.
+The correlator node gets data for the same time slice from every input
+node. Before the signal can be correlated, the integer delay corrected
+signal has to be processed further. First, the signal is delayed by a
+the fractional delay that remains after the integer delay done in the
+input node. After that a phase correction is done, which is a first
+order approximation of the delay function. These manipulations are not
+done on the input node because they require floating point samples,
+hence the data stream expands from 2 bits per sample to 32 bits or
+even 64 bits per sample, which would require much more network
+bandwidth. After the fractional delay and the phase rotation, the
+signal is ready to be correlated. The auto and cross correlation are
+then computed by Fourier transforming the input signal and
+element-wise multiplying all combination of telescope-pairs. These
+values are accumulated over a certain period of time and the
+accumulated values are sent to the output node.
 
-\paragraph{Output node}
-The output node will receive a message from the manager node where
-to store the data, and it allows connections from the correlator node to
-be opened. The node sorts the received data from the correlator nodes
-and stores it for further processing. The output node has to make the
-received data available to the user, and it should be archived in a
-proper way.
-
-\paragraph{Manager node}
-The manager node is the most complicated node in the software
-correlator. It sends messages to initialize the other nodes and tells
-them how to connect to each other. After the initialization, it
-maintains a list of available correlator nodes and delegates time
-slices to available correlator nodes. General error messages can also
-be sent from any node to the manager node.
-
-The interface to the user will communicate with the manager node to
-send commands to the correlator and obtain status information from the
-correlator. The user interface will be based on Virtual lab.
+The output node will receives the data from the correlator nodes,
+sorts the data and stores it at a specified location.
 
 \subsection{Network connections}
 Since correlation is mainly a networking problem, testing and
