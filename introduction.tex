@@ -78,8 +78,7 @@ per telescope are used.  The requirements on both the data streams and
 the computing power to achieve a good sensitivity are shown in
 Table~\ref{tab:speed}.
 
-Currently, JIVE is in the transition phase from traditional VLBI to
-{\it e}-VLBI. Traditionally, the data is recorded at the telescopes on
+Traditionally, the data is recorded at the telescopes on
 disk packs during a VLBI experiment. After the experiment the disks
 are shipped to a central institute, e.g. the Joint Institute for VLBI
 in Europe (JIVE), for correlation. At JIVE, the data from the
@@ -108,12 +107,13 @@ the time when the correlated data becomes available.
   \label{tab:speed}
 \end{table}
 \paragraph{{\it e}-VLBI}
-In an electronic VLBI ({\it e}-VLBI) experiment~\cite{szomoru-2004},
-data from the telescopes is transferred directly over the internet to
-JIVE, where it is streamed into the correlator in real time. The data
-transport from the telescopes to JIVE goes over several networks like
-local connections, paths provided by NRENs and the G\'EANT backbone in
-Europe.
+Currently, JIVE is in the transition phase from traditional VLBI to
+{\it e}-VLBI~\cite{szomoru-2004}. In an electronic VLBI ({\it e}-VLBI)
+experiment, data from the telescopes is transferred directly over the
+internet to JIVE, where it is streamed into the correlator in real
+time. The data transport from the telescopes to JIVE goes over several
+networks like local connections, paths provided by NRENs and the
+G\'EANT backbone in Europe.
 
 Transporting the data over the network has several advantages over a
 traditional experiment. Obviously, the results of the experiments are
@@ -133,7 +133,7 @@ available to the general astronomy community.
 
 \begin{figure}
   \centering
-  \includegraphics[width=.5\textwidth]
+  \includegraphics[width=.75\textwidth]
   {img/VLBI}
   \caption{Block diagram of the correlation.}
   \label{fig:correlation_diagram}

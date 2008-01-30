@@ -20,30 +20,32 @@ correlator, which the current hardware correlator is not able to
 provide.  Moreover, we expect that the costs of developing a software
 correlator are much lower than the costs for a hardware correlator.
 
-The correlation is done by splitting the signal in time slices that
-are processed in parallel (see Figure~\ref{fig:netw_corr}). The signal
-from a telescope is received by a single so-called input node.  The
-input node sends slices of data to an available correlator node. The
-correlator node receives data from all telescopes for a certain time
-slice and performs the correlation. The size of the output of the
-correlation is much smaller than the input size and can be collected
-and stored by a single output node.  There is a single manager node
-that assigns data to available computing nodes.
+Computationally the correlation is relatively inexpensive, in the
+sense that it requires only few operations per transferred bytes.
+However, due to the high data rates, the absolute number of clock
+cycles required by the application is still extremely high. Moreover,
+the problem is quadratic in the number of telescopes participating in
+the experiment since it is linear in the number of channel pairs that
+have to be correlated. The huge need for networking and computing
+power makes a computing Grid an ideal platform for this application.
 
-The correlation is not computationally expensive, in the sense that it
-requires only few operations per transferred bytes. However, due to
-the high data rates, the absolute number of clock cycles required by
-the application is still extremely high. Moreover, the problem is
-quadratic in the number of telescopes participating in the experiment
-since it is linear in the number of channel pairs that have to be
-correlated. The huge need for networking and computing power makes a
-computing Grid an ideal platform for this application.
+In the software correlator, we split the computation in time slices.
+These time slices are processed in parallel (see
+Figure~\ref{fig:netw_corr}). The signal from a telescope is received
+by a single so-called input node.  The input node sends slices of data
+to one of the available correlator nodes. The correlator node receives
+data from all telescopes for a certain time slice and performs the
+correlation. The size of the output of the correlation is much smaller
+than the input size and can be collected and stored by a single output
+node.  There is a single manager node that assigns data to available
+computing nodes.
+
 
 
 \begin{figure}
   \centering
-  \includegraphics[width=.45\textwidth]
-    {img/NetworkConnections}
+  \includegraphics[width=.75\textwidth]
+    {img/Network_correlator}
     \caption{Outline of the network connections between different
       components in the software correlator.}
   \label{fig:netw_corr}
@@ -56,13 +58,12 @@ standard libraries like \verb~fftw~ \cite{FFTW05}, \verb~mpich~
 \cite{Gropp:1996:HPI}, , \verb~GSL~ \cite{GSL} and the
 standard template library.
 
-At initialization, each node is assigned a role: input node, correlator
-node, output node or manager node. The node then creates a number of
-controllers that manage different tasks of the node. 
+\marginpar{NGHK: Continue}
+At initialization, the manager node is created. It then starts up the input nodes, the correlator nodes and the output node each node is assigned a role: input node, correlator
+node, output node or manager node. 
 
 \paragraph{Input node}
-The input node receives the data from a single data stream and
-\marginpar{NGHK: Continue}. It then connects the two using a buffer.
+The input node receives the data from a single data stream and. It then connects the two using a buffer.
 The input node will receive a message from the manager node specifying
 how to obtain the input: from file or over the network using one of
 various types of transfer protocols. It will also receive messages
