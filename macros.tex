@@ -1,0 +1,18 @@
+\newif{\ifTODO}
+% utiliser l'une ou l'autre de ces commandes
+%  \TODOtrue   
+%  \TODOfalse  
+\newcommand{\todo}[1]{\ifTODO{\marginpar{$`[:-]$}{[[\small #1]]}} \else{} \fi}
+\newif{\ifTADA}
+% utiliser l'une ou l'autre de ces commandes
+%  \TADAtrue   
+%  \TADAfalse  
+\newcommand{\tada}[1]{\ifTADA{\marginpar{$`[:-]`[:-]$}{[[\small #1]]}} \else{} \fi}
+\newcommand{\done}[1]{\marginpar{$\smiley$}{[[\small #1]]}}
+
+\newif{\ifTOREMOVE}
+\newcommand{\toremove}[1]{\ifTOREMOVE{\marginpar{\tiny to remove ?}{\textbf{#1}}} \else{} \fi}
+
+\newif{\ifENABLECOMMENT}
+\newcommand{\acomment}[2]{\ifENABLECOMMENT{\marginpar{\small Comment: #1 }{\textbf{#2}}} \else{} \fi}
+
