@@ -43,31 +43,37 @@ following user-application requirements:
   that can only be executed if put in an isolated environment in the 
   sense that the other users'application cannot interfere. Examples are 
   real-time distributed application, or benchmarks that require reproducible
-  result.
+  result. 
 
 \item \emph{scheduling}: some application requires to be synchronized
   with "external events" (like having radio-telescope looking at a
   specific location in the sky at a specific date). In order to
-  execute such application it is mandatory to schedule them and
-  reserve the needed resource in advance.
+  execute such application it is mandatory to schedule its execution 
+  and reserve the needed resource in advance.
 \end{itemize}
-
-In order to fully reach the \scarie\ objectivs these three requirements 
-have to be matched. As they are still hot-topics in the grid 
-communauty, especially the networking part of it, we are 
-conducting ours experiences using the experimental
- \das3\ grids and its user-controllable network dynamic 
-photonic network called StarPlane. 
+In order to fully reach the \scarie\ objectivs these three 
+requirements have to be addressed for networking resource, nodes and 
+data space. These are still hot-topics in the grid communauty, 
+especially because networking has a long history as a 
+\emph{best-effort} shared resourced which is incompatible 
+with an isolated network environment. For this reason we are 
+conducting ours experiences using the experimental \das3\ 
+grids as it have an user-controllable dynamic photonic 
+network called StarPlane to build, on demand and application specific, 
+isolated virtual-network on top of the complete grid. A such service would 
+permit to run \scarie\ with a good confidence level that a real-time 
+experiment will not be disturbed by other users. \\
 
 The rest of the paper is organized as follows. Section~\ref{sec:vlbi}
-describes the architecture of the software correlator.
-Section~\ref{sec:data_flow} describes the data flow within the
-correlator and the use of StarPlane to optimize the efficiency. We
-present benchmarks in Section~\ref{sec:benchmarks} and conclude the
-paper with future work in Section~\ref{sec:conclusion}.
+contains a general introduction to VLBI and its recent development 
+called \evlbi. Section~\ref{sec:softwarecorrelation} describes the 
+architecture of the software correlator. Section~\ref{sec:network} 
+describes how the software correlator make use of the StarPlane services 
+and the \das3 resources. We present benchmarks in Section~\ref{sec:benchmarks} 
+and conclude the paper with future work in Section~\ref{sec:conclusion}.
 
 
-\section{VLBI}
+\section{VLBI}\label{sec:vlbi}
 In order to approximate a telescope with a larger dish, multiple
 telescopes can observe the same object, and the data can be combined
 using interferometry. The angular resolution of the VLBI array of
