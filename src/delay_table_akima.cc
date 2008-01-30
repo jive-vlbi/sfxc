@@ -36,17 +36,25 @@
 
 // Default constructor
 Delay_table_akima::Delay_table_akima() 
-  : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL) {
+  : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL), 
+  splineakima_u(NULL), splineakima_v(NULL), splineakima_w(NULL) {
 }
 
 // Copy constructor
 Delay_table_akima::Delay_table_akima(const Delay_table_akima &other)
-  : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL)
+  : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL), 
+  splineakima_u(NULL), splineakima_v(NULL), splineakima_w(NULL)
 {
   Delay_table_akima();
   assert(splineakima == NULL);
+  assert(splineakima_u == NULL);
+  assert(splineakima_v == NULL);
+  assert(splineakima_w == NULL);
   times = other.times;
   delays = other.delays;
+  uv = other.uv;
+  vv = other.vv;
+  wv = other.wv;
 }
 
 // Destructor
@@ -56,14 +64,23 @@ Delay_table_akima::~Delay_table_akima() {
 void Delay_table_akima::operator=(const Delay_table_akima &other) {
   Delay_table_akima();
   assert(splineakima == NULL);
+  assert(splineakima_u == NULL);
+  assert(splineakima_v == NULL);
+  assert(splineakima_w == NULL);
   times = other.times;
   delays = other.delays;
+  uv = other.uv;
+  vv = other.vv;
+  wv = other.wv;
 }
 
 bool Delay_table_akima::operator==(const Delay_table_akima &other) const
 {
   if (times != other.times) return false;
   if (delays != other.delays) return false;
+  if (uv != other.uv) return false;
+  if (vv != other.vv) return false;
+  if (wv != other.wv) return false;
   return true;
 }
 
@@ -82,32 +99,25 @@ int Delay_table_akima::open(const char *delayTableName)
    
   // Read the data
   double line[5];
-  std::ofstream outtext("delay.txt");
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))){
     assert(line[4] <= 0);
     // The time read from file is in seconds, whereas the software correlator
     // works with times in microseconds
     times.push_back(line[0]*1000000);
+    uv.push_back(line[1]);
+    vv.push_back(line[2]);
+    wv.push_back(line[3]);
     delays.push_back(line[4]);
-/*    std::cout << "time " << line[0] << std::endl;
-    std::cout << "u " << line[1] << std::endl;
-    std::cout << "v " << line[2] << std::endl;
-    std::cout << "w " << line[3] << std::endl;
-    std::cout << "delay " << line[4] << std::endl;
-*/
-    outtext << std::setprecision(14) << line[0] << " "
-              << std::setprecision(14) << line[1] << " "
-              << std::setprecision(14) << line[2] << " "
-              << std::setprecision(14) << line[3] << " "
-              << std::setprecision(14) << line[4] << " " << std::endl;
 
   }
-
+  
   // Initialise
   begin_scan = 0;
   end_scan   = 0;
   bool result = initialise_next_scan();
   assert(result);
+  bool result_uvw = initialise_next_scan_uvw();
+  assert(result_uvw);
 
   return 0;
 }
@@ -152,6 +162,68 @@ bool Delay_table_akima::initialise_next_scan() {
                   &times[begin_scan], 
                   &delays[begin_scan], 
                   n_pts);
+  return true;
+}
+
+
+bool Delay_table_akima::initialise_next_scan_uvw() {
+  // make end_scan point to the start of the next scan
+  if (end_scan != 0) end_scan += 2;
+  begin_scan = end_scan;
+
+  if (end_scan >= times.size()) return false;
+
+  // next_end_scan is the past-the-end iterator of the next scan
+  while ((end_scan < times.size()) && (times[end_scan] != 0)) {
+    end_scan ++;
+  }
+  if (end_scan >= times.size()) return false;
+
+  if (splineakima_u != NULL) {
+    assert(acc != NULL);
+    gsl_spline_free(splineakima_u);
+    gsl_interp_accel_free(acc);
+    splineakima_u = NULL;
+  }
+  if (splineakima_v != NULL) {
+    gsl_spline_free(splineakima_v);
+    splineakima_v = NULL;
+  }
+  if (splineakima_w != NULL) {
+    gsl_spline_free(splineakima_w);
+    splineakima_w = NULL;
+  }
+
+
+  // Initialise the Akima spline
+  acc = gsl_interp_accel_alloc();
+  int n_pts = end_scan - begin_scan-1;
+  // at least 4 sample points for a spline
+  if (n_pts <= 4) {
+    assert(false);
+    return false;
+  }
+
+  // End scan now points to the beginning of the next scan and 
+  // the next scan has n_pts data points
+  splineakima_u = gsl_spline_alloc(gsl_interp_akima, n_pts);
+  splineakima_v = gsl_spline_alloc(gsl_interp_akima, n_pts);
+  splineakima_w = gsl_spline_alloc(gsl_interp_akima, n_pts);
+
+  assert(delays[begin_scan] != 0);
+  assert(delays[begin_scan+n_pts] != 0);
+  gsl_spline_init(splineakima_u,
+                  &times[begin_scan], 
+                  &uv[begin_scan], 
+                  n_pts);
+  gsl_spline_init(splineakima_v,
+                  &times[begin_scan], 
+                  &vv[begin_scan], 
+                  n_pts);
+  gsl_spline_init(splineakima_w,
+                  &times[begin_scan], 
+                  &wv[begin_scan], 
+                  n_pts);
   
   return true;
 }
@@ -172,6 +244,29 @@ double Delay_table_akima::delay(int64_t time) {
   double result = gsl_spline_eval (splineakima, time, acc);
   assert(result < 0);
   assert(result >= -MAX_DELAY);
+  return result;
+}
+//calculates uvw-coordinates for the delayType at time in microseconds
+//get the next line from the delay table file
+std::vector<double> Delay_table_akima::uvw(int64_t time) {
+  if (times.empty()) {
+    DEBUG_MSG("times.empty()");
+    assert(!times.empty());
+  }
+  while (times[end_scan-1] < time) {
+    bool result = initialise_next_scan_uvw();
+    assert(result);
+  }
+  assert(splineakima_u != NULL);
+  double result1 = gsl_spline_eval (splineakima_u, time, acc);
+  assert(splineakima_v != NULL);
+  double result2 = gsl_spline_eval (splineakima_v, time, acc);
+  assert(splineakima_w != NULL);
+  double result3 = gsl_spline_eval (splineakima_w, time, acc);
+  std::vector<double> result;
+  result.push_back(result1);
+  result.push_back(result2);
+  result.push_back(result3);
   return result;
 }
 

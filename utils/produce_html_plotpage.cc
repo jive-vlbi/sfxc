@@ -56,12 +56,14 @@ int plot_count=0;
 class Plot_generator {
 public:
   Plot_generator(std::ifstream &infile, const Control_parameters &ConPrms,
-                 int count_channel);
+                 int count_channel, int32_t &start_time);
 
 private:
   // sets the data of plot_data except for the plots
-  void set_plot_data(Plot_data &data, const Control_parameters &ConPrms,
-                     int count_channel);
+  void set_plot_data(Plot_data &data, 
+                     const Control_parameters &ConPrms,
+                     int count_channel,
+                     int32_t &start_time);
   void generate_auto_plots(std::ifstream &in,
                            int stations_start,
                            int stations_end,
@@ -87,7 +89,8 @@ private:
 
 Plot_generator::Plot_generator(std::ifstream &infile, 
                                const Control_parameters &ConPrms,
-                               int count_channel)
+                               int count_channel, 
+                               int32_t &start_time)
 {
   Log_writer_cout log_writer;
 
@@ -116,7 +119,8 @@ Plot_generator::Plot_generator(std::ifstream &infile,
   int nStations = ConPrms.number_stations();
   int cross_channel = -1;
   if (ConPrms.cross_polarize()) {
-    cross_channel = ConPrms.cross_polarisation(count_channel);
+    cross_channel = ConPrms.cross_polarisation(count_channel, 
+                                      ConPrms.get_mode(start_time));
     assert((cross_channel == -1) ||
            (cross_channel > count_channel));
   }
@@ -130,11 +134,11 @@ Plot_generator::Plot_generator(std::ifstream &infile,
     plot_data[0].job_name = 
       ConPrms.channel(count_channel)+ ", " +
       ConPrms.frequency(ConPrms.channel(count_channel), 
-                        ConPrms.station(0)) + ", " +
+                        ConPrms.station(0),ConPrms.get_mode(start_time)) + ", " +
       ConPrms.sideband(ConPrms.channel(count_channel), 
-                       ConPrms.station(0))+"SB, "+
+                       ConPrms.station(0),ConPrms.get_mode(start_time))+"SB, "+
       ConPrms.polarisation(ConPrms.channel(count_channel),
-                           ConPrms.station(0)) + "cp ";
+                           ConPrms.station(0),ConPrms.get_mode(start_time)) + "cp ";
 
   } else {
     generate_auto_plots(infile, 0, nStations, plot_data[0], ConPrms);
@@ -143,19 +147,19 @@ Plot_generator::Plot_generator(std::ifstream &infile,
     plot_data[0].job_name = 
       ConPrms.channel(count_channel)+ ", " +
       ConPrms.frequency(ConPrms.channel(count_channel), 
-                        ConPrms.station(0)) + ", " +
+                        ConPrms.station(0),ConPrms.get_mode(start_time)) + ", " +
       ConPrms.sideband(ConPrms.channel(count_channel), 
-                       ConPrms.station(0))+"SB, "+
+                       ConPrms.station(0),ConPrms.get_mode(start_time))+"SB, "+
       ConPrms.polarisation(ConPrms.channel(count_channel),
-                           ConPrms.station(0)) + "cp ";
+                           ConPrms.station(0),ConPrms.get_mode(start_time)) + "cp ";
     plot_data[2].job_name = 
       ConPrms.channel(cross_channel)+ ", " +
       ConPrms.frequency(ConPrms.channel(cross_channel), 
-                        ConPrms.station(0)) + ", " +
+                        ConPrms.station(0),ConPrms.get_mode(start_time)) + ", " +
       ConPrms.sideband(ConPrms.channel(cross_channel), 
-                       ConPrms.station(0))+"SB, "+
+                       ConPrms.station(0),ConPrms.get_mode(start_time))+"SB, "+
       ConPrms.polarisation(ConPrms.channel(cross_channel),
-                           ConPrms.station(0)) + "cp ";
+                           ConPrms.station(0),ConPrms.get_mode(start_time)) + "cp ";
 
     plot_data[0].job_name += ", parallel";
     plot_data[1].job_name += "<div align=right>cross</div>";
@@ -258,27 +262,37 @@ Plot_generator::Plot_generator(std::ifstream &infile,
 
 void Plot_generator::set_plot_data(Plot_data & data, 
                                    const Control_parameters &ConPrms,
-                                   int count_channel) {
+                                   int count_channel,
+                                   int32_t &start_time) {
 
   for (int i=0; i<ConPrms.channels_size(); i++){
     for (int j=1; j<ConPrms.number_stations(); j++){
-      if(ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(j)) 
-         != ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(0))){
+      if(ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(j),
+                              ConPrms.get_mode(start_time)) 
+         != ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(0),
+                              ConPrms.get_mode(start_time))){
         std::cout << "error in polarisation values" << std::endl;
-      } else if (ConPrms.frequency(ConPrms.channel(i),ConPrms.station(j)) 
-                 != ConPrms.frequency(ConPrms.channel(i),ConPrms.station(0))){
+      } else if (ConPrms.frequency(ConPrms.channel(i),ConPrms.station(j),
+                                  ConPrms.get_mode(start_time)) 
+                 != ConPrms.frequency(ConPrms.channel(i),ConPrms.station(0),
+                                  ConPrms.get_mode(start_time))){
         std::cout << "error in frequency values" << std::endl;
-      } else if (ConPrms.sideband(ConPrms.channel(i),ConPrms.station(j)) 
-                 != ConPrms.sideband(ConPrms.channel(i),ConPrms.station(0))){
+      } else if (ConPrms.sideband(ConPrms.channel(i),ConPrms.station(j),
+                                  ConPrms.get_mode(start_time)) 
+                 != ConPrms.sideband(ConPrms.channel(i),ConPrms.station(0),
+                                  ConPrms.get_mode(start_time))){
         std::cout << "error in sideband values" << std::endl;
       }
     }
   }
 
   data.job_name = ConPrms.experiment()+"_"+ConPrms.channel(count_channel)
-    + "_" + ConPrms.polarisation(ConPrms.channel(count_channel),ConPrms.station(0)) 
-    + "cp_" + ConPrms.frequency(ConPrms.channel(count_channel), ConPrms.station(0))
-    + "_" + ConPrms.sideband(ConPrms.channel(count_channel), ConPrms.station(0)) + "sb";
+    + "_" + ConPrms.polarisation(ConPrms.channel(count_channel),ConPrms.station(0),
+                                 ConPrms.get_mode(start_time)) 
+    + "cp_" + ConPrms.frequency(ConPrms.channel(count_channel), ConPrms.station(0),
+                                 ConPrms.get_mode(start_time))
+    + "_" + ConPrms.sideband(ConPrms.channel(count_channel), ConPrms.station(0),
+                                 ConPrms.get_mode(start_time)) + "sb";
   data.frequency = 0; //not used at this moment HO
   data.sideband = 'L'; //not used at this moment (GenPrms.get_sideband()-1 ? 'L' : 'U');
 }
@@ -627,19 +641,19 @@ int main(int argc, char *argv[])
     //read-in the header of the time-slice
     infile.read((char*)&timeslice, sizeof(Output_header_timeslice));
     // generate plots for the channel
-    Plot_generator(infile, ConPrms, channel);
+    Plot_generator(infile, ConPrms, channel, header.start_time);
 
     // find the next channel
     if (ConPrms.cross_polarize()) {
       channel ++;
       int cross_channel = 
-        ConPrms.cross_polarisation(channel);
+        ConPrms.cross_polarisation(channel, ConPrms.get_mode(header.start_time));
       while ((channel <
               ConPrms.number_frequency_channels()) &&
              (cross_channel >= 0) && (cross_channel < channel)) {
         channel ++;
         cross_channel = 
-          ConPrms.cross_polarisation(channel);
+          ConPrms.cross_polarisation(channel, ConPrms.get_mode(header.start_time));
       }
     } else {
       channel++;

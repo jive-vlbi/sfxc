@@ -453,51 +453,64 @@ Control_parameters::cross_polarize() const {
   return ctrl["cross_polarize"].asBool();
 }
 
-int
-Control_parameters::
-cross_polarisation(int channel_nr) const {
-  if ((size_t) channel_nr >= number_frequency_channels())
-    return -1;
-  return cross_polarisation(channel(channel_nr));
+std::string Control_parameters::
+get_mode(int32_t &start_time) const {
+  std::string mode;
+  
+  for (Vex::Node::const_iterator sched_block = vex.get_root_node()["SCHED"]->begin();
+    sched_block != vex.get_root_node()["SCHED"]->end(); ++sched_block) {
+    if (start_time > Date(sched_block["start"]->to_string()).to_miliseconds()/1000) {
+      mode = sched_block["mode"]->to_string();
+    }
+  }
+  return mode;
 }
 
 int
 Control_parameters::
-cross_polarisation(const std::string &channel_name) const {
-  std::string freq = frequency(channel_name, station(0));
-  char side = sideband(channel_name, station(0));
-  char pol  = polarisation(channel_name, station(0));
+cross_polarisation(int channel_nr, const std::string &mode) const {
+  if ((size_t) channel_nr >= number_frequency_channels())
+    return -1;
+  return cross_polarisation(channel(channel_nr), mode);
+}
 
+int
+Control_parameters::
+cross_polarisation(const std::string &channel_name,
+                   const std::string &mode) const {
+  std::string freq = frequency(channel_name, station(0), mode);
+  char side = sideband(channel_name, station(0), mode);
+  char pol  = polarisation(channel_name, station(0), mode);
   for (size_t i=0; i<number_frequency_channels(); i++) {
     if (channel(i) != channel_name) {
-      if ((freq == frequency(channel(i), station(0))) &&
-          (side == sideband(channel(i), station(0))) &&
-          (pol != polarisation(channel(i), station(0)))) {
+      if ((freq == frequency(channel(i), station(0), mode)) &&
+          (side == sideband(channel(i), station(0), mode)) &&
+          (pol != polarisation(channel(i), station(0), mode))) {
         return i;
       }
     }
   }
-
   return -1;
 }
 
 char
 Control_parameters::
-polarisation(const std::string &if_node,
-             const std::string &if_ref) const {
+polarisation(const std::string &channel_name,
+             const std::string &station_name,
+             const std::string &mode) const {
   std::string if_mode_freq;
   std::string if_node_Node;
   std::string if_ref_BBC;
   std::string if_ref_BBCnr;
   std::string if_ref_Ref;
 
-  for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin();
-       mod_block != vex.get_root_node()["MODE"]->end(); ++mod_block) {
+  for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin(mode);
+       mod_block != vex.get_root_node()["MODE"]->end(mode); ++mod_block) {
     for (Vex::Node::const_iterator if_it = mod_block->begin("FREQ");
          if_it != mod_block->end("FREQ"); ++if_it) {
       for (Vex::Node::const_iterator elem_it = if_it->begin();
            elem_it != if_it->end(); ++elem_it) {
-        if (elem_it->to_string() == if_ref) {
+        if (elem_it->to_string() == station_name) {
           if_mode_freq = if_it[0]->to_string();
         }
       }
@@ -506,7 +519,7 @@ polarisation(const std::string &if_node,
          if_it != mod_block->end("IF"); ++if_it) {
       for (Vex::Node::const_iterator elem_it = if_it->begin();
            elem_it != if_it->end(); ++elem_it) {
-        if (elem_it->to_string() == if_ref) {
+        if (elem_it->to_string() == station_name) {
           if_node_Node = if_it[0]->to_string();
         }
       }
@@ -514,7 +527,7 @@ polarisation(const std::string &if_node,
     for (Vex::Node::const_iterator bbc_it = mod_block->begin("BBC");
          bbc_it != mod_block->end("BBC"); ++bbc_it) {
       for (size_t i=1; i<bbc_it->size(); i++) {
-        if (bbc_it[i]->to_string() == if_ref) {
+        if (bbc_it[i]->to_string() == station_name) {
           if_ref_BBC = bbc_it[0]->to_string();
         }
       }
@@ -527,7 +540,7 @@ polarisation(const std::string &if_node,
        ++frq_block) {
     for (Vex::Node::const_iterator elem_it = frq_block->begin();
          elem_it != frq_block->end(); ++elem_it) {
-      if (elem_it->to_string() == if_node) {
+      if (elem_it->to_string() == channel_name) {
         if_ref_BBCnr = frq_block[5]->to_string();
       }
     }
@@ -550,8 +563,9 @@ polarisation(const std::string &if_node,
 
 std::string
 Control_parameters::
-frequency(const std::string &if_node,
-          const std::string &if_ref) const {
+frequency(const std::string &channel_name,
+          const std::string &station_name,
+          const std::string &mode) const {
 
   std::string if_mode_freq;
   std::string if_node_Node;
@@ -560,13 +574,13 @@ frequency(const std::string &if_node,
   std::string if_ref_Ref;
   std::string frequen;
 
-  for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin();
-       mod_block != vex.get_root_node()["MODE"]->end(); ++mod_block) {
+  for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin(mode);
+       mod_block != vex.get_root_node()["MODE"]->end(mode); ++mod_block) {
     for (Vex::Node::const_iterator if_it = mod_block->begin("FREQ");
          if_it != mod_block->end("FREQ"); ++if_it) {
       for (Vex::Node::const_iterator elem_it = if_it->begin();
            elem_it != if_it->end(); ++elem_it) {
-        if (elem_it->to_string() == if_ref) {
+        if (elem_it->to_string() == station_name) {
           if_mode_freq = if_it[0]->to_string();
         }
       }
@@ -575,7 +589,7 @@ frequency(const std::string &if_node,
          if_it != mod_block->end("IF"); ++if_it) {
       for (Vex::Node::const_iterator elem_it = if_it->begin();
            elem_it != if_it->end(); ++elem_it) {
-        if (elem_it->to_string() == if_ref) {
+        if (elem_it->to_string() == station_name) {
           if_node_Node = if_it[0]->to_string();
         }
       }
@@ -583,30 +597,29 @@ frequency(const std::string &if_node,
     for (Vex::Node::const_iterator bbc_it = mod_block->begin("BBC");
          bbc_it != mod_block->end("BBC"); ++bbc_it) {
       for (int i=1; i<bbc_it->size(); i++) {
-        if (bbc_it[i]->to_string() == if_ref) {
+        if (bbc_it[i]->to_string() == station_name) {
           if_ref_BBC = bbc_it[0]->to_string();
         }
       }
     }
   }
-
   for (Vex::Node::const_iterator frq_block = vex.get_root_node()["FREQ"][if_mode_freq]->begin("chan_def");
        frq_block != vex.get_root_node()["FREQ"][if_mode_freq]->end("chan_def"); ++frq_block) {
     for (Vex::Node::const_iterator elem_it = frq_block->begin();
          elem_it != frq_block->end(); ++elem_it) {
-      if (elem_it->to_string() == if_node) {
+      if (elem_it->to_string() == channel_name) {
         frequen = frq_block[1]->to_string();
       }
     }
   }
-
   return frequen;
 }
 
 char
 Control_parameters::
-sideband(const std::string &if_node,
-         const std::string &if_ref) const {
+sideband(const std::string &channel_name,
+         const std::string &station_name,
+         const std::string &mode) const {
 
   std::string if_mode_freq;
   std::string if_node_Node;
@@ -615,13 +628,13 @@ sideband(const std::string &if_node,
   std::string if_ref_Ref;
   char sband;
 
-  for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin();
-       mod_block != vex.get_root_node()["MODE"]->end(); ++mod_block) {
+  for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin(mode);
+       mod_block != vex.get_root_node()["MODE"]->end(mode); ++mod_block) {
     for (Vex::Node::const_iterator if_it = mod_block->begin("FREQ");
          if_it != mod_block->end("FREQ"); ++if_it) {
       for (Vex::Node::const_iterator elem_it = if_it->begin();
            elem_it != if_it->end(); ++elem_it) {
-        if (elem_it->to_string() == if_ref) {
+        if (elem_it->to_string() == station_name) {
           if_mode_freq = if_it[0]->to_string();
         }
       }
@@ -630,7 +643,7 @@ sideband(const std::string &if_node,
          if_it != mod_block->end("IF"); ++if_it) {
       for (Vex::Node::const_iterator elem_it = if_it->begin();
            elem_it != if_it->end(); ++elem_it) {
-        if (elem_it->to_string() == if_ref) {
+        if (elem_it->to_string() == station_name) {
           if_node_Node = if_it[0]->to_string();
         }
       }
@@ -638,7 +651,7 @@ sideband(const std::string &if_node,
     for (Vex::Node::const_iterator bbc_it = mod_block->begin("BBC");
          bbc_it != mod_block->end("BBC"); ++bbc_it) {
       for (int i=1; i<bbc_it->size(); i++) {
-        if (bbc_it[i]->to_string() == if_ref) {
+        if (bbc_it[i]->to_string() == station_name) {
           if_ref_BBC = bbc_it[0]->to_string();
         }
       }
@@ -649,7 +662,7 @@ sideband(const std::string &if_node,
        frq_block != vex.get_root_node()["FREQ"][if_mode_freq]->end("chan_def"); ++frq_block) {
     for (Vex::Node::const_iterator elem_it = frq_block->begin();
          elem_it != frq_block->end(); ++elem_it) {
-      if (elem_it->to_string() == if_node) {
+      if (elem_it->to_string() == channel_name) {
         sband = frq_block[2]->to_char();
       }
     }
@@ -676,7 +689,7 @@ get_correlation_parameters(const std::string &scan_name,
     vex.get_root_node()["SCHED"][scan_name];
   Vex::Node::const_iterator mode =
     vex.get_root_node()["MODE"][scan["mode"]->to_string()];
-
+  
   Correlation_parameters corr_param;
   corr_param.start_time = vex.start_of_scan(scan_name).to_miliseconds();
   corr_param.stop_time = vex.stop_of_scan(scan_name).to_miliseconds();
@@ -751,7 +764,8 @@ get_correlation_parameters(const std::string &scan_name,
   assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');
 
   corr_param.cross_polarize = cross_polarize();
-  if (cross_polarisation(channel_name) == -1) {
+  std::string mode_name = mode.key().c_str();
+  if (cross_polarisation(channel_name, mode_name) == -1) {
     corr_param.cross_polarize = false;
   }
 

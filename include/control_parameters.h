@@ -157,17 +157,24 @@ public:
   std::string frequency_channel(size_t channel_nr) const;
 
   bool cross_polarize() const;
-  int cross_polarisation(int channel_nr) const;
-  int cross_polarisation(const std::string &channel_nr) const;
+  int cross_polarisation(int channel_nr, 
+                         const std::string &mode) const;
+  int cross_polarisation(const std::string &channel_nr,
+                         const std::string &mode) const;
 
-  char polarisation(const std::string &if_node, 
-                    const std::string &if_ref) const;
-
-  std::string frequency(const std::string &if_node, 
-                    const std::string &if_ref) const;
+  std::string get_mode(int32_t &time) const;
   
-  char sideband(const std::string &if_node, 
-                    const std::string &if_ref) const;
+  char polarisation(const std::string &channel_name, 
+                    const std::string &station_name,
+                    const std::string &mode) const;
+
+  std::string frequency(const std::string &channel_name, 
+                    const std::string &station_name,
+                    const std::string &mode) const;
+  
+  char sideband(const std::string &channel_name, 
+                    const std::string &station_name,
+                    const std::string &mode) const;
 						 
   /****************************************************/
   /* Extract structs for the correlation:             */

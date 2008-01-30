@@ -101,6 +101,9 @@ private:
   size_t current_channel;
 
   int n_corr_nodes;
+  
+//  Delay_table_akima delay_table;
+//  std::vector<double> uvw;
 };
 
 #endif // CONTROLLER_NODE_H

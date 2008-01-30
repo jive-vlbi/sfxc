@@ -49,18 +49,24 @@ public:
   //calculate the delay for the delayType at time in microseconds
   double delay(int64_t time);
 
+  //calculate uvw-coordinates for the delayType at time in microseconds
+  std::vector<double> uvw(int64_t time);
+
   /// A spline only interpolates one scan. 
-  /// This functions preprocesses the spline for the next scan.
+  /// This functions preprocesses the spline for the next scan for delay.
   bool initialise_next_scan();
+  /// and for uvw
+  bool initialise_next_scan_uvw();
   
   int64_t start_time_scan();
   int64_t stop_time_scan();
 private:
   // Beginning of the scan and past the end pointer
   size_t begin_scan, end_scan;
-  std::vector<double> times, delays;
+  std::vector<double> times, delays, uv, vv, wv;
   gsl_interp_accel *acc;
   gsl_spline *splineakima;
+  gsl_spline *splineakima_u, *splineakima_v, *splineakima_w;
 };
 
 

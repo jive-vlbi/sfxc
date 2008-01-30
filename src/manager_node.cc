@@ -16,7 +16,7 @@
 #include "utils.h"
 #include "mpi_transfer.h"
 #include "log_writer_cout.h"
-#include "uvw_model.h"
+//#include "uvw_model.h"
 #include <iomanip>
 
 Manager_node::
@@ -84,51 +84,51 @@ Manager_node(int rank, int numtasks,
   }
   assert(n_stations > 0);
 
-  //Set uvw_model
-  
-  Uvw_model model;
-
-  std::string filename = "../delay/" + control_parameters.experiment() +
-                          "_" + control_parameters.station(0) + ".del";
-  DEBUG_MSG("MANAGER NODE filename is -> " << filename);
-
-  char * filename_buffer = strdup(filename.c_str());
-  model.open(filename_buffer);
-  free(filename_buffer);
-
-  int64_t uvw_start_time = control_parameters.get_start_time().to_miliseconds()*1000;
-  int64_t uvw_stop_time = control_parameters.get_stop_time().to_miliseconds()*1000;
-  double uvw_integration_time = control_parameters.integration_time();
-  std::vector< std::vector<double> > uvw_temp;
-  
-  DEBUG_MSG("start time --> " << std::setprecision(14) << uvw_start_time);
-  DEBUG_MSG("stop time --> " << std::setprecision(14) << uvw_stop_time);
-  DEBUG_MSG("integration time --> " << std::setprecision(14) << uvw_integration_time);
-  std::ofstream uvw_output("output.delay");
-
-  uvw_temp = model.uvw_values(uvw_output, uvw_start_time, uvw_stop_time, uvw_integration_time);
-  
-  int count_front=0;
-  int count_back=0;
-  int i=0;
-  while (uvw_temp[0][i]*1000 < uvw_start_time){
-    i++;
-  }
-  count_front = i;
-  while (uvw_temp[0][i]*1000 < uvw_stop_time && i < uvw_temp[0].size()){
-    i++;
-  }
-  count_back = i;
-  
-  std::vector< std::vector<double> > uvw(4, count_back-count_front);
-  int j=0;
-  for(i=count_front; i<count_back; i++){
-    uvw[0][j] = uvw_temp[0][i];
-    uvw[1][j] = uvw_temp[1][i];
-    uvw[2][j] = uvw_temp[2][i];
-    uvw[3][j] = uvw_temp[3][i];
-    j++;
-  }
+//  //Set uvw_model
+//  
+//  Uvw_model model;
+//
+//  std::string filename = "../delay/" + control_parameters.experiment() +
+//                          "_" + control_parameters.station(0) + ".del";
+//  DEBUG_MSG("MANAGER NODE filename is -> " << filename);
+//
+//  char * filename_buffer = strdup(filename.c_str());
+//  model.open(filename_buffer);
+//  free(filename_buffer);
+//
+//  int64_t uvw_start_time = control_parameters.get_start_time().to_miliseconds()*1000;
+//  int64_t uvw_stop_time = control_parameters.get_stop_time().to_miliseconds()*1000;
+//  double uvw_integration_time = control_parameters.integration_time();
+//  std::vector< std::vector<double> > uvw_temp;
+//  
+//  DEBUG_MSG("start time --> " << std::setprecision(14) << uvw_start_time);
+//  DEBUG_MSG("stop time --> " << std::setprecision(14) << uvw_stop_time);
+//  DEBUG_MSG("integration time --> " << std::setprecision(14) << uvw_integration_time);
+//  std::ofstream uvw_output("output.delay");
+//
+//  uvw_temp = model.uvw_values(uvw_output, uvw_start_time, uvw_stop_time, uvw_integration_time);
+//  
+//  int count_front=0;
+//  int count_back=0;
+//  int i=0;
+//  while (uvw_temp[0][i]*1000 < uvw_start_time){
+//    i++;
+//  }
+//  count_front = i;
+//  while (uvw_temp[0][i]*1000 < uvw_stop_time && i < uvw_temp[0].size()){
+//    i++;
+//  }
+//  count_back = i;
+//  
+//  std::vector< std::vector<double> > uvw(4, count_back-count_front);
+//  int j=0;
+//  for(i=count_front; i<count_back; i++){
+//    uvw[0][j] = uvw_temp[0][i];
+//    uvw[1][j] = uvw_temp[1][i];
+//    uvw[2][j] = uvw_temp[2][i];
+//    uvw[3][j] = uvw_temp[3][i];
+//    j++;
+//  }
 
   // correlator nodes:
   if (numtasks-(n_stations+3) <
@@ -198,7 +198,7 @@ void Manager_node::start() {
   get_log_writer()(1) << "Manager_node::start()" << std::endl;
 
   initialise();
-  
+
   status = START_NEW_SCAN;
 
   while (status != END_NODE) {
@@ -299,6 +299,10 @@ void Manager_node::start() {
       }
       case STOP_CORRELATING:
       {
+//        Delay_table_akima delay_table;
+//        uvw = delay_table.uvw(start_time*int64_t(1000));
+//        DEBUG_MSG("MANAGER NODE uvw coordinates " << uvw[0]);
+
         // The status is set to END_NODE as soon as the output_node is ready
         MPI_Send(&slice_nr, 1, MPI_INT32, 
                  RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_CORRELATION_READY,
@@ -326,10 +330,10 @@ void Manager_node::start() {
 void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   int cross_channel = -1;
   if (control_parameters.cross_polarize()) {
-    cross_channel = control_parameters.cross_polarisation(current_channel);
+    cross_channel = control_parameters.cross_polarisation(current_channel, 
+                                       control_parameters.get_mode(start_time));
     assert((cross_channel == -1) || (cross_channel > (int)current_channel));
   }
-
   // Initialise the correlator node
   if (cross_channel == -1) {
     get_log_writer()(1)
@@ -346,32 +350,25 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
       << cross_channel << " to correlation node " 
       << corr_node_nr << std::endl;
   }
-
+  
   std::string channel_name =
     control_parameters.frequency_channel(current_channel);
- 
   std::vector<std::string> station_name;
   Correlation_parameters correlation_parameters; 
-
   int nr_stations = control_parameters.number_stations();
-
   for (int i=0; i<nr_stations; i++){
     station_name.push_back(get_control_parameters().station(i));
   }
-
   correlation_parameters = 
     control_parameters.
     get_correlation_parameters(*scans.begin(),
         channel_name,
         station_name,
         get_input_node_map());
-
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
   correlation_parameters.slice_nr = slice_nr;
-
   assert ((cross_channel != -1) == correlation_parameters.cross_polarize);
-
   // Check the cross polarisation
   if (cross_channel != -1) {
     int n_stations = control_parameters.number_stations();
@@ -396,7 +393,6 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
                               /*stream*/corr_node_nr,
                               start_time,
                               stoptime_timeslice);
-
     if (cross_channel != -1) {
       // Add the cross polarisation channel
       input_node_set_time_slice(control_parameters.station(station_nr),
@@ -406,20 +402,21 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
                                 stoptime_timeslice);
     }
   }
-            
   set_correlating_state(corr_node_nr, CORRELATING);
 
   current_channel ++;
   if (control_parameters.cross_polarize()) {
     // Go to the next channel.
     size_t cross_channel = 
-      control_parameters.cross_polarisation(current_channel);
+      control_parameters.cross_polarisation(current_channel, 
+                                            control_parameters.get_mode(start_time));
     while ((current_channel <
             control_parameters.number_frequency_channels()) &&
            (cross_channel >= 0) && (cross_channel < current_channel)) {
       current_channel ++;
       cross_channel = 
-        control_parameters.cross_polarisation(current_channel);
+        control_parameters.cross_polarisation(current_channel, 
+                                              control_parameters.get_mode(start_time));
     }
   }
   slice_nr++;
@@ -445,7 +442,13 @@ Manager_node::initialise() {
     const std::string &delay_file = 
       control_parameters.get_delay_table_name(station_name);
     delay_table.open(delay_file.c_str());
-
+//    int64_t time_temp = control_parameters.get_start_time().to_miliseconds()*int64_t(1000);
+//    uvw = delay_table.uvw(time_temp);
+//    DEBUG_MSG("MANAGER NODE filename is -> " << delay_file);
+//    DEBUG_MSG("MANAGER NODE time is -> " << time_temp);
+//    DEBUG_MSG("MANAGER NODE UVW COORDINATES -> " << uvw[0] 
+//                                          << " " << uvw[1] 
+//                                          << " " << uvw[2]);
     correlator_node_set_all(delay_table, station_name);
   }
 
