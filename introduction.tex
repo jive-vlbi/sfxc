@@ -9,22 +9,23 @@
   telescopes and the Earth Orientation Parameters (EOP).
 \end{comment}
 
-Recent Astronomical researches aims to study the deep-sky (farther and
+Recent Astronomical research studies the deep-sky (sources farther and
 farther away from us) which requires higher and higher angular
 resolution to capture all the details of the observed sources.
-Increasing the size of a telescope dish increases the increase the
-angular resolution of the image linearly.  Nevertheless, due to
-mechanical constraints, it is difficult to build moveable telescope
-dishes with a size much larger than 100m. Interferometry provides a
-possible solution to this problem as it permit to combine the
-measurements of several telescopes to simulate a dish of size
-equivalent to the maximal distance between the farthest telescopes.
-This approach is called Very Large Baseline Interferometry (VLBI) and
-permits us to build a virtual telescope with a dish of a size of the
-earth (or more). Once the data has been recorded, the data of each
-pair of stations has to be correlated.  In the \scarie\ project we are
-developing and analyzing the capabilities of making a software
-correlator that uses the processing power of a grid.
+Increasing the size of a telescope dish increases the angular
+resolution of the image.  However, due to mechanical constraints, it
+is difficult to build moveable telescope dishes with a size much
+larger than 100m. Interferometry provides a possible solution to this
+problem as it permits to combine the measurements of several
+telescopes to simulate a dish of a size equivalent to the maximal
+distance between the farthest telescopes on the plane orthogonal to
+the viewing direction.  This approach is called Very Large Baseline
+Interferometry (VLBI) and permits us to build a virtual telescope with
+a dish of a size of the earth (or larger). Once the data has been
+recorded, the data of each pair of stations has to be correlated.  In
+the \scarie\ project we are developing and analyzing the capabilities
+of making a software correlator that uses the processing power of a
+grid.
 
 \scarie\ is a typical example of a recent trend of the e-Science 
 community in which computation resources and scientific instruments 
@@ -51,17 +52,17 @@ following user-application requirements:
   execute such application it is mandatory to schedule its execution 
   and reserve the needed resource in advance.
 \end{itemize}
-In order to fully reach the \scarie\ objectivs these three 
-requirements have to be addressed for networking resource, nodes and 
-data space. These are still hot-topics in the grid communauty, 
-especially because networking has a long history as a 
-\emph{best-effort} shared resourced which is incompatible 
-with an isolated network environment. For this reason we are 
-conducting ours experiences using the experimental \das3\ 
-grids as it have an user-controllable dynamic photonic 
-network called StarPlane to build, on demand and application specific, 
-isolated virtual-network on top of the complete grid. A such service would 
-permit to run \scarie\ with a good confidence level that a real-time 
+In order to fully reach the \scarie\ objectives these three
+requirements have to be addressed for networking resource, nodes and
+data space. These are still hot-topics in the grid community,
+especially because networking has a long history as a
+\emph{best-effort} shared resourced which is incompatible with an
+isolated network environment. For this reason we are conducting our
+experiments using the experimental \das3\ grids as it have an
+user-controllable dynamic photonic network called StarPlane to build,
+on demand and application specific, isolated virtual-network on top of
+the complete grid. A such service would permit to run \scarie\ with a
+good confidence level that a real-time
 experiment will not be disturbed by other users. \\
 
 The rest of the paper is organized as follows. Section~\ref{sec:vlbi}
