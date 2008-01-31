@@ -1,19 +1,16 @@
 \section{Execution and deployment.}\label{sec:network}
 In section \ref{sec:vlbi} we presented the two operational mode we are
 targeting for the software correlator: \emph{batch-execution} and
-\emph{real-time}. Batch execution correspond to what the most common
-high performance computing scenario. \marginpar{NGHK: Don't
-  understand} If we except the \emph{size} of problem described in
-Section~\ref{sec:vlbi} and the challenge of making an efficient
-distributed application Section~\ref{sec:softwarecorrelation}, we
-consider that it is now relatively easy to run \emph{batch} job on top
-of existing grids infrastructure and middleware. Running the same
-software correlator in a \emph{real-time} mode is much more complex as
-the grid infrastructure and corresponding middleware have to provide
-guarantees on the Quality of the Service that match the application's
-requirement. As these issues are still evolving rapidly we are
-testing these aspects of \scarie\ on an experimental grid called DAS-3
-and its associated network service called StarPlane.
+\emph{real-time}. Grids have a long history in running batch jobs and
+grid-middleware is now doing a good job on this task. Therefore
+running a software correlator without real-time requirements is
+feasible on most grids. However for real-time applications the
+situation is much more complex, as the grid infrastructure and
+corresponding middleware have to provide guarantees on the Quality of
+the Service that match the application's requirement. As these issues
+are still evolving rapidly we are testing these aspects of \scarie\ on
+an experimental grid called DAS-3 and its associated network service
+called StarPlane.
 
 \subsection{Real-time and quality of service}
 The term \emph{real-time} has many definitions in the computer science
@@ -62,12 +59,12 @@ environment based on user requirements.
 
 \subsection{Running \scarie on \das3 and Starplane}
 Networking issues are one of the challenges of the \scarie\ project.
-The regular Internet best-effort\marginpar{NGHK: best effort?} Layer3
-IP routing has great flexibility but is slow and unpredictable; on the
-other hand, dedicated \textit{lightpaths} as available in
-\textit{lambda Grids}~\cite{eslea-2007}, with their predictable delays
-and throughputs offer good performances and guarantee on the Quality
-of Service (QoS). This is the approach that is used in \scarie\ to
+The regular Internet best-effort Layer3 IP routing has great
+flexibility but is slow and unpredictable; on the other hand,
+dedicated \textit{lightpaths} as available in \textit{lambda
+  Grids}~\cite{eslea-2007}, with their predictable delays and
+throughputs offer good performances and guarantee on the Quality of
+Service (QoS). This is the approach that is used in \scarie\ to
 delivered the data from the radio-telescope to the computation center.
 Giving end user an access to dedicated connection has been implemented
 in many of the current research and education networks. The Dutch
@@ -75,26 +72,33 @@ National Resarch and Education network SURFnet is one of them.
 SURFnet6 deploys multiple fiber optic rings that connect the academic
 and research locations around The Netherlands.
 
-For the correlation process we are making experiment on the \das3\
-grid\marginpar{NGHK: ??}. The \das3\ supercomputer~\cite{das3} was
-deployed in the summer of 2007. It is composed of fives clusters
-located in the Netherlands and connected by an photonic network called
-StarPlane. StarPlane is also a research project funded by the
-Netherlands Organization for Scientific Research (NWO) \emph{and
-  carried out at two Dutch Universities: the University of Amsterdam
-  (UvA) and the Vrije Universiteit Amsterdam (VU)}\marginpar{NGHK:
-  needed?}. The goal of the project is to build an
-\textit{application-controlled photonic network}. StarPlane manages
-eight wavelengths in one of the SURFnet6 optical rings. The novelty of
-the StarPlane project lies in its attempt to build a virtual network
+For the correlation process we are experimenting on the \das3\ grid.
+The \das3\ supercomputer~\cite{das3} was deployed in the summer of
+2007. It is composed of fives clusters located in the Netherlands and
+connected by a photonic network called StarPlane. The StarPlane
+project manages eight wavelengths in one of the SURFnet6 optical
+rings.  The goal of the project is to build a network service that
+permits \textit{application-controlled photonic network and
+  node-to-node traffic isolation}. The novelty of the StarPlane
+project lies in its attempt to build a virtual network service at the
+lowest possible networking layer: the photonic layer for the optical
+part and ethernet-layer2 for the connexion to the nodes. This has the
+advantage to improve performances and to dramatically reduce the cost
+(the price or the energy) per byte transfered \cite{}\marginpar{TODO}.
+
+StarPlane manages eight wavelengths in one of the SURFnet6 optical
+rings. The goal of StarPlane is to build an
+\textit{application-controlled photonic network}. The novelty of the
+StarPlane project lies in its attempt to build a virtual network
 service at the lowest possible networking layer. This has the
 advantage to improve performances and to dramatically reduce the cost
 (the price or the energy) per byte transfered \cite{}\marginpar{TODO}.
 A complete virtual network for an application can then be build using
 only vlan-on-mac layer 2 switches and layer-1 photonic lighpath. The
 other novelty is that the photonic lightpath can dynamically be
-reorganized to adapt to the user-application requests.
-
+reorganized to adapt to the user-application requests.  \marginpar{DM:
+  layer 0 for the optical part and layer 2 for the LAN connexion to
+  the nodes}
 
 \subsection{Benchmarks on DAS-3}
 \scarie~ and StarPlane have parallel roadmaps. Hence the complete
@@ -103,23 +107,46 @@ performances test using \das3. The current software correlator is
 currently able to perform a 4x128Mbps experiment at 20\% of the
 real-time speed using a total of 16 (quad core 2.0Ghz cpu) nodes.
 
-\marginpar{NGHK: relevant?}
-In parallel to correlation tests we are working on the real-time
-based\marginpar{Real-time based what?}  on the on demand virtual
-service. The only part of the StarPlane that is working at the time of
-writing is user-requestable lighpath service of StarPlane that permits
-to build and allocate a lighpath between two clusters. We tested this
-feature by running two client-server applications transmitting data
-between cluster. The communication middleware detects this scenario
-and allocate a lighpath, while the the lighpath is not available the
-application is sending the traffic to the normal network interface;
-when it become ready the traffic is switched
-\marginpar{automatically?} to the lighpaths.
-\begin{figure}[h]
+In parallel with the benchmarks of the correlator, we are also testing
+the capabilities of StarPlane to do high performance traffic isolation
+that is needed for real-time correlation. As the computing power of
+one cluster may not be sufficient, it might be necessary to distribute
+the workload over several locations. Therefore high-bandwidth, QoS
+aware, network connections are needed between the clusters. At the
+time of writing StarPlane has implemented the service that allows a
+program to build and allocate a lighpath between two clusters on
+demand. We tested this feature by running two client-server
+applications transmitting data between clusters.
+
+The network traffic of the two applications is depicted in
+Figure~\ref{fig:timing}.  At the start of the application, a request
+for lighpath allocation is issued (arrow 1). After a while the
+throughput drops because the second application starts sending data as
+well (arrow 2).  As long as the lighpath is not ready (photonic
+switching takes 10 minutes) the application is sending the traffic to
+the default 1Gb/s ethernet route; when the lighpath is ready (arrow 3)
+the traffic is rerouted to the lightpath.
+
+\begin{figure}[ht]
   \centering
   \includegraphics[width=\textwidth] {img/timing.eps}
-    \caption{\label{fig:timing}
-		Two application executed on the StarPlane network. The application share the ethernet part of the network. Then acquire a lighpath, the change of the bandwith is clearly sensible.}
+  \caption{\label{fig:timing} Two application are started at time
+    (arrow 1) and (arrow 2). The two applications have to share the
+    1Gbps network bandwith. When a lighpath is allocated (arrow 3) the
+    increase in performance is clearly visible.}
 \end{figure} 
 
-This experiment rise questions, as the supposly secured path that is suppose to deliver reliably "550MB/s" of throughput between a pair of cluster. In Figure~\ref{fig:timing} we can see a periodic artifact, the traffic falling down to 300MB/s for few seconds. A second to investigate issue is that from time to time the lighpath connectivity disapear and these issue have to be investigated in order to provide a "real" guaranteed service. 
+The results of this experiment rise questions, as the secured
+lightpath is supposed to deliver reliably "550MB/s" of throughput
+between a pair of cluster. In Figure~\ref{fig:timing} we can see a
+periodic artifact, the traffic falling down to 300MB/s for few
+seconds. A second issue to investigate is that from time to time the
+lighpath connectivity disapears entirely (e.g. at second 580). We are
+currently working with Starplane team to understand and solve these
+problems.
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "Ingrid"
+%%% End:
