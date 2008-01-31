@@ -86,7 +86,7 @@ void Bits_to_float_converter::do_task() {
 
   if (bits_per_sample == 2) {
     for (int byte = 0; byte < bytes_read; byte++) {
-      memcpy(&buffer[byte*4], // byte * 4
+      memcpy(&buffer[byte<<2], // byte * 4
              &lookup_table[(int)(unsigned char)input_char_buffer[byte]][0],
              4*sizeof(FLOAT));
     }
