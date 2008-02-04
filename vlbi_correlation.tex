@@ -33,9 +33,12 @@ However, due to the high data rates, the absolute number of clock
 cycles required by the application is still extremely high. Moreover,
 the problem is quadratic in the number of telescopes participating in
 the experiment since it is linear in the number of channel pairs that
-have to be correlated. The huge need for networking and computing
-power makes a computing Grid an ideal platform for this application.
+have to be correlated. \acomment{ I disgagree with the logical 
+organization of causes/consequence here.}{The huge need for networking 
+and computing power makes a computing Grid an ideal platform for 
+this application.}
 
+\acomment{This should be in Design section}{
 In the software correlator, we split the computation in time slices.
 These time slices are processed in parallel (see
 Figure~\ref{fig:netw_corr}). The signal from a telescope is received
@@ -45,8 +48,7 @@ data from all telescopes for a certain time slice and performs the
 correlation. The size of the output of the correlation is much smaller
 than the input size and can be collected and stored by a single output
 node.  There is a single manager node that assigns data to available
-computing nodes.
-
+computing nodes.}
 
 
 \begin{figure}
@@ -60,13 +62,13 @@ computing nodes.
 
 
 \subsection{Design}
-The software correlator is written in \verb~C++~ and uses several
+\acomment{Is this really so important that we need to start with this ? In addition you don't explain why we need FFTs, why spline fitting etc..}{}The software correlator is written in \verb~C++~ and uses several
 standard libraries like \verb~fftw~ \cite{FFTW05} for the fast Fourier
 transforms, \verb~mpich~ \cite{Gropp:1996:HPI} as the MPI
 implementation , \verb~GSL~ \cite{GSL} for cubic spline fitting and
 the standard template library.
 
-At start up, the manager node is created, which starts the other nodes
+\acomment{The following is not "design".}{}At start up, the manager node is created, which starts the other nodes
 and connects them. The manager node is the central node that controls
 the workflow of the entire software correlator. It assigns time slices
 to available correlator nodes and handles errors. After all time
@@ -82,14 +84,15 @@ sample in the input stream and sends the data to the correlator node.
 
 The correlator node gets data for the same time slice from every input
 node. Before the signal can be correlated, the integer delay corrected
-signal has to be processed further. First, the signal is delayed by a
+signal has to be processed further. \acomment{I like the details of the algoritm. 
+Could this be separated to its "distribution" on multiple node}{}First, the signal is delayed by a
 the fractional delay that remains after the integer delay done in the
 input node. After that a phase correction is done, which is a first
-order approximation of the delay function. These manipulations are not
+order approximation of the delay function. \acomment{Maybe move to "network/distribution" part}{These manipulations are not
 done on the input node because they require floating point samples,
 hence the data stream expands from 2 bits per sample to 32 bits or
 even 64 bits per sample, which would require much more network
-bandwidth. After the fractional delay and the phase rotation, the
+bandwidth}. After the fractional delay and the phase rotation, the
 signal is ready to be correlated. The auto and cross correlation are
 then computed by Fourier transforming the input signal and
 element-wise multiplying all combination of telescope-pairs. These
@@ -100,6 +103,7 @@ The output node will receives the data from the correlator nodes,
 sorts the data and stores it at a specified location.
 
 \subsection{Network connections}
+
 Since correlation is mainly a networking problem, testing and
 optimizing the data flows is of vital importance for the performance
 of the software correlator. We distinguish two types of data flows:
