@@ -103,7 +103,8 @@ The output node will receives the data from the correlator nodes,
 sorts the data and stores it at a specified location.
 
 \subsection{Network connections}
-
+\acomment{I disagree, correlation is a computation problem. It is when 
+we distribute it that is become a networking problem.}{}
 Since correlation is mainly a networking problem, testing and
 optimizing the data flows is of vital importance for the performance
 of the software correlator. We distinguish two types of data flows:
@@ -116,18 +117,20 @@ these messages. The network is mainly star shaped around the control
 node, but there are some connections during the initialization between
 input nodes and the correlator nodes and between correlator nodes and
 the output node. Since the messages control the correlator, the
-delivery of the messages has to be guaranteed. For the analysis of the
-network throughput these messages are of no importance.
+delivery of the messages has to be guaranteed. \acomment{If it has no importance maybe we could reduce the size of this part?}{For the analysis of the
+network throughput these messages are of no importance.}
 
 \paragraph{Signal of the telescopes}
 The signal from the telescopes requires far more bandwidth than the
 control messages. The constant throughput for these connections is
-very important as we are dealing with real time data. Some packet loss
+very important as we are dealing with real time data. \acomment{We should come with a formula linking buffer-size, packet-loss throughput and bandwidth}{Some packet loss
 is even acceptable if a data stream at a constant rate can then be
-maintained. The connections for these data streams are set up to be
+maintained}. The connections for these data streams are set up to be
 exchangeable such that it is possible to test different network
-protocols like TCP (using jumbo frames), or protocols used for
-streaming media. The network consists of three layers: from the
+protocols like TCP \acomment{sound like a technical buzzword/magicword for astronomers :)}{(using jumbo frames)}, 
+or protocols used for streaming media. 
+
+The network consists of three layers: from the
 telescopes to the data nodes, then to the correlator nodes and finally
 to the output node, as is shown in
 Figure~\ref{fig:netw_corr}.\marginpar{NGHK: mention StarPlane}
