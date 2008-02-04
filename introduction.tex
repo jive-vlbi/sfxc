@@ -75,15 +75,26 @@ and conclude the paper with future work in Section~\ref{sec:conclusion}.
 
 
 \section{VLBI}\label{sec:vlbi}
-In order to approximate a telescope with a larger dish, multiple
-telescopes can observe the same object, and the data can be combined
-using interferometry. The angular resolution of the VLBI array of
-telescopes depends on the maximal projected distance between two
-telescopes, while the sensitivity depends on the number of telescopes
-and the bandwidth. To acquire high sensitivity data rates upto 1Gbs
-per telescope are used.  The requirements on both the data streams and
-the computing power to achieve a good sensitivity are shown in
-Table~\ref{tab:speed}.
+Recent Astronomical research studies the deep-sky (sources farther and
+farther away from us) which requires higher and higher angular
+resolution to capture all the details of the observed sources.
+Increasing the size of a telescope dish increases the angular
+resolution of the image. It is difficult to build a moveable 
+telescope dishes with a size much larger than 100m. Interferometry 
+provides a possible solution to this problem as it permits to combine the measurements of several telescopes to simulate a dish of a size equivalent to the maximal
+distance between the farthest telescopes. Numerous projects make 
+use of this technique both at a local scale like the VLA and Lofar 
+but some also focus on a world scale. When used at a world scale it is  called   
+Very Large Baseline Interferometry (VLBI) and that permits to build 
+a virtual telescope with a dish of a size of the earth.
+As the angular resolution of a VLBI experiment depends on the maximal 
+projected distance between two telescopes VLBI permit to achieve 
+unsurpassable angular resolution. The drawback of VLBI is that it have 
+a relatively low sensitivity (why). Sensitivity is important as it 
+permit to detect fainter astronomical object. In VLBI it is possible 
+to increase the sensitivity by adding more radio-telescope looking 
+at the same object and by having an higher sample resolution and thus 
+a higher amount of data gathered per telescope. 
 
 Traditionally, the data is recorded at the telescopes on
 disk packs during a VLBI experiment. After the experiment the disks
@@ -92,7 +103,11 @@ in Europe (JIVE), for correlation. At JIVE, the data from the
 different telescopes is read from the disks and correlated by a
 dedicated hardware correlator~\cite{EVNCorrelator}. The maximal
 capacity of this hardware correlator is 16 telescopes at a data rate
-of 1Gbs each.  There can be several weeks between the experiment and
+of 1Gbs each. The requirements on both the data streams and
+the computing power to achieve a good sensitivity are shown inis
+Table~\ref{tab:speed}.
+
+There can be several weeks between the experiment and
 the time when the correlated data becomes available.
 
 % \marginpar{NGHK: Check 16Mb/s in table}
