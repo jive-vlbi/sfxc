@@ -188,7 +188,8 @@ read_new_block(Type *mark4_block) {
     int result = data_reader_->get_bytes(to_read, buffer);
     if (result <= 0) {
       DEBUG_MSG("Didn't read a complete frame read: "
-                << SIZE_MK4_FRAME-to_read/sizeof(Type));
+                << SIZE_MK4_FRAME-to_read/sizeof(Type)
+		<< " sizof(Type) is " << sizeof(Type));
       DEBUG_MSG("Didn't read a complete frame " << result);
       return false;
     }

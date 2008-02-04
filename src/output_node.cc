@@ -145,6 +145,14 @@ void Output_node::start() {
            RANK_MANAGER_NODE, MPI_TAG_OUTPUT_NODE_FINISHED, MPI_COMM_WORLD);
 }
 
+void
+Output_node::
+write_global_header(char* buffer, int size) {
+  output_value_type &element=output_buffer->produce();
+  memcpy(element.buffer(), buffer, size);
+  output_buffer->produced(size);
+}
+
 void 
 Output_node::
 set_weight_of_input_stream(int stream, int64_t weight, size_t size) {

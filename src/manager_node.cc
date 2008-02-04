@@ -16,6 +16,7 @@
 #include "utils.h"
 #include "mpi_transfer.h"
 #include "log_writer_cout.h"
+#include <iomanip>
 
 Manager_node::
 Manager_node(int rank, int numtasks,
@@ -41,6 +42,32 @@ duration_time_slice(1000) {
   set_data_writer(RANK_OUTPUT_NODE, 0,
                   control_parameters.get_output_file());
 
+  // Send the global header
+  Output_header_global header_msg;
+  header_msg.header_size = sizeof(Output_header_global);
+
+  strcpy(header_msg.experiment,control_parameters.experiment().c_str());      // Name of the experiment
+  header_msg.start_year = control_parameters.get_start_time().year;       // Start year of the experiment
+  header_msg.start_day = control_parameters.get_start_time().day;        // Start day of the experiment (day of year)
+  header_msg.start_time = control_parameters.get_start_time().to_miliseconds()/1000;
+                            // Start time of the correlation in seconds since
+                            // midnight
+  header_msg.number_channels = control_parameters.number_channels();  // Number of frequency channels
+  // 3 bytes left:
+  int int_time_tmp=0;
+  int int_time_count=0;
+  int_time_tmp = control_parameters.integration_time();// Integration time: 2^integration_time seconds
+  int_time_tmp /= 1000;
+  while(int_time_tmp > 2){
+    int_time_tmp = int_time_tmp/2;
+    int_time_count++;
+  }
+  header_msg.integration_time = (int8_t)(int_time_count);
+  header_msg.empty[0] = 0;
+  header_msg.empty[1] = 0;
+  header_msg.empty[2] = 0;
+
+  output_node_set_global_header((char *)&header_msg, sizeof(Output_header_global));
 
   // Input nodes:
   int n_stations = get_control_parameters().number_stations();
@@ -216,7 +243,6 @@ void Manager_node::start() {
           } else {
             current_scan++;
             status = START_NEW_SCAN;
-            DEBUG_MSG("NGHK: TODO: No next scan yet");
             status = STOP_CORRELATING;
           }
         } else if (current_scan == control_parameters.number_scans()) {
@@ -254,7 +280,8 @@ void Manager_node::start() {
 void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   int cross_channel = -1;
   if (control_parameters.cross_polarize()) {
-    cross_channel = control_parameters.cross_polarisation(current_channel);
+    cross_channel = control_parameters.cross_polarisation(current_channel, 
+                                       control_parameters.get_mode(start_time));
     assert((cross_channel == -1) || (cross_channel > (int)current_channel));
   }
 
@@ -277,11 +304,18 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
 
   std::string channel_name =
     control_parameters.frequency_channel(current_channel);
-  Correlation_parameters correlation_parameters =
+  std::vector<std::string> station_name;
+  Correlation_parameters correlation_parameters; 
+  int nr_stations = control_parameters.number_stations();
+  for (int i=0; i<nr_stations; i++){
+    station_name.push_back(get_control_parameters().station(i));
+  }
+  correlation_parameters = 
     control_parameters.
     get_correlation_parameters(control_parameters.scan(current_scan),
-                               channel_name,
-                               get_input_node_map());
+        channel_name,
+        station_name,
+        get_input_node_map());
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
   correlation_parameters.slice_nr = integration_slice_nr;
@@ -325,54 +359,24 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     }
   }
 
-  // set the output stream
-  //               autos       crosses
-  int nAutos = nStations;
-  int nCrosses = nStations*(nStations-1)/2;
-  int nBaselines;
-  if (cross_channel != -1) { // do cross polarisation
-    if (control_parameters.reference_station() == "") {
-      nBaselines = 2*nAutos + 4*nCrosses;
-    } else {
-      nBaselines = 2*nAutos + 4*(nAutos-1);
-    }
-  } else {
-    if (control_parameters.reference_station() == "") {
-      nBaselines = nAutos + nCrosses;
-    } else {
-      nBaselines = 2*nAutos - 1;
-    }
-  }
-  int size_of_one_baseline = sizeof(FFTW_COMPLEX)*
-                             (correlation_parameters.number_channels*PADDING/2+1);
-
-  int n_timeslices = (stoptime_timeslice-start_time) /
-    control_parameters.integration_time();
-  for (int i=0; i<n_timeslices; i++) {
-    int slice_nr_ = 
-      (integration_slice_nr+i) *
-      control_parameters.number_frequency_channels() +
-      current_channel;
-    output_node_set_timeslice(slice_nr_,
-                              corr_node_nr,
-                              size_of_one_baseline*nBaselines);
-  }
-
   set_correlating_state(corr_node_nr, CORRELATING);
 
   current_channel ++;
   if (control_parameters.cross_polarize()) {
     // Go to the next channel.
     size_t cross_channel =
-      control_parameters.cross_polarisation(current_channel);
+      control_parameters.cross_polarisation(current_channel, 
+      	      	              control_parameters.get_mode(start_time));
     while ((current_channel <
             control_parameters.number_frequency_channels()) &&
            (cross_channel >= 0) && (cross_channel < current_channel)) {
       current_channel ++;
       cross_channel =
-        control_parameters.cross_polarisation(current_channel);
+        control_parameters.cross_polarisation(current_channel, 
+      	      	              control_parameters.get_mode(start_time));
     }
   }
+  integration_slice_nr++;
 }
 
 void
@@ -401,10 +405,10 @@ Manager_node::initialise() {
   }
 
   Control_parameters::Date start = control_parameters.get_start_time();
-  start_year = start.year;
-  start_day  = start.day;
-  start_time = start.to_miliseconds();
-  stop_time  =
+  start_year = control_parameters.get_start_time().year, 
+  start_day  = control_parameters.get_start_time().day;
+  start_time = control_parameters.get_start_time().to_miliseconds();
+  stop_time  = 
     control_parameters.get_stop_time().to_miliseconds(start_day);
 
   // Get a list of all scan names

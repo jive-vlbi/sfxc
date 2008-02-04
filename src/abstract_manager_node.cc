@@ -369,3 +369,12 @@ output_node_set_timeslice(int slice_nr, int stream_nr, int bytes) {
            MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
            MPI_COMM_WORLD);
 }
+
+void
+Abstract_manager_node::
+output_node_set_global_header(char* header_msg, int size) {
+  MPI_Send(header_msg, size, MPI_CHAR,
+           RANK_OUTPUT_NODE,
+           MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER,
+           MPI_COMM_WORLD);
+}

@@ -28,6 +28,18 @@ Controller::Process_event_status
 Output_node_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
+  case MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER:
+  {
+    int size;
+    MPI_Get_elements(&status, MPI_CHAR, &size);
+    assert(size > 0);
+    char buffer[size];
+    MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE,
+             status.MPI_TAG, MPI_COMM_WORLD, &status2);
+    node.write_global_header(buffer, size);
+    
+    return PROCESS_EVENT_STATUS_SUCCEEDED;
+  }
   case MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY:
     {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
