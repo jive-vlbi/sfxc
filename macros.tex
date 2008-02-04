@@ -10,9 +10,13 @@
 \newcommand{\tada}[1]{\ifTADA{\marginpar{$`[:-]`[:-]$}{[[\small #1]]}} \else{} \fi}
 \newcommand{\done}[1]{\marginpar{$\smiley$}{[[\small #1]]}}
 
+\newcounter{acommentcounter}
+
 \newif{\ifTOREMOVE}
 \newcommand{\toremove}[1]{\ifTOREMOVE{\marginpar{\tiny to remove ?}{\textbf{#1}}} \else{} \fi}
 
 \newif{\ifENABLECOMMENT}
-\newcommand{\acomment}[2]{\ifENABLECOMMENT{\marginpar{\small Comment: #1 }{\textbf{#2}}} \else{} \fi}
+\newcommand{\acomment}[2]{\ifENABLECOMMENT{
+	\addtocounter{acommentcounter}{1}
+	\marginpar{\small [*\arabic{acommentcounter}]#1 }{\textbf{[*\arabic{acommentcounter}]#2}}} \else{} \fi}
 

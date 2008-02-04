@@ -79,36 +79,36 @@ Recent Astronomical research studies the deep-sky (sources farther and
 farther away from us) which requires higher and higher angular
 resolution to capture all the details of the observed sources.
 Increasing the size of a telescope dish increases the angular
-resolution of the image. It is difficult to build a moveable 
-telescope dishes with a size much larger than 100m. Interferometry 
-provides a possible solution to this problem as it permits to combine the measurements of several telescopes to simulate a dish of a size equivalent to the maximal
-distance between the farthest telescopes. Numerous projects make 
-use of this technique both at a local scale like the VLA and Lofar 
-but some also focus on a world scale. When used at a world scale it is  called   
-Very Large Baseline Interferometry (VLBI) and that permits to build 
-a virtual telescope with a dish of a size of the earth.
-As the angular resolution of a VLBI experiment depends on the maximal 
-projected distance between two telescopes VLBI permit to achieve 
-unsurpassable angular resolution. The drawback of VLBI is that it have 
-a relatively low sensitivity (why). Sensitivity is important as it 
-permit to detect fainter astronomical object. In VLBI it is possible 
-to increase the sensitivity by adding more radio-telescope looking 
-at the same object and by having an higher sample resolution and thus 
-a higher amount of data gathered per telescope. 
+resolution of the image. However, it is difficult to build a moveable 
+telescope dish with a size much larger than 100m. Interferometry 
+provides a possible solution to this problem as it combines the measurements of several telescopes to simulate a dish of a size equivalent to the maximal
+distance between the farthest telescopes on the plane orthogonal to
+the viewing direction. Numerous projects use this technique focusing on different size of baseline:  the Very Large Array, Lofar, the European VLBI Network (EVN) or the Very Large Baseline Array (VLBA). When the radio-telescope are geogreaphically very far appart, we also refer to interferometry as Very Large Baseline Interferometry (VLBI). 
+VLBI permits to build a virtual radio-telescope with a dish of a size of 
+the Earth. As the angular resolution of a VLBI experiment depends 
+on the maximal projected distance between two radio-telescopes VLBI achieves 
+unsurpassed angular resolution with the drawback of a relatively 
+low sensitivity (why). Sensitivity is important as it 
+allow to detect fainter astronomical object, increasing the 
+sensitivity is possible by adding more radio-telescopes looking 
+at the same object and also by increasing the sample's resolution or 
+the sampling rate, and thus having more data gathered per telescope. 
 
-Traditionally, the data is recorded at the telescopes on
+In order to get the final picture the signal gathered from
+the radio-telescopes have to be correlated at a central place. 
+The Joint Institute for VLBI in Europe (JIVE), for correlation. 
+JIVE is operating a dedicated hardware correlator~\cite{EVNCorrelator}.
+
+The maximal capacity of this hardware correlator is 16 telescopes at 
+a data rate of 1Gbs each. The requirements on both the data streams and the computing power 
+to achieve a good sensitivity are shown inis
+Table~\ref{tab:speed}. 
+
+\acomment{What about copying this into the introduction of eVLBI} 
+{Traditionally, the data is recorded at the telescopes on
 disk packs during a VLBI experiment. After the experiment the disks
-are shipped to a central institute, e.g. the Joint Institute for VLBI
-in Europe (JIVE), for correlation. At JIVE, the data from the
-different telescopes is read from the disks and correlated by a
-dedicated hardware correlator~\cite{EVNCorrelator}. The maximal
-capacity of this hardware correlator is 16 telescopes at a data rate
-of 1Gbs each. The requirements on both the data streams and
-the computing power to achieve a good sensitivity are shown inis
-Table~\ref{tab:speed}.
-
-There can be several weeks between the experiment and
-the time when the correlated data becomes available.
+are shipped to a central institute. There can be several weeks between 
+the experiment and the time when the correlated data becomes available. }
 
 % \marginpar{NGHK: Check 16Mb/s in table}
 \begin{table}
@@ -128,7 +128,30 @@ the time when the correlated data becomes available.
     experiment based on a XF architecture.}
   \label{tab:speed}
 \end{table}
+
+\paragraph{Correlation}
+\acomment{Can we explain more simply correlation.}{
+Correlation is the process} by which data from multiple telescopes is
+collected and combined to measure the spatial Fourier components of
+the image of the sky. 
+\acomment{Sizing and optimization should be introduce later. }{The high data rates and the optimizations complicate the process.}
+
+Assume that we are correlating the signal of two telescopes. First,
+both signals are delayed to account for the different time at which
+the signal arrives at the telescopes, see
+Figure~\ref{fig:correlation_diagram}. \acomment{Justifiy why we give these details}{ This process requires very accurate timing information in the data and a very detailed model of the geometry of the experiment}. After \acomment{added.}{the application of delay} the signals are properly aligned, the signals are ready to be correlated. Correlation is \acomment{mathematically defined as...}{ a well defined mathematical function~\cite{def_correlation} on two signals }in
+which \acomment{is this the mathematical definition or JIVE hardware correlator implenentation}{the first signal is delayed with discrete steps and the integral
+is computed of of the delayed signal multiplied with the second
+signal}. To increase the signal to noise ratio, the correlated signal
+is averaged over a certain period of time. Typical averaging times lie
+in the range of $0.25-4$ seconds.
+
+For more than two stations, each station is correlated with itself
+(auto-correlation) and every other station (cross-correlation). Note
+that the complexity is quadratic in the number of telescopes. 
+
 \paragraph{{\it e}-VLBI}
+\acomment{What do you think about putting e-VLBI somewhere else ?}{}
 Currently, JIVE is in the transition phase from traditional VLBI to
 {\it e}-VLBI~\cite{szomoru-2004}. In an electronic VLBI ({\it e}-VLBI)
 experiment, data from the telescopes is transferred directly over the
@@ -160,29 +183,7 @@ available to the general astronomy community.
   \caption{Block diagram of the correlation.}
   \label{fig:correlation_diagram}
 \end{figure}
-\paragraph{Correlation}
-Correlation is the process by which data from multiple telescopes is
-collected and combined to measure the spatial Fourier components of
-the image of the sky. The high data rates and the optimizations
-complicate the process.
 
-Assume that we are correlating the signal of two telescopes. First,
-both signals are delayed to account for the different time at which
-the signal arrives at the telescopes, see
-Figure~\ref{fig:correlation_diagram}.  This process requires very
-accurate timing information in the data and a very detailed model of
-the geometry of the experiment. After the signals are properly
-aligned, the signals are ready to be correlated. Correlation is a well
-defined mathematical function~\cite{def_correlation} on two signals in
-which the first signal is delayed with discrete steps and the integral
-is computed of of the delayed signal multiplied with the second
-signal. To increase the signal to noise ratio, the correlated signal
-is averaged over a certain period of time. Typical averaging times lie
-in the range of $0.25-4$ seconds.
-
-For more than two stations, each station is correlated with itself
-(auto-correlation) and every other station (cross-correlation). Note
-that the complexity is quadratic in the number of telescopes.
 
 
 %%% Local Variables:
