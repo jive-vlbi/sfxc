@@ -1,69 +1,54 @@
 \section{Introduction}
-\begin{comment}
-  Very Long Baseline Interferometry (VLBI) \cite{VLBIbook} is a type of
-  interferometry used in radio astronomy, in which data received at
-  several telescopes is combined to produce an image with very high
-  resolution. VLBI can be used for both astronomy and geodesy.  For
-  astronomy, VLBI provides high-resolution images of radio sources in
-  the sky, whereas in geodesy VLBI measures the location of the
-  telescopes and the Earth Orientation Parameters (EOP).
-\end{comment}
-
+Very Long Baseline Interferometry (VLBI) \cite{VLBIbook} is a type of
+interferometry used in radio astronomy, in which data received at
+several telescopes is combined to produce an image with very high
+resolution. 
+%\acomment{Remove.}{VLBI can be used for both astronomy and geodesy.  For
+%astronomy, VLBI provides high-resolution images of radio sources in
+%the sky, whereas in geodesy VLBI measures the location of the
+%telescopes and the Earth Orientation Parameters (EOP).}
 Recent Astronomical research studies the deep-sky (sources farther and
 farther away from us) which requires higher and higher angular
 resolution to capture all the details of the observed sources.
 Increasing the size of a telescope dish increases the angular
-resolution of the image.  However, due to mechanical constraints, it
+resolution of the image. Due ue to mechanical constraints, it
 is difficult to build moveable telescope dishes with a size much
-larger than 100m. Interferometry provides a possible solution to this
-problem as it permits to combine the measurements of several
-telescopes to simulate a dish of a size equivalent to the maximal
-distance between the farthest telescopes on the plane orthogonal to
-the viewing direction.  This approach is called Very Large Baseline
-Interferometry (VLBI) and permits us to build a virtual telescope with
-a dish of a size of the earth (or larger). Once the data has been
-recorded, the data of each pair of stations has to be correlated.  In
+larger than 100m. With VLBI, it is possible simulate a dish of a size 
+equivalent to the maximal distance between the farthest telescopes \acomment{This details can go 
+to 2}{on the plane orthogonal to
+the viewing direction} so making virtual telescope with
+a dish of a size of the Earth (or larger). The data is recorded
+and sent to a central facility for processing, the central part of this
+processing imply is pairwise signal correlation. In
 the \scarie\ project we are developing and analyzing the capabilities
-of making a software correlator that uses the processing power of a
-grid.
+of making a software correlator using grids technologies.
 
 \scarie\ is a typical example of a recent trend of the e-Science 
-community in which computation resources and scientific instruments 
-are connected worldwide through high-speed networks. We think that to 
+community in which the worldwide computation centers and the 
+scientific instruments are connected through high-speed networks. We think that to 
 generalize the utilization of such world-size inter-connected facility, 
 the grids and their middlewares have to offer services that matches the three
-following user-application requirements:
+following important aspects:
 \begin{itemize}
-\item \emph{better performances}: an application is said performance
-  limited if the resources needed to run it are not large enough to
-  satisfy its needs. Performance limitations can have multiple
-  origins: insufficient computing resources, memory, high network
-  latency or low network throughput.
-  
-\item \emph{isolated environment}: there are classes of applications
-  that can only be executed if put in an isolated environment in the 
-  sense that the other users'application cannot interfere. Examples are 
-  real-time distributed application, or benchmarks that require reproducible
-  result. 
-
-\item \emph{scheduling}: some application requires to be synchronized
-  with "external events" (like having radio-telescope looking at a
-  specific location in the sky at a specific date). In order to
-  execute such application it is mandatory to schedule its execution 
-  and reserve the needed resource in advance.
+\item \emph{performances}: solving bigger problem imply to use larger and/or
+  more efficient hardware. 
+\item \emph{isolated environment}: some users requires guarantee of isolated 
+  execution environment in which the users'application cannot interfere. This is 
+the case for real-time application or benchmarks.
+\item \emph{scheduling}: may be needed when application requires to be synchronized
+  with "external events": like a radio-telescope observing at specific date. 
 \end{itemize}
-In order to fully reach the \scarie\ objectives these three
-requirements have to be addressed for networking resource, nodes and
-data space. These are still hot-topics in the grid community,
-especially because networking has a long history as a
-\emph{best-effort} shared resourced which is incompatible with an
-isolated network environment. For this reason we are conducting our
-experiments using the experimental \das3\ grids as it have an
-user-controllable dynamic photonic network called StarPlane to build,
-on demand and application specific, isolated virtual-network on top of
-the complete grid. A such service would permit to run \scarie\ with a
-good confidence level that a real-time
-experiment will not be disturbed by other users. \\
+In \scarie\ we are facing these three challenges, as we want to build a 
+high-performance software correlator compatible with a real-time VLBI 
+observation. These three aspects are hot-topics in the grid community,
+especially the networking side; probably because worldwide networking (Internet) 
+has a long history in being a \emph{best-effort} shared resourced. As best-effort 
+is not compatible with isolated-environment we are conducting our 
+experiments using the experimental \das3\ grids and its an
+user-controllable dynamic photonic network called StarPlane that could permit 
+us to build, on demand and application specific, isolated virtual-network 
+on top of the complete grid. \\
+
 
 The rest of the paper is organized as follows. Section~\ref{sec:vlbi}
 contains a general introduction to VLBI and its recent development 
