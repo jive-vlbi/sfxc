@@ -1,18 +1,12 @@
 \section{VLBI}\label{sec:vlbi}
-\acomment{NGHK: Move to the introduction}{Recent Astronomical research
-  studies the deep-sky (sources farther and farther away from us)
-  which requires higher and higher angular resolution to capture all
-  the details of the observed sources.  Increasing the size of a
-  telescope dish increases the angular resolution of the image.
-  However, it is difficult to build a moveable telescope dish with a
-  size much larger than 100m.} Interferometry provides a possible
-solution to \acomment{change}{this problem} as it combines the measurements of
-several telescopes to simulate a dish of a size equivalent to the
-maximal distance between the farthest telescopes on the plane
-orthogonal to the viewing direction. Numerous arrays (groups of
-telescopes) use this technique, e.g., the VLA (Very Large Array),
+Instead of building larger and larger telescopes to obtain the
+required resolution, interferometry can be used. It combines the
+measurements of several telescopes to simulate a dish of a size
+equivalent to the maximal distance between the farthest telescopes on
+the plane orthogonal to the viewing direction. Numerous arrays (groups
+of telescopes) use this technique, e.g., the VLA (Very Large Array),
 Lofar (Low-frequency array), the EVN (European VLBI Network) or the
-VLBA (Very Large Baseline Array). Interferometry with telescopes that
+VLBA (Very Large Baseline Array).  Interferometry with telescopes that
 are geographically very far apart is refered to as Very Large Baseline
 Interferometry (VLBI). VLBI permits to build a virtual radio-telescope
 with a dish of a size of the Earth. As the angular resolution of a
@@ -52,31 +46,12 @@ the computing power are shown in Table~\ref{tab:speed}.
   \label{tab:speed}
 \end{table}
 
-\paragraph{Correlation}\marginpar{NGHK: Split how/why correlation}
-Correlation is the process by which data from multiple telescopes is
-collected and combined to measure the spatial Fourier components of
-the image of the sky.
-
-Assume that we are correlating the signal of two telescopes. First,
-both signals are delayed to account for the different time at which
-the signal arrives at the telescopes, see
-Figure~\ref{fig:correlation_diagram}. This process requires very
-accurate timing information in the data and a very detailed model of
-the geometry of the experiment. After the application of delay the
-signals are properly aligned and the can be correlated.
-Correlation~\cite{def_correlation} is mathematically defined as a
-function on two signals in which \acomment{this is the mathematical
-  definition}{the first signal is delayed with discrete steps and the
-  integral is computed of the delayed signal multiplied with the
-  second signal}. To increase the signal to noise ratio, the
-correlated signal is averaged over a certain period of time. Typical
-averaging times lie in the range of $0.25-4$ seconds.
-
-For more than two stations, each station is correlated with itself
-(auto-correlation) and every other station (cross-correlation). Note
-that the complexity of the correlation is quadratic in the number of
-telescopes, as it is linear in the number of baselines (telescope
-pairs).
+\begin{figure}
+  \centering 
+  \includegraphics[width=0.5\textwidth]{img/VLBI.eps}
+  \caption{Aligning the signals before correlation.}
+  \label{fig:correlation_diagram}
+\end{figure}
 
 \paragraph{{\it e}-VLBI}
 Traditionally, in VLBI, the data is recorded at the telescopes on disk
@@ -107,6 +82,55 @@ is possible. The EC funds the EXPReS project\footnote{EXPReS is made
 aims at building a production-level {\it e}-VLBI instrument of upto 16
 intercontinental telescopes connected in real-time to JIVE and
 available to the general astronomy community.
+
+\paragraph{Correlation}
+Correlation is the process by which data from multiple telescopes is
+collected and combined to measure the spatial Fourier components of
+the image of the sky. 
+
+We have to align the signals from the different telescopes before we
+can correlate them. Therefore, project all the telescopes on the plane
+through the center of the earth and orthogonal to direction to the
+source, see Figure~\ref{fig:correlation_diagram}. The signals that are
+received by the projected telescopes will be correlated. These signals
+are the signals received by the telescopes delayed with the distance
+between the telescope and its projection times the speed of light (the
+signal travels with the speed of light). Note that the delay changes
+during the observation because the earth rotates. We conveniently
+split the delay in an integer number of samples and a remaining
+fraction. While the integer delay is easily done by an offset in the
+sample buffer, the fractional bit shift is usually implemented as a
+phase rotation in the frequency domain. In a final step, called the
+phase rotation, we change the sample rate to match the first order of
+the delay function.
+
+After the delay has been applied, the signals are ready for
+correlation. Correlation~\cite{def_correlation} is mathematically
+defined as a function on two signals in which the first signal is
+delayed with discrete steps and the integral is computed of the
+delayed signal multiplied with the second signal. The correlation is
+done for each baseline (pair of telescopes). The correlation is called
+an auto-correlation if the signal of a station is correlated with
+itself and a cross-correlation if the signals are from different
+stations. Note that the complexity of the correlation is quadratic in
+the number of telescopes, as it is linear in the number of baselines.
+
+To increase the signal to noise ratio, the correlated signal is
+averaged over a certain period of time. Typical averaging times lie in
+the range of $0.25-4$ seconds. Finally, the averaged signals are
+Fourier transformed. Correlation in this order is refered to as XF,
+because the correlation is done before the Fourier transform.  This is
+how the correlation is implemented in most hardware correlators, as it
+allows for large parallelisation.
+
+One of the properties of correlation is that the Fourier transform of
+two correlated signals is equal to multiplying the Fourier transformed
+signals~\cite{corr_theorem}. This relation is used in most software
+correlators, where correlation is more expensive than multiplication.
+After the delay, the signal from each telescope is Fourier transformed
+and the signals for each baseline are then multiplied elementwise.
+This implementation is also refered to as FX: the Fourier transform comes
+before the correlation.
 
 %%% Local Variables:
 %%% mode: latex

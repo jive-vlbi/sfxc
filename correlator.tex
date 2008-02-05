@@ -85,19 +85,13 @@ certain time slice to a correlator node, it seeks the right starting
 sample in the input stream and sends the data to the correlator node.
 
 The correlator node gets data for the same time slice from every input
-node. Before the signal can be correlated, the integer delay corrected
-signal has to be processed further. \acomment{I like the details of
-  the algoritm.  Could this be separated to its "distribution" on
-  multiple node}{}First, the signal is delayed by a the fractional
-delay that remains after the integer delay done in the input node.
-After that a phase correction is done, which is a first order
-approximation of the delay function. \acomment{Maybe move to
-  "network/distribution" part}{These manipulations are not done on the
-  input node because they require floating point samples, hence the
-  data stream expands from 2 bits per sample to 32 bits or even 64
-  bits per sample, which would require much more network bandwidth}.
-After the fractional delay and the phase rotation, the signal is ready
-to be correlated. The auto and cross correlation are then computed by
+node. First it, compensates for the fractional delay and performs the
+phase rotation. These manipulations are not done on the input node
+because they require floating point samples, hence the data stream
+expands from 2 bits per sample to 32 bits or even 64 bits per sample,
+which would require much more network bandwidth. After the fractional
+delay correction and the phase rotation, the signal is ready to be
+correlated.  The auto and cross correlation are then computed by
 Fourier transforming the input signal and element-wise multiplying all
 combination of telescope-pairs. These values are accumulated over a
 certain period of time and the accumulated values are sent to the
@@ -105,39 +99,6 @@ output node.
 
 The output node will receives the data from the correlator nodes,
 sorts the data and stores it at a specified location.
-
-\subsection{Network connections}\marginpar{Remove this section?}
-Since distributed correlation is mainly a networking problem, testing
-and optimizing the data flows is of vital importance for the
-performance of the software correlator. We distinguish two types of
-data flows: containing control messages and the signals from the
-telescopes.
-
-\paragraph{Control messages}
-The control messages are sent between different nodes to regulate the
-correlation. They form a low bandwidth stream and MPI is used to send
-these messages. Since the messages control the correlator, the
-delivery of the messages has to be guaranteed. For the analysis of the
-network throughput these messages are of no importance.
-
-\paragraph{Signal of the telescopes}
-The signal from the telescopes requires far more bandwidth than the
-control messages. The constant throughput for these connections is
-very important as we are dealing with real time data. \acomment{NGHK:
-  Maybe later We should come with a formula linking buffer-size,
-  packet-loss throughput and bandwidth}{Some packet loss is even
-  acceptable if a data stream at a constant rate can then be
-  maintained}. The connections for these data streams are set up to be
-exchangeable such that it is possible to test different network
-protocols like TCP (using jumbo frames), or protocols used for
-streaming media.
-
-The network consists of three layers: from the
-telescopes to the data nodes, then to the correlator nodes and finally
-to the output node, as is shown in
-Figure~\ref{fig:netw_corr}.
-
-
 
 %%% Local Variables:
 %%% mode: latex
