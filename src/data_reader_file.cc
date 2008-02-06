@@ -49,6 +49,10 @@ Data_reader_file::~Data_reader_file() {
 
 size_t
 Data_reader_file::do_get_bytes(size_t nBytes, char*out) {
+  if (!file.good()) {
+    DEBUG_MSG_RANK(3, "!file.good()");
+    return -1;
+  }
   if (out == NULL) {
     uint64_t pos = file.tellg();
     file.seekg (nBytes, std::ios::cur);
