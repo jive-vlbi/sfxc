@@ -230,9 +230,6 @@ void Manager_node::start() {
         break;
       }
       case GOTO_NEXT_TIMESLICE: {
-        int n_timeslices = (stoptime_timeslice-start_time) /
-          control_parameters.integration_time();
-        integration_slice_nr += n_timeslices;
         start_time += duration_time_slice;
 
         if (start_time+duration_time_slice > stop_time) {
@@ -254,9 +251,7 @@ void Manager_node::start() {
       }
       case STOP_CORRELATING: {
         // The status is set to END_NODE as soon as the output_node is ready
-        int nr_slices = 
-          integration_slice_nr*control_parameters.number_frequency_channels();
-        MPI_Send(&nr_slices, 1, MPI_INT32,
+        MPI_Send(&output_slice_nr, 1, MPI_INT32,
                  RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_CORRELATION_READY,
                  MPI_COMM_WORLD);
 
@@ -318,7 +313,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
         get_input_node_map());
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
-  correlation_parameters.slice_nr = integration_slice_nr;
+  correlation_parameters.slice_nr = output_slice_nr;
 
   assert ((cross_channel != -1) == correlation_parameters.cross_polarize);
 
@@ -376,7 +371,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
       	      	              control_parameters.get_mode(start_time));
     }
   }
-  integration_slice_nr++;
+  output_slice_nr++;
 }
 
 void
@@ -416,7 +411,7 @@ Manager_node::initialise() {
   assert(current_scan >= 0);
   assert((size_t)current_scan < control_parameters.number_scans());
 
-  integration_slice_nr = 0;
+  output_slice_nr = 0;
 
   get_log_writer()(1) << "Starting correlation" << std::endl;
 }
