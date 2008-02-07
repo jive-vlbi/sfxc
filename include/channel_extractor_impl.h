@@ -13,46 +13,18 @@
 #include "mark4_header.h"
 
 template <class Type>
-Channel_extractor<Type>::Channel_extractor() {}
+Channel_extractor<Type>::Channel_extractor() : N(sizeof(Type)) {
+  // bit shift right with padding
+  for (int shift=0; shift<8; shift++) {
+    for (int value=0; value<256; value++) {
+      bit_shift_right_table[shift][value] =
+        (uint8_t)((value >> (8-shift)) & ((1<<shift)-1));
+    }
+  }
+}
 
 template <class Type>
 Channel_extractor<Type>::~Channel_extractor() {}
-
-template <class Type>
-void
-Channel_extractor<Type>::
-process_samples(Type *input_buffer,
-                int n_input_samples,
-                int start_track_nr,
-                int end_track_nr,
-                std::vector<char *> &output_buffer,
-                int &output_buffer_bit,
-                int &output_buffer_byte) {
-  // for each input sample
-  for (int input_sample = 0; input_sample < n_input_samples; input_sample++) {
-    // for each track in the output subband
-    for (int track_nr = start_track_nr; track_nr < end_track_nr; track_nr++) {
-      // for each subband
-      for (int subband=(int)output_buffer.size()-1; subband >= 0 ; subband--) {
-      //for (size_t subband=0; subband < output_buffer.size() ; subband++) {
-        // bit shift
-        output_buffer[subband][output_buffer_byte] =
-          (output_buffer[subband][output_buffer_byte]<<1);
-        // add new sample
-        output_buffer[subband][output_buffer_byte] +=
-          (((*input_buffer) >> tracks_in_subbands[subband][track_nr]) & 1);
-      }
-
-      // go to the next bit
-      output_buffer_bit ++;
-      if (output_buffer_bit==8) { // Compute modulo 8
-        output_buffer_bit = 0;
-        output_buffer_byte ++;
-      }
-    }
-    input_buffer++;
-  }
-}
 
 template <class Type>
 void
@@ -90,88 +62,102 @@ Channel_extractor<Type>::do_task() {
   assert(n_output_bytes > 0);
 
   std::vector<Output_buffer_element>  output_elements;
-  std::vector<char *>                 output_positions;
   { // Acquire output buffers
     output_elements.resize(n_subbands);
-    output_positions.resize(n_subbands);
     for (size_t i=0; i<n_subbands; i++) {
       assert(!output_memory_pool_.empty());
       output_elements[i] = output_memory_pool_.allocate();
-      // allocate the right amount of memory for each output block
-      if (output_elements[i]->data.size() != (size_t)n_output_bytes) {
-        output_elements[i]->data.resize(n_output_bytes);
-      }
-      assert(output_elements[i]->data.size() == (size_t)n_output_bytes);
-      // set output_positions to the beginning of the memory block
-      output_positions[i] = &(output_elements[i]->data[0]);
     }
   }
 
-  // The current bit we want to fill
-  int bit_position = 0;      // The bit number in the output sample
-  int byte_position = 0;      // The bit number in the output sample
+  // Do the actual channel extraction
+  for (size_t subband=0; subband < n_subbands; subband++) {
 
-  // Process the first sample
-  process_samples(&input_element.data1.data()[input_element.sample_offset],
-                  /* number of input samples */ 1,
-                  input_element.subsample_offset, n_tracks_per_subband,
-                  output_positions,
-                  bit_position, byte_position);
+    // allocate the right amount of memory for each output block
+    if (output_elements[subband]->data.size() != (size_t)n_output_bytes) {
+      output_elements[subband]->data.resize(n_output_bytes);
+    }
+    assert(output_elements[subband]->data.size() == (size_t)n_output_bytes);
+    // set output_positions to the beginning of the memory block
+    char *output_position = &(output_elements[subband]->data[0]);
 
-  if (input_element.sample_offset+input_element.number_data_samples <=
-      (int)input_element.data1.data().size()) {
-    // everything fits in one data block
-    // We don't use data2, check that it is not filled
-    assert(input_element.data2.released());
+    memset((void *)output_position, 0, n_input_samples*fan_out/8);
 
-    // process the second sample to the second last sample
-    process_samples(&input_element.data1.data()[input_element.sample_offset+1],
-                    /* number of input samples */ input_element.number_data_samples-1,
-                    0, n_tracks_per_subband,
-                    output_positions,
-                    bit_position, byte_position);
-    //     DEBUG_MSG_RANK(3, "bit_position: " << bit_position);
-    //     DEBUG_MSG_RANK(3, "byte_position: " << byte_position);
 
-  } else {
-    assert(!input_element.data2.released());
+    char last_sample = 0;
 
-    // process the second sample to the second last sample in the first data block
-    // input_element.sample_offset+1 because we already processed the first sample
-    int samples_in_data1 =
-      input_element.data1.data().size() - (input_element.sample_offset+1);
+    { // Channel extract
+      if (input_element.sample_offset+input_element.number_data_samples+1 <=
+          (int)input_element.data1.data().size()) {
+        // everything fits in one data block
+        // We don't use data2, check that it is not filled
+        assert(input_element.data2.released());
 
-    // check that not all data fits in data1
-    //     DEBUG_MSG_RANK(3, samples_in_data1<<" < "<<input_element.number_data_samples-1);
-    assert(samples_in_data1 < input_element.number_data_samples-1);
+        int current_bit=0;
+        channel_extract(input_element.number_data_samples,
+                        current_bit,
+                        &input_element.data1.data()[input_element.sample_offset],
+                        output_position,
+                        &lookup_table[subband][0][0]);
+        assert(current_bit == 0);
+        current_bit=0;
+        char *last_sample_ptr = &last_sample;
+        channel_extract(1,
+                        current_bit,
+                        &input_element.data1.data()[input_element.sample_offset+
+                                                    input_element.number_data_samples],
+                        last_sample_ptr,
+                        &lookup_table[subband][0][0]);
+      } else {
+        assert(!input_element.data2.released());
+        int samples_in_data1 = (int)input_element.data1.data().size() -
+                               input_element.sample_offset;
+        int samples_in_data2 = input_element.number_data_samples -
+                               samples_in_data1;
 
-    // Read in data form data1
-    process_samples(&input_element.data1.data()[input_element.sample_offset+1],
-                    /* number of input samples */ samples_in_data1,
-                    0, n_tracks_per_subband,
-                    output_positions,
-                    bit_position, byte_position);
+        int current_bit=0;
+        channel_extract(samples_in_data1,
+                        current_bit,
+                        &input_element.data1.data()[input_element.sample_offset],
+                        output_position,
+                        &lookup_table[subband][0][0]);
+        channel_extract(samples_in_data2,
+                        current_bit,
+                        &input_element.data2.data()[0],
+                        output_position,
+                        &lookup_table[subband][0][0]);
+        assert(current_bit == 0);
+        current_bit=0;
+        char *last_sample_ptr = &last_sample;
+        channel_extract(1,
+                        current_bit,
+                        &input_element.data2.data()[samples_in_data2],
+                        last_sample_ptr,
+                        &lookup_table[subband][0][0]);
+      }
+    }
 
-    // process samples in data2
-    int samples_in_data2 = (input_element.number_data_samples-1)-samples_in_data1;
+    // Do the offset
+    int subsample_offset = input_element.subsample_offset;
+    {
+      uint8_t *mask_right = bit_shift_right_table[subsample_offset];
 
-    process_samples(&input_element.data2.data()[0],
-                    /* number of input samples */ samples_in_data2,
-                    0, n_tracks_per_subband,
-                    output_positions,
-                    bit_position, byte_position);
+      char *data = &output_elements[subband]->data[0];
+      int n_output_samples = n_input_samples*fan_out/8;
+      // Start at 1 because we handle the last sample differently
+      for (int sample=1; sample<n_output_samples; sample++) {
+        *data = (*data << subsample_offset) | mask_right[(uint8_t)*(data+1)];
+        data++;
+      }
+
+      // Process the last sample
+      // shift the last sample
+      if (fan_out<8)
+        last_sample = (last_sample<<(8-2*fan_out));
+
+      *data = (*data << subsample_offset) | mask_right[(uint8_t)last_sample];
+    }
   }
-
-  // process the last sample
-  process_samples(&input_element.last_sample,
-                  /* number of input samples */ 1,
-                  0, input_element.subsample_offset,
-                  output_positions,
-                  bit_position, byte_position);
-
-  // Easiest check
-  assert(bit_position == 0);
-  assert(byte_position == n_output_bytes);
 
   { // release the buffers
     input_buffer_->pop();
@@ -218,6 +204,30 @@ set_parameters(const Input_node_parameters &input_node_param,
       }
     }
   }
+
+
+  n_subbands = track_positions.size();
+  fan_out = track_positions[0].size();
+  samples_per_byte = 8/fan_out;
+  assert(fan_out <= 8);
+  assert(8%fan_out == 0);
+  assert(fan_out*samples_per_byte == 8);
+
+  memset(lookup_table, 0, N*256*8);
+  // Lookup table for the tracks
+  for (int subband=0; subband < n_subbands; subband++) {
+    for (int track_nr=0; track_nr < fan_out; track_nr++) {
+      int track = track_positions[subband][track_nr];
+      int n = track/8;
+      assert(n < N);
+      int bit = track % 8;
+      for (int sample=0; sample<256; sample++) {
+        if (((sample >> bit)& 1) != 0) {
+          lookup_table[subband][n][sample] |= (1<<(fan_out-1-track_nr));
+        }
+      }
+    }
+  }
 }
 
 
@@ -239,6 +249,30 @@ Channel_extractor<Type>::get_output_buffer(size_t stream) {
   }
   assert(output_buffers_[stream] != Output_buffer_ptr());
   return output_buffers_[stream];
+}
+
+
+template <class Type>
+void
+Channel_extractor<Type>::
+channel_extract(int n_input_samples,
+                int &curr_bit,
+                const Type *in_data,
+                char *&output_data,
+                const uint8_t *lookup_table) {
+  const uint8_t *in_pos = (const uint8_t *)in_data;
+
+  for (int sample=0; sample<n_input_samples; sample++) {
+    // samples_per_byte-1 times:
+    process_sample(in_pos, output_data, lookup_table);
+    curr_bit += fan_out;
+    if (curr_bit == 8) {
+      curr_bit = 0;
+      output_data++;
+    } else {
+      *output_data = (*output_data << fan_out);
+    }
+  }
 }
 
 #endif // CHANNEL_EXTRACTOR_IMPL_H

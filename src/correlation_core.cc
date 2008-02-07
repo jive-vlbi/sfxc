@@ -42,6 +42,10 @@ void Correlation_core::do_task() {
     current_fft ++; 
     
     if (current_fft == number_ffts_in_integration) {
+#if 1
+      DEBUG_MSG("PROGRESS node " << node_nr_ << ", " 
+                << current_fft << " of " << number_ffts_in_integration);
+#endif
       integration_average();
       integration_write();
     }
@@ -66,7 +70,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
                                  int node_nr) {
   node_nr_ = node_nr;
 
-  int prev_size_of_fft = size_of_fft();
+  size_t prev_size_of_fft = size_of_fft();
   correlation_parameters = parameters;
   
   number_ffts_in_integration = 
