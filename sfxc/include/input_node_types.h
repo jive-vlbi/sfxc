@@ -42,8 +42,6 @@ public:
 
     // The data for the fft can be split over two mark4 blocks
     Mk4_memory_pool_element data1, data2;
-    // We need one extra sample because of the subsamples
-    Type                    last_sample;
 
     /// Do not process this block, only release the data block
     bool only_release_data1;

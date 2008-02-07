@@ -34,10 +34,10 @@ public:
   Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader, char *buffer);
 
   ~Input_node_tasklet_implementation() {
-  DEBUG_MSG("Time mar4_reader:       " << mark4_reader_timer_.measured_time());
-  DEBUG_MSG("Time integer_delay:     " << integer_delay_timer_.measured_time());
-  DEBUG_MSG("Time channel_extractor: " << channel_extractor_timer_.measured_time());
-  DEBUG_MSG("Time data_writers:      " << data_writers_timer_.measured_time());
+    DEBUG_MSG("Time mar4_reader:       " << mark4_reader_timer_.measured_time());
+    DEBUG_MSG("Time integer_delay:     " << integer_delay_timer_.measured_time());
+    DEBUG_MSG("Time channel_extractor: " << channel_extractor_timer_.measured_time());
+    DEBUG_MSG("Time data_writers:      " << data_writers_timer_.measured_time());
 
   }
 
@@ -72,7 +72,7 @@ private:
   bool did_work;
 
   Timer mark4_reader_timer_, integer_delay_timer_, channel_extractor_timer_, data_writers_timer_;
-    
+
 };
 
 
@@ -82,8 +82,7 @@ template <class Type>
 Input_node_tasklet_implementation<Type>::
 Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader, char *buffer)
     : mark4_reader_(reader, buffer),
-    did_work(true)
-    {
+did_work(true) {
   integer_delay_.connect_to(mark4_reader_.get_output_buffer());
   channel_extractor_.connect_to(integer_delay_.get_output_buffer());
 }
@@ -120,7 +119,7 @@ do_task() {
         did_work = true;
       }
     }
- data_writers_timer_.stop();
+    data_writers_timer_.stop();
   }
 }
 
@@ -144,7 +143,7 @@ template <class Type>
 void
 Input_node_tasklet_implementation<Type>::
 set_parameters(const Input_node_parameters &input_node_param,
-                      int node_nr) {
+               int node_nr) {
   integer_delay_.set_parameters(input_node_param, node_nr);
 
   channel_extractor_.set_parameters(input_node_param,
@@ -183,7 +182,7 @@ void
 Input_node_tasklet_implementation<Type>::
 set_stop_time(int time) {
   did_work = true;
-  
+
   integer_delay_.set_stop_time(int64_t(1000)*time);
   return mark4_reader_.set_stop_time(int64_t(1000)*time);
 }

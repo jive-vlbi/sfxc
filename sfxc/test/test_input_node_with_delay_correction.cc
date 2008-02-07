@@ -89,9 +89,9 @@ int main(int argc, char*argv[]) {
     for (size_t i=0; i<control_parameters.number_frequency_channels(); i++) {
       char filename[80];
       sprintf(filename, "file://output%d.bin", (int)i);
-      //data_writer = 
-      //  boost::shared_ptr<Data_writer>(new Data_writer_file(filename));
-      data_writer = boost::shared_ptr<Data_writer>(new Data_writer_void());
+      data_writer = 
+        boost::shared_ptr<Data_writer>(new Data_writer_file(filename));
+      //data_writer = boost::shared_ptr<Data_writer>(new Data_writer_void());
 
       // Output all data
       input_node_tasklet->add_data_writer(i, data_writer, 

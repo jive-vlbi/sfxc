@@ -55,13 +55,22 @@ public:
                       const std::vector< std::vector<int> > &track_positions);
 private:
   // Dechannelize samples
-  void process_samples(Type *input_buffer,
-                       int n_input_samples,
-                       int start_track_nr,
-                       int end_track_nr,
-                       std::vector<char *> &output_positions,
-                       int &output_buffer_bit,
-                       int &output_buffer_byte);
+  inline void channel_extract(int n_input_samples,
+                              int &curr_bit,
+                              const Type *in_data,
+                              char *&output_data,
+                              const uint8_t *lookup_table);
+
+  inline void process_sample(const uint8_t *&in_array,
+                             char *output_data,
+                             const uint8_t *table) {
+    for (int n=0; n<N; n++) {
+      *output_data |= table[*in_array];
+      table += 256;
+      in_array++;
+    }
+  }
+
 private:
   Input_buffer_ptr                input_buffer_;
   Output_memory_pool              output_memory_pool_;
@@ -69,6 +78,24 @@ private:
 
   /// Bit positions for the sign and magnitude bits, per channel
   std::vector< std::vector<int> > tracks_in_subbands;
+
+  /// Cached values:
+
+
+  // sizeof(Type)
+  const int N;
+  // Lookup table for the channel extraction
+  // At most 8 channels
+  // lookup_table[index in Type word][value of the byte][output sample/channel]
+  uint8_t lookup_table[8][sizeof(Type)][256];
+
+  // Lookup table for a right bitshift with 0 inserted
+  uint8_t bit_shift_right_table[8][256];
+
+  // Fan out
+  int fan_out, samples_per_byte;
+
+  int n_subbands;
 };
 
 #include "channel_extractor_impl.h"

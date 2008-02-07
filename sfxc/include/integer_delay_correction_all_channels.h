@@ -32,8 +32,7 @@ public:
   typedef std::pair<int,int>                             Delay_type;
 
   Integer_delay_correction_all_channels();
-  ~Integer_delay_correction_all_channels() {
-  }
+  ~Integer_delay_correction_all_channels() {}
 
   /// For tasklet
 
@@ -129,6 +128,7 @@ Integer_delay_correction_all_channels()
 template <class Type>
 void
 Integer_delay_correction_all_channels<Type>::do_task() {
+  static int n_ffts=0;
   assert(has_work());
   assert(current_delay.first <= 0);
 
@@ -177,23 +177,20 @@ Integer_delay_correction_all_channels<Type>::do_task() {
       if (position < -nr_output_samples) {
         // Complete Type of random data, just copy the current Type
         output_element.sample_offset = 0;
-        output_element.last_sample = 0;
       } else {
         // This fft contains partially valid data
         // we can output actual data
         // Just use data1 twice: we will use weights later on anyway to randomize the data
         output_element.sample_offset = output_element.data1.data().size()+position;
         output_element.data2 = input_buffer_->front();
-        output_element.last_sample = input_buffer_->front().data()[nr_output_samples+position];
       }
     } else {
       // normal case where we have data
       output_element.sample_offset = position;
 
-      int samples_in_data2 = position+nr_output_samples-input_buffer_->front().data().size();
+      int samples_in_data2 = position+nr_output_samples+1-input_buffer_->front().data().size();
       if (samples_in_data2 < 0) {
         // Data is contained in one data block
-        output_element.last_sample = input_buffer_->front().data()[nr_output_samples+position];
       } else if (samples_in_data2 == 0) {
         // the samples come from the first block, but the extra sample from the next block
 
@@ -201,7 +198,6 @@ Integer_delay_correction_all_channels<Type>::do_task() {
         position -= input_buffer_->front().data().size();
         input_buffer_->pop();
         assert(!input_buffer_->empty());
-        output_element.last_sample = input_buffer_->front().data()[0];
 
         Delay_type new_delay = get_delay(current_time_+delta_time);
         if (new_delay.first < current_delay.first) {
@@ -211,6 +207,7 @@ Integer_delay_correction_all_channels<Type>::do_task() {
           assert(current_delay.second == 0);
 
           output_buffer_->push(output_element);
+          n_ffts++;
 
           // set time for the next block, it reuses the last sample of data1
           current_time_ += delta_time;
@@ -222,7 +219,6 @@ Integer_delay_correction_all_channels<Type>::do_task() {
           output_element.data2 = input_buffer_->front();
           output_element.sample_offset = position;
           output_element.subsample_offset = current_delay.second;
-          output_element.last_sample = output_element.data2.data()[nr_output_samples];
         }
 
         // We can release the data
@@ -234,8 +230,6 @@ Integer_delay_correction_all_channels<Type>::do_task() {
         assert(!input_buffer_->empty());
         output_element.data2 = input_buffer_->front();
 
-        output_element.last_sample = output_element.data2.data()[samples_in_data2];
-
         // We can release the data
         release_data = true;
       }
@@ -244,11 +238,12 @@ Integer_delay_correction_all_channels<Type>::do_task() {
 
     // Push the output to the Type for further processing
     output_buffer_->push(output_element);
-
+    n_ffts++;
 #if 1
+
     if ((current_time_/integration_time) !=
         ((current_time_+delta_time)/integration_time)) {
-      DEBUG_MSG(" PROGRESS node " << node_nr_ 
+      DEBUG_MSG(" PROGRESS node " << node_nr_
                 << ", time " << current_time_+delta_time);
     }
 #endif
@@ -280,10 +275,9 @@ Integer_delay_correction_all_channels<Type>::do_task() {
       position += current_delay.first;
     }
   }
-
   if (release_data) {
     output_element.only_release_data1 = true;
-    output_buffer_->push(output_element); 
+    output_buffer_->push(output_element);
     return;
   }
 
@@ -304,7 +298,7 @@ Integer_delay_correction_all_channels<Type>::has_work() {
 
   if (input_buffer_->empty())
     return false;
-  if (size_t(position + nr_output_samples +1) > input_buffer_->front().data().size()) {
+  if (size_t(position + nr_output_samples +1) >= input_buffer_->front().data().size()) {
     if (input_buffer_->size() < 2) {
       return false;
     }
@@ -383,8 +377,8 @@ set_parameters(const Input_node_parameters &parameters,
      sample_rate*subsamples_per_sample,
      bits_per_subsample,
      parameters.number_channels);
-  
-  random_element_.data().resize(nr_output_samples);
+
+  random_element_.data().resize(nr_output_samples+1);
   for (int i=0; i<nr_output_samples; i++) {
     random_element_.data()[i] = ~Type(0);
   }
