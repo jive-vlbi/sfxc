@@ -239,14 +239,12 @@ Integer_delay_correction_all_channels<Type>::do_task() {
     // Push the output to the Type for further processing
     output_buffer_->push(output_element);
     n_ffts++;
-#if 1
 
     if ((current_time_/integration_time) !=
         ((current_time_+delta_time)/integration_time)) {
-      DEBUG_MSG(" PROGRESS node " << node_nr_
+      PROGRESS_MSG("node " << node_nr_
                 << ", time " << current_time_+delta_time);
     }
-#endif
 
     // Increase the position
     current_time_ += delta_time;

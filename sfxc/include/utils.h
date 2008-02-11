@@ -92,6 +92,12 @@ extern int RANK_OF_NODE; // Rank of the current node
 #define MPI_DEBUG_MSG(msg) 
 #endif
 
+#ifdef PRINT_PROGRESS
+#define PROGRESS_MSG(msg) DEBUG_MSG("PROGRESS " << msg);
+#else
+#define PROGRESS_MSG(msg)
+#endif // PRINT_PROGRESS
+
 /// Interface_pair is a pair of two strings 
 /// containing the interface name and its ip address;
 typedef std::pair<std::string, std::string> Interface_pair;
