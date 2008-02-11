@@ -167,6 +167,16 @@ if test $USE_OPTIMIZATION = "yes"; then
   CXXFLAGS="$CXXFLAGS -O3"
 fi
 
+dnl optimization
+AC_ARG_ENABLE(progress,
+              [  --enable-progress        Enable progress messages],
+              PRINT_PROGRESS="$enableval", PRINT_PROGRESS="no")
+
+if test $PRINT_PROGRESS = "yes"; then 
+  CFLAGS="$CFLAGS -DPRINT_PROGRESS"
+  CXXFLAGS="$CXXFLAGS -DPRINT_PROGRESS"
+fi
+
 
 dnl export these variable (so Makefile substitutions
 dnl can be made.
