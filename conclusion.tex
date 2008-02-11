@@ -1,30 +1,33 @@
 \section{Conclusion and future work}\label{sec:conclusion}
 In the last year we laid the foundation for a flexible software
-correlator based on distributed computing technologies. \acomment{Damien: }{Saying that it is now deliverable state.} Using this
-software correlator we are currently collaborating intensively with
-the StarPlane project in order to test incoming network with
-guarenteed Quality of Services for grid.
+correlator based on distributed computing technologies. \scarie\ is
+now useable for batch correlation and is used for ftp-fringe tests for
+the EVN.
+
+In order to reach our real-time correlation goal, we are collaborating
+intensively with the StarPlane project to test new network
+architectures for grids with guarenteed Quality of Services.
 
 \paragraph{Future work}
 Within \scarie\ and a related project FABRIC, which is a joint
 research activity in the EXPR{\it e}S project, we are currently
-improving and testing more intensively the software correlator. \acomment{Damien:}{ 
-Saying we can see several way to improve the speed at at least 6x. }
+improving and testing the software correlator. We still see
+possibilities to improve the efficiency of the software correlator,
+which we would like to investigate further.
 
-On the batch processing aspect of \scarie~ we want to investigate 
-how dynamical resources can be added during the application run time to 
-accelerate the computation. This include node joining/leaving the calculus as well as
-setting up lighpath between input-nodes and the joining nodes.
+On the batch processing aspect of \scarie\ we want to investigate how
+resources can be added dynamically at runtime to accelerate the
+computation. This include node joining and leaving as well as setting
+up additional lighpaths to the new nodes.
 
-We also want to continue our testing on the traffic isolation features of
-the incoming networks as the one provided by Starplane. This include
-interaction with network service providers as well as on experiencing
-networking protocols to optimize the data transfer (using UDP instead
-of TCP).
+On the real-time processing aspect, more work has to be done on the
+traffic isolation features of the incoming networks as well as the
+isolation provided by Starplane. 
 
 \section{Acknowledgment}
-\scarie\ is a joint research project of JIVE, the UvA and SARA funded
-by the Netherlands Organization for Scientific Research (NWO).
+\scarie\ is a joint research project between JIVE, the University of
+Amsterdam and SARA funded by the Netherlands Organization for
+Scientific Research (NWO).
 
 
 

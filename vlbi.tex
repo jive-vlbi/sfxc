@@ -1,26 +1,29 @@
 \section{VLBI}\label{sec:vlbi}
-Instead of building larger and larger telescopes to obtain the
-required resolution, interferometry can be used. It combines the
-measurements of several telescopes to simulate a dish of a size
-equivalent to the maximal distance between the farthest telescopes on
-the plane orthogonal to the viewing direction. Numerous arrays (groups
-of telescopes) use this technique, e.g., the VLA (Very Large Array),
-Lofar (Low-frequency array), the EVN (European VLBI Network) or the
-VLBA (Very Large Baseline Array).  Interferometry with telescopes that
-are geographically very far apart is refered to as Very Large Baseline
-Interferometry (VLBI). VLBI permits to build a virtual radio-telescope
-with a dish of a size of the Earth. As the angular resolution of a
-VLBI experiment depends on the maximal projected distance between two
-radio-telescopes, VLBI achieves unsurpassed angular resolution with
-the drawback of a relatively low sensitivity. Sensitivity is important
-as it allows to detect fainter astronomical objects, increasing the
-sensitivity is possible by adding more radio-telescopes or by
-increasing the sample's resolution or the sampling rate, and thus
-having more data gathered per telescope.
+To achieve larger and larger resolution in astronomical imaging, it is
+necessary to build larger telescopes, or to revert to
+interferometry. As interferometry combines the measurements of several
+telescopes to simulate a dish of a size equivalent to the maximal
+distance between the farthest telescopes on the plane orthogonal to
+the viewing direction. Numerous arrays (groups of telescopes) use this
+technique, e.g., the VLA (Very Large Array), Lofar (Low-frequency
+array), the EVN (European VLBI Network) or the VLBA (Very Large
+Baseline Array).  Interferometry with telescopes that are
+geographically very far apart is refered to as Very Large Baseline
+Interferometry (VLBI). With VLBI it is possible to build a virtual
+radio-telescope with a dish of size of the Earth. As the angular
+resolution of a VLBI experiment depends on the maximal projected
+distance between two radio-telescopes, VLBI achieves unsurpassed
+angular resolution with the drawback of a relatively low sensitivity
+\cite{VLBIbook}\marginpar{NGHK: TODO}. Another important property is
+sensitivity, as it allows to detect fainter astronomical
+objects. Increasing the sensitivity is possible by adding more
+radio-telescopes or by increasing the sampling rate or
+resolution. Increasing the sampling rate or resolution increases the
+data rate per telescope.
 
 In order to get the final picture the signal gathered from the
 radio-telescopes have to be correlated at a central place, the Joint
-Institute for VLBI in Europe (JIVE), for correlation.  JIVE is
+Institute for VLBI in Europe (JIVE).  JIVE is
 operating a dedicated hardware correlator~\cite{EVNCorrelator}.
 
 The maximal capacity of this hardware correlator is 16 telescopes at a
@@ -76,33 +79,36 @@ identify and resolve minor technical problems in the data collection
 during the experiment.
 
 Several experiments in the past have shown that real time {\it e}-VLBI
-is possible. The EC funds the EXPReS project\footnote{EXPReS is made
-  possible through the support of the European Commission (DG-INFSO),
-  Sixth Framework Programme, Contract \#026642.}~\cite{EXPReS} which
-aims at building a production-level {\it e}-VLBI instrument of upto 16
-intercontinental telescopes connected in real-time to JIVE and
-available to the general astronomy community.
+is possible. The EC funds the EXPReS project%
+%\footnote{EXPReS is made
+%  possible through the support of the European Commission (DG-INFSO),
+%  Sixth Framework Programme, Contract \#026642.}
+~\cite{EXPReS} which aims at building a production-level {\it e}-VLBI
+instrument of upto 16 intercontinental telescopes connected in
+real-time to JIVE and available to the general astronomy community.
 
 \paragraph{Correlation}
 Correlation is the process by which data from multiple telescopes is
 collected and combined to measure the spatial Fourier components of
-the image of the sky. 
+the image of the sky. It consists of two steps: first applying a delay
+correction to align the signals and secondly computing the correlation
+function for each pair of telescopes called a baseline.
 
-We have to align the signals from the different telescopes before we
-can correlate them. Therefore, project all the telescopes on the plane
-through the center of the earth and orthogonal to direction to the
-source, see Figure~\ref{fig:correlation_diagram}. The signals that are
-received by the projected telescopes will be correlated. These signals
-are the signals received by the telescopes delayed with the distance
-between the telescope and its projection times the speed of light (the
-signal travels with the speed of light). Note that the delay changes
-during the observation because the earth rotates. We conveniently
-split the delay in an integer number of samples and a remaining
-fraction. While the integer delay is easily done by an offset in the
-sample buffer, the fractional bit shift is usually implemented as a
-phase rotation in the frequency domain. In a final step, called the
-phase rotation, we change the sample rate to match the first order of
-the delay function.
+To align the signals from the different telescopes, we project all the
+telescopes on the plane through the center of the earth and orthogonal
+to direction to the source, see
+Figure~\ref{fig:correlation_diagram}. We will correlate the signals
+received by the virtual projected telescopes. To compute these
+signals, the signals from the real telescopes are delayed with the
+distance between the telescope and its projection multiplied with the
+speed of light (the signal travels with the speed of light). Note that
+the delay changes during the observation because the earth rotates. We
+conveniently split the delay in an integer number of samples and a
+remaining fraction. While the integer delay is easily done by an
+offset in the sample buffer, the fractional bit shift is usually
+implemented as a phase rotation in the frequency domain. In a final
+step, called the phase rotation, we change the sample rate to match
+the rate of the delay function.
 
 After the delay has been applied, the signals are ready for
 correlation. Correlation~\cite{def_correlation} is mathematically
