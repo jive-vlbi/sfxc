@@ -137,7 +137,6 @@ void Manager_node::start() {
 
         // Set the input nodes to the proper start time
         assert(duration_time_slice >= 1000);
-        //DEBUG_MSG("start time: " << start_time);
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
           int station_time =
@@ -401,11 +400,11 @@ Manager_node::initialise() {
   }
 
   Control_parameters::Date start = control_parameters.get_start_time();
+  Control_parameters::Date stop = control_parameters.get_stop_time();
   start_year = start.year;
   start_day  = start.day;
   start_time = start.to_miliseconds();
-  stop_time  =
-    control_parameters.get_stop_time().to_miliseconds(start_day);
+  stop_time  = stop.to_miliseconds(start_day);
 
   // Get a list of all scan names
   current_scan = control_parameters.scan(start);
@@ -413,6 +412,9 @@ Manager_node::initialise() {
   assert((size_t)current_scan < control_parameters.number_scans());
 
   integration_slice_nr = 0;
+
+  PROGRESS_MSG("start_time: " << start.to_string());
+  PROGRESS_MSG("stop_time: " << stop.to_string());
 
   get_log_writer()(1) << "Starting correlation" << std::endl;
 }
