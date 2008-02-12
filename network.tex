@@ -27,17 +27,17 @@ resource is now a well understood process and most of the time it is
 part of the execution service that allocates the requested resources
 and if all resources are acquired, it deploys and executes the
 application.
-\begin{comment}
-\begin{figure}
-  \centering
-  \includegraphics[width=\textwidth]
-    {img/mapping.eps}
-    \caption{Left: An specific instaInce of an experiment. Right: The
-      resource set. Resource allocation and application scheduling
-      have to map the left side to the resources. }
-  \label{fig:mapping}
-\end{figure}
-\end{comment}
+%\begin{comment}
+%\begin{figure}
+%  \centering
+%  \includegraphics[width=\textwidth]
+%    {img/mapping.eps}
+%    \caption{Left: An specific instaInce of an experiment. Right: The
+%      resource set. Resource allocation and application scheduling
+%      have to map the left side to the resources. }
+%  \label{fig:mapping}
+%\end{figure}
+%\end{comment}
 The simplest way to offer guaranteed service over a shared resource
 can be done by restricting the access to only one user at a time. This
 approach is used in the DAS-3 grid (based on SGE) in which an
@@ -46,9 +46,9 @@ be applied to the complete grid including its networks and other
 resources. A more flexible approach consists in sharing the resource
 under the arbitration of a third party that will insure that each
 application is using only the allocated part of the resource. This is
-the case with Layer-3 QoS for networks, or the recently added
-Completely Fair Scheduler (per application CPU time allocation) or per
-application IO-bandwith arbitration\cite{}\marginpar{DAMIEN: TODO}. In
+the case with Layer-3 QoS for networks, or the Completely Fair Scheduler 
+(per application CPU time allocation) combined with the Process Containers 
+recently introduced into the Linux Kernel\cite{cfs}. In
 a very general point of view all these technologies virtualize the
 resource thus they permit to build on top of a real grid a complete
 isolated environment based on user requirements.
@@ -59,7 +59,7 @@ challenging aspects of \scarie.  The regular Internet Layer3 IP
 routing based on the best-effort policy has a great flexibility but is
 often slow and unpredictable; on the other hand, we have dedicated
 \textit{lightpaths} as available in \textit{lambda
-  Grids}~\cite{eslea-2007}\marginpar{DAMIEN}, with their predictable
+  Grids}~\cite{eslea-2007}, with their predictable
 delays and throughputs offer good performances and a good basis to
 offer Quality of Service. Giving end users access to dedicated
 connection has been implemented in many of the current research and
@@ -79,9 +79,7 @@ wavelengths with the goal to build a network service that permits
   traffic isolation}. The novelty of the StarPlane project lies in its
 attempt to build a virtual network service at the lowest possible
 networking layer: the photonic layer for the optical part and
-ethernet-layer2 for the connection to the nodes. This permits to
-improve performance and to dramatically reduces the cost (the price or
-the energy) per byte transfered \cite{}\marginpar{TODO}. Another
+ethernet-layer2 for the connection to the nodes. Another
 property of StarPlane is that the photonic lightpath can dynamically
 be reorganized to match the requirements of the user-application. By
 using StarPlane, a complete virtual network over distributed cluster
