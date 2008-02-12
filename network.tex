@@ -93,9 +93,13 @@ complete network domain.
 \scarie~ and StarPlane have parallel roadmaps. Hence the complete
 approach cannot be tested yet. We have conducted correlator
 performance tests using \das3. The current software correlator is
-currently able to perform a 4x128Mbps\marginpar{NGHK: CHECK}
-experiment at 20\% of the real-time speed using a total of 16 (quad
-core 2.0Ghz cpu) nodes.
+currently able to perform a 4x256Mbps experiment at 30\% of the
+real-time speed using a total of 15 (quad core 2.0Ghz cpu)
+nodes. Analysis of the software correlator shows that the bottleneck
+is in the extraction of the data from the input stream (which we can
+do at 110Mbps). Hence, we are not able to do real-time correlation,
+but an optimized prototype shows that we will be able to resolve this
+bottleneck.
 
 In parallel with the benchmarks of the correlator, we are also testing
 the capabilities of StarPlane to do high performance traffic isolation
