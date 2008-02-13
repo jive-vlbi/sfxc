@@ -33,9 +33,7 @@ Data_reader_tcp::~Data_reader_tcp() {
   if (socket > 0) close(socket);
 }
 
-int64_t sum_read=0;
-
-size_t Data_reader_tcp::do_get_bytes(size_t nBytes, char*out) {
+int Data_reader_tcp::do_get_bytes(size_t nBytes, char*out) {
   assert(socket > 0);
 
   if (out == NULL) {

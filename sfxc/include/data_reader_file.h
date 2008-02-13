@@ -30,7 +30,7 @@ class Data_reader_file : public Data_reader {
   bool eof();  
   
 private:
-  size_t do_get_bytes(size_t nBytes, char *out);
+  int do_get_bytes(size_t nBytes, char *out);
 
   std::ifstream file;
 };

@@ -79,7 +79,7 @@ private:
   
   boost::shared_ptr<Data_writer>                    writer;
 
-  Timer timer;
+  Timer fft_timer;
 
   // Needed for writing the progress messages
   int node_nr_;

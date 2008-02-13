@@ -30,7 +30,7 @@ class DataReader_socket : public Data_reader
 
 
     protected:
-        size_t do_get_bytes(size_t nBytes, char *buff);
+        int do_get_bytes(size_t nBytes, char *buff);
 
         int m_socket;
 

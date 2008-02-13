@@ -79,7 +79,7 @@ void get_info(const std::string url, String& server, String& port, String& filen
     if( strcmp( response.c_str(), "OK") ) MTHROW("The server refuse to give me this file");
   }
 
-  size_t do_get_bytes(size_t readb, char *buffer){
+  int do_get_bytes(size_t readb, char *buffer){
     int32_t readbyte = readb;
     *m_writer << readbyte;
     m_breader->get_bytes(readb, buffer);
