@@ -14,23 +14,31 @@ process = {}
 start_time = 0
 stop_time = 1
 current_time = 0
+corrnode = 0
+runtimefull = 0
+start_time2 = 0
 
 def update_state(id, curr, max):
-	global process
+	global process, corrnode
 	if process.has_key(id):
 		process[id][0] = curr
 		process[id][1] = max
 	else:
-		process[id] = [1,1,0, "",0]		 
+		process[id] = [1,1,0, "",0,0]		 
+		#corrnode=corrnode+1	
 
 def update_count(id, packet, time):
-	global process
+	global process, corrnode
 	if process.has_key(id):
+		if process[id][3] == "" and process[id][5] == 0:
+			corrnode=corrnode+1
+			process[id][5] = 1	
 		process[id][2] = process[id][2]+1
 		process[id][3] = time
 		process[id][4] = packet
 	else:
-		process[id] = [0,1,0, "",0]
+		process[id] = [0,1,0, "",0,0]
+		#corrnode=corrnode+1
 
 def time_to_int(time):
 	ret = re.match("([0-9]*)y([0-9]*)d([0-9]*)h([0-9]*)m([0-9]*)s", time)
@@ -76,7 +84,7 @@ def percent(current, total):
 	return ""+`int(current*100/total)`+"%"
 
 def make_display(runtime, last_lines):
-	global process, funfunid
+	global process, funfunid, runtimefull
 		
 	funfunid+=funfunid+1
 	if funfunid >= len(funfun): 
@@ -87,18 +95,49 @@ def make_display(runtime, last_lines):
 	display+="running since: "+`runtime`+"sec\n" 
 	display+="Begin time:"+`start_time`+" End time:"+`stop_time`+" Current time:"+`current_time`+"\n"
 	display+="Progress: "+bargraph(current_time-start_time, stop_time-start_time, 50)+": "+percent(current_time-start_time, stop_time-start_time)
+
 	if not runtime == 0:
 		display+="  Real-time ratio:"+`(current_time-start_time)*100/runtime`+"%"
+
+	if not runtimefull == 0:
+		display+="  Real-time full:"+`(current_time-start_time2)*100/runtimefull`+"%"
+	
+
 	display+="\n"
 
-	for i in process.keys():
-		if i < 10:
-			display+="Correlation core["+`i`+"]:  processing: "+process[i][3]+"["+`process[i][4]`+"]"
-		else:
-			display+="Correlation core["+`i`+"]: processing: "+process[i][3]+"["+`process[i][4]`+"]"
-		 
-		display+=bargraph(process[i][0], process[i][1], 40)
-		display+=":"+`process[i][2]`+"\n"
+	if len(process.keys()) < 25:
+		for i in process.keys():
+			if i < 10:
+				display+="Core["+`i`+"]:  P: "+process[i][3]+"["+`process[i][4]`+"]"
+			else:
+				display+="Core["+`i`+"]: P: "+process[i][3]+"["+`process[i][4]`+"]"
+			display+=bargraph(process[i][0], process[i][1], 40)
+			display+=":"+`process[i][2]`+"\n"
+	elif len(process.keys()) < 50: 
+		for i in process.keys():
+			if i < 10:
+				display+="Core["+`i`+"]:  P["+`process[i][4]`+"]"
+			else:
+				display+="Core["+`i`+"]: P["+`process[i][4]`+"]"
+			display+=bargraph(process[i][0], process[i][1], 25)
+ 			display+=":"+`process[i][2]`
+			if (i+1) % 2 == 0:
+				display+="\n"
+			else:
+				display+="   "
+	elif len(process.keys()) < 100: 
+		for i in process.keys():
+			if i < 10:
+				display+="Core["+`i`+"]: "
+			else:
+				display+="Core["+`i`+"]:"
+			display+=bargraph(process[i][0], process[i][1], 10)
+ 			display+=":"+`process[i][2]`
+			if (i+1) % 4 == 0:
+				display+="\n"
+			else:
+				display+="   "
+			
 	display+="\n"
 	display+="-----------------------------------------------------------------------------------------------\n"
 	for i in last_lines:
@@ -108,16 +147,19 @@ def make_display(runtime, last_lines):
 
 
 def display(runtime, last_lines):
-	global process
+	global process, runtimefull,corrnode, start_time2, current_time
 	displaystr = make_display(runtime, last_lines)
 	print displaystr
 	
 
 last_lines=[]
 total_time = time.time()
+total_time2 = 0
 for i in range(0,10000):
         iter_time = time.time()
 	process={}
+	corrnode = 0
+	current_time = 0
 	tmpfile = open("std_output.txt", "r")
 	for line in tmpfile:
 		ret = re.match(".*start_time: ([0-9a-z]*)",line)
@@ -146,7 +188,16 @@ for i in range(0,10000):
 						last_lines.pop(0)
 	
 	tmpfile.close()
-	while (time.time()-iter_time) < 0.1:
+	
+	while (time.time()-iter_time) < 2:
 		None
+
+	if not(corrnode == 0) and len(process.keys()) == corrnode:
+		if total_time2 == 0:
+			total_time2 = int(time.time())
+			start_time2 = current_time
+		runtimefull = int(time.time()-total_time2)
+
 	display(int(time.time()-total_time), last_lines)
+	#print "HELLO BISON:"+`total_time2`+" " + `start_time2` 
 		
