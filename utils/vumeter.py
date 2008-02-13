@@ -104,8 +104,9 @@ def make_display(runtime, last_lines):
 	
 
 	display+="\n"
-
+	idx = 0
 	if len(process.keys()) < 25:
+		
 		for i in process.keys():
 			if i < 10:
 				display+="Core["+`i`+"]:  P: "+process[i][3]+"["+`process[i][4]`+"]"
@@ -115,25 +116,27 @@ def make_display(runtime, last_lines):
 			display+=":"+`process[i][2]`+"\n"
 	elif len(process.keys()) < 50: 
 		for i in process.keys():
+			idx=idx+1
 			if i < 10:
 				display+="Core["+`i`+"]:  P["+`process[i][4]`+"]"
 			else:
 				display+="Core["+`i`+"]: P["+`process[i][4]`+"]"
 			display+=bargraph(process[i][0], process[i][1], 25)
  			display+=":"+`process[i][2]`
-			if (i+1) % 2 == 0:
+			if (idx+1) % 2 == 0:
 				display+="\n"
 			else:
 				display+="   "
 	elif len(process.keys()) < 100: 
 		for i in process.keys():
+			idx = idx+1
 			if i < 10:
 				display+="Core["+`i`+"]: "
 			else:
 				display+="Core["+`i`+"]:"
 			display+=bargraph(process[i][0], process[i][1], 10)
  			display+=":"+`process[i][2]`
-			if (i+1) % 4 == 0:
+			if (idx) % 4 == 0:
 				display+="\n"
 			else:
 				display+="   "
@@ -162,24 +165,25 @@ for i in range(0,10000):
 	current_time = 0
 	tmpfile = open("std_output.txt", "r")
 	for line in tmpfile:
-		ret = re.match(".*start_time: ([0-9a-z]*)",line)
+		ret = re.match(".* PROGRESS t=[0-9]*:.*start_time: ([0-9a-z]*)",line)
 		if ret:
 			set_start_time(ret.groups()[0])
-		ret = re.match(".*stop_time: ([0-9a-z]*)",line)
+		ret = re.match(".* PROGRESS t=[0-9]*:.*stop_time: ([0-9a-z]*)",line)
 		if ret:
 			set_stop_time(ret.groups()[0])
 		
-		ret = re.match("#([0-9]*) correlation_core.cc, [0-9]+: PROGRESS node ([0-9]*), ([0-9]*) of ([0-9]*)", line)
+		ret = re.match("#([0-9]*) correlation_core.cc, [0-9]+:  PROGRESS t=[0-9]*: node ([0-9]*), ([0-9]*) of ([0-9]*)", line)
 		if ret:
 			update_state(int(ret.groups()[1]), int(ret.groups()[2]), int(ret.groups()[3]))
 		else:
-			ret = re.match(".* start ([0-9a-z]*), channel ([0-9]*) to correlation node ([0-9]+)", line)			
+			ret = re.match(".* PROGRESS t=[0-9]*:.* start ([0-9a-z]*), channel ([0-9]*) to correlation node ([0-9]+)", line)			
 			if ret:
 				update_count(int(ret.groups()[2]), int(ret.groups()[1]), ret.groups()[0])
 			
 			else:
-				ret = re.match(".* time ([0-9]*)", line)			
+				ret = re.match(".* PROGRESS t=[0-9]*:.* time ([0-9]+)", line)			
 				if ret:
+					#print "Hello world:"+ret.groups()[0]
 					update_current( int(ret.groups()[0]) )
 
 				else:
@@ -192,11 +196,11 @@ for i in range(0,10000):
 	while (time.time()-iter_time) < 2:
 		None
 
-	if not(corrnode == 0) and len(process.keys()) == corrnode:
-		if total_time2 == 0:
-			total_time2 = int(time.time())
-			start_time2 = current_time
-		runtimefull = int(time.time()-total_time2)
+	#if not(corrnode == 0) and len(process.keys()) == corrnode:
+	#	if total_time2 == 0:
+	#		total_time2 = int(time.time())
+	#		start_time2 = current_time
+	#	runtimefull = int(time.time()-total_time2)
 
 	display(int(time.time()-total_time), last_lines)
 	#print "HELLO BISON:"+`total_time2`+" " + `start_time2` 
