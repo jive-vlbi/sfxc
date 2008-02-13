@@ -57,14 +57,14 @@ duration_time_slice(1000) {
 
 
   // correlator nodes:
-  if (numtasks-(n_stations+3) - control_parameters.number_frequency_channels() < 0) {
+  if (numtasks-(n_stations+3) - control_parameters.number_correlation_cores_per_timeslice() < 0) {
     std::cout << "#correlator nodes < #freq. channels, use at least "
-    << n_stations+3+control_parameters.number_frequency_channels()
+    << n_stations+3+control_parameters.number_correlation_cores_per_timeslice()
     << " nodes." << std::endl
     << "Exiting now." << std::endl;
     get_log_writer()(1)
     << "#correlator nodes < #freq. channels, use at least "
-    << n_stations+3+control_parameters.number_frequency_channels()
+    << n_stations+3+control_parameters.number_correlation_cores_per_timeslice()
     << " nodes." << std::endl
     << "Exiting now." << std::endl;
     exit(1);
@@ -175,6 +175,7 @@ void Manager_node::start() {
           stoptime_timeslice = stop_time_scan;
         }
         current_channel = 0;
+        current_correlator_node = 0;
         status = START_CORRELATOR_NODES_FOR_TIME_SLICE;
         break;
       }
@@ -228,7 +229,7 @@ void Manager_node::start() {
       case STOP_CORRELATING: {
         // The status is set to END_NODE as soon as the output_node is ready
         int nr_slices = 
-          integration_slice_nr*control_parameters.number_frequency_channels();
+          integration_slice_nr*control_parameters.number_correlation_cores_per_timeslice();
         MPI_Send(&nr_slices, 1, MPI_INT32,
                  RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_CORRELATION_READY,
                  MPI_COMM_WORLD);
@@ -253,7 +254,7 @@ void Manager_node::start() {
 void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   int cross_channel = -1;
   if (control_parameters.cross_polarize()) {
-    cross_channel = control_parameters.cross_polarisation(current_channel);
+    cross_channel = control_parameters.cross_channel(current_channel);
     assert((cross_channel == -1) || (cross_channel > (int)current_channel));
   }
 
@@ -350,8 +351,8 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   for (int i=0; i<n_timeslices; i++) {
     int slice_nr_ = 
       (integration_slice_nr+i) *
-      control_parameters.number_frequency_channels() +
-      current_channel;
+      control_parameters.number_correlation_cores_per_timeslice() +
+      current_correlator_node;
     output_node_set_timeslice(slice_nr_,
                               corr_node_nr,
                               size_of_one_baseline*nBaselines);
@@ -360,16 +361,17 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   set_correlating_state(corr_node_nr, CORRELATING);
 
   current_channel ++;
+  current_correlator_node ++;
   if (control_parameters.cross_polarize()) {
     // Go to the next channel.
     size_t cross_channel =
-      control_parameters.cross_polarisation(current_channel);
+      control_parameters.cross_channel(current_channel);
     while ((current_channel <
             control_parameters.number_frequency_channels()) &&
            (cross_channel >= 0) && (cross_channel < current_channel)) {
       current_channel ++;
       cross_channel =
-        control_parameters.cross_polarisation(current_channel);
+        control_parameters.cross_channel(current_channel);
     }
   }
 }

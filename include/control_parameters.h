@@ -154,13 +154,16 @@ public:
   int station_in_scan(const std::string& scan,
                       const std::string &station) const;
 
+  // Takes cross polarisation into account
+  int number_correlation_cores_per_timeslice() const;
+
   // Return the Frequency channels from the VEX file, filtered by the ctrl file
   size_t number_frequency_channels() const;
   std::string frequency_channel(size_t channel_nr) const;
 
   bool cross_polarize() const;
-  int cross_polarisation(int channel_nr) const;
-  int cross_polarisation(const std::string &channel_nr) const;
+  int cross_channel(int channel_nr) const;
+  int cross_channel(const std::string &channel_nr) const;
 
   char polarisation(const std::string &if_node,
                     const std::string &if_ref) const;

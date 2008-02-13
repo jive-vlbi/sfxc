@@ -108,7 +108,7 @@ Plot_generator::Plot_generator(std::ifstream &infile,
   int nStations = ConPrms.number_stations();
   int cross_channel = -1;
   if (ConPrms.cross_polarize()) {
-    cross_channel = ConPrms.cross_polarisation(count_channel);
+    cross_channel = ConPrms.cross_channel(count_channel);
     assert((cross_channel == -1) ||
            (cross_channel > count_channel));
   }
@@ -601,13 +601,13 @@ int main(int argc, char *argv[])
     if (ConPrms.cross_polarize()) {
       channel ++;
       int cross_channel = 
-        ConPrms.cross_polarisation(channel);
+        ConPrms.cross_channel(channel);
       while ((channel <
               ConPrms.number_frequency_channels()) &&
              (cross_channel >= 0) && (cross_channel < channel)) {
         channel ++;
         cross_channel = 
-          ConPrms.cross_polarisation(channel);
+          ConPrms.cross_channel(channel);
       }
     } else {
       channel++;

@@ -98,6 +98,7 @@ private:
 
   /// the current channel to correlate by a free correlator node
   size_t current_channel;
+  size_t current_correlator_node;
 
   int n_corr_nodes;
 };
