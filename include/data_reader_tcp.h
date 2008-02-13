@@ -35,7 +35,7 @@ public:
   
   bool eof() { return socket < 0; }  
 private:
-  size_t do_get_bytes(size_t nBytes, char *out);
+  int do_get_bytes(size_t nBytes, char *out);
 
 
   int connection_socket, socket;

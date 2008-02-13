@@ -18,10 +18,10 @@ Data_reader::Data_reader() : _data_counter(0), data_slice(-1) {
 Data_reader::~Data_reader() {
 }
   
-size_t
+int
 Data_reader::get_bytes(size_t nBytes, char *buff) {
   assert((data_slice==-1) || (nBytes <= (size_t)data_slice));
-  size_t result = do_get_bytes(nBytes, buff);
+  int result = do_get_bytes(nBytes, buff);
   _data_counter += result;
   if (data_slice != -1) data_slice -= result;
   return result;

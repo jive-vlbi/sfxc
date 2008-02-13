@@ -13,7 +13,7 @@ Correlation_core::~Correlation_core()
   //}
   int N = size_of_fft();
   int numiterations = total_ffts;
-  double time = timer.measured_time()*1000000;
+  double time = fft_timer.measured_time()*1000000;
   DEBUG_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
 }
 
@@ -31,7 +31,6 @@ void Correlation_core::do_task() {
     }
 #endif
 
-  //timer.resume();
   if (has_work()) {
     if (current_fft%number_ffts_in_integration == 0) {
       integration_initialise();
@@ -50,7 +49,6 @@ void Correlation_core::do_task() {
       integration_write();
     }
   }
-  //timer.stop();
 }
 
 bool Correlation_core::finished() {
@@ -196,11 +194,11 @@ void Correlation_core::integration_step() {
          correlation_parameters.station_streams.size());
   for (size_t i=0; i<input_buffers.size(); i++) {
     assert(frequency_buffer[i].size() == size_of_fft()/2+1);
-    timer.resume();
+    fft_timer.resume();
     FFTW_EXECUTE_DFT_R2C(plan, 
-                         (FLOAT *)input_elements[i]->buffer(),
+                         (FLOAT *)&input_elements[i]->buffer()[0],
                          (FFTW_COMPLEX *)&frequency_buffer[i][0]);
-    timer.stop();
+    fft_timer.stop();
     total_ffts++;
   }
 
@@ -232,7 +230,8 @@ void Correlation_core::integration_step() {
 
 void Correlation_core::integration_average() {
   std::vector<FLOAT> norms;
-  norms.resize(n_stations(), 0);
+  norms.resize(n_stations());
+  for (size_t i=0; i<norms.size(); i++) norms[i] = 0;
   
   // Average the auto correlations
   for (size_t station=0; station < n_stations(); station++) {

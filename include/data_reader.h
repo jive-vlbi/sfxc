@@ -29,7 +29,7 @@ public:
       \return the number of bytes read into the buffer.
       \pre buff is allocated. nBytes >= 0
   **/
-  size_t get_bytes(size_t nBytes, char *buff);
+  int get_bytes(size_t nBytes, char *buff);
 
   /** Returns true if all data is read from the input reader.
   **/ 
@@ -62,7 +62,7 @@ public:
 private:
   /** Function that actually writes the data to the output device.
   **/ 
-  virtual size_t do_get_bytes(size_t nBytes, char *buff) = 0;
+  virtual int do_get_bytes(size_t nBytes, char *buff) = 0;
 
   uint64_t _data_counter;
   int data_slice;

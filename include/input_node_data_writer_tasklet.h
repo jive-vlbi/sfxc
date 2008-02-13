@@ -33,12 +33,14 @@ public:
   void set_parameters(const Input_node_parameters &input_param);
 
   bool &verbose() { return verbose_; }
+
 private:
   Input_buffer_ptr    input_buffer_;
   Data_writer_queue    data_writers_;
 
   bool verbose_;
 };
+
 
 template <class Type>
 Input_node_data_writer_tasklet<Type>::
@@ -97,6 +99,7 @@ do_task() {
 
   assert(input_element.data().data.size() > 0);
   int bytes_to_write = input_element.data().data.size(), bytes_written = 0;
+
   do {
     assert(bytes_to_write - bytes_written > 0);
     size_t nbytes =

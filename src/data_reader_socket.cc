@@ -36,7 +36,7 @@ DataReader_socket::~DataReader_socket() {
 }
 
 
-size_t DataReader_socket::do_get_bytes(size_t nBytes, char *out) {
+int DataReader_socket::do_get_bytes(size_t nBytes, char *out) {
   assert(m_socket > 0);
   assert(out != NULL);
   return read(m_socket, (void *) out, nBytes);

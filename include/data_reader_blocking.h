@@ -12,7 +12,7 @@ class Data_reader_blocking : public Data_reader
   public:
     Data_reader_blocking(Data_reader *rdr);
 
-    size_t do_get_bytes(size_t size, char* buffer);
+    int do_get_bytes(size_t size, char* buffer);
     bool eof();
 };
 

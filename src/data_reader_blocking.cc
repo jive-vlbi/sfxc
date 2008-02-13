@@ -8,7 +8,7 @@ Data_reader_blocking::Data_reader_blocking(Data_reader *rdr)
     assert(rdr);
 }
 
-size_t Data_reader_blocking::do_get_bytes(size_t size, char* buffer)
+int Data_reader_blocking::do_get_bytes(size_t size, char* buffer)
 {
     int numretry = 0;
     size_t remains = size;

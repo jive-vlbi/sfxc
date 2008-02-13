@@ -34,7 +34,7 @@ public:
 
   bool eof();  
 private:
-  size_t do_get_bytes(size_t nBytes, char *out);
+  int do_get_bytes(size_t nBytes, char *out);
 
   int sock;
   int msglev;

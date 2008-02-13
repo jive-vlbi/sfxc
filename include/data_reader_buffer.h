@@ -40,7 +40,7 @@ public:
     return buffer;
   }
 private:
-  size_t do_get_bytes(size_t nElements, char *out);
+  int do_get_bytes(size_t nElements, char *out);
 
   // The input buffer
   boost::shared_ptr<Buffer> buffer;
@@ -65,7 +65,7 @@ Data_reader_buffer<Element>::~Data_reader_buffer() {
 }
 
 template <class Element>
-size_t Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out_) {
+int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out_) {
   element_type *out = (element_type *)out_;
   size_t elements_to_read = nElements;
   while (elements_to_read > 0) {

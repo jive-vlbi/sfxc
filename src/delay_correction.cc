@@ -34,7 +34,6 @@ double Delay_correction::get_delay(int64_t time) {
 
 void Delay_correction::do_task() {
   assert(has_work());
-  //delay_timer.resume();
   assert(current_time >= 0);
 
   if (n_ffts_per_integration == current_fft) {
@@ -53,6 +52,7 @@ void Delay_correction::do_task() {
   Input_buffer_element &input = input_buffer->consume(input_size);
   Output_buffer_element &output = output_buffer->produce();
 
+
   // A factor of 2 for padding
   assert(input_size == number_channels());
   assert(input.size() == number_channels());
@@ -65,10 +65,14 @@ void Delay_correction::do_task() {
   double delay_in_samples = delay*sample_rate();
   int integer_delay = (int)std::floor(delay_in_samples+.5);
 
-  for (int i = 0; i < number_channels(); i++) {
+  {
+    int n_channels = number_channels();
     // Implicit FLOAT to complex conversion
-    frequency_buffer[i] = input[i];
-  }
+    for (int i = 0; i < n_channels; i++) 
+      frequency_buffer[i] = input[i];
+    for (int i = n_channels; i < 2*n_channels; i++) 
+      frequency_buffer[i] = 0;
+  }    
 
   fractional_bit_shift(&frequency_buffer[0],
                        integer_delay,
@@ -81,22 +85,12 @@ void Delay_correction::do_task() {
 
   input_buffer->consumed();
   output_buffer->produced(2*number_channels());
-
-  //delay_timer.stop();
 }
 
 
 void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
     int integer_shift,
     FLOAT fractional_delay) {
-  // create the fft-plans
-  //   plan_t2f = FFTW_PLAN_DFT_1D(number_channels(),
-  //                               (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output,
-  //                               FFTW_BACKWARD, FFTW_ESTIMATE);
-  //   plan_f2t = FFTW_PLAN_DFT_1D(number_channels(),
-  //                               (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output,
-  //                               FFTW_FORWARD,  FFTW_ESTIMATE);
-
   // 3) execute the complex to complex FFT, from Time to Frequency domain
   //    input: sls. output sls_freq
   delay_timer.resume();
@@ -132,11 +126,6 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
   FFTW_EXECUTE_DFT(plan_f2t, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
   delay_timer.stop();
   total_ffts++;
-  //   FFTW_EXECUTE(plan_f2t);
-
-  //   FFTW_DESTROY_PLAN(plan_f2t);
-  //   FFTW_DESTROY_PLAN(plan_t2f);
-
 }
 void Delay_correction::fringe_stopping(std::complex<FLOAT> input[],
                                        FLOAT output[]) {
@@ -236,7 +225,7 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 
   n_recompute_delay = sample_rate()/1000000;
 
-  frequency_buffer.resize(number_channels()*2);
+  frequency_buffer.resize(number_channels()*2, 0);
 
   if (prev_number_channels != number_channels()) {
     buffer.resize(number_channels());
