@@ -55,7 +55,6 @@ void Correlator_node::start() {
       }
       case CORRELATING: {
         if (process_all_waiting_messages() == TERMINATE_NODE) {
-          DEBUG_MSG("END_CORRELATING");
           status = END_CORRELATING;
         }
 

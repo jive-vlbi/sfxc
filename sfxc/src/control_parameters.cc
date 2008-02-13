@@ -376,6 +376,23 @@ Control_parameters::number_stations_in_scan(const std::string& scan) const {
   return n_stations;
 }
 
+int 
+Control_parameters::
+number_correlation_cores_per_timeslice() const {
+  if (cross_polarize()) {
+    int n_cores=0;
+    for (size_t i=0; i<number_frequency_channels(); i++) {
+      int cross = cross_channel(channel(i));
+      if ((cross == -1) || (cross > i)) {
+        n_cores ++;
+      }
+    }
+    return n_cores;
+  } else {
+    return number_frequency_channels();
+  }
+}
+
 size_t
 Control_parameters::number_frequency_channels() const {
   return ctrl["channels"].size();
@@ -471,15 +488,15 @@ Control_parameters::cross_polarize() const {
 
 int
 Control_parameters::
-cross_polarisation(int channel_nr) const {
+cross_channel(int channel_nr) const {
   if ((size_t) channel_nr >= number_frequency_channels())
     return -1;
-  return cross_polarisation(channel(channel_nr));
+  return cross_channel(channel(channel_nr));
 }
 
 int
 Control_parameters::
-cross_polarisation(const std::string &channel_name) const {
+cross_channel(const std::string &channel_name) const {
   std::string freq = frequency(channel_name, station(0));
   char side = sideband(channel_name, station(0));
   char pol  = polarisation(channel_name, station(0));
@@ -715,7 +732,7 @@ get_correlation_parameters(const std::string &scan_name,
   assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');
 
   corr_param.cross_polarize = cross_polarize();
-  if (cross_polarisation(channel_name) == -1) {
+  if (cross_channel(channel_name) == -1) {
     corr_param.cross_polarize = false;
   }
 

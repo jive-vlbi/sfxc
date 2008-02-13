@@ -82,7 +82,7 @@ void Output_node::start() {
           if (input_streams_order.begin()->first == curr_slice) {
             status = START_NEW_SLICE;
           }
-        }
+        } 
         break;
       }
     case START_NEW_SLICE:
