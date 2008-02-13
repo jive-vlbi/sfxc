@@ -14,6 +14,9 @@
 #include <string>
 #include <assert.h>
 
+# include <unistd.h>
+# include <sys/time.h>
+
 #include "types.h"
 #include "log_writer.h"
 
@@ -93,7 +96,22 @@ extern int RANK_OF_NODE; // Rank of the current node
 #endif
 
 #ifdef PRINT_PROGRESS
-#define PROGRESS_MSG(msg) DEBUG_MSG("PROGRESS " << msg);
+inline void getusec(unsigned long long &utime)
+{
+        struct timeval tv;
+        gettimeofday(&tv,0);
+        utime=tv.tv_sec*1000000;
+        utime+=tv.tv_usec;
+}
+
+inline unsigned long long getusec(void)
+{
+      unsigned long long t;
+      getusec(t);
+      return t;
+}
+
+#define PROGRESS_MSG(msg) DEBUG_MSG(" PROGRESS t=" << getusec() << ": " << msg);
 #else
 #define PROGRESS_MSG(msg)
 #endif // PRINT_PROGRESS
