@@ -265,6 +265,10 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     << Vex::Date(start_year, start_day, start_time/1000).to_string()
     << ", channel " << current_channel << " to correlation node "
     << corr_node_nr << std::endl;
+    PROGRESS_MSG("start "
+                 << Vex::Date(start_year, start_day, start_time/1000).to_string()
+                 << ", channel " << current_channel << " to correlation node "
+                 << corr_node_nr);
   } else {
     get_log_writer()(1)
     << "start "
@@ -273,6 +277,12 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     << current_channel << ","
     << cross_channel << " to correlation node "
     << corr_node_nr << std::endl;
+    PROGRESS_MSG("start "
+                 << Vex::Date(start_year, start_day, start_time/1000).to_string()
+                 << ", channel "
+                 << current_channel << ","
+                 << cross_channel << " to correlation node "
+                 << corr_node_nr);
   }
 
   std::string channel_name =
