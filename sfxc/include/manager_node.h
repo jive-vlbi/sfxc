@@ -70,6 +70,8 @@ public:
   /// Called when the output_node is finished
   void end_correlation();
 private:
+  std::string get_current_mode() const;
+
   Manager_node_controller manager_controller;
   Status status;
   std::vector<Correlating_state> state_correlator_node;

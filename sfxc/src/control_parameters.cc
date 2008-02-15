@@ -378,7 +378,7 @@ Control_parameters::number_stations_in_scan(const std::string& scan) const {
 
 int 
 Control_parameters::
-number_correlation_cores_per_timeslice() const {
+number_correlation_cores_per_timeslice(const std::string &mode) const {
   if (cross_polarize()) {
     int n_cores=0;
     for (size_t i=0; i<number_frequency_channels(); i++) {

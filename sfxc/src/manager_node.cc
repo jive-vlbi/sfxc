@@ -57,14 +57,14 @@ duration_time_slice(1000) {
 
 
   // correlator nodes:
-  if (numtasks-(n_stations+3) - control_parameters.number_correlation_cores_per_timeslice() < 0) {
+  if (numtasks-(n_stations+3) - control_parameters.number_correlation_cores_per_timeslice(get_current_mode()) < 0) {
     std::cout << "#correlator nodes < #freq. channels, use at least "
-    << n_stations+3+control_parameters.number_correlation_cores_per_timeslice()
+    << n_stations+3+control_parameters.number_correlation_cores_per_timeslice(get_current_mode())
     << " nodes." << std::endl
     << "Exiting now." << std::endl;
     get_log_writer()(1)
     << "#correlator nodes < #freq. channels, use at least "
-    << n_stations+3+control_parameters.number_correlation_cores_per_timeslice()
+    << n_stations+3+control_parameters.number_correlation_cores_per_timeslice(get_current_mode())
     << " nodes." << std::endl
     << "Exiting now." << std::endl;
     exit(1);
@@ -229,7 +229,7 @@ void Manager_node::start() {
       case STOP_CORRELATING: {
         // The status is set to END_NODE as soon as the output_node is ready
         int nr_slices = 
-          integration_slice_nr*control_parameters.number_correlation_cores_per_timeslice();
+          integration_slice_nr*control_parameters.number_correlation_cores_per_timeslice(get_current_mode());
         MPI_Send(&nr_slices, 1, MPI_INT32,
                  RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_CORRELATION_READY,
                  MPI_COMM_WORLD);
@@ -361,7 +361,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   for (int i=0; i<n_timeslices; i++) {
     int slice_nr_ = 
       (integration_slice_nr+i) *
-      control_parameters.number_correlation_cores_per_timeslice() +
+      control_parameters.number_correlation_cores_per_timeslice(get_current_mode()) +
       current_correlator_node;
     output_node_set_timeslice(slice_nr_,
                               corr_node_nr,
@@ -461,4 +461,9 @@ void Manager_node::initialise_scan(const std::string &scan) {
 void Manager_node::end_correlation() {
   assert(status == WAIT_FOR_OUTPUT_NODE);
   status = END_NODE;
+}
+
+std::string Manager_node::get_current_mode() const {
+  std::string scan_name = control_parameters.scan(current_scan);
+  return control_parameters.get_vex().get_mode(scan_name);
 }

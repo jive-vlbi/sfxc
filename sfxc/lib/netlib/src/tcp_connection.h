@@ -13,6 +13,8 @@
 #include <vector>
 #include <string>
 
+#include <stdint.h>
+
 class TCP_Connection
 {
 public:

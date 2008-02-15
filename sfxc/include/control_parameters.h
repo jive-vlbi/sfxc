@@ -155,7 +155,7 @@ public:
                       const std::string &station) const;
 
   // Takes cross polarisation into account
-  int number_correlation_cores_per_timeslice() const;
+  int number_correlation_cores_per_timeslice(const std::string &mode) const;
 
   // Return the Frequency channels from the VEX file, filtered by the ctrl file
   size_t number_frequency_channels() const;
