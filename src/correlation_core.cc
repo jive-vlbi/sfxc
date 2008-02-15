@@ -240,7 +240,9 @@ void Correlation_core::integration_average() {
     }
     for (size_t i = 0; i < size_of_fft()/2+1; i++) {
       // imaginary part should be zero!
-      accumulation_buffers[station*(size_of_fft()/2+1)+i].real() /= norms[station];
+      int index = station*(size_of_fft()/2+1)+i;
+      accumulation_buffers[index] = 
+        accumulation_buffers[index].real() / norms[station];
     }
   }
 
@@ -266,9 +268,8 @@ auto_correlate_baseline(std::complex<FLOAT> in[],
                         std::complex<FLOAT> out[]) {
   int size = size_of_fft()/2+1;
   for (int i=0; i<size; i++) {
-    out[i].real() += in[i].real()*in[i].real() +
-                     in[i].imag()*in[i].imag();
-    out[i].imag() = 0;
+    out[i] += (in[i].real()*in[i].real() +
+               in[i].imag()*in[i].imag());
   }
 }
 
@@ -277,16 +278,9 @@ Correlation_core::
 correlate_baseline(std::complex<FLOAT> in1[],
                    std::complex<FLOAT> in2[],
                    std::complex<FLOAT> out[]) {
-  // NGHK: TODO: expand and optimize
   int size = size_of_fft()/2+1;
   for (int i=0; i<size; i++) {
-    //out[i] += in1[i]*std::conj(in2[i]);
-    out[i].real() += 
-      in1[i].real() * in2[i].real() + 
-      in1[i].imag() * in2[i].imag();
-    out[i].imag() += 
-      in1[i].imag() * in2[i].real() - 
-      in1[i].real() * in2[i].imag();
+    out[i] += in1[i]*std::conj(in2[i]);
   }
 }
 

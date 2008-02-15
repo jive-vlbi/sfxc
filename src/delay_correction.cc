@@ -183,7 +183,7 @@ void Delay_correction::fringe_stopping(std::complex<FLOAT> input[],
 
     // 6b)apply normalization and multiply by 2.0
     // NHGK: Why only the real part
-    input[i].real() *= 2.0;
+    input[i] = std::complex<FLOAT>(2*input[i].real(), input[i].imag());
 
     // 7)subtract dopplers and put real part in Bufs for the current segment
     output[i] =
