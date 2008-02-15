@@ -12,8 +12,12 @@
 
 #include "mark4_header.h"
 
+// At least be able to buffer the data 
+// for MAX_SUBBANDS for two seconds at 256Mbps
 template <class Type>
-Channel_extractor<Type>::Channel_extractor() : N(sizeof(Type)) {
+Channel_extractor<Type>::Channel_extractor()
+  : output_memory_pool_(32000*MAX_SUBBANDS),
+    N(sizeof(Type)) {
   // bit shift right with padding
   for (int shift=0; shift<8; shift++) {
     for (int value=0; value<256; value++) {
@@ -188,6 +192,7 @@ void
 Channel_extractor<Type>::
 set_parameters(const Input_node_parameters &input_node_param,
                const std::vector< std::vector<int> > &track_positions) {
+  DEBUG_MSG("Set_Parameters");
   tracks_in_subbands = track_positions;
 
   // Check that all subbands have the same data rate
@@ -213,7 +218,8 @@ set_parameters(const Input_node_parameters &input_node_param,
   assert(8%fan_out == 0);
   assert(fan_out*samples_per_byte == 8);
 
-  memset(lookup_table, 0, N*256*8);
+  assert(n_subbands <= MAX_SUBBANDS);
+  memset(lookup_table, 0, N*256*MAX_SUBBANDS);
   // Lookup table for the tracks
   for (int subband=0; subband < n_subbands; subband++) {
     for (int track_nr=0; track_nr < fan_out; track_nr++) {

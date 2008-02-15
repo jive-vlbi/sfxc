@@ -24,12 +24,10 @@ Correlation_core::get_output_buffer() {
 }
 
 void Correlation_core::do_task() {
-#if 1
-    if (current_fft % 1000 == 0) {
-      PROGRESS_MSG("node " << node_nr_ << ", " 
-                   << current_fft << " of " << number_ffts_in_integration);
-    }
-#endif
+  if (current_fft % 1000 == 0) {
+    PROGRESS_MSG("node " << node_nr_ << ", " 
+                 << current_fft << " of " << number_ffts_in_integration);
+  }
 
   if (has_work()) {
     if (current_fft%number_ffts_in_integration == 0) {
@@ -41,10 +39,9 @@ void Correlation_core::do_task() {
     current_fft ++; 
     
     if (current_fft == number_ffts_in_integration) {
-#if 1
       PROGRESS_MSG("node " << node_nr_ << ", " 
                    << current_fft << " of " << number_ffts_in_integration);
-#endif
+
       integration_average();
       integration_write();
     }

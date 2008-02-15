@@ -17,6 +17,8 @@
 #include "input_node_types.h"
 #include "control_parameters.h"
 
+#define MAX_SUBBANDS 16
+
 // Not a data reader since it outputs multiple streams
 template <class Type>
 class Channel_extractor : public Tasklet {
@@ -85,9 +87,9 @@ private:
   // sizeof(Type)
   const int N;
   // Lookup table for the channel extraction
-  // At most 8 channels
+  // At most 16 channels
   // lookup_table[index in Type word][value of the byte][output sample/channel]
-  uint8_t lookup_table[8][sizeof(Type)][256];
+  uint8_t lookup_table[MAX_SUBBANDS][sizeof(Type)][256];
 
   // Lookup table for a right bitshift with 0 inserted
   uint8_t bit_shift_right_table[8][256];
