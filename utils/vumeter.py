@@ -192,9 +192,8 @@ for i in range(0,10000):
 						last_lines.pop(0)
 	
 	tmpfile.close()
-	
-	while (time.time()-iter_time) < 2:
-		None
+
+	time.sleep(1);
 
 	#if not(corrnode == 0) and len(process.keys()) == corrnode:
 	#	if total_time2 == 0:
