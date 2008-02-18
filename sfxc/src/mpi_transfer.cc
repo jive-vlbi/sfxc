@@ -202,38 +202,43 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
   assert(position == size);
 }
 
-void 
+void
 MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   int size = 0;
-  size = 
-    9*sizeof(int32_t) + sizeof(int64_t) + 2*sizeof(char) +  
-    corr_param.station_streams.size()*3*sizeof(int32_t);
-  
-  int position = 0; 
+  size =
+    11*sizeof(int32_t) + sizeof(int64_t) + 3*sizeof(char) +
+    corr_param.station_streams.size()*3*sizeof(int32_t) +
+    corr_param.station_number.size()*sizeof(int32_t);
+  int position = 0;
   char message_buffer[size];
 
   MPI_Pack(&corr_param.start_time, 1, MPI_INT32,
-           message_buffer, size, &position, MPI_COMM_WORLD); 
+           message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.stop_time, 1, MPI_INT32,
-           message_buffer, size, &position, MPI_COMM_WORLD); 
+           message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.integration_time, 1, MPI_INT32,
-           message_buffer, size, &position, MPI_COMM_WORLD); 
+           message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.number_channels, 1, MPI_INT32,
-           message_buffer, size, &position, MPI_COMM_WORLD); 
+           message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.slice_nr, 1, MPI_INT32,
-           message_buffer, size, &position, MPI_COMM_WORLD); 
-  
+           message_buffer, size, &position, MPI_COMM_WORLD);
+
   MPI_Pack(&corr_param.sample_rate, 1, MPI_INT32,
-           message_buffer, size, &position, MPI_COMM_WORLD); 
+           message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.bits_per_sample, 1, MPI_INT32,
-           message_buffer, size, &position, MPI_COMM_WORLD); 
-  
+           message_buffer, size, &position, MPI_COMM_WORLD);
+
   MPI_Pack(&corr_param.channel_freq, 1, MPI_INT64,
-           message_buffer, size, &position, MPI_COMM_WORLD); 
+           message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.bandwidth, 1, MPI_INT32,
-           message_buffer, size, &position, MPI_COMM_WORLD); 
+           message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.sideband, 1, MPI_CHAR,
-           message_buffer, size, &position, MPI_COMM_WORLD); 
+           message_buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&corr_param.polarisation, 1, MPI_CHAR,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&corr_param.channel_nr, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+
   char cross_polarize;
   if (corr_param.cross_polarize) {
     cross_polarize='y';
@@ -241,100 +246,119 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
     cross_polarize='n';
   }
   MPI_Pack(&cross_polarize, 1, MPI_CHAR,
-           message_buffer, size, &position, MPI_COMM_WORLD); 
+           message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.reference_station, 1, MPI_INT32,
-           message_buffer, size, &position, MPI_COMM_WORLD); 
-  
-  for (Correlation_parameters::Station_iterator station = 
+           message_buffer, size, &position, MPI_COMM_WORLD);
+
+  int32_t vector_size = corr_param.station_number.size();
+  MPI_Pack(&vector_size, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&corr_param.station_number[0], vector_size, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+
+  for (Correlation_parameters::Station_iterator station =
          corr_param.station_streams.begin();
        station != corr_param.station_streams.end(); station++) {
     MPI_Pack(&station->station_stream, 1, MPI_INT32,
-             message_buffer, size, &position, MPI_COMM_WORLD); 
+             message_buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&station->start_time, 1, MPI_INT32,
-             message_buffer, size, &position, MPI_COMM_WORLD); 
+             message_buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&station->stop_time, 1, MPI_INT32,
-             message_buffer, size, &position, MPI_COMM_WORLD); 
+             message_buffer, size, &position, MPI_COMM_WORLD);
   }
-
   assert(position == size);
-  MPI_Send(message_buffer, position, MPI_PACKED, rank, 
+  MPI_Send(message_buffer, position, MPI_PACKED, rank,
            MPI_TAG_CORR_PARAMETERS, MPI_COMM_WORLD);
 }
 
-void 
+void
 MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
   corr_param.station_streams.clear();
-  
+
   MPI_Status status2;
-  
+
   int size;
   MPI_Get_elements(&status, MPI_CHAR, &size);
   assert(size > 0);
   char buffer[size];
   MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE,
            status.MPI_TAG, MPI_COMM_WORLD, &status2);
-
   int position = 0;
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.start_time, 1, MPI_INT32,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.stop_time, 1, MPI_INT32,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.integration_time, 1, MPI_INT32,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.number_channels, 1, MPI_INT32,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.slice_nr, 1, MPI_INT32,
+             MPI_COMM_WORLD);
 
-  MPI_Unpack(buffer, size, &position, 
-             &corr_param.start_time, 1, MPI_INT32, 
-             MPI_COMM_WORLD); 
-  MPI_Unpack(buffer, size, &position, 
-             &corr_param.stop_time, 1, MPI_INT32, 
-             MPI_COMM_WORLD); 
-  MPI_Unpack(buffer, size, &position, 
-             &corr_param.integration_time, 1, MPI_INT32, 
-             MPI_COMM_WORLD); 
-  MPI_Unpack(buffer, size, &position, 
-             &corr_param.number_channels, 1, MPI_INT32, 
-             MPI_COMM_WORLD); 
-  MPI_Unpack(buffer, size, &position, 
-             &corr_param.slice_nr, 1, MPI_INT32, 
-             MPI_COMM_WORLD); 
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.sample_rate, 1, MPI_INT32,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.bits_per_sample, 1, MPI_INT32,
+             MPI_COMM_WORLD);
 
-  MPI_Unpack(buffer, size, &position, 
-             &corr_param.sample_rate, 1, MPI_INT32, 
-             MPI_COMM_WORLD); 
-  MPI_Unpack(buffer, size, &position, 
-             &corr_param.bits_per_sample, 1, MPI_INT32, 
-             MPI_COMM_WORLD); 
-
-  MPI_Unpack(buffer, size, &position, 
-             &corr_param.channel_freq, 1, MPI_INT64, 
-             MPI_COMM_WORLD); 
-  MPI_Unpack(buffer, size, &position, 
-             &corr_param.bandwidth, 1, MPI_INT32, 
-             MPI_COMM_WORLD); 
-  MPI_Unpack(buffer, size, &position, 
-             &corr_param.sideband, 1, MPI_CHAR, 
-             MPI_COMM_WORLD); 
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.channel_freq, 1, MPI_INT64,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.bandwidth, 1, MPI_INT32,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.sideband, 1, MPI_CHAR,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.polarisation, 1, MPI_CHAR,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.channel_nr, 1, MPI_INT32,
+             MPI_COMM_WORLD);
   char cross_polarize;
-  MPI_Unpack(buffer, size, &position, 
-             &cross_polarize, 1, MPI_CHAR, 
-             MPI_COMM_WORLD); 
+  MPI_Unpack(buffer, size, &position,
+             &cross_polarize, 1, MPI_CHAR,
+             MPI_COMM_WORLD);
   if (cross_polarize=='y') {
     corr_param.cross_polarize = true;
   } else {
     assert(cross_polarize=='n');
     corr_param.cross_polarize = false;
   }
-  MPI_Unpack(buffer, size, &position, 
-             &corr_param.reference_station, 1, MPI_INT32, 
-             MPI_COMM_WORLD); 
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.reference_station, 1, MPI_INT32,
+             MPI_COMM_WORLD);
+
+  int32_t vector_size;
+  MPI_Unpack(buffer, size, &position,
+             &vector_size, 1, MPI_INT32,
+             MPI_COMM_WORLD);
+  corr_param.station_number.resize(vector_size);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.station_number[0], vector_size, MPI_INT32,
+             MPI_COMM_WORLD);
 
   while (position < size) {
-    Correlation_parameters::Station_parameters station_param;
-    MPI_Unpack(buffer, size, &position, 
-               &station_param.station_stream, 1, MPI_INT32,
-               MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, 
-               &station_param.start_time, 1, MPI_INT32,
-               MPI_COMM_WORLD); 
-    MPI_Unpack(buffer, size, &position, 
-               &station_param.stop_time, 1, MPI_INT32,
-               MPI_COMM_WORLD); 
 
+    Correlation_parameters::Station_parameters station_param;
+    MPI_Unpack(buffer, size, &position,
+               &station_param.station_stream, 1, MPI_INT32,
+               MPI_COMM_WORLD);
+    MPI_Unpack(buffer, size, &position,
+               &station_param.start_time, 1, MPI_INT32,
+               MPI_COMM_WORLD);
+    MPI_Unpack(buffer, size, &position,
+               &station_param.stop_time, 1, MPI_INT32,
+               MPI_COMM_WORLD);
     corr_param.station_streams.push_back(station_param);
   }
+
   assert(position == size);
 }

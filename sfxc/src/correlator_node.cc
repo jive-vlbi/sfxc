@@ -12,6 +12,7 @@
 #include "data_reader_buffer.h"
 #include "data_writer_buffer.h"
 #include "utils.h"
+#include "output_header.h"
 
 Correlator_node::Correlator_node(int rank, int nr_corr_node)
     : Node(rank),
@@ -203,4 +204,39 @@ Correlator_node::set_parameters(const Correlation_parameters &parameters) {
 
   n_integration_slice_in_time_slice =
     (parameters.stop_time-parameters.start_time) / parameters.integration_time;
-}
+  // set the output stream
+   int nAutos = parameters.station_streams.size();
+   int nCrosses = nAutos*(nAutos-1)/2;
+   int nBaselines;
+   if (parameters.cross_polarize) { // do cross polarisation
+     if (parameters.reference_station < 0) {
+       nBaselines = 2*nAutos + 4*nCrosses;
+     } else {
+       nBaselines = 2*nAutos + 4*(nAutos-1);
+     }
+   } else {
+     if (parameters.reference_station < 0) {
+       nBaselines = nAutos + nCrosses;
+     } else {
+       nBaselines = 2*nAutos - 1;
+     }
+   }
+        
+   int size_of_one_baseline = sizeof(fftwf_complex)*
+     (parameters.number_channels*PADDING/2+1);
+   
+   output_node_set_timeslice(parameters.slice_nr, get_correlate_node_number(),
+         n_integration_slice_in_time_slice * size_of_one_baseline*nBaselines +
+         n_integration_slice_in_time_slice * sizeof(Output_header_timeslice) +
+         n_integration_slice_in_time_slice * sizeof(Output_header_baseline)*nBaselines);
+ }
+
+ void
+ Correlator_node::
+ output_node_set_timeslice(int slice_nr, int stream_nr, int bytes) {
+   int32_t msg_output_node[] = {stream_nr, slice_nr, bytes};
+   MPI_Send(&msg_output_node, 3, MPI_INT32,
+            RANK_OUTPUT_NODE,
+            MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
+            MPI_COMM_WORLD);
+ }

@@ -26,9 +26,11 @@
 #include "data_writer_file.h"
 
 Input_node::Input_node(int rank, int station_number, Log_writer *log_writer) :
-    Node(rank, log_writer), input_node_ctrl(*this), data_reader_ctrl(*this),
+    Node(rank, log_writer), 
+    input_node_ctrl(*this), 
+    data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
-input_node_tasklet(NULL), status(WAITING) {
+    input_node_tasklet(NULL), status(WAITING) {
   initialise();
 }
 Input_node::Input_node(int rank, int station_number) :

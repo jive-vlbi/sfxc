@@ -357,27 +357,27 @@ void gnuplot_resetplot(gnuplot_ctrl * h)
 
 /*-------------------------------------------------------------------------*/
 /**
-  @brief	Plots a 2d graph from a list of FLOATs.
+  @brief	Plots a 2d graph from a list of floats.
   @param	handle	Gnuplot session control handle.
-  @param	d		Array of FLOATs.
+  @param	d		Array of floats.
   @param	n		Number of values in the passed array.
   @param	title	Title of the plot.
   @return	void
 
-  Plots out a 2d graph from a list of FLOATs. The x-coordinate is the
-  index of the FLOAT in the list, the y coordinate is the FLOAT in
+  Plots out a 2d graph from a list of floats. The x-coordinate is the
+  index of the float in the list, the y coordinate is the float in
   the list.
 
   Example:
 
   @code
     gnuplot_ctrl    *h ;
-    FLOAT          d[50] ;
+    float          d[50] ;
     int             i ;
 
     h = gnuplot_init() ;
     for (i=0 ; i<50 ; i++) {
-        d[i] = (FLOAT)(i*i) ;
+        d[i] = (float)(i*i) ;
     }
     gnuplot_plot_x(h, d, 50, "parabola") ;
     sleep(2) ;
@@ -388,7 +388,7 @@ void gnuplot_resetplot(gnuplot_ctrl * h)
 
 void gnuplot_plot_x(
     gnuplot_ctrl    *   handle,
-    FLOAT          *   d,
+    float          *   d,
     int                 n,
     char            *   title
 )
@@ -455,7 +455,7 @@ void gnuplot_plot_x(
   @param	handle		Gnuplot session control handle.
   @param	x			Pointer to a list of x coordinates.
   @param	y			Pointer to a list of y coordinates.
-  @param	n			Number of FLOATs in x (assumed the same as in y).
+  @param	n			Number of floats in x (assumed the same as in y).
   @param	title		Title of the plot.
   @return	void
 
@@ -465,13 +465,13 @@ void gnuplot_plot_x(
 
   @code
     gnuplot_ctrl    *h ;
-	FLOAT			x[50] ;
-	FLOAT			y[50] ;
+	float			x[50] ;
+	float			y[50] ;
     int             i ;
 
     h = gnuplot_init() ;
     for (i=0 ; i<50 ; i++) {
-        x[i] = (FLOAT)(i)/10.0 ;
+        x[i] = (float)(i)/10.0 ;
         y[i] = x[i] * x[i] ;
     }
     gnuplot_plot_xy(h, x, y, 50, "parabola") ;
@@ -483,8 +483,8 @@ void gnuplot_plot_x(
 
 void gnuplot_plot_xy(
     gnuplot_ctrl    *   handle,
-	FLOAT			*	x,
-	FLOAT			*	y,
+	float			*	x,
+	float			*	y,
     int                 n,
     char            *   title
 )
@@ -570,8 +570,8 @@ void gnuplot_plot_once(
 	char	*	style,
 	char	*	label_x,
 	char	*	label_y,
-	FLOAT	*	x,
-	FLOAT	*	y,
+	float	*	x,
+	float	*	y,
 	int			n
 )
 {
@@ -625,7 +625,7 @@ void gnuplot_plot_once(
 
   @code
     gnuplot_ctrl    *   h ;
-    FLOAT              a, b ;
+    float              a, b ;
 
     h = gnuplot_init() ;
     gnuplot_plot_slope(h, 1.0, 0.0, "unity slope") ;
@@ -638,8 +638,8 @@ void gnuplot_plot_once(
 
 void gnuplot_plot_slope(
     gnuplot_ctrl    *   handle,
-    FLOAT              a,
-    FLOAT              b,
+    float              a,
+    float              b,
     char            *   title
 )
 {

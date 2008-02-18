@@ -112,6 +112,9 @@ private:
   Input_node_tasklet *input_node_tasklet;
 
   Status status;
+  int32_t start_time;
+  
+  int64_t stop_time;
 };
 
 #endif // INPUT_NODE_H

@@ -1,4 +1,6 @@
 #include "correlation_core.h"
+#include "output_header.h"
+#include <utils.h>
 
 Correlation_core::Correlation_core()
 : output_buffer(Output_buffer_ptr(new Output_buffer(2))),
@@ -255,8 +257,71 @@ void Correlation_core::integration_average() {
 
 void Correlation_core::integration_write() {
   assert(writer != boost::shared_ptr<Data_writer>());
-  writer->put_bytes(accumulation_buffers.size()*sizeof(std::complex<FLOAT>),
+  assert(accumulation_buffers.size() ==
+    baselines.size()*(size_of_fft()/2+1));
+
+  int nr_corr = (correlation_parameters.stop_time-correlation_parameters.start_time)
+                /correlation_parameters.integration_time;
+
+  int polarisation;
+  if(correlation_parameters.polarisation == 'R'){
+    polarisation =0;
+  } else if (correlation_parameters.polarisation == 'L'){
+    polarisation =1;
+  }
+
+  Output_header_timeslice htimeslice;
+  Output_header_baseline hbaseline;
+  
+  htimeslice.number_baselines = baselines.size();
+  htimeslice.integration_slice = nr_corr;
+  htimeslice.number_uvw_coordinates = 0;
+
+  //write normalized correlation results to output file
+  //NGHK: Make arrays consecutive to be able to write all data at once
+  
+  uint64_t nWrite = sizeof(htimeslice);
+  writer->put_bytes(nWrite, (char *)&htimeslice);
+  
+  std::vector<int32_t> station_list;
+  for (int ii=0; ii<correlation_parameters.station_number.size(); ii++){
+       station_list.push_back(correlation_parameters.station_number[ii]);
+  }
+  
+  accumulation_buffers_float.resize(size_of_fft()/2+1);
+  
+  for (int i=0; i<baselines.size(); i++) {
+    std::pair<int,int> &stations = baselines[i];
+    
+    for (int ii=0; ii<size_of_fft()/2+1; ii++ ){
+      accumulation_buffers_float[ii] = accumulation_buffers[i*(size_of_fft()/2+1)+ii];
+    }
+
+    hbaseline.weight = 0;       // The number of good samples
+    hbaseline.station_nr1 = (uint8_t)station_list[stations.first];  // Station number in the vex-file
+    hbaseline.station_nr2 = (uint8_t)station_list[stations.second];  // Station number in the vex-file
+    hbaseline.polarisation1 = (unsigned char)polarisation; // Polarisation for the first station
+                            // (RCP: 0, LCP: 1)
+    hbaseline.polarisation2 = (unsigned char)polarisation; // Polarisation for the second station
+    if(correlation_parameters.sideband=='U'){
+      hbaseline.sideband = 1;      // Upper or lower sideband (LSB: 0, USB: 1)
+    }else if(correlation_parameters.sideband=='L'){
+      hbaseline.sideband = 0;
+    }
+    hbaseline.frequency_nr = (unsigned char)correlation_parameters.channel_nr;       // The number of the channel in the vex-file,
+                            // sorted increasingly
+      // 1 byte left:
+    hbaseline.empty = ' ';
+    
+    nWrite = sizeof(hbaseline);
+    writer->put_bytes(nWrite, (char *)&hbaseline);
+    writer->put_bytes((size_of_fft()/2+1)*sizeof(std::complex<float>),
+        ((char*)&accumulation_buffers_float[0]));
+  }
+/*
+  writer->put_bytes(accumulation_buffers.size()*sizeof(std::complex<DOUBLE>),
                     ((char*)&accumulation_buffers[0]));
+*/
 }
 
 void 

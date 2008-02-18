@@ -16,7 +16,7 @@
 #define RANK_LOG_NODE     1
 #define RANK_OUTPUT_NODE  2
 
-#define PRINT_PID         false
+#define PRINT_PID         true
 #define PRINT_HOST        false
 
 #define MPI_INT8   MPI_CHAR
@@ -202,6 +202,11 @@ enum MPI_TAG {
    **/
   MPI_TAG_LOG_NODE_SET_OUTPUT_FILE,
 
+  /** Global header message for the output file
+   * - char[]: header
+   **/
+  MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER,
+
   // General messages
   //-------------------------------------------------------------------------//
 
@@ -293,6 +298,8 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_LOG_NODE_SET_OUTPUT_COUT"; }
     case MPI_TAG_LOG_NODE_SET_OUTPUT_FILE:
       { return "MPI_TAG_LOG_NODE_SET_OUTPUT_FILE"; }
+    case MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER:
+      { return "MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER"; }
     case MPI_TAG_DATASTREAM_EMPTY:
       { return "MPI_TAG_DATASTREAM_EMPTY"; }
     case MPI_TAG_CORRELATE_ENDED:
