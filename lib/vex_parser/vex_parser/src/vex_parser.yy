@@ -1,12 +1,3 @@
-/* Reverse polish notation calculator. */
-/* %file-prefix="parser" */
-
-/* Location tracking.  */
-/* %locations */
-
-/* %pure-parser */
-/* %parse-param {YYSTYPE &result} */
-
 %defines
 
 %{
@@ -110,7 +101,9 @@ block_lines:
   { $$ = YYSTYPE(YYSTYPE::DICT); }
 | block_lines 
   block_line
-  { $$ = $1; $$.join($2); } 
+  { $$ = $1; 
+    $$.join($2); 
+  } 
 ;
            
 block_line:
