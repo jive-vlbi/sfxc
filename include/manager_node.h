@@ -14,6 +14,7 @@
 
 #include "abstract_manager_node.h"
 #include "controller.h"
+#include "output_header.h"
 
 class Manager_node;
 
@@ -93,7 +94,10 @@ private:
   /// The number of the current stream
 //  int32_t stream_nr;
   /// The number of the integration slice
-  int32_t integration_slice_nr;
+  int32_t output_slice_nr;
+
+  // A list of all scan names.
+  std::list<std::string> scans;
 
   // The current scan number
   size_t current_scan;

@@ -90,6 +90,8 @@ public:
   
   void start();
 
+  void output_node_set_timeslice(int slice_nr, int stream_nr, int bytes);
+
   /// Callback function for adding a data_reader:
   void hook_added_data_reader(size_t reader);
   /// Callback function for adding a data_writer:

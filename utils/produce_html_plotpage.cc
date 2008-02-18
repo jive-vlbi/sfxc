@@ -1,4 +1,12 @@
 /* author : N.G.H. Kruithof
+* 
+ * Note (H. Ozdemir):
+ * At the moment we loop through the stations and  produce the html output
+ * assuming that the baselines are output in the correct order in the .cor file.
+ * Instead we should read the baseline header and decide weather it is auto or cross
+ * depending on the station1 and station2 written in that baseline header.
+ * In this case we have to write the html table in the corrected order.
+ * 
  */
 
 #define MAX_SNR_VALUE 8
@@ -16,11 +24,11 @@
 #include <vector>
 #include <assert.h>
 #include <complex>
-
 #include "log_writer_cout.h"
 #include "gnuplot_i.h"
 #include "utils.h"
 #include "control_parameters.h"
+#include "output_header.h"
 
 Control_parameters ConPrms;
 
@@ -31,8 +39,8 @@ public:
   double frequency;
   char sideband;
   std::vector<std::string> autos, crosses;
-  std::vector<FLOAT> snr_crosses; // Signal to noise ratio for the crosses
-  std::vector<FLOAT> offset; // Offset of the maximum value of a cross with the midpoint
+  std::vector<float> snr_crosses; // Signal to noise ratio for the crosses
+  std::vector<float> offset; // Offset of the maximum value of a cross with the midpoint
 
   void set_size_crosses(int size_cross) {
     crosses.resize(size_cross);
@@ -48,12 +56,14 @@ int plot_count=0;
 class Plot_generator {
 public:
   Plot_generator(std::ifstream &infile, const Control_parameters &ConPrms,
-                 int count_channel);
+                 int count_channel, int32_t &start_time);
 
 private:
   // sets the data of plot_data except for the plots
-  void set_plot_data(Plot_data &data, const Control_parameters &ConPrms,
-                     int count_channel);
+  void set_plot_data(Plot_data &data, 
+                     const Control_parameters &ConPrms,
+                     int count_channel,
+                     int32_t &start_time);
   void generate_auto_plots(std::ifstream &in,
                            int stations_start,
                            int stations_end,
@@ -67,19 +77,20 @@ private:
                            const Control_parameters &ConPrms);
   void plot(char *filename, int nPts, char *title);
 
-  FLOAT signal_to_noise_ratio(std::vector< std::complex<FLOAT> > &data);
-  FLOAT max_value_offset(std::vector< std::complex<FLOAT> > &data);
+  float signal_to_noise_ratio(std::vector< std::complex<float> > &data);
+  float max_value_offset(std::vector< std::complex<float> > &data);
 
 private:
   int nLags;
-  std::vector< std::complex<FLOAT> > in, out;
-  std::vector< FLOAT > magnitude;
-  FFTW_PLAN visibilities2lags; 
+  std::vector< std::complex<float> > in, out;
+  std::vector<float> magnitude;
+  fftwf_plan visibilities2lags; 
 };
 
 Plot_generator::Plot_generator(std::ifstream &infile, 
                                const Control_parameters &ConPrms,
-                               int count_channel)
+                               int count_channel, 
+                               int32_t &start_time)
 {
   Log_writer_cout log_writer;
 
@@ -89,9 +100,9 @@ Plot_generator::Plot_generator(std::ifstream &infile,
   magnitude.resize(nLags);
 
   visibilities2lags = 
-    FFTW_PLAN_DFT_1D(nLags, 
-                     reinterpret_cast<FFTW_COMPLEX*>(&in[0]),
-                     reinterpret_cast<FFTW_COMPLEX*>(&out[0]),
+    fftwf_plan_dft_1d(nLags, 
+                     reinterpret_cast<fftwf_complex*>(&in[0]),
+                     reinterpret_cast<fftwf_complex*>(&out[0]),
                      FFTW_BACKWARD, 
                      FFTW_ESTIMATE);
 
@@ -108,7 +119,8 @@ Plot_generator::Plot_generator(std::ifstream &infile,
   int nStations = ConPrms.number_stations();
   int cross_channel = -1;
   if (ConPrms.cross_polarize()) {
-    cross_channel = ConPrms.cross_channel(count_channel);
+    cross_channel = ConPrms.cross_channel(count_channel, 
+                                      ConPrms.get_mode(start_time));
     assert((cross_channel == -1) ||
            (cross_channel > count_channel));
   }
@@ -122,11 +134,11 @@ Plot_generator::Plot_generator(std::ifstream &infile,
     plot_data[0].job_name = 
       ConPrms.channel(count_channel)+ ", " +
       ConPrms.frequency(ConPrms.channel(count_channel), 
-                        ConPrms.station(0)) + ", " +
+                        ConPrms.station(0),ConPrms.get_mode(start_time)) + ", " +
       ConPrms.sideband(ConPrms.channel(count_channel), 
-                       ConPrms.station(0))+"SB, "+
+                       ConPrms.station(0),ConPrms.get_mode(start_time))+"SB, "+
       ConPrms.polarisation(ConPrms.channel(count_channel),
-                           ConPrms.station(0)) + "cp ";
+                           ConPrms.station(0),ConPrms.get_mode(start_time)) + "cp ";
 
   } else {
     generate_auto_plots(infile, 0, nStations, plot_data[0], ConPrms);
@@ -135,19 +147,19 @@ Plot_generator::Plot_generator(std::ifstream &infile,
     plot_data[0].job_name = 
       ConPrms.channel(count_channel)+ ", " +
       ConPrms.frequency(ConPrms.channel(count_channel), 
-                        ConPrms.station(0)) + ", " +
+                        ConPrms.station(0),ConPrms.get_mode(start_time)) + ", " +
       ConPrms.sideband(ConPrms.channel(count_channel), 
-                       ConPrms.station(0))+"SB, "+
+                       ConPrms.station(0),ConPrms.get_mode(start_time))+"SB, "+
       ConPrms.polarisation(ConPrms.channel(count_channel),
-                           ConPrms.station(0)) + "cp ";
+                           ConPrms.station(0),ConPrms.get_mode(start_time)) + "cp ";
     plot_data[2].job_name = 
       ConPrms.channel(cross_channel)+ ", " +
       ConPrms.frequency(ConPrms.channel(cross_channel), 
-                        ConPrms.station(0)) + ", " +
+                        ConPrms.station(0),ConPrms.get_mode(start_time)) + ", " +
       ConPrms.sideband(ConPrms.channel(cross_channel), 
-                       ConPrms.station(0))+"SB, "+
+                       ConPrms.station(0),ConPrms.get_mode(start_time))+"SB, "+
       ConPrms.polarisation(ConPrms.channel(cross_channel),
-                           ConPrms.station(0)) + "cp ";
+                           ConPrms.station(0),ConPrms.get_mode(start_time)) + "cp ";
 
     plot_data[0].job_name += ", parallel";
     plot_data[1].job_name += "<div align=right>cross</div>";
@@ -245,32 +257,42 @@ Plot_generator::Plot_generator(std::ifstream &infile,
       plot_data_channels.push_back(plot_data[i]);
     }
   }  
-  FFTW_DESTROY_PLAN(visibilities2lags);
+  fftwf_destroy_plan(visibilities2lags);
 }
 
 void Plot_generator::set_plot_data(Plot_data & data, 
                                    const Control_parameters &ConPrms,
-                                   int count_channel) {
+                                   int count_channel,
+                                   int32_t &start_time) {
 
   for (int i=0; i<ConPrms.channels_size(); i++){
     for (int j=1; j<ConPrms.number_stations(); j++){
-      if(ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(j)) 
-         != ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(0))){
+      if(ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(j),
+                              ConPrms.get_mode(start_time)) 
+         != ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(0),
+                              ConPrms.get_mode(start_time))){
         std::cout << "error in polarisation values" << std::endl;
-      } else if (ConPrms.frequency(ConPrms.channel(i),ConPrms.station(j)) 
-                 != ConPrms.frequency(ConPrms.channel(i),ConPrms.station(0))){
+      } else if (ConPrms.frequency(ConPrms.channel(i),ConPrms.station(j),
+                                  ConPrms.get_mode(start_time)) 
+                 != ConPrms.frequency(ConPrms.channel(i),ConPrms.station(0),
+                                  ConPrms.get_mode(start_time))){
         std::cout << "error in frequency values" << std::endl;
-      } else if (ConPrms.sideband(ConPrms.channel(i),ConPrms.station(j)) 
-                 != ConPrms.sideband(ConPrms.channel(i),ConPrms.station(0))){
+      } else if (ConPrms.sideband(ConPrms.channel(i),ConPrms.station(j),
+                                  ConPrms.get_mode(start_time)) 
+                 != ConPrms.sideband(ConPrms.channel(i),ConPrms.station(0),
+                                  ConPrms.get_mode(start_time))){
         std::cout << "error in sideband values" << std::endl;
       }
     }
   }
 
   data.job_name = ConPrms.experiment()+"_"+ConPrms.channel(count_channel)
-    + "_" + ConPrms.polarisation(ConPrms.channel(count_channel),ConPrms.station(0)) 
-    + "cp_" + ConPrms.frequency(ConPrms.channel(count_channel), ConPrms.station(0))
-    + "_" + ConPrms.sideband(ConPrms.channel(count_channel), ConPrms.station(0)) + "sb";
+    + "_" + ConPrms.polarisation(ConPrms.channel(count_channel),ConPrms.station(0),
+                                 ConPrms.get_mode(start_time)) 
+    + "cp_" + ConPrms.frequency(ConPrms.channel(count_channel), ConPrms.station(0),
+                                 ConPrms.get_mode(start_time))
+    + "_" + ConPrms.sideband(ConPrms.channel(count_channel), ConPrms.station(0),
+                                 ConPrms.get_mode(start_time)) + "sb";
   data.frequency = 0; //not used at this moment HO
   data.sideband = 'L'; //not used at this moment (GenPrms.get_sideband()-1 ? 'L' : 'U');
 }
@@ -283,9 +305,18 @@ Plot_generator::generate_auto_plots(std::ifstream &infile,
                                     Plot_data &plot_data,
                                     const Control_parameters &ConPrms) {
 
+  //read-in the header of the baselines
+  Output_header_baseline baseline;
+  //the following loop is also over baselines since 
+  //in auto correlation the number of 
+  //baselines equals to number of stations.
   for (int station=stations_start; station<stations_end; station++) {
-    infile.read((char *)&in[0], 2*in.size()*sizeof(FLOAT));
-
+    infile.read((char*)&baseline, sizeof(Output_header_baseline));
+    
+    assert((int)baseline.station_nr1 == (int)baseline.station_nr2);
+    
+    //read data for this baseline
+    infile.read((char *)&in[0], 2*in.size()*sizeof(float));
     for  (int lag=0; lag<nLags; lag++) {
       magnitude[lag] = abs(in[lag]);
     }
@@ -311,9 +342,16 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
                                     int plot_nr,
                                     const Control_parameters &ConPrms) {
   int nStations = ConPrms.number_stations();
+  Output_header_baseline baseline;
+  //read-in the header of the baselines
+  infile.read((char*)&baseline, sizeof(Output_header_baseline));
 
-  infile.read((char *)&in[0], 2*in.size()*sizeof(FLOAT));
-  FFTW_EXECUTE(visibilities2lags);
+  //assert(station == (int)baseline.station_nr1);
+  //assert(station2 == (int)baseline.station_nr2);
+
+  //read data for this baseline
+  infile.read((char *)&in[0], 2*in.size()*sizeof(float));
+  fftwf_execute(visibilities2lags);
 
   for  (int lag=0; lag<nLags; lag++) {
     magnitude[lag] = abs(out[(lag+nLags/2)%nLags])/nLags;
@@ -360,15 +398,15 @@ Plot_generator::plot(char *filename, int nPts, char *title) {
   gnuplot_close(g);
 }
 
-FLOAT
-Plot_generator::max_value_offset(std::vector< std::complex<FLOAT> > &data)
+float
+Plot_generator::max_value_offset(std::vector< std::complex<float> > &data)
 {
   int index_max = 0;
   for (size_t i=1; i<data.size(); i++) {
     if (norm(data[i]) > norm(data[index_max])) index_max = i;
   }
 
-  FLOAT maxval = 0.0;
+  float maxval = 0.0;
   int maxval_loc = 0;
   for  (int lag=0; lag<data.size(); lag++) {
     magnitude[lag] = abs(data[(lag+data.size()/2)%data.size()])/data.size();
@@ -380,8 +418,8 @@ Plot_generator::max_value_offset(std::vector< std::complex<FLOAT> > &data)
   
   return maxval_loc;
 }
-FLOAT 
-Plot_generator::signal_to_noise_ratio(std::vector< std::complex<FLOAT> > &data)
+float 
+Plot_generator::signal_to_noise_ratio(std::vector< std::complex<float> > &data)
 {
   int index_max = 0;
   for (size_t i=1; i<data.size(); i++) {
@@ -389,7 +427,7 @@ Plot_generator::signal_to_noise_ratio(std::vector< std::complex<FLOAT> > &data)
   }
 
   //return noise rms in array, skip 10 % around maximum
-  std::complex<FLOAT> mean(0,0);
+  std::complex<float> mean(0,0);
   int ll=index_max - data.size()/20;//5% of range to left
   int ul=index_max + data.size()/20;//5% of range to right
   int n2avg=0;
@@ -405,7 +443,7 @@ Plot_generator::signal_to_noise_ratio(std::vector< std::complex<FLOAT> > &data)
 
   mean /= n2avg;
 
-  FLOAT sum = 0;
+  float sum = 0;
   for (size_t i=0 ; i< data.size() ; i++){
     if (((int)i < ll) || ((int)i > ul)) {
       sum += norm(data[i]-mean);
@@ -593,21 +631,29 @@ int main(int argc, char *argv[])
     assert(err == 0);
   }
   
+  Output_header_global header;
+  Output_header_timeslice timeslice;
+
+  //read-in the global header 
+  infile.read((char*)&header, sizeof(Output_header_global));
+    
   for (int channel=0; channel<ConPrms.channels_size();) {
+    //read-in the header of the time-slice
+    infile.read((char*)&timeslice, sizeof(Output_header_timeslice));
     // generate plots for the channel
-    Plot_generator(infile, ConPrms, channel);
+    Plot_generator(infile, ConPrms, channel, header.start_time);
 
     // find the next channel
     if (ConPrms.cross_polarize()) {
       channel ++;
       int cross_channel = 
-        ConPrms.cross_channel(channel);
+        ConPrms.cross_channel(channel, ConPrms.get_mode(header.start_time));
       while ((channel <
               ConPrms.number_frequency_channels()) &&
              (cross_channel >= 0) && (cross_channel < channel)) {
         channel ++;
         cross_channel = 
-          ConPrms.cross_channel(channel);
+          ConPrms.cross_channel(channel, ConPrms.get_mode(header.start_time));
       }
     } else {
       channel++;

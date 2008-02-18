@@ -3,6 +3,8 @@
 
 #include <json/json.h>
 #include <vex/Vex++.h>
+#include <list>
+#include <algorithm>
 #include "utils.h"
 
 
@@ -53,9 +55,12 @@ std::ostream &operator<<(std::ostream &out, const Input_node_parameters &param);
 class Correlation_parameters {
 public:
   Correlation_parameters()
-      : start_time(0), stop_time(0), integration_time(0),
-      number_channels(0), slice_nr(-1), sample_rate(0),
-  bits_per_sample(0), channel_freq(0), bandwidth(0), sideband('n') {}
+    : start_time(0), stop_time(0), integration_time(0),
+      number_channels(0), slice_nr(-1), sample_rate(0), 
+      bits_per_sample(0), channel_freq(0), bandwidth(0), 
+      sideband('n'), channel_nr(0), polarisation('n'), 
+      station_number(0) {
+  }
 
 
   bool operator==(const Correlation_parameters& other) const;
@@ -79,16 +84,18 @@ public:
   int32_t integration_time; // In milliseconds
   int32_t number_channels;  // number of frequency channels
   int32_t slice_nr;         // Number of the integration slice
-
   int32_t sample_rate;      // #Samples per second
   int32_t bits_per_sample;  // For all stations equal
-
   int64_t channel_freq;     // Center frequency of the band in Hz
   int32_t bandwidth;        // Bandwidth of the channel in Hz
   char    sideband;         // U or L
+  int32_t channel_nr;          // channel number ordered in the list
+  char    polarisation;         // L or R
 
   bool    cross_polarize;   // do the cross polarisations
   int32_t reference_station;// use a reference station
+  std::vector<int32_t>  station_number; //the number of the station 
+                                      //according to the vex file sorted alphabathically
 
   Station_list station_streams; // input streams used
 };
@@ -115,8 +122,8 @@ public:
   /****************************************************/
   /* Get functions from the correlation control file: */
   /****************************************************/
-  Date get_start_time();
-  Date get_stop_time();
+  Date get_start_time() const;
+  Date get_stop_time() const;
   std::vector<std::string> data_sources(const std::string &station) const;
   std::string get_output_file() const;
 
@@ -155,24 +162,32 @@ public:
                       const std::string &station) const;
 
   // Takes cross polarisation into account
-  int number_correlation_cores_per_timeslice(const std::string &mode) const;
+  // NGHK: MAKE THE MODE WORK
+  int number_correlation_cores_per_timeslice(const std::string &mode="NME.5CM") const;
 
   // Return the Frequency channels from the VEX file, filtered by the ctrl file
   size_t number_frequency_channels() const;
   std::string frequency_channel(size_t channel_nr) const;
 
   bool cross_polarize() const;
-  int cross_channel(int channel_nr) const;
-  int cross_channel(const std::string &channel_nr) const;
+  int cross_channel(int channel_nr, 
+                    const std::string &mode) const;
+  int cross_channel(const std::string &channel_nr,
+                    const std::string &mode) const;
 
-  char polarisation(const std::string &if_node,
-                    const std::string &if_ref) const;
+  std::string get_mode(int32_t &time) const;
 
-  std::string frequency(const std::string &if_node,
-                        const std::string &if_ref) const;
+  char polarisation(const std::string &channel_name, 
+                    const std::string &station_name,
+                    const std::string &mode) const;
 
-  char sideband(const std::string &if_node,
-                const std::string &if_ref) const;
+  std::string frequency(const std::string &channel_name, 
+                    const std::string &station_name,
+                    const std::string &mode) const;
+  
+  char sideband(const std::string &channel_name, 
+                    const std::string &station_name,
+                    const std::string &mode) const;
 
   /**
    * Returns the number of bytes transferred for one integration slice 
@@ -213,8 +228,8 @@ public:
   Correlation_parameters
   get_correlation_parameters(const std::string &scan_name,
                              const std::string &channel_name,
-                             const std::map<std::string, int>
-                             &correlator_node_station_to_input) const;
+                             const std::vector<std::string> &station_name,
+                             const std::map<std::string, int> &correlator_node_station_to_input) const;
 
   const Vex &get_vex() const;
 private:
