@@ -90,14 +90,14 @@ operator*() const {
     }
   case ARRAY:
     {
-      assert(lst_it != Vexpp_node::array_iterator());
+      assert(lst_it != Vexpp_node::array_iterator(NULL));
       assert(lst_it != vexp->lst.end());
       return *lst_it;
       break;
     }
   case DICT:
     {
-      assert(dict_it != Vexpp_node::dict_iterator());
+      assert(dict_it != Vexpp_node::dict_iterator(NULL));
       assert(dict_it != vexp->dict.end());
       return dict_it->second;
       break;
