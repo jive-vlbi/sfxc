@@ -169,7 +169,7 @@ void Manager_node::start() {
           int station_time =
             input_node_get_current_time(control_parameters.station(station));
           if (station_time > start_time) {
-            //DEBUG_MSG("updating start time: " << station_time);
+            DEBUG_MSG("updating start time: " << station_time);
             start_time =
               (station_time/duration_time_slice) * duration_time_slice;
             if (station_time%1000 != 0) {
