@@ -10,6 +10,8 @@
 %defines
 
 %{
+#define YYERROR_VERBOSE 1
+
 #include <math.h>
 #include <stdio.h>
 #include <iostream>
@@ -29,12 +31,13 @@
 %% /* Grammar rules and actions follow. */
 
 vex: 
+  { linenr = 1; }
   vex_header
   blocks
   {
-    $$= $2;
-    $$.join($1);
-    //std::cout << "FINISHED: " << $2 << std::endl; 
+    $$= $3;
+    $$.join($2);
+    //std::cout << "FINISHED: " << $3 << std::endl; 
     parse_result = $$;
   }
 ;
@@ -162,7 +165,10 @@ word:
 %% 
 
 void yyerror (char const *s) {
-  fprintf (stderr, "Error: %s\n", s);
+  fprintf (stderr, " == Error: %s\n", s);
+  fprintf (stderr, " == In line: %d\n\n", linenr);
 }
 
+// Global variables
 YYSTYPE parse_result;
+int     linenr;

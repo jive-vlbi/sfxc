@@ -13,8 +13,10 @@ extern FILE *yyin, *yyout;
 #define YYSTYPE Vex::Node
 #include "vex_parser.h"
 
-// NGHK: TODO: Check the default way to return the AST
 extern YYSTYPE parse_result;
+
+// Compute the line number
+extern int linenr;
 
 int yylex();
 int yyparse();

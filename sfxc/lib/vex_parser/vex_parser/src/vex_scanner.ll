@@ -7,18 +7,20 @@
 %}
 
 TOKEN [^&$\*:;=\t\n\r\ ]
+ENDL  [(\r\n)\n]
 %%
 
 
-:            return COLON;
-;            return SEMICOLON;
-=            return EQ;
-\$           return DOLLAR;
-def          return DEF;
-enddef       return ENDDEF;
-scan         return SCAN;
-endscan      return ENDSCAN;
-ref          return REF;
+:            yylval = Vexpp_node(); return COLON;
+;            yylval = Vexpp_node(); return SEMICOLON;
+=            yylval = Vexpp_node(); return EQ;
+\$           yylval = Vexpp_node(); return DOLLAR;
+def          yylval = Vexpp_node(); return DEF;
+enddef       yylval = Vexpp_node(); return ENDDEF;
+scan         yylval = Vexpp_node(); return SCAN;
+endscan      yylval = Vexpp_node(); return ENDSCAN;
+ref          yylval = Vexpp_node(); return REF;
+{ENDL}       yylval = Vexpp_node(); linenr = linenr + 1;
 
 
 {TOKEN}+ {
@@ -26,7 +28,9 @@ ref          return REF;
   return IDENT;
 }
 
-\*[^\n\r]*(\n|\r(\n)?) /* disregard comments */
+\*[^\r\n]*{ENDL} {/* disregard comments */
+  linenr = linenr + 1;
+}
 
-[ \t&\n\r]+            /* eat up whitespace  */
+[ \t&]+            /* eat up whitespace  */
 

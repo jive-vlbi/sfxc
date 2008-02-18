@@ -19,46 +19,6 @@ Vexpp_node::Vexpp_node(const char* ident) {
   name = ident;
 }
 
-// void Vexpp_node::initialise(Vex_node *node_c) {
-//   if (node_c == NULL) {
-//     type = Vexpp_node::EMPTY;
-//     return;
-//   }
-//   type = (Type)node_c->type;
-  
-//   switch (type) {
-//   case Vexpp_node::STRING:
-//     {
-//       assert(node_c->name != NULL);
-//       name = node_c->name;
-//       break;
-//     }
-//   case Vexpp_node::ARRAY:
-//     {
-//       while (node_c != 0L) {
-//         lst.push_back(Vexpp_node(node_c->child));
-//         node_c = node_c->next;
-//       }
-//       break;
-//     }
-//   case Vexpp_node::DICT:
-//     {
-//       if (node_c->next != 0L) {
-//         assert(node_c->type == node_c->next->type);
-//         Vexpp_node tail(node_c->next);
-//         std::swap(dict, tail.dict);
-//       }
-//       dict.insert(Vexpp_node::dict_element(node_c->name, 
-//                                          Vexpp_node(node_c->child)));
-//       break;
-//     }
-//   case Vexpp_node::EMPTY:
-//     {
-//       assert(false);
-//     }
-//   }
-// }
-
 std::ostream &operator<<(std::ostream &out, const Vexpp_node& data) {
   data.print(out, 0);
   out << std::endl;
