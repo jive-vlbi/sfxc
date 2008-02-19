@@ -8,13 +8,12 @@ Delay_correction::Delay_correction()
 delay_table_set(false) {}
 
 Delay_correction::~Delay_correction() {
-  //double mflops(uint64_t time, int numiterations, int N) {
-  //  return 5.0*N*log2(N) * numiterations / (1.0*time);
-  //}
+#if PRINT_TIMER
   int N = number_channels();
   int numiterations = total_ffts;
   double time = delay_timer.measured_time()*1000000;
   DEBUG_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
+#endif
 }
 
 void Delay_correction::connect_to(Input_buffer_ptr new_input_buffer) {
