@@ -60,10 +60,13 @@ Manager_node(int rank, int numtasks,
   int int_time_tmp=0;
   int int_time_count=0;
   int_time_tmp = control_parameters.integration_time();// Integration time: 2^integration_time seconds
-  int_time_tmp /= 1000;
-  while(int_time_tmp > 2){
-    int_time_tmp = int_time_tmp/2;
+  while (int_time_tmp > 1000) {
+    int_time_tmp /= 2;
     int_time_count++;
+  }
+  while (int_time_tmp < 1000) {
+    int_time_tmp *= 2;
+    int_time_count--;
   }
   header_msg.integration_time = (int8_t)(int_time_count);
   header_msg.empty[0] = 0;
