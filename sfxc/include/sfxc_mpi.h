@@ -18,6 +18,7 @@
 
 #define PRINT_PID         true
 #define PRINT_HOST        false
+#define PRINT_TIMER       false
 
 #define MPI_INT8   MPI_CHAR
 #define MPI_UINT8  MPI_UNSIGNED_CHAR

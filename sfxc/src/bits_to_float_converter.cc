@@ -78,11 +78,11 @@ void Bits_to_float_converter::do_task() {
 
   int bytes_to_read = size_output_slice/(8/bits_per_sample);
   int bytes_read = 0;
-  while (bytes_read != bytes_to_read) {
+  do {
     bytes_read +=
       data_reader->get_bytes(bytes_to_read-bytes_read,
                              &input_char_buffer[bytes_read]);
-  }
+  } while (bytes_read != bytes_to_read);
 
   if (bits_per_sample == 2) {
     for (int byte = 0; byte < bytes_read; byte++) {

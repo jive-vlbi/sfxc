@@ -34,11 +34,12 @@ public:
   Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader, char *buffer);
 
   ~Input_node_tasklet_implementation() {
+#if PRINT_TIMER
     DEBUG_MSG("Time mar4_reader:       " << mark4_reader_timer_.measured_time());
     DEBUG_MSG("Time integer_delay:     " << integer_delay_timer_.measured_time());
     DEBUG_MSG("Time channel_extractor: " << channel_extractor_timer_.measured_time());
     DEBUG_MSG("Time data_writers:      " << data_writers_timer_.measured_time());
-
+#endif
   }
 
   void do_task();
