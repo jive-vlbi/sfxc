@@ -156,8 +156,8 @@
   800 CONTINUE
 !
 !   Normal CALC termination.
-      IF (ILUOUT.NE.-1) WRITE(6,"(' All data for this experiment has ',
-     .          'been processed. ')")
+c      IF (ILUOUT.NE.-1) WRITE(6,"(' All data for this experiment has ',
+c     .          'been processed. ')")
 !
 !   Go to 50 to see if we want another database.
 !   We use this funny GOTO to keep the compiler happy.

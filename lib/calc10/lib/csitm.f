@@ -473,7 +473,7 @@
      .       (DABS(SITXYZ(3,I)) .le. 1.D-6) )  Then
           If (Zero_site .eq. 0) Then
            Zero_site = I
-           Write(6,'("SITI: Goecenter site = site # ",I3)') Zero_site
+c           Write(6,'("SITI: Goecenter site = site # ",I3)') Zero_site
           Else      ! More than one geocenter site! Not allowed!
            Write(6,'("SITBLK: More than 1 geocenter site! Quitting!")')
            CALL TERMINATE_CALC ( 'SITI  ', int2(0), int2(0))
@@ -1038,7 +1038,7 @@
 !  Check for geocenter station
        If(Zero_site .ne. 0 .and. N .eq. Zero_site) Then
         Nzero = N
-        WRITE ( 6, * )  ' SITG: Geocenter Site Found, Nzero =  ', Nzero
+c        WRITE ( 6, * )  ' SITG: Geocenter Site Found, Nzero =  ', Nzero
        Endif
 !
 !     Close the loop which runs over the sites.
