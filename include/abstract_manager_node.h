@@ -80,7 +80,6 @@ public:
                                  int32_t start_time, int32_t stop_time);
 
 
-  void output_node_set_timeslice(int slice_nr, int stream_nr, int bytes);
   void output_node_set_global_header(char* header_msg, int size);
 
   int get_number_of_processes() const;

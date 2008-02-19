@@ -37,6 +37,13 @@ public:
   void set_data_writer(boost::shared_ptr<Data_writer> writer);
   
   Output_buffer_ptr get_output_buffer();
+
+  int number_of_baselines() {
+    return baselines.size();
+  }
+  boost::shared_ptr<Data_writer> data_writer() {
+    return writer;
+  }
   
 private:
   void integration_initialise();

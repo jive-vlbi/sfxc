@@ -263,11 +263,11 @@ void Correlation_core::integration_write() {
   int nr_corr = (correlation_parameters.stop_time-correlation_parameters.start_time)
                 /correlation_parameters.integration_time;
 
-  int polarisation;
+  int polarisation = 1;
   if(correlation_parameters.polarisation == 'R'){
     polarisation =0;
-  } else if (correlation_parameters.polarisation == 'L'){
-    polarisation =1;
+  } else {
+    assert(correlation_parameters.polarisation == 'L');
   }
 
   Output_header_timeslice htimeslice;
@@ -284,7 +284,7 @@ void Correlation_core::integration_write() {
   writer->put_bytes(nWrite, (char *)&htimeslice);
   
   std::vector<int32_t> station_list;
-  for (int ii=0; ii<correlation_parameters.station_number.size(); ii++){
+  for (size_t ii=0; ii<correlation_parameters.station_number.size(); ii++){
        station_list.push_back(correlation_parameters.station_number[ii]);
   }
   
@@ -318,10 +318,6 @@ void Correlation_core::integration_write() {
     writer->put_bytes((size_of_fft()/2+1)*sizeof(std::complex<float>),
         ((char*)&accumulation_buffers_float[0]));
   }
-/*
-  writer->put_bytes(accumulation_buffers.size()*sizeof(std::complex<DOUBLE>),
-                    ((char*)&accumulation_buffers[0]));
-*/
 }
 
 void 
