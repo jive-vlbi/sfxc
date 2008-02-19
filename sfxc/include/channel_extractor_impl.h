@@ -192,7 +192,6 @@ void
 Channel_extractor<Type>::
 set_parameters(const Input_node_parameters &input_node_param,
                const std::vector< std::vector<int> > &track_positions) {
-  DEBUG_MSG("Set_Parameters");
   tracks_in_subbands = track_positions;
 
   // Check that all subbands have the same data rate

@@ -362,16 +362,6 @@ Abstract_manager_node::get_channel(const std::string &channel) {
 
 void
 Abstract_manager_node::
-output_node_set_timeslice(int slice_nr, int stream_nr, int bytes) {
-  int32_t msg_output_node[] = {stream_nr, slice_nr, bytes};
-  MPI_Send(&msg_output_node, 3, MPI_INT32,
-           RANK_OUTPUT_NODE,
-           MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
-           MPI_COMM_WORLD);
-}
-
-void
-Abstract_manager_node::
 output_node_set_global_header(char* header_msg, int size) {
   MPI_Send(header_msg, size, MPI_CHAR,
            RANK_OUTPUT_NODE,
