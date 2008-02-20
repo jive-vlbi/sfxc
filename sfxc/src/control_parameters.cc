@@ -489,25 +489,23 @@ Control_parameters::cross_polarize() const {
 
 std::string Control_parameters::
 get_mode(int32_t &start_time) const {
-  std::string mode = "";
-  
   for (Vex::Node::const_iterator sched_block = 
          vex.get_root_node()["SCHED"]->begin();
        sched_block != vex.get_root_node()["SCHED"]->end(); 
        ++sched_block) {
     if (start_time > 
         Date(sched_block["start"]->to_string()).to_miliseconds()/1000) {
-      mode = sched_block["mode"]->to_string();
+      return sched_block["mode"]->to_string();
     }
   }
-  assert(mode != "");
-  return mode;
+  assert(false);
+  return std::string("");
 }
 
 int
 Control_parameters::
 cross_channel(int channel_nr, const std::string &mode) const {
-  if ((size_t) channel_nr >= number_frequency_channels())
+  if (channel_nr >= (int)number_frequency_channels())
     return -1;
   return cross_channel(channel(channel_nr), mode);
 }
@@ -515,7 +513,7 @@ cross_channel(int channel_nr, const std::string &mode) const {
 int
 Control_parameters::
 cross_channel(const std::string &channel_name,
-                   const std::string &mode) const {
+              const std::string &mode) const {
   std::string freq = frequency(channel_name, station(0), mode);
   char side = sideband(channel_name, station(0), mode);
   char pol  = polarisation(channel_name, station(0), mode);
