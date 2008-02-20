@@ -32,11 +32,11 @@ Output_node_controller::process_event(MPI_Status &status) {
   {
     int size;
     MPI_Get_elements(&status, MPI_CHAR, &size);
-    assert(size > 0);
-    char buffer[size];
-    MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE,
+    assert(size == sizeof(Output_header_global));
+    Output_header_global global_header;
+    MPI_Recv((char *)&global_header, size, MPI_CHAR, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
-    node.write_global_header(buffer, size);
+    node.write_global_header(global_header);
     
     return PROCESS_EVENT_STATUS_SUCCEEDED;
   }

@@ -147,10 +147,11 @@ void Output_node::start() {
 
 void
 Output_node::
-write_global_header(char* buffer, int size) {
+write_global_header(const Output_header_global &global_header) {
   output_value_type &element=output_buffer->produce();
-  memcpy(element.buffer(), buffer, size);
-  output_buffer->produced(size);
+  memcpy(element.buffer(), (char *)&global_header, 
+         sizeof(Output_header_global));
+  output_buffer->produced(sizeof(Output_header_global));
 }
 
 void 

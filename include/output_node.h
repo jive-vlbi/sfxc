@@ -16,6 +16,7 @@
 #include "node.h"
 #include "multiple_data_readers_controller.h"
 #include "single_data_writer_controller.h"
+#include "output_header.h"
 
 class Output_node;
 
@@ -96,7 +97,7 @@ public:
     END_NODE
   };
   
-  void write_global_header(char* buffer, int size);
+  void write_global_header(const Output_header_global &global_header);
   void set_weight_of_input_stream(int num, int64_t weight, size_t size);
   void time_slice_finished(int rank, int64_t nBytes);      
   
