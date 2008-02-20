@@ -233,7 +233,9 @@ void Manager_node::start() {
       }
       case GOTO_NEXT_TIMESLICE: {
         start_time += duration_time_slice;
-
+        int n = control_parameters.integrations_per_timeslice(duration_time_slice);
+        output_slice_nr += (n-1) * control_parameters.number_correlation_cores_per_timeslice(get_current_mode());
+        
         if (start_time+duration_time_slice > stop_time) {
           status = STOP_CORRELATING;
         } else if (start_time >= stop_time_scan) {

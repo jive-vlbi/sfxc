@@ -660,7 +660,7 @@ sideband(const std::string &channel_name,
   std::string if_ref_BBC;
   std::string if_ref_BBCnr;
   std::string if_ref_Ref;
-  char sband;
+  char sband = 'x';
 
   for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin(mode);
        mod_block != vex.get_root_node()["MODE"]->end(mode); ++mod_block) {
@@ -720,14 +720,17 @@ get_correlation_parameters(const std::string &scan_name,
 
   Vex::Node::const_iterator scan =
     vex.get_root_node()["SCHED"][scan_name];
+  std::string mode_name = scan["mode"]->to_string();
   Vex::Node::const_iterator mode =
-    vex.get_root_node()["MODE"][scan["mode"]->to_string()];
+    vex.get_root_node()["MODE"][mode_name];
   
   Correlation_parameters corr_param;
   corr_param.start_time = vex.start_of_scan(scan_name).to_miliseconds();
   corr_param.stop_time = vex.stop_of_scan(scan_name).to_miliseconds();
   corr_param.integration_time = integration_time();
   corr_param.number_channels = number_channels();
+  corr_param.slice_offset = 
+    number_correlation_cores_per_timeslice(mode_name);
 
   // Assumption: sample rate the the same for all stations:
   Vex::Node::const_iterator freq =
@@ -774,7 +777,7 @@ get_correlation_parameters(const std::string &scan_name,
   }
   for (Vex::Node::const_iterator bbc_it = mode->begin("BBC");
        bbc_it != mode->end("BBC"); ++bbc_it) {
-    for (int i=1; i<bbc_it->size(); i++) {
+    for (size_t i=1; i<bbc_it->size(); i++) {
       if (bbc_it[i]->to_string() == station_name[0]) {
         bbc_mode = bbc_it[0]->to_string();
       }
@@ -797,7 +800,6 @@ get_correlation_parameters(const std::string &scan_name,
   assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');
 
   corr_param.cross_polarize = cross_polarize();
-  std::string mode_name = mode.key().c_str();
   if (cross_channel(channel_name, mode_name) == -1) {
     corr_param.cross_polarize = false;
   }
@@ -1003,6 +1005,8 @@ Correlation_parameters::operator==(const Correlation_parameters& other) const {
     return false;
   if (slice_nr != other.slice_nr)
     return false;
+  if (slice_offset != other.slice_offset)
+    return false;
 
   if (sample_rate != other.sample_rate)
     return false;
@@ -1021,13 +1025,15 @@ Correlation_parameters::operator==(const Correlation_parameters& other) const {
   return true;
 }
 
-std::ostream &operator<<(std::ostream &out, const Correlation_parameters &param) {
+std::ostream &operator<<(std::ostream &out, 
+                         const Correlation_parameters &param) {
   out << "{ ";
   out << "\"start_time\": " << param.start_time << ", " << std::endl;
   out << "  \"stop_time\": " << param.stop_time << ", " << std::endl;
   out << "  \"integr_time\": " << param.integration_time << ", " << std::endl;
   out << "  \"number_channels\": " << param.number_channels << ", " << std::endl;
   out << "  \"slice_nr\": " << param.slice_nr << ", " << std::endl;
+  out << "  \"slice_offset\": " << param.slice_offset << ", " << std::endl;
   out << "  \"sample_rate\": " << param.sample_rate << ", " << std::endl;
   out << "  \"bits_per_sample\": " << param.bits_per_sample << ", " << std::endl;
   out << "  \"channel_freq\": " << param.channel_freq << ", " << std::endl;
