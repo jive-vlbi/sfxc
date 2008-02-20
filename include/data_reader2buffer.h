@@ -18,8 +18,6 @@
 #include "buffer.h"
 #include "utils.h"
 
-
-
 /** Reads data from the data reader and puts it in a buffer,
  * which is useful for non-blocking IO.
  **/
@@ -163,6 +161,7 @@ void *
 Data_reader2buffer<T>::start_reading(void * self_) {
   Self *self = static_cast<Self *>(self_);
   self->read();
+//   DEBUG_MSG("Data_reader2buffer: stop reading " << self->data_reader->data_counter());
   return NULL;
 }
 

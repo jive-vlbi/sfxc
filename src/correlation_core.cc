@@ -25,27 +25,26 @@ Correlation_core::get_output_buffer() {
 }
 
 void Correlation_core::do_task() {
+  assert(has_work());
   if (current_fft % 1000 == 0) {
     PROGRESS_MSG("node " << node_nr_ << ", " 
                  << current_fft << " of " << number_ffts_in_integration);
   }
 
-  if (has_work()) {
-    if (current_fft%number_ffts_in_integration == 0) {
-      integration_initialise();
-    }
+  if (current_fft%number_ffts_in_integration == 0) {
+    integration_initialise();
+  }
     
-    // Process the data of the current fft
-    integration_step();
-    current_fft ++; 
+  // Process the data of the current fft
+  integration_step();
+  current_fft ++; 
     
-    if (current_fft == number_ffts_in_integration) {
-      PROGRESS_MSG("node " << node_nr_ << ", " 
-                   << current_fft << " of " << number_ffts_in_integration);
+  if (current_fft == number_ffts_in_integration) {
+    PROGRESS_MSG("node " << node_nr_ << ", " 
+                 << current_fft << " of " << number_ffts_in_integration);
 
-      integration_average();
-      integration_write();
-    }
+    integration_average();
+    integration_write();
   }
 }
 
@@ -130,7 +129,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
     }
   }
   
-  frequency_buffer.resize(correlation_parameters.station_streams.size());
+  frequency_buffer.resize(number_input_streams_in_use());
   for (size_t i=0; i < frequency_buffer.size(); i++) {
     frequency_buffer[i].resize(size_of_fft()/2+1);
   }
@@ -152,7 +151,7 @@ set_data_writer(boost::shared_ptr<Data_writer> writer_) {
 }
 
 bool Correlation_core::has_work() {
-  for (size_t i=0; i < input_buffers.size(); i++) {
+  for (size_t i=0; i < number_input_streams_in_use(); i++) {
     if (input_buffers[i]->empty()) {
       return false;
     }
@@ -177,10 +176,10 @@ void Correlation_core::integration_initialise() {
 }
 
 void Correlation_core::integration_step() {
-  if (input_elements.size() != input_buffers.size()) {
-    input_elements.resize(input_buffers.size());
+  if (input_elements.size() != number_input_streams_in_use()) {
+    input_elements.resize(number_input_streams_in_use());
   }
-  for (size_t i=0; i<input_buffers.size(); i++) {
+  for (size_t i=0; i<number_input_streams_in_use(); i++) {
     int size;
     input_elements[i] = &input_buffers[i]->consume(size);
     assert(size == (int)size_of_fft());
@@ -188,9 +187,8 @@ void Correlation_core::integration_step() {
   }
   
   // Do the fft from time to frequency:
-  assert(frequency_buffer.size() == 
-         correlation_parameters.station_streams.size());
-  for (size_t i=0; i<input_buffers.size(); i++) {
+  assert(frequency_buffer.size() == number_input_streams_in_use());
+  for (size_t i=0; i<number_input_streams_in_use(); i++) {
     assert(frequency_buffer[i].size() == size_of_fft()/2+1);
     fft_timer.resume();
     FFTW_EXECUTE_DFT_R2C(plan, 
@@ -201,7 +199,7 @@ void Correlation_core::integration_step() {
   }
 
   // do the correlation
-  for (size_t i=0; i < input_buffers.size(); i++) {
+  for (size_t i=0; i < number_input_streams_in_use(); i++) {
     // Auto correlations
     std::pair<int,int> &stations = baselines[i];
     assert(stations.first == stations.second);
@@ -211,7 +209,7 @@ void Correlation_core::integration_step() {
                             &accumulation_buffers[i*(size_of_fft()/2+1)]);
   }
   
-  for (size_t i=input_buffers.size(); i < baselines.size(); i++) {
+  for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
     // Cross correlations
     std::pair<int,int> &stations = baselines[i];
     assert(stations.first != stations.second);
@@ -221,7 +219,7 @@ void Correlation_core::integration_step() {
        /* out */ &accumulation_buffers[i*(size_of_fft()/2+1)]);
   }
 
-  for (size_t i=0; i<input_buffers.size(); i++) {
+  for (size_t i=0; i<number_input_streams_in_use(); i++) {
     input_buffers[i]->consumed();
   }
 }
@@ -353,3 +351,6 @@ size_t Correlation_core::n_stations() {
   return correlation_parameters.station_streams.size();
 }
 
+int Correlation_core::number_input_streams_in_use() {
+  return correlation_parameters.station_streams.size();
+}

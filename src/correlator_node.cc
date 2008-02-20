@@ -153,8 +153,9 @@ void Correlator_node::correlate() {
   bits_to_float_timer_.resume();
   for (size_t i=0; i<bits2float_converters.size(); i++) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
-      if (bits2float_converters[i]->has_work())
+      if (bits2float_converters[i]->has_work()) {
         bits2float_converters[i]->do_task();
+      }
     }
   }
   bits_to_float_timer_.stop();
@@ -162,13 +163,17 @@ void Correlator_node::correlate() {
   delay_timer_.resume();
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
-      delay_modules[i]->do_task();
+      if (delay_modules[i]->has_work()) {
+        delay_modules[i]->do_task();
+      }
     }
   }
   delay_timer_.stop();
   
   correlation_timer_.resume();
-  correlation_core.do_task();
+  if (correlation_core.has_work()) {
+    correlation_core.do_task();
+  }
   correlation_timer_.stop();
 }
 
@@ -190,9 +195,13 @@ Correlator_node::set_parameters(const Correlation_parameters &parameters) {
 
   for (size_t i=0; i<bits2float_converters.size(); i++) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
-      bits2float_converters[i]->set_parameters(parameters.bits_per_sample,
-                                               size_input_slice*nr_integrations,
-                                               parameters.number_channels);
+      if (i <parameters.station_streams.size()) {
+        bits2float_converters[i]->set_parameters(parameters.bits_per_sample,
+                                                 size_input_slice*nr_integrations,
+                                                 parameters.number_channels);
+      } else {
+        bits2float_converters[i]->set_parameters(-1, 0, 0);
+      }
     }
   }
   for (size_t i=0; i<delay_modules.size(); i++) {

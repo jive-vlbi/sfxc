@@ -33,6 +33,10 @@ void
 Bits_to_float_converter::set_parameters(int bits_per_sample_,
                                         int size_input_slice_,
                                         int size_output_slice_) {
+  if (bits_per_sample_ <= 0) {
+    bits_per_sample = bits_per_sample_;
+    return;
+  }
   if ((bits_per_sample != bits_per_sample_) ||
       (size_output_slice != size_output_slice_)) {
     bits_per_sample = bits_per_sample_;
@@ -101,11 +105,10 @@ void Bits_to_float_converter::do_task() {
 
 bool
 Bits_to_float_converter::has_work() {
-  if (data_reader->get_size_dataslice() == 0) {
-    DEBUG_MSG(__PRETTY_FUNCTION__
-              << " data_reader->get_size_dataslice() == 0");
+  if (bits_per_sample <= 0)
     return false;
-  }
+  if (data_reader->get_size_dataslice() == 0)
+    return false;
   if (output_buffer->full())
     return false;
   return true;
