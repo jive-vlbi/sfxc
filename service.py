@@ -9,15 +9,40 @@ from ZSI import ServiceProxy
 from TranslationNode_services_server import *
 from TranslationNode_mark5 import *
 from TranslationNode_vex import *
+# we need to skip comments in input file.
+# For that we make use of re
+import re
 
-inp =  open("mark5_connect_data.inp", "r")
-portMark5Data = int(inp.readline())
-portMark5Control = int(inp.readline())
-ipMark = inp.readline()
-fileName = inp.readline()
+# define comment characters
+comment_char = re.compile(r'^\s*#')
+
+# define a list and initialize it with anything and don't use inp[0] later on 
+inp = ['##']
+# if the first character matches the comment character skip that line
+# otherwise read the line
+for line in file('mark5_connect_data.inp'):
+  if comment_char.match(line):
+    continue
+  inp.append(line)
+
+# read in the Data port number
+portMark5Data = int(inp[1].strip())
+
+# read in the Control port number
+portMark5Control = int(inp[2].strip())
+
+# IP address of the Mark5 that will be connected
+ipMark = inp[3].strip()
+
+# file path that the data will be copied to
+fileName = inp[4].strip()
 fileName = fileName.strip()
-block_size = int(inp.readline())
-portNumber = int(inp.readline())
+
+# read in the block size
+block_size = int(inp[5].strip())
+
+# port number 
+portNumber = int(inp[6].strip())
 
 class Service(TranslationNode):
 
@@ -215,13 +240,13 @@ class Service(TranslationNode):
 #		Mark5_disconnect()
 		return rsp
 
-url_notification = 'http://melisa.man.poznan.pl:8080/axis2/services/TranslationNodeNotification'
-wsdl_service = ServiceProxy(url_notification, use_wsdl=True, tracefile=sys.stdout)
-result_notification = wsdl_service.Notification(chunkId=1, 
-														  chunkLocation="huygens.jive.nl", 
-														  translationNodeIP="10.88.0.190", 
-														  translationNodeID=1)
-print "result:", result_notification
+#url_notification = 'http://melisa.man.poznan.pl:8080/axis2/services/TranslationNodeNotification'
+#wsdl_service = ServiceProxy(url_notification, use_wsdl=True, tracefile=sys.stdout)
+#result_notification = wsdl_service.Notification(chunkId=1, 
+#														  chunkLocation="huygens.jive.nl", 
+#														  translationNodeIP="10.88.0.190", 
+#														  translationNodeID=1)
+#print "result:", result_notification
 
 
 if __name__ == "__main__" :

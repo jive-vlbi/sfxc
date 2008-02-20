@@ -1,6 +1,12 @@
+# Data socket number
 2630
+#Control socket number
 2620
+# Mark5 IP address
 10.88.0.50
+# path to download/copy files to
 /jop32_0/ozdemir/data/ez015/
+# block size
 8192
+# port number
 8080

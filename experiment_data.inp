@@ -1,0 +1,15 @@
+# IP address of the machine where the service is run
+10.87.10.32
+# chunk size in bytes or "scan size"
+# when "scan size", calculates the actual chunk size as the size of a scan 
+scan size
+# port number
+8080
+# start time of the first chunk
+2007y158d18h56m00s
+# end time
+2007y158d18h59m00s
+# Station code (two letter name of station)
+Wb
+# vax file name
+ez015.vix
