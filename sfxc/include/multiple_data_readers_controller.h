@@ -22,7 +22,7 @@
 class Multiple_data_readers_controller : public Controller {
   typedef Multiple_data_readers_controller  Self;
 public:
-  typedef Buffer_element<char,4096>         value_type;
+  typedef Buffer_element<char,256>         value_type;
   typedef Data_reader2buffer<value_type>    Reader2buffer;
   typedef Buffer<value_type>                Buffer;
   typedef Data_reader_buffer<value_type>    Reader_buffer;
