@@ -2,6 +2,7 @@
 #define OUTPUT_HEADER_H_
 
 #include <stdint.h>
+#include <iostream>
 
 /*
   20-11-2007 added: 
@@ -92,5 +93,19 @@ struct Output_header_baseline {
   // 1 byte left:
   char empty;
 };
+
+
+std::ostream &
+operator<<(std::ostream &out,
+           const Output_header_global &global_header);
+std::ostream &
+operator<<(std::ostream &out,
+           const Output_header_timeslice &timeslice_header);
+std::ostream &
+operator<<(std::ostream &out,
+           const Output_uvw_coordinates &uvw_header);
+std::ostream &
+operator<<(std::ostream &out,
+           const Output_header_baseline &baseline_header);
 
 #endif /*OUTPUT_HEADER_H_*/

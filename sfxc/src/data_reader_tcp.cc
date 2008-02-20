@@ -44,9 +44,7 @@ int Data_reader_tcp::do_get_bytes(size_t nBytes, char*out) {
   }
   
   /* Read data from socket */ 
-  int result = read(socket, (void *) out, nBytes);
-  assert((size_t)result == nBytes);
-  return result;
+  return read(socket, (void *) out, nBytes);
 }
 
 unsigned int Data_reader_tcp::get_port() {

@@ -130,7 +130,7 @@ Plot_generator::Plot_generator(std::istream &input,
   int cross_channel = -1;
   if (ConPrms.cross_polarize()) {
     cross_channel = ConPrms.cross_channel(count_channel, 
-                                      ConPrms.get_mode(start_time));
+                                          ConPrms.get_mode(start_time));
     assert((cross_channel == -1) ||
            (cross_channel > count_channel));
   }
@@ -650,7 +650,7 @@ int main(int argc, char *argv[])
 
   //read-in the global header 
   in.read((char*)&header, sizeof(Output_header_global));
-    
+
   for (size_t channel=0; channel<ConPrms.channels_size();) {
     // generate plots for the channel
     Plot_generator(in, ConPrms, channel, header.start_time);

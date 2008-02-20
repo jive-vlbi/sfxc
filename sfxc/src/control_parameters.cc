@@ -489,14 +489,18 @@ Control_parameters::cross_polarize() const {
 
 std::string Control_parameters::
 get_mode(int32_t &start_time) const {
-  std::string mode;
+  std::string mode = "";
   
-  for (Vex::Node::const_iterator sched_block = vex.get_root_node()["SCHED"]->begin();
-    sched_block != vex.get_root_node()["SCHED"]->end(); ++sched_block) {
-    if (start_time > Date(sched_block["start"]->to_string()).to_miliseconds()/1000) {
+  for (Vex::Node::const_iterator sched_block = 
+         vex.get_root_node()["SCHED"]->begin();
+       sched_block != vex.get_root_node()["SCHED"]->end(); 
+       ++sched_block) {
+    if (start_time > 
+        Date(sched_block["start"]->to_string()).to_miliseconds()/1000) {
       mode = sched_block["mode"]->to_string();
     }
   }
+  assert(mode != "");
   return mode;
 }
 
@@ -538,35 +542,34 @@ polarisation(const std::string &channel_name,
   std::string if_ref_BBCnr;
   std::string if_ref_Ref;
 
-  for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin(mode);
-       mod_block != vex.get_root_node()["MODE"]->end(mode); ++mod_block) {
-    for (Vex::Node::const_iterator if_it = mod_block->begin("FREQ");
-         if_it != mod_block->end("FREQ"); ++if_it) {
-      for (Vex::Node::const_iterator elem_it = if_it->begin();
-           elem_it != if_it->end(); ++elem_it) {
-        if (elem_it->to_string() == station_name) {
-          if_mode_freq = if_it[0]->to_string();
-        }
-      }
-    }
-    for (Vex::Node::const_iterator if_it = mod_block->begin("IF");
-         if_it != mod_block->end("IF"); ++if_it) {
-      for (Vex::Node::const_iterator elem_it = if_it->begin();
-           elem_it != if_it->end(); ++elem_it) {
-        if (elem_it->to_string() == station_name) {
-          if_node_Node = if_it[0]->to_string();
-        }
-      }
-    }
-    for (Vex::Node::const_iterator bbc_it = mod_block->begin("BBC");
-         bbc_it != mod_block->end("BBC"); ++bbc_it) {
-      for (size_t i=1; i<bbc_it->size(); i++) {
-        if (bbc_it[i]->to_string() == station_name) {
-          if_ref_BBC = bbc_it[0]->to_string();
-        }
+  Vex::Node::const_iterator mode_block = vex.get_root_node()["MODE"][mode];
+  for (Vex::Node::const_iterator if_it = mode_block->begin("FREQ");
+       if_it != mode_block->end("FREQ"); ++if_it) {
+    for (Vex::Node::const_iterator elem_it = if_it->begin();
+         elem_it != if_it->end(); ++elem_it) {
+      if (elem_it->to_string() == station_name) {
+        if_mode_freq = if_it[0]->to_string();
       }
     }
   }
+  for (Vex::Node::const_iterator if_it = mode_block->begin("IF");
+       if_it != mode_block->end("IF"); ++if_it) {
+    for (Vex::Node::const_iterator elem_it = if_it->begin();
+         elem_it != if_it->end(); ++elem_it) {
+      if (elem_it->to_string() == station_name) {
+        if_node_Node = if_it[0]->to_string();
+      }
+    }
+  }
+  for (Vex::Node::const_iterator bbc_it = mode_block->begin("BBC");
+       bbc_it != mode_block->end("BBC"); ++bbc_it) {
+    for (size_t i=1; i<bbc_it->size(); i++) {
+      if (bbc_it[i]->to_string() == station_name) {
+        if_ref_BBC = bbc_it[0]->to_string();
+      }
+    }
+  }
+
 
   for (Vex::Node::const_iterator frq_block =
          vex.get_root_node()["FREQ"][if_mode_freq]->begin("chan_def");
@@ -608,32 +611,31 @@ frequency(const std::string &channel_name,
   std::string if_ref_Ref;
   std::string frequen;
 
-  for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin(mode);
-       mod_block != vex.get_root_node()["MODE"]->end(mode); ++mod_block) {
-    for (Vex::Node::const_iterator if_it = mod_block->begin("FREQ");
-         if_it != mod_block->end("FREQ"); ++if_it) {
-      for (Vex::Node::const_iterator elem_it = if_it->begin();
-           elem_it != if_it->end(); ++elem_it) {
-        if (elem_it->to_string() == station_name) {
-          if_mode_freq = if_it[0]->to_string();
-        }
+  Vex::Node::const_iterator mode_block = vex.get_root_node()["MODE"][mode];
+
+  for (Vex::Node::const_iterator if_it = mode_block->begin("FREQ");
+       if_it != mode_block->end("FREQ"); ++if_it) {
+    for (Vex::Node::const_iterator elem_it = if_it->begin();
+         elem_it != if_it->end(); ++elem_it) {
+      if (elem_it->to_string() == station_name) {
+        if_mode_freq = if_it[0]->to_string();
       }
     }
-    for (Vex::Node::const_iterator if_it = mod_block->begin("IF");
-         if_it != mod_block->end("IF"); ++if_it) {
-      for (Vex::Node::const_iterator elem_it = if_it->begin();
-           elem_it != if_it->end(); ++elem_it) {
-        if (elem_it->to_string() == station_name) {
-          if_node_Node = if_it[0]->to_string();
-        }
+  }
+  for (Vex::Node::const_iterator if_it = mode_block->begin("IF");
+       if_it != mode_block->end("IF"); ++if_it) {
+    for (Vex::Node::const_iterator elem_it = if_it->begin();
+         elem_it != if_it->end(); ++elem_it) {
+      if (elem_it->to_string() == station_name) {
+        if_node_Node = if_it[0]->to_string();
       }
     }
-    for (Vex::Node::const_iterator bbc_it = mod_block->begin("BBC");
-         bbc_it != mod_block->end("BBC"); ++bbc_it) {
-      for (int i=1; i<bbc_it->size(); i++) {
-        if (bbc_it[i]->to_string() == station_name) {
-          if_ref_BBC = bbc_it[0]->to_string();
-        }
+  }
+  for (Vex::Node::const_iterator bbc_it = mode_block->begin("BBC");
+       bbc_it != mode_block->end("BBC"); ++bbc_it) {
+    for (int i=1; i<bbc_it->size(); i++) {
+      if (bbc_it[i]->to_string() == station_name) {
+        if_ref_BBC = bbc_it[0]->to_string();
       }
     }
   }
@@ -662,35 +664,34 @@ sideband(const std::string &channel_name,
   std::string if_ref_Ref;
   char sband = 'x';
 
-  for (Vex::Node::const_iterator mod_block = vex.get_root_node()["MODE"]->begin(mode);
-       mod_block != vex.get_root_node()["MODE"]->end(mode); ++mod_block) {
-    for (Vex::Node::const_iterator if_it = mod_block->begin("FREQ");
-         if_it != mod_block->end("FREQ"); ++if_it) {
-      for (Vex::Node::const_iterator elem_it = if_it->begin();
-           elem_it != if_it->end(); ++elem_it) {
-        if (elem_it->to_string() == station_name) {
-          if_mode_freq = if_it[0]->to_string();
-        }
-      }
-    }
-    for (Vex::Node::const_iterator if_it = mod_block->begin("IF");
-         if_it != mod_block->end("IF"); ++if_it) {
-      for (Vex::Node::const_iterator elem_it = if_it->begin();
-           elem_it != if_it->end(); ++elem_it) {
-        if (elem_it->to_string() == station_name) {
-          if_node_Node = if_it[0]->to_string();
-        }
-      }
-    }
-    for (Vex::Node::const_iterator bbc_it = mod_block->begin("BBC");
-         bbc_it != mod_block->end("BBC"); ++bbc_it) {
-      for (int i=1; i<bbc_it->size(); i++) {
-        if (bbc_it[i]->to_string() == station_name) {
-          if_ref_BBC = bbc_it[0]->to_string();
-        }
+  Vex::Node::const_iterator mode_block = vex.get_root_node()["MODE"][mode];
+  for (Vex::Node::const_iterator if_it = mode_block->begin("FREQ");
+       if_it != mode_block->end("FREQ"); ++if_it) {
+    for (Vex::Node::const_iterator elem_it = if_it->begin();
+         elem_it != if_it->end(); ++elem_it) {
+      if (elem_it->to_string() == station_name) {
+        if_mode_freq = if_it[0]->to_string();
       }
     }
   }
+  for (Vex::Node::const_iterator if_it = mode_block->begin("IF");
+       if_it != mode_block->end("IF"); ++if_it) {
+    for (Vex::Node::const_iterator elem_it = if_it->begin();
+         elem_it != if_it->end(); ++elem_it) {
+      if (elem_it->to_string() == station_name) {
+        if_node_Node = if_it[0]->to_string();
+      }
+    }
+  }
+  for (Vex::Node::const_iterator bbc_it = mode_block->begin("BBC");
+       bbc_it != mode_block->end("BBC"); ++bbc_it) {
+    for (int i=1; i<bbc_it->size(); i++) {
+      if (bbc_it[i]->to_string() == station_name) {
+        if_ref_BBC = bbc_it[0]->to_string();
+      }
+    }
+  }
+    
 
   for (Vex::Node::const_iterator frq_block = vex.get_root_node()["FREQ"][if_mode_freq]->begin("chan_def");
        frq_block != vex.get_root_node()["FREQ"][if_mode_freq]->end("chan_def"); ++frq_block) {

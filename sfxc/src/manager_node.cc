@@ -43,37 +43,40 @@ Manager_node(int rank, int numtasks,
   set_data_writer(RANK_OUTPUT_NODE, 0,
                   control_parameters.get_output_file());
 
-  // Send the global header
-  Output_header_global header_msg;
-  header_msg.header_size = sizeof(Output_header_global);
+  {
+    // Send the global header
+    Output_header_global output_header;
+    output_header.header_size = sizeof(Output_header_global);
   
 
-  strcpy(header_msg.experiment,control_parameters.experiment().c_str());      // Name of the experiment
-  Control_parameters::Date start = control_parameters.get_start_time();
-  header_msg.start_year = start.year;       // Start year of the experiment
-  header_msg.start_day = start.day;        // Start day of the experiment (day of year)
-  header_msg.start_time = start.to_miliseconds()/1000;
-                            // Start time of the correlation in seconds since
-                            // midnight
-  header_msg.number_channels = control_parameters.number_channels();  // Number of frequency channels
-  // 3 bytes left:
-  int int_time_tmp=0;
-  int int_time_count=0;
-  int_time_tmp = control_parameters.integration_time();// Integration time: 2^integration_time seconds
-  while (int_time_tmp > 1000) {
-    int_time_tmp /= 2;
-    int_time_count++;
-  }
-  while (int_time_tmp < 1000) {
-    int_time_tmp *= 2;
-    int_time_count--;
-  }
-  header_msg.integration_time = (int8_t)(int_time_count);
-  header_msg.empty[0] = 0;
-  header_msg.empty[1] = 0;
-  header_msg.empty[2] = 0;
+    strcpy(output_header.experiment,control_parameters.experiment().c_str());      // Name of the experiment
+    Control_parameters::Date start = control_parameters.get_start_time();
+    output_header.start_year = start.year;       // Start year of the experiment
+    output_header.start_day = start.day;        // Start day of the experiment (day of year)
+    output_header.start_time = start.to_miliseconds()/1000;
+    // Start time of the correlation in seconds since
+    // midnight
+    output_header.number_channels = control_parameters.number_channels();  // Number of frequency channels
+    // 3 bytes left:
+    int int_time_tmp=0;
+    int int_time_count=0;
+    int_time_tmp = control_parameters.integration_time();// Integration time: 2^integration_time seconds
+    while (int_time_tmp > 1000) {
+      int_time_tmp /= 2;
+      int_time_count++;
+    }
+    while (int_time_tmp < 1000) {
+      int_time_tmp *= 2;
+      int_time_count--;
+    }
+    output_header.integration_time = (int8_t)(int_time_count);
+    output_header.empty[0] = 0;
+    output_header.empty[1] = 0;
+    output_header.empty[2] = 0;
 
-  output_node_set_global_header((char *)&header_msg, sizeof(Output_header_global));
+    output_node_set_global_header((char *)&output_header, 
+                                  sizeof(Output_header_global));
+  }
 
   // Input nodes:
   int n_stations = get_control_parameters().number_stations();

@@ -37,6 +37,7 @@ produce_html_plotpage_SOURCES = \
   ../src/log_writer.cc \
   ../src/log_writer_cout.cc \
   ../src/utils.cc \
+  ../src/output_header.cc \
   gnuplot_i.cc
 
 vex2ccf_SOURCES = \
