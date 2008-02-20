@@ -126,6 +126,7 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
   delay_timer.stop();
   total_ffts++;
 }
+
 void Delay_correction::fringe_stopping(std::complex<FLOAT> input[],
                                        FLOAT output[]) {
   double mult_factor_phi =
