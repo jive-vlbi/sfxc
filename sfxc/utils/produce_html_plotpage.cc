@@ -55,7 +55,7 @@ int plot_count=0;
 
 class Plot_generator {
 public:
-  Plot_generator(std::ifstream &infile, const Control_parameters &ConPrms,
+  Plot_generator(std::istream &in, const Control_parameters &ConPrms,
                  int count_channel, int32_t &start_time);
 
 private:
@@ -64,13 +64,11 @@ private:
                      const Control_parameters &ConPrms,
                      int count_channel,
                      int32_t &start_time);
-  void generate_auto_plots(std::ifstream &in,
-                           int stations_start,
+  void generate_auto_plots(int stations_start,
                            int stations_end,
                            Plot_data &plot_data,
                            const Control_parameters &ConPrms);
-  void generate_cross_plot(std::ifstream &in,
-                           int station,
+  void generate_cross_plot(int station,
                            int station2,
                            Plot_data &plot_data,
                            int plot_nr,
@@ -80,18 +78,30 @@ private:
   float signal_to_noise_ratio(std::vector< std::complex<float> > &data);
   float max_value_offset(std::vector< std::complex<float> > &data);
 
+  void read_data();
+
 private:
+  std::istream &input;
+
   int nLags;
   std::vector< std::complex<float> > in, out;
   std::vector<float> magnitude;
   fftwf_plan visibilities2lags; 
+
+  // Headers found in the data
+  Output_header_timeslice timeslice_header;
+  Output_header_baseline baseline_header;
+
+  int n_baselines; // Number of integrations before the next timeslice header
 };
 
-Plot_generator::Plot_generator(std::ifstream &infile, 
+Plot_generator::Plot_generator(std::istream &input, 
                                const Control_parameters &ConPrms,
                                int count_channel, 
                                int32_t &start_time)
+  : input(input), n_baselines(0)
 {
+
   Log_writer_cout log_writer;
 
   nLags =ConPrms.number_channels()+1;
@@ -108,7 +118,7 @@ Plot_generator::Plot_generator(std::ifstream &infile,
 
   int reference_station = -1;
   if (ConPrms.reference_station() != "") {
-    for (int i=0; i<ConPrms.number_stations(); i++) {
+    for (size_t i=0; i<ConPrms.number_stations(); i++) {
       if (ConPrms.station(i) == ConPrms.reference_station()) {
         reference_station = i;
       }
@@ -129,8 +139,11 @@ Plot_generator::Plot_generator(std::ifstream &infile,
   Plot_data plot_data[4];
 
   // Read the auto correlations
+  
+
+
   if (cross_channel == -1) {
-    generate_auto_plots(infile, 0, nStations, plot_data[0], ConPrms);
+    generate_auto_plots(0, nStations, plot_data[0], ConPrms);
     plot_data[0].job_name = 
       ConPrms.channel(count_channel)+ ", " +
       ConPrms.frequency(ConPrms.channel(count_channel), 
@@ -141,8 +154,8 @@ Plot_generator::Plot_generator(std::ifstream &infile,
                            ConPrms.station(0),ConPrms.get_mode(start_time)) + "cp ";
 
   } else {
-    generate_auto_plots(infile, 0, nStations, plot_data[0], ConPrms);
-    generate_auto_plots(infile, 0, nStations, plot_data[2], ConPrms);
+    generate_auto_plots(0, nStations, plot_data[0], ConPrms);
+    generate_auto_plots(0, nStations, plot_data[2], ConPrms);
 
     plot_data[0].job_name = 
       ConPrms.channel(count_channel)+ ", " +
@@ -175,7 +188,7 @@ Plot_generator::Plot_generator(std::ifstream &infile,
       int plot_nr=0;
       for (int i=0; i<nStations; i++) {
         for (int j=i+1; j<nStations; j++) {
-          generate_cross_plot(infile, i, j, plot_data[0], plot_nr, ConPrms);
+          generate_cross_plot(i, j, plot_data[0], plot_nr, ConPrms);
           plot_nr++;
         }    
       }
@@ -185,7 +198,7 @@ Plot_generator::Plot_generator(std::ifstream &infile,
       int plot_nr=0;
       for (int i=0; i<nStations; i++) {
         if (i != reference_station) {
-          generate_cross_plot(infile, i, reference_station, plot_data[0], 
+          generate_cross_plot(i, reference_station, plot_data[0], 
                               plot_nr, ConPrms);
           plot_nr++;
         }
@@ -225,7 +238,7 @@ Plot_generator::Plot_generator(std::ifstream &infile,
                   ((jprime-iprime)%nStations)-1;
               }
             }
-            generate_cross_plot(infile, i, j,
+            generate_cross_plot(i, j,
                                 plot_data[data_nr], plot_nr, ConPrms);
           }
         }    
@@ -240,7 +253,7 @@ Plot_generator::Plot_generator(std::ifstream &infile,
         int plot_nr=0;
         for (int i=0; i<nStations; i++) {
           if (i != reference_station) {
-            generate_cross_plot(infile, i, reference_station, 
+            generate_cross_plot(i, reference_station, 
                                 plot_data[row_map[row]], 
                                 plot_nr, ConPrms);
             plot_nr++;
@@ -265,8 +278,8 @@ void Plot_generator::set_plot_data(Plot_data & data,
                                    int count_channel,
                                    int32_t &start_time) {
 
-  for (int i=0; i<ConPrms.channels_size(); i++){
-    for (int j=1; j<ConPrms.number_stations(); j++){
+  for (size_t i=0; i<ConPrms.channels_size(); i++){
+    for (size_t j=1; j<ConPrms.number_stations(); j++){
       if(ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(j),
                               ConPrms.get_mode(start_time)) 
          != ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(0),
@@ -299,24 +312,19 @@ void Plot_generator::set_plot_data(Plot_data & data,
 
 
 void 
-Plot_generator::generate_auto_plots(std::ifstream &infile,
-                                    int stations_start,
+Plot_generator::generate_auto_plots(int stations_start,
                                     int stations_end,
                                     Plot_data &plot_data,
                                     const Control_parameters &ConPrms) {
-
-  //read-in the header of the baselines
-  Output_header_baseline baseline;
   //the following loop is also over baselines since 
   //in auto correlation the number of 
   //baselines equals to number of stations.
   for (int station=stations_start; station<stations_end; station++) {
-    infile.read((char*)&baseline, sizeof(Output_header_baseline));
-    
-    assert((int)baseline.station_nr1 == (int)baseline.station_nr2);
-    
     //read data for this baseline
-    infile.read((char *)&in[0], 2*in.size()*sizeof(float));
+    read_data();
+    assert((int) baseline_header.station_nr1 == 
+           (int) baseline_header.station_nr2);
+    
     for  (int lag=0; lag<nLags; lag++) {
       magnitude[lag] = abs(in[lag]);
     }
@@ -335,22 +343,15 @@ Plot_generator::generate_auto_plots(std::ifstream &infile,
 }
 
 void 
-Plot_generator::generate_cross_plot(std::ifstream &infile,
-                                    int station,
+Plot_generator::generate_cross_plot(int station,
                                     int station2,
                                     Plot_data &plot_data,
                                     int plot_nr,
                                     const Control_parameters &ConPrms) {
   int nStations = ConPrms.number_stations();
-  Output_header_baseline baseline;
-  //read-in the header of the baselines
-  infile.read((char*)&baseline, sizeof(Output_header_baseline));
-
-  //assert(station == (int)baseline.station_nr1);
-  //assert(station2 == (int)baseline.station_nr2);
 
   //read data for this baseline
-  infile.read((char *)&in[0], 2*in.size()*sizeof(float));
+  read_data();
   fftwf_execute(visibilities2lags);
 
   for  (int lag=0; lag<nLags; lag++) {
@@ -377,7 +378,7 @@ Plot_generator::generate_cross_plot(std::ifstream &infile,
            ConPrms.station(station2).c_str(),
            tmp2,
            plot_count);
-  assert(plot_nr < plot_data.crosses.size());
+  assert(plot_nr < (int)plot_data.crosses.size());
   plot_data.crosses[plot_nr] = filename;
   plot_data.snr_crosses[plot_nr] = signal_to_noise_ratio(out);
   plot_data.offset[plot_nr] = max_value_offset(out);
@@ -408,7 +409,7 @@ Plot_generator::max_value_offset(std::vector< std::complex<float> > &data)
 
   float maxval = 0.0;
   int maxval_loc = 0;
-  for  (int lag=0; lag<data.size(); lag++) {
+  for  (size_t lag=0; lag<data.size(); lag++) {
     magnitude[lag] = abs(data[(lag+data.size()/2)%data.size()])/data.size();
     if(magnitude[lag] > maxval){
       maxval = magnitude[lag];
@@ -600,6 +601,20 @@ void print_html(const Control_parameters &ConPrms) {
   }
 }
 
+void Plot_generator::read_data() {
+  // Read the header of the timeslice
+  if (n_baselines == 0) {
+    //read-in the header of the time-slice
+    input.read((char*)&timeslice_header, sizeof(Output_header_timeslice));
+    n_baselines = timeslice_header.number_baselines;
+  }
+  
+  // Read the header of the baseline
+  input.read((char*)&baseline_header, sizeof(Output_header_baseline));
+  // Read the data
+  input.read((char *)&in[0], 2*in.size()*sizeof(float));
+
+}
 
 //main
 int main(int argc, char *argv[])
@@ -620,9 +635,9 @@ int main(int argc, char *argv[])
   ConPrms.initialise(argv[1], argv[2], logg);
 
   assert(strncmp(ConPrms.get_output_file().c_str(), "file://", 7) == 0);
-  std::ifstream infile(ConPrms.get_output_file().c_str()+7, 
+  std::ifstream in(ConPrms.get_output_file().c_str()+7, 
                        std::ios::in | std::ios::binary);
-  assert(infile.is_open());
+  assert(in.is_open());
   
   if (argc== 4) {
     // Goto the output directory
@@ -632,24 +647,20 @@ int main(int argc, char *argv[])
   }
   
   Output_header_global header;
-  Output_header_timeslice timeslice;
 
   //read-in the global header 
-  infile.read((char*)&header, sizeof(Output_header_global));
+  in.read((char*)&header, sizeof(Output_header_global));
     
-  for (int channel=0; channel<ConPrms.channels_size();) {
-    //read-in the header of the time-slice
-    infile.read((char*)&timeslice, sizeof(Output_header_timeslice));
+  for (size_t channel=0; channel<ConPrms.channels_size();) {
     // generate plots for the channel
-    Plot_generator(infile, ConPrms, channel, header.start_time);
+    Plot_generator(in, ConPrms, channel, header.start_time);
 
     // find the next channel
     if (ConPrms.cross_polarize()) {
       channel ++;
       int cross_channel = 
         ConPrms.cross_channel(channel, ConPrms.get_mode(header.start_time));
-      while ((channel <
-              ConPrms.number_frequency_channels()) &&
+      while ((channel < (int)ConPrms.number_frequency_channels()) &&
              (cross_channel >= 0) && (cross_channel < channel)) {
         channel ++;
         cross_channel = 

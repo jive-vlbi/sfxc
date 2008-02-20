@@ -212,21 +212,27 @@ Correlator_node::set_parameters(const Correlation_parameters &parameters) {
   int size_of_one_baseline = sizeof(fftwf_complex)*
     (parameters.number_channels*PADDING/2+1);
 
-  output_node_set_timeslice(parameters.slice_nr, get_correlate_node_number(),
-                            n_integration_slice_in_time_slice * 
-                            ( sizeof(Output_header_timeslice) +
-                              ( nBaselines *
-                                (size_of_one_baseline + 
-                                 sizeof(Output_header_baseline) ) ) ) );
+  output_node_set_timeslice(parameters.slice_nr, 
+                            parameters.slice_offset,
+                            n_integration_slice_in_time_slice,
+                            get_correlate_node_number(),
+                            sizeof(Output_header_timeslice) +
+                            ( nBaselines *
+                              (size_of_one_baseline + 
+                               sizeof(Output_header_baseline) ) ) );
 }
 
 void
 Correlator_node::
-output_node_set_timeslice(int slice_nr, int stream_nr, int bytes) {
-  correlation_core.data_writer()->set_size_dataslice(bytes);
+output_node_set_timeslice(int slice_nr, int slice_offset, int n_slices,
+                          int stream_nr, int bytes) {
+  correlation_core.data_writer()->set_size_dataslice(bytes*n_slices);
   int32_t msg_output_node[] = {stream_nr, slice_nr, bytes};
-  MPI_Send(&msg_output_node, 3, MPI_INT32,
-           RANK_OUTPUT_NODE,
-           MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
-           MPI_COMM_WORLD);
+  for (int i=0; i<n_slices; i++) {
+    MPI_Send(&msg_output_node, 3, MPI_INT32,
+             RANK_OUTPUT_NODE,
+             MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
+             MPI_COMM_WORLD);
+    msg_output_node[1] += slice_offset;
+  }
 }
