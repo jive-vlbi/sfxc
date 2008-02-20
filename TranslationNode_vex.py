@@ -16,6 +16,7 @@ data_format_overhead = {'Mark4': 1.0, 'VLBA': 1.008}
 
 class Vex:
     def __init__(self, name):
+        print "name is ", name
         self._vex = AntlrVex(name)
         return
 
