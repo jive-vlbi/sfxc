@@ -58,7 +58,7 @@ public:
     : start_time(0), stop_time(0), integration_time(0),
       number_channels(0), slice_nr(-1), slice_offset(-1), sample_rate(0), 
       bits_per_sample(0), channel_freq(0), bandwidth(0), sideband('n'),
-      channel_nr(0), polarisation('n'), station_number(0) {
+      channel_nr(0), polarisation('n') {
   }
 
 
@@ -69,8 +69,11 @@ public:
     bool
     operator==(const Correlation_parameters::Station_parameters& other) const;
 
-    int32_t station_stream; // input stream
-    int32_t start_time;      // Start and stop time for the station
+    int32_t station_number; // the number of the station 
+                            // according to the vex file 
+                            // sorted alphabathically
+    int32_t station_stream; // input stream (from multiple_data_readers)
+    int32_t start_time;     // Start and stop time for the station
     int32_t stop_time;
   };
 
@@ -96,9 +99,6 @@ public:
 
   bool    cross_polarize;   // do the cross polarisations
   int32_t reference_station;// use a reference station
-  std::vector<int32_t>  station_number; // the number of the station 
-                                        // according to the vex file 
-                                        // sorted alphabathically
 
 
   Station_list station_streams; // input streams used

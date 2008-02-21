@@ -11,7 +11,8 @@ bin_PROGRAMS = create_delay_function \
                vex2ccf \
 	       generate_uvw_coordinates \
 	       plot_delay_table \
-               produce_output_graphs
+               produce_output_graphs \
+               print_new_output_format
 
 bin_SCRIPTS  = run_sfxc.py vumeter.py
 
@@ -58,3 +59,7 @@ produce_output_graphs_SOURCES = \
   produce_output_graphs.cc
 
 pkginclude_HEADERS = *.h *.py
+
+print_new_output_format_SOURCES = \
+  print_new_output_format.cc \
+  ../src/output_header.cc

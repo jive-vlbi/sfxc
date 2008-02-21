@@ -806,7 +806,7 @@ get_correlation_parameters(const std::string &scan_name,
 
   corr_param.reference_station = -1;
   if (reference_station() != "") {
-    for (int station_nr=0; station_nr < number_stations(); station_nr++) {
+    for (size_t station_nr=0; station_nr < number_stations(); station_nr++) {
       if (reference_station() == station(station_nr)) {
         corr_param.reference_station = station_nr;
       }
@@ -815,6 +815,20 @@ get_correlation_parameters(const std::string &scan_name,
   }
 
   // now get the station streams
+  std::map<std::string, int> station_names; // sorted alphabetically
+  {
+    for (Vex::Node::const_iterator station_it = 
+           vex.get_root_node()["STATION"]->begin();
+         station_it != vex.get_root_node()["STATION"]->end(); ++station_it) {
+      station_names[station_it.key()] = -1;
+    }
+    int nr = 0;
+    for (std::map<std::string, int>::iterator it = station_names.begin();
+         it != station_names.end(); it++) {
+      it->second = nr;
+      nr++;
+    }
+  }
   for (Vex::Node::const_iterator station = scan->begin("station");
        station != scan->end("station"); ++station) {
     std::map<std::string, int>::const_iterator station_nr_it =
@@ -822,26 +836,12 @@ get_correlation_parameters(const std::string &scan_name,
     if (station_nr_it != correlator_node_station_to_input.end()) {
       if (station_nr_it->second >= 0) {
         Correlation_parameters::Station_parameters station_param;
+        station_param.station_number = station_names[station[0]->to_string()];
         station_param.station_stream = station_nr_it->second;
         station_param.start_time = station[1]->to_int_amount("sec");
         station_param.stop_time = station[2]->to_int_amount("sec");
         corr_param.station_streams.push_back(station_param);
       }
-    }
-  }
-
-  //the station number according to the vex file sorted alphabathically
-
-  int ii=0;
-  for (int i=0; i<station_name.size(); i++) {
-    int say=0;
-    for (Vex::Node::const_iterator station_it = vex.get_root_node()["STATION"]->begin();
-         station_it != vex.get_root_node()["STATION"]->end(); ++station_it) {
-      if(station_it.key() == station_name[i]) {
-        corr_param.station_number.push_back(say);
-        ii++;
-      }
-      say ++;
     }
   }
 
@@ -1057,6 +1057,8 @@ std::ostream &operator<<(std::ostream &out,
 bool
 Correlation_parameters::Station_parameters::
 operator==(const Correlation_parameters::Station_parameters& other) const {
+  if (station_number != other.station_number)
+    return false;
   if (station_stream != other.station_stream)
     return false;
   if (start_time != other.start_time)
