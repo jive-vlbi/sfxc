@@ -206,9 +206,8 @@ void
 MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   int size = 0;
   size =
-    12*sizeof(int32_t) + sizeof(int64_t) + 3*sizeof(char) +
-    corr_param.station_streams.size()*3*sizeof(int32_t) +
-    corr_param.station_number.size()*sizeof(int32_t);
+    11*sizeof(int32_t) + sizeof(int64_t) + 3*sizeof(char) +
+    corr_param.station_streams.size()*4*sizeof(int32_t);
   int position = 0;
   char message_buffer[size];
 
@@ -252,15 +251,11 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   MPI_Pack(&corr_param.reference_station, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
 
-  int32_t vector_size = corr_param.station_number.size();
-  MPI_Pack(&vector_size, 1, MPI_INT32,
-           message_buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&corr_param.station_number[0], vector_size, MPI_INT32,
-           message_buffer, size, &position, MPI_COMM_WORLD);
-
   for (Correlation_parameters::Station_iterator station =
          corr_param.station_streams.begin();
        station != corr_param.station_streams.end(); station++) {
+    MPI_Pack(&station->station_number, 1, MPI_INT32,
+             message_buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&station->station_stream, 1, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&station->start_time, 1, MPI_INT32,
@@ -341,18 +336,12 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
              &corr_param.reference_station, 1, MPI_INT32,
              MPI_COMM_WORLD);
 
-  int32_t vector_size;
-  MPI_Unpack(buffer, size, &position,
-             &vector_size, 1, MPI_INT32,
-             MPI_COMM_WORLD);
-  corr_param.station_number.resize(vector_size);
-  MPI_Unpack(buffer, size, &position,
-             &corr_param.station_number[0], vector_size, MPI_INT32,
-             MPI_COMM_WORLD);
-
   while (position < size) {
 
     Correlation_parameters::Station_parameters station_param;
+    MPI_Unpack(buffer, size, &position,
+               &station_param.station_number, 1, MPI_INT32,
+               MPI_COMM_WORLD);
     MPI_Unpack(buffer, size, &position,
                &station_param.station_stream, 1, MPI_INT32,
                MPI_COMM_WORLD);
