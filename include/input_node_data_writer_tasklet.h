@@ -32,19 +32,15 @@ public:
 
   void set_parameters(const Input_node_parameters &input_param);
 
-  bool &verbose() { return verbose_; }
-
 private:
   Input_buffer_ptr    input_buffer_;
   Data_writer_queue    data_writers_;
-
-  bool verbose_;
 };
 
 
 template <class Type>
 Input_node_data_writer_tasklet<Type>::
-Input_node_data_writer_tasklet() : verbose_(false) {}
+Input_node_data_writer_tasklet() {}
 
 template <class Type>
 Input_node_data_writer_tasklet<Type>::~Input_node_data_writer_tasklet() {
@@ -110,9 +106,6 @@ do_task() {
   } while (bytes_written != bytes_to_write);
 
   if (data_writers_.front()->get_size_dataslice() == 0) {
-    if (verbose_) {
-      DEBUG_MSG_RANK(3, "Finished writing data slice");
-    }
     data_writers_.pop();
   }
 
