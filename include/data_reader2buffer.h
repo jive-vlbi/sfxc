@@ -16,7 +16,6 @@
 
 #include "data_reader.h"
 #include "buffer.h"
-#include "utils.h"
 
 /** Reads data from the data reader and puts it in a buffer,
  * which is useful for non-blocking IO.
@@ -26,6 +25,9 @@ class Data_reader2buffer
 {
   typedef Data_reader2buffer<T> Self;
 public:
+  typedef boost::shared_ptr< Data_reader > Data_reader_ptr;
+  typedef boost::shared_ptr< Buffer<T> >   Buffer_ptr;
+
   enum State {
     STOPPED=0, ///< Not running, the additional thread is not active
     SUSPENDED, /**< Not running, the additional thread is waiting 
@@ -53,10 +55,10 @@ private:
   static void *start_reading(void *);
   void read();
 private:
-  boost::shared_ptr< Data_reader > data_reader;
-  boost::shared_ptr< Buffer<T> >   buffer;
-  State       state;
-  pthread_t   io_thread;
+  Data_reader_ptr data_reader;
+  Buffer_ptr      buffer;
+  State           state;
+  pthread_t       io_thread;
   
   pthread_mutex_t mutex_for_set_state;
 };
@@ -85,27 +87,28 @@ Data_reader2buffer<T>::~Data_reader2buffer()
   
 template <class T>
 void
-Data_reader2buffer<T>::set_data_reader(boost::shared_ptr<Data_reader> reader) {
+Data_reader2buffer<T>::set_data_reader(Data_reader_ptr reader) {
   assert(state != RUNNING);
+  assert(data_reader == Data_reader_ptr());
   data_reader = reader;
 }
 
 template <class T>
-boost::shared_ptr<Data_reader>
+typename Data_reader2buffer<T>::Data_reader_ptr
 Data_reader2buffer<T>::get_data_reader() {
   return data_reader;
 }
 
 template <class T>
 void
-Data_reader2buffer<T>::set_buffer(boost::shared_ptr< Buffer<T> > buff) {
-  assert(buffer == boost::shared_ptr< Buffer<T> >());
+Data_reader2buffer<T>::set_buffer(Buffer_ptr buff) {
+  assert(buffer == Buffer_ptr());
   assert(state == STOPPED);
   buffer = buff;
 }
 
 template <class T>
-boost::shared_ptr< Buffer<T> >
+typename Data_reader2buffer<T>::Buffer_ptr
 Data_reader2buffer<T>::get_buffer() {
   return buffer;
 }
@@ -114,7 +117,7 @@ Data_reader2buffer<T>::get_buffer() {
 template <class T>
 void
 Data_reader2buffer<T>::try_start() {
-  if ((data_reader != NULL) && (buffer != NULL)) {
+  if ((data_reader != Data_reader_ptr() ) && (buffer != Buffer_ptr())) {
     start();
   }
 }
@@ -122,8 +125,8 @@ Data_reader2buffer<T>::try_start() {
 template <class T>
 void
 Data_reader2buffer<T>::start() {
-  assert(data_reader != NULL);
-  assert(buffer != NULL);
+  assert(data_reader != Data_reader_ptr());
+  assert(buffer != Buffer_ptr());
   
   if (state == STOPPED) {
     set_state(RUNNING);
@@ -161,7 +164,6 @@ void *
 Data_reader2buffer<T>::start_reading(void * self_) {
   Self *self = static_cast<Self *>(self_);
   self->read();
-//   DEBUG_MSG("Data_reader2buffer: stop reading " << self->data_reader->data_counter());
   return NULL;
 }
 
@@ -176,7 +178,7 @@ Data_reader2buffer<T>::read() {
         usleep(1000000); // .1 second:
       } else if (data_reader->eof()) {
         DEBUG_MSG("data_reader->eof()");
-        state = STOPPED;
+        set_state(STOPPED);
       } else {
         T &elem = buffer->produce();
         assert(elem.size() > 0);
