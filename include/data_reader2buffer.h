@@ -183,6 +183,10 @@ Data_reader2buffer<T>::read() {
         T &elem = buffer->produce();
         assert(elem.size() > 0);
         int size = data_reader->get_bytes(elem.size(), elem.buffer());
+        if (size < 0) {
+          // Make sure the error messages do not propagate in the buffer
+          size = 0;
+        }
         buffer->produced(size);
       }
     }
