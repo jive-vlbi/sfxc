@@ -650,6 +650,10 @@ int main(int argc, char *argv[])
 
   //read-in the global header 
   in.read((char*)&header, sizeof(Output_header_global));
+  if (in.eof()) {
+    std::cout << "Empty correlation file" << std::endl;
+    exit(-1);
+  }
 
   for (size_t channel=0; channel<ConPrms.channels_size();) {
     // generate plots for the channel
