@@ -157,7 +157,6 @@ set_parameters(const Input_node_parameters &input_node_param,
     data_writers_[i].connect_to(channel_extractor_.get_output_buffer(i));
     data_writers_[i].set_parameters(input_node_param);
   }
-  data_writers_[0].verbose() = true;
 
   did_work = true;
 }
