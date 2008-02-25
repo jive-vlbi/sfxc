@@ -56,9 +56,9 @@ class Correlation_parameters {
 public:
   Correlation_parameters()
     : start_time(0), stop_time(0), integration_time(0),
-      number_channels(0), slice_nr(-1), slice_offset(-1), sample_rate(0), 
-      bits_per_sample(0), channel_freq(0), bandwidth(0), sideband('n'),
-      channel_nr(0), polarisation('n') {
+      number_channels(0), integration_nr(-1), slice_nr(-1), slice_offset(-1), 
+      sample_rate(0), bits_per_sample(0), channel_freq(0), bandwidth(0), 
+      sideband('n'), channel_nr(0), polarisation('n') {
   }
 
 
@@ -85,8 +85,9 @@ public:
   int32_t stop_time;        // End of the slice in milliseconds
   int32_t integration_time; // In milliseconds
   int32_t number_channels;  // number of frequency channels
-  int32_t slice_nr;         // Number of the integration slice
-  int32_t slice_offset;     // Number of integration slices in the output file
+  int32_t integration_nr;   // number of the integration
+  int32_t slice_nr;         // Number of the output slice
+  int32_t slice_offset;     // Number of output slices in the output file
                             // between one integration slice and the next 
                             // in case of subsecond integrations
   int32_t sample_rate;      // #Samples per second

@@ -94,6 +94,8 @@ private:
   /// The number of the current stream
 //  int32_t stream_nr;
   /// The number of the integration slice
+  int32_t integration_slice_nr;
+  /// Number of the slice for the output node
   int32_t output_slice_nr;
 
   // A list of all scan names.
