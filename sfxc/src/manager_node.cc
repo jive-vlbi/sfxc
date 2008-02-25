@@ -238,6 +238,7 @@ void Manager_node::start() {
         start_time += duration_time_slice;
         int n = control_parameters.integrations_per_timeslice(duration_time_slice);
         output_slice_nr += (n-1) * control_parameters.number_correlation_cores_per_timeslice(get_current_mode());
+        integration_slice_nr += n;
         
         if (start_time+duration_time_slice > stop_time) {
           status = STOP_CORRELATING;
@@ -330,6 +331,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
         get_input_node_map());
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
+  correlation_parameters.integration_nr = integration_slice_nr;
   correlation_parameters.slice_nr = output_slice_nr;
 
   correlation_parameters.cross_polarize = (cross_channel != -1);

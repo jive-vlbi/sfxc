@@ -64,6 +64,7 @@ void
 Correlation_core::set_parameters(const Correlation_parameters &parameters,
                                  int node_nr) {
   node_nr_ = node_nr;
+  current_integration = 0;
 
   size_t prev_size_of_fft = size_of_fft();
   correlation_parameters = parameters;
@@ -254,9 +255,6 @@ void Correlation_core::integration_write() {
   assert(accumulation_buffers.size() ==
     baselines.size()*(size_of_fft()/2+1));
 
-  int nr_corr = (correlation_parameters.stop_time-correlation_parameters.start_time)
-                /correlation_parameters.integration_time;
-
   int polarisation = 1;
   if(correlation_parameters.polarisation == 'R'){
     polarisation =0;
@@ -264,21 +262,24 @@ void Correlation_core::integration_write() {
     assert(correlation_parameters.polarisation == 'L');
   }
 
-  Output_header_timeslice htimeslice;
-  Output_header_baseline hbaseline;
+  { // Writing the timeslice header
+    Output_header_timeslice htimeslice;
   
-  htimeslice.number_baselines = baselines.size();
-  htimeslice.integration_slice = nr_corr;
-  htimeslice.number_uvw_coordinates = 0;
-  
-  uint64_t nWrite = sizeof(htimeslice);
-  writer->put_bytes(nWrite, (char *)&htimeslice);
-  
-  accumulation_buffers_float.resize(size_of_fft()/2+1);
-  
-  size_t n_stations = correlation_parameters.station_streams.size();
+    htimeslice.number_baselines = baselines.size();
+    htimeslice.integration_slice = 
+      correlation_parameters.integration_nr + current_integration;
+    htimeslice.number_uvw_coordinates = 0;
+    
+    uint64_t nWrite = sizeof(htimeslice);
+    writer->put_bytes(nWrite, (char *)&htimeslice);
 
+    current_integration++;
+  }
+
+  accumulation_buffers_float.resize(size_of_fft()/2+1);
+  size_t n_stations = correlation_parameters.station_streams.size();
   std::vector<int> stream2station;
+  
   {
     // initialise with -1
     stream2station.resize(input_buffers.size(), -1);
@@ -293,6 +294,8 @@ void Correlation_core::integration_write() {
         correlation_parameters.station_streams[i].station_number;
     }
   }
+
+  Output_header_baseline hbaseline;
   for (int i=0; i<baselines.size(); i++) {
     std::pair<int,int> &stations = baselines[i];
     
@@ -332,7 +335,7 @@ void Correlation_core::integration_write() {
     // 1 byte left:
     hbaseline.empty = ' ';
     
-    nWrite = sizeof(hbaseline);
+    int nWrite = sizeof(hbaseline);
     writer->put_bytes(nWrite, (char *)&hbaseline);
     writer->put_bytes((size_of_fft()/2+1)*sizeof(std::complex<float>),
         ((char*)&accumulation_buffers_float[0]));

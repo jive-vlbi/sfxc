@@ -93,6 +93,7 @@ private:
 
   // Needed for writing the progress messages
   int node_nr_;
+  int current_integration;
 };
 
 #endif /*CORRELATION_CORE_H_*/

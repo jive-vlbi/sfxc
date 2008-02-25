@@ -1002,6 +1002,8 @@ Correlation_parameters::operator==(const Correlation_parameters& other) const {
     return false;
   if (number_channels != other.number_channels)
     return false;
+  if (integration_nr != other.integration_nr)
+    return false;
   if (slice_nr != other.slice_nr)
     return false;
   if (slice_offset != other.slice_offset)
