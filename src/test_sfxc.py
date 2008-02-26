@@ -18,31 +18,34 @@ def usage():
   print "  --np d: number of processes"
 
 try:
-  opts, args = getopt.getopt(sys.argv[1:], "hn:", ["help", "np="])
+  opts, args = getopt.getopt(sys.argv[1:], "hn:x", ["help", "np=", "ctrl="])
 except getopt.GetoptError:
   usage()
   sys.exit(2)
 
+controlfiles = []
 for opt, arg in opts:
   if opt in ("-h", "--help"):
     usage()
     sys.exit(2)
   if opt in ("-n", "--np"):
     numProcesses = arg;
+  if opt in ("--ctrl"):
+    controlfiles.append(arg);
 
 # Load the ccf files for testing:
 RC_FILE = os.path.join(os.environ.get('HOME'), ".sfxcrc")
 if os.path.isfile(RC_FILE):
-  execfile(RC_FILE)
-
+  execfile(RC_FILE)        
+	
 # compile the executable
 status = os.system("make sfxc")
 if (status != 0): sys.exit(1)
 
 # run the executable on all ccf files
 for ctrlfile in controlfiles:
-  cmd = "mpirun -np "+str(numProcesses)+" sfxc "+" ".join(ctrlfile)
-  os.system("echo "+cmd)
+  cmd = "mpirun -np "+str(numProcesses)+" sfxc "+" "+ctrlfile
+  print cmd
   status = os.system(cmd)
   if (status != 0): sys.exit(1)
   
