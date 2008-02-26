@@ -3,22 +3,13 @@
 #include <iostream>
 
 #include "channel_extractor_interface.h"
-#include "channel_extractor1.h"
+#include "channel_extractor_brute_force.h"
 
-#include "tester.h"
-
-#include "utils.h"
-#include "timer.h"
-
-int benchmark(Channel_extractor_interface &channel_extractor) {
-}
-            
-void benchmark() {
-
-}
+#include "benchmark.h"
 
 int main() {
-  Test<Channel_extractor1, Channel_extractor1>();
+  Channel_extractor_brute_force channel_extractor_bf;
+  
+  Benchmark benchmark(channel_extractor_bf);
 
-  benchmark();
 }

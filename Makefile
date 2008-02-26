@@ -2,6 +2,9 @@ CXXFLAGS=-DNDEBUG -O3
 
 all: channel_extractor
 
-OBJ = main.o utils.o 
+OBJ = main.o utils.o benchmark.o channel_extractor_brute_force.o
 channel_extractor: $(OBJ)
 	g++ $(CXXFLAGS) -o channel_extractor $(OBJ)
+
+clean:
+	rm -f channel_extractor $(OBJ)
