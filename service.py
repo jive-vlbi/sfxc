@@ -173,28 +173,39 @@ class Service(TranslationNode):
 
 				sendFile = experiment_name[0] + '_' + station + '_' + str(scan) + "_" + str(chunk_number) + '.m5a'
 				sendFile = fileName + sendFile.lower()
+				print "file to be sent: " + sendFile
 				
 				if exists(sendFile):
-					split_command = "split -d -a 3 -b " + str(chunk_bytes) + " " + sendFile + " " + sendFile
 					file_size =  getsize(sendFile)
-					print file_size
-					os.system(split_command)
-					nr_files = file_size/chunk_bytes + 1
-					i=0
-					while i < nr_files:
-						if nr_files <= 9:
-							filename2 = sendFile + "00" + str(i)
-						elif (nr_files >9 and nr_files <= 99):
-							filename2 = sendFile + "0" + str(i)
-						elif (nr_files >99 and nr_files <= 999):
-							filename2 = sendFile + str(i)
+
+				if (exists(sendFile) and file_size > 0):
+					print "file size = " + str(file_size)
+					print "chunk size = " + str(chunk_bytes)
+					if (file_size < chunk_bytes):
+						copyFile = "globus-url-copy file://" + str(sendFile) + " gsiftp://huygens.nfra.nl/data4/sfxc/huseyin/tn/junk/"
+						print copyFile
+						os.system(copyFile)
+					elif (file_size >= chunk_bytes):
+						split_command = "split -d -a 3 -b " + str(chunk_bytes) + " " + sendFile + " " + sendFile
+						os.system(split_command)
+						nr_files = file_size/chunk_bytes + 1
+						i=0
+						while i < nr_files:
+							if nr_files <= 9:
+								filename2 = sendFile + "00" + str(i)
+							elif (nr_files >9 and nr_files <= 99):
+								filename2 = sendFile + "0" + str(i)
+							elif (nr_files >99 and nr_files <= 999):
+								filename2 = sendFile + str(i)
 								
-					print filename2
-					copyFile = "scp " + str(filename2) + " ozdemir@huygens:~/data/"
-					print copyFile
-					os.system(copyFile)
-					i +=1
-					continue
+						print filename2
+						copyFile = "globus-url-copy file://" + str(filename2) + " gsiftp://huygens.nfra.nl/data4/sfxc/huseyin/tn/junk/"
+						print copyFile
+						os.system(copyFile)
+						i +=1
+						continue
+				elif (exists(sendFile) and file_size == 0):
+					break
 				else:
 					mark5_chunk_output = Mark5_get_chunks(portMark5Data,
 					portMark5Control, 

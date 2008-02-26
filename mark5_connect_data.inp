@@ -3,10 +3,10 @@
 #Control socket number
 2620
 # Mark5 IP address
-10.88.0.50
+192.42.120.22
 # path to download/copy files to
-/jop32_0/ozdemir/data/ez015/
+/data4/sfxc/huseyin/tn/download_data/
 # block size
 8192
 # port number
-8080
+8082

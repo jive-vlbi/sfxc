@@ -1,7 +1,7 @@
 import socket, telnetlib
 
 #host = socket.gethostbyname(socket.gethostname())
-host = "10.87.10.32"
+host = "192.42.120.69"
 class Mark5_set_position:
 	def __init__(self):
 		self.resp_list=[]
