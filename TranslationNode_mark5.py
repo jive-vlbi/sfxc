@@ -1,12 +1,10 @@
 import socket, telnetlib
 
-#host = socket.gethostbyname(socket.gethostname())
-host = "192.42.120.69"
 class Mark5_set_position:
 	def __init__(self):
 		self.resp_list=[]
 		
-	def bytes_starting_position(self, port = None, portMark5 = None, ipMark5 = None, startPosition = None):
+	def bytes_starting_position(self, host=None,  port = None, portMark5 = None, ipMark5 = None, startPosition = None):
 		s = socket.socket()
 		print host
 		s.bind((host, port))
@@ -28,7 +26,7 @@ class Mark5_set_position:
 		return self.resp_list[3]
 
 class Mark5_get_chunks:
-	def __init__(self, port = None, portMark5 = None, ipMark5 = None, fileName = None, blockSize = None, chunkSize = None, startPosition = None):
+	def __init__(self, host=None, port = None, portMark5 = None, ipMark5 = None, fileName = None, blockSize = None, chunkSize = None, startPosition = None):
 		
 		f = open(fileName, "w")
 

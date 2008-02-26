@@ -1,5 +1,8 @@
-# IP address of the machine where the service is run
-192.42.120.69
+# grid ftp address where the file is to be transfered
+# this adress has to be the full path to the directory
+# i.e. relative to a home directory : melisa.man.poznan.pl/~/
+# i.e. absolute path: huygens.nfra.nl/data4/sfxc/
+huygens.nfra.nl/data4/sfxc/huseyin/tn/junk/
 # chunk size in bytes or "scan size"
 # when "scan size", calculates the actual chunk size as the size of a scan 
 scan size

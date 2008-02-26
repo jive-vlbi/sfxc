@@ -34,15 +34,18 @@ portMark5Control = int(inp[2].strip())
 # IP address of the Mark5 that will be connected
 ipMark = inp[3].strip()
 
+# IP address of the host where the service is run
+host = inp[4].strip()
+
 # file path that the data will be copied to
-fileName = inp[4].strip()
+fileName = inp[5].strip()
 fileName = fileName.strip()
 
 # read in the block size
-block_size = int(inp[5].strip())
+block_size = int(inp[6].strip())
 
 # port number 
-portNumber = int(inp[6].strip())
+portNumber = int(inp[7].strip())
 
 class Service(TranslationNode):
 
@@ -62,7 +65,7 @@ class Service(TranslationNode):
 
 # Information passed to us by the VLBI grid broker
 		station = msg.Param0.StationName
-		host = msg.Param0.BrokerIPAddress
+		brokerIP = msg.Param0.BrokerIPAddress
 		chunk_size = msg.Param0.ChunkSize
 		job_start = parse_vex_time(msg.Param0.StartTime)
 		job_end = parse_vex_time(msg.Param0.EndTime)
@@ -72,6 +75,7 @@ class Service(TranslationNode):
 #		print "experiment_name ==> '"+str(type(vex_file_name))-+"'"
 		
 		print 'host IP address: ', host
+		print 'broker address: ', brokerIP
 		
 		# Open VEX file
 		vex = Vex(str(vex_file_name))
@@ -128,7 +132,7 @@ class Service(TranslationNode):
 			start_position = float(vex.get_data_start(scan, station))
 			start_position = int(start_position*1000*1000*1000)
 			mark5_set_output = Mark5_set_position()
-			time_real_start = mark5_set_output.bytes_starting_position(portMark5Data, portMark5Control, ipMark, start_position)
+			time_real_start = mark5_set_output.bytes_starting_position(host, portMark5Data, portMark5Control, ipMark, start_position)
 			time_real_start_ms = re.search("\.(\d{4})s", time_real_start)
 			time_real_start_ms = float("0."+time_real_start_ms.group(1))
 			time_real_start=re.sub("\.\d*", "", time_real_start)
@@ -182,7 +186,7 @@ class Service(TranslationNode):
 					print "file size = " + str(file_size)
 					print "chunk size = " + str(chunk_bytes)
 					if (file_size < chunk_bytes):
-						copyFile = "globus-url-copy file://" + str(sendFile) + " gsiftp://huygens.nfra.nl/data4/sfxc/huseyin/tn/junk/"
+						copyFile = "globus-url-copy file://" + str(sendFile) + " gsiftp://" + brokerIP
 						print copyFile
 						os.system(copyFile)
 					elif (file_size >= chunk_bytes):
@@ -199,7 +203,7 @@ class Service(TranslationNode):
 								filename2 = sendFile + str(i)
 								
 						print filename2
-						copyFile = "globus-url-copy file://" + str(filename2) + " gsiftp://huygens.nfra.nl/data4/sfxc/huseyin/tn/junk/"
+						copyFile = "globus-url-copy file://" + str(filename2) + " gsiftp://" + brokerIP
 						print copyFile
 						os.system(copyFile)
 						i +=1
@@ -207,7 +211,8 @@ class Service(TranslationNode):
 				elif (exists(sendFile) and file_size == 0):
 					break
 				else:
-					mark5_chunk_output = Mark5_get_chunks(portMark5Data,
+					mark5_chunk_output = Mark5_get_chunks(host, 
+					portMark5Data,
 					portMark5Control, 
 					ipMark, 
 					sendFile, 

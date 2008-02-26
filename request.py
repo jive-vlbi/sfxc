@@ -10,11 +10,15 @@ comment_char = re.compile(r'^\s*#')
 inp = ['##']
 # if the first character matches the comment character skip that line
 # otherwise read the line
-for line in file('experiment_data.inp'):
+fileExp = file('experiment_data.inp')
+for line in fileExp:
   if comment_char.match(line):
     continue
   inp.append(line)
-  
+
+# we are done with reading. we can close the file
+fileExp.close()
+
 # define request
 req = startTranslationJobMessage()
 req.Param0 = req.new_param0()  

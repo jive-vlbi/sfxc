@@ -4,6 +4,8 @@
 2620
 # Mark5 IP address
 192.42.120.22
+# IP address of the machine where the service is run
+192.42.120.69
 # path to download/copy files to
 /data4/sfxc/huseyin/tn/download_data/
 # block size
