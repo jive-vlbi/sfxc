@@ -1,8 +1,6 @@
-# grid ftp address where the file is to be transfered
-# this adress has to be the full path to the directory
-# i.e. relative to a home directory : melisa.man.poznan.pl/~/
-# i.e. absolute path: huygens.nfra.nl/data4/sfxc/
-huygens.nfra.nl/data4/sfxc/huseyin/tn/junk/
+# grid broker IP address
+# where the response notification will be sent
+192.42.120.69
 # chunk size in bytes or "scan size"
 # when "scan size", calculates the actual chunk size as the size of a scan 
 scan size

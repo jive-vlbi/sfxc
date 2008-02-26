@@ -37,15 +37,19 @@ ipMark = inp[3].strip()
 # IP address of the host where the service is run
 host = inp[4].strip()
 
+# url address of the grid ftp 
+#including the location of the directory where the files to be copied
+gridFtpIP = inp[5].strip()
+
 # file path that the data will be copied to
-fileName = inp[5].strip()
+fileName = inp[6].strip()
 fileName = fileName.strip()
 
 # read in the block size
-block_size = int(inp[6].strip())
+block_size = int(inp[7].strip())
 
 # port number 
-portNumber = int(inp[7].strip())
+portNumber = int(inp[8].strip())
 
 class Service(TranslationNode):
 
@@ -186,7 +190,7 @@ class Service(TranslationNode):
 					print "file size = " + str(file_size)
 					print "chunk size = " + str(chunk_bytes)
 					if (file_size < chunk_bytes):
-						copyFile = "globus-url-copy file://" + str(sendFile) + " gsiftp://" + brokerIP
+						copyFile = "globus-url-copy file://" + str(sendFile) + " gsiftp://" + gridFtpIP
 						print copyFile
 						os.system(copyFile)
 					elif (file_size >= chunk_bytes):
@@ -203,7 +207,7 @@ class Service(TranslationNode):
 								filename2 = sendFile + str(i)
 								
 						print filename2
-						copyFile = "globus-url-copy file://" + str(filename2) + " gsiftp://" + brokerIP
+						copyFile = "globus-url-copy file://" + str(filename2) + " gsiftp://" + gridFtpIP
 						print copyFile
 						os.system(copyFile)
 						i +=1
