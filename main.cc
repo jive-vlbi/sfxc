@@ -12,4 +12,9 @@ int main() {
   
   Benchmark benchmark(channel_extractor_bf);
 
+  if (benchmark.test()) {
+    std::cout << "Test succeeded" << std::endl;
+  } else {
+    std::cout << "Test failed" << std::endl;
+  }
 }

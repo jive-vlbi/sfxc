@@ -1,4 +1,5 @@
-CXXFLAGS=-DNDEBUG -O3
+#CXXFLAGS=-DNDEBUG -O3
+CXXFLAGS=-O2 -g
 
 all: channel_extractor
 
