@@ -413,21 +413,22 @@ Plot_generator::max_value_offset(std::vector< std::complex<float> > &data)
 float 
 Plot_generator::signal_to_noise_ratio(std::vector< std::complex<float> > &data)
 {
-  int index_max = 0;
-  for (size_t i=1; i<data.size(); i++) {
-    if (norm(data[i]) > norm(data[index_max])) index_max = i;
-  }
+  const int N = data.size();
+  int index_max = max_value_offset(data);
+  index_max = (index_max+N)%N;
 
   //return noise rms in array, skip 10 % around maximum
   std::complex<float> mean(0,0);
-  int ll=index_max - data.size()/20;//5% of range to left
-  int ul=index_max + data.size()/20;//5% of range to right
   int n2avg=0;
 
-
-  for (size_t i=0 ; i< data.size() ; i++){
-    if ( ((int)i < ll) || ((int)i > ul) ) {
-      //skip 10% arround lag for max which is at imax 
+  for (size_t i=0 ; i< N ; i++){
+    // difference in the range [0,n)
+    int pos_diff = (N+index_max-i)%N;
+    // difference in the range [-n/2,n/2)
+    pos_diff = std::abs((int)((pos_diff+N/2)%N - 
+                              N/2));
+    if (pos_diff > N/20) {
+      // skip 10% arround lag for max which is at imax 
       n2avg++;
       mean += data[i];
     }
@@ -436,8 +437,13 @@ Plot_generator::signal_to_noise_ratio(std::vector< std::complex<float> > &data)
   mean /= n2avg;
 
   float sum = 0;
-  for (size_t i=0 ; i< data.size() ; i++){
-    if (((int)i < ll) || ((int)i > ul)) {
+  for (size_t i=0 ; i< N ; i++){
+    // difference in the range [0,n)
+    int pos_diff = (N+index_max-i)%N;
+    // difference in the range [-n/2,n/2)
+    pos_diff = std::abs((int)((pos_diff+N/2)%N - 
+                              N/2));
+    if (pos_diff > N/20) {
       sum += norm(data[i]-mean);
     }
   }
