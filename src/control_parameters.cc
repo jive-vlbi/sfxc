@@ -31,7 +31,7 @@ initialise(const char *ctrl_file, const char *vex_file,
     Json::Reader reader;
     std::ifstream in(ctrl_file);
     if (!in.is_open()) {
-      log_writer << "Could not open control file" << std::endl;
+      log_writer << "Could not open control file  [" <<ctrl_file<<"]"<< std::endl;
       assert(false);
       return false;
     }
@@ -46,9 +46,17 @@ initialise(const char *ctrl_file, const char *vex_file,
     }
   }
 
-  { // parse the vex file
+  { 
+    std::ifstream in(vex_file);
+    if (!in.is_open()) {
+      log_writer << "Could not open control file  [" <<vex_file<<"]"<< std::endl;
+      assert(false);
+      return false;
+    }
+	
+    // parse the vex file
     if (!vex.open(vex_file)) {
-      log_writer << "Could not open vex file" << std::endl;
+      log_writer << "Could not parse vex file  [" << vex_file <<"]"<<  std::endl;
       assert(false);
       return false;
     }
@@ -150,12 +158,15 @@ Control_parameters::check(std::ostream &writer) const {
                  data_source_it.begin();
                source_it != data_source_it.end(); ++source_it) {
             std::string filename = create_path((*source_it).asString());
-            if (strncmp(filename.c_str(), "file://", 7)!=0) {
-              //               ok = false;
+            
+	   if (	filename.find("file://") != 0 && 
+		filename.find("mark5://") != 0 ) {
+              //ok = false;
               writer
               << "Ctrl-file: Data source should start with 'file://'"
               << std::endl;
-            } else {
+            } 
+	    if ( filename.find("file://") == 0 ){
               std::ifstream in(create_path(filename).c_str()+7);
               if (!in.is_open()) {
                 ok = false;
@@ -192,7 +203,7 @@ Control_parameters::check(std::ostream &writer) const {
       if (strncmp(output_file.c_str(), "file://", 7) != 0) {
         ok = false;
         writer
-        << "Ctrl-file: Data source should start with 'file://'"
+        << "Ctrl-file: Output file should start with 'file://'"
         << std::endl;
       } else {
         std::ofstream out(output_file.c_str()+7);
@@ -1044,4 +1055,5 @@ operator==(const Correlation_parameters::Station_parameters& other) const {
 
   return true;
 }
+
 
