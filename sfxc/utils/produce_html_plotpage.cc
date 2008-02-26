@@ -40,7 +40,7 @@ public:
   char sideband;
   std::vector<std::string> autos, crosses;
   std::vector<float> snr_crosses; // Signal to noise ratio for the crosses
-  std::vector<float> offset; // Offset of the maximum value of a cross with the midpoint
+  std::vector<int> offset; // Offset of the maximum value of a cross with the midpoint
 
   void set_size_crosses(int size_cross) {
     crosses.resize(size_cross);
@@ -76,7 +76,7 @@ private:
   void plot(char *filename, int nPts, char *title);
 
   float signal_to_noise_ratio(std::vector< std::complex<float> > &data);
-  float max_value_offset(std::vector< std::complex<float> > &data);
+  int max_value_offset(std::vector< std::complex<float> > &data);
 
   void read_data();
 
@@ -399,7 +399,7 @@ Plot_generator::plot(char *filename, int nPts, char *title) {
   gnuplot_close(g);
 }
 
-float
+int
 Plot_generator::max_value_offset(std::vector< std::complex<float> > &data)
 {
   int index_max = 0;
@@ -407,18 +407,9 @@ Plot_generator::max_value_offset(std::vector< std::complex<float> > &data)
     if (norm(data[i]) > norm(data[index_max])) index_max = i;
   }
 
-  float maxval = 0.0;
-  int maxval_loc = 0;
-  for  (size_t lag=0; lag<data.size(); lag++) {
-    magnitude[lag] = abs(data[(lag+data.size()/2)%data.size()])/data.size();
-    if(magnitude[lag] > maxval){
-      maxval = magnitude[lag];
-      maxval_loc =lag -  (data.size()/2);
-    }
-  }
-  
-  return maxval_loc;
+  return (index_max+data.size()/2)%data.size() - data.size()/2;
 }
+
 float 
 Plot_generator::signal_to_noise_ratio(std::vector< std::complex<float> > &data)
 {
