@@ -204,7 +204,7 @@ Control_parameters::check(std::ostream &writer) const {
       if (strncmp(output_file.c_str(), "file://", 7) != 0) {
         ok = false;
         writer
-        << "Ctrl-file: Data source should start with 'file://'"
+        << "Ctrl-file: Correlation output should start with 'file://'"
         << std::endl;
       } else {
         std::ofstream out(output_file.c_str()+7);
@@ -827,8 +827,7 @@ get_correlation_parameters(const std::string &scan_name,
   }
 
   // now get the station streams
-  std::map<std::string, int> station_names; // sorted alphabetically
-  {
+  std::map<std::string, int> station_names; { // sorted alphabetically
     for (Vex::Node::const_iterator station_it =
            vex.get_root_node()["STATION"]->begin();
          station_it != vex.get_root_node()["STATION"]->end(); ++station_it) {

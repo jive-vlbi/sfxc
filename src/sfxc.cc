@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
   //initialisation
   int stat = MPI_Init(&argc,&argv);
   if (stat != MPI_SUCCESS) {
-    std::cout << "Error starting MPI program. Terminating.\n";
+    std::cerr << "Error starting MPI program. Terminating.\n";
     MPI_Abort(MPI_COMM_WORLD, stat);
   }
 
@@ -51,6 +51,14 @@ int main(int argc, char *argv[]) {
   MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+
+  if( argc != 3 ){
+    if( rank == 0 ){
+      std::cerr << "ERROR: not enough parameter." << std::endl;
+      std::cerr << "usage: sfxc controlfile.ctrl vexfile.vex." << std::endl;
+    }
+    MPI_Abort(MPI_COMM_WORLD, stat);
+  }
 
   char *ctrl_file = argv[1];
   char *vex_file = argv[2];
