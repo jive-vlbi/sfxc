@@ -24,6 +24,8 @@
 
 /// Constants
 #define SIZE_MK4_FRAME           20000
+// Size of a mark4 header
+#define SIZE_MK4_HEADER          160
 // Track bit rate
 #define MARK4_TRACK_BIT_RATE     8000000
 // Maximal delay in milliseconds, should be an integer number of Mark4 blocks

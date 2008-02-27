@@ -12,6 +12,7 @@
 
 #include "semaphore_buffer.h"
 #include "input_node_types.h"
+#include "utils.h"
 
 template <class Type>
 class Integer_delay_correction_all_channels {
@@ -63,6 +64,8 @@ public:
 private:
   Delay_type get_delay(int64_t time);
   void send_release(Input_memory_pool_element &elem);
+
+  void pop_from_input_buffer();
 
 private:
   /// The input data Type
@@ -152,7 +155,6 @@ Integer_delay_correction_all_channels<Type>::do_task() {
       output_element.data1               = random_element_;
 
 #if 1
-
       { // Randomize data
         for (int i=0; i<nr_output_samples; i++) {
           // park_miller_random generates 31 random bits
@@ -196,7 +198,7 @@ Integer_delay_correction_all_channels<Type>::do_task() {
 
         // get the last sample
         position -= input_buffer_->front().data().size();
-        input_buffer_->pop();
+        pop_from_input_buffer();
         assert(!input_buffer_->empty());
 
         Delay_type new_delay = get_delay(current_time_+delta_time);
@@ -226,7 +228,7 @@ Integer_delay_correction_all_channels<Type>::do_task() {
       } else {
         // Get new data block
         position -= input_buffer_->front().data().size();
-        input_buffer_->pop();
+        pop_from_input_buffer();
         assert(!input_buffer_->empty());
         output_element.data2 = input_buffer_->front();
 
@@ -409,6 +411,34 @@ bytes_of_output(int nr_seconds) {
   int nr_time_slices = int64_t(1000)*nr_seconds/integration_time;
 
   return nr_bytes_per_integration_slice * nr_time_slices;
+}
+
+template <class Type>
+void
+Integer_delay_correction_all_channels<Type>::
+pop_from_input_buffer() {
+  input_buffer_->pop();
+#if 1
+  { // Randomize header
+    Input_memory_pool_element front = input_buffer_->front();
+    for (int i=0; i<SIZE_MK4_HEADER; i++) {
+      // park_miller_random generates 31 random bits
+      if (sizeof(Type) < 4) {
+        front.data()[i] = (Type)park_miller_random();
+      } else if (sizeof(Type) == 4) {
+        front.data()[i] =
+          (Type(park_miller_random())<<16) + park_miller_random();
+      } else {
+        assert(sizeof(Type) == 8);
+        int64_t rnd = park_miller_random();
+        rnd = (rnd << 16) + park_miller_random();
+        rnd = (rnd << 16) + park_miller_random();
+        rnd = (rnd << 16) + park_miller_random();
+        front.data()[i] = rnd;
+      }
+    }
+  }
+#endif
 }
 
 #endif // INTEGER_DELAY_CORRECTION_ALL_CHANNELS_H
