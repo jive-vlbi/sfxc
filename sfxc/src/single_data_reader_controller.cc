@@ -21,7 +21,7 @@ Single_data_reader_controller::Process_event_status
 Single_data_reader_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
-  case MPI_TAG_ADD_DATA_READER_FILE2:
+  case MPI_TAG_ADD_DATA_READER:
     {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       

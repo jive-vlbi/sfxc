@@ -156,7 +156,7 @@ set_data_reader(int rank, int32_t stream_nr,
   memcpy(msg+sizeof(int32_t), filename.c_str(), filename.size()+1);
 
   MPI_Send(msg, len, MPI_CHAR,
-           rank, MPI_TAG_ADD_DATA_READER_FILE2, MPI_COMM_WORLD);
+           rank, MPI_TAG_ADD_DATA_READER, MPI_COMM_WORLD);
 
   wait_for_setting_up_channel(rank);
 }

@@ -59,7 +59,7 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-  case MPI_TAG_ADD_DATA_READER_FILE2:
+  case MPI_TAG_ADD_DATA_READER:
     {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
