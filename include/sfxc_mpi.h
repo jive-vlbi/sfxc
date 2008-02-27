@@ -76,9 +76,9 @@ enum MPI_TAG {
 
   /** Create a data reader stream for incoming data using TCP
    * - INT32_t: stream number
-   * - CHAR+: filename
+   * - CHAR+: file descriptor file:// or dnfp:// or mark5:// 
    **/
-  MPI_TAG_ADD_DATA_READER_FILE2,
+  MPI_TAG_ADD_DATA_READER,
   
   /** Create a data reader stream for incoming data using TCP
    * - uint64_t: stream number
@@ -267,7 +267,7 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
       { return "MPI_TAG_GET_STATUS"; }
     case MPI_TAG_SET_MESSAGELEVEL:
       { return "MPI_TAG_SET_MESSAGELEVEL"; }
-    case MPI_TAG_ADD_DATA_READER_FILE2:
+    case MPI_TAG_ADD_DATA_READER:
       { return "MPI_TAG_ADD_DATA_READER_FILE"; }
     case MPI_TAG_ADD_DATA_READER_TCP2:
       { return "MPI_TAG_ADD_DATA_READER_TCP"; }

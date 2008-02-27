@@ -31,7 +31,7 @@ initialise(const char *ctrl_file, const char *vex_file,
     Json::Reader reader;
     std::ifstream in(ctrl_file);
     if (!in.is_open()) {
-      log_writer << "Could not open control file" << std::endl;
+      log_writer << "Could not open control file [" << ctrl_file << "]" << std::endl;
       assert(false);
       return false;
     }
@@ -46,9 +46,17 @@ initialise(const char *ctrl_file, const char *vex_file,
     }
   }
 
-  { // parse the vex file
+  { // VEX file
+    std::ifstream in(vex_file);
+    if (!in.is_open()) {
+      log_writer << "Could not open vex file [" <<vex_file<<"]"<< std::endl;
+      assert(false);
+      return false;
+    }
+
+    // parse the vex file
     if (!vex.open(vex_file)) {
-      log_writer << "Could not open vex file" << std::endl;
+      log_writer << "Could not parse vex file ["<<vex_file<<"]" << std::endl;
       assert(false);
       return false;
     }
@@ -150,17 +158,21 @@ Control_parameters::check(std::ostream &writer) const {
                  data_source_it.begin();
                source_it != data_source_it.end(); ++source_it) {
             std::string filename = create_path((*source_it).asString());
-            if (strncmp(filename.c_str(), "file://", 7)!=0) {
+
+            if (filename.find("file://") != 0 &&
+                filename.find("mark5://") != 0 ) {
               //               ok = false;
               writer
-              << "Ctrl-file: Data source should start with 'file://'"
+              << "Ctrl-file: invalid data source '" << filename << "'"
               << std::endl;
-            } else {
+            }
+            if (filename.find("file://") == 0) {
+              // Check whether the file exists
               std::ifstream in(create_path(filename).c_str()+7);
               if (!in.is_open()) {
                 ok = false;
                 writer << "Ctrl-file: Could not open data source: "
-                << (*source_it).asString() << std::endl;
+                << filename << std::endl;
               }
             }
           }
@@ -213,12 +225,12 @@ Control_parameters::check(std::ostream &writer) const {
 }
 
 Control_parameters::Date
-Control_parameters::get_start_time() const{
+Control_parameters::get_start_time() const {
   return Date(ctrl["start"].asString());
 }
 
 Control_parameters::Date
-Control_parameters::get_stop_time() const{
+Control_parameters::get_stop_time() const {
   return Date(ctrl["stop"].asString());
 }
 
@@ -377,7 +389,7 @@ Control_parameters::number_stations_in_scan(const std::string& scan) const {
   return n_stations;
 }
 
-int 
+int
 Control_parameters::
 number_correlation_cores_per_timeslice(const std::string &mode) const {
   if (cross_polarize()) {
@@ -489,11 +501,11 @@ Control_parameters::cross_polarize() const {
 
 std::string Control_parameters::
 get_mode(int32_t &start_time) const {
-  for (Vex::Node::const_iterator sched_block = 
+  for (Vex::Node::const_iterator sched_block =
          vex.get_root_node()["SCHED"]->begin();
-       sched_block != vex.get_root_node()["SCHED"]->end(); 
+       sched_block != vex.get_root_node()["SCHED"]->end();
        ++sched_block) {
-    if (start_time > 
+    if (start_time >
         Date(sched_block["start"]->to_string()).to_miliseconds()/1000) {
       return sched_block["mode"]->to_string();
     }
@@ -689,7 +701,7 @@ sideband(const std::string &channel_name,
       }
     }
   }
-    
+
 
   for (Vex::Node::const_iterator frq_block = vex.get_root_node()["FREQ"][if_mode_freq]->begin("chan_def");
        frq_block != vex.get_root_node()["FREQ"][if_mode_freq]->end("chan_def"); ++frq_block) {
@@ -722,13 +734,13 @@ get_correlation_parameters(const std::string &scan_name,
   std::string mode_name = scan["mode"]->to_string();
   Vex::Node::const_iterator mode =
     vex.get_root_node()["MODE"][mode_name];
-  
+
   Correlation_parameters corr_param;
   corr_param.start_time = vex.start_of_scan(scan_name).to_miliseconds();
   corr_param.stop_time = vex.stop_of_scan(scan_name).to_miliseconds();
   corr_param.integration_time = integration_time();
   corr_param.number_channels = number_channels();
-  corr_param.slice_offset = 
+  corr_param.slice_offset =
     number_correlation_cores_per_timeslice(mode_name);
 
   // Assumption: sample rate the the same for all stations:
@@ -763,8 +775,8 @@ get_correlation_parameters(const std::string &scan_name,
     }
     count++;
   }
-//in the following two blocks (if_mode and bbc_mode) we assume only one of the
-//station name HO
+  //in the following two blocks (if_mode and bbc_mode) we assume only one of the
+  //station name HO
   for (Vex::Node::const_iterator if_it = mode->begin("IF");
        if_it != mode->end("IF"); ++if_it) {
     for (Vex::Node::const_iterator elem_it = if_it->begin();
@@ -817,7 +829,7 @@ get_correlation_parameters(const std::string &scan_name,
   // now get the station streams
   std::map<std::string, int> station_names; // sorted alphabetically
   {
-    for (Vex::Node::const_iterator station_it = 
+    for (Vex::Node::const_iterator station_it =
            vex.get_root_node()["STATION"]->begin();
          station_it != vex.get_root_node()["STATION"]->end(); ++station_it) {
       station_names[station_it.key()] = -1;
@@ -1026,7 +1038,7 @@ Correlation_parameters::operator==(const Correlation_parameters& other) const {
   return true;
 }
 
-std::ostream &operator<<(std::ostream &out, 
+std::ostream &operator<<(std::ostream &out,
                          const Correlation_parameters &param) {
   out << "{ ";
   out << "\"start_time\": " << param.start_time << ", " << std::endl;

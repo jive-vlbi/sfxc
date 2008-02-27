@@ -10,16 +10,51 @@
 #include <assert.h>
 #include <iostream>
 #include <algorithm>
-
+#include <sstream>
 #include <netinet/in.h> // sockaddr_in
 #include <netdb.h>      // getservbyname()
 
 #include "data_reader_mark5.h"
 
-Data_reader_mark5::Data_reader_mark5(char *protocol, int port) 
-  : msglev(-1), _eof(false)
+Data_reader_mark5::Data_reader_mark5(const std::string& str)
+{
+	int port;  int idx;
+	std::string protocol, tmp;
+	
+	idx = str.find("mark5://");
+	if(  idx != 0 ){
+   		std::cerr << "ERROR: this is not a valid mark5 string " << str << std::endl;
+    		exit(1);
+	}
+	tmp=str.substr(strlen("mark5://")); 
+	idx = tmp.find(":");
+
+	if(  idx == std::string::npos ){
+   		std::cerr << "ERROR: this is not a valid mark5 string " << str << std::endl;
+    		exit(1);
+	}
+	protocol = tmp.substr(0, idx); 
+	tmp      = tmp.substr(idx+1);
+
+	std::cout << "DEBUG: mark5 is using [" << protocol << "] and ports [" << tmp << "]" << std::endl;
+ 	std::stringstream t(tmp);
+	t >> port;
+ 	initialize( protocol.c_str(), port );	
+}
+
+Data_reader_mark5::Data_reader_mark5(const char *protocol, int port)
+{
+	initialize(protocol, port);	
+}
+
+
+void Data_reader_mark5::initialize(const char *protocol, int port)
 {
   int protocol_type, unconnected_sock;
+  
+  msglev=-1;
+  _eof = false;
+	
   // Check protocol
   if (strcasecmp(protocol, "tcp") == 0) {
     protocol_type = SOCK_STREAM; 
@@ -114,7 +149,7 @@ Data_reader_mark5::Data_reader_mark5(char *protocol, int port)
 Data_reader_mark5::~Data_reader_mark5() {
 }
 
-size_t Data_reader_mark5::do_get_bytes(size_t nBytes, char*out) {
+int Data_reader_mark5::do_get_bytes(size_t nBytes, char*out) {
   uint64_t size = 0, last;
   size = last = recv(sock, (void *) out, nBytes, 0);
   while (size < nBytes) {

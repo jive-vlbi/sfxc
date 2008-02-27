@@ -84,7 +84,7 @@ void test_output_node(int rank, int numtasks,
       memcpy(msg,&reader_stream_nr,sizeof(int32_t));
       memcpy(msg+sizeof(int32_t), input_file, strlen(input_file)+1);
       MPI_Send(msg, size, MPI_CHAR, 
-               rank_output_node, MPI_TAG_ADD_DATA_READER_FILE2, MPI_COMM_WORLD);
+               rank_output_node, MPI_TAG_ADD_DATA_READER, MPI_COMM_WORLD);
       wait_for_setting_up_channel(rank_output_node);
     }
     {
