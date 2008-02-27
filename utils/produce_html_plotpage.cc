@@ -198,7 +198,7 @@ Plot_generator::Plot_generator(std::istream &input,
       int plot_nr=0;
       for (int i=0; i<nStations; i++) {
         if (i != reference_station) {
-          generate_cross_plot(i, reference_station, plot_data[0], 
+          generate_cross_plot(reference_station, i, plot_data[0], 
                               plot_nr, ConPrms);
           plot_nr++;
         }
@@ -253,7 +253,7 @@ Plot_generator::Plot_generator(std::istream &input,
         int plot_nr=0;
         for (int i=0; i<nStations; i++) {
           if (i != reference_station) {
-            generate_cross_plot(i, reference_station, 
+            generate_cross_plot(reference_station, i, 
                                 plot_data[row_map[row]], 
                                 plot_nr, ConPrms);
             plot_nr++;
