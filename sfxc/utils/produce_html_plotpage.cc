@@ -355,7 +355,7 @@ Plot_generator::generate_cross_plot(int station,
   fftwf_execute(visibilities2lags);
 
   for  (int lag=0; lag<nLags; lag++) {
-    magnitude[lag] = abs(out[(lag+nLags/2)%nLags])/nLags;
+    magnitude[lag] = abs(out[(lag+nLags/2)%nLags]);
   }
   char title[80], filename[80];
   int tmp1=0, tmp2=0;
