@@ -176,9 +176,17 @@ std::ostream &operator<<(std::ostream &out, const Vex& vex) {
 // For the python interface:
 Vex::Node parse_vex(char *filename) {
   yyin = fopen( filename, "r" );
-  assert(yyin != NULL);
+  if (yyin == NULL) {
+    std::cout << "Could not open vexfile" << std::endl;
+    return Vex::Node();
+  }
+  yyrestart( yyin );
 
   int result = yyparse();
-  assert(result==0);
+  if (result != 0) {
+    std::cout << "Could not parse vexfile" << std::endl;
+    return Vex::Node();
+  }
+
   return parse_result;
 }
