@@ -22,6 +22,7 @@ if test "x$enable_pythonlib" = "xyes"; then
   dnl Check for python
   AM_PATH_PYTHON(2.4)
   dnl Check for boost.python
+  AC_CHECK_LIB(python2.4, main)
   AC_CHECK_LIB(boost_python, main)
   echo ================ /ENABLE PYTHONLIB
 fi
