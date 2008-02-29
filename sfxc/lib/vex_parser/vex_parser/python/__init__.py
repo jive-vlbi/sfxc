@@ -6,6 +6,8 @@ import MultiDict
 
 def Vex(filename):
   root = vex_parser.parse_vex(str(filename))
+  if root.type() == "EMPTY":
+    raise ParseError, "Parsing failed";
   return __convert(root)
 
 

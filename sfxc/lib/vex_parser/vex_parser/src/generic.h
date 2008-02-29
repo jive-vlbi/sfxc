@@ -21,5 +21,6 @@ extern int linenr;
 int yylex();
 int yyparse();
 void yyerror (char const *msg);
+void yyrestart(FILE *yyin);
 
 #endif // GENERIC_H
