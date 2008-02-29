@@ -112,6 +112,7 @@ void Input_node::hook_added_data_reader(size_t stream_nr) {
 
    input_node_tasklet =
      get_input_node_tasklet(data_reader_ctrl.get_data_reader(stream_nr));
+   assert(input_node_tasklet != NULL);
 }
 
 void Input_node::hook_added_data_writer(size_t writer) {}
