@@ -9,6 +9,7 @@ from ZSI import ServiceProxy
 from TranslationNode_services_server import *
 from TranslationNode_mark5 import *
 from TranslationNode_vex import *
+from TranslationNode_notification import *
 # we need to skip comments in input file.
 # For that we make use of re
 import re
@@ -53,7 +54,7 @@ portNumber = int(inp[8].strip())
 
 class Service(TranslationNode):
 
-        def soap_startTranslationJob(self, ps):
+  def soap_startTranslationJob(self, ps):
 		rsp = TranslationNode.soap_startTranslationJob(self, ps)
 		msg = self.request
 		print 'Requested broker IP address: ', msg.Param0.BrokerIPAddress
@@ -223,10 +224,20 @@ class Service(TranslationNode):
 					block_size, 
 					chunk_real_size, 
 					start_position)
-        				print mark5_chunk_output
-        	
+					print mark5_chunk_output
+
 				time.sleep(1)
-				
+				node_notification = TranslationNode_notification(host,
+                                                         0,
+                                                         "location://file.dat",
+                                                         123456,
+                                                         "2007y158d18h56m05s",
+                                                         "2007y158d18h56m00s",
+                                                         gridFtpIP,
+                                                         1)
+
+				print node_notification
+        
 				if chunk_end >= job_end:
 					break
 				

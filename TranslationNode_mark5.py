@@ -32,7 +32,8 @@ class Mark5_get_chunks:
 
 		print host
 
-		s = socket.socket()
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		s.bind((host, port))
 		s.listen(1)
 
