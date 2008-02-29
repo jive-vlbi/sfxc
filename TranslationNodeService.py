@@ -9,7 +9,7 @@ from ZSI import ServiceProxy
 from TranslationNode_services_server import *
 from TranslationNode_mark5 import *
 from TranslationNode_vex import *
-from TranslationNode_notification import *
+from TranslationNodeNotification import *
 # we need to skip comments in input file.
 # For that we make use of re
 import re
@@ -227,7 +227,7 @@ class Service(TranslationNode):
 					print mark5_chunk_output
 
 				time.sleep(1)
-				node_notification = TranslationNode_notification(host,
+				node_notification = TranslationNodeNotification(host,
                                                          0,
                                                          "location://file.dat",
                                                          123456,

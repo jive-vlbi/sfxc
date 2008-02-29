@@ -1,6 +1,6 @@
 from TranslationNodeNotification_services import *
 
-class TranslationNode_notification:
+class TranslationNodeNotification:
   def __init__(self, BrokerIPAdress=None, 
                chunkId = None, 
                chunLocation = None, 
