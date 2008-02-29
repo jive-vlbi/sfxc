@@ -23,14 +23,16 @@ Input_node_tasklet *get_input_node_tasklet(boost::shared_ptr<Data_reader> reader
   // buffer is an array of SIZE_MK4_FRAME bytes (8 is the smallest number of tracks).
   // We fill the buffer and then look for the header
   // if we don't find a header, read in another half block and continue.
-  size_t bytes_read = reader->get_bytes(SIZE_MK4_FRAME/2, buffer+SIZE_MK4_FRAME/2);
+  size_t bytes_read = reader->get_bytes(SIZE_MK4_FRAME/2, 
+                                        buffer+SIZE_MK4_FRAME/2);
   assert (bytes_read == SIZE_MK4_FRAME/2);
 
   int nOnes=0, header_start=-1, nTracks8 = -1;
   for (int block=0; (block<16) && (header_start<0); block++) {
     // Move the last half to the first half and read frameMk4/2 bytes:
     memcpy(buffer, buffer+SIZE_MK4_FRAME/2, SIZE_MK4_FRAME/2);
-    size_t bytes_read = reader->get_bytes(SIZE_MK4_FRAME/2, buffer+SIZE_MK4_FRAME/2);
+    size_t bytes_read = reader->get_bytes(SIZE_MK4_FRAME/2, 
+                                          buffer+SIZE_MK4_FRAME/2);
     assert (bytes_read == SIZE_MK4_FRAME/2);
 
     // the header contains 64 bits before the syncword and
@@ -40,17 +42,18 @@ Input_node_tasklet *get_input_node_tasklet(boost::shared_ptr<Data_reader> reader
       if (buffer[byte] == (char)(~0)) {
         nOnes ++;
       } else {
-        if ((nOnes>0) && (nOnes%32 == 0)) {
+        if (nOnes>=32) {
           // make sure the begin of the header is in the buffer
           // syncword is 32 samples, auxiliary data field 64 samples
-          header_start = byte - nOnes*3;
+          header_start = byte - nOnes - 64*(nOnes/32);
           if (header_start >= 0) {
             // We found a complete header
-            assert((nOnes % 32) == 0);
             nTracks8 = nOnes/32;
 
-            memmove(buffer, buffer+header_start, SIZE_MK4_FRAME-header_start);
-            reader->get_bytes(header_start, buffer+SIZE_MK4_FRAME-header_start);
+            memmove(buffer, buffer+header_start, 
+                    SIZE_MK4_FRAME-header_start);
+            reader->get_bytes(header_start, 
+                              buffer+SIZE_MK4_FRAME-header_start);
 
             switch (nTracks8) {
               case 1: {

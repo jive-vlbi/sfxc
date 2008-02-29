@@ -60,7 +60,7 @@ public:
 
 private:
   // format a time in miliseconds
-  std::string time_to_string(int32_t time);
+  std::string time_to_string(int64_t time);
 
   // checking the header:
   bool check_time_stamp(Header &header);
@@ -160,7 +160,7 @@ get_current_time() {
 template <class Type>
 std::string
 Mark4_reader<Type>::
-time_to_string(int32_t time) {
+time_to_string(int64_t time) {
   int milisecond = time % 1000;
   time /= 1000;
   int second = time % 60;
