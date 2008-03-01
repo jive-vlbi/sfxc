@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -47,7 +47,7 @@
 # define FFTW_PLAN_DFT_R2C_1D    fftw_plan_dft_r2c_1d
 # define FFTW_EXECUTE            fftw_execute
 # define FFTW_EXECUTE_DFT        fftw_execute_dft
-# define FFTW_EXECUTE_DFT_R2C    fftw_execute_dft_r2c 
+# define FFTW_EXECUTE_DFT_R2C    fftw_execute_dft_r2c
 # define FFTW_DESTROY_PLAN       fftw_destroy_plan
 #else // !USE_DOUBLE
 # define FLOAT                   float
@@ -57,7 +57,7 @@
 # define FFTW_PLAN_DFT_R2C_1D    fftwf_plan_dft_r2c_1d
 # define FFTW_EXECUTE            fftwf_execute
 # define FFTW_EXECUTE_DFT        fftwf_execute_dft
-# define FFTW_EXECUTE_DFT_R2C    fftwf_execute_dft_r2c 
+# define FFTW_EXECUTE_DFT_R2C    fftwf_execute_dft_r2c
 # define FFTW_DESTROY_PLAN       fftwf_destroy_plan
 #endif // USE_FLOAT
 
@@ -92,25 +92,23 @@ extern int RANK_OF_NODE; // Rank of the current node
     { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
       get_log_writer()(0) << FORMAT_MSG(msg) << std::endl << std::flush; }
 #else
-#define DEBUG_MSG(msg) 
-#define DEBUG_MSG_RANK(rank,msg) 
-#define MPI_DEBUG_MSG(msg) 
+#define DEBUG_MSG(msg)
+#define DEBUG_MSG_RANK(rank,msg)
+#define MPI_DEBUG_MSG(msg)
 #endif
 
 #ifdef PRINT_PROGRESS
-inline void getusec(unsigned long long &utime)
-{
-        struct timeval tv;
-        gettimeofday(&tv,0);
-        utime=tv.tv_sec*1000000;
-        utime+=tv.tv_usec;
+inline void getusec(unsigned long long &utime) {
+  struct timeval tv;
+  gettimeofday(&tv,0);
+  utime=tv.tv_sec*1000000;
+  utime+=tv.tv_usec;
 }
 
-inline unsigned long long getusec(void)
-{
-      unsigned long long t;
-      getusec(t);
-      return t;
+inline unsigned long long getusec(void) {
+  unsigned long long t;
+  getusec(t);
+  return t;
 }
 
 #define PROGRESS_MSG(msg) DEBUG_MSG(" PROGRESS t=" << getusec() << ": " << msg);
@@ -118,21 +116,21 @@ inline unsigned long long getusec(void)
 #define PROGRESS_MSG(msg)
 #endif // PRINT_PROGRESS
 
-/// Interface_pair is a pair of two strings 
+/// Interface_pair is a pair of two strings
 /// containing the interface name and its ip address;
 typedef std::pair<std::string, std::string> Interface_pair;
 
-/** 
+/**
  * get_ip_address retrieves the ip-addresses of the current host.
  * @returns a list of Interface_pair.
- **/ 
+ **/
 void get_ip_address(std::list<Interface_pair> &addresses,
                     bool IPv4_only = true);
-          
-/** 
+
+/**
  * get the time in micro seconds from an array (year, day, hour, minute, second).
  * @returns a list of Interface_pair.
- **/ 
+ **/
 int64_t get_us_time(int time[]);
 
 
@@ -158,5 +156,5 @@ int irbit2();
 void park_miller_set_seed(unsigned long seed_);
 long unsigned int park_miller_random();
 
-                    
+
 #endif // UTILS_H
