@@ -13,6 +13,11 @@
 #include <vector>
 #include <assert.h>
 
+// Ugly dependency to fftw3...
+// needed for fftw_malloc that return
+// optimized alignment.
+#include <fftw3.h>
+
 #include "utils.h"
 
 /// Use this element for the buffer class if you want to store an array
@@ -21,7 +26,9 @@ template <class T, int N>
 class Buffer_element {
 public:
   typedef T value_type;
-  int size() { return N; }
+  int size() {
+    return N;
+  }
 
   T &operator[](int i) {
     assert(i >= 0);
@@ -41,20 +48,22 @@ template <class T, int N>
 class Buffer_element_large {
 public:
   typedef T value_type;
-  int size() { return N; }
+  int size() {
+    return N;
+  }
 
-  Buffer_element_large(){
+  Buffer_element_large() {
     //std::cout << "Building array of size" << N << std::endl;
     _buffer = new T[N];
   }
 
-  Buffer_element_large(const Buffer_element_large& src){
+  Buffer_element_large(const Buffer_element_large& src) {
     //std::cout << "Building by copy an array of size" << N << std::endl;
     _buffer = new T[N];
     memcpy(_buffer, src._buffer, sizeof(T)*N );
   }
 
-  ~Buffer_element_large(){
+  ~Buffer_element_large() {
     //std::cout << "Deleting array of size" << N << std::endl;
     delete[] _buffer;
   }
@@ -77,31 +86,54 @@ template <class T>
 class Buffer_element_vector {
 public:
   typedef T value_type;
-  int size() { return _buffer.size(); }
-
-  Buffer_element_vector() {
+  int size() {
+    return size_;
   }
 
-  ~Buffer_element_vector(){
-//    DEBUG_MSG("Deleting array element of size " << size());
+  Buffer_element_vector() {
+    size_ = 0;
+    buffer_ = NULL;
+  }
+
+  ~Buffer_element_vector() {
+    // DEBUG_MSG("Deleting array element of size " << size());
+    fftw_free(buffer_);
   }
 
   void resize(size_t size) {
-//    DEBUG_MSG("resizing from " << _buffer.size() << " to " << size);
-    if (_buffer.size() != size) _buffer.resize(size);
+    //DEBUG_MSG("resizing from " << _buffer.size() << " to " << size);
+    //if (_buffer.size() != size) _buffer.resize(size);
+    if ( size != size_ ) {
+      if ( buffer_ == NULL ) {
+        // fftw_malloc insure that the allocated data
+        // is nicely aligned.
+        buffer_ = static_cast<T*>( fftw_malloc( sizeof(T)*size ) );
+        size_ = size;
+      } else {
+        T* oldbuffer = buffer_;
+        buffer_ = static_cast<T*>( fftw_malloc( sizeof(T)*size ) );
+        memcpy(buffer_, oldbuffer, size_);
+        size_ = size;
+        fftw_free(oldbuffer);
+      }
+    }
   }
 
 
-  T &operator[](int i) {
+  T& operator[](int i) {
     assert(i >= 0);
-    assert(i < (int)_buffer.size());
-    return _buffer[i];
+    assert(i < (int)size_ );
+    return buffer_[i];
   }
-  T *buffer() {
-    return &_buffer[0];
+
+  T* buffer() {
+    return buffer_;
   }
 private:
-  std::vector<T> _buffer;
+  // We cannot use a std::vector because we cannot control that
+  // the data are properly aligned to be used with fftw_xx or SSE
+  T* buffer_;
+  int size_;
 };
 
 
@@ -167,10 +199,11 @@ private:
 template <class T>
 Buffer<T>::
 Buffer(int size)
-  : size(size),
-    front(0), rear(0)
-{
-  if (size <= 0) { DEBUG_MSG(size); }
+    : size(size),
+    front(0), rear(0) {
+  if (size <= 0) {
+    DEBUG_MSG(size);
+  }
   assert(size > 0);
   buffer.resize(size);
   status.resize(size);
@@ -179,10 +212,11 @@ Buffer(int size)
 template <class T>
 Buffer<T>::
 Buffer(int size, const T &element)
-  : size(size),
-    front(0), rear(0)
-{
-  if (size <= 0) { DEBUG_MSG(size); }
+    : size(size),
+    front(0), rear(0) {
+  if (size <= 0) {
+    DEBUG_MSG(size);
+  }
   assert(size > 0);
   buffer.resize(size, element);
   status.resize(size);
@@ -191,8 +225,7 @@ Buffer(int size, const T &element)
 
 template <class T>
 Buffer<T>::
-~Buffer()
-{
+~Buffer() {
 }
 
 #endif // BUFFER_H
