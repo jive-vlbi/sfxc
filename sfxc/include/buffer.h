@@ -22,11 +22,12 @@
 
 /// Use this element for the buffer class if you want to store an array
 /// on every position.
+///// DEPRECATED SHOULD BE REMOVED...
 template <class T, int N>
 class Buffer_element {
 public:
   typedef T value_type;
-  int size() {
+  inline int size() {
     return N;
   }
 
@@ -48,32 +49,33 @@ template <class T, int N>
 class Buffer_element_large {
 public:
   typedef T value_type;
-  int size() {
+  inline int size() {
     return N;
   }
 
   Buffer_element_large() {
     //std::cout << "Building array of size" << N << std::endl;
-    _buffer = new T[N];
+    _buffer = static_cast<T*>(fftw_malloc(sizeof(T)*N));
   }
 
   Buffer_element_large(const Buffer_element_large& src) {
     //std::cout << "Building by copy an array of size" << N << std::endl;
-    _buffer = new T[N];
+    _buffer = static_cast<T*>(fftw_malloc(sizeof(T)*N));
     memcpy(_buffer, src._buffer, sizeof(T)*N );
   }
 
   ~Buffer_element_large() {
     //std::cout << "Deleting array of size" << N << std::endl;
-    delete[] _buffer;
+    fftw_free(_buffer);
   }
 
-  T &operator[](int i) {
+  inline T &operator[](int i) {
     assert(i >= 0);
     assert(i < N);
     return (_buffer)[i];
   }
-  T *buffer() {
+
+  inline T *buffer() {
     return _buffer;
   }
 private:
@@ -83,19 +85,19 @@ private:
 /// Use this class if you want to allocate large number of element
 /// static array declaration may fails if the array is too large...
 template <class T>
-class Buffer_element_vector {
+class Aligned_vector {
 public:
   typedef T value_type;
-  int size() {
+  inline int size() {
     return size_;
   }
 
-  Buffer_element_vector() {
+  Aligned_vector() {
     size_ = 0;
     buffer_ = NULL;
   }
 
-  ~Buffer_element_vector() {
+  ~Aligned_vector() {
     // DEBUG_MSG("Deleting array element of size " << size());
     fftw_free(buffer_);
   }
@@ -120,13 +122,13 @@ public:
   }
 
 
-  T& operator[](int i) {
+  inline T& operator[](int i) {
     assert(i >= 0);
     assert(i < (int)size_ );
     return buffer_[i];
   }
 
-  T* buffer() {
+  inline T* buffer() {
     return buffer_;
   }
 private:
@@ -136,6 +138,11 @@ private:
   int size_;
 };
 
+template<class T>
+class Buffer_element_vector : public Aligned_vector<T> {
+public:
+  typedef T value_type;
+};
 
 /** Generic buffer class.
  * Precondition T is default constructible

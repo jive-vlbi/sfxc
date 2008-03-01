@@ -8,34 +8,34 @@
 
 #include "timer.h"
 
-class Correlation_core : public Tasklet
-{
+class Correlation_core : public Tasklet {
 public:
   typedef Delay_correction::Output_buffer_element        Input_buffer_element;
   typedef Delay_correction::Output_buffer                Input_buffer;
   typedef Delay_correction::Output_buffer_ptr            Input_buffer_ptr;
 
-  typedef Buffer_element<char,131072>                    Output_buffer_element;
-  //typedef Buffer_element_large<FLOAT,131072>          Output_buffer_element;
+  typedef Buffer_element_large<FLOAT,131072>             Output_buffer_element;
   typedef Semaphore_buffer<Output_buffer_element>        Output_buffer;
   typedef boost::shared_ptr<Output_buffer>               Output_buffer_ptr;
-  
+
   Correlation_core();
   virtual ~Correlation_core();
-  
+
   /// For Tasklet
   void do_task();
   bool has_work();
-  const char *name() { return __PRETTY_FUNCTION__; }
-  
+  const char *name() {
+    return __PRETTY_FUNCTION__;
+  }
+
   bool finished();
-  
+
   void connect_to(size_t stream, Input_buffer_ptr buffer);
-  
+
   void set_parameters(const Correlation_parameters &parameters,
                       int node_nr);
   void set_data_writer(boost::shared_ptr<Data_writer> writer);
-  
+
   Output_buffer_ptr get_output_buffer();
 
   int number_of_baselines() {
@@ -44,7 +44,7 @@ public:
   boost::shared_ptr<Data_writer> data_writer() {
     return writer;
   }
-  
+
 private:
   void integration_initialise();
   void integration_step();
@@ -58,7 +58,7 @@ private:
                           std::complex<FLOAT> in2[],
                           std::complex<FLOAT> out[]);
 
-  
+
   size_t size_of_fft();
   size_t n_channels();
   size_t n_stations();
@@ -76,17 +76,21 @@ private:
 
   int number_ffts_in_integration, current_fft, total_ffts;
 
-  FFTW_PLAN                          plan;
-  std::vector< FLOAT >               plan_input_buffer;
-  std::vector< std::complex<FLOAT> > plan_output_buffer;
-  
+  FFTW_PLAN                             plan;
+  Aligned_vector<FLOAT>                 plan_input_buffer;
+  Aligned_vector<std::complex<FLOAT> >  plan_output_buffer;
+
+  //std::vector< FLOAT >               plan_input_buffer;
+  //std::vector< std::complex<FLOAT> > plan_output_buffer;
+
+
   Correlation_parameters                            correlation_parameters;
-  
-  std::vector< std::vector< std::complex<FLOAT> > > frequency_buffer;
+
+  std::vector< Aligned_vector< std::complex<FLOAT> > > frequency_buffer;
   std::vector< std::complex<FLOAT> >                accumulation_buffers;
-  std::vector< std::complex<float> >        accumulation_buffers_float;  
+  std::vector< std::complex<float> >                accumulation_buffers_float;
   std::vector< std::pair<int, int> >                baselines;
-  
+
   boost::shared_ptr<Data_writer>                    writer;
 
   Timer fft_timer;
