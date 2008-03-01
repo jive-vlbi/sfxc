@@ -5,7 +5,7 @@ const FLOAT Delay_correction::maximal_phase_change = 0.2; // 5.7 degrees
 Delay_correction::Delay_correction()
     : output_buffer(Output_buffer_ptr(new Output_buffer(10))),
     current_time(-1),
-delay_table_set(false) {}
+    delay_table_set(false) {}
 
 Delay_correction::~Delay_correction() {
 #if PRINT_TIMER
@@ -67,11 +67,11 @@ void Delay_correction::do_task() {
   {
     int n_channels = number_channels();
     // Implicit FLOAT to complex conversion
-    for (int i = 0; i < n_channels; i++) 
+    for (int i = 0; i < n_channels; i++)
       frequency_buffer[i] = input[i];
-    for (int i = n_channels; i < 2*n_channels; i++) 
+    for (int i = n_channels; i < 2*n_channels; i++)
       frequency_buffer[i] = 0;
-  }    
+  }
 
   fractional_bit_shift(&frequency_buffer[0],
                        integer_delay,
@@ -93,7 +93,8 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
   // 3) execute the complex to complex FFT, from Time to Frequency domain
   //    input: sls. output sls_freq
   delay_timer.resume();
-  FFTW_EXECUTE_DFT(plan_t2f, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
+  //DM replaced: FFTW_EXECUTE_DFT(plan_t2f, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
+  FFTW_EXECUTE(plan_t2f);
   delay_timer.stop();
   total_ffts++;
 
@@ -122,7 +123,8 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
   delay_timer.resume();
-  FFTW_EXECUTE_DFT(plan_f2t, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
+  //DM replaced: FFTW_EXECUTE_DFT(plan_f2t, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
+  FFTW_EXECUTE(plan_f2t);
   delay_timer.stop();
   total_ffts++;
 }
@@ -228,15 +230,15 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   frequency_buffer.resize(number_channels()*2, 0);
 
   if (prev_number_channels != number_channels()) {
-    buffer.resize(number_channels());
+    //buffer.resize(number_channels());
 
     plan_t2f = FFTW_PLAN_DFT_1D(number_channels(),
-                                (FFTW_COMPLEX *)&buffer[0],
-                                (FFTW_COMPLEX *)&buffer[0],
+                                (FFTW_COMPLEX *)&frequency_buffer[0],
+                                (FFTW_COMPLEX *)&frequency_buffer[0],
                                 FFTW_BACKWARD, FFTW_MEASURE);
     plan_f2t = FFTW_PLAN_DFT_1D(number_channels(),
-                                (FFTW_COMPLEX *)&buffer[0],
-                                (FFTW_COMPLEX *)&buffer[0],
+                                (FFTW_COMPLEX *)&frequency_buffer[0],
+                                (FFTW_COMPLEX *)&frequency_buffer[0],
                                 FFTW_FORWARD,  FFTW_MEASURE);
   }
 
