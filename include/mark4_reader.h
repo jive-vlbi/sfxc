@@ -137,7 +137,7 @@ goto_time(Type *mark4_block, int64_t us_time) {
     size_t result = data_reader_->get_bytes(byte_to_read,NULL);
     byte_to_read -= result;
     if( byte_to_read > read_n_bytes/5  ){
-      std::cout << FORMAT_MSG("skipping data, remaining: ") << byte_to_read << std::endl;
+      std::cout << "skipping data, remaining: " << byte_to_read << std::endl;
     }
   }
   
