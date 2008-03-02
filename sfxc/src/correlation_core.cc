@@ -134,8 +134,8 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
     plan_input_buffer.resize(size_of_fft());
     plan_output_buffer.resize(size_of_fft()/2+1);
     plan = FFTW_PLAN_DFT_R2C_1D(size_of_fft(),
-                                (FLOAT *)&plan_input_buffer[0],
-                                (FFTW_COMPLEX *)&plan_output_buffer[0],
+                                (FLOAT *)plan_input_buffer.buffer(),
+                                (FFTW_COMPLEX *)plan_output_buffer.buffer(),
                                 FFTW_MEASURE);
   }
 }
@@ -188,8 +188,8 @@ void Correlation_core::integration_step() {
     assert(frequency_buffer[i].size() == size_of_fft()/2+1);
     fft_timer.resume();
     FFTW_EXECUTE_DFT_R2C(plan,
-                         (FLOAT *)&input_elements[i]->buffer()[0],
-                         (FFTW_COMPLEX *)&frequency_buffer[i][0]);
+                         (FLOAT *)input_elements[i]->buffer(),
+                         (FFTW_COMPLEX *)frequency_buffer[i].buffer());
     fft_timer.stop();
     total_ffts++;
   }
@@ -200,7 +200,7 @@ void Correlation_core::integration_step() {
     std::pair<int,int> &stations = baselines[i];
     assert(stations.first == stations.second);
     auto_correlate_baseline(/* in1 */
-      &frequency_buffer[stations.first][0],
+      frequency_buffer[stations.first].buffer(),
       /* out */
       &accumulation_buffers[i*(size_of_fft()/2+1)]);
   }
@@ -210,8 +210,8 @@ void Correlation_core::integration_step() {
     std::pair<int,int> &stations = baselines[i];
     assert(stations.first != stations.second);
     correlate_baseline
-    (/* in1 */ &frequency_buffer[stations.first][0],
-               /* in2 */ &frequency_buffer[stations.second][0],
+    (/* in1 */ frequency_buffer[stations.first].buffer(),
+               /* in2 */ frequency_buffer[stations.second].buffer(),
                /* out */ &accumulation_buffers[i*(size_of_fft()/2+1)]);
   }
 
