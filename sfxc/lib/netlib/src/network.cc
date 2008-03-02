@@ -16,7 +16,9 @@ InterfaceIP* Network::get_interface_by_name(const std::string& name) {
   Network::get_interfaces(interface);
   for (unsigned int i=0;i<interface.size();i++) {
     if ( interface[i]->name().find( name ) != String::npos ) return interface[i];
+    if ( interface[i]->ip().find( name ) != String::npos ) return interface[i];
   }
+  
   return NULL;
 }
 
