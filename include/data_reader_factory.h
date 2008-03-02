@@ -1,5 +1,5 @@
-#ifndef DATA_READER_FACTORY_H
-#define DATA_READER_FACTORY_H
+#ifndef DATA_READER_DFACTORY_H
+#define DATA_READER_DFACTORY_H
 
 #include <string>
 #include "data_reader.h"

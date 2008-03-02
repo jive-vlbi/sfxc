@@ -52,6 +52,12 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
+ // Print here compilation option enabled while SFXC is in development
+  #ifdef PRINT_PROGRESS
+  if(rank == 0)
+    std::cout << "Application compiled with: -DPRINT_PROGRESS" << std::endl;
+  #endif // PRINT_PROGRESS
+
   if( argc != 3 ){
     if( rank == 0 ){
       std::cerr << "ERROR: not enough parameter." << std::endl;

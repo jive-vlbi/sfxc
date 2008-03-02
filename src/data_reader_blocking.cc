@@ -23,7 +23,7 @@ int Data_reader_blocking::do_get_bytes(size_t size, char* buffer)
         }
         if ( remains != 0 ) usleep(numretry*100);
     }
-    return remains;
+    return size-remains;
 }
 
 bool Data_reader_blocking::eof()

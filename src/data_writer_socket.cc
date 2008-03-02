@@ -3,7 +3,7 @@
  *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  *
- * $Id: DataWriter_socket.cc 278 2007-07-04 07:27:05Z kruithof $
+ * $Id: Data_writer_socket.cc 278 2007-07-04 07:27:05Z kruithof $
  *
  */
 #include <assert.h>
@@ -22,23 +22,23 @@
 
 
 
-DataWriter_socket::DataWriter_socket(int socket)
+Data_writer_socket::Data_writer_socket(int socket)
 {
   m_socket = socket;
   assert(m_socket >= 0);
 }
 
-DataWriter_socket::DataWriter_socket(Connexion* connexion)
+Data_writer_socket::Data_writer_socket(Connexion* connexion)
 {
   m_socket = connexion->get_socket();
   assert(m_socket >= 0);
 }
 
-DataWriter_socket::~DataWriter_socket() {
+Data_writer_socket::~Data_writer_socket() {
 
 }
 
-size_t DataWriter_socket::do_put_bytes(size_t nBytes, char const *buff) {
+size_t Data_writer_socket::do_put_bytes(size_t nBytes, char const *buff) {
   if (socket <= 0) return 0;
   assert(nBytes > 0);
   size_t bytes_written = 0;

@@ -6,19 +6,19 @@
  *            Damien Marchal <dmarchal@science.uva.nl>, 2007
  *
  */
-#ifndef DATAWRITER_SOCKET_HH
-#define DATAWRITER_SOCKET_HH
+#ifndef Data_writer_socket_HH
+#define Data_writer_socket_HH
 
 #include <cassert>
 #include "network.h"
 #include "data_writer.h"
 
-class DataWriter_socket : public Data_writer
+class Data_writer_socket : public Data_writer
 {
     public:
-        DataWriter_socket(int socket);
-        DataWriter_socket(Connexion* connexion);
-        virtual ~DataWriter_socket();
+        Data_writer_socket(int socket);
+        Data_writer_socket(Connexion* connexion);
+        virtual ~Data_writer_socket();
 
         //unsigned int get_port();
         void flush();
@@ -29,4 +29,4 @@ class DataWriter_socket : public Data_writer
         int m_socket;
 };
 
-#endif // DATAWRITER_SOCKET_HH
+#endif // Data_writer_socket_HH

@@ -1,7 +1,5 @@
 #
 # SFXC software Correlator
-#   modified version for SuperComputing 2007 demo
-# 
 #  
 # In order to compile this software you need
 #  fftw3
@@ -12,5 +10,17 @@
 # libtool can be outdated ... in this case you have to run
 # "libtoolize" in the base dir
 #
+# 
+#
+#
 #then run the 
 ./compile.sh
+# followed by:
+# ./configure
+#      --enable-debug
+#      --enable-optimization
+#      CC and CXX set to mpic++
+#
+# make -j x will not work for the first time compilation
+# due to a wrong dependeny trackin with vex_parser
+#
