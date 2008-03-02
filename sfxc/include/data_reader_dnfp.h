@@ -10,14 +10,13 @@
 
 //typedef DataWriter_socket* pDataWriter_socket;
 //typedef DataReader_socket* pDataReader_socket;
-
 class Data_reader_dnfp : public Data_reader
 {
 public:
   Data_reader_dnfp(pInterfaceIP interface, const std::string url)
   {
     m_url = url;
-    get_info(url, m_serverip, m_serverport, m_filename);
+    parse_url(url, m_serverip, m_serverport, m_filename);
 
     std::cout << "INFO: " << m_serverip << " et " << m_serverport << " et " << m_filename;
 
@@ -29,11 +28,11 @@ public:
   Data_reader_dnfp(const std::string url)
   {
     m_url = url;
-    get_info(url, m_serverip, m_serverport, m_filename);
+    parse_url(url, m_serverip, m_serverport, m_filename);
 
-    std::cout << "INFO: " << m_serverip << " et " << m_serverport << " et " << m_filename;
+    std::cout << "INFO: " << m_serverip << " et " << m_serverport << " et " << m_filename << std::endl;
 
-    connect(Network::get_first_interface());
+    connect(Network::get_any_interface());
     negociate();
     m_isEof = false;
   }
@@ -41,7 +40,7 @@ public:
 
   bool eof(){ return m_isEof; }
 
-void get_info(const std::string url, String& server, String& port, String& filename)
+void parse_url(const std::string url, String& server, String& port, String& filename)
 {
   if( url.find("dnfp://") < 0 ) MTHROW("INVALID URL for dnfp protocol");
   String tmp = url.substr(7);
@@ -52,7 +51,17 @@ void get_info(const std::string url, String& server, String& port, String& filen
   serverb = tmp.find("/");
   if( serverb < 0 ) MTHROW("INVALID URL for dnfp protocol, missing port");
   port = tmp.substr(0, serverb);
-  filename = tmp.substr(serverb);
+  
+  tmp = tmp.substr(serverb+1);
+  if( tmp.find("?") != std::string::npos )
+  {
+    serverb  = tmp.find("?");
+    filename = tmp.substr(0,serverb);
+    std::string options  = tmp.substr(serverb+1);
+    std::cout << "OPTIONS: " << options << std::endl;
+  }else{
+    filename = tmp;
+  }  
 }
 
   virtual void closef(){
@@ -63,9 +72,11 @@ void get_info(const std::string url, String& server, String& port, String& filen
 
   void connect(pInterfaceIP interface){
     if( interface == NULL ) MTHROW("No valid interface to host");
+    std::cout << "DNFP-Message: Connecting to:"+m_serverip+":"+m_serverport;
+    std::cout << " from interface:"+interface->name() << std::endl;
     pConnexion connexion= interface->connect_to( m_serverip, m_serverport );
-    m_reader = new DataReader_socket( connexion->socket() );
-    m_writer = new DataWriter_socket( connexion->socket() );
+    m_reader = new Data_reader_socket( connexion->socket() );
+    m_writer = new Data_writer_socket( connexion->socket() );
     m_breader  = new Data_reader_blocking(m_reader);
   }
 
@@ -80,13 +91,26 @@ void get_info(const std::string url, String& server, String& port, String& filen
   }
 
   int do_get_bytes(size_t readb, char *buffer){
+    if (buffer == NULL) {
+      size_t buff_size = 1000000;
+      readb = (readb < buff_size ? readb : buff_size);
+      char buff[(int)readb];
+      
+      int32_t readbyte = readb;
+      //*m_writer << readbyte;
+      int ret = m_breader->get_bytes(readb, buff);
+      //uint32_t eof;
+      //*m_breader >> eof;
+      //if( eof == 1 ) m_isEof = 1;
+      return ret;
+    }
     int32_t readbyte = readb;
-    *m_writer << readbyte;
-    m_breader->get_bytes(readb, buffer);
+    //*m_writer << readbyte;
+    int ret = m_breader->get_bytes(readb, buffer);
     uint32_t eof;
-    *m_breader >> eof;
-    if( eof == 1 ) m_isEof = 1;
-    return readb;
+    //*m_breader >> eof;
+    //if( eof == 1 ) m_isEof = 1;
+    return ret;
   }
 
   private:
@@ -97,8 +121,8 @@ void get_info(const std::string url, String& server, String& port, String& filen
 
     bool m_isEof;
 
-    DataWriter_socket* m_writer;
-    DataReader_socket* m_reader;
+    Data_writer_socket* m_writer;
+    Data_reader_socket* m_reader;
     Data_reader_blocking* m_breader;
 };
 

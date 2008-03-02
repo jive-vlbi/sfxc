@@ -129,8 +129,19 @@ goto_time(Type *mark4_block, int64_t us_time) {
   // Read an integer number of frames
   assert(read_n_bytes %(SIZE_MK4_FRAME*sizeof(Type))==0);
 
-  size_t result = data_reader_->get_bytes(read_n_bytes,NULL);
-  if (result != read_n_bytes) {
+  // TODO having a blocking read would be nice.
+  // as well as a goto function.
+  size_t byte_to_read = read_n_bytes;
+  while( byte_to_read > 0 && !data_reader_->eof() )
+  {
+    size_t result = data_reader_->get_bytes(byte_to_read,NULL);
+    byte_to_read -= result;
+    if( byte_to_read > read_n_bytes/5  ){
+      std::cout << FORMAT_MSG("skipping data, remaining: ") << byte_to_read << std::endl;
+    }
+  }
+  
+  if( byte_to_read != 0 ) {
     assert(false);
     return get_current_time();
   }

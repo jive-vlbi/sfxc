@@ -18,13 +18,13 @@
 #include "network.h"
 #include "data_reader.h"
 
-class DataReader_socket : public Data_reader
+class Data_reader_socket : public Data_reader
 {
     public:
-        DataReader_socket(int socket);
-        DataReader_socket(Connexion* connexion);
-        virtual ~DataReader_socket();
-
+        Data_reader_socket(int socket);
+        Data_reader_socket(Connexion* connexion);
+        
+        virtual ~Data_reader_socket();
         virtual bool eof();
         void closef(){ assert(false && "not implemented"); }
 

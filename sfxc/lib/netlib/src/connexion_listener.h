@@ -26,54 +26,50 @@
 * This is still a transitional phase
 * that make use of TCP_Connection object
 ***************************************/
-class Connexion_listener
-{
-    int m_serversocket;
-    int m_port;
+class Connexion_listener {
+  int m_serversocket;
+  int m_port;
+  bool verbose_;
 
-    // The interface to which is bind the listener
-    InterfaceIP* m_interface;
+  // The interface to which is bind the listener
+  InterfaceIP* m_interface;
 
 public:
-    /****************************************
-    * Create a new Connexion_listener object
-    * serversocket is the socket on which
-    * listen, port is the port to listen
-    * and interface is the interface to usesss
-    *****************************************/
-    Connexion_listener(unsigned int serversocket, int port, pInterfaceIP interface);
+  /****************************************
+  * Create a new Connexion_listener object
+  * serversocket is the socket on which
+  * listen, port is the port to listen
+  * and interface is the interface to usesss
+  *****************************************/
+  Connexion_listener(unsigned int serversocket, int port, pInterfaceIP interface);
 
-    /************************************
-    * start listening, block until a client
-    * connects
-    *************************************/
-    int open_connexion();
+  /************************************
+  * start listening, block until a client
+  * connects
+  *************************************/
+  int wait_connexion();
 
-    /************************************
-    * return the port to which the client
-    * have to connect.
-    *************************************/
-    int port()
-    {
-        return m_port;
-    }
+  /************************************
+  * return the port to which the client
+  * have to connect.
+  *************************************/
+  int port() {
+    return m_port;
+  }
 
-		/************************************
+  /************************************
     * return the address/hostname associated
     * with this network interface in charge
     * of this communcation.
     *************************************/
-    const String& address()
-    {
-        return m_interface->ip();
-    }
+  const String& address() {
+    return m_interface->ip();
+  }
 
 
-    friend std::ostream& operator<<(std::ostream& out, Connexion_listener&);
-    friend std::ostream& operator<<(std::ostream& out, Connexion_listener*);
+  friend std::ostream& operator<<(std::ostream& out, Connexion_listener&);
+  friend std::ostream& operator<<(std::ostream& out, Connexion_listener*);
 };
 
-
-typedef Connexion_listener* pConnexion_listener;
-
+typedef Connexion_listener* Connexion_listener_ptr;
 #endif // CONNEXION_LISTENER_H

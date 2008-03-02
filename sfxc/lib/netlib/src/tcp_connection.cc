@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id: tcp_connection.cc 412 2007-12-05 12:13:20Z kruithof $
  *
  */
@@ -21,12 +21,10 @@
 #include "tcp_connection.h"
 
 TCP_Connection::TCP_Connection(bool verbose)
-: verbose(verbose), connection_socket(-1), port_nr(-1)
-{
+    : verbose(verbose), connection_socket(-1), port_nr(-1) {
 }
 
-TCP_Connection::~TCP_Connection()
-{
+TCP_Connection::~TCP_Connection() {
 }
 
 bool
@@ -46,7 +44,7 @@ TCP_Connection::open_port(unsigned short int port, int connections) {
     }
     return false;
   }
-  
+
   // Bind listen socket to listen port.  First set various fields in
   // the serverAddress structure, then call bind().
   // htonl() and htons() convert long integers and short integers
@@ -56,7 +54,7 @@ TCP_Connection::open_port(unsigned short int port, int connections) {
   serverAddress.sin_family = AF_INET;
   serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
   serverAddress.sin_port = htons(port);
-  
+
   if (bind(connection_socket,
            (struct sockaddr *) &serverAddress,
            sizeof(serverAddress)) < 0) {
@@ -68,7 +66,7 @@ TCP_Connection::open_port(unsigned short int port, int connections) {
     connection_socket = -1;
     return false;
   }
-  
+
   if (verbose)
     std::cout << "Port used is: " << port << std::endl;
 
@@ -79,11 +77,11 @@ TCP_Connection::open_port(unsigned short int port, int connections) {
   listen(connection_socket, connections);
 
   assert(connection_socket >= 0);
-  
+
   return true;
 }
 
-unsigned int 
+unsigned int
 TCP_Connection::open_connection() {
   assert(connection_socket >= 0);
   int connectSocket;
@@ -108,7 +106,7 @@ TCP_Connection::open_connection() {
     std::cout << "cannot accept connection ";
     return 0;
   }
-  
+
   // Show the IP address of the client.
   // inet_ntoa() converts an IP address from binary form to the
   // standard "numbers and dots" notation.
@@ -125,7 +123,7 @@ TCP_Connection::open_connection() {
   return connectSocket;
 }
 
-int 
+int
 TCP_Connection::do_connect(const char *hostname, unsigned short int port) {
   int output_socket;
   struct sockaddr_in serverAddress;
@@ -158,7 +156,7 @@ TCP_Connection::do_connect(const char *hostname, unsigned short int port) {
   memcpy((char *) &serverAddress.sin_addr.s_addr,
          hostInfo->h_addr_list[0], hostInfo->h_length);
   serverAddress.sin_port = htons(port);
-        
+
   if (connect(output_socket,
               (struct sockaddr *) &serverAddress,
               sizeof(serverAddress)) < 0) {
@@ -171,7 +169,7 @@ TCP_Connection::do_connect(const char *hostname, unsigned short int port) {
   return output_socket;
 }
 
-int 
+int
 TCP_Connection::do_connect(uint64_t ip, unsigned short int port) {
   struct in_addr addr;
   addr.s_addr = ip;
@@ -189,7 +187,7 @@ TCP_Connection::do_connect(uint64_t ip, unsigned short int port) {
     std::cout << "problem interpreting host: " << inet_ntoa(addr) << "\n";
     return -1;
   }
-  
+
   // Create a socket.  "AF_INET" means it will use the IPv4 protocol.
   // "SOCK_STREAM" means it will be a reliable connection (i.e., TCP;
   // for UDP use SOCK_DGRAM), and I'm not sure what the 0 for the last
@@ -207,12 +205,12 @@ TCP_Connection::do_connect(uint64_t ip, unsigned short int port) {
   memcpy((char *) &serverAddress.sin_addr.s_addr,
          hostInfo->h_addr_list[0], hostInfo->h_length);
   serverAddress.sin_port = htons(port);
-        
+
   if (connect(socketDescriptor,
               (struct sockaddr *) &serverAddress,
               sizeof(serverAddress)) < 0) {
     std::cout << "cannot connect to port ";
-    printf("%d.%d.%d.%d", 
+    printf("%d.%d.%d.%d",
            (int)ip&255, (int)(ip>>8)&255, (int)(ip>>16)&255, (int)ip>>24);
     std::cout << ", " << port << "\n";
     close(socketDescriptor);
@@ -222,15 +220,14 @@ TCP_Connection::do_connect(uint64_t ip, unsigned short int port) {
   return socketDescriptor;
 }
 
-void 
+void
 TCP_Connection::get_ip_addresses(std::vector<std::string> &addr) {
   struct ifaddrs *ifa = NULL;
-  
-  if (getifaddrs (&ifa) < 0)
-    {
-      std::cout << "error in getifaddrs" << std::endl;;
-      return;
-    }
+
+  if (getifaddrs (&ifa) < 0) {
+    std::cout << "error in getifaddrs" << std::endl;;
+    return;
+  }
 
   for (; ifa; ifa = ifa->ifa_next) {
     char ip[ 15 ];
@@ -241,9 +238,9 @@ TCP_Connection::get_ip_addresses(std::vector<std::string> &addr) {
       salen = sizeof (struct sockaddr_in);
       if (getnameinfo (ifa->ifa_addr, salen,
                        ip, sizeof (ip), NULL, 0, NI_NUMERICHOST) < 0) {
-          perror ("getnameinfo");
-          continue;
-        }
+        perror ("getnameinfo");
+        continue;
+      }
       addr.push_back(std::string(ip));
     }
   }
@@ -251,17 +248,17 @@ TCP_Connection::get_ip_addresses(std::vector<std::string> &addr) {
   freeifaddrs (ifa);
 }
 
-void 
+void
 TCP_Connection::get_ip_addresses(std::vector<uint64_t>  &addr) {
   std::vector<std::string> tmp_addr;
   get_ip_addresses(tmp_addr);
-  
+
   for (std::vector<std::string>::iterator it = tmp_addr.begin();
        it != tmp_addr.end(); it++) {
     struct in_addr address;
     inet_aton(it->c_str(), &address);
     addr.push_back(address.s_addr);
-  }      
+  }
 }
 
 int TCP_Connection::get_port() {

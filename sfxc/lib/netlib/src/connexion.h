@@ -22,54 +22,48 @@
 * @class Connexion
 * @desc wrap around a socket descriptor
 ****************************************/
-class Connexion
-{
+class Connexion {
 public:
-    /************************************
-    * Create a Connexion object. The
-    * objet is in a non-connected state.
-    *************************************/
-    Connexion()
-    {
-        m_socket = -1;
-    }
+  /************************************
+  * Create a Connexion object. The
+  * objet is in a non-connected state.
+  *************************************/
+  Connexion() {
+    m_socket = -1;
+  }
 
-    /************************************
-    * Create a Connexion object using the
-    * given socket. The object is in a
-    * connected state.
-    *************************************/
-    Connexion(int socket)
-    {
-        m_socket = socket;
-    }
+  /************************************
+  * Create a Connexion object using the
+  * given socket. The object is in a
+  * connected state.
+  *************************************/
+  Connexion(int socket) {
+    m_socket = socket;
+  }
 
-    /***************************************
-    * Return true if the connexion is in a
-    * connected state.
-    ***************************************/
-    bool is_connected()
-    {
-        return m_socket >= 0;
-    }
+  /***************************************
+  * Return true if the connexion is in a
+  * connected state.
+  ***************************************/
+  bool is_connected() {
+    return m_socket >= 0;
+  }
 
-    /***************************************
-    * Accessor to the underlying socket id
-    ***************************************/
-    int get_socket()
-    {
-        return m_socket;
-    }
-    int socket()
-    {
-        return m_socket;
-    }
+  /***************************************
+  * Accessor to the underlying socket id
+  ***************************************/
+  int get_socket() {
+    return m_socket;
+  }
+  int socket() {
+    return m_socket;
+  }
 
-    // those two function have to be implemented
-    //void connect_to();
-    //void connect_to(pInterface);
+  // those two function have to be implemented
+  //void connect_to();
+  //void connect_to(pInterface);
 protected:
-    int m_socket;
+  int m_socket;
 };
 
 typedef Connexion* pConnexion;
