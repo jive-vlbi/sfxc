@@ -56,6 +56,7 @@ public:
   Buffer_element_large() {
     //std::cout << "Building array of size" << N << std::endl;
     _buffer = static_cast<T*>(fftw_malloc(sizeof(T)*N));
+    construct_data_();
   }
 
   Buffer_element_large(const Buffer_element_large& src) {
@@ -79,6 +80,16 @@ public:
     return _buffer;
   }
 private:
+  // This function make a kind of fake default-constructor 
+  // initialization...using the copy constructor...
+  void construct_data_()
+  {
+    T tmp;
+    for(unsigned int i=0;i<N;i++){
+      _buffer[i] = tmp;
+    }
+  }
+  
   T* _buffer;
 };
 
@@ -111,11 +122,14 @@ public:
         // is nicely aligned.
         buffer_ = static_cast<T*>( fftw_malloc( sizeof(T)*size ) );
         size_ = size;
+        construct_data_();
       } else {
         T* oldbuffer = buffer_;
         buffer_ = static_cast<T*>( fftw_malloc( sizeof(T)*size ) );
-        memcpy(buffer_, oldbuffer, size_);
         size_ = size;
+        construct_data_();
+        
+        memcpy(buffer_, oldbuffer, size_);
         fftw_free(oldbuffer);
       }
     }
@@ -132,6 +146,14 @@ public:
     return buffer_;
   }
 private:
+  void construct_data_()
+  {
+    T tmp;
+    for(unsigned int i=0;i<size_;i++){
+      buffer_[i] = tmp;
+    }
+  }
+
   // We cannot use a std::vector because we cannot control that
   // the data are properly aligned to be used with fftw_xx or SSE
   T* buffer_;
