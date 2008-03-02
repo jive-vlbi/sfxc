@@ -92,13 +92,18 @@ Thread& Thread::start()
     return *this;
 }
 
+void Thread::stop()
+{
+  isrunning_ = false;
+}
+
 void* Thread::execute(void *param)
 {
     Signal_handler::install();
     Thread *th = static_cast<Thread*>(param);
     assert( th != NULL );
-
     try{
+        th->isrunning_ = true;
         th->do_execute();
     }catch(Exception& e){
         //LOG2( singleton<Log_writer_cout>::instance(), e);

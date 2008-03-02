@@ -9,16 +9,38 @@ bin_PROGRAMS = create_delay_function \
                print_headers \
                produce_html_plotpage \
                vex2ccf \
-	       generate_uvw_coordinates \
-	       plot_delay_table \
+               generate_uvw_coordinates \
+               plot_delay_table \
                produce_output_graphs \
-               print_new_output_format
+               print_new_output_format \
+               dnfp_fileserver \
+               dnfp_fileclient
 
 bin_SCRIPTS  = run_sfxc.py vumeter.py
 
 create_delay_function_SOURCES = create_delay_function.cc
 
 produce_fringe_SOURCES = produce_fringe.cc
+
+dnfp_fileserver_SOURCES = \
+  dnfp_fileserver.cc \
+   ../src/data_reader.cc \
+   ../src/data_writer.cc \
+   ../src/data_reader_file.cc \
+   ../src/data_writer_socket.cc \
+   ../src/data_reader_socket.cc \
+   ../src/data_reader_blocking.cc \
+   ../src/utils.cc   
+   
+dnfp_fileclient_SOURCES = \
+  dnfp_fileclient.cc \
+   ../src/data_reader.cc \
+   ../src/data_writer.cc \
+   ../src/data_reader_file.cc \
+   ../src/data_writer_socket.cc \
+   ../src/data_reader_socket.cc \
+   ../src/data_reader_blocking.cc  \
+   ../src/utils.cc
 
 print_headers_SOURCES = \
   print_headers.cc \

@@ -2,7 +2,7 @@
  * Copyright (c) 2007 University of Amsterdam (Netherlands)
  * All rights reserved.
  *
- * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ * Author(s): Nico Kruithof  <Kruithof@JIVE.nl>, 2007
  *            Damien Marchal <dmarchal@science.uva.nl>, 2007
  *
  *
@@ -19,11 +19,14 @@ class Thread
 {
     friend class ThreadPool;
     pthread_t m_threadid;
+    bool isrunning_;
 public:
     Thread();
     virtual ~Thread();
 
     Thread& start();
+    void stop();
+    
     static void* execute(void*);
     virtual void do_execute() = 0;
 };

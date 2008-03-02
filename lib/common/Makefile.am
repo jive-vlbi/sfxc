@@ -9,6 +9,7 @@ libcommon_a_SOURCES = \
   src/raiimutex.cc \
   src/condition.cc \
   src/exception_indexoutofbound.cc \
-  src/signal_handler.cc
+  src/signal_handler.cc \
+  src/monitor.cc
 
 pkginclude_HEADERS = src/*.h
