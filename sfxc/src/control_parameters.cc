@@ -879,20 +879,25 @@ get_delay_table_name(const std::string &station_name) const {
   if (access(delay_table_name.c_str(), R_OK) == 0) {
     return delay_table_name;
   }
-  std::string cmd =
-    "generate_delay_model "+vex_filename+
-    " "+station_name+
-    " "+delay_table_name;
-  DEBUG_MSG(cmd);
-  int result = system(cmd.c_str());
-  if (result != 0) {
-    assert(false);
-  }
+  generate_delay_table(station_name, delay_table_name);
   if (access(delay_table_name.c_str(), R_OK) == 0) {
     return delay_table_name;
   }
   assert(false);
   return std::string("");
+}
+
+void
+Control_parameters::
+generate_delay_table(const std::string &station_name,
+                     const std::string &filename) const {
+  std::string cmd =
+    "generate_delay_model "+vex_filename+" "+station_name+" "+filename;
+  DEBUG_MSG(cmd);
+  int result = system(cmd.c_str());
+  if (result != 0) {
+    assert(false);
+  }
 }
 
 std::string

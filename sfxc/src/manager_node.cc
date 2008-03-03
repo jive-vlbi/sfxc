@@ -414,6 +414,12 @@ Manager_node::initialise() {
     const std::string &delay_file =
       control_parameters.get_delay_table_name(station_name);
     delay_table.open(delay_file.c_str());
+    if (!delay_table.initialised()) {
+      DEBUG_MSG("Delay table could not be read");
+      control_parameters.generate_delay_table(station_name, delay_file);
+      delay_table.open(delay_file.c_str());
+      assert(delay_table.initialised());
+    }
 
     send(delay_table, /* station_nr */ 0, input_rank(station));
     correlator_node_set_all(delay_table, station_name);
