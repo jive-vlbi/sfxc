@@ -95,12 +95,15 @@ int Delay_table_akima::open(const char *delayTableName)
   begin_scan = 0;
   end_scan   = 0;
   bool result = initialise_next_scan();
-  assert(result);
+  if (!result) {
+    DEBUG_MSG("Could not read delay table " << delayTableName);
+  }
 
   return 0;
 }
 
 bool Delay_table_akima::initialise_next_scan() {
+  if (times.empty()) return false;
   // make end_scan point to the start of the next scan
   if (end_scan != 0) end_scan += 2;
   begin_scan = end_scan;

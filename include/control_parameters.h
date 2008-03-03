@@ -145,6 +145,8 @@ public:
 
   std::string get_delay_directory() const;
   std::string get_delay_table_name(const std::string &station_name) const;
+  void generate_delay_table(const std::string &station_name,
+                            const std::string &filename) const;
 
   std::string channel(int i) const;
   size_t channels_size() const;
