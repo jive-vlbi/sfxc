@@ -55,6 +55,7 @@ portNumber = int(inp[8].strip())
 class Service(TranslationNode):
 
   def soap_startTranslationJob(self, ps):
+    """ Main service function actually starts the translation job."""
 		rsp = TranslationNode.soap_startTranslationJob(self, ps)
 		msg = self.request
 		print 'Requested broker IP address: ', msg.Param0.BrokerIPAddress

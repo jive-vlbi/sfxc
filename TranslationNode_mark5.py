@@ -5,12 +5,16 @@ class Mark5_set_position:
 		self.resp_list=[]
 		
 	def bytes_starting_position(self, host=None,  port = None, portMark5 = None, ipMark5 = None, startPosition = None):
+		"""Opens the connection between local machine and Mark5.
+		Sets up a telnet session.
+		Initiates the starting position of requested data on Mark5 disk."""
 		s = socket.socket()
 		print host
 		s.bind((host, port))
 		s.listen(1)
 
-		""" The IP address of Mark5 starts from 10.88.0.50 and up"""
+		""" The internel IP address of Mark5 starts from 10.88.0.50 and up"""
+		""" For some cases the external IP address is required. """
 
 		tn = telnetlib.Telnet(ipMark5, portMark5)
 		
@@ -27,6 +31,8 @@ class Mark5_set_position:
 
 class Mark5_get_chunks:
 	def __init__(self, host=None, port = None, portMark5 = None, ipMark5 = None, fileName = None, blockSize = None, chunkSize = None, startPosition = None):
+		""" Downloads the data from Mark5 to a disk using telnet connection.
+		Uses disk2net command on Mark5. """
 		
 		f = open(fileName, "w")
 

@@ -9,6 +9,11 @@ class TranslationNodeNotification:
                startTime = None, 
                translationNodeIP = None, 
                translationNodeId = None):
+    
+    """ This is a TranslationNodeNotification service simulator. 
+    This service is used to test if the TranslationNodeService is sending
+    the notification correctly after the downloading/copying from Mark5 
+    operations are finished. """
 
   # define request
     req = chunkIsReadyRequest()
