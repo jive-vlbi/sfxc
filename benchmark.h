@@ -23,11 +23,10 @@ private:
                ORDER ordering,
                int n_input_samples_to_process);
 
-  bool check_output_buffers(char * out1[],
-                            char * out2[],
+  bool check_output_buffers(unsigned char * out1[],
+                            unsigned char * out2[],
                             int n_channels,
                             int bytes_per_channel);
 
   Channel_extractor_interface &channel_extractor;
 };
-

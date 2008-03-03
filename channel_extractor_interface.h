@@ -24,10 +24,10 @@ public:
   // fan_out is the number of output bits per input sample
   // fan_out is 1 2 4 8
   // offset is 0 .. fan_out-1
-  virtual void extract(char *in_data1,
-                       char *in_data2,
+  virtual void extract(unsigned char *in_data1,
+                       unsigned char *in_data2,
                        int samples_in_data1, /* <= size_of_one_input_word+1 */
-                       char **output_data,
+                       unsigned char **output_data,
                        int offset) = 0;
 
 };

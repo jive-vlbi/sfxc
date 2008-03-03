@@ -8,13 +8,24 @@ public:
                   int size_of_one_input_word_,
                   int input_sample_size_);
 
-  void extract(char *in_data1,
-               char *in_data2,
+  void extract(unsigned char *in_data1,
+               unsigned char *in_data2,
                int samples_in_data1, /* <= size_of_one_input_word+1 */
-               char **output_data,
+               unsigned char **output_data,
                int offset);
 private:
+  
+  void extract_element(unsigned char *in_data,
+                       unsigned char **output_data, 
+                       int output_sample);
+  
   std::vector< std::vector<int> > track_positions;
   int size_of_one_input_word;
   int input_sample_size;
+  
+  // Computed
+  int fan_out;
+  
+  // temporary buffer for the last sample
+  unsigned char **output_data_tmp;
 };

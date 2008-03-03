@@ -37,7 +37,7 @@ bool Benchmark::do_test(int n_channels, int fan_out,
   bool result = true;
   assert((fan_out*n_channels) % 8 == 0);
   // Size of one input data sample in bytes
-  const int size_input_sample = fan_out*n_channels/8;
+  const int size_input_word = fan_out*n_channels/8;
   Channel_extractor_brute_force channel_extractor_brute;
 
   // Initialise the track positions
@@ -72,47 +72,56 @@ bool Benchmark::do_test(int n_channels, int fan_out,
   }
 
   // Initialise the input data
-  const int input_size = 2*size_input_sample*n_input_samples_to_process;
-  char in_data[input_size];
-  for (int i=0; i<input_size; i++) {
-    in_data[i] = random();
-  }
+  const int input_size = size_input_word*(n_input_samples_to_process+1);
+  unsigned char in_data1[input_size],in_data2[input_size];
 
   // Allocate the output buffers
-  std::vector<char *> output, output_brute;
+  std::vector<unsigned char *> output, output_brute;
   const int n_output_bytes_per_channel = fan_out*n_input_samples_to_process/8;
   output.resize(n_channels);
   output_brute.resize(n_channels);
   for (int i=0; i<n_channels; i++) {
-    output[i] = new char[n_output_bytes_per_channel];
-    output_brute[i] = new char[n_output_bytes_per_channel];
+    output[i] = new unsigned char[n_output_bytes_per_channel];
+    output_brute[i] = new unsigned char[n_output_bytes_per_channel];
   }
 
   // Initialise the extractors
   channel_extractor.initialise(track_positions,
-                               size_input_sample,
+                               size_input_word,
                                n_input_samples_to_process);
   channel_extractor_brute.initialise(track_positions,
-                                     size_input_sample,
+                                     size_input_word,
                                      n_input_samples_to_process);
 
+  assert(input_size == size_input_word*(n_input_samples_to_process+1));
+
   for (int offset=0; offset<fan_out; offset++) {
+    // randomize input data:
+    for (int i=0; i<input_size; i++) {
+      in_data1[i] = random();
+      in_data2[i] = random();
+    }
+
     // Brute force for the reference
     randomize_buffers(output_brute, n_output_bytes_per_channel);
-    channel_extractor_brute.extract(&in_data[0], &in_data[0],
+    channel_extractor_brute.extract(&in_data1[0], &in_data2[0],
                                     n_input_samples_to_process+1,
                                     &output_brute[0],
                                     offset);
 
-    for (int samples_in_data1=n_input_samples_to_process+1;
-         samples_in_data1>n_input_samples_to_process-10; samples_in_data1--) {
+    for (int offset_in_input_samples=0;
+         offset_in_input_samples<10; offset_in_input_samples++) {
       // recompute the output
       randomize_buffers(output, n_output_bytes_per_channel);
-      channel_extractor.extract(&in_data[0],
-                                &in_data[samples_in_data1*size_input_sample],
-                                samples_in_data1,
+      channel_extractor.extract(&in_data1[size_input_word*offset_in_input_samples],
+                                &in_data2[0],
+                                n_input_samples_to_process+1-offset_in_input_samples,
                                 &output[0],
                                 offset);
+
+      // std::cout << "offset: " << offset << std::endl;
+      // print_output_buffers(output, n_output_bytes_per_channel);
+      
       // check the result:
       result &= check_output_buffers(&output[0],
                                      &output_brute[0],
@@ -125,6 +134,15 @@ bool Benchmark::do_test(int n_channels, int fan_out,
         }
         return result;
       }
+
+      { // shift all samples one input position:
+        for (int i=input_size-1; i>=size_input_word; i--)
+          in_data2[i] = in_data2[i-size_input_word];
+        for (int i=size_input_word-1; i>=0; i--)
+          in_data2[i] = in_data1[input_size-size_input_word+i];
+        for (int i=input_size-1; i>=size_input_word; i--)
+          in_data1[i] = in_data1[i-size_input_word];
+      }
     }
   }
 
@@ -136,8 +154,8 @@ bool Benchmark::do_test(int n_channels, int fan_out,
   return result;
 }
 
-bool Benchmark::check_output_buffers(char * out1[],
-                                     char * out2[],
+bool Benchmark::check_output_buffers(unsigned char * out1[],
+                                     unsigned char * out2[],
                                      int n_channels,
                                      int bytes_per_channel) {
   for (int i=0; i<n_channels; i++) {
@@ -153,73 +171,3 @@ bool Benchmark::check_output_buffers(char * out1[],
   }
   return true;
 }
-
-//
-//    std::cout << __PRETTY_FUNCTION__ << std::endl;
-//
-//    char in_data1[OUTPUT_SAMPLE_SIZE], in_data2[OUTPUT_SAMPLE_SIZE];
-//    char *output_data1[N_SUBBANDS];
-//    char *output_data2[N_SUBBANDS];
-//
-//
-//    // Initialising the buffers:
-//    for (int i=0; i<OUTPUT_SAMPLE_SIZE; i++) in_data1[i] = rand();
-//
-//    for (int i=0; i<N_SUBBANDS; i++) {
-//      // two bits samples
-//      output_data1[i] = new char[OUTPUT_SAMPLE_SIZE/4];
-//      output_data2[i] = new char[OUTPUT_SAMPLE_SIZE/4];
-//    }
-//
-//    { // Normal execution:
-//      const int size_of_one_input_word = 4;
-//      const int offset = 0;
-//      const int n_tracks = 4;
-//      const int fan_out = 4;
-//      std::vector< std::vector<int> > track_positions;
-//      track_positions.resize(N_SUBBANDS);
-//      int track=0;
-//      for (size_t i=0; i<track_positions.size(); i++) {
-//        track_positions[i].resize(n_tracks);
-//        for (size_t j=0; j<track_positions[i].size(); j++) {
-//          track_positions[i][j] = track;
-//          track++;
-//        }
-//      }
-//      assert(track <= 8*size_of_one_input_word);
-//
-//      int input_sample_size = OUTPUT_SAMPLE_SIZE/track_positions[0].size();
-//      check(track_positions,
-//            size_of_one_input_word, input_sample_size,
-//            offset,
-//            in_data1, in_data2, OUTPUT_SAMPLE_SIZE,
-//            output_data1, output_data2);
-//
-//    }
-//  }
-//
-//private:
-//  void check(std::vector< std::vector<int> > &track_positions,
-//             int size_input_word,
-//             int input_sample_size,
-//             int offset,
-//             char *in_data1, char *in_data2, int samples_in_data1,
-//             char **output_data1, char **output_data2) {
-//    const int n_subbands = track_positions[0].size();
-//    const int fan_out = track_positions[0].size();
-//
-//    Extractor1 ch_ex1(track_positions, size_input_word, input_sample_size);
-//    Extractor2 ch_ex2(track_positions, size_input_word, input_sample_size);
-//
-//    ch_ex1.extract(in_data1, in_data2, samples_in_data1,
-//                   output_data1, offset);
-//    ch_ex2.extract(in_data1, in_data2, samples_in_data1,
-//                   output_data2, offset);
-//
-//    for (int subband=0; subband < n_subbands
-//    for (int i=0; i<input_sample_size*fan_out/8; i++) {
-//      assert(output_data1[i] == output_data2[i]);
-//    }
-//
-//  }
-//

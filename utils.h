@@ -34,7 +34,8 @@ bool check_buffers(std::vector<char *> &output_buffers,
 void print(std::vector<char *> &output_buffers,
            int buffer_size);
 
-void randomize_buffers(std::vector<char *> &output_buffers,
+void randomize_buffers(std::vector<unsigned char *> &output_buffers,
                        int buffer_size);
-
+void print_output_buffers(std::vector<unsigned char *> &output_buffers,
+                          int buffer_size);
 #endif // UTILS_H

@@ -903,14 +903,14 @@ void print(std::vector<char *> &output_buffers,
 
 }
 
-void randomize_buffers(std::vector<char *> &output_buffers,
-                       int buffer_size) {
-  for (size_t i=0; i<output_buffers.size(); i++) {
-    for (int j=0; j<buffer_size; j++) {
-      output_buffers[i][j] = random();
-    }
-  }
-}
+//void randomize_buffers(std::vector<char *> &output_buffers,
+//                       int buffer_size) {
+//  for (size_t i=0; i<output_buffers.size(); i++) {
+//    for (int j=0; j<buffer_size; j++) {
+//      output_buffers[i][j] = random();
+//    }
+//  }
+//}
 
 
 //#include "extractor7.hh"
