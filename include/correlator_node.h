@@ -24,7 +24,6 @@
 #include "correlation_core.h"
 #include "delay_correction.h"
 #include "tasklet/tasklet_manager.h"
-#include "integer_delay_correction.h"
 
 #include "timer.h"
 
