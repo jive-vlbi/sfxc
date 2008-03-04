@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef CHANNEL_EXTRACTOR_H_
-#define CHANNEL_EXTRACTOR_H_
+#ifndef CHANNEL_EXTRACTOR_TASKLET_H_
+#define CHANNEL_EXTRACTOR_TASKLET_H_
 
 #include <vector>
 
@@ -17,11 +17,13 @@
 #include "input_node_types.h"
 #include "control_parameters.h"
 
+#include "channel_extractor_interface.h"
+
 #define MAX_SUBBANDS 16
 
 // Not a data reader since it outputs multiple streams
 template <class Type>
-class Channel_extractor : public Tasklet {
+class Channel_extractor_tasklet : public Tasklet {
 public:
   typedef Input_node_types<Type>                        Types;
 
@@ -34,8 +36,8 @@ public:
   typedef typename Output_buffer::value_type            Output_buffer_element;
   typedef boost::shared_ptr<Output_buffer>              Output_buffer_ptr;
 
-  Channel_extractor();
-  virtual ~Channel_extractor();
+  Channel_extractor_tasklet();
+  virtual ~Channel_extractor_tasklet();
 
   /// For tasklet
 
@@ -55,51 +57,20 @@ public:
   // Setting parameters
   void set_parameters(const Input_node_parameters &input_node_param,
                       const std::vector< std::vector<int> > &track_positions);
-private:
-  // Dechannelize samples
-  inline void channel_extract(int n_input_samples,
-                              int &curr_bit,
-                              const Type *in_data,
-                              char *&output_data,
-                              const uint8_t *lookup_table);
-
-  inline void process_sample(const uint8_t *&in_array,
-                             char *output_data,
-                             const uint8_t *table) {
-    for (int n=0; n<N; n++) {
-      *output_data |= table[*in_array];
-      table += 256;
-      in_array++;
-    }
-  }
 
 private:
   Input_buffer_ptr                input_buffer_;
   Output_memory_pool              output_memory_pool_;
   std::vector<Output_buffer_ptr>  output_buffers_;
-
-  /// Bit positions for the sign and magnitude bits, per channel
-  std::vector< std::vector<int> > tracks_in_subbands;
-
-  /// Cached values:
-
-
-  // sizeof(Type)
-  const int N;
-  // Lookup table for the channel extraction
-  // At most 16 channels
-  // lookup_table[index in Type word][value of the byte][output sample/channel]
-  uint8_t lookup_table[MAX_SUBBANDS][sizeof(Type)][256];
-
-  // Lookup table for a right bitshift with 0 inserted
-  uint8_t bit_shift_right_table[8][256];
-
-  // Fan out
-  int fan_out, samples_per_byte;
-
-  int n_subbands;
+  
+  Channel_extractor_interface     *ch_extractor;
+  
+  // Cached values
+  size_t n_subbands;      // Number of subbands
+  size_t fan_out;         // Number of output bits per input sample
+  size_t bits_per_sample; // Number of bits per output sample
 };
 
 #include "channel_extractor_impl.h"
 
-#endif /*CHANNEL_EXTRACTOR_H_*/
+#endif /*CHANNEL_EXTRACTOR_TASKLET_H_*/

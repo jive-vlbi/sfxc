@@ -27,6 +27,7 @@ OBJ=\
   delay_correction.cc \
   integer_delay_correction.cc \
   channel_extractor_mark4.cc \
+  channel_extractor_brute_force.cc \
   bits_to_float_converter.cc \
   tasklet/mutex.cc \
   tasklet/tasklet.cc \

@@ -20,7 +20,7 @@
 #include "mark4_reader_tasklet.h"
 #include "integer_delay_correction_all_channels.h"
 #include "void_consuming_tasklet.h"
-#include "channel_extractor.h"
+#include "channel_extractor_tasklet.h"
 #include "input_node_data_writer_tasklet.h"
 
 template <class Type>
@@ -28,7 +28,7 @@ class Input_node_tasklet_implementation : public Input_node_tasklet {
 public:
   typedef Mark4_reader_tasklet<Type>                       Mark4_reader_tasklet_;
   typedef Integer_delay_correction_all_channels<Type>      Integer_delay_tasklet_;
-  typedef Channel_extractor<Type>                          Channel_extractor_tasklet_;
+  typedef Channel_extractor_tasklet<Type>                  Channel_extractor_tasklet_;
   typedef Input_node_data_writer_tasklet<Type>             Data_writer_tasklet_;
 
   Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader, char *buffer);

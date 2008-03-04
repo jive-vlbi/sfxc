@@ -6,6 +6,7 @@
 class Channel_extractor_interface {
 public:
   Channel_extractor_interface() {}
+  virtual ~Channel_extractor_interface() {}
 
   // Size of one input word to process in the extract function
   // Track position array
