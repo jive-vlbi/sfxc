@@ -1,3 +1,5 @@
+SUBDIRS = benchmark_channel_extractor
+
 AM_CXXFLAGS = $(SFXC_CXXFLAGS)
 LDADD = $(SFXC_LDADD)
 

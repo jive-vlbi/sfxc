@@ -191,6 +191,7 @@ AC_OUTPUT(Makefile
           lib/vex_parser/Makefile
           src/Makefile
           test/Makefile
+          test/benchmark_channel_extractor/Makefile
           include/Makefile
           utils/Makefile
           utils/delay/Makefile
