@@ -18,7 +18,9 @@
 // for MAX_SUBBANDS for two seconds at 256Mbps
 template <class Type>
 Channel_extractor_tasklet<Type>::Channel_extractor_tasklet()
-    : ch_extractor(new Channel_extractor_brute_force()), n_subbands(0), fan_out(0) {}
+    : output_memory_pool_(32000*MAX_SUBBANDS),
+      ch_extractor(new Channel_extractor_brute_force()), 
+                   n_subbands(0), fan_out(0) {}
 
 template <class Type>
 Channel_extractor_tasklet<Type>::~Channel_extractor_tasklet() {}
