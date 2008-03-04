@@ -12,7 +12,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "channel_extractor.h"
 #include "data_reader.h"
 #include "semaphore_buffer.h"
 #include "tasklet/tasklet.h"

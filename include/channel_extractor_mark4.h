@@ -17,6 +17,7 @@
 #include "data_writer.h"
 #include "log_writer.h"
 #include "control_parameters.h"
+#include "channel_extractor_interface.h"
 
 // Templated by the type of the element from which the samples are extracted
 // Either int32_t (n_head_stacks == 1) or int64_t (n_head_stacks == 2)
@@ -70,15 +71,10 @@ public:
 private:
   int find_header(char *buffer, boost::shared_ptr<Data_reader> reader);
 
-  
   /** The number of tracks, determined from the data **/
   int total_tracks;
   
-  // Different implementations based on the number of head stacks:
-  Channel_extractor_mark4_implementation<uint8_t>     *ch_extractor_8_tracks;
-  Channel_extractor_mark4_implementation<uint16_t>    *ch_extractor_16_tracks;
-  Channel_extractor_mark4_implementation<uint32_t>    *ch_extractor_32_tracks;
-  Channel_extractor_mark4_implementation<uint64_t>    *ch_extractor_64_tracks;
+  Channel_extractor_interface *ch_extractor;
 };
 
 #endif /*CHANNEL_EXTRACTOR_MARK4_H_*/
