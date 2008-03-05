@@ -3,6 +3,12 @@
   ==========================================================
    (e.g. for ftp-fringe tests)
 
+
+# in session 1/2008, we started to use skype for a (text only) chat between
+# the support scientist(s) and the VLBI friends at the stations. The support 
+# scientist in charge of hte NME can use the official skype name "jiveops". 
+
+
 # the software correlator currently resides on huygens, may be moved to ADAM 
 # in the future
 
@@ -22,14 +28,12 @@ mkdir output
 mkdir html
 
 
-# copy the necessary files over to huygens: 
-# =========================================
-# ftp-data to subdir "m5a", vex-file to subdir "ctrl"
-
-scp -r jive@jop13.nfra.nl:/jop13_1/softcorr/ftpdata/ftpdata/<expname>*  m5a/
+# copy the vex-file over to huygens: 
+# ==================================
  
 scp jops@ccsops:/ccs/expr/<expname>/<expname>.vax  ctrl/ 
 #e.g. scp -p jops@ccsops:/ccs/expr/N07M3/n07m3.vax ctrl/ 
+
 
 # edit the ctrl-file and start up the correlator
 # ==============================================
@@ -44,21 +48,23 @@ run_sfxc.py <expname, e.g. n07m3>.vax
                                    # edit if not all channels are to be 
                                    # included in this correlation run
    "data_sources" : {              # specify names of the ftp'd files 
-      "Cm" : ["file://../m5a/<expname>_cm_no<scan#>.m5a"],
-      "Ef" : ["file://../m5a/<expname>_ef_no<scan#>.m5a"],
-      "Hh" : ["file://../m5a/<expname>_hh_no<scan#>.m5a"],
-      "Jb" : ["file://../m5a/<expname>_jb_no<scan#>.m5a"],
-      "Mc" : ["file://../m5a/<expname>_mc_no<scan#>.m5a"],
-      "Nt" : ["file://../m5a/<expname>_nt_no<scan#>.m5a"],
-      "On" : ["file://../m5a/<expname>_on_no<scan#>.m5a"],
-      "Tr" : ["file://../m5a/<expname>_tr_no<scan#>.m5a"],
-      "Wb" : ["file://../m5a/<expname>_wb_no<scan#>.m5a"]
+      "Cm" : ["file:///data1/fringetest/ftpdata/<expname>_cm_no<scan#>.m5a"],
+#e.g. "Cm" : ["file:///data1/fringetest/ftpdata/n08k1_cm_no0042.m5a"],
+      "Ef" : ["file:///data1/fringetest/ftpdata/<expname>_ef_no<scan#>.m5a"],
+      "Hh" : ["file:///data1/fringetest/ftpdata/<expname>_hh_no<scan#>.m5a"],
+      "Jb" : ["file:///data1/fringetest/ftpdata/<expname>_jb_no<scan#>.m5a"],
+      "Mc" : ["file:///data1/fringetest/ftpdata/<expname>_mc_no<scan#>.m5a"],
+      "Nt" : ["file:///data1/fringetest/ftpdata/<expname>_nt_no<scan#>.m5a"],
+      "On" : ["file:///data1/fringetest/ftpdata/<expname>_on_no<scan#>.m5a"],
+      "Tr" : ["file:///data1/fringetest/ftpdata/<expname>_tr_no<scan#>.m5a"],
+      "Wb" : ["file:///data1/fringetest/ftpdata/<expname>_wb_no<scan#>.m5a"]
                                    # files names can be filled in, even if the 
                                    # files don't exist in m5a yet
 
    "exper_name" : "<expname>",     # experiment name e.g. N07M3    
    "integr_time" : 1,              # duration of data to be correlated, 
-                                   # \leq length of ftp'd data 
+                                   # can be > 1sec, but must be \leq length of 
+                                   # ftp'd data 
    "message_level" : 1,            # 1 gives progress messages, 0 prints very 
                                    # little feedback
 
@@ -70,19 +76,21 @@ run_sfxc.py <expname, e.g. n07m3>.vax
                                    # are to be included in this correlation run
    "stop" : "2007y291d14h36m39s"   # stop time of data to be correlated(*)
 
-  (*) start and stop time have to be within the time range covered by the 
-      ftp'd data
+# (*) start and stop time have to be within the time range covered by the 
+#     ftp'd data, check in skd-file or vax-file
     
   save and close emacs window (Ctrl-x Ctrl-s, Ctrl-x Ctrl-c)
 
-#currently, correlator doesn't start automatically, when emacs is closed, so 
-# rerun previous command:
+# the correlator starts automatically, when emacs is closed
+ 
+# to rerun the correlation, e.g. after modifying the existing .ctrl-file, 
+# type in the previous command again:
 
 run_sfxc.py <expname>.vax
 
-# The softcorr currently can't handle files with multiple setups. If there is 
-# more than one setup in the .vax-file, please edit the file (and save under a 
-# new name), so that it only contains the setup of the scan to be correlated.
+# The softcorr currently can't handle files with multiple setups yet. If there 
+# is more than one setup in the .vax-file, please edit the file (and save under
+# a new name), so that it only contains the setup of the scan to be correlated.
 
 # The .ctrl-file is called up automatically by run_sfxc.py and thus _must_ be 
 # named <expname>.ctrl; save previous/alternative versions under other names, 
@@ -106,13 +114,13 @@ firefox index.html &
 # let the world know of your findings
 # ===================================
 
-# copy plots to web page
+# copy plots to the web page
 
 ssh -X dop40 -l jive
 cd /www/evlbi.org/tog/ftp_fringes
 mkdir <expname>
 cd <expname>
-scp -r jops@huygens:/data4/sfxc/ftp/2007_october/<expname>/html .
+scp -r jops@huygens:/data4/sfxc/ftp/<session, e.g. 2008_march/<expname>/html .
 mv html/* .
 rmdir html
 
@@ -158,12 +166,6 @@ Notes:
 
 a) <specify problems, e.g. RFI, low sensitivity, noting station and BBC>
 -------------------------------------------------------------------------------
-
-
-# clean up after yourself
-
-  after transfer of all ftp-files to huygens in complete, delete the files on 
-  jop13 (low disk space)
 
 
 
