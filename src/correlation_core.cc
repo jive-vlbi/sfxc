@@ -186,6 +186,12 @@ void Correlation_core::integration_step() {
   assert(frequency_buffer.size() == number_input_streams_in_use());
   for (size_t i=0; i<number_input_streams_in_use(); i++) {
     assert(frequency_buffer[i].size() == size_of_fft()/2+1);
+    
+    // zero out the data for padding
+    for (int j=size_of_fft()/2+1; j<size_of_fft(); j++) {
+      (*input_elements[i])[j] = 0;
+    }
+
     fft_timer.resume();
     FFTW_EXECUTE_DFT_R2C(plan,
                          (FLOAT *)input_elements[i]->buffer(),
