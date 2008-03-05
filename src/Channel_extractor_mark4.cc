@@ -161,10 +161,10 @@ Channel_extractor_mark4::find_header(char *buffer,
       if (buffer[byte] == (char)(~0)) {
         nOnes ++;
       } else {
-        if ((nOnes>0) && (nOnes%32 == 0)) {
+        if (nOnes > 32) {
           // make sure the begin of the header is in the buffer
           // syncword is 32 samples, auxiliary data field 64 samples
-          header_start = byte - nOnes*3;
+          header_start = byte - nOnes - 64*(nOnes/32);
           if (header_start >= 0) {
             // We found a complete header
             nTracks8 = nOnes/32;

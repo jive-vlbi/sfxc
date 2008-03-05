@@ -73,7 +73,7 @@ private:
   Status status;
   std::vector<Correlating_state> state_correlator_node;
   
-  static const int duration_time_slice = 1000; // Duration in miliseconds
+  int duration_time_slice; // Duration in miliseconds
   
   /// Start day of the experiment
   int32_t start_day;

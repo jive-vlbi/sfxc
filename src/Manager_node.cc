@@ -25,7 +25,8 @@ Manager_node(int rank, int numtasks,
 : Abstract_manager_node(rank, numtasks,
                         log_writer,
                         control_parameters),
-                        manager_controller(*this) {
+                        manager_controller(*this),
+  duration_time_slice(1000) {
   assert(rank == RANK_MANAGER_NODE);
 
   add_controller(&manager_controller);
@@ -401,6 +402,10 @@ Manager_node::initialise() {
   assert(!scans.empty());
   
   slice_nr  = 0;
+
+  if (duration_time_slice < control_parameters.integration_time()) {
+    duration_time_slice = control_parameters.integration_time();
+  }
 
   get_log_writer()(1) << "Initialisation finished" << std::endl;
   get_log_writer()(2) << "start scan : " << *scans.begin() << std::endl;
