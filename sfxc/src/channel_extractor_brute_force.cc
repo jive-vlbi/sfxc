@@ -7,7 +7,9 @@
 #include "utils.h"
 
 
-Channel_extractor_brute_force::Channel_extractor_brute_force() {}
+Channel_extractor_brute_force::Channel_extractor_brute_force() {
+name_ = "Channel_extractor_brute_force";
+}
 
 void
 Channel_extractor_brute_force::

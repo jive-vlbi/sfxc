@@ -35,13 +35,12 @@ std::ostream &print_hex(std::ostream &out, const Type &t) {
   return out;
 }
 
-class Extractor
-{
-	public:
-		virtual void do_task(int n_input_samples,
-        	       int offset,
-        	       const Type in_data[],
-        	       std::vector<char *> output_data) = 0;
+class Extractor {
+public:
+  virtual void do_task(int n_input_samples,
+                       int offset,
+                       const Type in_data[],
+                       std::vector<char *> output_data) = 0;
 };
 
 
@@ -419,7 +418,7 @@ private:
   int n_subbands;
 };
 
-class Extractor5{
+class Extractor5 {
 public:
   Extractor5(const std::vector< std::vector<int> > &track_positions) {
     // bit shift right with padding
@@ -477,12 +476,12 @@ public:
         process_sample(in_pos, out_pos, table);
         out_pos++;
       }
-      if( offset != 0 ){ // Do the offset
-	 uint8_t *mask_right = bit_shift_right_table[offset];
+      if ( offset != 0 ) { // Do the offset
+        uint8_t *mask_right = bit_shift_right_table[offset];
 
-        	// shift the last sample
-       	 if (fan_out < 4)
-        	  *out_pos = (*out_pos<<(8-2*fan_out));
+        // shift the last sample
+        if (fan_out < 4)
+          *out_pos = (*out_pos<<(8-2*fan_out));
 
         char *data = output_data[subband];
         for (int sample=0; sample<n_input_samples*fan_out/8; sample++) {
@@ -519,59 +518,56 @@ private:
   int n_subbands;
 };
 
-class Action
-{
-	public:
-		Action(int c, int v){
-			channel = c;
-			value = v;
-			shift = 0;
-		}
-		Action(const Action& a){
-			channel = a.channel;
-			value = a.value;
-			shift = a.shift;		
-		}
-		int channel;
-		int value;
-		int shift;
+class Action {
+public:
+  Action(int c, int v) {
+    channel = c;
+    value = v;
+    shift = 0;
+  }
+  Action(const Action& a) {
+    channel = a.channel;
+    value = a.value;
+    shift = a.shift;
+  }
+  int channel;
+  int value;
+  int shift;
 };
 
-void find_add( std::vector<Action> *v, int channel, int value, int shift){
-	for(unsigned int i=0;i<v->size();i++)
-	{
-		if( (*v)[i].channel == channel ){
-			//std::cout << "Replacing: " <<  (*v)[i].value << " and => " << value << std::endl; 
-			(*v)[i].value = (*v)[i].value | (value);	
-			(*v)[i].shift = shift;			
-			return;
-		}
-	}
-	Action a(channel,value);
-	v->push_back(a);
-	return;
+void find_add( std::vector<Action> *v, int channel, int value, int shift) {
+  for (unsigned int i=0;i<v->size();i++) {
+    if ( (*v)[i].channel == channel ) {
+      //std::cout << "Replacing: " <<  (*v)[i].value << " and => " << value << std::endl;
+      (*v)[i].value = (*v)[i].value | (value);
+      (*v)[i].shift = shift;
+      return;
+    }
+  }
+  Action a(channel,value);
+  v->push_back(a);
+  return;
 }
 
 
-void find_add( std::vector<Action>& v, int channel, int value, int shift){
-	for(unsigned int i=0;i<v.size();i++)
-	{
-		if( (v)[i].channel == channel ){
-			//std::cout << "Replacing: " <<  (*v)[i].value << " and => " << value << std::endl; 
-			(v)[i].value = (v)[i].value | (value);	
-			(v)[i].shift = shift;			
-			return;
-		}
-	}
-	Action a(channel,value);
-	v.push_back(a);
-	return;
+void find_add( std::vector<Action>& v, int channel, int value, int shift) {
+  for (unsigned int i=0;i<v.size();i++) {
+    if ( (v)[i].channel == channel ) {
+      //std::cout << "Replacing: " <<  (*v)[i].value << " and => " << value << std::endl;
+      (v)[i].value = (v)[i].value | (value);
+      (v)[i].shift = shift;
+      return;
+    }
+  }
+  Action a(channel,value);
+  v.push_back(a);
+  return;
 }
 
 
 
 template<int Tn_subbands, int Tfan_out,  int Tsamples_per_byte, int Tseqsize>
-class Extractor7 : public Extractor{
+class Extractor7 : public Extractor {
 public:
   //int n_subbands;
   //int fan_out;
@@ -579,263 +575,261 @@ public:
   //int seqsize = samples_per_byte*N;
 
   Extractor7(const std::vector< std::vector<int> > &track_positions) {
-	assert( Tn_subbands == track_positions.size() );	
-	assert( Tfan_out == track_positions[0].size() );		
-	assert(Tfan_out <= 8);
-    	assert(8%Tfan_out == 0);
-    	assert(Tfan_out*Tsamples_per_byte == 8);
-	
-	std::cout << "Table builder: " << std::endl;
-	std::cout << "     Subbands: " << Tn_subbands << std::endl;
-	std::cout << "      fan out: " << Tfan_out << std::endl;
-	std::cout << " samples/byte: " << Tsamples_per_byte << std::endl;
-	std::cout << "sequence size: " << Tseqsize << std::endl;
-	
-	std::cout << "Table builder: " << std::endl;
-	for(unsigned int i=0;i<track_positions.size();i++)
-	{
-		std::cout << "Channel "<<i<<": ";
-		for(unsigned int j=0;j<track_positions[i].size();j++)
-		{
-			std::cout << track_positions[i][j] << ", ";
-		}
-		std::cout << std::endl;
-	}
+    assert( Tn_subbands == track_positions.size() );
+    assert( Tfan_out == track_positions[0].size() );
+    assert(Tfan_out <= 8);
+    assert(8%Tfan_out == 0);
+    assert(Tfan_out*Tsamples_per_byte == 8);
 
-	int val = Tsamples_per_byte;
-	int padd = N-val;
-	std::cout << "VAL: " << val << " and padding: << " << padd <<std::endl;	
+    std::cout << "Table builder: " << std::endl;
+    std::cout << "     Subbands: " << Tn_subbands << std::endl;
+    std::cout << "      fan out: " << Tfan_out << std::endl;
+    std::cout << " samples/byte: " << Tsamples_per_byte << std::endl;
+    std::cout << "sequence size: " << Tseqsize << std::endl;
 
-	bg_size2 = Tsamples_per_byte+padd;
-	bg_size1 = 256*(bg_size2);
-	unsigned int big_size = Tseqsize*bg_size1;
-	bigarray = new uint8_t[big_size];
-	
-	// Size of a the last item
-	bg2_size2 = Tsamples_per_byte+padd;
-	
-	// sequence size
-	bg2_size1 = Tseqsize*bg2_size2;
-	bg2_size  = 256 * bg_size1;
-	bigarray2 = new uint8_t[bg2_size];
+    std::cout << "Table builder: " << std::endl;
+    for (unsigned int i=0;i<track_positions.size();i++) {
+      std::cout << "Channel "<<i<<": ";
+      for (unsigned int j=0;j<track_positions[i].size();j++) {
+        std::cout << track_positions[i][j] << ", ";
+      }
+      std::cout << std::endl;
+    }
 
-	for(int i =0;i<256;i++){
-	  iptable[i] = i*bg_size2;
-	  iptable2[i] = i*bg2_size2;
-	}
-	
-	table = new std::vector<Action>**[Tseqsize];
-	//ftable = new uint8_t**[seqsize];
-	for(unsigned int i=0;i<Tseqsize;i++){
-		table[i] = new std::vector<Action>*[256];
-		//ftable[i] = new uint8_t*[256];
-		for(unsigned int j=0;j<256;j++){
-			table[i][j] = new std::vector<Action>();
-			//for(unsigned int k=0;k<8;k++) table[i][j][k] = 0;
-		}
-	}
-	//ftable = new uint8_t[seqsize][256][32];
-	
-	int seqpref = 0;
-	int cshift[256][Tn_subbands];
-	for(unsigned int i=0;i<256;i++)
-		for(int j=0;j<Tn_subbands;j++) 
-			cshift[i][j] = 7;
+    int val = Tsamples_per_byte;
+    int padd = N-val;
+    std::cout << "VAL: " << val << " and padding: << " << padd <<std::endl;
 
-	for(unsigned int r=0;r<Tseqsize;r+=Tfan_out){
-	for(unsigned int i=0;i<Tn_subbands;i++)
-	{		
-		//std::cout << "Doing TABLE for channel "<<i<<": ";
-		for(unsigned int j=0;j<track_positions[i].size();j++)
-		{
-			uint8_t idx = track_positions[i][j];
-			//std::cout << track_positions[i][j] << ": ";
-			//assert(seqidx < fan_out);			
-			
-			uint8_t seqidx = r  + idx / 8;
-			uint8_t cidx = idx % 8;
-			//std::cout << "SHIFING("<< (int)r << ":"<< (int)seqidx <<","<< (int)cidx <<"): " << std::endl;
-			for(unsigned int k=0;k<256;k++){
-				//if( (k>>cidx&1) )
-				find_add( table[seqidx][k], i, (k>>cidx&1) << (cshift[k][i]), (cshift[k][i]) );
-				(cshift[k][i])--;
-			}
-			//std::cout << std::endl;
-			//std::cout << ", " ;	
-		}
-		//std::cout << std::endl;
-	}
-	}
+    bg_size2 = Tsamples_per_byte+padd;
+    bg_size1 = 256*(bg_size2);
+    unsigned int big_size = Tseqsize*bg_size1;
+    bigarray = new uint8_t[big_size];
 
-	//order = new uint8_t[Tseqsize*Tsamples_per_byte];
-	int tidx=0;
-	memset( bigarray2, 101, bg2_size);		
-	for(unsigned int i=0;i<256;i++){
-		for(unsigned int j=0;j<Tseqsize;j++)
-		{	
-			std::vector<Action>::iterator bg = (*table[j][i]).begin();
-			std::vector<Action>::iterator en = (*table[j][i]).end();
-			
-			memset( &(bigarray[j*(bg_size1)+i*(bg_size2)]) , 101, bg_size2);
-			int idefix=0;					
-			//std::cout << "[";
-			while( bg != en ){
-				assert(j*(bg_size1)+i*(bg_size2)+idefix < big_size);
-				bigarray[j*(bg_size1)+i*(bg_size2)+idefix ] = (*bg).value;
-				bigarray2[ i*bg2_size1+j*bg2_size2 +idefix ] = (*bg).value;
-				//std::cout << "Value:" << i*bg2_size1+j*bg2_size2+idefix << std::endl;
-				
-				//for(unsigned int offset = 0; offset < Tfan_out ;offset++){
-				newtab[i][j][idefix] = ((unsigned char)(*bg).value) ;
-				//}
+    // Size of a the last item
+    bg2_size2 = Tsamples_per_byte+padd;
 
-				
-				idefix+=1;
-				if(i == 255 ){
-					std::cout << (*bg).channel << ":("<< (*bg).value << ") ";
-					order[tidx] = (*bg).channel;
-					std::cout << "Adding: " << tidx << " " << (*bg).channel+1 <<" " << std::endl;
-							
-					tidx++;				
-				}
-				bg++;	
-				
-			}
-			//std::cout << "] ";
+    // sequence size
+    bg2_size1 = Tseqsize*bg2_size2;
+    bg2_size  = 256 * bg_size1;
+    bigarray2 = new uint8_t[bg2_size];
 
-		}
-		//std::cout << std::endl;
-	}
+    for (int i =0;i<256;i++) {
+      iptable[i] = i*bg_size2;
+      iptable2[i] = i*bg2_size2;
+    }
 
-	//tmpout = new char[Tn_subbands+1];
-	for(unsigned int i=0; i<Tseqsize*Tsamples_per_byte;i++){
-		fasttmp[i] = &(tmpout[ order[i] ] );
-	}
-	memset(tmpout, 0, Tn_subbands+1);   
+    table = new std::vector<Action>**[Tseqsize];
+    //ftable = new uint8_t**[seqsize];
+    for (unsigned int i=0;i<Tseqsize;i++) {
+      table[i] = new std::vector<Action>*[256];
+      //ftable[i] = new uint8_t*[256];
+      for (unsigned int j=0;j<256;j++) {
+        table[i][j] = new std::vector<Action>();
+        //for(unsigned int k=0;k<8;k++) table[i][j][k] = 0;
+      }
+    }
+    //ftable = new uint8_t[seqsize][256][32];
+
+    int seqpref = 0;
+    int cshift[256][Tn_subbands];
+    for (unsigned int i=0;i<256;i++)
+      for (int j=0;j<Tn_subbands;j++)
+        cshift[i][j] = 7;
+
+    for (unsigned int r=0;r<Tseqsize;r+=Tfan_out) {
+      for (unsigned int i=0;i<Tn_subbands;i++) {
+        //std::cout << "Doing TABLE for channel "<<i<<": ";
+        for (unsigned int j=0;j<track_positions[i].size();j++) {
+          uint8_t idx = track_positions[i][j];
+          //std::cout << track_positions[i][j] << ": ";
+          //assert(seqidx < fan_out);
+
+          uint8_t seqidx = r  + idx / 8;
+          uint8_t cidx = idx % 8;
+          //std::cout << "SHIFING("<< (int)r << ":"<< (int)seqidx <<","<< (int)cidx <<"): " << std::endl;
+          for (unsigned int k=0;k<256;k++) {
+            //if( (k>>cidx&1) )
+            find_add( table[seqidx][k], i, (k>>cidx&1) << (cshift[k][i]), (cshift[k][i]) );
+            (cshift[k][i])--;
+          }
+          //std::cout << std::endl;
+          //std::cout << ", " ;
+        }
+        //std::cout << std::endl;
+      }
+    }
+
+    //order = new uint8_t[Tseqsize*Tsamples_per_byte];
+    int tidx=0;
+    memset( bigarray2, 101, bg2_size);
+    for (unsigned int i=0;i<256;i++) {
+      for (unsigned int j=0;j<Tseqsize;j++) {
+        std::vector<Action>::iterator bg = (*table[j][i]).begin();
+        std::vector<Action>::iterator en = (*table[j][i]).end();
+
+        memset( &(bigarray[j*(bg_size1)+i*(bg_size2)]) , 101, bg_size2);
+        int idefix=0;
+        //std::cout << "[";
+        while ( bg != en ) {
+          assert(j*(bg_size1)+i*(bg_size2)+idefix < big_size);
+          bigarray[j*(bg_size1)+i*(bg_size2)+idefix ] = (*bg).value;
+          bigarray2[ i*bg2_size1+j*bg2_size2 +idefix ] = (*bg).value;
+          //std::cout << "Value:" << i*bg2_size1+j*bg2_size2+idefix << std::endl;
+
+          //for(unsigned int offset = 0; offset < Tfan_out ;offset++){
+          newtab[i][j][idefix] = ((unsigned char)(*bg).value) ;
+          //}
+
+
+          idefix+=1;
+          if (i == 255 ) {
+            std::cout << (*bg).channel << ":("<< (*bg).value << ") ";
+            order[tidx] = (*bg).channel;
+            std::cout << "Adding: " << tidx << " " << (*bg).channel+1 <<" " << std::endl;
+
+            tidx++;
+          }
+          bg++;
+
+        }
+        //std::cout << "] ";
+
+      }
+      //std::cout << std::endl;
+    }
+
+    //tmpout = new char[Tn_subbands+1];
+    for (unsigned int i=0; i<Tseqsize*Tsamples_per_byte;i++) {
+      fasttmp[i] = &(tmpout[ order[i] ] );
+    }
+    memset(tmpout, 0, Tn_subbands+1);
   }
 
   void do_task(int n_input_samples,
                int offset,
                const Type in_data[],
                std::vector<char *> output_data) {
-	       switch(offset){
-			case 0: do_task_no_offset(n_input_samples, in_data, output_data); break;		
-	       		case 1: do_task_offset<1, 7>(n_input_samples, in_data, output_data);break;	
-	       		case 2: do_task_offset<2, 6>(n_input_samples, in_data, output_data);break;	
-	       		case 3: do_task_offset<3, 5>(n_input_samples, in_data, output_data);break;
-			default: 
-				assert("Strange offset for this fan_out");
-  		}
-	}
+    switch (offset) {
+    case 0:
+      do_task_no_offset(n_input_samples, in_data, output_data);
+      break;
+    case 1:
+      do_task_offset<1, 7>(n_input_samples, in_data, output_data);
+      break;
+    case 2:
+      do_task_offset<2, 6>(n_input_samples, in_data, output_data);
+      break;
+    case 3:
+      do_task_offset<3, 5>(n_input_samples, in_data, output_data);
+      break;
+    default:
+      assert("Strange offset for this fan_out");
+    }
+  }
 
 
 
-	template<int Toffset, int Tshift> 
-	void do_task_offset(int n_input_samples,
-               const Type in_data[],
-               std::vector<char *> output_data){
-	
-	unsigned int outindex=0;
-    	unsigned char* currbuffer = (unsigned char*)in_data;
-    	unsigned char* endbuffer = currbuffer+(n_input_samples+1)*N;
-		
-	//uint8_t* dorder = order;
-        //char** cfasttmp = &(fasttmp[0]);
-	//int shift = 8-offset;
-	//shift = 8;
-	for(unsigned int i=0;i<Tseqsize;++i){
-			char* dst;
-			unsigned char* channelidxval2;
-		
-			channelidxval2 = &(newtab[(*currbuffer)][i][0]);
-			dst = fasttmp[i*Tsamples_per_byte];			
+  template<int Toffset, int Tshift>
+  void do_task_offset(int n_input_samples,
+                      const Type in_data[],
+                      std::vector<char *> output_data) {
 
-			for(unsigned int j=0;j<Tsamples_per_byte;j++){		
-				//tmpout[ dorder[j] ] |= (*(channelidxval2+j));
-				*(dst+j) |= (*(channelidxval2+j));
-			}
-			//dorder+=Tsamples_per_byte;
-			//cfasttmp+=Tsamples_per_byte;
-			++currbuffer;
-		}
-		//cfasttmp = fasttmp;
-		//dorder = order;
+    unsigned int outindex=0;
+    unsigned char* currbuffer = (unsigned char*)in_data;
+    unsigned char* endbuffer = currbuffer+(n_input_samples+1)*N;
 
-	      // the sequence is terminated...
-	        for (unsigned int i=0;i<Tn_subbands;i++)
-	        {
-			output_data[i][outindex] = tmpout[i];
-	        	tmpout[i]=0;
-	        }
-	++outindex;
+    //uint8_t* dorder = order;
+    //char** cfasttmp = &(fasttmp[0]);
+    //int shift = 8-offset;
+    //shift = 8;
+    for (unsigned int i=0;i<Tseqsize;++i) {
+      char* dst;
+      unsigned char* channelidxval2;
 
-	while(currbuffer < endbuffer)
-    	{
-		for(unsigned int i=0;i<Tseqsize;++i){
-			char* dst;
-			unsigned char* channelidxval2;
-		
-			channelidxval2 = &(newtab[(*currbuffer)][i][0]);
-			dst = fasttmp[i*Tsamples_per_byte];			
+      channelidxval2 = &(newtab[(*currbuffer)][i][0]);
+      dst = fasttmp[i*Tsamples_per_byte];
 
-			for(unsigned int j=0;j<Tsamples_per_byte;j++){		
-				//tmpout[ dorder[j] ] |= (*(channelidxval2+j));
-				*(dst+j) |= (*(channelidxval2+j));
-			}
-			//dorder+=Tsamples_per_byte;
-			//cfasttmp+=Tsamples_per_byte;
-			++currbuffer;
-		}
-		//cfasttmp = fasttmp;
-		//dorder = order;
+      for (unsigned int j=0;j<Tsamples_per_byte;j++) {
+        //tmpout[ dorder[j] ] |= (*(channelidxval2+j));
+        *(dst+j) |= (*(channelidxval2+j));
+      }
+      //dorder+=Tsamples_per_byte;
+      //cfasttmp+=Tsamples_per_byte;
+      ++currbuffer;
+    }
+    //cfasttmp = fasttmp;
+    //dorder = order;
 
-	        // the sequence is terminated...
-	        for (unsigned int i=0;i<Tn_subbands;i++)
-	        {
-			output_data[i][outindex-1] = (output_data[i][outindex-1] << Toffset) | (((unsigned char)tmpout[i])>> Tshift); 
-			output_data[i][outindex] = tmpout[i];
-	        	tmpout[i]=0;
-	        }		
-		++outindex;
-	    }
-	    
-	    //for (unsigned int i=0;i<Tn_subbands;i++)
-	    //{
-		//output_data[i][outindex-1] = (output_data[i][outindex-1] << Toffset) | (((unsigned char)tmpout[i])>>Tshift); 
-	    //}			
-	}
+    // the sequence is terminated...
+    for (unsigned int i=0;i<Tn_subbands;i++) {
+      output_data[i][outindex] = tmpout[i];
+      tmpout[i]=0;
+    }
+    ++outindex;
+
+    while (currbuffer < endbuffer) {
+      for (unsigned int i=0;i<Tseqsize;++i) {
+        char* dst;
+        unsigned char* channelidxval2;
+
+        channelidxval2 = &(newtab[(*currbuffer)][i][0]);
+        dst = fasttmp[i*Tsamples_per_byte];
+
+        for (unsigned int j=0;j<Tsamples_per_byte;j++) {
+          //tmpout[ dorder[j] ] |= (*(channelidxval2+j));
+          *(dst+j) |= (*(channelidxval2+j));
+        }
+        //dorder+=Tsamples_per_byte;
+        //cfasttmp+=Tsamples_per_byte;
+        ++currbuffer;
+      }
+      //cfasttmp = fasttmp;
+      //dorder = order;
+
+      // the sequence is terminated...
+      for (unsigned int i=0;i<Tn_subbands;i++) {
+        output_data[i][outindex-1] = (output_data[i][outindex-1] << Toffset) | (((unsigned char)tmpout[i])>> Tshift);
+        output_data[i][outindex] = tmpout[i];
+        tmpout[i]=0;
+      }
+      ++outindex;
+    }
+
+    //for (unsigned int i=0;i<Tn_subbands;i++)
+    //{
+    //output_data[i][outindex-1] = (output_data[i][outindex-1] << Toffset) | (((unsigned char)tmpout[i])>>Tshift);
+    //}
+  }
 
 
-	void do_task_no_offset(int n_input_samples,
-               			const Type in_data[],
-               			std::vector<char *> output_data){
-	
-	unsigned int outindex=0;
-    	unsigned char* currbuffer = (unsigned char*)in_data;
-    	unsigned char* endbuffer = currbuffer+(n_input_samples)*N;
-	
-	while(currbuffer < endbuffer)
-    	{
-		for(unsigned int i=0;i<Tseqsize;++i){
-			char* dst;
-			unsigned char* channelidxval2;
-		
-			channelidxval2 = &(newtab[(*currbuffer)][i][0]);
-			dst = fasttmp[i*Tsamples_per_byte];			
+  void do_task_no_offset(int n_input_samples,
+                         const Type in_data[],
+                         std::vector<char *> output_data) {
 
-			for(unsigned int j=0;j<Tsamples_per_byte;j++){		
-				*(dst+j) |= (*(channelidxval2+j));
-			}
-			++currbuffer;
-		}
-	        for (unsigned int i=0;i<Tn_subbands;i++)
-	        {
-			output_data[i][outindex] = tmpout[i];
-	        	tmpout[i]=0;
-	        }		
-		++outindex;
-	    }	
-	}
+    unsigned int outindex=0;
+    unsigned char* currbuffer = (unsigned char*)in_data;
+    unsigned char* endbuffer = currbuffer+(n_input_samples)*N;
+
+    while (currbuffer < endbuffer) {
+      for (unsigned int i=0;i<Tseqsize;++i) {
+        char* dst;
+        unsigned char* channelidxval2;
+
+        channelidxval2 = &(newtab[(*currbuffer)][i][0]);
+        dst = fasttmp[i*Tsamples_per_byte];
+
+        for (unsigned int j=0;j<Tsamples_per_byte;j++) {
+          *(dst+j) |= (*(channelidxval2+j));
+        }
+        ++currbuffer;
+      }
+      for (unsigned int i=0;i<Tn_subbands;i++) {
+        output_data[i][outindex] = tmpout[i];
+        tmpout[i]=0;
+      }
+      ++outindex;
+    }
+  }
 private:
   std::vector<Action> ***table;
   uint8_t ***ftable;
@@ -843,7 +837,7 @@ private:
   uint8_t *bigarray;
   unsigned int bg_size1;
   unsigned int bg_size2;
-		
+
   unsigned int iptable[256];
   unsigned int iptable2[256];
 
@@ -855,8 +849,8 @@ private:
   uint8_t  order[Tseqsize*Tsamples_per_byte];
   char* fasttmp[Tseqsize*Tsamples_per_byte];
 
-  uint8_t  newtab[256][Tseqsize][Tsamples_per_byte];	
-  
+  uint8_t  newtab[256][Tseqsize][Tsamples_per_byte];
+
   char tmpout[Tn_subbands+1];
 };
 
@@ -915,26 +909,25 @@ void print(std::vector<char *> &output_buffers,
 
 //#include "extractor7.hh"
 #include "extractor8.inl.cc"
-class ExtractorFactory
-{	
-	public:
-		static Extractor* get_new_extractor(const std::vector< std::vector<int> > &track_positions){
-			switch( track_positions.size() ){
-				case 4:
-					// 1) n_subbands
-					// 2) fan_out = (8*N)/n_subbands;
-					// 3) samples_per_byte = 8/fan_out;
-					// 4) seqsize = samples_per_byte*N;
-					return new Extractor7<4, 8*TN/4, 1/(TN/4), TN/(TN/4) >(track_positions);
-				case 8:
-//					return get_extractor8(  track_positions );
-					return new Extractor7<8, (8*TN)/8, 8/((8*TN)/8), (8/((8*TN)/8))*N >(track_positions);	
-				default:	
-					assert( 0 && "This extractor is not supported" );
-					std::cout<< "NO CHANNELIZER SUPPORTED" << std::endl;					
-					exit(0);		
-			}	
-		} 	
+class ExtractorFactory {
+public:
+  static Extractor* get_new_extractor(const std::vector< std::vector<int> > &track_positions) {
+    switch ( track_positions.size() ) {
+    case 4:
+      // 1) n_subbands
+      // 2) fan_out = (8*N)/n_subbands;
+      // 3) samples_per_byte = 8/fan_out;
+      // 4) seqsize = samples_per_byte*N;
+      return new Extractor7<4, 8*TN/4, 1/(TN/4), TN/(TN/4) >(track_positions);
+    case 8:
+//     return get_extractor8(  track_positions );
+      return new Extractor7<8, (8*TN)/8, 8/((8*TN)/8), (8/((8*TN)/8))*N >(track_positions);
+    default:
+      assert( 0 && "This extractor is not supported" );
+      std::cout<< "NO CHANNELIZER SUPPORTED" << std::endl;
+      exit(0);
+    }
+  }
 
 
 };
@@ -969,7 +962,7 @@ void test(const int n_subbands,
     // reset output buffers
     randomize_buffers(output_buffers2, in_size*fan_out/8);
 
-if (show_timings)    std::cout << "Extractor1: starting bench"  << std::endl;
+    if (show_timings)    std::cout << "Extractor1: starting bench"  << std::endl;
 
     Timer timer;
     timer.resume();
@@ -992,8 +985,8 @@ if (show_timings)    std::cout << "Extractor1: starting bench"  << std::endl;
     Extractor2 extractor2(tracks_in_subbands);
     // reset output buffers
     randomize_buffers(output_buffers2, in_size*fan_out/8);
- 
-if (show_timings)    std::cout << "Extractor2: starting bench"  << std::endl;
+
+    if (show_timings)    std::cout << "Extractor2: starting bench"  << std::endl;
 
     Timer timer;
     timer.resume();
@@ -1018,7 +1011,7 @@ if (show_timings)    std::cout << "Extractor2: starting bench"  << std::endl;
     Extractor3 extractor3(tracks_in_subbands);
     // reset output buffers
     randomize_buffers(output_buffers2, in_size*fan_out/8);
-if (show_timings)   std::cout << "Extractor3: starting bench"  << std::endl;
+    if (show_timings)   std::cout << "Extractor3: starting bench"  << std::endl;
 
     Timer timer;
     timer.resume();
@@ -1083,8 +1076,8 @@ if (show_timings)   std::cout << "Extractor3: starting bench"  << std::endl;
     // reset output buffers
     randomize_buffers(output_buffers2, in_size*fan_out/8);
 
-    if (show_timings)	
-    	std::cout << "Extractor5: starting bench: "  << in_size << std::endl;
+    if (show_timings)
+      std::cout << "Extractor5: starting bench: "  << in_size << std::endl;
 
 
     Timer timer;
@@ -1112,13 +1105,13 @@ if (show_timings)   std::cout << "Extractor3: starting bench"  << std::endl;
     }
   }
 
-if (true) {
+  if (true) {
     Extractor* extractor7 = ExtractorFactory::get_new_extractor(tracks_in_subbands);
     // reset output buffers
     randomize_buffers(output_buffers2, in_size*fan_out/8);
 
-    if (show_timings)	
-    	std::cout << "Extractor7: starting bench: "  << in_size << std::endl;
+    if (show_timings)
+      std::cout << "Extractor7: starting bench: "  << in_size << std::endl;
 
     Timer timer;
     timer.resume();
@@ -1130,21 +1123,21 @@ if (true) {
       std::cout << "Extractor7: " << timer.measured_time() << std::endl;
 
     // Check data
-	
-   if (!check_buffers(output_buffers, output_buffers2, in_size*fan_out/8)) {
+
+    if (!check_buffers(output_buffers, output_buffers2, in_size*fan_out/8)) {
       std::cout << "Extractor7: Output data does not match" << std::endl;
       for (int i=0; i<32; i++)
         print_hex(std::cout, in_data[i]) << std::endl;
-      	std::cout << " ---" << std::endl;
-      	print(output_buffers, in_size*fan_out/8);
-      	std::cout << " ---" << std::endl;
-      	print(output_buffers2, in_size*fan_out/8);
-      	std::cout << " ---" << std::endl;
+      std::cout << " ---" << std::endl;
+      print(output_buffers, in_size*fan_out/8);
+      std::cout << " ---" << std::endl;
+      print(output_buffers2, in_size*fan_out/8);
+      std::cout << " ---" << std::endl;
       assert(false);
     }
   }
 
-  
+
 
   for (int i=0; i<n_subbands; i++) {
     delete[] output_buffers[i];
