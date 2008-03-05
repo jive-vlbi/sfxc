@@ -17,6 +17,7 @@
 // needed for fftw_malloc that return
 // optimized alignment.
 #include <fftw3.h>
+#include <boost/type_traits.hpp>
 
 #include "utils.h"
 
@@ -84,9 +85,11 @@ private:
   // initialization...using the copy constructor...
   void construct_data_()
   {
-    T tmp;
-    for(unsigned int i=0;i<N;i++){
-      _buffer[i] = tmp;
+    if( ! boost::is_pod<T>::value ){
+      T tmp;
+      for(unsigned int i=0;i<N;i++){
+        _buffer[i] = tmp;
+      }
     }
   }
   
@@ -148,9 +151,11 @@ public:
 private:
   void construct_data_()
   {
-    T tmp;
-    for(unsigned int i=0;i<size_;i++){
-      buffer_[i] = tmp;
+    if( !boost::is_pod<T>::value ){
+      T tmp;
+      for(unsigned int i=0;i<size_;i++){
+        buffer_[i] = tmp;
+      }
     }
   }
 

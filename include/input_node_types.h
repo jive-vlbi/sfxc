@@ -47,7 +47,7 @@ public:
     bool only_release_data1;
 
     // Number of data samples in the buffer(s)
-    int                     number_data_samples;
+    int number_data_samples;
 
     // Offset in samples of type Type
     int                     sample_offset;

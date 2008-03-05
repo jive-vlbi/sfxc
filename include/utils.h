@@ -70,6 +70,7 @@ const int   BufTime       =   16384; //delta time for Bufs in micro seconds
 #define YELLOW(str) "[\033[33m"+str+"\033[30m]"
 #define CYAN(str) "[\033[36m"+str+"\033[30m]"
 
+
 #ifdef SFXC_PRINT_DEBUG
 extern int RANK_OF_NODE; // Rank of the current node
 /*

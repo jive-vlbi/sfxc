@@ -1,11 +1,14 @@
-#ifndef CHANNEL_EXTRACTOR_INTERFACE_H
-  #define CHANNEL_EXTRACTOR_INTERFACE_H
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands) * Copyright (c) 2007 University of Amsterdam (Netherlands) * All rights reserved. * * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007 *            Damien Marchal <dmarchal@science.uva.nl>, 2007 * * * This file is part of: *   - sfxc/SCARIe * This file contains: *   - The declaration of a class that have to *     implement in order to provide channel_extraction *     into scarie. */#ifndef CHANNEL_EXTRACTOR_INTERFACE_H
+#define CHANNEL_EXTRACTOR_INTERFACE_H
 
 #include <vector>
+#include <string>
 
 class Channel_extractor_interface {
+protected:
+  std::string name_;
 public:
-  Channel_extractor_interface() {}
+  Channel_extractor_interface() { name_="Base_extractor_interface"; }
   virtual ~Channel_extractor_interface() {}
 
   // Size of one input word to process in the extract function
@@ -31,6 +34,7 @@ public:
                        unsigned char **output_data,
                        int offset) = 0;
 
+  std::string& name(){ return name_; }
 };
 
 #endif // CHANNEL_EXTRACTOR_INTERFACE_H

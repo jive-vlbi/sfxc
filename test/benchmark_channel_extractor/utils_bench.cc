@@ -46,6 +46,7 @@ void randomize_buffers(std::vector<unsigned char *> &output_buffers,
   for (size_t i=0; i<output_buffers.size(); i++) {
     for (int j=0; j<buffer_size; j++) {
       output_buffers[i][j] = random();
+      output_buffers[i][j] = 0xff;
     }
   }
 }
