@@ -58,6 +58,8 @@ int main(int argc, char *argv[]) {
     std::cout << "Application compiled with: -DPRINT_PROGRESS" << std::endl;
   #endif // PRINT_PROGRESS
 
+  park_miller_set_seed(rank+1);
+
   if( argc != 3 ){
     if( rank == 0 ){
       std::cerr << "ERROR: not enough parameter." << std::endl;
