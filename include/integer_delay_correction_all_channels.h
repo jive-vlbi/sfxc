@@ -102,7 +102,6 @@ private:
 
   /// Memory pool for a random data block as long as we don't have weights
   Input_memory_pool         memory_pool_;
-  Input_memory_pool_element random_element_;
 
   int node_nr_;
 };
@@ -125,7 +124,6 @@ Integer_delay_correction_all_channels()
 {
   position = 0;
   assert(!memory_pool_.empty());
-  random_element_ = memory_pool_.allocate();
 }
 
 template <class Type>
@@ -152,6 +150,10 @@ Integer_delay_correction_all_channels<Type>::do_task() {
     output_element.subsample_offset    = current_delay.second*bits_per_subsample;
 
     if (position < 0) {
+      Input_memory_pool_element random_element_ = memory_pool_.allocate();
+      if (random_element_.data().size() != nr_output_samples+1) {
+        random_element_.data().resize(nr_output_samples+1);
+      }
       output_element.data1               = random_element_;
 
 #if 1
@@ -162,7 +164,8 @@ Integer_delay_correction_all_channels<Type>::do_task() {
             random_element_.data()[i] = (Type)park_miller_random();
           } else if (sizeof(Type) == 4) {
             random_element_.data()[i] =
-              (Type(park_miller_random())<<16) + park_miller_random();
+              ((Type(park_miller_random())<<16)&(~0xFFFF)) + 
+              (park_miller_random()&0xFFFF);
           } else {
             assert(sizeof(Type) == 8);
             int64_t rnd = park_miller_random();
@@ -174,7 +177,8 @@ Integer_delay_correction_all_channels<Type>::do_task() {
         }
       }
 #endif
-
+      release_data = true;
+      
       // Before actual data (delay at the beginning of the stream)
       if (position < -nr_output_samples) {
         // Complete Type of random data, just copy the current Type
@@ -298,6 +302,12 @@ Integer_delay_correction_all_channels<Type>::has_work() {
 
   if (input_buffer_->empty())
     return false;
+  if (position < 0) {
+    // We need a block of random data
+    if (memory_pool_.empty()) 
+      return false;
+  }
+
   if (size_t(position + nr_output_samples +1) >= input_buffer_->front().data().size()) {
     if (input_buffer_->size() < 2) {
       return false;
@@ -378,10 +388,7 @@ set_parameters(const Input_node_parameters &parameters,
      bits_per_subsample,
      parameters.number_channels);
 
-  random_element_.data().resize(nr_output_samples+1);
-  for (int i=0; i<nr_output_samples; i++) {
-    random_element_.data()[i] = ~Type(0);
-  }
+
 }
 
 template <class Type>
