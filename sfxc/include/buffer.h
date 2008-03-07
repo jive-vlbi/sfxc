@@ -129,10 +129,17 @@ public:
       } else {
         T* oldbuffer = buffer_;
         buffer_ = static_cast<T*>( fftw_malloc( sizeof(T)*size ) );
+        size_t min_size = std::min(size_,size);
         size_ = size;
         construct_data_();
         
-        memcpy(buffer_, oldbuffer, size_);
+        if( boost::is_pod<T>::value ) {
+          memcpy(buffer_, oldbuffer, sizeof(T)*min_size);
+        } else {
+          for (int i=0; i<min_size; i++) {
+            buffer_[i] = oldbuffer[i];
+          }
+        }
         fftw_free(oldbuffer);
       }
     }
@@ -162,7 +169,7 @@ private:
   // We cannot use a std::vector because we cannot control that
   // the data are properly aligned to be used with fftw_xx or SSE
   T* buffer_;
-  int size_;
+  size_t size_;
 };
 
 template<class T>
