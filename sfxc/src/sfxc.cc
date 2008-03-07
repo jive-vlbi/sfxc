@@ -3,7 +3,7 @@
  * 
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  * 
- * $Id$
+ * $Id: sfxc.cc 602 2008-03-06 17:12:22Z kruithof $
  *
  *  Tests reading a file from disk and then writing it back using a Data_node
  */
@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
+  DEBUG_MSG_RANK(0, "$Rev$");
  // Print here compilation option enabled while SFXC is in development
   #ifdef PRINT_PROGRESS
   if(rank == 0)
