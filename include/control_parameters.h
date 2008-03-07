@@ -230,6 +230,8 @@ public:
     assert(duration_time_slice % integration_time() == 0);
     return duration_time_slice/integration_time();
   }
+  
+  int polarisation_type_for_global_output_header() const;
 
   /****************************************************/
   /* Extract structs for the correlation:             */

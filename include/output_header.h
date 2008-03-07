@@ -64,8 +64,15 @@ struct Output_header_global {
                             // midnight
   int32_t number_channels;  // Number of frequency channels
   int8_t  integration_time; // Integration time: 2^integration_time seconds
+  
+  static const int LEFT_POLARISATION=0;
+  static const int RIGHT_POLARISATION=1;
+  static const int LEFT_RIGHT_POLARISATION=2;
+  static const int LEFT_RIGHT_POLARISATION_WITH_CROSSES=3;
+  
+  int8_t polarisation_type; // L | R | L+R | L+R with crosses
   // 3 bytes left:
-  int8_t empty[3];
+  int8_t empty[2];
 };
 
 struct Output_header_timeslice {
