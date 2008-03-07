@@ -159,13 +159,19 @@ bool Correlation_core::has_work() {
 }
 
 void Correlation_core::integration_initialise() {
-  size_t size = (size_of_fft()/2+1) * baselines.size();
-  if (accumulation_buffers.size() != size) {
-    accumulation_buffers.resize(size);
+  if (accumulation_buffers.size() != baselines.size()) {
+    size_t size = (size_of_fft()/2+1);
+    for (int i=0; i<accumulation_buffers.size(); i++) {
+      accumulation_buffers[i].resize(size);
+    }
   }
 
+  assert(accumulation_buffers.size() == baselines.size());
   for (size_t i=0; i<accumulation_buffers.size(); i++) {
-    accumulation_buffers[i] = 0;
+    assert(accumulation_buffers[i].size() == size_of_fft()/2+1);
+    for (size_t j=0; j<accumulation_buffers[i].size(); j++) {
+      accumulation_buffers[i][j] = 0;
+    }
   }
 
   current_fft = 0;
@@ -208,7 +214,7 @@ void Correlation_core::integration_step() {
     auto_correlate_baseline(/* in1 */
       frequency_buffer[stations.first].buffer(),
       /* out */
-      &accumulation_buffers[i*(size_of_fft()/2+1)]);
+      &accumulation_buffers[i][0]);
   }
 
   for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
@@ -218,7 +224,7 @@ void Correlation_core::integration_step() {
     correlate_baseline
     (/* in1 */ frequency_buffer[stations.first].buffer(),
                /* in2 */ frequency_buffer[stations.second].buffer(),
-               /* out */ &accumulation_buffers[i*(size_of_fft()/2+1)]);
+               /* out */ &accumulation_buffers[i][0]);
   }
 
   for (size_t i=0; i<number_input_streams_in_use(); i++) {
@@ -234,13 +240,12 @@ void Correlation_core::integration_average() {
   // Average the auto correlations
   for (size_t station=0; station < n_stations(); station++) {
     for (size_t i = 0; i < size_of_fft()/2+1; i++) {
-      norms[station] += accumulation_buffers[station*(size_of_fft()/2+1)+i].real();
+      norms[station] += accumulation_buffers[station][i].real();
     }
     for (size_t i = 0; i < size_of_fft()/2+1; i++) {
       // imaginary part should be zero!
-      int index = station*(size_of_fft()/2+1)+i;
-      accumulation_buffers[index] =
-        accumulation_buffers[index].real() / norms[station];
+      accumulation_buffers[station][i] =
+        accumulation_buffers[station][i].real() / norms[station];
     }
   }
 
@@ -249,15 +254,14 @@ void Correlation_core::integration_average() {
     std::pair<int,int> &stations = baselines[station];
     FLOAT norm = sqrt(norms[stations.first]*norms[stations.second]);
     for (size_t i = 0 ; i < size_of_fft()/2+1; i++) {
-      accumulation_buffers[station*(size_of_fft()/2+1)+i] /= norm;
+      accumulation_buffers[station][i] /= norm;
     }
   }
 }
 
 void Correlation_core::integration_write() {
   assert(writer != boost::shared_ptr<Data_writer>());
-  assert(accumulation_buffers.size() ==
-         baselines.size()*(size_of_fft()/2+1));
+  assert(accumulation_buffers.size() == baselines.size());
 
   int polarisation = 1;
   if (correlation_parameters.polarisation == 'R') {
@@ -304,7 +308,7 @@ void Correlation_core::integration_write() {
     std::pair<int,int> &stations = baselines[i];
 
     for (int ii=0; ii<size_of_fft()/2+1; ii++ ) {
-      accumulation_buffers_float[ii] = accumulation_buffers[i*(size_of_fft()/2+1)+ii];
+      accumulation_buffers_float[ii] = accumulation_buffers[i][ii];
     }
 
     hbaseline.weight = 0;       // The number of good samples
