@@ -8,6 +8,7 @@
 #include <algorithm>
 
 #include "control_parameters.h"
+#include "output_header.h"
 #include "utils.h"
 
 Control_parameters::Control_parameters()
@@ -496,10 +497,22 @@ get_input_node_parameters(const std::string &mode_name,
 
 bool
 Control_parameters::cross_polarize() const {
-  return ctrl["cross_polarize"].asBool();
+  if (!ctrl["cross_polarize"].asBool())
+    return false;
+  for (Vex::Node::const_iterator mode_it =
+         vex.get_root_node()["MODE"]->begin();
+       mode_it != vex.get_root_node()["MODE"]->end();
+       ++mode_it) {
+    for (size_t ch_nr=0; ch_nr<number_frequency_channels(); ch_nr++) {
+      if (cross_channel(ch_nr, mode_it.key()) != -1)
+        return true;
+    }
+  }
+  return false;
 }
 
-std::string Control_parameters::
+std::string
+Control_parameters::
 get_mode(int32_t &start_time) const {
   for (Vex::Node::const_iterator sched_block =
          vex.get_root_node()["SCHED"]->begin();
@@ -540,6 +553,7 @@ cross_channel(const std::string &channel_name,
   }
   return -1;
 }
+
 
 char
 Control_parameters::
@@ -608,6 +622,40 @@ polarisation(const std::string &channel_name,
   return vex.polarisation(if_node_Node, if_ref_Ref);
 }
 
+int
+Control_parameters::
+polarisation_type_for_global_output_header() const {
+  if (cross_polarize())
+    return Output_header_global::LEFT_RIGHT_POLARISATION_WITH_CROSSES;
+
+  bool left = false, right = false;
+  for (Vex::Node::const_iterator mode_it =
+         vex.get_root_node()["MODE"]->begin();
+       mode_it != vex.get_root_node()["MODE"]->end();
+       ++mode_it) {
+    std::string mode = mode_it.key();
+    // Assume station 0 is in all scans
+    std::string station_name = station(0);
+    for (size_t ch_nr=0; ch_nr<number_frequency_channels(); ch_nr++) {
+      std::string channel_name = frequency_channel(ch_nr);
+      char pol = polarisation(channel_name, station_name, mode);
+      DEBUG_MSG(pol);
+      if ((pol == 'L') || (pol == 'l')) {
+        left = true;
+      } else {
+        assert((pol == 'R') || (pol == 'r'));
+        right = true;
+      }
+    }
+  }
+  if (left && right)
+    return Output_header_global::LEFT_RIGHT_POLARISATION;
+  if (left)
+    return Output_header_global::LEFT_POLARISATION;
+
+  assert(right);
+  return Output_header_global::RIGHT_POLARISATION;
+}
 std::string
 Control_parameters::
 frequency(const std::string &channel_name,
@@ -827,7 +875,8 @@ get_correlation_parameters(const std::string &scan_name,
   }
 
   // now get the station streams
-  std::map<std::string, int> station_names; { // sorted alphabetically
+  std::map<std::string, int> station_names;
+  { // sorted alphabetically
     for (Vex::Node::const_iterator station_it =
            vex.get_root_node()["STATION"]->begin();
          station_it != vex.get_root_node()["STATION"]->end(); ++station_it) {

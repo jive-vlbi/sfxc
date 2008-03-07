@@ -22,12 +22,12 @@ Manager_node::
 Manager_node(int rank, int numtasks,
              Log_writer *log_writer,
              const Control_parameters &control_parameters)
-  : Abstract_manager_node(rank, numtasks,
-                          log_writer,
-                          control_parameters),
+    : Abstract_manager_node(rank, numtasks,
+                            log_writer,
+                            control_parameters),
     manager_controller(*this),
     duration_time_slice(1000),
-    current_scan(0) {
+current_scan(0) {
   assert(rank == RANK_MANAGER_NODE);
 
   add_controller(&manager_controller);
@@ -43,11 +43,10 @@ Manager_node(int rank, int numtasks,
   set_data_writer(RANK_OUTPUT_NODE, 0,
                   control_parameters.get_output_file());
 
-  {
-    // Send the global header
+  { // Send the global header
     Output_header_global output_header;
     output_header.header_size = sizeof(Output_header_global);
-  
+
 
     strcpy(output_header.experiment,control_parameters.experiment().c_str());      // Name of the experiment
     Control_parameters::Date start = control_parameters.get_start_time();
@@ -70,11 +69,12 @@ Manager_node(int rank, int numtasks,
       int_time_count--;
     }
     output_header.integration_time = (int8_t)(int_time_count);
+    output_header.polarisation_type =
+      control_parameters.polarisation_type_for_global_output_header();
     output_header.empty[0] = 0;
     output_header.empty[1] = 0;
-    output_header.empty[2] = 0;
 
-    output_node_set_global_header((char *)&output_header, 
+    output_node_set_global_header((char *)&output_header,
                                   sizeof(Output_header_global));
   }
 
@@ -239,7 +239,7 @@ void Manager_node::start() {
         int n = control_parameters.integrations_per_timeslice(duration_time_slice);
         output_slice_nr += (n-1) * control_parameters.number_correlation_cores_per_timeslice(get_current_mode());
         integration_slice_nr += n;
-        
+
         if (start_time+duration_time_slice > stop_time) {
           status = STOP_CORRELATING;
         } else if (start_time >= stop_time_scan) {
@@ -283,30 +283,30 @@ void Manager_node::start() {
 void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   int cross_channel = -1;
   if (control_parameters.cross_polarize()) {
-    cross_channel = control_parameters.cross_channel(current_channel, 
-                                                     get_current_mode());
+    cross_channel = control_parameters.cross_channel(current_channel,
+                    get_current_mode());
     assert((cross_channel == -1) || (cross_channel > (int)current_channel));
   }
 
   // Initialise the correlator node
   if (cross_channel == -1) {
     get_log_writer()(1)
-      << "start "
-      << Vex::Date(start_year, start_day, start_time/1000).to_string()
-      << ", channel " << current_channel << " to correlation node "
-      << corr_node_nr << std::endl;
+    << "start "
+    << Vex::Date(start_year, start_day, start_time/1000).to_string()
+    << ", channel " << current_channel << " to correlation node "
+    << corr_node_nr << std::endl;
     PROGRESS_MSG("start "
                  << Vex::Date(start_year, start_day, start_time/1000).to_string()
                  << ", channel " << current_channel << " to correlation node "
                  << corr_node_nr);
   } else {
     get_log_writer()(1)
-      << "start "
-      << Vex::Date(start_year, start_day, start_time/1000).to_string()
-      << ", channel "
-      << current_channel << ","
-      << cross_channel << " to correlation node "
-      << corr_node_nr << std::endl;
+    << "start "
+    << Vex::Date(start_year, start_day, start_time/1000).to_string()
+    << ", channel "
+    << current_channel << ","
+    << cross_channel << " to correlation node "
+    << corr_node_nr << std::endl;
     PROGRESS_MSG("start "
                  << Vex::Date(start_year, start_day, start_time/1000).to_string()
                  << ", channel "
@@ -318,17 +318,17 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   std::string channel_name =
     control_parameters.frequency_channel(current_channel);
   std::vector<std::string> station_name;
-  Correlation_parameters correlation_parameters; 
+  Correlation_parameters correlation_parameters;
   int nr_stations = control_parameters.number_stations();
-  for (int i=0; i<nr_stations; i++){
+  for (int i=0; i<nr_stations; i++) {
     station_name.push_back(get_control_parameters().station(i));
   }
-  correlation_parameters = 
+  correlation_parameters =
     control_parameters.
     get_correlation_parameters(control_parameters.scan(current_scan),
-        channel_name,
-        station_name,
-        get_input_node_map());
+                               channel_name,
+                               station_name,
+                               get_input_node_map());
   correlation_parameters.start_time = start_time;
   correlation_parameters.stop_time  = stoptime_timeslice;
   correlation_parameters.integration_nr = integration_slice_nr;
@@ -380,15 +380,15 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   if (control_parameters.cross_polarize()) {
     // Go to the next channel.
     cross_channel =
-      control_parameters.cross_channel(current_channel, 
+      control_parameters.cross_channel(current_channel,
                                        get_current_mode());
     while ((current_channel <
             control_parameters.number_frequency_channels()) &&
            (cross_channel >= 0) && (cross_channel < current_channel)) {
       current_channel ++;
       cross_channel =
-        control_parameters.cross_channel(current_channel, 
-      	      	              control_parameters.get_mode(start_time));
+        control_parameters.cross_channel(current_channel,
+                                         control_parameters.get_mode(start_time));
     }
   }
   output_slice_nr++;
@@ -455,7 +455,8 @@ void Manager_node::initialise_scan(const std::string &scan) {
   }
   stop_time_scan =
     control_parameters.get_vex().stop_of_scan(scan).to_miliseconds(start_day);
-  if (stop_time < stop_time_scan) stop_time_scan = stop_time;
+  if (stop_time < stop_time_scan)
+    stop_time_scan = stop_time;
 
 
   // Send the track parameters to the input nodes
