@@ -195,7 +195,7 @@ void Correlation_core::integration_step() {
     assert(frequency_buffer[i].size() == size_of_fft()/2+1);
     
     // zero out the data for padding
-    for (int j=size_of_fft()/2+1; j<size_of_fft(); j++) {
+    for (int j=size_of_fft()/2; j<size_of_fft(); j++) {
       (*input_elements[i])[j] = 0;
     }
 
