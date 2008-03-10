@@ -22,12 +22,13 @@ Manager_node::
 Manager_node(int rank, int numtasks,
              Log_writer *log_writer,
              const Control_parameters &control_parameters)
-    : Abstract_manager_node(rank, numtasks,
-                            log_writer,
-                            control_parameters),
+  : Abstract_manager_node(rank, numtasks,
+                          log_writer,
+                          control_parameters),
     manager_controller(*this),
     duration_time_slice(1000),
-current_scan(0) {
+    current_scan(0), 
+    integration_slice_nr(0) {
   assert(rank == RANK_MANAGER_NODE);
 
   add_controller(&manager_controller);

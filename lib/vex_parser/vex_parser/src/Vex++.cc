@@ -3,6 +3,7 @@
 
 #include "vex/Vex++.h"
 #include "generic.h"
+#include <set>
 
 /**
  *  Vex : Wrapper around the vex data tree
@@ -189,4 +190,20 @@ Vex::Node parse_vex(char *filename) {
   }
 
   return parse_result;
+}
+
+void Vex::get_frequencies(std::vector<double> &frequencies) const {
+  std::set<double> freqs_;
+  for (Vex::Node::const_iterator freq_it = get_root_node()["FREQ"]->begin();
+       freq_it != get_root_node()["FREQ"]->end(); ++freq_it) {
+    for (Vex::Node::const_iterator chan_it = 
+           freq_it->begin("chan_def");
+         chan_it != freq_it->end("chan_def"); ++chan_it) {
+      freqs_.insert((*chan_it)[1]->to_double_amount("MHz")*1000000);
+    }
+  }
+  for (std::set<double>::iterator freq_it = freqs_.begin();
+       freq_it != freqs_.end(); freq_it++) {
+    frequencies.push_back(*freq_it);
+  }
 }
