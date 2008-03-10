@@ -100,7 +100,7 @@ public:
       if (std::abs(data[i]) > std::abs(data[index_max])) index_max = i;
     }
     
-    return (index_max+data.size()/2)%data.size() - data.size()/2;
+    return index_max;
   }
 
 };
@@ -115,6 +115,8 @@ public:
          it != root_node["STATION"]->end(); it++) {
       stations.push_back(it.key());
     }
+    
+    vex.get_frequencies(frequencies);
   }
 
   void read_plots(std::istream &in);
@@ -146,6 +148,9 @@ private:
 
   // Array with the station names
   std::vector<std::string> stations;
+
+  // Array with frequencies for a channel nr
+  std::vector<double>      frequencies;
 };
 
 void
@@ -218,7 +223,8 @@ All_plots_data::print_html() {
   index_html.precision(4);
 
   index_html << "<html><head>"  << std::endl
-             << "  <title>SFXC output</title>" << std::endl
+             << "  <title>SFXC output - "<< global_header.experiment 
+             << "</title>" << std::endl
              << "  <style> BODY,TH,TD{font-size: 10pt }</style>" << std::endl
              << "</head>"
              <<"<body>" 
@@ -311,8 +317,33 @@ All_plots_data::print_html() {
                 index_html << "<tr>" << std::endl;
                 // First cell
                 index_html << "<th>";
-                if (plots[pol1][pol2][ch][0][0].initialised) {
-                  index_html << (int)plots[pol1][pol2][ch][0][0].header.frequency_nr;
+                if (!plots[pol1][pol2][ch][0].empty()) {
+                  if (plots[pol1][pol2][ch][0][0].initialised) {
+                    assert(pol1 == pol2);
+                    const Output_header_baseline &header = 
+                      plots[pol1][pol2][ch][0][0].header;
+
+                    assert(header.frequency_nr < frequencies.size());
+                    index_html.precision(10);
+                    index_html << frequencies[header.frequency_nr]/1000000
+                               << "MHz";
+                    index_html.precision(4);
+                    if (header.sideband == 0) {
+                      index_html << ", LSB";
+                    } else {
+                      index_html << ", USB";
+                    }
+                    if (header.polarisation1 == 0) {
+                      index_html << ", Rcp";
+                    } else {
+                      index_html << ", Lcp";
+                    }
+                    if (header.polarisation2 == 0) {
+                      index_html << "-Rcp";
+                    } else {
+                      index_html << "-Lcp";
+                    }
+                  }
                 }
                 index_html << "</th>" << std::endl;
                 
@@ -347,6 +378,10 @@ All_plots_data::set_plot(const Plot_data &plot_data) {
   int station2 = plot_data.header.station_nr2;
   int pol1     = plot_data.header.polarisation1;
   int pol2     = plot_data.header.polarisation2;
+
+  if (station1 == station2) {
+    assert(pol1==pol2);
+  }
   
   Container &plot = plots[pol1][pol2];
   if (plot.size() <= freq) 
@@ -436,7 +471,8 @@ print_cross(std::ostream &index_html,
                    << "OnMouseOver=\"show('" << filename << "');\">" 
                    << snr << "<br>"
                    << "<font size=-2>offset: " 
-                   << plot_data.max_value_offset() << "</font>"
+                   << (plot_data.max_value_offset() - 
+                       global_header.number_channels/2) << "</font>"
                    << "</a>";
         index_html << "</td>";
       }
