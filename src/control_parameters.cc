@@ -639,7 +639,6 @@ polarisation_type_for_global_output_header() const {
     for (size_t ch_nr=0; ch_nr<number_frequency_channels(); ch_nr++) {
       std::string channel_name = frequency_channel(ch_nr);
       char pol = polarisation(channel_name, station_name, mode);
-      DEBUG_MSG(pol);
       if ((pol == 'L') || (pol == 'l')) {
         left = true;
       } else {
