@@ -82,11 +82,15 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   int ref_station = parameters.reference_station;
   if (parameters.cross_polarize) {
     assert(n_stations() % 2 == 0);
+    int n_st_2 = n_stations()/2;
     if (ref_station >= 0) {
       // cross polarize with a reference station
-      for (int sn = 0 ; sn < (int)n_stations(); sn++) {
-        if ((sn != ref_station) && (sn != (ref_station+(int)n_stations()/2))) {
-          baselines.push_back(std::pair<int,int>(sn,ref_station));
+      for (int sn = 0 ; sn < n_st_2; sn++) {
+        if (sn != ref_station) {
+          baselines.push_back(std::make_pair(ref_station       , sn       ));
+          baselines.push_back(std::make_pair(ref_station       , sn+n_st_2));
+          baselines.push_back(std::make_pair(ref_station+n_st_2, sn       ));
+          baselines.push_back(std::make_pair(ref_station+n_st_2, sn+n_st_2));
         }
       }
       for (int sn = 0 ; sn < (int)n_stations(); sn++) {
@@ -96,13 +100,12 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
       }
     } else {
       // cross polarize without a reference station
-      for (size_t sn = 0 ; sn < n_stations() - 1; sn++) {
-        for (size_t sno = sn + 1; sno < n_stations() ; sno ++) {
-          if (sn+n_stations()/2 != sno) {
-            // Do not cross correlate the
-            // two polarisations of the same station
-            baselines.push_back(std::pair<int,int>(sn,sno));
-          }
+      for (size_t sn = 0 ; sn < n_st_2 - 1; sn++) {
+        for (size_t sno = sn + 1; sno < n_st_2; sno ++) {
+          baselines.push_back(std::make_pair(sn       ,sno));
+          baselines.push_back(std::make_pair(sn       ,sno+n_st_2));
+          baselines.push_back(std::make_pair(sn+n_st_2,sno));
+          baselines.push_back(std::make_pair(sn+n_st_2,sno+n_st_2));
         }
       }
     }
