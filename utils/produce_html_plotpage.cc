@@ -1,11 +1,4 @@
 /* author : N.G.H. Kruithof
-* 
- * Note (H. Ozdemir):
- * At the moment we loop through the stations and  produce the html output
- * assuming that the baselines are output in the correct order in the .cor file.
- * Instead we should read the baseline header and decide weather it is auto or cross
- * depending on the station1 and station2 written in that baseline header.
- * In this case we have to write the html table in the corrected order.
  * 
  */
 
@@ -27,545 +20,409 @@
 #include "log_writer_cout.h"
 #include "gnuplot_i.h"
 #include "utils.h"
-#include "control_parameters.h"
-#include "output_header.h"
 
-Control_parameters ConPrms;
+#include "output_header.h"
+#include <vex/Vex++.h>
 
 class Plot_data {
 public:
-  std::string job_name;
-  // the following should be double
-  double frequency;
-  char sideband;
-  std::vector<std::string> autos, crosses;
-  std::vector<float> snr_crosses; // Signal to noise ratio for the crosses
-  std::vector<int> offset; // Offset of the maximum value of a cross with the midpoint
+  Plot_data() : initialised(false) {}
 
-  void set_size_crosses(int size_cross) {
-    crosses.resize(size_cross);
-    snr_crosses.resize(size_cross);
-    offset.resize(size_cross);
+  Plot_data(const Output_header_baseline &header,
+            const std::vector<float>     &data)
+    : header(header), data(data), initialised(true) {}
+
+  Output_header_baseline header;
+  std::vector<float>     data;
+  bool initialised;
+
+  void plot(char *filename, char *filename_large, char *title) {
+    char cmd[80];
+    gnuplot_ctrl * g = gnuplot_init();
+
+    gnuplot_cmd(g, "set terminal png medium size 300,200");
+    snprintf(cmd, 80, "set output \"%s\"", filename);
+    gnuplot_cmd(g, cmd);
+    gnuplot_setstyle(g, "lines");
+    gnuplot_plot_x(g, &data[0], data.size(), title) ;
+
+    gnuplot_cmd(g, "set terminal png large size 1024,768");
+    snprintf(cmd, 80, "set output \"%s\"", filename_large);
+    gnuplot_cmd(g, cmd);
+    gnuplot_setstyle(g, "lines");
+    gnuplot_plot_x(g, &data[0], data.size(), title) ;
+
+    gnuplot_close(g);
   }
-};
 
+  float signal_to_noise_ratio() {
+    const int N = data.size();
+    int index_max = max_value_offset();
+    index_max = (index_max+N)%N;
 
-std::vector< Plot_data > plot_data_channels;
-int plot_count=0;
+    //return noise rms in array, skip 10 % around maximum
+    std::complex<float> mean(0,0);
+    int n2avg=0;
 
-class Plot_generator {
-public:
-  Plot_generator(std::istream &in, const Control_parameters &ConPrms,
-                 int count_channel, int32_t &start_time);
-
-private:
-  // sets the data of plot_data except for the plots
-  void set_plot_data(Plot_data &data, 
-                     const Control_parameters &ConPrms,
-                     int count_channel,
-                     int32_t &start_time);
-  void generate_auto_plots(int stations_start,
-                           int stations_end,
-                           Plot_data &plot_data,
-                           const Control_parameters &ConPrms);
-  void generate_cross_plot(int station,
-                           int station2,
-                           Plot_data &plot_data,
-                           int plot_nr,
-                           const Control_parameters &ConPrms);
-  void plot(char *filename, int nPts, char *title);
-
-  float signal_to_noise_ratio(std::vector< std::complex<float> > &data);
-  int max_value_offset(std::vector< std::complex<float> > &data);
-
-  void read_data();
-
-private:
-  std::istream &input;
-
-  int nLags;
-  std::vector< std::complex<float> > in, out;
-  std::vector<float> magnitude;
-  fftwf_plan visibilities2lags; 
-
-  // Headers found in the data
-  Output_header_timeslice timeslice_header;
-  Output_header_baseline baseline_header;
-
-  int n_baselines; // Number of integrations before the next timeslice header
-};
-
-Plot_generator::Plot_generator(std::istream &input, 
-                               const Control_parameters &ConPrms,
-                               int count_channel, 
-                               int32_t &start_time)
-  : input(input), n_baselines(0)
-{
-
-  Log_writer_cout log_writer;
-
-  nLags =ConPrms.number_channels()+1;
-  in.resize(nLags);
-  out.resize(nLags);
-  magnitude.resize(nLags);
-
-  visibilities2lags = 
-    fftwf_plan_dft_1d(nLags, 
-                     reinterpret_cast<fftwf_complex*>(&in[0]),
-                     reinterpret_cast<fftwf_complex*>(&out[0]),
-                     FFTW_BACKWARD, 
-                     FFTW_ESTIMATE);
-
-  int reference_station = -1;
-  if (ConPrms.reference_station() != "") {
-    for (size_t i=0; i<ConPrms.number_stations(); i++) {
-      if (ConPrms.station(i) == ConPrms.reference_station()) {
-        reference_station = i;
+    for (size_t i=0 ; i< N ; i++){
+      // difference in the range [0,n)
+      int pos_diff = (N+index_max-i)%N;
+      // difference in the range [-n/2,n/2)
+      pos_diff = std::abs((int)((pos_diff+N/2)%N - 
+                                N/2));
+      if (pos_diff > N/20) {
+        // skip 10% arround lag for max which is at imax 
+        n2avg++;
+        mean += data[i];
       }
     }
-    assert(reference_station >= 0);
-  }
 
-  int nStations = ConPrms.number_stations();
-  int cross_channel = -1;
-  if (ConPrms.cross_polarize()) {
-    cross_channel = ConPrms.cross_channel(count_channel, 
-                                          ConPrms.get_mode(start_time));
-    assert((cross_channel == -1) ||
-           (cross_channel > count_channel));
-  }
+    mean /= n2avg;
 
-
-  Plot_data plot_data[4];
-
-  // Read the auto correlations
-  
-
-
-  if (cross_channel == -1) {
-    generate_auto_plots(0, nStations, plot_data[0], ConPrms);
-    plot_data[0].job_name = 
-      ConPrms.channel(count_channel)+ ", " +
-      ConPrms.frequency(ConPrms.channel(count_channel), 
-                        ConPrms.station(0),ConPrms.get_mode(start_time)) + ", " +
-      ConPrms.sideband(ConPrms.channel(count_channel), 
-                       ConPrms.station(0),ConPrms.get_mode(start_time))+"SB, "+
-      ConPrms.polarisation(ConPrms.channel(count_channel),
-                           ConPrms.station(0),ConPrms.get_mode(start_time)) + "cp ";
-
-  } else {
-    generate_auto_plots(0, nStations, plot_data[0], ConPrms);
-    generate_auto_plots(0, nStations, plot_data[2], ConPrms);
-
-    plot_data[0].job_name = 
-      ConPrms.channel(count_channel)+ ", " +
-      ConPrms.frequency(ConPrms.channel(count_channel), 
-                        ConPrms.station(0),ConPrms.get_mode(start_time)) + ", " +
-      ConPrms.sideband(ConPrms.channel(count_channel), 
-                       ConPrms.station(0),ConPrms.get_mode(start_time))+"SB, "+
-      ConPrms.polarisation(ConPrms.channel(count_channel),
-                           ConPrms.station(0),ConPrms.get_mode(start_time)) + "cp ";
-    plot_data[2].job_name = 
-      ConPrms.channel(cross_channel)+ ", " +
-      ConPrms.frequency(ConPrms.channel(cross_channel), 
-                        ConPrms.station(0),ConPrms.get_mode(start_time)) + ", " +
-      ConPrms.sideband(ConPrms.channel(cross_channel), 
-                       ConPrms.station(0),ConPrms.get_mode(start_time))+"SB, "+
-      ConPrms.polarisation(ConPrms.channel(cross_channel),
-                           ConPrms.station(0),ConPrms.get_mode(start_time)) + "cp ";
-
-    plot_data[0].job_name += ", parallel";
-    plot_data[1].job_name += "<div align=right>cross</div>";
-    plot_data[2].job_name += ", parallel";
-    plot_data[3].job_name += "<div align=right>cross</div>";
-  }
-  
-  // Cross correlations
-  if (cross_channel == -1) {
-    if (ConPrms.reference_station() == "") {
-      // no cross channel and no reference station
-      plot_data[0].set_size_crosses(nStations*(nStations-1)/2);
-      int plot_nr=0;
-      for (int i=0; i<nStations; i++) {
-        for (int j=i+1; j<nStations; j++) {
-          generate_cross_plot(i, j, plot_data[0], plot_nr, ConPrms);
-          plot_nr++;
-        }    
+    float sum = 0;
+    for (size_t i=0 ; i< N ; i++){
+      // difference in the range [0,n)
+      int pos_diff = (N+index_max-i)%N;
+      // difference in the range [-n/2,n/2)
+      pos_diff = std::abs((int)((pos_diff+N/2)%N - 
+                                N/2));
+      if (pos_diff > N/20) {
+        sum += norm(data[i]-mean);
       }
-    } else {
-      // no cross channel and a reference station
-      plot_data[0].set_size_crosses(nStations-1);
-      int plot_nr=0;
-      for (int i=0; i<nStations; i++) {
-        if (i != reference_station) {
-          generate_cross_plot(reference_station, i, plot_data[0], 
-                              plot_nr, ConPrms);
-          plot_nr++;
+    }
+
+    return sqrt(norm(data[index_max]-mean)/(sum/n2avg));
+  }
+
+  int max_value_offset() {
+    int index_max = 0;
+    for (size_t i=1; i<data.size(); i++) {
+      if (std::abs(data[i]) > std::abs(data[index_max])) index_max = i;
+    }
+    
+    return (index_max+data.size()/2)%data.size() - data.size()/2;
+  }
+
+};
+
+// Container for all plots
+class All_plots_data {
+  typedef std::vector< std::vector< std::vector<Plot_data> > > Container;
+public:
+  All_plots_data(const Vex &vex) : integration_slice(-1) {
+    const Vex::Node root_node = vex.get_root_node();
+    for (Vex::Node::const_iterator it = root_node["STATION"]->begin();
+         it != root_node["STATION"]->end(); it++) {
+      stations.push_back(it.key());
+    }
+  }
+
+  void read_plots(std::istream &in);
+
+  void print_html();
+
+private:
+  void set_plot(const Plot_data &plot_data);
+
+  void generate_filename(char *filename, 
+                         char *filename_large, 
+                         char *title,
+                         int size,
+                         int pol1, int pol2, int ch, 
+                         int station1, int station2);
+  void print_auto(std::ostream &index_html, 
+                  int pol1, int pol2, int ch, int station);
+  void print_cross(std::ostream &index_html, 
+                   int pol1, int pol2, int ch, int station1, int station2);
+
+  // plot[polarisation1][polarisation2][Channel][station1][station2]
+  Container plots[2][2];
+
+  // The global header in the data
+  Output_header_global global_header;
+
+  // Integration slice for which we print the fringe
+  int integration_slice;
+
+  // Array with the station names
+  std::vector<std::string> stations;
+};
+
+void
+All_plots_data::read_plots(std::istream &input) {
+  //read-in the global header 
+  input.read((char*)&global_header, sizeof(Output_header_global));
+  if (input.eof()) {
+    std::cout << "Empty correlation file" << std::endl;
+    exit(-1);
+  }
+
+  integration_slice = -1;
+
+  std::vector< std::complex<float> > data;
+  std::vector< float >               data_float;
+  data.resize(global_header.number_channels+1);
+  data_float.resize(global_header.number_channels+1);
+  fftwf_plan fftwf_plan_ = 
+    fftwf_plan_dft_1d(global_header.number_channels+1, 
+                      reinterpret_cast<fftwf_complex*>(&data[0]),
+                      reinterpret_cast<fftwf_complex*>(&data[0]),
+                      FFTW_BACKWARD, 
+                      FFTW_ESTIMATE);
+  
+  while (!input.eof()) {
+    
+    // Read the header of the timeslice
+    Output_header_timeslice timeslice_header;
+    input.read((char*)&timeslice_header, sizeof(Output_header_timeslice));
+
+    int n_baselines = timeslice_header.number_baselines;
+
+    // Initialise the integration slice
+    if (integration_slice == -1) 
+      integration_slice = timeslice_header.integration_slice;
+
+    if (!input.eof()) {
+      for (int i=0; i<n_baselines; i++) {
+        // Read the header of the baseline
+        Output_header_baseline baseline_header;
+        input.read((char*)&baseline_header, sizeof(Output_header_baseline));
+
+        // Read the data
+        input.read((char *)&data[0], 
+                   data.size()*sizeof(std::complex<float>));
+
+        if (integration_slice == timeslice_header.integration_slice) {
+          if (baseline_header.station_nr1 != baseline_header.station_nr2) {
+            fftwf_execute(fftwf_plan_);
+            int data_size = data.size();
+            for (size_t j=0; j<data_size; j++) {
+              data_float[j] = std::abs(data[(j+data_size/2)%data_size]);
+            }
+          } else {
+            for (size_t j=0; j<data.size(); j++) {
+              data_float[j] = std::abs(data[j]);
+            }
+          }
+          set_plot(Plot_data(baseline_header, data_float));
         }
       }
     }
-  } else {
-    if (ConPrms.reference_station() == "") {
-      for (int i=0; i<4; i++) {
-        plot_data[i].set_size_crosses(nStations*(nStations-1)/2);
+  }
+}
+
+void
+All_plots_data::print_html() {
+  std::ofstream index_html("index.html");
+  assert(index_html.is_open());
+  index_html.precision(4);
+
+  index_html << "<html><head>"  << std::endl
+             << "  <title>SFXC output</title>" << std::endl
+             << "  <style> BODY,TH,TD{font-size: 10pt }</style>" << std::endl
+             << "</head>"
+             <<"<body>" 
+             << std::endl;
+  index_html << "<script language=\"JavaScript\"><!--" << std::endl
+             << "function show(imageSrc) {" << std::endl
+             << "  if (document.images) document.images['plot_image'].src"
+             << " = imageSrc;" << std::endl
+             << "}" << std::endl
+             << "//--></script>" << std::endl
+             << std::endl;
+
+  { // Print the table
+    index_html << "<table border=1 bgcolor='#dddddd' cellspacing=0>"
+               << std::endl;
+
+    // Print header
+    std::vector<int>                  autos;
+    std::vector< std::pair<int,int> > crosses;
+    int pol1 = 0, pol2 = 0;
+    { // Compute nAutos and nCrosses
+      if (plots[pol1][pol2][0].size() == 0) {
+        pol1 = pol2 = 1;
       }
-      // also generating the cross correlations
-      for (int i=0; i<2*nStations; i++) {
-        for (int j=i+1; j<2*nStations; j++) {
-          if (i+nStations != j) {
-            // don't generate the "auto" cross polarisations.
-            int data_nr=0;
-          
-            int plot_nr = 
-              nStations*(nStations-1)/2 - 
-              (nStations-(i%nStations))*((nStations-(i%nStations))-1)/2 +
-              ((j-i)%nStations)-1;
-            if ((i<nStations) && (j<nStations)) {
-              data_nr = 0;
-            } else if ((i>=nStations) && (j>=nStations)) {
-              data_nr = 2;
+      assert(plots[pol1][pol2][0].size() != 0);
+      for (size_t st1=0; st1 != plots[pol1][pol2][0].size(); st1++) {
+        for (size_t st2=0; st2 != plots[pol1][pol2][0][st1].size(); st2++) {
+          if (plots[pol1][pol2][0][st1][st2].initialised) {
+            if (st1 == st2) {
+              autos.push_back(st1);
             } else {
-              assert(i%nStations != j%nStations);
-              if (i%nStations < j%nStations) {
-                data_nr = 1;
-              } else {
-                data_nr = 3;
-                int iprime = j%nStations;
-                int jprime = i%nStations;
-                plot_nr = 
-                  nStations*(nStations-1)/2 - 
-                  (nStations-(iprime%nStations))*((nStations-(iprime%nStations))-1)/2 +
-                  ((jprime-iprime)%nStations)-1;
+              crosses.push_back(std::make_pair(st1,st2));
+            }
+          }
+        }
+      }
+    }
+
+    { // first row
+      index_html << "<tr>" << std::endl;
+      index_html << "  <th rowspan=2>" << global_header.experiment << "</th>" 
+                 << std::endl;
+      index_html << "  <th colspan="<< autos.size() << ">Auto correlations</th>"
+                 << std::endl;
+      index_html << "  <th colspan="<< crosses.size() << ">Cross correlations</th>"
+                 << std::endl;
+      index_html << "</tr>" << std::endl;
+    }
+
+    { // second row
+      index_html << "<tr>" << std::endl;
+      // autos
+      for (size_t st1=0; st1 != plots[pol1][pol2][0].size(); st1++) {
+        if (st1 < plots[pol1][pol2][0][st1].size()) {
+          if (plots[pol1][pol2][0][st1][st1].initialised) {
+            assert(st1 < stations.size());
+            index_html << "<th>" << stations[st1] << "</th>";
+          }
+        }
+      }
+      // crosses
+      for (size_t st1=0; st1 != plots[pol1][pol2][0].size(); st1++) {
+        for (size_t st2=0; st2 != plots[pol1][pol2][0][st1].size(); st2++) {
+          if (st1 != st2) {
+            if (plots[pol1][pol2][0][st1][st2].initialised) {
+              assert(st1 < stations.size());
+              index_html << "<th>" 
+                         << stations[st1] << "-" 
+                         << stations[st2] << "</th>";
+            }
+          }
+        }
+      }
+
+      char filename[80], filename_large[80], title[80];
+      generate_filename(filename, filename_large, title, 80,
+                        pol1, pol2, 0, 0, 0);
+      index_html << "<td rowspan=99><img src=\"" 
+                 << filename << "\" name=\"plot_image\"></td>" << std::endl;
+      index_html << "</tr>" << std::endl;
+    }
+
+    { // Print content of the table
+      for (size_t ch = 0; ch != plots[pol1][pol2].size(); ch++) {
+        for (int pol1=0; pol1<2; pol1++) {
+          for (int pol2_cnt=0; pol2_cnt<2; pol2_cnt++) {
+            int pol2 = (pol1 + pol2_cnt)%2;
+            if (!plots[pol1][pol2].empty()) {
+              if (!plots[pol1][pol2][ch].empty()) {
+                index_html << "<tr>" << std::endl;
+                // First cell
+                index_html << "<th>";
+                if (plots[pol1][pol2][ch][0][0].initialised) {
+                  index_html << (int)plots[pol1][pol2][ch][0][0].header.frequency_nr;
+                }
+                index_html << "</th>" << std::endl;
+                
+                // Autos
+                for (int i=0; i<autos.size(); i++) {
+                  print_auto(index_html, pol1, pol2, ch, autos[i]);
+                }
+
+                // Crosses
+                for (int i=0; i<crosses.size(); i++) {
+                  print_cross(index_html, pol1, pol2, ch, crosses[i].first, crosses[i].second);
+                }
+                index_html << "</tr>" << std::endl;
               }
             }
-            generate_cross_plot(i, j,
-                                plot_data[data_nr], plot_nr, ConPrms);
-          }
-        }    
-      }
-    } else {
-      // cross channel and a reference station
-      for (int i=0; i<4; i++) {
-        plot_data[i].set_size_crosses(nStations-1);
-      }
-      int row_map[] = {0, 1, 3, 2};
-      for (int row=0; row < 4; row++) {
-        int plot_nr=0;
-        for (int i=0; i<nStations; i++) {
-          if (i != reference_station) {
-            generate_cross_plot(reference_station, i, 
-                                plot_data[row_map[row]], 
-                                plot_nr, ConPrms);
-            plot_nr++;
           }
         }
       }
     }
+    index_html << "</table>" << std::endl;
   }
+  index_html << "</html>" << std::endl;
 
-  if (cross_channel == -1) {
-    plot_data_channels.push_back(plot_data[0]);
-  } else {
-    for (int i=0; i<4; i++) {
-      plot_data_channels.push_back(plot_data[i]);
-    }
-  }  
-  fftwf_destroy_plan(visibilities2lags);
 }
 
-void Plot_generator::set_plot_data(Plot_data & data, 
-                                   const Control_parameters &ConPrms,
-                                   int count_channel,
-                                   int32_t &start_time) {
+void
+All_plots_data::set_plot(const Plot_data &plot_data) {
+  assert(plot_data.initialised);
 
-  for (size_t i=0; i<ConPrms.channels_size(); i++){
-    for (size_t j=1; j<ConPrms.number_stations(); j++){
-      if(ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(j),
-                              ConPrms.get_mode(start_time)) 
-         != ConPrms.polarisation(ConPrms.channel(i),ConPrms.station(0),
-                              ConPrms.get_mode(start_time))){
-        std::cout << "error in polarisation values" << std::endl;
-      } else if (ConPrms.frequency(ConPrms.channel(i),ConPrms.station(j),
-                                  ConPrms.get_mode(start_time)) 
-                 != ConPrms.frequency(ConPrms.channel(i),ConPrms.station(0),
-                                  ConPrms.get_mode(start_time))){
-        std::cout << "error in frequency values" << std::endl;
-      } else if (ConPrms.sideband(ConPrms.channel(i),ConPrms.station(j),
-                                  ConPrms.get_mode(start_time)) 
-                 != ConPrms.sideband(ConPrms.channel(i),ConPrms.station(0),
-                                  ConPrms.get_mode(start_time))){
-        std::cout << "error in sideband values" << std::endl;
-      }
-    }
-  }
-
-  data.job_name = ConPrms.experiment()+"_"+ConPrms.channel(count_channel)
-    + "_" + ConPrms.polarisation(ConPrms.channel(count_channel),ConPrms.station(0),
-                                 ConPrms.get_mode(start_time)) 
-    + "cp_" + ConPrms.frequency(ConPrms.channel(count_channel), ConPrms.station(0),
-                                 ConPrms.get_mode(start_time))
-    + "_" + ConPrms.sideband(ConPrms.channel(count_channel), ConPrms.station(0),
-                                 ConPrms.get_mode(start_time)) + "sb";
-  data.frequency = 0; //not used at this moment HO
-  data.sideband = 'L'; //not used at this moment (GenPrms.get_sideband()-1 ? 'L' : 'U');
-}
-
-
-void 
-Plot_generator::generate_auto_plots(int stations_start,
-                                    int stations_end,
-                                    Plot_data &plot_data,
-                                    const Control_parameters &ConPrms) {
-  //the following loop is also over baselines since 
-  //in auto correlation the number of 
-  //baselines equals to number of stations.
-  for (int station=stations_start; station<stations_end; station++) {
-    //read data for this baseline
-    read_data();
-    assert((int) baseline_header.station_nr1 == 
-           (int) baseline_header.station_nr2);
-    
-    for  (int lag=0; lag<nLags; lag++) {
-      magnitude[lag] = abs(in[lag]);
-    }
-    char title[80], filename[80];
-
-    snprintf(title, 80, "Auto %s", ConPrms.station(station).c_str());
-    snprintf(filename, 80, "%s_%s_%d.png", 
-             ConPrms.experiment().c_str(), 
-             ConPrms.station(station).c_str(), 
-             plot_count);
-    plot_data.autos.push_back(filename);
-    plot_count++;
-
-    plot(filename, nLags, title);    
-  }
-}
-
-void 
-Plot_generator::generate_cross_plot(int station,
-                                    int station2,
-                                    Plot_data &plot_data,
-                                    int plot_nr,
-                                    const Control_parameters &ConPrms) {
-  int nStations = ConPrms.number_stations();
-
-  //read data for this baseline
-  read_data();
-  fftwf_execute(visibilities2lags);
-
-  for  (int lag=0; lag<nLags; lag++) {
-    magnitude[lag] = abs(out[(lag+nLags/2)%nLags]);
-  }
-  char title[80], filename[80];
-  int tmp1=0, tmp2=0;
-  if (station>=nStations) {
-    tmp1 = 1;
-    station -= nStations;
-  }
-  if (station2>=nStations) {
-    tmp2 = 1;
-    station2 -= nStations;
-  }
-  snprintf(title, 80, "Cross %s vs. %s", 
-           ConPrms.station(station).c_str(),
-           ConPrms.station(station2).c_str());
+  int freq     = plot_data.header.frequency_nr;
+  int station1 = plot_data.header.station_nr1;
+  int station2 = plot_data.header.station_nr2;
+  int pol1     = plot_data.header.polarisation1;
+  int pol2     = plot_data.header.polarisation2;
   
-  snprintf(filename, 80, "%s_%s%d-%s%d_%d.png", 
-           ConPrms.experiment().c_str(), 
-           ConPrms.station(station).c_str(),
-           tmp1,
-           ConPrms.station(station2).c_str(),
-           tmp2,
-           plot_count);
-  assert(plot_nr < (int)plot_data.crosses.size());
-  plot_data.crosses[plot_nr] = filename;
-  plot_data.snr_crosses[plot_nr] = signal_to_noise_ratio(out);
-  plot_data.offset[plot_nr] = max_value_offset(out);
-  plot_count++;
-  plot(filename, nLags, title);
+  Container &plot = plots[pol1][pol2];
+  if (plot.size() <= freq) 
+    plot.resize(freq+1);
+  assert(plot.size() > freq);
+  if (plot[freq].size() <= station1) 
+    plot[freq].resize(station1+1);
+  assert(plot[freq].size() > station1);
+  if (plot[freq][station1].size() <= station2) 
+    plot[freq][station1].resize(station2+1);
+  assert(plot[freq][station1].size() > station2);
+
+  assert(!plot[freq][station1][station2].initialised);
+  plot[freq][station1][station2] = plot_data;
+  assert(plot[freq][station1][station2].initialised);
 }
 
 void 
-Plot_generator::plot(char *filename, int nPts, char *title) {
-  char cmd[80];
-  gnuplot_ctrl * g = gnuplot_init();
-
-  gnuplot_cmd(g, "set terminal png medium size 300,200");
-  snprintf(cmd, 80, "set output \"%s\"", filename);
-  gnuplot_cmd(g, cmd);
-  gnuplot_setstyle(g, "lines");
-  gnuplot_plot_x(g, &magnitude[0], nPts, title) ;
-  gnuplot_close(g);
+All_plots_data::
+generate_filename(char *filename, 
+                  char *filename_large, 
+                  char *title,
+                  int size,
+                  int pol1, int pol2, int ch, int station1, int station2) {
+  assert(plots[pol1][pol2][ch][station1][station2].initialised);
+  int sb = plots[pol1][pol2][ch][station1][station2].header.sideband;
+  snprintf(filename, 80,
+           "st%02d_%1d-st%02d_%1d-ch%01d-sb%1d.png", 
+           station1, pol1, station2, pol2, ch, sb);
+  snprintf(filename_large, 80,
+           "st%02d_%1d-st%02d_%1d-ch%01d-sb%1d_large.png", 
+           station1, pol1, station2, pol2, ch, sb);
+  snprintf(title, 80,
+           "(%02d,%1d)-(st%02d,%1d) ch%01d sb%1d", 
+           station1, pol1, station2, pol2, ch, sb);
 }
 
-int
-Plot_generator::max_value_offset(std::vector< std::complex<float> > &data)
-{
-  int index_max = 0;
-  for (size_t i=1; i<data.size(); i++) {
-    if (norm(data[i]) > norm(data[index_max])) index_max = i;
+void 
+All_plots_data::
+print_auto(std::ostream &index_html,
+           int pol1, int pol2, int ch, int station) {
+  index_html << "<td>";
+  if (station < plots[pol1][pol2][ch].size()) {
+    if (station < plots[pol1][pol2][ch][station].size()) {
+      Plot_data &plot_data = plots[pol1][pol2][ch][station][station];
+      if (plot_data.initialised) {
+        char filename[80], filename_large[80], title[80];
+        generate_filename(filename, filename_large, title, 80,
+                          pol1, pol2, ch, station, station);
+        plot_data.plot(filename, filename_large, title);
+        index_html << "<A href = '" << filename_large << "' "
+                   << "OnMouseOver=\"show('" << filename << "');\">" 
+                   << "A" << "</a>";
+      }
+    }
   }
-
-  return (index_max+data.size()/2)%data.size() - data.size()/2;
+  index_html << "</td>";
 }
+void 
+All_plots_data::
+print_cross(std::ostream &index_html, 
+            int pol1, int pol2, int ch, int station1, int station2) {
+  bool show_plot = false;
+  if (station1 < plots[pol1][pol2][ch].size()) {
+    if (station2 < plots[pol1][pol2][ch][station1].size()) {
+      Plot_data &plot_data = plots[pol1][pol2][ch][station1][station2];
+      if (plot_data.initialised) {
+        show_plot = true;
+        char filename[80], filename_large[80], title[80];
+        generate_filename(filename, filename_large, title, 80,
+                          pol1, pol2, ch, station1, station2);
+        plot_data.plot(filename, filename_large, title);
 
-float 
-Plot_generator::signal_to_noise_ratio(std::vector< std::complex<float> > &data)
-{
-  const int N = data.size();
-  int index_max = max_value_offset(data);
-  index_max = (index_max+N)%N;
-
-  //return noise rms in array, skip 10 % around maximum
-  std::complex<float> mean(0,0);
-  int n2avg=0;
-
-  for (size_t i=0 ; i< N ; i++){
-    // difference in the range [0,n)
-    int pos_diff = (N+index_max-i)%N;
-    // difference in the range [-n/2,n/2)
-    pos_diff = std::abs((int)((pos_diff+N/2)%N - 
-                              N/2));
-    if (pos_diff > N/20) {
-      // skip 10% arround lag for max which is at imax 
-      n2avg++;
-      mean += data[i];
-    }
-  }
-
-  mean /= n2avg;
-
-  float sum = 0;
-  for (size_t i=0 ; i< N ; i++){
-    // difference in the range [0,n)
-    int pos_diff = (N+index_max-i)%N;
-    // difference in the range [-n/2,n/2)
-    pos_diff = std::abs((int)((pos_diff+N/2)%N - 
-                              N/2));
-    if (pos_diff > N/20) {
-      sum += norm(data[i]-mean);
-    }
-  }
-
-  return sqrt(norm(data[index_max]-mean)/(sum/n2avg));
-}
-
-void print_html(const Control_parameters &ConPrms) {
-  std::string reference_station = ConPrms.reference_station();
-
-  int nAutos   = ConPrms.number_stations();
-  int nCrosses = ConPrms.number_stations() -1;
-  if (reference_station == "") {
-    nCrosses = ConPrms.number_stations()*(ConPrms.number_stations()-1)/2;
-  }
-
-  for (int show_plots = 0; show_plots <2; show_plots++) {
-
-    Log_writer_cout logg;
-    std::ofstream html_output;
-    if (show_plots) {
-      html_output.open("plots.html");
-    } else {
-      html_output.open("index.html");
-    }
-    html_output << "<html><head>"  << std::endl
-                << "<title>SFXC output</title>" << std::endl
-                << "<style> BODY,TH,TD{font-size: 10pt }</style>" << std::endl
-                << "</head>"
-                <<"<body>" 
-                << std::endl;
-    if (!show_plots) {
-      html_output << "<script language=\"JavaScript\"><!--" << std::endl
-                  << "function show(imageSrc) {" << std::endl
-                  << "  if (document.images) document.images['plot_image'].src = imageSrc;" << std::endl
-                  << "}" << std::endl
-                  << "//--></script>" << std::endl
-                  << std::endl;
-    }
-    if (show_plots) {
-      html_output << "<a href='index.html'>Show table</a><br>" << std::endl;
-    } else {
-      html_output << "<a href='plots.html'>Show plots</a><br>" << std::endl;
-    }
-
-    html_output << "<table border=1 bgcolor='#dddddd' cellspacing=0>\n";
-    int nStations = ConPrms.number_stations();
-
-    // First row
-    html_output
-      << "<tr><td></td>"
-      << "<th colspan='" << nAutos << "'>Auto correlation</th>"
-      << "<th colspan='" << nCrosses << "'>Cross correlation</th>";
-
-    if (!show_plots) {
-      html_output << "<td rowspan=99><img src=\"" 
-                  << plot_data_channels[0].autos[0] 
-                  << "\" name=\"plot_image\"></td>" << std::endl;
-    }
-    html_output << "</tr>\n";
-
-    // Second row
-    html_output << "<tr><td></td>";
-    // Print stations for the auto correlations
-    for (int station = 0; station < nStations; station++) {
-      html_output << "<th>" << ConPrms.station(station)
-                  << "</th>";
-    }
-    // Print cross correlations
-    if (reference_station == "") {
-      for (int i=0; i<nStations; i++) {
-        for (int j=i+1; j<nStations; j++) {
-          html_output << "<th>" 
-                      << ConPrms.station(i)
-                      << "-"
-                      << ConPrms.station(j) << "</th>\n";
-        }    
-      }
-      html_output << "</tr>\n";
-      
-    } else {
-      for (int i=0; i<nStations; i++) {
-        if ((ConPrms.station(i) != reference_station)) {
-          html_output << "<th>" << reference_station
-                      << "-" << ConPrms.station(i) << "</th>\n";
-        }    
-      }
-      html_output << "</tr>\n";
-    }
-
-
-    // Data
-    size_t auto_size=0;
-    for (size_t i=0; i<plot_data_channels.size(); i++) {
-      Plot_data &data = plot_data_channels[i];
-
-      html_output << "<tr>";
-      html_output << "<td>" << data.job_name << " ";
-
-      // autos
-      if (data.autos.size() != 0) {
-        auto_size = data.autos.size();
-        for (size_t col=0; col<data.autos.size(); col++) {
-          html_output << "<td>";
-          if (show_plots) {
-            html_output << "<img src='" << data.autos[col] << "'>";
-          } else {
-            html_output << "<A href = '" << data.autos[col] << "' "
-                        << "OnMouseOver=\"show('" << data.autos[col] << "');\">" 
-                        << "A" << "</a>";
-          }
-          html_output << "</td>\n";
-        }
-      } else {
-        html_output << "<td colspan=" << auto_size << "></td>\n";
-      }
-
-      // crosses
-      assert(data.crosses.size() == data.snr_crosses.size()); 
-      for (size_t col=0; col<data.crosses.size(); col++) {
-        int color_val = (int)(255*(data.snr_crosses[col]-MIN_SNR_VALUE) /
-                              (MAX_SNR_VALUE-MIN_SNR_VALUE));
+        double snr = plot_data.signal_to_noise_ratio();
+        int color_val = 
+          (int)(255*(snr-MIN_SNR_VALUE) / (MAX_SNR_VALUE-MIN_SNR_VALUE));
         if (color_val < 0) color_val = 0;
         if (color_val > 255) color_val = 255;
         char color[7];
@@ -574,46 +431,22 @@ void print_html(const Control_parameters &ConPrms) {
         } else {
           snprintf(color, 7, "#%2X0000", 255-color_val);
         }
-        html_output << "<td bgcolor='" << color << "'>";
-        html_output.precision(4);
-        if (show_plots) {
-          html_output << "<img src='" << data.crosses[col] << "'> " 
-                      << data.crosses[col] << " - " << data.snr_crosses[col] << " - offset: " 
-                      << data.offset[col] << std::endl;
-        } else {
-          html_output << "<A href = '" << data.crosses[col] << "' "
-                      << "OnMouseOver=\"show('" << data.crosses[col] << "');\">" 
-                      << data.snr_crosses[col] <<  " <br><font size='-3'>offset: " 
-                      << data.offset[col] << "</font></a></td>";
-        }
+        index_html << "<td bgcolor='" << color << "'>";
+        index_html << "<A href = '" << filename_large << "' "
+                   << "OnMouseOver=\"show('" << filename << "');\">" 
+                   << snr << "<br>"
+                   << "<font size=-2>offset: " 
+                   << plot_data.max_value_offset() << "</font>"
+                   << "</a>";
+        index_html << "</td>";
       }
-
-      html_output << "</tr>\n";
-
-
-      html_output << "<tr>";
     }
-    html_output << "</table>\n";
-    html_output << "</body></html>" << std::endl;
   }
+  if (!show_plot) index_html << "<td></td>";
 }
 
-void Plot_generator::read_data() {
-  // Read the header of the timeslice
-  if (n_baselines == 0) {
-    //read-in the header of the time-slice
-    input.read((char*)&timeslice_header, sizeof(Output_header_timeslice));
-    n_baselines = timeslice_header.number_baselines;
-  }
-  
-  // Read the header of the baseline
-  input.read((char*)&baseline_header, sizeof(Output_header_baseline));
-  // Read the data
-  input.read((char *)&in[0], 2*in.size()*sizeof(float));
 
-}
 
-//main
 int main(int argc, char *argv[])
 {
 #ifdef SFXC_PRINT_DEBUG
@@ -621,20 +454,36 @@ int main(int argc, char *argv[])
 #endif
 
   if (!((argc == 3) || (argc == 4))) {
-    std::cout << "usage: " << argv[0] << " <ctrl-file> <vex-file> [<output_directory>]" 
+    std::cout << "usage: " << argv[0] << " <vex-file> <correlation_file> [<output_directory>]" 
               << std::endl;
     exit(1);
   }
 
-  Control_parameters ConPrms;
-  Log_writer_cout logg;
+  // Parse the vex file
+  Vex vex;
+  { 
+    char * vex_file = argv[1];
+    std::ifstream in(vex_file);
+    if (!in.is_open()) {
+      std::cout << "Could not open vex file ["<<vex_file<<"]"<< std::endl;
+      return false;
+    }
 
-  ConPrms.initialise(argv[1], argv[2], logg);
+    // parse the vex file
+    if (!vex.open(vex_file)) {
+      std::cout << "Could not parse vex file ["<<vex_file<<"]" << std::endl;
+      return false;
+    }
+  }
 
-  assert(strncmp(ConPrms.get_output_file().c_str(), "file://", 7) == 0);
-  std::ifstream in(ConPrms.get_output_file().c_str()+7, 
-                       std::ios::in | std::ios::binary);
-  assert(in.is_open());
+  All_plots_data all_plots(vex);
+
+
+  // open the input file
+  std::ifstream input(argv[2], std::ios::in | std::ios::binary);
+  assert(input.is_open());
+  // read the data in
+  all_plots.read_plots(input);
   
   if (argc== 4) {
     // Goto the output directory
@@ -643,36 +492,7 @@ int main(int argc, char *argv[])
     assert(err == 0);
   }
   
-  Output_header_global header;
-
-  //read-in the global header 
-  in.read((char*)&header, sizeof(Output_header_global));
-  if (in.eof()) {
-    std::cout << "Empty correlation file" << std::endl;
-    exit(-1);
-  }
-
-  for (size_t channel=0; channel<ConPrms.channels_size();) {
-    // generate plots for the channel
-    Plot_generator(in, ConPrms, channel, header.start_time);
-
-    // find the next channel
-    if (ConPrms.cross_polarize()) {
-      channel ++;
-      int cross_channel = 
-        ConPrms.cross_channel(channel, ConPrms.get_mode(header.start_time));
-      while ((channel < (int)ConPrms.number_frequency_channels()) &&
-             (cross_channel >= 0) && (cross_channel < channel)) {
-        channel ++;
-        cross_channel = 
-          ConPrms.cross_channel(channel, ConPrms.get_mode(header.start_time));
-      }
-    } else {
-      channel++;
-    }
-  }
-
-  print_html(ConPrms);
+  all_plots.print_html();
 
   return 0;
 }

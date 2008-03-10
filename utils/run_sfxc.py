@@ -77,14 +77,21 @@ def run_sfxc(vex_file, ctrl_file):
   elif os.path.exists("../html"):
     html_directory = "../html";
 
+  output_file = ctrl["output_file"]
+  if output_file[:7] != "file://":
+    print "output_file should start with file://"
+    sys.exit(1)
+  else:
+    output_file = output_file[7:]
+    
   # run the html generator
-  cmd = "produce_html_plotpage "+ctrl_file+" "+vex_file+" "+html_directory
+  cmd = "produce_html_plotpage "+vex_file+" "+output_file+" "+html_directory
   print cmd
   status = os.system(cmd)
 
   if (status != 0):
     print "produce_html_plotpage: returned error."
-    sys.exit(1);
+    sys.exit(1)
 
 
 ######### MAIN CODE
