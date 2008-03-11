@@ -85,18 +85,17 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
     int n_st_2 = n_stations()/2;
     if (ref_station >= 0) {
       // cross polarize with a reference station
-      for (int sn = 0 ; sn < n_st_2; sn++) {
-        if (sn != ref_station) {
-          baselines.push_back(std::make_pair(ref_station       , sn       ));
-          baselines.push_back(std::make_pair(ref_station       , sn+n_st_2));
-          baselines.push_back(std::make_pair(ref_station+n_st_2, sn       ));
-          baselines.push_back(std::make_pair(ref_station+n_st_2, sn+n_st_2));
-        }
+      for (int sn = 0 ; sn < ref_station; sn++) {
+        baselines.push_back(std::make_pair(sn       , ref_station       ));
+        baselines.push_back(std::make_pair(sn+n_st_2, ref_station       ));
+        baselines.push_back(std::make_pair(sn       , ref_station+n_st_2));
+        baselines.push_back(std::make_pair(sn+n_st_2, ref_station+n_st_2));
       }
-      for (int sn = 0 ; sn < (int)n_stations(); sn++) {
-        if ((sn != ref_station) && (sn != (ref_station+(int)n_stations()/2))) {
-          baselines.push_back(std::pair<int,int>(sn,ref_station+n_stations()/2));
-        }
+      for (int sn = ref_station+1 ; sn < n_st_2; sn++) {
+        baselines.push_back(std::make_pair(ref_station       , sn       ));
+        baselines.push_back(std::make_pair(ref_station       , sn+n_st_2));
+        baselines.push_back(std::make_pair(ref_station+n_st_2, sn       ));
+        baselines.push_back(std::make_pair(ref_station+n_st_2, sn+n_st_2));
       }
     } else {
       // cross polarize without a reference station
