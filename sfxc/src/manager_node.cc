@@ -203,10 +203,22 @@ void Manager_node::start() {
       }
       case START_CORRELATOR_NODES_FOR_TIME_SLICE: {
         bool added_correlator_node = false;
+#ifdef SFXC_DETERMINISTIC_ORDERING_OF_TIMESLICES
         if (get_correlating_state(current_correlator_node) == READY) {
           start_next_timeslice_on_node(current_correlator_node);
           added_correlator_node = true;
         }
+#else
+        for (size_t i=0;
+             (current_channel<control_parameters.number_frequency_channels())
+             && (i<number_correlator_nodes());
+             i++) {
+          if (get_correlating_state(i) == READY) {
+            start_next_timeslice_on_node(i);
+            added_correlator_node = true;
+          }
+        }
+#endif
 
         if (added_correlator_node) {
           if (current_channel == control_parameters.number_frequency_channels()) {
