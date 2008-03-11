@@ -41,11 +41,17 @@ def update_count(id, packet, time):
 		#corrnode=corrnode+1
 
 def time_to_int(time):
-	ret = re.match("([0-9]*)y([0-9]*)d([0-9]*)h([0-9]*)m([0-9]*)s", time)
+	ret = re.match("([0-9]*)y([0-9]*)d([0-9]*)h([0-9]*)m([0-9]*)s(([0-9]*)ms)?", time)
 	#print time,
 	itime = -1
 	if ret:
-		itime = (int(ret.groups()[4])+ 60*( int(ret.groups()[3]) + 60*( int(ret.groups()[2]) + 0*( int(ret.groups()[1]) + 0*int(ret.groups()[0]) ))))
+                itime = int(ret.groups()[2])
+                itime = int(ret.groups()[3]) + 60*itime
+                itime = int(ret.groups()[4]) + 60*itime
+                itime = 1000*itime
+                if (ret.groups()[6]):
+                        itime = itime + int(ret.groups()[6])
+
 	#itime = itime*1000000
 	#print " this give: "+`itime`
 	return itime
@@ -176,9 +182,9 @@ for i in range(0,10000):
 		if ret:
 			update_state(int(ret.groups()[1]), int(ret.groups()[2]), int(ret.groups()[3]))
 		else:
-			ret = re.match(".* PROGRESS t=[0-9]*:.* start ([0-9a-z]*), channel ([0-9]*) to correlation node ([0-9]+)", line)			
+			ret = re.match(".* PROGRESS t=[0-9]*:.* start ([0-9a-z]*), channel ([0-9,]*) to correlation node ([0-9]+)", line)			
 			if ret:
-				update_count(int(ret.groups()[2]), int(ret.groups()[1]), ret.groups()[0])
+				update_count(int(ret.groups()[2]), ret.groups()[1], ret.groups()[0])
 			
 			else:
 				ret = re.match(".* PROGRESS t=[0-9]*:.* time ([0-9]+)", line)			
