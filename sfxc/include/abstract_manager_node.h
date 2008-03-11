@@ -105,6 +105,10 @@ public:
   size_t get_channel(const std::string &channel);
 
   const std::map<std::string, int> &get_input_node_map() const;
+  
+  int integration_time() const {
+    return control_parameters.integration_time();
+  }
 protected:
   void wait_for_setting_up_channel(int rank);
 

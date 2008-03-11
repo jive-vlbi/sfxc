@@ -77,8 +77,6 @@ private:
   Status status;
   std::vector<Correlating_state> state_correlator_node;
   
-  int duration_time_slice; // Duration in miliseconds
-  
   /// Start day and year of the experiment
   int32_t start_day, start_year;
   
@@ -88,11 +86,7 @@ private:
   int32_t stop_time;
   /// Stop time of the scan in miliseconds from midnight on the startday
   int32_t stop_time_scan;
-  /// Stop time of the integration slice in miliseconds from midnight 
-  /// on the startday
-  int32_t stoptime_timeslice;
-  /// The number of the current stream
-//  int32_t stream_nr;
+
   /// The number of the integration slice
   int32_t integration_slice_nr;
   /// Number of the slice for the output node
