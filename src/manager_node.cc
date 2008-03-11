@@ -224,23 +224,18 @@ void Manager_node::start() {
 
         if (start_time+integration_slice_nr*integration_time() >=
             stop_time) {
-          DEBUG_MSG("STOP_CORRELATING");
           status = STOP_CORRELATING;
         } else if (start_time >= stop_time_scan) {
           if (current_scan == control_parameters.number_scans()) {
-            DEBUG_MSG("STOP_CORRELATING");
             status = STOP_CORRELATING;
           } else {
             current_scan++;
             status = START_NEW_SCAN;
             status = STOP_CORRELATING;
-            DEBUG_MSG("STOP_CORRELATING");
           }
         } else if (current_scan == control_parameters.number_scans()) {
-          DEBUG_MSG("STOP_CORRELATING");
           status = STOP_CORRELATING;
         } else {
-          DEBUG_MSG("START_CORRELATION_TIME_SLICE");
           status = START_CORRELATION_TIME_SLICE;
         }
         break;
@@ -278,26 +273,31 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
 
   // Initialise the correlator node
   if (cross_channel == -1) {
+    int32_t time = start_time + integration_time()*integration_slice_nr;
     get_log_writer()(1)
     << "start "
-    << Vex::Date(start_year, start_day, start_time/1000).to_string()
-    << (start_time%1000) << "ms"
+    << Vex::Date(start_year, start_day, time/1000).to_string()
+    << (time%1000) << "ms"
     << ", channel " << current_channel << " to correlation node "
     << corr_node_nr << std::endl;
     PROGRESS_MSG("start "
-                 << Vex::Date(start_year, start_day, start_time/1000).to_string()
+                 << Vex::Date(start_year, start_day, time/1000).to_string()
+                 << (time%1000) << "ms"
                  << ", channel " << current_channel << " to correlation node "
                  << corr_node_nr);
   } else {
+    int32_t time = start_time + integration_time()*integration_slice_nr;
     get_log_writer()(1)
     << "start "
-    << Vex::Date(start_year, start_day, start_time/1000).to_string()
+    << Vex::Date(start_year, start_day, time/1000).to_string()
+    << (time%1000) << "ms"
     << ", channel "
     << current_channel << ","
     << cross_channel << " to correlation node "
     << corr_node_nr << std::endl;
     PROGRESS_MSG("start "
-                 << Vex::Date(start_year, start_day, start_time/1000).to_string()
+                 << Vex::Date(start_year, start_day, time/1000).to_string()
+                 << (time%1000) << "ms"
                  << ", channel "
                  << current_channel << ","
                  << cross_channel << " to correlation node "
