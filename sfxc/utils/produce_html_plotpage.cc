@@ -56,7 +56,7 @@ public:
   }
 
   float signal_to_noise_ratio() {
-    const int N = data.size();
+    const size_t N = data.size();
     int index_max = max_value_offset();
     index_max = (index_max+N)%N;
 
@@ -66,10 +66,9 @@ public:
 
     for (size_t i=0 ; i< N ; i++){
       // difference in the range [0,n)
-      int pos_diff = (N+index_max-i)%N;
+      size_t pos_diff = (N+index_max-i)%N;
       // difference in the range [-n/2,n/2)
-      pos_diff = std::abs((int)((pos_diff+N/2)%N - 
-                                N/2));
+      pos_diff = std::abs((int)((pos_diff+N/2)%N - N/2));
       if (pos_diff > N/20) {
         // skip 10% arround lag for max which is at imax 
         n2avg++;
@@ -82,7 +81,7 @@ public:
     float sum = 0;
     for (size_t i=0 ; i< N ; i++){
       // difference in the range [0,n)
-      int pos_diff = (N+index_max-i)%N;
+      size_t pos_diff = (N+index_max-i)%N;
       // difference in the range [-n/2,n/2)
       pos_diff = std::abs((int)((pos_diff+N/2)%N - 
                                 N/2));
@@ -125,6 +124,8 @@ public:
 
 private:
   void set_plot(const Plot_data &plot_data);
+
+  const Plot_data &get_first_plot();
 
   void generate_filename(char *filename, 
                          char *filename_large, 
@@ -241,27 +242,18 @@ All_plots_data::print_html() {
     index_html << "<table border=1 bgcolor='#dddddd' cellspacing=0>"
                << std::endl;
 
+
+
     // Print header
     std::vector<int>                  autos;
     std::vector< std::pair<int,int> > crosses;
-    int sideband=-1, pol1=-1, pol2=-1;
-    { // Compute nAutos and nCrosses
-      for (int sideband_it = 0; sideband_it<2; sideband_it++) {
-        for (int pol1_it = 0; pol1_it<2; pol1_it++) {
-          for (int pol2_it = 0; pol2_it<2; pol2_it++) {
-            if (!plots[sideband_it][pol1_it][pol2_it].empty()) {
-              if (!plots[sideband_it][pol1_it][pol2_it][0].empty()) {
-                sideband = sideband_it;
-                pol1 = pol1_it;
-                pol2 = pol2_it;
-              }
-            }
-          }
-        }
-      }
-      assert(sideband != -1);
-      assert(!plots[sideband][pol1][pol2].empty());
+    const Plot_data &first_plot = get_first_plot();
 
+    int sideband = first_plot.header.sideband;
+    int pol1 = first_plot.header.polarisation1;
+    int pol2 = first_plot.header.polarisation2;
+
+    { // Compute nAutos and nCrosses
       for (size_t st1=0; st1 != plots[sideband][pol1][pol2][0].size(); st1++) {
         for (size_t st2=0; st2 != plots[sideband][pol1][pol2][0][st1].size(); st2++) {
           if (plots[sideband][pol1][pol2][0][st1][st2].initialised) {
@@ -312,14 +304,16 @@ All_plots_data::print_html() {
       }
 
       char filename[80], filename_large[80], title[80];
-      generate_filename(filename, filename_large, title, 80,
-                        plots[sideband][pol1][pol2][0][0][0]);
+      generate_filename(filename, filename_large, title, 80, first_plot);
       index_html << "<td rowspan=99><img src=\"" 
                  << filename << "\" name=\"plot_image\"></td>" << std::endl;
       index_html << "</tr>" << std::endl;
     }
 
     { // Print content of the table
+      assert(first_plot.header.station_nr1 == first_plot.header.station_nr2);
+      const size_t first_station = first_plot.header.station_nr1;
+
       for (size_t ch = 0; ch != plots[sideband][pol1][pol2].size(); ch++) {
         for (int sideband=0; sideband<2; sideband++) {
           for (int pol1=0; pol1<2; pol1++) {
@@ -330,33 +324,25 @@ All_plots_data::print_html() {
                   index_html << "<tr>" << std::endl;
                   // First cell
                   index_html << "<th>";
-                  if (!plots[sideband][pol1][pol2][ch][0].empty()) {
-                    if (plots[sideband][pol1][pol2][ch][0][0].initialised) {
-                      assert(pol1 == pol2);
-                      const Output_header_baseline &header = 
-                        plots[sideband][pol1][pol2][ch][0][0].header;
 
-                      assert(header.frequency_nr < frequencies.size());
-                      index_html.precision(10);
-                      index_html << frequencies[header.frequency_nr]/1000000
-                                 << "MHz";
-                      index_html.precision(4);
-                      if (header.sideband == 0) {
-                        index_html << ", LSB";
-                      } else {
-                        index_html << ", USB";
-                      }
-                      if (header.polarisation1 == 0) {
-                        index_html << ", Rcp";
-                      } else {
-                        index_html << ", Lcp";
-                      }
-                      if (header.polarisation2 == 0) {
-                        index_html << "-Rcp";
-                      } else {
-                        index_html << "-Lcp";
-                      }
-                    }
+                  index_html.precision(10);
+                  index_html << frequencies[ch]/1000000
+                             << "MHz";
+                  index_html.precision(4);
+                  if (sideband == 0) {
+                    index_html << ", LSB";
+                  } else {
+                    index_html << ", USB";
+                  }
+                  if (pol1 == 0) {
+                    index_html << ", Rcp";
+                  } else {
+                    index_html << ", Lcp";
+                  }
+                  if (pol2 == 0) {
+                    index_html << "-Rcp";
+                  } else {
+                    index_html << "-Lcp";
                   }
                   index_html << "</th>" << std::endl;
                 
@@ -399,20 +385,46 @@ All_plots_data::set_plot(const Plot_data &plot_data) {
     assert(pol1==pol2);
   }
   
-  Container &plot = plots[sideband][pol1][pol2];
-  if (plot.size() <= freq) 
-    plot.resize(freq+1);
-  assert(plot.size() > freq);
-  if (plot[freq].size() <= station1) 
-    plot[freq].resize(station1+1);
-  assert(plot[freq].size() > station1);
-  if (plot[freq][station1].size() <= station2) 
-    plot[freq][station1].resize(station2+1);
-  assert(plot[freq][station1].size() > station2);
+  Container &container = plots[sideband][pol1][pol2];
+  if (container.size() <= freq) 
+    container.resize(freq+1);
+  assert(freq < container.size());
+  if (container[freq].size() <= station1) 
+    container[freq].resize(station1+1);
+  assert(station1 < container[freq].size());
+  if (container[freq][station1].size() <= station2) 
+    container[freq][station1].resize(station2+1);
+  assert(station2 < container[freq][station1].size());
 
-  assert(!plot[freq][station1][station2].initialised);
-  plot[freq][station1][station2] = plot_data;
-  assert(plot[freq][station1][station2].initialised);
+  assert(!container[freq][station1][station2].initialised);
+  container[freq][station1][station2] = plot_data;
+  assert(container[freq][station1][station2].initialised);
+}
+
+const Plot_data &
+All_plots_data::
+get_first_plot() {
+  for (size_t channel=0; channel < 16; channel++) {
+    for (int sideband=0; sideband<2; sideband++) {
+      for (int pol1=0; pol1<2; pol1++) {
+        for (int pol2=0; pol2<2; pol2++) {
+          Container &container = plots[sideband][pol1][pol2];
+          if (channel < container.size()) {
+            for (size_t station=0; 
+                 station<container[channel].size(); station++) {
+              if (station < container[channel][station].size()) {
+                if (container[channel][station][station].initialised) {
+                  return container[channel][station][station];
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  assert(false);
+  return plots[0][0][0][0][0][0];
 }
 
 void 
@@ -431,6 +443,7 @@ generate_filename(char *filename,
   char pol1_ch = (pol1 == 0 ? 'r' : 'l');
   int pol2 = data.header.polarisation2;
   char pol2_ch = (pol2 == 0 ? 'r' : 'l');
+  
   assert(plots[sideband][pol1][pol2][channel][station1][station2].initialised);
   snprintf(filename, size,
            "st%02d_%ccp-st%02d_%ccp-ch%01d-%csb.png", 
