@@ -508,7 +508,8 @@ print_cross(std::ostream &index_html,
                    << snr << "<br>"
                    << "<font size=-2>offset: " 
                    << (plot_data.max_value_offset() - 
-                       global_header.number_channels/2) << "</font>"
+                       global_header.number_channels/2 - 1)
+                   << "</font>"
                    << "</a>";
         index_html << "</td>";
       }
