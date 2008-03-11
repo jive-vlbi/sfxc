@@ -22,13 +22,13 @@ Manager_node::
 Manager_node(int rank, int numtasks,
              Log_writer *log_writer,
              const Control_parameters &control_parameters)
-  : Abstract_manager_node(rank, numtasks,
-                          log_writer,
-                          control_parameters),
+    : Abstract_manager_node(rank, numtasks,
+                            log_writer,
+                            control_parameters),
     manager_controller(*this),
-    duration_time_slice(1000),
-    current_scan(0), 
-    integration_slice_nr(0) {
+    integration_slice_nr(0),
+    current_scan(0)
+/**/ {
   assert(rank == RANK_MANAGER_NODE);
 
   add_controller(&manager_controller);
@@ -142,10 +142,6 @@ Manager_node(int rank, int numtasks,
 
   assert(number_correlator_nodes() > 0);
   state_correlator_node.resize(number_correlator_nodes());
-
-  if (duration_time_slice < control_parameters.integration_time()) {
-    duration_time_slice = control_parameters.integration_time();
-  }
 }
 
 Manager_node::~Manager_node() {
@@ -170,18 +166,15 @@ void Manager_node::start() {
         initialise_scan(control_parameters.scan(current_scan));
 
         // Set the input nodes to the proper start time
-        assert(duration_time_slice >= 1000);
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
           int station_time =
             input_node_get_current_time(control_parameters.station(station));
-          if (station_time > start_time) {
+          if (station_time >
+              start_time + integration_slice_nr*integration_time()) {
             //DEBUG_MSG("updating start time: " << station_time);
-            start_time =
-              (station_time/duration_time_slice) * duration_time_slice;
-            if (station_time%1000 != 0) {
-              start_time += duration_time_slice;
-            }
+            integration_slice_nr =
+              (station_time-start_time)/integration_time();
           }
         }
 
@@ -203,10 +196,6 @@ void Manager_node::start() {
         break;
       }
       case START_CORRELATION_TIME_SLICE: {
-        stoptime_timeslice = start_time+duration_time_slice;
-        if (stop_time_scan < stoptime_timeslice) {
-          stoptime_timeslice = stop_time_scan;
-        }
         current_channel = 0;
         current_correlator_node = 0;
         status = START_CORRELATOR_NODES_FOR_TIME_SLICE;
@@ -214,14 +203,9 @@ void Manager_node::start() {
       }
       case START_CORRELATOR_NODES_FOR_TIME_SLICE: {
         bool added_correlator_node = false;
-        for (size_t i=0;
-             (current_channel<control_parameters.number_frequency_channels())
-             && (i<number_correlator_nodes());
-             i++) {
-          if (get_correlating_state(i) == READY) {
-            start_next_timeslice_on_node(i);
-            added_correlator_node = true;
-          }
+        if (get_correlating_state(current_correlator_node) == READY) {
+          start_next_timeslice_on_node(current_correlator_node);
+          added_correlator_node = true;
         }
 
         if (added_correlator_node) {
@@ -236,24 +220,27 @@ void Manager_node::start() {
         break;
       }
       case GOTO_NEXT_TIMESLICE: {
-        start_time += duration_time_slice;
-        int n = control_parameters.integrations_per_timeslice(duration_time_slice);
-        output_slice_nr += (n-1) * control_parameters.number_correlation_cores_per_timeslice(get_current_mode());
-        integration_slice_nr += n;
+        integration_slice_nr += 1;
 
-        if (start_time+duration_time_slice > stop_time) {
+        if (start_time+integration_slice_nr*integration_time() >=
+            stop_time) {
+          DEBUG_MSG("STOP_CORRELATING");
           status = STOP_CORRELATING;
         } else if (start_time >= stop_time_scan) {
           if (current_scan == control_parameters.number_scans()) {
+            DEBUG_MSG("STOP_CORRELATING");
             status = STOP_CORRELATING;
           } else {
             current_scan++;
             status = START_NEW_SCAN;
             status = STOP_CORRELATING;
+            DEBUG_MSG("STOP_CORRELATING");
           }
         } else if (current_scan == control_parameters.number_scans()) {
+          DEBUG_MSG("STOP_CORRELATING");
           status = STOP_CORRELATING;
         } else {
+          DEBUG_MSG("START_CORRELATION_TIME_SLICE");
           status = START_CORRELATION_TIME_SLICE;
         }
         break;
@@ -294,6 +281,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     get_log_writer()(1)
     << "start "
     << Vex::Date(start_year, start_day, start_time/1000).to_string()
+    << (start_time%1000) << "ms"
     << ", channel " << current_channel << " to correlation node "
     << corr_node_nr << std::endl;
     PROGRESS_MSG("start "
@@ -330,8 +318,10 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
                                channel_name,
                                station_name,
                                get_input_node_map());
-  correlation_parameters.start_time = start_time;
-  correlation_parameters.stop_time  = stoptime_timeslice;
+  correlation_parameters.start_time =
+    start_time + integration_slice_nr*integration_time();
+  correlation_parameters.stop_time  =
+    start_time + (integration_slice_nr+1)*integration_time();
   correlation_parameters.integration_nr = integration_slice_nr;
   correlation_parameters.slice_nr = output_slice_nr;
 
@@ -361,16 +351,16 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     input_node_set_time_slice(control_parameters.station(station_nr),
                               current_channel,
                               /*stream*/corr_node_nr,
-                              start_time,
-                              stoptime_timeslice);
+                              correlation_parameters.start_time,
+                              correlation_parameters.stop_time);
 
     if (cross_channel != -1) {
       // Add the cross polarisation channel
       input_node_set_time_slice(control_parameters.station(station_nr),
                                 cross_channel,
                                 /*stream*/corr_node_nr+n_corr_nodes,
-                                start_time,
-                                stoptime_timeslice);
+                                correlation_parameters.start_time,
+                                correlation_parameters.stop_time);
     }
   }
 

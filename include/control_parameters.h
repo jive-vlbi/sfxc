@@ -220,16 +220,6 @@ public:
                   number_channels);
     return nr_ffts*number_channels*bits_per_sample/8;
   }
-
-  /**
-   * Computes the number of bytes transferred from the input node to the 
-   * correlator node for one integration slice.
-   **/
-  int integrations_per_timeslice(int duration_time_slice) {
-    assert(duration_time_slice >= integration_time());
-    assert(duration_time_slice % integration_time() == 0);
-    return duration_time_slice/integration_time();
-  }
   
   int polarisation_type_for_global_output_header() const;
 

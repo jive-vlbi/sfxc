@@ -136,7 +136,7 @@ public:
         if( boost::is_pod<T>::value ) {
           memcpy(buffer_, oldbuffer, sizeof(T)*min_size);
         } else {
-          for (int i=0; i<min_size; i++) {
+          for (size_t i=0; i<min_size; i++) {
             buffer_[i] = oldbuffer[i];
           }
         }
