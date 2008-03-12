@@ -203,7 +203,7 @@ void Manager_node::start() {
       }
       case START_CORRELATOR_NODES_FOR_TIME_SLICE: {
         bool added_correlator_node = false;
-#ifdef SFXC_DETERMINISTIC_ORDERING_OF_TIMESLICES
+#ifdef SFXC_DETERMINISTIC
         if (get_correlating_state(current_correlator_node) == READY) {
           start_next_timeslice_on_node(current_correlator_node);
           added_correlator_node = true;
