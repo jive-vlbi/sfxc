@@ -562,7 +562,10 @@ int main(int argc, char *argv[])
     // Goto the output directory
     int err = chdir(argv[3]);
     // Make sure it exists
-    assert(err == 0);
+    if (err != 0) {
+      std::cout << "Could not go to directory " << argv[3] << std::endl;
+      return -1;
+    }
   }
   
   all_plots.print_html();
