@@ -432,7 +432,7 @@ void
 Integer_delay_correction_all_channels<Type>::
 pop_from_input_buffer() {
   input_buffer_->pop();
-#if SFXC_DETERMINISTIC
+#ifdef SFXC_DETERMINISTIC
   { // Randomize header
     Input_memory_pool_element front = input_buffer_->front();
     for (int i=0; i<SIZE_MK4_HEADER; i++) {
