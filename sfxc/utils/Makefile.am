@@ -14,7 +14,8 @@ bin_PROGRAMS = create_delay_function \
                produce_output_graphs \
                print_new_output_format \
                dnfp_fileserver \
-               dnfp_fileclient
+               dnfp_fileclient \
+               phase_plot
 
 bin_SCRIPTS  = run_sfxc.py vumeter.py
 
@@ -31,7 +32,7 @@ dnfp_fileserver_SOURCES = \
    ../src/data_reader_socket.cc \
    ../src/data_reader_blocking.cc \
    ../src/utils.cc   
-   
+
 dnfp_fileclient_SOURCES = \
   dnfp_fileclient.cc \
    ../src/data_reader.cc \
@@ -85,4 +86,8 @@ pkginclude_HEADERS = *.h *.py
 
 print_new_output_format_SOURCES = \
   print_new_output_format.cc \
+  ../src/output_header.cc
+
+phase_plot_SOURCES = \
+  phase_plot.cc\
   ../src/output_header.cc
