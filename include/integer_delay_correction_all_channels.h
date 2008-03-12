@@ -156,7 +156,14 @@ Integer_delay_correction_all_channels<Type>::do_task() {
       }
       output_element.data1               = random_element_;
 
-#if 1
+#ifdef SFXC_DETERMINISTIC
+      { // Randomize data
+        for (int i=0; i<nr_output_samples; i++) {
+          // park_miller_random generates 31 random bits
+          random_element_.data()[i] = Type(0);
+        }
+      }
+#else
       { // Randomize data
         for (int i=0; i<nr_output_samples; i++) {
           // park_miller_random generates 31 random bits
@@ -425,7 +432,14 @@ void
 Integer_delay_correction_all_channels<Type>::
 pop_from_input_buffer() {
   input_buffer_->pop();
-#if 1
+#if SFXC_DETERMINISTIC
+  { // Randomize header
+    Input_memory_pool_element front = input_buffer_->front();
+    for (int i=0; i<SIZE_MK4_HEADER; i++) {
+      front.data()[i] = Type(0);
+    }
+  }
+#else
   { // Randomize header
     Input_memory_pool_element front = input_buffer_->front();
     for (int i=0; i<SIZE_MK4_HEADER; i++) {
