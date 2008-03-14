@@ -231,7 +231,7 @@ Integer_delay_correction_all_channels<Type>::do_task() {
           assert(position == (int)output_element.data1.data().size()-1);
           output_element.data2 = input_buffer_->front();
           output_element.sample_offset = position;
-          output_element.subsample_offset = current_delay.second;
+          output_element.subsample_offset = current_delay.second*bits_per_subsample;
         }
 
         // We can release the data

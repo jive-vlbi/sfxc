@@ -85,7 +85,7 @@ Channel_extractor_tasklet<Type>::do_task() {
                             &input_element.data1.data()[0],
                             samples_in_data1,
                             output_positions,
-                            0/*bits_per_sample*input_element.subsample_offset*/);
+                            input_element.subsample_offset);
     } else {
       int samples_in_data1 = (int)input_element.data1.data().size() -
                              input_element.sample_offset;
@@ -96,7 +96,7 @@ Channel_extractor_tasklet<Type>::do_task() {
                             &input_element.data2.data()[0],
                             samples_in_data1,
                             output_positions,
-                            0/*bits_per_sample*input_element.subsample_offset*/);
+                            input_element.subsample_offset);
 
     }
   }
