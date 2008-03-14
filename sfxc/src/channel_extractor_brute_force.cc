@@ -74,9 +74,15 @@ extract(unsigned char *in_data1,
       for (size_t track=0; track<track_positions.size(); track++) {
         output_data_tmp[track][0] = 0;
       }
-      extract_element(&in_data2[size_of_one_input_word *
-                                (input_sample_size+1-samples_in_data1)],
-                      output_data_tmp, 0);
+      if ((input_sample_size+1) < samples_in_data1) {
+        extract_element(&in_data1[size_of_one_input_word *
+                                  (input_sample_size+1)],
+                        output_data_tmp, 0);
+      } else {
+        extract_element(&in_data2[size_of_one_input_word *
+                                  (input_sample_size+1-samples_in_data1)],
+                        output_data_tmp, 0);
+      }
     }
     for (size_t track=0; track<track_positions.size(); track++) {
       output_data[track][output_sample-1] =
