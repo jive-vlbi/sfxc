@@ -10,7 +10,8 @@ benchmark_channel_extractor_SOURCES = \
   main.cc \
   benchmark.cc \
   utils_bench.cc \
-  channel_extractor_5.cc \ 
+  channel_extractor_5.cc \
   channel_extractor_fast.cc \
-  ../../src/channel_extractor_brute_force.cc
-  
+  ../../src/channel_extractor_brute_force.cc \
+  ../../src/utils.cc
+
