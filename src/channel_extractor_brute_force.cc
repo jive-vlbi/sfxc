@@ -84,6 +84,11 @@ extract(unsigned char *in_data1,
                                   (input_sample_size-samples_in_data1)],
                         output_data_tmp, 0);
       }
+      if (fan_out != 8) {
+        for (size_t track=0; track<track_positions.size(); track++) {
+          output_data_tmp[track][0] = output_data_tmp[track][0] << (8-fan_out);
+        }
+      }
     }
     for (size_t track=0; track<track_positions.size(); track++) {
       output_data[track][output_sample-1] =
