@@ -19,6 +19,7 @@ initialise(const std::vector< std::vector<int> > &track_positions_,
   track_positions = track_positions_;
   size_of_one_input_word = size_of_one_input_word_;
   input_sample_size = input_sample_size_;
+  assert((input_sample_size_%2) == 0);
 
   fan_out = track_positions[0].size();
 
@@ -76,11 +77,11 @@ extract(unsigned char *in_data1,
       }
       if ((input_sample_size+1) < samples_in_data1) {
         extract_element(&in_data1[size_of_one_input_word *
-                                  (input_sample_size+1)],
+                                  input_sample_size],
                         output_data_tmp, 0);
       } else {
         extract_element(&in_data2[size_of_one_input_word *
-                                  (input_sample_size+1-samples_in_data1)],
+                                  (input_sample_size-samples_in_data1)],
                         output_data_tmp, 0);
       }
     }
