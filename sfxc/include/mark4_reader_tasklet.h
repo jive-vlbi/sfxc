@@ -55,7 +55,8 @@ private:
   void allocate_element();
   /// Push the input_element_ to the output buffer
   void push_element();
-
+  /// Randomize the mark4 header
+  void randomize_header();
 private:
   /// Data stream to read from
   boost::shared_ptr< Mark4_reader<Type> > mark4_reader_;
@@ -157,10 +158,7 @@ template <class Type>
 void
 Mark4_reader_tasklet<Type>::
 push_element() {
-//  Mark4_header<Type>        header;
-//  header.set_header(&input_element_.data()[0]);
-//  DEBUG_MSG(header.get_time_str(0));
-
+  randomize_header();
   output_buffer_->push(input_element_);
 }
 
@@ -178,4 +176,38 @@ get_tracks(const Input_node_parameters &input_node_param) {
   return mark4_reader_->get_tracks(input_node_param,
                                    &input_element_.data()[0]);
 }
+
+
+template <class Type>
+void
+Mark4_reader_tasklet<Type>::
+randomize_header() {
+#ifdef SFXC_DETERMINISTIC
+  { // Randomize header
+    for (int i=0; i<SIZE_MK4_HEADER; i++) {
+      input_element_.data()[i] = Type(0);
+    }
+  }
+#else
+  { // Randomize header
+    for (int i=0; i<SIZE_MK4_HEADER; i++) {
+      // park_miller_random generates 31 random bits
+      if (sizeof(Type) < 4) {
+        input_element_.data()[i] = (Type)park_miller_random();
+      } else if (sizeof(Type) == 4) {
+        input_element_.data()[i] =
+          (Type(park_miller_random())<<16) + park_miller_random();
+      } else {
+        assert(sizeof(Type) == 8);
+        int64_t rnd = park_miller_random();
+        rnd = (rnd << 16) + park_miller_random();
+        rnd = (rnd << 16) + park_miller_random();
+        rnd = (rnd << 16) + park_miller_random();
+        input_element_.data()[i] = rnd;
+      }
+    }
+  }
+#endif
+}
+
 #endif // MARK4_READER_TASKLET_H

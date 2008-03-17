@@ -136,7 +136,6 @@ Integer_delay_correction_all_channels<Type>::do_task() {
   bool release_data = false;
   output_buffer_element output_element;
 
-
   if (position >= (int)input_buffer_->front().data().size()) {
     position -= input_buffer_->front().data().size();
 
@@ -159,7 +158,6 @@ Integer_delay_correction_all_channels<Type>::do_task() {
 #ifdef SFXC_DETERMINISTIC
       { // Randomize data
         for (int i=0; i<nr_output_samples; i++) {
-          // park_miller_random generates 31 random bits
           random_element_.data()[i] = Type(0);
         }
       }
@@ -432,34 +430,6 @@ void
 Integer_delay_correction_all_channels<Type>::
 pop_from_input_buffer() {
   input_buffer_->pop();
-#ifdef SFXC_DETERMINISTIC
-  { // Randomize header
-    Input_memory_pool_element front = input_buffer_->front();
-    for (int i=0; i<SIZE_MK4_HEADER; i++) {
-      front.data()[i] = Type(0);
-    }
-  }
-#else
-  { // Randomize header
-    Input_memory_pool_element front = input_buffer_->front();
-    for (int i=0; i<SIZE_MK4_HEADER; i++) {
-      // park_miller_random generates 31 random bits
-      if (sizeof(Type) < 4) {
-        front.data()[i] = (Type)park_miller_random();
-      } else if (sizeof(Type) == 4) {
-        front.data()[i] =
-          (Type(park_miller_random())<<16) + park_miller_random();
-      } else {
-        assert(sizeof(Type) == 8);
-        int64_t rnd = park_miller_random();
-        rnd = (rnd << 16) + park_miller_random();
-        rnd = (rnd << 16) + park_miller_random();
-        rnd = (rnd << 16) + park_miller_random();
-        front.data()[i] = rnd;
-      }
-    }
-  }
-#endif
 }
 
 #endif // INTEGER_DELAY_CORRECTION_ALL_CHANNELS_H
