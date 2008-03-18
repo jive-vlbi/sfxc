@@ -12,7 +12,7 @@
 #include "bits_to_float_converter.h"
 
 const FLOAT sample_value_ms[] = {
-                                  -7, -2, 2, 7
+                                  -2, -7, 2, 7
                                 };
 const FLOAT sample_value_m[]  = {
                                   -5,  5
