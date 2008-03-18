@@ -89,7 +89,9 @@ int main(int argc, char *argv[])
       struct Output_header_baseline baseline_header;
       infile.read((char *)&baseline_header, sizeof(baseline_header));
       if (infile.eof()) return 0;
-      //std::cout << baseline_header;
+
+      if (timeslice_header.integration_slice==0) 
+        std::cout << baseline_header;
       
       infile.read((char *)&input_buffer[0], sizeof(input_buffer));
 
