@@ -16,7 +16,8 @@ Input_node_tasklet::Input_node_tasklet() {}
 
 Input_node_tasklet::~Input_node_tasklet() {}
 
-Input_node_tasklet *get_input_node_tasklet(boost::shared_ptr<Data_reader> reader) {
+Input_node_tasklet *
+get_input_node_tasklet(boost::shared_ptr<Data_reader> reader) {
   assert(SIZE_MK4_FRAME%2 == 0);
   char buffer[SIZE_MK4_FRAME];
 
