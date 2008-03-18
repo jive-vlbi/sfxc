@@ -66,8 +66,8 @@ public:
   void extract(unsigned char *in_data1,
                unsigned char *in_data2,
                int samples_in_data1, /* <= size_of_one_input_word+1 */
-               unsigned char **output_data,
-               int offset) {
+               unsigned char **output_data) {
+    int offset = 0;
     int difference = (input_sample_size_+1) - samples_in_data1;
     int out_position=0;
     //std::cout << "\n V1  AT: " << samples_in_data1 << " diff: " << samples_per_byte<< std::endl;
@@ -183,6 +183,6 @@ void Channel_extractor_5::extract(unsigned char *in_data1,
                                   int offset) {
   assert( hidden_implementation_ != NULL && "big" );
 
-  hidden_implementation_->extract(in_data1, in_data2, samples_in_data1-1, output_data, offset);
+  hidden_implementation_->extract(in_data1, in_data2, samples_in_data1-1, output_data);
 }
 

@@ -22,25 +22,29 @@ int main(int argc, char *argv[]) {
 #endif
 
   Log_writer_cout log_writer(0);
-  
+
   if (argc != 2) {
     log_writer << "usage: " << argv[0] << " <mark4-file>" << std::endl;
     return 1;
   }
 
-  
+
   boost::shared_ptr<Data_reader> reader(new Data_reader_file(argv[1]));
-  
-  Channel_extractor_mark4 
-    extractor(reader, 
-              false /* insert_random_headers */, 
-              Channel_extractor_mark4::CHECK_ALL_HEADERS);
 
-  // print first header
-  extractor.print_header(log_writer,0);
+//  Input_node_tasklet *input_node = get_input_node_tasklet(reader);
   
-  extractor.goto_next_block();
+  
 
-  // print second header
-  extractor.print_header(log_writer,0);
+//  Channel_extractor_mark4
+//  extractor(reader,
+//            false /* insert_random_headers */,
+//            Channel_extractor_mark4::CHECK_ALL_HEADERS);
+//
+//  // print first header
+//  extractor.print_header(log_writer,0);
+//
+//  extractor.goto_next_block();
+//
+//  // print second header
+//  extractor.print_header(log_writer,0);
 }

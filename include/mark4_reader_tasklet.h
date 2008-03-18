@@ -57,6 +57,7 @@ private:
   void push_element();
   /// Randomize the mark4 header
   void randomize_header();
+
 private:
   /// Data stream to read from
   boost::shared_ptr< Mark4_reader<Type> > mark4_reader_;
@@ -80,8 +81,8 @@ Mark4_reader_tasklet(boost::shared_ptr<Data_reader> reader, char *buffer)
   mark4_reader_ =
     boost::shared_ptr<Mark4_reader<Type> >(new Mark4_reader<Type>(reader,
                                            buffer,
-                                           &input_element_.data()[0]));
-
+                                           &input_element_.data().mk4_data[0]));
+  input_element_.data().start_time = mark4_reader_->get_current_time();
 }
 
 template <class Type>
@@ -92,7 +93,37 @@ do_task() {
 
   push_element();
   allocate_element();
-  mark4_reader_->read_new_block(&input_element_.data()[0]);
+  if (!mark4_reader_->read_new_block(&input_element_.data().mk4_data[0])) {
+#ifdef SFXC_DETERMINISTIC
+    { // Randomize data
+      for (int i=0; i<SIZE_MK4_FRAME; i++) {
+        input_element_.data().mk4_data[i] = Type(0);
+      }
+    }
+#else
+    { // Randomize data
+      for (int i=0; i<SIZE_MK4_FRAME; i++) {
+        // park_miller_random generates 31 random bits
+        if (sizeof(Type) < 4) {
+          input_element_.data().mk4_data[i] = (Type)park_miller_random();
+        } else if (sizeof(Type) == 4) {
+          input_element_.data().mk4_data[i] =
+            ((Type(park_miller_random())<<16)&(~0xFFFF)) +
+            (park_miller_random()&0xFFFF);
+        } else {
+          assert(sizeof(Type) == 8);
+          uint64_t rnd = park_miller_random();
+          rnd = (rnd << 16) + park_miller_random();
+          rnd = (rnd << 16) + park_miller_random();
+          rnd = (rnd << 16) + park_miller_random();
+          input_element_.data().mk4_data[i] = rnd;
+        }
+      }
+    }
+#endif
+
+  }
+  input_element_.data().start_time = mark4_reader_->get_current_time();
 }
 
 template <class Type>
@@ -101,9 +132,7 @@ Mark4_reader_tasklet<Type>::
 has_work() {
   if (memory_pool_.empty())
     return false;
-  // NGHK: TODO check
-//  DEBUG_MSG("time_stamp: " << mark4_reader_->get_current_time() << " < " <<  stop_time);
-  if ((stop_time > 0) && (stop_time <= mark4_reader_->get_current_time()))
+  if (stop_time <= mark4_reader_->get_current_time())
     return false;
 
   return true;
@@ -115,10 +144,9 @@ Mark4_reader_tasklet<Type>::
 allocate_element() {
   assert(!memory_pool_.empty());
   input_element_ = memory_pool_.allocate();
-  std::vector<Type> vector_ = input_element_.data();
+  std::vector<Type> &vector_ = input_element_.data().mk4_data;
   if (vector_.size() != SIZE_MK4_FRAME) {
     vector_.resize(SIZE_MK4_FRAME);
-    input_element_.data().resize(SIZE_MK4_FRAME);
   }
 }
 
@@ -127,12 +155,14 @@ int
 Mark4_reader_tasklet<Type>::
 goto_time(int ms_time) {
   int64_t us_time = int64_t(1000)*ms_time;
-  // NGHK: TODO: check if we need to release the current block
+
   int64_t new_time =
-    mark4_reader_->goto_time(&input_element_.data()[0], us_time);
-  
+    mark4_reader_->goto_time(&input_element_.data().mk4_data[0], us_time);
+  input_element_.data().start_time = mark4_reader_->get_current_time();
+
   if (us_time != new_time) {
-    DEBUG_MSG("New time " << us_time << "us not found. Current time is " << new_time);
+    DEBUG_MSG("New time " << us_time
+              << "us not found. Current time is " << new_time);
   }
   return new_time/1000;
 }
@@ -174,36 +204,37 @@ std::vector< std::vector<int> >
 Mark4_reader_tasklet<Type>::
 get_tracks(const Input_node_parameters &input_node_param) {
   return mark4_reader_->get_tracks(input_node_param,
-                                   &input_element_.data()[0]);
+                                   &input_element_.data().mk4_data[0]);
 }
-
 
 template <class Type>
 void
 Mark4_reader_tasklet<Type>::
 randomize_header() {
+  // Randomize header
 #ifdef SFXC_DETERMINISTIC
-  { // Randomize header
+  { // Randomize data
     for (int i=0; i<SIZE_MK4_HEADER; i++) {
-      input_element_.data()[i] = Type(0);
+      input_element_.data().mk4_data[i] = Type(0);
     }
   }
 #else
-  { // Randomize header
+  { // Randomize data
     for (int i=0; i<SIZE_MK4_HEADER; i++) {
       // park_miller_random generates 31 random bits
       if (sizeof(Type) < 4) {
-        input_element_.data()[i] = (Type)park_miller_random();
+        input_element_.data().mk4_data[i] = (Type)park_miller_random();
       } else if (sizeof(Type) == 4) {
-        input_element_.data()[i] =
-          (Type(park_miller_random())<<16) + park_miller_random();
+        input_element_.data().mk4_data[i] =
+          ((Type(park_miller_random())<<16)&(~0xFFFF)) +
+          (park_miller_random()&0xFFFF);
       } else {
         assert(sizeof(Type) == 8);
-        int64_t rnd = park_miller_random();
+        uint64_t rnd = park_miller_random();
         rnd = (rnd << 16) + park_miller_random();
         rnd = (rnd << 16) + park_miller_random();
         rnd = (rnd << 16) + park_miller_random();
-        input_element_.data()[i] = rnd;
+        input_element_.data().mk4_data[i] = rnd;
       }
     }
   }
@@ -211,3 +242,4 @@ randomize_header() {
 }
 
 #endif // MARK4_READER_TASKLET_H
+

@@ -18,6 +18,25 @@
 #include "mark4_header.h"
 #include "control_parameters.h"
 
+class Mark4_reader_interface {
+public:
+  Mark4_reader_interface() {}
+  virtual ~Mark4_reader_interface() {}
+
+  /// Time in microseconds
+  /// Changed the order of the arguments when I changed from miliseconds to microseconds
+  virtual int64_t goto_time(char *data_block, int64_t us_time) = 0;
+
+  /// Get the current time in microseconds
+  virtual int64_t get_current_time() = 0;
+
+  /// Read another mark4-frame
+  virtual bool read_new_block(char *data_block) = 0;
+
+  // The time between two headers in microseconds
+  virtual int time_between_headers() = 0;
+};
+
 /**
  * Returns the start of a mark4 header in buffer and returns the number of tracks
  **/
@@ -26,7 +45,7 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
 
 
 template <class Type>
-class Mark4_reader {
+class Mark4_reader : public Mark4_reader_interface {
   enum Debug_level {
     NO_CHECKS = 0,
     CHECK_PERIODIC_HEADERS,
@@ -57,6 +76,18 @@ public:
   /// Get track information from a mark4 header
   std::vector< std::vector<int> >
   get_tracks(const Input_node_parameters &input_node_param, Type *mark4_block);
+
+
+  // Implementation of virtual functions
+  int64_t goto_time(char *data_block, int64_t us_time) {
+    return goto_time((Type*) data_block, us_time);
+  }
+  bool read_new_block(char *data_block) {
+    return read_new_block((Type *)data_block);
+  }
+  int time_between_headers() {
+    return MARK4_TRACK_BIT_RATE / SIZE_MK4_FRAME;
+  }
 
 private:
   // format a time in miliseconds
@@ -89,7 +120,7 @@ Mark4_reader(boost::shared_ptr<Data_reader> data_reader,
              Type *mark4_block)
     : data_reader_(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
-block_count_(0) {
+    block_count_(0) {
   // fill the first mark4 block
   memcpy(mark4_block, buffer, SIZE_MK4_FRAME*sizeof(char));
   int size = SIZE_MK4_FRAME*(sizeof(Type) - sizeof(char));
@@ -131,17 +162,13 @@ goto_time(Type *mark4_block, int64_t us_time) {
 
   // TODO having a blocking read would be nice.
   // as well as a goto function.
-  size_t byte_to_read = read_n_bytes;
-  while( byte_to_read > 0 && !data_reader_->eof() )
-  {
-    size_t result = data_reader_->get_bytes(byte_to_read,NULL);
-    byte_to_read -= result;
-    if( byte_to_read > read_n_bytes/5  ){
-      std::cout << "skipping data, remaining: " << byte_to_read << std::endl;
-    }
+  size_t bytes_to_read = read_n_bytes;
+  while( bytes_to_read > 0 && !data_reader_->eof() ) {
+    size_t result = data_reader_->get_bytes(bytes_to_read,NULL);
+    bytes_to_read -= result;
   }
-  
-  if( byte_to_read != 0 ) {
+
+  if( bytes_to_read != 0 ) {
     assert(false);
     return get_current_time();
   }
@@ -198,6 +225,7 @@ read_new_block(Type *mark4_block) {
   do {
     int result = data_reader_->get_bytes(to_read, buffer);
     if (result < 0) {
+      current_time_ += time_between_headers();
       return false;
     }
     to_read -= result;

@@ -35,8 +35,7 @@ Channel_extractor_brute_force::
 extract(unsigned char *in_data1,
         unsigned char *in_data2,
         int samples_in_data1, /* <= size_of_one_input_word+1 */
-        unsigned char **output_data,
-        int offset) {
+        unsigned char **output_data) {
   int output_sample = 0, bit = 0;
   for (int input_sample=0; input_sample < input_sample_size; input_sample++) {
     if (bit == 0) { // Clear a new sample
@@ -60,41 +59,6 @@ extract(unsigned char *in_data1,
       bit = 0;
     }
     assert(bit < 8);
-  }
-  
-  if (offset != 0) {
-    // do the offset
-    for (size_t track=0; track<track_positions.size(); track++) {
-      for (int sample=0; sample<output_sample-1; sample++) {
-        output_data[track][sample] =
-          (output_data[track][sample] << offset) |
-          (output_data[track][sample+1] >> (8-offset));
-      }
-    }
-    { // Last sample
-      for (size_t track=0; track<track_positions.size(); track++) {
-        output_data_tmp[track][0] = 0;
-      }
-      if (input_sample_size < samples_in_data1) {
-        extract_element(&in_data1[size_of_one_input_word *
-                                  input_sample_size],
-                        output_data_tmp, 0);
-      } else {
-        extract_element(&in_data2[size_of_one_input_word *
-                                  (input_sample_size-samples_in_data1)],
-                        output_data_tmp, 0);
-      }
-      if (fan_out != 8) {
-        for (size_t track=0; track<track_positions.size(); track++) {
-          output_data_tmp[track][0] = output_data_tmp[track][0] << (8-fan_out);
-        }
-      }
-    }
-    for (size_t track=0; track<track_positions.size(); track++) {
-      output_data[track][output_sample-1] =
-        ((unsigned char)output_data[track][output_sample-1] << offset) |
-        ((unsigned char)output_data_tmp[track][0] >> (8-offset));
-    }
   }
 }
 

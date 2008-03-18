@@ -5,13 +5,14 @@
 #include <boost/shared_ptr.hpp>
 
 #include "data_writer.h"
+#include "utils.h"
 
 template <class Type>
 class Input_node_data_writer_tasklet : public Tasklet {
 public:
-  typedef typename Input_node_types<Type>::Channel_buffer         Input_buffer;
-  typedef typename Input_node_types<Type>::Channel_buffer_element Input_buffer_element;
-  typedef typename Input_node_types<Type>::Channel_buffer_ptr     Input_buffer_ptr;
+  typedef typename Input_node_types<Type>::Fft_buffer         Input_buffer;
+  typedef typename Input_node_types<Type>::Fft_buffer_element Input_buffer_element;
+  typedef typename Input_node_types<Type>::Fft_buffer_ptr     Input_buffer_ptr;
 
   typedef boost::shared_ptr<Data_writer>                 Data_writer_ptr;
   typedef std::queue<Data_writer_ptr>                    Data_writer_queue;
@@ -90,17 +91,19 @@ do_task() {
 
   Input_buffer_element &input_element = input_buffer_->front();
   assert((data_writers_.front()->get_size_dataslice() < 0) ||
-         (input_element.data().data.size() <=
+         (input_element.fft_data.data().data.size() <=
           (size_t)data_writers_.front()->get_size_dataslice()));
 
-  assert(input_element.data().data.size() > 0);
-  int bytes_to_write = input_element.data().data.size(), bytes_written = 0;
+
+  assert(input_element.fft_data.data().data.size() > 0);
+  int bytes_to_write = input_element.fft_data.data().data.size();
+  int bytes_written = 0;
 
   do {
     assert(bytes_to_write - bytes_written > 0);
     size_t nbytes =
       data_writers_.front()->put_bytes(bytes_to_write - bytes_written,
-                                       &input_element.data().data[bytes_written]);
+                                       (char *)&input_element.fft_data.data().data[bytes_written]);
     assert(nbytes >= 0);
     bytes_written += nbytes;
   } while (bytes_written != bytes_to_write);
@@ -109,7 +112,7 @@ do_task() {
     data_writers_.pop();
   }
 
-  input_element.release();
+  input_element.fft_data.release();
   input_buffer_->pop();
 }
 

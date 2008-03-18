@@ -112,7 +112,7 @@ bool
 Bits_to_float_converter::has_work() {
   if (bits_per_sample <= 0)
     return false;
-  if (data_reader->get_size_dataslice() == 0)
+  if (data_reader->get_size_dataslice() <= 0)
     return false;
   if (output_buffer->full())
     return false;

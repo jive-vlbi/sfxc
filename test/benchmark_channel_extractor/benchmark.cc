@@ -87,7 +87,6 @@ bool Benchmark::do_test(int n_channels, int fan_out,
   output.resize(n_channels);
   output_brute.resize(n_channels);
   for (int i=0; i<n_channels; i++) {
-file:///usr/share/ubuntu-artwork/home/index.html
     output[i] = new unsigned char[n_output_bytes_per_channel];
     output_brute[i] = new unsigned char[n_output_bytes_per_channel];
   }
@@ -113,8 +112,7 @@ file:///usr/share/ubuntu-artwork/home/index.html
     randomize_buffers(output_brute, n_output_bytes_per_channel);
     channel_extractor_brute.extract(&in_data1[0], &in_data2[0],
                                     n_input_samples_to_process+1,
-                                    &output_brute[0],
-                                    offset);
+                                    &output_brute[0]);
 
     for (int offset_in_input_samples=0; offset_in_input_samples<10; offset_in_input_samples++) {
       // recompute the output
@@ -122,8 +120,7 @@ file:///usr/share/ubuntu-artwork/home/index.html
       channel_extractor.extract(&in_data1[size_input_word*offset_in_input_samples],
                                 &in_data2[0],
                                 n_input_samples_to_process+1-offset_in_input_samples,
-                                &output[0],
-                                offset);
+                                &output[0]);
 
       // std::cout << "offset: " << offset << std::endl;
       // print_output_buffers(output, n_output_bytes_per_channel);

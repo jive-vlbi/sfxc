@@ -19,8 +19,9 @@
 template <class Type>
 Channel_extractor_tasklet<Type>::Channel_extractor_tasklet()
     : output_memory_pool_(32000*MAX_SUBBANDS),
-      ch_extractor(new Channel_extractor_brute_force()), 
-                   n_subbands(0), fan_out(0) {}
+    ch_extractor(new Channel_extractor_brute_force()),
+    n_subbands(0),
+fan_out(0) {}
 
 template <class Type>
 Channel_extractor_tasklet<Type>::~Channel_extractor_tasklet() {}
@@ -37,19 +38,9 @@ Channel_extractor_tasklet<Type>::do_task() {
   // The struct containing the data for processing
   Input_buffer_element input_element = input_buffer_->front();
 
-  // Check if we only need to release the buffer
-  if (input_element.only_release_data1) {
-    assert(!input_element.data1.released());
-    input_element.data1.release();
-    input_buffer_->pop();
-    return;
-  }
-
-  assert((size_t)input_element.sample_offset < input_element.data1->size());
-
   // The number of input samples to process
-  int n_input_samples = input_element.number_data_samples;
-  assert(n_input_samples > 0);
+  int n_input_samples = input_element.data().mk4_data.size();
+  assert(n_input_samples == SIZE_MK4_FRAME);
 
   // Number of bytes in the output chunk
   assert((n_input_samples*fan_out)%8==0);
@@ -61,48 +52,31 @@ Channel_extractor_tasklet<Type>::do_task() {
   { // Acquire output buffers
     for (size_t subband=0; subband<n_subbands; subband++) {
       assert(!output_memory_pool_.empty());
-      output_elements[subband] = output_memory_pool_.allocate();
-      
+      output_elements[subband].channel_data = output_memory_pool_.allocate();
+
+      output_elements[subband].start_time = input_element.data().start_time;
+
       // allocate the right amount of memory for each output block
-      if (output_elements[subband]->data.size() != (size_t)n_output_bytes) {
-        output_elements[subband]->data.resize(n_output_bytes);
+      if (output_elements[subband].channel_data.data().data.size() !=
+          (size_t)n_output_bytes) {
+        output_elements[subband].channel_data.data().data.resize(n_output_bytes);
       }
-      assert(output_elements[subband]->data.size() == (size_t)n_output_bytes);
-      
-      output_positions[subband] = (unsigned char *)&(output_elements[subband]->data[0]);
+      assert(output_elements[subband].channel_data.data().data.size() == (size_t)n_output_bytes);
+
+      output_positions[subband] = (unsigned char *)&(output_elements[subband].channel_data.data().data[0]);
     }
   }
 
   { // Channel extract
-    if (input_element.data2.released()) {
-      int samples_in_data1 = input_element.number_data_samples+1;
-      assert((int)input_element.data1.data().size() -
-             input_element.sample_offset >= samples_in_data1);
-
-      ch_extractor->extract((unsigned char *)
-                            &input_element.data1.data()[input_element.sample_offset],
-                            (unsigned char *)
-                            &input_element.data1.data()[0],
-                            samples_in_data1,
-                            output_positions,
-                            input_element.subsample_offset);
-    } else {
-      int samples_in_data1 = (int)input_element.data1.data().size() -
-                             input_element.sample_offset;
-      assert(samples_in_data1 <= input_element.number_data_samples);
-      ch_extractor->extract((unsigned char *)
-                            &input_element.data1.data()[input_element.sample_offset],
-                            (unsigned char *)
-                            &input_element.data2.data()[0],
-                            samples_in_data1,
-                            output_positions,
-                            input_element.subsample_offset);
-
-    }
+    ch_extractor->extract((unsigned char *) &input_element.data().mk4_data[0],
+                          (unsigned char *) NULL,
+                          n_input_samples,
+                          output_positions);
   }
 
 
   { // release the buffers
+    input_element.release();
     input_buffer_->pop();
     for (size_t i=0; i<n_subbands; i++) {
       assert(output_buffers_[i] != Output_buffer_ptr());
@@ -114,14 +88,25 @@ Channel_extractor_tasklet<Type>::do_task() {
 template <class Type>
 bool
 Channel_extractor_tasklet<Type>::has_work() {
-  if (n_subbands == 0)
+  if (n_subbands == 0) {
+    //    DEBUG_MSG_RANK(3, "subbands not initialised");
     return false;
-  if (input_buffer_ == Input_buffer_ptr())
+  }
+  if (input_buffer_ == Input_buffer_ptr()) {
+    //    DEBUG_MSG_RANK(3, "input_buffer_ not initialised");
     return false;
-  if (input_buffer_->empty())
+  }
+  if (input_buffer_->empty()) {
+    //    DEBUG_MSG_RANK(3, "input_buffer_ empty");
     return false;
-  if (output_memory_pool_.number_free_element() < output_buffers_.size())
+  }
+  if (output_memory_pool_.number_free_element() < output_buffers_.size()) {
+    //    DEBUG_MSG_RANK(3, "output memory pool full "
+    //                   << output_memory_pool_.number_free_element()
+    //                   << " < "
+    //                   << output_buffers_.size());
     return false;
+  }
 
   return true;
 }
@@ -134,10 +119,7 @@ set_parameters(const Input_node_parameters &input_node_param,
   n_subbands = input_node_param.channels.size();
   fan_out    = input_node_param.bits_per_sample() *
                input_node_param.subsamples_per_sample();
-  ch_extractor->initialise(track_positions,
-                           sizeof(Type),
-                           input_node_param.number_channels/
-                           input_node_param.subsamples_per_sample());
+  ch_extractor->initialise(track_positions, sizeof(Type), 20000);
 }
 
 
