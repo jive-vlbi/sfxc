@@ -3,14 +3,14 @@
 192.42.120.69
 # chunk size in bytes or "scan size"
 # when "scan size", calculates the actual chunk size as the size of a scan 
-scan size
+10000
 # port number
 8082
 # start time of the first chunk
-2007y158d18h56m00s
+2007y158d18h41m30s
 # end time
-2007y158d18h59m00s
+2007y158d18h41m32s
 # Station code (two letter name of station)
-Jb
+Ef
 # vax file name
 ez015.vix

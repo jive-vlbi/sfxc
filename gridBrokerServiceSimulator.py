@@ -21,4 +21,4 @@ class Service(TranslationNodeNotification):
 
 if __name__ == "__main__" :
   port = 8080
-  AsServer(port, (Service('test'),))
+  AsServer(port, (Service('notification'),))

@@ -21,22 +21,22 @@ class TranslationNodeNotification:
 
   # get broker ip address from the read file
     req.Param0.BrokerIPAddress = BrokerIPAddress
-    req.Param0.chunkId = chunkId
-    req.Param0.chunkLocation = chunkLocation
-    req.Param0.chunkSize = chunkSize
-    req.Param0.endTime = endTime
-    req.Param0.startTime = startTime
-    req.Param0.translationNodeIP = translationNodeIP
-    req.Param0.translationNodeId = translationNodeId
+    req.Param0.ChunkId = chunkId
+    req.Param0.ChunkLocation = chunkLocation
+    req.Param0.ChunkSize = chunkSize
+    req.Param0.EndTime = endTime
+    req.Param0.StartTime = startTime
+    req.Param0.TranslationNodeIP = translationNodeIP
+    req.Param0.TranslationNodeId = translationNodeId
 
 
-    print 'chunk ID: ', req.Param0.chunkId
-    print 'chunk Location: ', req.Param0.chunkLocation
-    print 'Requested chunk size: ', req.Param0.chunkSize
-    print 'Requested end time: ', req.Param0.endTime
-    print 'Requested start time: ', req.Param0.startTime
-    print 'translationNode IP: ', req.Param0.translationNodeIP
-    print 'translationNode Id: ', req.Param0.translationNodeId
+    print 'chunk ID: ', req.Param0.ChunkId
+    print 'chunk Location: ', req.Param0.ChunkLocation
+    print 'Requested chunk size: ', req.Param0.ChunkSize
+    print 'Requested end time: ', req.Param0.EndTime
+    print 'Requested start time: ', req.Param0.StartTime
+    print 'translationNode IP: ', req.Param0.TranslationNodeIP
+    print 'translationNode Id: ', req.Param0.TranslationNodeId
 
   # get port number from the read file
     portNumber_string = "8080"
@@ -45,9 +45,9 @@ class TranslationNodeNotification:
 
   # test if the http address correctly parsed
     loc = TranslationNodeNotificationLocator()
-    portTest = 'http://localhost:' + portNumber + '/test'
+    portTest = 'http://10.87.10.32:' + portNumber + '/notification'
     print portTest
-    port = loc.getTranslationNodeNotificationPortType(portTest)
+    port = loc.getTranslationNodeNotificationPortType(portTest, tracefile=sys.stdout)
 
   # actualy ask the service to do the job
     resp = port.chunkIsReady(req)

@@ -5,14 +5,15 @@
 # Mark5 IP address
 192.42.120.6
 # IP address of the machine where the service is run
-10.87.10.32
+192.42.120.69
 # grid ftp address where the file is to be transfered
 # this adress has to be the full path to the directory
 # i.e. relative to a home directory : melisa.man.poznan.pl/~/
 # i.e. absolute path: huygens.nfra.nl/data4/sfxc/
-huygens.nfra.nl/data4/sfxc/huseyin/tn/junk/
+#huygens.nfra.nl/data4/sfxc/huseyin/tn/junk_mark5/
+melisa.man.poznan.pl/~/
 # path to download/copy files to
-/jop32_0/ozdemir/data/junk/
+/data4/sfxc/huseyin/tn/download_mark5/
 # block size
 8192
 # port number
