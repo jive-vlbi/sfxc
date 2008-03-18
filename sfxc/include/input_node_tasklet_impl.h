@@ -18,7 +18,7 @@
 #include "utils.h"
 
 #include "mark4_reader_tasklet.h"
-#include "integer_delay_correction_all_channels.h"
+#include "integer_delay_correction_per_channel.h"
 #include "void_consuming_tasklet.h"
 #include "channel_extractor_tasklet.h"
 #include "input_node_data_writer_tasklet.h"
@@ -27,8 +27,8 @@ template <class Type>
 class Input_node_tasklet_implementation : public Input_node_tasklet {
 public:
   typedef Mark4_reader_tasklet<Type>                       Mark4_reader_tasklet_;
-  typedef Integer_delay_correction_all_channels<Type>      Integer_delay_tasklet_;
   typedef Channel_extractor_tasklet<Type>                  Channel_extractor_tasklet_;
+  typedef Integer_delay_correction_per_channel<Type>       Integer_delay_tasklet_;
   typedef Input_node_data_writer_tasklet<Type>             Data_writer_tasklet_;
 
   Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader, char *buffer);
@@ -65,15 +65,18 @@ public:
 private:
   //  std::list<Time_slice>                time_slices_;
   Mark4_reader_tasklet_                mark4_reader_;
-  Integer_delay_tasklet_               integer_delay_;
   Channel_extractor_tasklet_           channel_extractor_;
 
+  // Pointer because we can not copy construct the Integer_delay_tasklet_
+  // because of the memory pool
+  std::vector<Integer_delay_tasklet_ *>  integer_delay_;
   std::vector<Data_writer_tasklet_>    data_writers_;
 
   bool did_work;
 
   Timer mark4_reader_timer_, integer_delay_timer_, channel_extractor_timer_, data_writers_timer_;
 
+  Delay_table_akima delay_table;
 };
 
 
@@ -81,11 +84,10 @@ private:
 
 template <class Type>
 Input_node_tasklet_implementation<Type>::
-Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader, char *buffer)
-    : mark4_reader_(reader, buffer),
-did_work(true) {
-  integer_delay_.connect_to(mark4_reader_.get_output_buffer());
-  channel_extractor_.connect_to(integer_delay_.get_output_buffer());
+Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader,
+                                  char *buffer)
+    : mark4_reader_(reader, buffer), did_work(true) {
+  channel_extractor_.connect_to(mark4_reader_.get_output_buffer());
 }
 
 
@@ -94,34 +96,35 @@ void
 Input_node_tasklet_implementation<Type>::
 do_task() {
   did_work = false;
-  if (integer_delay_.time_set()) {
-    mark4_reader_timer_.resume();
-    if (mark4_reader_.has_work()) {
-      mark4_reader_.do_task();
-      did_work = true;
-    }
-    mark4_reader_timer_.stop();
-    integer_delay_timer_.resume();
-    if (integer_delay_.has_work()) {
-      integer_delay_.do_task();
-      did_work = true;
-    }
-    integer_delay_timer_.stop();
-    channel_extractor_timer_.resume();
-    if (channel_extractor_.has_work()) {
-      channel_extractor_.do_task();
-      did_work = true;
-    }
-    channel_extractor_timer_.stop();
-    data_writers_timer_.resume();
-    for (size_t i=0; i<data_writers_.size(); i++) {
-      if (data_writers_[i].has_work()) {
-        data_writers_[i].do_task();
-        did_work = true;
-      }
-    }
-    data_writers_timer_.stop();
+  mark4_reader_timer_.resume();
+  if (mark4_reader_.has_work()) {
+    mark4_reader_.do_task();
+    did_work = true;
   }
+  mark4_reader_timer_.stop();
+  channel_extractor_timer_.resume();
+  if (channel_extractor_.has_work()) {
+    channel_extractor_.do_task();
+    did_work = true;
+  }
+  channel_extractor_timer_.stop();
+  integer_delay_timer_.resume();
+  for (size_t i=0; i<integer_delay_.size(); i++) {
+    assert(integer_delay_[i] != NULL);
+    if (integer_delay_[i]->has_work()) {
+      integer_delay_[i]->do_task();
+      did_work = true;
+    }
+  }
+  integer_delay_timer_.stop();
+  data_writers_timer_.resume();
+  for (size_t i=0; i<data_writers_.size(); i++) {
+    if (data_writers_[i].has_work()) {
+      data_writers_[i].do_task();
+      did_work = true;
+    }
+  }
+  data_writers_timer_.stop();
 }
 
 template <class Type>
@@ -135,7 +138,11 @@ template <class Type>
 void
 Input_node_tasklet_implementation<Type>::
 set_delay_table(Delay_table_akima &table) {
-  integer_delay_.set_delay_table(table);
+  delay_table = table;
+  for (size_t i=0; i<integer_delay_.size(); i++) {
+    assert(integer_delay_[i] != NULL);
+    integer_delay_[i]->set_delay_table(table);
+  }
 
   did_work = true;
 }
@@ -145,16 +152,24 @@ void
 Input_node_tasklet_implementation<Type>::
 set_parameters(const Input_node_parameters &input_node_param,
                int node_nr) {
-  integer_delay_.set_parameters(input_node_param, node_nr);
-
   channel_extractor_.set_parameters(input_node_param,
                                     mark4_reader_.get_tracks(input_node_param));
 
   size_t number_frequency_channels = input_node_param.channels.size();
+  integer_delay_.resize(number_frequency_channels, NULL);
   data_writers_.resize(number_frequency_channels);
 
   for (size_t i=0; i < number_frequency_channels; i++) {
-    data_writers_[i].connect_to(channel_extractor_.get_output_buffer(i));
+    if (integer_delay_[i] == NULL) {
+      integer_delay_[i] = new Integer_delay_tasklet_();
+      if (delay_table.initialised()) {
+        integer_delay_[i]->set_delay_table(delay_table);
+      }
+    }
+    integer_delay_[i]->connect_to(channel_extractor_.get_output_buffer(i));
+    integer_delay_[i]->set_parameters(input_node_param, node_nr);
+
+    data_writers_[i].connect_to(integer_delay_[i]->get_output_buffer());
     data_writers_[i].set_parameters(input_node_param);
   }
 
@@ -165,8 +180,13 @@ template <class Type>
 int
 Input_node_tasklet_implementation<Type>::
 goto_time(int time) {
+  assert(!integer_delay_.empty());
+  assert(integer_delay_[0] != NULL);
   int new_time = mark4_reader_.goto_time(time);
-  integer_delay_.set_time(int64_t(1000)*new_time);
+
+  for (size_t i=0; i < integer_delay_.size(); i++) {
+    integer_delay_[i]->set_time(int64_t(1000)*new_time);
+  }
 
   did_work = true;
   return new_time;
@@ -183,7 +203,10 @@ Input_node_tasklet_implementation<Type>::
 set_stop_time(int time) {
   did_work = true;
 
-  integer_delay_.set_stop_time(int64_t(1000)*time);
+  for (size_t i=0; i<integer_delay_.size(); i++) {
+    assert(integer_delay_[i] != NULL);
+    integer_delay_[i]->set_stop_time(int64_t(1000)*time);
+  }
   return mark4_reader_.set_stop_time(int64_t(1000)*time);
 }
 
@@ -195,7 +218,9 @@ add_data_writer(size_t i,
                 int nr_seconds) {
   did_work = true;
   assert(i < data_writers_.size());
-  int size_slice = integer_delay_.bytes_of_output(nr_seconds);
+  assert(!integer_delay_.empty());
+  assert(integer_delay_[i] != NULL);
+  int size_slice = integer_delay_[i]->bytes_of_output(nr_seconds);
   data_writers_[i].add_data_writer(data_writer, size_slice);
 }
 

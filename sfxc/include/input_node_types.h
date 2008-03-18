@@ -20,7 +20,11 @@ template <class Type>
 class Input_node_types {
 public:
   // Memory pool for Mark4 frames
-  typedef Memory_pool< std::vector<Type> >               Mk4_memory_pool;
+  struct Mk4_frame_data {
+    std::vector<Type> mk4_data;
+    int64_t           start_time;
+  };
+  typedef Memory_pool< Mk4_frame_data >                  Mk4_memory_pool;
   typedef typename Mk4_memory_pool::Element              Mk4_memory_pool_element;
 
   /// Buffer for mark4 data frames
@@ -28,51 +32,32 @@ public:
   typedef Threadsafe_queue<Mk4_buffer_element>           Mk4_buffer;
   typedef boost::shared_ptr<Mk4_buffer>                  Mk4_buffer_ptr;
 
-
-  // Memory pool for fft's
-  typedef Memory_pool<std::vector<Type> >                Fft_memory_pool;
-  typedef typename Fft_memory_pool::Element              Fft_memory_pool_element;
-
-  /// Buffer for fft buffers
-  struct Fft_buffer_element {
-    typedef Type            value_type;
-
-    Fft_buffer_element()
-        : only_release_data1(false), number_data_samples(0), sample_offset(0), subsample_offset(0) {}
-
-    // The data for the fft can be split over two mark4 blocks
-    Mk4_memory_pool_element data1, data2;
-
-    /// Do not process this block, only release the data block
-    bool only_release_data1;
-
-    // Number of data samples in the buffer(s)
-    int number_data_samples;
-
-    // Offset in samples of type Type
-    int                     sample_offset;
-
-    // Each sample of type Type can contain multiple samples
-    // Start at sample with offset "offset_in_samples"
-    int                     subsample_offset;
-  };
-  typedef Threadsafe_queue<Fft_buffer_element>           Fft_buffer;
-  typedef boost::shared_ptr<Fft_buffer>                  Fft_buffer_ptr;
-
-
   // Memory pool for dechannelized data
   struct Channel_memory_pool_data {
-    typedef char      value_type;
-    std::vector<char> data;
+    typedef unsigned char      value_type;
+    
+    std::vector<value_type> data;
     // NGHK: TODO: weights
   };
   typedef Memory_pool< Channel_memory_pool_data >        Channel_memory_pool;
   typedef typename Channel_memory_pool::Element          Channel_memory_pool_element;
 
   /// Buffer for fft buffers
-  typedef Channel_memory_pool_element                    Channel_buffer_element;
+  struct Channel_buffer_element_ {
+    Channel_memory_pool_element channel_data;
+    int64_t                     start_time; // Time in microseconds
+  };
+  typedef Channel_buffer_element_                        Channel_buffer_element;
   typedef Threadsafe_queue<Channel_buffer_element>       Channel_buffer;
   typedef boost::shared_ptr<Channel_buffer>              Channel_buffer_ptr;
+
+    /// Buffer for fft buffers
+  struct Fft_buffer_element_ {
+    Channel_memory_pool_element fft_data;
+  };
+  typedef Fft_buffer_element_                        Fft_buffer_element;
+  typedef Threadsafe_queue<Fft_buffer_element>       Fft_buffer;
+  typedef boost::shared_ptr<Fft_buffer>              Fft_buffer_ptr;
 
   Input_node_types() {}
 }

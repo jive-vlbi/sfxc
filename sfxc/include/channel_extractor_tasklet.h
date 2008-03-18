@@ -27,13 +27,13 @@ class Channel_extractor_tasklet : public Tasklet {
 public:
   typedef Input_node_types<Type>                        Types;
 
-  typedef typename Types::Fft_buffer                    Input_buffer;
+  typedef typename Types::Mk4_buffer                    Input_buffer;
   typedef typename Input_buffer::value_type             Input_buffer_element;
   typedef boost::shared_ptr<Input_buffer>               Input_buffer_ptr;
 
   typedef typename Types::Channel_memory_pool           Output_memory_pool;
   typedef typename Types::Channel_buffer                Output_buffer;
-  typedef typename Output_buffer::value_type            Output_buffer_element;
+  typedef typename Types::Channel_buffer_element        Output_buffer_element;
   typedef boost::shared_ptr<Output_buffer>              Output_buffer_ptr;
 
   Channel_extractor_tasklet();

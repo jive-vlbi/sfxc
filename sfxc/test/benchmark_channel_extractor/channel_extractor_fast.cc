@@ -323,10 +323,9 @@ void Channel_extractor_fast::initialise(const std::vector< std::vector<int> > &t
 void Channel_extractor_fast::extract(unsigned char *in_data1,
                                      unsigned char *in_data2,
                                      int samples_in_data1, /* <= size_of_one_input_word+1 */
-                                     unsigned char **output_data,
-                                     int offset) {
+                                     unsigned char **output_data) {
   assert( hidden_implementation_ != NULL && "big" );
 
-  hidden_implementation_->extract(in_data1, in_data2, samples_in_data1-1, output_data, offset);
+  hidden_implementation_->extract(in_data1, in_data2, samples_in_data1-1, output_data);
 }
 

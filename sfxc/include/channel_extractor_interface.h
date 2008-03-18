@@ -31,8 +31,7 @@ public:
   virtual void extract(unsigned char *in_data1,
                        unsigned char *in_data2,
                        int samples_in_data1, /* <= size_of_one_input_word+1 */
-                       unsigned char **output_data,
-                       int offset) = 0;
+                       unsigned char **output_data) = 0;
 
   std::string& name(){ return name_; }
 };
