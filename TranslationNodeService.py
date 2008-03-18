@@ -1,6 +1,5 @@
 #!/usr/bin/env python2.4
 import sys
-import re
 import time
 import os
 from os.path import join, getsize, exists, split
@@ -231,13 +230,13 @@ class Service(TranslationNode):
         time.sleep(1)
         print "send notification to grid broker..."
         node_notification = TranslationNodeNotification(host,
-                                                        0,
+                                                        10001,
                                                         "location://file.dat",
                                                         123456,
                                                         "2007y158d18h56m05s",
                                                         "2007y158d18h56m00s",
                                                         gridFtpIP,
-                                                        1)
+                                                        20001)
 
         print node_notification
         print "end of notification to grid broker..."

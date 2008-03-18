@@ -1,10 +1,14 @@
+import sys
 from TranslationNodeNotification_services import *
 
 class TranslationNodeNotification:
+  def __init__(self):
+    self.resp_list=[]
+
   def __init__(self, BrokerIPAdress=None, 
                chunkId = None, 
-               chunLocation = None, 
-               chunSize = None, 
+               chunkLocation = None, 
+               chunkSize = None, 
                endTime = None, 
                startTime = None, 
                translationNodeIP = None, 
@@ -14,13 +18,13 @@ class TranslationNodeNotification:
     This service is used to test if the TranslationNodeService is sending
     the notification correctly after the downloading/copying from Mark5 
     operations are finished. """
-
+    
   # define request
     req = chunkIsReadyRequest()
     req.Param0 = req.new_param0()  
 
   # get broker ip address from the read file
-    req.Param0.BrokerIPAddress = BrokerIPAddress
+#    req.Param0.BrokerIPAddress = BrokerIPAddress
     req.Param0.ChunkId = chunkId
     req.Param0.ChunkLocation = chunkLocation
     req.Param0.ChunkSize = chunkSize
@@ -45,7 +49,7 @@ class TranslationNodeNotification:
 
   # test if the http address correctly parsed
     loc = TranslationNodeNotificationLocator()
-    portTest = 'http://10.87.10.32:' + portNumber + '/notification'
+    portTest = 'http://jop32:' + portNumber + '/notification'
     print portTest
     port = loc.getTranslationNodeNotificationPortType(portTest, tracefile=sys.stdout)
 

@@ -24,7 +24,7 @@ print portNumber
 # test if the http address correctly parsed
 # get a port proxy instance
 loc = TranslationNodeNotificationLocator()
-portTest = 'http://localhost:' + portNumber + '/test'
+portTest = 'http://jop32:' + portNumber + '/notification'
 print portTest
 port = loc.getTranslationNodeNotificationPortType(portTest, tracefile=sys.stdout)
 
