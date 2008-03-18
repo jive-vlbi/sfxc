@@ -49,6 +49,7 @@ print_headers_SOURCES = \
   ../src/log_writer_cout.cc \
   ../src/data_reader.cc \
   ../src/data_reader_file.cc \
+  ../src/mark4_reader.cc \
   ../src/channel_extractor_mark4.cc \
   ../src/channel_extractor_brute_force.cc \
   ../src/utils.cc \

@@ -11,10 +11,9 @@
 
 #include "log_writer_cout.h"
 #include "data_reader_file.h"
-#include "channel_extractor_mark4.h"
 
 #include "utils.h"
-#include "mark4_header.h"
+#include "mark4_reader.h"
 
 int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG
@@ -31,20 +30,19 @@ int main(int argc, char *argv[]) {
 
   boost::shared_ptr<Data_reader> reader(new Data_reader_file(argv[1]));
 
-//  Input_node_tasklet *input_node = get_input_node_tasklet(reader);
-  
-  
+  char buffer[sizeof(int64_t)*SIZE_MK4_FRAME];
 
-//  Channel_extractor_mark4
-//  extractor(reader,
-//            false /* insert_random_headers */,
-//            Channel_extractor_mark4::CHECK_ALL_HEADERS);
-//
-//  // print first header
-//  extractor.print_header(log_writer,0);
-//
-//  extractor.goto_next_block();
-//
-//  // print second header
-//  extractor.print_header(log_writer,0);
+  Mark4_reader_interface *mark4_reader = get_mark4_reader(reader, buffer);
+
+  int64_t prev_time = mark4_reader->get_current_time(), current_time;
+
+  do {
+    current_time = mark4_reader->get_current_time();
+    std::cout
+    << current_time
+    << " \t" << current_time - prev_time
+    << std::endl;
+    prev_time = current_time;
+  } while (mark4_reader->read_new_block(buffer));
+
 }

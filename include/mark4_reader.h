@@ -37,12 +37,11 @@ public:
   virtual int time_between_headers() = 0;
 };
 
-/**
- * Returns the start of a mark4 header in buffer and returns the number of tracks
+/** Returns a mark4 reader based on the headers in the data stream
  **/
-int find_start_of_header(boost::shared_ptr<Data_reader> reader,
-                         char buffer[]);
-
+Mark4_reader_interface *
+get_mark4_reader(boost::shared_ptr<Data_reader> reader,
+                 char *first_block);
 
 template <class Type>
 class Mark4_reader : public Mark4_reader_interface {
@@ -120,9 +119,9 @@ Mark4_reader(boost::shared_ptr<Data_reader> data_reader,
              Type *mark4_block)
     : data_reader_(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
-    block_count_(0) {
+block_count_(0) {
   // fill the first mark4 block
-  memcpy(mark4_block, buffer, SIZE_MK4_FRAME*sizeof(char));
+  memmove(mark4_block, buffer, SIZE_MK4_FRAME*sizeof(char));
   int size = SIZE_MK4_FRAME*(sizeof(Type) - sizeof(char));
   int read = data_reader->get_bytes(size,
                                     ((char *)mark4_block) + SIZE_MK4_FRAME*sizeof(char));
