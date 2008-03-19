@@ -5,7 +5,8 @@ const FLOAT Delay_correction::maximal_phase_change = 0.2; // 5.7 degrees
 Delay_correction::Delay_correction()
     : output_buffer(Output_buffer_ptr(new Output_buffer(10))),
     current_time(-1),
-    delay_table_set(false) {}
+delay_table_set(false) {
+}
 
 Delay_correction::~Delay_correction() {
 #if PRINT_TIMER
@@ -50,7 +51,6 @@ void Delay_correction::do_task() {
   int input_size;
   Input_buffer_element &input = input_buffer->consume(input_size);
   Output_buffer_element &output = output_buffer->produce();
-
 
   // A factor of 2 for padding
   assert(input_size == number_channels());

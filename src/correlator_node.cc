@@ -15,13 +15,13 @@
 #include "output_header.h"
 
 Correlator_node::Correlator_node(int rank, int nr_corr_node)
-  : Node(rank),
+    : Node(rank),
     correlator_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
     correlate_state(INITIALISE_TIME_SLICE),
     status(STOPPED),
-    nr_corr_node(nr_corr_node) {
+nr_corr_node(nr_corr_node) {
   get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;
 
   add_controller(&correlator_node_ctrl);
@@ -49,35 +49,34 @@ Correlator_node::~Correlator_node() {
 void Correlator_node::start() {
   while (true) {
     switch (status) {
-    case STOPPED: {
-      // blocking:
-      if (check_and_process_message()==TERMINATE_NODE) {
-        status = END_CORRELATING;
-      }
-      break;
-    }
-    case CORRELATING: {
-      if (process_all_waiting_messages() == TERMINATE_NODE) {
-        status = END_CORRELATING;
-      }
-
-      correlate();
-
-      if (correlation_core.finished()) {
-        n_integration_slice_in_time_slice--;
-        if (n_integration_slice_in_time_slice==0) {
-          // Notify manager node:
-          int32_t msg = get_correlate_node_number();
-          MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
-                   MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
-                   MPI_COMM_WORLD);
-          status = STOPPED;
+      case STOPPED: {
+        // blocking:
+        if (check_and_process_message()==TERMINATE_NODE) {
+          status = END_CORRELATING;
         }
+        break;
       }
-      break;
-    }
-    case END_CORRELATING: 
-      {
+      case CORRELATING: {
+        if (process_all_waiting_messages() == TERMINATE_NODE) {
+          status = END_CORRELATING;
+        }
+
+        correlate();
+
+        if (correlation_core.finished()) {
+          n_integration_slice_in_time_slice--;
+          if (n_integration_slice_in_time_slice==0) {
+            // Notify manager node:
+            int32_t msg = get_correlate_node_number();
+            MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
+                     MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
+                     MPI_COMM_WORLD);
+            status = STOPPED;
+          }
+        }
+        break;
+      }
+      case END_CORRELATING: {
         return;
       }
     }
@@ -149,6 +148,7 @@ int Correlator_node::output_size_of_one_integration_step() {
 }
 
 void Correlator_node::correlate() {
+
   // Execute all tasklets:
   bits_to_float_timer_.resume();
   for (size_t i=0; i<bits2float_converters.size(); i++) {
@@ -159,7 +159,7 @@ void Correlator_node::correlate() {
     }
   }
   bits_to_float_timer_.stop();
-  
+
   delay_timer_.resume();
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
@@ -169,7 +169,7 @@ void Correlator_node::correlate() {
     }
   }
   delay_timer_.stop();
-  
+
   correlation_timer_.resume();
   if (correlation_core.has_work()) {
     correlation_core.do_task();
@@ -188,8 +188,8 @@ Correlator_node::set_parameters(const Correlation_parameters &parameters) {
      parameters.bits_per_sample,
      parameters.number_channels);
 
-  int nr_integrations =
-    (parameters.stop_time-parameters.start_time)/parameters.integration_time;
+  assert(((parameters.stop_time-parameters.start_time) /
+          parameters.integration_time) == 1);
 
   assert(size_input_slice > 0);
 
@@ -197,8 +197,8 @@ Correlator_node::set_parameters(const Correlation_parameters &parameters) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
       if (i <parameters.station_streams.size()) {
         bits2float_converters[i]->set_parameters(parameters.bits_per_sample,
-                                                 size_input_slice*nr_integrations,
-                                                 parameters.number_channels);
+            size_input_slice,
+            parameters.number_channels);
       } else {
         bits2float_converters[i]->set_parameters(-1, 0, 0);
       }
@@ -219,15 +219,15 @@ Correlator_node::set_parameters(const Correlation_parameters &parameters) {
   // set the output stream
   int nBaselines = correlation_core.number_of_baselines();
   int size_of_one_baseline = sizeof(fftwf_complex)*
-    (parameters.number_channels*PADDING/2+1);
+                             (parameters.number_channels*PADDING/2+1);
 
-  output_node_set_timeslice(parameters.slice_nr, 
+  output_node_set_timeslice(parameters.slice_nr,
                             parameters.slice_offset,
                             n_integration_slice_in_time_slice,
                             get_correlate_node_number(),
                             sizeof(Output_header_timeslice) +
                             ( nBaselines *
-                              (size_of_one_baseline + 
+                              (size_of_one_baseline +
                                sizeof(Output_header_baseline) ) ) );
 }
 
