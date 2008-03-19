@@ -12,7 +12,7 @@
 #include "bits_to_float_converter.h"
 
 const FLOAT sample_value_ms[] = {
-                                  -2, -7, 2, 7
+                                  -7, -2, 2, 7
                                 };
 const FLOAT sample_value_m[]  = {
                                   -5,  5
@@ -93,11 +93,11 @@ void Bits_to_float_converter::do_task() {
       memcpy(&buffer[byte<<2], // byte * 4
              &lookup_table[(int)(unsigned char)input_char_buffer[byte]][0],
              4*sizeof(FLOAT));
-      
-//      assert(buffer[byte*4  ] == sample_value_ms[(input_char_buffer[byte]>>6)&3]);
-//      assert(buffer[byte*4+1] == sample_value_ms[(input_char_buffer[byte]>>4)&3]);
-//      assert(buffer[byte*4+2] == sample_value_ms[(input_char_buffer[byte]>>2)&3]);
-//      assert(buffer[byte*4+3] == sample_value_ms[(input_char_buffer[byte]   )&3]);
+
+      //      assert(buffer[byte*4  ] == sample_value_ms[(input_char_buffer[byte]>>6)&3]);
+      //      assert(buffer[byte*4+1] == sample_value_ms[(input_char_buffer[byte]>>4)&3]);
+      //      assert(buffer[byte*4+2] == sample_value_ms[(input_char_buffer[byte]>>2)&3]);
+      //      assert(buffer[byte*4+3] == sample_value_ms[(input_char_buffer[byte]   )&3]);
     }
   } else {
     std::cout << "Not yet implemented" << std::endl;
