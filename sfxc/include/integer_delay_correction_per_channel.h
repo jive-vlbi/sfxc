@@ -73,10 +73,6 @@ private:
   Delay_type get_delay(int64_t time);
   void send_release(Input_memory_pool_element &elem);
 
-  void do_bit_offset(std::vector<unsigned char> &data,
-                     unsigned char last_sample,
-                     int offset);
-
 private:
   /// The input data Type
   Input_buffer_ptr     input_buffer_;
@@ -147,46 +143,44 @@ Integer_delay_correction_per_channel<Type>::do_task() {
 
   Output_buffer_element output_element;
   output_element.fft_data = memory_pool.allocate();
-  if (output_element.fft_data.data().data.size() != (size_t)nr_output_bytes) {
-    output_element.fft_data.data().data.resize(nr_output_bytes);
+  // One extra byte for the offset
+  if (output_element.fft_data.data().data.size() !=
+      (size_t)(nr_output_bytes+1)) {
+    output_element.fft_data.data().data.resize(nr_output_bytes+1);
   }
+  output_element.fft_data.data().data[0] = current_delay.second;
 
   if (byte_offset < -nr_output_bytes) {
+    // Do not do the bit offset
+    output_element.fft_data.data().data[0] = 0;
+
     // Completely random data
-    for (int i=0; i<nr_output_bytes; i++) {
+    for (int i=1; i<nr_output_bytes; i++) {
       output_element.fft_data.data().data[i] = 0;
     }
-    // Do not do the bit offset
   } else if (byte_offset < 0) {
     // Partially random data
     for (int i=0; i<-byte_offset; i++) {
-      output_element.fft_data.data().data[i] = 0;
+      output_element.fft_data.data().data[i+1] = 0;
     }
     for (int i=-byte_offset; i<nr_output_bytes; i++) {
-      output_element.fft_data.data().data[i] =
+      output_element.fft_data.data().data[i+1] =
         input_element.channel_data.data().data[i+byte_offset];
     }
-    do_bit_offset(output_element.fft_data.data().data,
-                  input_element.channel_data.data().data[nr_output_bytes+byte_offset],
-                  current_delay.second);
-
   } else {
     assert (byte_offset >= 0);
     int input_data_size = input_element.channel_data.data().data.size();
-    if ((byte_offset + nr_output_bytes + 1) < input_data_size) {
+    if ((byte_offset + nr_output_bytes) < input_data_size) {
       for (int i=0; i<nr_output_bytes; i++) {
-        output_element.fft_data.data().data[i] =
+        output_element.fft_data.data().data[i+1] =
           input_element.channel_data.data().data[i+byte_offset];
       }
       assert(nr_output_bytes+byte_offset <
              (int)input_element.channel_data.data().data.size());
-      do_bit_offset(output_element.fft_data.data().data,
-                    input_element.channel_data.data().data[nr_output_bytes+byte_offset],
-                    current_delay.second);
     } else {
       int bytes_in_current_block = input_data_size-byte_offset;
       for (int i=0; i<bytes_in_current_block; i++) {
-        output_element.fft_data.data().data[i] =
+        output_element.fft_data.data().data[i+1] =
           input_element.channel_data.data().data[i+byte_offset];
       }
       input_buffer_->front().channel_data.release();
@@ -195,18 +189,16 @@ Integer_delay_correction_per_channel<Type>::do_task() {
       assert(!input_buffer_->empty());
       input_element = input_buffer_->front();
       for (int i=bytes_in_current_block; i<nr_output_bytes; i++) {
-        output_element.fft_data.data().data[i] =
+        output_element.fft_data.data().data[i+1] =
           input_element.channel_data.data().data[i-bytes_in_current_block];
       }
       assert(nr_output_bytes-bytes_in_current_block <
              (int)input_element.channel_data.data().data.size());
-      do_bit_offset(output_element.fft_data.data().data,
-                    input_element.channel_data.data().data[nr_output_bytes-bytes_in_current_block],
-                    current_delay.second);
     }
-
   }
 
+  assert((output_element.fft_data.data().data[0] == current_delay.second) ||
+         (output_element.fft_data.data().data[0] == 0));
   output_buffer_->push(output_element);
 
   _current_time += delta_time;
@@ -286,17 +278,20 @@ Integer_delay_correction_per_channel<Type>::get_delay(int64_t time) {
   assert(delay_in_samples < 0);
 
   int delay_in_bytes = -((-delay_in_samples)/(8/bits_per_sample))-1;
-  int delay_in_bits = delay_in_samples*bits_per_sample-delay_in_bytes*8;
+  int delay_in_remaining_samples = delay_in_samples-delay_in_bytes*8/bits_per_sample;
 
-  if (delay_in_bits == 8) {
+  if (delay_in_remaining_samples*bits_per_sample == 8) {
     delay_in_bytes++;
-    delay_in_bits = 0;
+    delay_in_remaining_samples = 0;
   }
 
-  assert((delay_in_bytes <= 0) && (delay_in_bits < 8));
-  assert((delay_in_bytes*8 + delay_in_bits)/bits_per_sample == delay_in_samples);
+  assert((delay_in_bytes <= 0) && (delay_in_remaining_samples < 8));
+  assert((delay_in_bytes*8 + delay_in_remaining_samples*bits_per_sample)/bits_per_sample == delay_in_samples);
 
-  return Delay_type(delay_in_bytes, delay_in_bits);
+  if (delay_in_remaining_samples >= 4) {
+    DEBUG_MSG("delay: " << delay_in_remaining_samples);
+  }
+  return Delay_type(delay_in_bytes, delay_in_remaining_samples);
 }
 
 template <class Type>
@@ -316,11 +311,12 @@ set_parameters(const Input_node_parameters &parameters,
   assert(parameters.number_channels%subsamples_per_sample == 0);
 
   assert((parameters.number_channels*bits_per_sample)%8 == 0);
-  nr_output_bytes = parameters.number_channels*bits_per_sample/8;
+  // The offset is not counted
+  nr_output_bytes = parameters.number_channels*bits_per_sample/8+1;
   sample_rate = parameters.track_bit_rate * subsamples_per_sample;
 
-  assert(((nr_output_bytes*(8/bits_per_sample))*1000000) % sample_rate== 0);
-  delta_time = (nr_output_bytes*(8/bits_per_sample))*1000000/sample_rate;
+  assert((((nr_output_bytes-1)*(8/bits_per_sample))*1000000) % sample_rate== 0);
+  delta_time = ((nr_output_bytes-1)*(8/bits_per_sample))*1000000/sample_rate;
   integration_time = parameters.integr_time*1000;
 
   nr_bytes_per_integration_slice =
@@ -358,29 +354,6 @@ bytes_of_output(int nr_seconds) {
     return nr_seconds;
 
   return nr_bytes_per_integration_slice;
-}
-
-template <class Type>
-void
-Integer_delay_correction_per_channel<Type>::
-do_bit_offset(std::vector<unsigned char> &data,
-              unsigned char last_sample,
-              int offset) {
-  assert((int)data.size() == nr_output_bytes);
-  // Bit offset
-  if (offset != 0) {
-    assert(offset % 2 == 0);
-    const int offset_rev = 8-offset;
-    for (int i=0; i<nr_output_bytes-1; i++) {
-      data[i] =
-        ((unsigned char)(data[i] << offset)) |
-        ((unsigned char)(data[i+1] >> offset_rev));
-    }
-    // And process the last byte:
-    data[nr_output_bytes-1] =
-      ((unsigned char)(data[nr_output_bytes-1] << offset)) |
-      ((unsigned char)(last_sample >> offset_rev));
-  }
 }
 
 #endif // INTEGER_DELAY_CORRECTION_PER_CHANNEL_H

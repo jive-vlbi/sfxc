@@ -218,7 +218,9 @@ public:
     int nr_ffts = nr_ffts_per_integration_slice(integration_time,
                   data_rate,
                   number_channels);
-    return nr_ffts*number_channels*bits_per_sample/8;
+    // One byte for the offset
+    // One extra byte at the end for the offset
+    return nr_ffts*(number_channels*bits_per_sample/8 + 2);
   }
   
   int polarisation_type_for_global_output_header() const;

@@ -53,6 +53,8 @@ public:
 
     /// Buffer for fft buffers
   struct Fft_buffer_element_ {
+    // first element is offset
+    // then nr_channels/samples_per_byte+1 bytes containing data
     Channel_memory_pool_element fft_data;
   };
   typedef Fft_buffer_element_                        Fft_buffer_element;

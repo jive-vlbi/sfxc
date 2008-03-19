@@ -63,6 +63,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
                                  int node_nr) {
   node_nr_ = node_nr;
   current_integration = 0;
+  current_fft = 0;
 
   size_t prev_size_of_fft = size_of_fft();
   correlation_parameters = parameters;
@@ -176,8 +177,6 @@ void Correlation_core::integration_initialise() {
       accumulation_buffers[i][j] = 0;
     }
   }
-
-  current_fft = 0;
 }
 
 void Correlation_core::integration_step() {
