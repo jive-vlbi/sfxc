@@ -23,8 +23,10 @@ print portNumber
 
 # test if the http address correctly parsed
 # get a port proxy instance
+#http://melisa.man.poznan.pl:8080/axis2/services/TranslationNodeNotification
 loc = TranslationNodeNotificationLocator()
-portTest = 'http://jop32:' + portNumber + '/notification'
+#portTest = 'http://jop32:' + portNumber + '/notification'
+portTest = 'http://melisa.man.poznan.pl:' + portNumber + '/axis2/services/TranslationNodeNotification'
 print portTest
 port = loc.getTranslationNodeNotificationPortType(portTest, tracefile=sys.stdout)
 
@@ -34,3 +36,4 @@ print "Chunk Location", req.Param0.ChunkLocation
 
 # actualy ask the service to do the job
 resp = port.chunkIsReady(req)
+print resp

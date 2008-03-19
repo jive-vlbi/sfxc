@@ -118,6 +118,9 @@ class Service(TranslationNode):
         continue
 
 # Calculate the data rate for this scan.
+# Calculated the size of a chunk that fits in to 1 second
+# make sure that the chunk size is at least equals to 1 second data size
+# if required chunk size corresponds to a floating point seconds use int value
       mode = vex.get_mode(scan)
       bits_per_sample = vex.get_bits_per_sample(mode, station)
       num_channels = vex.get_num_channels(mode, station)
@@ -135,6 +138,7 @@ class Service(TranslationNode):
       chunk_size = chunk_to_data_rate * (data_rate/8)
       chunk_bytes = chunk_size
 
+# set head position on the disk on Mark5
       start_position = float(vex.get_data_start(scan, station))
       start_position = int(start_position*1000*1000*1000)
       mark5_set_output = Mark5_set_position()
@@ -164,7 +168,8 @@ class Service(TranslationNode):
         print "chunk", chunk_number, scan, \
           strftime("%Yy%jd%Hh%Mm%Ss", localtime(chunk_start)), scan, \
           strftime("%Yy%jd%Hh%Mm%Ss", localtime(chunk_end))
-          
+
+# Consider several conditions to deliver the right chunk
         if (time_real_start > chunk_start_check and int(bytes_starting_diff/chunk_size)>0):
           chunk_real_size=0
         elif (time_real_start >= chunk_start_check and int(bytes_starting_diff/chunk_size)==0):
@@ -181,10 +186,13 @@ class Service(TranslationNode):
 
         chunk_start_check=chunk_end
 
+# give a logical name to the file that is downloaded from Mark5
         sendFile = experiment_name[0] + '_' + station + '_' + str(scan) + "_" + str(chunk_number) + '.m5a'
         sendFile = fileName + sendFile.lower()
         print "file to be sent: " + sendFile
-        
+
+#  If file is already downloaded from Mark5 before, we don't need to download it again
+#  just split the existing file in to required chunk size and send it
         if exists(sendFile):
           file_size =  getsize(sendFile)
 
@@ -192,6 +200,7 @@ class Service(TranslationNode):
           print "file size = " + str(file_size)
           print "chunk size = " + str(chunk_bytes)
           if (file_size <= chunk_bytes):
+# please note: If the gridftp server is not started yet, the following operation will fail
             copyFile = "globus-url-copy file://" + str(sendFile) + " gsiftp://" + gridFtpIP
             print copyFile
             os.system(copyFile)
@@ -200,6 +209,7 @@ class Service(TranslationNode):
             os.system(split_command)
             nr_files = file_size/chunk_bytes + 1
             i=0
+# include leading zeros tot he file names accordingly
             while i < nr_files:
               if nr_files <= 9:
                 filename2 = sendFile + "00" + str(i)
@@ -207,8 +217,9 @@ class Service(TranslationNode):
                 filename2 = sendFile + "0" + str(i)
               elif (nr_files >99 and nr_files <= 999):
                 filename2 = sendFile + str(i)
-                
+
             print filename2
+# please note: If the gridftp server is not started yet, the following operation will fail
             copyFile = "globus-url-copy file://" + str(filename2) + " gsiftp://" + gridFtpIP
             print copyFile
             os.system(copyFile)
@@ -217,6 +228,7 @@ class Service(TranslationNode):
         elif (exists(sendFile) and file_size == 0):
           break
         else:
+# If file doesn't already exist than download it from Mark5
           mark5_chunk_output = Mark5_get_chunks(host, 
           portMark5Data,
           portMark5Control, 
@@ -228,37 +240,40 @@ class Service(TranslationNode):
           print mark5_chunk_output
 
         time.sleep(1)
+
+# After the file is splitted or downloaded than notify the grid broker
+# The host name below belongs to the host of the Notification service
         print "send notification to grid broker..."
         node_notification = TranslationNodeNotification(host,
                                                         10001,
-                                                        "location://file.dat",
-                                                        123456,
-                                                        "2007y158d18h56m05s",
-                                                        "2007y158d18h56m00s",
                                                         gridFtpIP,
+                                                        chunk_real_size,
+                                                        chunk_end,
+                                                        chunk_start,
+                                                        "http://huygens",
                                                         20001)
 
         print node_notification
         print "end of notification to grid broker..."
-        
+
         if chunk_end >= job_end:
           break
-        
+
         if chunk_end >= scan_end:
           break
-        
+
         chunk_start = chunk_time = chunk_end
         chunk_end = chunk_time + chunk_size / (data_rate / 8)
         if scan_end < job_end:
           chunk_end = min(chunk_end, scan_end)
         elif scan_end >= job_end:
           chunk_end = min(chunk_end, job_end)
-          
+
         chunk_bytes = chunk_size
         chunk_number += 1
         start_scan = scan
         continue
-      
+
       chunk_time = scan_end
       chunk_start = chunk_time
       chunk_bytes = chunk_size
@@ -271,18 +286,12 @@ class Service(TranslationNode):
 
 
 # end of calculation
-#		Mark5_disconnect()
+# Mark5_disconnect()
     return rsp
 
-#url_notification = 'http://melisa.man.poznan.pl:8080/axis2/services/TranslationNodeNotification'
-#wsdl_service = ServiceProxy(url_notification, use_wsdl=True, tracefile=sys.stdout)
-#result_notification = wsdl_service.Notification(chunkId=1, 
-#														  chunkLocation="huygens.jive.nl", 
-#														  translationNodeIP="10.88.0.190", 
-#														  translationNodeID=1)
-#print "result:", result_notification
-
-
+# The following lines actually starts the service
+# the service name is defined here as Service('servicename')
+# This service is run at: http://url-of-the-machine:portnumber/servicename
 if __name__ == "__main__" :
   port = portNumber
   AsServer(port, (Service('translationnode'),))
