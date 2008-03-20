@@ -7,8 +7,9 @@
  *
  */
 
-#include "utils.h"
+
 #include "sfxc_mpi.h"
+#include "utils.h"
 #include "log_node.h"
 #include "input_node.h"
 #include "output_node.h"

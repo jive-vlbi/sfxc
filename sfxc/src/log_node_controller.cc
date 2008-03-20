@@ -9,6 +9,7 @@
 
 #include <assert.h>
 
+#include "sfxc_mpi.h"
 #include "utils.h"
 #include "log_node.h"
 #include "log_writer_cout.h"
