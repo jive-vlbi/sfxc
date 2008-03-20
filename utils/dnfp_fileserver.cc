@@ -5,7 +5,7 @@
  * Author(s): Damien Marchal <dmarchal@science.uva.nl>, 2007
  *
  * This file contains a little file server based on a simple
- * protocol. The application use a config file named: dnfp_configfile.cfg 
+ * protocol. The application use a config file named: dnfp_configfile.cfg
  * this file stores the list of file to expose to the clients...and there
  * symbolic name in the format:
  * name1 /path/to/real/file
@@ -25,6 +25,14 @@
 #include "monitor.h"
 #include "exception_common.h"
 
+#include <signal.h>
+//void (*signal (int sig, void (*func)(int)))(int);
+
+void signal_handler(int sig) 
+{
+  std::cout << "Crappy crappy !" << sig << " and " << SIGPIPE << std::endl;
+  //exit(1);
+}
 
 class Server {
 public:
@@ -71,8 +79,7 @@ public:
 private:
   std::map< String, String > mapping_;
 };
-
-
+
 /*****************************************
 * @class Client_writer
 * @desc This class implement the "file
@@ -95,7 +102,8 @@ public:
     uint32_t bytetoread=m_buffersize;
     int32_t cmd=0;
     unsigned int counter =0;
-    while ( !filereader->eof() ) {
+    try{
+      while ( !filereader->eof() ) {
       if ( counter == 0 ) m_monitor.begin_measure();
       //*m_breader >> cmd;
       if ( cmd == -1 ) {
@@ -111,6 +119,7 @@ public:
       std::cout << "Number of byte read " << byteread << std::endl;
       //std::cout << "stream " << std::endl;
       while ( byteread != 0  ) {
+        char tmp;
         int ret = m_writer->put_bytes(bytetoread, m_buffer);
         byteread -= ret;
       }
@@ -125,6 +134,7 @@ public:
         counter = 0;
       }
     }
+    }catch(...){}
     std::cout << "THE FILE IS EOF" << std::endl;
 
   }
@@ -208,6 +218,8 @@ void print_usage(char* appname) {
 /* Server for the SC07 demo */
 int main(int argc, char** argv) {
   try {
+    signal(SIGPIPE, signal_handler);
+
     InterfaceIP* interface=Network::get_any_interface();
     int port=2630;
     bool arg_problem=false;
@@ -246,17 +258,20 @@ int main(int argc, char** argv) {
       }
       exit(2);
     }
-    printf("PORT%d\n", port);
+    printf("PORT %d %d\n", port, interface);
 
     Connexion_listener_ptr listener = interface->create_listener( port );
-    printf("PORT%d\n", port);
+    printf("PORT%d %d\n", port, listener);
 
+    if( listener == NULL ){
+      MTHROW("Strange exception");
+    }
     std::cout << "A dnfp fileserver is listening at: " << listener << std::endl;
 
     Server server;
     server.load_config_file("dnfp_configfile.cfg");
     Client_writer_allocator_ptr clientallocator = new Client_writer_allocator(server);
-    Client_writer_listener_ptr  clientlistener  = new Client_writer_listener(listener, clientallocator);
+    Client_writer_listener_ptr  clientlistener  = new Client_writer_listener(listener,       clientallocator);
 
     clientlistener->start();
 

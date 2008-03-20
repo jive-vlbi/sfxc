@@ -140,7 +140,7 @@ Connexion* InterfaceIP::connect_to(const std::string& ipaddress, unsigned short 
   //int window_size = 1024 * 1024; /* 128 kilobytes */
   //setsockopt(socketDescriptor, SOL_SOCKET, SO_SNDBUF, (char *) &window_size, sizeof(window_size));
   //setsockopt(socketDescriptor, SOL_SOCKET, SO_RCVBUF, (char *) &window_size, sizeof(window_size));
-  localAddress.sin_family = hostInfo->h_addrtype;
+  localAddress.sin_family = AF_INET;
   localAddress.sin_port = 0;
 
   // The socket is bounded to the local address
