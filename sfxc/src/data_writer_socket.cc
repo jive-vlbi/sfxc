@@ -19,7 +19,7 @@
 #include <connexion.h>
 
 #include "data_writer_socket.h"
-
+#include "exception_common.h"
 
 
 Data_writer_socket::Data_writer_socket(int socket)
@@ -44,8 +44,9 @@ size_t Data_writer_socket::do_put_bytes(size_t nBytes, char const *buff) {
   size_t bytes_written = 0;
 
   while (bytes_written != nBytes) {
-    ssize_t result = write(m_socket, buff+bytes_written, nBytes-bytes_written);
-    if (result <= 0) { return bytes_written; }
+    int result = write(m_socket, buff+bytes_written, nBytes-bytes_written);
+    if (result == 0) { return bytes_written; }
+    if (result < 0) { MTHROW("Exception :)"); }
     bytes_written += result;
   }
 
