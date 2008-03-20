@@ -8,10 +8,13 @@
 #include "connexion_listener.h"
 
 Connexion_listener::Connexion_listener(unsigned int serversocket, int port, InterfaceIP* interface) {
+  verbose_ = true;  
   m_serversocket = serversocket;
   m_interface = interface;
   m_port = port;
-  verbose_ = true;
+  
+  if( verbose_ )
+    std::cout << "Connexion Listener created" << std::endl;
 }
 
 int Connexion_listener::wait_connexion(){

@@ -24,6 +24,7 @@ std::ostream& operator<<(std::ostream& out, InterfaceIP* intf) {
 Connexion_listener* InterfaceIP::create_listener(const int portnum) {
   int serversocket = -1;
   int port= portnum;
+  std::cout << "Hello:" << port << std::endl;
 
   while ( (serversocket = open_port( ip(), port)) == -1 ) {
     //std::cout << "Unable to bind on port:" << port << std::endl;
@@ -31,6 +32,7 @@ Connexion_listener* InterfaceIP::create_listener(const int portnum) {
     MASSERT(port < 65536 && "port is too high...something goes wrong");
   }
 
+  std::cout << "Will create soon a connexion Listener:" << port << std::endl;
   return new Connexion_listener(serversocket, port, this);
 }
 
@@ -56,6 +58,7 @@ int InterfaceIP::open_port(const String& interfacename, unsigned short int port)
   // Significant Byte first) to network byte order (Most Significant
   // Byte first).
   if ( interfacename != "any" ) {
+    std::cout << "Not any" << std::endl;
     hostInfo = gethostbyname(interfacename.c_str());
     if (hostInfo == NULL) {
       std::cerr << "problem interpreting host: " << interfacename << "\n";
@@ -64,16 +67,14 @@ int InterfaceIP::open_port(const String& interfacename, unsigned short int port)
     memcpy((char *) &serverAddress.sin_addr.s_addr,
            hostInfo->h_addr_list[0], hostInfo->h_length);
   } else {
+    std::cout << "Is any" << std::endl;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
   }
-
-
   // Connect to server.  First we have to set some fields in the
   // serverAddress structure.  The system will assign me an arbitrary
   // local port that is not in use.
-  serverAddress.sin_family = hostInfo->h_addrtype;
+  serverAddress.sin_family = AF_INET;
   serverAddress.sin_port = htons(port);
-
 
   if (bind(listenSocket,
            (struct sockaddr *) &serverAddress,
