@@ -212,33 +212,28 @@ void
 Mark4_reader_tasklet<Type>::
 randomize_header() {
   // Randomize header
+  for (int i=0; i<SIZE_MK4_HEADER; i++) {
 #ifdef SFXC_DETERMINISTIC
-  { // Randomize data
-    for (int i=0; i<SIZE_MK4_HEADER; i++) {
-      input_element_.data().mk4_data[i] = Type(0);
-    }
-  }
+    input_element_.data().mk4_data[i] = Type(0);
 #else
-  { // Randomize data
-    for (int i=0; i<SIZE_MK4_HEADER; i++) {
-      // park_miller_random generates 31 random bits
-      if (sizeof(Type) < 4) {
-        input_element_.data().mk4_data[i] = (Type)park_miller_random();
-      } else if (sizeof(Type) == 4) {
-        input_element_.data().mk4_data[i] =
-          ((Type(park_miller_random())<<16)&(~0xFFFF)) +
-          (park_miller_random()&0xFFFF);
-      } else {
-        assert(sizeof(Type) == 8);
-        uint64_t rnd = park_miller_random();
-        rnd = (rnd << 16) + park_miller_random();
-        rnd = (rnd << 16) + park_miller_random();
-        rnd = (rnd << 16) + park_miller_random();
-        input_element_.data().mk4_data[i] = rnd;
-      }
+    // Randomize data
+    // park_miller_random generates 31 random bits
+    if (sizeof(Type) < 4) {
+      input_element_.data().mk4_data[i] = (Type)park_miller_random();
+    } else if (sizeof(Type) == 4) {
+      input_element_.data().mk4_data[i] =
+        ((Type(park_miller_random())<<16)&(~0xFFFF)) +
+        (park_miller_random()&0xFFFF);
+    } else {
+      assert(sizeof(Type) == 8);
+      uint64_t rnd = park_miller_random();
+      rnd = (rnd << 16) + park_miller_random();
+      rnd = (rnd << 16) + park_miller_random();
+      rnd = (rnd << 16) + park_miller_random();
+      input_element_.data().mk4_data[i] = rnd;
     }
-  }
 #endif
+  }
 }
 
 #endif // MARK4_READER_TASKLET_H
