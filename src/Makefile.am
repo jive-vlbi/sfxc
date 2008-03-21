@@ -25,7 +25,6 @@ OBJ=\
   log_writer_file.cc \
   correlation_core.cc \
   delay_correction.cc \
-  channel_extractor_mark4.cc \
   channel_extractor_brute_force.cc \
   bits_to_float_converter.cc \
   tasklet/mutex.cc \
