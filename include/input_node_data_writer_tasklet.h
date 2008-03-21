@@ -90,29 +90,36 @@ do_task() {
   assert(has_work());
 
   Input_buffer_element &input_element = input_buffer_->front();
-  assert((data_writers_.front()->get_size_dataslice() < 0) ||
-         (input_element.fft_data.data().data.size() <=
-          (size_t)data_writers_.front()->get_size_dataslice()));
 
+  if (input_element.release_data) {
+    input_element.channel_data.release();
+    input_buffer_->pop();
+    return;
+  }
+  if ((int)input_element.delay >= 0) {
+    int nbytes = 0;
+    do {
+      nbytes = data_writers_.front()->put_bytes(1, &input_element.delay);
+    } while (nbytes != 1);
+  }
 
-  assert(input_element.fft_data.data().data.size() > 0);
-  int bytes_to_write = input_element.fft_data.data().data.size();
+  int bytes_to_write = input_element.nr_samples;
   int bytes_written = 0;
+  char *data =
+    (char*)&input_element.channel_data.data().data[input_element.first_sample];
 
-  do {
-    assert(bytes_to_write - bytes_written > 0);
-    size_t nbytes =
-      data_writers_.front()->put_bytes(bytes_to_write - bytes_written,
-                                       (char *)&input_element.fft_data.data().data[bytes_written]);
+  while (bytes_written < bytes_to_write) {
+    int nbytes =
+      data_writers_.front()->put_bytes(bytes_to_write - bytes_written, data);
     assert(nbytes >= 0);
     bytes_written += nbytes;
-  } while (bytes_written != bytes_to_write);
+    data          += nbytes;
+  }
 
   if (data_writers_.front()->get_size_dataslice() == 0) {
     data_writers_.pop();
   }
 
-  input_element.fft_data.release();
   input_buffer_->pop();
 }
 

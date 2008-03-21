@@ -30,6 +30,7 @@ public:
   typedef typename Input_node_types<Type>::Fft_buffer_element Output_buffer_element;
   typedef typename Input_node_types<Type>::Fft_buffer         Output_buffer;
   typedef typename Input_node_types<Type>::Fft_buffer_ptr     Output_buffer_ptr;
+  typedef typename Input_node_types<Type>::Channel_memory_pool_element Input_data_block;
 
   // Pair of the delay in samples (of type Type) and subsamples
   typedef std::pair<int,int>                                      Delay_type;
@@ -71,7 +72,8 @@ public:
 
 private:
   Delay_type get_delay(int64_t time);
-  void send_release(Input_memory_pool_element &elem);
+
+  Input_data_block allocate_random_element();
 
 private:
   /// The input data Type
@@ -99,7 +101,8 @@ private:
   /// Delay for the sample to process
   Delay_type           current_delay;
 
-  Output_memory_pool   memory_pool;
+  // Memory pool for random data
+  Output_memory_pool   memory_pool_;
 
   /// Delay table
   Delay_table_akima    delay_table;
@@ -116,10 +119,10 @@ Integer_delay_correction_per_channel()
     stop_time_(-1),
     integration_time(-1),
     current_delay(1,1),
-    memory_pool(10)
+    memory_pool_(10)
     /**/
 {
-  assert(!memory_pool.empty());
+  assert(!memory_pool_.empty());
 }
 
 template <class Type>
@@ -129,77 +132,97 @@ Integer_delay_correction_per_channel<Type>::do_task() {
   assert(current_delay.first <= 0);
 
   Input_buffer_element input_element = input_buffer_->front();
+  Output_buffer_element output_element;
+  output_element.delay = (char)current_delay.second;
+  output_element.release_data = false;
+
   int byte_offset =
     (_current_time-input_element.start_time)*sample_rate*bits_per_sample/8/1000000 +
     current_delay.first;
   if (byte_offset >= (int)input_element.channel_data.data().data.size()) {
     // This can happen when we go to a next integration slice
-    input_buffer_->front().channel_data.release();
+    output_element.release_data = true;
+    output_buffer_->push(output_element);
+
     input_buffer_->pop();
-    input_element = input_buffer_->front();
-    DEBUG_MSG_RANK(8, "New block, time: " << input_element.start_time);
     return;
   }
 
-  Output_buffer_element output_element;
-  output_element.fft_data = memory_pool.allocate();
-  // One extra byte for the offset
-  if (output_element.fft_data.data().data.size() !=
-      (size_t)(nr_output_bytes+1)) {
-    output_element.fft_data.data().data.resize(nr_output_bytes+1);
-  }
-  output_element.fft_data.data().data[0] = current_delay.second;
-
   if (byte_offset < -nr_output_bytes) {
-    // Do not do the bit offset
-    output_element.fft_data.data().data[0] = 0;
-
     // Completely random data
-    for (int i=1; i<nr_output_bytes; i++) {
-      output_element.fft_data.data().data[i] = 0;
-    }
+
+    // Do not do the bit offset
+    output_element.delay = char(0);
+
+    // Send random data
+    output_element.channel_data = allocate_random_element();
+    output_element.first_sample = 0;
+    output_element.nr_samples = nr_output_bytes;
+    output_buffer_->push(output_element);
+
+    // Release the data
+    output_element.release_data = true;
+    output_buffer_->push(output_element);
+
   } else if (byte_offset < 0) {
     // Partially random data
-    for (int i=0; i<-byte_offset; i++) {
-      output_element.fft_data.data().data[i+1] = 0;
-    }
-    for (int i=-byte_offset; i<nr_output_bytes; i++) {
-      output_element.fft_data.data().data[i+1] =
-        input_element.channel_data.data().data[i+byte_offset];
-    }
+
+    // Send random data
+    output_element.channel_data = allocate_random_element();
+    output_element.first_sample = 0;
+    output_element.nr_samples = -byte_offset;
+    output_buffer_->push(output_element);
+
+    // Release the data
+    output_element.release_data = true;
+    output_buffer_->push(output_element);
+
+    // Send real data
+    output_element.release_data = false;
+    // Don't send the delay again:
+    output_element.delay = -1;
+    output_element.channel_data = input_element.channel_data;
+    output_element.first_sample = 0;
+    output_element.nr_samples = nr_output_bytes+byte_offset;
+    output_buffer_->push(output_element);
+
   } else {
     assert (byte_offset >= 0);
     int input_data_size = input_element.channel_data.data().data.size();
     if ((byte_offset + nr_output_bytes) < input_data_size) {
-      for (int i=0; i<nr_output_bytes; i++) {
-        output_element.fft_data.data().data[i+1] =
-          input_element.channel_data.data().data[i+byte_offset];
-      }
-      assert(nr_output_bytes+byte_offset <
-             (int)input_element.channel_data.data().data.size());
+      // Send data
+      output_element.channel_data = input_element.channel_data;
+      output_element.first_sample = byte_offset;
+      output_element.nr_samples = nr_output_bytes;
+      output_buffer_->push(output_element);
+
     } else {
       int bytes_in_current_block = input_data_size-byte_offset;
-      for (int i=0; i<bytes_in_current_block; i++) {
-        output_element.fft_data.data().data[i+1] =
-          input_element.channel_data.data().data[i+byte_offset];
-      }
-      input_buffer_->front().channel_data.release();
+      // Send first block of data
+      output_element.channel_data = input_element.channel_data;
+      output_element.first_sample = byte_offset;
+      output_element.nr_samples = bytes_in_current_block;
+      output_buffer_->push(output_element);
+
+      // Release the data
+      output_element.release_data = true;
+      output_buffer_->push(output_element);
+
+      // Get the second block of data
       input_buffer_->pop();
-      input_element = input_buffer_->front();
       assert(!input_buffer_->empty());
       input_element = input_buffer_->front();
-      for (int i=bytes_in_current_block; i<nr_output_bytes; i++) {
-        output_element.fft_data.data().data[i+1] =
-          input_element.channel_data.data().data[i-bytes_in_current_block];
-      }
-      assert(nr_output_bytes-bytes_in_current_block <
-             (int)input_element.channel_data.data().data.size());
+
+      // Send second block of data
+      output_element.release_data = false;
+      // Don't send the delay again:
+      output_element.delay = -1;
+      output_element.channel_data = input_element.channel_data;
+      output_element.first_sample = 0;
+      output_element.nr_samples = nr_output_bytes-bytes_in_current_block;
+      output_buffer_->push(output_element);
     }
   }
-
-  assert((output_element.fft_data.data().data[0] == current_delay.second) ||
-         (output_element.fft_data.data().data[0] == 0));
-  output_buffer_->push(output_element);
 
   _current_time += delta_time;
   current_delay = get_delay(_current_time);
@@ -227,7 +250,7 @@ Integer_delay_correction_per_channel<Type>::has_work() {
     return false;
   if (input_buffer_->empty())
     return false;
-  if (memory_pool.number_free_element() < 2)
+  if (memory_pool_.empty())
     return false;
 
   // Check whether we cross a block boundary:
@@ -356,4 +379,27 @@ bytes_of_output(int nr_seconds) {
   return nr_bytes_per_integration_slice;
 }
 
+
+template <class Type>
+typename
+Integer_delay_correction_per_channel<Type>::Input_data_block
+Integer_delay_correction_per_channel<Type>::
+allocate_random_element() {
+  Input_data_block result = memory_pool_.allocate();
+  if (result.data().data.size() != (size_t)nr_output_bytes) {
+    result.data().data.resize(nr_output_bytes);
+  }
+  // Completely random data
+  for (int i=0; i<nr_output_bytes; i++) {
+#ifdef SFXC_DETERMINISTIC
+    // Set data to zero
+    result.data().data[i] = 0;
+#else
+    // Randomize data
+    result.data().data[i] = (char)park_miller_random();
+#endif
+
+  }
+  return result;
+}
 #endif // INTEGER_DELAY_CORRECTION_PER_CHANNEL_H

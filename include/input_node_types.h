@@ -35,7 +35,7 @@ public:
   // Memory pool for dechannelized data
   struct Channel_memory_pool_data {
     typedef unsigned char      value_type;
-    
+
     std::vector<value_type> data;
     // NGHK: TODO: weights
   };
@@ -51,11 +51,16 @@ public:
   typedef Threadsafe_queue<Channel_buffer_element>       Channel_buffer;
   typedef boost::shared_ptr<Channel_buffer>              Channel_buffer_ptr;
 
-    /// Buffer for fft buffers
+  /// Buffer for fft buffers
   struct Fft_buffer_element_ {
+    Fft_buffer_element_()
+        : first_sample(-1), nr_samples(-1), delay(-1), release_data(false) {}
     // first element is offset
     // then nr_channels/samples_per_byte+1 bytes containing data
-    Channel_memory_pool_element fft_data;
+    Channel_memory_pool_element channel_data;
+    int first_sample, nr_samples;
+    char delay;
+    bool release_data;
   };
   typedef Fft_buffer_element_                        Fft_buffer_element;
   typedef Threadsafe_queue<Fft_buffer_element>       Fft_buffer;
