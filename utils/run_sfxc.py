@@ -52,7 +52,7 @@ def run_sfxc(vex_file, ctrl_file):
   number_of_processes = 3 + len(ctrl["channels"]) + len(ctrl["stations"])
 
   # run the software correlator
-  cmd="mpirun -np "+str(number_of_processes)+" "+which("sfxc")+ \
+  cmd="time mpirun -np "+str(number_of_processes)+" "+which("sfxc")+ \
       " "+ctrl_file+" "+vex_file+" | tee std_output.txt | grep -v PROGRESS"
   print cmd
   status = os.system(cmd)
