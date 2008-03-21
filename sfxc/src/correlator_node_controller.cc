@@ -51,7 +51,7 @@ Correlator_node_controller::process_event(MPI_Status &status) {
       Correlation_parameters parameters;
       MPI_Transfer::receive(status, parameters);
 
-      node.set_parameters(parameters);
+      node.receive_parameters(parameters);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

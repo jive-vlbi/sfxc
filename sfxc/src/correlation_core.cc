@@ -46,6 +46,10 @@ void Correlation_core::do_task() {
   }
 }
 
+bool Correlation_core::almost_finished() {
+  return current_fft == number_ffts_in_integration*1/5;
+}
+
 bool Correlation_core::finished() {
   return current_fft == number_ffts_in_integration;
 }
@@ -83,7 +87,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   int ref_station = parameters.reference_station;
   if (parameters.cross_polarize) {
     assert(n_stations() % 2 == 0);
-    int n_st_2 = n_stations()/2;
+    size_t n_st_2 = n_stations()/2;
     if (ref_station >= 0) {
       // cross polarize with a reference station
       for (int sn = 0 ; sn < ref_station; sn++) {
@@ -92,7 +96,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
         baselines.push_back(std::make_pair(sn       , ref_station+n_st_2));
         baselines.push_back(std::make_pair(sn+n_st_2, ref_station+n_st_2));
       }
-      for (int sn = ref_station+1 ; sn < n_st_2; sn++) {
+      for (size_t sn = ref_station+1 ; sn < n_st_2; sn++) {
         baselines.push_back(std::make_pair(ref_station       , sn       ));
         baselines.push_back(std::make_pair(ref_station       , sn+n_st_2));
         baselines.push_back(std::make_pair(ref_station+n_st_2, sn       ));
@@ -150,7 +154,7 @@ set_data_writer(boost::shared_ptr<Data_writer> writer_) {
 }
 
 bool Correlation_core::has_work() {
-  for (size_t i=0; i < number_input_streams_in_use(); i++) {
+  for (int i=0; i < number_input_streams_in_use(); i++) {
     if (input_buffers[i]->empty()) {
       return false;
     }
@@ -165,7 +169,7 @@ void Correlation_core::integration_initialise() {
   if (accumulation_buffers.size() != baselines.size()) {
     accumulation_buffers.resize(baselines.size());
     size_t size = (size_of_fft()/2+1);
-    for (int i=0; i<accumulation_buffers.size(); i++) {
+    for (size_t i=0; i<accumulation_buffers.size(); i++) {
       accumulation_buffers[i].resize(size);
     }
   }
@@ -180,10 +184,10 @@ void Correlation_core::integration_initialise() {
 }
 
 void Correlation_core::integration_step() {
-  if (input_elements.size() != number_input_streams_in_use()) {
+  if ((int)input_elements.size() != number_input_streams_in_use()) {
     input_elements.resize(number_input_streams_in_use());
   }
-  for (size_t i=0; i<number_input_streams_in_use(); i++) {
+  for (int i=0; i<number_input_streams_in_use(); i++) {
     int size;
     input_elements[i] = &input_buffers[i]->consume(size);
     assert(size == (int)size_of_fft());
@@ -191,12 +195,12 @@ void Correlation_core::integration_step() {
   }
 
   // Do the fft from time to frequency:
-  assert(frequency_buffer.size() == number_input_streams_in_use());
-  for (size_t i=0; i<number_input_streams_in_use(); i++) {
-    assert(frequency_buffer[i].size() == size_of_fft()/2+1);
+  assert((int)frequency_buffer.size() == number_input_streams_in_use());
+  for (size_t i=0; i<frequency_buffer.size(); i++) {
+    assert(frequency_buffer.size() == (size_of_fft()/2+1));
     
     // zero out the data for padding
-    for (int j=size_of_fft()/2; j<size_of_fft(); j++) {
+    for (size_t j=size_of_fft()/2; j<size_of_fft(); j++) {
       (*input_elements[i])[j] = 0;
     }
 
@@ -209,9 +213,9 @@ void Correlation_core::integration_step() {
   }
 
   // do the correlation
-  for (size_t i=0; i < number_input_streams_in_use(); i++) {
+  for (int i=0; i < number_input_streams_in_use(); i++) {
     // Auto correlations
-    std::pair<int,int> &stations = baselines[i];
+    std::pair<size_t,size_t> &stations = baselines[i];
     assert(stations.first == stations.second);
     auto_correlate_baseline(/* in1 */
       frequency_buffer[stations.first].buffer(),
@@ -221,7 +225,7 @@ void Correlation_core::integration_step() {
 
   for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
     // Cross correlations
-    std::pair<int,int> &stations = baselines[i];
+    std::pair<size_t,size_t> &stations = baselines[i];
     assert(stations.first != stations.second);
     correlate_baseline
     (/* in1 */ frequency_buffer[stations.first].buffer(),
@@ -229,7 +233,7 @@ void Correlation_core::integration_step() {
                /* out */ &accumulation_buffers[i][0]);
   }
 
-  for (size_t i=0; i<number_input_streams_in_use(); i++) {
+  for (int i=0; i<number_input_streams_in_use(); i++) {
     input_buffers[i]->consumed();
   }
 }
@@ -253,7 +257,7 @@ void Correlation_core::integration_average() {
 
   // Average the cross correlations
   for (size_t station=n_stations(); station < baselines.size(); station++) {
-    std::pair<int,int> &stations = baselines[station];
+    std::pair<size_t,size_t> &stations = baselines[station];
     FLOAT norm = sqrt(norms[stations.first]*norms[stations.second]);
     for (size_t i = 0 ; i < size_of_fft()/2+1; i++) {
       accumulation_buffers[station][i] /= norm;
@@ -294,10 +298,10 @@ void Correlation_core::integration_write() {
     // initialise with -1
     stream2station.resize(input_buffers.size(), -1);
 
-    for (int i=0;
+    for (size_t i=0;
          i < correlation_parameters.station_streams.size();
          i++) {
-      int station_stream =
+      size_t station_stream =
         correlation_parameters.station_streams[i].station_stream;
       assert(station_stream < stream2station.size());
       stream2station[station_stream] =
@@ -306,10 +310,10 @@ void Correlation_core::integration_write() {
   }
 
   Output_header_baseline hbaseline;
-  for (int i=0; i<baselines.size(); i++) {
-    std::pair<int,int> &stations = baselines[i];
+  for (size_t i=0; i<baselines.size(); i++) {
+    std::pair<size_t,size_t> &stations = baselines[i];
 
-    for (int ii=0; ii<size_of_fft()/2+1; ii++ ) {
+    for (size_t ii=0; ii<(size_of_fft()/2+1); ii++ ) {
       accumulation_buffers_float[ii] = accumulation_buffers[i][ii];
     }
 

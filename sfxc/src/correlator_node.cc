@@ -63,15 +63,22 @@ void Correlator_node::start() {
 
         correlate();
 
-        if (correlation_core.finished()) {
-          n_integration_slice_in_time_slice--;
-          if (n_integration_slice_in_time_slice==0) {
+        if (correlation_core.almost_finished()) {
+          if (n_integration_slice_in_time_slice==1) {
             // Notify manager node:
             int32_t msg = get_correlate_node_number();
             MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
                      MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
                      MPI_COMM_WORLD);
+          }
+        }
+        if (correlation_core.finished()) {
+          n_integration_slice_in_time_slice--;
+          if (n_integration_slice_in_time_slice==0) {
+            // Notify manager node:
             status = STOPPED;
+            // Try initialising a new integration slice
+            set_parameters();
           }
         }
         break;
@@ -178,8 +185,20 @@ void Correlator_node::correlate() {
 }
 
 void
-Correlator_node::set_parameters(const Correlation_parameters &parameters) {
+Correlator_node::receive_parameters(const Correlation_parameters &parameters) {
+  integration_slices_queue.push(parameters);
+  if (status == STOPPED) 
+    set_parameters();
+  
+}
+void
+Correlator_node::set_parameters() {
   assert(status == STOPPED);
+  
+  if (integration_slices_queue.empty()) return;
+  
+  const Correlation_parameters &parameters = 
+    integration_slices_queue.front();
 
   int size_input_slice =
     Control_parameters::nr_bytes_per_integration_slice_input_node_to_correlator_node
@@ -229,6 +248,8 @@ Correlator_node::set_parameters(const Correlation_parameters &parameters) {
                             ( nBaselines *
                               (size_of_one_baseline +
                                sizeof(Output_header_baseline) ) ) );
+  
+  integration_slices_queue.pop();
 }
 
 void
