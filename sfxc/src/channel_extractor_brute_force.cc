@@ -33,8 +33,6 @@ initialise(const std::vector< std::vector<int> > &track_positions_,
 void
 Channel_extractor_brute_force::
 extract(unsigned char *in_data1,
-        unsigned char *in_data2,
-        int samples_in_data1, /* <= size_of_one_input_word+1 */
         unsigned char **output_data) {
   int output_sample = 0, bit = 0;
   for (int input_sample=0; input_sample < input_sample_size; input_sample++) {
@@ -44,14 +42,9 @@ extract(unsigned char *in_data1,
       }
     }
     // Extract the data
-    if (input_sample < samples_in_data1) {
-      extract_element(&in_data1[size_of_one_input_word*input_sample],
-                      output_data, output_sample);
-    } else {
-      extract_element(&in_data2[size_of_one_input_word *
-                                (input_sample-samples_in_data1)],
-                      output_data, output_sample);
-    }
+    extract_element(&in_data1[size_of_one_input_word*input_sample],
+                    output_data, output_sample);
+
     // Move the output pointer
     bit += fan_out;
     if (bit == 8) {

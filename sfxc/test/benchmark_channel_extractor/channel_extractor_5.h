@@ -12,10 +12,7 @@ public:
                   int input_sample_size_);
 
   void extract(unsigned char *in_data1,
-               unsigned char *in_data2,
-               int samples_in_data1, /* <= size_of_one_input_word+1 */
-               unsigned char **output_data,
-               int offset);
+               unsigned char **output_data);
 private:
   Channel_extractor_interface* hidden_implementation_;
 

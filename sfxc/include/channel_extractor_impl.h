@@ -67,13 +67,9 @@ Channel_extractor_tasklet<Type>::do_task() {
     }
   }
 
-  { // Channel extract
-    ch_extractor->extract((unsigned char *) &input_element.data().mk4_data[0],
-                          (unsigned char *) NULL,
-                          n_input_samples,
-                          output_positions);
-  }
-
+  // Channel extract
+  ch_extractor->extract((unsigned char *) &input_element.data().mk4_data[0],
+                        output_positions);
 
   { // release the buffers
     input_element.release();
