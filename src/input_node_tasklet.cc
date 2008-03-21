@@ -24,17 +24,27 @@ get_input_node_tasklet(boost::shared_ptr<Data_reader> reader) {
   // buffer is an array of SIZE_MK4_FRAME bytes (8 is the smallest number of tracks).
   // We fill the buffer and then look for the header
   // if we don't find a header, read in another half block and continue.
-  size_t bytes_read = reader->get_bytes(SIZE_MK4_FRAME/2, 
-                                        buffer+SIZE_MK4_FRAME/2);
-  assert (bytes_read == SIZE_MK4_FRAME/2);
+  char * data = buffer+SIZE_MK4_FRAME/2;
+  int bytes_to_read = SIZE_MK4_FRAME/2;
+  do {
+    int bytes_read = reader->get_bytes(bytes_to_read, data);
+    bytes_to_read -= bytes_read;
+    data += bytes_read;
+    assert (bytes_read >= 0);
+  } while (bytes_to_read > 0);
 
   int nOnes=0, header_start=-1, nTracks8 = -1;
   for (int block=0; (block<16) && (header_start<0); block++) {
     // Move the last half to the first half and read frameMk4/2 bytes:
     memcpy(buffer, buffer+SIZE_MK4_FRAME/2, SIZE_MK4_FRAME/2);
-    size_t bytes_read = reader->get_bytes(SIZE_MK4_FRAME/2, 
-                                          buffer+SIZE_MK4_FRAME/2);
-    assert (bytes_read == SIZE_MK4_FRAME/2);
+    char * data = buffer+SIZE_MK4_FRAME/2;
+    int bytes_to_read = SIZE_MK4_FRAME/2;
+    do {
+      int bytes_read = reader->get_bytes(bytes_to_read, data);
+      bytes_to_read -= bytes_read;
+      data += bytes_read;
+      assert (bytes_read >= 0);
+    } while (bytes_to_read > 0);
 
     // the header contains 64 bits before the syncword and
     //                     64 bits after the syncword.

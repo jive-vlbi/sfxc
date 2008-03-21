@@ -78,8 +78,13 @@ int main(int argc, char *argv[]) {
     int buffsize = 100, nread;
     char buff[buffsize];
     while ((nread = reader_file->get_bytes(buffsize, buff)) > 0) {
-      int64_t nwritten = data_writer->put_bytes(nread, buff);
-      assert(nwritten == nread);
+      char *data = buff;
+      do { 
+        int read = data_writer->put_bytes(nread, buff);
+        assert(read >= 0);
+        nread -= read;
+        data += read;
+      } while (nread > 0);
     }
 
   } else { // Receiving node:
