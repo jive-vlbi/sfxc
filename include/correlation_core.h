@@ -29,6 +29,7 @@ public:
   }
 
   bool finished();
+  bool almost_finished();
 
   void connect_to(size_t stream, Input_buffer_ptr buffer);
 
@@ -88,8 +89,8 @@ private:
 
   std::vector< Aligned_vector< std::complex<FLOAT> > > frequency_buffer;
   std::vector< std::vector<std::complex<FLOAT> > >     accumulation_buffers;
-  std::vector< std::complex<float> >                accumulation_buffers_float;
-  std::vector< std::pair<int, int> >                baselines;
+  std::vector< std::complex<float> >                   accumulation_buffers_float;
+  std::vector< std::pair<size_t, size_t> >             baselines;
 
   boost::shared_ptr<Data_writer>                    writer;
 

@@ -27,6 +27,8 @@
 
 #include "timer.h"
 
+#include <queue>
+
 // Declare the correlator controller:
 class Correlator_node;
 
@@ -99,7 +101,8 @@ public:
 
   void add_delay_table(int sn, Delay_table_akima &table);
 
-  void set_parameters(const Correlation_parameters &parameters);
+  void receive_parameters(const Correlation_parameters &parameters);
+  void set_parameters();
   
 
   int get_correlate_node_number();
@@ -132,6 +135,8 @@ private:
   int n_integration_slice_in_time_slice;
   
   Timer bits_to_float_timer_, delay_timer_, correlation_timer_;
+  
+  std::queue<Correlation_parameters>          integration_slices_queue;
 };
 
 #endif // CORRELATOR_NODE_H
