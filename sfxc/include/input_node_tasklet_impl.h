@@ -111,7 +111,7 @@ do_task() {
   integer_delay_timer_.resume();
   for (size_t i=0; i<integer_delay_.size(); i++) {
     assert(integer_delay_[i] != NULL);
-    if (integer_delay_[i]->has_work()) {
+    while (integer_delay_[i]->has_work()) {
       integer_delay_[i]->do_task();
       did_work = true;
     }
@@ -119,7 +119,7 @@ do_task() {
   integer_delay_timer_.stop();
   data_writers_timer_.resume();
   for (size_t i=0; i<data_writers_.size(); i++) {
-    if (data_writers_[i].has_work()) {
+    while (data_writers_[i].has_work()) {
       data_writers_[i].do_task();
       did_work = true;
     }
