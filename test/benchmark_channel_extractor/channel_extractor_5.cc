@@ -64,31 +64,22 @@ public:
   }
 
   void extract(unsigned char *in_data1,
-               unsigned char *in_data2,
-               int samples_in_data1, /* <= size_of_one_input_word+1 */
                unsigned char **output_data) {
-    int offset = 0;
-    int difference = (input_sample_size_+1) - samples_in_data1;
     int out_position=0;
-    //std::cout << "\n V1  AT: " << samples_in_data1 << " diff: " << samples_per_byte<< std::endl;
-    do_task(samples_in_data1, offset, in_data1, output_data, out_position);
-    //std::cout << "\n V2 AT: " << out_position << " in pos: " << size_of_one_input_word_*difference << std::endl;
-    //do_task(difference, offset, &in_data2[0], output_data, out_position );
+    do_task(in_data1, output_data, out_position);
   };
 
 
-  void do_task(int n_input_samples,
-               int offset,
-               unsigned char in_data[],
+  void do_task(unsigned char in_data[],
                unsigned char** output_data, int& out_position) {
 
     for (int subband=0; subband<n_subbands; subband++) {
       const uint8_t *in_pos = (const uint8_t *)in_data;
       unsigned char *out_pos = &(output_data[subband][out_position]);
       const uint8_t *table = &lookup_table[subband][0][0];
-      memset((void *)out_pos, 0, n_input_samples*fan_out/8+1);
+      memset((void *)out_pos, 0, input_sample_size_*fan_out/8+1);
 
-      for (int sample=0; sample<n_input_samples; sample+=samples_per_byte) {
+      for (int sample=0; sample<input_sample_size_; sample+=samples_per_byte) {
         // samples_per_byte-1 times:
         for (int i=1; i<samples_per_byte; i++) {
           process_sample(in_pos, out_pos, table);
@@ -98,21 +89,8 @@ public:
         process_sample(in_pos, out_pos, table);
         out_pos++;
       }
-      if ( offset != 0 ) { // Do the offset
-        uint8_t *mask_right = bit_shift_right_table[offset];
-
-        // shift the last sample
-        if (fan_out < 4)
-          *out_pos = (*out_pos<<(8-2*fan_out));
-
-        unsigned char *data = output_data[subband];
-        for (int sample=0; sample<n_input_samples*fan_out/8; sample++) {
-          *data = (*data << offset) | mask_right[(uint8_t)*(data+1)];
-          data++;
-        }
-      }
     }
-    out_position += n_input_samples/samples_per_byte;
+    out_position += input_sample_size_/samples_per_byte;
   }
 
 private:
@@ -177,12 +155,9 @@ void Channel_extractor_5::initialise(const std::vector< std::vector<int> > &trac
 }
 
 void Channel_extractor_5::extract(unsigned char *in_data1,
-                                  unsigned char *in_data2,
-                                  int samples_in_data1, /* <= size_of_one_input_word+1 */
-                                  unsigned char **output_data,
-                                  int offset) {
+                                  unsigned char **output_data) {
   assert( hidden_implementation_ != NULL && "big" );
 
-  hidden_implementation_->extract(in_data1, in_data2, samples_in_data1-1, output_data);
+  hidden_implementation_->extract(in_data1, output_data);
 }
 

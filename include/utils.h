@@ -137,17 +137,6 @@ void get_ip_address(std::list<Interface_pair> &addresses,
  **/
 int64_t get_us_time(int time[]);
 
-
-///** Constructs an array containing all control data for a correlate node (Gen and Run).
-// *  @returns the size of the array
-//  **/
-//void send_control_data(int rank);
-//
-///** Stores all control data for a correlate node (Gen and Run).
-//  **/
-//void receive_control_data(MPI_Status &status);
-
-
 //*****************************************************************************
 //  irbit2: random seeding
 //  See Numerical Recipes

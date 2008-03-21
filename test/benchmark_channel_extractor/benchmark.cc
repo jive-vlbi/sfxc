@@ -5,55 +5,36 @@
 #include <vector>
 #include <assert.h>
 
+#include "utils.h"
 #include "utils_bench.h"
 #include "timer.h"
 
 Benchmark::Benchmark(Channel_extractor_interface &channel_extractor_)
-    : channel_extractor(channel_extractor_) {}
+  : channel_extractor(channel_extractor_) {}
 
 bool Benchmark::test() {
   bool ok = true;
   bool early_exit = true;
   std::cout << ".";
   std::cout.flush();
-  ok &= do_test(4,4,CHANNEL_ORDER, 512);
-  if (early_exit && !ok) exit(0);
 
-  std::cout << ".";
-  std::cout.flush();
-  ok &= do_test(8,4,FAN_OUT_ORDER, 512);
-  if (early_exit && !ok) exit(0);
+  for (int nr_channels=256; nr_channels<2048; nr_channels *= 2) {
+    for (int order=CHANNEL_ORDER; order != NO_ORDER; order++) {
+      for (int n_subbands=1; n_subbands<32; n_subbands *= 2) {
+        for (int fan_out=1; fan_out<8; fan_out *= 2) {
+          if ((n_subbands*fan_out)%8 == 0) {
+            ok &= do_test(n_subbands,fan_out,(ORDER)order, nr_channels);
+            if (early_exit && !ok) exit(0);
+          }
+        }
+      }
 
-  std::cout << ".";
-  std::cout.flush();
-  ok &= do_test(8,2,CHANNEL_ORDER, 512);
-  if (early_exit && !ok) exit(0);
+      std::cout << ".";
+      std::cout.flush();
+    }
+  }
 
-  std::cout << ".";
-  std::cout.flush();
-  ok &= do_test(8,8,CHANNEL_ORDER, 512);
   if (early_exit && !ok) exit(0);
-
-  std::cout << ".";
-  std::cout.flush();
-  ok &= do_test(16,4,CHANNEL_ORDER, 512);
-  if (early_exit && !ok) exit(0);
-
-  std::cout << ".";
-  std::cout.flush();
-  ok &= do_test(16,4,CHANNEL_ORDER, 512);
-  if (early_exit && !ok) exit(0);
-
-  std::cout << ".";
-  std::cout.flush();
-  ok &= do_test(16,4,CHANNEL_ORDER, 512);
-  if (early_exit && !ok) exit(0);
-
-  std::cout << ".";
-  std::cout.flush();
-  ok &= do_test(16,4,CHANNEL_ORDER, 512);
-  if (early_exit && !ok) exit(0);
-
   return ok;
 }
 
@@ -101,53 +82,34 @@ bool Benchmark::do_test(int n_channels, int fan_out,
 
   assert(input_size == size_input_word*(n_input_samples_to_process+1));
 
-  for (int offset=0; offset<fan_out; offset++) {
-    // randomize input data:
-    for (int i=0; i<input_size; i++) {
-      in_data1[i] = random();
-      in_data2[i] = random();
+  // randomize input data:
+  for (int i=0; i<input_size; i++) {
+    in_data1[i] = random();
+    in_data2[i] = random();
+  }
+
+  // Brute force for the reference
+  randomize_buffers(output_brute, n_output_bytes_per_channel);
+  channel_extractor_brute.extract(&in_data1[0],
+                                  &output_brute[0]);
+
+  // recompute the output
+  randomize_buffers(output, n_output_bytes_per_channel);
+  channel_extractor.extract(&in_data1[0], &output[0]);
+
+  // check the result:
+  result &= check_output_buffers(&output[0],
+                                 &output_brute[0],
+                                 n_channels,
+                                 n_output_bytes_per_channel,
+                                 track_positions);
+
+  if (!result) {
+    for (int i=0; i<n_channels; i++) {
+      delete[] output[i];
+      delete[] output_brute[i];
     }
-
-    // Brute force for the reference
-    randomize_buffers(output_brute, n_output_bytes_per_channel);
-    channel_extractor_brute.extract(&in_data1[0], &in_data2[0],
-                                    n_input_samples_to_process+1,
-                                    &output_brute[0]);
-
-    for (int offset_in_input_samples=0; offset_in_input_samples<10; offset_in_input_samples++) {
-      // recompute the output
-      randomize_buffers(output, n_output_bytes_per_channel);
-      channel_extractor.extract(&in_data1[size_input_word*offset_in_input_samples],
-                                &in_data2[0],
-                                n_input_samples_to_process+1-offset_in_input_samples,
-                                &output[0]);
-
-      // std::cout << "offset: " << offset << std::endl;
-      // print_output_buffers(output, n_output_bytes_per_channel);
-
-      // check the result:
-      result &= check_output_buffers(&output[0],
-                                     &output_brute[0],
-                                     n_channels,
-                                     n_output_bytes_per_channel,
-                                     track_positions);
-      if (!result) {
-        for (int i=0; i<n_channels; i++) {
-          delete[] output[i];
-          delete[] output_brute[i];
-        }
-        return result;
-      }
-
-      { // shift all samples one input position:
-        for (int i=input_size-1; i>=size_input_word; i--)
-          in_data2[i] = in_data2[i-size_input_word];
-        for (int i=size_input_word-1; i>=0; i--)
-          in_data2[i] = in_data1[input_size-size_input_word+i];
-        for (int i=input_size-1; i>=size_input_word; i--)
-          in_data1[i] = in_data1[i-size_input_word];
-      }
-    }
+    return result;
   }
 
   // Clear up the buffers and return
@@ -166,7 +128,8 @@ void Benchmark::initialise(int n_channels,
   for (int i=0; i<n_channels; i++)
     track_positions[i].resize(fan_out);
   switch (ordering) {
-  case CHANNEL_ORDER: {
+  case CHANNEL_ORDER:
+    {
       int track=0;
       for (int i=0; i<n_channels; i++) {
         for (int j=0; j<fan_out; j++) {
@@ -176,7 +139,8 @@ void Benchmark::initialise(int n_channels,
       }
       break;
     }
-  case FAN_OUT_ORDER: {
+  case FAN_OUT_ORDER: 
+    {
       int track=0;
       for (int j=0; j<fan_out; j++) {
         for (int i=0; i<n_channels; i++) {
@@ -186,7 +150,28 @@ void Benchmark::initialise(int n_channels,
       }
       break;
     }
-  case RANDOM_ORDER: {
+  case RANDOM_ORDER: 
+    {
+      srand(7);
+      int size = fan_out*n_channels;
+      bool track_used[size];
+      for (int i=0; i<size; i++) track_used[i] = false;
+      int curr_track=0; 
+      for (int j=0; j<fan_out; j++) {
+        for (int i=0; i<n_channels; i++) {
+          unsigned char rnd = rand();
+          while (rnd > 0) {
+            curr_track = (curr_track+1)%size;
+            if (!track_used[curr_track]) rnd--;
+          }
+          track_used[curr_track] = true;
+          track_positions[i][j] = curr_track;
+        }
+      }
+      break;
+    }
+  case NO_ORDER: 
+    {
       assert(false);
     }
   }

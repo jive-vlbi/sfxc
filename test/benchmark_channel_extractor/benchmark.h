@@ -4,9 +4,10 @@
 
 class Benchmark {
   enum ORDER {
-    CHANNEL_ORDER,
+    CHANNEL_ORDER = 0,
     FAN_OUT_ORDER,
-    RANDOM_ORDER
+    RANDOM_ORDER,
+    NO_ORDER
   };
 public:
   Benchmark(Channel_extractor_interface &channel_extractor_);
