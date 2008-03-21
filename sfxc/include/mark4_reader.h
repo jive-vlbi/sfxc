@@ -122,10 +122,14 @@ Mark4_reader(boost::shared_ptr<Data_reader> data_reader,
 block_count_(0) {
   // fill the first mark4 block
   memmove(mark4_block, buffer, SIZE_MK4_FRAME*sizeof(char));
-  int size = SIZE_MK4_FRAME*(sizeof(Type) - sizeof(char));
-  int read = data_reader->get_bytes(size,
-                                    ((char *)mark4_block) + SIZE_MK4_FRAME*sizeof(char));
-  assert(read == size);
+  int bytes_to_read = SIZE_MK4_FRAME*(sizeof(Type) - sizeof(char));
+  char *data = ((char *)mark4_block) + SIZE_MK4_FRAME*sizeof(char);
+  while (bytes_to_read > 0) {
+    int read = data_reader->get_bytes(bytes_to_read, data);
+    assert(read >= 0);
+    bytes_to_read -= read;
+    data += read;
+  }
 
   Header header;
   header.set_header(mark4_block);
@@ -342,5 +346,10 @@ Mark4_reader<Type>::get_tracks(const Input_node_parameters &input_node_param,
 
   return result;
 }
+
+
+int find_start_of_header(boost::shared_ptr<Data_reader> reader,
+                         char first_block[]);
+
 
 #endif // MARK4_READER_H

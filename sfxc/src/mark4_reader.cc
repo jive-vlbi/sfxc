@@ -1,9 +1,6 @@
 #include "mark4_reader.h"
 #include "mark4_header.h"
 
-int find_start_of_header(boost::shared_ptr<Data_reader> reader,
-                         char first_block[]);
-
 Mark4_reader_interface *
 get_mark4_reader(boost::shared_ptr<Data_reader> reader,
                  char *first_block) {
@@ -62,17 +59,27 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
   // first_block is an array of SIZE_MK4_FRAME bytes (8 is the smallest number of tracks).
   // We fill the first_block and then look for the header
   // if we don't find a header, read in another half block and continue.
-  size_t bytes_read = reader->get_bytes(SIZE_MK4_FRAME/2,
-                                        first_block+SIZE_MK4_FRAME/2);
-  assert (bytes_read == SIZE_MK4_FRAME/2);
+  size_t bytes_to_read = SIZE_MK4_FRAME/2;
+  char *data = first_block+SIZE_MK4_FRAME/2;
+  do {
+    int read = reader->get_bytes(bytes_to_read, data);
+    bytes_to_read -= read;
+    data += read;
+  } while (bytes_to_read > 0);
 
   int nOnes=0, header_start=-1, nTracks8 = -1;
   for (int block=0; (block<16) && (header_start<0); block++) {
     // Move the last half to the first half and read frameMk4/2 bytes:
     memcpy(first_block, first_block+SIZE_MK4_FRAME/2, SIZE_MK4_FRAME/2);
-    size_t bytes_read = reader->get_bytes(SIZE_MK4_FRAME/2,
-                                          first_block+SIZE_MK4_FRAME/2);
-    assert (bytes_read == SIZE_MK4_FRAME/2);
+
+    size_t bytes_to_read = SIZE_MK4_FRAME/2;
+    char *data = first_block+SIZE_MK4_FRAME/2;
+    do {
+      int read = reader->get_bytes(bytes_to_read, data);
+      bytes_to_read -= read;
+      data += read;
+    } while (bytes_to_read > 0);
+
 
     // the header contains 64 bits before the syncword and
     //                     64 bits after the syncword.

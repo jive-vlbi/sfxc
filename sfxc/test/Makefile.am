@@ -41,6 +41,8 @@ OBJ = ../src/utils.cc \
       ../src/control_parameters.cc \
       ../src/delay_table_akima.cc \
       ../src/channel_extractor_mark4.cc \
+      ../src/channel_extractor_brute_force.cc \
+      ../src/mark4_reader.cc \
       ../src/bits_to_float_converter.cc \
       \
       ../src/data_reader.cc \
@@ -50,6 +52,7 @@ OBJ = ../src/utils.cc \
       ../src/data_reader_dnfp.cc \
       ../src/data_reader_blocking.cc \
       ../src/data_reader_socket.cc \
+      ../src/data_reader_mark5.cc \
       ../src/data_writer.cc \
       ../src/data_writer_file.cc \
       ../src/data_writer_tcp.cc \
@@ -81,7 +84,6 @@ OBJ = ../src/utils.cc \
       ../src/sfxc_mpi.cc \
       ../src/delay_correction.cc \
       ../src/correlation_core.cc \
-      ../src/integer_delay_correction.cc \
       \
       ../src/tasklet/tasklet.cc \
       ../src/input_node_tasklet.cc
@@ -111,7 +113,7 @@ test_transfer_control_parameters_SOURCES = \
   $(OBJ) test_transfer_control_parameters.cc
 
 test_data_reader_mark5_SOURCES = \
-  $(OBJ) test_data_reader_mark5.cc ../src/data_reader_mark5.cc
+  $(OBJ) test_data_reader_mark5.cc
 
 test_channel_extractor_SOURCES = \
   $(OBJ) test_channel_extractor.cc

@@ -80,11 +80,25 @@ void Test_manager_node::start() {
   start_log_node(RANK_LOG_NODE);
 
   get_log_writer()(0) << "Initialising the Input_node" << std::endl;
+
+
   // setting the first data-source of the first station
   const std::string &station_name = control_parameters.station(0);
   start_input_node(rank_input_node, station_name);
   std::string filename = control_parameters.data_sources(station_name)[0];
   set_data_reader(rank_input_node, /*stream_nr*/0, filename);
+
+  // Sending the delay table
+  Delay_table_akima delay_table;
+  const std::string &delay_file =
+    control_parameters.get_delay_table_name(station_name);
+  delay_table.open(delay_file.c_str());
+  if (!delay_table.initialised()) {
+    DEBUG_MSG("Delay table could not be read");
+    control_parameters.generate_delay_table(station_name, delay_file);
+    delay_table.open(delay_file.c_str());
+    assert(delay_table.initialised());
+  }
 
   // Send the track parameters
   std::vector<std::string> scans;
@@ -116,7 +130,10 @@ void Test_manager_node::start() {
   int64_t current_time = input_node_get_current_time(station_name);
   int32_t start_time = control_parameters.get_start_time().to_miliseconds();
   int32_t stop_time = start_time + 2000; // add two seconds
-  assert(current_time <= start_time);
+  if (current_time > start_time) {
+    get_log_writer()(0) << "Error: current time after start time" << std::endl;
+    return;
+  }
   // goto the start time 
   input_node_goto_time(station_name, start_time);
   // set the stop time
