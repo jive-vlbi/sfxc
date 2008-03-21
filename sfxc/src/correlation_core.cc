@@ -197,7 +197,7 @@ void Correlation_core::integration_step() {
   // Do the fft from time to frequency:
   assert((int)frequency_buffer.size() == number_input_streams_in_use());
   for (size_t i=0; i<frequency_buffer.size(); i++) {
-    assert(frequency_buffer.size() == (size_of_fft()/2+1));
+    assert(frequency_buffer[i].size() == (size_of_fft()/2+1));
     
     // zero out the data for padding
     for (size_t j=size_of_fft()/2; j<size_of_fft(); j++) {
