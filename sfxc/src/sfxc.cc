@@ -32,7 +32,6 @@
 #include "data_writer_file.h"
 #include "data_reader_file.h"
 #include "data_reader_tcp.h"
-#include "channel_extractor_mark4.h"
 #include "utils.h"
 
 #include "manager_node.h"

@@ -19,7 +19,6 @@
 #include "semaphore_buffer.h"
 
 #include "data_reader_buffer.h"
-#include "channel_extractor_mark4.h"
 
 #include "mpi_transfer.h"
 

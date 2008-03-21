@@ -50,7 +50,6 @@ print_headers_SOURCES = \
   ../src/data_reader.cc \
   ../src/data_reader_file.cc \
   ../src/mark4_reader.cc \
-  ../src/channel_extractor_mark4.cc \
   ../src/channel_extractor_brute_force.cc \
   ../src/utils.cc \
   ../src/control_parameters.cc

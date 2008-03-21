@@ -18,9 +18,6 @@
 #include "single_data_reader_controller.h"
 #include "multiple_data_writers_controller.h"
 
-#include "channel_extractor_mark4.h"
-#include "time_slicer.h"
-
 #include "data_reader2buffer.h"
 
 #include "semaphore_buffer.h"
@@ -57,8 +54,6 @@ class Input_node : public Node {
   typedef Single_data_reader_controller::value_type     value_type;
   typedef Semaphore_buffer<value_type>                  Buffer;
 
-  // assume at most 8 tracks:
-  typedef Time_slicer< Buffer_element_large<char, SIZE_MK4_FRAME> >    Slicer;
 public:
   Input_node(int rank, int station_number, Log_writer *log_writer);
   Input_node(int rank, int station_number);
