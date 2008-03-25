@@ -96,7 +96,7 @@ void parse_url(const std::string url, String& server, String& port, String& file
       readb = (readb < buff_size ? readb : buff_size);
       char buff[(int)readb];
       
-      int32_t readbyte = readb;
+      //int32_t readbyte = readb;
       //*m_writer << readbyte;
       int ret = m_breader->get_bytes(readb, buff);
       //uint32_t eof;
@@ -104,10 +104,10 @@ void parse_url(const std::string url, String& server, String& port, String& file
       //if( eof == 1 ) m_isEof = 1;
       return ret;
     }
-    int32_t readbyte = readb;
+    //int32_t readbyte = readb;
     //*m_writer << readbyte;
     int ret = m_breader->get_bytes(readb, buffer);
-    uint32_t eof;
+    //uint32_t eof;
     //*m_breader >> eof;
     //if( eof == 1 ) m_isEof = 1;
     return ret;

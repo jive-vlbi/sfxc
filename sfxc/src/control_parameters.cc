@@ -421,7 +421,7 @@ Control_parameters::
 number_correlation_cores_per_timeslice(const std::string &mode) const {
   if (cross_polarize()) {
     int n_cores=0;
-    for (size_t i=0; i<number_frequency_channels(); i++) {
+    for (int i=0; i<(int)number_frequency_channels(); i++) {
       int cross = cross_channel(channel(i), mode);
       if ((cross == -1) || (cross > i)) {
         n_cores ++;
@@ -716,7 +716,7 @@ frequency(const std::string &channel_name,
   }
   for (Vex::Node::const_iterator bbc_it = mode_block->begin("BBC");
        bbc_it != mode_block->end("BBC"); ++bbc_it) {
-    for (int i=1; i<bbc_it->size(); i++) {
+    for (size_t i=1; i<bbc_it->size(); i++) {
       if (bbc_it[i]->to_string() == station_name) {
         if_ref_BBC = bbc_it[0]->to_string();
       }
@@ -768,7 +768,7 @@ sideband(const std::string &channel_name,
   }
   for (Vex::Node::const_iterator bbc_it = mode_block->begin("BBC");
        bbc_it != mode_block->end("BBC"); ++bbc_it) {
-    for (int i=1; i<bbc_it->size(); i++) {
+    for (size_t i=1; i<bbc_it->size(); i++) {
       if (bbc_it[i]->to_string() == station_name) {
         if_ref_BBC = bbc_it[0]->to_string();
       }
