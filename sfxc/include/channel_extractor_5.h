@@ -1,3 +1,6 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands) * Copyright (c) 2007 University of Amsterdam (Netherlands) * All rights reserved. * * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007 *            Damien Marchal <dmarchal@science.uva.nl>, 2007 * * * This file is part of: *   - sfxc/SCARIe * This file contains: *   - An implementation of faster than 
+ *     channel_extractor_brute_force.  *     this method use precomputation table. 
+ */    
 #ifndef CHANNEL_EXTRACTOR_5_H__
 #define CHANNEL_EXTRACTOR_5_H__
 
