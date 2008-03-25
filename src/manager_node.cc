@@ -387,7 +387,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
                                        get_current_mode());
     while ((current_channel <
             control_parameters.number_frequency_channels()) &&
-           (cross_channel >= 0) && (cross_channel < current_channel)) {
+           (cross_channel >= 0) && (cross_channel < (int)current_channel)) {
       current_channel ++;
       cross_channel =
         control_parameters.cross_channel(current_channel,

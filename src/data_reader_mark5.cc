@@ -29,7 +29,7 @@ Data_reader_mark5::Data_reader_mark5(const std::string& str) {
   tmp=str.substr(strlen("mark5://"));
   idx = tmp.find(":");
 
-  if(  idx == std::string::npos ) {
+  if(  idx == (int)std::string::npos ) {
     std::cerr << "ERROR: this is not a valid mark5 string " << str << std::endl;
     exit(1);
   }

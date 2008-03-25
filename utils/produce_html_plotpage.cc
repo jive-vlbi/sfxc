@@ -201,7 +201,7 @@ All_plots_data::read_plots(std::istream &input) {
         if (integration_slice == timeslice_header.integration_slice) {
           if (baseline_header.station_nr1 != baseline_header.station_nr2) {
             fftwf_execute(fftwf_plan_);
-            int data_size = data.size();
+            size_t data_size = data.size();
             for (size_t j=0; j<data_size; j++) {
               data_float[j] = std::abs(data[(j+data_size/2)%data_size]);
             }
@@ -312,8 +312,6 @@ All_plots_data::print_html() {
 
     { // Print content of the table
       assert(first_plot.header.station_nr1 == first_plot.header.station_nr2);
-      const size_t first_station = first_plot.header.station_nr1;
-
       for (size_t ch = 0; ch != plots[sideband][pol1][pol2].size(); ch++) {
         for (int sideband=0; sideband<2; sideband++) {
           for (int pol1=0; pol1<2; pol1++) {
@@ -347,12 +345,12 @@ All_plots_data::print_html() {
                   index_html << "</th>" << std::endl;
                 
                   // Autos
-                  for (int i=0; i<autos.size(); i++) {
+                  for (size_t i=0; i<autos.size(); i++) {
                     print_auto(index_html, sideband, pol1, pol2, ch, autos[i]);
                   }
 
                   // Crosses
-                  for (int i=0; i<crosses.size(); i++) {
+                  for (size_t i=0; i<crosses.size(); i++) {
                     print_cross(index_html, sideband, pol1, pol2, ch, 
                                 crosses[i].first, crosses[i].second);
                   }
@@ -374,12 +372,12 @@ void
 All_plots_data::set_plot(const Plot_data &plot_data) {
   assert(plot_data.initialised);
 
-  int freq     = plot_data.header.frequency_nr;
-  int station1 = plot_data.header.station_nr1;
-  int station2 = plot_data.header.station_nr2;
-  int pol1     = plot_data.header.polarisation1;
-  int pol2     = plot_data.header.polarisation2;
-  int sideband = plot_data.header.sideband;
+  size_t freq     = plot_data.header.frequency_nr;
+  size_t station1 = plot_data.header.station_nr1;
+  size_t station2 = plot_data.header.station_nr2;
+  size_t pol1     = plot_data.header.polarisation1;
+  size_t pol2     = plot_data.header.polarisation2;
+  size_t sideband = plot_data.header.sideband;
 
   if (station1 == station2) {
     assert(pol1==pol2);
@@ -461,8 +459,8 @@ All_plots_data::
 print_auto(std::ostream &index_html,
            int sideband, int pol1, int pol2, int ch, int station) {
   index_html << "<td>";
-  if (station < plots[sideband][pol1][pol2][ch].size()) {
-    if (station < plots[sideband][pol1][pol2][ch][station].size()) {
+  if (station < (int)plots[sideband][pol1][pol2][ch].size()) {
+    if (station < (int)plots[sideband][pol1][pol2][ch][station].size()) {
       Plot_data &plot_data = plots[sideband][pol1][pol2][ch][station][station];
       if (plot_data.initialised) {
         char filename[80], filename_large[80], title[80];
@@ -482,8 +480,8 @@ print_cross(std::ostream &index_html,
             int sideband, int pol1, int pol2, int ch, 
             int station1, int station2) {
   bool show_plot = false;
-  if (station1 < plots[sideband][pol1][pol2][ch].size()) {
-    if (station2 < plots[sideband][pol1][pol2][ch][station1].size()) {
+  if (station1 < (int)plots[sideband][pol1][pol2][ch].size()) {
+    if (station2 < (int)plots[sideband][pol1][pol2][ch][station1].size()) {
       Plot_data &plot_data = plots[sideband][pol1][pol2][ch][station1][station2];
       if (plot_data.initialised) {
         show_plot = true;
