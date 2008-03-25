@@ -141,6 +141,7 @@ Integer_delay_correction_per_channel<Type>::do_task() {
     current_delay.first;
   if (byte_offset >= (int)input_element.channel_data.data().data.size()) {
     // This can happen when we go to a next integration slice
+    output_element.channel_data = input_element.channel_data;
     output_element.release_data = true;
     output_buffer_->push(output_element);
 
