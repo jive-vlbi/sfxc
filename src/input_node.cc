@@ -129,7 +129,6 @@ void Input_node::add_time_slice(int channel, int stream, int starttime_slice,
                                 int stoptime_slice) {
   assert(data_writers_ctrl.get_data_writer(stream) != 
          Multiple_data_writers_controller::Data_writer_ptr());
-  assert(data_writers_ctrl.get_data_writer(stream)->get_size_dataslice() <= 0);
 
   assert(input_node_tasklet != NULL);
 
