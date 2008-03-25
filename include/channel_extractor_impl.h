@@ -24,8 +24,15 @@ Channel_extractor_tasklet<Type>::Channel_extractor_tasklet()
     : output_memory_pool_(32000*MAX_SUBBANDS),
     n_subbands(0),
 fan_out(0) {
-  ch_extractor = new Channel_extractor_5();  
-  DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
+  
+   #ifdef USE_EXTRACTOR_5
+    ch_extractor = new Channel_extractor_5();  
+  #else
+    ch_extractor = new Channel_extractor_fast();  
+    DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );  
+  #endif //USE_EXTRACTOR_5
+  
+  DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );  
 }
 
 template <class Type>
