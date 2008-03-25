@@ -12,6 +12,9 @@
 
 #include "channel_extractor_tasklet.h"
 #include "channel_extractor_brute_force.h"
+#include "channel_extractor_5.h"
+#include "channel_extractor_fast.h"
+
 #include "mark4_header.h"
 
 // At least be able to buffer the data
@@ -19,9 +22,11 @@
 template <class Type>
 Channel_extractor_tasklet<Type>::Channel_extractor_tasklet()
     : output_memory_pool_(32000*MAX_SUBBANDS),
-    ch_extractor(new Channel_extractor_brute_force()),
     n_subbands(0),
-fan_out(0) {}
+fan_out(0) {
+  ch_extractor = new Channel_extractor_5();  
+  DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
+}
 
 template <class Type>
 Channel_extractor_tasklet<Type>::~Channel_extractor_tasklet() {}
