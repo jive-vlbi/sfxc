@@ -10,12 +10,12 @@
 template <class Type>
 class Input_node_data_writer_tasklet : public Tasklet {
 public:
-  typedef typename Input_node_types<Type>::Fft_buffer         Input_buffer;
+  typedef typename Input_node_types<Type>::Fft_buffer       Input_buffer;
   typedef typename Input_node_types<Type>::Fft_buffer_element Input_buffer_element;
-  typedef typename Input_node_types<Type>::Fft_buffer_ptr     Input_buffer_ptr;
+  typedef typename Input_node_types<Type>::Fft_buffer_ptr   Input_buffer_ptr;
 
-  typedef boost::shared_ptr<Data_writer>                 Data_writer_ptr;
-  typedef std::queue<Data_writer_ptr>                    Data_writer_queue;
+  typedef boost::shared_ptr<Data_writer>                    Data_writer_ptr;
+  typedef std::queue< std::pair<Data_writer_ptr,int> >      Data_writer_queue;
 
   Input_node_data_writer_tasklet();
   virtual ~Input_node_data_writer_tasklet();
@@ -41,7 +41,8 @@ private:
 
 template <class Type>
 Input_node_data_writer_tasklet<Type>::
-Input_node_data_writer_tasklet() {}
+Input_node_data_writer_tasklet() {
+}
 
 template <class Type>
 Input_node_data_writer_tasklet<Type>::~Input_node_data_writer_tasklet() {
@@ -52,7 +53,7 @@ Input_node_data_writer_tasklet<Type>::~Input_node_data_writer_tasklet() {
     }
   }
   while  (!data_writers_.empty()) {
-    if (!data_writers_.front()->get_size_dataslice() == 0) {
+    if (!data_writers_.front().first->get_size_dataslice() == 0) {
       data_writers_.pop();
     } else {
       break;
@@ -99,7 +100,7 @@ do_task() {
   if ((int)input_element.delay >= 0) {
     int nbytes = 0;
     do {
-      nbytes = data_writers_.front()->put_bytes(1, &input_element.delay);
+      nbytes = data_writers_.front().first->put_bytes(1, &input_element.delay);
     } while (nbytes != 1);
   }
 
@@ -110,14 +111,20 @@ do_task() {
 
   while (bytes_written < bytes_to_write) {
     int nbytes =
-      data_writers_.front()->put_bytes(bytes_to_write - bytes_written, data);
+      data_writers_.front().first->put_bytes(bytes_to_write - bytes_written, data);
     assert(nbytes >= 0);
     bytes_written += nbytes;
     data          += nbytes;
   }
 
-  if (data_writers_.front()->get_size_dataslice() == 0) {
+  if (data_writers_.front().first->get_size_dataslice() == 0) {
     data_writers_.pop();
+    assert(data_writers_.front().first->get_size_dataslice() <= 0);
+    int nr_bytes = data_writers_.front().second;
+    assert(nr_bytes != 0);
+    if (nr_bytes > 0) {
+      data_writers_.front().first->set_size_dataslice(nr_bytes);
+    }
   }
 
   input_buffer_->pop();
@@ -127,11 +134,7 @@ template <class Type>
 void
 Input_node_data_writer_tasklet<Type>::
 add_data_writer(Data_writer_ptr data_writer, int nr_bytes) {
-  assert(data_writer->get_size_dataslice() <= 0);
-  if (nr_bytes > 0) {
-    data_writer->set_size_dataslice(nr_bytes);
-  }
-  data_writers_.push(data_writer);
+  data_writers_.push(std::make_pair(data_writer, nr_bytes));
 }
 
 template <class Type>
