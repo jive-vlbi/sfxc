@@ -26,6 +26,8 @@ std::ostream &print_hex(std::ostream &out, const Type &t) {
   return out;
 }
 
+#define STRRED    "\033[31m"#define STRGREEN  "\033[32m"#define STRYELLOW "\033[33m"#define STRCYAN   "\033[36m"#define STRBLACK  "\033[30m"
+
 bool check_buffers(std::vector<char *> &output_buffers,
                    std::vector<char *> &output_buffers2,
                    int buffer_size);
