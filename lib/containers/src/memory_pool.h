@@ -14,7 +14,7 @@
 #ifndef PC_BUFFER_H
 #define PC_BUFFER_H
 
-#include <queue>
+#include <stack>
 #include <vector>
 #include "exception_common.h"
 
@@ -166,7 +166,7 @@ private:
   Condition m_freequeuecond;
 
   // queue of the currently free Buffer_elements
-  std::queue<T*> m_freequeue;
+  std::stack<T*> m_freequeue;
 
   // vector of all the allocated Buffer_elements
   std::vector<T*> m_vectorelements;
@@ -240,7 +240,7 @@ typename Memory_pool<T>::Element Memory_pool<T>::allocate() {
     m_freequeuecond.wait();
   }
 
-  T* element = m_freequeue.front();
+  T* element = m_freequeue.top();
   m_freequeue.pop();
 
   //element->set_owner(this);
