@@ -58,7 +58,7 @@ Backtrace::Backtrace()
 	get_trace( trace_ );
 }
 
-std::ostream& operator<<(std::ostream& out, Backtrace& backtrace)
+std::ostream& operator<<(std::ostream& out, const Backtrace& backtrace)
 {
 		for(unsigned int i=1;i<backtrace.trace_.size();i++)
 		{
