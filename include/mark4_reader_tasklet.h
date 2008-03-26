@@ -60,7 +60,7 @@ private:
 
 private:
   /// Data stream to read from
-  boost::shared_ptr< Mark4_reader<Type> > mark4_reader_;
+  boost::shared_ptr< Mark4_reader >   mark4_reader_;
   /// Memory pool of data block that can be filled
   Input_memory_pool                   memory_pool_;
   /// Current mark4 data block
@@ -79,9 +79,10 @@ Mark4_reader_tasklet(boost::shared_ptr<Data_reader> reader, char *buffer)
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
   allocate_element();
   mark4_reader_ =
-    boost::shared_ptr<Mark4_reader<Type> >(new Mark4_reader<Type>(reader,
-                                           buffer,
-                                           &input_element_.data().mk4_data[0]));
+    boost::shared_ptr<Mark4_reader >(new Mark4_reader(reader,
+                                     sizeof(Type),
+                                     (unsigned char *)buffer,
+                                     (unsigned char *)&input_element_.data().mk4_data[0]));
   input_element_.data().start_time = mark4_reader_->get_current_time();
 }
 
@@ -93,7 +94,7 @@ do_task() {
 
   push_element();
   allocate_element();
-  if (!mark4_reader_->read_new_block(&input_element_.data().mk4_data[0])) {
+  if (!mark4_reader_->read_new_block((unsigned char *)&input_element_.data().mk4_data[0])) {
 #ifdef SFXC_DETERMINISTIC
     { // Randomize data
       for (int i=0; i<SIZE_MK4_FRAME; i++) {
@@ -157,7 +158,7 @@ goto_time(int ms_time) {
   int64_t us_time = int64_t(1000)*ms_time;
 
   int64_t new_time =
-    mark4_reader_->goto_time(&input_element_.data().mk4_data[0], us_time);
+    mark4_reader_->goto_time((unsigned char *)&input_element_.data().mk4_data[0], us_time);
   input_element_.data().start_time = mark4_reader_->get_current_time();
 
   if (us_time != new_time) {
@@ -204,7 +205,7 @@ std::vector< std::vector<int> >
 Mark4_reader_tasklet<Type>::
 get_tracks(const Input_node_parameters &input_node_param) {
   return mark4_reader_->get_tracks(input_node_param,
-                                   &input_element_.data().mk4_data[0]);
+                                   (unsigned char *)&input_element_.data().mk4_data[0]);
 }
 
 template <class Type>
@@ -233,6 +234,7 @@ randomize_header() {
       input_element_.data().mk4_data[i] = rnd;
     }
 #endif
+
   }
 }
 

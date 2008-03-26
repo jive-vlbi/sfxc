@@ -61,42 +61,26 @@ get_input_node_tasklet(boost::shared_ptr<Data_reader> reader) {
             // We found a complete header
             nTracks8 = nOnes/32;
 
-            memmove(buffer, buffer+header_start, 
+            memmove(buffer, buffer+header_start,
                     SIZE_MK4_FRAME-header_start);
-            reader->get_bytes(header_start, 
+            reader->get_bytes(header_start,
                               buffer+SIZE_MK4_FRAME-header_start);
+
+            Mark4_header header(nTracks8);
+            header.set_header((unsigned char *)buffer);
+            assert(header.checkCRC());
 
             switch (nTracks8) {
               case 1: {
-                Mark4_header<uint8_t> header;
-                header.set_header((uint8_t*)(buffer));
-                if (!header.checkCRC()) {
-                  header_start = -1;
-                }
                 return new Input_node_tasklet_implementation<int8_t>(reader, buffer);
               }
               case 2: {
-                Mark4_header<uint16_t> header;
-                header.set_header((uint16_t*)(buffer));
-                if (!header.checkCRC()) {
-                  header_start = -1;
-                }
                 return new Input_node_tasklet_implementation<int16_t>(reader, buffer);
               }
               case 4: {
-                Mark4_header<uint32_t> header;
-                header.set_header((uint32_t*)(buffer));
-                if (!header.checkCRC()) {
-                  header_start = -1;
-                }
                 return new Input_node_tasklet_implementation<int32_t>(reader, buffer);
               }
               case 8: {
-                Mark4_header<uint64_t> header;
-                header.set_header((uint64_t*)(buffer));
-                if (!header.checkCRC()) {
-                  header_start = -1;
-                }
                 return new Input_node_tasklet_implementation<int64_t>(reader, buffer);
               }
               default: {
