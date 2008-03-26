@@ -50,7 +50,7 @@ class TranslationNodeNotification:
   # test if the http address correctly parsed
     loc = TranslationNodeNotificationLocator()
     #portTest = 'http://jop32:' + portNumber + '/notification'
-    portTest = 'http://melisa.man.poznan.pl:8080/axis2/services/TranslationNodeNotification'
+    portTest = 'http://melisa.man.poznan.pl:8086/vlbiBroker/services/TranslationNodeNotification'
     print portTest
     port = loc.getTranslationNodeNotificationPortType(portTest, tracefile=sys.stdout)
 
