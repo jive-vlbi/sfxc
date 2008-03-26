@@ -12,6 +12,8 @@ OBJ=\
   sfxc_mpi.cc \
   utils.cc \
   delay_table_akima.cc \
+  mark4_reader.cc \
+  mark4_header.cc \
   data_writer.cc data_reader.cc \
   data_reader_factory.cc \
   data_reader_dnfp.cc \
