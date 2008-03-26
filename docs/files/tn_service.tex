@@ -1,0 +1,139 @@
+\subsection{Service for Translation Node web service}\label{tn_service}
+
+The service should receive the request, do the process and
+finally notice the Notification service. The process is as follows:
+\begin{itemize}
+  \item Receive the data from the client
+  \item Calculate the actual size of the chunk
+  \item Check if the requested data already downloaded from Mark5 previously
+  \item If not downloaded, connect Mark5 and download requested data (disk has
+to be inserted before)
+  \item If files already exist then check the size of the files and if
+necessary split them up with the required chunk size
+  \item Copy the files over the grid ftp
+  \item Notify the Notification service that the file is copied (with necessary
+data)
+\end{itemize}
+
+Below is the short listing of the service:
+
+\begin{verbatim}
+TranslationNodeService.py:
+
+#!/usr/bin/env python2.4
+from ZSI.ServiceContainer import AsServer
+from ZSI import ServiceProxy
+from TranslationNode_services_server import *
+from TranslationNode_mark5 import *
+from TranslationNode_vex import *
+from TranslationNodeNotification import *
+
+# Read in or define the configuration parameters
+portMark5Data = ...
+portMark5Control = ...
+ipMark = ...
+host = ...
+gridFtpIP = ...
+fileName = ...
+block_size = ...
+portNumber = ...
+
+class Service(TranslationNode):
+
+  def soap_startTranslationJob(self, ps):
+    """ Main service function actually starts the translation job."""
+    rsp = TranslationNode.soap_startTranslationJob(self, ps)
+    msg = self.request
+
+# this is where everything is calculated...
+
+# Information passed to us by the VLBI grid broker
+    station = msg.Param0.StationName
+    ...
+
+    # Open VEX file and read in some data
+    vex = Vex(str(vex_file_name))
+    ...
+    ...
+
+    sched = vex['SCHED']
+
+# within the following for loop we perform all necessary process
+# please see the original code for details
+
+    for scan in sched:
+
+      ...
+      ...
+
+      - Calculate the actual size of the chunk
+
+      - Check if the requested data already downloaded from Mark5 previously
+
+      - If not downloaded, connect Mark5 and download requested data (disk has
+to be inserted before)
+
+      - If files already exist then check the size of the files and if
+necessary split them up with the required chunk size
+
+      - Copy the files over the grid ftp
+
+      ...
+      ...
+
+# After the file is splitted or downloaded than notify the grid broker
+# The host name below belongs to the host of the Notification service
+        print "send notification to grid broker..."
+        node_notification = TranslationNodeNotification(host,
+                                                        10001,
+                                                        gridFtpIP,
+                                                        chunk_real_size,
+                                                        chunk_end,
+                                                        chunk_start,
+                                                        "http://huygens",
+                                                        20001)
+
+      ...
+      ...
+
+      continue
+
+# end of calculation
+
+    return rsp
+
+# The following lines actually starts the service
+# the service name is defined here as Service('servicename')
+# This service is run at: http://url-of-the-machine:portnumber/servicename
+if __name__ == "__main__" :
+  port = portNumber
+  AsServer(port, (Service('translationnode'),))
+
+\end{verbatim}
+
+and the corresponding input files is:
+
+\begin{verbatim}
+mark5_connect_data.inp:
+
+# Data socket number
+2630
+#Control socket number
+2620
+# Mark5 IP address
+192.42.120.6
+# IP address of the machine where the service is run
+192.42.120.69
+# grid ftp address where the file is to be transfered
+# this adress has to be the full path to the directory
+# i.e. relative to a home directory : melisa.man.poznan.pl/~/
+# i.e. absolute path: huygens.nfra.nl/data4/sfxc/
+#huygens.nfra.nl/data4/sfxc/huseyin/tn/junk_mark5/
+melisa.man.poznan.pl/~/
+# path to download/copy files to
+/data4/sfxc/huseyin/tn/download_mark5/
+# block size
+8192
+# port number
+8082
+\end{verbatim}

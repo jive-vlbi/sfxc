@@ -1,0 +1,83 @@
+% first release v1.0, 20th October 1996
+%       release v1.01, 29th October 1996
+%       release v1.1, 25th June 1997
+%   (based on JFMsampl.tex v1.3 for LaTeX2.09)
+% Copyright (C) 1996, 1997 Cambridge University Press
+
+\listfiles
+\NeedsTeXFormat{LaTeX2e}
+
+\documentclass{article}
+\input{commands.cls}
+
+\usepackage{latexsym}
+%\usepackage{charter} % 14-11-2001
+\usepackage{times}
+%\usepackage{layout} % 14-11-2001
+
+\usepackage{amsbsy}
+\usepackage{amssymb}
+\usepackage{bbm}
+\usepackage{mathrsfs}
+
+\usepackage[dvips]{graphicx,rotating,color}
+\DeclareGraphicsExtensions{ps,eps,ps.gz}
+%
+\setlength{\topmargin}{10mm}
+\setlength{\headheight}{4mm}
+\setlength{\headsep}{2mm}
+\setlength{\textheight}{215mm}
+\setlength{\textwidth}{150mm}
+\setlength{\oddsidemargin}{10mm}
+\setlength{\evensidemargin}{10mm}
+\setlength{\parindent}{0in}
+\setlength{\footskip}{5mm}
+\setlength{\parskip}{0.4cm}
+
+%\setlength{\textwidth}{130mm}
+%\setlength{\oddsidemargin}{22mm}
+%\setlength{\evensidemargin}{18mm}
+
+\begin{document}
+\pagestyle{empty}
+
+%\pagecolor{blue}
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+%
+\begin{center}
+\vspace*{-2cm}
+\bfseries\Large{A short manual on web services}\\
+\vspace*{0.7cm}
+\bfseries\large{H\"useyin \"Ozdemir} \\
+\vspace*{0.7cm}
+\normalsize{\today}
+\end{center}
+%
+% Introduction
+%
+%\newpage
+\pagestyle{plain}
+\pagenumbering{arabic}
+
+\vspace*{1.5cm}
+\input{files/intro}
+\input{files/web_service}
+\input{files/tn}
+\input{files/tn_client}
+\input{files/tn_service}
+\input{files/tn_notification}
+\input{files/running_service}
+\appendix
+\input{files/appendix}
+
+\input{files/references}
+
+
+%\input{references}
+% Bibliography
+%
+%\bibliography{thesis}
+%\input{references}
+
+%
+\end{document}

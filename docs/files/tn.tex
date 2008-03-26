@@ -1,0 +1,62 @@
+\section{Translation Node Web Service}\label{tn}
+
+Let's continue explaining the web service on a real example. We would like to
+implement the Translation Node web service. The procedure can be summarized as
+follows:
+
+\begin{itemize}
+  \item Grid broker sends a request to the Translation Node service including
+the necessary data
+  \item Translation Node service processes and transfers the data to the
+required location
+  \item Translation Node service sends back a Notification message indicating
+required messages
+\end{itemize}
+
+First of all let's have a look at the WSDL file that we are going to use:
+
+\begin{verbatim}
+TranslationNode.wsdl:
+
+<wsdl:types>
+  <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  attributeFormDefault="qualified" elementFormDefault="qualified"
+  targetNamespace="http://tr.remote.expres.psnc.pl/xsd">
+    <xs:element name="startTranslationJob">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="param0" nillable="true" type="xsd:JobInfo"/>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:element>
+    <xs:element name="JobInfo" type="xsd:JobInfo"/>
+    <xs:complexType name="JobInfo">
+      <xs:sequence>
+        <xs:element name="brokerIPAddress" nillable="true" type="xs:string"/>
+        <xs:element name="chunkSize" type="xs:long"/>
+        <xs:element name="endTime" nillable="true" type="xs:string"/>
+        <xs:element name="startTime" nillable="true" type="xs:string"/>
+        <xs:element name="stationName" nillable="true" type="xs:string"/>
+        <xs:element name="experimentName" nillable="true" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:schema>
+<wsdl:types>
+
+\end{verbatim} 
+
+Here we should pay attention that there are two "complexType"s defined under one
+"schema". For more info please look at reference \cite{xmlman} for the standard
+XML Schema manual or \cite{xmltut} for a detailed tutorial.
+
+First of all we use the wsdl2py and wsdl2dispatch tools to generate the
+interfaces:
+
+\verb|  wsdl2py -bf file.wsdl|,
+
+generates {\it TranslationNode\_services.py} and {\it
+TranslationNode\_services\_types.py} files and
+
+\verb|  wsdl2dispatch --extended --file file.wsdl|
+
+generates the {\it TranslationNode\_services\_server.py} file.

@@ -1,0 +1,37 @@
+\section{Running the web service}\label{running}
+
+Since we are going to copy the data over a grid ftp we need to set up and
+intiate the grid ftp server first. Assumed that Globus is installed:
+
+\begin{itemize}
+\item log in as jops (to i.e. huygens) and set up the Globus environment with
+either: \\
+  \verb|  $ setenv GLOBUS_LOCATION /huygens_1/jops/globus| \\
+  \verb|  $ source $GLOBUS_LOCATION/etc/globus-user-env.csh| \\
+or: \\
+  \verb|  $ export GLOBUS_LOCATION=/huygens_1/jops/globus| \\
+  \verb|  $ . $GLOBUS_LOCATION/etc/globus-user-env.sh|
+\item Now, you can start the server (as user jops) by: \\
+  \verb|  $ grid-proxy-init -key /etc/grid-security/containerkey.pem -cert \|\\
+  \verb|    /etc/grid-security/containercert.pem| \\
+  \verb|  $ globus-gridftp-server -p 2811|
+\item After that, you can log in as yourself and set up the environment as
+above.  Make sure that you have a ~/.globus directory with your
+private key (userkey.pem) and your certificate.(usercert.pem, which
+you got by mail).  If that's the case, you should be able to create a
+proxy certificate using: \\
+  \verb|  $ grid-proxy-init| \\
+This will ask you to enter the passphrase for your key.
+\item You should be able to use the GridFTP client:\\
+  \verb|  $ globus-url-copy gsiftp://huygens.nfra.nl/SRC file://DEST|
+\item Now you are ready to run the web service:
+  \verb|  python TranslationNodeService.py|
+\end{itemize}
+
+More documentation can be found at:\\
+  \verb|  http://www.globus.org/toolkit/docs/4.0/data/gridftp/|
+
+
+
+
+

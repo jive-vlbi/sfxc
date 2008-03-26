@@ -1,0 +1,118 @@
+\subsection{Client for Translation Node Notification web
+service}\label{tn_notification}
+
+As we have mentioned earlier the Translation Node service sends a notification
+to the Notification service after it processes the request. For the mentioned
+notification that part of the Translation Node service acts as a client. Since
+there are some differences between the Translation Node service and the
+Notification service, it would be a good idea to give the details of
+Notification service as well.
+
+First of all let's have a look at the corresponding WSDL file of the
+Notification service:
+
+\begin{verbatim}
+TranslationNodeNotification.wsdl:
+
+  <wsdl:types>
+    <xs:schema attributeFormDefault="qualified" elementFormDefault="qualified"
+targetNamespace="http://broker.remote.expres.psnc.pl/xsd"
+xmlns:xsd="http://broker.remote.expres.psnc.pl/xsd">
+    <xs:element name="chunkIsReady">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element minOccurs="0" name="param0" nillable="true"
+type="ns1:ChunkInfo"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
+    <xs:schema attributeFormDefault="qualified" elementFormDefault="qualified"
+targetNamespace="http://jobinfo.broker.remote.expres.psnc.pl/xsd"
+xmlns:ax21="http://jobinfo.broker.remote.expres.psnc.pl/xsd">
+    <xs:complexType name="ChunkInfo">
+        <xs:sequence>
+            <xs:element minOccurs="0" name="chunkId" type="xs:long"/>
+            <xs:element minOccurs="0" name="chunkLocation" nillable="true"
+type="xs:string"/>
+            <xs:element minOccurs="0" name="chunkSize" type="xs:long"/>
+            <xs:element minOccurs="0" name="endTime" nillable="true"
+type="xs:string"/>
+            <xs:element minOccurs="0" name="startTime" nillable="true"
+type="xs:string"/>
+            <xs:element minOccurs="0" name="translationNodeIP" nillable="true"
+type="xs:string"/>
+            <xs:element minOccurs="0" name="translationNodeId" type="xs:int"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>
+  </wsdl:types>
+\end{verbatim}
+
+When we compare the above WSDL file with the TranslationNode.wsdl we see that
+here the complexType and it's elements span different name spaces and
+defined in different schemas while they span the same name space and defined i
+n the same schema in the previous WSDL file. After generating the interface
+classes from this WSDL file with wsdl2py and wsdl2dispatch tools, as explained
+above, we will also see differences in *\_services\_types.py files. A closer
+look at the TranslationNodeNotification\_services\_types.py reveals that there
+are two separete classes (ns0 and ns1) are generated for this case where there
+was only one class (ns0) is generated for TranslationNode.wsdl file.
+
+Keeping in mind the above differences, we should implement the client code
+accordingly:
+
+\begin{verbatim}
+TranslationNodeNotification.wsdl: (client for Notification service)
+
+import sys
+from TranslationNodeNotification_services import *
+
+class TranslationNodeNotification:
+  def __init__(self):
+    self.resp_list=[]
+
+  def __init__(self, BrokerIPAdress=None, 
+               chunkId = None, 
+               chunkLocation = None, 
+               chunkSize = None, 
+               endTime = None, 
+               startTime = None, 
+               translationNodeIP = None, 
+               translationNodeId = None):
+    
+    """ This is a TranslationNodeNotification service simulator. 
+    This service is used to test if the TranslationNodeService is sending
+    the notification correctly after the downloading/copying from Mark5 
+    operations are finished. """
+    
+# define request
+    req = chunkIsReadyRequest()
+    req.Param0 = req.new_param0()  
+
+# assign parameters to be sent (received from TranslationNodeService.py)
+    req.Param0.ChunkId = chunkId
+    req.Param0.ChunkLocation = chunkLocation
+    req.Param0.ChunkSize = chunkSize
+    req.Param0.EndTime = endTime
+    req.Param0.StartTime = startTime
+    req.Param0.TranslationNodeIP = translationNodeIP
+    req.Param0.TranslationNodeId = translationNodeId
+
+# Those parameters can be accessed here as follows:
+    print 'chunk ID: ', req.Param0.ChunkId
+
+# get a port proxy instance
+    loc = TranslationNodeNotificationLocator()
+    locationName =
+'http://melisa.man.poznan.pl:8080/axis2/services/TranslationNodeNotification'
+# tracefile=sys.stdout parameter prints the sent request on the screen
+    port = loc.getTranslationNodeNotificationPortType(locationName,
+tracefile=sys.stdout)
+
+# actualy ask the service to do the job
+    resp = port.chunkIsReady(req)
+\end{verbatim}
+
+The complete listings of the above codes together with the grid broker service
+and client simulators are included as an appendix.

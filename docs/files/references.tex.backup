@@ -1,0 +1,9 @@
+\begin{thebibliography}{99}
+
+\bibitem{dj14} Oerlemans, R.H.J., {\it Correlator Design Specifications}, JRA1, FABRIC, WP2.2.1, deliverable DJ1.4 (also at \\ http://www.jive.nl/dokuwiki/lib/exe/fetch.php/fabric:dj1.4\_correlatordesignspecifications.doc? $\backslash$ id=fabric\%3Awp2\_distributed\_correlation\&cache=cache)
+\bibitem{zsi} Salz, R., {\it ZSI: The Zolera Soap Infrastructure}, http://pywebsvcs.sourceforge.net/zsi.html
+\bibitem{pyweb} {\it Python Web Services Project}, http://pywebsvcs.sourceforge.net/
+\bibitem{xmlman} {\it XML Schema}, http://www.w3.org/XML/Schema
+\bibitem{xmltut} {\it XML Schema Tutorial}, http://www.w3schools.com/schema/
+
+\end{thebibliography}

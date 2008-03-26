@@ -1,0 +1,62 @@
+\subsection{Client for Translation Node web service}\label{tn_client}
+
+We should write the necessary consumer code. In this case the client needs to
+send data to the service. For the complete client and service codes please see
+the original codes. Below we give a more compact generic forms of these codes.
+
+\begin{verbatim}
+TranslationNodeRequest.py:
+
+# import the generated class stubs
+from TranslationNode_services import *
+
+# create a new request
+req = startTranslationJobMessage()
+req.Param0 = req.new_param0()
+
+# of course we need to read in (or define) data to be sent first
+# details can be seen from the original code
+req.Param0.BrokerIPAddress=brokerIPAdress
+req.Param0.ChunkSize=chunkSize
+req.Param0.StartTime=startTime
+req.Param0.EndTime=endTime
+req.Param0.StationName=stationName
+req.Param0.ExperimentName=experimentName
+
+# get a port proxy instance
+# translationnode is the name of the service
+# portnumber is defined in the input file
+loc = TranslationNodeLocator()
+serviceLocation = 'http://huygens:' + portNumber + '/translationnode'
+port = loc.getTranslationNodePortType(serviceLocation)
+
+# actualy ask the service to do the job
+resp = port.startTranslationJob(req)
+
+# print out the response
+print resp
+\end{verbatim}
+
+An example of the data file is as follows:
+
+\begin{verbatim}
+experiment_data.inp:
+
+# grid broker IP address
+# where the response notification will be sent
+jop32
+# chunk size in bytes or "scan size"
+# when "scan size", calculates the actual chunk size as the size of a scan 
+10000
+# port number
+8082
+# start time of the first chunk
+2007y158d18h41m30s
+# end time
+2007y158d18h41m32s
+# Station code (two letter name of station)
+Ef
+# vax file name
+ez015.vix
+\end{verbatim}
+
