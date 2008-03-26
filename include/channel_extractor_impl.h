@@ -17,30 +17,31 @@
 
 #include "mark4_header.h"
 
-// At least be able to buffer the data
-// for MAX_SUBBANDS for two seconds at 256Mbps
-template <class Type>
-Channel_extractor_tasklet<Type>::Channel_extractor_tasklet()
-    : output_memory_pool_(32000*MAX_SUBBANDS),
+// Increase the size of the output_memory_pool_ to allow more buffering
+// (8M/SIZE_MK4_FRAME=) 400 input blocks is 1 second of data
+Channel_extractor_tasklet::Channel_extractor_tasklet(int N_)
+    : output_memory_pool_(400*MAX_SUBBANDS),
     n_subbands(0),
-fan_out(0) {
-  
-   #ifdef USE_EXTRACTOR_5
-    ch_extractor = new Channel_extractor_5();  
-  #else
-    ch_extractor = new Channel_extractor_fast();  
-    DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );  
-  #endif //USE_EXTRACTOR_5
-  
-  DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );  
+fan_out(0), N(N_) {
+  assert(N_ > 0);
+
+#ifdef USE_EXTRACTOR_5
+
+  ch_extractor = new Channel_extractor_5();
+#else
+
+  ch_extractor = new Channel_extractor_fast();
+#endif //USE_EXTRACTOR_5
+
+  DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
 }
 
-template <class Type>
-Channel_extractor_tasklet<Type>::~Channel_extractor_tasklet() {}
 
-template <class Type>
+Channel_extractor_tasklet::~Channel_extractor_tasklet() {}
+
+
 void
-Channel_extractor_tasklet<Type>::do_task() {
+Channel_extractor_tasklet::do_task() {
   assert(has_work());
 
   // Number of output streams
@@ -52,7 +53,7 @@ Channel_extractor_tasklet<Type>::do_task() {
 
   // The number of input samples to process
   int n_input_samples = input_element.data().mk4_data.size();
-  assert(n_input_samples == SIZE_MK4_FRAME);
+  assert(n_input_samples == SIZE_MK4_FRAME*N);
 
   // Number of bytes in the output chunk
   assert((n_input_samples*fan_out)%8==0);
@@ -93,9 +94,9 @@ Channel_extractor_tasklet<Type>::do_task() {
   }
 }
 
-template <class Type>
+
 bool
-Channel_extractor_tasklet<Type>::has_work() {
+Channel_extractor_tasklet::has_work() {
   if (n_subbands == 0) {
     //    DEBUG_MSG_RANK(3, "subbands not initialised");
     return false;
@@ -119,27 +120,27 @@ Channel_extractor_tasklet<Type>::has_work() {
   return true;
 }
 
-template <class Type>
+
 void
-Channel_extractor_tasklet<Type>::
+Channel_extractor_tasklet::
 set_parameters(const Input_node_parameters &input_node_param,
                const std::vector< std::vector<int> > &track_positions) {
   n_subbands = input_node_param.channels.size();
   fan_out    = input_node_param.bits_per_sample() *
                input_node_param.subsamples_per_sample();
-  ch_extractor->initialise(track_positions, sizeof(Type), 20000);
+  ch_extractor->initialise(track_positions, N, 20000);
 }
 
 
-template <class Type>
+
 void
-Channel_extractor_tasklet<Type>::connect_to(Input_buffer_ptr new_input_buffer) {
+Channel_extractor_tasklet::connect_to(Input_buffer_ptr new_input_buffer) {
   input_buffer_ = new_input_buffer;
 }
 
-template <class Type>
-typename Channel_extractor_tasklet<Type>::Output_buffer_ptr
-Channel_extractor_tasklet<Type>::get_output_buffer(size_t stream) {
+
+Channel_extractor_tasklet::Output_buffer_ptr
+Channel_extractor_tasklet::get_output_buffer(size_t stream) {
   if (stream >= output_buffers_.size()) {
     output_buffers_.resize(stream+1);
     assert(stream < output_buffers_.size());

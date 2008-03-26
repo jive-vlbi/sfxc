@@ -17,20 +17,20 @@
 template <class Type>
 class Integer_delay_correction_per_channel {
 public:
-  typedef typename Input_node_types<Type>::Channel_buffer     Input_buffer;
-  typedef typename Input_node_types<Type>::Channel_buffer_element Input_buffer_element;
-  typedef typename Input_node_types<Type>::Channel_buffer_ptr Input_buffer_ptr;
+  typedef typename Input_node_types::Channel_buffer     Input_buffer;
+  typedef typename Input_node_types::Channel_buffer_element Input_buffer_element;
+  typedef typename Input_node_types::Channel_buffer_ptr Input_buffer_ptr;
 
-  typedef typename Input_node_types<Type>::Channel_memory_pool
+  typedef typename Input_node_types::Channel_memory_pool
   /**/                                                        Input_memory_pool;
-  typedef typename Input_node_types<Type>::Channel_memory_pool_element
+  typedef typename Input_node_types::Channel_memory_pool_element
   /**/                                                        Input_memory_pool_element;
 
-  typedef typename Input_node_types<Type>::Channel_memory_pool    Output_memory_pool;
-  typedef typename Input_node_types<Type>::Fft_buffer_element Output_buffer_element;
-  typedef typename Input_node_types<Type>::Fft_buffer         Output_buffer;
-  typedef typename Input_node_types<Type>::Fft_buffer_ptr     Output_buffer_ptr;
-  typedef typename Input_node_types<Type>::Channel_memory_pool_element Input_data_block;
+  typedef typename Input_node_types::Channel_memory_pool    Output_memory_pool;
+  typedef typename Input_node_types::Fft_buffer_element Output_buffer_element;
+  typedef typename Input_node_types::Fft_buffer         Output_buffer;
+  typedef typename Input_node_types::Fft_buffer_ptr     Output_buffer_ptr;
+  typedef typename Input_node_types::Channel_memory_pool_element Input_data_block;
 
   // Pair of the delay in samples (of type Type) and subsamples
   typedef std::pair<int,int>                                      Delay_type;
@@ -139,7 +139,7 @@ Integer_delay_correction_per_channel<Type>::do_task() {
   int byte_offset =
     (_current_time-input_element.start_time)*sample_rate*bits_per_sample/8/1000000 +
     current_delay.first;
-  if (byte_offset >= (int)input_element.channel_data.data().data.size()) {
+  if (byte_offset >= (int)(input_element.channel_data.data().data.size()/sizeof(Type))) {
     // This can happen when we go to a next integration slice
     output_element.channel_data = input_element.channel_data;
     output_element.release_data = true;
@@ -189,7 +189,7 @@ Integer_delay_correction_per_channel<Type>::do_task() {
 
   } else {
     assert (byte_offset >= 0);
-    int input_data_size = input_element.channel_data.data().data.size();
+    int input_data_size = input_element.channel_data.data().data.size()/sizeof(Type);
     if ((byte_offset + nr_output_bytes) < input_data_size) {
       // Send data
       output_element.channel_data = input_element.channel_data;
@@ -260,7 +260,7 @@ Integer_delay_correction_per_channel<Type>::has_work() {
     (_current_time-input_element.start_time)*sample_rate*bits_per_sample/8/1000000 +
     current_delay.first;
   if (size_t(byte_offset + nr_output_bytes +1) >=
-      input_element.channel_data.data().data.size()) {
+      input_element.channel_data.data().data.size()/sizeof(Type)) {
     if (input_buffer_->size() < 2)
       return false;
   }

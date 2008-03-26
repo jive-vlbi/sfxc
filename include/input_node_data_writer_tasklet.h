@@ -10,9 +10,9 @@
 template <class Type>
 class Input_node_data_writer_tasklet : public Tasklet {
 public:
-  typedef typename Input_node_types<Type>::Fft_buffer       Input_buffer;
-  typedef typename Input_node_types<Type>::Fft_buffer_element Input_buffer_element;
-  typedef typename Input_node_types<Type>::Fft_buffer_ptr   Input_buffer_ptr;
+  typedef typename Input_node_types::Fft_buffer       Input_buffer;
+  typedef typename Input_node_types::Fft_buffer_element Input_buffer_element;
+  typedef typename Input_node_types::Fft_buffer_ptr   Input_buffer_ptr;
 
   typedef boost::shared_ptr<Data_writer>                    Data_writer_ptr;
   typedef std::queue< std::pair<Data_writer_ptr,int> >      Data_writer_queue;

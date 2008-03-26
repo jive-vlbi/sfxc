@@ -22,21 +22,20 @@
 #define MAX_SUBBANDS 16
 
 // Not a data reader since it outputs multiple streams
-template <class Type>
 class Channel_extractor_tasklet : public Tasklet {
 public:
-  typedef Input_node_types<Type>                        Types;
+  typedef Input_node_types                     Types;
 
-  typedef typename Types::Mk4_buffer                    Input_buffer;
-  typedef typename Input_buffer::value_type             Input_buffer_element;
-  typedef boost::shared_ptr<Input_buffer>               Input_buffer_ptr;
+  typedef Types::Mk4_buffer                    Input_buffer;
+  typedef Input_buffer::value_type             Input_buffer_element;
+  typedef boost::shared_ptr<Input_buffer>      Input_buffer_ptr;
 
-  typedef typename Types::Channel_memory_pool           Output_memory_pool;
-  typedef typename Types::Channel_buffer                Output_buffer;
-  typedef typename Types::Channel_buffer_element        Output_buffer_element;
-  typedef boost::shared_ptr<Output_buffer>              Output_buffer_ptr;
+  typedef Types::Channel_memory_pool           Output_memory_pool;
+  typedef Types::Channel_buffer                Output_buffer;
+  typedef Types::Channel_buffer_element        Output_buffer_element;
+  typedef boost::shared_ptr<Output_buffer>     Output_buffer_ptr;
 
-  Channel_extractor_tasklet();
+  Channel_extractor_tasklet(int N);
   virtual ~Channel_extractor_tasklet();
 
   /// For tasklet
@@ -69,6 +68,9 @@ private:
   size_t n_subbands;      // Number of subbands
   size_t fan_out;         // Number of output bits per input sample
   size_t bits_per_sample; // Number of bits per output sample
+  
+  // Size of one input word in bytes (#tracks/8)
+  const int N;
 };
 
 #include "channel_extractor_impl.h"
