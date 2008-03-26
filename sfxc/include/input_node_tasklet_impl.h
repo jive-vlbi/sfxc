@@ -26,10 +26,10 @@
 template <class Type>
 class Input_node_tasklet_implementation : public Input_node_tasklet {
 public:
-  typedef Mark4_reader_tasklet<Type>                       Mark4_reader_tasklet_;
-  typedef Channel_extractor_tasklet<Type>                  Channel_extractor_tasklet_;
-  typedef Integer_delay_correction_per_channel<Type>       Integer_delay_tasklet_;
-  typedef Input_node_data_writer_tasklet<Type>             Data_writer_tasklet_;
+  typedef Mark4_reader_tasklet<Type>                 Mark4_reader_tasklet_;
+  typedef Channel_extractor_tasklet                  Channel_extractor_tasklet_;
+  typedef Integer_delay_correction_per_channel<Type> Integer_delay_tasklet_;
+  typedef Input_node_data_writer_tasklet<Type>       Data_writer_tasklet_;
 
   Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader, char *buffer);
 
@@ -40,6 +40,7 @@ public:
     DEBUG_MSG("Time channel_extractor: " << channel_extractor_timer_.measured_time());
     DEBUG_MSG("Time data_writers:      " << data_writers_timer_.measured_time());
 #endif
+
   }
 
   void do_task();
@@ -86,7 +87,9 @@ template <class Type>
 Input_node_tasklet_implementation<Type>::
 Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader,
                                   char *buffer)
-    : mark4_reader_(reader, buffer), did_work(true) {
+    : mark4_reader_(reader, buffer),
+    channel_extractor_(mark4_reader_.size_input_word()),
+did_work(true) {
   channel_extractor_.connect_to(mark4_reader_.get_output_buffer());
 }
 

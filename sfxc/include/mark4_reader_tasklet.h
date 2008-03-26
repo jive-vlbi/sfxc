@@ -19,11 +19,12 @@
 template <class Type>
 class Mark4_reader_tasklet : public Tasklet {
 public:
-  typedef typename Input_node_types<Type>::Mk4_memory_pool    Input_memory_pool;
-  typedef typename Input_node_types<Type>::Mk4_buffer_element Input_element;
-  typedef typename Input_node_types<Type>::Mk4_buffer         Output_buffer;
-  typedef typename Input_node_types<Type>::Mk4_buffer_element Output_buffer_element;
-  typedef typename Input_node_types<Type>::Mk4_buffer_ptr     Output_buffer_ptr;
+  typedef typename Input_node_types::value_type         value_type;
+  typedef typename Input_node_types::Mk4_memory_pool    Input_memory_pool;
+  typedef typename Input_node_types::Mk4_buffer_element Input_element;
+  typedef typename Input_node_types::Mk4_buffer         Output_buffer;
+  typedef typename Input_node_types::Mk4_buffer_element Output_buffer_element;
+  typedef typename Input_node_types::Mk4_buffer_ptr     Output_buffer_ptr;
 
   Mark4_reader_tasklet(boost::shared_ptr<Data_reader> reader,
                        char *buffer);
@@ -50,6 +51,10 @@ public:
 
   std::vector< std::vector<int> > get_tracks(const Input_node_parameters &input_node_param);
 
+  int size_input_word() const {
+    return mark4_reader_->N;
+  }
+  
 private:
   /// Get an element from the memory pool into input_element_
   void allocate_element();
@@ -76,6 +81,7 @@ template <class Type>
 Mark4_reader_tasklet<Type>::
 Mark4_reader_tasklet(boost::shared_ptr<Data_reader> reader, char *buffer)
     : memory_pool_(10), stop_time(-1) {
+  assert(sizeof(value_type) == 1);
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
   allocate_element();
   mark4_reader_ =
@@ -94,35 +100,17 @@ do_task() {
 
   push_element();
   allocate_element();
-  if (!mark4_reader_->read_new_block((unsigned char *)&input_element_.data().mk4_data[0])) {
+  if (!mark4_reader_->read_new_block(&input_element_.data().mk4_data[0])) {
+    for (size_t i=0; i<SIZE_MK4_FRAME*sizeof(Type); i++) {
 #ifdef SFXC_DETERMINISTIC
-    { // Randomize data
-      for (int i=0; i<SIZE_MK4_FRAME; i++) {
-        input_element_.data().mk4_data[i] = Type(0);
-      }
-    }
+      input_element_.data().mk4_data[i] = value_type(0);
 #else
-    { // Randomize data
-      for (int i=0; i<SIZE_MK4_FRAME; i++) {
-        // park_miller_random generates 31 random bits
-        if (sizeof(Type) < 4) {
-          input_element_.data().mk4_data[i] = (Type)park_miller_random();
-        } else if (sizeof(Type) == 4) {
-          input_element_.data().mk4_data[i] =
-            ((Type(park_miller_random())<<16)&(~0xFFFF)) +
-            (park_miller_random()&0xFFFF);
-        } else {
-          assert(sizeof(Type) == 8);
-          uint64_t rnd = park_miller_random();
-          rnd = (rnd << 16) + park_miller_random();
-          rnd = (rnd << 16) + park_miller_random();
-          rnd = (rnd << 16) + park_miller_random();
-          input_element_.data().mk4_data[i] = rnd;
-        }
-      }
-    }
+      // Randomize data
+      input_element_.data().mk4_data[i] =
+        value_type(park_miller_random());
 #endif
 
+    }
   }
   input_element_.data().start_time = mark4_reader_->get_current_time();
 }
@@ -145,9 +133,9 @@ Mark4_reader_tasklet<Type>::
 allocate_element() {
   assert(!memory_pool_.empty());
   input_element_ = memory_pool_.allocate();
-  std::vector<Type> &vector_ = input_element_.data().mk4_data;
-  if (vector_.size() != SIZE_MK4_FRAME) {
-    vector_.resize(SIZE_MK4_FRAME);
+  std::vector<value_type> &vector_ = input_element_.data().mk4_data;
+  if (vector_.size() != (SIZE_MK4_FRAME*sizeof(Type))) {
+    vector_.resize(SIZE_MK4_FRAME*sizeof(Type));
   }
 }
 
@@ -213,28 +201,14 @@ void
 Mark4_reader_tasklet<Type>::
 randomize_header() {
   // Randomize header
-  for (int i=0; i<SIZE_MK4_HEADER; i++) {
+  for (size_t i=0; i<SIZE_MK4_HEADER*sizeof(Type); i++) {
 #ifdef SFXC_DETERMINISTIC
-    input_element_.data().mk4_data[i] = Type(0);
+    input_element_.data().mk4_data[i] = value_type(0);
 #else
     // Randomize data
     // park_miller_random generates 31 random bits
-    if (sizeof(Type) < 4) {
-      input_element_.data().mk4_data[i] = (Type)park_miller_random();
-    } else if (sizeof(Type) == 4) {
-      input_element_.data().mk4_data[i] =
-        ((Type(park_miller_random())<<16)&(~0xFFFF)) +
-        (park_miller_random()&0xFFFF);
-    } else {
-      assert(sizeof(Type) == 8);
-      uint64_t rnd = park_miller_random();
-      rnd = (rnd << 16) + park_miller_random();
-      rnd = (rnd << 16) + park_miller_random();
-      rnd = (rnd << 16) + park_miller_random();
-      input_element_.data().mk4_data[i] = rnd;
-    }
+    input_element_.data().mk4_data[i] = (value_type)park_miller_random();
 #endif
-
   }
 }
 

@@ -101,6 +101,7 @@ private:
   Debug_level debug_level_;
   int block_count_;
 
+public:
   const int N;
 };
 
