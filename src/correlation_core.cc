@@ -47,7 +47,7 @@ void Correlation_core::do_task() {
 }
 
 bool Correlation_core::almost_finished() {
-  return current_fft == number_ffts_in_integration*1/5;
+  return current_fft == number_ffts_in_integration*9/10;
 }
 
 bool Correlation_core::finished() {
