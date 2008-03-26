@@ -35,27 +35,26 @@
 
 #include "common.h"
 
-class Backtrace
-{
-    //String trace_;
-		Vector_string trace_;
+class Backtrace {
+  //String trace_;
+  Vector_string trace_;
 
 public:
-	  Backtrace();
-    Backtrace(const Backtrace& bt);
-    Backtrace(const String& trace);
+  Backtrace();
+  Backtrace(const Backtrace& bt);
+  Backtrace(const String& trace);
 
-    friend std::ostream& operator<<(std::ostream&, Backtrace& backtrace);
+  friend std::ostream& operator<<(std::ostream&, const Backtrace& backtrace);
 
-		/*
-		#ifdef ENABLE_TEST_UNIT
-		class Test : public Test_aclass<Backtrace>
-		{
-					public:
-						void tests();
-			};
-		#endif // ENABLE_TEST_UNIT
-		*/
+  /*
+  #ifdef ENABLE_TEST_UNIT
+  class Test : public Test_aclass<Backtrace>
+{
+     public:
+      void tests();
+   };
+  #endif // ENABLE_TEST_UNIT
+  */
 };
 
 #endif // BACKTRACE_H
