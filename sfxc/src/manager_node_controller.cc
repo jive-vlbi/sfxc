@@ -29,7 +29,7 @@ Manager_node_controller::process_event(MPI_Status &status) {
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);
       assert(status.MPI_TAG == status2.MPI_TAG);
 
-      node.set_correlating_state(correlator, Manager_node::READY);
+      node.set_correlator_node_ready(correlator);
       
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

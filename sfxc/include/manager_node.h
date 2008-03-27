@@ -75,7 +75,6 @@ private:
 
   Manager_node_controller manager_controller;
   Status status;
-  std::vector<Correlating_state> state_correlator_node;
   
   /// Start day and year of the experiment
   int32_t start_day, start_year;

@@ -155,7 +155,6 @@ int Correlator_node::output_size_of_one_integration_step() {
 }
 
 void Correlator_node::correlate() {
-
   // Execute all tasklets:
   bits_to_float_timer_.resume();
   for (size_t i=0; i<bits2float_converters.size(); i++) {
