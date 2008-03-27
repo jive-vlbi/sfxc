@@ -19,6 +19,11 @@
 
 #include "channel_extractor_interface.h"
 
+#ifdef RUNTIME_STATISTIC
+#include "monitor.h"
+#endif //RUNTIME_STATISTIC
+
+
 #define MAX_SUBBANDS 16
 
 // Not a data reader since it outputs multiple streams
@@ -71,6 +76,10 @@ private:
   
   // Size of one input word in bytes (#tracks/8)
   const int N;
+  
+  #ifdef RUNTIME_STATISTIC
+  QOS_MonitorSpeed monitor_;
+  #endif //RUNTIME_STATISTIC
 };
 
 #include "channel_extractor_impl.h"

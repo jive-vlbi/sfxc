@@ -60,10 +60,12 @@ int main(int argc, char *argv[]) {
   #ifdef RUNTIME_STATISTIC
   if(rank == 0)
     std::cout << "Application compiled with: -DRUNTIME_STATISTIC" << std::endl;
+    std::cout << "Runtime statistics will be stored in: " << RUNTIME_STATISTIC_DIR << std::endl;
   #endif // RUNTIME_STATISTIC
   #ifdef SFXC_PRINT_DEBUG
-  if(rank == 0)
+  if(rank == 0){
     std::cout << "Application compiled with: -DSFXC_PRINT_DEBUG" << std::endl;
+  }  
   #endif // SFXC_PRINT_DEBUG
   #ifdef SFXC_DETERMINISTIC
   if(rank == 0)

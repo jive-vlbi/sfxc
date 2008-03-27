@@ -64,14 +64,18 @@ class QOS_Monitor
 *    Class to monitor a speed
 *    the speed is often measured in Byte/seconds
 ***/
+#ifndef RUNTIME_STATISTIC_DIR
+#define RUNTIME_STATISTC_DIR "stats/"
+#endif //RUNTIME_STATISTIC_DIR
+
 class QOS_MonitorSpeed : public QOS_Monitor
 {
     public:
         QOS_MonitorSpeed();
-        QOS_MonitorSpeed(const std::string& name, const std::string& dirname="./", int history_size=1000);
+        QOS_MonitorSpeed(const std::string& name, const std::string& dirname=RUNTIME_STATISTIC_DIR, int history_size=1000);
         virtual ~QOS_MonitorSpeed();
 
-        void init(const std::string& name, const std::string& dirname="./", int history_size=1000);
+        void init(const std::string& name, const std::string& dirname=RUNTIME_STATISTIC_DIR, int history_size=1000);
         
         template<class I, class J>
         void add_property(const std::string& s, const I& p, const J& v){
