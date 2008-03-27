@@ -65,7 +65,7 @@ class QOS_Monitor
 *    the speed is often measured in Byte/seconds
 ***/
 #ifndef RUNTIME_STATISTIC_DIR
-#define RUNTIME_STATISTC_DIR "stats/"
+#define RUNTIME_STATISTIC_DIR "stats/"
 #endif //RUNTIME_STATISTIC_DIR
 
 class QOS_MonitorSpeed : public QOS_Monitor
@@ -139,7 +139,7 @@ class QOS_MonitorSpeed : public QOS_Monitor
           SampleSpeed& last_measure(){ return m_history[ m_history.size()-1 ]; }
 
     private:
-        
+        QOS_MonitorSpeed(const QOS_MonitorSpeed& );
         
         unsigned int current_sample_;
         uint64_t m_begin_time;
