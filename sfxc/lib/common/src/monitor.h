@@ -68,7 +68,17 @@ class QOS_MonitorSpeed : public QOS_Monitor
 {
     public:
         QOS_MonitorSpeed();
+        QOS_MonitorSpeed(const std::string& name, const std::string& dirname="./", int history_size=1000);
         virtual ~QOS_MonitorSpeed();
+
+        void init(const std::string& name, const std::string& dirname="./", int history_size=1000);
+        
+        template<class I, class J>
+        void add_property(const std::string& s, const I& p, const J& v){
+          std::stringstream str;
+          str << "['" << s << "', '" << p << "', '" << v << "']";
+          properties_.push_back(str.str());
+         }
 
         void begin_measure();
         void end_measure(uint64_t bytecount);
@@ -84,17 +94,25 @@ class QOS_MonitorSpeed : public QOS_Monitor
         class SampleSpeed
         {
             public:
-                SampleSpeed(time_t begin, time_t end, uint64_t numbytes){
-                        m_begin = begin;
-                        m_end = end;
-                        m_numbytes = numbytes;
-                }
+                SampleSpeed(){
+                        m_begin = 0;
+                        m_end = 0;
+                        m_numbytes = 0;
+                
+                } 
 
                 SampleSpeed(const SampleSpeed& s){
                     m_begin = s.m_begin;
                     m_end = s.m_end;
                     m_numbytes = s.m_numbytes;
                 }
+
+                void set(time_t begin, time_t end, uint64_t numbytes){
+                        m_begin = begin;
+                        m_end = end;
+                        m_numbytes = numbytes;
+                }
+
 
                 uint64_t m_begin;
                 uint64_t m_end;
@@ -117,14 +135,19 @@ class QOS_MonitorSpeed : public QOS_Monitor
           SampleSpeed& last_measure(){ return m_history[ m_history.size()-1 ]; }
 
     private:
-
-
+        
+        
+        unsigned int current_sample_;
         uint64_t m_begin_time;
         uint64_t m_end_time;
 
         bool m_is_measuring;
-
+        bool inited_;
+        
+        std::ofstream fout_;
         std::vector<SampleSpeed> m_history;
+        std::vector<std::string> properties_;
+        std::stringstream filenamebase_;
 };
 
 /********************************************************
