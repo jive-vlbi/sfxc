@@ -57,6 +57,18 @@ int main(int argc, char *argv[]) {
   if(rank == 0)
     std::cout << "Application compiled with: -DPRINT_PROGRESS" << std::endl;
   #endif // PRINT_PROGRESS
+  #ifdef RUNTIME_STATISTIC
+  if(rank == 0)
+    std::cout << "Application compiled with: -DRUNTIME_STATISTIC" << std::endl;
+  #endif // RUNTIME_STATISTIC
+  #ifdef SFXC_PRINT_DEBUG
+  if(rank == 0)
+    std::cout << "Application compiled with: -DSFXC_PRINT_DEBUG" << std::endl;
+  #endif // SFXC_PRINT_DEBUG
+  #ifdef SFXC_DETERMINISTIC
+  if(rank == 0)
+    std::cout << "Application compiled with: -DSFXC_DETERMINISTIC" << std::endl;
+  #endif // SFXC_DETERMINISTIC
 
   park_miller_set_seed(rank+1);
 
