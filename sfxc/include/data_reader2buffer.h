@@ -172,10 +172,10 @@ void
 Data_reader2buffer<T>::read() {
   while (state != STOPPED) {
     if (state == SUSPENDED) {
-      usleep(100000); // .1 second:
+      usleep(100); // 100 microseconds
     } else {
       if (buffer->full()) {
-        usleep(1000000); // .1 second:
+        usleep(100); // 100 microseconds
       } else if (data_reader->eof()) {
         DEBUG_MSG("data_reader->eof()");
         set_state(STOPPED);
