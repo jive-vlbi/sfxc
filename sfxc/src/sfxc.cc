@@ -57,10 +57,17 @@ int main(int argc, char *argv[]) {
   if(rank == 0)
     std::cout << "Application compiled with: -DPRINT_PROGRESS" << std::endl;
   #endif // PRINT_PROGRESS
-  #ifdef RUNTIME_STATISTIC
+
+  #ifdef PRINT_TIMER
   if(rank == 0)
+    std::cout << "Application compiled with: -DPRINT_TIMER" << std::endl;
+  #endif // PRINT_TIMER
+  
+  #ifdef RUNTIME_STATISTIC
+  if(rank == 0){
     std::cout << "Application compiled with: -DRUNTIME_STATISTIC" << std::endl;
     std::cout << "Runtime statistics will be stored in: " << RUNTIME_STATISTIC_DIR << std::endl;
+  }
   #endif // RUNTIME_STATISTIC
   #ifdef SFXC_PRINT_DEBUG
   if(rank == 0){
