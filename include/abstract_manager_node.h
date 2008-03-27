@@ -14,22 +14,13 @@
 #include "control_parameters.h"
 #include "delay_table_akima.h"
 
+#include <queue>
+
 /** Abstract manager node which defines generic functions needed by
     manager nodes.
  **/
 class Abstract_manager_node : public Node {
 public:
-  enum Correlating_state {
-    /// The correlator node is being initialised
-    INITIALISING = 0,
-    /// The correlator node is currently correlating a time slice
-    CORRELATING,
-    /// The correlator node is ready to process a time slice
-    READY,
-    /// The correlator node is terminated
-    FINISHED
-  };
-
   Abstract_manager_node(int rank, int numtasks,
                         const Control_parameters &param);
   Abstract_manager_node(int rank, int numtasks,
@@ -97,8 +88,7 @@ public:
   void correlator_node_set_all(Delay_table_akima &delay_table,
                                const std::string &station_name);
 
-  void set_correlating_state(size_t correlator_rank, Correlating_state state);
-  Correlating_state get_correlating_state(size_t correlator_nr);
+  void set_correlator_node_ready(size_t correlator_rank, bool ready=true);
 
   void send(Delay_table_akima &delay_table, int station, int to_rank);
 
@@ -123,8 +113,12 @@ protected:
   // Map from the correlator node number to the MPI_rank
   std::vector<int> correlator_node_rank;
 
+#ifdef SFXC_DETERMINISTIC
   /// Status of the correlation node
-  std::vector<Correlating_state> state_correlator_node;
+  std::vector<bool> correlator_node_ready;
+#else
+  std::queue<int> ready_correlator_nodes;
+#endif
 };
 
 #endif // ABSTRACT_MANAGER_NODE_H

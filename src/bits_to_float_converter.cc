@@ -69,6 +69,9 @@ Bits_to_float_converter::get_output_buffer() {
 }
 
 void Bits_to_float_converter::do_task() {
+  // produce size_output_slice number of samples
+  assert(has_work());
+
   char offset;
   int bytes_read = 0;
 
@@ -78,9 +81,6 @@ void Bits_to_float_converter::do_task() {
   
   assert(bytes_read == 1);
   assert((offset >= 0) && (offset*bits_per_sample < 8));
-
-  // produce size_output_slice number of samples
-  assert(has_work());
 
   assert(bits_per_sample > 0);
   assert(size_output_slice > 0);

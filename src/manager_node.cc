@@ -139,9 +139,6 @@ Manager_node(int rank, int numtasks,
     set_TCP(correlator_rank, 0,
             RANK_OUTPUT_NODE, correlator_nr);
   }
-
-  assert(number_correlator_nodes() > 0);
-  state_correlator_node.resize(number_correlator_nodes());
 }
 
 Manager_node::~Manager_node() {
@@ -204,19 +201,17 @@ void Manager_node::start() {
       case START_CORRELATOR_NODES_FOR_TIME_SLICE: {
         bool added_correlator_node = false;
 #ifdef SFXC_DETERMINISTIC
-        if (get_correlating_state(current_correlator_node) == READY) {
+        if (correlator_node_ready[current_correlator_node]) {
+          set_correlator_node_ready(current_correlator_node, false);
           start_next_timeslice_on_node(current_correlator_node);
+
           added_correlator_node = true;
         }
 #else
-        for (size_t i=0;
-             (current_channel<control_parameters.number_frequency_channels())
-             && (i<number_correlator_nodes());
-             i++) {
-          if (get_correlating_state(i) == READY) {
-            start_next_timeslice_on_node(i);
-            added_correlator_node = true;
-          }
+        if (!ready_correlator_nodes.empty()) {
+          start_next_timeslice_on_node(ready_correlator_nodes.front());
+          ready_correlator_nodes.pop();
+          added_correlator_node = true;
         }
 #endif
 
@@ -375,8 +370,6 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
                                 correlation_parameters.stop_time);
     }
   }
-
-  set_correlating_state(corr_node_nr, CORRELATING);
 
   current_channel ++;
   current_correlator_node ++;

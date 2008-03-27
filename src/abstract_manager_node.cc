@@ -64,9 +64,11 @@ void
 Abstract_manager_node::
 start_correlator_node(int rank) {
   size_t correlator_node_nr = correlator_node_rank.size();
-  state_correlator_node.resize(correlator_node_nr+1);
-  assert(correlator_node_nr < state_correlator_node.size());
-  state_correlator_node[correlator_node_nr] = INITIALISING;
+#ifdef SFXC_DETERMINISTIC
+  correlator_node_ready.resize(correlator_node_nr+1);
+  assert(correlator_node_nr < correlator_node_ready.size());
+  set_correlator_node_ready(correlator_node_nr, false);
+#endif
   correlator_node_rank.push_back(rank);
 
   // starting a correlator node
@@ -324,16 +326,17 @@ correlator_node_set_all(Delay_table_akima &delay_table,
 
 void
 Abstract_manager_node::
-set_correlating_state(size_t correlator_nr, Correlating_state state) {
-  assert(correlator_nr < state_correlator_node.size());
-  state_correlator_node[correlator_nr] = state;
+set_correlator_node_ready(size_t correlator_nr, bool ready) {
+#ifdef SFXC_DETERMINISTIC
+  assert(correlator_nr < correlator_node_ready.size());
+  correlator_node_ready[correlator_nr] = ready;
+#else
+  if (ready) {
+    ready_correlator_nodes.push(correlator_nr);
+  }
+#endif
 }
-Abstract_manager_node::Correlating_state
-Abstract_manager_node::
-get_correlating_state(size_t correlator_nr) {
-  assert(correlator_nr < state_correlator_node.size());
-  return state_correlator_node[correlator_nr];
-}
+
 
 void
 Abstract_manager_node::

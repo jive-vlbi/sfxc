@@ -20,7 +20,7 @@
 // Increase the size of the output_memory_pool_ to allow more buffering
 // (8M/SIZE_MK4_FRAME=) 400 input blocks is 1 second of data
 Channel_extractor_tasklet::Channel_extractor_tasklet(int N_)
-    : output_memory_pool_(400*MAX_SUBBANDS),
+    : output_memory_pool_(4000*MAX_SUBBANDS),
     n_subbands(0),
 fan_out(0), N(N_) {
   assert(N_ > 0);
