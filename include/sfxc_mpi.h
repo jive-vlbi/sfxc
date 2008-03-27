@@ -16,10 +16,6 @@
 #define RANK_LOG_NODE     1
 #define RANK_OUTPUT_NODE  2
 
-#define PRINT_PID         true
-#define PRINT_HOST        false
-#define PRINT_TIMER       false
-
 #define MPI_INT8   MPI_CHAR
 #define MPI_UINT8  MPI_UNSIGNED_CHAR
 #define MPI_INT16  MPI_SHORT
