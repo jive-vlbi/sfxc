@@ -15,6 +15,8 @@
 #include "output_node.h"
 #include "correlator_node.h"
 
+IF_MT_MPI_ENABLED( Mutex g_mpi_thebig_mutex );
+
 void start_node() {
   int rank;
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
