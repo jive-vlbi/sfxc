@@ -10,6 +10,23 @@
 #ifndef SFXC_MPI_H
 #define SFXC_MPI_H
 
+// Check if the application is multi-threaded
+#ifdef MT_SFXC_ENABLE
+  #include "thread.h"
+  #include "mutex.h"
+  #include "raiimutex.h"
+  // Check if the MPI_specific mutex are enabled
+  #ifdef MT_MPI_ENABLE
+    extern Mutex g_mpi_thebig_mutex;  
+    // do not put {} around x...as x may be a RAIIMutex.
+    #define IF_MT_MPI_ENABLED(x) x
+  #else
+    #define IF_MT_MPI_ENABLED(x) 
+  #endif // MT_MPI_ENABLE
+#else
+  #define IF_MT_MPI_ENABLED(x)
+#endif // MT_SFXC_ENABLE
+
 #include "types.h"
 
 #define RANK_MANAGER_NODE 0

@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-  DEBUG_MSG_RANK(0, "$GlobalRev: 686M $");
+  DEBUG_MSG_RANK(0, "$GlobalRev: 686:689M $");
  // Print here compilation option enabled while SFXC is in development
   #ifdef PRINT_PROGRESS
   if(rank == 0)
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
   #ifdef RUNTIME_STATISTIC
   if(rank == 0){
     std::cout << "Application compiled with: -DRUNTIME_STATISTIC" << std::endl;
-    std::cout << "Runtime statistics will be stored in: " << RUNTIME_STATISTIC_DIR << std::endl;
+    std::cout << "Application compiled with: -DRUNTIME_STATISTIC_DIR=" << RUNTIME_STATISTIC_DIR << std::endl;
   }
   #endif // RUNTIME_STATISTIC
   #ifdef SFXC_PRINT_DEBUG
@@ -77,6 +77,18 @@ int main(int argc, char *argv[]) {
   #ifdef SFXC_DETERMINISTIC
   if(rank == 0)
     std::cout << "Application compiled with: -DSFXC_DETERMINISTIC" << std::endl;
+  #endif // SFXC_DETERMINISTIC
+  #ifdef MT_SFXC_ENABLE
+  if(rank == 0)
+    std::cout << "Application compiled with: -DMT_SFXC_ENABLE" << std::endl;
+  #endif // MT_SFXC
+  #ifdef MT_MPI_ENABLE
+    #ifndef MT_SFXC_ENABLE
+      std::cout << "Application compiled with: -DMT_MPI_ENABLE but without -DMT_SFXC_ENABLE" << std::endl;
+      MPI_Abort(MPI_COMM_WORLD, stat);
+    #endif  
+  if(rank == 0)
+    std::cout << "Application compiled with: -DMT_MPI_ENABLE" << std::endl;
   #endif // SFXC_DETERMINISTIC
 
   park_miller_set_seed(rank+1);

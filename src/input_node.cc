@@ -88,7 +88,7 @@ void Input_node::start() {
         }
         assert(input_node_tasklet != NULL);
         input_node_tasklet->do_task();
-        if (!input_node_tasklet->has_work())
+        if ( !input_node_tasklet->has_work() )
           status = WAITING;
         break;
       }

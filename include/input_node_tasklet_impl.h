@@ -113,7 +113,6 @@ did_work(true) {
   
   inputid << "inputnode" << RANK_OF_NODE;
  
-  compid.str(""); monid.str("");
   compid << inputid.str() << "_dotask";
   monid << compid.str() << "_monitor_state";  
   dotask_state_.init(monid.str());
@@ -123,6 +122,7 @@ did_work(true) {
   dotask_state_.add_property(compid.str(), "has", monid.str() );
   tt.str(monid.str());
   
+  compid.str(""); monid.str("");
   compid << inputid.str() << "_mark4reader";
   monid << compid.str() << "_monitor_state";
   mark4reader_state_.init(monid.str());
