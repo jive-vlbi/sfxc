@@ -1,7 +1,7 @@
 AM_CXXFLAGS = $(SFXC_CXXFLAGS)
 LDADD = $(SFXC_LDADD)
 
-bin_PROGRAMS = sfxc
+bin_PROGRAMS = update_rev sfxc
 
 TESTS           = \
 	test_sfxc.py
@@ -54,3 +54,6 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   single_data_reader_controller.cc \
   input_node_tasklet.cc \
   output_header.cc
+
+update_rev:
+	sed -i -e "s/\$$GlobalRev.*\\\$$/\$$GlobalRev: `svnversion -n ..` \$$/" sfxc.cc
