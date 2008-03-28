@@ -19,7 +19,6 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node)
     correlator_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
-    correlate_state(INITIALISE_TIME_SLICE),
     status(STOPPED),
 nr_corr_node(nr_corr_node) {
   get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;

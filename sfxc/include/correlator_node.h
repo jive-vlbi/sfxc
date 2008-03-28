@@ -77,15 +77,6 @@ public:
     END_CORRELATING
   };
   
-  enum CORRELATE_STEPS {
-    /// Initialise the correlator for a new time slice:
-    INITIALISE_TIME_SLICE=0,
-    /// Do one integration step:
-    CORRELATE_INTEGRATION_SLICE,
-    /// Finish processing a time slice:
-    END_TIME_SLICE
-  };
-  
   Correlator_node(int rank, int nr_corr_node);
   ~Correlator_node();
   
@@ -122,7 +113,6 @@ private:
   Single_data_writer_controller    data_writer_ctrl;
   
   // State variables:
-  CORRELATE_STEPS correlate_state;
   Status status;
 
   /// Number of the correlator node
