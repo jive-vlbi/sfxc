@@ -24,7 +24,12 @@ class QOS_MonitorLatency;
 #include <time.h>
 # include <sys/time.h>
 #include <sstream>
-//#include "tools.hh"
+
+#ifdef RUNTIME_STATISTIC
+#define RT_STAT(x) x;
+#else
+#define RT_STAT(x)
+#endif //RUNTIME_STATISTIC
 
 /********************************************************
 *    Virtual class root of Monitoring and QOS services.

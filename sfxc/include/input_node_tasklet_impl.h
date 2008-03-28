@@ -23,6 +23,10 @@
 #include "channel_extractor_tasklet.h"
 #include "input_node_data_writer_tasklet.h"
 
+#include "monitor.h"
+
+
+
 template <class Type>
 class Input_node_tasklet_implementation : public Input_node_tasklet {
 public:
@@ -34,6 +38,7 @@ public:
   Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader, char *buffer);
 
   ~Input_node_tasklet_implementation() {
+
 #if PRINT_TIMER
     DEBUG_MSG("Time mar4_reader:       " << mark4_reader_timer_.measured_time());
     DEBUG_MSG("Time integer_delay:     " << integer_delay_timer_.measured_time());
@@ -78,6 +83,14 @@ private:
   Timer mark4_reader_timer_, integer_delay_timer_, channel_extractor_timer_, data_writers_timer_;
 
   Delay_table_akima delay_table;
+  
+  #ifdef RUNTIME_STATISTIC
+  QOS_MonitorSpeed mark4reader_state_;
+  QOS_MonitorSpeed chex_state_;
+  QOS_MonitorSpeed integerdelay_state_;
+  QOS_MonitorSpeed outputwriter_state_;
+  QOS_MonitorSpeed dotask_state_;
+  #endif //RUNTIME_STATISTIC
 };
 
 
@@ -91,6 +104,73 @@ Input_node_tasklet_implementation(boost::shared_ptr<Data_reader> reader,
     channel_extractor_(mark4_reader_.size_input_word()),
 did_work(true) {
   channel_extractor_.connect_to(mark4_reader_.get_output_buffer());
+  
+  #ifdef RUNTIME_STATISTIC
+  std::stringstream inputid;
+  std::stringstream compid;
+  std::stringstream monid;
+  std::stringstream tt;
+  
+  inputid << "inputnode" << RANK_OF_NODE;
+ 
+  compid.str(""); monid.str("");
+  compid << inputid.str() << "_dotask";
+  monid << compid.str() << "_monitor_state";  
+  dotask_state_.init(monid.str());
+  dotask_state_.add_property(inputid.str(), "is_a", "inputnode");
+  dotask_state_.add_property(inputid.str(), "has", compid.str() );
+  dotask_state_.add_property(compid.str(), "is_a", "inputnode_dotaskloop");
+  dotask_state_.add_property(compid.str(), "has", monid.str() );
+  tt.str(monid.str());
+  
+  compid << inputid.str() << "_mark4reader";
+  monid << compid.str() << "_monitor_state";
+  mark4reader_state_.init(monid.str());
+  mark4reader_state_.add_property(inputid.str(), "is_a", "inputnode");
+  mark4reader_state_.add_property(inputid.str(), "has", compid.str() );
+  mark4reader_state_.add_property(compid.str(), "is_a", "mark4_reader");
+  mark4reader_state_.add_property(compid.str(), "has", monid.str() );
+  dotask_state_.add_property(tt.str(), "contains", monid.str() );
+  
+  
+  compid.str(""); monid.str("");
+  compid << inputid.str() << "_channelextractor";
+  monid << compid.str() << "_monitor_state";
+  chex_state_.init(monid.str());
+  chex_state_.add_property(inputid.str(), "is_a", "inputnode");
+  chex_state_.add_property(inputid.str(), "has", compid.str() );
+  chex_state_.add_property(compid.str(), "is_a", "channel_extractor");
+  chex_state_.add_property(compid.str(), "has", monid.str() );
+  dotask_state_.add_property(tt.str(), "contains", monid.str() );
+ 
+
+  compid.str(""); monid.str("");
+  compid << inputid.str() << "_integerdelaycorr";
+  monid << compid.str() << "_monitor_state";  
+  integerdelay_state_.init(monid.str());
+  integerdelay_state_.add_property(inputid.str(), "is_a", "inputnode");
+  integerdelay_state_.add_property(inputid.str(), "has", compid.str() );
+  integerdelay_state_.add_property(compid.str(), "is_a", "integer_delay_correction");
+  integerdelay_state_.add_property(compid.str(), "has", monid.str() );
+  dotask_state_.add_property(tt.str(), "contains", monid.str() );
+ 
+
+  compid.str(""); monid.str("");
+  compid << inputid.str() << "_outputwriter";
+  monid << compid.str() << "_monitor_state";  
+  outputwriter_state_.init(monid.str());
+  outputwriter_state_.add_property(inputid.str(), "is_a", "inputnode");
+  outputwriter_state_.add_property(inputid.str(), "has", compid.str() );
+  outputwriter_state_.add_property(compid.str(), "is_a", "output_writers");
+  outputwriter_state_.add_property(compid.str(), "has", monid.str() );
+  dotask_state_.add_property(tt.str(), "contains", monid.str() );
+ 
+
+ 
+  
+#endif //RUNTIME_STATISTIC
+  
+
 }
 
 
@@ -99,35 +179,59 @@ void
 Input_node_tasklet_implementation<Type>::
 do_task() {
   did_work = false;
+  
+  RT_STAT( dotask_state_.begin_measure() );
+  
+
   mark4_reader_timer_.resume();
-  if (mark4_reader_.has_work()) {
+  if (mark4_reader_.has_work()){
+  
+    RT_STAT( mark4reader_state_.begin_measure() );
     mark4_reader_.do_task();
+    RT_STAT(mark4reader_state_.end_measure(1) );
+
     did_work = true;
   }
   mark4_reader_timer_.stop();
+  
   channel_extractor_timer_.resume();
   if (channel_extractor_.has_work()) {
+  
+    RT_STAT(chex_state_.begin_measure());
     channel_extractor_.do_task();
+    RT_STAT(chex_state_.end_measure(1));
+    
     did_work = true;
   }
   channel_extractor_timer_.stop();
+
   integer_delay_timer_.resume();
+  RT_STAT(integerdelay_state_.begin_measure() );    
   for (size_t i=0; i<integer_delay_.size(); i++) {
     assert(integer_delay_[i] != NULL);
     while (integer_delay_[i]->has_work()) {
+       
       integer_delay_[i]->do_task();
+       
       did_work = true;
     }
   }
+  RT_STAT(integerdelay_state_.end_measure(1));
   integer_delay_timer_.stop();
+
+
   data_writers_timer_.resume();
+  RT_STAT( outputwriter_state_.begin_measure() );
   for (size_t i=0; i<data_writers_.size(); i++) {
-    while (data_writers_[i].has_work()) {
+    while (data_writers_[i].has_work()) {    
       data_writers_[i].do_task();
       did_work = true;
     }
   }
+  RT_STAT( outputwriter_state_.end_measure(1) );
   data_writers_timer_.stop();
+  
+  RT_STAT( dotask_state_.end_measure(1) );
 }
 
 template <class Type>
