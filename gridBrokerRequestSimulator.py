@@ -17,6 +17,7 @@ req.Param0.set_element_translationNodeIP("192.42.120.22")
 req.Param0.set_element_translationNodeId(20001)
 
 # get port number from the read file
+# this is not really used
 portNumber_string = "8080"
 portNumber = portNumber_string.strip()
 print portNumber
@@ -26,9 +27,9 @@ print portNumber
 #http://melisa.man.poznan.pl:8080/axis2/services/TranslationNodeNotification
 loc = TranslationNodeNotificationLocator()
 #portTest = 'http://jop32:' + portNumber + '/notification'
-portTest = 'http://melisa.man.poznan.pl:' + portNumber + '/axis2/services/TranslationNodeNotification'
-print portTest
-port = loc.getTranslationNodeNotificationPortType(portTest, tracefile=sys.stdout)
+    serviceLocation = 'http://melisa.man.poznan.pl:8086/vlbiBroker/services/TranslationNodeNotification'
+    port = loc.getTranslationNodeNotificationPortType(serviceLocation, tracefile=sys.stdout)
+    print serviceLocation
 
 # Note that both of the following implementations work
 print "Chunk Id", req.Param0.get_element_chunkId()

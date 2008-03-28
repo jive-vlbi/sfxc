@@ -33,7 +33,7 @@ class TranslationNodeNotification:
     req.Param0.TranslationNodeIP = translationNodeIP
     req.Param0.TranslationNodeId = translationNodeId
 
-
+# We can access these parameters here as follows
     print 'chunk ID: ', req.Param0.ChunkId
     print 'chunk Location: ', req.Param0.ChunkLocation
     print 'Requested chunk size: ', req.Param0.ChunkSize
@@ -42,17 +42,19 @@ class TranslationNodeNotification:
     print 'translationNode IP: ', req.Param0.TranslationNodeIP
     print 'translationNode Id: ', req.Param0.TranslationNodeId
 
-  # get port number from the read file
-    portNumber_string = "8080"
+ # get port number from the read file
+ # not sure if the port number is necessary
+    portNumber_string = "8086"
     portNumber = portNumber_string.strip()
     print portNumber
 
-  # test if the http address correctly parsed
+# get a port proxy instance
+# test if the http address correctly parsed
     loc = TranslationNodeNotificationLocator()
-    #portTest = 'http://jop32:' + portNumber + '/notification'
-    portTest = 'http://melisa.man.poznan.pl:8086/vlbiBroker/services/TranslationNodeNotification'
-    print portTest
-    port = loc.getTranslationNodeNotificationPortType(portTest, tracefile=sys.stdout)
+ #portTest = 'http://jop32:' + portNumber + '/notification'
+    serviceLocation = BrokerIPAdress
+    port = loc.getTranslationNodeNotificationPortType(serviceLocation, tracefile=sys.stdout)
+    print serviceLocation
 
-  # actualy ask the service to do the job
+ # actualy ask the service to do the job
     resp = port.chunkIsReady(req)

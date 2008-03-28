@@ -52,11 +52,11 @@ XML Schema manual or \cite{xmltut} for a detailed tutorial.
 First of all we use the wsdl2py and wsdl2dispatch tools to generate the
 interfaces:
 
-\verb|  wsdl2py -bf file.wsdl|,
+\verb|  wsdl2py -bf TranslationNode.wsdl|,
 
 generates {\it TranslationNode\_services.py} and {\it
 TranslationNode\_services\_types.py} files and
 
-\verb|  wsdl2dispatch --extended --file file.wsdl|
+\verb|  wsdl2dispatch --extended --file TranslationNode.wsdl|
 
 generates the {\it TranslationNode\_services\_server.py} file.

@@ -1,8 +1,7 @@
 from TranslationNode_services import *
-# we need to skip comments in input file.
-# For that we make use of re
 import re
 
+# first of all we read the input file for parameters
 # define comment characters
 comment_char = re.compile(r'^\s*#')
 
@@ -31,9 +30,11 @@ bytes_string = inp[2]
 bytes = bytes_string.strip()
 
 # get port number from the read file
+# this is not really needed
 portNumber_string = inp[3]
 portNumber = portNumber_string.strip()
 
+# get a port proxy instance
 # test if the http address correctly parsed
 loc = TranslationNodeLocator()
 portTest = 'http://huygens:' + portNumber + '/translationnode'
@@ -41,6 +42,9 @@ print portTest
 port = loc.getTranslationNodePortType(portTest)
 
 # initialize the chunk size
+# If the chunk size is defined as scan size assign it as zero 
+# Then in the service.py calculate the actual scan size if chunk size 
+# is assigned to zero
 if (bytes == "scan size"):
   req.Param0.ChunkSize=0
 else: 
@@ -52,6 +56,7 @@ req.Param0.EndTime=inp[5].strip()
 req.Param0.StationName=inp[6].strip()
 req.Param0.ExperimentName=inp[7].strip()
 
+# We can access these parameters as follows
 print "broker IP address ", req.Param0.BrokerIPAddress
 print "bytes ", bytes
 print "portNumber ", portNumber
@@ -63,3 +68,4 @@ print "Experiment name ", req.Param0.ExperimentName
 
 # actualy ask the service to do the job
 resp = port.startTranslationJob(req)
+print resp

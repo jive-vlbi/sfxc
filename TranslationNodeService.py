@@ -1,4 +1,9 @@
 #!/usr/bin/env python2.4
+# Author: Huseyin Ozdemir
+# Date: 20080328
+#
+# TODO: A proper kill method to stop the service and disconnect from Mark5 properly
+#
 import sys
 import time
 import os
@@ -91,6 +96,7 @@ class Service(TranslationNode):
 
     sched = vex['SCHED']
     chunk_number = 0
+# This is the main loop
     for scan in sched:
       if not start_scan:
         start_scan = scan
@@ -153,18 +159,20 @@ class Service(TranslationNode):
         time_start_diff = time_real_start-scan_start
       bytes_starting_diff = (time_start_diff+time_real_start_ms)*(data_rate/8)
 
-# Chop it up and chunks 
+# Chop it up in to chunks 
       chunk_end = chunk_time + chunk_size / (data_rate / 8)
       chunk_end = min(chunk_end, job_end)
       chunk_start_check = max(job_start, scan_start)
-      
+
       chunk_real_end_size_temp = (scan_end-scan_start) * (data_rate / 8) / chunk_size
       chunk_real_end_size = (chunk_real_end_size_temp - int(chunk_real_end_size_temp))*chunk_size
       if chunk_real_end_size ==0:
         chunk_real_end_size = chunk_size
       scan_size = (scan_end-scan_start)*(data_rate/8)
-      
+
+# This is the main while loop
       while chunk_end <= scan_end:
+# print out some info about the current chunk
         print "chunk", chunk_number, scan, \
           strftime("%Yy%jd%Hh%Mm%Ss", localtime(chunk_start)), scan, \
           strftime("%Yy%jd%Hh%Mm%Ss", localtime(chunk_end))
@@ -244,7 +252,7 @@ class Service(TranslationNode):
 # After the file is splitted or downloaded than notify the grid broker
 # The host name below belongs to the host of the Notification service
         print "send notification to grid broker..."
-        node_notification = TranslationNodeNotification(host,
+        node_notification = TranslationNodeNotification(brokerIP,
                                                         10001,
                                                         gridFtpIP,
                                                         chunk_real_size,
@@ -256,6 +264,7 @@ class Service(TranslationNode):
         print node_notification
         print "end of notification to grid broker..."
 
+# Check if the required chunks are delivered completly
         if chunk_end >= job_end:
           break
 
@@ -286,6 +295,7 @@ class Service(TranslationNode):
 
 
 # end of calculation
+# The following statement might be usefull
 # Mark5_disconnect()
     return rsp
 

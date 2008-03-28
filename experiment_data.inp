@@ -1,6 +1,7 @@
 # grid broker IP address
 # where the response notification will be sent
-192.42.120.69
+#http://huygens:8082/notificationservice
+http://melisa.man.poznan.pl:8086/vlbiBroker/services/TranslationNodeNotification
 # chunk size in bytes or "scan size"
 # when "scan size", calculates the actual chunk size as the size of a scan 
 10000

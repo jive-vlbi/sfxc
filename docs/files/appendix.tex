@@ -1,8 +1,7 @@
 \section{Code Listings}\label{codes}
 
+\subsection{TranslationNodeRequest.py}
 \begin{verbatim}
-TranslationNodeRequest.py:
-
 from TranslationNode_services import *
 # we need to skip comments in input file.
 # For that we make use of re
@@ -70,9 +69,8 @@ print "Experiment name ", req.Param0.ExperimentName
 resp = port.startTranslationJob(req)
 \end{verbatim} 
 
+\subsection{experiment\_data.inp}
 \begin{verbatim}
-experiment_data.inp:
-
 # grid broker IP address
 # where the response notification will be sent
 jop32
@@ -91,9 +89,8 @@ Ef
 ez015.vix
 \end{verbatim} 
 
+\subsection{TranslationNodeService.py}
 \begin{verbatim}
-TranslationNodeService.py:
-
 #!/usr/bin/env python2.4
 import sys
 import time
@@ -405,9 +402,8 @@ if __name__ == "__main__" :
   AsServer(port, (Service('translationnode'),))
 \end{verbatim} 
 
+\subsection{mark5\_connect\_data.inp}
 \begin{verbatim}
-mark5_connect_data.inp:
-
 # Data socket number
 2630
 #Control socket number
@@ -495,9 +491,8 @@ tracefile=sys.stdout)
     resp = port.chunkIsReady(req)
 \end{verbatim} 
 
+\subsection{gridBrokerRequestSimulator.py}
 \begin{verbatim}
-gridBrokerRequestSimulator.py:
-
 import sys
 from TranslationNodeNotification_services import *
 
@@ -541,9 +536,8 @@ resp = port.chunkIsReady(req)
 print resp
 \end{verbatim} 
 
+\subsection{gridBrokerServiceSimulator.py}
 \begin{verbatim}
-gridBrokerServiceSimulator.py:
-
 #!/usr/bin/env python2.4
 from ZSI.ServiceContainer import AsServer
 from ZSI import ServiceProxy
