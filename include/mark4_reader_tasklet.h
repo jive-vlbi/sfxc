@@ -16,6 +16,10 @@
 #include "mark4_reader.h"
 #include "input_node_types.h"
 
+#ifdef RUNTIME_STATISTIC
+#include "monitor.h" 
+#endif // RUNTIME_STATISTIC
+
 template <class Type>
 class Mark4_reader_tasklet : public Tasklet {
 public:
@@ -75,6 +79,10 @@ private:
 
   /// Stop time in microseconds
   int64_t stop_time;
+  
+   #ifdef RUNTIME_STATISTIC
+  QOS_MonitorSpeed monitor_;
+  #endif // RUNTIME_STATISTIC
 };
 
 template <class Type>
@@ -90,12 +98,33 @@ Mark4_reader_tasklet(boost::shared_ptr<Data_reader> reader, char *buffer)
                                      (unsigned char *)buffer,
                                      (unsigned char *)&input_element_.data().mk4_data[0]));
   input_element_.data().start_time = mark4_reader_->get_current_time();
+  
+#ifdef RUNTIME_STATISTIC
+  std::stringstream inputid;
+  std::stringstream chexid;
+  std::stringstream monid;
+  
+  inputid << "inputnode" << RANK_OF_NODE;
+  chexid << inputid.str() << "_mark4reader";
+  monid << chexid.str() << "_monitor_speed";
+  
+  monitor_.init(monid.str(), "stats/");
+  monitor_.add_property(inputid.str(), "is_a", "inputnode");
+  monitor_.add_property(inputid.str(), "has", chexid.str() );
+  monitor_.add_property(chexid.str(), "is_a", "mark4reader");
+  monitor_.add_property(chexid.str(), "has", monid.str() );
+  
+#endif //RUNTIME_STATISTIC
 }
 
 template <class Type>
 void
 Mark4_reader_tasklet<Type>::
 do_task() {
+  #ifdef RUNTIME_STATISTIC
+  monitor_.begin_measure();
+  #endif // RUNTIME_STATISTIC
+
   assert(has_work());
 
   push_element();
@@ -113,6 +142,10 @@ do_task() {
     }
   }
   input_element_.data().start_time = mark4_reader_->get_current_time();
+  
+  #ifdef RUNTIME_STATISTIC
+  monitor_.end_measure(SIZE_MK4_FRAME*sizeof(Type));
+  #endif // RUNTIME_STATISTIC
 }
 
 template <class Type>

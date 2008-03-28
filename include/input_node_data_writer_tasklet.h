@@ -7,6 +7,10 @@
 #include "data_writer.h"
 #include "utils.h"
 
+//#ifdef RUNTIME_STATISTIC
+//#include "monitor.h" 
+//#endif // RUNTIME_STATISTIC
+
 template <class Type>
 class Input_node_data_writer_tasklet : public Tasklet {
 public:
@@ -40,12 +44,20 @@ public:
 private:
   Input_buffer_ptr    input_buffer_;
   Data_writer_queue    data_writers_;
+  
+  //#ifdef RUNTIME_STATISTIC
+  //QOS_MonitorSpeed monitor_;
+  //#endif // RUNTIME_STATISTIC
+
 };
 
 
 template <class Type>
 Input_node_data_writer_tasklet<Type>::
 Input_node_data_writer_tasklet() {
+
+
+
 }
 
 template <class Type>
