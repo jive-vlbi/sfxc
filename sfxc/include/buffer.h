@@ -68,7 +68,9 @@ public:
 
   ~Buffer_element_large() {
     //std::cout << "Deleting array of size" << N << std::endl;
-    fftw_free(_buffer);
+    if (_buffer != NULL) {
+      fftw_free(_buffer);
+    }
   }
 
   inline T &operator[](int i) {
@@ -113,12 +115,12 @@ public:
 
   ~Aligned_vector() {
     // DEBUG_MSG("Deleting array element of size " << size());
-    fftw_free(buffer_);
+    if (buffer_ != NULL) {
+      fftw_free(buffer_);
+    }
   }
 
   void resize(size_t size) {
-    //DEBUG_MSG("resizing from " << _buffer.size() << " to " << size);
-    //if (_buffer.size() != size) _buffer.resize(size);
     if ( size != size_ ) {
       if ( buffer_ == NULL ) {
         // fftw_malloc insure that the allocated data
