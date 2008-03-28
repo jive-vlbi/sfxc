@@ -182,6 +182,9 @@ Data_reader2buffer<T>::read() {
       } else {
         T &elem = buffer->produce();
         assert(elem.size() > 0);
+        // Do not fill the buffer as this might cause deadlock, because
+        // the last part of a time slice will never be released to the
+        // buffer.
         int size = data_reader->get_bytes(elem.size(), elem.buffer());
         if (size < 0) {
           // Make sure the error messages do not propagate in the buffer
