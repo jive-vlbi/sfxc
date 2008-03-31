@@ -53,16 +53,19 @@ void Correlator_node_data_reader_tasklet::do_task() {
   } while (bytes_to_read != 0);
 
   n_ffts_to_read --;
+
   output_buffer->push(output_elem);
 }
 
 bool Correlator_node_data_reader_tasklet::has_work() {
   if (n_ffts_to_read <= 0)
     return false;
-  if (reader == Data_reader_ptr())
+  if (reader == Data_reader_ptr()) {
+    //DEBUG_MSG_RANK(10, "reader == Data_reader_ptr()");
     return false;
+  }
   if (output_memory_pool.empty()) {
-    DEBUG_MSG("output_memory_pool.empty()");
+    //DEBUG_MSG("output_memory_pool.empty()");
     return false;
   }
   return true;
@@ -73,7 +76,6 @@ Correlator_node_data_reader_tasklet::
 set_parameters(const int n_ffts_to_read_, 
                const int bits_per_sample_,
                const int number_channels_) {
-  assert(n_ffts_to_read <= 0);
-  n_ffts_to_read = n_ffts_to_read_;
+  n_ffts_to_read += n_ffts_to_read_;
   n_bytes_per_fft = (number_channels_*bits_per_sample_)/8 + 1;
 }
