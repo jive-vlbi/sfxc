@@ -37,3 +37,8 @@ Data_writer_file::do_put_bytes(size_t nBytes, const char *buff) {
   }
   return 0;
 }
+
+bool Data_writer_file::can_write() {
+  DEBUG_MSG("can_write() not yet implemented");
+  return true;
+}

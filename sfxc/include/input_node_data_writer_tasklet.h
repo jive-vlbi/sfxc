@@ -98,6 +98,10 @@ has_work() {
   if (data_writers_.empty())
     return false;
 
+  if (!data_writers_.front().writer->can_write()) {
+    //DEBUG_MSG("Data writer can't write");
+    return false;
+  }
   return true;
 }
 

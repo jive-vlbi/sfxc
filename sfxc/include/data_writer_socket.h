@@ -13,20 +13,28 @@
 #include "network.h"
 #include "data_writer.h"
 
+#include "utils.h"
+
 class Data_writer_socket : public Data_writer
 {
-    public:
-        Data_writer_socket(int socket);
-        Data_writer_socket(Connexion* connexion);
-        virtual ~Data_writer_socket();
+public:
+  Data_writer_socket(int socket);
+  Data_writer_socket(Connexion* connexion);
+  virtual ~Data_writer_socket();
 
-        //unsigned int get_port();
-        void flush();
-        void close(){ assert(false && "not implemented"); }
+  //unsigned int get_port();
+  void flush();
+  void close(){ assert(false && "not implemented"); }
 
-    protected:
-        size_t do_put_bytes(size_t nBytes, char const*buff);
-        int m_socket;
+
+  bool can_write() {
+    DEBUG_MSG("can write not implemented");
+    return true;
+  }
+
+protected:
+  size_t do_put_bytes(size_t nBytes, char const*buff);
+  int m_socket;
 };
 
 #endif // Data_writer_socket_HH
