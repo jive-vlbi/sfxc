@@ -39,6 +39,7 @@ nr_corr_node(nr_corr_node) {
 
 Correlator_node::~Correlator_node() {
 #if PRINT_TIMER
+  DEBUG_MSG("Time bit_sample_reader:  " << bit_sample_reader_.measured_time());
   DEBUG_MSG("Time bits2float:  " << bits_to_float_timer_.measured_time());
   DEBUG_MSG("Time delay:       " << delay_timer_.measured_time());
   DEBUG_MSG("Time correlation: " << correlation_timer_.measured_time());
@@ -99,18 +100,21 @@ void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
 }
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
-  // Make sure a time slice fits, at most 16000 ffts of length 1024 samples
-  Input_buffer_element elem;
-  Input_buffer_ptr buffer(new Input_buffer(16000*(1024/4)/elem.size()));
-  data_readers_ctrl.set_buffer(stream_nr, buffer);
+  // create the bit sample reader tasklet
+  if (bit_sample_readers.size() <= stream_nr) {
+    bit_sample_readers.resize(stream_nr+1, Bit_sample_reader_ptr());
+  }
+  bit_sample_readers[stream_nr] = 
+    Bit_sample_reader_ptr(new Correlator_node_data_reader_tasklet());
+  bit_sample_readers[stream_nr]->connect_to(data_readers_ctrl.get_data_reader(stream_nr));
 
-  boost::shared_ptr<Bits_to_float_converter> sample_reader(new Bits_to_float_converter());
-  sample_reader->set_data_reader(data_readers_ctrl.get_data_reader(stream_nr));
+  // Bits2float tasklet
+  Bits2float_ptr sample_reader(new Bits_to_float_converter());
+  sample_reader->connect_to(bit_sample_readers[stream_nr]->get_output_buffer());
 
   // create the bits to float converters
   if (bits2float_converters.size() <= stream_nr) {
-    bits2float_converters.resize(stream_nr+1,
-                                 boost::shared_ptr<Bits_to_float_converter>());
+    bits2float_converters.resize(stream_nr+1, Bits2float_ptr());
   }
   bits2float_converters[stream_nr] = sample_reader;
 
@@ -155,6 +159,19 @@ int Correlator_node::output_size_of_one_integration_step() {
 
 void Correlator_node::correlate() {
   // Execute all tasklets:
+  bit_sample_reader_timer_.resume();
+  for (size_t i=0; i<bit_sample_readers.size(); i++) {
+    assert(bit_sample_readers[i] != Bit_sample_reader_ptr());
+    if (bit_sample_readers[i] != Bit_sample_reader_ptr()) {
+      int count = 0;
+      while ((count < 25) && bit_sample_readers[i]->has_work()) {
+        bit_sample_readers[i]->do_task();
+        count++;
+      }
+    }
+  }
+  bit_sample_reader_timer_.stop();
+
   bits_to_float_timer_.resume();
   for (size_t i=0; i<bits2float_converters.size(); i++) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
@@ -185,6 +202,24 @@ void Correlator_node::correlate() {
 void
 Correlator_node::receive_parameters(const Correlation_parameters &parameters) {
   integration_slices_queue.push(parameters);
+
+  { // Immediately start prefetching the data:
+    int number_ffts_in_integration =
+      Control_parameters::nr_ffts_per_integration_slice
+      (parameters.integration_time,
+       parameters.sample_rate,
+       parameters.number_channels);
+    for (size_t i=0; i<bit_sample_readers.size(); i++) {
+      assert(bit_sample_readers[i] !=
+             Bit_sample_reader_ptr());
+      if (i <parameters.station_streams.size()) {
+        bit_sample_readers[i]->set_parameters(number_ffts_in_integration, 
+                                              parameters.bits_per_sample,
+                                              parameters.number_channels);
+      }
+    }
+  }
+  
   if (status == STOPPED) 
     set_parameters();
   
@@ -213,11 +248,9 @@ Correlator_node::set_parameters() {
   for (size_t i=0; i<bits2float_converters.size(); i++) {
     if (bits2float_converters[i] != Bits2float_ptr()) {
       if (i <parameters.station_streams.size()) {
-        bits2float_converters[i]->set_parameters(parameters.bits_per_sample,
-            size_input_slice,
-            parameters.number_channels);
+        bits2float_converters[i]->set_parameters(parameters.bits_per_sample);
       } else {
-        bits2float_converters[i]->set_parameters(-1, 0, 0);
+        bits2float_converters[i]->set_parameters(-1);
       }
     }
   }

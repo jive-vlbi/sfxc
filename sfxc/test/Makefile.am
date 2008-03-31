@@ -18,6 +18,7 @@ check_PROGRAMS = \
   test_tcp_connection \
   test_channel_extractor \
   test_input_node_with_delay_correction \
+  test_correlator_node_data_reader \
   do_channel_extractor
 
 TESTS           = \
@@ -29,6 +30,7 @@ TESTS           = \
   test_data_reader_file \
   test_data_reader_mark5.py \
   test_data_reader_tcp.py \
+  test_correlator_node_data_reader \
   test_output_node.py \
   test_input_node.py \
   test_log_writer_mpi.py \
@@ -40,9 +42,11 @@ OBJ = ../src/utils.cc \
       ../src/mpi_transfer.cc \
       ../src/control_parameters.cc \
       ../src/delay_table_akima.cc \
-      ../src/channel_extractor_mark4.cc \
       ../src/channel_extractor_brute_force.cc \
+      ../src/channel_extractor_fast.cc \
+      ../src/channel_extractor_utils.cc \
       ../src/mark4_reader.cc \
+      ../src/mark4_header.cc \
       ../src/bits_to_float_converter.cc \
       \
       ../src/data_reader.cc \
@@ -149,3 +153,8 @@ do_channel_extractor_SOURCES = \
   ../src/data_reader.cc \
   ../src/data_reader_file.cc \
   ../src/control_parameters.cc
+
+test_correlator_node_data_reader_SOURCES = \
+  $(OBJ) \
+  test_correlator_node_data_reader.cc \
+  ../src/correlator_node_data_reader_tasklet.cc

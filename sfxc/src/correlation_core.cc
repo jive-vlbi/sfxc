@@ -132,9 +132,13 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
     }
   }
 
-  frequency_buffer.resize(number_input_streams_in_use());
+  if (frequency_buffer.size() != number_input_streams_in_use()) {
+    frequency_buffer.resize(number_input_streams_in_use());
+  }
   for (size_t i=0; i < frequency_buffer.size(); i++) {
-    frequency_buffer[i].resize(size_of_fft()/2+1);
+    if (frequency_buffer[i].size() != (size_of_fft()/2+1)) {
+      frequency_buffer[i].resize(size_of_fft()/2+1);
+    }
   }
 
   if (prev_size_of_fft != size_of_fft()) {
