@@ -15,6 +15,8 @@
 #include "data_writer.h"
 #include "tcp_connection.h"
 
+#include "utils.h"
+
 class Data_writer_tcp : public Data_writer {
 public:
   Data_writer_tcp();
@@ -23,6 +25,9 @@ public:
   ~Data_writer_tcp();
   
   void flush();
+
+  bool can_write();
+
 private:
   size_t do_put_bytes(size_t nBytes, const char *buff);
 

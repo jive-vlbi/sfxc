@@ -40,34 +40,34 @@ public:
 
   bool eof(){ return m_isEof; }
 
-void parse_url(const std::string url, String& server, String& port, String& filename)
-{
-  if( url.find("dnfp://") < 0 ) MTHROW("INVALID URL for dnfp protocol");
-  String tmp = url.substr(7);
-  int serverb = tmp.find(":");
-  if( serverb < 0 ) MTHROW("INVALID URL for dnfp protocol, missing port");
-  server = tmp.substr(0, serverb);
-  tmp = tmp.substr(serverb+1);
-  serverb = tmp.find("/");
-  if( serverb < 0 ) MTHROW("INVALID URL for dnfp protocol, missing port");
-  port = tmp.substr(0, serverb);
-  
-  tmp = tmp.substr(serverb+1);
-  if( tmp.find("?") != std::string::npos )
+  void parse_url(const std::string url, String& server, String& port, String& filename)
   {
-    serverb  = tmp.find("?");
-    filename = tmp.substr(0,serverb);
-    std::string options  = tmp.substr(serverb+1);
-    std::cout << "OPTIONS: " << options << std::endl;
-  }else{
-    filename = tmp;
-  }  
-}
+    if( url.find("dnfp://") < 0 ) MTHROW("INVALID URL for dnfp protocol");
+    String tmp = url.substr(7);
+    int serverb = tmp.find(":");
+    if( serverb < 0 ) MTHROW("INVALID URL for dnfp protocol, missing port");
+    server = tmp.substr(0, serverb);
+    tmp = tmp.substr(serverb+1);
+    serverb = tmp.find("/");
+    if( serverb < 0 ) MTHROW("INVALID URL for dnfp protocol, missing port");
+    port = tmp.substr(0, serverb);
+  
+    tmp = tmp.substr(serverb+1);
+    if( tmp.find("?") != std::string::npos )
+      {
+        serverb  = tmp.find("?");
+        filename = tmp.substr(0,serverb);
+        std::string options  = tmp.substr(serverb+1);
+        std::cout << "OPTIONS: " << options << std::endl;
+      }else{
+        filename = tmp;
+      }  
+  }
 
   virtual void closef(){
-      std::cout << "closing files" << std::endl;
-      int32_t cmd=-1;
-      *m_writer << cmd;
+    std::cout << "closing files" << std::endl;
+    int32_t cmd=-1;
+    *m_writer << cmd;
   }
 
   void connect(pInterfaceIP interface){
@@ -113,17 +113,17 @@ void parse_url(const std::string url, String& server, String& port, String& file
     return ret;
   }
 
-  private:
-    String m_filename;
-    String m_serverip;
-    String m_serverport;
-    String m_url;
+private:
+  String m_filename;
+  String m_serverip;
+  String m_serverport;
+  String m_url;
 
-    bool m_isEof;
+  bool m_isEof;
 
-    Data_writer_socket* m_writer;
-    Data_reader_socket* m_reader;
-    Data_reader_blocking* m_breader;
+  Data_writer_socket* m_writer;
+  Data_reader_socket* m_reader;
+  Data_reader_blocking* m_breader;
 };
 
 

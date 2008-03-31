@@ -51,6 +51,8 @@ public:
   /** returns true if eof or the end of the data slice has been reached **/
   bool end_of_dataslice();
 
+  /** returns whether we can write at least 1 byte **/
+  virtual bool can_write() = 0;
   
 private:
   /** Function that actually writes the data to the output device.

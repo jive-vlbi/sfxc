@@ -22,6 +22,8 @@ public:
   
   size_t do_put_bytes(size_t nBytes, const char *buff);
 
+  bool can_write();
+
 private:
   std::ofstream file;
 };

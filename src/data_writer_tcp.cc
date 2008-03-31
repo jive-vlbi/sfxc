@@ -18,6 +18,8 @@
 #include "tcp_connection.h"
 #include "utils.h"
 
+#include <sys/poll.h>
+
 Data_writer_tcp::Data_writer_tcp() 
 : socket(-1)
 {
@@ -48,3 +50,24 @@ Data_writer_tcp::do_put_bytes(size_t nBytes, const char *buff) {
   assert(bytes_written == nBytes);
   return bytes_written;
 }
+
+bool Data_writer_tcp::can_write() {
+//   struct pollfd {
+//     int fd;           /* file descriptor */
+//     short events;     /* requested events */
+//     short revents;    /* returned events */
+//   };
+  pollfd fds[1];
+  fds[0].fd = socket;
+  fds[0].events = POLLOUT;
+
+  int ret = poll(fds, 1, /*timeout in miliseconds*/ 50);
+  if (ret > 0) {
+    assert((fds[0].revents & POLLOUT) != 0);
+  } else {
+    assert((fds[0].revents & POLLOUT) == 0);
+  }
+
+  return (ret > 0);
+}
+

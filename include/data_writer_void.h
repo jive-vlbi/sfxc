@@ -12,12 +12,19 @@
 
 #include "data_writer.h"
 
+#include "utils.h"
+
 class Data_writer_void : public Data_writer {
 public:
   Data_writer_void();
   ~Data_writer_void();
   
   size_t do_put_bytes(size_t nBytes, const char *buff);
+
+  bool can_write() {
+    DEBUG_MSG("can_write() not yet implemented");
+    return true;
+  }
 };
 
 #endif // DATA_WRITER_VOID_H

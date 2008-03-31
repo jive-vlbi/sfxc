@@ -101,9 +101,8 @@ void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
 }
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
-  Input_buffer_element elem;
-  Input_buffer_ptr buffer(new Input_buffer(100));
-  data_readers_ctrl.set_buffer(stream_nr, buffer);
+//   Input_buffer_ptr buffer(new Input_buffer(100));
+//   data_readers_ctrl.set_buffer(stream_nr, buffer);
 
   // create the bit sample reader tasklet
   if (bit_sample_readers.size() <= stream_nr) {
@@ -169,7 +168,7 @@ void Correlator_node::correlate() {
     assert(bit_sample_readers[i] != Bit_sample_reader_ptr());
     if (bit_sample_readers[i] != Bit_sample_reader_ptr()) {
       int count = 0;
-      while ((count < 5) && bit_sample_readers[i]->has_work()) {
+      while ((count < 25) && bit_sample_readers[i]->has_work()) {
         bit_sample_readers[i]->do_task();
         count++;
       }
