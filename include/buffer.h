@@ -99,7 +99,7 @@ private:
 };
 
 /// Use this class if you want to allocate large number of element
-/// static array declaration may fails if the array is too large...
+/// static array declaration may fail if the array is too large...
 template <class T>
 class Aligned_vector {
 public:
@@ -242,27 +242,15 @@ private:
 template <class T>
 Buffer<T>::
 Buffer(int size)
-    : size(size),
-    front(0), rear(0) {
-  if (size <= 0) {
-    DEBUG_MSG(size);
-  }
+    : size(size), buffer(size), status(size), front(0), rear(0) {
   assert(size > 0);
-  buffer.resize(size);
-  status.resize(size);
 }
 
 template <class T>
 Buffer<T>::
 Buffer(int size, const T &element)
-    : size(size),
-    front(0), rear(0) {
-  if (size <= 0) {
-    DEBUG_MSG(size);
-  }
+    : size(size), buffer(size, element), status(size), front(0), rear(0) {
   assert(size > 0);
-  buffer.resize(size, element);
-  status.resize(size);
 }
 
 

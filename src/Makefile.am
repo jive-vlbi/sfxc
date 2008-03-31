@@ -45,6 +45,7 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   controller.cc input_node_controller.cc output_node_controller.cc \
   correlator_node_controller.cc manager_node_controller.cc \
   log_node_controller.cc \
+  correlator_node_data_reader_tasklet.cc \
   mpi_transfer.cc tcp_connection.cc \
   log_writer_mpi.cc data_reader_tcp.cc  data_writer_tcp.cc \
   data_writer_buffer.cc \

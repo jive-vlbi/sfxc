@@ -18,12 +18,14 @@
 #include "semaphore_buffer.h"
 
 #include "control_parameters.h"
+#include "correlator_node_data_reader_tasklet.h"
 #include "bits_to_float_converter.h"
 
 #include "log_writer_mpi.h"
 #include "correlation_core.h"
 #include "delay_correction.h"
-#include "tasklet/tasklet_manager.h"
+
+#include <tasklet/tasklet_manager.h>
 
 #include "timer.h"
 
@@ -64,8 +66,11 @@ public:
   typedef Semaphore_buffer<Input_buffer_element>       Input_buffer;
   typedef boost::shared_ptr<Input_buffer>              Input_buffer_ptr;
   typedef Buffer_element_vector<char>                  output_value_type;
-  
+
+
 private:
+  typedef boost::shared_ptr<Correlator_node_data_reader_tasklet> 
+  /**/                                                Bit_sample_reader_ptr;
   typedef boost::shared_ptr<Bits_to_float_converter>  Bits2float_ptr;
   typedef boost::shared_ptr<Delay_correction>         Delay_correction_ptr;
 public:
@@ -118,13 +123,14 @@ private:
   /// Number of the correlator node
   int nr_corr_node;
 
+  std::vector< Bit_sample_reader_ptr >        bit_sample_readers;
   std::vector< Bits2float_ptr >               bits2float_converters;
   std::vector< Delay_correction_ptr >         delay_modules;
   Correlation_core                            correlation_core;
   
   int n_integration_slice_in_time_slice;
   
-  Timer bits_to_float_timer_, delay_timer_, correlation_timer_;
+  Timer bit_sample_reader_timer_, bits_to_float_timer_, delay_timer_, correlation_timer_;
   
   std::queue<Correlation_parameters>          integration_slices_queue;
 };
