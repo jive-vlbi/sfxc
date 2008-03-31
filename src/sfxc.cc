@@ -36,6 +36,10 @@
 
 #include "manager_node.h"
 
+#ifdef RUNTIME_STATISTIC
+#include "monitor.h"
+#endif //RUNTIME_STATISTIC
+
 int main(int argc, char *argv[]) {
   //initialisation
   int stat = MPI_Init(&argc,&argv);
@@ -51,7 +55,7 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-  DEBUG_MSG_RANK(0, "$GlobalRev: 693M $");
+  DEBUG_MSG_RANK(0, "$GlobalRev: 694M $");
 
  // Print here compilation option enabled while SFXC is in development
   #ifdef PRINT_PROGRESS
