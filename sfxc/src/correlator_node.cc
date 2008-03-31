@@ -64,6 +64,8 @@ void Correlator_node::start() {
         correlate();
 
         if (correlation_core.almost_finished()) {
+        }
+        if (correlation_core.finished()) {
           if (n_integration_slice_in_time_slice==1) {
             // Notify manager node:
             int32_t msg = get_correlate_node_number();
@@ -71,8 +73,7 @@ void Correlator_node::start() {
                      MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
                      MPI_COMM_WORLD);
           }
-        }
-        if (correlation_core.finished()) {
+
           n_integration_slice_in_time_slice--;
           if (n_integration_slice_in_time_slice==0) {
             // Notify manager node:
@@ -100,6 +101,10 @@ void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
 }
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
+  Input_buffer_element elem;
+  Input_buffer_ptr buffer(new Input_buffer(100));
+  data_readers_ctrl.set_buffer(stream_nr, buffer);
+
   // create the bit sample reader tasklet
   if (bit_sample_readers.size() <= stream_nr) {
     bit_sample_readers.resize(stream_nr+1, Bit_sample_reader_ptr());
@@ -164,10 +169,13 @@ void Correlator_node::correlate() {
     assert(bit_sample_readers[i] != Bit_sample_reader_ptr());
     if (bit_sample_readers[i] != Bit_sample_reader_ptr()) {
       int count = 0;
-      while ((count < 25) && bit_sample_readers[i]->has_work()) {
+      while ((count < 5) && bit_sample_readers[i]->has_work()) {
         bit_sample_readers[i]->do_task();
         count++;
       }
+//       if (bit_sample_readers[i]->has_work()) {
+//         bit_sample_readers[i]->do_task();
+//       }
     }
   }
   bit_sample_reader_timer_.stop();

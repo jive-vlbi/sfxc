@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-  DEBUG_MSG_RANK(0, "$GlobalRev: 694M $");
+  DEBUG_MSG_RANK(0, "$GlobalRev: 695M $");
 
  // Print here compilation option enabled while SFXC is in development
   #ifdef PRINT_PROGRESS
