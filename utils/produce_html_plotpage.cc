@@ -1,5 +1,5 @@
-/* author : N.G.H. Kruithof
- * 
+/* 
+ * author : N.G.H. Kruithof
  */
 
 #define MAX_SNR_VALUE 8
@@ -30,7 +30,8 @@ public:
 
   Plot_data(const Output_header_baseline &header,
             const std::vector<float>     &data)
-    : header(header), data(data), initialised(true) {}
+    : header(header), data(data), initialised(true) {
+  }
 
   Output_header_baseline header;
   std::vector<float>     data;
@@ -108,21 +109,15 @@ public:
 class All_plots_data {
   typedef std::vector< std::vector< std::vector<Plot_data> > > Container;
 public:
-  All_plots_data(const Vex &vex) : integration_slice(-1) {
-    const Vex::Node root_node = vex.get_root_node();
-    for (Vex::Node::const_iterator it = root_node["STATION"]->begin();
-         it != root_node["STATION"]->end(); it++) {
-      stations.push_back(it.key());
-    }
-    
-    vex.get_frequencies(frequencies);
-  }
+  All_plots_data(const Vex &vex, FILE *input);
 
-  void read_plots(std::istream &in);
+  void read_plots(bool stop_at_eof);
 
   void print_html();
 
 private:
+  void read_data_from_file(int to_read, char * data, bool stop_at_eof);
+
   void set_plot(const Plot_data &plot_data);
 
   const Plot_data &get_first_plot();
@@ -138,88 +133,141 @@ private:
                    int sideband, int pol1, int pol2, int ch, 
                    int station1, int station2);
 
+  // input file
+  FILE *input;
+
   // plot[sideband][polarisation1][polarisation2][Channel][station1][station2]
   Container plots[2][2][2];
 
   // The global header in the data
   Output_header_global global_header;
 
-  // Integration slice for which we print the fringe
-  int integration_slice;
-
+  // Header of the last timeslice read;
+  Output_header_timeslice timeslice_header;
+    
   // Array with the station names
   std::vector<std::string> stations;
 
   // Array with frequencies for a channel nr
   std::vector<double>      frequencies;
-};
 
-void
-All_plots_data::read_plots(std::istream &input) {
-  //read-in the global header 
-  input.read((char*)&global_header, sizeof(Output_header_global));
-  if (input.eof()) {
-    std::cout << "Empty correlation file" << std::endl;
-    exit(-1);
-  }
-
-  integration_slice = -1;
-
+  // Arrays containing one fft
+  fftwf_plan fftwf_plan_;
   std::vector< std::complex<float> > data;
   std::vector< float >               data_float;
-  data.resize(global_header.number_channels+1);
-  data_float.resize(global_header.number_channels+1);
-  fftwf_plan fftwf_plan_ = 
-    fftwf_plan_dft_1d(global_header.number_channels+1, 
-                      reinterpret_cast<fftwf_complex*>(&data[0]),
-                      reinterpret_cast<fftwf_complex*>(&data[0]),
-                      FFTW_BACKWARD, 
-                      FFTW_ESTIMATE);
-  
-  while (!input.eof()) {
+};
+
+All_plots_data::All_plots_data(const Vex &vex, FILE *input) : input(input) {
+    const Vex::Node root_node = vex.get_root_node();
+    for (Vex::Node::const_iterator it = root_node["STATION"]->begin();
+         it != root_node["STATION"]->end(); it++) {
+      stations.push_back(it.key());
+    }
     
-    // Read the header of the timeslice
-    Output_header_timeslice timeslice_header;
-    input.read((char*)&timeslice_header, sizeof(Output_header_timeslice));
+    vex.get_frequencies(frequencies);
+    
+    //`read-in the global header 
+    read_data_from_file(sizeof(Output_header_global), 
+                        (char *)&global_header, false);
+    
+    data.resize(global_header.number_channels+1);
+    data_float.resize(global_header.number_channels+1);
+    fftwf_plan_ = 
+      fftwf_plan_dft_1d(global_header.number_channels+1, 
+                        reinterpret_cast<fftwf_complex*>(&data[0]),
+                        reinterpret_cast<fftwf_complex*>(&data[0]),
+                        FFTW_BACKWARD, 
+                        FFTW_ESTIMATE);
 
-    int n_baselines = timeslice_header.number_baselines;
+    // Read the first timeslice header:
+    read_data_from_file(sizeof(Output_header_timeslice), 
+                        (char*)&timeslice_header, false);
+    assert(timeslice_header.number_baselines != 0);
+  }
 
-    // Initialise the integration slice
-    if (integration_slice == -1) 
-      integration_slice = timeslice_header.integration_slice;
+void 
+All_plots_data::read_data_from_file(int to_read, char * data, 
+                                    bool stop_at_eof) {
+  while (!(stop_at_eof && feof(input))) {
+    int read = fread(data, to_read, 1, input);
+    if (read == 1) {
+      return;
+    } else if (read == 0) {
+      if (ferror(input)) {
+        exit(-1);
+      }
+      sleep(1);
+    }
+  }
+}
 
-    if (!input.eof()) {
-      for (int i=0; i<n_baselines; i++) {
-        // Read the header of the baseline
-        Output_header_baseline baseline_header;
-        input.read((char*)&baseline_header, sizeof(Output_header_baseline));
-
-        // Read the data
-        input.read((char *)&data[0], 
-                   data.size()*sizeof(std::complex<float>));
-
-        if (integration_slice == timeslice_header.integration_slice) {
-          if (baseline_header.station_nr1 != baseline_header.station_nr2) {
-            fftwf_execute(fftwf_plan_);
-            size_t data_size = data.size();
-            for (size_t j=0; j<data_size; j++) {
-              data_float[j] = std::abs(data[(j+data_size/2)%data_size]);
-            }
-          } else {
-            for (size_t j=0; j<data.size(); j++) {
-              data_float[j] = std::abs(data[j]);
+void
+All_plots_data::read_plots(bool stop_at_eof) {
+  // Clear previous plots
+  for (int i1 = 0; i1<2; i1++) {
+    for (int i2 = 0; i2<2; i2++) {
+      for (int i3 = 0; i3<2; i3++) {
+        for (size_t j1 = 0; j1<plots[i1][i2][i3].size(); j1++) {
+          for (size_t j2 = 0; j2<plots[i1][i2][i3][j1].size(); j2++) {
+            for (size_t j3 = 0; j3<plots[i1][i2][i3][j1][j2].size(); j3++) {
+              plots[i1][i2][i3][j1][j2][j3].initialised = false;
             }
           }
-          set_plot(Plot_data(baseline_header, data_float));
         }
       }
+    }
+  }
+
+  int  current_integration = timeslice_header.integration_slice;
+    
+  bool first_timeslice_header = true;
+  while (current_integration == timeslice_header.integration_slice) {
+    int n_baselines = timeslice_header.number_baselines;
+
+    for (int i=0; i<n_baselines; i++) {
+      // Read the header of the baseline
+      Output_header_baseline baseline_header;
+      read_data_from_file(sizeof(Output_header_baseline),
+                          (char*)&baseline_header, 
+                          stop_at_eof && (!first_timeslice_header));
+      if (baseline_header.weight == -1) {
+        return;
+      }
+      
+      // Read the data
+      read_data_from_file(data.size()*sizeof(std::complex<float>), 
+                          (char *)&data[0], 
+                          stop_at_eof && (!first_timeslice_header));
+
+      
+      if (baseline_header.station_nr1 != baseline_header.station_nr2) {
+        fftwf_execute(fftwf_plan_);
+        size_t data_size = data.size();
+        for (size_t j=0; j<data_size; j++) {
+          data_float[j] = std::abs(data[(j+data_size/2)%data_size]);
+        }
+      } else {
+        for (size_t j=0; j<data.size(); j++) {
+          data_float[j] = std::abs(data[j]);
+        }
+      }
+      set_plot(Plot_data(baseline_header, data_float));
+    }
+
+    { // Read the next timeslice header
+      read_data_from_file(sizeof(Output_header_timeslice), 
+                          (char*)&timeslice_header, stop_at_eof);
+      if (timeslice_header.number_baselines == 0) {
+        return;
+      }
+      first_timeslice_header = false;
     }
   }
 }
 
 void
 All_plots_data::print_html() {
-  std::ofstream index_html("index.html");
+  std::ofstream index_html("index2.html");
   assert(index_html.is_open());
   index_html.precision(4);
 
@@ -366,6 +414,10 @@ All_plots_data::print_html() {
   }
   index_html << "</html>" << std::endl;
 
+  index_html.close();
+
+  // Atomic update
+  rename("index2.html", "index.html");
 }
 
 void
@@ -382,7 +434,7 @@ All_plots_data::set_plot(const Plot_data &plot_data) {
   if (station1 == station2) {
     assert(pol1==pol2);
   }
-  
+
   Container &container = plots[sideband][pol1][pol2];
   if (container.size() <= freq) 
     container.resize(freq+1);
@@ -524,10 +576,24 @@ int main(int argc, char *argv[])
   RANK_OF_NODE = 0;
 #endif
 
-  if (!((argc == 3) || (argc == 4))) {
-    std::cout << "usage: " << argv[0] << " <vex-file> <correlation_file> [<output_directory>]" 
+  if ((argc < 3) || (argc > 5)) {
+    std::cout << "usage: " << argv[0] << " [-f] <vex-file> <correlation_file> [<output_directory>]" 
               << std::endl;
     exit(1);
+  }
+
+  // test for -f
+  bool update = false;
+  if (strcmp(argv[1], "-f") == 0) {
+    update = true;
+    argc--;
+    argv++;
+  } else {
+    if (argc > 4) {
+      std::cout << "usage: " << argv[0] << " [-f] <vex-file> <correlation_file> [<output_directory>]" 
+                << std::endl;
+      exit(1);
+    }
   }
 
   // Parse the vex file
@@ -547,15 +613,10 @@ int main(int argc, char *argv[])
     }
   }
 
-  All_plots_data all_plots(vex);
-
-
   // open the input file
-  std::ifstream input(argv[2], std::ios::in | std::ios::binary);
-  assert(input.is_open());
-  // read the data in
-  all_plots.read_plots(input);
-  
+  FILE *input = fopen(argv[2], "rb");
+  assert(input != NULL);
+
   if (argc== 4) {
     // Goto the output directory
     int err = chdir(argv[3]);
@@ -566,7 +627,17 @@ int main(int argc, char *argv[])
     }
   }
   
-  all_plots.print_html();
+
+  // read the data in
+  All_plots_data all_plots(vex, input);
+
+  do {
+    all_plots.read_plots(!update);
+    
+    all_plots.print_html();
+
+    std::cout << "Produced html page" << std::endl;
+  } while (update);
 
   return 0;
 }
