@@ -61,13 +61,10 @@ bool Data_writer_tcp::can_write() {
   fds[0].fd = socket;
   fds[0].events = POLLOUT;
 
-  int ret = poll(fds, 1, /*timeout in miliseconds*/ 50);
+  int ret = poll(fds, 1, /*timeout in miliseconds*/ 0);
   if (ret > 0) {
-    assert((fds[0].revents & POLLOUT) != 0);
-  } else {
-    assert((fds[0].revents & POLLOUT) == 0);
-  }
-
-  return (ret > 0);
+    return ((fds[0].revents & POLLOUT) != 0);
+  } 
+  return false;
 }
 
