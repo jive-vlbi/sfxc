@@ -113,6 +113,11 @@ public:
     return ret;
   }
 
+  bool can_read() {
+    DEBUG_MSG("Data_reader_dnfp: can read not implemented");
+    return true;
+  }
+
 private:
   String m_filename;
   String m_serverip;

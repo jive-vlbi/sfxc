@@ -1,6 +1,7 @@
 #include <arpa/inet.h>
 # include <unistd.h>
 #include "data_reader_blocking.h"
+#include "utils.h"
 
 Data_reader_blocking::Data_reader_blocking(Data_reader *rdr)
 {
@@ -29,6 +30,11 @@ int Data_reader_blocking::do_get_bytes(size_t size, char* buffer)
 bool Data_reader_blocking::eof()
 {
     return m_reader->eof();
+}
+
+bool Data_reader_blocking::can_read() {
+  DEBUG_MSG("Data_reader_blocking: can read not implemented");
+  return true;
 }
 
 Data_reader_blocking& operator>>(Data_reader_blocking& dr, uint32_t& value)

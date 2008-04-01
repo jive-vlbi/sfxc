@@ -46,3 +46,8 @@ bool Data_reader_socket::eof()
 {
     return false;
 }
+
+bool Data_reader_socket::can_read() {
+  DEBUG_MSG("Data_reader_socket: can read not implemented");
+  return true;
+}
