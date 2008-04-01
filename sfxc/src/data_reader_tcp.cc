@@ -17,6 +17,7 @@
 #include "tcp_connection.h"
 
 #include <sys/poll.h>
+#include <errno.h>
 
 Data_reader_tcp::Data_reader_tcp(uint64_t *ip_addr, int nAddr, unsigned short int port)
   : Data_reader(), socket(-1)
@@ -55,21 +56,10 @@ unsigned int Data_reader_tcp::get_port() {
 
 
 bool Data_reader_tcp::can_read() {
-//     int fd;           /* file descriptor */
-//     short events;     /* requested events */
-//     short revents;    /* returned events */
-//   };
-  pollfd fds[1];
-  fds[0].fd = socket;
-  fds[0].events = POLLIN;
-
-  int ret = poll(fds, 1, /*timeout in miliseconds*/ 50);
-  if (ret > 0) {
-    assert((fds[0].revents & POLLIN) != 0);
-  } else {
-    assert((fds[0].revents & POLLIN) == 0);
-  }
-
-  return (ret > 0);
+  int errno_ = errno;
+  char ch;
+  int result = recv(socket, &ch, 1, MSG_PEEK | MSG_DONTWAIT);
+  errno = errno_;
+  return (result > 0);
 }
 
