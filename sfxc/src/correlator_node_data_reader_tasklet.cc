@@ -69,7 +69,7 @@ bool Correlator_node_data_reader_tasklet::has_work() {
     return false;
   }
   if (!reader->can_read()) {
-    DEBUG_MSG("!can_read()");
+    //DEBUG_MSG("!can_read()");
     return false;
   }
   return true;
