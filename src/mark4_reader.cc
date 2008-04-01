@@ -105,10 +105,17 @@ bool Mark4_reader::read_new_block(unsigned char *mark4_block) {
   int to_read = SIZE_MK4_FRAME*N;
   unsigned char *buffer = (unsigned char *)mark4_block;
   do {
+    if (eof()) {
+      DEBUG_MSG("EOF");
+      current_time_ += time_between_headers();
+      return false;
+    }
     int result = data_reader_->get_bytes(to_read, (char *)buffer);
     if (result < 0) {
       current_time_ += time_between_headers();
       return false;
+    } else if (result == 0) {
+      DEBUG_MSG("ZERO");
     }
     to_read -= result;
     buffer += result;
@@ -223,6 +230,10 @@ Mark4_reader::get_tracks(const Input_node_parameters &input_node_param,
   }
 
   return result;
+}
+
+bool Mark4_reader::eof() {
+  return data_reader_->eof();
 }
 
 int find_start_of_header(boost::shared_ptr<Data_reader> reader,

@@ -80,6 +80,8 @@ public:
     return MARK4_TRACK_BIT_RATE / SIZE_MK4_FRAME;
   }
 
+  bool eof();
+
 private:
   // format a time in miliseconds
   std::string time_to_string(int64_t time);

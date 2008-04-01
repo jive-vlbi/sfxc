@@ -232,7 +232,8 @@ void Manager_node::start() {
         if (start_time+integration_slice_nr*integration_time() >=
             stop_time) {
           status = STOP_CORRELATING;
-        } else if (start_time >= stop_time_scan) {
+        } else if (start_time+integration_slice_nr*integration_time() >=
+                   stop_time_scan) {
           if (current_scan == control_parameters.number_scans()) {
             status = STOP_CORRELATING;
           } else {
