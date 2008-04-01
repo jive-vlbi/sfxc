@@ -197,7 +197,14 @@ void Delay_correction::fringe_stopping(std::complex<FLOAT> input[],
 }
 
 bool Delay_correction::has_work() {
-  return (!input_buffer->empty()) && (!output_buffer->full());
+  if (input_buffer->empty()) 
+    return false;
+  if (output_buffer->full())
+    return false;
+  if (n_ffts_per_integration == current_fft) 
+    return false;
+  
+  return true;
 }
 
 Delay_correction::Output_buffer_ptr
