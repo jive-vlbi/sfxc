@@ -64,8 +64,8 @@ private:
   void allocate_element();
   /// Push the input_element_ to the output buffer
   void push_element();
-  /// Randomize the mark4 header
-  void randomize_header();
+  /// Randomize data in the mark4 block
+  void randomize_block(int start, int stop);
 
 private:
   /// Data stream to read from
@@ -77,27 +77,32 @@ private:
   /// Output buffer of mark4 data blocks
   Output_buffer_ptr                   output_buffer_;
 
+  /// Current time in microseconds
+  int64_t current_time;
+
   /// Stop time in microseconds
   int64_t stop_time;
   
-   #ifdef RUNTIME_STATISTIC
+#ifdef RUNTIME_STATISTIC
   QOS_MonitorSpeed monitor_;
-  #endif // RUNTIME_STATISTIC
+#endif // RUNTIME_STATISTIC
 };
 
 template <class Type>
 Mark4_reader_tasklet<Type>::
 Mark4_reader_tasklet(boost::shared_ptr<Data_reader> reader, char *buffer)
-    : memory_pool_(10), stop_time(-1) {
+  : memory_pool_(10), stop_time(-1) {
   assert(sizeof(value_type) == 1);
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
   allocate_element();
   mark4_reader_ =
     boost::shared_ptr<Mark4_reader >(new Mark4_reader(reader,
-                                     sizeof(Type),
-                                     (unsigned char *)buffer,
-                                     (unsigned char *)&input_element_.data().mk4_data[0]));
-  input_element_.data().start_time = mark4_reader_->get_current_time();
+                                                      sizeof(Type),
+                                                      (unsigned char *)buffer,
+                                                      (unsigned char *)&input_element_.data().mk4_data[0]));
+  current_time = mark4_reader_->get_current_time();
+  input_element_.data().start_time = current_time;
+  
   
 #ifdef RUNTIME_STATISTIC
   std::stringstream inputid;
@@ -121,31 +126,23 @@ template <class Type>
 void
 Mark4_reader_tasklet<Type>::
 do_task() {
-  #ifdef RUNTIME_STATISTIC
+#ifdef RUNTIME_STATISTIC
   monitor_.begin_measure();
-  #endif // RUNTIME_STATISTIC
+#endif // RUNTIME_STATISTIC
 
   assert(has_work());
 
   push_element();
   allocate_element();
   if (!mark4_reader_->read_new_block(&input_element_.data().mk4_data[0])) {
-    for (size_t i=0; i<SIZE_MK4_FRAME*sizeof(Type); i++) {
-#ifdef SFXC_DETERMINISTIC
-      input_element_.data().mk4_data[i] = value_type(0);
-#else
-      // Randomize data
-      input_element_.data().mk4_data[i] =
-        value_type(park_miller_random());
-#endif
-
-    }
+    randomize_block(0,SIZE_MK4_FRAME*sizeof(Type));
   }
-  input_element_.data().start_time = mark4_reader_->get_current_time();
+  current_time = mark4_reader_->get_current_time();
+  input_element_.data().start_time = current_time;
   
-  #ifdef RUNTIME_STATISTIC
+#ifdef RUNTIME_STATISTIC
   monitor_.end_measure(SIZE_MK4_FRAME*sizeof(Type));
-  #endif // RUNTIME_STATISTIC
+#endif // RUNTIME_STATISTIC
 }
 
 template <class Type>
@@ -154,7 +151,7 @@ Mark4_reader_tasklet<Type>::
 has_work() {
   if (memory_pool_.empty())
     return false;
-  if (stop_time <= mark4_reader_->get_current_time())
+  if (stop_time <= current_time)
     return false;
 
   return true;
@@ -179,8 +176,10 @@ goto_time(int ms_time) {
   int64_t us_time = int64_t(1000)*ms_time;
 
   int64_t new_time =
-    mark4_reader_->goto_time((unsigned char *)&input_element_.data().mk4_data[0], us_time);
-  input_element_.data().start_time = mark4_reader_->get_current_time();
+    mark4_reader_->goto_time((unsigned char *)&input_element_.data().mk4_data[0],
+                             us_time);
+  current_time = mark4_reader_->get_current_time();
+  input_element_.data().start_time = current_time;
 
   if (us_time != new_time) {
     DEBUG_MSG("New time " << us_time
@@ -193,14 +192,14 @@ template <class Type>
 int
 Mark4_reader_tasklet<Type>::
 get_current_time() {
-  return mark4_reader_->get_current_time();
+  return current_time;
 }
 
 template <class Type>
 void
 Mark4_reader_tasklet<Type>::
 set_stop_time(int64_t time) {
-  assert(mark4_reader_->get_current_time() < time);
+  assert(current_time < time);
   stop_time = time;
 }
 
@@ -210,7 +209,7 @@ template <class Type>
 void
 Mark4_reader_tasklet<Type>::
 push_element() {
-  randomize_header();
+  randomize_block(0, SIZE_MK4_HEADER*sizeof(Type));
   output_buffer_->push(input_element_);
 }
 
@@ -232,7 +231,7 @@ get_tracks(const Input_node_parameters &input_node_param) {
 template <class Type>
 void
 Mark4_reader_tasklet<Type>::
-randomize_header() {
+randomize_block(int start, int stop) {
   // Randomize header
   for (size_t i=0; i<SIZE_MK4_HEADER*sizeof(Type); i++) {
 #ifdef SFXC_DETERMINISTIC
