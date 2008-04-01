@@ -64,8 +64,6 @@ void Correlator_node::start() {
         correlate();
 
         if (correlation_core.almost_finished()) {
-        }
-        if (correlation_core.finished()) {
           if (n_integration_slice_in_time_slice==1) {
             // Notify manager node:
             int32_t msg = get_correlate_node_number();
@@ -73,7 +71,8 @@ void Correlator_node::start() {
                      MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
                      MPI_COMM_WORLD);
           }
-
+        }
+        if (correlation_core.finished()) {
           n_integration_slice_in_time_slice--;
           if (n_integration_slice_in_time_slice==0) {
             // Notify manager node:
