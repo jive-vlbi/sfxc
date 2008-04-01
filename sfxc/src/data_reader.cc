@@ -11,6 +11,7 @@
 
 #include "utils.h"
 #include "data_reader.h"
+#include <limits>
 
 Data_reader::Data_reader() : _data_counter(0), data_slice(-1) {
 }
@@ -21,6 +22,11 @@ Data_reader::~Data_reader() {
 int
 Data_reader::get_bytes(size_t nBytes, char *buff) {
   assert((data_slice==-1) || (nBytes <= (size_t)data_slice));
+  // Read at most max_int bytes: 
+  //  otherwise we can't return the number of bytes read
+  const size_t max_int = (size_t)(std::numeric_limits<int>::max());
+  if (nBytes > max_int) nBytes = max_int;
+
   int result = do_get_bytes(nBytes, buff);
   _data_counter += result;
   if (data_slice != -1) data_slice -= result;
