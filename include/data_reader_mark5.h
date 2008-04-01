@@ -45,6 +45,9 @@ public:
 
   
   bool eof();  
+
+  bool can_read();
+
 private:
   void initialize(const char *protocol, const int port);
 

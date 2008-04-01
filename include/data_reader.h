@@ -59,6 +59,9 @@ public:
   /** returns true if eof or the end of the data slice has been reached **/
   bool end_of_dataslice();
 
+  /** returns true if at least one byte can be read **/
+  virtual bool can_read() = 0;
+
 private:
   /** Function that actually writes the data to the output device.
   **/ 

@@ -34,6 +34,8 @@ public:
   unsigned int get_port();
   
   bool eof() { return socket < 0; }  
+
+  bool can_read();
 private:
   int do_get_bytes(size_t nBytes, char *out);
 

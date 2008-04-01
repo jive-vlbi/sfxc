@@ -20,21 +20,22 @@
 
 class Data_reader_socket : public Data_reader
 {
-    public:
-        Data_reader_socket(int socket);
-        Data_reader_socket(Connexion* connexion);
+public:
+  Data_reader_socket(int socket);
+  Data_reader_socket(Connexion* connexion);
         
-        virtual ~Data_reader_socket();
-        virtual bool eof();
-        void closef(){ assert(false && "not implemented"); }
+  virtual ~Data_reader_socket();
+  virtual bool eof();
+  void closef(){ assert(false && "not implemented"); }
 
+  bool can_read();
 
-    protected:
-        int do_get_bytes(size_t nBytes, char *buff);
+protected:
+  int do_get_bytes(size_t nBytes, char *buff);
 
-        int m_socket;
+  int m_socket;
 
-    private:
+private:
 };
 
 #endif // DATAREADER_SOCKET_HH

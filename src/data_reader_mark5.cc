@@ -15,6 +15,7 @@
 #include <netdb.h>      // getservbyname()
 
 #include "data_reader_mark5.h"
+#include "utils.h"
 
 Data_reader_mark5::Data_reader_mark5(const std::string& str) {
   int port;
@@ -164,4 +165,10 @@ int Data_reader_mark5::do_get_bytes(size_t nBytes, char*out) {
 bool Data_reader_mark5::eof() {
   assert(false);
   return false;
+}
+
+
+bool Data_reader_mark5::can_read() {
+  DEBUG_MSG("Data_reader_file: can read not implemented");
+  return true;
 }

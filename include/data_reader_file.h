@@ -29,6 +29,8 @@ class Data_reader_file : public Data_reader {
 
   bool eof();  
   
+  bool can_read();
+
 private:
   int do_get_bytes(size_t nBytes, char *out);
 

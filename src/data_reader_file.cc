@@ -66,3 +66,8 @@ Data_reader_file::do_get_bytes(size_t nBytes, char*out) {
 bool Data_reader_file::eof() {
   return file.eof(); 
 }
+
+bool Data_reader_file::can_read() {
+  DEBUG_MSG("Data_reader_file: can read not implemented");
+  return true;
+}

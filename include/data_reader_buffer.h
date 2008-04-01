@@ -36,6 +36,8 @@ public:
 
   bool eof();  
 
+  bool can_read();
+
   boost::shared_ptr<Buffer> get_buffer() {
     return buffer;
   }
@@ -102,6 +104,12 @@ int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {
 template <class Element>
 bool Data_reader_buffer<Element>::eof() {
   return (end_of_file && (bytes_left == 0)); 
+}
+
+template <class Element>
+bool Data_reader_buffer<Element>::can_read() {
+  DEBUG_MSG("Data_reader_buffer: can read not implemented");
+  return true;
 }
 
 #endif // DATA_READER_BUFFER_H

@@ -172,9 +172,6 @@ void Correlator_node::correlate() {
         bit_sample_readers[i]->do_task();
         count++;
       }
-//       if (bit_sample_readers[i]->has_work()) {
-//         bit_sample_readers[i]->do_task();
-//       }
     }
   }
   bit_sample_reader_timer_.stop();
