@@ -82,7 +82,7 @@ private:
 
   /// Stop time in microseconds
   int64_t stop_time;
-  
+
 #ifdef RUNTIME_STATISTIC
   QOS_MonitorSpeed monitor_;
 #endif // RUNTIME_STATISTIC
@@ -134,10 +134,16 @@ do_task() {
 
   push_element();
   allocate_element();
-  if (!mark4_reader_->read_new_block(&input_element_.data().mk4_data[0])) {
+  
+  if (mark4_reader_->eof()) {
     randomize_block(0,SIZE_MK4_FRAME*sizeof(Type));
+    current_time += mark4_reader_->time_between_headers();
+  } else {
+    if (!mark4_reader_->read_new_block(&input_element_.data().mk4_data[0])) {
+      randomize_block(0,SIZE_MK4_FRAME*sizeof(Type));
+    }
+    current_time = mark4_reader_->get_current_time();
   }
-  current_time = mark4_reader_->get_current_time();
   input_element_.data().start_time = current_time;
   
 #ifdef RUNTIME_STATISTIC
@@ -149,10 +155,12 @@ template <class Type>
 bool
 Mark4_reader_tasklet<Type>::
 has_work() {
-  if (memory_pool_.empty())
+  if (memory_pool_.empty()) {
     return false;
-  if (stop_time <= current_time)
+  }
+  if (stop_time <= current_time) {
     return false;
+  }
 
   return true;
 }
