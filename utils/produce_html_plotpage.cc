@@ -41,13 +41,21 @@ public:
     char cmd[80];
     gnuplot_ctrl * g = gnuplot_init();
 
-    gnuplot_cmd(g, "set terminal png tiny size 300,200");
+    // This works on huygens
+    gnuplot_cmd(g, "set terminal png small size 300,200");
+    // This works on das3
+    gnuplot_cmd(g, "set terminal png small picsize 300 200");
+
     snprintf(cmd, 80, "set output \"%s\"", filename);
     gnuplot_cmd(g, cmd);
     gnuplot_setstyle(g, "lines");
     gnuplot_plot_x(g, &data[0], data.size(), title) ;
 
+    // This works on huygens
     gnuplot_cmd(g, "set terminal png large size 1024,768");
+    // This works on das3
+    gnuplot_cmd(g, "set terminal png large picsize 1024 768");
+
     snprintf(cmd, 80, "set output \"%s\"", filename_large);
     gnuplot_cmd(g, cmd);
     gnuplot_setstyle(g, "lines");
