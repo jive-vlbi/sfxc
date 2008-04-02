@@ -56,10 +56,20 @@ unsigned int Data_reader_tcp::get_port() {
 
 
 bool Data_reader_tcp::can_read() {
-  int errno_ = errno;
-  char ch;
-  int result = recv(socket, &ch, 1, MSG_PEEK | MSG_DONTWAIT);
-  errno = errno_;
-  return (result > 0);
+  //     int fd;           /* file descriptor */
+  //     short events;     /* requested events */
+  //     short revents;    /* returned events */
+  //   };
+
+  pollfd fds[1];
+  fds[0].fd = socket;
+  fds[0].events = POLLIN;
+  
+  int ret = poll(fds, 1, /*timeout in miliseconds*/ 0);
+  if (ret > 0) {
+    return ((fds[0].revents & POLLIN) != 0);
+  }
+
+  return false;
 }
 
