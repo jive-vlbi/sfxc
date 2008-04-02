@@ -36,6 +36,8 @@
 
 #include "manager_node.h"
 
+#include "svn_version.h"
+
 #ifdef RUNTIME_STATISTIC
 #include "monitor.h"
 #endif //RUNTIME_STATISTIC
@@ -55,7 +57,7 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-  DEBUG_MSG_RANK(0, "$GlobalRev: 700:702M $");
+  DEBUG_MSG_RANK(0, "svn_version: " << SVN_VERSION);
 
  // Print here compilation option enabled while SFXC is in development
   #ifdef PRINT_PROGRESS
