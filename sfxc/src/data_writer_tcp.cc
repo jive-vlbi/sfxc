@@ -38,9 +38,15 @@ size_t
 Data_writer_tcp::do_put_bytes(size_t nBytes, const char *buff) {
   if (socket <= 0) return 0;
   assert(nBytes > 0);
+  int flags = 0;
+  if ((get_size_dataslice() != -1) && (get_size_dataslice() != nBytes)) {
+    flags = MSG_MORE;
+  }
   size_t bytes_written = 0;
   while (bytes_written != nBytes) {
-    ssize_t result = write(socket, buff+bytes_written, nBytes-bytes_written);
+    ssize_t result = send(socket, 
+                          buff+bytes_written, nBytes-bytes_written, 
+                          flags);
     
     if (result <= 0) {
       return bytes_written;
@@ -64,7 +70,7 @@ bool Data_writer_tcp::can_write() {
   int ret = poll(fds, 1, /*timeout in miliseconds*/ 0);
   if (ret > 0) {
     return ((fds[0].revents & POLLOUT) != 0);
-  } 
+  }
   return false;
 }
 
