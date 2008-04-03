@@ -8,6 +8,7 @@
  *  Tests reading a file from disk and then writing it back using a Data_node
  */
 
+
 #include <fstream>
 #include <assert.h>
 #include <stdio.h>
@@ -74,6 +75,9 @@ int main(int argc, char *argv[]) {
   if(rank == 0){
     std::cout << "Application compiled with: -DRUNTIME_STATISTIC" << std::endl;
     std::cout << "Application compiled with: -DRUNTIME_STATISTIC_DIR=" << RUNTIME_STATISTIC_DIR << std::endl;
+    if( !directory_exist(RUNTIME_STATISTIC_DIR) ){
+       create_directory(RUNTIME_STATISTIC_DIR);
+    }
   }
   #endif // RUNTIME_STATISTIC
   #ifdef SFXC_PRINT_DEBUG
