@@ -1,3 +1,5 @@
+AM_CXXFLAGS=-I../testunit/src -I./src $(SFXC_CXXFLAGS) 
+
 noinst_LIBRARIES = libcommon.a
 libcommon_a_SOURCES = \
   src/backtrace.cc \

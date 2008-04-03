@@ -183,7 +183,9 @@ AC_OUTPUT(Makefile
           lib/calc10/lib/Makefile
           lib/calc10/src/Makefile
           lib/common/Makefile
+          lib/common/test/Makefile
           lib/containers/Makefile
+          lib/containers/test/Makefile
           lib/netlib/Makefile
           lib/testunit/Makefile
           lib/jsoncpp/Makefile
