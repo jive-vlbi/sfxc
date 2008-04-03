@@ -1,4 +1,4 @@
-AM_CXXFLAGS=-I../common/src
+AM_CXXFLAGS=-I../testunit/src -I../common/src  $(SFXC_CXXFLAGS) 
 
 noinst_LIBRARIES = libcontainers.a
 libcontainers_a_SOURCES = \
