@@ -160,5 +160,7 @@ int irbit2();
 void park_miller_set_seed(unsigned long seed_);
 long unsigned int park_miller_random();
 
+bool directory_exist(const std::string& path);
+void create_directory(const std::string& path);
 
 #endif // UTILS_H

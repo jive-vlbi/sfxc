@@ -16,8 +16,10 @@
 #include <assert.h>
 #include <iostream>
 
+#include "data_reader_file.h"
 #include "utils.h"
-#include <data_reader_file.h>
+#include "exception_common.h"
+
 
 #ifdef SFXC_PRINT_DEBUG
 int RANK_OF_NODE = -1; // Rank of the current node
@@ -129,3 +131,29 @@ long unsigned int park_miller_random() {
 
   return (park_miller_seed = (long)lo);
 }
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+bool directory_exist(const std::string& path)
+{
+  struct stat buf;
+  if( stat(path.c_str(), &buf) == 0){
+    return S_ISDIR( buf.st_mode );
+  }
+  
+  if( errno == ENOENT ){
+    return false;
+  }
+  MTHROW(std::string("Unable to test if the directory exist: ")+strerror(errno));
+}
+
+void create_directory(const std::string& path)
+{
+  if( mkdir(path.c_str(), S_IRWXU) < 0 )
+  {
+    MTHROW(std::string("Unable to create a directory :")+path+" because of:"+strerror(errno)); 
+  }
+}
+
