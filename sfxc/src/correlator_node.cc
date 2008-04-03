@@ -39,7 +39,7 @@ nr_corr_node(nr_corr_node) {
 
 Correlator_node::~Correlator_node() {
 #if PRINT_TIMER
-  DEBUG_MSG("Time bit_sample_reader:  " << bit_sample_reader_.measured_time());
+  DEBUG_MSG("Time bit_sample_reader:  " << bit_sample_reader_timer_.measured_time());
   DEBUG_MSG("Time bits2float:  " << bits_to_float_timer_.measured_time());
   DEBUG_MSG("Time delay:       " << delay_timer_.measured_time());
   DEBUG_MSG("Time correlation: " << correlation_timer_.measured_time());
