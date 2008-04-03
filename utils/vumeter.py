@@ -10,6 +10,11 @@ import sys, os, popen2, re, simplejson
 import time
 import tempfile
 
+inputfilename="std_output.txt"
+
+if len(sys.argv) == 2:
+  inputfilename = sys.argv[1]
+
 process = {}
 start_time = 0
 stop_time = 1
@@ -26,6 +31,13 @@ def update_state(id, curr, max):
 	else:
 		process[id] = [1,1,0, "",0,0]		 
 		#corrnode=corrnode+1	
+
+def count_packet():
+	global process
+	counter = 0
+	for i in process.keys():
+		counter+=process[i][2]
+	return counter
 
 def update_count(id, packet, time):
 	global process, corrnode
@@ -68,8 +80,10 @@ def set_stop_time(time):
 
 def update_current(ctime):
 	global current_time
-	if ctime > current_time:
-		current_time = ctime/1000000
+	new_time = time_to_int(ctime)
+	#print "ToTO:"+ctime
+	if new_time > current_time:
+		current_time = new_time
 
 #funfun = ['-','\\','|', '/']
 funfun = ['>']
@@ -99,14 +113,19 @@ def make_display(runtime, last_lines):
 	display="\x1b[2J"
 	display+="-----------------------------========= SFXC MONITOR ========-----------------------------------\n"
 	display+="running since: "+`runtime`+"sec\n" 
+	display+="durationfull: "+`runtimefull`+"sec\n" 
+	display+="number of second to correlate: "+`(stop_time-start_time)/1000`+"sec\n" 
+	display+="timeslice processed:"+`count_packet()`+"\n"
+	if not runtime == 0:
+	  display+="processing speed:"+`(1.0*count_packet())/runtime`+" ts/s\n"
 	display+="Begin time:"+`start_time`+" End time:"+`stop_time`+" Current time:"+`current_time`+"\n"
 	display+="Progress: "+bargraph(current_time-start_time, stop_time-start_time, 50)+": "+percent(current_time-start_time, stop_time-start_time)
 
 	if not runtime == 0:
-		display+="  Real-time ratio:"+`(current_time-start_time)*100/runtime`+"%"
+		display+="  Real-time ratio:"+`(current_time-start_time)*100/(runtime*1000)`+"%"
 
 	if not runtimefull == 0:
-		display+="  Real-time full:"+`(current_time-start_time2)*100/runtimefull`+"%"
+		display+="  Real-time full:"+`(current_time-start_time2)*100/(runtimefull*1000)`+"%"
 	
 
 	display+="\n"
@@ -133,7 +152,7 @@ def make_display(runtime, last_lines):
 				display+="\n"
 			else:
 				display+="   "
-	elif len(process.keys()) < 100: 
+	elif len(process.keys()) < 150: 
 		for i in process.keys():
 			idx = idx+1
 			if i < 10:
@@ -169,7 +188,7 @@ for i in range(0,10000):
 	process={}
 	corrnode = 0
 	current_time = 0
-	tmpfile = open("std_output.txt", "r")
+	tmpfile = open(inputfilename, "r")
 	for line in tmpfile:
 		ret = re.match(".* PROGRESS t=[0-9]*:.*start_time: ([0-9a-z]*)",line)
 		if ret:
@@ -180,17 +199,18 @@ for i in range(0,10000):
 		
 		ret = re.match("#([0-9]*) correlation_core.cc, [0-9]+:  PROGRESS t=[0-9]*: node ([0-9]*), ([0-9]*) of ([0-9]*)", line)
 		if ret:
-			update_state(int(ret.groups()[1]), int(ret.groups()[2]), int(ret.groups()[3]))
+			try:
+				update_state(int(ret.groups()[1]), int(ret.groups()[2]), int(ret.groups()[3]))
+			except:
+				print "BROKEN LINE:" + line
 		else:
 			ret = re.match(".* PROGRESS t=[0-9]*:.* start ([0-9a-z]*), channel ([0-9,]*) to correlation node ([0-9]+)", line)			
 			if ret:
 				update_count(int(ret.groups()[2]), ret.groups()[1], ret.groups()[0])
-			
+				update_current( ret.groups()[0] )
 			else:
-				ret = re.match(".* PROGRESS t=[0-9]*:.* time ([0-9]+)", line)			
 				if ret:
-					#print "Hello world:"+ret.groups()[0]
-					update_current( int(ret.groups()[0]) )
+					update_current( ret.groups()[0] )
 
 				else:
 					last_lines.append(line)
@@ -201,11 +221,11 @@ for i in range(0,10000):
 
 	time.sleep(1);
 
-	#if not(corrnode == 0) and len(process.keys()) == corrnode:
-	#	if total_time2 == 0:
-	#		total_time2 = int(time.time())
-	#		start_time2 = current_time
-	#	runtimefull = int(time.time()-total_time2)
+	if not(corrnode == 0) and len(process.keys()) == corrnode:
+		if total_time2 == 0:
+			total_time2 = int(time.time())
+			start_time2 = current_time
+		runtimefull = int(time.time()-total_time2)
 
 	display(int(time.time()-total_time), last_lines)
 	#print "HELLO BISON:"+`total_time2`+" " + `start_time2` 
