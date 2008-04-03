@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  */
 
@@ -33,14 +33,14 @@ int64_t get_us_time(int time[]) {
   result = time[4] +   60* result; // seconds
   result = 0       + 1000* result; // milisecs
   result = 0       + 1000* result; // microsecs
-  
+
   return result;
 }
 
 void get_ip_address(std::list<Interface_pair> &addresses,
                     bool IPv4_only) {
   struct ifaddrs *ifa = NULL;
-  
+
   if (getifaddrs (&ifa) < 0) {
     perror ("getifaddrs");
     return;
@@ -83,17 +83,16 @@ void set_seed_1_bit(unsigned long seed_) {
   iseed = seed_;
 }
 
-int irbit2()
-{
-  #define IB1 1
+int irbit2() {
+#define IB1 1
   //  #define IB2 2
-  #define IB4 8
+#define IB4 8
   //  #define IB5 16
-  #define IB6 32 
+#define IB6 32
   //  #define IB18 131072
-  #define IB30 536870912
-  #define MASK (IB1+IB4+IB6)
- 
+#define IB30 536870912
+#define MASK (IB1+IB4+IB6)
+
   if (iseed & IB30) {
     iseed=((iseed ^ MASK) << 1) | IB1;
     return 1;
@@ -101,14 +100,14 @@ int irbit2()
     iseed <<= 1;
     return 0;
   }
-  #undef MASK
-  #undef IB30
+#undef MASK
+#undef IB30
   //  #undef IB18
-  #undef IB6
+#undef IB6
   //  #undef IB5
-  #undef IB4
+#undef IB4
   //  #undef IB2
-  #undef IB1
+#undef IB1
 }
 
 long park_miller_seed = 42;
@@ -136,24 +135,21 @@ long unsigned int park_miller_random() {
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
-bool directory_exist(const std::string& path)
-{
+bool directory_exist(const std::string& path) {
   struct stat buf;
-  if( stat(path.c_str(), &buf) == 0){
+  if ( stat(path.c_str(), &buf) == 0) {
     return S_ISDIR( buf.st_mode );
   }
-  
-  if( errno == ENOENT ){
+
+  if ( errno == ENOENT ) {
     return false;
   }
   MTHROW(std::string("Unable to test if the directory exist: ")+strerror(errno));
 }
 
-void create_directory(const std::string& path)
-{
-  if( mkdir(path.c_str(), S_IRWXU) < 0 )
-  {
-    MTHROW(std::string("Unable to create a directory :")+path+" because of:"+strerror(errno)); 
+void create_directory(const std::string& path) {
+  if ( mkdir(path.c_str(), S_IRWXU) < 0 ) {
+    MTHROW(std::string("Unable to create a directory :")+path+" because of:"+strerror(errno));
   }
 }
 
