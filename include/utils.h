@@ -20,9 +20,17 @@
 #include "types.h"
 #include "log_writer.h"
 
+#ifndef PRINT_PID
 #define PRINT_PID         true
+#endif // PRINT_PID
+
+#ifndef PRINT_HOST
 #define PRINT_HOST        false
-#define PRINT_TIMER       false
+#endif // PRINT_HOST
+
+#ifndef PRINT_TIMER
+#define PRINT_TIMER       true
+#endif // PRINT_TIMER
 
 /// Constants
 #define SIZE_MK4_FRAME           20000
