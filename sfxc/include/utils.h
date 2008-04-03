@@ -29,7 +29,7 @@
 #endif // PRINT_HOST
 
 #ifndef PRINT_TIMER
-#define PRINT_TIMER       true
+#define PRINT_TIMER       false
 #endif // PRINT_TIMER
 
 /// Constants
