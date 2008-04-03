@@ -1,5 +1,7 @@
 #include "delay_correction.h"
 
+#include "config.h"
+
 const FLOAT Delay_correction::maximal_phase_change = 0.2; // 5.7 degrees
 
 Delay_correction::Delay_correction()
@@ -108,16 +110,32 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
 
   // 5a)calculate the fract bit shift (=phase corrections in freq domain)
   // the following should be double
-  double tmp1 = -2.0*M_PI*fractional_delay/sample_rate();
-  double tmp2 = 0.5*M_PI*integer_shift;/* was: / ovrfl */
+  const double dfr  = sample_rate()*1.0/number_channels(); // delta frequency
+  const double tmp1 = -2.0*M_PI*fractional_delay/sample_rate();
+  const double tmp2 = 0.5*M_PI*(integer_shift&3);/* was: / ovrfl */
+  const double constant_term = tmp2 - sideband()*tmp1*0.5*bandwidth();
+  const double linear_term = tmp1*sideband()*dfr;
+
   // 5b)apply phase correction in frequency range
-  //assert(freq_scale.size() == number_channels()+1);
-  for (size_t i = 0; i < freq_scale.size(); i++) {
-    //phi  = -2.0*M_PI*dfs*tbs*fs[jf] + 0.5*M_PI*integer_shift/ovrfl;
+  const int size = number_channels()/2+1;
+
+  double phi = constant_term;
+  for (int i = 0; i < size; i++) {
     // the following should be double
-    double phi  = tmp1*freq_scale[i] + tmp2;
-    std::complex<FLOAT> tmp(cos(phi),sin(phi));
-    output[i] *= tmp;
+    double cos_phi, sin_phi;
+
+#ifdef HAVE_SINCOS
+    sincos(phi, &sin_phi, &cos_phi);
+#else
+    cos_phi = cos(phi);
+    // sin^2(phi) + cos^2(phi) == 1
+    int    sign = ( (((int)floor(phi/M_PI))&1 == 1) ? -1 : 1 );
+    sin_phi = sign*sqrt(1-cos_phi*cos_phi);
+#endif
+
+    output[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
+
+    phi += linear_term;
   }
 
   // 6a)execute the complex to complex FFT, from Frequency to Time domain

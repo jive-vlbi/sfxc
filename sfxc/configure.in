@@ -21,6 +21,8 @@ dnl setting flags for sfxc
 SFXC_CXXFLAGS='-I${top_srcdir}/include '
 SFXC_LDADD=' '
 
+AC_CHECK_FUNCS(sincos)
+
 dnl backup of generic flags
 CXXFLAGS_IN=$CXXFLAGS
 CFLAGS_IN=$CFLAGS
