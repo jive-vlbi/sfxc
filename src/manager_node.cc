@@ -153,6 +153,8 @@ Manager_node::~Manager_node() {
 void Manager_node::start() {
   get_log_writer()(1) << "Manager_node::start()" << std::endl;
 
+  PROGRESS_MSG("start correlating");
+
   initialise();
   status = START_NEW_SCAN;
   while (status != END_NODE) {
@@ -228,6 +230,7 @@ void Manager_node::start() {
       }
       case GOTO_NEXT_TIMESLICE: {
         integration_slice_nr += 1;
+        PROGRESS_MSG("starting timeslice " << start_time+integration_slice_nr*integration_time());
 
         if (start_time+integration_slice_nr*integration_time() >=
             stop_time) {
@@ -267,6 +270,7 @@ void Manager_node::start() {
       }
     }
   }
+  PROGRESS_MSG("terminating nodes");
 
   get_log_writer()(1) << "Terminating nodes" << std::endl;
 }
