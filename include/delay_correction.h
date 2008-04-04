@@ -26,10 +26,9 @@ public:
   typedef Bits_to_float_converter::Output_buffer         Input_buffer;
   typedef Bits_to_float_converter::Output_buffer_ptr     Input_buffer_ptr;
 
-  typedef Buffer_element_vector<FLOAT>                   Output_buffer_element;
-  typedef Semaphore_buffer<Output_buffer_element>        Output_buffer;
-  typedef boost::shared_ptr<Output_buffer>               Output_buffer_ptr;
-
+  typedef Input_buffer_element                           Output_buffer_element;
+  typedef Input_buffer                                   Output_buffer;
+  typedef Input_buffer_ptr                               Output_buffer_ptr;
 
   Delay_correction();
   virtual ~Delay_correction();
@@ -54,11 +53,9 @@ public:
   }
 
 private:
-  void fractional_bit_shift(std::complex<FLOAT> output[],
-                            int integer_shift,
+  void fractional_bit_shift(int integer_shift,
                             FLOAT fractional_delay);
-  void fringe_stopping(std::complex<FLOAT> intput[],
-                       FLOAT output[]);
+  void fringe_stopping(FLOAT output[]);
 
 private:
   // access functions to the correlation parameters
@@ -74,29 +71,28 @@ private:
   Input_buffer_ptr    input_buffer;
   Output_buffer_ptr   output_buffer;
 
-  int64_t             current_time; // In microseconds
+  int64_t                current_time; // In microseconds
   Correlation_parameters correlation_parameters;
 
   int n_ffts_per_integration, current_fft, total_ffts;
 
-  FFTW_PLAN          plan_t2f, plan_f2t;
-  // buffer used for the plan
-  std::vector<std::complex<FLOAT> > buffer;
+  FFTW_PLAN           plan_t2f, plan_f2t;
 
-  std::vector<FLOAT> freq_scale; // frequency scale for the fractional bit shift
+  std::complex<FLOAT> *data;
+
+  // frequency scale for the fractional bit shift
+  std::vector<FLOAT>  freq_scale;
+
   // For fringe stopping we do a linear approximation
   // maximal_phase_change is the maximal angle between two
   // sample points
   static const FLOAT maximal_phase_change; // 5.7 degrees
-  int n_recompute_delay;
+  int                n_recompute_delay;
 
-  bool delay_table_set;
-  Delay_table_akima   delay_table;
+  bool               delay_table_set;
+  Delay_table_akima  delay_table;
 
-  // You need this one because the input and output are FLOATs (not complex)
-  std::vector<std::complex<FLOAT> > frequency_buffer;
-
-  Timer delay_timer;
+  Timer              delay_timer;
 };
 
 #endif /*DELAY_CORRECTION_H*/

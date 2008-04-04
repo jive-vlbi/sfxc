@@ -73,7 +73,7 @@ private:
   Output_buffer_element          *output_element;
 
   // Used in integration_step(), avoids contruction and destroying the vectors
-  std::vector<Input_buffer_element *>               input_elements;
+  std::vector<Input_buffer_element> input_elements;
 
   int number_ffts_in_integration, current_fft, total_ffts;
 

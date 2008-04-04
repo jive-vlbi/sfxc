@@ -225,7 +225,6 @@ Correlator_node::receive_parameters(const Correlation_parameters &parameters) {
   
   if (status == STOPPED) 
     set_parameters();
-  
 }
 void
 Correlator_node::set_parameters() {
@@ -257,14 +256,15 @@ Correlator_node::set_parameters() {
       }
     }
   }
+  
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
       delay_modules[i]->set_parameters(parameters);
     }
   }
+  
   correlation_core.set_parameters(parameters, get_correlate_node_number());
-
-
+  
   status = CORRELATING;
 
   n_integration_slice_in_time_slice =

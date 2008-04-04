@@ -104,7 +104,7 @@ template <class T>
 class Aligned_vector {
 public:
   typedef T value_type;
-  inline int size() {
+  inline size_t size() {
     return size_;
   }
 
