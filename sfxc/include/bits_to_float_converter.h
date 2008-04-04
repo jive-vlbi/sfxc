@@ -23,14 +23,14 @@
 class Bits_to_float_converter : public Tasklet
 {
 public:
-  typedef Correlator_node_types::Bit_sample_queue     Input_buffer;
-  typedef Correlator_node_types::Bit_sample_queue_ptr Input_buffer_ptr;
-  typedef Input_buffer::value_type                    Input_buffer_element;
+  typedef Correlator_node_types::Bit_sample_buffer     Input_buffer;
+  typedef Correlator_node_types::Bit_sample_buffer_ptr Input_buffer_ptr;
+  typedef Input_buffer::value_type                     Input_buffer_element;
 
-  typedef Buffer_element_vector<FLOAT>                Output_buffer_element;
-  typedef Semaphore_buffer< Output_buffer_element >   Output_buffer;
-  typedef boost::shared_ptr<Output_buffer>            Output_buffer_ptr;
-
+  typedef Correlator_node_types::Fourier_memory_pool_element Output_buffer_element;
+  typedef Correlator_node_types::Fourier_memory_pool   Output_memory_pool;
+  typedef Correlator_node_types::Fourier_buffer        Output_buffer;
+  typedef Correlator_node_types::Fourier_buffer_ptr    Output_buffer_ptr;
 
   Bits_to_float_converter();
   
@@ -51,9 +51,10 @@ public:
 private:
   int                bits_per_sample;
   
-  Output_buffer_ptr  output_buffer;
+  Input_buffer_ptr    input_buffer;
 
-  Input_buffer_ptr   input_buffer;
+  Output_memory_pool  output_memory_pool;
+  Output_buffer_ptr   output_buffer;
   
   // only 2 bit samples
   FLOAT lookup_table[256][4];

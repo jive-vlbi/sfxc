@@ -12,15 +12,16 @@
 
 
 const FLOAT sample_value_ms[] = {
-                                  -7, -2, 2, 7
-                                };
+  -7, -2, 2, 7
+};
 const FLOAT sample_value_m[]  = {
-                                  -5,  5
-                                };
+  -5,  5
+};
 
 Bits_to_float_converter::Bits_to_float_converter()
-    : bits_per_sample(-1),
-      output_buffer(Output_buffer_ptr(new Output_buffer(10))) {
+  : bits_per_sample(-1),
+    output_memory_pool(10),
+    output_buffer(new Output_buffer()) {
   for (int i=0; i<256; i++) {
     lookup_table[i][0] = sample_value_ms[(i>>6) & 3];
     lookup_table[i][1] = sample_value_ms[(i>>4) & 3];
@@ -66,15 +67,15 @@ void Bits_to_float_converter::do_task() {
   assert(offset >= 0);
   assert(offset < (8/bits_per_sample));
   assert(output_buffer != Output_buffer_ptr());
-  assert(!output_buffer->full());
-  Output_buffer_element &output_elem = output_buffer->produce();
+  assert(!output_memory_pool.empty());
+  Output_buffer_element output_elem = output_memory_pool.allocate();
 
-  if (output_elem.size() < size_output_slice) {
-    output_elem.resize(size_output_slice);
-  }
+  // Check for the right size is done in the resize method
+  // A factor of 2 for padding in the correlator
+  output_elem->resize(2*size_output_slice);
 
   if (bits_per_sample == 2) {
-    FLOAT *output_buffer = &output_elem[0];
+    FLOAT *output_buffer = output_elem->buffer();
     // First byte:
     memcpy(output_buffer,
            &lookup_table[(int)input_elem->data[0]][(int)offset],
@@ -93,14 +94,19 @@ void Bits_to_float_converter::do_task() {
     memcpy(output_buffer,
            &lookup_table[(int)(unsigned char)input_elem->data[input_size-1]][0],
            offset*sizeof(FLOAT));
-   } else {
-     std::cout << "Not yet implemented" << std::endl;
-     assert(false);
-   }
+    output_buffer += offset;
+
+    for (int i=size_output_slice; i<2*size_output_slice; i++) {
+      output_buffer = 0; output_buffer++;
+    }
+  } else {
+    std::cout << "Not yet implemented" << std::endl;
+    assert(false);
+  }
 
   input_elem.release();
   input_buffer->pop();
-  output_buffer->produced(size_output_slice);
+  output_buffer->push(output_elem);
 }
 
 bool
@@ -109,7 +115,7 @@ Bits_to_float_converter::has_work() {
     return false;
   if (input_buffer->empty())
     return false;
-  if (output_buffer->full())
+  if (output_memory_pool.empty())
     return false;
   return true;
 }

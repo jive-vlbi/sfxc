@@ -5,9 +5,10 @@
 const FLOAT Delay_correction::maximal_phase_change = 0.2; // 5.7 degrees
 
 Delay_correction::Delay_correction()
-    : output_buffer(Output_buffer_ptr(new Output_buffer(10))),
-    current_time(-1),
-delay_table_set(false) {
+    : output_buffer(new Output_buffer()),
+      current_time(-1),
+      data(NULL),
+      delay_table_set(false) {
 }
 
 Delay_correction::~Delay_correction() {
@@ -17,6 +18,9 @@ Delay_correction::~Delay_correction() {
   double time = delay_timer.measured_time()*1000000;
   DEBUG_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
 #endif
+  if (data != NULL) {
+    fftw_free(data);
+  }
 }
 
 void Delay_correction::connect_to(Input_buffer_ptr new_input_buffer) {
@@ -50,48 +54,37 @@ void Delay_correction::do_task() {
   }
   current_fft++;
 
-  int input_size;
-  Input_buffer_element &input = input_buffer->consume(input_size);
-  Output_buffer_element &output = output_buffer->produce();
+  Input_buffer_element element = input_buffer->front();
 
-  // A factor of 2 for padding
-  assert(input_size == number_channels());
-  assert(input.size() == number_channels());
+  // A factor of 2 for padding in the correlator
+  assert(element->size() == 2*number_channels());
 
-  if (output.size() != 2*input_size) {
-    output.resize(input_size*2);
+  { // Copy the data to a local array
+    FLOAT *input_buffer = element->buffer();
+    for (int i=0; i<number_channels(); i++) {
+      // Implicit conversion from FLOAT to FFTW_COMPLEX
+      data[i] = input_buffer[i];
+    }
   }
 
   double delay = get_delay(current_time+length_of_one_fft()/2);
   double delay_in_samples = delay*sample_rate();
   int integer_delay = (int)std::floor(delay_in_samples+.5);
 
-  {
-    int n_channels = number_channels();
-    // Implicit FLOAT to complex conversion
-    for (int i = 0; i < n_channels; i++)
-      frequency_buffer[i] = input[i];
-    for (int i = n_channels; i < 2*n_channels; i++)
-      frequency_buffer[i] = 0;
-  }
-
-  fractional_bit_shift(&frequency_buffer[0],
-                       integer_delay,
+  fractional_bit_shift(integer_delay,
                        delay_in_samples - integer_delay);
 
-  fringe_stopping(&frequency_buffer[0],
-                  output.buffer());
+  fringe_stopping(element->buffer());
 
   current_time += length_of_one_fft();
 
-  input_buffer->consumed();
-  output_buffer->produced(2*number_channels());
+  input_buffer->pop();
+  output_buffer->push(element);
 }
 
 
-void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
-    int integer_shift,
-    FLOAT fractional_delay) {
+void Delay_correction::fractional_bit_shift(int integer_shift,
+                                            FLOAT fractional_delay) {
   // 3) execute the complex to complex FFT, from Time to Frequency domain
   //    input: sls. output sls_freq
   delay_timer.resume();
@@ -100,12 +93,12 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
   delay_timer.stop();
   total_ffts++;
 
-  output[0] *= 0.5;
-  output[number_channels()/2] *= 0.5;//Nyquist
+  data[0] *= 0.5;
+  data[number_channels()/2] *= 0.5;//Nyquist
 
   // 4c) zero the unused subband (?)
   for (int i=number_channels()/2+1; i<number_channels(); i++) {
-    output[i] = 0.0;
+    data[i] = 0.0;
   }
 
   // 5a)calculate the fract bit shift (=phase corrections in freq domain)
@@ -133,7 +126,7 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
     sin_phi = sign*sqrt(1-cos_phi*cos_phi);
 #endif
 
-    output[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
+    data[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
 
     phi += linear_term;
   }
@@ -141,14 +134,12 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
   delay_timer.resume();
-  //DM replaced: FFTW_EXECUTE_DFT(plan_f2t, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
   FFTW_EXECUTE(plan_f2t);
   delay_timer.stop();
   total_ffts++;
 }
 
-void Delay_correction::fringe_stopping(std::complex<FLOAT> input[],
-                                       FLOAT output[]) {
+void Delay_correction::fringe_stopping(FLOAT output[]) {
   double mult_factor_phi =
     -sideband()*2.0*M_PI*(channel_freq() + sideband()*bandwidth()*0.5);
 
@@ -203,11 +194,10 @@ void Delay_correction::fringe_stopping(std::complex<FLOAT> input[],
 
     // 6b)apply normalization and multiply by 2.0
     // NHGK: Why only the real part
-    input[i] = std::complex<FLOAT>(2*input[i].real(), input[i].imag());
+    data[i] = std::complex<FLOAT>(2*data[i].real(), data[i].imag());
 
     // 7)subtract dopplers and put real part in Bufs for the current segment
-    output[i] =
-      input[i].real()*cosPhi - input[i].imag()*sinPhi;
+    output[i] = data[i].real()*cosPhi - data[i].imag()*sinPhi;
     cosPhi += deltaCosPhi;
     sinPhi += deltaSinPhi;
 
@@ -216,8 +206,6 @@ void Delay_correction::fringe_stopping(std::complex<FLOAT> input[],
 
 bool Delay_correction::has_work() {
   if (input_buffer->empty()) 
-    return false;
-  if (output_buffer->full())
     return false;
   if (n_ffts_per_integration == current_fft) 
     return false;
@@ -252,18 +240,15 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 
   n_recompute_delay = sample_rate()/1000000;
 
-  frequency_buffer.resize(number_channels()*2, 0);
-
   if (prev_number_channels != number_channels()) {
-    //buffer.resize(number_channels());
-
+    // buffer used for the plan
+    data = (std::complex<FLOAT> *)
+      fftw_malloc(number_channels()*sizeof(FFTW_COMPLEX));
     plan_t2f = FFTW_PLAN_DFT_1D(number_channels(),
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
+                                (FFTW_COMPLEX *)data, (FFTW_COMPLEX *)data,
                                 FFTW_BACKWARD, FFTW_MEASURE);
     plan_f2t = FFTW_PLAN_DFT_1D(number_channels(),
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
+                                (FFTW_COMPLEX *)data, (FFTW_COMPLEX *)data,
                                 FFTW_FORWARD,  FFTW_MEASURE);
   }
 
@@ -273,6 +258,7 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
       parameters.sample_rate,
       parameters.number_channels);
   current_fft = 0;
+
 }
 
 int Delay_correction::number_channels() {
