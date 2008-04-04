@@ -242,6 +242,9 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 
   if (prev_number_channels != number_channels()) {
     // buffer used for the plan
+    if (data != NULL) {
+      fftw_free(data);
+    }
     data = (std::complex<FLOAT> *)
       fftw_malloc(number_channels()*sizeof(FFTW_COMPLEX));
     plan_t2f = FFTW_PLAN_DFT_1D(number_channels(),
