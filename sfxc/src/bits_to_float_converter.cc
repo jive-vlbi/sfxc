@@ -53,7 +53,7 @@ Bits_to_float_converter::get_output_buffer() {
 void Bits_to_float_converter::do_task() {
   // produce size_output_slice number of samples
   assert(has_work());
-
+  
   assert(!input_buffer->empty());
   Input_buffer_element &input_elem = input_buffer->front();
 
@@ -87,9 +87,15 @@ void Bits_to_float_converter::do_task() {
       memcpy(output_buffer, // byte * 4
              &lookup_table[(int)input_elem->data[byte]][0],
              4*sizeof(FLOAT));
+      
+//       int inbyte = (int)input_elem->data[byte];
+//       FLOAT *ptr =  lookup_table[inbyte];
+//       output_buffer[0] = ptr[0];
+//       output_buffer[1] = ptr[1];
+//       output_buffer[2] = ptr[2];
+//       output_buffer[3] = ptr[3];
       output_buffer += 4;
     }
-
     // Last byte:
     memcpy(output_buffer,
            &lookup_table[(int)(unsigned char)input_elem->data[input_size-1]][0],
@@ -110,12 +116,13 @@ void Bits_to_float_converter::do_task() {
 }
 
 bool
-Bits_to_float_converter::has_work() {
+Bits_to_float_converter::has_work(){
+  
   if (bits_per_sample <= 0)
     return false;
-  if (input_buffer->empty())
-    return false;
   if (output_memory_pool.empty())
+    return false;
+  if (input_buffer->empty())
     return false;
   return true;
 }

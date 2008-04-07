@@ -40,15 +40,14 @@ public:
         << (*this) << std::endl;
     }
   }
-}
 
-void start(const char* msg = 0);
-void restart(const char* msg = 0);
-void resume(const char* msg = 0);
-void stop(const char* msg = 0);
-void check(const char* msg = 0);
-
-double measured_time() const;
+  void start(const char* msg = 0);
+  void restart(const char* msg = 0);
+  void resume(const char* msg = 0);
+  void stop(const char* msg = 0);
+  void check(const char* msg = 0);
+  
+  double measured_time() const;
 }; // class Timer
 
 //===========================================================================
