@@ -51,7 +51,7 @@ void Delay_correction::do_task() {
   current_fft++;
 
 	Input_buffer_element input = input_buffer->front_and_pop(); //input_buffer->consume(input_size);  Output_buffer_element &output = output_buffer->produce();
-	int input_size = (input->data.size()-1)*8/ correlation_parameters.bits_per_sample;	// A factor of 2 for padding  assert(input_size == number_channels());  if (output.size() != 2*input_size) {    output.resize(input_size*2);  }	bit2float( input.data().offset, input.data().data.size(), &input.data().data[0], (std::complex<FLOAT>*)&frequency_buffer[0] );
+	int input_size = (input.data().bytes_count()-1)*8/ correlation_parameters.bits_per_sample;	// A factor of 2 for padding  assert(input_size == number_channels());  if (output.size() != 2*input_size) {    output.resize(input_size*2);  }	bit2float( input.data().offset(), input.data().bytes_count(), input.data().bytes_buffer(), (std::complex<FLOAT>*)&frequency_buffer[0] );
 
   double delay = get_delay(current_time+length_of_one_fft()/2);
   double delay_in_samples = delay*sample_rate();
