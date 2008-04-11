@@ -14,6 +14,7 @@
 #ifndef PC_BUFFER_H
 #define PC_BUFFER_H
 
+#include <boost/shared_ptr.hpp>
 #include <stack>
 #include <vector>
 #include "exception_common.h"
@@ -28,7 +29,8 @@
 #include "Test_unit.h"
 #endif // ENABLE_TEST_UNIT
 
-/************************************
+
+/****************************************************
  * @class Memory_pool
  * @desc A Memory_pool is used to control
  * ownership of objects T. An object
@@ -38,22 +40,115 @@
  * allocation and release of the data
  * stored in the buffer are with an
  * O(1) complexity.
- * Futur plan:
- *  we should be able to specified
- *  which strategy the Memory_pool could
- *  employ to deceide when allocate new
- *  Buffer_element. Different policy:
- *    - fixed size buffer
- *    - double the size of buffer
- *    - double the size of buffer but with
- *      limited increase,
- *    - double the size of buffer with limited
- *      increase and throwing an exception
- *      in case of overflow.
- *************************************/
+ *
+ * a call to allocate():
+ *      - if not enough element
+ *           use policy to resize
+ *      - if still empty (the policy refuse to resize)
+ *           block while a different thread dealloc
+ *           an element        
+ *      return the element
+ * a call to resize() will force a resize of the 
+ * pool.
+ *
+ * a call to ask_increase() will call the policy 
+ * to automatically resize the pool.
+ *
+ *****************************************************/
 template<class T>
 class Memory_pool {
 public:
+ 
+  /************************************
+   * @class Resize_policy
+   * @desc base interface that is 
+   * inherited in order to build more 
+   * complex resizing policies
+   *************************************/
+  class Resize_policy
+  {
+    public: 
+      
+      
+      virtual ~Resize_policy(){}
+      virtual bool check_size(Memory_pool<T>& pool, unsigned int newsize) = 0;  
+      virtual void resize(Memory_pool<T>& pool) = 0 ;  
+  };
+
+    typedef boost::shared_ptr<Resize_policy> PolicyPtr;
+    typedef boost::shared_ptr<Allocator<T> > AllocatorPtr;
+
+
+   /************************************
+   * @class NoResize_policy
+   * @desc A resize policy that do nothing
+   * this is usefull if you want to prevent
+   * a buffer to fill the complete memory.
+   *************************************/
+  class NoResize_policy : public Resize_policy
+  {
+    public:
+     
+      PolicyPtr create(int max_resize_count=10){
+        return PolicyPtr( new NoResize_policy(max_resize_count) ); 
+      }
+     
+      virtual ~NoResize_policy(){}
+      bool check_size(Memory_pool<T>& pool, unsigned int newsize) { return false; }  
+      void resize(Memory_pool<T>& pool){ 
+        std::cout << "Empty Buffer and a resize policy that do nothing !" << std::endl;
+      }
+    private:
+      NoResize_policy(){}      
+  };
+
+  /************************************
+  * @class AutomaticResize_policy
+  * @desc Increase the size of the 
+  * memory pool by a factor of 2 at 
+  * each call. There is no limit in the 
+  * increasement. 
+  *************************************/
+ class AutomaticResize_policy : public Resize_policy 
+  {
+    public:
+      static PolicyPtr create(int max_resize_count){
+        return PolicyPtr( new AutomaticResize_policy(max_resize_count) ); 
+      }
+    
+      AutomaticResize_policy(int max_resize_count)
+      {
+        max_resize_count_ = max_resize_count;
+        cur_resize_count_ = 0;
+      }
+      
+      virtual ~AutomaticResize_policy(){}
+      virtual bool check_size(Memory_pool<T>& pool, unsigned int newsize)
+      {
+        if( pool.empty_no_lock() ){
+          //MTHROW("Memory pool is empty")
+          return true;
+        }
+        return false;
+      } 
+      
+      virtual void resize(Memory_pool<T>& pool)
+      {
+        std::cout << "REQUEST FOR RESIZE THIS IS AN EXPERIMENTAL FEATURE:" << max_resize_count_ << std::endl;       
+        if( cur_resize_count_ < max_resize_count_ ){
+         std::cout << "REQUEST FOR RESIZE NEW BUFFER SIZE IS:" << pool.size_no_lock()*2 << std::endl;
+         pool.resize_no_lock(pool.size_no_lock()*2);
+         cur_resize_count_++;
+        }else{
+          MTHROW("The memory pool is definitively empty.")  
+        }
+      }
+      private:
+        int max_resize_count_;
+        int cur_resize_count_;
+  };
+
+
   /************************************
    * @class Buffer_element
    * @desc This is the object return by
@@ -121,9 +216,9 @@ public:
    * numelements that are allocated using the
    * provided allocator.
    *****************************************/
-  Memory_pool(unsigned int numelements=10);
-  Memory_pool(unsigned int numelements, Allocator<T>* allocator );
-  Memory_pool(unsigned int numelements, Allocator<T>& allocator );
+  //Memory_pool(unsigned int numelements=10, Allocator<T>* allocator=Default_allocator<T>(), Resize_policy& policy=NoResize_policy());
+  //Memory_pool(unsigned int numelements, Allocator<T>* allocator, Resize_policy& policy=NoResize_policy());
+  Memory_pool(unsigned int numelements, AllocatorPtr allocator= Default_allocator<T>::create(), PolicyPtr policy=AutomaticResize_policy::create(10));
 
   /************************************
    * Return the number of free Buffer_elements
@@ -143,18 +238,56 @@ public:
   /************************************
    * Return true if the buffer is empty
    * ie: if no more element can be
-   * allocated. This is thread-safe
+   * allocated. This is thread-safe.
+   * If the pool is empty it is possible 
+   * to resize manually the pool or 
+   * use an automatic resizing policy 
    *************************************/
   bool empty();
+  
+  /************************************
+  * Resize the memory_pool
+  * to allocate more element without
+  * blocking. This is thread-safe
+  *************************************/
+  void resize(unsigned int newsize);
+  
+  /************************************
+  * Request for a memory pool increase
+  * the pool then use its own internal
+  * policy to increase its size.
+  * (possibly refusing to increase
+  *  the size)
+  * If the pool is not increased.
+  * an Exception is thrown. 
+  *************************************/
+  void ask_increase(unsigned int newsize);
+
+  /************************************
+  * Return the number of total element
+  * that can be allocated in the pool.
+  * the function is thread-safe
+  *************************************/ 
+  unsigned int size();
+  
+  /************************************
+  * Do not use these they are for 
+  * for internal use.
+  *************************************/
+  void resize_no_lock(unsigned int newsize);
+  unsigned int size_no_lock();
+  bool empty_no_lock();
+  
 
 #ifdef ENABLE_TEST_UNIT
-
 class Test : public Test_aclass< Memory_pool<T> > {
   public:
     void tests();
   };
 #endif //ENABLE_TEST_UNIT
 private:
+  Memory_pool<T>(){};
+
   /************************************
    * return the Buffer_element into the
    * free elements list. The function is
@@ -177,6 +310,8 @@ private:
   int mid;
 
   Memory_pool(const Memory_pool<T>&);
+  PolicyPtr policy_;
+  AllocatorPtr allocator_;
 };
 
 ////////////////// IMPLEMENTATION (I Hate c++ template) ///////////////
@@ -190,8 +325,11 @@ Memory_pool<T>::Memory_pool(const Memory_pool<T>&) {
   MASSERT(false && "Not implemented");
 }
 
+/*
 template<class T>
-Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>* allocator ) {
+Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>* allocator, Resize_policy& policy ) :
+ allocator_(allocator), policy_(policy)
+ {
   mid = sid++;
   for (unsigned int i=0;i<numelements;i++) {
     T* element = allocator->allocate();
@@ -202,11 +340,25 @@ Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>* allocator ) 
 }
 
 template<class T>
-Memory_pool<T>::Memory_pool(unsigned int numelements ) {
-  Default_allocator<T> allocator;
+Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>& allocator, Resize_policy& policy ) : 
+  allocator_(allocator), policy_(policy)
+{
   mid = sid++;
   for (unsigned int i=0;i<numelements;i++) {
-    T* tmp = allocator.allocate();
+    T* tmp = allocator_.allocate();
+    //pType element = new Type(tmp, *this);
+    m_freequeue.push( tmp );
+    m_vectorelements.push_back( tmp );
+  }
+}*/
+
+template<class T>
+Memory_pool<T>::Memory_pool(unsigned int numelements, AllocatorPtr allocator, PolicyPtr policy) :
+  allocator_(allocator), policy_(policy)
+{
+  mid = sid++;
+  for (unsigned int i=0;i<numelements;i++) {
+    T* tmp = allocator_->allocate();
     //pType element = new Type(tmp, *this);
     m_freequeue.push( tmp );
     m_vectorelements.push_back( tmp );
@@ -214,14 +366,34 @@ Memory_pool<T>::Memory_pool(unsigned int numelements ) {
 }
 
 template<class T>
-Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>& allocator ) {
-  mid = sid++;
-  for (unsigned int i=0;i<numelements;i++) {
-    T* tmp = allocator.allocate();
-    //pType element = new Type(tmp, *this);
-    m_freequeue.push( tmp );
-    m_vectorelements.push_back( tmp );
-  }
+void Memory_pool<T>::resize(unsigned int newsize) {
+  RAIIMutex rc(m_freequeuecond);
+  if( newsize > m_vectorelements.size() ){
+   for (unsigned int i=m_vectorelements.size();i<newsize;i++) {
+     T* tmp = allocator_->allocate();
+     m_freequeue.push( tmp );
+     m_vectorelements.push_back( tmp );
+   }
+  } 
+}
+
+template<class T>
+void Memory_pool<T>::resize_no_lock(unsigned int newsize) {
+  if( newsize > m_vectorelements.size() ){
+   for (unsigned int i=m_vectorelements.size();i<newsize;i++) {
+     T* tmp = allocator_->allocate();
+     m_freequeue.push( tmp );
+     m_vectorelements.push_back( tmp );
+   }
+  }else{
+    MTHROW("Unable to resize"); 
+  } 
+}
+
+template<class T>
+void Memory_pool<T>::ask_increase(unsigned int newsize) {
+  RAIIMutex rc(m_freequeuecond);
+  policy_->resize(newsize);
 }
 
 template<class T>
@@ -234,6 +406,15 @@ size_t Memory_pool<T>::number_free_element() {
 template<class T>
 typename Memory_pool<T>::Element Memory_pool<T>::allocate() {
   RAIIMutex rc(m_freequeuecond);
+
+  // if the queue has no free element...we check if we 
+  // resize it. 
+  if( m_freequeue.size() == 0 ){
+    std::cout << "ASK FRO RESIZE:" << policy_ << std::endl;
+    policy_->resize(*this);
+    //std::cout << "RESIZE TERMINATED:" << std::endl;
+  }
+  
   // use a while loop instead of an if to avoid
   // the spurious signal waking up.
   while ( m_freequeue.size() == 0 ) {
@@ -262,6 +443,23 @@ template<class T>
 bool Memory_pool<T>::empty() {
   RAIIMutex rc(m_freequeuecond);
   return m_freequeue.size() == 0;
+}
+
+template<class T>
+bool Memory_pool<T>::empty_no_lock() {
+  return m_freequeue.size() == 0;
+}
+
+
+template<class T>
+unsigned int Memory_pool<T>::size() {
+  RAIIMutex rc(m_freequeuecond);
+  return m_vectorelements.size();
+}
+
+template<class T>
+unsigned int Memory_pool<T>::size_no_lock() {
+  return m_vectorelements.size();
 }
 
 
@@ -314,7 +512,7 @@ void Memory_pool<T>::Buffer_element::release() {
 #ifdef ENABLE_TEST_UNIT
 template<class T>
 void Memory_pool<T>::Test::tests() {
-  Memory_pool<T> t(1);
+  Memory_pool<T> t(1, Default_allocator<int>::create(), Memory_pool<int>::AutomaticResize_policy::create(1));
   Element elem = Element::None;
 
   // This part is testing the public interface
@@ -327,6 +525,16 @@ void Memory_pool<T>::Test::tests() {
   TEST_ASSERT( t.empty() == false );
   TEST_EXCEPTION_THROW( elem.release() );
   TEST_ASSERT( t.empty() == false );
+
+  // Testing the automatic allocation. 
+  TEST_EXCEPTION_NTHROW( elem = t.allocate() );
+  TEST_EXCEPTION_THROW( elem.release() );
+  TEST_EXCEPTION_THROW( elem.release() );
+  TEST_ASSERT( t.empty() == false );
+  TEST_EXCEPTION_NTHROW( elem = t.allocate() );
+  TEST_EXCEPTION_NTHROW( elem = t.allocate() );
+  TEST_EXCEPTION_THROW( elem = t.allocate() );
+ 
 
   // This part is testing the private interface
   //TEST_EXCEPTION_THROW( t.release(NULL) );

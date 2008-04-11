@@ -42,7 +42,7 @@ Channel_extractor_tasklet::Channel_extractor_tasklet(int N_)
   chexid << inputid.str() << "_channelextractor";
   monid << chexid.str() << "_monitor_speed";
 
-  monitor_.init(monid.str(), "stats/");
+  monitor_.init(monid.str(), 1000, "stats/");
   monitor_.add_property(inputid.str(), "is_a", "inputnode");
   monitor_.add_property(inputid.str(), "has", chexid.str() );
   monitor_.add_property(chexid.str(), "is_a", "channel_extractor");

@@ -10,7 +10,7 @@ int main(int argc, char** argv)
 	Threadsafe_queue<int> queue;
 	manager.add_test( new Threadsafe_queue<int>::Test() );
 
-	Memory_pool<int> buffer(10, new Default_allocator<int>() );
+	Memory_pool<int> buffer(1);
 	manager.add_test( new Memory_pool<int>::Test() );
 
 	manager.do_test();

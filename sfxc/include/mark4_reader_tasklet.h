@@ -35,9 +35,11 @@ public:
 
   /// For Tasklet
   void do_task();
+
   /// For Tasklet
   bool has_work();
-  const char *name() {
+
+  const char* name() {
     return "Mark4_reader_tasklet";
   }
 
@@ -113,7 +115,7 @@ Mark4_reader_tasklet(boost::shared_ptr<Data_reader> reader, char *buffer)
   chexid << inputid.str() << "_mark4reader";
   monid << chexid.str() << "_monitor_speed";
 
-  monitor_.init(monid.str(), "stats/");
+  monitor_.init(monid.str(), 1000, "stats/");
   monitor_.add_property(inputid.str(), "is_a", "inputnode");
   monitor_.add_property(inputid.str(), "has", chexid.str() );
   monitor_.add_property(chexid.str(), "is_a", "mark4reader");
@@ -150,6 +152,7 @@ do_task() {
   monitor_.end_measure(SIZE_MK4_FRAME*sizeof(Type));
 #endif // RUNTIME_STATISTIC
 }
+
 
 template <class Type>
 bool
