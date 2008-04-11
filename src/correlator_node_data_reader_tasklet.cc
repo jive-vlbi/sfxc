@@ -15,7 +15,7 @@ Correlator_node_data_reader_tasklet::
 void
 Correlator_node_data_reader_tasklet::
 connect_to(Data_reader_ptr reader_) {
-  reader = reader_;
+  reader = reader_;	breader_ = Data_reader_blocking_ptr( new Data_reader_blocking( reader_.get() ) );
 }
 
 Correlator_node_data_reader_tasklet::Output_buffer_ptr
@@ -28,30 +28,7 @@ void Correlator_node_data_reader_tasklet::do_task() {
   assert(has_work());
 
   Output_memory_pool_element output_elem = output_memory_pool.allocate();
-
-  // read the offset
-  int bytes_to_read = 1;
-  char *data = &output_elem->offset;
-  do {
-    bytes_to_read -= reader->get_bytes(1, data);
-  } while (bytes_to_read != 0);
-
-  // allocate the data array
-  if (output_elem->data.size() != (size_t)n_bytes_per_fft){
-    output_elem->data.resize(n_bytes_per_fft);
-  }
-
-  // read the data
-  bytes_to_read = n_bytes_per_fft;
-  data = (char*)&output_elem->data[0];
-  do {
-    int read = reader->get_bytes(bytes_to_read, data);
-    if (read > 0) {
-      bytes_to_read -= read;
-      data += read;
-    }
-  } while (bytes_to_read != 0);
-
+	// allocate the data array  if (output_elem.data().bytes_count() != (size_t)n_bytes_per_fft){    output_elem.data().resize_bytes_buffer(n_bytes_per_fft);  }	breader_->get_bytes(output_elem.data().raw_size(), (char*)output_elem.data().raw_buffer());
   n_ffts_to_read --;
 
   output_buffer->push(output_elem);
