@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  * Definitions of common types.
@@ -25,7 +25,7 @@
 #  define FOPEN fopen64
 #endif
 
-/** 
+/**
     \defgroup ImportantClasses Important classes
     \defgroup Node             Nodes for the MPI-version
  **/

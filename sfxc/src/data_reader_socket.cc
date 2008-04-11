@@ -19,16 +19,14 @@
 #include "data_reader_socket.h"
 #include "connexion.h"
 
-Data_reader_socket::Data_reader_socket(int socket)
-{
-    m_socket = socket;
-    assert(m_socket > 0);
+Data_reader_socket::Data_reader_socket(int socket) {
+  m_socket = socket;
+  assert(m_socket > 0);
 }
 
-Data_reader_socket::Data_reader_socket(Connexion* connexion)
-{
-    m_socket = connexion->get_socket();
-    assert(m_socket > 0);
+Data_reader_socket::Data_reader_socket(Connexion* connexion) {
+  m_socket = connexion->get_socket();
+  assert(m_socket > 0);
 }
 
 Data_reader_socket::~Data_reader_socket() {
@@ -42,9 +40,8 @@ int Data_reader_socket::do_get_bytes(size_t nBytes, char *out) {
   return read(m_socket, (void *) out, nBytes);
 }
 
-bool Data_reader_socket::eof()
-{
-    return false;
+bool Data_reader_socket::eof() {
+  return false;
 }
 
 bool Data_reader_socket::can_read() {

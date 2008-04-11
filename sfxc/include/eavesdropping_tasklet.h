@@ -53,7 +53,7 @@ private:
 
 
 template <class Buffer>
-void 
+void
 Eavesdropping_tasklet< Buffer >::
 do_task() {
   assert(has_work());
@@ -65,13 +65,13 @@ do_task() {
   out_.write((char *)&input_element.data()[0], size);
 #elif 0 // Input_node::FFT_BUFFER_ELEMENT
   int size = std::min(input_element.sizeof_fftblock,
-                      (int)input_element.data1.data().size() - 
+                      (int)input_element.data1.data().size() -
                       input_element.sample_offset);
-  out_.write((char *)&input_element.data1.data()[input_element.sample_offset], 
+  out_.write((char *)&input_element.data1.data()[input_element.sample_offset],
              size*sizeof(typename Input_buffer_element::value_type));
-  
+
   if (size < input_element.sizeof_fftblock) {
-    out_.write((char *)&input_element.data2.data()[0], 
+    out_.write((char *)&input_element.data2.data()[0],
                (input_element.sizeof_fftblock - size) *
                sizeof(typename Input_buffer_element::value_type));
   }
@@ -83,7 +83,7 @@ do_task() {
 #else
   assert(false);
 #endif
-  
+
   output_buffer_->push(input_element);
   input_buffer_->pop();
 #else
@@ -91,7 +91,7 @@ do_task() {
   Input_buffer_element &input_element = input_buffer_->consume(size);
   Output_buffer_element &output_element = output_buffer_->produce();
   DEBUG_MSG(sizeof(typename Input_buffer_element::value_type::value_type)*size);
-  out_.write((char *)&input_element.data()[0], 
+  out_.write((char *)&input_element.data()[0],
              sizeof(typename Input_buffer_element::value_type::value_type)*size);
   output_element = input_element;
   input_buffer_->consumed();

@@ -9,7 +9,7 @@ Mark4_reader(boost::shared_ptr<Data_reader> data_reader,
              unsigned char *mark4_block)
     : data_reader_(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
-block_count_(0), N(N_) {
+    block_count_(0), N(N_) {
   // fill the first mark4 block
   memmove(mark4_block, buffer, SIZE_MK4_FRAME*sizeof(unsigned char));
   int bytes_to_read = SIZE_MK4_FRAME*(N - sizeof(unsigned char));
@@ -53,12 +53,12 @@ Mark4_reader::goto_time(unsigned char *mark4_block, int64_t us_time) {
   // TODO having a blocking read would be nice.
   // as well as a goto function.
   size_t bytes_to_read = read_n_bytes;
-  while( bytes_to_read > 0 && !data_reader_->eof() ) {
+  while ( bytes_to_read > 0 && !data_reader_->eof() ) {
     size_t result = data_reader_->get_bytes(bytes_to_read,NULL);
     bytes_to_read -= result;
   }
 
-  if( bytes_to_read != 0 ) {
+  if ( bytes_to_read != 0 ) {
     assert(false);
     return get_current_time();
   }

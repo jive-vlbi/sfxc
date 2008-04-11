@@ -40,7 +40,7 @@ public:
 
   /// Returns the current time in miliseconds
   virtual int get_current_time() = 0;
-  
+
   /// sets a specified stop time in miliseconds,
   /// after this time, no more data is sent.
   virtual void set_stop_time(int time) = 0;

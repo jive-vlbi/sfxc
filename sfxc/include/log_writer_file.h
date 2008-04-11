@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -14,8 +14,7 @@
 
 #include "log_writer.h"
 
-class Log_writer_file : public Log_writer
-{
+class Log_writer_file : public Log_writer {
 public:
   Log_writer_file(char *filename, int message_level=0);
 

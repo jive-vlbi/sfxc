@@ -20,7 +20,7 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node)
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
     status(STOPPED),
-nr_corr_node(nr_corr_node) {
+    nr_corr_node(nr_corr_node) {
   get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;
 
   add_controller(&correlator_node_ctrl);
@@ -49,14 +49,14 @@ Correlator_node::~Correlator_node() {
 void Correlator_node::start() {
   while (true) {
     switch (status) {
-      case STOPPED: {
+    case STOPPED: {
         // blocking:
         if (check_and_process_message()==TERMINATE_NODE) {
           status = END_CORRELATING;
         }
         break;
       }
-      case CORRELATING: {
+    case CORRELATING: {
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           status = END_CORRELATING;
         }
@@ -83,7 +83,7 @@ void Correlator_node::start() {
         }
         break;
       }
-      case END_CORRELATING: {
+    case END_CORRELATING: {
         return;
       }
     }

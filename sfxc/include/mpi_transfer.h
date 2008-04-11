@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -18,11 +18,10 @@
 
 /** Transfer special classes for the sfxc using MPI
  **/
-class MPI_Transfer
-{
+class MPI_Transfer {
 public:
   MPI_Transfer();
-  
+
   static void send(Delay_table_akima &table, int sn, int rank);
   static void receive(MPI_Status &status, Delay_table_akima &table, int &sn);
 

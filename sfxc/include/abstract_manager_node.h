@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id: Node.h 251 2007-06-12 13:56:30Z kruithof $
  *
  */
@@ -95,7 +95,7 @@ public:
   size_t get_channel(const std::string &channel);
 
   const std::map<std::string, int> &get_input_node_map() const;
-  
+
   int integration_time() const {
     return control_parameters.integration_time();
   }

@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id: Node.cc 283 2007-07-12 12:13:17Z kruithof $
  *
  */
@@ -309,8 +309,8 @@ correlator_node_set_all(Delay_table_akima &delay_table,
                         const std::string &station_name) {
   for (size_t i=0; i<correlator_node_rank.size(); i++) {
     send(delay_table,
-                       input_node(station_name),
-                       correlator_node_rank[i]);
+         input_node(station_name),
+         correlator_node_rank[i]);
   }
 
   // Cross polarize?

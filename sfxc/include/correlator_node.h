@@ -37,8 +37,7 @@ class Correlator_node;
 /**
  * Correlator_node_controller processes specific signals for the Correlator node.
  **/
-class Correlator_node_controller : public Controller
-{
+class Correlator_node_controller : public Controller {
 public:
   Correlator_node_controller(Correlator_node &node);
   ~Correlator_node_controller();
@@ -49,17 +48,16 @@ private:
   Correlator_node &node;
 };
 
- /**
-  * A correlate node will initialize the correlation process and connect
-  * to the output node. It can receive messages from a data node asking to
-  * open an input connection and from the controller node to process a
-  * time slice. After the slice is processed the node will send a message
-  * to the controller node saying it is available for a next job.
-  *
-  * \ingroup Node
-  **/
-class Correlator_node : public Node
-{
+/**
+ * A correlate node will initialize the correlation process and connect
+ * to the output node. It can receive messages from a data node asking to
+ * open an input connection and from the controller node to process a
+ * time slice. After the slice is processed the node will send a message
+ * to the controller node saying it is available for a next job.
+ *
+ * \ingroup Node
+ **/
+class Correlator_node : public Node {
 public:
   typedef Correlator_node                              Self;
   typedef Multiple_data_readers_controller::value_type Input_buffer_element;

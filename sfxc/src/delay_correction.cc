@@ -7,8 +7,15 @@ const FLOAT Delay_correction::maximal_phase_change = 0.2; // 5.7 degrees
 Delay_correction::Delay_correction()
     : output_buffer(Output_buffer_ptr(new Output_buffer(10))),
     current_time(-1),
-delay_table_set(false) {// Bit2Float table initialization  const FLOAT sample_value_ms[] = {-7, -2, 2, 7};  const FLOAT sample_value_m[]  = {-5, 5};  for (int i=0; i<256; i++) {    lookup_table[i][0] = sample_value_ms[(i>>6) & 3];    lookup_table[i][1] = sample_value_ms[(i>>4) & 3];    lookup_table[i][2] = sample_value_ms[(i>>2) & 3];    lookup_table[i][3] = sample_value_ms[i & 3];  }
-}
+    delay_table_set(false) {
+// Bit2Float table initialization
+  const FLOAT sample_value_ms[] = {-7, -2, 2, 7};
+  const FLOAT sample_value_m[]  = {-5, 5};
+  for (int i=0; i<256; i++) {
+    lookup_table[i][0] = sample_value_ms[(i>>6) & 3];
+    lookup_table[i][1] = sample_value_ms[(i>>4) & 3];
+    lookup_table[i][2] = sample_value_ms[(i>>2) & 3];
+    lookup_table[i][3] = sample_value_ms[i & 3];  }}
 
 Delay_correction::~Delay_correction() {
 #if PRINT_TIMER
@@ -50,21 +57,59 @@ void Delay_correction::do_task() {
   }
   current_fft++;
 
-	Input_buffer_element input = input_buffer->front_and_pop(); //input_buffer->consume(input_size);  Output_buffer_element &output = output_buffer->produce();
-	int input_size = (input.data().bytes_count()-1)*8/ correlation_parameters.bits_per_sample;	// A factor of 2 for padding  assert(input_size == number_channels());  if (output.size() != 2*input_size) {    output.resize(input_size*2);  }	bit2float( input.data().offset(), input.data().bytes_count(), input.data().bytes_buffer(), (std::complex<FLOAT>*)&frequency_buffer[0] );
+  Input_buffer_element input = input_buffer->front_and_pop(); //input_buffer->consume(input_size);
+  Output_buffer_element &output = output_buffer->produce();
+  int input_size = (input.data().bytes_count()-1)*8/ correlation_parameters.bits_per_sample;
+
+  // A factor of 2 for padding
+  assert(input_size == number_channels());
+
+  if (output.size() != 2*input_size) {
+    output.resize(input_size*2);
+  }
+
+  bit2float( input.data().offset(), input.data().bytes_count(), input.data().bytes_buffer(), (std::complex<FLOAT>*)&frequency_buffer[0] );
+
 
   double delay = get_delay(current_time+length_of_one_fft()/2);
   double delay_in_samples = delay*sample_rate();
   int integer_delay = (int)std::floor(delay_in_samples+.5);
-/*
-  {
-    // Implicit FLOAT to complex conversion
-    for (int i = 0; i < n_channels; i++)
-      frequency_buffer[i] = input[i];*/  int n_channels = number_channels();
-	for (int i = n_channels; i < 2*n_channels; i++){
-      frequency_buffer[i] = 0;
+  /*
+    {
+      // Implicit FLOAT to complex conversion
+      for (int i = 0; i < n_channels; i++)
+        frequency_buffer[i] = input[i];
+  */
+  int n_channels = number_channels();
+  for (int i = n_channels; i < 2*n_channels; i++) {
+    frequency_buffer[i] = 0;
   }
-	/*	bool doPrint=false;	for(unsigned int i=0;i<n_channels*2;i++)	{			if(  !((frequency_buffer[i].real() ==  0 ||					  frequency_buffer[i].real() == -7 ||					  frequency_buffer[i].real() == -2 ||					  frequency_buffer[i].real() == 2  ||					  frequency_buffer[i].real() == 7) &&						frequency_buffer[i].imag() == 0) ){							doPrint=true;						std::cout << " CHOUIPINET:" << i << " => " << frequency_buffer[i] << std::endl;			}	}	if( doPrint ){	std::cout << "Current: "<< current_fft <<  " offset:" << (int)input.data().data.size() << std::endl;	for(unsigned int i=0;i<n_channels*2;i++)	{		std::cout << " Val["<<i<<"]" << frequency_buffer[i] << std::endl;	}	std::cout << "End" << std::endl;	}	*/
+  /*
+  bool doPrint=false;
+  for(unsigned int i=0;i<n_channels*2;i++)
+  {
+    if(  !((frequency_buffer[i].real() ==  0 ||
+        frequency_buffer[i].real() == -7 ||
+        frequency_buffer[i].real() == -2 ||
+        frequency_buffer[i].real() == 2  ||
+        frequency_buffer[i].real() == 7) &&
+       frequency_buffer[i].imag() == 0) ){
+        doPrint=true;
+
+       std::cout << " CHOUIPINET:" << i << " => " << frequency_buffer[i] << std::endl;
+    }
+  }
+
+  if( doPrint ){
+  std::cout << "Current: "<< current_fft <<  " offset:" << (int)input.data().data.size() << std::endl;
+  for(unsigned int i=0;i<n_channels*2;i++)
+  {
+   std::cout << " Val["<<i<<"]" << frequency_buffer[i] << std::endl;
+  }
+  std::cout << "End" << std::endl;
+  }
+  */
+
   fractional_bit_shift(&frequency_buffer[0],
                        integer_delay,
                        delay_in_samples - integer_delay);
@@ -73,61 +118,25 @@ void Delay_correction::do_task() {
                   output.buffer());
 
   current_time += length_of_one_fft();
-	input.release();
+
+  input.release();
   output_buffer->produced(2*number_channels());
 }
-void Delay_correction::bit2float(const unsigned int offset, const unsigned int input_size, const unsigned char* input, std::complex<FLOAT>* output_buffer){  assert(correlation_parameters.bits_per_sample == 2);  if (correlation_parameters.bits_per_sample == 2) {		// First byte:    memcpy(output_buffer,           &lookup_table[(int)input[0]][(int)offset],           (4-offset)*sizeof(std::complex<FLOAT>));    output_buffer += 4-offset;    for (int byte = 1; byte < input_size-1; byte++) {      memcpy(output_buffer, // byte * 4             &lookup_table[(int)input[byte]][0],             4*sizeof(std::complex<FLOAT>));      output_buffer += 4;    }    // Last byte:    memcpy(output_buffer,           &lookup_table[(int)(unsigned char)input[input_size-1]][0],           offset*sizeof(std::complex<FLOAT>));		/*    int idx=0; int byte=0;    switch(offset){			default:				assert(false && "Problem with the offset");      case 0: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[0]][0], 0 );      case 1: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[0]][1], 0 );      case 2: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[0]][2], 0 );      case 3: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[0]][3], 0 );    }    for (byte=1; byte < input_size-1; byte++) {      output_buffer[idx+0] = std::complex<FLOAT>( lookup_table[input[byte]][0], 0 );      output_buffer[idx+1] = std::complex<FLOAT>( lookup_table[input[byte]][1], 0 );      output_buffer[idx+2] = std::complex<FLOAT>( lookup_table[input[byte]][2], 0 );      output_buffer[idx+3] = std::complex<FLOAT>( lookup_table[input[byte]][3], 0 );			idx += 4;    }    switch(offset){			default:				assert(false && "Problem with the offset");      case 3: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[byte] ][0], 0);      case 2: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[byte] ][1], 0);      case 1: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[byte] ][2], 0);			case 0: break;		}		if( idx != number_channels() || byte != 256 ){			std::cout << "Invalid data access: " << byte << std::endl;			std::cout << "             offset: " << offset << std::endl;			std::cout << "               size: " << input_size << std::endl;			std::cout << "             other: " << idx << " and:" << number_channels() << std::endl;		}		assert( ( idx == number_channels()  && byte == 256 ) && "Invalid data access");		*/  }  else {    std::cout << "Not yet implemented" << std::endl;    assert(false);  }}
 
-void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
-    int integer_shift,
-    FLOAT fractional_delay) {
-  // 3) execute the complex to complex FFT, from Time to Frequency domain
-  //    input: sls. output sls_freq
-  delay_timer.resume();
-  //DM replaced: FFTW_EXECUTE_DFT(plan_t2f, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
-  FFTW_EXECUTE(plan_t2f);
-  delay_timer.stop();
-  total_ffts++;
+void Delay_correction::bit2float(const unsigned int offset, const unsigned int input_size, const unsigned char* input, std::complex<FLOAT>* output_buffer) {
+  assert(correlation_parameters.bits_per_sample == 2);
 
-  output[0] *= 0.5;
-  output[number_channels()/2] *= 0.5;//Nyquist
+  if (correlation_parameters.bits_per_sample == 2) {
+    // First byte:
+    memcpy(output_buffer,
+           &lookup_table[(int)input[0]][(int)offset],
+           (4-offset)*sizeof(std::complex<FLOAT>));
+    output_buffer += 4-offset;
 
-  // 4c) zero the unused subband (?)
-  for (int i=number_channels()/2+1; i<number_channels(); i++) {
-    output[i] = 0.0;
-  }
-
-  // 5a)calculate the fract bit shift (=phase corrections in freq domain)
-  // the following should be double
-  const double dfr  = sample_rate()*1.0/number_channels(); // delta frequency
-  const double tmp1 = -2.0*M_PI*fractional_delay/sample_rate();
-  const double tmp2 = 0.5*M_PI*(integer_shift&3);/* was: / ovrfl */
-  const double constant_term = tmp2 - sideband()*tmp1*0.5*bandwidth();
-  const double linear_term = tmp1*sideband()*dfr;
-
-  // 5b)apply phase correction in frequency range
-  const int size = number_channels()/2+1;
-
-  double phi = constant_term;
-  for (int i = 0; i < size; i++) {
-    // the following should be double
-    double cos_phi, sin_phi;
-
-#ifdef HAVE_SINCOS
-    sincos(phi, &sin_phi, &cos_phi);
-#else
-    cos_phi = cos(phi);
-    // sin^2(phi) + cos^2(phi) == 1
-    int    sign = ( (((int)floor(phi/M_PI))&1 == 1) ? -1 : 1 );
-    sin_phi = sign*sqrt(1-cos_phi*cos_phi);
-#endif
-
-    output[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
-
-    phi += linear_term;
-  }
-
-  // 6a)execute the complex to complex FFT, from Frequency to Time domain
+    for (int byte = 1; byte < input_size-1; byte++) {
+      memcpy(output_buffer, // byte * 4
+             &lookup_table[(int)input[byte]][0],
+             4*sizeof(std::complex<FLOAT>));      output_buffer += 4;    }    // Last byte:    memcpy(output_buffer,           &lookup_table[(int)(unsigned char)input[input_size-1]][0],           offset*sizeof(std::complex<FLOAT>));    /*      int idx=0; int byte=0;      switch(offset){     default:      assert(false && "Problem with the offset");        case 0: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[0]][0], 0 );        case 1: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[0]][1], 0 );        case 2: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[0]][2], 0 );        case 3: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[0]][3], 0 );      }      for (byte=1; byte < input_size-1; byte++) {        output_buffer[idx+0] = std::complex<FLOAT>( lookup_table[input[byte]][0], 0 );        output_buffer[idx+1] = std::complex<FLOAT>( lookup_table[input[byte]][1], 0 );        output_buffer[idx+2] = std::complex<FLOAT>( lookup_table[input[byte]][2], 0 );        output_buffer[idx+3] = std::complex<FLOAT>( lookup_table[input[byte]][3], 0 );     idx += 4;      }      switch(offset){     default:      assert(false && "Problem with the offset");        case 3: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[byte] ][0], 0);        case 2: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[byte] ][1], 0);        case 1: output_buffer[idx++] = std::complex<FLOAT>( lookup_table[input[byte] ][2], 0);     case 0: break;    }    if( idx != number_channels() || byte != 256 ){     std::cout << "Invalid data access: " << byte << std::endl;     std::cout << "             offset: " << offset << std::endl;     std::cout << "               size: " << input_size << std::endl;     std::cout << "             other: " << idx << " and:" << number_channels() << std::endl;    }    assert( ( idx == number_channels()  && byte == 256 ) && "Invalid data access");    */  } else {    std::cout << "Not yet implemented" << std::endl;    assert(false);  }}void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],    int integer_shift,    FLOAT fractional_delay) {  // 3) execute the complex to complex FFT, from Time to Frequency domain  //    input: sls. output sls_freq  delay_timer.resume();  //DM replaced: FFTW_EXECUTE_DFT(plan_t2f, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);  FFTW_EXECUTE(plan_t2f);  delay_timer.stop();  total_ffts++;  output[0] *= 0.5;  output[number_channels()/2] *= 0.5;//Nyquist  // 4c) zero the unused subband (?)  for (int i=number_channels()/2+1; i<number_channels(); i++) {    output[i] = 0.0;  }  // 5a)calculate the fract bit shift (=phase corrections in freq domain)  // the following should be double  const double dfr  = sample_rate()*1.0/number_channels(); // delta frequency  const double tmp1 = -2.0*M_PI*fractional_delay/sample_rate();  const double tmp2 = 0.5*M_PI*(integer_shift&3);/* was: / ovrfl */  const double constant_term = tmp2 - sideband()*tmp1*0.5*bandwidth();  const double linear_term = tmp1*sideband()*dfr;  // 5b)apply phase correction in frequency range  const int size = number_channels()/2+1;  double phi = constant_term;  for (int i = 0; i < size; i++) {    // the following should be double    double cos_phi, sin_phi;#ifdef HAVE_SINCOS    sincos(phi, &sin_phi, &cos_phi);#else    cos_phi = cos(phi);    // sin^2(phi) + cos^2(phi) == 1    int    sign = ( (((int)floor(phi/M_PI))&1 == 1) ? -1 : 1 );    sin_phi = sign*sqrt(1-cos_phi*cos_phi);#endif    output[i] *= std::complex<FLOAT>(cos_phi,sin_phi);    phi += linear_term;  }  // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
   delay_timer.resume();
   //DM replaced: FFTW_EXECUTE_DFT(plan_f2t, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);

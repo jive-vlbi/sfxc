@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -19,27 +19,26 @@
 /** Reads data from a buffer and writes it to a Data_writer.
  **/
 template <class T>
-class Buffer2data_writer
-{
+class Buffer2data_writer {
   typedef Buffer2data_writer<T> Self;
-  
+
 public:
   enum State {
     STOPPED=0, ///< Not running, the additional thread is not active
-    SUSPENDED, /**< Not running, the additional thread is waiting 
+    SUSPENDED, /**< Not running, the additional thread is waiting
                     (e.g. for a change of buffers) **/
     RUNNING    ///< The thread is writing data from the buffer
   };
 
   Buffer2data_writer();
   ~Buffer2data_writer();
-  
+
   void set_data_writer(boost::shared_ptr< Data_writer >data_writer);
   void set_buffer(boost::shared_ptr< Buffer<T> > buffer);
   boost::shared_ptr< Data_writer > get_data_writer();
   boost::shared_ptr< Buffer<T> > get_buffer();
 
-  /// Starts the asynchronous IO if the buffer and data_writer are not NULL  
+  /// Starts the asynchronous IO if the buffer and data_writer are not NULL
   void try_start();
   /** Starts the asynchronous IO.
    * \pre the buffer and the data_writer are not NULL
@@ -51,7 +50,7 @@ public:
   void suspend();
   /// Resume the asynchronous IO, the thread is already created
   void resume();
-  
+
   /// Return the status
   State status();
 
@@ -69,14 +68,12 @@ private:
 
 // Implementation:
 template <class T>
-Buffer2data_writer<T>::Buffer2data_writer() 
-  : state(STOPPED), redirect_thread(0)
-{
+Buffer2data_writer<T>::Buffer2data_writer()
+    : state(STOPPED), redirect_thread(0) {
 }
 
 template <class T>
-Buffer2data_writer<T>::~Buffer2data_writer() 
-{
+Buffer2data_writer<T>::~Buffer2data_writer() {
   if (buffer != boost::shared_ptr< Buffer<T> >()) {
     if (!buffer->empty()) {
       std::cout << "Buffer of Buffer2data_writer is not empty" << std::endl;
@@ -84,7 +81,7 @@ Buffer2data_writer<T>::~Buffer2data_writer()
   }
   stop();
 }
-  
+
 template <class T>
 void
 Buffer2data_writer<T>::set_data_writer(boost::shared_ptr< Data_writer > writer) {
@@ -98,7 +95,7 @@ Buffer2data_writer<T>::set_buffer(boost::shared_ptr< Buffer<T> > buff) {
   assert(state != RUNNING);
   buffer = buff;
 }
-  
+
 template <class T>
 boost::shared_ptr< Data_writer >
 Buffer2data_writer<T>::get_data_writer() {
@@ -106,11 +103,11 @@ Buffer2data_writer<T>::get_data_writer() {
 }
 
 template <class T>
-boost::shared_ptr< Buffer<T> > 
+boost::shared_ptr< Buffer<T> >
 Buffer2data_writer<T>::get_buffer() {
   return buffer;
 }
-  
+
 template <class T>
 void
 Buffer2data_writer<T>::try_start() {
@@ -125,9 +122,9 @@ Buffer2data_writer<T>::start() {
   assert(data_writer != NULL);
   assert(buffer != NULL);
   assert(state == STOPPED);
-  
+
   state = RUNNING;
-  pthread_create(&redirect_thread, NULL, 
+  pthread_create(&redirect_thread, NULL,
                  start_writing, static_cast<void*>(this));
 }
 
@@ -157,7 +154,7 @@ template <class T>
 void
 Buffer2data_writer<T>::write() {
   while (state != STOPPED) {
-    if ((state == SUSPENDED) || buffer->empty()){
+    if ((state == SUSPENDED) || buffer->empty()) {
       usleep(100000); // .1 second:
     } else {
       int size;

@@ -25,8 +25,8 @@
 #include "data_writer_file.h"
 
 Input_node::Input_node(int rank, int station_number, Log_writer *log_writer) :
-    Node(rank, log_writer), 
-    input_node_ctrl(*this), 
+    Node(rank, log_writer),
+    input_node_ctrl(*this),
     data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
     input_node_tasklet(NULL), status(WAITING) {
@@ -35,7 +35,7 @@ Input_node::Input_node(int rank, int station_number, Log_writer *log_writer) :
 Input_node::Input_node(int rank, int station_number) :
     Node(rank), input_node_ctrl(*this), data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
-input_node_tasklet(NULL), status(WAITING) {
+    input_node_tasklet(NULL), status(WAITING) {
   initialise();
 }
 void Input_node::initialise() {
@@ -70,7 +70,7 @@ int mark4_time=0;
 void Input_node::start() {
   while (status != END_NODE) {
     switch (status) {
-      case WAITING: { // Wait until we can start sending new data
+    case WAITING: { // Wait until we can start sending new data
         // Wait for data_source to become ready
         if (check_and_process_message() == TERMINATE_NODE) {
           status = END_NODE;
@@ -80,7 +80,7 @@ void Input_node::start() {
           status = WRITING;
         break;
       }
-      case WRITING: {
+    case WRITING: {
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           DEBUG_MSG("END_INPUT_NODE");
           status = END_NODE;
@@ -94,7 +94,7 @@ void Input_node::start() {
         }
         break;
       }
-      case END_NODE: {
+    case END_NODE: {
         assert(false);
       }
     }
@@ -111,9 +111,9 @@ void Input_node::start() {
 void Input_node::hook_added_data_reader(size_t stream_nr) {
   assert(stream_nr == 0);
 
-   input_node_tasklet =
-     get_input_node_tasklet(data_reader_ctrl.get_data_reader(stream_nr));
-   assert(input_node_tasklet != NULL);
+  input_node_tasklet =
+    get_input_node_tasklet(data_reader_ctrl.get_data_reader(stream_nr));
+  assert(input_node_tasklet != NULL);
 }
 
 void Input_node::hook_added_data_writer(size_t writer) {}
@@ -129,7 +129,7 @@ void Input_node::goto_time(int64_t new_time) {
 
 void Input_node::add_time_slice(int channel, int stream, int starttime_slice,
                                 int stoptime_slice) {
-  assert(data_writers_ctrl.get_data_writer(stream) != 
+  assert(data_writers_ctrl.get_data_writer(stream) !=
          Multiple_data_writers_controller::Data_writer_ptr());
 
   assert(input_node_tasklet != NULL);

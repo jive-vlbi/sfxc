@@ -9,7 +9,7 @@
  * This file is part of:
  *   - SFXC/SCARIe project.
  * This file contains:
- *   - few utilitary classes and function used by 
+ *   - few utilitary classes and function used by
  *     some channel_extractor to build their computation
  *     tables.
  */
@@ -18,17 +18,17 @@
 
 class Action {
 public:
-	Action(){
-		channel=-1;
-		value=0;
-		shift=0;
-	}
+  Action() {
+    channel=-1;
+    value=0;
+    shift=0;
+  }
 
-	Action(const int&){
-		channel=-1;
-		value=0;
-		shift=0;
-	}
+  Action(const int&) {
+    channel=-1;
+    value=0;
+    shift=0;
+  }
 
   Action(int c, int v) {
     channel = c;

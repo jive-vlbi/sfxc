@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -17,7 +17,7 @@
 #include "utils.h"
 
 Data_writer_file::Data_writer_file(const char *filename) :
-Data_writer() {
+    Data_writer() {
   assert(strncmp(filename, "file://", 7)==0);
   file.open(filename+7, std::ios::out | std::ios::binary);
   assert(file.is_open() );

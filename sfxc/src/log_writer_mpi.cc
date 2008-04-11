@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -42,7 +42,7 @@ Log_writer_mpi_buffer::Log_writer_mpi_buffer(int rank,
     int message_level,
     int buffer_size)
     : Log_writer_buffer(message_level, buffer_size),
-rank(rank) {}
+    rank(rank) {}
 
 Log_writer_mpi_buffer::~Log_writer_mpi_buffer() {
   sync();
@@ -89,10 +89,10 @@ void Log_writer_mpi_buffer::put_buffer() {
       strncpy(buffer+20, pbase(), len);
       buffer[len+20] = '\0';
 
-      // If MT_MPI is defined then acquire  the mutex. 
+      // If MT_MPI is defined then acquire  the mutex.
       // otherwise do nothing.
       IF_MT_MPI_ENABLED( RAIIMutex mutex(g_mpi_thebig_mutex) );
-      
+
       MPI_Send(buffer, len+20+1, MPI_CHAR, RANK_LOG_NODE, MPI_TAG_LOG_MESSAGE, MPI_COMM_WORLD);
     }
 

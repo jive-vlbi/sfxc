@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -28,12 +28,14 @@ public:
                 listen for a connection
    **/
   Data_reader_tcp(uint64_t *ip_addr, int nAddr, unsigned short int port);
-  
+
   ~Data_reader_tcp();
 
   unsigned int get_port();
-  
-  bool eof() { return socket < 0; }  
+
+  bool eof() {
+    return socket < 0;
+  }
 
   bool can_read();
 private:

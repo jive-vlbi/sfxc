@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -23,14 +23,14 @@ Data_reader_mark5::Data_reader_mark5(const std::string& str) {
   std::string protocol, tmp;
 
   idx = str.find("mark5://");
-  if(  idx != 0 ) {
+  if (  idx != 0 ) {
     std::cerr << "ERROR: this is not a valid mark5 string " << str << std::endl;
     exit(1);
   }
   tmp=str.substr(strlen("mark5://"));
   idx = tmp.find(":");
 
-  if(  idx == (int)std::string::npos ) {
+  if (  idx == (int)std::string::npos ) {
     std::cerr << "ERROR: this is not a valid mark5 string " << str << std::endl;
     exit(1);
   }
@@ -72,8 +72,8 @@ void Data_reader_mark5::initialize(const char *protocol, int port) {
   /* Get service number for socket service */
   /* Allow reuse of the local socket address in bind() */
   bool on = true;
-  if(setsockopt(unconnected_sock, SOL_SOCKET, SO_REUSEADDR, (void *) &on,
-                sizeof(int)) < 0) {
+  if (setsockopt(unconnected_sock, SOL_SOCKET, SO_REUSEADDR, (void *) &on,
+                 sizeof(int)) < 0) {
     if (msglev < 2) {
       std::cerr << "WARNING: setsockopt() SO_REUSEADDR returned " << std::endl;
     }

@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id: channel_extractor.h 440 2007-12-16 20:26:04Z kruithof $
  *
  */
@@ -22,7 +22,7 @@
 Channel_extractor_tasklet::Channel_extractor_tasklet(int N_)
     : output_memory_pool_(400*MAX_SUBBANDS),
     n_subbands(0),
-fan_out(0), N(N_) {
+    fan_out(0), N(N_) {
   assert(N_ > 0);
 
 #ifdef USE_EXTRACTOR_5
@@ -32,24 +32,24 @@ fan_out(0), N(N_) {
 #endif //USE_EXTRACTOR_5
 
   DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
-  
+
 #ifdef RUNTIME_STATISTIC
   std::stringstream inputid;
   std::stringstream chexid;
   std::stringstream monid;
-  
+
   inputid << "inputnode" << RANK_OF_NODE;
   chexid << inputid.str() << "_channelextractor";
   monid << chexid.str() << "_monitor_speed";
-  
+
   monitor_.init(monid.str(), "stats/");
   monitor_.add_property(inputid.str(), "is_a", "inputnode");
   monitor_.add_property(inputid.str(), "has", chexid.str() );
   monitor_.add_property(chexid.str(), "is_a", "channel_extractor");
   monitor_.add_property(chexid.str(), "has", monid.str() );
-  
+
 #endif //RUNTIME_STATISTIC
-  
+
 }
 
 
@@ -61,7 +61,7 @@ Channel_extractor_tasklet::do_task() {
 #ifdef RUNTIME_STATISTIC
   monitor_.begin_measure();
 #endif // RUNTIME_STATISTIC
-  
+
   assert(has_work());
 
   // Number of output streams
@@ -112,10 +112,10 @@ Channel_extractor_tasklet::do_task() {
       output_buffers_[i]->push(output_elements[i]);
     }
   }
-  
-  #ifdef RUNTIME_STATISTIC
+
+#ifdef RUNTIME_STATISTIC
   monitor_.end_measure(n_output_bytes*n_subbands);
-  #endif // RUNTIME_STATISTIC
+#endif // RUNTIME_STATISTIC
 }
 
 

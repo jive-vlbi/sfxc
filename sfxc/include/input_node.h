@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -45,7 +45,7 @@ private:
  * obtain the input: from file or over the network using one of various
  * types of transfer protocols. It will also receive messages containing
  * a start and stop time and the correlate node to send the data to.
- * 
+ *
  * \ingroup Node
  **/
 class Input_node : public Node {
@@ -92,7 +92,7 @@ public:
   // Callback functions:
   void hook_added_data_reader(size_t reader);
   void hook_added_data_writer(size_t writer);
-  
+
   void set_delay_table(Delay_table_akima &delay_table);
 
 private:
@@ -108,7 +108,7 @@ private:
 
   Status status;
   int32_t start_time;
-  
+
   int64_t stop_time;
 };
 

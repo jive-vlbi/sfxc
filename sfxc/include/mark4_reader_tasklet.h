@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id: channel_extractor.h 412 2007-12-05 12:13:20Z kruithof $
  *
  */
@@ -17,7 +17,7 @@
 #include "input_node_types.h"
 
 #ifdef RUNTIME_STATISTIC
-#include "monitor.h" 
+#include "monitor.h"
 #endif // RUNTIME_STATISTIC
 
 template <class Type>
@@ -58,7 +58,7 @@ public:
   int size_input_word() const {
     return mark4_reader_->N;
   }
-  
+
 private:
   /// Get an element from the memory pool into input_element_
   void allocate_element();
@@ -91,34 +91,34 @@ private:
 template <class Type>
 Mark4_reader_tasklet<Type>::
 Mark4_reader_tasklet(boost::shared_ptr<Data_reader> reader, char *buffer)
-  : memory_pool_(10), stop_time(-1) {
+    : memory_pool_(10), stop_time(-1) {
   assert(sizeof(value_type) == 1);
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
   allocate_element();
   mark4_reader_ =
     boost::shared_ptr<Mark4_reader >(new Mark4_reader(reader,
-                                                      sizeof(Type),
-                                                      (unsigned char *)buffer,
-                                                      (unsigned char *)&input_element_.data().mk4_data[0]));
+                                     sizeof(Type),
+                                     (unsigned char *)buffer,
+                                     (unsigned char *)&input_element_.data().mk4_data[0]));
   current_time = mark4_reader_->get_current_time();
   input_element_.data().start_time = current_time;
-  
-  
+
+
 #ifdef RUNTIME_STATISTIC
   std::stringstream inputid;
   std::stringstream chexid;
   std::stringstream monid;
-  
+
   inputid << "inputnode" << RANK_OF_NODE;
   chexid << inputid.str() << "_mark4reader";
   monid << chexid.str() << "_monitor_speed";
-  
+
   monitor_.init(monid.str(), "stats/");
   monitor_.add_property(inputid.str(), "is_a", "inputnode");
   monitor_.add_property(inputid.str(), "has", chexid.str() );
   monitor_.add_property(chexid.str(), "is_a", "mark4reader");
   monitor_.add_property(chexid.str(), "has", monid.str() );
-  
+
 #endif //RUNTIME_STATISTIC
 }
 
@@ -134,7 +134,7 @@ do_task() {
 
   push_element();
   allocate_element();
-  
+
   if (mark4_reader_->eof()) {
     randomize_block(0,SIZE_MK4_FRAME*sizeof(Type));
     current_time += mark4_reader_->time_between_headers();
@@ -145,7 +145,7 @@ do_task() {
     current_time = mark4_reader_->get_current_time();
   }
   input_element_.data().start_time = current_time;
-  
+
 #ifdef RUNTIME_STATISTIC
   monitor_.end_measure(SIZE_MK4_FRAME*sizeof(Type));
 #endif // RUNTIME_STATISTIC

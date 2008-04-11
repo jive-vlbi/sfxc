@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -20,9 +20,8 @@
 
 #include <sys/poll.h>
 
-Data_writer_tcp::Data_writer_tcp() 
-: socket(-1)
-{
+Data_writer_tcp::Data_writer_tcp()
+    : socket(-1) {
 }
 
 void Data_writer_tcp::open_connection(TCP_Connection &tcp_connection) {
@@ -41,7 +40,7 @@ Data_writer_tcp::do_put_bytes(size_t nBytes, const char *buff) {
   size_t bytes_written = 0;
   while (bytes_written != nBytes) {
     ssize_t result = write(socket, buff+bytes_written, nBytes-bytes_written);
-    
+
     if (result <= 0) {
       return bytes_written;
     }

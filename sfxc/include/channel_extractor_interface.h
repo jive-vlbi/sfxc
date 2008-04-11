@@ -24,7 +24,9 @@ class Channel_extractor_interface {
 protected:
   std::string name_;
 public:
-  Channel_extractor_interface() { name_="Base_extractor_interface"; }
+  Channel_extractor_interface() {
+    name_="Base_extractor_interface";
+  }
   virtual ~Channel_extractor_interface() {}
 
   // Size of one input word to process in the extract function
@@ -47,7 +49,9 @@ public:
   virtual void extract(unsigned char *in_data1,
                        unsigned char **output_data) = 0;
 
-  std::string& name(){ return name_; }
+  std::string& name() {
+    return name_;
+  }
 };
 
 #endif // CHANNEL_EXTRACTOR_INTERFACE_H

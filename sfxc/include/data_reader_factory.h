@@ -4,8 +4,7 @@
 #include <string>
 #include "data_reader.h"
 
-class Data_reader_factory
-{
+class Data_reader_factory {
 public:
   static Data_reader* get_reader(const std::string& url);
 };

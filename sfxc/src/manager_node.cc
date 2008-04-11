@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -28,7 +28,7 @@ Manager_node(int rank, int numtasks,
     manager_controller(*this),
     integration_slice_nr(0),
     current_scan(0)
-/**/ {
+    /**/ {
   assert(rank == RANK_MANAGER_NODE);
 
   add_controller(&manager_controller);
@@ -160,7 +160,7 @@ void Manager_node::start() {
   while (status != END_NODE) {
     process_all_waiting_messages();
     switch (status) {
-      case START_NEW_SCAN: {
+    case START_NEW_SCAN: {
         // set track information
         initialise_scan(control_parameters.scan(current_scan));
 
@@ -194,13 +194,13 @@ void Manager_node::start() {
         status = START_CORRELATION_TIME_SLICE;
         break;
       }
-      case START_CORRELATION_TIME_SLICE: {
+    case START_CORRELATION_TIME_SLICE: {
         current_channel = 0;
         current_correlator_node = 0;
         status = START_CORRELATOR_NODES_FOR_TIME_SLICE;
         break;
       }
-      case START_CORRELATOR_NODES_FOR_TIME_SLICE: {
+    case START_CORRELATOR_NODES_FOR_TIME_SLICE: {
         bool added_correlator_node = false;
 #ifdef SFXC_DETERMINISTIC
         if (correlator_node_ready[current_correlator_node]) {
@@ -228,7 +228,7 @@ void Manager_node::start() {
 
         break;
       }
-      case GOTO_NEXT_TIMESLICE: {
+    case GOTO_NEXT_TIMESLICE: {
         integration_slice_nr += 1;
         PROGRESS_MSG("starting timeslice " << start_time+integration_slice_nr*integration_time());
 
@@ -251,7 +251,7 @@ void Manager_node::start() {
         }
         break;
       }
-      case STOP_CORRELATING: {
+    case STOP_CORRELATING: {
         // The status is set to END_NODE as soon as the output_node is ready
         MPI_Send(&output_slice_nr, 1, MPI_INT32,
                  RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_CORRELATION_READY,
@@ -260,12 +260,12 @@ void Manager_node::start() {
         status = WAIT_FOR_OUTPUT_NODE;
         break;
       }
-      case WAIT_FOR_OUTPUT_NODE: {
+    case WAIT_FOR_OUTPUT_NODE: {
         // The status is set to END_NODE as soon as the output_node is ready
         check_and_process_message();
         break;
       }
-      case END_NODE: {
+    case END_NODE: {
         break;
       }
     }

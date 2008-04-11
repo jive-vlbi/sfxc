@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -23,7 +23,7 @@ public:
   void open_connection(TCP_Connection &tcp_connection);
 
   ~Data_writer_tcp();
-  
+
   void flush();
 
   bool can_write();

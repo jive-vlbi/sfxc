@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id: Output_node_without_buffering.h 222 2007-05-14 07:22:32Z kruithof $
  *
  */
@@ -26,9 +26,9 @@ public:
   typedef Input_stream_priority_map::value_type Input_stream_priority_map_value;
 
   Output_node_without_buffering_controller(Output_node_without_buffering &node);
-  
+
   Process_event_status process_event(MPI_Status &status);
-  
+
 private:
   Output_node_without_buffering &node;
 };
@@ -40,7 +40,7 @@ private:
  * and stores it for further processing. The output node has to make the
  * received data available to the user and it should be archived in a
  * proper way.
- * 
+ *
  * \ingroup Node
  **/
 class Output_node_without_buffering : public Node {
@@ -49,7 +49,7 @@ public:
   typedef std::map<int32_t, int>                  Input_stream_priority_map;
   typedef Input_stream_priority_map::value_type Input_stream_priority_map_value;
   typedef Buffer<value_type>                    Buffer;
-  
+
   Output_node_without_buffering(int rank, Log_writer *writer, int buffer_size = 10);
   Output_node_without_buffering(int rank, int buffer_size = 10);
   void initialise();
@@ -63,14 +63,14 @@ public:
     WRITE_OUTPUT,
     END_NODE
   };
-  
+
   void set_status();
 
   void create_buffer(int num);
 
   void set_weight_of_input_stream(int num, uint64_t weight);
-  void time_slice_finished(int rank, uint64_t nBytes);      
-  
+  void time_slice_finished(int rank, uint64_t nBytes);
+
   void set_number_of_time_slices(int n_time_slices);
 
   // Callback functions:
@@ -94,7 +94,7 @@ private:
   // Priority map of the input streams
   Input_stream_priority_map           input_streams_order;
   std::vector<int>                    bytes_in_timeslice_per_input_stream;
-  
+
   /** List of streams that stores whether a time slice is transferred.
    * The stream is not finished, if input_streams_finished[i]==0
    * if input_streams_finished[i]>0 then the stream is finished and specifies
