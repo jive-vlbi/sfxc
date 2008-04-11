@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -49,7 +49,7 @@ public:
    * - 1: message processed
    **/
   MESSAGE_RESULT check_and_process_waiting_message();
-  
+
   MESSAGE_RESULT process_all_waiting_messages();
 
   /** Blocking check for a message and process it.
@@ -72,16 +72,18 @@ public:
      Add a controller to the node.
    **/
   void add_controller(Controller *controller);
-  
+
   Log_writer &get_log_writer();
 
   void set_log_writer(Log_writer *new_writer) {
     log_writer = new_writer;
   }
 
-  int get_rank() { return rank; }
+  int get_rank() {
+    return rank;
+  }
 
-  /** Callback function after adding a data_reader to the input streams. 
+  /** Callback function after adding a data_reader to the input streams.
    * Reader = 0 for a Single_data_reader_controller
    **/
   virtual void hook_added_data_reader(size_t reader) = 0;
@@ -89,7 +91,7 @@ public:
    * Reader = 0 for a Single_data_reader_controller
    **/
   virtual void hook_added_data_writer(size_t writer) = 0;
- 
+
 private:
   int rank;
   Controller_list controllers;

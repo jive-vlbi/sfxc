@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -29,17 +29,19 @@ public:
 
   T &produce();
   void produced(int status);
-  
+
   T &consume(int &status);
   void consumed();
 
   bool empty();
-  bool full() { return false; }
+  bool full() {
+    return false;
+  }
 
 private:
   // One semaphores to avoid reading from an empty queue:
   sem_t empty_sem;
-  
+
   // Override the buffer and status from base:
   std::queue<T *> buffer;
   std::queue<int> status;
@@ -53,9 +55,8 @@ private:
 
 template <class T>
 Queue_buffer<T>::
-Queue_buffer() 
-  : Base(1)
-{
+Queue_buffer()
+    : Base(1) {
   if ( sem_init(&empty_sem, 1, 0) == -1 ) {
     std::cout << "Failed to initialise the \"empty_sem\" semaphore" << std::endl;
     exit(1);
@@ -79,7 +80,7 @@ Queue_buffer<T>::produced(int nelem) {
   status.push(nelem);
   sem_post(&empty_sem);
 }
-  
+
 template <class T>
 T &
 Queue_buffer<T>::consume(int &nelem) {

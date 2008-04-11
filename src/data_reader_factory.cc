@@ -7,8 +7,7 @@
 //#include "data_reader_http.h"
 //#include "data_reader_ftp.h"
 
-Data_reader* Data_reader_factory::get_reader(const std::string& url)
-{
+Data_reader* Data_reader_factory::get_reader(const std::string& url) {
   if ( url.find("file://") == 0 ) {
     return new Data_reader_file(url);
   } else if ( url.find("dnfp://") == 0 ) {

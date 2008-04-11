@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -12,19 +12,19 @@
 
 // Check if the application is multi-threaded
 #ifdef MT_SFXC_ENABLE
-  #include "thread.h"
-  #include "mutex.h"
-  #include "raiimutex.h"
-  // Check if the MPI_specific mutex are enabled
-  #ifdef MT_MPI_ENABLE
-    extern Mutex g_mpi_thebig_mutex;  
-    // do not put {} around x...as x may be a RAIIMutex.
-    #define IF_MT_MPI_ENABLED(x) x
-  #else
-    #define IF_MT_MPI_ENABLED(x) 
-  #endif // MT_MPI_ENABLE
+#include "thread.h"
+#include "mutex.h"
+#include "raiimutex.h"
+// Check if the MPI_specific mutex are enabled
+#ifdef MT_MPI_ENABLE
+extern Mutex g_mpi_thebig_mutex;
+// do not put {} around x...as x may be a RAIIMutex.
+#define IF_MT_MPI_ENABLED(x) x
 #else
-  #define IF_MT_MPI_ENABLED(x)
+#define IF_MT_MPI_ENABLED(x)
+#endif // MT_MPI_ENABLE
+#else
+#define IF_MT_MPI_ENABLED(x)
 #endif // MT_SFXC_ENABLE
 
 #include "types.h"
@@ -47,12 +47,12 @@ void end_node(int32_t rank);
 enum MPI_TAG {
   // INITIALISATION OF THE DIFFERENT TYPES OF NODES:
   //------------------------------------------------------------------------
-  
+
   /** Add an input node
    * - MPI_INT32: number of the input node
    **/
   MPI_TAG_SET_INPUT_NODE,
-  
+
   /** Add a correlator node
    * - MPI_INT32: no content
    **/
@@ -62,7 +62,7 @@ enum MPI_TAG {
    * - MPI_INT32: no content
    **/
   MPI_TAG_SET_OUTPUT_NODE,
-  
+
   /** Add a log node
    * - MPI_INT32: no content
    **/
@@ -83,34 +83,34 @@ enum MPI_TAG {
    * - MPI_INT32: message level
    **/
   MPI_TAG_SET_MESSAGELEVEL,
-  
+
   // DATA COMMUNICATION, SET is for a single connection, ADD for multiple
   //--------------------------------------------------------------------------
 
   /** Create a data reader stream for incoming data using TCP
    * - INT32_t: stream number
-   * - CHAR+: file descriptor file:// or dnfp:// or mark5:// 
+   * - CHAR+: file descriptor file:// or dnfp:// or mark5://
    **/
   MPI_TAG_ADD_DATA_READER,
-  
+
   /** Create a data reader stream for incoming data using TCP
    * - uint64_t: stream number
    * - uint64_t: ip_addresses
    * - uint64_t: port
    **/
   MPI_TAG_ADD_DATA_READER_TCP2,
-  
+
   /** Add a data writer to a file
    * - int32_t: channel number
    * - char[]: filename
    **/
   MPI_TAG_ADD_DATA_WRITER_FILE2,
-  
+
   /** Add a void data writer
    * - int32_t: channel number
    **/
   MPI_TAG_ADD_DATA_WRITER_VOID2,
-  
+
 
   /** This message is sent to the sending node, which creates the connection to the
    * receiving node, message contains the number of the MPI-node
@@ -125,14 +125,14 @@ enum MPI_TAG {
    * - int32_t: Rank of the stream for the data reader
    **/
   MPI_TAG_CONNECTION_ESTABLISHED,
-  
-  // Node specific commands 
+
+  // Node specific commands
   //-------------------------------------------------------------------------//
   /** Terminate a node. Note that the Output node has its own message
    * - int32_t: no specific value
    **/
   MPI_TAG_END_NODE,
-  
+
   // Input node specific commands
   //-------------------------------------------------------------------------//
 
@@ -141,12 +141,12 @@ enum MPI_TAG {
    **/
   MPI_TAG_INPUT_NODE_GOTO_TIME,
 
-  /** Returns a message with the same tag back with the current time stamp in 
+  /** Returns a message with the same tag back with the current time stamp in
    *  the channel extractor
    * - int64_t: the timestamp in microseconds
    **/
   MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP,
-   
+
   /** The stop time for the input node. Terminate if this time is reached
    * - int64_t: Time in microseconds
    **/
@@ -159,7 +159,7 @@ enum MPI_TAG {
    * - int32_t: stop time (milliseconds)
    **/
   MPI_TAG_INPUT_NODE_ADD_TIME_SLICE,
-   
+
   // Output node specific commands
   //-------------------------------------------------------------------------//
 
@@ -169,7 +169,7 @@ enum MPI_TAG {
    * - int64_t: Size in bytes of the stream
    **/
   MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
-  
+
   // Correlate node specific commands
   //-------------------------------------------------------------------------//
 
@@ -177,17 +177,17 @@ enum MPI_TAG {
    * - ?
    **/
   MPI_TAG_TRACK_PARAMETERS,
-  
+
   /** Send the Correlation parameters defined in Control_parameters.h
    * - ?
    **/
   MPI_TAG_CORR_PARAMETERS,
-  
+
   /** Send a delay table
    * - ?
    **/
   MPI_TAG_DELAY_TABLE,
-  
+
   /** The correlation node is ready to process data
    * - ?
    **/
@@ -210,7 +210,7 @@ enum MPI_TAG {
    * - ?
    **/
   MPI_TAG_LOG_NODE_SET_OUTPUT_COUT,
-  
+
   /** Print all received log messages to file
    * - ?
    **/
@@ -228,12 +228,12 @@ enum MPI_TAG {
    * - ?
    **/
   MPI_TAG_DATASTREAM_EMPTY,
-  
+
   /** A correlate node finished
    * - ?
    **/
   MPI_TAG_CORRELATE_ENDED,
-  
+
   /** A log node terminated and will not send more messages:
    * - ?
    **/
@@ -253,79 +253,113 @@ enum MPI_TAG {
 };
 
 // Helps detecting missing constants in MPI_TAG:
-// generate with: 
+// generate with:
 // sed -e "s://.*::" -e "s:[ ,(=0)]::g" -e "/^$/d"
 //     -e "s:^\(.*\)$:    case \1\:\n      \{ return \"\1\"; \}:"
 inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
   switch (tag) {
-    case MPI_TAG_ADD_DATA_WRITER_FILE2:
-      { return "MPI_TAG_ADD_DATA_WRITER_FILE"; }
-    case MPI_TAG_ADD_DATA_WRITER_VOID2:
-      { return "MPI_TAG_ADD_DATA_WRITER_VOID"; }
-    case MPI_TAG_ADD_TCP:
-      { return "MPI_TAG_ADD_TCP"; }
-    case MPI_TAG_CONNECTION_ESTABLISHED:
-      { return "MPI_TAG_CONNECTION_ESTABLISHED"; }
-    case MPI_TAG_SET_INPUT_NODE:
-      { return "MPI_TAG_SET_INPUT_NODE"; }
-    case MPI_TAG_SET_CORRELATOR_NODE:
-      { return "MPI_TAG_SET_CORRELATOR_NODE"; }
-    case MPI_TAG_SET_OUTPUT_NODE:
-      { return "MPI_TAG_SET_OUTPUT_NODE"; }
-    case MPI_TAG_SET_LOG_NODE:
-      { return "MPI_TAG_SET_LOG_NODE"; }
-    case MPI_TAG_NODE_INITIALISED:
-      { return "MPI_TAG_NODE_INITIALISED"; }
-    case MPI_TAG_GET_STATUS:
-      { return "MPI_TAG_GET_STATUS"; }
-    case MPI_TAG_SET_MESSAGELEVEL:
-      { return "MPI_TAG_SET_MESSAGELEVEL"; }
-    case MPI_TAG_ADD_DATA_READER:
-      { return "MPI_TAG_ADD_DATA_READER_FILE"; }
-    case MPI_TAG_ADD_DATA_READER_TCP2:
-      { return "MPI_TAG_ADD_DATA_READER_TCP"; }
-    case MPI_TAG_INPUT_NODE_GOTO_TIME:
-      { return "MPI_TAG_INPUT_NODE_GOTO_TIME"; }
-    case MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP:
-      { return "MPI_TAG_GET_CURRENT_TIMESTAMP"; }
-    case MPI_TAG_INPUT_NODE_STOP_TIME:
-      { return "MPI_TAG_INPUT_NODE_STOP_TIME"; }
-    case MPI_TAG_INPUT_NODE_ADD_TIME_SLICE:
-      { return "MPI_TAG_INPUT_NODE_ADD_TIME_SLICE"; }
-    case MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY:
-      { return "MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY"; }
-    case MPI_TAG_TRACK_PARAMETERS:
-      { return "MPI_TAG_TRACK_PARAMETERS"; }
-    case   MPI_TAG_CORR_PARAMETERS:
-      { return "MPI_TAG_CORR_PARAMETERS"; }
-    case MPI_TAG_DELAY_TABLE:
-      { return "MPI_TAG_DELAY_TABLE"; }
-    case MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED:
-      { return "MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED"; }
-    case MPI_TAG_END_NODE:
-      { return "MPI_TAG_END_NODE"; }
-    case MPI_TAG_OUTPUT_NODE_CORRELATION_READY:
-      { return "MPI_TAG_OUTPUT_NODE_CORRELATION_READY"; }
-    case MPI_TAG_OUTPUT_NODE_FINISHED:
-      { return "MPI_TAG_OUTPUT_NODE_FINISHED"; }
-    case MPI_TAG_LOG_NODE_SET_OUTPUT_COUT:
-      { return "MPI_TAG_LOG_NODE_SET_OUTPUT_COUT"; }
-    case MPI_TAG_LOG_NODE_SET_OUTPUT_FILE:
-      { return "MPI_TAG_LOG_NODE_SET_OUTPUT_FILE"; }
-    case MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER:
-      { return "MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER"; }
-    case MPI_TAG_DATASTREAM_EMPTY:
-      { return "MPI_TAG_DATASTREAM_EMPTY"; }
-    case MPI_TAG_CORRELATE_ENDED:
-      { return "MPI_TAG_CORRELATE_ENDED"; }
-    case MPI_TAG_LOG_MESSAGES_ENDED:
-      { return "MPI_TAG_LOG_MESSAGES_ENDED"; }
-    case MPI_TAG_TEXT_MESSAGE:
-      { return "MPI_TAG_TEXT_MESSAGE"; }
-    case MPI_TAG_LOG_MESSAGE:
-      { return "MPI_TAG_LOG_MESSAGE"; }
-    case MPI_TAG_ERROR:
-      { return "MPI_TAG_ERROR"; }
+  case MPI_TAG_ADD_DATA_WRITER_FILE2: {
+      return "MPI_TAG_ADD_DATA_WRITER_FILE";
+    }
+  case MPI_TAG_ADD_DATA_WRITER_VOID2: {
+      return "MPI_TAG_ADD_DATA_WRITER_VOID";
+    }
+  case MPI_TAG_ADD_TCP: {
+      return "MPI_TAG_ADD_TCP";
+    }
+  case MPI_TAG_CONNECTION_ESTABLISHED: {
+      return "MPI_TAG_CONNECTION_ESTABLISHED";
+    }
+  case MPI_TAG_SET_INPUT_NODE: {
+      return "MPI_TAG_SET_INPUT_NODE";
+    }
+  case MPI_TAG_SET_CORRELATOR_NODE: {
+      return "MPI_TAG_SET_CORRELATOR_NODE";
+    }
+  case MPI_TAG_SET_OUTPUT_NODE: {
+      return "MPI_TAG_SET_OUTPUT_NODE";
+    }
+  case MPI_TAG_SET_LOG_NODE: {
+      return "MPI_TAG_SET_LOG_NODE";
+    }
+  case MPI_TAG_NODE_INITIALISED: {
+      return "MPI_TAG_NODE_INITIALISED";
+    }
+  case MPI_TAG_GET_STATUS: {
+      return "MPI_TAG_GET_STATUS";
+    }
+  case MPI_TAG_SET_MESSAGELEVEL: {
+      return "MPI_TAG_SET_MESSAGELEVEL";
+    }
+  case MPI_TAG_ADD_DATA_READER: {
+      return "MPI_TAG_ADD_DATA_READER_FILE";
+    }
+  case MPI_TAG_ADD_DATA_READER_TCP2: {
+      return "MPI_TAG_ADD_DATA_READER_TCP";
+    }
+  case MPI_TAG_INPUT_NODE_GOTO_TIME: {
+      return "MPI_TAG_INPUT_NODE_GOTO_TIME";
+    }
+  case MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP: {
+      return "MPI_TAG_GET_CURRENT_TIMESTAMP";
+    }
+  case MPI_TAG_INPUT_NODE_STOP_TIME: {
+      return "MPI_TAG_INPUT_NODE_STOP_TIME";
+    }
+  case MPI_TAG_INPUT_NODE_ADD_TIME_SLICE: {
+      return "MPI_TAG_INPUT_NODE_ADD_TIME_SLICE";
+    }
+  case MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY: {
+      return "MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY";
+    }
+  case MPI_TAG_TRACK_PARAMETERS: {
+      return "MPI_TAG_TRACK_PARAMETERS";
+    }
+  case   MPI_TAG_CORR_PARAMETERS: {
+      return "MPI_TAG_CORR_PARAMETERS";
+    }
+  case MPI_TAG_DELAY_TABLE: {
+      return "MPI_TAG_DELAY_TABLE";
+    }
+  case MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED: {
+      return "MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED";
+    }
+  case MPI_TAG_END_NODE: {
+      return "MPI_TAG_END_NODE";
+    }
+  case MPI_TAG_OUTPUT_NODE_CORRELATION_READY: {
+      return "MPI_TAG_OUTPUT_NODE_CORRELATION_READY";
+    }
+  case MPI_TAG_OUTPUT_NODE_FINISHED: {
+      return "MPI_TAG_OUTPUT_NODE_FINISHED";
+    }
+  case MPI_TAG_LOG_NODE_SET_OUTPUT_COUT: {
+      return "MPI_TAG_LOG_NODE_SET_OUTPUT_COUT";
+    }
+  case MPI_TAG_LOG_NODE_SET_OUTPUT_FILE: {
+      return "MPI_TAG_LOG_NODE_SET_OUTPUT_FILE";
+    }
+  case MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER: {
+      return "MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER";
+    }
+  case MPI_TAG_DATASTREAM_EMPTY: {
+      return "MPI_TAG_DATASTREAM_EMPTY";
+    }
+  case MPI_TAG_CORRELATE_ENDED: {
+      return "MPI_TAG_CORRELATE_ENDED";
+    }
+  case MPI_TAG_LOG_MESSAGES_ENDED: {
+      return "MPI_TAG_LOG_MESSAGES_ENDED";
+    }
+  case MPI_TAG_TEXT_MESSAGE: {
+      return "MPI_TAG_TEXT_MESSAGE";
+    }
+  case MPI_TAG_LOG_MESSAGE: {
+      return "MPI_TAG_LOG_MESSAGE";
+    }
+  case MPI_TAG_ERROR: {
+      return "MPI_TAG_ERROR";
+    }
   }
   return "UNKNOWN_MPI_TAG";
 }

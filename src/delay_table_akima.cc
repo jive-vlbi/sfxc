@@ -1,10 +1,10 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Ruud Oerlemans  <Oerlemans@JIVE.nl>, 2007
  *            Nico Kruithof   <Kruithof@JIVE.nl>, 2007
  *            Huseyin Ozdemir <Ozdemir@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  * Class function definitions for station specific data
@@ -35,14 +35,13 @@
 //*****************************************************************************
 
 // Default constructor
-Delay_table_akima::Delay_table_akima() 
-  : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL) {
+Delay_table_akima::Delay_table_akima()
+    : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL) {
 }
 
 // Copy constructor
 Delay_table_akima::Delay_table_akima(const Delay_table_akima &other)
-  : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL)
-{
+    : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL) {
   Delay_table_akima();
   assert(splineakima == NULL);
   times = other.times;
@@ -61,8 +60,7 @@ void Delay_table_akima::operator=(const Delay_table_akima &other) {
   initialise_next_scan();
 }
 
-bool Delay_table_akima::operator==(const Delay_table_akima &other) const
-{
+bool Delay_table_akima::operator==(const Delay_table_akima &other) const {
   if (times != other.times) return false;
   if (delays != other.delays) return false;
   return true;
@@ -70,20 +68,19 @@ bool Delay_table_akima::operator==(const Delay_table_akima &other) const
 
 //read the delay table, do some checks and
 //calculate coefficients for parabolic interpolation
-int Delay_table_akima::open(const char *delayTableName)
-{
+int Delay_table_akima::open(const char *delayTableName) {
   std::ifstream in(delayTableName);
   assert(in.is_open());
   int32_t header_size;
-	
+
   // Read the header
   in.read(reinterpret_cast < char * > (&header_size), sizeof(int32_t));
   char header[header_size];
   in.read(reinterpret_cast < char * > (header), header_size*sizeof(char));
-   
+
   // Read the data
   double line[5];
-  while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))){
+  while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
     assert(line[4] <= 0);
     // The time read from file is in seconds, whereas the software correlator
     // works with times in microseconds
@@ -133,17 +130,17 @@ bool Delay_table_akima::initialise_next_scan() {
     return false;
   }
 
-  // End scan now points to the beginning of the next scan and 
+  // End scan now points to the beginning of the next scan and
   // the next scan has n_pts data points
   splineakima = gsl_spline_alloc(gsl_interp_akima, n_pts);
 
   assert(delays[begin_scan] != 0);
   assert(delays[begin_scan+n_pts] != 0);
   gsl_spline_init(splineakima,
-                  &times[begin_scan], 
-                  &delays[begin_scan], 
+                  &times[begin_scan],
+                  &delays[begin_scan],
                   n_pts);
-  
+
   return true;
 }
 

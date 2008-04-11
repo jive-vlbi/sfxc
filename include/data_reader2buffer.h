@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -21,8 +21,7 @@
  * which is useful for non-blocking IO.
  **/
 template <class T>
-class Data_reader2buffer
-{
+class Data_reader2buffer {
   typedef Data_reader2buffer<T> Self;
 public:
   typedef boost::shared_ptr< Data_reader > Data_reader_ptr;
@@ -30,7 +29,7 @@ public:
 
   enum State {
     STOPPED=0, ///< Not running, the additional thread is not active
-    SUSPENDED, /**< Not running, the additional thread is waiting 
+    SUSPENDED, /**< Not running, the additional thread is waiting
                     (e.g. for a change of buffers) **/
     RUNNING    ///< The thread is writing data from the buffer
   };
@@ -38,13 +37,13 @@ public:
   Data_reader2buffer();
   Data_reader2buffer(const Data_reader2buffer &buffer);
   ~Data_reader2buffer();
-  
+
   boost::shared_ptr<Data_reader> get_data_reader();
   void set_data_reader(boost::shared_ptr<Data_reader> data_reader);
 
   boost::shared_ptr< Buffer<T> > get_buffer();
   void set_buffer(boost::shared_ptr< Buffer<T> > buffer);
-  
+
   void start();
   void try_start();
   void stop();
@@ -59,32 +58,30 @@ private:
   Buffer_ptr      buffer;
   State           state;
   pthread_t       io_thread;
-  
+
   pthread_mutex_t mutex_for_set_state;
 };
 
 
 // Implementation:
 template <class T>
-Data_reader2buffer<T>::Data_reader2buffer() 
-  : state(STOPPED)
-{
+Data_reader2buffer<T>::Data_reader2buffer()
+    : state(STOPPED) {
   pthread_mutex_init(&mutex_for_set_state, NULL);
 }
 
 template <class T>
 Data_reader2buffer<T>::
-Data_reader2buffer(const Data_reader2buffer &buffer){
+Data_reader2buffer(const Data_reader2buffer &buffer) {
   // No copy constructor, the threads don't like it
   assert(false);
 }
-  
+
 template <class T>
-Data_reader2buffer<T>::~Data_reader2buffer() 
-{
+Data_reader2buffer<T>::~Data_reader2buffer() {
   stop();
 }
-  
+
 template <class T>
 void
 Data_reader2buffer<T>::set_data_reader(Data_reader_ptr reader) {
@@ -113,7 +110,7 @@ Data_reader2buffer<T>::get_buffer() {
   return buffer;
 }
 
-  
+
 template <class T>
 void
 Data_reader2buffer<T>::try_start() {
@@ -127,14 +124,14 @@ void
 Data_reader2buffer<T>::start() {
   assert(data_reader != Data_reader_ptr());
   assert(buffer != Buffer_ptr());
-  
+
   if (state == STOPPED) {
     set_state(RUNNING);
-    pthread_create(&io_thread, NULL, 
+    pthread_create(&io_thread, NULL,
                    start_reading, static_cast<void*>(this));
   } else {
     set_state(RUNNING);
-  }  
+  }
 }
 
 template <class T>
@@ -152,11 +149,11 @@ Data_reader2buffer<T>::get_state() {
 }
 
 template <class T>
-void 
+void
 Data_reader2buffer<T>::set_state(State new_state) {
   pthread_mutex_lock( &mutex_for_set_state );
   state = new_state;
-  pthread_mutex_unlock( &mutex_for_set_state );  
+  pthread_mutex_unlock( &mutex_for_set_state );
 }
 
 template <class T>

@@ -15,8 +15,7 @@
 
 #include "utils.h"
 
-class Data_writer_socket : public Data_writer
-{
+class Data_writer_socket : public Data_writer {
 public:
   Data_writer_socket(int socket);
   Data_writer_socket(Connexion* connexion);
@@ -24,7 +23,9 @@ public:
 
   //unsigned int get_port();
   void flush();
-  void close(){ assert(false && "not implemented"); }
+  void close() {
+    assert(false && "not implemented");
+  }
 
 
   bool can_write() {

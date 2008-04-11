@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -23,13 +23,13 @@ public:
   /**
      Constructor.
      @param[in] urlstr The string describe the protocol and port in
-		the following format: 
-		mark5://protocol:port
-		the currently support protocols are:
-		mark5://tcp:port
-		mark5://udp:port 
+  the following format:
+  mark5://protocol:port
+  the currently support protocols are:
+  mark5://tcp:port
+  mark5://udp:port
    **/
-  Data_reader_mark5(const std::string& urlstr);	
+  Data_reader_mark5(const std::string& urlstr);
 
   /**
      Constructor.
@@ -43,8 +43,8 @@ public:
                     const int port = 2630);
   ~Data_reader_mark5();
 
-  
-  bool eof();  
+
+  bool eof();
 
   bool can_read();
 

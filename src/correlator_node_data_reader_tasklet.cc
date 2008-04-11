@@ -2,7 +2,7 @@
 
 Correlator_node_data_reader_tasklet::
 Correlator_node_data_reader_tasklet()
-  : output_memory_pool(65000),
+    : output_memory_pool(65000),
     output_buffer(Output_buffer_ptr(new Output_buffer())),
     n_ffts_to_read(0) {
 }
@@ -15,7 +15,8 @@ Correlator_node_data_reader_tasklet::
 void
 Correlator_node_data_reader_tasklet::
 connect_to(Data_reader_ptr reader_) {
-  reader = reader_;	breader_ = Data_reader_blocking_ptr( new Data_reader_blocking( reader_.get() ) );
+  reader = reader_;
+  breader_ = Data_reader_blocking_ptr( new Data_reader_blocking( reader_.get() ) );
 }
 
 Correlator_node_data_reader_tasklet::Output_buffer_ptr
@@ -28,7 +29,13 @@ void Correlator_node_data_reader_tasklet::do_task() {
   assert(has_work());
 
   Output_memory_pool_element output_elem = output_memory_pool.allocate();
-	// allocate the data array  if (output_elem.data().bytes_count() != (size_t)n_bytes_per_fft){    output_elem.data().resize_bytes_buffer(n_bytes_per_fft);  }	breader_->get_bytes(output_elem.data().raw_size(), (char*)output_elem.data().raw_buffer());
+  // allocate the data array
+  if (output_elem.data().bytes_count() != (size_t)n_bytes_per_fft) {
+    output_elem.data().resize_bytes_buffer(n_bytes_per_fft);
+  }
+
+  breader_->get_bytes(output_elem.data().raw_size(), (char*)output_elem.data().raw_buffer());
+
   n_ffts_to_read --;
 
   output_buffer->push(output_elem);

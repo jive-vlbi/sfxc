@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id: Channel_extractor_mark4.h 219 2007-05-09 11:55:38Z kruithof $
  *
  */
@@ -19,7 +19,7 @@ const FLOAT sample_value_m[]  = {
 };
 
 Bits_to_float_converter::Bits_to_float_converter()
-  : bits_per_sample(-1),
+    : bits_per_sample(-1),
     output_memory_pool(10),
     output_buffer(new Output_buffer()) {
   for (int i=0; i<256; i++) {
@@ -53,12 +53,12 @@ Bits_to_float_converter::get_output_buffer() {
 void Bits_to_float_converter::do_task() {
   // produce size_output_slice number of samples
   assert(has_work());
-  
+
   assert(!input_buffer->empty());
   Input_buffer_element &input_elem = input_buffer->front();
 
   char offset = input_elem->offset;
-  
+
   assert(bits_per_sample > 0);
   int size_output_slice = 8/bits_per_sample*(input_elem->data.size()-1);
 
@@ -87,7 +87,7 @@ void Bits_to_float_converter::do_task() {
       memcpy(output_buffer, // byte * 4
              &lookup_table[(int)input_elem->data[byte]][0],
              4*sizeof(FLOAT));
-      
+
 //       int inbyte = (int)input_elem->data[byte];
 //       FLOAT *ptr =  lookup_table[inbyte];
 //       output_buffer[0] = ptr[0];
@@ -103,7 +103,8 @@ void Bits_to_float_converter::do_task() {
     output_buffer += offset;
 
     for (int i=size_output_slice; i<2*size_output_slice; i++) {
-      output_buffer = 0; output_buffer++;
+      output_buffer = 0;
+      output_buffer++;
     }
   } else {
     std::cout << "Not yet implemented" << std::endl;
@@ -116,8 +117,8 @@ void Bits_to_float_converter::do_task() {
 }
 
 bool
-Bits_to_float_converter::has_work(){
-  
+Bits_to_float_converter::has_work() {
+
   if (bits_per_sample <= 0)
     return false;
   if (output_memory_pool.empty())

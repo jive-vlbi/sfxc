@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -23,16 +23,16 @@ public:
   virtual ~Data_reader();
 
   /** Reads nBytes from channel into the buff starting from the
-      read_pointer. If buff == NULL, then the buffer is not 
+      read_pointer. If buff == NULL, then the buffer is not
       filled and the read pointer is only increased by the amount of bytes.
-      
+    
       \return the number of bytes read into the buffer.
       \pre buff is allocated. nBytes >= 0
   **/
   int get_bytes(size_t nBytes, char *buff);
 
   /** Returns true if all data is read from the input reader.
-  **/ 
+  **/
   virtual bool eof() = 0;
 
   /** Returns the number of bytes written
@@ -64,7 +64,7 @@ public:
 
 private:
   /** Function that actually writes the data to the output device.
-  **/ 
+  **/
   virtual int do_get_bytes(size_t nBytes, char *buff) = 0;
 
   uint64_t _data_counter;

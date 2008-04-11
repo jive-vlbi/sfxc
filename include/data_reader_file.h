@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -19,7 +19,7 @@
     filesystem.
  **/
 class Data_reader_file : public Data_reader {
-  public:
+public:
   /** Constructor, reads from file
    **/
   Data_reader_file(const char * filename);
@@ -27,8 +27,8 @@ class Data_reader_file : public Data_reader {
 
   ~Data_reader_file();
 
-  bool eof();  
-  
+  bool eof();
+
   bool can_read();
 
 private:

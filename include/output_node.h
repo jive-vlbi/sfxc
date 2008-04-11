@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -27,9 +27,9 @@ public:
   typedef Input_stream_priority_map::value_type Input_stream_priority_map_value;
 
   Output_node_controller(Output_node &node);
-  
+
   Process_event_status process_event(MPI_Status &status);
-  
+
 private:
   Output_node &node;
 };
@@ -41,7 +41,7 @@ private:
  * and stores it for further processing. The output node has to make the
  * received data available to the user and it should be archived in a
  * proper way.
- * 
+ *
  * \ingroup Node
  **/
 class Output_node : public Node {
@@ -52,14 +52,14 @@ public:
   typedef Input_stream_priority_map::value_type     Input_stream_priority_map_value;
   typedef Buffer<input_value_type>                  Input_buffer;
   typedef Buffer<output_value_type>                 Output_buffer;
-  
+
   /** Manages the input from one correlator node.
-   * The input stream is used to maintain the data 
+   * The input stream is used to maintain the data
    **/
   class Input_stream {
   public:
     Input_stream(boost::shared_ptr<Data_reader> reader);
-    
+
     /** Fills the buffer with as much data as possible and returns the number of
      * bytes written.
      **/
@@ -67,7 +67,7 @@ public:
     /** returns whether we reached the end of the current time slice
      **/
     bool end_of_slice();
-    
+
     /** sets the length of a new time slice
      **/
     void set_length_time_slice(int64_t nBytes);
@@ -96,11 +96,11 @@ public:
     END_SLICE,
     END_NODE
   };
-  
+
   void write_global_header(const Output_header_global &global_header);
   void set_weight_of_input_stream(int num, int64_t weight, size_t size);
-  void time_slice_finished(int rank, int64_t nBytes);      
-  
+  void time_slice_finished(int rank, int64_t nBytes);
+
   void set_number_of_time_slices(int n_time_slices);
 
   // Callback functions:
@@ -124,7 +124,7 @@ private:
   Input_stream_priority_map           input_streams_order;
   // One input stream for every correlate node
   std::vector<Input_stream *>         input_streams;
-  
+
   int32_t curr_slice, number_of_time_slices, curr_stream;
 };
 

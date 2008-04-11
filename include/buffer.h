@@ -83,18 +83,17 @@ public:
     return _buffer;
   }
 private:
-  // This function make a kind of fake default-constructor 
+  // This function make a kind of fake default-constructor
   // initialization...using the copy constructor...
-  void construct_data_()
-  {
-    if( ! boost::is_pod<T>::value ){
+  void construct_data_() {
+    if ( ! boost::is_pod<T>::value ) {
       T tmp;
-      for(unsigned int i=0;i<N;i++){
+      for (unsigned int i=0;i<N;i++) {
         _buffer[i] = tmp;
       }
     }
   }
-  
+
   T* _buffer;
 };
 
@@ -134,8 +133,8 @@ public:
         size_t min_size = std::min(size_,size);
         size_ = size;
         construct_data_();
-        
-        if( boost::is_pod<T>::value ) {
+
+        if ( boost::is_pod<T>::value ) {
           memcpy(buffer_, oldbuffer, sizeof(T)*min_size);
         } else {
           for (size_t i=0; i<min_size; i++) {
@@ -158,11 +157,10 @@ public:
     return buffer_;
   }
 private:
-  void construct_data_()
-  {
-    if( !boost::is_pod<T>::value ){
+  void construct_data_() {
+    if ( !boost::is_pod<T>::value ) {
       T tmp;
-      for(unsigned int i=0;i<size_;i++){
+      for (unsigned int i=0;i<size_;i++) {
         buffer_[i] = tmp;
       }
     }

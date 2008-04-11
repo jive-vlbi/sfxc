@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -14,9 +14,8 @@
 #include "data_reader_file.h"
 #include "utils.h"
 
-Data_reader_file::Data_reader_file(const char *filename) : 
-  Data_reader()
-{
+Data_reader_file::Data_reader_file(const char *filename) :
+    Data_reader() {
   if (strncmp(filename, "file://", 7) != 0) {
     DEBUG_MSG("Filename '" << filename << "' doesn't start with file://");
     assert(strncmp(filename, "file://", 7) == 0);
@@ -28,9 +27,8 @@ Data_reader_file::Data_reader_file(const char *filename) :
   }
 }
 
-Data_reader_file::Data_reader_file(const std::string &filename) : 
-  Data_reader()
-{
+Data_reader_file::Data_reader_file(const std::string &filename) :
+    Data_reader() {
   if (strncmp(filename.c_str(), "file://", 7) != 0) {
     DEBUG_MSG("Filename '" << filename << "' doesn't start with file://");
     assert(strncmp(filename.c_str(), "file://", 7) == 0);
@@ -64,7 +62,7 @@ Data_reader_file::do_get_bytes(size_t nBytes, char*out) {
 }
 
 bool Data_reader_file::eof() {
-  return file.eof(); 
+  return file.eof();
 }
 
 bool Data_reader_file::can_read() {

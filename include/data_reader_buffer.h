@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -26,7 +26,7 @@ class Data_reader_buffer : public Data_reader {
   typedef Element                          value_type;
   typedef typename Element::value_type     element_type;
   typedef Buffer<value_type>               Buffer;
-  
+
 public:
   /** Constructor, reads from buffer
    **/
@@ -34,7 +34,7 @@ public:
 
   ~Data_reader_buffer();
 
-  bool eof();  
+  bool eof();
 
   bool can_read();
 
@@ -55,10 +55,9 @@ private:
 
 template <class Element>
 Data_reader_buffer<Element>::Data_reader_buffer(boost::shared_ptr<Buffer> buff)
-  : Data_reader(), 
-    buffer(buff), bytes_left(0), 
-    end_of_file(false)
-{
+    : Data_reader(),
+    buffer(buff), bytes_left(0),
+    end_of_file(false) {
   assert(buffer != NULL);
   // Didn't implement different types yet
   assert(sizeof(element_type) == 1);
@@ -82,7 +81,7 @@ int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {
     }
     if (bytes_left != 0) {
       // Copy the data
-      size_t curr_read = 
+      size_t curr_read =
         (elements_to_read < (size_t)bytes_left ? elements_to_read : bytes_left);
       if (out != NULL) {
         memcpy(out, data_start, curr_read);
@@ -91,7 +90,7 @@ int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {
       data_start += curr_read;
       elements_to_read -=curr_read;
       bytes_left -=curr_read;
-    
+
     }
     if (bytes_left == 0) {
       // get a release the buffer element
@@ -103,7 +102,7 @@ int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {
 
 template <class Element>
 bool Data_reader_buffer<Element>::eof() {
-  return (end_of_file && (bytes_left == 0)); 
+  return (end_of_file && (bytes_left == 0));
 }
 
 template <class Element>

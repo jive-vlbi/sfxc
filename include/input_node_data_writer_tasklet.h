@@ -8,7 +8,7 @@
 #include "utils.h"
 
 //#ifdef RUNTIME_STATISTIC
-//#include "monitor.h" 
+//#include "monitor.h"
 //#endif // RUNTIME_STATISTIC
 
 template <class Type>
@@ -44,7 +44,7 @@ public:
 private:
   Input_buffer_ptr    input_buffer_;
   Data_writer_queue    data_writers_;
-  
+
   //#ifdef RUNTIME_STATISTIC
   //QOS_MonitorSpeed monitor_;
   //#endif // RUNTIME_STATISTIC
@@ -69,7 +69,7 @@ Input_node_data_writer_tasklet<Type>::~Input_node_data_writer_tasklet() {
     }
   }
   while  (!data_writers_.empty()) {
-    if ((data_writers_.front().writer->get_size_dataslice() <= 0) && 
+    if ((data_writers_.front().writer->get_size_dataslice() <= 0) &&
         (data_writers_.front().slice_size == 0)) {
       data_writers_.pop();
     } else {

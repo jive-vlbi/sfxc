@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -30,7 +30,7 @@ public:
   // NGHK: add a mutex in produce (multiple producers)
   T &produce();
   void produced(int status);
-  
+
   // NGHK: add a mutex in consume (multiple consumers)
   T &consume(int &status);
   void consumed();
@@ -52,9 +52,8 @@ private:
 
 template <class T>
 Semaphore_buffer<T>::
-Semaphore_buffer(int size) 
-  : Base(size), consuming(false), producing(false)
-{
+Semaphore_buffer(int size)
+    : Base(size), consuming(false), producing(false) {
   assert(size > 0);
   if ( sem_init(&empty_sem, 1, 0) == -1 ) {
     std::cout << "Failed to initialise the \"empty\" semaphore" << std::endl;
@@ -69,8 +68,7 @@ Semaphore_buffer(int size)
 template <class T>
 Semaphore_buffer<T>::
 Semaphore_buffer(int size, const T& element)
-  : Base(size, element), consuming(false), producing(false)
-{
+    : Base(size, element), consuming(false), producing(false) {
   assert(size > 0);
   if ( sem_init(&empty_sem, 1, 0) == -1 ) {
     std::cout << "Failed to initialise the \"empty\" semaphore" << std::endl;
@@ -91,7 +89,8 @@ Semaphore_buffer<T>::~Semaphore_buffer() {
 template <class T>
 T &
 Semaphore_buffer<T>::produce() {
-  assert(!producing); producing = true;
+  assert(!producing);
+  producing = true;
   sem_wait(&full_sem);
   return Base::get_prod_elem();
 }
@@ -99,15 +98,17 @@ Semaphore_buffer<T>::produce() {
 template <class T>
 void
 Semaphore_buffer<T>::produced(int status) {
-  assert(producing); producing = false;
+  assert(producing);
+  producing = false;
   Base::succ_prod(status);
   sem_post(&empty_sem);
 }
-  
+
 template <class T>
 T &
 Semaphore_buffer<T>::consume(int &status) {
-  assert(!consuming); consuming = true;
+  assert(!consuming);
+  consuming = true;
   sem_wait(&empty_sem);
   return Base::get_cons_elem(status);
 }
@@ -115,13 +116,14 @@ Semaphore_buffer<T>::consume(int &status) {
 template <class T>
 void
 Semaphore_buffer<T>::consumed() {
-  assert(consuming); consuming = false;
+  assert(consuming);
+  consuming = false;
   Base::succ_cons();
   sem_post(&full_sem);
 }
 
 template <class T>
-bool 
+bool
 Semaphore_buffer<T>::empty() {
   int val;
   sem_getvalue(&empty_sem, &val);
@@ -129,7 +131,7 @@ Semaphore_buffer<T>::empty() {
 }
 
 template <class T>
-bool 
+bool
 Semaphore_buffer<T>::full() {
   int val;
   sem_getvalue(&full_sem, &val);

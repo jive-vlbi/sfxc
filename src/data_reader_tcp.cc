@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -20,15 +20,14 @@
 #include <errno.h>
 
 Data_reader_tcp::Data_reader_tcp(uint64_t *ip_addr, int nAddr, unsigned short int port)
-  : Data_reader(), socket(-1)
-{
+    : Data_reader(), socket(-1) {
   TCP_Connection connection(true);
   int i=0;
   do {
     i = (i+1)%nAddr;
     socket = connection.do_connect(ip_addr[i], port);
   } while (socket <= 0);
-  
+
   assert(socket > 0);
 }
 
@@ -45,8 +44,8 @@ int Data_reader_tcp::do_get_bytes(size_t nBytes, char*out) {
     char buff[(int)buff_size];
     return read(socket, (void *) buff, buff_size);
   }
-  
-  /* Read data from socket */ 
+
+  /* Read data from socket */
   return read(socket, (void *) out, nBytes);
 }
 
@@ -64,7 +63,7 @@ bool Data_reader_tcp::can_read() {
   pollfd fds[1];
   fds[0].fd = socket;
   fds[0].events = POLLIN;
-  
+
   int ret = poll(fds, 1, /*timeout in miliseconds*/ 0);
   if (ret > 0) {
     return ((fds[0].revents & POLLIN) != 0);

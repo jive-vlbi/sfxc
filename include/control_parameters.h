@@ -12,8 +12,8 @@
 /** Information about the mark4 tracks needed by the input node. **/
 class Input_node_parameters {
 public:
-  Input_node_parameters() 
-    : track_bit_rate(0), number_channels(-1), integr_time(-1) {}
+  Input_node_parameters()
+      : track_bit_rate(0), number_channels(-1), integr_time(-1) {}
 
   class Channel_parameters {
   public:
@@ -55,9 +55,9 @@ std::ostream &operator<<(std::ostream &out, const Input_node_parameters &param);
 class Correlation_parameters {
 public:
   Correlation_parameters()
-    : start_time(0), stop_time(0), integration_time(0),
-      number_channels(0), integration_nr(-1), slice_nr(-1), slice_offset(-1), 
-      sample_rate(0), bits_per_sample(0), channel_freq(0), bandwidth(0), 
+      : start_time(0), stop_time(0), integration_time(0),
+      number_channels(0), integration_nr(-1), slice_nr(-1), slice_offset(-1),
+      sample_rate(0), bits_per_sample(0), channel_freq(0), bandwidth(0),
       sideband('n'), channel_nr(0), polarisation('n') {
   }
 
@@ -69,9 +69,9 @@ public:
     bool
     operator==(const Correlation_parameters::Station_parameters& other) const;
 
-    int32_t station_number; // the number of the station 
-                            // according to the vex file 
-                            // sorted alphabathically
+    int32_t station_number; // the number of the station
+    // according to the vex file
+    // sorted alphabathically
     int32_t station_stream; // input stream (from multiple_data_readers)
     int32_t start_time;     // Start and stop time for the station
     int32_t stop_time;
@@ -88,8 +88,8 @@ public:
   int32_t integration_nr;   // number of the integration
   int32_t slice_nr;         // Number of the output slice
   int32_t slice_offset;     // Number of output slices in the output file
-                            // between one integration slice and the next 
-                            // in case of subsecond integrations
+  // between one integration slice and the next
+  // in case of subsecond integrations
   int32_t sample_rate;      // #Samples per second
   int32_t bits_per_sample;  // For all stations equal
   int64_t channel_freq;     // Center frequency of the band in Hz
@@ -176,27 +176,27 @@ public:
   std::string frequency_channel(size_t channel_nr) const;
 
   bool cross_polarize() const;
-  int cross_channel(int channel_nr, 
+  int cross_channel(int channel_nr,
                     const std::string &mode) const;
   int cross_channel(const std::string &channel_nr,
                     const std::string &mode) const;
 
   std::string get_mode(int32_t &time) const;
 
-  char polarisation(const std::string &channel_name, 
+  char polarisation(const std::string &channel_name,
                     const std::string &station_name,
                     const std::string &mode) const;
 
-  std::string frequency(const std::string &channel_name, 
-                    const std::string &station_name,
-                    const std::string &mode) const;
-  
-  char sideband(const std::string &channel_name, 
-                    const std::string &station_name,
-                    const std::string &mode) const;
+  std::string frequency(const std::string &channel_name,
+                        const std::string &station_name,
+                        const std::string &mode) const;
+
+  char sideband(const std::string &channel_name,
+                const std::string &station_name,
+                const std::string &mode) const;
 
   /**
-   * Returns the number of bytes transferred for one integration slice 
+   * Returns the number of bytes transferred for one integration slice
    * from the input node to the correlator node.
    **/
   static int nr_ffts_per_integration_slice
@@ -207,7 +207,7 @@ public:
   }
 
   /**
-   * Computes the number of bytes transferred from the input node to the 
+   * Computes the number of bytes transferred from the input node to the
    * correlator node for one integration slice.
    **/
   static int nr_bytes_per_integration_slice_input_node_to_correlator_node
@@ -222,7 +222,7 @@ public:
     // One extra byte at the end for the offset
     return nr_ffts*(number_channels*bits_per_sample/8 + 2);
   }
-  
+
   int polarisation_type_for_global_output_header() const;
 
   /****************************************************/

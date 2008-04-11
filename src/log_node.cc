@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -17,25 +17,23 @@
 #include "log_writer_cout.h"
 #include "log_writer_file.h"
 
-Log_node::Log_node(int rank, int nNodes) 
-  : Node(rank), log_node_ctrl(*this, nNodes)
-{
+Log_node::Log_node(int rank, int nNodes)
+    : Node(rank), log_node_ctrl(*this, nNodes) {
   get_log_writer()(1) << "Log_node()" << std::endl;
   add_controller(&log_node_ctrl);
 
   int32_t msg;
-  MPI_Send(&msg, 1, MPI_INT32, 
+  MPI_Send(&msg, 1, MPI_INT32,
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
 }
 
-Log_node::Log_node(int rank, int nNodes, Log_writer *writer) 
-  : Node(rank, writer), log_node_ctrl(*this, nNodes)
-{
+Log_node::Log_node(int rank, int nNodes, Log_writer *writer)
+    : Node(rank, writer), log_node_ctrl(*this, nNodes) {
   get_log_writer()(1) << "Log_node()" << std::endl;
   add_controller(&log_node_ctrl);
 
   int32_t msg;
-  MPI_Send(&msg, 1, MPI_INT32, 
+  MPI_Send(&msg, 1, MPI_INT32,
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
 }
 

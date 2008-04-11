@@ -5,8 +5,7 @@
 #include <unistd.h>
 #include "data_reader.h"
 
-class Data_reader_blocking : public Data_reader
-{
+class Data_reader_blocking : public Data_reader {
   Data_reader* m_reader;
 public:
   Data_reader_blocking(Data_reader *rdr);

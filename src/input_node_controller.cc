@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -21,7 +21,7 @@ Controller::Process_event_status
 Input_node_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
-    case MPI_TAG_TRACK_PARAMETERS: {
+  case MPI_TAG_TRACK_PARAMETERS: {
       MPI_Transfer transfer;
       Input_node_parameters input_node_param;
       transfer.receive(status, input_node_param);
@@ -31,7 +31,7 @@ Input_node_controller::process_event(MPI_Status &status) {
     }
 
 
-    case MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP: {
+  case MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP: {
       int32_t time_stamp;
       MPI_Recv(&time_stamp, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -41,7 +41,7 @@ Input_node_controller::process_event(MPI_Status &status) {
                MPI_COMM_WORLD);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-    case MPI_TAG_INPUT_NODE_GOTO_TIME: {
+  case MPI_TAG_INPUT_NODE_GOTO_TIME: {
       int32_t new_time;
       MPI_Recv(&new_time, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -49,21 +49,21 @@ Input_node_controller::process_event(MPI_Status &status) {
       return PROCESS_EVENT_STATUS_SUCCEEDED;
 
     }
-    case MPI_TAG_INPUT_NODE_STOP_TIME: {
+  case MPI_TAG_INPUT_NODE_STOP_TIME: {
       int32_t stop_time;
       MPI_Recv(&stop_time, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       node.set_stop_time(stop_time);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-    case MPI_TAG_INPUT_NODE_ADD_TIME_SLICE: {
+  case MPI_TAG_INPUT_NODE_ADD_TIME_SLICE: {
       int32_t message[4];
       MPI_Recv(&message, 4, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       node.add_time_slice(message[0],message[1],message[2],message[3]);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-    case MPI_TAG_GET_STATUS: {
+  case MPI_TAG_GET_STATUS: {
       int32_t node_status;
       MPI_Recv(&node_status, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -72,8 +72,8 @@ Input_node_controller::process_event(MPI_Status &status) {
                MPI_TAG_GET_STATUS, MPI_COMM_WORLD);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-    case MPI_TAG_DELAY_TABLE: {
-      Delay_table_akima delay_table; 
+  case MPI_TAG_DELAY_TABLE: {
+      Delay_table_akima delay_table;
       int station;
       MPI_Transfer::receive(status, delay_table, station);
       node.set_delay_table(delay_table);

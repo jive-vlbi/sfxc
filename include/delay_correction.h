@@ -9,11 +9,12 @@
 
 #ifndef DELAY_CORRECTION_H
 #define DELAY_CORRECTION_H
-#include <boost/shared_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <complex>
 #include <fftw3.h>
 
-#include "tasklet/tasklet.h"#include "semaphore_buffer.h"
+#include "tasklet/tasklet.h"
+#include "semaphore_buffer.h"
 #include "delay_table_akima.h"
 #include "correlator_node_types.h"
 #include "control_parameters.h"
@@ -21,7 +22,11 @@
 #include "timer.h"
 
 class Delay_correction : public Tasklet {
-public:	typedef Correlator_node_types::Bit_sample_queue     Input_buffer;  typedef Correlator_node_types::Bit_sample_queue_ptr Input_buffer_ptr;  typedef Input_buffer::value_type                    Input_buffer_element;
+public:
+  typedef Correlator_node_types::Bit_sample_queue     Input_buffer;
+  typedef Correlator_node_types::Bit_sample_queue_ptr Input_buffer_ptr;
+  typedef Input_buffer::value_type                    Input_buffer_element;
+
   //typedef Bits_to_float_converter::Output_buffer_element Input_buffer_element;
   //typedef Bits_to_float_converter::Output_buffer         Input_buffer;
   //typedef Bits_to_float_converter::Output_buffer_ptr     Input_buffer_ptr;
@@ -44,7 +49,13 @@ public:	typedef Correlator_node_types::Bit_sample_queue     Input_buffer;  typ
   void set_delay_table(const Delay_table_akima &delay_table);
 
   void set_parameters(const Correlation_parameters &parameters);
-	///	void bit2float(const unsigned int offset,				  			 const unsigned int input_size,								 const unsigned char* input,					  		 std::complex<FLOAT>* output_buffer);
+  ///
+  void bit2float(const unsigned int offset,
+                 const unsigned int input_size,
+                 const unsigned char* input,
+                 std::complex<FLOAT>* output_buffer);
+
+
   /// Do one delay step
   void do_task();
 
@@ -96,7 +107,9 @@ private:
   // You need this one because the input and output are FLOATs (not complex)
   std::vector<std::complex<FLOAT> > frequency_buffer;
 
-  Timer delay_timer;  std::complex<FLOAT> lookup_table[256][4];
+  Timer delay_timer;
+
+  std::complex<FLOAT> lookup_table[256][4];
 };
 
 #endif /*DELAY_CORRECTION_H*/

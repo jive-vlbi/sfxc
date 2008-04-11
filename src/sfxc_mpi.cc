@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id: sfxc_mpi.h 281 2007-07-10 13:53:05Z kruithof $
  *
  */
@@ -25,85 +25,90 @@ void start_node() {
   MPI_Status status;
   MPI_Probe(RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
   switch (status.MPI_TAG) {
-  case MPI_TAG_SET_LOG_NODE:
-    { 
+  case MPI_TAG_SET_LOG_NODE: {
       int32_t msg;
-      MPI_Recv(&msg, 1, MPI_INT32, 
+      MPI_Recv(&msg, 1, MPI_INT32,
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
       // No break
     }
-  case MPI_TAG_LOG_MESSAGE: 
-    {
-      
+  case MPI_TAG_LOG_MESSAGE: {
+
       assert (RANK_LOG_NODE == rank);
       int numtasks;
       MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
-      if (PRINT_PID) { DEBUG_MSG("Log node, pid = " << getpid()); }
-      if (PRINT_HOST) { 
-        char hostname[255]; gethostname(hostname, 255);
-        DEBUG_MSG("Log node, hostname = " << hostname); 
+      if (PRINT_PID) {
+        DEBUG_MSG("Log node, pid = " << getpid());
+      }
+      if (PRINT_HOST) {
+        char hostname[255];
+        gethostname(hostname, 255);
+        DEBUG_MSG("Log node, hostname = " << hostname);
       }
 
       Log_node log_node(rank,numtasks);
       log_node.start();
       break;
     }
-  case MPI_TAG_SET_INPUT_NODE: 
-    {
+  case MPI_TAG_SET_INPUT_NODE: {
       // The integer is the number of the input_reader:
       int32_t msg;
-      MPI_Recv(&msg, 1, MPI_INT32, 
+      MPI_Recv(&msg, 1, MPI_INT32,
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-      if (PRINT_PID) { DEBUG_MSG("Input node, pid = " << getpid()); }
-      if (PRINT_HOST) { 
-        char hostname[255]; gethostname(hostname, 255);
-        DEBUG_MSG("Input node, hostname = " << hostname); 
+      if (PRINT_PID) {
+        DEBUG_MSG("Input node, pid = " << getpid());
+      }
+      if (PRINT_HOST) {
+        char hostname[255];
+        gethostname(hostname, 255);
+        DEBUG_MSG("Input node, hostname = " << hostname);
       }
       Input_node input_node(rank, msg);
       input_node.start();
       break;
     }
-  case MPI_TAG_SET_OUTPUT_NODE: 
-    {
+  case MPI_TAG_SET_OUTPUT_NODE: {
       int32_t msg;
-      MPI_Recv(&msg, 1, MPI_INT32, 
+      MPI_Recv(&msg, 1, MPI_INT32,
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-      if (PRINT_PID) { DEBUG_MSG("Output node, pid = " << getpid()); }
-      if (PRINT_HOST) { 
-        char hostname[255]; gethostname(hostname, 255);
-        DEBUG_MSG("Output node, hostname = " << hostname); 
+      if (PRINT_PID) {
+        DEBUG_MSG("Output node, pid = " << getpid());
+      }
+      if (PRINT_HOST) {
+        char hostname[255];
+        gethostname(hostname, 255);
+        DEBUG_MSG("Output node, hostname = " << hostname);
       }
       Output_node node(rank);
       node.start();
       break;
     }
-  case MPI_TAG_SET_CORRELATOR_NODE: 
-    {
+  case MPI_TAG_SET_CORRELATOR_NODE: {
       int32_t msg;
-      MPI_Recv(&msg, 1, MPI_INT32, 
+      MPI_Recv(&msg, 1, MPI_INT32,
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-      if (PRINT_PID) { DEBUG_MSG("Correlator node, pid = " << getpid()); }
-      if (PRINT_HOST) { 
-        char hostname[255]; gethostname(hostname, 255);
-        DEBUG_MSG("Correlator node, hostname = " << hostname); 
+      if (PRINT_PID) {
+        DEBUG_MSG("Correlator node, pid = " << getpid());
+      }
+      if (PRINT_HOST) {
+        char hostname[255];
+        gethostname(hostname, 255);
+        DEBUG_MSG("Correlator node, hostname = " << hostname);
       }
       Correlator_node node(rank, msg);
       node.start();
       break;
     }
-  case MPI_TAG_END_NODE: 
-    {
+  case MPI_TAG_END_NODE: {
       DEBUG_MSG("MPI_TAG_END_NODE");
       int32_t msg;
-      MPI_Recv(&msg, 1, MPI_INT32, 
+      MPI_Recv(&msg, 1, MPI_INT32,
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
       break;
     }
-  default:
-    {
+  default: {
       std::cout << "Unknown node type " << status.MPI_TAG << std::endl;
       assert(false);
     }
@@ -111,6 +116,6 @@ void start_node() {
 }
 
 void end_node(int32_t rank) {
-  MPI_Send(&rank, 1, MPI_INT32, 
+  MPI_Send(&rank, 1, MPI_INT32,
            rank, MPI_TAG_END_NODE, MPI_COMM_WORLD);
 }

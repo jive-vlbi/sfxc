@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -66,20 +66,20 @@ private:
   Input_buffer_ptr                input_buffer_;
   Output_memory_pool              output_memory_pool_;
   std::vector<Output_buffer_ptr>  output_buffers_;
-  
+
   Channel_extractor_interface     *ch_extractor;
-  
+
   // Cached values
   size_t n_subbands;      // Number of subbands
   size_t fan_out;         // Number of output bits per input sample
   size_t bits_per_sample; // Number of bits per output sample
-  
+
   // Size of one input word in bytes (#tracks/8)
   const int N;
-  
-  #ifdef RUNTIME_STATISTIC
+
+#ifdef RUNTIME_STATISTIC
   QOS_MonitorSpeed monitor_;
-  #endif //RUNTIME_STATISTIC
+#endif //RUNTIME_STATISTIC
 };
 
 #include "channel_extractor_impl.h"

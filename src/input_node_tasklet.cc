@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id: channel_extractor.h 412 2007-12-05 12:13:20Z kruithof $
  *
  */
@@ -71,19 +71,19 @@ get_input_node_tasklet(boost::shared_ptr<Data_reader> reader) {
             assert(header.checkCRC());
 
             switch (nTracks8) {
-              case 1: {
+            case 1: {
                 return new Input_node_tasklet_implementation<int8_t>(reader, buffer);
               }
-              case 2: {
+            case 2: {
                 return new Input_node_tasklet_implementation<int16_t>(reader, buffer);
               }
-              case 4: {
+            case 4: {
                 return new Input_node_tasklet_implementation<int32_t>(reader, buffer);
               }
-              case 8: {
+            case 8: {
                 return new Input_node_tasklet_implementation<int64_t>(reader, buffer);
               }
-              default: {
+            default: {
                 assert(false);
               }
             }

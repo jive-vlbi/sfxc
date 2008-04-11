@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -27,12 +27,16 @@ public:
 
   T &produce();
   void produced(int status);
-  
+
   T &consume(int &status);
   void consumed();
 
-  bool empty() { return ptr_empty==ptr_full; }
-  bool full() { return (ptr_full >= ptr_empty+Base::size); }
+  bool empty() {
+    return ptr_empty==ptr_full;
+  }
+  bool full() {
+    return (ptr_full >= ptr_empty+Base::size);
+  }
 
 private:
   int64_t ptr_empty, ptr_full;
@@ -46,9 +50,8 @@ private:
 
 template <class T>
 Ring_buffer<T>::
-Ring_buffer(int size) 
-  : Base(size), ptr_empty(0), ptr_full(0)
-{
+Ring_buffer(int size)
+    : Base(size), ptr_empty(0), ptr_full(0) {
 }
 
 template <class T>
@@ -58,7 +61,7 @@ Ring_buffer<T>::~Ring_buffer() {
 template <class T>
 T &
 Ring_buffer<T>::produce() {
-  if (ptr_full >= ptr_empty+Base::size) 
+  if (ptr_full >= ptr_empty+Base::size)
     std::cout << "Buffer overflow" << std::endl;
   return Base::get_prod_elem();
 }
@@ -69,7 +72,7 @@ Ring_buffer<T>::produced(int status) {
   ptr_full++;
   Base::succ_prod(status);
 }
-  
+
 template <class T>
 T &
 Ring_buffer<T>::consume(int &status) {

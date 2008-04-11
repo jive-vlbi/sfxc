@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -18,14 +18,13 @@
 
 class Manager_node;
 
-class Manager_node_controller : public Controller
-{
+class Manager_node_controller : public Controller {
 public:
   Manager_node_controller(Manager_node &node);
 
   Process_event_status process_event(MPI_Status &status);
-  
-  
+
+
 private:
   Manager_node &node;
 };
@@ -46,7 +45,7 @@ public:
     STOP_CORRELATING,
     /// Stop the correlator, wait for the nodes to finish
     WAIT_FOR_OUTPUT_NODE,
-    /// Terminate the node 
+    /// Terminate the node
     END_NODE
   };
   /// Different states a correlator node can have
@@ -59,9 +58,9 @@ public:
 
   void start_next_timeslice_on_node(int corr_node_nr);
 
-  /// Initialise is called from start() to initialise the correlation process. 
+  /// Initialise is called from start() to initialise the correlation process.
   void initialise();
-  
+
   /// Initialises the processing of a certain scan
   void initialise_scan(const std::string &scan);
 
@@ -75,10 +74,10 @@ private:
 
   Manager_node_controller manager_controller;
   Status status;
-  
+
   /// Start day and year of the experiment
   int32_t start_day, start_year;
-  
+
   /// Start time of the experiment in miliseconds from midnight on the startday
   int32_t start_time;
   /// Stop time of the experiment in miliseconds from midnight on the startday

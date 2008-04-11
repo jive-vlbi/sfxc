@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -16,8 +16,7 @@
 
 class Log_node;
 
-class Log_node_controller : public Controller
-{
+class Log_node_controller : public Controller {
 public:
   Log_node_controller(Node &node, int nNodes);
 

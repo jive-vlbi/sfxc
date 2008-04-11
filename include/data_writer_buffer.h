@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -20,7 +20,7 @@
 class Data_writer_buffer : public Data_writer {
   typedef Buffer_element<char,131072>      value_type;
   typedef Buffer<value_type>               Buffer;
-  
+
 public:
   /** Constructor, reads from buffer
    **/

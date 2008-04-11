@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -29,7 +29,7 @@ public:
 
 protected:
   int max_level, current_level;
-  virtual int	sync()=0;
+  virtual int sync()=0;
 
 };
 
@@ -38,9 +38,12 @@ class Log_writer : public std::ostream {
 public:
   Log_writer(Log_writer_buffer *str_buffer);
   virtual ~Log_writer();
-  
+
   /// Sets message level
-  Log_writer &operator()(int i) {set_messagelevel(i); return *this;};
+  Log_writer &operator()(int i) {
+    set_messagelevel(i);
+    return *this;
+  };
   void set_messagelevel(int level);
   int  get_messagelevel();
 
@@ -54,8 +57,11 @@ private:
 template <class T>
 char* itoa(T value, char* result, int base ) {
   // check that the base if valid
-  if (base < 2 || base > 16) { *result = 0; return result; }
-  
+  if (base < 2 || base > 16) {
+    *result = 0;
+    return result;
+  }
+
   char* out = result;
   T quotient = value;
   int sign = 1;
@@ -70,13 +76,13 @@ char* itoa(T value, char* result, int base ) {
     ++out;
     quotient /= base;
   } while ( quotient );
-  
+
   // Only apply negative sign for base 10
   if ( (sign == -1) && (base == 10) ) *out++ = '-';
-  
+
   std::reverse( result, out );
   *out = 0;
-  
+
   return result;
 }
 
