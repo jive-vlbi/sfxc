@@ -31,7 +31,6 @@ OBJ=\
   channel_extractor_5.cc \
   channel_extractor_fast.cc \
   channel_extractor_utils.cc \
-  bits_to_float_converter.cc \
   tasklet/mutex.cc \
   tasklet/tasklet.cc \
   tasklet/tasklet_manager.cc \

@@ -2,7 +2,7 @@
 
 Correlator_node_data_reader_tasklet::
 Correlator_node_data_reader_tasklet()
-  : output_memory_pool(65000), 
+  : output_memory_pool(65000),
     output_buffer(Output_buffer_ptr(new Output_buffer())),
     n_ffts_to_read(0) {
 }
@@ -12,13 +12,13 @@ Correlator_node_data_reader_tasklet::
 }
 
 /// Set the input
-void 
+void
 Correlator_node_data_reader_tasklet::
 connect_to(Data_reader_ptr reader_) {
   reader = reader_;
 }
 
-Correlator_node_data_reader_tasklet::Output_buffer_ptr 
+Correlator_node_data_reader_tasklet::Output_buffer_ptr
 Correlator_node_data_reader_tasklet::
 get_output_buffer() {
   return output_buffer;
@@ -35,9 +35,9 @@ void Correlator_node_data_reader_tasklet::do_task() {
   do {
     bytes_to_read -= reader->get_bytes(1, data);
   } while (bytes_to_read != 0);
-  
+
   // allocate the data array
-  if (output_elem->data.size() != (size_t)n_bytes_per_fft) {
+  if (output_elem->data.size() != (size_t)n_bytes_per_fft){
     output_elem->data.resize(n_bytes_per_fft);
   }
 
@@ -77,7 +77,7 @@ bool Correlator_node_data_reader_tasklet::has_work() {
 
 void
 Correlator_node_data_reader_tasklet::
-set_parameters(const int n_ffts_to_read_, 
+set_parameters(const int n_ffts_to_read_,
                const int bits_per_sample_,
                const int number_channels_) {
   n_ffts_to_read += n_ffts_to_read_;

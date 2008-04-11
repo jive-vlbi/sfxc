@@ -3,7 +3,7 @@
 #include <utils.h>
 
 Correlation_core::Correlation_core()
-  : output_buffer(Output_buffer_ptr(new Output_buffer(2))),
+    : output_buffer(Output_buffer_ptr(new Output_buffer(2))),
     current_fft(0), total_ffts(0) {
 }
 
@@ -47,7 +47,7 @@ void Correlation_core::do_task() {
 }
 
 bool Correlation_core::almost_finished() {
-  return current_fft == number_ffts_in_integration*3/4;
+  return current_fft == number_ffts_in_integration*9/10;
 }
 
 bool Correlation_core::finished() {
@@ -74,9 +74,9 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
 
   number_ffts_in_integration =
     Control_parameters::nr_ffts_per_integration_slice(
-                                                      parameters.integration_time,
-                                                      parameters.sample_rate,
-                                                      parameters.number_channels);
+      parameters.integration_time,
+      parameters.sample_rate,
+      parameters.number_channels);
 
   baselines.clear();
   // Autos
@@ -132,7 +132,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
     }
   }
 
-  if ((int)frequency_buffer.size() != number_input_streams_in_use()) {
+  if (frequency_buffer.size() != number_input_streams_in_use()) {
     frequency_buffer.resize(number_input_streams_in_use());
   }
   for (size_t i=0; i < frequency_buffer.size(); i++) {
@@ -192,8 +192,8 @@ void Correlation_core::integration_step() {
     input_elements.resize(number_input_streams_in_use());
   }
   for (int i=0; i<number_input_streams_in_use(); i++) {
-    input_elements[i] = input_buffers[i]->front();
-    int size = input_elements[i]->size();
+    int size;
+    input_elements[i] = &input_buffers[i]->consume(size);
     assert(size == (int)size_of_fft());
     assert(size == input_elements[i]->size());
   }
@@ -203,6 +203,11 @@ void Correlation_core::integration_step() {
   for (size_t i=0; i<frequency_buffer.size(); i++) {
     assert((size_t)frequency_buffer[i].size() == (size_of_fft()/2+1));
     
+    // zero out the data for padding
+    for (size_t j=size_of_fft()/2; j<size_of_fft(); j++) {
+      (*input_elements[i])[j] = 0;
+    }
+
     fft_timer.resume();
     FFTW_EXECUTE_DFT_R2C(plan,
                          (FLOAT *)input_elements[i]->buffer(),
@@ -217,9 +222,9 @@ void Correlation_core::integration_step() {
     std::pair<size_t,size_t> &stations = baselines[i];
     assert(stations.first == stations.second);
     auto_correlate_baseline(/* in1 */
-                            frequency_buffer[stations.first].buffer(),
-                            /* out */
-                            &accumulation_buffers[i][0]);
+      frequency_buffer[stations.first].buffer(),
+      /* out */
+      &accumulation_buffers[i][0]);
   }
 
   for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
@@ -227,14 +232,13 @@ void Correlation_core::integration_step() {
     std::pair<size_t,size_t> &stations = baselines[i];
     assert(stations.first != stations.second);
     correlate_baseline
-      (/* in1 */ frequency_buffer[stations.first].buffer(),
-       /* in2 */ frequency_buffer[stations.second].buffer(),
-       /* out */ &accumulation_buffers[i][0]);
+    (/* in1 */ frequency_buffer[stations.first].buffer(),
+               /* in2 */ frequency_buffer[stations.second].buffer(),
+               /* out */ &accumulation_buffers[i][0]);
   }
 
   for (int i=0; i<number_input_streams_in_use(); i++) {
-    input_buffers[i]->pop();
-    input_elements[i].release();
+    input_buffers[i]->consumed();
   }
 }
 
