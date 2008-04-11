@@ -9,27 +9,22 @@
 
 #ifndef CORRELATOR_NODE_H
 #define CORRELATOR_NODE_H
-
+#include <queue>
 #include "node.h"
-
 #include "multiple_data_readers_controller.h"
 #include "single_data_writer_controller.h"
-
 #include "semaphore_buffer.h"
-
 #include "control_parameters.h"
 #include "correlator_node_data_reader_tasklet.h"
-//#include "bits_to_float_converter.h"
-
 #include "log_writer_mpi.h"
 #include "correlation_core.h"
 #include "delay_correction.h"
-
 #include <tasklet/tasklet_manager.h>
-
 #include "timer.h"
 
-#include <queue>
+#ifdef RUNTIME_STATISTIC
+#include "monitor.h"
+#endif //RUNTIME_STATISTIC
 
 // Declare the correlator controller:
 class Correlator_node;
@@ -131,6 +126,14 @@ private:
   Timer bit_sample_reader_timer_, bits_to_float_timer_, delay_timer_, correlation_timer_;
 
   std::queue<Correlation_parameters>          integration_slices_queue;
+
+#ifdef RUNTIME_STATISTIC
+  QOS_MonitorSpeed reader_state_;
+  QOS_MonitorSpeed delaycorrection_state_;
+  QOS_MonitorSpeed correlation_state_;
+  QOS_MonitorSpeed dotask_state_;
+#endif //RUNTIME_STATISTIC
 };
 
-#endif // CORRELATOR_NODE_H
+#endif // CORRELATOR_NODE_H\
+ 

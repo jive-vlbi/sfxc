@@ -84,8 +84,8 @@ class QOS_MonitorSpeed : public QOS_Monitor
         QOS_MonitorSpeed(const std::string& name, const int interval_ms=0, const std::string& dirname=RUNTIME_STATISTIC_DIR, int history_size=1000);
         virtual ~QOS_MonitorSpeed();
 
-        void init(const std::string& name, const int interval_ms=100, const std::string& dirname=RUNTIME_STATISTIC_DIR, int history_size=1000);
-        
+        void init(const std::string& name, const int interval_ms=200, const std::string& dirname=RUNTIME_STATISTIC_DIR, int history_size=1000);
+
         template<class I, class J>
         void add_property(const std::string& s, const I& p, const J& v){
           std::stringstream str;
@@ -110,7 +110,7 @@ class QOS_MonitorSpeed : public QOS_Monitor
                         m_end = 0;
                         m_numbytes = 0;
                         m_numtime = 0;
-                } 
+                }
 
                 SampleSpeed(const SampleSpeed& s){
                     m_begin = s.m_begin;
@@ -125,12 +125,12 @@ class QOS_MonitorSpeed : public QOS_Monitor
                         m_numtime = end-begin;
                         m_numbytes = numbytes;
                 }
-                
+
                 void reset()
                 {
                   m_begin = 0;
                 }
-                
+
                 void add_subsample(time_t begin, time_t end, uint64_t numbytes){
                   if( m_begin == 0)
                   {
@@ -144,16 +144,16 @@ class QOS_MonitorSpeed : public QOS_Monitor
                         m_numbytes += numbytes;
                   }
                 }
-                
+
                 uint64_t m_begin;
                 uint64_t m_end;
                 uint64_t m_numtime;
                 uint64_t m_numbytes;
 
                 uint64_t get_bytecount(){ return m_numbytes; }
-                uint64_t get_duration(){                   
-                  if( m_begin == 0 ) return 0; 
-                  return m_end-m_begin; 
+                uint64_t get_duration(){
+                  if( m_begin == 0 ) return 0;
+                  return m_end-m_begin;
                 }
                 uint64_t get_timecount(){ return m_numtime; }
 
@@ -178,19 +178,19 @@ class QOS_MonitorSpeed : public QOS_Monitor
     private:
         // PConstructor
         QOS_MonitorSpeed(const QOS_MonitorSpeed& );
-        
+
         // PFunction
         void finalize_current_sample();
 
-        // Attributes        
+        // Attributes
         unsigned int current_sample_;
         uint64_t m_begin_time;
         uint64_t m_end_time;
         uint64_t sampling_interval_ticks_;
-        
+
         bool m_is_measuring;
         bool inited_;
-        
+
         std::ofstream fout_;
         std::vector<SampleSpeed> m_history;
         std::vector<std::string> properties_;
@@ -236,10 +236,10 @@ class QOS_MonitorState : public QOS_Monitor
         void save_history_to_file(const std::string& filename);
 
         std::string toString();
-        
+
         template<class J>
         friend std::ostream& operator<<(std::ostream& out, QOS_MonitorState<J>&);
-        
+
         template<class J>
         friend std::ostream& operator<<(std::ostream& out, QOS_MonitorState<J>*);
     private:
