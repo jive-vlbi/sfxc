@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -19,7 +19,7 @@
 
 #include "control_parameters.h"
 #include "correlator_node_data_reader_tasklet.h"
-#include "bits_to_float_converter.h"
+//#include "bits_to_float_converter.h"
 
 #include "log_writer_mpi.h"
 #include "correlation_core.h"
@@ -36,15 +36,15 @@ class Correlator_node;
 
 /**
  * Correlator_node_controller processes specific signals for the Correlator node.
- **/ 
+ **/
 class Correlator_node_controller : public Controller
 {
 public:
   Correlator_node_controller(Correlator_node &node);
   ~Correlator_node_controller();
-  
+
   Process_event_status process_event(MPI_Status &status);
-  
+
 private:
   Correlator_node &node;
 };
@@ -55,7 +55,7 @@ private:
   * open an input connection and from the controller node to process a
   * time slice. After the slice is processed the node will send a message
   * to the controller node saying it is available for a next job.
-  * 
+  *
   * \ingroup Node
   **/
 class Correlator_node : public Node
@@ -69,9 +69,9 @@ public:
 
 
 private:
-  typedef boost::shared_ptr<Correlator_node_data_reader_tasklet> 
+  typedef boost::shared_ptr<Correlator_node_data_reader_tasklet>
   /**/                                                Bit_sample_reader_ptr;
-  typedef boost::shared_ptr<Bits_to_float_converter>  Bits2float_ptr;
+  //typedef boost::shared_ptr<Bits_to_float_converter>  Bits2float_ptr;
   typedef boost::shared_ptr<Delay_correction>         Delay_correction_ptr;
 public:
   enum Status {
@@ -81,10 +81,10 @@ public:
     CORRELATING,
     END_CORRELATING
   };
-  
+
   Correlator_node(int rank, int nr_corr_node);
   ~Correlator_node();
-  
+
   void start();
 
   void output_node_set_timeslice(int slice_nr, int slice_offset, int n_slices,
@@ -99,7 +99,7 @@ public:
 
   void receive_parameters(const Correlation_parameters &parameters);
   void set_parameters();
-  
+
 
   int get_correlate_node_number();
 
@@ -111,12 +111,12 @@ public:
 private:
   void correlate();
 
-  
+
 private:
   Correlator_node_controller       correlator_node_ctrl;
   Multiple_data_readers_controller data_readers_ctrl;
   Single_data_writer_controller    data_writer_ctrl;
-  
+
   // State variables:
   Status status;
 
@@ -124,14 +124,14 @@ private:
   int nr_corr_node;
 
   std::vector< Bit_sample_reader_ptr >        bit_sample_readers;
-  std::vector< Bits2float_ptr >               bits2float_converters;
+  //std::vector< Bits2float_ptr >               bits2float_converters;
   std::vector< Delay_correction_ptr >         delay_modules;
   Correlation_core                            correlation_core;
-  
+
   int n_integration_slice_in_time_slice;
-  
+
   Timer bit_sample_reader_timer_, bits_to_float_timer_, delay_timer_, correlation_timer_;
-  
+
   std::queue<Correlation_parameters>          integration_slices_queue;
 };
 

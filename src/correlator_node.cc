@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -107,19 +107,19 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   if (bit_sample_readers.size() <= stream_nr) {
     bit_sample_readers.resize(stream_nr+1, Bit_sample_reader_ptr());
   }
-  bit_sample_readers[stream_nr] = 
+  bit_sample_readers[stream_nr] =
     Bit_sample_reader_ptr(new Correlator_node_data_reader_tasklet());
   bit_sample_readers[stream_nr]->connect_to(data_readers_ctrl.get_data_reader(stream_nr));
 
   // Bits2float tasklet
-  Bits2float_ptr sample_reader(new Bits_to_float_converter());
-  sample_reader->connect_to(bit_sample_readers[stream_nr]->get_output_buffer());
+  //Bits2float_ptr sample_reader(new Bits_to_float_converter());
+  //sample_reader->connect_to(bit_sample_readers[stream_nr]->get_output_buffer());
 
   // create the bits to float converters
-  if (bits2float_converters.size() <= stream_nr) {
-    bits2float_converters.resize(stream_nr+1, Bits2float_ptr());
-  }
-  bits2float_converters[stream_nr] = sample_reader;
+  //if (bits2float_converters.size() <= stream_nr) {
+  //  bits2float_converters.resize(stream_nr+1, Bits2float_ptr());
+  //}
+  //bits2float_converters[stream_nr] = sample_reader;
 
   { // create the delay modules
     if (delay_modules.size() <= stream_nr) {
@@ -130,7 +130,7 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
       Delay_correction_ptr(new Delay_correction());
 
     // Connect the delay_correction to the bits2float_converter
-    delay_modules[stream_nr]->connect_to(bits2float_converters[stream_nr]->get_output_buffer());
+    delay_modules[stream_nr]->connect_to(bit_sample_readers[stream_nr]->get_output_buffer());
   }
 
   // Connect the correlation_core to delay_correction
@@ -175,16 +175,6 @@ void Correlator_node::correlate() {
   }
   bit_sample_reader_timer_.stop();
 
-  bits_to_float_timer_.resume();
-  for (size_t i=0; i<bits2float_converters.size(); i++) {
-    if (bits2float_converters[i] != Bits2float_ptr()) {
-      if (bits2float_converters[i]->has_work()) {
-        bits2float_converters[i]->do_task();
-      }
-    }
-  }
-  bits_to_float_timer_.stop();
-
   delay_timer_.resume();
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
@@ -216,23 +206,24 @@ Correlator_node::receive_parameters(const Correlation_parameters &parameters) {
       assert(bit_sample_readers[i] !=
              Bit_sample_reader_ptr());
       if (i <parameters.station_streams.size()) {
-        bit_sample_readers[i]->set_parameters(number_ffts_in_integration, 
+        bit_sample_readers[i]->set_parameters(number_ffts_in_integration,
                                               parameters.bits_per_sample,
                                               parameters.number_channels);
       }
     }
   }
-  
-  if (status == STOPPED) 
+
+  if (status == STOPPED)
     set_parameters();
+
 }
 void
 Correlator_node::set_parameters() {
   assert(status == STOPPED);
-  
+
   if (integration_slices_queue.empty()) return;
-  
-  const Correlation_parameters &parameters = 
+
+  const Correlation_parameters &parameters =
     integration_slices_queue.front();
 
   int size_input_slice =
@@ -247,24 +238,14 @@ Correlator_node::set_parameters() {
 
   assert(size_input_slice > 0);
 
-  for (size_t i=0; i<bits2float_converters.size(); i++) {
-    if (bits2float_converters[i] != Bits2float_ptr()) {
-      if (i <parameters.station_streams.size()) {
-        bits2float_converters[i]->set_parameters(parameters.bits_per_sample);
-      } else {
-        bits2float_converters[i]->set_parameters(-1);
-      }
-    }
-  }
-  
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
       delay_modules[i]->set_parameters(parameters);
     }
   }
-  
   correlation_core.set_parameters(parameters, get_correlate_node_number());
-  
+
+
   status = CORRELATING;
 
   n_integration_slice_in_time_slice =
@@ -282,7 +263,7 @@ Correlator_node::set_parameters() {
                             ( nBaselines *
                               (size_of_one_baseline +
                                sizeof(Output_header_baseline) ) ) );
-  
+
   integration_slices_queue.pop();
 }
 

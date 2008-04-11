@@ -9,14 +9,7 @@
 #include "data_reader.h"
 
 class Correlator_node_data_reader_tasklet : public Tasklet {
-public:
-  typedef Correlator_node_types             Types;
-  typedef boost::shared_ptr<Data_reader>    Data_reader_ptr;
-  typedef Types::Bit_sample_memory_pool     Output_memory_pool;
-  typedef Output_memory_pool::Element       Output_memory_pool_element;
-  typedef Types::Bit_sample_buffer          Output_buffer;
-  typedef Types::Bit_sample_buffer_ptr      Output_buffer_ptr;
-
+public:  typedef Correlator_node_types             Types;  typedef boost::shared_ptr<Data_reader>    Data_reader_ptr;  typedef Types::Bit_sample_memory_pool     Output_memory_pool;  typedef Output_memory_pool::Element       Output_memory_pool_element;  typedef Types::Bit_sample_queue           Output_buffer;  typedef Types::Bit_sample_queue_ptr       Output_buffer_ptr;
   Correlator_node_data_reader_tasklet();
   ~Correlator_node_data_reader_tasklet();
 
@@ -30,7 +23,7 @@ public:
     return __PRETTY_FUNCTION__;
   }
 
-  void set_parameters(const int n_ffts_to_read, 
+  void set_parameters(const int n_ffts_to_read,
                       const int bits_per_sample,
                       const int number_channels);
 
