@@ -185,8 +185,6 @@ do_task() {
   did_work = false;
 
   RT_STAT( dotask_state_.begin_measure() );
-
-
   mark4_reader_timer_.resume();
   if (mark4_reader_.has_work()) {
 
@@ -198,13 +196,12 @@ do_task() {
   }
   mark4_reader_timer_.stop();
 
+
   channel_extractor_timer_.resume();
   if (channel_extractor_.has_work()) {
-
     RT_STAT(chex_state_.begin_measure());
     channel_extractor_.do_task();
     RT_STAT(chex_state_.end_measure(1));
-
     did_work = true;
   }
   channel_extractor_timer_.stop();
@@ -263,6 +260,7 @@ void
 Input_node_tasklet_implementation<Type>::
 set_parameters(const Input_node_parameters &input_node_param,
                int node_nr) {
+
   channel_extractor_.set_parameters(input_node_param,
                                     mark4_reader_.get_tracks(input_node_param));
 

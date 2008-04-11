@@ -25,6 +25,10 @@ class QOS_MonitorLatency;
 # include <sys/time.h>
 #include <sstream>
 
+#ifdef ENABLE_TEST_UNIT
+#include "Test_unit.h"
+#endif // ENABLE_TEST_UNIT
+
 #ifdef RUNTIME_STATISTIC
 #define RT_STAT(x) x;
 #else
@@ -77,10 +81,10 @@ class QOS_MonitorSpeed : public QOS_Monitor
 {
     public:
         QOS_MonitorSpeed();
-        QOS_MonitorSpeed(const std::string& name, const std::string& dirname=RUNTIME_STATISTIC_DIR, int history_size=1000);
+        QOS_MonitorSpeed(const std::string& name, const int interval_ms=0, const std::string& dirname=RUNTIME_STATISTIC_DIR, int history_size=1000);
         virtual ~QOS_MonitorSpeed();
 
-        void init(const std::string& name, const std::string& dirname=RUNTIME_STATISTIC_DIR, int history_size=1000);
+        void init(const std::string& name, const int interval_ms=100, const std::string& dirname=RUNTIME_STATISTIC_DIR, int history_size=1000);
         
         template<class I, class J>
         void add_property(const std::string& s, const I& p, const J& v){
@@ -98,8 +102,6 @@ class QOS_MonitorSpeed : public QOS_Monitor
         friend std::ostream& operator<<(std::ostream& out, QOS_MonitorSpeed&);
         friend std::ostream& operator<<(std::ostream& out, QOS_MonitorSpeed*);
 
-
-
         class SampleSpeed
         {
             public:
@@ -107,49 +109,85 @@ class QOS_MonitorSpeed : public QOS_Monitor
                         m_begin = 0;
                         m_end = 0;
                         m_numbytes = 0;
-                
+                        m_numtime = 0;
                 } 
 
                 SampleSpeed(const SampleSpeed& s){
                     m_begin = s.m_begin;
                     m_end = s.m_end;
+                    m_numtime = s.m_numtime;
                     m_numbytes = s.m_numbytes;
                 }
 
                 void set(time_t begin, time_t end, uint64_t numbytes){
                         m_begin = begin;
                         m_end = end;
+                        m_numtime = end-begin;
                         m_numbytes = numbytes;
                 }
-
-
+                
+                void reset()
+                {
+                  m_begin = 0;
+                }
+                
+                void add_subsample(time_t begin, time_t end, uint64_t numbytes){
+                  if( m_begin == 0)
+                  {
+                        m_begin = begin;
+                        m_end = end;
+                        m_numtime = end-begin;
+                        m_numbytes = numbytes;
+                  }else{
+                        m_end = end;
+                        m_numtime += end-begin;
+                        m_numbytes += numbytes;
+                  }
+                }
+                
                 uint64_t m_begin;
                 uint64_t m_end;
+                uint64_t m_numtime;
                 uint64_t m_numbytes;
 
-                // Return the avreage rate... in byte per seconds
                 uint64_t get_bytecount(){ return m_numbytes; }
-                uint64_t  get_duration(){ return m_end-m_begin; }
+                uint64_t get_duration(){                   
+                  if( m_begin == 0 ) return 0; 
+                  return m_end-m_begin; 
+                }
+                uint64_t get_timecount(){ return m_numtime; }
 
                 friend std::ostream& operator<<(std::ostream& out, SampleSpeed&);
-
 
                 std::string toString()
                 {
                         std::stringstream data;
-                        data << m_begin << " " << m_end << " " << m_numbytes << std::endl;
+                        data << m_begin << " " << m_end << " " << m_numtime << " "<< m_numbytes << std::endl;
                         return data.str();
                 }
         };
-          SampleSpeed& last_measure(){ return m_history[ m_history.size()-1 ]; }
+        SampleSpeed& last_measure(){ return m_history[ m_history.size()-1 ]; }
+
+        #ifdef ENABLE_TEST_UNIT
+        class Test : public Test_aclass< QOS_MonitorSpeed > {
+          public:
+            void tests();
+        };
+#endif //ENABLE_TEST_UNIT
 
     private:
+        // PConstructor
         QOS_MonitorSpeed(const QOS_MonitorSpeed& );
         
+        // PFunction
+        void finalize_current_sample();
+
+        // Attributes        
         unsigned int current_sample_;
         uint64_t m_begin_time;
         uint64_t m_end_time;
-
+        uint64_t sampling_interval_ticks_;
+        
         bool m_is_measuring;
         bool inited_;
         
