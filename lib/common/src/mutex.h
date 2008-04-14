@@ -23,52 +23,47 @@
  *   consult pthread documentation to learn
  *   the difference.
  *****************************************/
-class Mutex
-{
+class Mutex {
 public:
 
-    inline Mutex();
-    inline ~Mutex();
+  inline Mutex();
+  inline ~Mutex();
 
-    // Same behavior as the POSIX pthread_mutex_t
-    inline void lock();
-    inline void unlock();
+  // Same behavior as the POSIX pthread_mutex_t
+  inline void lock ();
+  inline void unlock();
 
 protected:
-    pthread_mutex_t mutex_;
+  pthread_mutex_t mutex_;
 
 private:
-    // Each mutex has a fixed and unique id,
-    unsigned int id_;
-    static unsigned int s_ids_;
+  // Each mutex has a fixed and unique id,
+  unsigned int id_;
+  static unsigned int s_ids_;
 };
 
 ////////////////////////////////////
 // Implementation of Mutex::*
 ////////////////////////////////////
-inline Mutex::Mutex()
-{
-    //std::cout << "Mutex init" << std::endl;
-    pthread_mutex_init(&mutex_, NULL);
-    id_ = s_ids_++;
+inline Mutex::Mutex() {
+  //std::cout << "Mutex init" << std::endl;
+  pthread_mutex_init(&mutex_, NULL);
+  id_ = s_ids_++;
 }
 
-inline Mutex::~Mutex()
-{
-    //std::cout << "Mutex destroy" << std::endl;
-    pthread_mutex_destroy( &mutex_ );
+inline Mutex::~Mutex() {
+  //std::cout << "Mutex destroy" << std::endl;
+  pthread_mutex_destroy( &mutex_ );
 }
 
-inline void Mutex::lock()
-{
-    //std::cout << "Locking" << m_id << std::endl;
-    pthread_mutex_lock( &mutex_ );
+inline void Mutex::lock () {
+  //std::cout << "Locking" << m_id << std::endl;
+  pthread_mutex_lock( &mutex_ );
 }
 
-inline void Mutex::unlock()
-{
-    //std::cout << "Mutex unlock" << std::endl;
-    pthread_mutex_unlock( &mutex_ );
+inline void Mutex::unlock() {
+  //std::cout << "Mutex unlock" << std::endl;
+  pthread_mutex_unlock( &mutex_ );
 }
 
 #endif // MUTEX_HH

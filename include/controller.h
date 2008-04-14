@@ -32,8 +32,7 @@ class Controller {
 public:
   Controller(Node &node);
 
-  virtual ~Controller() {
-  }
+  virtual ~Controller() {}
 
   /// Result of processing an event
   enum Process_event_status {

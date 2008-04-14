@@ -38,12 +38,10 @@
 //default constructor, set default values
 Uvw_model::Uvw_model()
     : end_scan(0), acc(NULL), splineakima_u(NULL), splineakima_v(NULL),
-    splineakima_w(NULL) {
-}
+    splineakima_w(NULL) {}
 
 //destructor
-Uvw_model::~Uvw_model() {
-}
+Uvw_model::~Uvw_model() {}
 
 bool Uvw_model::operator==(const Uvw_model &other) const {
   return true;

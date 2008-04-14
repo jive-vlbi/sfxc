@@ -36,8 +36,7 @@
 
 // Default constructor
 Delay_table_akima::Delay_table_akima()
-    : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL) {
-}
+    : begin_scan(0), end_scan(0), acc(NULL), splineakima(NULL) {}
 
 // Copy constructor
 Delay_table_akima::Delay_table_akima(const Delay_table_akima &other)
@@ -49,8 +48,7 @@ Delay_table_akima::Delay_table_akima(const Delay_table_akima &other)
 }
 
 // Destructor
-Delay_table_akima::~Delay_table_akima() {
-}
+Delay_table_akima::~Delay_table_akima() {}
 
 void Delay_table_akima::operator=(const Delay_table_akima &other) {
   Delay_table_akima();

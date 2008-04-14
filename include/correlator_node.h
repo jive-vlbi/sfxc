@@ -22,9 +22,7 @@
 #include <tasklet/tasklet_manager.h>
 #include "timer.h"
 
-#ifdef RUNTIME_STATISTIC
 #include "monitor.h"
-#endif //RUNTIME_STATISTIC
 
 // Declare the correlator controller:
 class Correlator_node;
@@ -135,5 +133,4 @@ private:
 #endif //RUNTIME_STATISTIC
 };
 
-#endif // CORRELATOR_NODE_H\
- 
+#endif // CORRELATOR_NODE_H

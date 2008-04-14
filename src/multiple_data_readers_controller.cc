@@ -15,8 +15,7 @@
 
 Multiple_data_readers_controller::
 Multiple_data_readers_controller(Node &node)
-    : Controller(node) {
-}
+    : Controller(node) {}
 
 Multiple_data_readers_controller::
 ~Multiple_data_readers_controller() {

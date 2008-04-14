@@ -48,7 +48,5 @@ void Log_node::start() {
   }
 }
 
-void Log_node::hook_added_data_reader(size_t reader) {
-}
-void Log_node::hook_added_data_writer(size_t writer) {
-}
+void Log_node::hook_added_data_reader(size_t reader) {}
+void Log_node::hook_added_data_writer(size_t writer) {}

@@ -15,33 +15,31 @@
 #include <vector>
 #include <pthread.h>
 
-class Thread
-{
-    friend class ThreadPool;
-    pthread_t m_threadid;
-    bool isrunning_;
+class Thread {
+  friend class ThreadPool;
+  pthread_t m_threadid;
+  bool isrunning_;
 public:
-    Thread();
-    virtual ~Thread();
+  Thread();
+  virtual ~Thread();
 
-    Thread& start();
-    void stop();
-    
-    static void* execute(void*);
-    virtual void do_execute() = 0;
+  Thread& start();
+  void stop();
+
+  static void* execute(void*);
+  virtual void do_execute() = 0;
 };
 
-class ThreadPool
-{
-    friend class Thread;
-    public:
-        ThreadPool();
-        void register_thread(Thread& thread);
-        void wait_for_all_termination();
+class ThreadPool {
+  friend class Thread;
+public:
+  ThreadPool();
+  void register_thread(Thread& thread);
+  void wait_for_all_termination();
 
-        static void s_wait_for_all_termination();
-    private:
-        std::vector<Thread*> m_vectorthread;
+  static void s_wait_for_all_termination();
+private:
+  std::vector<Thread*> m_vectorthread;
 };
 
 ThreadPool& operator||( Thread& a, Thread& b);

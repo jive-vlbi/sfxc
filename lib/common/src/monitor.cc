@@ -49,7 +49,6 @@ QOS_Monitor::QOS_Monitor() {
 }
 
 QOS_Monitor::~QOS_Monitor() {
-
 }
 
 std::ostream& operator<<(std::ostream& out, QOS_MonitorSpeed::SampleSpeed& sample) {
@@ -123,15 +122,15 @@ QOS_MonitorSpeed::~QOS_MonitorSpeed() {
 
 void QOS_MonitorSpeed::init(const std::string& name, const int sampling_interval_ms,  const std::string& dirname, int history_size) {
   //assert( inited_ == false && "Double initialization !");
-  if( inited_ == true ) MTHROW("Double Initialization");
-  
+  if ( inited_ == true ) MTHROW("Double Initialization");
+
   m_is_measuring = false;
-  
+
   current_sample_ = 0;
   m_name = name;
   m_history.resize(history_size);
 
-  sampling_interval_ticks_ = (sampling_interval_ms*ticksPerMSec()); 
+  sampling_interval_ticks_ = (sampling_interval_ms*ticksPerMSec());
 
   // Initialize the base par of the output filename
   filenamebase_.str("");
@@ -151,9 +150,9 @@ void QOS_MonitorSpeed::init(const std::string& name, const int sampling_interval
   }
 
   inited_ = true;
-  
-  for (unsigned int i=0;i<m_history.size();i++){
-      m_history[i].reset();
+
+  for (unsigned int i=0;i<m_history.size();i++) {
+    m_history[i].reset();
   }
 }
 
@@ -171,7 +170,7 @@ void QOS_MonitorSpeed::begin_measure() {
 void QOS_MonitorSpeed::finalize_current_sample() {
   current_sample_++;
   if ( current_sample_ == m_history.size() ) {
-    for (unsigned int i=0;i<m_history.size();i++){
+    for (unsigned int i=0;i<m_history.size();i++) {
       fout_ << m_history[i].toString();
       m_history[i].reset();
     }
@@ -190,7 +189,7 @@ void QOS_MonitorSpeed::end_measure(uint64_t bytecount) {
     if ( sampling_interval_ticks_ > 0 && length < sampling_interval_ticks_ ) {
       uint64_t totallength = m_history[current_sample_].get_duration();
       uint64_t diff   = sampling_interval_ticks_ - totallength;
-     
+
       //std::cout << "totallength:" << totallength <<" diff:"<<diff << " sampling_interval:" << sampling_interval_ticks_ << std::endl;
 
       // Do we need to split the interval in two
@@ -202,25 +201,25 @@ void QOS_MonitorSpeed::end_measure(uint64_t bytecount) {
       } else {
         //std::cout << "PATH B:" << current_sample_ << std::endl;
         // linear interpolation of the value
-        if( totallength < sampling_interval_ticks_ ){
-              double alpha = ((1.0*(length-diff))*bytecount)/length;
-              uint64_t part1 = alpha;
-              uint64_t part2 = bytecount-part1;
-        
-              // Save the previous sample._t
-              m_history[current_sample_].add_subsample(m_begin_time, m_begin_time+diff, part1);
-              finalize_current_sample();
+        if ( totallength < sampling_interval_ticks_ ) {
+          double alpha = ((1.0*(length-diff))*bytecount)/length;
+          uint64_t part1 = alpha;
+          uint64_t part2 = bytecount-part1;
 
-              // Initialize the next sample
-              m_history[current_sample_].set(m_begin_time, m_end_time, part2);
-        }else{
-              // Save the previous sample._t
-              finalize_current_sample();
+          // Save the previous sample._t
+          m_history[current_sample_].add_subsample(m_begin_time, m_begin_time+diff, part1);
+          finalize_current_sample();
 
-              // Initialize the next sample
-              m_history[current_sample_].set(m_begin_time, m_end_time, bytecount);
+          // Initialize the next sample
+          m_history[current_sample_].set(m_begin_time, m_end_time, part2);
+        } else {
+          // Save the previous sample._t
+          finalize_current_sample();
 
-        } 
+          // Initialize the next sample
+          m_history[current_sample_].set(m_begin_time, m_end_time, bytecount);
+
+        }
       }
     }
 
@@ -276,13 +275,13 @@ std::ostream& operator<<(std::ostream& out, QOS_MonitorSpeed* mon) {
 #ifdef ENABLE_TEST_UNIT
 void QOS_MonitorSpeed::Test::tests() {
   QOS_MonitorSpeed monitor;
-  
-  TEST_EXCEPTION_NTHROW(  monitor.init("test_monitor", 50, "./", 1000) );  
-  TEST_EXCEPTION_THROW(  monitor.init("This one should fails") );  
-  
+
+  TEST_EXCEPTION_NTHROW(  monitor.init("test_monitor", 50, "./", 1000) );
+  TEST_EXCEPTION_THROW(  monitor.init("This one should fails") );
+
   //monitor.init();
   std::cout << "Testing subsampling" << std::endl;
-  for(unsigned int i=0;i<100;i++){
+  for (unsigned int i=0;i<100;i++) {
     monitor.begin_measure();
     usleep( 100000*(1.0*random()/RAND_MAX) );
     monitor.end_measure(1);
@@ -290,21 +289,21 @@ void QOS_MonitorSpeed::Test::tests() {
   }
 
   std::cout << "Testing over-sampling" << std::endl;
-  for(unsigned int i=0;i<10; i++){
+  for (unsigned int i=0;i<10; i++) {
     monitor.begin_measure();
     sleep(3*(1.0*random()/RAND_MAX));
     monitor.end_measure(1);
     sleep(3*(1.0*random()/RAND_MAX));
   }
-  
+
   std::cout << "Testing subsampling (again)" << std::endl;
-  for(unsigned int i=0;i<100;i++){
+  for (unsigned int i=0;i<100;i++) {
     monitor.begin_measure();
     usleep( 100000*(1.0*random()/RAND_MAX) );
     monitor.end_measure(1);
     usleep( 100000*(1.0*random()/RAND_MAX) );
   }
-  
+
 }
 #endif // ENABLE_TEST_UNIT
 
@@ -316,19 +315,15 @@ void QOS_MonitorSpeed::Test::tests() {
 //
 ////////////////////////////////////////////////////////////////////////
 QOS_MonitorLatency::QOS_MonitorLatency() {
-
 }
 
 QOS_MonitorLatency::~QOS_MonitorLatency() {
-
 }
 
 void QOS_MonitorLatency::begin_measure() {
-
 }
 
 void QOS_MonitorLatency::end_measure() {
-
 }
 
 ////////////////////////////////////////////////////////////////////////

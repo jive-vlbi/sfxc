@@ -1,4 +1,4 @@
-/* 
+/*
  * author : N.G.H. Kruithof
  */
 
@@ -30,8 +30,7 @@ public:
 
   Plot_data(const Output_header_baseline &header,
             const std::vector<float>     &data)
-    : header(header), data(data), initialised(true) {
-  }
+      : header(header), data(data), initialised(true) {}
 
   Output_header_baseline header;
   std::vector<float>     data;
@@ -73,13 +72,13 @@ public:
     std::complex<float> mean(0,0);
     int n2avg=0;
 
-    for (size_t i=0 ; i< N ; i++){
+    for (size_t i=0 ; i< N ; i++) {
       // difference in the range [0,n)
       size_t pos_diff = (N+index_max-i)%N;
       // difference in the range [-n/2,n/2)
       pos_diff = std::abs((int)((pos_diff+N/2)%N - N/2));
       if (pos_diff > N/20) {
-        // skip 10% arround lag for max which is at imax 
+        // skip 10% arround lag for max which is at imax
         n2avg++;
         mean += data[i];
       }
@@ -88,11 +87,11 @@ public:
     mean /= n2avg;
 
     float sum = 0;
-    for (size_t i=0 ; i< N ; i++){
+    for (size_t i=0 ; i< N ; i++) {
       // difference in the range [0,n)
       size_t pos_diff = (N+index_max-i)%N;
       // difference in the range [-n/2,n/2)
-      pos_diff = std::abs((int)((pos_diff+N/2)%N - 
+      pos_diff = std::abs((int)((pos_diff+N/2)%N -
                                 N/2));
       if (pos_diff > N/20) {
         sum += norm(data[i]-mean);
@@ -107,7 +106,7 @@ public:
     for (size_t i=1; i<data.size(); i++) {
       if (std::abs(data[i]) > std::abs(data[index_max])) index_max = i;
     }
-    
+
     return index_max;
   }
 
@@ -130,15 +129,15 @@ private:
 
   const Plot_data &get_first_plot();
 
-  void generate_filename(char *filename, 
-                         char *filename_large, 
+  void generate_filename(char *filename,
+                         char *filename_large,
                          char *title,
                          int size,
                          const Plot_data &data);
-  void print_auto(std::ostream &index_html, 
+  void print_auto(std::ostream &index_html,
                   int sideband, int pol1, int pol2, int ch, int station);
-  void print_cross(std::ostream &index_html, 
-                   int sideband, int pol1, int pol2, int ch, 
+  void print_cross(std::ostream &index_html,
+                   int sideband, int pol1, int pol2, int ch,
                    int station1, int station2);
 
   // input file
@@ -152,7 +151,7 @@ private:
 
   // Header of the last timeslice read;
   Output_header_timeslice timeslice_header;
-    
+
   // Array with the station names
   std::vector<std::string> stations;
 
@@ -166,35 +165,35 @@ private:
 };
 
 All_plots_data::All_plots_data(const Vex &vex, FILE *input) : input(input) {
-    const Vex::Node root_node = vex.get_root_node();
-    for (Vex::Node::const_iterator it = root_node["STATION"]->begin();
-         it != root_node["STATION"]->end(); it++) {
-      stations.push_back(it.key());
-    }
-    
-    vex.get_frequencies(frequencies);
-    
-    //`read-in the global header 
-    read_data_from_file(sizeof(Output_header_global), 
-                        (char *)&global_header, false);
-    
-    data.resize(global_header.number_channels+1);
-    data_float.resize(global_header.number_channels+1);
-    fftwf_plan_ = 
-      fftwf_plan_dft_1d(global_header.number_channels+1, 
-                        reinterpret_cast<fftwf_complex*>(&data[0]),
-                        reinterpret_cast<fftwf_complex*>(&data[0]),
-                        FFTW_BACKWARD, 
-                        FFTW_ESTIMATE);
-
-    // Read the first timeslice header:
-    read_data_from_file(sizeof(Output_header_timeslice), 
-                        (char*)&timeslice_header, false);
-    assert(timeslice_header.number_baselines != 0);
+  const Vex::Node root_node = vex.get_root_node();
+  for (Vex::Node::const_iterator it = root_node["STATION"]->begin();
+       it != root_node["STATION"]->end(); it++) {
+    stations.push_back(it.key());
   }
 
-void 
-All_plots_data::read_data_from_file(int to_read, char * data, 
+  vex.get_frequencies(frequencies);
+
+  //`read-in the global header
+  read_data_from_file(sizeof(Output_header_global),
+                      (char *)&global_header, false);
+
+  data.resize(global_header.number_channels+1);
+  data_float.resize(global_header.number_channels+1);
+  fftwf_plan_ =
+    fftwf_plan_dft_1d(global_header.number_channels+1,
+                      reinterpret_cast<fftwf_complex*>(&data[0]),
+                      reinterpret_cast<fftwf_complex*>(&data[0]),
+                      FFTW_BACKWARD,
+                      FFTW_ESTIMATE);
+
+  // Read the first timeslice header:
+  read_data_from_file(sizeof(Output_header_timeslice),
+                      (char*)&timeslice_header, false);
+  assert(timeslice_header.number_baselines != 0);
+}
+
+void
+All_plots_data::read_data_from_file(int to_read, char * data,
                                     bool stop_at_eof) {
   while (!(stop_at_eof && feof(input))) {
     int read = fread(data, to_read, 1, input);
@@ -227,7 +226,7 @@ All_plots_data::read_plots(bool stop_at_eof) {
   }
 
   int  current_integration = timeslice_header.integration_slice;
-    
+
   bool first_timeslice_header = true;
   while (current_integration == timeslice_header.integration_slice) {
     int n_baselines = timeslice_header.number_baselines;
@@ -236,18 +235,18 @@ All_plots_data::read_plots(bool stop_at_eof) {
       // Read the header of the baseline
       Output_header_baseline baseline_header;
       read_data_from_file(sizeof(Output_header_baseline),
-                          (char*)&baseline_header, 
+                          (char*)&baseline_header,
                           stop_at_eof && (!first_timeslice_header));
       if (baseline_header.weight == -1) {
         return;
       }
-      
+
       // Read the data
-      read_data_from_file(data.size()*sizeof(std::complex<float>), 
-                          (char *)&data[0], 
+      read_data_from_file(data.size()*sizeof(std::complex<float>),
+                          (char *)&data[0],
                           stop_at_eof && (!first_timeslice_header));
 
-      
+
       if (baseline_header.station_nr1 != baseline_header.station_nr2) {
         fftwf_execute(fftwf_plan_);
         size_t data_size = data.size();
@@ -263,7 +262,7 @@ All_plots_data::read_plots(bool stop_at_eof) {
     }
 
     { // Read the next timeslice header
-      read_data_from_file(sizeof(Output_header_timeslice), 
+      read_data_from_file(sizeof(Output_header_timeslice),
                           (char*)&timeslice_header, stop_at_eof);
       if (timeslice_header.number_baselines == 0) {
         return;
@@ -280,23 +279,23 @@ All_plots_data::print_html() {
   index_html.precision(4);
 
   index_html << "<html><head>"  << std::endl
-             << "  <title>SFXC output - "<< global_header.experiment 
-             << "</title>" << std::endl
-             << "  <style> BODY,TH,TD{font-size: 10pt }</style>" << std::endl
-             << "</head>"
-             <<"<body>" 
-             << std::endl;
+  << "  <title>SFXC output - "<< global_header.experiment
+  << "</title>" << std::endl
+  << "  <style> BODY,TH,TD{font-size: 10pt }</style>" << std::endl
+  << "</head>"
+  <<"<body>"
+  << std::endl;
   index_html << "<script language=\"JavaScript\"><!--" << std::endl
-             << "function show(imageSrc) {" << std::endl
-             << "  if (document.images) document.images['plot_image'].src"
-             << " = imageSrc;" << std::endl
-             << "}" << std::endl
-             << "//--></script>" << std::endl
-             << std::endl;
+  << "function show(imageSrc) {" << std::endl
+  << "  if (document.images) document.images['plot_image'].src"
+  << " = imageSrc;" << std::endl
+  << "}" << std::endl
+  << "//--></script>" << std::endl
+  << std::endl;
 
   { // Print the table
     index_html << "<table border=1 bgcolor='#dddddd' cellspacing=0>"
-               << std::endl;
+    << std::endl;
 
 
 
@@ -325,12 +324,12 @@ All_plots_data::print_html() {
 
     { // first row
       index_html << "<tr>" << std::endl;
-      index_html << "  <th rowspan=2>" << global_header.experiment << "</th>" 
-                 << std::endl;
+      index_html << "  <th rowspan=2>" << global_header.experiment << "</th>"
+      << std::endl;
       index_html << "  <th colspan="<< autos.size() << ">Auto correlations</th>"
-                 << std::endl;
+      << std::endl;
       index_html << "  <th colspan="<< crosses.size() << ">Cross correlations</th>"
-                 << std::endl;
+      << std::endl;
       index_html << "</tr>" << std::endl;
     }
 
@@ -351,9 +350,9 @@ All_plots_data::print_html() {
           if (st1 != st2) {
             if (plots[sideband][pol1][pol2][0][st1][st2].initialised) {
               assert(st1 < stations.size());
-              index_html << "<th>" 
-                         << stations[st1] << "-" 
-                         << stations[st2] << "</th>";
+              index_html << "<th>"
+              << stations[st1] << "-"
+              << stations[st2] << "</th>";
             }
           }
         }
@@ -361,8 +360,8 @@ All_plots_data::print_html() {
 
       char filename[80], filename_large[80], title[80];
       generate_filename(filename, filename_large, title, 80, first_plot);
-      index_html << "<td rowspan=99><img src=\"" 
-                 << filename << "\" name=\"plot_image\"></td>" << std::endl;
+      index_html << "<td rowspan=99><img src=\""
+      << filename << "\" name=\"plot_image\"></td>" << std::endl;
       index_html << "</tr>" << std::endl;
     }
 
@@ -381,7 +380,7 @@ All_plots_data::print_html() {
 
                   index_html.precision(10);
                   index_html << frequencies[ch]/1000000
-                             << "MHz";
+                  << "MHz";
                   index_html.precision(4);
                   if (sideband == 0) {
                     index_html << ", LSB";
@@ -399,7 +398,7 @@ All_plots_data::print_html() {
                     index_html << "-Lcp";
                   }
                   index_html << "</th>" << std::endl;
-                
+
                   // Autos
                   for (size_t i=0; i<autos.size(); i++) {
                     print_auto(index_html, sideband, pol1, pol2, ch, autos[i]);
@@ -407,7 +406,7 @@ All_plots_data::print_html() {
 
                   // Crosses
                   for (size_t i=0; i<crosses.size(); i++) {
-                    print_cross(index_html, sideband, pol1, pol2, ch, 
+                    print_cross(index_html, sideband, pol1, pol2, ch,
                                 crosses[i].first, crosses[i].second);
                   }
                   index_html << "</tr>" << std::endl;
@@ -444,13 +443,13 @@ All_plots_data::set_plot(const Plot_data &plot_data) {
   }
 
   Container &container = plots[sideband][pol1][pol2];
-  if (container.size() <= freq) 
+  if (container.size() <= freq)
     container.resize(freq+1);
   assert(freq < container.size());
-  if (container[freq].size() <= station1) 
+  if (container[freq].size() <= station1)
     container[freq].resize(station1+1);
   assert(station1 < container[freq].size());
-  if (container[freq][station1].size() <= station2) 
+  if (container[freq][station1].size() <= station2)
     container[freq][station1].resize(station2+1);
   assert(station2 < container[freq][station1].size());
 
@@ -468,7 +467,7 @@ get_first_plot() {
         for (int pol2=0; pol2<2; pol2++) {
           Container &container = plots[sideband][pol1][pol2];
           if (channel < container.size()) {
-            for (size_t station=0; 
+            for (size_t station=0;
                  station<container[channel].size(); station++) {
               if (station < container[channel][station].size()) {
                 if (container[channel][station][station].initialised) {
@@ -485,10 +484,10 @@ get_first_plot() {
   return plots[0][0][0][0][0][0];
 }
 
-void 
+void
 All_plots_data::
-generate_filename(char *filename, 
-                  char *filename_large, 
+generate_filename(char *filename,
+                  char *filename_large,
                   char *title,
                   int size,
                   const Plot_data &data) {
@@ -501,20 +500,20 @@ generate_filename(char *filename,
   char pol1_ch = (pol1 == 0 ? 'r' : 'l');
   int pol2 = data.header.polarisation2;
   char pol2_ch = (pol2 == 0 ? 'r' : 'l');
-  
+
   assert(plots[sideband][pol1][pol2][channel][station1][station2].initialised);
   snprintf(filename, size,
-           "st%02d_%ccp-st%02d_%ccp-ch%01d-%csb.png", 
+           "st%02d_%ccp-st%02d_%ccp-ch%01d-%csb.png",
            station1, pol1_ch, station2, pol2_ch, channel, sideband_ch);
   snprintf(filename_large, size,
-           "st%02d_%ccp-st%02d_%ccp-ch%01d-%csb_large.png", 
+           "st%02d_%ccp-st%02d_%ccp-ch%01d-%csb_large.png",
            station1, pol1_ch, station2, pol2_ch, channel, sideband_ch);
   snprintf(title, size,
-           "(st%02d,%ccp)-(st%02d,%ccp) ch%01d %csb", 
+           "(st%02d,%ccp)-(st%02d,%ccp) ch%01d %csb",
            station1, pol1_ch, station2, pol2_ch, channel, sideband_ch);
 }
 
-void 
+void
 All_plots_data::
 print_auto(std::ostream &index_html,
            int sideband, int pol1, int pol2, int ch, int station) {
@@ -527,17 +526,17 @@ print_auto(std::ostream &index_html,
         generate_filename(filename, filename_large, title, 80, plot_data);
         plot_data.plot(filename, filename_large, title);
         index_html << "<A href = '" << filename_large << "' "
-                   << "OnMouseOver=\"show('" << filename << "');\">" 
-                   << "A" << "</a>";
+        << "OnMouseOver=\"show('" << filename << "');\">"
+        << "A" << "</a>";
       }
     }
   }
   index_html << "</td>";
 }
-void 
+void
 All_plots_data::
-print_cross(std::ostream &index_html, 
-            int sideband, int pol1, int pol2, int ch, 
+print_cross(std::ostream &index_html,
+            int sideband, int pol1, int pol2, int ch,
             int station1, int station2) {
   bool show_plot = false;
   if (station1 < (int)plots[sideband][pol1][pol2][ch].size()) {
@@ -550,7 +549,7 @@ print_cross(std::ostream &index_html,
         plot_data.plot(filename, filename_large, title);
 
         double snr = plot_data.signal_to_noise_ratio();
-        int color_val = 
+        int color_val =
           (int)(255*(snr-MIN_SNR_VALUE) / (MAX_SNR_VALUE-MIN_SNR_VALUE));
         if (color_val < 0) color_val = 0;
         if (color_val > 255) color_val = 255;
@@ -562,13 +561,13 @@ print_cross(std::ostream &index_html,
         }
         index_html << "<td bgcolor='" << color << "'>";
         index_html << "<A href = '" << filename_large << "' "
-                   << "OnMouseOver=\"show('" << filename << "');\">" 
-                   << snr << "<br>"
-                   << "<font size=-2>offset: " 
-                   << (plot_data.max_value_offset() - 
-                       global_header.number_channels/2 - 1)
-                   << "</font>"
-                   << "</a>";
+        << "OnMouseOver=\"show('" << filename << "');\">"
+        << snr << "<br>"
+        << "<font size=-2>offset: "
+        << (plot_data.max_value_offset() -
+            global_header.number_channels/2 - 1)
+        << "</font>"
+        << "</a>";
         index_html << "</td>";
       }
     }
@@ -578,15 +577,14 @@ print_cross(std::ostream &index_html,
 
 
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG
   RANK_OF_NODE = 0;
 #endif
 
   if ((argc < 3) || (argc > 5)) {
-    std::cout << "usage: " << argv[0] << " [-f] <vex-file> <correlation_file> [<output_directory>]" 
-              << std::endl;
+    std::cout << "usage: " << argv[0] << " [-f] <vex-file> <correlation_file> [<output_directory>]"
+    << std::endl;
     exit(1);
   }
 
@@ -598,15 +596,15 @@ int main(int argc, char *argv[])
     argv++;
   } else {
     if (argc > 4) {
-      std::cout << "usage: " << argv[0] << " [-f] <vex-file> <correlation_file> [<output_directory>]" 
-                << std::endl;
+      std::cout << "usage: " << argv[0] << " [-f] <vex-file> <correlation_file> [<output_directory>]"
+      << std::endl;
       exit(1);
     }
   }
 
   // Parse the vex file
   Vex vex;
-  { 
+  {
     char * vex_file = argv[1];
     std::ifstream in(vex_file);
     if (!in.is_open()) {
@@ -634,14 +632,14 @@ int main(int argc, char *argv[])
       return -1;
     }
   }
-  
+
 
   // read the data in
   All_plots_data all_plots(vex, input);
 
   do {
     all_plots.read_plots(!update);
-    
+
     all_plots.print_html();
 
     std::cout << "Produced html page" << std::endl;

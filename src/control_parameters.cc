@@ -82,9 +82,9 @@ initialise(const char *ctrl_file, const char *vex_file,
       }
     }
     for (std::set<std::string>::const_iterator set_it = result_set.begin();
-         set_it != result_set.end(); ++set_it) {
-      ctrl["channels"].append(*set_it);
-    }
+           set_it != result_set.end(); ++set_it) {
+        ctrl["channels"].append(*set_it);
+      }
   }
 
   // Checking reference station

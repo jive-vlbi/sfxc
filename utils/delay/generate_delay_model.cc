@@ -1,6 +1,6 @@
 /*
-  purpose    : delmo generates delay tables in sfxc type format according to 
-  the parameters set in a delmo_control_file, which was generated 
+  purpose    : delmo generates delay tables in sfxc type format according to
+  the parameters set in a delmo_control_file, which was generated
   with the utility vex2ccf
 
   last change: 29-05-2007
@@ -45,7 +45,7 @@ struct Scan_data    *scan_data;
 int initialise_data(const char *vex_file,
                     const std::string &station_name);
 
-int 
+int
 main(int argc, char *argv[]) {
   if (argc!=4) {
     printf("\n");
@@ -67,7 +67,7 @@ main(int argc, char *argv[]) {
   // Open the output file
   FILE *output_file = fopen(argv[3], "w");
   assert(output_file!=NULL);
-	
+
   // Change to the CALC-directory
   // Goto the location of calc-10 files ocean.dat, tilt.dat and DE405_le.jpl
   char *dir = getenv("CALC_DIR");
@@ -87,12 +87,11 @@ main(int argc, char *argv[]) {
 /*******************************************/
 
 
-long str_to_long (std::string inString, int pos, int length)
-{
+long str_to_long (std::string inString, int pos, int length) {
   std::string str=inString.substr(pos,length);
   char tmp[length+1];
   strcpy(tmp,str.c_str());
-  
+
   char *endp;
   long sval = strtol(tmp, &endp, 10);
   if (endp == tmp) {
@@ -100,7 +99,7 @@ long str_to_long (std::string inString, int pos, int length)
     return -1;
   } else {
     return sval;
-  }  
+  }
 }
 
 bool leap_year(int year) {
@@ -109,17 +108,19 @@ bool leap_year(int year) {
 
 //input  year, day of year
 //output month, day of month
-void yd2md(int year, int doy, int &month, int &dom){
+void yd2md(int year, int doy, int &month, int &dom) {
 
-  const int monthdays[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  const int monthdays[] = {
+                            31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+                          };
   int rest_of_days=doy;
   int current_month=1;
   int length_current_month = monthdays[current_month-1];
-  while(rest_of_days > length_current_month) {
+  while (rest_of_days > length_current_month) {
     rest_of_days -= length_current_month;
     current_month++;
     length_current_month =
-      (monthdays[current_month-1] + 
+      (monthdays[current_month-1] +
        (current_month==2 && leap_year(year) ? 1 : 0));
   }
   dom = rest_of_days;
@@ -128,18 +129,16 @@ void yd2md(int year, int doy, int &month, int &dom){
 
 //input year month day
 //output Julian Day
-long long JD(int y, int m, int d)
-{
+long long JD(int y, int m, int d) {
   return ( 1461 * ( y + 4800 + ( m - 14 ) / 12 ) ) / 4 +
-    ( 367 * ( m - 2 - 12 * ( ( m - 14 ) / 12 ) ) ) / 12 -
-    ( 3 * ( ( y + 4900 + ( m - 14 ) / 12 ) / 100 ) ) / 4 +
-    d - 32075;  
+         ( 367 * ( m - 2 - 12 * ( ( m - 14 ) / 12 ) ) ) / 12 -
+         ( 3 * ( ( y + 4900 + ( m - 14 ) / 12 ) / 100 ) ) / 4 +
+         d - 32075;
 }
 
 //returns clock epoch in seconds for timeString
 //assumption: |year-ref_year|<=1
-long ceps(std::string timeString, int ref_year)
-{
+long ceps(std::string timeString, int ref_year) {
   long clock_epoch=0;
   int year = str_to_long(timeString,0,4);  //pos=0, length=4
   int doy = str_to_long(timeString,5,3);
@@ -152,7 +151,7 @@ long ceps(std::string timeString, int ref_year)
   } else {
     int days_per_year = (leap_year(ref_year) ? 366 : 365);
     clock_epoch = sec + 60*min + 3600*hr + 86400*doy +
-      (year-ref_year)*days_per_year * 86400;
+                  (year-ref_year)*days_per_year * 86400;
   }
   return clock_epoch;
 }
@@ -160,7 +159,7 @@ long ceps(std::string timeString, int ref_year)
   double site_position(const Vexpp_node &vex,
   const std::string &station) {
   std::vector<double> result;
-  Vex::Node::const_iterator position = 
+  Vex::Node::const_iterator position =
   vex["SITE"][vex["STATION"][station]["SITE"]->to_string()]["site_position"];
   int i=0;
   for (Vex::Node::const_iterator site = position->begin();
@@ -173,13 +172,13 @@ long ceps(std::string timeString, int ref_year)
   }
   }
 */
-int initialise_data(const char *vex_filename, 
+int initialise_data(const char *vex_filename,
                     const std::string &station_name) {
   Vex vex(vex_filename);
 
   Vex::Node root = vex.get_root_node();
 
-  std::string site_name = 
+  std::string site_name =
     root["STATION"][station_name]["SITE"]->to_string();
 
   strcpy(station_data.site_name, site_name.c_str());
@@ -188,46 +187,46 @@ int initialise_data(const char *vex_filename,
   }
 
   station_data.site_name[8]='\0';
-  
+
   int i = 0;
-  Vex::Node::const_iterator position = 
+  Vex::Node::const_iterator position =
     vex.get_root_node()["SITE"][site_name]["site_position"];
   for (Vex::Node::const_iterator site = position->begin();
        site != position->end(); ++site) {
-    double pos;      
+    double pos;
     int err = sscanf(site->to_string().c_str(), "%lf m", &pos);
     assert(err == 1);
     station_data.site_position[i] = pos;
     i++;
   }
 
-  if(vex.get_root_node()["ANTENNA"][site_name]["axis_type"][0]->to_string()=="az")
+  if (vex.get_root_node()["ANTENNA"][site_name]["axis_type"][0]->to_string()=="az")
     station_data.axis_type=3;
-  if(vex.get_root_node()["ANTENNA"][site_name]["axis_type"][0]->to_string()=="ha")
+  if (vex.get_root_node()["ANTENNA"][site_name]["axis_type"][0]->to_string()=="ha")
     station_data.axis_type=4;
-    
-  station_data.axis_offset = 
+
+  station_data.axis_offset =
     vex.get_root_node()["ANTENNA"][site_name]["axis_offset"]->to_double_amount("m");
 
-  const std::string site_clock = 
+  const std::string site_clock =
     vex.get_root_node()["STATION"][station_name]["CLOCK"]->to_string();
-    
-  station_data.clock_early = 
+
+  station_data.clock_early =
     vex.get_root_node()["CLOCK"][site_clock]["clock_early"][1]->to_double()/1000000.;
-  station_data.clock_rate = 
-    vex.get_root_node()["CLOCK"][site_clock]["clock_early"][3]->to_double()/1000000.;  
- 
+  station_data.clock_rate =
+    vex.get_root_node()["CLOCK"][site_clock]["clock_early"][3]->to_double()/1000000.;
+
   {
     std::string clock_epoch = vex.get_root_node()["CLOCK"][site_clock]["clock_early"][2]->to_string();
     std::string startTime = vex.get_root_node()["SCHED"]->begin()["start"]->to_string();
     int year_start = str_to_long(startTime,0,4);  //pos=0, length=4;
     station_data.clock_epoch = ceps(clock_epoch,year_start);
   }
-   
+
   { // EOP information
     for (Vex::Node::const_iterator eop = vex.get_root_node()["EOP"]->begin();
          eop != vex.get_root_node()["EOP"]->end(); ++eop) {
-      station_data.tai_utc = eop["TAI-UTC"]->to_double();         
+      station_data.tai_utc = eop["TAI-UTC"]->to_double();
       std::string eop_ref_epoch = eop["eop_ref_epoch"]->to_string();
       int year = str_to_long(eop_ref_epoch,0,4);  //pos=0, length=4
       int doy = str_to_long(eop_ref_epoch,5,3);
@@ -236,35 +235,35 @@ int initialise_data(const char *vex_filename,
       station_data.eop_ref_epoch = JD(year,month,day); // Julian day
       station_data.num_eop_points = eop["num_eop_points"]->to_int();
       assert(station_data.num_eop_points<=10);
-      for (int i=0; i<station_data.num_eop_points; i++){
+      for (int i=0; i<station_data.num_eop_points; i++) {
         station_data.ut1_utc[i] = eop["ut1-utc"][i]->to_double_amount("sec");
         station_data.x_wobble[i] = eop["x_wobble"][i]->to_double_amount("asec");
-        station_data.y_wobble[i] = eop["y_wobble"][i]->to_double_amount("asec");           
+        station_data.y_wobble[i] = eop["y_wobble"][i]->to_double_amount("asec");
       }
     }
   }
-  
+
   // Scan related data
 
   n_scans = 0;
   for (Vex::Node::const_iterator scan = vex.get_root_node()["SCHED"]->begin();
        scan != vex.get_root_node()["SCHED"]->end(); ++scan) {
     for (Vex::Node::const_iterator scan_it = scan->begin("station");
-         scan_it != scan->end("station"); ++scan_it){
-      if (scan_it[0]->to_string() == station_name){
+         scan_it != scan->end("station"); ++scan_it) {
+      if (scan_it[0]->to_string() == station_name) {
         n_scans +=1;
       }
     }
   }
- 
+
   std::string startTime;
   scan_data = new struct Scan_data[n_scans];
   int scan_nr=0;
   for (Vex::Node::const_iterator scan_block = vex.get_root_node()["SCHED"]->begin();
        scan_block != vex.get_root_node()["SCHED"]->end(); ++scan_block) {
     for (Vex::Node::const_iterator scan_it = scan_block->begin("station");
-         scan_it != scan_block->end("station"); ++scan_it){
-      if (scan_it[0]->to_string() == station_name){
+         scan_it != scan_block->end("station"); ++scan_it) {
+      if (scan_it[0]->to_string() == station_name) {
         assert(scan_nr < n_scans);
         struct Scan_data &scan = scan_data[scan_nr];
 
@@ -272,23 +271,23 @@ int initialise_data(const char *vex_filename,
         scan.year = str_to_long(startTime,0,4);  //pos=0, length=4
         int doy = str_to_long(startTime,5,3);
         // convert day of year to (month,day)
-        yd2md(scan.year,doy,scan.month,scan.day); 
+        yd2md(scan.year,doy,scan.month,scan.day);
         scan.hour  = str_to_long(startTime,9,2);
         scan.min = str_to_long(startTime,12,2);
         scan.sec = str_to_long(startTime,15,2);
         // delay table for sfxc needs this one
-        scan.sec_of_day = scan.hour*3600. + scan.min*60. + scan.sec; 
-        scan.scan_start = 
+        scan.sec_of_day = scan.hour*3600. + scan.min*60. + scan.sec;
+        scan.scan_start =
           scan.sec + 60*(scan.min + 60*(scan.hour + 24*(double)doy));
         double duration = scan_it[2]->to_double_amount("sec");
         scan.scan_stop = scan.scan_start + duration;
         scan.nr_of_intervals = (int)(duration/delta_time)+1;
-        for (Vex::Node::const_iterator source_block = 
+        for (Vex::Node::const_iterator source_block =
                vex.get_root_node()["SOURCE"]->begin(scan_block["source"]->to_string());
              source_block != vex.get_root_node()["SOURCE"]->end(scan_block["source"]->to_string());
-             ++source_block){
+             ++source_block) {
 
-          strncpy(scan.source_name, 
+          strncpy(scan.source_name,
                   scan_block["source"]->to_string().c_str(),
                   80);
           for (int i=strlen(scan_block["source"]->to_string().c_str()); i<80; i++) {
@@ -305,7 +304,7 @@ int initialise_data(const char *vex_filename,
             scan.dec = -1*(PI/180)*(abs(degs)+minutes/60.0+seconds/3600);
           else
             scan.dec = (PI/180)*(abs(degs)+minutes/60.0+seconds/3600);
-        }         
+        }
         scan_nr +=1;
       }
     }

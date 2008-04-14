@@ -64,8 +64,7 @@ Queue_buffer()
 }
 
 template <class T>
-Queue_buffer<T>::~Queue_buffer() {
-}
+Queue_buffer<T>::~Queue_buffer() {}
 
 template <class T>
 T &

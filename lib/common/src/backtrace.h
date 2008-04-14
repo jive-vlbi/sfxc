@@ -49,7 +49,7 @@ public:
   /*
   #ifdef ENABLE_TEST_UNIT
   class Test : public Test_aclass<Backtrace>
-{
+  {
      public:
       void tests();
    };

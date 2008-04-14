@@ -17,7 +17,11 @@ public:
   typedef boost::shared_ptr<Data_reader_blocking>    Data_reader_blocking_ptr;
 
   typedef Types::Bit_sample_memory_pool     Output_memory_pool;
-  typedef Output_memory_pool::Element       Output_memory_pool_element;  typedef Types::Bit_sample_queue           Output_buffer;  typedef Types::Bit_sample_queue_ptr       Output_buffer_ptr;  Correlator_node_data_reader_tasklet();
+  typedef Output_memory_pool::Element       Output_memory_pool_element;
+  typedef Types::Bit_sample_queue           Output_buffer;
+  typedef Types::Bit_sample_queue_ptr       Output_buffer_ptr;
+
+  Correlator_node_data_reader_tasklet();
   ~Correlator_node_data_reader_tasklet();
 
   /// Set the input

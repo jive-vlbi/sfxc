@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Ruud Oerlemans <Oerlemans@JIVE.nl>, 2007
- * 
+ *
  * $Id: delayTable.h 278 2007-07-04 07:27:05Z kruithof $
  *
  * Class definitions for delay table

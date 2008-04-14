@@ -21,7 +21,6 @@
 
 Output_node_without_buffering_controller::Output_node_without_buffering_controller(Output_node_without_buffering &node)
     : Controller(node), node(node) {
-
 }
 
 Controller::Process_event_status
@@ -50,7 +49,8 @@ Output_node_without_buffering_controller::process_event(MPI_Status &status) {
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG)
-      << " From: corr.node " << rank[0] <<", bytes " << rank[1] << std::endl;;
+      << " From: corr.node " << rank[0] <<", bytes " << rank[1] << std::endl;
+      ;
 
 
       assert(status.MPI_SOURCE == status2.MPI_SOURCE);

@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
       in_buff[i] = ' ';
     }
     shutdown(connectSocket, 2);
-    
+
     connectSocket = connection.open_connection();
 
     assert(connectSocket > 0);
@@ -78,45 +78,45 @@ int main(int argc, char *argv[]) {
       std::vector<std::string> addr;
       connection.get_ip_addresses(addr);
       int connectSocket = -1;
-  
-      for (std::vector<std::string>::iterator it = addr.begin(); 
+
+      for (std::vector<std::string>::iterator it = addr.begin();
            connectSocket <= 0;) {
         if (*it != "127.0.0.1") {
           //std::cout << *it << std::endl;
           connectSocket = connection.do_connect(it->c_str(),1233);
         }
-  
+
         it ++;
         if (it == addr.end()) it = addr.begin();
       }
       assert(connectSocket > 0);
 
-      char buff[100]; 
+      char buff[100];
       recv(connectSocket, buff, 100, 0);
       send(connectSocket, buff, 100, 0);
-      
+
       shutdown(connectSocket, 2);
     }
     {
       std::vector<uint64_t> addr;
       connection.get_ip_addresses(addr);
       int connectSocket = -1;
-  
+
       std::cout << std::hex;
-      for (std::vector<uint64_t>::iterator it = addr.begin(); 
+      for (std::vector<uint64_t>::iterator it = addr.begin();
            connectSocket <= 0;) {
         struct in_addr addr1;
         addr1.s_addr = *it;
         if (connection.is_localhost(*it)) {
           connectSocket = connection.do_connect(*it,1233);
         }
-  
+
         it ++;
         if (it == addr.end()) it = addr.begin();
-      } 
+      }
       assert(connectSocket > 0);
 
-      char buff[100]; 
+      char buff[100];
       recv(connectSocket, buff, 100, 0);
       send(connectSocket, buff, 100, 0);
 

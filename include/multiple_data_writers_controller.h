@@ -54,8 +54,7 @@ private:
   class Output_stream {
   public:
     Output_stream()
-        : rank_node_reader(-1), stream_number_reader(-1) {
-    }
+        : rank_node_reader(-1), stream_number_reader(-1) {}
     /// The actual output stream
     // These are pointers, because a resize of the vector will
     // copy construct all the elements and then destroy the old

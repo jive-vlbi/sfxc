@@ -12,11 +12,11 @@
 
 
 const FLOAT sample_value_ms[] = {
-  -7, -2, 2, 7
-};
+                                  -7, -2, 2, 7
+                                };
 const FLOAT sample_value_m[]  = {
-  -5,  5
-};
+                                  -5,  5
+                                };
 
 Bits_to_float_converter::Bits_to_float_converter()
     : bits_per_sample(-1),

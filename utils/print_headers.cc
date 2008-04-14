@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
   unsigned char buffer[sizeof(int64_t)*SIZE_MK4_FRAME];
 
-  Mark4_reader_interface *mark4_reader = 
+  Mark4_reader_interface *mark4_reader =
     get_mark4_reader(reader, buffer);
 
   int64_t prev_time = mark4_reader->get_current_time(), current_time;

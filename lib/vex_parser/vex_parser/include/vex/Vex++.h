@@ -77,7 +77,7 @@ std::ostream &operator<<(std::ostream &out, const Vex& vex);
 
 // Template functions
 template <class OutputIterator>
-OutputIterator 
+OutputIterator
 Vex::get_scans(OutputIterator output) const {
   for (Node::const_iterator it = root["SCHED"]->begin();
        it != root["SCHED"]->end(); ++it) {
@@ -88,7 +88,7 @@ Vex::get_scans(OutputIterator output) const {
 }
 
 template <class OutputIterator>
-OutputIterator 
+OutputIterator
 Vex::get_stations(const std::string scan, OutputIterator output) const {
   Node::const_iterator scan_it = root["SCHED"][scan];
   for (Node::const_iterator it = scan_it->begin("station");

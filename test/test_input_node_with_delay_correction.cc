@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id: channel_extractor.h 412 2007-12-05 12:13:20Z kruithof $
  *
  */
@@ -89,12 +89,12 @@ int main(int argc, char*argv[]) {
     for (size_t i=0; i<control_parameters.number_frequency_channels(); i++) {
       char filename[80];
       sprintf(filename, "file://output%d.bin", (int)i);
-      data_writer = 
+      data_writer =
         boost::shared_ptr<Data_writer>(new Data_writer_file(filename));
       //data_writer = boost::shared_ptr<Data_writer>(new Data_writer_void());
 
       // Output all data
-      input_node_tasklet->add_data_writer(i, data_writer, 
+      input_node_tasklet->add_data_writer(i, data_writer,
                                           stop_time-start_time);
     }
   }

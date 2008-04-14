@@ -13,11 +13,9 @@
 #include "data_writer.h"
 #include "utils.h"
 
-Data_writer::Data_writer() : _data_counter(0), data_slice(-1) {
-}
+Data_writer::Data_writer() : _data_counter(0), data_slice(-1) {}
 
-Data_writer::~Data_writer() {
-}
+Data_writer::~Data_writer() {}
 
 size_t
 Data_writer::put_bytes(size_t nBytes, const char *buff) {

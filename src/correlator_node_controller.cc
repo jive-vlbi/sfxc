@@ -24,11 +24,9 @@
 #include "mpi_transfer.h"
 
 Correlator_node_controller::Correlator_node_controller(Correlator_node &node)
-    : Controller(node), node(node) {
-}
+    : Controller(node), node(node) {}
 
-Correlator_node_controller::~Correlator_node_controller() {
-}
+Correlator_node_controller::~Correlator_node_controller() {}
 
 Controller::Process_event_status
 Correlator_node_controller::process_event(MPI_Status &status) {

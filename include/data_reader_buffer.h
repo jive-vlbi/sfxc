@@ -64,8 +64,7 @@ Data_reader_buffer<Element>::Data_reader_buffer(boost::shared_ptr<Buffer> buff)
 }
 
 template <class Element>
-Data_reader_buffer<Element>::~Data_reader_buffer() {
-}
+Data_reader_buffer<Element>::~Data_reader_buffer() {}
 
 template <class Element>
 int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {

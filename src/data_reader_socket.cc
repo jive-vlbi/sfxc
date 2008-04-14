@@ -30,7 +30,6 @@ Data_reader_socket::Data_reader_socket(Connexion* connexion) {
 }
 
 Data_reader_socket::~Data_reader_socket() {
-
 }
 
 

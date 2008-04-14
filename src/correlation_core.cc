@@ -4,8 +4,7 @@
 
 Correlation_core::Correlation_core()
     : output_buffer(Output_buffer_ptr(new Output_buffer(2))),
-    current_fft(0), total_ffts(0) {
-}
+    current_fft(0), total_ffts(0) {}
 
 Correlation_core::~Correlation_core() {
 #if PRINT_TIMER

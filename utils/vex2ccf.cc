@@ -11,7 +11,7 @@
 
 std::string add_time(std::string &time, int delta) {
   int year, day, hour, minute, second;
-  int n_matched = sscanf(time.c_str(), "%dy%dd%dh%dm%ds", 
+  int n_matched = sscanf(time.c_str(), "%dy%dd%dh%dm%ds",
                          &year, &day, &hour, &minute, &second);
   assert(n_matched == 5);
   second += delta;
@@ -72,12 +72,12 @@ std::string get_stop(const Vexpp_node &vex) {
 
 Json::Value get_frequency(const Vex &vex,
                           Vexpp_node::const_iterator channel,
-                          const std::string &ref_station, 
+                          const std::string &ref_station,
                           const std::string &BBC_block,
                           const std::string &IF_block) {
   Json::Value result;
   std::string if_ref;
-  for (Vex::Node::const_iterator bbc = 
+  for (Vex::Node::const_iterator bbc =
          vex.get_root_node()["BBC"][BBC_block]->begin("BBC_assign");
        bbc != vex.get_root_node()["BBC"][BBC_block]->end("BBC_assign"); ++bbc) {
     if (bbc[0]->to_string() == channel[5]->to_string()) {
@@ -90,7 +90,7 @@ Json::Value get_frequency(const Vex &vex,
   assert(err == 1);
   err = sscanf(channel[3]->to_string().c_str(), "%lf MHz", &bandwidth);
   assert(err == 1);
-  
+
   result["frequency"] = freq*1000000;
   result["bandwidth"] = bandwidth*1000000;
   result["sideband"]  = channel[2]->to_string()+"SB";
@@ -107,10 +107,10 @@ Json::Value get_frequencies(const Vex &vex) {
   // Find the corresponding BBC block:
   for (Vex::Node::const_iterator bbc = vex.get_root_node()["MODE"][mode]->begin("BBC");
        bbc != vex.get_root_node()["MODE"][mode]->end("BBC"); ++bbc) {
-    for (Vex::Node::const_iterator station = ++(bbc->begin()); 
-	 station != (*bbc).end(); ++station) {
+    for (Vex::Node::const_iterator station = ++(bbc->begin());
+         station != (*bbc).end(); ++station) {
       if (ref_station == station->to_string()) {
-	BBC_block = bbc[0]->to_string();
+        BBC_block = bbc[0]->to_string();
       }
     }
   }
@@ -129,10 +129,10 @@ Json::Value get_frequencies(const Vex &vex) {
 }
 
 Json::Value site_position(const Vexpp_node &vex,
-			  const std::string &station) {
+                          const std::string &station) {
   Json::Value result;
 
-  Vex::Node::const_iterator position = 
+  Vex::Node::const_iterator position =
     vex["SITE"][vex["STATION"][station]["SITE"]->to_string()]["site_position"];
   for (Vex::Node::const_iterator site = position->begin();
        site != position->end(); ++site) {
@@ -144,10 +144,10 @@ Json::Value site_position(const Vexpp_node &vex,
   return result;
 }
 
-Json::Value get_channels(const Vex &vex){
+Json::Value get_channels(const Vex &vex) {
   std::set<std::string> result_set;
   Json::Value result;
-	
+
   for (Vex::Node::const_iterator frq_block = vex.get_root_node()["FREQ"]->begin();
        frq_block != vex.get_root_node()["FREQ"]->end(); ++frq_block) {
     for (Vex::Node::const_iterator freq_it = frq_block->begin("chan_def");
@@ -156,9 +156,9 @@ Json::Value get_channels(const Vex &vex){
     }
   }
   for (std::set<std::string>::const_iterator set_it = result_set.begin();
-       set_it != result_set.end(); ++set_it){
-    result.append(*set_it);
-  }
+         set_it != result_set.end(); ++set_it) {
+      result.append(*set_it);
+    }
   return result;
 }
 
@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
   bool full=false;
   bool das3=false;
   int vex_count=-1, ctrl_count=-1;
-  
+
   for (int i=1; i<argc; i++) {
     if (strcmp(argv[i],"--full") == 0) {
       full = true;
@@ -187,8 +187,8 @@ int main(int argc, char *argv[]) {
       } else {
         if (ctrl_file != NULL) {
           std::cout << "usage: " << argv[0]
-                    << " [--full|-f] [--das3] <vex-file> <ctrl-file>"
-                    << std::endl;
+          << " [--full|-f] [--das3] <vex-file> <ctrl-file>"
+          << std::endl;
           exit(1);
         }
         ctrl_file = argv[i];
@@ -198,17 +198,17 @@ int main(int argc, char *argv[]) {
   }
   if (ctrl_file == NULL) {
     std::cout << "usage: " << argv[0]
-              << " [--full|-f] [--das3] <vex-file> <ctrl-file>"
-              << std::endl;
+    << " [--full|-f] [--das3] <vex-file> <ctrl-file>"
+    << std::endl;
     exit(1);
   }
 
   std::ofstream outfile(argv[ctrl_count], std::ios::out);
 
   Vex vex(argv[vex_count]);
-  
+
   Json::Value json_output;
-  json_output["exper_name"] = 
+  json_output["exper_name"] =
     vex.get_root_node()["GLOBAL"]["EXPER"]->to_string();
   json_output["start"] = get_start(vex.get_root_node());
   json_output["stop"] = get_stop(vex.get_root_node());
@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
        it != vex.get_root_node()["STATION"]->end(); ++it) {
     json_output["stations"].append(it.key());
     json_output["data_sources"][it.key()] = Json::Value(Json::arrayValue);
-    if(full){
+    if (full) {
       json_output["site_position"][it.key()] = site_position(vex.get_root_node(), it.key());
     }
   }
@@ -227,18 +227,18 @@ int main(int argc, char *argv[]) {
   json_output["number_channels"]   = 1024;
   json_output["integr_time"]       = 1;
   json_output["message_level"]     = 1;
-  if(full){
+  if (full) {
     json_output["delay_directory"]   = "";
   }
   json_output["output_file"]       = "";
-  if(full){
+  if (full) {
     json_output["subbands"]          = get_frequencies(vex);
   }
   if (das3) {
     json_output["das3"]["clusters"]["DAS3-UVA"]["nodecount"] = 16;
     json_output["das3"]["clusters"]["DAS3-VU"]["nodecount"] = 0;
     json_output["das3"]["clusters"]["DAS3-LEIDEN"]["nodecount"] = 0;
-    
+
     json_output["das3"]["order"].append("DAS3-UVA");
     json_output["das3"]["order"].append("DAS3-VU");
     json_output["das3"]["order"].append("DAS3-LEIDEN");
@@ -246,4 +246,4 @@ int main(int argc, char *argv[]) {
 
   outfile << json_output << std::endl;
   return 0;
-} 
+}

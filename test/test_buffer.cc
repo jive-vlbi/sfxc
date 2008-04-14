@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  * Tests several implementations of buffers.
@@ -71,7 +71,7 @@ int main(int argc, char*argv) {
     buffer = &buff1;
     pthread_create(&cons_thread, NULL, consume, NULL);
     pthread_create(&prod_thread, NULL, produce, NULL);
-    
+
     pthread_join(prod_thread, NULL);
     pthread_join(cons_thread, NULL);
   }

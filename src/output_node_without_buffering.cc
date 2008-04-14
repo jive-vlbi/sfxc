@@ -109,7 +109,6 @@ void Output_node_without_buffering::start() {
 }
 
 void Output_node_without_buffering::create_buffer(int num) {
-
 }
 
 void Output_node_without_buffering::set_weight_of_input_stream(int num, uint64_t weight) {
@@ -121,11 +120,9 @@ void Output_node_without_buffering::set_weight_of_input_stream(int num, uint64_t
   input_streams_order.insert(Input_stream_priority_map_value(weight,num));
 }
 
-void Output_node_without_buffering::time_slice_finished(int rank, uint64_t nBytes) {
-}
+void Output_node_without_buffering::time_slice_finished(int rank, uint64_t nBytes) {}
 
-void Output_node_without_buffering::set_status() {
-}
+void Output_node_without_buffering::set_status() {}
 
 void Output_node_without_buffering::write_output() {
   assert(data_available());
@@ -146,11 +143,9 @@ bool Output_node_without_buffering::data_available() {
   return (bytes_in_timeslice_per_input_stream[input_streams_order.begin()->second] > 0);
 }
 
-void Output_node_without_buffering::hook_added_data_reader(size_t reader) {
-}
+void Output_node_without_buffering::hook_added_data_reader(size_t reader) {}
 
-void Output_node_without_buffering::hook_added_data_writer(size_t writer) {
-}
+void Output_node_without_buffering::hook_added_data_writer(size_t writer) {}
 
 void
 Output_node_without_buffering::set_number_of_time_slices(int n_time_slices) {

@@ -51,12 +51,10 @@ private:
 template <class T>
 Ring_buffer<T>::
 Ring_buffer(int size)
-    : Base(size), ptr_empty(0), ptr_full(0) {
-}
+    : Base(size), ptr_empty(0), ptr_full(0) {}
 
 template <class T>
-Ring_buffer<T>::~Ring_buffer() {
-}
+Ring_buffer<T>::~Ring_buffer() {}
 
 template <class T>
 T &

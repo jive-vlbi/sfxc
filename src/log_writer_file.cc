@@ -34,7 +34,6 @@ protected:
 Log_writer_file::Log_writer_file(char *filename,
                                  int messagelevel)
     : Log_writer(new Log_writer_file_buffer(filename, messagelevel)) {
-
 }
 
 // Buffer

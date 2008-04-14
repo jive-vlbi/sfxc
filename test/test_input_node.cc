@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  *  Tests reading a file from disk and then writing it back using a Data_node
@@ -67,13 +67,11 @@ Test_manager_node(int rank, int numtasks,
                   char *tmp_dir,
                   char *file_basename,
                   int nr_time_slices)
-  : Abstract_manager_node(rank, numtasks,
-                          log_writer,
-                          control_parameters),
-    tmp_dir(tmp_dir), file_basename(file_basename), 
-    nr_time_slices(nr_time_slices)
-{
-}
+    : Abstract_manager_node(rank, numtasks,
+                            log_writer,
+                            control_parameters),
+    tmp_dir(tmp_dir), file_basename(file_basename),
+    nr_time_slices(nr_time_slices) {}
 
 void Test_manager_node::start() {
   get_log_writer()(0) << "Starting nodes" << std::endl;
@@ -103,7 +101,7 @@ void Test_manager_node::start() {
   // Send the track parameters
   std::vector<std::string> scans;
   control_parameters.get_vex().get_scans(std::back_inserter(scans));
-  const std::string &mode = 
+  const std::string &mode =
     control_parameters.get_vex().get_mode(scans[0]);
   Input_node_parameters input_node_param =
     control_parameters.get_input_node_parameters(mode, station_name);
@@ -113,8 +111,8 @@ void Test_manager_node::start() {
   {
     int channel_nr =0;
     for (int time_slice=0; time_slice < nr_time_slices; time_slice++) {
-      for (Input_node_parameters::Channel_iterator 
-             chan_it = input_node_param.channels.begin();
+      for (Input_node_parameters::Channel_iterator
+           chan_it = input_node_param.channels.begin();
            chan_it != input_node_param.channels.end(); chan_it++, channel_nr++) {
         char filename[80];
         snprintf(filename, 80, "file://%s/%s_%02d_%02d.out",
@@ -134,7 +132,7 @@ void Test_manager_node::start() {
     get_log_writer()(0) << "Error: current time after start time" << std::endl;
     return;
   }
-  // goto the start time 
+  // goto the start time
   input_node_goto_time(station_name, start_time);
   // set the stop time
   input_node_set_stop_time(station_name, stop_time);
@@ -145,20 +143,20 @@ void Test_manager_node::start() {
     assert(start_time+delta_time*(nr_time_slices-1) < stop_time);
     int channel_nr =0;
     for (int time_slice=0; time_slice < nr_time_slices-1; time_slice++) {
-      for (Input_node_parameters::Channel_iterator 
-             chan_it = input_node_param.channels.begin();
+      for (Input_node_parameters::Channel_iterator
+           chan_it = input_node_param.channels.begin();
            chan_it != input_node_param.channels.end(); chan_it++, channel_nr++) {
-        input_node_set_time_slice(station_name, 
+        input_node_set_time_slice(station_name,
                                   channel_nr%input_node_param.channels.size(),
                                   /*stream*/channel_nr,
-                                  start_time+time_slice*delta_time, 
+                                  start_time+time_slice*delta_time,
                                   start_time+(time_slice+1)*delta_time);
       }
     }
-    for (Input_node_parameters::Channel_iterator 
-           chan_it = input_node_param.channels.begin();
+    for (Input_node_parameters::Channel_iterator
+         chan_it = input_node_param.channels.begin();
          chan_it != input_node_param.channels.end(); chan_it++, channel_nr++) {
-      input_node_set_time_slice(station_name, 
+      input_node_set_time_slice(station_name,
                                 channel_nr%input_node_param.channels.size(),
                                 /*stream*/channel_nr,
                                 start_time+(nr_time_slices-1)*delta_time,
@@ -177,7 +175,7 @@ void Test_manager_node::start() {
     usleep(100000); // .1 second
     status = get_status(rank_input_node);
   }
-  
+
   get_log_writer()(0) << "Terminating nodes" << std::endl;
   end_node(rank_input_node);
   end_node(RANK_LOG_NODE);
@@ -200,7 +198,7 @@ int main(int argc, char *argv[]) {
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   assert(numtasks == 3);
-  
+
   assert(argc == 4);
   char *ctrl_file = argv[1];
   char *vex_file = argv[2];
@@ -212,8 +210,8 @@ int main(int argc, char *argv[]) {
     Control_parameters control_parameters;
     control_parameters.initialise(ctrl_file, vex_file, log_writer);
     char *base_filename = "test_Input_node";
-    Test_manager_node node(rank, numtasks, &log_writer, 
-                           control_parameters, 
+    Test_manager_node node(rank, numtasks, &log_writer,
+                           control_parameters,
                            output_directory, base_filename,
                            /* nr of time slices */ 1);
     node.start();
@@ -228,8 +226,8 @@ int main(int argc, char *argv[]) {
     Control_parameters control_parameters;
     control_parameters.initialise(ctrl_file, vex_file, log_writer);
     char *base_filename = "test_Input_node_two_slices";
-    Test_manager_node node(rank, numtasks, &log_writer, 
-                           control_parameters, 
+    Test_manager_node node(rank, numtasks, &log_writer,
+                           control_parameters,
                            output_directory, base_filename,
                            /* nr of time slices */ 2);
     node.start();

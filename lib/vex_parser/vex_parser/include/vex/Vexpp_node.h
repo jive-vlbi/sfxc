@@ -59,10 +59,10 @@ public:
       return to_miliseconds(start_day, year);
     }
     int64_t to_miliseconds(int start_day, int start_year) {
-      int days_per_year = 
-        ((start_year%4==0) && 
-        ((start_year%100!=0) || (start_year%400==0)) ? 366 : 365);
-      
+      int days_per_year =
+        ((start_year%4==0) &&
+         ((start_year%100!=0) || (start_year%400==0)) ? 366 : 365);
+
       return 1000 * (second +
                      60 * (minute +
                            60 * (hour +
@@ -80,7 +80,7 @@ public:
   typedef std::pair<std::string, Vexpp_node>     dict_element;
   typedef Dict::iterator                         dict_iterator;
   typedef Dict::const_iterator                   const_dict_iterator;
-  
+
   class const_key_iterator {
   public:
     typedef std::string                        value_type;
@@ -88,21 +88,21 @@ public:
     typedef ptrdiff_t                            difference_type;
     typedef value_type*                          pointer;
     typedef value_type                          reference;
-    
+
     const_key_iterator(const_dict_iterator curr, const_dict_iterator end);
     const_key_iterator operator++();
     const_key_iterator operator++(int);
     bool operator==(const_key_iterator &other);
     bool operator!=(const_key_iterator &other);
     std::string operator*() const;
-    
+
   private:
     const_dict_iterator m_curr, m_end;
   };
 
   const_key_iterator keys_begin() const;
   const_key_iterator keys_end() const;
-  
+
   typedef Vexpp_node_iterator<Vexpp_node_iterator_type>       iterator;
   typedef Vexpp_node_iterator<Vexpp_node_iterator_const_type> const_iterator;
 
@@ -123,7 +123,7 @@ public:
   std::string to_string() const;
   const char *to_c_string() const;
 
-  
+
   // operators for ARRAY and DICT
   iterator begin();
   iterator end();
@@ -138,7 +138,7 @@ public:
   // for python
   iterator begin_key(const char *name);
   iterator end_key(const char *name);
-  
+
 
   void set_key(const std::string &key, Self& value);
   void append(const Self& value);

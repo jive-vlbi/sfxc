@@ -37,11 +37,11 @@ int main(int argc, char *argv[]) {
       in.read((char *)&baseline_header, sizeof(baseline_header));
       if (in.eof()) return 0;
       std::cout << baseline_header;
-      
+
       in.read((char *)&data[0], sizeof(data));
       for (int i=0; i<global_header.number_channels+1; i++) {
         out << data[i].real() << " "
-            << data[i].imag() << std::endl;
+        << data[i].imag() << std::endl;
       }
     }
   }

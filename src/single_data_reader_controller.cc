@@ -14,8 +14,7 @@
 
 Single_data_reader_controller::
 Single_data_reader_controller(Node &node)
-    : Controller(node) {
-}
+    : Controller(node) {}
 
 Single_data_reader_controller::Process_event_status
 Single_data_reader_controller::process_event(MPI_Status &status) {
