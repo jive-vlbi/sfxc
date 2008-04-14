@@ -27,14 +27,11 @@ public:
   typedef Correlator_node_types::Bit_sample_queue_ptr Input_buffer_ptr;
   typedef Input_buffer::value_type                    Input_buffer_element;
 
-  //typedef Bits_to_float_converter::Output_buffer_element Input_buffer_element;
-  //typedef Bits_to_float_converter::Output_buffer         Input_buffer;
-  //typedef Bits_to_float_converter::Output_buffer_ptr     Input_buffer_ptr;
-
-  typedef Buffer_element_vector<FLOAT>                   Output_buffer_element;
-  typedef Semaphore_buffer<Output_buffer_element>        Output_buffer;
-  typedef boost::shared_ptr<Output_buffer>               Output_buffer_ptr;
-
+  typedef Correlator_node_types::Float_memory_pool    Output_memory_pool;
+  typedef Correlator_node_types::Float_queue          Output_buffer;
+  typedef Correlator_node_types::Float_queue_ptr      Output_buffer_ptr;
+  typedef Output_buffer::value_type                   Output_buffer_element;
+  
 
   Delay_correction();
   virtual ~Delay_correction();
@@ -84,6 +81,7 @@ private:
 private:
   Input_buffer_ptr    input_buffer;
   Output_buffer_ptr   output_buffer;
+  Output_memory_pool  output_memory_pool;
 
   int64_t             current_time; // In microseconds
   Correlation_parameters correlation_parameters;

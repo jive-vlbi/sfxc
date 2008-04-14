@@ -4,6 +4,7 @@
 #include <memory_pool.h>
 #include <threadsafe_queue.h>
 #include <vector>
+#include "buffer.h"
 
 class Correlator_node_types {
 public:
@@ -44,6 +45,11 @@ public:
   typedef Bit_sample_memory_pool::Element                  Bit_sample_memory_pool_element;
   typedef Threadsafe_queue<Bit_sample_memory_pool_element> Bit_sample_queue;
   typedef boost::shared_ptr<Bit_sample_queue>              Bit_sample_queue_ptr;
+  
+  typedef Aligned_vector<FLOAT>                            Float_element;
+  typedef Memory_pool<Float_element>                       Float_memory_pool;
+  typedef Threadsafe_queue<Float_memory_pool::Element>     Float_queue;
+  typedef boost::shared_ptr<Float_queue>                   Float_queue_ptr;
 };
 
 #endif // CORRELATOR_NODE_TYPES_H

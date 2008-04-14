@@ -191,10 +191,7 @@ void Correlation_core::integration_step() {
     input_elements.resize(number_input_streams_in_use());
   }
   for (int i=0; i<number_input_streams_in_use(); i++) {
-    int size;
-    input_elements[i] = &input_buffers[i]->consume(size);
-    assert(size == (int)size_of_fft());
-    assert(size == input_elements[i]->size());
+    input_elements[i] = input_buffers[i]->front();
   }
 
   // Do the fft from time to frequency:
@@ -237,7 +234,8 @@ void Correlation_core::integration_step() {
   }
 
   for (int i=0; i<number_input_streams_in_use(); i++) {
-    input_buffers[i]->consumed();
+    input_buffers[i]->pop();
+    input_elements[i].release();
   }
 }
 
@@ -393,6 +391,6 @@ size_t Correlation_core::n_stations() {
   return correlation_parameters.station_streams.size();
 }
 
-int Correlation_core::number_input_streams_in_use() {
+size_t Correlation_core::number_input_streams_in_use() {
   return correlation_parameters.station_streams.size();
 }
