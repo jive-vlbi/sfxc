@@ -35,8 +35,7 @@ private:
 };
 
 template <class Buffer>
-Void_consuming_tasklet<Buffer>::Void_consuming_tasklet() {
-}
+Void_consuming_tasklet<Buffer>::Void_consuming_tasklet() {}
 
 template <class Buffer>
 void

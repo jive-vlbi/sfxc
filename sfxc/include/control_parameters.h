@@ -58,8 +58,7 @@ public:
       : start_time(0), stop_time(0), integration_time(0),
       number_channels(0), integration_nr(-1), slice_nr(-1), slice_offset(-1),
       sample_rate(0), bits_per_sample(0), channel_freq(0), bandwidth(0),
-      sideband('n'), channel_nr(0), polarisation('n') {
-  }
+      sideband('n'), channel_nr(0), polarisation('n') {}
 
 
   bool operator==(const Correlation_parameters& other) const;

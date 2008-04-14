@@ -24,48 +24,49 @@
 * facility.
 *
 **********************************************/
-class Exception : public std::exception
-{
+class Exception : public std::exception {
 public:
-    /******************************************
-    * Create a new exception, the backtrace
-    * has to be provided externally. As this can
-    * be tiring to type evertime, use the macro
-    * MTHROW when you want to throw an exception.
+  /******************************************
+  * Create a new exception, the backtrace
+  * has to be provided externally. As this can
+  * be tiring to type evertime, use the macro
+  * MTHROW when you want to throw an exception.
+  *******************************************/
+  Exception(const std::string& message, Backtrace& bt);
+  virtual ~Exception() throw ();
+
+  /******************************************
+    * return the backtrace of the exception
+    * ideally this should include all the function
+    * call stack. As this is compiler-depend some
+    * shortcomming are provided that simply return
+    * the location in the source-code where the
+    * exception was risen.
     *******************************************/
-    Exception(const std::string& message, Backtrace& bt);
-    virtual ~Exception() throw ();
+  Backtrace& backtrace();
 
-    /******************************************
-      * return the backtrace of the exception
-      * ideally this should include all the function
-      * call stack. As this is compiler-depend some
-      * shortcomming are provided that simply return
-      * the location in the source-code where the
-      * exception was risen.
-      *******************************************/
-    Backtrace& backtrace();
+  /******************************************
+  * return a string containing the type of
+  * exception in an human readable format.
+  *******************************************/
+  virtual const std::string type();
 
-    /******************************************
-    * return a string containing the type of
-    * exception in an human readable format.
-    *******************************************/
-    virtual const std::string type();
+  /******************************************
+  * return the exception message.
+  *******************************************/
+  virtual const std::string message();
 
-    /******************************************
+  /******************************************
     * return the exception message.
     *******************************************/
-    virtual const std::string message();
+  virtual const char* what() const throw() {
+    return message_.c_str();
+  }
 
-		/******************************************
-    * return the exception message.
-    *******************************************/
-    virtual const char* what() const throw() { return message_.c_str(); }
-
-    friend std::ostream& operator<<(std::ostream& out, Exception& exception);
+  friend std::ostream& operator<<(std::ostream& out, Exception& exception);
 protected:
-    std::string message_;
-    Backtrace backtrace_;
+  std::string message_;
+  Backtrace backtrace_;
 };
 
 //Backtrace bt(__PRETTY_FUNCTION__);

@@ -8,8 +8,7 @@
 /**
  *  Vex : Wrapper around the vex data tree
  **/
-Vex::Vex() {
-}
+Vex::Vex() {}
 
 Vex::Vex(const char* filename) {
   int result = open(filename);
@@ -35,13 +34,13 @@ Vex::get_root_node_not_const() {
   return root;
 }
 
-std::string 
+std::string
 Vex::get_mode(const std::string &scan) const {
   return root["SCHED"][scan]["mode"]->to_string();
 }
 
 
-std::string 
+std::string
 Vex::get_start_time_of_experiment() const {
   std::string result = "";
   Vex::Node::const_iterator sched = root["SCHED"];
@@ -56,7 +55,7 @@ Vex::get_start_time_of_experiment() const {
   return result;
 }
 
-std::string 
+std::string
 Vex::get_stop_time_of_experiment() const {
   std::string result = "";
   Vex::Node::const_iterator sched = get_root_node()["SCHED"];
@@ -72,14 +71,14 @@ Vex::get_stop_time_of_experiment() const {
   return result;
 }
 
-std::string 
+std::string
 Vex::get_start_time_of_scan(const std::string &scan_name) const {
   Vex::Node::const_iterator scan = root["SCHED"][scan_name];
   std::string start = scan["start"]->to_string();
   return start;
 }
 
-std::string 
+std::string
 Vex::get_stop_time_of_scan(const std::string &scan_name) const {
   Vex::Node::const_iterator scan = root["SCHED"][scan_name];
 
@@ -154,8 +153,8 @@ void Vex::site_position(const std::string &station, double position[]) const {
   assert(i==3);
 }
 
-char 
-Vex::polarisation(const std::string &if_node, 
+char
+Vex::polarisation(const std::string &if_node,
                   const std::string &if_ref) const {
   for (Vex::Node::const_iterator if_it = get_root_node()["IF"][if_node]->begin();
        if_it != get_root_node()["IF"][if_node]->end(); ++if_it) {
@@ -163,7 +162,7 @@ Vex::polarisation(const std::string &if_node,
       return if_it[2]->to_char();
     }
   }
-  
+
   return ' ';
 }
 
@@ -196,14 +195,14 @@ void Vex::get_frequencies(std::vector<double> &frequencies) const {
   std::set<double> freqs_;
   for (Vex::Node::const_iterator freq_it = get_root_node()["FREQ"]->begin();
        freq_it != get_root_node()["FREQ"]->end(); ++freq_it) {
-    for (Vex::Node::const_iterator chan_it = 
+    for (Vex::Node::const_iterator chan_it =
            freq_it->begin("chan_def");
          chan_it != freq_it->end("chan_def"); ++chan_it) {
       freqs_.insert((*chan_it)[1]->to_double_amount("MHz")*1000000);
     }
   }
   for (std::set<double>::iterator freq_it = freqs_.begin();
-       freq_it != freqs_.end(); freq_it++) {
-    frequencies.push_back(*freq_it);
-  }
+         freq_it != freqs_.end(); freq_it++) {
+      frequencies.push_back(*freq_it);
+    }
 }

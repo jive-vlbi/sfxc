@@ -12,11 +12,9 @@
 #include "node.h"
 #include "utils.h"
 
-Node::Node(int rank) : rank(rank), log_writer(new Log_writer_mpi(rank, 0)) {
-}
+Node::Node(int rank) : rank(rank), log_writer(new Log_writer_mpi(rank, 0)) {}
 
-Node::Node(int rank, Log_writer *writer) : rank(rank), log_writer(writer) {
-}
+Node::Node(int rank, Log_writer *writer) : rank(rank), log_writer(writer) {}
 
 Node::~Node() {
   int rank = get_rank();

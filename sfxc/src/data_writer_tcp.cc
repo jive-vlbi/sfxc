@@ -21,8 +21,7 @@
 #include <sys/poll.h>
 
 Data_writer_tcp::Data_writer_tcp()
-    : socket(-1) {
-}
+    : socket(-1) {}
 
 void Data_writer_tcp::open_connection(TCP_Connection &tcp_connection) {
   socket = tcp_connection.open_connection();

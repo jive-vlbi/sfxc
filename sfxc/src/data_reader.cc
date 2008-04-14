@@ -13,11 +13,9 @@
 #include "data_reader.h"
 #include <limits>
 
-Data_reader::Data_reader() : _data_counter(0), data_slice(-1) {
-}
+Data_reader::Data_reader() : _data_counter(0), data_slice(-1) {}
 
-Data_reader::~Data_reader() {
-}
+Data_reader::~Data_reader() {}
 
 int
 Data_reader::get_bytes(size_t nBytes, char *buff) {

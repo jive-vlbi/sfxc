@@ -57,7 +57,6 @@ Input_node_data_writer_tasklet<Type>::
 Input_node_data_writer_tasklet() {
 
 
-
 }
 
 template <class Type>

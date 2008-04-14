@@ -22,5 +22,4 @@ protected:
 };
 
 Log_writer_void::Log_writer_void(int messagelevel)
-    : Log_writer(new Log_writer_void_buffer(messagelevel)) {
-}
+    : Log_writer(new Log_writer_void_buffer(messagelevel)) {}

@@ -30,37 +30,34 @@
 *      to know the size of the mangled string
 *      large/fixed buffer size is allocated
 **********************************************/
-class Demangler
-{
+class Demangler {
 public:
-    // Create an demangler that will convert and hold
-    // the sepecified mangled name given in parameter
-    Demangler(const char* name);
-    Demangler(const Demangler& param)
-    {
-        std::cout << "toto" <<std::endl;
-    };
-    Demangler(Demangler& param)
-    {
-        std::cout << "toto" <<std::endl;
-    };
+  // Create an demangler that will convert and hold
+  // the sepecified mangled name given in parameter
+  Demangler(const char* name);
+  Demangler(const Demangler& param) {
+    std::cout << "toto" <<std::endl;
+  };
+  Demangler(Demangler& param) {
+    std::cout << "toto" <<std::endl;
+  };
 
-    // Release memory and destroy the object.
-    ~Demangler();
+  // Release memory and destroy the object.
+  ~Demangler();
 
-    // return a reference to the unmangled name, the reference
-    // is valid as long as the object exist.
-    std::string& value();
+  // return a reference to the unmangled name, the reference
+  // is valid as long as the object exist.
+  std::string& value();
 
-    // put the unmangled name to a stream
-    friend std::ostream& operator<<(std::ostream& str, Demangler& dem );
+  // put the unmangled name to a stream
+  friend std::ostream& operator<<(std::ostream& str, Demangler& dem );
 private:
-    // string to store the mangled name
-    std::string name_;
+  // string to store the mangled name
+  std::string name_;
 
-    // temporary buffer to store the unmangled name
-    char*  buffer_;
-    size_t size_;
+  // temporary buffer to store the unmangled name
+  char*  buffer_;
+  size_t size_;
 
 };
 
@@ -70,10 +67,9 @@ private:
 //     ...
 //     GetTypeName(object); will return "MyClass"
 template<class T>
-std::string& get_type_name(T& data)
-{
-    static Demangler g_dem( typeid(T).name() );
-    return g_dem.value();
+std::string& get_type_name(T& data) {
+  static Demangler g_dem( typeid(T).name() );
+  return g_dem.value();
 }
 
 
@@ -84,10 +80,9 @@ std::string& get_type_name(T& data)
 //     ...
 //     GetTypeName(object); will return "MyClass"
 template<class T>
-std::string& get_type_name()
-{
-    static Demangler g_dem( typeid(T).name() );
-    return g_dem.value();
+std::string& get_type_name() {
+  static Demangler g_dem( typeid(T).name() );
+  return g_dem.value();
 }
 
 

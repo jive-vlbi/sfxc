@@ -12,11 +12,11 @@ std::string generate_ccf_filename(const std::string &path,
                                   const std::string &channel2) {
   char filename[80];
   if (channel2.length() >= 1) {
-    snprintf(filename, 80, "%s/%s_%s_%s_%s.ccf", 
-             path.c_str(), exp.c_str(), scan_name.c_str(), 
+    snprintf(filename, 80, "%s/%s_%s_%s_%s.ccf",
+             path.c_str(), exp.c_str(), scan_name.c_str(),
              channel1.c_str(), channel2.c_str());
   } else {
-    snprintf(filename, 80, "%s/%s_%s_%s.ccf", 
+    snprintf(filename, 80, "%s/%s_%s_%s.ccf",
              path.c_str(), exp.c_str(), scan_name.c_str(), channel1.c_str());
   }
   return std::string(filename);
@@ -27,8 +27,8 @@ std::string generate_dcf_filename(std::string const &path,
                                   const std::string &scan_name,
                                   const std::string &channel) {
   char filename[80];
-  snprintf(filename, 80, 
-           "%s/%s_%s_%s.dcf", 
+  snprintf(filename, 80,
+           "%s/%s_%s_%s.dcf",
            path.c_str(), exp.c_str(), scan_name.c_str(), channel.c_str());
   return std::string(filename);
 }
@@ -39,9 +39,9 @@ std::string generate_del_filename(std::string const &path,
                                   const std::string &channel,
                                   std::string const &station_name) {
   char filename[80];
-  snprintf(filename, 80, 
-           "%s/%s_%s_%s_%s.del", 
-           path.c_str(), exp.c_str(), scan_name.c_str(), 
+  snprintf(filename, 80,
+           "%s/%s_%s_%s_%s.del",
+           path.c_str(), exp.c_str(), scan_name.c_str(),
            channel.c_str(), station_name.c_str());
   return std::string(filename);
 }
@@ -53,11 +53,11 @@ std::string generate_cor_filename(const std::string &path,
                                   std::string const &channel2) {
   char filename[80];
   if (channel2.size() > 0) {
-    snprintf(filename, 80, "%s/%s_%s_%s_%s.cor", 
-             path.c_str(), exp.c_str(), scan_name.c_str(), 
+    snprintf(filename, 80, "%s/%s_%s_%s_%s.cor",
+             path.c_str(), exp.c_str(), scan_name.c_str(),
              channel1.c_str(), channel2.c_str());
   } else {
-    snprintf(filename, 80, "%s/%s_%s_%s.cor", 
+    snprintf(filename, 80, "%s/%s_%s_%s.cor",
              path.c_str(), exp.c_str(), scan_name.c_str(), channel1.c_str());
   }
   return std::string(filename);
@@ -65,13 +65,13 @@ std::string generate_cor_filename(const std::string &path,
 
 
 inline std::vector< std::vector<std::string> >
-get_channels(VexPlus const &vex, 
+get_channels(VexPlus const &vex,
              Json::Value const &sfxc_ctrl) {
   std::vector< std::vector<std::string> > result;
   if (sfxc_ctrl.isMember("channels")) {
     assert(sfxc_ctrl["channels"].isArray());
-    for (size_t channel = 0; 
-         channel < sfxc_ctrl["channels"].size(); 
+    for (size_t channel = 0;
+         channel < sfxc_ctrl["channels"].size();
          channel++) {
       std::vector<std::string> channel_str;
       assert(sfxc_ctrl["channels"][channel].isArray());
@@ -86,16 +86,16 @@ get_channels(VexPlus const &vex,
     for (int channel = 0; channel < nChannels; channel ++) {
       std::vector<std::string> channel_str;
       channel_str.push_back(vex.Link_freq_track(vex.Station(0),
-                                                vex.Mode(0),
-                                                channel));
-      
+                            vex.Mode(0),
+                            channel));
+
       if ((channel<nChannels-1) &&
           (vex.SkyFreq(vex.Station(0),vex.Mode(0),channel) ==
            vex.SkyFreq(vex.Station(0),vex.Mode(0),channel+1))) {
         channel++;
         channel_str.push_back(vex.Link_freq_track(vex.Station(0),
-                                                  vex.Mode(0),
-                                                  channel));
+                              vex.Mode(0),
+                              channel));
       }
       result.push_back(channel_str);
     }

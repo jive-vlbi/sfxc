@@ -45,84 +45,74 @@
 *
 ***********************************************/
 template<class T>
-class Threadsafe_queue
-  {
-    public:
-      typedef T     Type;
-      typedef Type  value_type;
+class Threadsafe_queue {
+public:
+  typedef T     Type;
+  typedef Type  value_type;
 
-      Threadsafe_queue(){}
-      virtual ~Threadsafe_queue(){}
+  Threadsafe_queue() {}
+  virtual ~Threadsafe_queue() {}
 
-      void push( Type element )
-      {
-        RAIIMutex rc(m_queuecond);
-        m_queue.push(element);
-        if ( m_queue.size() != 0 ) m_queuecond.signal();
-      }
+  void push( Type element ) {
+    RAIIMutex rc(m_queuecond);
+    m_queue.push(element);
+    if ( m_queue.size() != 0 ) m_queuecond.signal();
+  }
 
-      Type& front()
-      {
-        RAIIMutex rc(m_queuecond);
-        if ( m_queue.size() == 0 ) m_queuecond.wait();
-        return m_queue.front();
-      }
+  Type& front() {
+    RAIIMutex rc(m_queuecond);
+    if ( m_queue.size() == 0 ) m_queuecond.wait();
+    return m_queue.front();
+  }
 
-      void pop()
-      {
-        RAIIMutex rc(m_queuecond);
-        if ( m_queue.size() == 0 ) m_queuecond.wait();
-        m_queue.pop();
-      }
+  void pop() {
+    RAIIMutex rc(m_queuecond);
+    if ( m_queue.size() == 0 ) m_queuecond.wait();
+    m_queue.pop();
+  }
 
-      Type front_and_pop()
-      {
-        RAIIMutex rc(m_queuecond);
-        if ( m_queue.size() == 0 ) m_queuecond.wait();
-        Type element = m_queue.front();
-        m_queue.pop();
-        return element;
-      }
+  Type front_and_pop() {
+    RAIIMutex rc(m_queuecond);
+    if ( m_queue.size() == 0 ) m_queuecond.wait();
+    Type element = m_queue.front();
+    m_queue.pop();
+    return element;
+  }
 
-      Type front_and_pop_non_blocking()
-      {
-        RAIIMutex rc(m_queuecond);
-        if ( m_queue.size() == 0 ) MTHROW("Trying to pop from an empty queue.");
-        Type element = m_queue.front();
-        m_queue.pop();
-        return element;
-      }
+  Type front_and_pop_non_blocking() {
+    RAIIMutex rc(m_queuecond);
+    if ( m_queue.size() == 0 ) MTHROW("Trying to pop from an empty queue.");
+    Type element = m_queue.front();
+    m_queue.pop();
+    return element;
+  }
 
-      bool empty()
-      {
-        RAIIMutex rc(m_queuecond);
-        return m_queue.empty();
-      }
+  bool empty() {
+    RAIIMutex rc(m_queuecond);
+    return m_queue.empty();
+  }
 
-      size_t size()
-      {
-        RAIIMutex rc(m_queuecond);
-        return m_queue.size();
-      }
+  size_t size() {
+    RAIIMutex rc(m_queuecond);
+    return m_queue.size();
+  }
 
 #ifdef ENABLE_TEST_UNIT
-    class Test : public Test_aclass<Threadsafe_queue>
-        {
-          public:
-            void tests();
-        };
+class Test : public Test_aclass<Threadsafe_queue> {
+  public:
+    void tests();
+  };
 #endif // ENABLE_TEST_UNIT
 
-    private:
-      std::queue<Type> m_queue;
-      Condition m_queuecond;
-  };
+private:
+  std::queue<Type> m_queue;
+  Condition m_queuecond;
+};
 
 /////////////////// IMPLEMENTATION (I hate c++ template) ///////////////
 #ifdef ENABLE_TEST_UNIT
 template<class T>
-void Threadsafe_queue<T>::Test::tests()
-{
+void Threadsafe_queue<T>::Test::tests() {
   Threadsafe_queue<T*> queue;
   T obj;
   T* pobj=NULL;

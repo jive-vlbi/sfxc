@@ -21,8 +21,7 @@
  *   @desc A mutex implementation.
  *   @author Damien Marchal
  */
-class Mutex
-{
+class Mutex {
   static unsigned int s_id;
   unsigned int m_id;
 public:
@@ -30,7 +29,7 @@ public:
   inline ~Mutex();
 
   // Same behavior as the POSIX pthread_mutex_t
-  inline void lock();
+  inline void lock ();
   inline void unlock();
 protected:
   pthread_mutex_t m_mutex;
@@ -38,26 +37,23 @@ protected:
 
 
 template<class T>
-class MutexT : public Mutex
-{
+class MutexT : public Mutex {
   T* m_object;
 public:
-  MutexT(){ }
+  MutexT() { }
 
-  inline void lock()
-  {
+  inline void lock () {
     //std::cout << "Locking mutex around: " << GetTypeName(*m_object) << std::endl;
-    Mutex::lock();
+    Mutex::lock ();
   }
 
-  inline void unlock(){
+  inline void unlock() {
     //std::cout << "Un;ocking mutex around: " << GetTypeName(*m_object) << std::endl;
     Mutex::unlock();
   }
 };
 
-class RAIIMutex
-{
+class RAIIMutex {
 public:
   inline RAIIMutex(Mutex& mutex);
   inline ~RAIIMutex();
@@ -69,27 +65,23 @@ private:
 ////////////////////////////////////
 // Implementation of Mutex::*
 ////////////////////////////////////
-inline Mutex::Mutex()
-{
+inline Mutex::Mutex() {
   //std::cout << "Mutex init" << std::endl;
   pthread_mutex_init(&m_mutex, NULL);
   m_id = s_id++;
 }
 
-inline Mutex::~Mutex()
-{
+inline Mutex::~Mutex() {
   //std::cout << "Mutex destroy" << std::endl;
   pthread_mutex_destroy( &m_mutex );
 }
 
-inline void Mutex::lock()
-{
+inline void Mutex::lock () {
   //std::cout << "Locking" << m_id << std::endl;
   pthread_mutex_lock( &m_mutex );
 }
 
-inline void Mutex::unlock()
-{
+inline void Mutex::unlock() {
   //std::cout << "Mutex unlock" << std::endl;
   pthread_mutex_unlock( &m_mutex );
 }
@@ -100,14 +92,12 @@ inline void Mutex::unlock()
 // Implementation of RAIIMutex::*
 ////////////////////////////////////
 inline RAIIMutex::RAIIMutex(Mutex& mutex) :
-  m_mutex(mutex)
-{
+    m_mutex(mutex) {
   //std::cout << __PRETTY_FUNCTION__ << std::endl;
   m_mutex.lock();
 }
 
-inline RAIIMutex::~RAIIMutex()
-{
+inline RAIIMutex::~RAIIMutex() {
   //std::cout << __PRETTY_FUNCTION__ << std::endl;
   m_mutex.unlock();
 }
@@ -115,14 +105,13 @@ inline RAIIMutex::~RAIIMutex()
 
 
 template<class T>
-class RAIITrace
-{
+class RAIITrace {
 public:
   RAIITrace(T& t) :m_t(t) {
     std::cout << "ENTER: " << GetTypeName(t) << std::endl;
   }
 
-  ~RAIITrace(){
+  ~RAIITrace() {
     std::cout << "LEAVING: " << GetTypeName(m_t) << std::endl;
   }
 
@@ -131,26 +120,22 @@ private:
 };
 
 
-class Condition : public Mutex
-{
+class Condition : public Mutex {
   pthread_cond_t m_condition;
 public:
-  Condition(){
+  Condition() {
     pthread_cond_init( &m_condition, NULL);
   }
 
-  inline void wait()
-  {
+  inline void wait() {
     pthread_cond_wait( &m_condition, &m_mutex );
   }
 
-  inline void signal()
-  {
+  inline void signal() {
     pthread_cond_signal( &m_condition );
   }
 
-  inline void broadcast()
-  {
+  inline void broadcast() {
     pthread_cond_broadcast( &m_condition );
   }
 };

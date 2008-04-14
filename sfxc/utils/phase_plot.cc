@@ -5,8 +5,7 @@
 #include <fftw3.h>
 #include <output_header.h>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   if (argc != 2) {
     std::cout << "Usage: " << argv[0] << " <cor-file>" << std::endl;
     exit(-1);
@@ -17,7 +16,7 @@ int main(int argc, char *argv[])
 
   Output_header_global global_header;
   infile.read((char *)&global_header, sizeof(global_header));
-  
+
   std::cout << global_header << std::endl;
 
   const int N = global_header.number_channels;
@@ -30,10 +29,10 @@ int main(int argc, char *argv[])
 
   std::complex<float> input_buffer[N+1], output_buffer[N+1];
   fftwf_plan p;
-  p = fftwf_plan_dft_1d(N+1, 
+  p = fftwf_plan_dft_1d(N+1,
                         reinterpret_cast<fftwf_complex*>(&input_buffer[0]),
                         reinterpret_cast<fftwf_complex*>(&output_buffer[0]),
-                        FFTW_BACKWARD, 
+                        FFTW_BACKWARD,
                         FFTW_ESTIMATE);
 
   int current_integration = 0;
@@ -58,14 +57,14 @@ int main(int argc, char *argv[])
       infile.read((char *)&baseline_header, sizeof(baseline_header));
       if (infile.eof()) return 0;
 
-      if (timeslice_header.integration_slice==0) 
+      if (timeslice_header.integration_slice==0)
         std::cout << baseline_header;
-      
+
       infile.read((char *)&input_buffer[0], sizeof(input_buffer));
 
       { // Compute the phase
         fftwf_execute(p);
-        
+
         int max_index = 0;
         for (int i=0; i<N+1; i++) {
           if (std::abs(output_buffer[i]) >
@@ -73,7 +72,7 @@ int main(int argc, char *argv[])
             max_index = i;
           }
         }
-        
+
         out_phase << std::arg(output_buffer[max_index]) << " ";
         out_index << max_index << " ";
       }
@@ -81,6 +80,6 @@ int main(int argc, char *argv[])
   }
 
   fftwf_destroy_plan(p);
-  
+
   return 0;
 }

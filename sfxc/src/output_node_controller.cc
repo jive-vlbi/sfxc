@@ -21,7 +21,6 @@
 
 Output_node_controller::Output_node_controller(Output_node &node)
     : Controller(node), node(node) {
-
 }
 
 Controller::Process_event_status

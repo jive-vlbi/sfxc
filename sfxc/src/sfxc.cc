@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
       create_directory(RUNTIME_STATISTIC_DIR);
     }
   }
-  
+
 #endif // RUNTIME_STATISTIC
 #ifdef SFXC_PRINT_DEBUG
   if (rank == 0) {

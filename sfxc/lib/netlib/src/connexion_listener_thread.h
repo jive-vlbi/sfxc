@@ -70,7 +70,7 @@ private:
 template<class T>
 Connexion_listener_thread<T>::Connexion_listener_thread(Connexion_listener_ptr listener, Connexion_thread_allocator<T>* allocator) :
     allocator_(*allocator), listener_(listener) {
-    assert(listener_ != NULL );
+  assert(listener_ != NULL );
 }
 
 template<class T>

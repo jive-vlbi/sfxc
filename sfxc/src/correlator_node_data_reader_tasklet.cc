@@ -4,12 +4,10 @@ Correlator_node_data_reader_tasklet::
 Correlator_node_data_reader_tasklet()
     : output_memory_pool(65000),
     output_buffer(Output_buffer_ptr(new Output_buffer())),
-    n_ffts_to_read(0) {
-}
+    n_ffts_to_read(0) {}
 
 Correlator_node_data_reader_tasklet::
-~Correlator_node_data_reader_tasklet() {
-}
+~Correlator_node_data_reader_tasklet() {}
 
 /// Set the input
 void

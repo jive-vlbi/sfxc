@@ -9,11 +9,9 @@
 
 #include "data_writer_void.h"
 
-Data_writer_void::Data_writer_void() : Data_writer() {
-}
+Data_writer_void::Data_writer_void() : Data_writer() {}
 
-Data_writer_void::~Data_writer_void() {
-}
+Data_writer_void::~Data_writer_void() {}
 
 size_t
 Data_writer_void::do_put_bytes(size_t nBytes, const char *) {

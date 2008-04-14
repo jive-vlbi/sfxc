@@ -1,5 +1,8 @@
 #ifndef COMMON_H_INCLUDED
+
 #define COMMON_H_INCLUDED
+
+
 
 #include <string>
 typedef std::string   String;
@@ -19,20 +22,21 @@ typedef std::complex<double>   Complex;
 /*template<class T>
 T& operator<<(T& dest, String& s)
 {
-	std::stringstream ss(s);
+ std::stringstream ss(s);
   dest << ss;
-	return dest;
+ return dest;
 }*/
 
 int& operator<<(int& dest, const String& s);
 
 template<class T>
-T& operator<<(String& s, T& elem)
-{
-	std::stringstream ss;
-	ss << elem;
-	s.append( ss.str() );
-	return s;
+T& operator<<(String& s, T& elem) {
+  std::stringstream ss;
+  ss << elem;
+  s.append( ss.str() );
+  return s;
 }
 
+
 #endif // COMMON_H_INCLUDED
+

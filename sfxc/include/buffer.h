@@ -254,7 +254,6 @@ Buffer(int size, const T &element)
 
 template <class T>
 Buffer<T>::
-~Buffer() {
-}
+~Buffer() {}
 
 #endif // BUFFER_H

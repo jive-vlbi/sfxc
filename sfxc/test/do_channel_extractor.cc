@@ -4,7 +4,9 @@
 char    *filename = "file:///data4/sfxc/ftp/2007_june/f07m2/mk4/f07m2_cm_no0001.m5a";
 int64_t start_time = 58078000000;
 
-const FLOAT sample_value_ms[] = {-7, 2, -2, 7};
+const FLOAT sample_value_ms[] = {
+                                  -7, 2, -2, 7
+                                };
 
 template <class Type>
 void print_tracks(Type /* No name */,
@@ -17,11 +19,11 @@ void print_tracks(Type /* No name */,
 
 
   std::string station = parameters.station(0);
-  std::string scan = 
+  std::string scan =
     parameters.scan(parameters.scan(parameters.get_start_time()));
-  std::string mode = 
+  std::string mode =
     parameters.get_vex().get_mode(scan);
-  
+
   std::vector<int> tracks;
   Input_node_parameters input_parameters =
     parameters.get_input_node_parameters(mode, station);
@@ -38,10 +40,10 @@ void print_tracks(Type /* No name */,
   for (int block_nr=0; block_nr<100; block_nr++) {
     for (size_t i=0; i<SIZE_MK4_FRAME; i++) {
       for (int j = 0; j<fan_out; j++) {
-        std::cout << ((block[i] >> tracks[j*2]) & 1) 
-                  << ((block[i] >> tracks[j*2+1]) & 1)
-                  << std::endl;
-        int sample = 
+        std::cout << ((block[i] >> tracks[j*2]) & 1)
+        << ((block[i] >> tracks[j*2+1]) & 1)
+        << std::endl;
+        int sample =
           ((block[i] >> tracks[j*2]) & 1)*2 +
           ((block[i] >> tracks[j*2+1]) & 1);
         out << sample_value_ms[sample] << std::endl;
@@ -54,8 +56,8 @@ void print_tracks(Type /* No name */,
 
 int main(int argc, char *argv[]) {
   if (argc != 4) {
-    std::cout << "Usage: " << argv[0] << " <ctrl-file> <vex-file> <out-file>" 
-              << std::endl;
+    std::cout << "Usage: " << argv[0] << " <ctrl-file> <vex-file> <out-file>"
+    << std::endl;
     exit(-1);
   }
 
@@ -70,27 +72,27 @@ int main(int argc, char *argv[]) {
   char buffer[SIZE_MK4_FRAME];
   int n_tracks = find_start_of_header(data_reader, buffer);
 
-  
+
   std::ofstream out(argv[3]);
   switch (n_tracks) {
   case 1: {
-    print_tracks((int8_t)0, data_reader, buffer, parameters, out);
-    break;
-  }
+      print_tracks((int8_t)0, data_reader, buffer, parameters, out);
+      break;
+    }
   case 2: {
-    print_tracks((int16_t)0, data_reader, buffer, parameters, out);
-    break;
-  }
+      print_tracks((int16_t)0, data_reader, buffer, parameters, out);
+      break;
+    }
   case 4: {
-    print_tracks((int32_t)0, data_reader, buffer, parameters, out);
-    break;
-  }
+      print_tracks((int32_t)0, data_reader, buffer, parameters, out);
+      break;
+    }
   case 8: {
-    print_tracks((int64_t)0, data_reader, buffer, parameters, out);
-    break;
-  }
+      print_tracks((int64_t)0, data_reader, buffer, parameters, out);
+      break;
+    }
   default: {
-    assert(false);
-  }
+      assert(false);
+    }
   }
 }

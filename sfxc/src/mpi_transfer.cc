@@ -13,8 +13,7 @@
 #include "mpi_transfer.h"
 #include "types.h"
 
-MPI_Transfer::MPI_Transfer() {
-}
+MPI_Transfer::MPI_Transfer() {}
 
 void
 MPI_Transfer::

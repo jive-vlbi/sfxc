@@ -28,7 +28,8 @@ public:
   void check(const char* msg = 0);
 
   double measured_time();
-}; // class Timer
+}
+; // class Timer
 
 //===========================================================================
 // Return the total time that the timer has been in the "running"
@@ -115,9 +116,9 @@ inline void Timer::check(const char* msg) {
   // Print an optional message, something like "Checking timer t";
   if (msg) std::cout << msg << " : ";
 
-  std::cout << "Elapsed time [" << std::setiosflags(std::ios::fixed)
-  << std::setprecision(2)
-  << acc_time + (running ? elapsed_time() : 0) << "] seconds\n";
+  std::cout << "Elapsed time [" << std::setiosflags(std::ios::fixed )
+    << std::setprecision(2)
+    << acc_time + (running ? elapsed_time() : 0) << "] seconds\n";
 
 } // Timer::check
 
@@ -127,8 +128,8 @@ inline void Timer::check(const char* msg) {
 // print out the total amount of time 't' has been "running".
 
 inline std::ostream& operator<<(std::ostream& os, Timer& t) {
-  os << std::setprecision(2) << std::setiosflags(std::ios::fixed)
-  << t.acc_time + (t.running ? t.elapsed_time() : 0);
+  os << std::setprecision(2) << std::setiosflags(std::ios::fixed )
+    << t.acc_time + (t.running ? t.elapsed_time() : 0);
   return os;
 }
 

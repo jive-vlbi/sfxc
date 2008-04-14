@@ -29,14 +29,12 @@ protected:
 
 Log_writer_cout::Log_writer_cout(int messagelevel)
     : Log_writer(new Log_writer_cout_buffer(messagelevel)) {
-
 }
 
 // Buffer
 Log_writer_cout_buffer::Log_writer_cout_buffer(int message_level,
     int buffer_size)
-    : Log_writer_buffer(message_level, buffer_size) {
-}
+    : Log_writer_buffer(message_level, buffer_size) {}
 
 Log_writer_cout_buffer::~Log_writer_cout_buffer() {
   sync();

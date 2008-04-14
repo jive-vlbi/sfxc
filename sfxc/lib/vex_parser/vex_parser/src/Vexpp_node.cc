@@ -6,8 +6,7 @@
 /**
  *  Vexpp_node : Node of the C++ vex tree
  **/
-Vexpp_node::Vexpp_node() : m_type(EMPTY) {
-}
+Vexpp_node::Vexpp_node() : m_type(EMPTY) {}
 
 Vexpp_node::Vexpp_node(Type _type) {
   m_type = _type;
@@ -25,8 +24,7 @@ std::ostream &operator<<(std::ostream &out, const Vexpp_node& data) {
   return out;
 }
 
-std::string escape(std::string const &str, char const *series)
-{
+std::string escape(std::string const &str, char const *series) {
   std::string ret;
   int left = 0;
 
@@ -49,25 +47,23 @@ std::ostream &Vexpp_node::print(std::ostream &out, int indent) const {
   int indent_lvl = 2;
 
   switch (m_type) {
-  case Vexpp_node::EMPTY:
-    {
+  case Vexpp_node::EMPTY: {
       for (int i=0; i<indent; i++) out << " ";
       out << '"' << '"';
       break;
     }
-  case Vexpp_node::STRING:
-    {
+  case Vexpp_node::STRING: {
       for (int i=0; i<indent; i++) out << " ";
       out << '"' << escape(name, "\"") << '"';
       break;
     }
-  case Vexpp_node::ARRAY:
-    {
+  case Vexpp_node::ARRAY: {
       for (int i=0; i<indent; i++) out << " ";
       out << "[" << std::endl;
       for (const_array_iterator it = lst.begin(); it != lst.end(); it++) {
         (*it).print(out, indent + indent_lvl);
-        const_array_iterator next = it; next++;
+        const_array_iterator next = it;
+        next++;
         if (next != lst.end()) {
           out << ",";
         }
@@ -77,15 +73,15 @@ std::ostream &Vexpp_node::print(std::ostream &out, int indent) const {
       out << "]";
       break;
     }
-  case Vexpp_node::DICT:
-    {
+  case Vexpp_node::DICT: {
       for (int i=0; i<indent; i++) out << " ";
       out << "{" << std::endl;
       for (const_dict_iterator it = dict.begin(); it != dict.end(); ++it) {
         for (int i=0; i<indent; i++) out << " ";
         out << '"' << it->first << '"' << ": " << std::endl;
         (*it).second.print(out, indent+indent_lvl);
-        const_dict_iterator next = it; ++next;
+        const_dict_iterator next = it;
+        ++next;
         if (next != dict.end()) {
           out << ",";
         }
@@ -124,7 +120,7 @@ Vexpp_node::operator[](const std::string &key) {
   }
 }
 
-Vexpp_node::iterator 
+Vexpp_node::iterator
 Vexpp_node::operator[](size_t i) {
   assert(m_type == ARRAY);
   if (i < lst.size()) {
@@ -142,13 +138,13 @@ Vexpp_node::operator[](const std::string &key) const {
     return const_iterator(this, it);
   } else {
     std::cout << __FILE__ << ", l" << __LINE__ << " "
-              << "Key: \"" << key << "\" not found." << std::endl;
+    << "Key: \"" << key << "\" not found." << std::endl;
     assert(false);
     return const_iterator(this, dict.end());
   }
 }
 
-Vexpp_node::const_iterator 
+Vexpp_node::const_iterator
 Vexpp_node::operator[](size_t i) const {
   assert(m_type == ARRAY);
   if (i < lst.size()) {
@@ -173,7 +169,7 @@ void Vexpp_node::join(Self& value) {
   assert(m_type == DICT);
   assert(value.m_type == DICT);
   assert(value.size() == 1);
-  
+
   iterator it = value.begin();
   set_key(it.key(), *it);
 }
@@ -200,7 +196,8 @@ int Vexpp_node::to_int_amount(const std::string &unit) const {
 
 double Vexpp_node::to_double() const {
   assert(m_type == STRING);
-  double result; int err;
+  double result;
+  int err;
   err = sscanf(name.c_str(), "%lf", &result);
   assert(err==1);
   return result;
@@ -208,7 +205,8 @@ double Vexpp_node::to_double() const {
 
 double Vexpp_node::to_double_amount(const std::string &unit) const {
   assert(m_type == STRING);
-  double result; int err;
+  double result;
+  int err;
   char unit2[name.size()];
   err = sscanf(name.c_str(), "%lf %s", &result, unit2);
   assert(err==2);
@@ -271,7 +269,7 @@ Vexpp_node::const_iterator Vexpp_node::end() const {
   }
 }
 
-Vexpp_node::iterator 
+Vexpp_node::iterator
 Vexpp_node::begin(const std::string &key) {
   assert(m_type == DICT);
   dict_iterator it = dict.lower_bound(key);
@@ -285,20 +283,20 @@ Vexpp_node::begin(const std::string &key) {
     return iterator(this, dict.end());
   }
 }
-Vexpp_node::iterator 
+Vexpp_node::iterator
 Vexpp_node::end(const std::string &key) {
   assert(m_type == DICT);
   return iterator(this, dict.upper_bound(key));
 }
 
-Vexpp_node::iterator 
+Vexpp_node::iterator
 Vexpp_node::begin_key(const char *key) {
   Vexpp_node::iterator result = begin(key);
   return result;
 }
-Vexpp_node::iterator 
+Vexpp_node::iterator
 Vexpp_node::end_key(const char *key) {
-  Vexpp_node::iterator result = end(key); 
+  Vexpp_node::iterator result = end(key);
   return result;
 }
 
@@ -325,7 +323,7 @@ size_t Vexpp_node::size() const {
     return lst.size();
   } else {
     return dict.size();
-  } 
+  }
   assert((m_type == ARRAY) || (m_type == DICT));
 }
 
@@ -336,13 +334,13 @@ Vexpp_node::Type Vexpp_node::get_type() {
 const char *
 Vexpp_node::type() {
   switch (m_type) {
-    case STRING:
-      return "STRING";
-    case ARRAY:
-      return "ARRAY";
-    case DICT:
-      return "DICT";
-    default: {
+  case STRING:
+    return "STRING";
+  case ARRAY:
+    return "ARRAY";
+  case DICT:
+    return "DICT";
+  default: {
       assert (m_type==EMPTY);
       return "EMPTY";
     }
@@ -351,8 +349,7 @@ Vexpp_node::type() {
 }
 
 /* Date members */
-Vexpp_node::Date::Date() : year(0), day(0), hour(0), minute(0), second(0) {
-}
+Vexpp_node::Date::Date() : year(0), day(0), hour(0), minute(0), second(0) {}
 
 Vexpp_node::Date::Date(const std::string &date) {
   sscanf(date.c_str(), "%dy%dd%dh%dm%ds",
@@ -360,15 +357,17 @@ Vexpp_node::Date::Date(const std::string &date) {
 }
 
 Vexpp_node::Date::Date(int year, int day, int seconds) :
-  year(year), day(day) {
-  second = seconds % 60; seconds /= 60;
-  minute = seconds % 60; seconds /= 60;
+    year(year), day(day) {
+  second = seconds % 60;
+  seconds /= 60;
+  minute = seconds % 60;
+  seconds /= 60;
   hour   = seconds;
 
   assert(hour <= 23);
 }
 
-Vexpp_node::Date 
+Vexpp_node::Date
 Vexpp_node::Date::operator+(const Date &other) const {
   Date result;
   result.year   = year + other.year;
@@ -382,8 +381,10 @@ Vexpp_node::Date::operator+(const Date &other) const {
 
 bool
 Vexpp_node::Date::operator<(const Date &other) const {
-  Date left = *this; left.normalize();
-  Date right = other; right.normalize();
+  Date left = *this;
+  left.normalize();
+  Date right = other;
+  right.normalize();
   if (left.year < right.year)  return true;
   if (left.year != right.year) return false;
   if (left.day < right.day)    return true;
@@ -398,8 +399,10 @@ Vexpp_node::Date::operator<(const Date &other) const {
 
 bool
 Vexpp_node::Date::operator==(const Date &other) const {
-  Date left = *this; left.normalize();
-  Date right = other; right.normalize();
+  Date left = *this;
+  left.normalize();
+  Date right = other;
+  right.normalize();
   return ((left.year == right.year) &&
           (left.day == right.day) &&
           (left.hour == right.hour) &&
@@ -422,7 +425,7 @@ Vexpp_node::Date::operator>(const Date &other) const {
   return (other < *this);
 }
 
-std::string 
+std::string
 Vexpp_node::Date::to_string() const {
   char date[20];
   snprintf(date, 20, "%04dy%03dd%02dh%02dm%02ds",
@@ -430,35 +433,38 @@ Vexpp_node::Date::to_string() const {
   return std::string(date);
 }
 
-void 
+void
 Vexpp_node::Date::normalize() {
-  minute += second/60; second = second%60;
-  hour   += minute/60; minute = minute%60;
-  day    += hour/24; hour = hour%24;
+  minute += second/60;
+  second = second%60;
+  hour   += minute/60;
+  minute = minute%60;
+  day    += hour/24;
+  hour = hour%24;
   int days_per_year = 365;
   if ((year % 4 == 0) && ((year % 100 != 0) && (year % 400 == 0))) {
     days_per_year = 366;
   }
-  year += day/days_per_year; day = day%days_per_year;
+  year += day/days_per_year;
+  day = day%days_per_year;
 }
 
 // Keys:
-Vexpp_node::const_key_iterator 
+Vexpp_node::const_key_iterator
 Vexpp_node::keys_begin() const {
   assert(m_type == DICT);
   return const_key_iterator(dict.begin(), dict.end());
 }
-Vexpp_node::const_key_iterator 
+Vexpp_node::const_key_iterator
 Vexpp_node::keys_end() const {
   assert(m_type == DICT);
   return const_key_iterator(dict.end(), dict.end());
 }
 
-Vexpp_node::const_key_iterator::const_key_iterator(const_dict_iterator curr, 
-                                                   const_dict_iterator end)
-: m_curr(curr), m_end(end) {
-}
-Vexpp_node::const_key_iterator 
+Vexpp_node::const_key_iterator::const_key_iterator(const_dict_iterator curr,
+    const_dict_iterator end)
+    : m_curr(curr), m_end(end) {}
+Vexpp_node::const_key_iterator
 Vexpp_node::const_key_iterator::operator++() {
   assert(m_curr != m_end);
   const_dict_iterator first = m_curr;
@@ -468,7 +474,7 @@ Vexpp_node::const_key_iterator::operator++() {
   }
   return *this;
 }
-Vexpp_node::const_key_iterator 
+Vexpp_node::const_key_iterator
 Vexpp_node::const_key_iterator::operator++(int) {
   Vexpp_node::const_key_iterator self = *this;
   assert(m_curr != m_end);
@@ -478,15 +484,15 @@ Vexpp_node::const_key_iterator::operator++(int) {
   }
   return self;
 }
-bool 
+bool
 Vexpp_node::const_key_iterator::operator==(const_key_iterator &other) {
   return m_curr == other.m_curr;
 }
-bool 
+bool
 Vexpp_node::const_key_iterator::operator!=(const_key_iterator &other) {
   return m_curr != other.m_curr;
 }
-std::string 
+std::string
 Vexpp_node::const_key_iterator::operator*() const {
   assert(m_curr != m_end);
   return m_curr->first;

@@ -24,8 +24,7 @@ public:
   // 'running' is initially false.  A Timer needs to be explicitly started
   // using 'start' or 'restart'
   Timer()
-      : running(false), start_clock(0), start_time(0), acc_time(0), name(NULL) {
-  }
+      : running(false), start_clock(0), start_time(0), acc_time(0), name(NULL) {}
   Timer(const char * name_)
       : running(false), start_clock(0), start_time(0), acc_time(0) {
     int size = strlen(name_);
@@ -48,7 +47,8 @@ public:
   void check(const char* msg = 0);
 
   double measured_time() const;
-}; // class Timer
+}
+; // class Timer
 
 //===========================================================================
 // Return the total time that the timer has been in the "running"
@@ -135,9 +135,9 @@ inline void Timer::check(const char* msg) {
 // Print an optional message, something like "Checking timer t";
   if (msg) std::cout << msg << " : ";
 
-  std::cout << "Elapsed time [" << std::setiosflags(std::ios::fixed)
-  << std::setprecision(2)
-  << acc_time + (running ? elapsed_time() : 0) << "] seconds\n";
+  std::cout << "Elapsed time [" << std::setiosflags(std::ios::fixed )
+    << std::setprecision(2)
+    << acc_time + (running ? elapsed_time() : 0) << "] seconds\n";
 
 } // Timer::check
 
@@ -147,8 +147,8 @@ inline void Timer::check(const char* msg) {
 // print out the total amount of time 't' has been "running".
 
 inline std::ostream& operator<<(std::ostream& os, const Timer& t) {
-  os << std::setprecision(2) << std::setiosflags(std::ios::fixed)
-  << t.acc_time + (t.running ? t.elapsed_time() : 0);
+  os << std::setprecision(2) << std::setiosflags(std::ios::fixed )
+    << t.acc_time + (t.running ? t.elapsed_time() : 0);
   return os;
 }
 

@@ -21,11 +21,9 @@
 #include "tcp_connection.h"
 
 TCP_Connection::TCP_Connection(bool verbose)
-    : verbose(verbose), connection_socket(-1), port_nr(-1) {
-}
+    : verbose(verbose), connection_socket(-1), port_nr(-1) {}
 
-TCP_Connection::~TCP_Connection() {
-}
+TCP_Connection::~TCP_Connection() {}
 
 bool
 TCP_Connection::open_port(unsigned short int port, int connections) {
@@ -225,7 +223,8 @@ TCP_Connection::get_ip_addresses(std::vector<std::string> &addr) {
   struct ifaddrs *ifa = NULL;
 
   if (getifaddrs (&ifa) < 0) {
-    std::cout << "error in getifaddrs" << std::endl;;
+    std::cout << "error in getifaddrs" << std::endl;
+    ;
     return;
   }
 

@@ -1,12 +1,12 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
   Checks transferring data using a TCP connection.
-  
+
   Program transfers a file using TCP, uses a buffer for asynchronous IO
   and compares it to the original file
 */
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
     char buff[buffsize];
     while ((nread = reader_file->get_bytes(buffsize, buff)) > 0) {
       char *data = buff;
-      do { 
+      do {
         int read = data_writer->put_bytes(nread, buff);
         assert(read >= 0);
         nread -= read;

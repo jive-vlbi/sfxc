@@ -8,16 +8,16 @@
 #include "connexion_listener.h"
 
 Connexion_listener::Connexion_listener(unsigned int serversocket, int port, InterfaceIP* interface) {
-  verbose_ = true;  
+  verbose_ = true;
   m_serversocket = serversocket;
   m_interface = interface;
   m_port = port;
-  
-  if( verbose_ )
+
+  if ( verbose_ )
     std::cout << "Connexion Listener created" << std::endl;
 }
 
-int Connexion_listener::wait_connexion(){
+int Connexion_listener::wait_connexion() {
   int connectSocket;
   socklen_t clientAddressLength;
   struct sockaddr_in clientAddress;
@@ -30,10 +30,10 @@ int Connexion_listener::wait_connexion(){
   // connections on listenSocket, before connectSocket is closed,
   // but this program doesn't do that.
   clientAddressLength = sizeof(clientAddress);
-  
+
   if (verbose_)
     std::cout << "Waiting for connexion..." << this << std::endl;
-  
+
   connectSocket = accept(m_serversocket,
                          (struct sockaddr *) &clientAddress,
                          &clientAddressLength);

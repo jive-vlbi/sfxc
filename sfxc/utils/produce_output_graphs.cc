@@ -9,7 +9,7 @@
 int main(int argc, char *argv[]) {
   if (argc != 3) {
     std::cout << "Usage: " << argv[0] << " <ctrl-file> <#baselines>"
-              << std::endl;
+    << std::endl;
     exit(1);
   }
 
@@ -26,8 +26,8 @@ int main(int argc, char *argv[]) {
     if ( !ok ) {
       // report to the user the failure and their locations in the document.
       std::cout  << "Failed to parse control file\n"
-                 << reader.getFormatedErrorMessages()
-                 << std::endl;
+      << reader.getFormatedErrorMessages()
+      << std::endl;
       assert(false);
       return false;
     }
@@ -44,10 +44,10 @@ int main(int argc, char *argv[]) {
   std::complex<double> in[number_channels+1], out[number_channels+1];
 
   fftw_plan p;
-  p = fftw_plan_dft_1d(number_channels+1, 
+  p = fftw_plan_dft_1d(number_channels+1,
                        reinterpret_cast<fftw_complex*>(&in),
                        reinterpret_cast<fftw_complex*>(&out),
-                       FFTW_BACKWARD, 
+                       FFTW_BACKWARD,
                        FFTW_ESTIMATE);
 
   std::ofstream out_offset("offset.txt");
@@ -66,8 +66,8 @@ int main(int argc, char *argv[]) {
 
       if (!finished) {
         fftw_execute(p); /* repeat as needed */
-      
-        int max_index=0; 
+
+        int max_index=0;
         double max_ampl=0;
         {
           double ampl;
@@ -79,10 +79,10 @@ int main(int argc, char *argv[]) {
             }
           }
         }
-        out_offset << (max_index <= number_channels/2 ? 
-                       max_index : 
+        out_offset << (max_index <= number_channels/2 ?
+                       max_index :
                        max_index - (number_channels+1))
-                   << " ";
+        << " ";
         out_magn << std::abs(out[max_index]) << " ";
         out_phase << std::arg(out[max_index]) << " ";
         if (++baseline == nr_baselines) {
@@ -96,5 +96,5 @@ int main(int argc, char *argv[]) {
   }
 
   fftw_destroy_plan(p);
-  
+
 }

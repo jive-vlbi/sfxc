@@ -1,32 +1,60 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+
  * Copyright (c) 2007 University of Amsterdam (Netherlands)
+
  * All rights reserved.
+
  *
+
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+
  *            Damien Marchal <dmarchal@science.uva.nl>, 2007
+
  *
+
  *
+
  * This file is part of:
+
  *   - netlib library
+
  * This file contains:
+
  *   - declaration of the Interface object.
+
  *   - declaration of the InterfaceIP object.
+
  */
+
 #ifndef INTERFACE_H
+
 #define INTERFACE_H
 
+
+
 #include "common.h"
+
 #include "tcp_connection.h"
 
+
+
 class Connexion;
+
 class Connexion_listener;
 
+
 /************************************
+
 * @class Interface
+
 * @desc An Interface object is used
+
 * to represent a network interface that
+
 * can be used to socket based
+
 * communcation.
+
 *************************************/
 class Interface {
   String m_name;

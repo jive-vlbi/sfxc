@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -69,7 +69,7 @@ void check_control_parameters(int rank,
 
       // Check the correlation parameters
       std::vector<std::string> station_name;
-      station_name.push_back("Wb");      
+      station_name.push_back("Wb");
       Correlation_parameters correlation_param =
         control_parameters.
         get_correlation_parameters(control_parameters.scan(i),
@@ -125,7 +125,7 @@ void check_control_parameters(int rank,
 
       // Check the correlation parameters
       std::vector<std::string> station_name;
-      station_name.push_back("Wb");      
+      station_name.push_back("Wb");
       Correlation_parameters correlation_param =
         control_parameters.get_correlation_parameters(control_parameters.scan(i),
             channel_name,

@@ -1,8 +1,8 @@
 /* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
  * All rights reserved.
- * 
+ *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
- * 
+ *
  * $Id$
  *
  */
@@ -31,11 +31,11 @@ int main(int argc, char *argv[]) {
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
   assert(numtasks==2);
-  
+
   if (rank==0) {
     int i=0;
 
-    MPI_Send(&i, 1, MPI_INT32, 
+    MPI_Send(&i, 1, MPI_INT32,
              RANK_LOG_NODE, MPI_TAG_LOG_NODE_SET_OUTPUT_COUT, MPI_COMM_WORLD);
 
     Log_writer_mpi writer(rank);
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     writer << "b" << std::endl;
     writer << "c" << std::endl;
     writer << std::endl;
-    MPI_Send(&i, 1, MPI_INT32, 
+    MPI_Send(&i, 1, MPI_INT32,
              RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
   } else {
     assert (rank == RANK_LOG_NODE);

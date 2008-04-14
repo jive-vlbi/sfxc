@@ -11,8 +11,7 @@
 #include "utils.h"
 
 Manager_node_controller::Manager_node_controller(Manager_node &node)
-    : Controller(node), node(node) {
-}
+    : Controller(node), node(node) {}
 
 Controller::Process_event_status
 Manager_node_controller::process_event(MPI_Status &status) {

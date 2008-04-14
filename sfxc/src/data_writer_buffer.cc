@@ -18,8 +18,7 @@ Data_writer_buffer::Data_writer_buffer(Buffer *buff)
   assert(buffer != NULL);
 }
 
-Data_writer_buffer::~Data_writer_buffer() {
-}
+Data_writer_buffer::~Data_writer_buffer() {}
 
 size_t
 Data_writer_buffer::do_put_bytes(size_t nBytes, char *input_buffer) {

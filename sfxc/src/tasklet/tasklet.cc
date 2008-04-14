@@ -1,7 +1,6 @@
 #include "tasklet/tasklet.h"
 
-Tasklet::~Tasklet()
-{
-    //dtor
+Tasklet::~Tasklet() {
+  //dtor
 }
 

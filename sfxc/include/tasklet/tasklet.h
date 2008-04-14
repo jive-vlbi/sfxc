@@ -7,8 +7,7 @@ typedef enum {TASKLET_FINISHED,
               TASKLET_CONTINUE,
               TASKLET_BLOCKED} TaskletState;
 
-class Tasklet
-{
+class Tasklet {
 public:
   virtual ~Tasklet();
   virtual void do_task() = 0;

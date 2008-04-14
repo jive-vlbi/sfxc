@@ -33,7 +33,6 @@ Data_writer_socket::Data_writer_socket(Connexion* connexion) {
 }
 
 Data_writer_socket::~Data_writer_socket() {
-
 }
 
 size_t Data_writer_socket::do_put_bytes(size_t nBytes, char const *buff) {

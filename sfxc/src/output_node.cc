@@ -198,8 +198,7 @@ void Output_node::hook_added_data_reader(size_t reader) {
     new Input_stream(data_readers_ctrl.get_data_reader(reader));
 }
 
-void Output_node::hook_added_data_writer(size_t writer) {
-}
+void Output_node::hook_added_data_writer(size_t writer) {}
 
 void
 Output_node::set_number_of_time_slices(int n_time_slices) {

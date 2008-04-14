@@ -27,13 +27,68 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node)
   add_controller(&data_readers_ctrl);
   add_controller(&data_writer_ctrl);
 
+
   int32_t msg;
   MPI_Send(&msg, 1, MPI_INT32,
            RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED, MPI_COMM_WORLD);
 
   MPI_Send(&nr_corr_node, 1, MPI_INT32,
            RANK_MANAGER_NODE, MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
-           MPI_COMM_WORLD);#ifdef RUNTIME_STATISTIC  std::stringstream inputid;  std::stringstream compid;  std::stringstream monid;  std::stringstream tt;  inputid << "correlationnode" << RANK_OF_NODE;  compid << inputid.str() << "_dotask";  monid << compid.str() << "_monitor_state";  dotask_state_.init(monid.str());  dotask_state_.add_property(inputid.str(), "is_a", "correlationnode");  dotask_state_.add_property(inputid.str(), "has", compid.str() );  dotask_state_.add_property(compid.str(), "is_a", "correlationnode_dotaskloop");  dotask_state_.add_property(compid.str(), "has", monid.str() );  tt.str(monid.str());  compid.str("");  monid.str("");  compid << inputid.str() << "_reader";  monid << compid.str() << "_monitor_state";  reader_state_.init(monid.str());  reader_state_.add_property(inputid.str(), "is_a", "correlationnode");  reader_state_.add_property(inputid.str(), "has", compid.str() );  reader_state_.add_property(compid.str(), "is_a", "reader_component");  reader_state_.add_property(compid.str(), "has", monid.str() );  dotask_state_.add_property(tt.str(), "contains", monid.str() );  compid.str("");  monid.str("");  compid << inputid.str() << "_delaycorrection";  monid << compid.str() << "_monitor_state";  delaycorrection_state_.init(monid.str());  delaycorrection_state_.add_property(inputid.str(), "is_a", "correlationnode");  delaycorrection_state_.add_property(inputid.str(), "has", compid.str() );  delaycorrection_state_.add_property(compid.str(), "is_a", "delaycorrection_component");  delaycorrection_state_.add_property(compid.str(), "has", monid.str() );  dotask_state_.add_property(tt.str(), "contains", monid.str() );  compid.str("");  monid.str("");  compid << inputid.str() << "_integration";  monid << compid.str() << "_monitor_state";  correlation_state_.init(monid.str());  correlation_state_.add_property(inputid.str(), "is_a", "correlationnode");  correlation_state_.add_property(inputid.str(), "has", compid.str() );  correlation_state_.add_property(compid.str(), "is_a", "correlation_component");  correlation_state_.add_property(compid.str(), "has", monid.str() );  correlation_state_.add_property(tt.str(), "contains", monid.str() );	#endif //RUNTIME_STATISTIC
+           MPI_COMM_WORLD);
+
+
+
+#ifdef RUNTIME_STATISTIC
+  std::stringstream inputid;
+  std::stringstream compid;
+  std::stringstream monid;
+  std::stringstream tt;
+
+  inputid << "correlationnode" << RANK_OF_NODE;
+
+  compid << inputid.str() << "_dotask";
+  monid << compid.str() << "_monitor_state";
+  dotask_state_.init(monid.str());
+  dotask_state_.add_property(inputid.str(), "is_a", "correlationnode");
+  dotask_state_.add_property(inputid.str(), "has", compid.str() );
+  dotask_state_.add_property(compid.str(), "is_a", "correlationnode_dotaskloop");
+  dotask_state_.add_property(compid.str(), "has", monid.str() );
+  tt.str(monid.str());
+
+  compid.str("");
+  monid.str("");
+  compid << inputid.str() << "_reader";
+  monid << compid.str() << "_monitor_state";
+  reader_state_.init(monid.str());
+  reader_state_.add_property(inputid.str(), "is_a", "correlationnode");
+  reader_state_.add_property(inputid.str(), "has", compid.str() );
+  reader_state_.add_property(compid.str(), "is_a", "reader_component");
+  reader_state_.add_property(compid.str(), "has", monid.str() );
+  dotask_state_.add_property(tt.str(), "contains", monid.str() );
+
+  compid.str("");
+  monid.str("");
+  compid << inputid.str() << "_delaycorrection";
+  monid << compid.str() << "_monitor_state";
+  delaycorrection_state_.init(monid.str());
+  delaycorrection_state_.add_property(inputid.str(), "is_a", "correlationnode");
+  delaycorrection_state_.add_property(inputid.str(), "has", compid.str() );
+  delaycorrection_state_.add_property(compid.str(), "is_a", "delaycorrection_component");
+  delaycorrection_state_.add_property(compid.str(), "has", monid.str() );
+  dotask_state_.add_property(tt.str(), "contains", monid.str() );
+
+  compid.str("");
+  monid.str("");
+  compid << inputid.str() << "_integration";
+  monid << compid.str() << "_monitor_state";
+  correlation_state_.init(monid.str());
+  correlation_state_.add_property(inputid.str(), "is_a", "correlationnode");
+  correlation_state_.add_property(inputid.str(), "has", compid.str() );
+  correlation_state_.add_property(compid.str(), "is_a", "correlation_component");
+  correlation_state_.add_property(compid.str(), "has", monid.str() );
+  correlation_state_.add_property(tt.str(), "contains", monid.str() );
+#endif //RUNTIME_STATISTIC
+
 }
 
 Correlator_node::~Correlator_node() {
@@ -149,15 +204,22 @@ int Correlator_node::output_size_of_one_integration_step() {
   return 0;
 }
 
-void Correlator_node::correlate(){	RT_STAT( dotask_state_.begin_measure() );
+void Correlator_node::correlate() {
+  RT_STAT( dotask_state_.begin_measure() );
+
+
   // Execute all tasklets:
   bit_sample_reader_timer_.resume();
   for (size_t i=0; i<bit_sample_readers.size(); i++) {
     assert(bit_sample_readers[i] != Bit_sample_reader_ptr());
     if (bit_sample_readers[i] != Bit_sample_reader_ptr()) {
       int count = 0;
-      while ((count < 25) && bit_sample_readers[i]->has_work()) {				RT_STAT( reader_state_.begin_measure() );
-        bit_sample_readers[i]->do_task();				RT_STAT( reader_state_.end_measure(1) );
+      while ((count < 25) && bit_sample_readers[i]->has_work()) {
+        RT_STAT( reader_state_.begin_measure() );
+
+        bit_sample_readers[i]->do_task();
+        RT_STAT( reader_state_.end_measure(1) );
+
         count++;
       }
     }
@@ -167,18 +229,31 @@ void Correlator_node::correlate(){	RT_STAT( dotask_state_.begin_measure() );
   delay_timer_.resume();
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
-      if (delay_modules[i]->has_work()){				RT_STAT( delaycorrection_state_.begin_measure() );
-				delay_modules[i]->do_task();				RT_STAT( delaycorrection_state_.end_measure(1) );
+      if (delay_modules[i]->has_work()) {
+        RT_STAT( delaycorrection_state_.begin_measure() );
+
+        delay_modules[i]->do_task();
+        RT_STAT( delaycorrection_state_.end_measure(1) );
+
       }
     }
   }
   delay_timer_.stop();
 
   correlation_timer_.resume();
-  if (correlation_core.has_work()){		RT_STAT( correlation_state_.begin_measure() );
-		correlation_core.do_task();		RT_STAT( correlation_state_.end_measure(1) );
-  }
-  correlation_timer_.stop();	RT_STAT( dotask_state_.end_measure(1) );
+  if (correlation_core.has_work()) {
+    RT_STAT( correlation_state_.begin_measure() );
+
+    correlation_core.do_task();
+    RT_STAT( correlation_state_.end_measure(1) );
+
+
+  }
+
+
+  correlation_timer_.stop();
+
+  RT_STAT( dotask_state_.end_measure(1) );
 }
 
 void

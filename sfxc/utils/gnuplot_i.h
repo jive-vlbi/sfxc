@@ -1,25 +1,25 @@
 
 /*-------------------------------------------------------------------------*/
 /**
-  @file		gnuplot_i.h
-  @author	N. Devillard
-  @date		Sep 1998
-  @version	$Revision: 1.11 $
-  @brief	C interface to gnuplot.
+  @file  gnuplot_i.h
+  @author N. Devillard
+  @date  Sep 1998
+  @version $Revision: 1.11 $
+  @brief C interface to gnuplot.
 
   gnuplot is a freely available, command-driven graphical display tool for
   Unix. It compiles and works quite well on a number of Unix flavours as
   well as other operating systems. The following module enables sending
   display requests to gnuplot through simple C calls.
-  
+
 */
 /*--------------------------------------------------------------------------*/
 
 /*
-	$Id: gnuplot_i.h,v 1.11 2003/01/27 08:58:04 ndevilla Exp $
-	$Author: ndevilla $
-	$Date: 2003/01/27 08:58:04 $
-	$Revision: 1.11 $
+ $Id: gnuplot_i.h,v 1.11 2003/01/27 08:58:04 ndevilla Exp $
+ $Author: ndevilla $
+ $Date: 2003/01/27 08:58:04 $
+ $Revision: 1.11 $
  */
 
 #ifndef _GNUPLOT_PIPES_H_
@@ -50,8 +50,8 @@
 
 /*-------------------------------------------------------------------------*/
 /**
-  @typedef	gnuplot_ctrl
-  @brief	gnuplot session handle (opaque type).
+  @typedef gnuplot_ctrl
+  @brief gnuplot session handle (opaque type).
 
   This structure holds all necessary information to talk to a gnuplot
   session. It is built and returned by gnuplot_init() and later used
@@ -64,19 +64,20 @@
 /*-------------------------------------------------------------------------*/
 
 typedef struct _GNUPLOT_CTRL_ {
-    /** Pipe to gnuplot process */
-    FILE    * gnucmd ;
-    
-    /** Number of currently active plots */
-    int       nplots ;
-	/** Current plotting style */
-    char      pstyle[32] ;
+  /** Pipe to gnuplot process */
+  FILE    * gnucmd ;
 
-    /** Name of temporary files */
-    char      to_delete[GP_MAX_TMP_FILES][GP_TMP_NAME_SIZE] ;
-	/** Number of temporary files */
-    int       ntmp ;
-} gnuplot_ctrl ;
+  /** Number of currently active plots */
+  int       nplots ;
+  /** Current plotting style */
+  char      pstyle[32] ;
+
+  /** Name of temporary files */
+  char      to_delete[GP_MAX_TMP_FILES][GP_TMP_NAME_SIZE] ;
+  /** Number of temporary files */
+  int       ntmp ;
+}
+gnuplot_ctrl ;
 
 /*---------------------------------------------------------------------------
                         Function ANSI C prototypes
@@ -109,7 +110,7 @@ typedef struct _GNUPLOT_CTRL_ {
   gnuplot_get_program_path("csh") returns "/usr/bin"
   gnuplot_get_program_path("/bin/ls") returns NULL
   @endverbatim
-  
+
  */
 /*-------------------------------------------------------------------------*/
 char * gnuplot_get_program_path(char * pname);
@@ -293,16 +294,16 @@ void gnuplot_plot_x(gnuplot_ctrl * handle, float * d, int n, char * title);
  */
 /*--------------------------------------------------------------------------*/
 void gnuplot_plot_xy(
-    gnuplot_ctrl    *   handle,
-    float          *   x,
-    float          *   y,
-    int                 n,
-    char            *   title
+  gnuplot_ctrl    *   handle,
+  float          *   x,
+  float          *   y,
+  int                 n,
+  char            *   title
 ) ;
 
 
 /*-------------------------------------------------------------------------*/
-/** 
+/**
   @brief    Open a new session, plot a signal, close the session.
   @param    title   Plot title
   @param    style   Plot style
@@ -322,13 +323,13 @@ void gnuplot_plot_xy(
  */
 /*--------------------------------------------------------------------------*/
 void gnuplot_plot_once(
-    char    *   title,
-    char    *   style,
-    char    *   label_x,
-    char    *   label_y,
-    float  *   x,
-    float  *   y,
-    int         n
+  char    *   title,
+  char    *   style,
+  char    *   label_x,
+  char    *   label_y,
+  float  *   x,
+  float  *   y,
+  int         n
 );
 
 /*-------------------------------------------------------------------------*/
@@ -357,10 +358,10 @@ void gnuplot_plot_once(
  */
 /*--------------------------------------------------------------------------*/
 void gnuplot_plot_slope(
-    gnuplot_ctrl    *   handle,
-    float              a,
-    float              b,
-    char            *   title
+  gnuplot_ctrl    *   handle,
+  float              a,
+  float              b,
+  char            *   title
 ) ;
 
 /*-------------------------------------------------------------------------*/
