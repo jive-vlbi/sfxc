@@ -64,7 +64,7 @@ private:
   size_t n_channels();
   size_t n_stations();
 
-  int number_input_streams_in_use();
+  size_t number_input_streams_in_use();
 
 private:
   std::vector<Input_buffer_ptr>  input_buffers;
@@ -73,7 +73,7 @@ private:
   Output_buffer_element          *output_element;
 
   // Used in integration_step(), avoids contruction and destroying the vectors
-  std::vector<Input_buffer_element *>               input_elements;
+  std::vector<Input_buffer_element>     input_elements;
 
   int number_ffts_in_integration, current_fft, total_ffts;
 

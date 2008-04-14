@@ -352,7 +352,7 @@ Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>& allocator, R
 
 template<class T>
 Memory_pool<T>::Memory_pool(unsigned int numelements, AllocatorPtr allocator, PolicyPtr policy) :
-    allocator_(allocator), policy_(policy) {
+    policy_(policy), allocator_(allocator) {
   mid = sid++;
   for (unsigned int i=0;i<numelements;i++) {
     T* tmp = allocator_->allocate();
