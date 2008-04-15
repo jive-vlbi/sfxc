@@ -31,8 +31,8 @@ Channel_extractor_tasklet::Channel_extractor_tasklet(int N_)
   ch_extractor = new Channel_extractor_fast();
 #endif //USE_EXTRACTOR_5
 
-  DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
-
+  //DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
+  
 #ifdef RUNTIME_STATISTIC
   std::stringstream inputid;
   std::stringstream chexid;
