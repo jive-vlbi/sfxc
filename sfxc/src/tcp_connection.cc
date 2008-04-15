@@ -59,7 +59,6 @@ TCP_Connection::open_port(unsigned short int port, int connections) {
 
   pInterfaceIP interface = Network::get_interface_by_name("myri0");
   if (interface == NULL) {
-    DEBUG_MSG("Using the default network");
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddress.sin_port = htons(port);
