@@ -15,7 +15,8 @@ bin_PROGRAMS = create_delay_function \
                print_new_output_format \
                dnfp_fileserver \
                dnfp_fileclient \
-               phase_plot
+               phase_plot \
+               make_anim
 
 bin_SCRIPTS  = run_sfxc.py vumeter.py
 
@@ -92,3 +93,7 @@ print_new_output_format_SOURCES = \
 phase_plot_SOURCES = \
   phase_plot.cc\
   ../src/output_header.cc
+
+make_anim_SOURCES = \
+  make_anim.cc \
+  gnuplot_i.cc
