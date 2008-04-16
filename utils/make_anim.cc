@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <complex>
 #include <fstream>
+#include <sstream>
 #include <json/json.h>
 #include <fftw3.h>
 
@@ -14,17 +15,39 @@ const int MAX_PLOT  = 25;
 Json::Value ctrl;        // Correlator control file
 int st1, st2;
 
-std::vector< std::vector< float > > data;
+std::vector< std::string > data_files;
+
+
+inline bool
+operator==(const Output_header_baseline &bh1,
+           const Output_header_baseline &bh2) {
+  return ((bh1.station_nr1 == bh2.station_nr1) &&
+          (bh1.station_nr2 == bh2.station_nr2) &&
+          (bh1.polarisation1 == bh2.polarisation1) &&
+          (bh1.polarisation2 == bh2.polarisation2) &&
+          (bh1.sideband == bh2.sideband) &&
+          (bh1.frequency_nr == bh2.frequency_nr));
+}
+
+void get_filename(char *filename) {
+  int plot_nr = (int)data_files.size();
+  snprintf(filename, 80, "%s/fringe_%03d.txt", tmp_dir, plot_nr);
+}
 
 void read_data() {
+  char filename[80];
+
   int read;
-  std::string filename = ctrl["output_file"].asString().c_str()+7;
-  FILE *input = fopen(filename.c_str(), "rb");
+  std::string in_filename = ctrl["output_file"].asString().c_str()+7;
+  FILE *input = fopen(in_filename.c_str(), "rb");
   assert(input != NULL);
 
   Output_header_global global_header;
   Output_header_timeslice timeslice_header;
   Output_header_baseline baseline_header;
+  Output_header_baseline baseline_header_cmp;
+  baseline_header_cmp.station_nr1 = uint8_t(-1);
+  bool found_baseline = false;
 
   read = fread(&global_header, sizeof(global_header), 1, input);
   if (read != 1) {
@@ -40,6 +63,15 @@ void read_data() {
                       FFTW_BACKWARD,
                       FFTW_ESTIMATE);
     
+
+  for (int i=0; i<MAX_PLOT-1; i++) {
+    get_filename(filename);
+    std::ofstream out(filename);
+    out << 0 << " " << i << " 0" << std::endl;
+    out << number_channels << " " << i << " 0" << std::endl;
+    data_files.push_back(filename);
+  }
+  
 
   do {
     read = fread(&timeslice_header, sizeof(timeslice_header), 1, input);
@@ -59,77 +91,45 @@ void read_data() {
       if (read != 1) {
         std::cout << __LINE__ << " didn't read enough data" << std::endl;
       }
-      if (((baseline_header.station_nr1 == st1) &&
-           (baseline_header.station_nr2 == st2)) ||
-          ((baseline_header.station_nr1 == st2) &&
-           (baseline_header.station_nr2 == st1))) {
-        if (data.size() < 50) {
+      std::cout << (int)baseline_header.station_nr1 << " " << (int)baseline_header.station_nr2 << std::endl;
+      if (!found_baseline) {
+        if (((baseline_header.station_nr1 == st1) &&
+             (baseline_header.station_nr2 == st2)) ||
+            ((baseline_header.station_nr1 == st2) &&
+             (baseline_header.station_nr2 == st1))) {
+          baseline_header_cmp = baseline_header;
+          found_baseline = true;
+        }
+      }
+      if (baseline_header == baseline_header_cmp) {
         // do the fft
         fftwf_execute(fftwf_plan_);
         // Store the baseline
-        data.push_back(std::vector<float>());
-        data.back().resize(number_channels);
+        get_filename(filename);
+        std::ofstream out(filename);
         for (int j=0; j<number_channels; j++) {
-          data.back()[j] = std::abs(tmp_baseline[(j+number_channels/2)%number_channels]);
+          out << j << " " << data_files.size() << " "
+              << std::abs(tmp_baseline[(j+number_channels/2)%number_channels])
+              << std::endl;
         }
-        }
+        data_files.push_back(filename);
       }
-      
     }
   } while (!feof(input));
+  
 }
 
 void show_data() {
-//   int start, stop;
-//   {
-//     int year1, year2, day1, day2, hour, min, sec;
-//     sscanf(ctrl["start"].asString().c_str(), "%dy%dd%dh%dm%ds",
-//            &year1, &day1, &hour, &min, &sec);
-//     start = ((hour * 60 + min) * 60 + sec);
-//     sscanf(ctrl["stop"].asString().c_str(), "%dy%dd%dh%dm%ds",
-//            &year2, &day2, &hour, &min, &sec);
-//     assert(year1 == year2);
-//     stop = (day2-day1)*24*60*60 + ((hour * 60 + min) * 60 + sec);
-//   }
-
-//   int n_integrations = (int)((stop-start)/ctrl["integr_time"].asDouble());
-  int n_integrations = data.size();
-  int number_channels = data[0].size();
+  int n_integrations = data_files.size();
+  std::cout << "Size: " << n_integrations << std::endl;
   
   char cmd[80], data_file[80], plot_file[80];
   snprintf(data_file, 80, "%s/data.cin", tmp_dir);
 
-  for (int img_nr=1-MAX_PLOT; img_nr < n_integrations; img_nr++) {
+  for (int img_nr=0; img_nr < n_integrations-MAX_PLOT; img_nr++) {
+    //for (int img_nr=10; img_nr < 11; img_nr++) {
     std::cout << img_nr << std::endl;
     snprintf(plot_file, 80, "%s/mov%03d.png", tmp_dir, img_nr+MAX_PLOT);
-    { // Write data to file
-      int curr_integrations = std::min(img_nr+MAX_PLOT, (int)data.size());
-      std::ofstream out(data_file);
-
-      out << 0 << std::endl << std::endl;
-      // fill the first integrations time with zeros:
-      for (int i=img_nr; i<0; i++) {
-        out << 0 << std::endl << std::endl;
-        if ((i%5) == 0) 
-          out << 0 << std::endl << std::endl;
-      }
-      // fill first slices with fringes
-      for (int i=std::max(img_nr,0); i<curr_integrations; i++) {
-        if ((i%5) == 0) 
-          out << 0 << std::endl << std::endl;
-        for (int j=0; j<number_channels; j++) {
-          out << data[i][j] << std::endl;
-        }
-        out << std::endl;
-      }
-      // fill the remaining time with zeros:
-      for (int i=curr_integrations; i<img_nr+MAX_PLOT; i++) {
-        out << 0 << std::endl << std::endl;
-        if ((i%5) == 0) 
-          out << 0 << std::endl << std::endl;
-      }
-    }
-
     { // Plot the data
       gnuplot_ctrl * g = gnuplot_init();
       
@@ -144,12 +144,27 @@ void show_data() {
       gnuplot_cmd(g, "set noztics");
       gnuplot_cmd(g, "set noborder");
       gnuplot_cmd(g, "set view 70,150,.75,1.5");
-      
+
       snprintf(cmd, 80, "set output \"%s\"", plot_file);
       gnuplot_cmd(g, cmd);
-      
-      snprintf(cmd, 80, "splot \"%s\" w l t \"\"", data_file);
-      gnuplot_cmd(g, cmd);
+
+      bool first_plot = true;
+      std::stringstream plot_cmd;
+      plot_cmd << "splot ";
+      for (int i=0; i<MAX_PLOT; i++) {
+
+        if ((img_nr+i >= 0) && (img_nr+i < (int)data_files.size())) {
+          if (!first_plot) {
+            plot_cmd << ", ";
+          } else {
+            first_plot = false;
+          }
+          plot_cmd << "\"" << data_files[i+img_nr] << "\"  w l lt " << ((i+img_nr)%4)+1 << " notitle";
+        }
+      }
+      char plot_cmd2[plot_cmd.str().size()];
+      strcpy(plot_cmd2, plot_cmd.str().c_str());
+      gnuplot_cmd(g, plot_cmd2);
       
       gnuplot_close(g);
     }
@@ -184,9 +199,9 @@ int main(int argc, char * argv[]) {
       exit(-1);
     }
   }
-
+  
   read_data();
-  if (!data.empty()) 
+  if (!data_files.empty()) 
     show_data();
 
   char cmd[80];
