@@ -17,7 +17,6 @@
 // needed for fftw_malloc that return
 // optimized alignment.
 #include <fftw3.h>
-#include <boost/type_traits.hpp>
 
 #include "utils.h"
 
@@ -57,7 +56,6 @@ public:
   Buffer_element_large() {
     //std::cout << "Building array of size" << N << std::endl;
     _buffer = static_cast<T*>(fftw_malloc(sizeof(T)*N));
-    construct_data_();
   }
 
   Buffer_element_large(const Buffer_element_large& src) {
@@ -83,16 +81,6 @@ public:
     return _buffer;
   }
 private:
-  // This function make a kind of fake default-constructor
-  // initialization...using the copy constructor...
-  void construct_data_() {
-    if ( ! boost::is_pod<T>::value ) {
-      T tmp;
-      for (unsigned int i=0;i<N;i++) {
-        _buffer[i] = tmp;
-      }
-    }
-  }
 
   T* _buffer;
 };
@@ -126,21 +114,14 @@ public:
         // is nicely aligned.
         buffer_ = static_cast<T*>( fftw_malloc( sizeof(T)*size ) );
         size_ = size;
-        construct_data_();
       } else {
         T* oldbuffer = buffer_;
         buffer_ = static_cast<T*>( fftw_malloc( sizeof(T)*size ) );
         size_t min_size = std::min(size_,size);
         size_ = size;
-        construct_data_();
 
-        if ( boost::is_pod<T>::value ) {
-          memcpy(buffer_, oldbuffer, sizeof(T)*min_size);
-        } else {
-          for (size_t i=0; i<min_size; i++) {
-            buffer_[i] = oldbuffer[i];
-          }
-        }
+	memcpy(buffer_, oldbuffer, sizeof(T)*min_size);
+
         fftw_free(oldbuffer);
       }
     }
@@ -157,14 +138,6 @@ public:
     return buffer_;
   }
 private:
-  void construct_data_() {
-    if ( !boost::is_pod<T>::value ) {
-      T tmp;
-      for (unsigned int i=0;i<size_;i++) {
-        buffer_[i] = tmp;
-      }
-    }
-  }
 
   // We cannot use a std::vector because we cannot control that
   // the data are properly aligned to be used with fftw_xx or SSE
