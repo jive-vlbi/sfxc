@@ -85,7 +85,7 @@ def run_sfxc(vex_file, ctrl_file):
     output_file = output_file[7:]
     
   # run the html generator
-  cmd = "produce_html_plotpage "+vex_file+" "+output_file+" "+html_directory
+  cmd = "produce_html_plotpage "+vex_file+" "+output_file+" "+html_directory+" 2> /dev/null"
   print cmd
   status = os.system(cmd)
 
