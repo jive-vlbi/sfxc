@@ -76,7 +76,10 @@ void Delay_correction::do_task() {
     output->resize(input_size*2);
   }
 
-  bit2float( input.data().offset(), input.data().bytes_count(), input.data().bytes_buffer(), (std::complex<FLOAT>*)&frequency_buffer[0] );
+  bit2float(input.data().offset(), 
+            input.data().bytes_count(), 
+            input.data().bytes_buffer(), 
+            output->buffer() );
 
 
   double delay = get_delay(current_time+length_of_one_fft()/2);
@@ -84,12 +87,13 @@ void Delay_correction::do_task() {
   int integer_delay = (int)std::floor(delay_in_samples+.5);
 
 
-  fractional_bit_shift(&frequency_buffer[0],
+  // Output is in frequency_buffer
+  fractional_bit_shift(output->buffer(),
                        integer_delay,
                        delay_in_samples - integer_delay);
 
-  fringe_stopping(&frequency_buffer[0],
-                  output->buffer());
+  // Input is from frequency_buffer
+  fringe_stopping(output->buffer());
 
   current_time += length_of_one_fft();
 
@@ -102,27 +106,27 @@ void Delay_correction::do_task() {
   output_buffer->push(output);
 }
 
-void Delay_correction::bit2float(const unsigned int offset, const unsigned int input_size, const unsigned char* input, std::complex<FLOAT>* output_buffer) {
+void Delay_correction::bit2float(const unsigned int offset, const unsigned int input_size, const unsigned char* input, FLOAT* output_buffer) {
   assert(correlation_parameters.bits_per_sample == 2);
 
   if (correlation_parameters.bits_per_sample == 2) {
     // First byte:
     memcpy(output_buffer,
            &lookup_table[(int)input[0]][(int)offset],
-           (4-offset)*sizeof(std::complex<FLOAT>));
+           (4-offset)*sizeof(FLOAT));
     output_buffer += 4-offset;
 
     for (size_t byte = 1; byte < input_size-1; byte++) {
       memcpy(output_buffer, // byte * 4
              &lookup_table[(int)input[byte]][0],
-             4*sizeof(std::complex<FLOAT>));
+             4*sizeof(FLOAT));
       output_buffer += 4;
     }
 
     // Last byte:
     memcpy(output_buffer,
            &lookup_table[(int)(unsigned char)input[input_size-1]][0],
-           offset*sizeof(std::complex<FLOAT>));
+           offset*sizeof(FLOAT));
   } else {
     std::cout << "Not yet implemented" << std::endl;
     assert(false);
@@ -130,23 +134,34 @@ void Delay_correction::bit2float(const unsigned int offset, const unsigned int i
 }
 
 
-void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
+void Delay_correction::fractional_bit_shift(FLOAT input[],
     int integer_shift,
     FLOAT fractional_delay) {
   // 3) execute the complex to complex FFT, from Time to Frequency domain
   //    input: sls. output sls_freq
-  delay_timer.resume();
-  //DM replaced: FFTW_EXECUTE_DFT(plan_t2f, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
-  FFTW_EXECUTE(plan_t2f);
-  delay_timer.stop();
-  total_ffts++;
+  {
+    delay_timer.resume();
+    //DM replaced: FFTW_EXECUTE_DFT(plan_t2f, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
+    FFTW_COMPLEX *frequency_buffer_fftw = (FFTW_COMPLEX *)&frequency_buffer[0];
+    FFTW_EXECUTE_DFT_R2C(plan_t2f,
+                         &input[0],
+                         frequency_buffer_fftw);
+    // Element 0 and number_channels()/2 are real numbers
+    for (int i=1; i<number_channels()/2; i++) {
+      // frequency_buffer[i] = std::conj(frequency_buffer[i]);
+      // This avoids the assignment of the real part
+      frequency_buffer_fftw[i][1] = -frequency_buffer_fftw[i][1];
+    }
+    delay_timer.stop();
+    total_ffts++;
+  }
 
-  output[0] *= 0.5;
-  output[number_channels()/2] *= 0.5;//Nyquist
+  frequency_buffer[0] *= 0.5;
+  frequency_buffer[number_channels()/2] *= 0.5;//Nyquist
 
   // 4c) zero the unused subband (?)
   for (int i=number_channels()/2+1; i<number_channels(); i++) {
-    output[i] = 0.0;
+    frequency_buffer[i] = 0.0;
   }
 
   // 5a)calculate the fract bit shift (=phase corrections in freq domain)
@@ -176,7 +191,7 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
     sin_phi = sign*sqrt(1-cos_phi*cos_phi);
 #endif
 
-    output[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
+    frequency_buffer[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
 
     phi += linear_term;
   }
@@ -190,8 +205,7 @@ void Delay_correction::fractional_bit_shift(std::complex<FLOAT> output[],
   total_ffts++;
 }
 
-void Delay_correction::fringe_stopping(std::complex<FLOAT> input[],
-                                       FLOAT output[]) {
+void Delay_correction::fringe_stopping(FLOAT output[]) {
   double mult_factor_phi =
     -sideband()*2.0*M_PI*(channel_freq() + sideband()*bandwidth()*0.5);
 
@@ -246,11 +260,12 @@ void Delay_correction::fringe_stopping(std::complex<FLOAT> input[],
 
     // 6b)apply normalization and multiply by 2.0
     // NHGK: Why only the real part
-    input[i] = std::complex<FLOAT>(2*input[i].real(), input[i].imag());
+    frequency_buffer[i] = std::complex<FLOAT>(2*frequency_buffer[i].real(), 
+                                              frequency_buffer[i].imag());
 
     // 7)subtract dopplers and put real part in Bufs for the current segment
     output[i] =
-      input[i].real()*cosPhi - input[i].imag()*sinPhi;
+      frequency_buffer[i].real()*cosPhi - frequency_buffer[i].imag()*sinPhi;
     cosPhi += deltaCosPhi;
     sinPhi += deltaSinPhi;
 
@@ -295,15 +310,17 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 
   n_recompute_delay = sample_rate()/1000000;
 
-  frequency_buffer.resize(number_channels()*2, 0);
+  frequency_buffer.resize(number_channels(), 0);
 
   if (prev_number_channels != number_channels()) {
     //buffer.resize(number_channels());
+    Aligned_vector<FLOAT> input_buffer;
+    input_buffer.resize(number_channels());
 
-    plan_t2f = FFTW_PLAN_DFT_1D(number_channels(),
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
-                                FFTW_BACKWARD, FFTW_MEASURE);
+    plan_t2f = FFTW_PLAN_DFT_R2C_1D(number_channels(),
+                                    &input_buffer[0],
+                                    (FFTW_COMPLEX *)&frequency_buffer[0],
+                                    FFTW_MEASURE);
     plan_f2t = FFTW_PLAN_DFT_1D(number_channels(),
                                 (FFTW_COMPLEX *)&frequency_buffer[0],
                                 (FFTW_COMPLEX *)&frequency_buffer[0],
