@@ -46,11 +46,6 @@ public:
   void set_delay_table(const Delay_table_akima &delay_table);
 
   void set_parameters(const Correlation_parameters &parameters);
-  ///
-  void bit2float(const unsigned int offset,
-                 const unsigned int input_size,
-                 const unsigned char* input,
-                 std::complex<FLOAT>* output_buffer);
 
 
   /// Do one delay step
@@ -62,11 +57,15 @@ public:
   }
 
 private:
-  void fractional_bit_shift(std::complex<FLOAT> output[],
+  ///
+  void bit2float(const unsigned int offset,
+                 const unsigned int input_size,
+                 const unsigned char* input,
+                 FLOAT* output_buffer);
+  void fractional_bit_shift(FLOAT input[],
                             int integer_shift,
                             FLOAT fractional_delay);
-  void fringe_stopping(std::complex<FLOAT> intput[],
-                       FLOAT output[]);
+  void fringe_stopping(FLOAT output[]);
 
 private:
   // access functions to the correlation parameters
@@ -107,7 +106,7 @@ private:
 
   Timer delay_timer;
 
-  std::complex<FLOAT> lookup_table[256][4];
+  FLOAT lookup_table[256][4];
 };
 
 #endif /*DELAY_CORRECTION_H*/
