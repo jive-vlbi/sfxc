@@ -180,15 +180,14 @@ void Delay_correction::fractional_bit_shift(FLOAT input[],
     // the following should be double
     double cos_phi, sin_phi;
 
+    // Compute sin_phi=sin(phi); cos_phi = cos(phi);
 #ifdef HAVE_SINCOS
 
     sincos(phi, &sin_phi, &cos_phi);
 #else
 
+    sin_phi = sin(phi);
     cos_phi = cos(phi);
-    // sin^2(phi) + cos^2(phi) == 1
-    int    sign = ( (((int)floor(phi/M_PI))&1 == 1) ? -1 : 1 );
-    sin_phi = sign*sqrt(1-cos_phi*cos_phi);
 #endif
 
     frequency_buffer[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
@@ -217,8 +216,18 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
   double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
   // Initialise the end values
   double phi_end = mult_factor_phi * get_delay(time);
-  double cosPhi_end = cos(phi_end);
-  double sinPhi_end = sin(phi_end);
+
+  double cosPhi_end, sinPhi_end;
+
+  // Compute sinPhi_end=sin(phi_end); cosPhi_end = cos(phi_end);
+#ifdef HAVE_SINCOS
+
+    sincos(phi_end, &sinPhi_end, &cosPhi_end);
+#else
+
+    sinPhi_end = sin(phi_end);
+    cosPhi_end = cos(phi_end);
+#endif
 
   for (int i=0; i<number_channels(); i++) {
     if ((i % n_recompute_delay) == 0) {
@@ -249,8 +258,15 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
 
       time += delta_time;
 
-      cosPhi_end = cos(phi_end);
-      sinPhi_end = sin(phi_end);
+  // Compute sinPhi_end=sin(phi_end); cosPhi_end = cos(phi_end);
+#ifdef HAVE_SINCOS
+
+    sincos(phi_end, &sinPhi_end, &cosPhi_end);
+#else
+
+    sinPhi_end = sin(phi_end);
+    cosPhi_end = cos(phi_end);
+#endif
 
       deltaCosPhi = (cosPhi_end-cosPhi)/n_recompute_delay;
       deltaSinPhi = (sinPhi_end-sinPhi)/n_recompute_delay;
@@ -310,7 +326,7 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 
   n_recompute_delay = sample_rate()/1000000;
 
-  frequency_buffer.resize(number_channels(), 0);
+  frequency_buffer.resize(number_channels());
 
   if (prev_number_channels != number_channels()) {
     //buffer.resize(number_channels());
