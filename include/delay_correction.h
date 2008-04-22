@@ -102,7 +102,7 @@ private:
   Delay_table_akima   delay_table;
 
   // You need this one because the input and output are FLOATs (not complex)
-  std::vector<std::complex<FLOAT> > frequency_buffer;
+  Aligned_vector< std::complex<FLOAT> > frequency_buffer;
 
   Timer delay_timer;
 
