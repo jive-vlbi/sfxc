@@ -177,8 +177,7 @@ set_parameters(const Input_node_parameters &input_node_param,
       }
     }
     integer_delay_[i]->connect_to(channel_extractor_.get_output_buffer(i));
-    integer_delay_[i]->set_parameters(input_node_param, node_nr,
-                                      n_bytes_per_input_word);
+    integer_delay_[i]->set_parameters(input_node_param, node_nr);
 
     data_writers_[i].connect_to(integer_delay_[i]->get_output_buffer());
     data_writers_[i].set_parameters(input_node_param);
