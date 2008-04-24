@@ -32,6 +32,9 @@ public:
   typedef Input_node_types::Channel_memory_pool_element Input_data_block;
 
   // Pair of the delay in samples (of type Type) and subsamples
+  // - first is the delay in bytes
+  // - second is the number of samples in the byte that should be shifted
+  // Hence, integer bit shift = first*(8/bits_per_sample) + second
   typedef std::pair<int,int>                                      Delay_type;
 
   Integer_delay_correction_per_channel();
@@ -60,8 +63,7 @@ public:
   void set_stop_time(int64_t time);
   void set_delay_table(Delay_table_akima &table);
   void set_parameters(const Input_node_parameters &parameters,
-                      int node_nr,
-                      size_t n_bytes_per_input_word);
+                      int node_nr);
 
   int64_t current_time() {
     return _current_time;
@@ -106,8 +108,6 @@ private:
 
   /// Delay table
   Delay_table_akima    delay_table;
-
-  size_t n_bytes_per_input_word;
 };
 
 #endif // INTEGER_DELAY_CORRECTION_PER_CHANNEL_H

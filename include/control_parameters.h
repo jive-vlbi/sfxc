@@ -36,6 +36,7 @@ public:
 
   int bits_per_sample() const;
   int subsamples_per_sample() const;
+  int sample_rate() const;
   bool operator==(const Input_node_parameters &other) const;
 
   /// List of the tracks that are combined to frequency channels

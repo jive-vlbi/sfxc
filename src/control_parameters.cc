@@ -1062,6 +1062,11 @@ Input_node_parameters::subsamples_per_sample() const {
 }
 
 int
+Input_node_parameters::sample_rate() const {
+  return track_bit_rate * subsamples_per_sample();
+}
+
+int
 Input_node_parameters::Channel_parameters::bits_per_sample() const {
   return (magn_tracks.size() == 0 ? 1 : 2);
 }

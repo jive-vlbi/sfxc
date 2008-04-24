@@ -74,7 +74,7 @@ Channel_extractor_tasklet::do_task() {
 
   // Number of bytes in the output chunk
   assert((n_input_samples*fan_out)%8==0);
-  int n_output_bytes = (n_input_samples*fan_out)/8;
+  int n_output_bytes = (SIZE_MK4_FRAME*fan_out)/8;
   assert(n_output_bytes > 0);
 
   Output_buffer_element  output_elements[n_subbands];
@@ -149,7 +149,6 @@ set_parameters(const Input_node_parameters &input_node_param,
   n_subbands = input_node_param.channels.size();
   fan_out    = input_node_param.bits_per_sample() *
                input_node_param.subsamples_per_sample();
-  DEBUG_MSG("size_of_one_input_word_: " << N);
   ch_extractor->initialise(track_positions, N, 20000);
 }
 

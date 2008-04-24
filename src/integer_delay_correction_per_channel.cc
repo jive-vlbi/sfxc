@@ -29,8 +29,9 @@ Integer_delay_correction_per_channel::do_task() {
   int byte_offset =
     (_current_time-input_element.start_time)*sample_rate*bits_per_sample/8/1000000 +
     current_delay.first;
-  if (byte_offset >= (int)(input_element.channel_data.data().data.size()/n_bytes_per_input_word)) {
+  if (byte_offset >= (int)input_element.channel_data.data().data.size()) {
     // This can happen when we go to a next integration slice
+    // And the integer delay changes at the same time
     output_element.channel_data = input_element.channel_data;
     output_element.release_data = true;
     output_buffer_->push(output_element);
@@ -79,7 +80,7 @@ Integer_delay_correction_per_channel::do_task() {
 
   } else {
     assert (byte_offset >= 0);
-    int input_data_size = input_element.channel_data.data().data.size()/n_bytes_per_input_word;
+    int input_data_size = input_element.channel_data.data().data.size();
     if ((byte_offset + nr_output_bytes) < input_data_size) {
       // Send data
       output_element.channel_data = input_element.channel_data;
@@ -149,7 +150,7 @@ Integer_delay_correction_per_channel::has_work() {
     (_current_time-input_element.start_time)*sample_rate*bits_per_sample/8/1000000 +
     current_delay.first;
   if (size_t(byte_offset + nr_output_bytes +1) >=
-      input_element.channel_data.data().data.size()/n_bytes_per_input_word) {
+      input_element.channel_data.data().data.size()) {
     if (input_buffer_->size() < 2)
       return false;
   }
@@ -184,22 +185,22 @@ Integer_delay_correction_per_channel::get_delay(int64_t time) {
   int delay_in_samples = (int)std::floor(delay_*sample_rate+.5);
 
   // All because modulo doesn't work for negative values
+  // delay_in_bytes = std::floor(delay_in_samples/(8./bits_per_sample))
   assert(delay_in_samples < 0);
-
   int delay_in_bytes = -((-delay_in_samples)/(8/bits_per_sample))-1;
-  int delay_in_remaining_samples = delay_in_samples-delay_in_bytes*8/bits_per_sample;
-
+  int delay_in_remaining_samples = 
+    delay_in_samples-delay_in_bytes*(8/bits_per_sample);
   if (delay_in_remaining_samples*bits_per_sample == 8) {
     delay_in_bytes++;
     delay_in_remaining_samples = 0;
   }
 
-  assert((delay_in_bytes <= 0) && (delay_in_remaining_samples < 8));
-  assert((delay_in_bytes*8 + delay_in_remaining_samples*bits_per_sample)/bits_per_sample == delay_in_samples);
+  assert((delay_in_bytes <= 0) && 
+         (delay_in_remaining_samples < 8));
+  assert((delay_in_bytes*(8/bits_per_sample) + 
+          delay_in_remaining_samples) == 
+         delay_in_samples);
 
-  if (delay_in_remaining_samples >= 4) {
-    DEBUG_MSG("delay: " << delay_in_remaining_samples);
-  }
   return Delay_type(delay_in_bytes, delay_in_remaining_samples);
 }
 
@@ -212,17 +213,13 @@ set_delay_table(Delay_table_akima &table) {
 void
 Integer_delay_correction_per_channel::
 set_parameters(const Input_node_parameters &parameters,
-               int node_nr,
-               size_t n_bytes_per_input_word_) {
-  n_bytes_per_input_word = n_bytes_per_input_word_;
+               int node_nr) {
   bits_per_sample = parameters.bits_per_sample();
-  int subsamples_per_sample = parameters.subsamples_per_sample();
-  assert(parameters.number_channels%subsamples_per_sample == 0);
 
   assert((parameters.number_channels*bits_per_sample)%8 == 0);
   // The offset is not counted
   nr_output_bytes = parameters.number_channels*bits_per_sample/8+1;
-  sample_rate = parameters.track_bit_rate * subsamples_per_sample;
+  sample_rate = parameters.sample_rate();
 
   assert((((nr_output_bytes-1)*(8/bits_per_sample))*1000000) % sample_rate== 0);
   delta_time = ((nr_output_bytes-1)*(8/bits_per_sample))*1000000/sample_rate;

@@ -52,6 +52,7 @@ Input_node_data_writer_tasklet::
 do_task() {
   assert(has_work());
 
+  // Check whether we have to start a new timeslice
   if (data_writers_.front().slice_size > 0) {
     // Initialise the size of the data slice
     assert(data_writers_.front().writer->get_size_dataslice() <= 0);
@@ -68,11 +69,13 @@ do_task() {
 
   Input_buffer_element &input_element = input_buffer_->front();
 
+  // Check if we only need to release the block
   if (input_element.release_data) {
     input_element.channel_data.release();
     input_buffer_->pop();
     return;
   }
+
   if ((int)input_element.delay >= 0) {
     int nbytes = 0;
     do {
@@ -87,7 +90,8 @@ do_task() {
 
   while (bytes_written < bytes_to_write) {
     int nbytes =
-      data_writers_.front().writer->put_bytes(bytes_to_write - bytes_written, data);
+      data_writers_.front().writer->put_bytes(bytes_to_write - bytes_written,
+                                              data);
     assert(nbytes >= 0);
     bytes_written += nbytes;
     data          += nbytes;
