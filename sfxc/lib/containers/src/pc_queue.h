@@ -71,8 +71,7 @@
 
 template<class T>
 
-class PC_queue
-    {
+class PC_queue {
 
 public:
   typedef T   Type;

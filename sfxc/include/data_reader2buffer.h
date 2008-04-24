@@ -30,7 +30,7 @@ public:
   enum State {
     STOPPED=0, ///< Not running, the additional thread is not active
     SUSPENDED, /**< Not running, the additional thread is waiting
-                        (e.g. for a change of buffers) **/
+                            (e.g. for a change of buffers) **/
     RUNNING    ///< The thread is writing data from the buffer
   };
 

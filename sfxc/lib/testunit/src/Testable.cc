@@ -25,8 +25,7 @@
 
 
 
-Testable::~Testable()
-{
+Testable::~Testable() {
 
   //dtor
 

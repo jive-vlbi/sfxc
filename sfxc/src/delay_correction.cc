@@ -8,7 +8,7 @@ Delay_correction::Delay_correction()
     : output_buffer(Output_buffer_ptr(new Output_buffer())),
     output_memory_pool(10),
     current_time(-1),
-delay_table_set(false) {
+    delay_table_set(false) {
   // Bit2Float table initialization
   const FLOAT sample_value_ms[] = {
                                     -7, -2, 2, 7
@@ -76,9 +76,9 @@ void Delay_correction::do_task() {
     output->resize(input_size*2);
   }
 
-  bit2float(input.data().offset(), 
-            input.data().bytes_count(), 
-            input.data().bytes_buffer(), 
+  bit2float(input.data().offset(),
+            input.data().bytes_count(),
+            input.data().bytes_buffer(),
             output->buffer() );
 
 
@@ -222,11 +222,11 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
   // Compute sinPhi_end=sin(phi_end); cosPhi_end = cos(phi_end);
 #ifdef HAVE_SINCOS
 
-    sincos(phi_end, &sinPhi_end, &cosPhi_end);
+  sincos(phi_end, &sinPhi_end, &cosPhi_end);
 #else
 
-    sinPhi_end = sin(phi_end);
-    cosPhi_end = cos(phi_end);
+  sinPhi_end = sin(phi_end);
+  cosPhi_end = cos(phi_end);
 #endif
 
   for (int i=0; i<number_channels(); i++) {
@@ -258,14 +258,14 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
 
       time += delta_time;
 
-  // Compute sinPhi_end=sin(phi_end); cosPhi_end = cos(phi_end);
+      // Compute sinPhi_end=sin(phi_end); cosPhi_end = cos(phi_end);
 #ifdef HAVE_SINCOS
 
-    sincos(phi_end, &sinPhi_end, &cosPhi_end);
+      sincos(phi_end, &sinPhi_end, &cosPhi_end);
 #else
 
-    sinPhi_end = sin(phi_end);
-    cosPhi_end = cos(phi_end);
+      sinPhi_end = sin(phi_end);
+      cosPhi_end = cos(phi_end);
 #endif
 
       deltaCosPhi = (cosPhi_end-cosPhi)/n_recompute_delay;
@@ -276,8 +276,8 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
 
     // 6b)apply normalization and multiply by 2.0
     // NHGK: Why only the real part
-    frequency_buffer[i] = std::complex<FLOAT>(2*frequency_buffer[i].real(), 
-                                              frequency_buffer[i].imag());
+    frequency_buffer[i] = std::complex<FLOAT>(2*frequency_buffer[i].real(),
+                          frequency_buffer[i].imag());
 
     // 7)subtract dopplers and put real part in Bufs for the current segment
     output[i] =

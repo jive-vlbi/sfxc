@@ -8,8 +8,7 @@
 
 template<class T>
 
-class Allocator
-    {
+class Allocator {
 
 public:
   typedef boost::shared_ptr< Allocator<T> > SelfPtr;

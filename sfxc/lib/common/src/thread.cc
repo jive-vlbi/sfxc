@@ -21,8 +21,7 @@ public:
 };
 
 
-ThreadPool::ThreadPool() {
-}
+ThreadPool::ThreadPool() {}
 void ThreadPool::s_wait_for_all_termination() {
   singleton<ThreadPool>::instance().wait_for_all_termination();
 }
@@ -66,8 +65,7 @@ Thread::Thread() {
   singleton<ThreadPool>::instance().register_thread(*this);
 }
 
-Thread::~Thread() {
-}
+Thread::~Thread() {}
 
 Thread& Thread::start() {
   int rc = pthread_create(&m_threadid, NULL, execute, (void *)this);

@@ -285,8 +285,7 @@ QOS_MonitorState<T>::QOS_MonitorState() {
 }
 
 template<class T>
-QOS_MonitorState<T>::~QOS_MonitorState() {
-}
+QOS_MonitorState<T>::~QOS_MonitorState() {}
 
 template<class T>
 void QOS_MonitorState<T>::save_history_to_file(const std::string& dirname) {

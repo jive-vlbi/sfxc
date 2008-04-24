@@ -113,8 +113,7 @@ bool Mark4_reader::read_new_block(unsigned char *mark4_block) {
     if (result < 0) {
       current_time_ += time_between_headers();
       return false;
-    } else if (result == 0) {
-    }
+    } else if (result == 0) {}
     to_read -= result;
     buffer += result;
   } while (to_read > 0);

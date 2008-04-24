@@ -10,8 +10,7 @@ Tasklet_worker::Tasklet_worker(const std::string name, Tasklet_pool& taskletpool
 
 
 
-Tasklet_worker::~Tasklet_worker() {
-}
+Tasklet_worker::~Tasklet_worker() {}
 
 void Tasklet_worker::do_execute() {
   unsigned int retval;

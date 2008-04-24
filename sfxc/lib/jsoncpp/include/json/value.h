@@ -88,19 +88,19 @@ private:
  * - an ordered list of Value
  * - collection of name/value pairs (javascript object)
  *
- * The type of the held value is represented by a #ValueType and 
+ * The type of the held value is represented by a #ValueType and
  * can be obtained using type().
  *
- * values of an #objectValue or #arrayValue can be accessed using operator[]() methods. 
- * Non const methods will automatically create the a #nullValue element 
- * if it does not exist. 
- * The sequence of an #arrayValue will be automatically resize and initialized 
+ * values of an #objectValue or #arrayValue can be accessed using operator[]() methods.
+ * Non const methods will automatically create the a #nullValue element
+ * if it does not exist.
+ * The sequence of an #arrayValue will be automatically resize and initialized
  * with #nullValue. resize() can be used to enlarge or truncate an #arrayValue.
  *
  * The get() methods can be used to obtanis default value in the case the required element
  * does not exist.
  *
- * It is possible to iterate over the list of a #objectValue values using 
+ * It is possible to iterate over the list of a #objectValue values using
  * the getMemberNames() method.
  */
 class JSON_API Value {
@@ -605,7 +605,7 @@ public:
  * list in each bucket to handle collision. There is an addional twist in that
  * each node of the collision linked list is a page containing a fixed amount of
  * value. This provides a better compromise between memory usage and speed.
- * 
+ *
  * Each bucket is made up of a chained list of ValueInternalLink. The last
  * link of a given bucket can be found in the 'previous_' field of the following bucket.
  * The last link of the last bucket is stored in tailLink_ as it has no following bucket.
@@ -780,7 +780,7 @@ virtual void destruct( ValueInternalArray *array )
    delete array;
 }
 
-virtual void reallocateArrayPageIndex( Value **&indexes, 
+virtual void reallocateArrayPageIndex( Value **&indexes,
                                        ValueInternalArray::PageIndex &indexCount,
                                        ValueInternalArray::PageIndex minNewIndexCount )
 {
@@ -793,7 +793,7 @@ virtual void reallocateArrayPageIndex( Value **&indexes,
    indexCount = newIndexCount;
    indexes = static_cast<Value **>( newIndexes );
 }
-virtual void releaseArrayPageIndex( Value **indexes, 
+virtual void releaseArrayPageIndex( Value **indexes,
                                     ValueInternalArray::PageIndex indexCount )
 {
    if ( indexes )

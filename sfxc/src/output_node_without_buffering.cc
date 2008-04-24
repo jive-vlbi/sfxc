@@ -108,8 +108,7 @@ void Output_node_without_buffering::start() {
   }
 }
 
-void Output_node_without_buffering::create_buffer(int num) {
-}
+void Output_node_without_buffering::create_buffer(int num) {}
 
 void Output_node_without_buffering::set_weight_of_input_stream(int num, uint64_t weight) {
   assert(num >= 0);

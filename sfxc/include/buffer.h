@@ -120,7 +120,7 @@ public:
         size_t min_size = std::min(size_,size);
         size_ = size;
 
-	memcpy(buffer_, oldbuffer, sizeof(T)*min_size);
+        memcpy(buffer_, oldbuffer, sizeof(T)*min_size);
 
         fftw_free(oldbuffer);
       }
