@@ -12,6 +12,7 @@ OBJ=\
   sfxc_mpi.cc \
   utils.cc \
   delay_table_akima.cc \
+  mark4_reader_tasklet.cc \
   mark4_reader.cc \
   mark4_header.cc \
   data_writer.cc data_reader.cc \
@@ -27,6 +28,8 @@ OBJ=\
   log_writer_file.cc \
   correlation_core.cc \
   delay_correction.cc \
+  integer_delay_correction_per_channel.cc \
+  channel_extractor_tasklet.cc \
   channel_extractor_brute_force.cc \
   channel_extractor_5.cc \
   channel_extractor_fast.cc \
@@ -53,6 +56,8 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   single_data_writer_controller.cc \
   single_data_reader_controller.cc \
   input_node_tasklet.cc \
+  input_node_tasklet_impl.cc \
+  input_node_data_writer_tasklet.cc \
   output_header.cc
 
 sfxc.cc: svn_version.h

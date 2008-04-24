@@ -14,13 +14,11 @@
 #include "singleton.h"
 
 
-class Signal_handler
-    {
+class Signal_handler {
 
 public:
 
-  static void handler(int s)
-  {
+  static void handler(int s) {
 
     std::cerr << "(S): Signal handler received:" << s << std::endl;
 
@@ -30,8 +28,7 @@ public:
 
 
 
-  static void install()
-  {
+  static void install() {
 
     /*
 

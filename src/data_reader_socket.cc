@@ -29,8 +29,7 @@ Data_reader_socket::Data_reader_socket(Connexion* connexion) {
   assert(m_socket > 0);
 }
 
-Data_reader_socket::~Data_reader_socket() {
-}
+Data_reader_socket::~Data_reader_socket() {}
 
 
 int Data_reader_socket::do_get_bytes(size_t nBytes, char *out) {

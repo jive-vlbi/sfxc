@@ -82,6 +82,4 @@ private:
 #endif //RUNTIME_STATISTIC
 };
 
-#include "channel_extractor_impl.h"
-
 #endif /*CHANNEL_EXTRACTOR_TASKLET_H_*/

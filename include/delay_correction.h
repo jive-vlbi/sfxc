@@ -31,7 +31,7 @@ public:
   typedef Correlator_node_types::Float_queue          Output_buffer;
   typedef Correlator_node_types::Float_queue_ptr      Output_buffer_ptr;
   typedef Output_buffer::value_type                   Output_buffer_element;
-  
+
 
   Delay_correction();
   virtual ~Delay_correction();

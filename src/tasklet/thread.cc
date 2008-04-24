@@ -4,8 +4,7 @@
 #include "tasklet/singleton.h"
 #include "tasklet/thread.h"
 
-ThreadPool::ThreadPool() {
-}
+ThreadPool::ThreadPool() {}
 
 void ThreadPool::register_thread(Thread& thread) {
   m_vectorthread.push_back(&thread);
@@ -25,8 +24,7 @@ Thread::Thread() {
   singleton<ThreadPool>::instance().register_thread(*this);
 }
 
-Thread::~Thread() {
-}
+Thread::~Thread() {}
 
 void Thread::start() {
   int rc = pthread_create(&m_threadid, NULL, execute, (void *)this);

@@ -70,23 +70,11 @@ get_input_node_tasklet(boost::shared_ptr<Data_reader> reader) {
             header.set_header((unsigned char *)buffer);
             assert(header.checkCRC());
 
-            switch (nTracks8) {
-            case 1: {
-                return new Input_node_tasklet_implementation<int8_t>(reader, buffer);
-              }
-            case 2: {
-                return new Input_node_tasklet_implementation<int16_t>(reader, buffer);
-              }
-            case 4: {
-                return new Input_node_tasklet_implementation<int32_t>(reader, buffer);
-              }
-            case 8: {
-                return new Input_node_tasklet_implementation<int64_t>(reader, buffer);
-              }
-            default: {
-                assert(false);
-              }
-            }
+            assert((nTracks8 == 1) ||
+                   (nTracks8 == 2) ||
+                   (nTracks8 == 4) ||
+                   (nTracks8 == 8));
+            return new Input_node_tasklet_implementation(reader, buffer, nTracks8);
           }
         }
         nOnes=0;

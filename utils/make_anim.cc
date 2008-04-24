@@ -62,7 +62,7 @@ void read_data() {
                       reinterpret_cast<fftwf_complex*>(&tmp_baseline[0]),
                       FFTW_BACKWARD,
                       FFTW_ESTIMATE);
-    
+
 
   for (int i=0; i<MAX_PLOT-1; i++) {
     get_filename(filename);
@@ -71,7 +71,7 @@ void read_data() {
     out << number_channels << " " << i << " 0" << std::endl;
     data_files.push_back(filename);
   }
-  
+
 
   do {
     read = fread(&timeslice_header, sizeof(timeslice_header), 1, input);
@@ -85,8 +85,8 @@ void read_data() {
         i = timeslice_header.number_baselines;
         baseline_header.station_nr1 = uint8_t(-1);
       }
-      read = fread(&tmp_baseline[0], 
-                   number_channels*sizeof(std::complex<float>), 1, 
+      read = fread(&tmp_baseline[0],
+                   number_channels*sizeof(std::complex<float>), 1,
                    input);
       if (read != 1) {
         std::cout << __LINE__ << " didn't read enough data" << std::endl;
@@ -109,20 +109,20 @@ void read_data() {
         std::ofstream out(filename);
         for (int j=0; j<number_channels; j++) {
           out << j << " " << data_files.size() << " "
-              << std::abs(tmp_baseline[(j+number_channels/2)%number_channels])
-              << std::endl;
+          << std::abs(tmp_baseline[(j+number_channels/2)%number_channels])
+          << std::endl;
         }
         data_files.push_back(filename);
       }
     }
   } while (!feof(input));
-  
+
 }
 
 void show_data() {
   int n_integrations = data_files.size();
   std::cout << "Size: " << n_integrations << std::endl;
-  
+
   char cmd[80], data_file[80], plot_file[80];
   snprintf(data_file, 80, "%s/data.cin", tmp_dir);
 
@@ -132,10 +132,10 @@ void show_data() {
     snprintf(plot_file, 80, "%s/mov%03d.png", tmp_dir, img_nr+MAX_PLOT);
     { // Plot the data
       gnuplot_ctrl * g = gnuplot_init();
-      
+
       gnuplot_setstyle(g, "lines");
       //gnuplot_cmd(g, "set hidden3d");
-      
+
       gnuplot_cmd(g, "set terminal png");
       gnuplot_cmd(g, "set autoscale");
 
@@ -165,7 +165,7 @@ void show_data() {
       char plot_cmd2[plot_cmd.str().size()];
       strcpy(plot_cmd2, plot_cmd.str().c_str());
       gnuplot_cmd(g, plot_cmd2);
-      
+
       gnuplot_close(g);
     }
   }
@@ -173,16 +173,16 @@ void show_data() {
 
 int main(int argc, char * argv[]) {
   if (argc != 4) {
-    std::cout << "Usage: " 
-              << argv[0] << " <ctrl-file> <station1_nr> <station2_nr>"
-              << std::endl;
+    std::cout << "Usage: "
+    << argv[0] << " <ctrl-file> <station1_nr> <station2_nr>"
+    << std::endl;
     exit(-1);
   }
 
   char * ctrl_file = argv[1];
   st1 = atoi(argv[2]);
   st2 = atoi(argv[3]);
-  
+
   { // parse the control file
     Json::Reader reader;
     std::ifstream in(ctrl_file);
@@ -194,14 +194,14 @@ int main(int argc, char * argv[]) {
     if ( !ok ) {
       // report to the user the failure and their locations in the document.
       std::cout  << "Failed to parse control file\n"
-                  << reader.getFormatedErrorMessages()
-                  << std::endl;
+      << reader.getFormatedErrorMessages()
+      << std::endl;
       exit(-1);
     }
   }
-  
+
   read_data();
-  if (!data_files.empty()) 
+  if (!data_files.empty())
     show_data();
 
   char cmd[80];

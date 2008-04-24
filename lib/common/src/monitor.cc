@@ -48,8 +48,7 @@ QOS_Monitor::QOS_Monitor() {
   m_history_size = 0;
 }
 
-QOS_Monitor::~QOS_Monitor() {
-}
+QOS_Monitor::~QOS_Monitor() {}
 
 std::ostream& operator<<(std::ostream& out, QOS_MonitorSpeed::SampleSpeed& sample) {
   out << toMB( sample.get_bytecount() )/tickToSec(sample.get_duration()) << " MB/s";
@@ -314,17 +313,13 @@ void QOS_MonitorSpeed::Test::tests() {
 // QOS_MonitorLatency
 //
 ////////////////////////////////////////////////////////////////////////
-QOS_MonitorLatency::QOS_MonitorLatency() {
-}
+QOS_MonitorLatency::QOS_MonitorLatency() {}
 
-QOS_MonitorLatency::~QOS_MonitorLatency() {
-}
+QOS_MonitorLatency::~QOS_MonitorLatency() {}
 
-void QOS_MonitorLatency::begin_measure() {
-}
+void QOS_MonitorLatency::begin_measure() {}
 
-void QOS_MonitorLatency::end_measure() {
-}
+void QOS_MonitorLatency::end_measure() {}
 
 ////////////////////////////////////////////////////////////////////////
 //

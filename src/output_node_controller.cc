@@ -20,8 +20,7 @@
 #include "queue_buffer.h"
 
 Output_node_controller::Output_node_controller(Output_node &node)
-    : Controller(node), node(node) {
-}
+    : Controller(node), node(node) {}
 
 Controller::Process_event_status
 Output_node_controller::process_event(MPI_Status &status) {
