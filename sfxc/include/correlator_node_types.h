@@ -35,6 +35,8 @@ public:
       return data_[0];
     }
 
+    int32_t invalid_samples_begin, nr_invalid_samples;
+
   private:
     std::vector<unsigned char> data_;
   };

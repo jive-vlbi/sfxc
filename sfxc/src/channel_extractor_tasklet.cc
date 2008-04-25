@@ -91,9 +91,20 @@ Channel_extractor_tasklet::do_task() {
           (size_t)n_output_bytes) {
         output_elements[subband].channel_data.data().data.resize(n_output_bytes);
       }
-      assert(output_elements[subband].channel_data.data().data.size() == (size_t)n_output_bytes);
+      assert(output_elements[subband].channel_data.data().data.size() == 
+             (size_t)n_output_bytes);
 
-      output_positions[subband] = (unsigned char *)&(output_elements[subband].channel_data.data().data[0]);
+      output_positions[subband] = 
+        (unsigned char *)&(output_elements[subband].channel_data.data().data[0]);
+
+      // Copy the invalid-data members
+      // Mark4-files have headers, which should be invalidated
+      assert(input_element->invalid_bytes_begin >= 0);
+      output_elements[subband].invalid_samples_begin =
+        input_element->invalid_bytes_begin*fan_out/bits_per_sample;
+      output_elements[subband].nr_invalid_samples =
+        input_element->nr_invalid_bytes*fan_out/(bits_per_sample*N);
+      assert(output_elements[subband].nr_invalid_samples >= 0);
     }
   }
 
@@ -102,12 +113,13 @@ Channel_extractor_tasklet::do_task() {
                         output_positions);
 
   { // release the buffers
-    input_element.release();
-    input_buffer_->pop();
     for (size_t i=0; i<n_subbands; i++) {
       assert(output_buffers_[i] != Output_buffer_ptr());
       output_buffers_[i]->push(output_elements[i]);
     }
+
+    input_element.release();
+    input_buffer_->pop();
   }
 
 #ifdef RUNTIME_STATISTIC
@@ -147,7 +159,8 @@ Channel_extractor_tasklet::
 set_parameters(const Input_node_parameters &input_node_param,
                const std::vector< std::vector<int> > &track_positions) {
   n_subbands = input_node_param.channels.size();
-  fan_out    = input_node_param.bits_per_sample() *
+  bits_per_sample = input_node_param.bits_per_sample();
+  fan_out    = bits_per_sample *
                input_node_param.subsamples_per_sample();
   ch_extractor->initialise(track_positions, N, 20000);
 }

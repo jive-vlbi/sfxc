@@ -58,10 +58,7 @@ public:
 
 private:
   ///
-  void bit2float(const unsigned int offset,
-                 const unsigned int input_size,
-                 const unsigned char* input,
-                 FLOAT* output_buffer);
+  void bit2float(const Input_buffer_element &input, FLOAT* output_buffer);
   void fractional_bit_shift(FLOAT input[],
                             int integer_shift,
                             FLOAT fractional_delay);

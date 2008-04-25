@@ -50,7 +50,22 @@ has_work() {
 void
 Input_node_data_writer_tasklet::
 do_task() {
+  // Header contains
+  // - int32_t invalid_samples_begin
+  // - int32_t nr_invalid_samples
+  // - char offset (in samples within the first byte)
+  // The data contains nr_channels/samples_per_byte+1 bytes
+
   assert(has_work());
+
+  Input_buffer_element &input_element = input_buffer_->front();
+
+  // Check if we only need to release the block
+  if (input_element.release_data) {
+    input_element.channel_data.release();
+    input_buffer_->pop();
+    return;
+  }
 
   // Check whether we have to start a new timeslice
   if (data_writers_.front().slice_size > 0) {
@@ -67,26 +82,30 @@ do_task() {
     return;
   }
 
-  Input_buffer_element &input_element = input_buffer_->front();
-
-  // Check if we only need to release the block
-  if (input_element.release_data) {
-    input_element.channel_data.release();
-    input_buffer_->pop();
-    return;
-  }
-
   if ((int)input_element.delay >= 0) {
+    assert((input_element.invalid_samples_begin >= 0) &&
+           (input_element.invalid_samples_begin <= 1024));
+    assert((input_element.nr_invalid_samples >= 0) &&
+           (input_element.nr_invalid_samples <= 1024));
     int nbytes = 0;
+
+    // write the information on invalid samples
+    nbytes = data_writers_.front().writer->put_bytes(sizeof(input_element.invalid_samples_begin),
+                                                     (char*)&input_element.invalid_samples_begin);
+    assert(nbytes == sizeof(input_element.invalid_samples_begin));
+    nbytes = data_writers_.front().writer->put_bytes(sizeof(input_element.nr_invalid_samples),
+                                                     (char*)&input_element.nr_invalid_samples);
+    assert(nbytes == sizeof(input_element.nr_invalid_samples));
+
     do {
       nbytes = data_writers_.front().writer->put_bytes(1, &input_element.delay);
     } while (nbytes != 1);
   }
 
-  int bytes_to_write = input_element.nr_samples;
+  int bytes_to_write = input_element.nr_bytes;
   int bytes_written = 0;
   char *data =
-    (char*)&input_element.channel_data.data().data[input_element.first_sample];
+    (char*)&input_element.channel_data.data().data[input_element.first_byte];
 
   while (bytes_written < bytes_to_write) {
     int nbytes =
