@@ -4,19 +4,16 @@
 
 const FLOAT Delay_correction::maximal_phase_change = 0.2; // 5.7 degrees
 
+const FLOAT sample_value_ms[] = { -7, -2, 2, 7 };
+const FLOAT sample_value_m[]  = { -5, 5 };
+
 Delay_correction::Delay_correction()
     : output_buffer(Output_buffer_ptr(new Output_buffer())),
     output_memory_pool(10),
     current_time(-1),
     delay_table_set(false) {
   // Bit2Float table initialization
-  const FLOAT sample_value_ms[] = {
-                                    -7, -2, 2, 7
-                                  };
   // For 1 bit samples:
-  //  const FLOAT sample_value_m[]  = {
-  //                                    -5, 5
-  //                                  };
   for (int i=0; i<256; i++) {
     lookup_table[i][0] = sample_value_ms[(i>>6) & 3];
     lookup_table[i][1] = sample_value_ms[(i>>4) & 3];
@@ -58,7 +55,7 @@ void Delay_correction::do_task() {
   if (n_ffts_per_integration == current_fft) {
     assert(current_time/correlation_parameters.integration_time !=
            (current_time+length_of_one_fft())/correlation_parameters.integration_time);
-
+    
     current_time =
       ((current_time+length_of_one_fft()) /
        correlation_parameters.integration_time)*
@@ -76,10 +73,7 @@ void Delay_correction::do_task() {
     output->resize(input_size*2);
   }
 
-  bit2float(input.data().offset(),
-            input.data().bytes_count(),
-            input.data().bytes_buffer(),
-            output->buffer() );
+  bit2float(input, output->buffer() );
 
 
   double delay = get_delay(current_time+length_of_one_fft()/2);
@@ -106,31 +100,53 @@ void Delay_correction::do_task() {
   output_buffer->push(output);
 }
 
-void Delay_correction::bit2float(const unsigned int offset, const unsigned int input_size, const unsigned char* input, FLOAT* output_buffer) {
+void Delay_correction::bit2float(const Input_buffer_element &input, 
+                                 FLOAT* output_buffer_) {
+  FLOAT* output_buffer = output_buffer_;
   assert(correlation_parameters.bits_per_sample == 2);
+  unsigned char * input_data = input->bytes_buffer();
 
   if (correlation_parameters.bits_per_sample == 2) {
     // First byte:
     memcpy(output_buffer,
-           &lookup_table[(int)input[0]][(int)offset],
-           (4-offset)*sizeof(FLOAT));
-    output_buffer += 4-offset;
+           &lookup_table[(int)input_data[0]][(int)input->offset()],
+           (4-input->offset())*sizeof(FLOAT));
+    output_buffer += 4-input->offset();
 
-    for (size_t byte = 1; byte < input_size-1; byte++) {
+    size_t size = input->bytes_count()-1;
+    for (size_t byte = 1; byte < size; byte++) {
       memcpy(output_buffer, // byte * 4
-             &lookup_table[(int)input[byte]][0],
+             &lookup_table[(int)input_data[byte]][0],
              4*sizeof(FLOAT));
       output_buffer += 4;
     }
 
     // Last byte:
     memcpy(output_buffer,
-           &lookup_table[(int)(unsigned char)input[input_size-1]][0],
-           offset*sizeof(FLOAT));
+           &lookup_table[(int)(unsigned char)input_data[size]][0],
+           input->offset()*sizeof(FLOAT));
+
+#ifdef SFXC_INVALIDATE_SAMPLES
+    { // zero out the invalid samples
+      const int invalid_samples_begin = input->invalid_samples_begin;
+      const int invalid_samples_end = invalid_samples_begin + input->nr_invalid_samples;
+      assert(invalid_samples_begin >= 0);
+      assert(invalid_samples_begin <= invalid_samples_end);
+      assert(invalid_samples_end <= number_channels());
+      for (int i=invalid_samples_begin; i<invalid_samples_end; i++) {
+#ifdef SFXC_CHECK_INVALID_SAMPLES
+        assert(output_buffer_[i] == sample_value_ms[INVALID_PATTERN&3]);
+#endif
+        output_buffer_[i] = 0;
+      }
+    }
+#endif
+
   } else {
     std::cout << "Not yet implemented" << std::endl;
     assert(false);
   }
+
 }
 
 

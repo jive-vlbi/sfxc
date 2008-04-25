@@ -47,6 +47,14 @@
 #define SFXC_PORT                1233
 #define MAX_TCP_CONNECTIONS      16
 
+#define SFXC_INVALIDATE_SAMPLES
+#ifdef SFXC_INVALIDATE_SAMPLES
+//#  define SFXC_CHECK_INVALID_SAMPLES
+#  ifdef SFXC_CHECK_INVALID_SAMPLES
+  // Used to fill the random data for testing. Should be char(0) or char(-1)
+#    define INVALID_PATTERN          char(-1)
+#  endif
+#endif
 
 // NGHK: remove?
 const int   BufTime       =   16384; //delta time for Bufs in micro seconds

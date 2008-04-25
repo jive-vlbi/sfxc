@@ -34,22 +34,24 @@ Integer_delay_correction_per_channel::do_task() {
     // And the integer delay changes at the same time
     output_element.channel_data = input_element.channel_data;
     output_element.release_data = true;
-    output_buffer_->push(output_element);
 
+    output_buffer_->push(output_element);
     input_buffer_->pop();
     return;
   }
 
-  if (byte_offset < -nr_output_bytes) {
+  if (byte_offset < -(nr_output_bytes+1)) {
     // Completely random data
 
     // Do not do the bit offset
     output_element.delay = char(0);
+    output_element.invalid_samples_begin = 0;
+    output_element.nr_invalid_samples = nr_output_bytes*8/bits_per_sample;
 
     // Send random data
     output_element.channel_data = allocate_random_element();
-    output_element.first_sample = 0;
-    output_element.nr_samples = nr_output_bytes;
+    output_element.first_byte = 0;
+    output_element.nr_bytes = nr_output_bytes+1;
     output_buffer_->push(output_element);
 
     // Release the data
@@ -58,11 +60,19 @@ Integer_delay_correction_per_channel::do_task() {
 
   } else if (byte_offset < 0) {
     // Partially random data
+    output_element.invalid_samples_begin = 0;
+    // Either all data is random, or part of the second block contains valid data
+    output_element.nr_invalid_samples =
+      std::min(nr_output_bytes*8/bits_per_sample,
+               // random data in the first block
+               -byte_offset*8/bits_per_sample - output_element.delay + 
+               // random data in the second block
+               input_element.nr_invalid_samples);
 
     // Send random data
     output_element.channel_data = allocate_random_element();
-    output_element.first_sample = 0;
-    output_element.nr_samples = -byte_offset;
+    output_element.first_byte = 0;
+    output_element.nr_bytes = -byte_offset;
     output_buffer_->push(output_element);
 
     // Release the data
@@ -74,44 +84,83 @@ Integer_delay_correction_per_channel::do_task() {
     // Don't send the delay again:
     output_element.delay = -1;
     output_element.channel_data = input_element.channel_data;
-    output_element.first_sample = 0;
-    output_element.nr_samples = nr_output_bytes+byte_offset;
+    output_element.first_byte = 0;
+    output_element.nr_bytes = nr_output_bytes+1+byte_offset;
     output_buffer_->push(output_element);
 
   } else {
     assert (byte_offset >= 0);
     int input_data_size = input_element.channel_data.data().data.size();
     if ((byte_offset + nr_output_bytes) < input_data_size) {
+
+      { // Set invalid samples
+        output_element.invalid_samples_begin = 0;
+        output_element.nr_invalid_samples = 0;
+        // Check whether we have invalid samples
+        if ((byte_offset*8/bits_per_sample+output_element.delay) <
+            (input_element.invalid_samples_begin + input_element.nr_invalid_samples)) {
+          // nr of invalid samples from the beginning of the fft
+          int nr_invalid_samples = 
+            /* stop  */ (input_element.invalid_samples_begin + 
+                         input_element.nr_invalid_samples) -
+            /* start */ (byte_offset * 8 / bits_per_sample + output_element.delay);
+          output_element.nr_invalid_samples = 
+            std::min(nr_output_bytes*8/bits_per_sample, nr_invalid_samples);
+        }
+        assert(output_element.nr_invalid_samples >= 0);
+      }
+
       // Send data
       output_element.channel_data = input_element.channel_data;
-      output_element.first_sample = byte_offset;
-      output_element.nr_samples = nr_output_bytes;
+      output_element.first_byte = byte_offset;
+      output_element.nr_bytes = nr_output_bytes+1;
       output_buffer_->push(output_element);
 
     } else {
       int bytes_in_current_block = input_data_size-byte_offset;
       // Send first block of data
       output_element.channel_data = input_element.channel_data;
-      output_element.first_sample = byte_offset;
-      output_element.nr_samples = bytes_in_current_block;
-      output_buffer_->push(output_element);
-
-      // Release the data
-      output_element.release_data = true;
-      output_buffer_->push(output_element);
+      output_element.first_byte = byte_offset;
+      output_element.nr_bytes = bytes_in_current_block;
 
       // Get the second block of data
       input_buffer_->pop();
       assert(!input_buffer_->empty());
       input_element = input_buffer_->front();
 
+      { // Set invalid samples
+        output_element.invalid_samples_begin = 0;
+        output_element.nr_invalid_samples = 0;
+
+        // Simplification because the only invalid samples are missing data 
+        // or mark4-headers
+        assert(input_element.invalid_samples_begin == 0);
+
+        // start of the invalid data is the begin of the second data block
+        output_element.invalid_samples_begin = 
+          bytes_in_current_block*8/bits_per_sample - output_element.delay;
+        
+        int samples_in_second_block = 
+          (nr_output_bytes-bytes_in_current_block)*8/bits_per_sample + output_element.delay;
+
+        output_element.nr_invalid_samples =
+          std::min(samples_in_second_block, input_element.nr_invalid_samples);
+      }
+      output_buffer_->push(output_element);
+
+
+      // Release the data
+      output_element.release_data = true;
+      output_buffer_->push(output_element);
+
+
       // Send second block of data
       output_element.release_data = false;
       // Don't send the delay again:
       output_element.delay = -1;
       output_element.channel_data = input_element.channel_data;
-      output_element.first_sample = 0;
-      output_element.nr_samples = nr_output_bytes-bytes_in_current_block;
+      output_element.first_byte = 0;
+      output_element.nr_bytes = nr_output_bytes+1-bytes_in_current_block;
       output_buffer_->push(output_element);
     }
   }
@@ -218,11 +267,11 @@ set_parameters(const Input_node_parameters &parameters,
 
   assert((parameters.number_channels*bits_per_sample)%8 == 0);
   // The offset is not counted
-  nr_output_bytes = parameters.number_channels*bits_per_sample/8+1;
+  nr_output_bytes = parameters.number_channels*bits_per_sample/8;
   sample_rate = parameters.sample_rate();
 
-  assert((((nr_output_bytes-1)*(8/bits_per_sample))*1000000) % sample_rate== 0);
-  delta_time = ((nr_output_bytes-1)*(8/bits_per_sample))*1000000/sample_rate;
+  assert(((nr_output_bytes*(8/bits_per_sample))*1000000) % sample_rate== 0);
+  delta_time = (nr_output_bytes*(8/bits_per_sample))*1000000/sample_rate;
   integration_time = parameters.integr_time*1000;
 
   nr_bytes_per_integration_slice =
@@ -264,19 +313,21 @@ Integer_delay_correction_per_channel::Input_data_block
 Integer_delay_correction_per_channel::
 allocate_random_element() {
   Input_data_block result = memory_pool_.allocate();
-  if (result.data().data.size() != (size_t)nr_output_bytes) {
-    result.data().data.resize(nr_output_bytes);
-  }
-  // Completely random data
-  for (int i=0; i<nr_output_bytes; i++) {
-#ifdef SFXC_DETERMINISTIC
-    // Set data to zero
-    result.data().data[i] = 0;
+  if (result.data().data.size() != (size_t)nr_output_bytes+1) {
+    result.data().data.resize(nr_output_bytes+1);
+#ifdef SFXC_INVALIDATE_SAMPLES
+#ifdef SFXC_CHECK_INVALID_SAMPLES
+    for (int i=0; i<nr_output_bytes+1; i++) {
+      result.data().data[i] = INVALID_PATTERN;
+    }
+#endif
 #else
     // Randomize data
-    result.data().data[i] = (char)park_miller_random();
+    for (int i=0; i<nr_output_bytes+1; i++) {
+      result.data().data[i] = (char)park_miller_random();
+    }
 #endif
-
   }
+
   return result;
 }

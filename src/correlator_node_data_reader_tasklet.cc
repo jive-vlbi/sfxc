@@ -32,7 +32,12 @@ void Correlator_node_data_reader_tasklet::do_task() {
     output_elem.data().resize_bytes_buffer(n_bytes_per_fft);
   }
 
-  breader_->get_bytes(output_elem.data().raw_size(), (char*)output_elem.data().raw_buffer());
+  breader_->get_bytes(sizeof(output_elem.data().invalid_samples_begin),
+                      (char*)&output_elem.data().invalid_samples_begin);
+  breader_->get_bytes(sizeof(output_elem.data().nr_invalid_samples),
+                      (char*)&output_elem.data().nr_invalid_samples);
+  breader_->get_bytes(output_elem.data().raw_size(), 
+                      (char*)output_elem.data().raw_buffer());
 
   n_ffts_to_read --;
 

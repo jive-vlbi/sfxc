@@ -207,7 +207,6 @@ int Correlator_node::output_size_of_one_integration_step() {
 void Correlator_node::correlate() {
   RT_STAT( dotask_state_.begin_measure() );
 
-
   // Execute all tasklets:
   bit_sample_reader_timer_.resume();
   for (size_t i=0; i<bit_sample_readers.size(); i++) {
@@ -249,7 +248,6 @@ void Correlator_node::correlate() {
 
 
   }
-
 
   correlation_timer_.stop();
 

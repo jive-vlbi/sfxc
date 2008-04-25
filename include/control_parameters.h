@@ -220,7 +220,8 @@ public:
                   number_channels);
     // One byte for the offset
     // One extra byte at the end for the offset
-    return nr_ffts*(number_channels*bits_per_sample/8 + 2);
+    // two int32_t for the invalid sequence
+    return nr_ffts*(number_channels*bits_per_sample/8 + 2 + 2*sizeof(int32_t));
   }
 
   int polarisation_type_for_global_output_header() const;
