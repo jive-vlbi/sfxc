@@ -113,8 +113,8 @@ goto_time(int ms_time) {
   input_element_->start_time = current_time;
 
   if (us_time != new_time) {
-    DEBUG_MSG("New time " << us_time
-              << "us not found. Current time is " << new_time);
+    DEBUG_MSG("Warning: Couldn't go to time " << us_time/1000
+              << "ms not found. Current time is " << new_time);
   }
   return new_time/1000;
 }
