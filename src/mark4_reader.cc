@@ -36,9 +36,7 @@ int64_t
 Mark4_reader::goto_time(unsigned char *mark4_block, int64_t us_time) {
   // Compute with times in microseconds to find the exact time of the data
   if (us_time < get_current_time()) {
-    std::cout << "time in past, current time is: " << time_to_string(get_current_time()) << std::endl;
-    std::cout << "            requested time is: " << time_to_string(us_time) << std::endl;
-    return get_current_time()/1000;
+    return get_current_time();
   } else if (us_time == get_current_time()) {
     return us_time;
   }
