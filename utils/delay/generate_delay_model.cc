@@ -281,7 +281,7 @@ int initialise_data(const char *vex_filename,
           scan.sec + 60*(scan.min + 60*(scan.hour + 24*(double)doy));
         double duration = scan_it[2]->to_double_amount("sec");
         scan.scan_stop = scan.scan_start + duration;
-        scan.nr_of_intervals = (int)(duration/delta_time)+1;
+        scan.nr_of_intervals = (int)(duration/delta_time);
         for (Vex::Node::const_iterator source_block =
                vex.get_root_node()["SOURCE"]->begin(scan_block["source"]->to_string());
              source_block != vex.get_root_node()["SOURCE"]->end(scan_block["source"]->to_string());
