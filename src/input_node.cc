@@ -118,13 +118,10 @@ void Input_node::hook_added_data_reader(size_t stream_nr) {
 
 void Input_node::hook_added_data_writer(size_t writer) {}
 
-void Input_node::set_stop_time(int64_t stop_time_) {
-  input_node_tasklet->set_stop_time(stop_time_);
-}
-
-void Input_node::goto_time(int64_t new_time) {
+// Start time and stop time in seconds
+void Input_node::add_time_interval(int32_t start_time, int32_t stop_time) {
   assert(input_node_tasklet != NULL);
-  input_node_tasklet->goto_time(new_time);
+  input_node_tasklet->add_time_interval(start_time, stop_time);
 }
 
 void Input_node::add_time_slice(int channel, int stream, int starttime_slice,

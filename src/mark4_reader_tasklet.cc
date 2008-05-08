@@ -123,11 +123,18 @@ Mark4_reader_tasklet::
 get_current_time() {
   return current_time;
 }
+int
+Mark4_reader_tasklet::
+get_stop_time() {
+  return stop_time;
+}
 void
 Mark4_reader_tasklet::
-set_stop_time(int64_t time) {
-  assert(current_time < time);
-  stop_time = time;
+set_stop_time(int64_t ms_time) {
+  int64_t us_time = int64_t(1000)*ms_time;
+
+  assert(current_time < us_time);
+  stop_time = us_time;
 }
 
 

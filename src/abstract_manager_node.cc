@@ -222,16 +222,14 @@ input_node_get_current_time(const std::string &station) {
 
 void
 Abstract_manager_node::
-input_node_goto_time(const std::string &station, int32_t time) {
-  MPI_Send(&time, 1, MPI_INT32,
-           input_rank(station), MPI_TAG_INPUT_NODE_GOTO_TIME, MPI_COMM_WORLD);
-}
-
-void
-Abstract_manager_node::
-input_node_set_stop_time(const std::string &station, int32_t time) {
-  MPI_Send(&time, 1, MPI_INT32,
-           input_rank(station), MPI_TAG_INPUT_NODE_STOP_TIME, MPI_COMM_WORLD);
+input_node_set_time(const std::string &station, 
+                     int32_t start_time, int32_t stop_time) {
+  assert(start_time < stop_time);
+  int32_t time[2];
+  time[0] = start_time;
+  time[1] = stop_time;
+  MPI_Send(&time[0], 2, MPI_INT32,
+           input_rank(station), MPI_TAG_INPUT_NODE_SET_TIME, MPI_COMM_WORLD);
 }
 
 void

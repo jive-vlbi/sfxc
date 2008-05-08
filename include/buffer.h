@@ -91,7 +91,7 @@ template <class T>
 class Aligned_vector {
 public:
   typedef T value_type;
-  inline size_t size() {
+  inline size_t size() const {
     return size_;
   }
 
@@ -129,6 +129,12 @@ public:
 
 
   inline T& operator[](int i) {
+    assert(i >= 0);
+    assert(i < (int)size_ );
+    return buffer_[i];
+  }
+
+  inline const T& operator[](int i) const {
     assert(i >= 0);
     assert(i < (int)size_ );
     return buffer_[i];

@@ -57,21 +57,66 @@ operator<<(std::ostream &out,
 std::ostream &
 operator<<(std::ostream &out,
            const Output_header_baseline &baseline_header) {
-  out << "{ \"weight\": " << (int)baseline_header.weight
-  << "," << std::endl
-  << "  \"station_nr1\": " << (int)baseline_header.station_nr1
-  << "," << std::endl
-  << "  \"station_nr2\": " << (int)baseline_header.station_nr2
-  << "," << std::endl
-  << "  \"polarisation1\": " << (int)baseline_header.polarisation1
-  << "," << std::endl
-  << "  \"polarisation2\": " << (int)baseline_header.polarisation2
-  << "," << std::endl
-  << "  \"sideband\": " << (int)baseline_header.sideband
-  << "," << std::endl
-  << "  \"frequency_nr\": " << (int)baseline_header.frequency_nr
-  << " }"
+  out << "{ "
+      << "\"frequency_nr\": " << (int)baseline_header.frequency_nr
+      << "," << std::endl << "  "
+      << "\"sideband\": " << (int)baseline_header.sideband
+      << "," << std::endl << "  "
+      << "\"station_nr1\": " << (int)baseline_header.station_nr1
+      << "," << std::endl << "  "
+      << "\"polarisation1\": " << (int)baseline_header.polarisation1
+      << "," << std::endl << "  "
+      << "\"station_nr2\": " << (int)baseline_header.station_nr2
+      << "," << std::endl << "  "
+      << "\"polarisation2\": " << (int)baseline_header.polarisation2
+      << "," << std::endl << "  "
+      << "\"weight\": " << (int)baseline_header.weight
+      << " }"
   << std::endl;
 
   return out;
+}
+
+
+bool
+operator<(const Output_header_timeslice &timeslice_header1,
+          const Output_header_timeslice &timeslice_header2) {
+  return (timeslice_header1.integration_slice <
+          timeslice_header2.integration_slice);
+}
+
+bool
+operator<(const Output_header_baseline &h1,
+          const Output_header_baseline &h2) {
+  return ((h1.frequency_nr < h2.frequency_nr) ||
+          ((h1.frequency_nr == h2.frequency_nr) &&
+           ((h1.sideband < h2.sideband) ||
+            ((h1.sideband == h2.sideband) &&
+             ((h1.station_nr1 < h2.station_nr1) ||
+              ((h1.station_nr1 == h2.station_nr1) &&
+               ((h1.polarisation1 < h2.polarisation1) ||
+                ((h1.polarisation1 == h2.polarisation1) &&
+                 ((h1.station_nr2 < h2.station_nr2) ||
+                  ((h1.station_nr2 == h2.station_nr2) &&
+                   ((h1.polarisation2 < h2.polarisation2) ||
+                    ((h1.polarisation2 == h2.polarisation2)))))))))))));
+}
+
+
+bool
+operator==(const Output_header_timeslice &timeslice_header1,
+          const Output_header_timeslice &timeslice_header2) {
+  return (timeslice_header1.integration_slice ==
+          timeslice_header2.integration_slice);
+}
+
+bool
+operator==(const Output_header_baseline &h1,
+          const Output_header_baseline &h2) {
+  return ((h1.frequency_nr == h2.frequency_nr) &&
+          (h1.sideband == h2.sideband) &&
+          (h1.station_nr1 == h2.station_nr1) &&
+          (h1.polarisation1 == h2.polarisation1) &&
+          (h1.station_nr2 == h2.station_nr2) &&
+          (h1.polarisation2 == h2.polarisation2));
 }

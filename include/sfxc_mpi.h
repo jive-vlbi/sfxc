@@ -137,20 +137,16 @@ enum MPI_TAG {
   //-------------------------------------------------------------------------//
 
   /** Goto the specified time in the stream.
-   * - int64_t: Time in microseconds
+   * - int32_t: Start time in milliseconds
+   * - int32_t: Stop time in milliseconds
    **/
-  MPI_TAG_INPUT_NODE_GOTO_TIME,
+  MPI_TAG_INPUT_NODE_SET_TIME,
 
   /** Returns a message with the same tag back with the current time stamp in
    *  the channel extractor
    * - int64_t: the timestamp in microseconds
    **/
   MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP,
-
-  /** The stop time for the input node. Terminate if this time is reached
-   * - int64_t: Time in microseconds
-   **/
-  MPI_TAG_INPUT_NODE_STOP_TIME,
 
   /** Adds a new writer to a time slicer
    * - int32_t: channel
@@ -297,14 +293,11 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
   case MPI_TAG_ADD_DATA_READER_TCP2: {
       return "MPI_TAG_ADD_DATA_READER_TCP";
     }
-  case MPI_TAG_INPUT_NODE_GOTO_TIME: {
-      return "MPI_TAG_INPUT_NODE_GOTO_TIME";
+  case MPI_TAG_INPUT_NODE_SET_TIME: {
+      return "MPI_TAG_INPUT_NODE_SET_TIME";
     }
   case MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP: {
       return "MPI_TAG_GET_CURRENT_TIMESTAMP";
-    }
-  case MPI_TAG_INPUT_NODE_STOP_TIME: {
-      return "MPI_TAG_INPUT_NODE_STOP_TIME";
     }
   case MPI_TAG_INPUT_NODE_ADD_TIME_SLICE: {
       return "MPI_TAG_INPUT_NODE_ADD_TIME_SLICE";

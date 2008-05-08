@@ -41,19 +41,11 @@ Input_node_controller::process_event(MPI_Status &status) {
                MPI_COMM_WORLD);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-  case MPI_TAG_INPUT_NODE_GOTO_TIME: {
-      int32_t new_time;
-      MPI_Recv(&new_time, 1, MPI_INT32, status.MPI_SOURCE,
+  case MPI_TAG_INPUT_NODE_SET_TIME: {
+      int32_t times[2]; // start and stop time
+      MPI_Recv(&times[0], 2, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      node.goto_time(new_time);
-      return PROCESS_EVENT_STATUS_SUCCEEDED;
-
-    }
-  case MPI_TAG_INPUT_NODE_STOP_TIME: {
-      int32_t stop_time;
-      MPI_Recv(&stop_time, 1, MPI_INT32, status.MPI_SOURCE,
-               status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      node.set_stop_time(stop_time);
+      node.add_time_interval(/*start*/ times[0], /*stop*/ times[1]);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_INPUT_NODE_ADD_TIME_SLICE: {

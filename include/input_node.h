@@ -81,9 +81,8 @@ public:
   /// Get the current time stamp
   int32_t get_time_stamp();
 
-  void set_stop_time(int64_t stop_time);
-
-  void goto_time(int64_t new_time);
+  // Times in seconds
+  void add_time_interval(int32_t start_time, int32_t stop_time);
 
   void add_time_slice(int channel, int stream, int starttime, int stoptime);
 

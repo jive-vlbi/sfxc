@@ -133,4 +133,18 @@ std::ostream &
 operator<<(std::ostream &out,
            const Output_header_baseline &baseline_header);
 
+bool
+operator<(const Output_header_timeslice &timeslice_header1,
+          const Output_header_timeslice &timeslice_header2);
+bool
+operator<(const Output_header_baseline &baseline_header1,
+          const Output_header_baseline &baseline_header2);
+
+bool
+operator==(const Output_header_timeslice &timeslice_header1,
+           const Output_header_timeslice &timeslice_header2);
+bool
+operator==(const Output_header_baseline &baseline_header1,
+           const Output_header_baseline &baseline_header2);
+
 #endif /*OUTPUT_HEADER_H_*/

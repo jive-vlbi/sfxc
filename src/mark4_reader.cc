@@ -63,8 +63,7 @@ Mark4_reader::goto_time(unsigned char *mark4_block, int64_t us_time) {
 
   // Need to read the data to check the header
   if (!read_new_block(mark4_block)) {
-    assert(false);
-    return get_current_time();
+    DEBUG_MSG("Couldn't read data");
   }
 
   if (get_current_time() != us_time) {

@@ -97,6 +97,16 @@ do_task() {
     RT_STAT(mark4reader_state_.end_measure(1) );
 
     did_work = true;
+  } else {
+    // Check whether we can go to a new time interval
+    if (get_current_time() == get_stop_time()) {
+      if (!time_intervals.empty()) {
+        set_time_interval(time_intervals.front().first,
+                          time_intervals.front().second);
+        time_intervals.pop();
+        did_work = true;
+      }
+    }
   }
   mark4_reader_timer_.stop();
 
@@ -186,35 +196,29 @@ set_parameters(const Input_node_parameters &input_node_param,
   did_work = true;
 }
 
-int
+void
 Input_node_tasklet_implementation::
-goto_time(int time) {
+set_time_interval(int32_t start_time, int32_t stop_time) {
   assert(!integer_delay_.empty());
   assert(integer_delay_[0] != NULL);
-  int new_time = mark4_reader_.goto_time(time);
+  int new_time = mark4_reader_.goto_time(start_time);
+  mark4_reader_.set_stop_time(stop_time);
 
   for (size_t i=0; i < integer_delay_.size(); i++) {
     integer_delay_[i]->set_time(int64_t(1000)*new_time);
   }
 
   did_work = true;
-  return new_time;
 }
 int
 Input_node_tasklet_implementation::
 get_current_time() {
   return mark4_reader_.get_current_time();
 }
-void
+int
 Input_node_tasklet_implementation::
-set_stop_time(int time) {
-  did_work = true;
-
-  for (size_t i=0; i<integer_delay_.size(); i++) {
-    assert(integer_delay_[i] != NULL);
-    integer_delay_[i]->set_stop_time(int64_t(1000)*time);
-  }
-  return mark4_reader_.set_stop_time(int64_t(1000)*time);
+get_stop_time() {
+  return mark4_reader_.get_stop_time();
 }
 
 void

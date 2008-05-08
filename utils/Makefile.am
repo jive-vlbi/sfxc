@@ -16,7 +16,8 @@ bin_PROGRAMS = create_delay_function \
                dnfp_fileserver \
                dnfp_fileclient \
                phase_plot \
-               make_anim
+               make_anim \
+               baseline_info
 
 bin_SCRIPTS  = run_sfxc.py vumeter.py
 
@@ -60,6 +61,17 @@ analyse_fringes_SOURCES = analyse_fringes.cc
 
 produce_html_plotpage_SOURCES = \
   produce_html_plotpage.cc \
+  fringe_info.cc \
+  ../src/control_parameters.cc \
+  ../src/log_writer.cc \
+  ../src/log_writer_cout.cc \
+  ../src/utils.cc \
+  ../src/output_header.cc \
+  gnuplot_i.cc
+
+baseline_info_SOURCES = \
+  baseline_info.cc \
+  fringe_info.cc \
   ../src/control_parameters.cc \
   ../src/log_writer.cc \
   ../src/log_writer_cout.cc \
