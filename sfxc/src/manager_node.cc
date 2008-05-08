@@ -171,7 +171,6 @@ void Manager_node::start() {
             input_node_get_current_time(control_parameters.station(station));
           if (station_time >
               start_time + integration_slice_nr*integration_time()) {
-            //DEBUG_MSG("updating start time: " << station_time);
             integration_slice_nr =
               (station_time-start_time)/integration_time();
           }
@@ -180,16 +179,15 @@ void Manager_node::start() {
         // Check whether the new start time is before the stop time
         get_log_writer() << "START_TIME: " << start_time << std::endl;
         if (stop_time <= start_time) {
-          //DEBUG_MSG("Stopping correlation: " << stop_time << " <= " << start_time)
           status = STOP_CORRELATING;
           break;
         }
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
-          input_node_goto_time(control_parameters.station(station),
-                               start_time);
-          input_node_set_stop_time(control_parameters.station(station),
-                                   stop_time_scan);
+          input_node_set_time(control_parameters.station(station),
+                              start_time + 
+                              integration_slice_nr*integration_time(),
+                              stop_time_scan);
         }
         status = START_CORRELATION_TIME_SLICE;
         break;
@@ -232,21 +230,23 @@ void Manager_node::start() {
         integration_slice_nr += 1;
         PROGRESS_MSG("starting timeslice " << start_time+integration_slice_nr*integration_time());
 
-        if (start_time+integration_slice_nr*integration_time() >=
+        // Check whether the integration slice continues past the stop time
+        if (start_time+(integration_slice_nr+1)*integration_time() >
             stop_time) {
           status = STOP_CORRELATING;
-        } else if (start_time+integration_slice_nr*integration_time() >=
+
+          // Check whether the integration slice continues past the scan
+        } else if (start_time+(integration_slice_nr+1)*integration_time() >
                    stop_time_scan) {
+          // We can stop if we finished the last scan
           if (current_scan == control_parameters.number_scans()) {
             status = STOP_CORRELATING;
           } else {
             current_scan++;
             status = START_NEW_SCAN;
-            status = STOP_CORRELATING;
           }
-        } else if (current_scan == control_parameters.number_scans()) {
-          status = STOP_CORRELATING;
         } else {
+          // Just process the next time slice
           status = START_CORRELATION_TIME_SLICE;
         }
         break;
@@ -451,13 +451,24 @@ void Manager_node::initialise_scan(const std::string &scan) {
     control_parameters.get_vex().start_of_scan(scan);
 
   // set the start time to the beginning of the scan
-  if (start_time < start_of_scan.to_miliseconds(start_day)) {
-    start_time = start_of_scan.to_miliseconds(start_day);
+  if (start_time + integration_slice_nr*integration_time() <
+      start_of_scan.to_miliseconds(start_day)) {
+    int64_t start_interval = 
+      start_of_scan.to_miliseconds(start_day)-start_time;
+    integration_slice_nr = start_interval/integration_time();
+    if ((start_interval%integration_time()) != 0) {
+      integration_slice_nr ++;
+    }
   }
+
   stop_time_scan =
     control_parameters.get_vex().stop_of_scan(scan).to_miliseconds(start_day);
   if (stop_time < stop_time_scan)
     stop_time_scan = stop_time;
+  // Align the stop time with the time slices
+  assert(((stop_time_scan-start_time)%integration_time()) >= 0);
+  stop_time_scan -= (stop_time_scan-start_time)%integration_time();
+  assert(((stop_time_scan-start_time)%integration_time()) == 0);
 
 
   // Send the track parameters to the input nodes

@@ -3,6 +3,9 @@
 
 #include "utils.h"
 #include "delay_table_akima.h"
+#include "control_parameters.h"
+
+typedef Control_parameters::Date Date;
 
 int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG
@@ -21,15 +24,21 @@ int main(int argc, char *argv[]) {
   std::ofstream out(argv[2]);
   out.precision(20);
 
+  int scan = 1;
   do {
     // In microseconds
     int64_t start_time_scan = delay_table.start_time_scan();
     int64_t stop_time_scan = delay_table.stop_time_scan();
 
-    std::cout << start_time_scan << " \t" << stop_time_scan << std::endl;
+    // year and day are set to zero
+    std::cout << scan 
+              << " \t" << Date(0,0,start_time_scan/1000000).to_string()
+              << " \t" << Date(0,0,stop_time_scan/1000000).to_string()
+              << std::endl;
     for (int64_t time = start_time_scan; time<stop_time_scan; time += 10000) {
       out << time << " \t" << delay_table.delay(time) << std::endl;
     }
     out << std::endl;
+    scan ++;
   } while (delay_table.initialise_next_scan());
 }

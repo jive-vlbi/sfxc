@@ -2,6 +2,7 @@
 #define INPUT_NODE_TASKLET_H
 
 #include <boost/shared_ptr.hpp>
+#include <queue>
 
 #include "tasklet/tasklet.h"
 #include "data_reader.h"
@@ -12,15 +13,6 @@
 class Input_node_tasklet : public Tasklet {
 public:
   typedef boost::shared_ptr<Data_writer>                   Data_writer_ptr_;
-
-//  class Time_slice {
-//  public:
-//    Time_slice();
-//    Time_slice(int start_time, int stop_time, Data_writer *writer);
-//
-//    int start_time, stop_time;
-//    Data_writer *writer;
-//  };
 
   Input_node_tasklet();
   virtual ~Input_node_tasklet();
@@ -34,21 +26,30 @@ public:
 
   virtual bool has_work() = 0;
 
-  /// goes to the specified start time in miliseconds
-  /// @return: returns the new time
-  virtual int goto_time(int time) = 0;
+  /// Sets a new time interval for which it should output data
+  /// (typically the duration of a scan, or part thereof). 
+  /// @input Times are in milliseconds
+  void add_time_interval(int32_t start_time, int32_t stop_time);
 
-  /// Returns the current time in miliseconds
+  /// Set the current time interval in the data reader. It is not
+  /// possible to go back in time, as the data might be streamed in to
+  /// the input node and not be buffered anymore. Time is in milliseconds
+  virtual void set_time_interval(int32_t start_time, int32_t stop_time) = 0;
+
+
+  /// Returns the current time in microseconds
   virtual int get_current_time() = 0;
-
-  /// sets a specified stop time in miliseconds,
-  /// after this time, no more data is sent.
-  virtual void set_stop_time(int time) = 0;
+  /// Returns the stop time of the current time interval in microseconds
+  virtual int get_stop_time() = 0;
 
   /// Sets the output writer for channel i
   virtual void add_data_writer(size_t i,
                                Data_writer_ptr_ data_writer,
                                int nr_seconds) = 0;
+
+
+  // List of start and stop-times (in seconds) that the reader should output
+  std::queue< std::pair<int32_t, int32_t> > time_intervals;
 
 };
 

@@ -59,9 +59,14 @@ public:
   void set_delay_table(Delay_table_akima &delay);
   void set_parameters(const Input_node_parameters &input_node_param,
                       int node_nr);
-  int goto_time(int time);
+
+  // time in milliseconds
+  void set_time_interval(int32_t start_time, int32_t stop_time);
+
+  // time returned is in microseconds
   int get_current_time();
-  void set_stop_time(int time);
+  int get_stop_time();
+
   //  bool append_time_slice(const Time_slice &time_slice);
   void add_data_writer(size_t i,
                        Data_writer_ptr_ data_writer,

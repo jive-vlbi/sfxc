@@ -84,3 +84,18 @@ get_input_node_tasklet(boost::shared_ptr<Data_reader> reader) {
 
   return NULL;
 }
+
+void 
+Input_node_tasklet::add_time_interval(int32_t start_time, int32_t stop_time) {
+  if (time_intervals.empty()) {
+    // Check whether we are still processing
+    if ((get_current_time() == get_stop_time()) || 
+        (get_stop_time() < 0)) {
+      set_time_interval(start_time, stop_time);
+    } else {
+      time_intervals.push(std::make_pair(start_time, stop_time));
+    }
+  } else {
+    time_intervals.push(std::make_pair(start_time, stop_time));
+  }
+}

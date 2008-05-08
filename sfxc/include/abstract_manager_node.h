@@ -62,8 +62,8 @@ public:
                       Input_node_parameters &input_node_params);
   /// Returns the time in milliseconds since midnight on the start-day
   int32_t input_node_get_current_time(const std::string &station);
-  void input_node_goto_time(const std::string &station, int32_t time);
-  void input_node_set_stop_time(const std::string &station, int32_t time);
+  void input_node_set_time(const std::string &station, 
+                           int32_t start_time, int32_t stop_time);
 
   // Send a new time slice, start and stop time are in milliseconds
   void input_node_set_time_slice(const std::string &station, int32_t channel,

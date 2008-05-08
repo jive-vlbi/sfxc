@@ -50,6 +50,8 @@ public:
 
   /// get the current time in miliseconds
   int get_current_time();
+  /// get the stop time in miliseconds
+  int get_stop_time();
 
   /// set a stop time (after which no data is sent)
   void set_stop_time(int64_t time);

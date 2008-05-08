@@ -121,12 +121,9 @@ bool Delay_table_akima::initialise_next_scan() {
 
   // Initialise the Akima spline
   acc = gsl_interp_accel_alloc();
-  int n_pts = end_scan - begin_scan-1;
+  int n_pts = end_scan - begin_scan - 1;
   // at least 4 sample points for a spline
-  if (n_pts <= 4) {
-    assert(false);
-    return false;
-  }
+  assert(n_pts > 4);
 
   // End scan now points to the beginning of the next scan and
   // the next scan has n_pts data points
