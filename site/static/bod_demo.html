@@ -1,0 +1,35 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
+  </head>
+  
+  <body><center>
+  <table width="80%"><tr><td>
+  <center><h1> AutoBahn/SCARIe demo </h1></center><br><br>
+  <hr>
+   The goal is to simulate an e-VLBI observation where data from radio telescopes across Europe (or across the globe) is sent to a compute cluster running the SFXC VLBI software correlator in order to be correlated in real-time. In this scenario we'd need the Bandwidth-on-Demand functionality to make sure that we do not lose any data while transferring the data (which is produced at a constant bit rate) from the telescopes to the correlator.
+
+The simulation will use pre-recorded data distributed across some well-connected sites across Europe (or Europe + United States) that simulate the telescopes. The proposal is to correlate the signals from four telescopes, at a data rate of 256 Mbit/s per telescope (this is the data payload; the available bandwidth needs to be slightly larger to account for protocol overhead like TCP and IP headers), for about 10-15 minutes. If a longer demo is required, we can recorrelate the same data multiple times.
+  <hr>
+  <br><br>
+  
+  Astronomy and Radio-astronomy: <br/>
+  <table width="100%">
+  <tr>
+    <td width="20%"> <img src="/images/480mhz.jpg"  width="100%" height="150"> </td>
+    <td width="20%"> <img src="/images/1400mhz.jpg" width="100%" height="150"> </td>
+    <td width="20%"> <img src="/images/optical.jpg" width="100%" height="150"> </td>
+  </tr>
+  </table>
+   <!--div id="map"></div-->
+ 
+  <hr>
+  <br><br>
+  
+  SCARIe, eVLBI, Express...<br>
+  <img src="/images/vlbi.jpg" >
+  
+  </td></tr></table>
+  </center>
+  </body>
+</html>

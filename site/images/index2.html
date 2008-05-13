@@ -1,0 +1,77 @@
+<html>
+<head>
+
+<style type="text/css">
+
+DIV.clSlide{position:absolute;  ;z-index:10; left:0; width:138; height:22; clip:rect(0,138,22,0); padding:3px;}
+DIV.clSlideSub{position:absolute; ;z-index:10; padding:2px; clip:rect(0,127,20,0); width:127; height:20; left:0; visibility:hidden}
+DIV.clSlideSub2{position:absolute; ;z-index:10; padding:2px; clip:rect(0,118,20,0); width:118; height:20; left:0; visibility:hidden}
+
+
+#divSlideCont{position:relative; z-index:22; left:0; top:0; width:130; height=480; background-image:url('images/top.png');}
+#beginMenu{position:relative; z-index:10; left:0; top:0; height:25; width:140; }
+#endMenu{position:relative; z-index:10; left:0; top:0; height:25; width:140; }
+
+A.clSlideLinks{font-family:Verdana,  Arial, Helvetica, sans-serif; font-size:11px; font-weight:bold; text-decoration:none; color:white}
+A.clSlideSubLinks{font-family:Verdana,  Arial, Helvetica, sans-serif; font-size:10px; text-decoration:none; color:Navy}
+A.clSlideSub2Links{font-family:Verdana,  Arial, Helvetica, sans-serif; font-size:9px; text-decoration:none; color:Navy}
+
+DIV.topBar{position:absolute; z-index:12; top:0; left:0; width:1024; height:120; background-image:url('images/top.png'); }
+DIV.bottomBar{position:absolute; left:0 ; top:600; width:1024; height:60; }
+
+DIV.centerPane{position:absolute; top:120; left:0; width:1100; height:480;}
+DIV.leftBar{position:absolute; top:0; width:140; height:480; }
+DIV.mainContent{position:absolute; z-index:20; top:40; left:190; width:1100; height:500; font-family:Verdana,  Arial, Helvetica, sans-serif; font-size:9px; text-decoration:none; }
+DIV.rightBar{position:absolute; top:0; left:950; width:74; height:480; }
+
+#BODY{background-color: #FFFFCC; font-family:Verdana,  Arial, Helvetica, sans-serif; font-size:9px; text-decoration:none;}
+
+div.member{
+	position:absolute; 
+	z-index:10; 
+	left:0; 
+	width:600;
+	height:22; 
+	background-color:#FFBBAA ;
+}
+
+</style>
+
+<!script type="text/javascript" src="dojo/dojo.js"><!/script>
+<script type="text/javascript">  /*dojo.require("dojo.event.*");  dojo.require("dojo.io.*");  dojo.require("dojo.widget.*");
+  dojo.require("dojo.widget.Button");
+  dojo.require("dojo.lfx.extras")
+*/
+	  
+</script>
+
+<script type="text/javascript" src="menubar.js"></script>
+
+</head>
+<body>
+
+<div class="centerPane">
+
+<div class='leftBar' id='leftBar'>
+<script type="text/javascript" src="cached/auto_menubar.js"></script>
+</div>
+
+<div class="mainContent">
+<IFRAME id="myFrame" name='myFrame' width="100%" height="100%" src="static/welcome.html" frameborder="0" scrolling="yes"></IFRAME>  
+</div>
+
+<div class="rightBar">
+
+</div>
+</div>
+
+<div class="topBar" name='topBar'>
+<!/image src="images/SOFA-logo.png">
+</div>
+
+<div class="bottomBar">
+</div>
+
+
+</body>
+</html>

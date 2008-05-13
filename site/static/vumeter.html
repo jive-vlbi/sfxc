@@ -1,0 +1,267 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+
+<!-- jsProgressBarHandler prerequisites : prototype.js -->
+<script type="text/javascript" src="/js/prototype/prototype.js"></script>
+
+<!-- jsProgressBarHandler core -->
+<script type="text/javascript" src="/js/bramus/jsProgressBarHandler.js"></script>
+
+<!-- AJAX xmlhttprequest -->
+<script type="text/javascript" src="/js/xmlrequest.js"></script>
+
+
+</head>
+
+<body>
+
+
+
+<script type="text/javascript">
+/*
+var g_isover=false
+function ShowPopup(hoveritem)
+{
+    g_isover = true;
+    hp = document.getElementById("hoverpopup");
+
+    // Set position of hover-over popup
+    hp.style.top = hoveritem.offsetTop + 100;
+    hp.style.left = hoveritem.offsetLeft + 40;
+
+    // Set popup to visible
+    hp.style.visibility = "Visible";
+}*/
+
+function popupwindow()
+{
+  winpopup = window.open('/cached/slices'+g_lastts+'.png','popup','height=630,width=700,menubar=no,scrollbar=no,status=no, toolbar=no,left=300,top=150');
+}
+
+var counter=0
+var g_lastts = -1
+var g_animinit = false;
+function update_generalinfo(xp)
+{
+
+  generalinfo = document.getElementById("generalinfo");
+  generalinfo.innerHTML = ""
+  
+  switch(xp.status)
+  {
+    case 0: generalinfo.innerHTML += "The correlator is not running"; break;
+    case 1: generalinfo.innerHTML += "Initializing...."; break;
+    
+    case 2:
+      generalinfo.innerHTML += "Running...</br>"
+      generalinfo.innerHTML += "Number of second to correlate: "+xp.duration+" sec</br>"
+      generalinfo.innerHTML += "Timeslices processed: "+xp.lastslice+"/"+xp.duration+" </br>"
+      generalinfo.innerHTML += "Experiment begin: "+xp.start_time+",   Experiment ended: "+xp.stop_time+",   Current time: "+xp.current_time+"</br>"       
+
+      duration = xp.stop_time - xp.start_time
+      cduration = xp.current_time - xp.start_time
+      myJsProgressBarHandler.setPercentage("progresscorr",''+Math.round(cduration*100/duration));
+  
+      if( xp.lastslice > 0 && !g_animinit){
+        g_animinit = true;
+        imagert = document.getElementById("imganimback");
+        imagert.src = "/cached/anim.gif";
+        
+         hp = document.getElementById("hoverpopup");
+         
+        // Set popup to visible
+        hp.style.visibility = "Visible";
+      }
+  
+  
+      if( g_lastts != xp.lastslice ){
+        g_lastts = xp.lastslice
+        imagert = document.getElementById("imagert");
+        imagert.src = "/cached/slices"+xp.lastslice+".png";
+        
+        //g_animinit = true;
+        if( xp.lastslice+25 < 83 ){
+          imagert = document.getElementById("imganim");
+          imagert.src = "/cached/mov0"+(xp.lastslice+25)+".png";
+        }else{
+          imagert = document.getElementById("imganim");
+          imagert.src = "/cached/mov0"+(83)+".png";
+        
+        }
+      } 
+      break;
+
+    case 3: 
+      generalinfo.innerHTML += "Computation is terminated  !"; 
+      imagert = document.getElementById("imganimback");
+      imagert.src = "/images/fake_result.jpg";
+        
+      hp = document.getElementById("hoverpopup");
+         
+      // Set popup to visible
+      //hp.style.visibility = "Hidden";
+    break;
+  }
+}
+
+var g_counterCells=0
+var g_lastRow=0
+var g_progressBar=[]
+
+function update_correlationcore(cnodes)
+{ 
+  tbody = document.getElementById("tbody");
+  
+  if( g_counterCells < cnodes.length )
+  {
+    for( g_counterCells, len=cnodes.length ; g_counterCells < len; g_counterCells++)
+    {
+      if( g_counterCells % 6 == 0){
+        g_lastRow = tbody.insertRow(-1);
+      } 
+      var oCell = g_lastRow.insertCell(-1);
+      pgname = "coreprogress"+g_counterCells
+      oCell.innerHTML = "Core #"+g_counterCells+' : <div id="'+pgname+'"></div>'
+      g_progressBar.push( new JS_BRAMUS.jsProgressBar($(pgname),0, {animate		: false} ) );
+    }   
+  }
+  var toup = 0
+  if( g_counterCells < cnodes.length )
+    toup = g_counterCells
+  else 
+    toup  = cnodes.length
+    
+  for( var i=0; i < toup;  i++){
+    g_progressBar[i].setPercentage(''+Math.round(cnodes[i].current_fft*100/cnodes[i].total_fft))
+  }   
+  
+  
+}
+
+function update_picture(status)
+{
+
+}
+
+function update_all(status)
+{
+  update_generalinfo(status.experiment)
+  if( status.experiment.status == 2 || status.experiment.status == 3 ){
+    update_correlationcore(status.correlationnode)
+    update_picture(status)
+  }
+}
+
+var status_client = {}
+var l_req = null
+
+// handle onreadystatechange event of req object
+function processReqChange(){
+    if (l_req && l_req.readyState == 4) {
+        if (l_req.status == 200) 
+         {  
+            status = 0
+            try{
+              status = eval('(' + l_req.responseText + ')');
+            }catch(e){
+              setTimeout("timerRefresh()", 50);
+              return;
+            }
+            update_all(status)
+            setTimeout("timerRefresh()", 200);
+            
+          } else {
+            alert("There was a problem retrieving the XML data:\n"
+                   +l_req.statusText);
+         }
+    }
+}
+
+function onClick(){
+  counter+=1
+  div = document.getElementById("debugsection");
+  //div.innerHTML = "["+counter+"]Loading :"+"/cgi-bin/status_json.py....";  
+  l_req = loadXMLDoc("/cgi-bin/status_json.py", l_req, processReqChange);  
+  //div.innerHTML += "....Terminated<br>";
+}
+
+function timerRefresh()
+{
+  onClick();
+}
+
+function initAll()
+{  
+  setTimeout("timerRefresh()", 1);
+}
+
+function onProgress(e) {
+  var percentComplete = (e.position / e.totalSize)*100;
+}
+
+</script>
+
+<body onload="initAll()">
+
+<div id="debugsection">
+</div>
+
+<h1><center>SFXC Monitor</center></h1>
+<center>
+
+<table border="1" width="90%">
+<tr>
+
+<td width="270">
+<img id="imagert" src="/images/notrunning.png" width="100%" onclick="popupwindow()"/>
+</td>
+
+
+<td width="40%">
+<center>
+<div id="generalinfo">
+Running since: ? sec</br>
+Number of second to correlate: ? sec</br>
+Timeslices processed: ?/??? </br>
+Experiment begin: ?,   Experiment ended: ?,   Current time: ? </br>
+
+</div>
+
+<div id="process" width=100%> 
+Progress : <span class="progressBar" id="progresscorr">0%</span>
+</div>
+</center>
+
+<!--div id="process" width=100%> 
+Real-time ratio: <span class="progressBar" id="progressrt">0%</span>
+</div-->
+</td>
+</td>
+
+<td width="270">
+<img id="imganim" src="/images/notrunning.png" width="100%">
+
+<div id="hoverpopup" style="visibility:hidden; position:relative; top:0; left:0;"-->
+<img id="imganimback" src="/images/notrunning.png" width="100%"/>
+</div-->
+</td>
+
+</tr>
+</table>
+
+<table width="90%" border="1" id="tcorrelationnodes">
+
+<tbody id="tbody">
+</tbody>
+
+</table>
+  
+</center>
+
+
+
+</body>
+</html>

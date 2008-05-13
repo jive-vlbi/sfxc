@@ -1,0 +1,374 @@
+{ "experiment"  : { 
+	 "status" : 0, 
+	 "lastslice"     : 59, 
+	 "duration"     : 59, 
+	 "start_time"    : 27130000, 
+	 "stop_time"     : 27189000, 
+	 "current_time"  : 27189000 
+},  "correlationnode" : [ 
+{ 
+	"name": "correlationcore0", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 9 
+} , 
+{ 
+	"name": "correlationcore1", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 9 
+} , 
+{ 
+	"name": "correlationcore2", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 9 
+} , 
+{ 
+	"name": "correlationcore3", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 9 
+} , 
+{ 
+	"name": "correlationcore4", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 9 
+} , 
+{ 
+	"name": "correlationcore5", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 9 
+} , 
+{ 
+	"name": "correlationcore6", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 9 
+} , 
+{ 
+	"name": "correlationcore7", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 9 
+} , 
+{ 
+	"name": "correlationcore8", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 9 
+} , 
+{ 
+	"name": "correlationcore9", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 9 
+} , 
+{ 
+	"name": "correlationcore10", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore11", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore12", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore13", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore14", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 9 
+} , 
+{ 
+	"name": "correlationcore15", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore16", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore17", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore18", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore19", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore20", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore21", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore22", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore23", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 9 
+} , 
+{ 
+	"name": "correlationcore24", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore25", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore26", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore27", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore28", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore29", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore30", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore31", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore32", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore33", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore34", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore35", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore36", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore37", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore38", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore39", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore40", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore41", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore42", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore43", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore44", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore45", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore46", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore47", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore48", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore49", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore50", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+} , 
+{ 
+	"name": "correlationcore51", 
+	"load": 20, 
+	"current_fft": 15625, 
+	"total_fft": 15625, 
+	"ts_count": 8 
+}  
+]
+ }

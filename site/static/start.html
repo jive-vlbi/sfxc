@@ -1,0 +1,154 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
+  
+  <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=ABQIAAAAB7vfXntCNnGxRMU9GxOPyhQqyqwO2TPVZsKtNy7PiMk4PLDrFBQGlddOQvGkIhU6RVTMga4MOZ67-A"
+      type="text/javascript"></script>
+  
+  <script src="http://www.jive.nl/~kruithof/GPS/demo.js"
+      type="text/javascript"></script>
+  
+  <!--script src="http://www.openlayers.org/dev/lib/OpenLayers.js"></script-->
+    
+    <style type="text/css">    
+        #map {
+            width: 512px;
+            height: 350px;
+            border: 1px solid gray;
+        }
+    
+    </style>
+  
+    <script>
+    function init() {
+      load_map();
+      change_connection_color("croatia", "#00FF00");
+
+      hide_connection("poland");
+      set_icon("poland", radio_image);
+    }
+    </script>
+  
+    <!--script type="text/javascript">
+        var map;
+        var markers;
+        var popup;
+        var g_marker_icons=[]
+        
+        function mousedown(evt) {
+           sec = document.getElementById("ctrl")
+            if( sec ){
+              this.icon.setUrl('http://localhost:8080/images/data-unselect.png');   
+              sec.innerHTML+=" Clicked somewhere ! "
+            }else{
+              alert("Bobinou")
+            }
+            OpenLayers.Event.stop(evt);
+        }        
+
+        function init() {
+            map = new OpenLayers.Map('map');
+            map.addControl(new OpenLayers.Control.LayerSwitcher());
+            
+            markers = new OpenLayers.Layer.Markers( "Markers" );
+            map.addLayer(markers);
+
+            var size = new OpenLayers.Size(32,32);
+            var offset = new OpenLayers.Pixel(-(size.w/2), -size.h);
+            var icon1 = new OpenLayers.Icon('http://localhost:8080/images/data-unselect2.png',size,offset);
+            var icon2 = new OpenLayers.Icon('http://localhost:8080/images/data-unselect2.png',size,offset);
+            
+    
+            g_marker_icons.push(icon1);
+            g_marker_icons.push(icon2);
+            
+        
+            var marker1 = new OpenLayers.Marker(new OpenLayers.LonLat(-8.10791015625,52.998046875), icon1);
+            marker1.events.register("mousedown", marker1, mousedown);
+            markers.addMarker(marker1);
+        
+            var marker2 = new OpenLayers.Marker(new OpenLayers.LonLat(19.00634765625,51.85546875),icon1.clone());
+            marker2.events.register("mousedown", marker2, mousedown);
+            markers.addMarker(marker2);
+            
+            //markers.addMarker(new OpenLayers.Marker(new OpenLayers.LonLat(22.69775390625,39.375),icon3));
+            //markers.addMarker(new OpenLayers.Marker(new OpenLayers.LonLat(21.99462890625,38.056640625),icon4));
+            
+            // popup = new OpenLayers.Popup.Anchored("chicken", 
+            //                              new OpenLayers.LonLat(-8.10791015625,52.998046875),
+            //                              new OpenLayers.Size(500,500),
+            //                              "example popup",
+            //                              true);
+            // map.addPopup(popup);
+            
+            var gphy = new OpenLayers.Layer.Google(
+                "Google Physical",
+                {type: G_PHYSICAL_MAP}
+            );
+            var gmap = new OpenLayers.Layer.Google(
+                "Google Streets" // the default
+            );
+            var ghyb = new OpenLayers.Layer.Google(
+                "Google Hybrid",
+                {type: G_HYBRID_MAP}
+            );
+            var gsat = new OpenLayers.Layer.Google(
+                "Google Satellite",
+                {type: G_SATELLITE_MAP}
+            );
+
+
+            map.addLayers([gphy, gmap, ghyb, gsat]);
+            map.setCenter(new OpenLayers.LonLat(10.2, 48.9), 5);
+        }
+    
+    </script-->
+    
+  
+  </head>
+  
+  
+  
+  <body onload="init()" onunload="GUnload()">
+  <center>
+  <table width="80%"><tr><td>
+  <center><h1> Starting an AutoBahn/SCARIe experiment </h1></center>
+  
+  <hr> 
+   Please select on the map what data-sources you want to use for this experiment. You can also select
+   the destination cluster on which execute the software correlator.
+  <hr>
+  
+   <center>
+    <div id="map" style="width: 500px; height: 500px; border: 1px solid;"></div>
+  </center>
+
+  <hr>
+
+  <div id="ctrl"></div>  
+   
+    
+  <form name="submitform" action="/cgi-bin/submit_ctrl.py" enctype="multipart/form-data" method="POST" target="upload_target">
+    <p>
+       Please specify a sfxc control-file, :<br>
+       <input type="file" name="bod_ctrlfile" size="40"/>
+    </p>
+    <p>
+       Please specify a sfxc vex-file, :<br>
+       <input type="file" name="bod_vexfile" size="40"/>
+    </p>
+    <div>
+      <input type="submit" value="Start">
+    </div>
+  </form>
+  
+  <a href="n06_file.tgz">A set of ctrl/vex files can be downloaded here !</a>
+  <hr/>
+
+  </td></tr></table>
+  <iframe id="upload_target" name="upload_target" src="#" width="80%" border="0"></iframe>    
+
+  </center>
+  </body>
+              
+</html>

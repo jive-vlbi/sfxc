@@ -1,0 +1,228 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
+<style type="text/css">
+
+DIV.clSlide{position:absolute;  ;z-index:10; left:0; width:138; height:22; clip:rect(0,138,22,0); padding:3px;}
+DIV.clSlideSub{position:absolute; ;z-index:10; padding:2px; clip:rect(0,127,20,0); width:127; height:20; left:0; visibility:hidden}
+DIV.clSlideSub2{position:absolute; ;z-index:10; padding:2px; clip:rect(0,118,20,0); width:118; height:20; left:0; visibility:hidden}
+
+#divSlideCont{position:relative; z-index:22; left:0; top:0; width:130; height=480; background-image:url('images/top.png');}
+#beginMenu{position:relative; z-index:10; left:0; top:0; height:25; width:140; }
+#endMenu{position:relative; z-index:10; left:0; top:0; height:25; width:140; }
+
+A.clSlideLinks{font-family:Verdana,  Arial, Helvetica, sans-serif; font-size:11px; font-weight:bold; text-decoration:none; color:white}
+A.clSlideSubLinks{font-family:Verdana,  Arial, Helvetica, sans-serif; font-size:10px; text-decoration:none; color:Navy}
+A.clSlideSub2Links{font-family:Verdana,  Arial, Helvetica, sans-serif; font-size:9px; text-decoration:none; color:Navy}
+
+DIV.topBar{position:absolute; z-index:12; top:0; left:0; width:1024; height:120; background-image:url('images/top.png'); }
+
+DIV.centerPane{position:absolute; top:120; left:0; width:100%; height:800;}
+DIV.leftBar{position:absolute; top:0; width:10%; height:100% }
+
+DIV.mainContent{position:absolute; z-index:20; top:0%; left:140; width:1050; height:600; font-family:Verdana,  Arial, Helvetica, sans-serif; font-size:9px; text-decoration:none; }
+
+DIV.rightBar{position:absolute; top:250; z-index:10; left:1396; width:290; height:100%; background-image:url('images/right.png'); }
+DIV.arrowBar{position:relative; top:45; z-index:15; left:20; width:100%; height:100%;}
+DIV.infoBar{position:absolute; top:200; z-index:16; left:50; width:100%; height:100%;}
+DIV.videoBar{position:absolute; top:310; z-index:16; left:60; width:100%; height:100%;}
+
+
+DIV.bottomBar{position:relative; top:675; z-index:40; left:0%; width:100%; height:15% }
+
+div.member{
+	position:absolute; 
+	z-index:10; 
+	left:0; 
+	width:600;
+	height:22; 
+	background-color:#FFBBAA ;
+}
+
+</style>
+
+  <!-- jsProgressBarHandler prerequisites : prototype.js -->
+  <script type="text/javascript" src="/js/prototype/prototype.js"></script>
+
+  <!-- jsProgressBarHandler core -->
+  <script type="text/javascript" src="/js/bramus/jsProgressBarHandler.js"></script>
+
+  <!-- AJAX xmlhttprequest -->
+  <script type="text/javascript" src="/js/xmlrequest.js"></script>
+
+  <!-- AJAX Animated menu bar -->
+  <script type="text/javascript" src="menubar.js"></script>
+  
+  <script type="text/javascript">
+    var c_status=1;
+    var counter;
+    var g_progressBar=null;
+    
+    var g_topbarend=120;
+    var g_ctopbarend=120;
+    
+    function init()
+    {
+      c_status = 1;
+    }
+  
+    function animPanel()
+    {
+      div = document.getElementById("rightBar");
+      div3 = document.getElementById("topBar");
+      mc  = document.getElementById("mainContent");
+      cp  = document.getElementById("centerPane");    
+      
+      div2 = document.getElementById("bottombar");
+      if( div && mc ){
+        if( counter != 0 ){
+          if( c_status == 0 ){
+            val = eval(div.offsetLeft)+21
+            div.style.left=val;
+            mc.style.width=val-150;
+            
+            g_ctopbarend=g_ctopbarend-11;
+            mc.style.height= document.body.clientHeight-130+(220-g_ctopbarend);
+            
+            div3.style.top = g_ctopbarend-230;
+            cp.style.top=g_ctopbarend-110;
+          }else{
+            val =eval(div.offsetLeft)-21
+            div.style.left=val;
+            mc.style.width=val-150;  
+          
+            g_ctopbarend=g_ctopbarend+11;
+            mc.style.height= document.body.clientHeight-130+(220-g_ctopbarend);
+
+            div3.style.top = g_ctopbarend-230;
+            cp.style.top=g_ctopbarend-110;
+          }
+          
+          counter-=1;
+          setTimeout("animPanel()", 25);          
+        }else{
+          if( c_status == 0 ){ 
+            c_status = 1; 
+          }
+          else { 
+            c_status = 0; 
+            setTimeout("index2_refreshData()", 1);
+          }
+        }
+      }else{ 
+        alert("Problem");
+      }
+    }
+    
+    function startAnim() 
+    {
+      div = document.getElementById("bottombar");
+      if( div ){
+        counter = 10;
+        div.innerHTML = "Loading : "+counter+" status:"+c_status;  
+        setTimeout("animPanel()", 25);
+        div.innerHTML += "....Terminated<br>";
+      }else{
+        alert("Problem");
+      }
+    }
+    
+    function update_all(state){
+      div = document.getElementById("infoBar#text");
+      bar = document.getElementById("infoBar#currentState");
+      if( div ){
+        div.innerHTML="Status: "+state.correlator_state.desc+"<br/>"
+        if( 0 == state.correlator_state.code ){
+          if( g_progressBar ) g_progressBar.setPercentage('0');
+        }else{
+          if( g_progressBar == null ){
+            g_progressBar = new JS_BRAMUS.jsProgressBar(bar, 0, {animate		: false} );  
+          }
+          g_progressBar.setPercentage(''+state.correlator_state.curr_state);
+        }
+      }else{
+        alert("Gros problem");
+      }
+    }
+    
+    var index2_status_client = {}
+    var index2_l_req = null
+
+    // handle onreadystatechange event of req object
+    function index2_processReqChange(){
+      if (c_status == 0 && index2_l_req && index2_l_req.readyState == 4) {
+          if (index2_l_req.status == 200) 
+           {  
+              try{
+                status = eval('(' + index2_l_req.responseText + ')');
+                update_all(status)
+              
+                setTimeout("index2_refreshData()", 1500);
+              }catch(e){
+                alert("Coin coin"+e)
+                setTimeout("index2_refreshData()", 50);
+              }
+            } else {
+              alert("There was a problem retrieving the XML data:\n"
+                     +index2_l_req.statusText);
+           }
+      }
+   }
+   
+  var index2_counter=0
+  function index2_refreshData(){
+    index2_counter+=1
+    index2_l_req = loadXMLDoc("/cgi-bin/status_correlator_json.py", index2_l_req, index2_processReqChange);  
+   }
+  </script>
+
+</head>
+
+<body onload="init()">
+
+<div class="centerPane" id="centerPane" height="100%">
+
+<div class='leftBar' id='leftBar'>
+<script type="text/javascript" src="cached/auto_menubar.js"></script>
+<div style="position:relative;">
+  <img src="/images/logoJIVE.jpeg" style="position:relative; top:400;" width="90%">
+  <img src="/images/logo_autobahn.jpg" style="position:relative; top:400;" width="90%">
+  <img src="/images/logo_eng.gif" style="position:relative; top:400;" width="90%">
+  <img src="/images/logo_gn2.jpg" style="position:relative; top:400;" width="90%">
+</div>
+</div>
+
+<div class="mainContent" id="mainContent">
+<IFRAME id="myFrame" name='myFrame' width="100%" height="100%" src="static/bod_demo.html" frameborder="1" scrolling="auto"></IFRAME>  
+</div>
+
+</div>
+
+
+<!--div class="rightBar" id='rightBar'>
+  <div class="arrowBar" id='arrowBar'>
+    <img src="images/right-arrow.png" onclick="startAnim()"></img>
+  </div>  
+  
+  <div class="infoBar" id="infoBar">
+    <div id="infoBar#text">Status: Not running <br/></div>
+    
+    Progression: <div id="infoBar#currentState" width=100%></div>
+  </div>
+  
+  
+  <div class="videoBar" id='videoBar'>
+    <img src="images/anim.gif" width="160""></img>
+  </div>
+</div-->
+
+<div class="topBar" id='topBar'>
+<!/image src="images/SOFA-logo.png">
+</div>
+
+<div class="bottomBar" id="bottombar">
+</div>
+
+
+</body>
+</html>
