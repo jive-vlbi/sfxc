@@ -221,8 +221,9 @@ void Delay_correction::fractional_bit_shift(FLOAT input[],
 }
 
 void Delay_correction::fringe_stopping(FLOAT output[]) {
-  double mult_factor_phi =
-    -sideband()*2.0*M_PI*(channel_freq() + sideband()*bandwidth()*0.5);
+  const double mult_factor_phi = -sideband()*2.0*M_PI;
+  const double integer_mult_factor_phi = 
+    channel_freq() + sideband()*bandwidth()*0.5;
 
   int64_t time = current_time;
 
@@ -231,7 +232,10 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
     delta_time = 1;
   double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
   // Initialise the end values
-  double phi_end = mult_factor_phi * get_delay(time);
+
+  // Argument reduction
+  double phi_end = integer_mult_factor_phi * get_delay(time);
+  phi_end = mult_factor_phi*(phi_end-std::floor(phi_end));
 
   double cosPhi_end, sinPhi_end;
 
@@ -251,16 +255,18 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
       cosPhi = cosPhi_end;
       sinPhi = sinPhi_end;
 
-      phi_end =
-        mult_factor_phi * get_delay(time+delta_time);
+      // Argument reduction
+      phi_end = integer_mult_factor_phi * get_delay(time+delta_time);
+      phi_end = mult_factor_phi*(phi_end-std::floor(phi_end));
 
       if (std::abs(phi_end-phi) < 0.4*maximal_phase_change) {
         // Sampling is too dense
         n_recompute_delay *= 2;
         delta_time = (((int64_t)n_recompute_delay)*1000000)/sample_rate();
 
-        phi_end =
-          mult_factor_phi * get_delay(time+delta_time);
+        // Argument reduction
+        phi_end = integer_mult_factor_phi * get_delay(time+delta_time);
+        phi_end = mult_factor_phi*(phi_end-std::floor(phi_end));
       }
 
       while ((std::abs(phi_end-phi) > maximal_phase_change) &&
@@ -269,7 +275,9 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
         n_recompute_delay /= 2;
         delta_time = (((int64_t)n_recompute_delay)*1000000)/sample_rate();
 
-        phi_end =  mult_factor_phi * get_delay(time+delta_time);
+        // Argument reduction
+        phi_end = integer_mult_factor_phi * get_delay(time+delta_time);
+        phi_end = mult_factor_phi*(phi_end-std::floor(phi_end));
       }
 
       time += delta_time;
