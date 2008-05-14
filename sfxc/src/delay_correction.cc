@@ -290,11 +290,6 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
 
     }
 
-    // 6b)apply normalization and multiply by 2.0
-    // NHGK: Why only the real part
-    frequency_buffer[i] = std::complex<FLOAT>(2*frequency_buffer[i].real(),
-                          frequency_buffer[i].imag());
-
     // 7)subtract dopplers and put real part in Bufs for the current segment
     output[i] =
       frequency_buffer[i].real()*cosPhi - frequency_buffer[i].imag()*sinPhi;
