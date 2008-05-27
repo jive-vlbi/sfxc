@@ -451,23 +451,17 @@ Control_parameters::get_vex() const {
 }
 
 
-
-
-Input_node_parameters
+void 
 Control_parameters::
-get_input_node_parameters(const std::string &mode_name,
-                          const std::string &station_name) const {
+get_mark5a_tracks(const std::string &mode,
+                  const std::string &station,
+                  Input_node_parameters &input_parameters) const {
   const std::string &track_name =
-    get_vex().get_track(mode_name, station_name);
+    get_vex().get_track(mode, station);
   const std::string &freq_name =
-    get_vex().get_frequency(mode_name, station_name);
+    get_vex().get_frequency(mode, station);
   Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
   Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
-
-  Input_node_parameters result;
-  result.track_bit_rate = -1;
-  result.number_channels = number_channels();
-  result.integr_time = integration_time();
 
   for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
     const std::string &channel_name = frequency_channel(ch_nr);
@@ -478,23 +472,6 @@ get_input_node_parameters(const std::string &mode_name,
     for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
          fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
       if (channel_name == fanout_def_it[1]->to_string()) {
-        // sample_rate
-        for (Vex::Node::const_iterator chan = freq->begin("chan_def");
-             chan != freq->end("chan_def"); ++chan) {
-          if (chan[4]->to_string() == channel_name) {
-            if (result.track_bit_rate == -1) {
-              result.track_bit_rate =
-                (int)(freq["sample_rate"]->to_double_amount("Ms/sec")*1000000)
-                / (fanout_def_it->size()-4);
-            } else {
-              assert(result.track_bit_rate ==
-                     (freq["sample_rate"]->to_double_amount("Ms/sec") *
-                      1000000)
-                     / (fanout_def_it->size()-4));
-            }
-          }
-        }
-
         Vex::Node::const_iterator it = fanout_def_it->begin();
         ++it;
         ++it;
@@ -515,8 +492,165 @@ get_input_node_parameters(const std::string &mode_name,
         }
       }
     }
-    result.channels.push_back(channel_param);
+    input_parameters.channels.push_back(channel_param);
   }
+}
+
+void 
+Control_parameters::
+get_mark5b_tracks(const std::string &mode,
+                  const std::string &station,
+                  Input_node_parameters &input_parameters) const {
+  const Vex::Node &root=get_vex().get_root_node();
+  // Find the number of bits per sample
+  int bits_per_sample_ = bits_per_sample();
+  std::cout << "bits_per_sample: " << bits_per_sample_ << std::endl;
+
+  std::string bbc = "NO BBC FOUND";
+  { // Find the bbc
+    Vex::Node::const_iterator bbc_it;
+    for (bbc_it = root["MODE"][mode]->begin("BBC");
+         bbc_it != root["MODE"][mode]->end("BBC");
+         bbc_it ++) {
+      Vex::Node::const_iterator station_it = bbc_it->begin(); 
+      station_it++;
+      while (station_it != bbc_it->end()) {
+        if (station_it->to_string() == station)
+          bbc = bbc_it->begin()->to_string();
+        station_it++;
+      }
+    }
+  }
+
+  std::string freq = "NO FREQ FOUND";
+  { // Find the frequency label
+    Vex::Node::const_iterator freq_it;
+    for (freq_it = root["MODE"][mode]->begin("FREQ");
+         freq_it != root["MODE"][mode]->end("FREQ");
+         freq_it ++) {
+      Vex::Node::const_iterator station_it = freq_it->begin(); 
+      station_it++;
+      while (station_it != freq_it->end()) {
+        if (station_it->to_string() == station)
+          freq = freq_it->begin()->to_string();
+        station_it++;
+      }
+    }
+  }
+
+
+  // subband to bit-stream-nr conversion
+  std::map<std::string, int> subband_to_track;
+  {
+    // Sort the bbc's
+    std::map<int, std::string> bbc_map;
+    Vex::Node::const_iterator bbc_it;
+    for (bbc_it = root["BBC"][bbc]->begin("BBC_assign");
+         bbc_it != root["BBC"][bbc]->end("BBC_assign");
+         bbc_it ++) {
+      bbc_map[bbc_it[1]->to_int()] = bbc_it[0]->to_string();
+    }
+    
+    // Sorted list of bbc labels
+    std::vector<std::string> bbc_labels;
+    bbc_labels.resize(bbc_map.size());
+    int i=0;
+    for (std::map<int, std::string>::iterator it=bbc_map.begin();
+         it != bbc_map.end(); it++) {
+      bbc_labels[i] = (*it).second;
+      i++;
+    }
+
+    { // Iterate over bbcs to find the right numbering of the bit streams
+      int bit_stream = 0;
+      Vex::Node::const_iterator freq_it;
+      // Find the upper sidebands:
+      for (size_t bbc_nr=0; bbc_nr < bbc_labels.size(); bbc_nr++) {
+        for (freq_it = root["FREQ"][freq]->begin("chan_def");
+             freq_it != root["FREQ"][freq]->end("chan_def");
+             freq_it++) {
+          if ((freq_it[2]->to_string() == std::string("U")) &&
+              (freq_it[5]->to_string() == bbc_labels[bbc_nr])){
+            subband_to_track[freq_it[4]->to_string()] = bit_stream;
+            bit_stream++;
+          }
+        }
+      }
+      // Find the lower sidebands:
+      for (size_t bbc_nr=0; bbc_nr < bbc_labels.size(); bbc_nr++) {
+        for (freq_it = root["FREQ"][freq]->begin("chan_def");
+             freq_it != root["FREQ"][freq]->end("chan_def");
+             freq_it++) {
+          if ((freq_it[2]->to_string() == std::string("L")) &&
+              (freq_it[5]->to_string() == bbc_labels[bbc_nr])){
+            subband_to_track[freq_it[4]->to_string()] = bit_stream;
+            bit_stream++;
+          }
+        }
+      }
+    }
+  }
+
+  { // Fill the sign and magnitude bits:
+    int nr_bit_streams = subband_to_track.size()*bits_per_sample_;
+    for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
+      const std::string &channel_name = frequency_channel(ch_nr);
+      int bit_stream_nr = subband_to_track[channel_name]*bits_per_sample_;
+
+      Input_node_parameters::Channel_parameters channel_param;
+      if (bits_per_sample_ == 2) {
+        for (; bit_stream_nr < 32; bit_stream_nr += nr_bit_streams) {
+            channel_param.sign_tracks.push_back(bit_stream_nr);
+            channel_param.magn_tracks.push_back(bit_stream_nr+1);
+        }
+      } else {
+        for (; bit_stream_nr < 32; bit_stream_nr += nr_bit_streams) {
+            channel_param.sign_tracks.push_back(bit_stream_nr);
+        }
+      }
+      input_parameters.channels.push_back(channel_param);
+    }
+  }
+}
+
+
+Input_node_parameters
+Control_parameters::
+get_input_node_parameters(const std::string &mode_name,
+                          const std::string &station_name) const {
+  Input_node_parameters result;
+  result.track_bit_rate = -1;
+  result.number_channels = number_channels();
+  result.integr_time = integration_time();
+
+  const std::string &freq_name =
+    get_vex().get_frequency(mode_name, station_name);
+  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
+  
+  // sample_rate
+  for (Vex::Node::const_iterator chan = freq->begin("chan_def");
+       chan != freq->end("chan_def"); ++chan) {
+    result.track_bit_rate =
+      (int)(freq["sample_rate"]->to_double_amount("Ms/sec")*1000000);
+  }
+  
+  std::string das = 
+    get_vex().get_root_node()["STATION"][station_name]["DAS"]->to_string();
+  Vex::Node::const_iterator das_it = get_vex().get_root_node()["DAS"][das];
+  std::string record_transport_type =
+    das_it["record_transport_type"]->to_string();
+  
+  if (record_transport_type == "Mark5A") {
+    std::cout << station_name << " Mark5A" << std::endl;
+    get_mark5a_tracks(mode_name, station_name, result);
+  } else {
+    assert(record_transport_type == "Mark5B");
+    std::cout << station_name << " Mark5B" << std::endl;
+    get_mark5b_tracks(mode_name, station_name, result);
+  }
+
+  assert(!result.channels[0].sign_tracks.empty());
+  result.track_bit_rate /= result.channels[0].sign_tracks.size();
 
   return result;
 }
