@@ -246,6 +246,19 @@ public:
 private:
   std::string create_path(const std::string &path) const;
 private:
+
+  // Gets the track parameters for mark5a data
+  // Output is in input_parameters
+  void get_mark5a_tracks(const std::string &mode,
+                         const std::string &station,
+                         Input_node_parameters &input_parameters) const;
+
+  // Gets the track parameters for mark5b data
+  // Output is in input_parameters
+  void get_mark5b_tracks(const std::string &mode,
+                         const std::string &station,
+                         Input_node_parameters &input_parameters) const;
+
   std::string ctrl_filename;
   std::string vex_filename;
 

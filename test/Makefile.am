@@ -11,6 +11,8 @@ check_PROGRAMS = \
   test_transfer_control_parameters \
   test_data_reader_file \
   test_data_reader_mark5 \
+  test_mark5b_reader \
+  test_tracks_mark5b \
   test_data_reader_tcp \
   test_input_node \
   test_output_node \
@@ -29,6 +31,7 @@ TESTS           = \
   test_time_slicer \
   test_data_reader_file \
   test_data_reader_mark5.py \
+  test_mark5b_reader.py \
   test_data_reader_tcp.py \
   test_correlator_node_data_reader \
   test_output_node.py \
@@ -47,7 +50,6 @@ OBJ = ../src/utils.cc \
       ../src/channel_extractor_utils.cc \
       ../src/mark4_reader.cc \
       ../src/mark4_header.cc \
-      ../src/bits_to_float_converter.cc \
       \
       ../src/data_reader.cc \
       ../src/data_reader_tcp.cc \
@@ -118,6 +120,18 @@ test_transfer_control_parameters_SOURCES = \
 
 test_data_reader_mark5_SOURCES = \
   $(OBJ) test_data_reader_mark5.cc
+
+test_mark5b_reader_SOURCES = \
+  test_mark5b_reader.cc \
+  ../src/mark5b_reader.cc \
+  ../src/data_reader_file.cc \
+  ../src/data_reader.cc \
+  ../src/utils.cc
+
+test_tracks_mark5b_SOURCES = \
+  test_tracks_mark5b.cc \
+  ../src/control_parameters.cc \
+  ../src/utils.cc
 
 test_channel_extractor_SOURCES = \
   $(OBJ) test_channel_extractor.cc
