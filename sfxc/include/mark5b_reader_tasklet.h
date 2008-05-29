@@ -7,22 +7,22 @@
  *
  */
 
-#ifndef MARK4_READER_TASKLET_H
-#define MARK4_READER_TASKLET_H
+#ifndef MARK5b_READER_TASKLET_H
+#define MARK5b_READER_TASKLET_H
 
 #include <boost/shared_ptr.hpp>
 
 #include "tasklet/tasklet.h"
-#include "mark4_reader.h"
+#include "mark5b_reader.h"
 #include "input_node_types.h"
 
 #ifdef RUNTIME_STATISTIC
 #include "monitor.h"
 #endif // RUNTIME_STATISTIC
 
-class Mark4_reader_tasklet : public Tasklet {
+class Mark5b_reader_tasklet : public Tasklet {
 public:
-  typedef boost::shared_ptr< Mark4_reader >    Mark4_reader_ptr;
+  typedef boost::shared_ptr< Mark5b_reader >    Mark5b_reader_ptr;
   typedef Input_node_types::value_type         value_type;
   typedef Input_node_types::Mk4_memory_pool    Input_memory_pool;
   typedef Input_node_types::Mk4_buffer_element Input_element;
@@ -30,8 +30,7 @@ public:
   typedef Input_node_types::Mk4_buffer_element Output_buffer_element;
   typedef Input_node_types::Mk4_buffer_ptr     Output_buffer_ptr;
 
-  Mark4_reader_tasklet(Mark4_reader_ptr mark4_reader,
-                       unsigned char buffer[]);
+  Mark5b_reader_tasklet(Mark5b_reader_ptr mark5b_reader);
 
   /// For Tasklet
   void do_task();
@@ -40,7 +39,7 @@ public:
   bool has_work();
 
   const char* name() {
-    return "Mark4_reader_tasklet";
+    return "Mark5b_reader_tasklet";
   }
 
   /// Get the output
@@ -57,14 +56,14 @@ public:
   /// set a stop time (after which no data is sent)
   void set_stop_time(int64_t time);
 
+  /// set parameters (the track bit rate)
+  void set_parameters(const Input_node_parameters &input_param);
+
   std::vector< std::vector<int> > get_tracks(const Input_node_parameters &input_node_param);
 
   int size_input_word() const {
-    return mark4_reader_->N;
-  }
-
-  void set_parameters(const Input_node_parameters &input_node_param) {
-    mark4_reader_->set_parameters(input_node_param);
+    // Mark5b has a fixed input size
+    return sizeof(int32_t);
   }
 
 private:
@@ -72,17 +71,15 @@ private:
   void allocate_element();
   /// Push the input_element_ to the output buffer
   void push_element();
-  /// Randomize data in the mark4 block
-  void randomize_block(int start, int stop);
 
 private:
   /// Data stream to read from
-  Mark4_reader_ptr                    mark4_reader_;
+  Mark5b_reader_ptr                    mark5b_reader_;
   /// Memory pool of data block that can be filled
   Input_memory_pool                   memory_pool_;
-  /// Current mark4 data block
+  /// Current mark5b data block
   Input_element                       input_element_;
-  /// Output buffer of mark4 data blocks
+  /// Output buffer of mark5b data blocks
   Output_buffer_ptr                   output_buffer_;
 
   /// Current time in microseconds
@@ -94,9 +91,7 @@ private:
 #ifdef RUNTIME_STATISTIC
   QOS_MonitorSpeed monitor_;
 #endif // RUNTIME_STATISTIC
-
-  const size_t n_bytes_per_input_word;
 };
 
-#endif // MARK4_READER_TASKLET_H
+#endif // MARK5B_READER_TASKLET_H
 

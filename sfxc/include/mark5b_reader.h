@@ -25,9 +25,6 @@ class Mark5b_reader {
     CHECK_BIT_STATISTICS
   };
 public:
-  static const int WORD_SIZE          = sizeof(int32_t);
-  static const int SAMPLES_PER_BLOCK  = 2500;
-  static const int SAMPLES_PER_HEADER = 4;
 
   struct Header {
     uint32_t      syncword;
@@ -42,7 +39,13 @@ public:
 
     bool check() const;
 
+    // Time in microseconds since midnight (approx)
     int64_t microseconds() const;
+
+    // Time in secons since midnight (truncated time)
+    int64_t seconds() const;
+
+    // Julian day % 1000
     int julian_day() const;
 
   };
@@ -64,6 +67,12 @@ public:
 
   bool eof();
 
+  void set_track_bit_rate(int tbr);
+  int time_between_headers();
+
+  std::vector< std::vector<int> >
+  get_tracks(const Input_node_parameters &input_node_param);
+
 private:
   // Data reader: input stream
   // The file pointer is always after a header, but before the data
@@ -79,6 +88,8 @@ private:
   Debug_level debug_level_;
 
   Header current_header;
+
+  int time_between_headers_;
 };
 
 std::ostream &operator<<(std::ostream &out,

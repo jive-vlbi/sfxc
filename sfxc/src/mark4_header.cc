@@ -13,6 +13,9 @@ Mark4_header::Mark4_header(int N_) : header_(NULL), N(N_) {
 
 
 void Mark4_header::set_header(unsigned char* hdr) {
+  if (hdr == NULL) 
+    std::cout << "Backtrace: " << Backtrace() << std::endl;
+  assert(hdr != NULL);
   header_ = hdr;
 }
 

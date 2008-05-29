@@ -21,7 +21,7 @@
 #include "log_writer.h"
 
 #ifndef PRINT_PID
-#define PRINT_PID         true
+#define PRINT_PID         false
 #endif // PRINT_PID
 
 #ifndef PRINT_HOST
@@ -36,11 +36,18 @@
 #define SIZE_MK4_FRAME           20000
 // Size of a mark4 header
 #define SIZE_MK4_HEADER          160
-// Track bit rate
-#define MARK4_TRACK_BIT_RATE     8000000
-// Maximal delay in milliseconds, should be an integer number of Mark4 blocks
-// 5 should be enough
-#define MAX_DELAY                5
+
+// Size of a Mark5B frame
+#define SIZE_MK5B_FRAME           2500
+#define SIZE_MK5B_HEADER             4
+#define SIZE_MK5B_WORD            sizeof(int32_t)
+// Number of mark5b frames to read at once
+// To make sure that the first sample lies exactly on an integer microsecond
+// duration of one block: SIZE_MK5B_FRAME/MAX_SAMPLE_RATE = 2500/64 = 625/16
+// MAX_SAMPLE_RATE = 64 MHz
+// Hence, this should be a multiple of 16
+#define N_MK5B_BLOCKS_TO_READ       16
+
 // The amount of padding in the correlator (could be 1, not tested though)
 #define PADDING                  2
 

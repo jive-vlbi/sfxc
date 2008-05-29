@@ -7,6 +7,7 @@ TESTS           = \
 	test_sfxc.py
 
 OBJ=\
+  channel_extractor_fast.cc \
   abstract_manager_node.cc \
   control_parameters.cc \
   sfxc_mpi.cc \
@@ -15,6 +16,8 @@ OBJ=\
   mark4_reader_tasklet.cc \
   mark4_reader.cc \
   mark4_header.cc \
+  mark5b_reader.cc \
+  mark5b_reader_tasklet.cc \
   data_writer.cc data_reader.cc \
   data_reader_factory.cc \
   data_reader_dnfp.cc \
@@ -32,7 +35,6 @@ OBJ=\
   channel_extractor_tasklet.cc \
   channel_extractor_brute_force.cc \
   channel_extractor_5.cc \
-  channel_extractor_fast.cc \
   channel_extractor_utils.cc \
   tasklet/mutex.cc \
   tasklet/tasklet.cc \
@@ -56,7 +58,6 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   single_data_writer_controller.cc \
   single_data_reader_controller.cc \
   input_node_tasklet.cc \
-  input_node_tasklet_impl.cc \
   input_node_data_writer_tasklet.cc \
   output_header.cc
 

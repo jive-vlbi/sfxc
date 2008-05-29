@@ -32,9 +32,16 @@ start_input_node(int rank, const std::string &station) {
   input_node_map[station] = input_node_rank.size();
   input_node_rank.push_back(rank);
 
-  // starting an input reader
-  MPI_Send(&rank, 1, MPI_INT32,
-           rank, MPI_TAG_SET_INPUT_NODE, MPI_COMM_WORLD);
+  if (control_parameters.transport_type(station) == "Mark5A") {
+    // starting an input reader
+    MPI_Send(&rank, 1, MPI_INT32,
+             rank, MPI_TAG_SET_INPUT_NODE_MARK5A, MPI_COMM_WORLD);
+  } else {
+    assert(control_parameters.transport_type(station) == "Mark5B");
+    // starting an input reader
+    MPI_Send(&rank, 1, MPI_INT32,
+             rank, MPI_TAG_SET_INPUT_NODE_MARK5B, MPI_COMM_WORLD);
+  }
 
   MPI_Status status;
   int msg;

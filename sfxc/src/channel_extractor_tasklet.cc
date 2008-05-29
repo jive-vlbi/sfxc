@@ -14,12 +14,16 @@
 
 #include "mark4_header.h"
 
+#define USE_EXTRACTOR_5
+
 // Increase the size of the output_memory_pool_ to allow more buffering
 // (8M/SIZE_MK4_FRAME=) 400 input blocks is 1 second of data
-Channel_extractor_tasklet::Channel_extractor_tasklet(int N_)
+Channel_extractor_tasklet::
+Channel_extractor_tasklet(int samples_per_block, int N_)
     : output_memory_pool_(400*MAX_SUBBANDS),
     n_subbands(0),
-    fan_out(0), N(N_) {
+    fan_out(0), 
+    N(N_), samples_per_block(samples_per_block) {
   assert(N_ > 0);
 
 #ifdef USE_EXTRACTOR_5
@@ -70,11 +74,11 @@ Channel_extractor_tasklet::do_task() {
 
   // The number of input samples to process
   int n_input_samples = input_element.data().mk4_data.size();
-  assert(n_input_samples == SIZE_MK4_FRAME*N);
+  assert(n_input_samples == samples_per_block*N);
 
   // Number of bytes in the output chunk
   assert((n_input_samples*fan_out)%8==0);
-  int n_output_bytes = (SIZE_MK4_FRAME*fan_out)/8;
+  int n_output_bytes = (samples_per_block*fan_out)/8;
   assert(n_output_bytes > 0);
 
   Output_buffer_element  output_elements[n_subbands];
@@ -162,7 +166,7 @@ set_parameters(const Input_node_parameters &input_node_param,
   bits_per_sample = input_node_param.bits_per_sample();
   fan_out    = bits_per_sample *
                input_node_param.subsamples_per_sample();
-  ch_extractor->initialise(track_positions, N, 20000);
+  ch_extractor->initialise(track_positions, N, samples_per_block);
 }
 
 

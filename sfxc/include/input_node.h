@@ -55,8 +55,10 @@ class Input_node : public Node {
   typedef Semaphore_buffer<value_type>                  Buffer;
 
 public:
-  Input_node(int rank, int station_number, Log_writer *log_writer);
-  Input_node(int rank, int station_number);
+  Input_node(int rank, int station_number, Log_writer *log_writer,
+             TRANSPORT_TYPE transport_type);
+  Input_node(int rank, int station_number,
+             TRANSPORT_TYPE transport_type);
   ~Input_node();
 
   /** Generic constructor function, that is called in the body of
@@ -109,6 +111,8 @@ private:
   int32_t start_time;
 
   int64_t stop_time;
+
+  TRANSPORT_TYPE transport_type;
 };
 
 #endif // INPUT_NODE_H

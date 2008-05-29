@@ -504,7 +504,6 @@ get_mark5b_tracks(const std::string &mode,
   const Vex::Node &root=get_vex().get_root_node();
   // Find the number of bits per sample
   int bits_per_sample_ = bits_per_sample();
-  std::cout << "bits_per_sample: " << bits_per_sample_ << std::endl;
 
   std::string bbc = "NO BBC FOUND";
   { // Find the bbc
@@ -613,7 +612,6 @@ get_mark5b_tracks(const std::string &mode,
   }
 }
 
-
 Input_node_parameters
 Control_parameters::
 get_input_node_parameters(const std::string &mode_name,
@@ -634,18 +632,11 @@ get_input_node_parameters(const std::string &mode_name,
       (int)(freq["sample_rate"]->to_double_amount("Ms/sec")*1000000);
   }
   
-  std::string das = 
-    get_vex().get_root_node()["STATION"][station_name]["DAS"]->to_string();
-  Vex::Node::const_iterator das_it = get_vex().get_root_node()["DAS"][das];
-  std::string record_transport_type =
-    das_it["record_transport_type"]->to_string();
-  
+  std::string record_transport_type = transport_type(station_name);
   if (record_transport_type == "Mark5A") {
-    std::cout << station_name << " Mark5A" << std::endl;
     get_mark5a_tracks(mode_name, station_name, result);
   } else {
     assert(record_transport_type == "Mark5B");
-    std::cout << station_name << " Mark5B" << std::endl;
     get_mark5b_tracks(mode_name, station_name, result);
   }
 
@@ -654,6 +645,17 @@ get_input_node_parameters(const std::string &mode_name,
 
   return result;
 }
+
+std::string
+Control_parameters::transport_type(const std::string &station) const {
+  std::string das = 
+    get_vex().get_root_node()["STATION"][station]["DAS"]->to_string();
+  Vex::Node::const_iterator das_it = get_vex().get_root_node()["DAS"][das];
+
+  return das_it["record_transport_type"]->to_string();
+}
+
+
 
 bool
 Control_parameters::cross_polarize() const {

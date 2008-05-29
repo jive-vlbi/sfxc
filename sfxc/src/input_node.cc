@@ -24,18 +24,24 @@
 
 #include "data_writer_file.h"
 
-Input_node::Input_node(int rank, int station_number, Log_writer *log_writer) :
+Input_node::Input_node(int rank, 
+                       int station_number, 
+                       Log_writer *log_writer,
+                       TRANSPORT_TYPE transport_type) :
     Node(rank, log_writer),
     input_node_ctrl(*this),
     data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
-    input_node_tasklet(NULL), status(WAITING) {
+    input_node_tasklet(NULL), status(WAITING),
+    transport_type(transport_type) {
   initialise();
 }
-Input_node::Input_node(int rank, int station_number) :
+Input_node::Input_node(int rank, int station_number,
+                       TRANSPORT_TYPE transport_type) :
     Node(rank), input_node_ctrl(*this), data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
-    input_node_tasklet(NULL), status(WAITING) {
+    input_node_tasklet(NULL), status(WAITING),
+    transport_type(transport_type) {
   initialise();
 }
 void Input_node::initialise() {
@@ -112,7 +118,8 @@ void Input_node::hook_added_data_reader(size_t stream_nr) {
   assert(stream_nr == 0);
 
   input_node_tasklet =
-    get_input_node_tasklet(data_reader_ctrl.get_data_reader(stream_nr));
+    get_input_node_tasklet(data_reader_ctrl.get_data_reader(stream_nr),
+                           transport_type);
   assert(input_node_tasklet != NULL);
 }
 

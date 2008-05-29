@@ -11,7 +11,7 @@ Correlation_core::~Correlation_core() {
   int N = size_of_fft();
   int numiterations = total_ffts;
   double time = fft_timer.measured_time()*1000000;
-  DEBUG_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
+  PROGRESS_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
 #endif
 }
 
