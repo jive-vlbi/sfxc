@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
   unsigned char buffer[sizeof(int64_t)*SIZE_MK4_FRAME];
 
-  Mark4_reader_interface *mark4_reader =
+  Mark4_reader *mark4_reader =
     get_mark4_reader(reader, buffer);
 
   int64_t prev_time = mark4_reader->get_current_time(), current_time;

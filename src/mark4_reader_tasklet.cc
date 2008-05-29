@@ -1,20 +1,22 @@
 #include "mark4_reader_tasklet.h"
 
 Mark4_reader_tasklet::
-Mark4_reader_tasklet(boost::shared_ptr<Data_reader> reader,
-                     char *buffer,
-                     int n_bytes_per_input_word)
+Mark4_reader_tasklet(Mark4_reader_ptr reader,
+                     unsigned char buffer[])
     : memory_pool_(10), stop_time(-1),
-    n_bytes_per_input_word(n_bytes_per_input_word) {
+    n_bytes_per_input_word(reader->N) {
 
   assert(sizeof(value_type) == 1);
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
   allocate_element();
-  mark4_reader_ =
-    boost::shared_ptr<Mark4_reader >(new Mark4_reader(reader,
-                                     n_bytes_per_input_word,
-                                     (unsigned char *)buffer,
-                                     (unsigned char *)&input_element_->mk4_data[0]));
+  mark4_reader_ = reader;
+
+  assert(&input_element_->mk4_data[0] != NULL);
+  // Copy the first data block
+  memcpy((unsigned char *)&input_element_->mk4_data[0],
+         (unsigned char *)buffer,
+         SIZE_MK4_FRAME*n_bytes_per_input_word);
+
   current_time = mark4_reader_->get_current_time();
   input_element_->start_time = current_time;
 

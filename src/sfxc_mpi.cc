@@ -49,7 +49,7 @@ void start_node() {
       log_node.start();
       break;
     }
-  case MPI_TAG_SET_INPUT_NODE: {
+  case MPI_TAG_SET_INPUT_NODE_MARK5A: {
       // The integer is the number of the input_reader:
       int32_t msg;
       MPI_Recv(&msg, 1, MPI_INT32,
@@ -63,7 +63,25 @@ void start_node() {
         gethostname(hostname, 255);
         DEBUG_MSG("Input node, hostname = " << hostname);
       }
-      Input_node input_node(rank, msg);
+      Input_node input_node(rank, msg, MARK5A);
+      input_node.start();
+      break;
+    }
+  case MPI_TAG_SET_INPUT_NODE_MARK5B: {
+      // The integer is the number of the input_reader:
+      int32_t msg;
+      MPI_Recv(&msg, 1, MPI_INT32,
+               RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+      if (PRINT_PID) {
+        DEBUG_MSG("Input node, pid = " << getpid());
+      }
+      if (PRINT_HOST) {
+        char hostname[255];
+        gethostname(hostname, 255);
+        DEBUG_MSG("Input node, hostname = " << hostname);
+      }
+      Input_node input_node(rank, msg, MARK5B);
       input_node.start();
       break;
     }

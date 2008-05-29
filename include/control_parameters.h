@@ -41,7 +41,7 @@ public:
 
   /// List of the tracks that are combined to frequency channels
   Channel_list                                 channels;
-  // data
+  // data rate of one subband
   int32_t                                     track_bit_rate; // in Ms/s
   /// number of frequency channels (#samples per output data chunk)
   int32_t number_channels;
@@ -241,6 +241,8 @@ public:
                              const std::string &channel_name,
                              const std::vector<std::string> &station_name,
                              const std::map<std::string, int> &correlator_node_station_to_input) const;
+
+  std::string transport_type(const std::string &station) const;
 
   const Vex &get_vex() const;
 private:

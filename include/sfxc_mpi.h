@@ -48,10 +48,15 @@ enum MPI_TAG {
   // INITIALISATION OF THE DIFFERENT TYPES OF NODES:
   //------------------------------------------------------------------------
 
-  /** Add an input node
+  /** Add an input node containing mark5a data
    * - MPI_INT32: number of the input node
    **/
-  MPI_TAG_SET_INPUT_NODE,
+  MPI_TAG_SET_INPUT_NODE_MARK5A,
+
+  /** Add an input node containing mark5b data
+   * - MPI_INT32: number of the input node
+   **/
+  MPI_TAG_SET_INPUT_NODE_MARK5B,
 
   /** Add a correlator node
    * - MPI_INT32: no content
@@ -266,8 +271,11 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
   case MPI_TAG_CONNECTION_ESTABLISHED: {
       return "MPI_TAG_CONNECTION_ESTABLISHED";
     }
-  case MPI_TAG_SET_INPUT_NODE: {
-      return "MPI_TAG_SET_INPUT_NODE";
+  case MPI_TAG_SET_INPUT_NODE_MARK5A: {
+      return "MPI_TAG_SET_INPUT_NODE_MARK5A";
+    }
+  case MPI_TAG_SET_INPUT_NODE_MARK5B: {
+      return "MPI_TAG_SET_INPUT_NODE_MARK5B";
     }
   case MPI_TAG_SET_CORRELATOR_NODE: {
       return "MPI_TAG_SET_CORRELATOR_NODE";

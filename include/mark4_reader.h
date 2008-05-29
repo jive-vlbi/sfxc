@@ -18,32 +18,8 @@
 #include "mark4_header.h"
 #include "control_parameters.h"
 
-class Mark4_reader_interface {
-public:
-  Mark4_reader_interface() {}
-  virtual ~Mark4_reader_interface() {}
 
-  /// Time in microseconds
-  /// Changed the order of the arguments when I changed from miliseconds to microseconds
-  virtual int64_t goto_time(unsigned char *data_block, int64_t us_time) = 0;
-
-  /// Get the current time in microseconds
-  virtual int64_t get_current_time() = 0;
-
-  /// Read another mark4-frame
-  virtual bool read_new_block(unsigned char *data_block) = 0;
-
-  // The time between two headers in microseconds
-  virtual int time_between_headers() = 0;
-};
-
-/** Returns a mark4 reader based on the headers in the data stream
- **/
-Mark4_reader_interface *
-get_mark4_reader(boost::shared_ptr<Data_reader> reader,
-                 unsigned char *first_block);
-
-class Mark4_reader : public Mark4_reader_interface {
+class Mark4_reader {
   enum Debug_level {
     NO_CHECKS = 0,
     CHECK_PERIODIC_HEADERS,
@@ -77,10 +53,14 @@ public:
 
 
   int time_between_headers() {
-    return MARK4_TRACK_BIT_RATE / SIZE_MK4_FRAME;
+    assert(data_rate() % (N*SIZE_MK4_FRAME) == 0);
+    return data_rate() / (N*SIZE_MK4_FRAME);
   }
 
   bool eof();
+
+  void set_parameters(const Input_node_parameters &input_node_param);
+
 
 private:
   // format a time in miliseconds
@@ -103,10 +83,20 @@ private:
   Debug_level debug_level_;
   int block_count_;
 
+  int data_rate() const;
+
 public:
+  int DATA_RATE_;
   const int N;
 };
 
+
+
+/** Returns a mark4 reader based on the headers in the data stream
+ **/
+Mark4_reader *
+get_mark4_reader(boost::shared_ptr<Data_reader> reader,
+                 unsigned char *first_block);
 
 int find_start_of_header(boost::shared_ptr<Data_reader> reader,
                          unsigned char first_block[]);

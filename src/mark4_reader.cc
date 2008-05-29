@@ -9,7 +9,7 @@ Mark4_reader(boost::shared_ptr<Data_reader> data_reader,
              unsigned char *mark4_block)
     : data_reader_(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
-    block_count_(0), N(N_) {
+    block_count_(0), DATA_RATE_(0), N(N_) {
   // fill the first mark4 block
   memmove(mark4_block, buffer, SIZE_MK4_FRAME*sizeof(unsigned char));
   int bytes_to_read = SIZE_MK4_FRAME*(N - sizeof(unsigned char));
@@ -42,7 +42,7 @@ Mark4_reader::goto_time(unsigned char *mark4_block, int64_t us_time) {
   }
 
   size_t read_n_bytes =
-    (us_time-get_current_time())*MARK4_TRACK_BIT_RATE*N/1000000 -
+    (us_time-get_current_time())*data_rate()/(8*1000000) -
     SIZE_MK4_FRAME*N;
 
   // Read an integer number of frames
@@ -67,8 +67,9 @@ Mark4_reader::goto_time(unsigned char *mark4_block, int64_t us_time) {
   }
 
   if (get_current_time() != us_time) {
-    DEBUG_MSG("time:        " << us_time);
+    DEBUG_MSG("time:         " << us_time);
     DEBUG_MSG("current time: " << get_current_time());
+    sleep(1);
     assert(get_current_time() == us_time);
   }
 
@@ -108,6 +109,7 @@ bool Mark4_reader::read_new_block(unsigned char *mark4_block) {
     }
     int result = data_reader_->get_bytes(to_read, (char *)buffer);
     if (result < 0) {
+      DEBUG_MSG("FAILURE IN READING");
       current_time_ += time_between_headers();
       return false;
     } else if (result == 0) {}
@@ -148,9 +150,9 @@ bool Mark4_reader::check_time_stamp(Mark4_header &header) {
     assert(delta_time > 0);
   }
   int64_t computed_TBR =
-    (data_reader_->data_counter()*1000000/(N*delta_time));
+    (data_reader_->data_counter()*1000000/(delta_time));
 
-  if (computed_TBR != MARK4_TRACK_BIT_RATE) {
+  if (computed_TBR != data_rate()) {
     return false;
   }
   return true;
@@ -287,7 +289,7 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
   return -1;
 }
 
-Mark4_reader_interface *
+Mark4_reader *
 get_mark4_reader(boost::shared_ptr<Data_reader> reader,
                  unsigned char *first_block) {
 
@@ -301,3 +303,14 @@ get_mark4_reader(boost::shared_ptr<Data_reader> reader,
   return new Mark4_reader(reader, n_tracks_8, first_block, first_block);
 }
 
+int Mark4_reader::data_rate() const {
+  assert(DATA_RATE_ > 0);
+  return DATA_RATE_;
+}
+
+void 
+Mark4_reader::set_parameters(const Input_node_parameters &input_node_param) {
+  int tbr = input_node_param.track_bit_rate;
+  DATA_RATE_ = (tbr * N * 8);
+  assert(DATA_RATE_ > 0);
+}

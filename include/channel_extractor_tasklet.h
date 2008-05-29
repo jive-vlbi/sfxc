@@ -40,7 +40,7 @@ public:
   typedef Types::Channel_buffer_element        Output_buffer_element;
   typedef boost::shared_ptr<Output_buffer>     Output_buffer_ptr;
 
-  Channel_extractor_tasklet(int N);
+  Channel_extractor_tasklet(int samples_per_block, int N);
   virtual ~Channel_extractor_tasklet();
 
   /// For tasklet
@@ -76,6 +76,7 @@ private:
 
   // Size of one input word in bytes (#tracks/8)
   const int N;
+  const int samples_per_block;
 
 #ifdef RUNTIME_STATISTIC
   QOS_MonitorSpeed monitor_;

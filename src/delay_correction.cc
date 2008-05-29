@@ -29,7 +29,7 @@ Delay_correction::~Delay_correction() {
   int N = number_channels();
   int numiterations = total_ffts;
   double time = delay_timer.measured_time()*1000000;
-  DEBUG_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
+  PROGRESS_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
 #endif
 }
 
