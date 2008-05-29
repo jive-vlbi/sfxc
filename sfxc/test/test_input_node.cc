@@ -29,7 +29,7 @@
 #include "data_writer_file.h"
 #include "data_reader_file.h"
 #include "data_reader_tcp.h"
-#include "channel_extractor_mark4.h"
+#include "channel_extractor_interface.h"
 #include "utils.h"
 
 #include "abstract_manager_node.h"

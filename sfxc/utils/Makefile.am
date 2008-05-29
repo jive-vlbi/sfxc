@@ -51,8 +51,8 @@ print_headers_SOURCES = \
   ../src/log_writer_cout.cc \
   ../src/data_reader.cc \
   ../src/data_reader_file.cc \
-  ../src/mark4_reader.cc \
-  ../src/mark4_header.cc \
+  ../src/mark5a_reader.cc \
+  ../src/mark5a_header.cc \
   ../src/channel_extractor_brute_force.cc \
   ../src/utils.cc \
   ../src/control_parameters.cc

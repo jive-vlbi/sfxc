@@ -72,7 +72,6 @@ int32_t Input_node::get_time_stamp() {
   return input_node_tasklet->get_current_time()/1000;
 }
 
-int mark4_time=0;
 void Input_node::start() {
   while (status != END_NODE) {
     switch (status) {

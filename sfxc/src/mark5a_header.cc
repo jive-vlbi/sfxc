@@ -1,18 +1,18 @@
-#include "mark4_header.h"
+#include "mark5a_header.h"
 #include "backtrace.h"
 
-const int Mark4_header::microsecond_offset[] = {
+const int Mark5a_header::microsecond_offset[] = {
       0, 250, 500, 750, /*invalid*/-1, 0, 250, 500, 750, /*invalid*/-1
     };
 
 
 
-Mark4_header::Mark4_header(int N_) : header_(NULL), N(N_) {
+Mark5a_header::Mark5a_header(int N_) : header_(NULL), N(N_) {
   assert(N_ > 0);
 }
 
 
-void Mark4_header::set_header(unsigned char* hdr) {
+void Mark5a_header::set_header(unsigned char* hdr) {
   if (hdr == NULL) 
     std::cout << "Backtrace: " << Backtrace() << std::endl;
   assert(hdr != NULL);
@@ -20,7 +20,7 @@ void Mark4_header::set_header(unsigned char* hdr) {
 }
 
 
-bool Mark4_header::check_header() {
+bool Mark5a_header::check_header() {
   // Check for a valid header
   assert(header_ != NULL);
   if (!is_valid())
@@ -32,7 +32,7 @@ bool Mark4_header::check_header() {
 
 
 
-bool Mark4_header::is_valid() {
+bool Mark5a_header::is_valid() {
   for (size_t i=64*N; i<96*N; i++) {
     assert((unsigned char)(-1)^(unsigned char)(0) == (unsigned char)(-1));
     if (header_[i] != (unsigned char)(-1)) {
@@ -49,47 +49,47 @@ bool Mark4_header::is_valid() {
 }
 
 
-int Mark4_header::nTracks() {
+int Mark5a_header::nTracks() {
   return 8*N;
 }
 
 
-int Mark4_header::year(int track) {
+int Mark5a_header::year(int track) {
   assert((track >= 0) && (track < (int)N*8));
   return 2000 + BCD(96+ 0, track);
 }
 
 
-int Mark4_header::day(int track) {
+int Mark5a_header::day(int track) {
   return BCD(96+ 4, track)*100 +
          BCD(96+ 8, track)*10 +
          BCD(96+12, track);
 }
 
 
-int Mark4_header::hour(int track) {
+int Mark5a_header::hour(int track) {
   return BCD(96+16, track)*10 + BCD(96+20, track);
 }
 
 
-int Mark4_header::minute(int track) {
+int Mark5a_header::minute(int track) {
   return BCD(96+24, track)*10 + BCD(96+28, track);
 }
 
 
-int Mark4_header::second(int track) {
+int Mark5a_header::second(int track) {
   return BCD(96+32, track)*10 + BCD(96+36, track);
 }
 
 
-int Mark4_header::milisecond(int track) {
+int Mark5a_header::milisecond(int track) {
   int unit = BCD(96+48, track);
   assert(unit != 4);
   assert(unit != 9);
   return BCD(96+40, track)*100 + BCD(96+44, track)*10 + unit;
 }
 
-int Mark4_header::microsecond(int track, int milisec) {
+int Mark5a_header::microsecond(int track, int milisec) {
   int unit = milisec%10;
   assert(unit != 4);
   assert(unit != 9);
@@ -97,26 +97,26 @@ int Mark4_header::microsecond(int track, int milisec) {
 }
 
 
-int Mark4_header::headstack(int track) {
+int Mark5a_header::headstack(int track) {
   return 2*get_bit(32,track) + get_bit(33,track);
 }
 
-int Mark4_header::track(int track) {
+int Mark5a_header::track(int track) {
   return
     10*(2*get_bit(34,track) + get_bit(35,track)) +
     BCD(36,track);
 }
 
-bool Mark4_header::is_sign(int track) {
+bool Mark5a_header::is_sign(int track) {
   return (get_bit(41, track) == 0);
 }
 
-bool Mark4_header::is_magn(int track) {
+bool Mark5a_header::is_magn(int track) {
   return (get_bit(41, track) == 1);
 }
 
 
-int Mark4_header::find_track(int headstack_, int track_) {
+int Mark5a_header::find_track(int headstack_, int track_) {
   for (int i=0; i<nTracks(); i++) {
     if ((headstack(i) == headstack_) && (track(i) == track_)) {
       return i;
@@ -128,7 +128,7 @@ int Mark4_header::find_track(int headstack_, int track_) {
 
 
 
-bool Mark4_header::checkCRC() {
+bool Mark5a_header::checkCRC() {
   unsigned char crcBlock[12*N];
 
   /* Init CRC generator to all zeroes. */
@@ -168,7 +168,7 @@ bool Mark4_header::checkCRC() {
 }
 
 
-void Mark4_header::recomputeCRC() {
+void Mark5a_header::recomputeCRC() {
   unsigned char crcBlock[12];
 
   /* Init CRC generator to all zeroes. */
@@ -205,7 +205,7 @@ void Mark4_header::recomputeCRC() {
 
 
 template <class Type>
-void Mark4_header::crc12(Type *crcBlock,
+void Mark5a_header::crc12(Type *crcBlock,
                          Type *data,
                          int datawords) {
   assert(sizeof(Type) == N);
@@ -241,7 +241,7 @@ void Mark4_header::crc12(Type *crcBlock,
 
 
 int
-Mark4_header::BCD(int word, unsigned int track) {
+Mark5a_header::BCD(int word, unsigned int track) {
   assert(track<8*N);
   int result = get_bit(word,track)*8 +
                get_bit(word+1,track)*4 +
@@ -255,7 +255,7 @@ Mark4_header::BCD(int word, unsigned int track) {
 
 
 int
-Mark4_header::get_time_in_ms(int track) {
+Mark5a_header::get_time_in_ms(int track) {
   int result =
     milisecond(track) +
     1000*(second(track) +
@@ -267,14 +267,14 @@ Mark4_header::get_time_in_ms(int track) {
 
 
 int64_t
-Mark4_header::get_time_in_us(int track) {
+Mark5a_header::get_time_in_us(int track) {
   int64_t time_in_ms = get_time_in_ms(track);
   return 1000*time_in_ms + microsecond(track, time_in_ms);
 }
 
 
 std::string
-Mark4_header::get_time_str(int track) {
+Mark5a_header::get_time_str(int track) {
   char time_str[40];
   snprintf(time_str,40, "%04dy%03dd%02dh%02dm%02ds%03dms%03dus",
            year(track),
@@ -289,7 +289,7 @@ Mark4_header::get_time_str(int track) {
 
 
 Log_writer &
-Mark4_header::print_binary_header(Log_writer &writer) {
+Mark5a_header::print_binary_header(Log_writer &writer) {
   for (int i=0; i<180; i++) {
     for (size_t track=0; track<N*8; track++) {
       writer << get_bit(i,track);
@@ -302,7 +302,7 @@ Mark4_header::print_binary_header(Log_writer &writer) {
 
 
 
-const char *Mark4_header::header_map[] = {
+const char *Mark5a_header::header_map[] = {
       "0hp15",
       "0hp14",
       "0hp13",

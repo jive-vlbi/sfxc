@@ -1,19 +1,19 @@
-#include "mark4_reader.h"
-#include "mark4_header.h"
+#include "mark5a_reader.h"
+#include "mark5a_header.h"
 #include "backtrace.h"
 
-Mark4_reader::
-Mark4_reader(boost::shared_ptr<Data_reader> data_reader,
+Mark5a_reader::
+Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
              int N_,
              unsigned char *buffer,
-             unsigned char *mark4_block)
+             unsigned char *mark5a_block)
     : data_reader_(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
     block_count_(0), DATA_RATE_(0), N(N_) {
-  // fill the first mark4 block
-  memmove(mark4_block, buffer, SIZE_MK4_FRAME*sizeof(unsigned char));
-  int bytes_to_read = SIZE_MK4_FRAME*(N - sizeof(unsigned char));
-  char *data = ((char *)mark4_block) + SIZE_MK4_FRAME*sizeof(unsigned char);
+  // fill the first mark5a block
+  memmove(mark5a_block, buffer, SIZE_MK5A_FRAME*sizeof(unsigned char));
+  int bytes_to_read = SIZE_MK5A_FRAME*(N - sizeof(unsigned char));
+  char *data = ((char *)mark5a_block) + SIZE_MK5A_FRAME*sizeof(unsigned char);
   while (bytes_to_read > 0) {
     int read = data_reader->get_bytes(bytes_to_read, data);
     assert(read >= 0);
@@ -21,8 +21,8 @@ Mark4_reader(boost::shared_ptr<Data_reader> data_reader,
     data += read;
   }
 
-  Mark4_header header(N);
-  header.set_header(mark4_block);
+  Mark5a_header header(N);
+  header.set_header(mark5a_block);
   header.check_header();
   start_day_ = header.day(0);
   start_time_ = header.get_time_in_us(0);
@@ -30,10 +30,10 @@ Mark4_reader(boost::shared_ptr<Data_reader> data_reader,
 }
 
 
-Mark4_reader::~Mark4_reader() {}
+Mark5a_reader::~Mark5a_reader() {}
 
 int64_t
-Mark4_reader::goto_time(unsigned char *mark4_block, int64_t us_time) {
+Mark5a_reader::goto_time(unsigned char *mark5a_block, int64_t us_time) {
   // Compute with times in microseconds to find the exact time of the data
   if (us_time < get_current_time()) {
     return get_current_time();
@@ -43,10 +43,10 @@ Mark4_reader::goto_time(unsigned char *mark4_block, int64_t us_time) {
 
   size_t read_n_bytes =
     (us_time-get_current_time())*data_rate()/(8*1000000) -
-    SIZE_MK4_FRAME*N;
+    SIZE_MK5A_FRAME*N;
 
   // Read an integer number of frames
-  assert(read_n_bytes %(SIZE_MK4_FRAME*N)==0);
+  assert(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
 
   // TODO having a blocking read would be nice.
   // as well as a goto function.
@@ -62,7 +62,7 @@ Mark4_reader::goto_time(unsigned char *mark4_block, int64_t us_time) {
   }
 
   // Need to read the data to check the header
-  if (!read_new_block(mark4_block)) {
+  if (!read_new_block(mark5a_block)) {
     DEBUG_MSG("Couldn't read data");
   }
 
@@ -76,12 +76,12 @@ Mark4_reader::goto_time(unsigned char *mark4_block, int64_t us_time) {
   return get_current_time();
 }
 
-int64_t Mark4_reader::get_current_time() {
+int64_t Mark5a_reader::get_current_time() {
   return current_time_;
 }
 
 
-std::string Mark4_reader::time_to_string(int64_t time) {
+std::string Mark5a_reader::time_to_string(int64_t time) {
   int milisecond = time % 1000;
   time /= 1000;
   int second = time % 60;
@@ -99,9 +99,9 @@ std::string Mark4_reader::time_to_string(int64_t time) {
 
 }
 
-bool Mark4_reader::read_new_block(unsigned char *mark4_block) {
-  int to_read = SIZE_MK4_FRAME*N;
-  unsigned char *buffer = (unsigned char *)mark4_block;
+bool Mark5a_reader::read_new_block(unsigned char *mark5a_block) {
+  int to_read = SIZE_MK5A_FRAME*N;
+  unsigned char *buffer = (unsigned char *)mark5a_block;
   do {
     if (eof()) {
       current_time_ += time_between_headers();
@@ -118,8 +118,8 @@ bool Mark4_reader::read_new_block(unsigned char *mark4_block) {
   } while (to_read > 0);
 
   // at least we read the complete header. Check it
-  Mark4_header header(N);
-  header.set_header(mark4_block);
+  Mark5a_header header(N);
+  header.set_header(mark5a_block);
   current_time_ = header.get_time_in_us(0);
 
   if (debug_level_ >= CHECK_PERIODIC_HEADERS) {
@@ -128,7 +128,7 @@ bool Mark4_reader::read_new_block(unsigned char *mark4_block) {
       header.check_header();
       check_time_stamp(header);
       if (debug_level_ >= CHECK_BIT_STATISTICS) {
-        if (!check_track_bit_statistics(mark4_block)) {
+        if (!check_track_bit_statistics(mark5a_block)) {
           std::cout << "Track bit statistics are off." << std::endl;
         }
       }
@@ -140,7 +140,7 @@ bool Mark4_reader::read_new_block(unsigned char *mark4_block) {
 
 
 
-bool Mark4_reader::check_time_stamp(Mark4_header &header) {
+bool Mark5a_reader::check_time_stamp(Mark5a_header &header) {
   int64_t time_in_us = header.get_time_in_us(0);
   int64_t delta_time =
     (header.day(0)-start_day_)*24*60*60*1000000 + time_in_us - start_time_;
@@ -160,20 +160,20 @@ bool Mark4_reader::check_time_stamp(Mark4_header &header) {
 
 
 bool
-Mark4_reader::check_track_bit_statistics(unsigned char *mark4_block) {
+Mark5a_reader::check_track_bit_statistics(unsigned char *mark5a_block) {
   double track_bit_statistics[N*8];
   for (int track=0; track<N*8; track++) {
     track_bit_statistics[track]=0;
   }
 
-  for (int i=160; i<SIZE_MK4_FRAME; i++) {
+  for (int i=160; i<SIZE_MK5A_FRAME; i++) {
     for (int track=0; track<N*8; track++) {
-      track_bit_statistics[track] += (mark4_block[i] >> track) &1;
+      track_bit_statistics[track] += (mark5a_block[i] >> track) &1;
     }
   }
 
   for (int track=0; track<N*8; track++) {
-    track_bit_statistics[track] /= SIZE_MK4_FRAME;
+    track_bit_statistics[track] /= SIZE_MK5A_FRAME;
     if ((track_bit_statistics[track] < .45) ||
         (track_bit_statistics[track] > .55)) {
       return false;
@@ -185,10 +185,10 @@ Mark4_reader::check_track_bit_statistics(unsigned char *mark4_block) {
 
 
 std::vector< std::vector<int> >
-Mark4_reader::get_tracks(const Input_node_parameters &input_node_param,
-                         unsigned char *mark4_block) {
-  Mark4_header header(N);
-  header.set_header(mark4_block);
+Mark5a_reader::get_tracks(const Input_node_parameters &input_node_param,
+                         unsigned char *mark5a_block) {
+  Mark5a_header header(N);
+  header.set_header(mark5a_block);
   assert(header.check_header());
 
   std::vector< std::vector<int> > result;
@@ -228,17 +228,17 @@ Mark4_reader::get_tracks(const Input_node_parameters &input_node_param,
   return result;
 }
 
-bool Mark4_reader::eof() {
+bool Mark5a_reader::eof() {
   return data_reader_->eof();
 }
 
 int find_start_of_header(boost::shared_ptr<Data_reader> reader,
                          unsigned char first_block[]) {
-  // first_block is an array of SIZE_MK4_FRAME bytes (8 is the smallest number of tracks).
+  // first_block is an array of SIZE_MK5A_FRAME bytes (8 is the smallest number of tracks).
   // We fill the first_block and then look for the header
   // if we don't find a header, read in another half block and continue.
-  size_t bytes_to_read = SIZE_MK4_FRAME/2;
-  char *data = (char *)first_block+SIZE_MK4_FRAME/2;
+  size_t bytes_to_read = SIZE_MK5A_FRAME/2;
+  char *data = (char *)first_block+SIZE_MK5A_FRAME/2;
   do {
     int read = reader->get_bytes(bytes_to_read, data);
     bytes_to_read -= read;
@@ -247,11 +247,11 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
 
   int nOnes=0, header_start=-1, nTracks8 = -1;
   for (int block=0; (block<16) && (header_start<0); block++) {
-    // Move the last half to the first half and read frameMk4/2 bytes:
-    memcpy(first_block, first_block+SIZE_MK4_FRAME/2, SIZE_MK4_FRAME/2);
+    // Move the last half to the first half and read frameMk5a/2 bytes:
+    memcpy(first_block, first_block+SIZE_MK5A_FRAME/2, SIZE_MK5A_FRAME/2);
 
-    size_t bytes_to_read = SIZE_MK4_FRAME/2;
-    char *data = (char*)first_block+SIZE_MK4_FRAME/2;
+    size_t bytes_to_read = SIZE_MK5A_FRAME/2;
+    char *data = (char*)first_block+SIZE_MK5A_FRAME/2;
     do {
       int read = reader->get_bytes(bytes_to_read, data);
       bytes_to_read -= read;
@@ -262,7 +262,7 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
     // the header contains 64 bits before the syncword and
     //                     64 bits after the syncword.
     // We skip those bytes since we want to find an entire syncword
-    for (int byte=0; (byte<SIZE_MK4_FRAME-64*8) && (header_start<0); byte++) {
+    for (int byte=0; (byte<SIZE_MK5A_FRAME-64*8) && (header_start<0); byte++) {
       if ((char)first_block[byte] == (char)(~0)) {
         nOnes ++;
       } else {
@@ -275,9 +275,9 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
             nTracks8 = nOnes/32;
 
             memmove(first_block, first_block+header_start,
-                    SIZE_MK4_FRAME-header_start);
+                    SIZE_MK5A_FRAME-header_start);
             reader->get_bytes(header_start,
-                              (char *)first_block+SIZE_MK4_FRAME-header_start);
+                              (char *)first_block+SIZE_MK5A_FRAME-header_start);
 
             return nTracks8;
           }
@@ -289,27 +289,27 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
   return -1;
 }
 
-Mark4_reader *
-get_mark4_reader(boost::shared_ptr<Data_reader> reader,
+Mark5a_reader *
+get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
                  unsigned char *first_block) {
 
   int n_tracks_8 = find_start_of_header(reader, first_block);
-  Mark4_header header(n_tracks_8);
+  Mark5a_header header(n_tracks_8);
   header.set_header(first_block);
   if (!header.checkCRC()) {
     assert(false);
     return NULL;
   }
-  return new Mark4_reader(reader, n_tracks_8, first_block, first_block);
+  return new Mark5a_reader(reader, n_tracks_8, first_block, first_block);
 }
 
-int Mark4_reader::data_rate() const {
+int Mark5a_reader::data_rate() const {
   assert(DATA_RATE_ > 0);
   return DATA_RATE_;
 }
 
 void 
-Mark4_reader::set_parameters(const Input_node_parameters &input_node_param) {
+Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
   int tbr = input_node_param.track_bit_rate;
   DATA_RATE_ = (tbr * N * 8);
   assert(DATA_RATE_ > 0);

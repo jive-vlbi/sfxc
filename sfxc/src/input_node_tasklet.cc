@@ -9,19 +9,19 @@
 
 #include "input_node_tasklet.h"
 #include "utils.h"
-#include "mark4_reader.h"
+#include "mark5a_reader.h"
 #include "monitor.h"
 
 Input_node_tasklet *
 get_input_node_tasklet_mark5a(boost::shared_ptr<Data_reader> reader) {
 
   // Maximal buffer size
-  unsigned char buffer[SIZE_MK4_FRAME*sizeof(uint64_t)];
+  unsigned char buffer[SIZE_MK5A_FRAME*sizeof(uint64_t)];
 
-  boost::shared_ptr<Mark4_reader> mark4_reader_ptr = 
-    boost::shared_ptr<Mark4_reader>(get_mark4_reader(reader, buffer));
+  boost::shared_ptr<Mark5a_reader> mark5a_reader_ptr = 
+    boost::shared_ptr<Mark5a_reader>(get_mark5a_reader(reader, buffer));
 
-  return new Input_node_tasklet(mark4_reader_ptr, buffer);
+  return new Input_node_tasklet(mark5a_reader_ptr, buffer);
 }
 
 
@@ -63,25 +63,25 @@ Input_node_tasklet::add_time_interval(int32_t start_time, int32_t stop_time) {
 }
 
 Input_node_tasklet::
-Input_node_tasklet(Mark4_reader_ptr_ mark4_reader_ptr,
+Input_node_tasklet(Mark5a_reader_ptr_ mark5a_reader_ptr,
                    unsigned char buffer[])
-    : mark4_reader_(NULL),
+    : mark5a_reader_(NULL),
     mark5b_reader_(NULL),
-    channel_extractor_(SIZE_MK4_FRAME, mark4_reader_ptr->N),
+    channel_extractor_(SIZE_MK5A_FRAME, mark5a_reader_ptr->N),
     did_work(true),
-    n_bytes_per_input_word(mark4_reader_ptr->N),
+    n_bytes_per_input_word(mark5a_reader_ptr->N),
     transport_type(MARK5A) {
 
-  mark4_reader_ = new Mark4_reader_tasklet(mark4_reader_ptr, buffer),
+  mark5a_reader_ = new Mark5a_reader_tasklet(mark5a_reader_ptr, buffer),
 
-  channel_extractor_.connect_to(mark4_reader_->get_output_buffer());
+  channel_extractor_.connect_to(mark5a_reader_->get_output_buffer());
 
   initialise();
 }
 
 Input_node_tasklet::
 Input_node_tasklet(Mark5b_reader_ptr_ mark5b_reader_ptr)
-    : mark4_reader_(NULL),
+    : mark5a_reader_(NULL),
     mark5b_reader_(NULL),
     channel_extractor_(N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME, sizeof(int32_t)),
     did_work(true),
@@ -115,13 +115,13 @@ void Input_node_tasklet::initialise() {
 
   compid.str("");
   monid.str("");
-  compid << inputid.str() << "_mark4reader";
+  compid << inputid.str() << "_mark5a_reader";
   monid << compid.str() << "_monitor_state";
-  mark4reader_state_.init(monid.str());
-  mark4reader_state_.add_property(inputid.str(), "is_a", "inputnode");
-  mark4reader_state_.add_property(inputid.str(), "has", compid.str() );
-  mark4reader_state_.add_property(compid.str(), "is_a", "mark4_reader");
-  mark4reader_state_.add_property(compid.str(), "has", monid.str() );
+  mark5a_reader_state_.init(monid.str());
+  mark5a_reader_state_.add_property(inputid.str(), "is_a", "inputnode");
+  mark5a_reader_state_.add_property(inputid.str(), "has", compid.str() );
+  mark5a_reader_state_.add_property(compid.str(), "is_a", "mark5a_reader");
+  mark5a_reader_state_.add_property(compid.str(), "has", monid.str() );
   dotask_state_.add_property(tt.str(), "contains", monid.str() );
 
 
@@ -170,7 +170,7 @@ void Input_node_tasklet::initialise() {
 
 Input_node_tasklet::~Input_node_tasklet() {
 #if PRINT_TIMER
-  PROGRESS_MSG("Time mar4_reader:       " << mark4_reader_timer_.measured_time());
+  PROGRESS_MSG("Time mar4_reader:       " << mark5a_reader_timer_.measured_time());
   PROGRESS_MSG("Time integer_delay:     " << integer_delay_timer_.measured_time());
   PROGRESS_MSG("Time channel_extractor: " << channel_extractor_timer_.measured_time());
   PROGRESS_MSG("Time data_writers:      " << data_writers_timer_.measured_time());
@@ -186,15 +186,15 @@ do_task() {
 
   RT_STAT( dotask_state_.begin_measure() );
 
-  mark4_reader_timer_.resume();
+  mark5a_reader_timer_.resume();
   if (transport_type == MARK5A) {
-    assert(mark4_reader_ != NULL);
-    if (mark4_reader_->has_work()) {
+    assert(mark5a_reader_ != NULL);
+    if (mark5a_reader_->has_work()) {
       
-      RT_STAT( mark4reader_state_.begin_measure() );
-      assert(mark4_reader_ != NULL);
-      mark4_reader_->do_task();
-      RT_STAT(mark4reader_state_.end_measure(1) );
+      RT_STAT( mark5a_reader_state_.begin_measure() );
+      assert(mark5a_reader_ != NULL);
+      mark5a_reader_->do_task();
+      RT_STAT(mark5a_reader_state_.end_measure(1) );
       
       did_work = true;
     } else {
@@ -232,7 +232,7 @@ do_task() {
   } else {
     assert(false);
   }
-  mark4_reader_timer_.stop();
+  mark5a_reader_timer_.stop();
 
 
   channel_extractor_timer_.resume();
@@ -296,9 +296,9 @@ Input_node_tasklet::
 set_parameters(const Input_node_parameters &input_node_param,
                int node_nr) {
   if (transport_type == MARK5A) {
-    mark4_reader_->set_parameters(input_node_param);
+    mark5a_reader_->set_parameters(input_node_param);
     channel_extractor_.set_parameters(input_node_param,
-                                      mark4_reader_->get_tracks(input_node_param));
+                                      mark5a_reader_->get_tracks(input_node_param));
   } else if (transport_type == MARK5B) {
     mark5b_reader_->set_parameters(input_node_param);
     channel_extractor_.set_parameters(input_node_param,
@@ -335,9 +335,9 @@ set_time_interval(int32_t start_time, int32_t stop_time) {
   assert(!integer_delay_.empty());
   assert(integer_delay_[0] != NULL);
   if (transport_type == MARK5A) {
-    assert(mark4_reader_ != NULL);
-    new_time = mark4_reader_->goto_time(start_time);
-    mark4_reader_->set_stop_time(stop_time);
+    assert(mark5a_reader_ != NULL);
+    new_time = mark5a_reader_->goto_time(start_time);
+    mark5a_reader_->set_stop_time(stop_time);
   } else {
     assert(transport_type == MARK5B);
     assert(mark5b_reader_ != NULL);
@@ -355,8 +355,8 @@ int
 Input_node_tasklet::
 get_current_time() {
   if (transport_type == MARK5A) {
-    assert(mark4_reader_ != NULL);
-    return mark4_reader_->get_current_time();
+    assert(mark5a_reader_ != NULL);
+    return mark5a_reader_->get_current_time();
   } else {
     assert(mark5b_reader_ != NULL);
     return mark5b_reader_->get_current_time();
@@ -366,8 +366,8 @@ int
 Input_node_tasklet::
 get_stop_time() {
   if (transport_type == MARK5A) {
-    assert(mark4_reader_ != NULL);
-    return mark4_reader_->get_stop_time();
+    assert(mark5a_reader_ != NULL);
+    return mark5a_reader_->get_stop_time();
   } else {
     assert(mark5b_reader_ != NULL);
     return mark5b_reader_->get_stop_time();

@@ -10,7 +10,7 @@ Mark5b_reader_tasklet(Mark5b_reader_ptr reader)
   mark5b_reader_ = reader;
   current_time = mark5b_reader_->get_current_time();
   allocate_element();
-  mark5b_reader_->read_new_block(&input_element_->mk4_data[0]);
+  mark5b_reader_->read_new_block(&input_element_->mark5_data[0]);
   
   input_element_->start_time = current_time;
 
@@ -57,7 +57,7 @@ do_task() {
 
     current_time += mark5b_reader_->time_between_headers();
   } else {
-    if (!mark5b_reader_->read_new_block(&input_element_->mk4_data[0])) {
+    if (!mark5b_reader_->read_new_block(&input_element_->mark5_data[0])) {
 #ifdef SFXC_INVALIDATE_SAMPLES
       input_element_->invalid_bytes_begin = 0;
       input_element_->nr_invalid_bytes = SIZE_MK5B_FRAME*SIZE_MK5B_WORD;
@@ -92,12 +92,12 @@ Mark5b_reader_tasklet::
 allocate_element() {
   assert(!memory_pool_.empty());
   input_element_ = memory_pool_.allocate();
-  std::vector<value_type> &vector_ = input_element_->mk4_data;
+  std::vector<value_type> &vector_ = input_element_->mark5_data;
   if (vector_.size() != 
       (N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME*SIZE_MK5B_WORD)) {
     vector_.resize(N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME*SIZE_MK5B_WORD);
   }
-  assert(input_element_->mk4_data.size() > 0);
+  assert(input_element_->mark5_data.size() > 0);
 }
 int
 Mark5b_reader_tasklet::
@@ -105,7 +105,7 @@ goto_time(int ms_time) {
   int64_t us_time = int64_t(1000)*ms_time;
 
   int64_t new_time =
-    mark5b_reader_->goto_time((unsigned char *)&input_element_->mk4_data[0],
+    mark5b_reader_->goto_time((unsigned char *)&input_element_->mark5_data[0],
                              us_time);
   current_time = mark5b_reader_->get_current_time();
   input_element_->start_time = current_time;
@@ -140,7 +140,7 @@ void
 Mark5b_reader_tasklet::
 push_element() {
   // Mark the mark5b header as invalid , if no invalid sequence is set yet
-  assert(input_element_->mk4_data.size() > 0);
+  assert(input_element_->mark5_data.size() > 0);
   if (input_element_->invalid_bytes_begin < 0) {
     input_element_->invalid_bytes_begin = 0;
     input_element_->nr_invalid_bytes = 0;

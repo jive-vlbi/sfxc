@@ -33,9 +33,9 @@
 #endif // PRINT_TIMER
 
 /// Constants
-#define SIZE_MK4_FRAME           20000
-// Size of a mark4 header
-#define SIZE_MK4_HEADER          160
+#define SIZE_MK5A_FRAME           20000
+// Size of a mark5a header
+#define SIZE_MK5A_HEADER          160
 
 // Size of a Mark5B frame
 #define SIZE_MK5B_FRAME           2500

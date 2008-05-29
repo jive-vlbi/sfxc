@@ -1,7 +1,7 @@
-#include "mark4_reader.h"
+#include "mark5a_reader.h"
 #include "data_reader_file.h"
 
-char    *filename = "file:///data4/sfxc/ftp/2007_june/f07m2/mk4/f07m2_cm_no0001.m5a";
+char    *filename = "file:///data4/sfxc/ftp/2007_june/f07m2/mk5/f07m2_cm_no0001.m5a";
 int64_t start_time = 58078000000;
 
 const FLOAT sample_value_ms[] = {
@@ -14,8 +14,8 @@ void print_tracks(Type /* No name */,
                   char *buffer,
                   Control_parameters &parameters,
                   std::ostream &out) {
-  Type block[SIZE_MK4_FRAME];
-  Mark4_reader<Type> mark4_reader(reader, buffer, &block[0]);
+  Type block[SIZE_MK5A_FRAME];
+  Mark5a_reader<Type> mark5a_reader(reader, buffer, &block[0]);
 
 
   std::string station = parameters.station(0);
@@ -27,7 +27,7 @@ void print_tracks(Type /* No name */,
   std::vector<int> tracks;
   Input_node_parameters input_parameters =
     parameters.get_input_node_parameters(mode, station);
-  tracks = mark4_reader.get_tracks(input_parameters, block)[0];
+  tracks = mark5a_reader.get_tracks(input_parameters, block)[0];
 
   std::cerr << "Tracks: ";
   for (size_t i=0; i<tracks.size(); i++) {
@@ -38,7 +38,7 @@ void print_tracks(Type /* No name */,
   int fan_out = tracks.size()/2;
   std::cerr << "fan_out: " << fan_out << std::endl;
   for (int block_nr=0; block_nr<100; block_nr++) {
-    for (size_t i=0; i<SIZE_MK4_FRAME; i++) {
+    for (size_t i=0; i<SIZE_MK5A_FRAME; i++) {
       for (int j = 0; j<fan_out; j++) {
         std::cout << ((block[i] >> tracks[j*2]) & 1)
         << ((block[i] >> tracks[j*2+1]) & 1)
@@ -49,7 +49,7 @@ void print_tracks(Type /* No name */,
         out << sample_value_ms[sample] << std::endl;
       }
     }
-    mark4_reader.read_new_block(block);
+    mark5a_reader.read_new_block(block);
   }
 }
 
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
   std::cerr << "Filename: " << filename << std::endl;
 
   boost::shared_ptr<Data_reader> data_reader(new Data_reader_file(filename));
-  char buffer[SIZE_MK4_FRAME];
+  char buffer[SIZE_MK5A_FRAME];
   int n_tracks = find_start_of_header(data_reader, buffer);
 
 

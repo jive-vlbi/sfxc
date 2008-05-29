@@ -133,7 +133,7 @@ Integer_delay_correction_per_channel::do_task() {
         output_element.nr_invalid_samples = 0;
 
         // Simplification because the only invalid samples are missing data 
-        // or mark4-headers
+        // or mark5-headers
         assert(input_element.invalid_samples_begin == 0);
 
         // start of the invalid data is the begin of the second data block

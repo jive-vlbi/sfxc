@@ -12,12 +12,12 @@
 #include "channel_extractor_5.h"
 #include "channel_extractor_fast.h"
 
-#include "mark4_header.h"
+#include "mark5a_header.h"
 
 #define USE_EXTRACTOR_5
 
 // Increase the size of the output_memory_pool_ to allow more buffering
-// (8M/SIZE_MK4_FRAME=) 400 input blocks is 1 second of data
+// (8M/SIZE_MK5A_FRAME=) 400 input blocks is 1 second of data
 Channel_extractor_tasklet::
 Channel_extractor_tasklet(int samples_per_block, int N_)
     : output_memory_pool_(400*MAX_SUBBANDS),
@@ -73,7 +73,7 @@ Channel_extractor_tasklet::do_task() {
   Input_buffer_element input_element = input_buffer_->front();
 
   // The number of input samples to process
-  int n_input_samples = input_element.data().mk4_data.size();
+  int n_input_samples = input_element.data().mark5_data.size();
   assert(n_input_samples == samples_per_block*N);
 
   // Number of bytes in the output chunk
@@ -102,7 +102,7 @@ Channel_extractor_tasklet::do_task() {
         (unsigned char *)&(output_elements[subband].channel_data.data().data[0]);
 
       // Copy the invalid-data members
-      // Mark4-files have headers, which should be invalidated
+      // Mark5a-files have headers, which should be invalidated
       assert(input_element->invalid_bytes_begin >= 0);
       output_elements[subband].invalid_samples_begin =
         input_element->invalid_bytes_begin*fan_out/bits_per_sample;
@@ -113,7 +113,7 @@ Channel_extractor_tasklet::do_task() {
   }
 
   // Channel extract
-  ch_extractor->extract((unsigned char *) &input_element.data().mk4_data[0],
+  ch_extractor->extract((unsigned char *) &input_element.data().mark5_data[0],
                         output_positions);
 
   { // release the buffers
