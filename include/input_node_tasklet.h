@@ -10,7 +10,7 @@
 #include "delay_table_akima.h"
 #include "control_parameters.h"
 
-#include "mark4_reader_tasklet.h"
+#include "mark5a_reader_tasklet.h"
 #include "mark5b_reader_tasklet.h"
 #include "integer_delay_correction_per_channel.h"
 #include "void_consuming_tasklet.h"
@@ -31,16 +31,16 @@ enum TRANSPORT_TYPE {
 class Input_node_tasklet : public Tasklet {
 public:
   typedef boost::shared_ptr<Data_writer>             Data_writer_ptr_;
-  typedef boost::shared_ptr<Mark4_reader>            Mark4_reader_ptr_;
-  typedef Mark4_reader_tasklet                       Mark4_reader_tasklet_;
+  typedef boost::shared_ptr<Mark5a_reader>            Mark5a_reader_ptr_;
+  typedef Mark5a_reader_tasklet                       Mark5a_reader_tasklet_;
   typedef boost::shared_ptr<Mark5b_reader>           Mark5b_reader_ptr_;
   typedef Mark5b_reader_tasklet                      Mark5b_reader_tasklet_;
   typedef Channel_extractor_tasklet                  Channel_extractor_tasklet_;
   typedef Integer_delay_correction_per_channel       Integer_delay_tasklet_;
   typedef Input_node_data_writer_tasklet             Data_writer_tasklet_;
 
-  // The mark4-reader and the first data block
-  Input_node_tasklet(Mark4_reader_ptr_ mark4_reader_ptr,
+  // The mark5a-reader and the first data block
+  Input_node_tasklet(Mark5a_reader_ptr_ mark5a_reader_ptr,
                      unsigned char buffer[]);
 
   Input_node_tasklet(Mark5b_reader_ptr_ mark5b_reader);
@@ -83,7 +83,7 @@ public:
 
 private:
   //  std::list<Time_slice>                time_slices_;
-  Mark4_reader_tasklet_                *mark4_reader_;
+  Mark5a_reader_tasklet_                *mark5a_reader_;
   Mark5b_reader_tasklet_               *mark5b_reader_;
   Channel_extractor_tasklet_           channel_extractor_;
 
@@ -94,7 +94,7 @@ private:
 
   bool did_work;
 
-  Timer mark4_reader_timer_, integer_delay_timer_, channel_extractor_timer_, data_writers_timer_;
+  Timer mark5a_reader_timer_, integer_delay_timer_, channel_extractor_timer_, data_writers_timer_;
 
   Delay_table_akima delay_table;
 
@@ -103,7 +103,7 @@ private:
 
 
 #ifdef RUNTIME_STATISTIC
-  QOS_MonitorSpeed mark4reader_state_;
+  QOS_MonitorSpeed mark5areader_state_;
   QOS_MonitorSpeed chex_state_;
   QOS_MonitorSpeed integerdelay_state_;
   QOS_MonitorSpeed outputwriter_state_;

@@ -7,18 +7,18 @@
  *
  */
 
-#ifndef MARK4_HEADER_H
-#define MARK4_HEADER_H
+#ifndef MARK5A_HEADER_H
+#define MARK5A_HEADER_H
 
 #include <assert.h>
 
 #include "utils.h"
 
 /** Mark IV frame header in byte chunks, without parity bits. */
-class Mark4_header  {
+class Mark5a_header  {
 public:
   // N is the size of one input word in bytes
-  Mark4_header(int N);
+  Mark5a_header(int N);
 
   void set_header(unsigned char *header);
   bool check_header();
@@ -72,4 +72,4 @@ private:
   const unsigned int N;
 };
 
-#endif // MARK4_HEADER_H
+#endif // MARK5A_HEADER_H

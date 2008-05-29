@@ -9,7 +9,7 @@
  */
 
 #include "control_parameters.h"
-#include "channel_extractor_mark4.h"
+#include "channel_extractor_mark5a.h"
 #include "data_reader_file.h"
 #include "data_writer_file.h"
 #include "utils.h"
@@ -24,7 +24,7 @@ public:
   void goto_time(int64_t time);
   void write_block();
 private:
-  boost::shared_ptr<Channel_extractor_mark4> channel_extractor;
+  boost::shared_ptr<Channel_extractor_mark5a> channel_extractor;
   Input_node_parameters input_node_parameters;
   std::vector< boost::shared_ptr<Data_writer> >   output_writers;
 
@@ -124,8 +124,8 @@ Channel_extractor_tester(const std::string &input_filename,
   boost::shared_ptr<Data_reader>
   reader(new Data_reader_file(input_filename.c_str()));
 
-  channel_extractor = boost::shared_ptr<Channel_extractor_mark4>
-                      (new Channel_extractor_mark4(reader,
+  channel_extractor = boost::shared_ptr<Channel_extractor_mark5a>
+                      (new Channel_extractor_mark5a(reader,
                                                    /*random headers*/false));
   channel_extractor->set_input_node_parameters(input_node_parameters);
 
@@ -159,7 +159,7 @@ write_block() {
   int size = channel_extractor->get_bytes(buffer);
   for (size_t i=0; i<output_writers.size(); i++) {
     if (output_writers[i] != boost::shared_ptr<Data_writer>()) {
-      assert(size < 8*SIZE_MK4_FRAME);
+      assert(size < 8*SIZE_MK5A_FRAME);
       output_writers[i]->put_bytes(size, buffer[i]);
     }
   }

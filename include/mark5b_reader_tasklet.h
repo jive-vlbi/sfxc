@@ -24,11 +24,11 @@ class Mark5b_reader_tasklet : public Tasklet {
 public:
   typedef boost::shared_ptr< Mark5b_reader >    Mark5b_reader_ptr;
   typedef Input_node_types::value_type         value_type;
-  typedef Input_node_types::Mk4_memory_pool    Input_memory_pool;
-  typedef Input_node_types::Mk4_buffer_element Input_element;
-  typedef Input_node_types::Mk4_buffer         Output_buffer;
-  typedef Input_node_types::Mk4_buffer_element Output_buffer_element;
-  typedef Input_node_types::Mk4_buffer_ptr     Output_buffer_ptr;
+  typedef Input_node_types::Mark5_memory_pool    Input_memory_pool;
+  typedef Input_node_types::Mark5_buffer_element Input_element;
+  typedef Input_node_types::Mark5_buffer         Output_buffer;
+  typedef Input_node_types::Mark5_buffer_element Output_buffer_element;
+  typedef Input_node_types::Mark5_buffer_ptr     Output_buffer_ptr;
 
   Mark5b_reader_tasklet(Mark5b_reader_ptr mark5b_reader);
 

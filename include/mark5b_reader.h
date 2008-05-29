@@ -50,7 +50,6 @@ public:
 
   };
 
-  // unsigned char buffer[SIZE_MK4_FRAME] contains the beginning of a mark5b-frame
   Mark5b_reader(boost::shared_ptr<Data_reader> data_reader);
   virtual ~Mark5b_reader();
 

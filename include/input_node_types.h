@@ -19,34 +19,34 @@
 class Input_node_types {
 public:
   typedef unsigned char  value_type;
-  // Memory pool for Mark4 frames
-  struct Mk4_frame_data {
-    Mk4_frame_data() 
+  // Memory pool for Mark5 frames
+  struct Mark5_frame_data {
+    Mark5_frame_data() 
       : invalid_bytes_begin(-1), nr_invalid_bytes(-1), start_time(-1) {}
-    std::vector<value_type>        mk4_data;
+    std::vector<value_type>        mark5_data;
 
-    // The following two members are for the randomization of the mk4-header
+    // The following two members are for the randomization of the mark5-header
     // The number of the first invalid byte
     int invalid_bytes_begin;
-    // Number of invalid bytes in this mark4 block
+    // Number of invalid bytes in this mark5 block
     int nr_invalid_bytes;
 
-    // Start time of the mark4-block in microseconds from midnight
+    // Start time of the mark5-block in microseconds from midnight
     int64_t                        start_time;
   };
-  typedef Memory_pool< Mk4_frame_data >           Mk4_memory_pool;
-  typedef Mk4_memory_pool::Element                Mk4_memory_pool_element;
+  typedef Memory_pool< Mark5_frame_data >           Mark5_memory_pool;
+  typedef Mark5_memory_pool::Element                Mark5_memory_pool_element;
 
-  /// Buffer for mark4 data frames
-  typedef Mk4_memory_pool_element                 Mk4_buffer_element;
-  typedef Threadsafe_queue<Mk4_buffer_element>    Mk4_buffer;
-  typedef boost::shared_ptr<Mk4_buffer>           Mk4_buffer_ptr;
+  /// Buffer for mark5 data frames
+  typedef Mark5_memory_pool_element                 Mark5_buffer_element;
+  typedef Threadsafe_queue<Mark5_buffer_element>    Mark5_buffer;
+  typedef boost::shared_ptr<Mark5_buffer>           Mark5_buffer_ptr;
 
   // Memory pool for dechannelized data
   struct Channel_memory_pool_data {
     typedef unsigned char      value_type;
 
-    // The channel extracted from a mark4 frame
+    // The channel extracted from a mark5 frame
     std::vector<value_type> data;
   };
   typedef Memory_pool< Channel_memory_pool_data > Channel_memory_pool;
@@ -83,8 +83,8 @@ public:
     Channel_memory_pool_element channel_data;
 
     // If delay >= 0, then we print the header of the fft
-    // (otherwise the fft is split over two mark4-fft frames and we are 
-    //  processing the second mark4-block);
+    // (otherwise the fft is split over two mark5-fft frames and we are 
+    //  processing the second mark5-block);
 
     // Integer delay of samples within one byte
     char delay;

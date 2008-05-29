@@ -9,7 +9,7 @@
 
 
 
-/** Information about the mark4 tracks needed by the input node. **/
+/** Information about the mark5 tracks needed by the input node. **/
 class Input_node_parameters {
 public:
   Input_node_parameters()

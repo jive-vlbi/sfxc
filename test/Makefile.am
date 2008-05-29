@@ -7,7 +7,6 @@ check_PROGRAMS = \
   test_control_parameters \
   test_mpi \
   test_buffer \
-  test_time_slicer \
   test_transfer_control_parameters \
   test_data_reader_file \
   test_data_reader_mark5 \
@@ -28,7 +27,6 @@ TESTS           = \
   test_mpi.py \
   test_transfer_control_parameters.py \
   test_buffer \
-  test_time_slicer \
   test_data_reader_file \
   test_data_reader_mark5.py \
   test_mark5b_reader.py \
@@ -48,8 +46,8 @@ OBJ = ../src/utils.cc \
       ../src/channel_extractor_brute_force.cc \
       ../src/channel_extractor_fast.cc \
       ../src/channel_extractor_utils.cc \
-      ../src/mark4_reader.cc \
-      ../src/mark4_header.cc \
+      ../src/mark5a_reader.cc \
+      ../src/mark5a_header.cc \
       \
       ../src/data_reader.cc \
       ../src/data_reader_tcp.cc \
@@ -99,10 +97,6 @@ test_mpi_SOURCES = \
 
 test_buffer_SOURCES = \
   test_buffer.cc ../src/utils.cc
-
-test_time_slicer_SOURCES = \
-  test_time_slicer.cc \
-  ../src/data_writer.cc ../src/data_writer_file.cc ../src/utils.cc
 
 test_data_reader_file_SOURCES = \
   test_data_reader_file.cc ../src/data_reader.cc \
@@ -163,7 +157,7 @@ test_input_node_with_delay_correction_SOURCES = \
 do_channel_extractor_SOURCES = \
   do_channel_extractor.cc \
   ../src/utils.cc \
-  ../src/mark4_reader.cc \
+  ../src/mark5a_reader.cc \
   ../src/data_reader.cc \
   ../src/data_reader_file.cc \
   ../src/control_parameters.cc
