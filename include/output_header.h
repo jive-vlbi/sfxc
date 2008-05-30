@@ -15,10 +15,10 @@
 /*
   Schematic outline of the correlator output format.
   Author: Nico Kruithof
-
+ 
   -----------
   New Version
-
+ 
   ( # global header
     header_size (in bytes): int32_t
     char experiment[32];
@@ -45,10 +45,10 @@
       station_nr2 : uint8_t
       polarisation1 (polarisation for station 1) : unsigned char:1 (RCP: 0, LCP: 1)
       polarisation2 (polarisation for station 2) : unsigned char:1 (RCP: 0, LCP: 1)
-
+ 
       sideband     : unsigned char:1 (LSB: 0, USB: 1)
       frequency_nr : unsigned char:5 (sorted increasingly)
-
+ 
       (real: float,
        imag: float){number_channels times}
     ){number_correlations times}
@@ -59,7 +59,7 @@ struct Output_header_global {
   Output_header_global()
       : header_size(0),
       start_year(0), start_day(0), start_time(0),
-      number_channels(0), integration_time(0), polarisation_type(0) {
+  number_channels(0), integration_time(0), polarisation_type(0) {
     experiment[0] = '\0';
   }
 
@@ -100,10 +100,10 @@ struct Output_header_baseline {
   Output_header_baseline()
       : weight(-1), station_nr1(0), station_nr2(0),
       polarisation1(0), polarisation2(0),
-      sideband(0), frequency_nr(0) {}
-  int32_t weight;       // The number of good samples
-  uint8_t station_nr1;  // Station number in the vex-file
-  uint8_t station_nr2;  // Station number in the vex-file
+  sideband(0), frequency_nr(0) {}
+  int32_t weight;       ///< The number of good samples
+  uint8_t station_nr1;  ///< Station number in the vex-file
+  uint8_t station_nr2;  ///< Station number in the vex-file
 unsigned char polarisation1:
   1; // Polarisation for the first station
   // (RCP: 0, LCP: 1)

@@ -8,6 +8,7 @@ bin_PROGRAMS = create_delay_function \
                analyse_fringes \
                print_headers \
                produce_html_plotpage \
+               produce_html_diffpage \
                vex2ccf \
                generate_uvw_coordinates \
                plot_delay_table \
@@ -61,6 +62,16 @@ analyse_fringes_SOURCES = analyse_fringes.cc
 
 produce_html_plotpage_SOURCES = \
   produce_html_plotpage.cc \
+  fringe_info.cc \
+  ../src/control_parameters.cc \
+  ../src/log_writer.cc \
+  ../src/log_writer_cout.cc \
+  ../src/utils.cc \
+  ../src/output_header.cc \
+  gnuplot_i.cc
+
+produce_html_diffpage_SOURCES = \
+  produce_html_diffpage.cc \
   fringe_info.cc \
   ../src/control_parameters.cc \
   ../src/log_writer.cc \
