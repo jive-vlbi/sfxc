@@ -59,8 +59,12 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   single_data_reader_controller.cc \
   input_node_tasklet.cc \
   input_node_data_writer_tasklet.cc \
-  output_header.cc
+  output_header.cc \
+  svn_version.cc
+sfxc_DEPENDENCIES = update_svn_version svn_version.$(OBJEXT)
 
-sfxc.cc: svn_version.h
-svn_version.h:
-	echo "#define SVN_VERSION \"`svnversion -n ..`\"" > svn_version.h
+svn_version.cc: update_svn_version
+
+update_svn_version: 
+	echo "char *SVN_VERSION=\"`svnversion -n ..`\";" > svn_version.cc
+
