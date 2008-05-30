@@ -2,16 +2,18 @@
 
 #include "config.h"
 
-const FLOAT Delay_correction::maximal_phase_change = 0.2; // 5.7 degrees
-
-const FLOAT sample_value_ms[] = { -7, -2, 2, 7 };
-const FLOAT sample_value_m[]  = { -5, 5 };
+const FLOAT sample_value_ms[] = {
+                                  -7, -2, 2, 7
+                                };
+const FLOAT sample_value_m[]  = {
+                                  -5, 5
+                                };
 
 Delay_correction::Delay_correction()
     : output_buffer(Output_buffer_ptr(new Output_buffer())),
     output_memory_pool(10),
     current_time(-1),
-    delay_table_set(false) {
+delay_table_set(false) {
   // Bit2Float table initialization
   // For 1 bit samples:
   for (int i=0; i<256; i++) {
@@ -55,7 +57,7 @@ void Delay_correction::do_task() {
   if (n_ffts_per_integration == current_fft) {
     assert(current_time/correlation_parameters.integration_time !=
            (current_time+length_of_one_fft())/correlation_parameters.integration_time);
-    
+
     current_time =
       ((current_time+length_of_one_fft()) /
        correlation_parameters.integration_time)*
@@ -100,7 +102,7 @@ void Delay_correction::do_task() {
   output_buffer->push(output);
 }
 
-void Delay_correction::bit2float(const Input_buffer_element &input, 
+void Delay_correction::bit2float(const Input_buffer_element &input,
                                  FLOAT* output_buffer_) {
   FLOAT* output_buffer = output_buffer_;
   assert(correlation_parameters.bits_per_sample == 2);
@@ -127,6 +129,7 @@ void Delay_correction::bit2float(const Input_buffer_element &input,
            input->offset()*sizeof(FLOAT));
 
 #ifdef SFXC_INVALIDATE_SAMPLES
+
     { // zero out the invalid samples
       const int invalid_samples_begin = input->invalid_samples_begin;
       const int invalid_samples_end = invalid_samples_begin + input->nr_invalid_samples;
@@ -137,6 +140,7 @@ void Delay_correction::bit2float(const Input_buffer_element &input,
 #ifdef SFXC_CHECK_INVALID_SAMPLES
         assert(output_buffer_[i] == sample_value_ms[INVALID_PATTERN&3]);
 #endif
+
         output_buffer_[i] = 0;
       }
     }
@@ -222,88 +226,36 @@ void Delay_correction::fractional_bit_shift(FLOAT input[],
 
 void Delay_correction::fringe_stopping(FLOAT output[]) {
   const double mult_factor_phi = -sideband()*2.0*M_PI;
-  const double integer_mult_factor_phi = 
+  const double integer_mult_factor_phi =
     channel_freq() + sideband()*bandwidth()*0.5;
 
+  // Only compute the delay at integer microseconds
+  int n_recompute_delay = sample_rate()/1000000;
+
+  double phi, sinPhi, cosPhi;
   int64_t time = current_time;
 
-  int64_t delta_time = ((((int64_t)n_recompute_delay)*1000000)/sample_rate());
-  if (delta_time < 1)
-    delta_time = 1;
-  double phi, cosPhi=0, sinPhi=0, deltaCosPhi=0, deltaSinPhi=0;
-  // Initialise the end values
-
-  // Argument reduction
-  double phi_end = integer_mult_factor_phi * get_delay(time);
-  phi_end = mult_factor_phi*(phi_end-std::floor(phi_end));
-
-  double cosPhi_end, sinPhi_end;
-
-  // Compute sinPhi_end=sin(phi_end); cosPhi_end = cos(phi_end);
-#ifdef HAVE_SINCOS
-
-  sincos(phi_end, &sinPhi_end, &cosPhi_end);
-#else
-
-  sinPhi_end = sin(phi_end);
-  cosPhi_end = cos(phi_end);
-#endif
-
   for (int i=0; i<number_channels(); i++) {
-    if ((i % n_recompute_delay) == 0) {
-      phi = phi_end;
-      cosPhi = cosPhi_end;
-      sinPhi = sinPhi_end;
+    if ((i%n_recompute_delay)==0) {
+      phi = integer_mult_factor_phi * get_delay(time);
+      phi = mult_factor_phi*(phi-std::floor(phi));
 
-      // Argument reduction
-      phi_end = integer_mult_factor_phi * get_delay(time+delta_time);
-      phi_end = mult_factor_phi*(phi_end-std::floor(phi_end));
-
-      if (std::abs(phi_end-phi) < 0.4*maximal_phase_change) {
-        // Sampling is too dense
-        n_recompute_delay *= 2;
-        delta_time = (((int64_t)n_recompute_delay)*1000000)/sample_rate();
-
-        // Argument reduction
-        phi_end = integer_mult_factor_phi * get_delay(time+delta_time);
-        phi_end = mult_factor_phi*(phi_end-std::floor(phi_end));
-      }
-
-      while ((std::abs(phi_end-phi) > maximal_phase_change) &&
-             (n_recompute_delay >= 2*sample_rate()/1000000)) {
-        // Sampling is not dense enough
-        n_recompute_delay /= 2;
-        delta_time = (((int64_t)n_recompute_delay)*1000000)/sample_rate();
-
-        // Argument reduction
-        phi_end = integer_mult_factor_phi * get_delay(time+delta_time);
-        phi_end = mult_factor_phi*(phi_end-std::floor(phi_end));
-      }
-
-      time += delta_time;
-
-      // Compute sinPhi_end=sin(phi_end); cosPhi_end = cos(phi_end);
+      // Compute sinPhi=sin(phi); cosPhi = cos(phi);
 #ifdef HAVE_SINCOS
 
-      sincos(phi_end, &sinPhi_end, &cosPhi_end);
+      sincos(phi, &sinPhi, &cosPhi);
 #else
 
-      sinPhi_end = sin(phi_end);
-      cosPhi_end = cos(phi_end);
+      sinPhi = sin(phi);
+      cosPhi = cos(phi);
 #endif
 
-      deltaCosPhi = (cosPhi_end-cosPhi)/n_recompute_delay;
-      deltaSinPhi = (sinPhi_end-sinPhi)/n_recompute_delay;
-
-
+      time++;
     }
 
     // 7)subtract dopplers and put real part in Bufs for the current segment
     output[i] =
       frequency_buffer[i].real()*cosPhi - frequency_buffer[i].imag()*sinPhi;
-    cosPhi += deltaCosPhi;
-    sinPhi += deltaSinPhi;
-
   }
 }
 
@@ -342,8 +294,6 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
     //fs[jf]=sideband*(jf*dfr-0.5*GenPrms.get_bwfl()-GenPrms.get_foffset());
     freq_scale[i] = sideband()*(i*dfr-0.5*bandwidth());
   }
-
-  n_recompute_delay = sample_rate()/1000000;
 
   frequency_buffer.resize(number_channels());
 

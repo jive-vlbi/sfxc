@@ -89,11 +89,6 @@ private:
   std::vector<std::complex<FLOAT> > buffer;
 
   std::vector<FLOAT> freq_scale; // frequency scale for the fractional bit shift
-  // For fringe stopping we do a linear approximation
-  // maximal_phase_change is the maximal angle between two
-  // sample points
-  static const FLOAT maximal_phase_change; // 5.7 degrees
-  int n_recompute_delay;
 
   bool delay_table_set;
   Delay_table_akima   delay_table;
