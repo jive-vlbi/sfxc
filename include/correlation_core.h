@@ -7,6 +7,7 @@
 #include "data_writer.h"
 
 #include "timer.h"
+#include <fstream>
 
 class Correlation_core : public Tasklet {
 public:
@@ -99,6 +100,14 @@ private:
   // Needed for writing the progress messages
   int node_nr_;
   int current_integration;
+
+#ifdef SFXC_WRITE_STATS
+  // For plotting statistics on the height of the fringe and the phase
+  std::ofstream stats_out;
+  Aligned_vector<std::complex<FLOAT> >  backward_buffer;
+  FFTW_PLAN backward_plan_;
+#endif // SFXC_WRITE_STATS
+
 };
 
 #endif /*CORRELATION_CORE_H_*/

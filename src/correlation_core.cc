@@ -147,6 +147,16 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
                                 (FLOAT *)plan_input_buffer.buffer(),
                                 (FFTW_COMPLEX *)plan_output_buffer.buffer(),
                                 FFTW_MEASURE);
+
+#ifdef SFXC_WRITE_STATS
+    backward_buffer.resize(size_of_fft()/2+1);
+    backward_plan_ =
+      FFTW_PLAN_DFT_1D(size_of_fft()/2+1,
+                       reinterpret_cast<FFTW_COMPLEX*>(plan_output_buffer.buffer()),
+                       reinterpret_cast<FFTW_COMPLEX*>(&backward_buffer[0]),
+                       FFTW_BACKWARD,
+                       FFTW_ESTIMATE);
+#endif // SFXC_WRITE_STATS    
   }
 }
 
@@ -157,7 +167,7 @@ set_data_writer(boost::shared_ptr<Data_writer> writer_) {
 }
 
 bool Correlation_core::has_work() {
-  for (int i=0; i < number_input_streams_in_use(); i++) {
+  for (size_t i=0; i < number_input_streams_in_use(); i++) {
     if (input_buffers[i]->empty()) {
       return false;
     }
@@ -187,15 +197,15 @@ void Correlation_core::integration_initialise() {
 }
 
 void Correlation_core::integration_step() {
-  if ((int)input_elements.size() != number_input_streams_in_use()) {
+  if (input_elements.size() != number_input_streams_in_use()) {
     input_elements.resize(number_input_streams_in_use());
   }
-  for (int i=0; i<number_input_streams_in_use(); i++) {
+  for (size_t i=0; i<number_input_streams_in_use(); i++) {
     input_elements[i] = input_buffers[i]->front();
   }
 
   // Do the fft from time to frequency:
-  assert((int)frequency_buffer.size() == number_input_streams_in_use());
+  assert(frequency_buffer.size() == number_input_streams_in_use());
   for (size_t i=0; i<frequency_buffer.size(); i++) {
     assert((size_t)frequency_buffer[i].size() == (size_of_fft()/2+1));
 
@@ -213,7 +223,7 @@ void Correlation_core::integration_step() {
   }
 
   // do the correlation
-  for (int i=0; i < number_input_streams_in_use(); i++) {
+  for (size_t i=0; i < number_input_streams_in_use(); i++) {
     // Auto correlations
     std::pair<size_t,size_t> &stations = baselines[i];
     assert(stations.first == stations.second);
@@ -228,12 +238,64 @@ void Correlation_core::integration_step() {
     std::pair<size_t,size_t> &stations = baselines[i];
     assert(stations.first != stations.second);
     correlate_baseline
-    (/* in1 */ frequency_buffer[stations.first].buffer(),
-               /* in2 */ frequency_buffer[stations.second].buffer(),
-               /* out */ &accumulation_buffers[i][0]);
+      (/* in1 */ frequency_buffer[stations.first].buffer(),
+       /* in2 */ frequency_buffer[stations.second].buffer(),
+       /* out */ &accumulation_buffers[i][0]);
   }
 
-  for (int i=0; i<number_input_streams_in_use(); i++) {
+#ifdef SFXC_WRITE_STATS
+  {
+#ifndef SFXC_DETERMINISTIC
+    DEBUG_MSG("SFXC_WRITE_STATS only works with SFXC_DETERMINISTIC");
+    sleep(1);
+    assert(false);
+#endif
+
+    if (! stats_out.is_open()) {
+      char filename[80];
+      snprintf(filename, 80, "stats_%d.txt", RANK_OF_NODE);
+      stats_out.open(filename);
+    }
+    assert(stats_out.is_open());
+
+    // Reset buffer:
+    for (size_t i=0; i<size_of_fft()/2+1; i++) 
+      backward_buffer[i] = 0;
+
+    int baseline = number_input_streams_in_use();
+    std::pair<size_t,size_t> &stations = baselines[baseline];
+    correlate_baseline
+      (/* in1 */ frequency_buffer[stations.first].buffer(),
+       /* in2 */ frequency_buffer[stations.second].buffer(),
+       /* out */ &backward_buffer[0]);
+
+    // Hardcode the position of the fringe here
+    const int fringe_pos = 12;
+
+    FFTW_EXECUTE_DFT(backward_plan_,
+                     (FFTW_COMPLEX *)&backward_buffer[0],
+                     (FFTW_COMPLEX *)&backward_buffer[0]);
+    FLOAT fft_abs   = std::abs(backward_buffer[fringe_pos]);
+    FLOAT fft_phase = std::arg(backward_buffer[fringe_pos]);
+
+    FFTW_EXECUTE_DFT(backward_plan_,
+                     (FFTW_COMPLEX *)&accumulation_buffers[baseline][0],
+                     (FFTW_COMPLEX *)&backward_buffer[0]);
+    FLOAT integr_abs   = std::abs(backward_buffer[fringe_pos]);
+    FLOAT integr_phase = std::arg(backward_buffer[fringe_pos]);
+    int max_pos = 0;
+    for (size_t i=1; i<size_of_fft()/2+1; i++) {
+      if (std::abs(backward_buffer[i]) > std::abs(backward_buffer[max_pos]))
+        max_pos = i;
+    }
+
+    stats_out << fft_abs << " \t" << fft_phase << " \t"
+              << integr_abs << " \t" << integr_phase << " \t"
+              << max_pos << std::endl;
+  }
+#endif // SFXC_WRITE_STATS
+
+  for (size_t i=0; i<number_input_streams_in_use(); i++) {
     input_buffers[i]->pop();
     input_elements[i].release();
   }
