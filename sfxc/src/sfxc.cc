@@ -90,6 +90,10 @@ int main(int argc, char *argv[]) {
   if (rank == 0)
     std::cout << "Application compiled with: -DSFXC_DETERMINISTIC" << std::endl;
 #endif // SFXC_DETERMINISTIC
+#ifdef SFXC_WRITE_STATS
+  if (rank == 0)
+    std::cout << "Application compiled with: -DSFXC_WRITE_STATS" << std::endl;
+#endif // SFXC_WRITE_STATS
 #ifdef MT_SFXC_ENABLE
   if (rank == 0)
     std::cout << "Application compiled with: -DMT_SFXC_ENABLE" << std::endl;
