@@ -355,9 +355,9 @@ Fringe_info_container::print_html(const Vex &vex) {
           if (it->header.station_nr1 == it->header.station_nr2) {
             print_auto(index_html, *it);
           } else {
-            while (column < autos.size()) {
-              index_html << "<td></td>";
-              column ++;
+            if (column < autos.size()) {
+              index_html << "<td colspan='" << autos.size()-column << "'>Cross hands</td>";
+              column=autos.size();
             }
             print_cross(index_html, *it);
           }
@@ -504,7 +504,12 @@ print_cross(std::ostream &index_html,
     } else {
       snprintf(color, 7, "#%2X0000", 255-color_val);
     }
+    if (fringe_info.header.polarisation1 ==
+        fringe_info.header.polarisation2) {
     index_html << "<td bgcolor='" << color << "'>";
+    } else {
+    index_html << "<td>";
+    }
     index_html << "<A href = '" << filename_large << "' "
     << "OnMouseOver=\"show('" << filename << "');\">"
     << snr << "<br>"
