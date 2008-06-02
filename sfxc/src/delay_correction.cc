@@ -232,30 +232,38 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
   // Only compute the delay at integer microseconds
   int n_recompute_delay = sample_rate()/1000000;
 
-  double phi, sinPhi, cosPhi;
+  double phi, delta_phi, sin_phi, cos_phi;
   int64_t time = current_time;
+  phi = integer_mult_factor_phi * get_delay(time);
+  int floor_phi = (int)std::floor(phi);
+  phi = mult_factor_phi*(phi-floor_phi);
+
+  { // compute delta_phi
+    assert((number_channels()*1000000)%sample_rate() == 0);
+    double phi_end = integer_mult_factor_phi * 
+      get_delay(time + (number_channels()*1000000)/sample_rate());
+    phi_end = mult_factor_phi*(phi_end-floor_phi);
+    
+    delta_phi = (phi_end-phi)*n_recompute_delay/number_channels();
+  }
 
   for (int i=0; i<number_channels(); i++) {
+    // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     if ((i%n_recompute_delay)==0) {
-      phi = integer_mult_factor_phi * get_delay(time);
-      phi = mult_factor_phi*(phi-std::floor(phi));
-
-      // Compute sinPhi=sin(phi); cosPhi = cos(phi);
 #ifdef HAVE_SINCOS
-
-      sincos(phi, &sinPhi, &cosPhi);
+      
+      sincos(phi, &sin_phi, &cos_phi);
 #else
-
-      sinPhi = sin(phi);
-      cosPhi = cos(phi);
+      
+      sin_phi = sin(phi);
+      cos_phi = cos(phi);
 #endif
-
-      time++;
+      phi += delta_phi;
     }
 
     // 7)subtract dopplers and put real part in Bufs for the current segment
     output[i] =
-      frequency_buffer[i].real()*cosPhi - frequency_buffer[i].imag()*sinPhi;
+      frequency_buffer[i].real()*cos_phi - frequency_buffer[i].imag()*sin_phi;
   }
 }
 
