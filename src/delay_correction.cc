@@ -293,20 +293,9 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 
   assert((((int64_t)number_channels())*1000000000)%sample_rate() == 0);
 
-  //FLOAT dfr  = 1.0/(n2fftDC*tbs); // delta frequency
-  FLOAT dfr  = sample_rate()*1.0/number_channels(); // delta frequency
-  freq_scale.resize(number_channels()/2+1);
-
-  for (size_t i=0; i<freq_scale.size(); i++) {
-    //frequency scale in the segment
-    //fs[jf]=sideband*(jf*dfr-0.5*GenPrms.get_bwfl()-GenPrms.get_foffset());
-    freq_scale[i] = sideband()*(i*dfr-0.5*bandwidth());
-  }
-
-  frequency_buffer.resize(number_channels());
-
   if (prev_number_channels != number_channels()) {
-    //buffer.resize(number_channels());
+    frequency_buffer.resize(number_channels());
+
     Aligned_vector<FLOAT> input_buffer;
     input_buffer.resize(number_channels());
 
@@ -319,6 +308,7 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
                                 (FFTW_COMPLEX *)&frequency_buffer[0],
                                 FFTW_FORWARD,  FFTW_MEASURE);
   }
+  assert(frequency_buffer.size() == number_channels());
 
   n_ffts_per_integration =
     Control_parameters::nr_ffts_per_integration_slice(
