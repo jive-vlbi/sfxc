@@ -80,7 +80,7 @@ public:
       const uint8_t *in_pos = (const uint8_t *)in_data;
       unsigned char *out_pos = &(output_data[subband][0]);
       const uint8_t *table = &lookup_table[subband][0][0];
-      memset((void *)out_pos, 0, n_input_samples*fan_out/8+1);
+      memset((void *)out_pos, 0, n_input_samples*fan_out/8);
 
       for (int sample=0; sample<n_input_samples; sample+=samples_per_byte) {
         // samples_per_byte-1 times:
