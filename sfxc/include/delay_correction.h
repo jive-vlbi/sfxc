@@ -88,8 +88,6 @@ private:
   // buffer used for the plan
   std::vector<std::complex<FLOAT> > buffer;
 
-  std::vector<FLOAT> freq_scale; // frequency scale for the fractional bit shift
-
   bool delay_table_set;
   Delay_table_akima   delay_table;
 
