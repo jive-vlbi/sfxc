@@ -23,6 +23,18 @@
 #include "output_header.h"
 #include "fringe_info.h"
 
+bool copy_file(char *from, char *to) {
+  std::ifstream in(from);
+  if (!in.is_open()) return false;
+  std::ofstream out(to);
+  if (!out.is_open()) return false;
+
+  while (in.good())
+    out << (char) in.get();
+
+  return true;
+}
+
 int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG
   RANK_OF_NODE = 0;
@@ -69,9 +81,28 @@ int main(int argc, char *argv[]) {
   FILE *input = fopen(argv[2], "rb");
   assert(input != NULL);
 
+  char *output_dir = ".";
+  if (argc==4)
+    output_dir = argv[3];
+  char *vex_file;
+  
+  {
+    // Copy the vex-file:
+    char *from =argv[1];
+    // Basename might change from2, so we need to copy it
+    char from2[strlen(from)+1]; strcpy(from2, from);
+    char to[strlen(from)+strlen(output_dir)+2];
+    char *vex_file_temp = basename(from2);
+    vex_file = new char[strlen(vex_file_temp)+1];
+    strcpy(vex_file, vex_file_temp);
+    sprintf(to, "%s/%s", output_dir, vex_file);
+    copy_file(from, to);
+
+  }
+
   if (argc== 4) {
     // Goto the output directory
-    int err = chdir(argv[3]);
+    int err = chdir(output_dir);
     // Make sure it exists
     if (err != 0) {
       std::cout << "Could not go to directory " << argv[3] << std::endl;
@@ -86,7 +117,7 @@ int main(int argc, char *argv[]) {
   do {
     fringe_info.read_plots(!update);
 
-    fringe_info.print_html(vex);
+    fringe_info.print_html(vex, vex_file);
 
     std::cout << "Produced html page" << std::endl;
   } while (update);

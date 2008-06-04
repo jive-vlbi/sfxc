@@ -206,7 +206,7 @@ Fringe_info_container::read_plots(bool stop_at_eof) {
 }
 
 void
-Fringe_info_container::print_html(const Vex &vex) {
+Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
   // Array with the station names
   std::vector<std::string> stations;
 
@@ -239,6 +239,9 @@ Fringe_info_container::print_html(const Vex &vex) {
   << " = imageSrc;" << std::endl
   << "}" << std::endl
   << "//--></script>" << std::endl
+  << std::endl;
+
+  index_html << "<a href='" << vex_filename << "'>Vex file</a><br>"
   << std::endl;
 
   { // Print the table
