@@ -41,6 +41,10 @@ public:
   // Equality test
   bool operator==(const Delay_table_akima &other) const;
 
+  friend
+  std::ostream &operator<<(std::ostream &out,
+                           const Delay_table_akima &delay_table);
+
   //read the delay table, do some checks and
   //calculate coefficients for parabolic interpolation
   int open(const char *delayTableName);
@@ -66,5 +70,8 @@ private:
   gsl_spline *splineakima;
 };
 
+
+std::ostream &operator<<(std::ostream &out,
+                         const Delay_table_akima &delay_table);
 
 #endif // DELAY_TABLE_AKIMA_H

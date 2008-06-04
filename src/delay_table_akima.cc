@@ -165,3 +165,12 @@ int64_t Delay_table_akima::stop_time_scan() {
   assert(end_scan<times.size());
   return (int64_t)times[end_scan-1];
 }
+
+std::ostream &
+operator<<(std::ostream &out, const Delay_table_akima &delay_table) {
+  assert(delay_table.times.size() == delay_table.delays.size());
+  for (size_t i=0; i<delay_table.times.size(); i++) {
+    out << delay_table.times[i] << " \t" << delay_table.delays[i] << "\n";
+  }
+  return out;
+}
