@@ -49,7 +49,7 @@ public:
 
   void read_plots(bool stop_at_eof);
 
-  void print_html(const Vex &vex);
+  void print_html(const Vex &vex, char *vex_filename);
 
   const Fringe_info &get_first_plot() const;
   const Fringe_info &get_plot(const Output_header_baseline &baseline_header) const;
