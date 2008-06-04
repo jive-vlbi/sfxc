@@ -7,7 +7,6 @@ bin_PROGRAMS = create_delay_function \
                produce_fringe \
                analyse_fringes \
                print_headers \
-               print_delay \
                produce_html_plotpage \
                produce_html_diffpage \
                vex2ccf \
@@ -121,8 +120,3 @@ phase_plot_SOURCES = \
 make_anim_SOURCES = \
   make_anim.cc \
   gnuplot_i.cc
-
-print_delay_SOURCES = \
-  print_delay.cc \
-  ../src/delay_table_akima.cc \
-  ../src/utils.cc
