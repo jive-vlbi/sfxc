@@ -208,6 +208,7 @@ class AutomaticResize_policy : public Resize_policy {
    * accessible using  this Memory_pool
    ****************************************/
   typedef Buffer_element Element;
+  typedef Element        value_type             ;
 
   /*****************************************
    * Construct a Memory_pool object containing
@@ -242,6 +243,12 @@ class AutomaticResize_policy : public Resize_policy {
    * use an automatic resizing policy 
    *************************************/
   bool empty();
+
+  /************************************
+   * Return true if all elements are in
+   * the memory pool.
+   *************************************/
+  bool full();
 
   /************************************
   * Resize the memory_pool
@@ -439,12 +446,18 @@ void Memory_pool<T>::release(Element& element) {
 template<class T>
 bool Memory_pool<T>::empty() {
   RAIIMutex rc(m_freequeuecond);
-  return m_freequeue.size() == 0;
+  return m_freequeue.empty();
+}
+
+template<class T>
+bool Memory_pool<T>::full() {
+  RAIIMutex rc(m_freequeuecond);
+  return m_freequeue.size() == m_vectorelements.size();
 }
 
 template<class T>
 bool Memory_pool<T>::empty_no_lock() {
-  return m_freequeue.size() == 0;
+  return m_freequeue.empty();
 }
 
 
