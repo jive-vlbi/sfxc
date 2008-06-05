@@ -96,7 +96,7 @@ private:
   Output_header_global global_header;
 
   // Header of the last timeslice read;
-  Output_header_timeslice timeslice_header;
+  Output_header_timeslice first_timeslice_header, last_timeslice_header;
 
   // Arrays containing one fft
   fftwf_plan fftwf_plan_;
