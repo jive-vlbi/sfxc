@@ -10,13 +10,15 @@
 #ifndef OUTPUT_NODE_H
 #define OUTPUT_NODE_H
 
-#include <map>
-#include <queue>
-
 #include "node.h"
 #include "multiple_data_readers_controller.h"
 #include "single_data_writer_controller.h"
 #include "output_header.h"
+
+#include <memory_pool.h>
+
+#include <map>
+#include <queue>
 
 class Output_node;
 
@@ -46,12 +48,15 @@ private:
  **/
 class Output_node : public Node {
 public:
-  typedef Single_data_writer_controller::value_type output_value_type;
   typedef Multiple_data_readers_controller::value_type input_value_type;
   typedef std::map<int32_t, int>                    Input_stream_priority_map;
   typedef Input_stream_priority_map::value_type     Input_stream_priority_map_value;
   typedef Buffer<input_value_type>                  Input_buffer;
-  typedef Buffer<output_value_type>                 Output_buffer;
+
+  typedef Single_data_writer_controller::value_type  output_value_type;
+  typedef Single_data_writer_controller::Memory_pool Output_memory_pool;
+  typedef Single_data_writer_controller::Queue       Output_queue;
+  typedef Single_data_writer_controller::Queue_ptr   Output_queue_ptr;
 
   /** Manages the input from one correlator node.
    * The input stream is used to maintain the data
@@ -63,7 +68,7 @@ public:
     /** Fills the buffer with as much data as possible and returns the number of
      * bytes written.
      **/
-    int write_bytes(output_value_type &elem);
+    void write_bytes(output_value_type &elem);
     /** returns whether we reached the end of the current time slice
      **/
     bool end_of_slice();
@@ -112,7 +117,8 @@ private:
 
 
   // Output buffer:
-  boost::shared_ptr< Semaphore_buffer<output_value_type> > output_buffer;
+  Output_memory_pool                  output_memory_pool;
+  Output_queue_ptr                    output_queue;
 
   // Controllers:
   Output_node_controller              output_node_ctrl;

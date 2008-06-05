@@ -17,20 +17,31 @@
 #include "buffer2data_writer.h"
 #include "tcp_connection.h"
 
+#include <memory_pool.h>
+#include <threadsafe_queue.h>
+
 
 class Single_data_writer_controller : public Controller {
   typedef Single_data_writer_controller  Self;
 public:
-  typedef Buffer_element<char, 250000>     value_type;
-  typedef Buffer<value_type>               Buffer;
+  typedef Buffer_element_large<char, 250000>         data_type;
+  typedef Memory_pool<data_type>                     Memory_pool;
+  typedef Memory_pool::value_type                    pool_type;
+  struct value_type {
+    int       actual_size;
+    pool_type data;
+  };
+  typedef Threadsafe_queue<value_type>               Queue;
+  typedef boost::shared_ptr<Queue>                   Queue_ptr;
+  
 
   Single_data_writer_controller(Node &node);
   ~Single_data_writer_controller();
 
   Process_event_status process_event(MPI_Status &status);
 
-  boost::shared_ptr<Buffer> buffer();
-  void set_buffer(boost::shared_ptr<Buffer> buffer);
+  Queue_ptr queue();
+  void set_queue(Queue_ptr queue);
   boost::shared_ptr<Data_writer> get_data_writer(int i);
 private:
   void set_data_writer(int streamnr, boost::shared_ptr<Data_writer> writer);
