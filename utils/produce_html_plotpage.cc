@@ -27,12 +27,11 @@
 
 bool file_exists(char *filename) {
   struct stat stFileInfo;
-  bool blnReturn;
-  int intStat;
+  int result;
 
   // Attempt to get the file attributes
-  intStat = stat(filename, &stFileInfo);
-  return intStat;
+  result = stat(filename, &stFileInfo);
+  return (result==0);
 }
 
 bool copy_file(char *from, char *to) {
