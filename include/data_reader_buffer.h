@@ -15,13 +15,10 @@
 
 #include "utils.h"
 #include "data_reader.h"
-#include "buffer.h"
-
-//
 
 /** Specialisation of Data_reader for reading from a buffer.
  **/
-template < class T = Buffer_element<char,131072> >
+template < class T >
 class Data_reader_buffer : public Data_reader {
   typedef Data_reader2buffer<T>                      Reader2buffer;
 

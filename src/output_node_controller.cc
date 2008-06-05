@@ -17,7 +17,6 @@
 #include "data_writer_file.h"
 #include "data_reader_tcp.h"
 #include "tcp_connection.h"
-#include "queue_buffer.h"
 
 Output_node_controller::Output_node_controller(Output_node &node)
     : Controller(node), node(node) {}

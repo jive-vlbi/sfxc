@@ -136,23 +136,6 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }
 
-
-boost::shared_ptr<Multiple_data_writers_controller::Buffer>
-Multiple_data_writers_controller::buffer(unsigned int i) {
-  DEBUG_MSG("Not yet implemented");
-  assert(false);
-  return boost::shared_ptr<Multiple_data_writers_controller::Buffer>();
-}
-
-void
-Multiple_data_writers_controller::set_buffer
-(unsigned int i,
- boost::shared_ptr<Multiple_data_writers_controller::Buffer> buff) {
-  DEBUG_MSG("Not yet implemented");
-  assert(false);
-}
-
-
 Multiple_data_writers_controller::Data_writer_ptr
 Multiple_data_writers_controller::operator[](int i) {
   assert(i >= 0);

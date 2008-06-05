@@ -15,14 +15,23 @@
 #include "data_writer.h"
 #include "buffer2data_writer.h"
 
-#include "buffer.h"
+#include "memory_pool.h"
+#include "memory_pool_elements.h"
+#include "threadsafe_queue.h"
 
 
 class Multiple_data_writers_controller : public Controller {
   typedef Multiple_data_writers_controller  Self;
 public:
-  typedef Buffer_element<char,131072>      value_type;
-  typedef Buffer<value_type>               Buffer;
+  typedef Buffer_element<char,131072>                data_type;
+  typedef Memory_pool<data_type>                     Memory_pool;
+  typedef Memory_pool::value_type                    pool_type;
+  struct value_type {
+    int       actual_size;
+    pool_type data;
+  };
+  typedef Threadsafe_queue<value_type>               Queue;
+  typedef boost::shared_ptr<Queue>                   Queue_ptr;
 
   typedef boost::shared_ptr<Data_writer>   Data_writer_ptr;
 
@@ -31,8 +40,8 @@ public:
 
   Process_event_status process_event(MPI_Status &status);
 
-  boost::shared_ptr<Buffer> buffer(unsigned int i);
-  void set_buffer(unsigned int i, boost::shared_ptr<Buffer> buff);
+  Queue_ptr queue(unsigned int i);
+  void set_queue(unsigned int i, Queue_ptr queue);
 
   Data_writer_ptr operator[](int i);
 

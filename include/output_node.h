@@ -51,7 +51,6 @@ public:
   typedef Multiple_data_readers_controller::value_type input_value_type;
   typedef std::map<int32_t, int>                    Input_stream_priority_map;
   typedef Input_stream_priority_map::value_type     Input_stream_priority_map_value;
-  typedef Buffer<input_value_type>                  Input_buffer;
 
   typedef Single_data_writer_controller::value_type  output_value_type;
   typedef Single_data_writer_controller::Memory_pool Output_memory_pool;

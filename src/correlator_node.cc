@@ -10,7 +10,7 @@
 #include "correlator_node.h"
 
 #include "data_reader_buffer.h"
-#include "data_writer_buffer.h"
+#include "data_writer.h"
 #include "utils.h"
 #include "output_header.h"
 
