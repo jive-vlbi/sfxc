@@ -21,16 +21,19 @@
 
 /** Specialisation of Data_reader for reading from a buffer.
  **/
-template < class Element = Buffer_element<char,131072> >
+template < class T = Buffer_element<char,131072> >
 class Data_reader_buffer : public Data_reader {
-  typedef Element                          value_type;
-  typedef typename Element::value_type     element_type;
-  typedef Buffer<value_type>               Buffer;
+  typedef Data_reader2buffer<T>                      Reader2buffer;
+
+  typedef typename Reader2buffer::Memory_pool        Memory_pool;
+  typedef typename Reader2buffer::value_type         value_type;
+  typedef typename Reader2buffer::Queue              Queue;
+  typedef typename Reader2buffer::Queue_ptr          Queue_ptr;
 
 public:
   /** Constructor, reads from buffer
    **/
-  Data_reader_buffer(boost::shared_ptr<Buffer> buff);
+  Data_reader_buffer(Queue_ptr queue);
 
   ~Data_reader_buffer();
 
@@ -38,29 +41,27 @@ public:
 
   bool can_read();
 
-  boost::shared_ptr<Buffer> get_buffer() {
-    return buffer;
+  Queue_ptr get_queue() {
+    return queue;
   }
 private:
   int do_get_bytes(size_t nElements, char *out);
 
   // The input buffer
-  boost::shared_ptr<Buffer> buffer;
-  // Number of bytes left in the current buffer-element
-  int          bytes_left;
-  element_type *data_start;
+  Queue_ptr    queue;
+  value_type   data_start;
+  // Number of bytes left in data_start
+  int bytes_left;
   // Is there more data arriving in the buffer:
   bool         end_of_file;
 };
 
 template <class Element>
-Data_reader_buffer<Element>::Data_reader_buffer(boost::shared_ptr<Buffer> buff)
+Data_reader_buffer<Element>::Data_reader_buffer(Queue_ptr queue)
     : Data_reader(),
-    buffer(buff), bytes_left(0),
+    queue(queue), bytes_left(0),
     end_of_file(false) {
-  assert(buffer != NULL);
-  // Didn't implement different types yet
-  assert(sizeof(element_type) == 1);
+  assert(queue != Queue_ptr());
 }
 
 template <class Element>
@@ -68,14 +69,18 @@ Data_reader_buffer<Element>::~Data_reader_buffer() {}
 
 template <class Element>
 int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {
+  assert(queue!=Queue_ptr());
+  if (queue->empty()) return 0;
   size_t elements_to_read = nElements;
   while (elements_to_read > 0) {
     if (bytes_left == 0) {
-      if (buffer->empty()) {
+      if (queue->empty()) {
         return nElements - elements_to_read;
       }
       // get a new buffer element
-      data_start = buffer->consume(bytes_left).buffer();
+      data_start = queue->front();
+      queue->pop();
+      bytes_left = data_start.actual_size;
       assert(bytes_left >= 0);
     }
     if (bytes_left != 0) {
@@ -83,17 +88,17 @@ int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {
       size_t curr_read =
         (elements_to_read < (size_t)bytes_left ? elements_to_read : bytes_left);
       if (out != NULL) {
-        memcpy(out, data_start, curr_read);
+        memcpy(out, &(*data_start.data)[data_start.actual_size-bytes_left], 
+               curr_read);
         out += curr_read;
       }
-      data_start += curr_read;
       elements_to_read -=curr_read;
       bytes_left -=curr_read;
 
     }
     if (bytes_left == 0) {
       // get a release the buffer element
-      buffer->consumed();
+      data_start.data.release();
     }
   }
   return nElements;

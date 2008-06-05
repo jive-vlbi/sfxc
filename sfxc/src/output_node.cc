@@ -196,8 +196,7 @@ void Output_node::write_output() {
 
 void Output_node::hook_added_data_reader(size_t reader) {
   // Create an output buffer:
-  boost::shared_ptr<Input_buffer> new_buffer(new Semaphore_buffer<input_value_type>(1500));
-  data_readers_ctrl.set_buffer(reader, new_buffer);
+  data_readers_ctrl.enable_buffering(reader);
 
   // Create the data_stream:
   if (input_streams.size() <= reader) {

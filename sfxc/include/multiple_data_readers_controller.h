@@ -17,27 +17,33 @@
 #include "data_reader2buffer.h"
 #include "data_reader_buffer.h"
 
+#include "buffer.h"
+#include <memory_pool.h>
+#include <threadsafe_queue.h>
 
 
 class Multiple_data_readers_controller : public Controller {
   typedef Multiple_data_readers_controller  Self;
 public:
-  typedef Buffer_element<char,256>         value_type;
-  typedef Data_reader2buffer<value_type>    Reader2buffer;
-  typedef Buffer<value_type>                Buffer;
-  typedef Data_reader_buffer<value_type>    Reader_buffer;
+  typedef Buffer_element_large<char,5000>            data_type;
+  typedef Data_reader2buffer<data_type>              Reader2buffer;
+  typedef Data_reader_buffer<data_type>              Reader_buffer;
 
+  typedef Reader2buffer::Memory_pool                 Memory_pool;
+  typedef Reader2buffer::value_type                  value_type;
+  typedef Reader2buffer::Queue                       Queue;
+  typedef Reader2buffer::Queue_ptr                   Queue_ptr;
+  
   Multiple_data_readers_controller(Node &node);
   ~Multiple_data_readers_controller();
 
   Process_event_status process_event(MPI_Status &status);
 
-  /** Sets the buffer for an input stream and constructs a Data_reader_buffer
-   * for it. **/
-  void set_buffer(unsigned int i,
-                  boost::shared_ptr<Buffer> buffer);
+  /** This enables asynchronous io for a ceirtain stream
+   **/
+  void enable_buffering(unsigned int i);
 
-  boost::shared_ptr<Buffer> get_buffer(unsigned int i);
+  Queue_ptr get_queue(unsigned int i);
 
   /** Returns the data reader, which is either the real reader or the
    *  buffered reader if a buffer is set. **/
