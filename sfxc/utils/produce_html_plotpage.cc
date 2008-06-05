@@ -23,6 +23,18 @@
 #include "output_header.h"
 #include "fringe_info.h"
 
+#include <sys/stat.h>
+
+bool file_exists(char *filename) {
+  struct stat stFileInfo;
+  bool blnReturn;
+  int intStat;
+
+  // Attempt to get the file attributes
+  intStat = stat(filename, &stFileInfo);
+  return intStat;
+}
+
 bool copy_file(char *from, char *to) {
   std::ifstream in(from);
   if (!in.is_open()) return false;
@@ -96,8 +108,11 @@ int main(int argc, char *argv[]) {
     vex_file = new char[strlen(vex_file_temp)+1];
     strcpy(vex_file, vex_file_temp);
     sprintf(to, "%s/%s", output_dir, vex_file);
-    copy_file(from, to);
-
+    if (!file_exists(to)) {
+      copy_file(from, to);
+    } else {
+      std::cout << "Vex-file already exists, not copying" << std::endl;
+    }
   }
 
   if (argc== 4) {
