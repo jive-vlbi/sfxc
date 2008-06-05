@@ -1,5 +1,6 @@
 #include <fstream>
 #include "fringe_info.h"
+#include "control_parameters.h"
 
 #define MAX_SNR_VALUE 8
 #define MIN_SNR_VALUE 3
@@ -136,8 +137,8 @@ Fringe_info_container::Fringe_info_container(FILE *input) : input(input) {
 
   // Read the first timeslice header:
   read_data_from_file(sizeof(Output_header_timeslice),
-                      (char*)&timeslice_header, false);
-  assert(timeslice_header.number_baselines != 0);
+                      (char*)&last_timeslice_header, false);
+  assert(last_timeslice_header.number_baselines != 0);
 }
 
 void
@@ -161,18 +162,19 @@ Fringe_info_container::read_plots(bool stop_at_eof) {
   // Clear previous plots
   plots.clear();
 
-  int  current_integration = timeslice_header.integration_slice;
+  first_timeslice_header = last_timeslice_header;
 
-  bool first_timeslice_header = true;
-  while (current_integration == timeslice_header.integration_slice) {
-    int n_baselines = timeslice_header.number_baselines;
+  bool first = true;
+  while (first_timeslice_header.integration_slice ==
+         last_timeslice_header.integration_slice) {
+    int n_baselines = last_timeslice_header.number_baselines;
 
     for (int i=0; i<n_baselines; i++) {
       // Read the header of the baseline
       Output_header_baseline baseline_header;
       read_data_from_file(sizeof(Output_header_baseline),
                           (char*)&baseline_header,
-                          stop_at_eof && (!first_timeslice_header));
+                          stop_at_eof && (!first));
       if (baseline_header.weight == -1) {
         return;
       }
@@ -180,7 +182,7 @@ Fringe_info_container::read_plots(bool stop_at_eof) {
       // Read the data
       read_data_from_file(data_freq.size()*sizeof(std::complex<float>),
                           (char *)&data_freq[0],
-                          stop_at_eof && (!first_timeslice_header));
+                          stop_at_eof && (!first));
 
 
       fftwf_execute(fftwf_plan_);
@@ -198,17 +200,19 @@ Fringe_info_container::read_plots(bool stop_at_eof) {
 
     { // Read the next timeslice header
       read_data_from_file(sizeof(Output_header_timeslice),
-                          (char*)&timeslice_header, stop_at_eof);
-      if (timeslice_header.number_baselines == 0) {
+                          (char*)&last_timeslice_header, stop_at_eof);
+      if (last_timeslice_header.number_baselines == 0) {
         return;
       }
-      first_timeslice_header = false;
+      first = false;
     }
   }
 }
 
 void
 Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
+  typedef Control_parameters::Date Date;
+
   // Array with the station names
   std::vector<std::string> stations;
 
@@ -243,8 +247,20 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
   << "//--></script>" << std::endl
   << std::endl;
 
-  index_html << "<a href='" << vex_filename << "'>Vex file</a><br>"
+  index_html << "<a href='" << vex_filename << "'>Vex file</a> -- "
   << std::endl;
+  double integration_time = pow(2, global_header.integration_time);
+  double sec = (global_header.start_time +
+                integration_time * first_timeslice_header.integration_slice);
+
+  index_html << " Integration time: " 
+             << integration_time << "s"
+             << " -- Start of the integration: "
+             << Date(global_header.start_year,
+                     global_header.start_day,
+                     (int)sec).to_string()
+             << (sec-std::floor(sec))*1000 << "ms"
+             << std::endl;
 
   { // Print the table
     index_html << "<table border=1 bgcolor='#dddddd' cellspacing=0>"
