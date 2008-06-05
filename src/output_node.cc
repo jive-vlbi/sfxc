@@ -14,28 +14,28 @@
 #include "types.h"
 #include "data_writer_file.h"
 #include "data_reader_buffer.h"
-#include "queue_buffer.h"
-#include "semaphore_buffer.h"
 
 Output_node::Output_node(int rank, int size)
     : Node(rank),
-    output_buffer(new Semaphore_buffer<output_value_type>(1)),
+    output_memory_pool(10),
+    output_queue(new Output_queue()),
     output_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
     status(STOPPED),
-    curr_slice(0), number_of_time_slices(-1), curr_stream(-1) {
+curr_slice(0), number_of_time_slices(-1), curr_stream(-1) {
   initialise();
 }
 
 Output_node::Output_node(int rank, Log_writer *writer, int size)
     : Node(rank, writer),
-    output_buffer(new Semaphore_buffer<output_value_type>(1000)),
+    output_memory_pool(10),
+    output_queue(new Output_queue()),
     output_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
     status(STOPPED),
-    curr_slice(0), number_of_time_slices(-1), curr_stream(-1) {
+curr_slice(0), number_of_time_slices(-1), curr_stream(-1) {
   initialise();
 }
 
@@ -44,7 +44,7 @@ void Output_node::initialise() {
   add_controller(&output_node_ctrl);
   add_controller(&data_writer_ctrl);
 
-  data_writer_ctrl.set_buffer(output_buffer);
+  data_writer_ctrl.set_queue(output_queue);
 
   int32_t msg=0;
   MPI_Send(&msg, 1, MPI_INT32,
@@ -58,7 +58,7 @@ Output_node::~Output_node() {
 
 
   // wait until the output buffer is empty
-  while (!output_buffer->empty()) {
+  while (output_memory_pool.full()) {
     usleep(100000);
   }
 }
@@ -66,7 +66,7 @@ Output_node::~Output_node() {
 void Output_node::start() {
   while (status != END_NODE) {
     switch (status) {
-    case STOPPED: {
+      case STOPPED: {
         assert(curr_stream == -1);
         // blocking:
         if (check_and_process_message() == TERMINATE_NODE) {
@@ -82,7 +82,7 @@ void Output_node::start() {
         }
         break;
       }
-    case START_NEW_SLICE: {
+      case START_NEW_SLICE: {
         assert(curr_stream == -1);
 
         assert(!input_streams_order.empty());
@@ -95,7 +95,7 @@ void Output_node::start() {
         status = WRITE_OUTPUT;
         break;
       }
-    case WRITE_OUTPUT: {
+      case WRITE_OUTPUT: {
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           assert(false);
           status = END_NODE;
@@ -112,7 +112,7 @@ void Output_node::start() {
 
         break;
       }
-    case END_SLICE: {
+      case END_SLICE: {
         curr_stream = -1;
         curr_slice ++;
         if (curr_slice == number_of_time_slices) {
@@ -126,7 +126,7 @@ void Output_node::start() {
         }
         break;
       }
-    case END_NODE: { // For completeness sake
+      case END_NODE: { // For completeness sake
         assert(false);
         break;
       }
@@ -141,10 +141,14 @@ void Output_node::start() {
 void
 Output_node::
 write_global_header(const Output_header_global &global_header) {
-  output_value_type &element=output_buffer->produce();
-  memcpy(element.buffer(), (char *)&global_header,
+  assert(!output_memory_pool.empty());
+
+  output_value_type element;
+  element.actual_size = sizeof(Output_header_global);
+  element.data = output_memory_pool.allocate();
+  memcpy(element.data->buffer(), (char *)&global_header,
          sizeof(Output_header_global));
-  output_buffer->produced(sizeof(Output_header_global));
+  output_queue->push(element);
 }
 
 void
@@ -176,12 +180,18 @@ void Output_node::time_slice_finished(int rank, int64_t nBytes) {
 }
 
 void Output_node::write_output() {
+  if (output_memory_pool.empty())
+    return;
+  
   assert(curr_stream >= 0);
   assert(input_streams[curr_stream] != NULL);
+  assert(!output_memory_pool.empty());
+
   // Write data ...
-  output_value_type &out_elem = data_writer_ctrl.buffer()->produce();
-  int nBytes = input_streams[curr_stream]->write_bytes(out_elem);
-  data_writer_ctrl.buffer()->produced(nBytes);
+  output_value_type element;
+  element.data = output_memory_pool.allocate();
+  input_streams[curr_stream]->write_bytes(element);
+  output_queue->push(element);
 }
 
 void Output_node::hook_added_data_reader(size_t reader) {
@@ -215,11 +225,11 @@ Output_node::Input_stream::Input_stream(boost::shared_ptr<Data_reader> reader)
   reader->set_size_dataslice(0);
 }
 
-int
+void
 Output_node::Input_stream::write_bytes(output_value_type &elem) {
   assert(reader != boost::shared_ptr<Data_reader>());
-  size_t nBytes = std::min(elem.size(), reader->get_size_dataslice());
-  return reader->get_bytes(nBytes, elem.buffer());
+  size_t nBytes = std::min(elem.data->size(), reader->get_size_dataslice());
+  elem.actual_size = reader->get_bytes(nBytes, elem.data->buffer());
 }
 
 

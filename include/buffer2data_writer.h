@@ -14,7 +14,8 @@
 #include <assert.h>
 
 #include "data_writer.h"
-#include "buffer.h"
+
+#include <threadsafe_queue.h>
 
 /** Reads data from a buffer and writes it to a Data_writer.
  **/
@@ -23,6 +24,10 @@ class Buffer2data_writer {
   typedef Buffer2data_writer<T> Self;
 
 public:
+  typedef boost::shared_ptr< Data_writer > Data_writer_ptr;
+  typedef Threadsafe_queue<T>              Queue;
+  typedef boost::shared_ptr<Queue>         Queue_ptr;
+  
   enum State {
     STOPPED=0, ///< Not running, the additional thread is not active
     SUSPENDED, /**< Not running, the additional thread is waiting
@@ -33,10 +38,10 @@ public:
   Buffer2data_writer();
   ~Buffer2data_writer();
 
-  void set_data_writer(boost::shared_ptr< Data_writer >data_writer);
-  void set_buffer(boost::shared_ptr< Buffer<T> > buffer);
-  boost::shared_ptr< Data_writer > get_data_writer();
-  boost::shared_ptr< Buffer<T> > get_buffer();
+  void set_data_writer(Data_writer_ptr data_writer);
+  Data_writer_ptr get_data_writer();
+  void set_queue(Queue_ptr queue_);
+  Queue_ptr get_queue();
 
   /// Starts the asynchronous IO if the buffer and data_writer are not NULL
   void try_start();
@@ -59,8 +64,8 @@ private:
   static void *start_writing(void *);
   void write();
 
-  boost::shared_ptr< Data_writer >  data_writer;
-  boost::shared_ptr< Buffer<T> >    buffer;
+  boost::shared_ptr< Data_writer >         data_writer;
+  boost::shared_ptr< Threadsafe_queue<T> > queue;
   State       state;
   pthread_t   redirect_thread;
 };
@@ -73,8 +78,8 @@ Buffer2data_writer<T>::Buffer2data_writer()
 
 template <class T>
 Buffer2data_writer<T>::~Buffer2data_writer() {
-  if (buffer != boost::shared_ptr< Buffer<T> >()) {
-    if (!buffer->empty()) {
+  if (queue != Queue_ptr()) {
+    if (!queue->empty()) {
       std::cout << "Buffer of Buffer2data_writer is not empty" << std::endl;
     }
   }
@@ -90,9 +95,9 @@ Buffer2data_writer<T>::set_data_writer(boost::shared_ptr< Data_writer > writer) 
 
 template <class T>
 void
-Buffer2data_writer<T>::set_buffer(boost::shared_ptr< Buffer<T> > buff) {
+Buffer2data_writer<T>::set_queue(Queue_ptr queue_) {
   assert(state != RUNNING);
-  buffer = buff;
+  queue = queue_;
 }
 
 template <class T>
@@ -102,15 +107,15 @@ Buffer2data_writer<T>::get_data_writer() {
 }
 
 template <class T>
-boost::shared_ptr< Buffer<T> >
-Buffer2data_writer<T>::get_buffer() {
-  return buffer;
+typename Buffer2data_writer<T>::Queue_ptr
+Buffer2data_writer<T>::get_queue() {
+  return queue;
 }
 
 template <class T>
 void
 Buffer2data_writer<T>::try_start() {
-  if ((data_writer != NULL) && (buffer != NULL)) {
+  if ((data_writer != NULL) && (queue != Queue_ptr())) {
     start();
   }
 }
@@ -119,7 +124,7 @@ template <class T>
 void
 Buffer2data_writer<T>::start() {
   assert(data_writer != NULL);
-  assert(buffer != NULL);
+  assert(queue != Queue_ptr());
   assert(state == STOPPED);
 
   state = RUNNING;
@@ -153,16 +158,16 @@ template <class T>
 void
 Buffer2data_writer<T>::write() {
   while (state != STOPPED) {
-    if ((state == SUSPENDED) || buffer->empty()) {
+    if ((state == SUSPENDED) || queue->empty()) {
       usleep(100000); // .1 second:
     } else {
-      int size;
-      T &elem = buffer->consume(size);
+      T &elem = queue->front();
 
-      int64_t size2 = 0;
-      char *buff = elem.buffer();
+      int size = elem.actual_size;
+      int size2 = 0;
+      char *buff = elem.data->buffer();
       while (size != size2) {
-        int64_t new_size = data_writer->put_bytes(size,elem.buffer());
+        int64_t new_size = data_writer->put_bytes(size,buff);
         if (new_size <= 0) {
           std::cout << "1. Error writing data" << std::endl;
           usleep(100000); // .1 second:
@@ -172,7 +177,8 @@ Buffer2data_writer<T>::write() {
         }
       }
       assert((state != RUNNING) || (size == size2));
-      buffer->consumed();
+      elem.data.release();
+      queue->pop();
     }
   }
 }
