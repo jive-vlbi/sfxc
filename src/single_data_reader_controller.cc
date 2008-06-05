@@ -83,23 +83,22 @@ Single_data_reader_controller::eof() {
     if (!reader2buffer.get_data_reader()->eof()) return false;
   }
 
-  if (reader2buffer.get_buffer() != NULL) {
-    return (reader2buffer.get_buffer()->empty());
+  if (reader2buffer.get_queue() != Queue_ptr()) {
+    return (reader2buffer.get_queue()->empty());
   }
   return true;
 }
 
-boost::shared_ptr<Single_data_reader_controller::Buffer>
-Single_data_reader_controller::buffer() {
-  return reader2buffer.get_buffer();
+Single_data_reader_controller::Queue_ptr
+Single_data_reader_controller::queue() {
+  assert(false); // No buffering for the time being
+  return Queue_ptr();
 }
 
 void
 Single_data_reader_controller::
-set_buffer(boost::shared_ptr<Single_data_reader_controller::Buffer> buff) {
-  assert(buffer() == NULL);
+set_queue(Queue_ptr queue) {
   assert(false); // No buffering for the time being
-  return reader2buffer.set_buffer(buff);
 }
 
 boost::shared_ptr<Data_reader>

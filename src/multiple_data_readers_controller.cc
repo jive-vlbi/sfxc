@@ -19,7 +19,7 @@ Multiple_data_readers_controller(Node &node)
 
 Multiple_data_readers_controller::
 ~Multiple_data_readers_controller() {
-  for (std::vector< Data_reader2buffer<value_type>* >::iterator
+  for (std::vector< Reader2buffer* >::iterator
        it = data_readers.begin(); it != data_readers.end(); it++) {
     if ((*it) != NULL) {
       delete *it;
@@ -88,28 +88,29 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
 
 void
 Multiple_data_readers_controller::
-set_buffer(unsigned int i,
-           boost::shared_ptr<Buffer> buffer) {
+enable_buffering(unsigned int i) {
   assert(i < data_readers.size());
   assert(data_readers[i] != NULL);
   assert(data_readers[i]->get_data_reader() != NULL);
-  assert(data_readers[i]->get_buffer() == NULL);
-  assert(buffer != NULL);
+  assert(data_readers[i]->get_queue() == Queue_ptr());
+  
+  Queue_ptr queue(new Queue());
 
   // Make sure a pointer to the data reader has not been returned
   assert(!reader_known[i]);
 
-  data_readers[i]->set_buffer(buffer);
+  data_readers[i]->set_queue(queue);
   data_readers[i]->start();
 
   buffer_readers[i] =
-    boost::shared_ptr<Reader_buffer>(new Reader_buffer(buffer));
+    boost::shared_ptr<Reader_buffer>(new Reader_buffer(queue));
 }
 
-boost::shared_ptr<Multiple_data_readers_controller::Buffer>
-Multiple_data_readers_controller::get_buffer(unsigned int i) {
-  if (i < buffer_readers.size()) return buffer_readers[i]->get_buffer();
-  return boost::shared_ptr<Buffer>();
+Multiple_data_readers_controller::Queue_ptr
+Multiple_data_readers_controller::get_queue(unsigned int i) {
+  if (i < buffer_readers.size()) 
+    return buffer_readers[i]->get_queue();
+  return Queue_ptr();
 }
 
 boost::shared_ptr<Data_reader>
@@ -150,7 +151,7 @@ Multiple_data_readers_controller::add_data_reader
   assert((uint32_t)i < data_readers.size());
 
   if (data_readers[i] == NULL) {
-    data_readers[i] = new Data_reader2buffer<value_type>();
+    data_readers[i] = new Reader2buffer();
   }
 
   data_readers[i]->set_data_reader(reader);

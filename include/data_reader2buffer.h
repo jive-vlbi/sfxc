@@ -15,7 +15,9 @@
 #include <boost/shared_ptr.hpp>
 
 #include "data_reader.h"
-#include "buffer.h"
+
+#include <memory_pool.h>
+#include <threadsafe_queue.h>
 
 /** Reads data from the data reader and puts it in a buffer,
  * which is useful for non-blocking IO.
@@ -24,8 +26,17 @@ template <class T>
 class Data_reader2buffer {
   typedef Data_reader2buffer<T> Self;
 public:
+  typedef T                                          data_type;
+  typedef Memory_pool<data_type>                     Memory_pool;
+  typedef typename Memory_pool::value_type           pool_type;
+  struct value_type {
+    int       actual_size;
+    pool_type data;
+  };
+  typedef Threadsafe_queue<value_type>               Queue;
+  typedef boost::shared_ptr<Queue>                   Queue_ptr;
+
   typedef boost::shared_ptr< Data_reader > Data_reader_ptr;
-  typedef boost::shared_ptr< Buffer<T> >   Buffer_ptr;
 
   enum State {
     STOPPED=0, ///< Not running, the additional thread is not active
@@ -41,8 +52,8 @@ public:
   boost::shared_ptr<Data_reader> get_data_reader();
   void set_data_reader(boost::shared_ptr<Data_reader> data_reader);
 
-  boost::shared_ptr< Buffer<T> > get_buffer();
-  void set_buffer(boost::shared_ptr< Buffer<T> > buffer);
+  Queue_ptr get_queue();
+  void set_queue(Queue_ptr queue);
 
   void start();
   void try_start();
@@ -55,7 +66,8 @@ private:
   void read();
 private:
   Data_reader_ptr data_reader;
-  Buffer_ptr      buffer;
+  Memory_pool     memory_pool;
+  Queue_ptr       queue;
   State           state;
   pthread_t       io_thread;
 
@@ -66,7 +78,7 @@ private:
 // Implementation:
 template <class T>
 Data_reader2buffer<T>::Data_reader2buffer()
-    : state(STOPPED) {
+    : memory_pool(250), state(STOPPED) {
   pthread_mutex_init(&mutex_for_set_state, NULL);
 }
 
@@ -98,23 +110,23 @@ Data_reader2buffer<T>::get_data_reader() {
 
 template <class T>
 void
-Data_reader2buffer<T>::set_buffer(Buffer_ptr buff) {
-  assert(buffer == Buffer_ptr());
+Data_reader2buffer<T>::set_queue(Queue_ptr queue_) {
+  assert(queue == Queue_ptr());
   assert(state == STOPPED);
-  buffer = buff;
+  queue = queue_;
 }
 
 template <class T>
-typename Data_reader2buffer<T>::Buffer_ptr
-Data_reader2buffer<T>::get_buffer() {
-  return buffer;
+typename Data_reader2buffer<T>::Queue_ptr
+Data_reader2buffer<T>::get_queue() {
+  return queue;
 }
 
 
 template <class T>
 void
 Data_reader2buffer<T>::try_start() {
-  if ((data_reader != Data_reader_ptr() ) && (buffer != Buffer_ptr())) {
+  if ((data_reader != Data_reader_ptr() ) && (queue != Queue_ptr())) {
     start();
   }
 }
@@ -123,7 +135,7 @@ template <class T>
 void
 Data_reader2buffer<T>::start() {
   assert(data_reader != Data_reader_ptr());
-  assert(buffer != Buffer_ptr());
+  assert(queue != Queue_ptr());
 
   if (state == STOPPED) {
     set_state(RUNNING);
@@ -171,23 +183,26 @@ Data_reader2buffer<T>::read() {
     if (state == SUSPENDED) {
       usleep(100); // 100 microseconds
     } else {
-      if (buffer->full()) {
+      if (memory_pool.empty()) {
         usleep(100); // 100 microseconds
       } else if (data_reader->eof()) {
         DEBUG_MSG("data_reader->eof()");
         set_state(STOPPED);
       } else {
-        T &elem = buffer->produce();
-        assert(elem.size() > 0);
+        assert(!memory_pool.empty());
+        value_type elem;
+        elem.data = memory_pool.allocate();
+        assert(elem.data->size() > 0);
         // Do not fill the buffer as this might cause deadlock, because
         // the last part of a time slice will never be released to the
         // buffer.
-        int size = data_reader->get_bytes(elem.size(), elem.buffer());
+        int size = data_reader->get_bytes(elem.data->size(), elem.data->buffer());
         if (size < 0) {
           // Make sure the error messages do not propagate in the buffer
           size = 0;
         }
-        buffer->produced(size);
+        elem.actual_size = size;
+        queue->push(elem);
       }
     }
   }

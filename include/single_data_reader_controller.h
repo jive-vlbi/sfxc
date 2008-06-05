@@ -21,9 +21,13 @@
 class Single_data_reader_controller : public Controller {
   typedef Single_data_reader_controller  Self;
 public:
-  /// TODO: NGHK: Make this type global?
-  typedef Buffer_element<char,131072>      value_type;
-  typedef Buffer<value_type>               Buffer;
+  typedef Buffer_element_large<char,256>             data_type;
+  typedef Data_reader2buffer<data_type>              Reader2buffer;
+
+  typedef Reader2buffer::Memory_pool                 Memory_pool;
+  typedef Reader2buffer::value_type                  value_type;
+  typedef Reader2buffer::Queue                       Queue;
+  typedef Reader2buffer::Queue_ptr                   Queue_ptr;
 
   Single_data_reader_controller(Node &node);
 
@@ -31,14 +35,14 @@ public:
 
   bool eof();
 
-  boost::shared_ptr<Buffer> buffer();
-  void set_buffer(boost::shared_ptr<Buffer> buffer);
+  Queue_ptr queue();
+  void set_queue(Queue_ptr queue);
 
   boost::shared_ptr<Data_reader> get_data_reader(int i=0);
 private:
   void set_data_reader(int stream_nr, boost::shared_ptr<Data_reader> reader);
 
-  Data_reader2buffer<value_type>                 reader2buffer;
+  Reader2buffer                                      reader2buffer;
 };
 
 #endif /* SINGLE_DATA_READER_CONTROLLER_H */
