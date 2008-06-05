@@ -13,9 +13,9 @@
 #include "controller.h"
 #include "tcp_connection.h"
 #include "data_writer.h"
-#include "semaphore_buffer.h"
 #include "buffer2data_writer.h"
 
+#include "buffer.h"
 
 
 class Multiple_data_writers_controller : public Controller {

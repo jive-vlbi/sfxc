@@ -15,6 +15,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "data_reader.h"
+#include "utils.h"
 
 #include <memory_pool.h>
 #include <threadsafe_queue.h>

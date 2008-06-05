@@ -52,14 +52,15 @@ void Output_node::initialise() {
 }
 
 Output_node::~Output_node() {
+  DEBUG_MSG(__PRETTY_FUNCTION__);
   // empty the input buffers to the output
   assert(status == END_NODE);
   assert(input_streams_order.empty());
 
 
-  // wait until the output buffer is empty
-  while (output_memory_pool.full()) {
-    usleep(100000);
+  // wait until the output buffer is empty (the memory pool is full)
+  while (!output_memory_pool.full()) {
+    usleep(10000);
   }
 }
 
@@ -133,6 +134,7 @@ void Output_node::start() {
     }
   }
   // End the node;
+  DEBUG_MSG("Output node finished");
   int32_t msg=0;
   MPI_Send(&msg, 1, MPI_INT32,
            RANK_MANAGER_NODE, MPI_TAG_OUTPUT_NODE_FINISHED, MPI_COMM_WORLD);

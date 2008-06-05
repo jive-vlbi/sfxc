@@ -16,7 +16,6 @@
 #include "utils.h"
 
 #include "types.h"
-#include "semaphore_buffer.h"
 
 #include "data_reader_buffer.h"
 

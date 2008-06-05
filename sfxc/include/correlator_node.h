@@ -13,7 +13,6 @@
 #include "node.h"
 #include "multiple_data_readers_controller.h"
 #include "single_data_writer_controller.h"
-#include "semaphore_buffer.h"
 #include "control_parameters.h"
 #include "correlator_node_data_reader_tasklet.h"
 #include "log_writer_mpi.h"
@@ -53,9 +52,6 @@ private:
 class Correlator_node : public Node {
 public:
   typedef Correlator_node                              Self;
-  typedef Multiple_data_readers_controller::value_type Input_buffer_element;
-  typedef Semaphore_buffer<Input_buffer_element>       Input_buffer;
-  typedef boost::shared_ptr<Input_buffer>              Input_buffer_ptr;
   typedef Buffer_element_vector<char>                  output_value_type;
 
 
