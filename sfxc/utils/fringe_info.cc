@@ -71,6 +71,8 @@ float Fringe_info::signal_to_noise_ratio() const {
   int index_max = max_value_offset();
   index_max = (index_max+N)%N;
 
+  if (data_lag[index_max] == std::complex<float>(0,0)) return 0;
+
   //return noise rms in array, skip 10 % around maximum
   std::complex<float> mean(0,0);
   int n2avg=0;
