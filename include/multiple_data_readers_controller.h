@@ -13,7 +13,6 @@
 #include "controller.h"
 
 #include "data_writer.h"
-#include "semaphore_buffer.h"
 #include "data_reader2buffer.h"
 #include "data_reader_buffer.h"
 

@@ -15,10 +15,6 @@ public:
   typedef Delay_correction::Output_buffer                Input_buffer;
   typedef Delay_correction::Output_buffer_ptr            Input_buffer_ptr;
 
-  typedef Buffer_element_large<FLOAT,131072>             Output_buffer_element;
-  typedef Semaphore_buffer<Output_buffer_element>        Output_buffer;
-  typedef boost::shared_ptr<Output_buffer>               Output_buffer_ptr;
-
   Correlation_core();
   virtual ~Correlation_core();
 
@@ -37,8 +33,6 @@ public:
   void set_parameters(const Correlation_parameters &parameters,
                       int node_nr);
   void set_data_writer(boost::shared_ptr<Data_writer> writer);
-
-  Output_buffer_ptr get_output_buffer();
 
   int number_of_baselines() {
     return baselines.size();
@@ -69,9 +63,6 @@ private:
 
 private:
   std::vector<Input_buffer_ptr>  input_buffers;
-
-  Output_buffer_ptr              output_buffer;
-  Output_buffer_element          *output_element;
 
   // Used in integration_step(), avoids contruction and destroying the vectors
   std::vector<Input_buffer_element>     input_elements;

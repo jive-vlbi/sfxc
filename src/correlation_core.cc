@@ -3,8 +3,7 @@
 #include <utils.h>
 
 Correlation_core::Correlation_core()
-    : output_buffer(Output_buffer_ptr(new Output_buffer(2))),
-    current_fft(0), total_ffts(0) {}
+    : current_fft(0), total_ffts(0) {}
 
 Correlation_core::~Correlation_core() {
 #if PRINT_TIMER
@@ -13,12 +12,6 @@ Correlation_core::~Correlation_core() {
   double time = fft_timer.measured_time()*1000000;
   PROGRESS_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
 #endif
-}
-
-Correlation_core::Output_buffer_ptr
-Correlation_core::get_output_buffer() {
-  assert(output_buffer != Output_buffer_ptr());
-  return output_buffer;
 }
 
 void Correlation_core::do_task() {
@@ -171,9 +164,6 @@ bool Correlation_core::has_work() {
     if (input_buffers[i]->empty()) {
       return false;
     }
-  }
-  if ((current_fft == 0) && output_buffer->full()) {
-    return false;
   }
   return true;
 }

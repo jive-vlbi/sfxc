@@ -13,9 +13,9 @@
 #include "controller.h"
 
 #include "data_writer.h"
-#include "semaphore_buffer.h"
 #include "buffer2data_writer.h"
 #include "tcp_connection.h"
+#include "buffer.h"
 
 #include <memory_pool.h>
 #include <threadsafe_queue.h>

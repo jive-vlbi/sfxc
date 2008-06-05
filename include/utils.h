@@ -21,7 +21,7 @@
 #include "log_writer.h"
 
 #ifndef PRINT_PID
-#define PRINT_PID         false
+#define PRINT_PID         true
 #endif // PRINT_PID
 
 #ifndef PRINT_HOST

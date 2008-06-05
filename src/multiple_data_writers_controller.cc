@@ -14,8 +14,6 @@
 #include "data_writer_void.h"
 #include "tcp_connection.h"
 
-#include "semaphore_buffer.h"
-
 Multiple_data_writers_controller::
 Multiple_data_writers_controller(Node &node, int max_connections)
     : Controller(node) {

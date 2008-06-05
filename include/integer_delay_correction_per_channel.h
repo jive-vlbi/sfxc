@@ -10,7 +10,6 @@
 #ifndef INTEGER_DELAY_CORRECTION_PER_CHANNEL_H
 #define INTEGER_DELAY_CORRECTION_PER_CHANNEL_H
 
-#include "semaphore_buffer.h"
 #include "input_node_types.h"
 #include "utils.h"
 #include "delay_table_akima.h"

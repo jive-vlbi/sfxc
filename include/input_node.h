@@ -20,8 +20,6 @@
 
 #include "data_reader2buffer.h"
 
-#include "semaphore_buffer.h"
-
 #include "input_node_tasklet.h"
 
 
@@ -52,7 +50,6 @@ class Input_node : public Node {
   typedef Input_node                       Self;
 
   typedef Single_data_reader_controller::value_type     value_type;
-  typedef Semaphore_buffer<value_type>                  Buffer;
 
 public:
   Input_node(int rank, int station_number, Log_writer *log_writer,

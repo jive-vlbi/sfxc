@@ -14,7 +14,6 @@
 #include <fftw3.h>
 
 #include "tasklet/tasklet.h"
-#include "semaphore_buffer.h"
 #include "delay_table_akima.h"
 #include "correlator_node_types.h"
 #include "control_parameters.h"
