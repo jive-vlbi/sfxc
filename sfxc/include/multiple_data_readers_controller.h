@@ -16,7 +16,7 @@
 #include "data_reader2buffer.h"
 #include "data_reader_buffer.h"
 
-#include "buffer.h"
+#include "memory_pool_elements.h"
 #include <memory_pool.h>
 #include <threadsafe_queue.h>
 

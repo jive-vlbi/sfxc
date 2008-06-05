@@ -4,7 +4,7 @@
 #include <memory_pool.h>
 #include <threadsafe_queue.h>
 #include <vector>
-#include "buffer.h"
+#include "memory_pool_elements.h"
 
 class Correlator_node_types {
 public:
