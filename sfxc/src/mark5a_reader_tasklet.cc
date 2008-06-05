@@ -61,6 +61,18 @@ do_task() {
 #endif
 
     current_time += mark5a_reader_->time_between_headers();
+  } else if (current_time < mark5a_reader_->get_current_time()) {
+    // We don't have data yet
+#ifdef SFXC_INVALIDATE_SAMPLES
+    input_element_->invalid_bytes_begin = 0;
+    input_element_->nr_invalid_bytes = SIZE_MK5A_FRAME*n_bytes_per_input_word;
+#else
+    input_element_->invalid_bytes_begin = 0;
+    input_element_->nr_invalid_bytes = 0;
+    randomize_block(0,SIZE_MK5A_FRAME*n_bytes_per_input_word);
+#endif
+
+    current_time += mark5a_reader_->time_between_headers();
   } else {
     if (!mark5a_reader_->read_new_block(&input_element_->mark5_data[0])) {
 #ifdef SFXC_INVALIDATE_SAMPLES
@@ -110,15 +122,26 @@ goto_time(int ms_time) {
 
   int64_t new_time =
     mark5a_reader_->goto_time((unsigned char *)&input_element_->mark5_data[0],
-                             us_time);
-  current_time = mark5a_reader_->get_current_time();
+                              us_time);
+  assert(new_time == mark5a_reader_->get_current_time());
+
+  if (us_time < new_time) {
+    // Going to a time before the data started, start sending invalid data
+    current_time = us_time;
+  } else {
+    // Normal case: 
+    current_time = new_time;
+  }
+  
   input_element_->start_time = current_time;
 
   if (us_time != new_time) {
-    DEBUG_MSG("Warning: Couldn't go to time " << us_time/1000
-              << "ms not found. Current time is " << new_time);
+    DEBUG_MSG("Warning: Couldn't go to time " << us_time << "us.");
+    DEBUG_MSG("Current time is              " << current_time << "us.");
+    DEBUG_MSG("Time found is                " << new_time << "us.");
   }
-  return new_time/1000;
+
+  return current_time/1000;
 }
 int
 Mark5a_reader_tasklet::
