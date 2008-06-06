@@ -1,0 +1,73 @@
+Compilation instructions for the software correlator.
+
+Prerequisites
+-------------
+You will need
+  - fftw3 (both float and double versions) installed
+  - if you have gsl installed, that version will be used. Otherwise
+    gsl is installed in the lib/ directory
+  - a version of mpi installed (which requires a c++ compiler)
+  - python installed
+  - boost.python installed for the python binding in the vex-parser
+
+Setting up autoconf/automake
+----------------------------
+
+1. Generate the necessary files.
+   Before you can run configure you have to run
+     - aclocal
+     - autoheader
+     - autoconf
+     - automake --add-missing
+   The file "compile.sh" conveniently contains these commands
+
+2. Run configure
+   You should specify CXX to be an mpi-enabled c++-compiler
+   (e.g. mpicxx). Custom configure options are:
+   --enable-debug          
+     Enable printing debug information
+   --enable-progress
+     Enable progress messages, that are used by the vumeter.py and the
+     demo website.
+
+   You can also set some precompiler directives (in CXXFLAGS):
+   -DSFXC_DETERMINISTIC
+     Makes sure that the correlator is deterministic. It assigns time
+     slices to predetermined nodes
+
+   -DSFXC_WRITE_STATS      
+     Writes the cumulative phase and amplitude of the fringe in the
+     first correlator node, for the first channel. This only makes
+     sense with SFXC_DETERMINISTIC enabled. 
+
+   (also in utils.h):
+
+   -DPRINT_PID=true
+     Prints the process id for every node. This is convenient for
+     debugging as you can start the debugger with 
+     "gdb sfxc <pid>".
+     You can start debugging the main node with
+     "mpirun -gdb ..."
+
+   -DPRINT_HOST=true
+     Prints the hostname for every node, for checking the layout of
+     the nodes on a distributed system
+
+   -DPRINT_TIMER=true
+     Prints timing statistics of different tasklets
+
+   in utils.h there is a #define USE_DOUBLES which enables doubles for
+   all calculations in the correlator node. If you disable that, it will
+   use floats instead.
+
+   so you can execute configure like:
+   ./configure --enable-debug CXXFLAGS="$CXXFLAGS -DPRINT_PID=true" CXX=mpicxx
+
+
+Compiling the software correlator
+---------------------------------
+
+1. Compile with "make" and install with "make install"
+
+2. Generate doxygen code with "make doxygen".
+   The doxygen output will be in doc/html/

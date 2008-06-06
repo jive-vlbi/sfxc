@@ -33,17 +33,6 @@ dnl ---------------------------------------------------------------------------
 dnl Checking external libraries
 dnl ---------------------------------------------------------------------------
 
-dnl MPI and the math library
-dnl AC_CHECK_LIB(mpich, MPI_Init, [], [
-dnl         echo "Couldn't find mpi library."
-dnl         ])
-dnl MPICH_CXXFLAGS=
-dnl MPICH_LDADD=" -lmpich"
-dnl AC_SUBST(MPICH_CXXFLAGS)
-dnl AC_SUBST(MPICH_LDADD)
-dnl SFXC_CXXFLAGS="$SFXC_CXXFLAGS $MPICH_CXXFLAGS"
-dnl SFXC_LDADD="$SFXC_LDADD $MPICH_LDADD"
-
 dnl resetting generic flags
 CXXFLAGS=$CXXFLAGS_IN
 CFLAGS=$CFLAGS_IN

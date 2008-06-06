@@ -1,26 +1,5 @@
 #
 # SFXC software Correlator
 #  
-# In order to compile this software you need
-#  fftw3
-#  jsoncpp
-# if jsoncpp is in an system-wide everything shoud go fine 
-# if not... please considering to install it into the localusr/ subdir
-#
-# libtool can be outdated ... in this case you have to run
-# "libtoolize" in the base dir
-#
-# 
-#
-#
-#then run the 
-./compile.sh
-# followed by:
-# ./configure
-#      --enable-debug
-#      --enable-optimization
-#      CC and CXX set to mpic++
-#
-# make -j x will not work for the first time compilation
-# due to a wrong dependeny trackin with vex_parser
-#
+
+Compilation instructions can be found in docs/compile_sfxc.txt
