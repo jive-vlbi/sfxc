@@ -13,7 +13,6 @@
 #include "mark5a_reader_tasklet.h"
 #include "mark5b_reader_tasklet.h"
 #include "integer_delay_correction_per_channel.h"
-#include "void_consuming_tasklet.h"
 #include "channel_extractor_tasklet.h"
 #include "input_node_data_writer_tasklet.h"
 
