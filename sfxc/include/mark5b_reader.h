@@ -50,7 +50,8 @@ public:
 
   };
 
-  Mark5b_reader(boost::shared_ptr<Data_reader> data_reader);
+  Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
+                unsigned char *buffer);
   virtual ~Mark5b_reader();
 
   /// Time in microseconds
@@ -86,7 +87,10 @@ private:
   // For testing
   Debug_level debug_level_;
 
-  Header current_header;
+  // Current header is the first header read in read_new_block
+  // tmp_header is used for the other blocks
+  // so that the header points to the time of the first sample
+  Header current_header, tmp_header;
 
   int time_between_headers_;
 };

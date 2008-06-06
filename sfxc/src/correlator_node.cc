@@ -169,7 +169,7 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
     }
     delay_modules[stream_nr] =
       Delay_correction_ptr(new Delay_correction());
-
+    
     // Connect the delay_correction to the bits2float_converter
     delay_modules[stream_nr]->connect_to(bit_sample_readers[stream_nr]->get_output_buffer());
   }

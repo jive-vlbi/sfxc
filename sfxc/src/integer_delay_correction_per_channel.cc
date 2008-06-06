@@ -27,68 +27,24 @@ Integer_delay_correction_per_channel::do_task() {
   output_element.release_data = false;
 
   int byte_offset =
-    (_current_time-input_element.start_time)*sample_rate*bits_per_sample/8/1000000 +
+    (_current_time-input_element.start_time) *
+    sample_rate*bits_per_sample/8/1000000 +
     current_delay.first;
-  if (byte_offset >= (int)input_element.channel_data.data().data.size()) {
-    // This can happen when we go to a next integration slice
-    // And the integer delay changes at the same time
-    output_element.channel_data = input_element.channel_data;
-    output_element.release_data = true;
 
-    output_buffer_->push(output_element);
-    input_buffer_->pop();
-    return;
-  }
-
-  if (byte_offset < -(nr_output_bytes+1)) {
-    // Completely random data
-
-    // Do not do the bit offset
-    output_element.delay = char(0);
-    output_element.invalid_samples_begin = 0;
-    output_element.nr_invalid_samples = nr_output_bytes*8/bits_per_sample;
-
-    // Send random data
-    output_element.channel_data = allocate_random_element();
-    output_element.first_byte = 0;
-    output_element.nr_bytes = nr_output_bytes+1;
-    output_buffer_->push(output_element);
-
-    // Release the data
-    output_element.release_data = true;
-    output_buffer_->push(output_element);
-
-  } else if (byte_offset < 0) {
-    // Partially random data
-    output_element.invalid_samples_begin = 0;
-    // Either all data is random, or part of the second block contains valid data
-    output_element.nr_invalid_samples =
-      std::min(nr_output_bytes*8/bits_per_sample,
-               // random data in the first block
-               -byte_offset*8/bits_per_sample - output_element.delay + 
-               // random data in the second block
-               input_element.nr_invalid_samples);
-
-    // Send random data
-    output_element.channel_data = allocate_random_element();
-    output_element.first_byte = 0;
-    output_element.nr_bytes = -byte_offset;
-    output_buffer_->push(output_element);
-
-    // Release the data
-    output_element.release_data = true;
-    output_buffer_->push(output_element);
-
-    // Send real data
-    output_element.release_data = false;
-    // Don't send the delay again:
-    output_element.delay = -1;
-    output_element.channel_data = input_element.channel_data;
-    output_element.first_byte = 0;
-    output_element.nr_bytes = nr_output_bytes+1+byte_offset;
-    output_buffer_->push(output_element);
-
-  } else {
+  if (byte_offset >= 0) {
+    if (byte_offset >= 
+        (int)input_element.channel_data.data().data.size()) {
+      // This can happen when we go to a next integration slice
+      // And the integer delay changes at the same time
+      output_element.channel_data = input_element.channel_data;
+      output_element.release_data = true;
+      
+      output_buffer_->push(output_element);
+      input_buffer_->pop();
+      return;
+    }
+    
+    // Default case with normal data
     assert (byte_offset >= 0);
     int input_data_size = input_element.channel_data.data().data.size();
     if ((byte_offset + nr_output_bytes) < input_data_size) {
@@ -163,6 +119,54 @@ Integer_delay_correction_per_channel::do_task() {
       output_element.nr_bytes = nr_output_bytes+1-bytes_in_current_block;
       output_buffer_->push(output_element);
     }
+  } else if (byte_offset < -(nr_output_bytes+1)) {
+    // Completely random data
+
+    // Do not do the bit offset
+    output_element.delay = char(0);
+    output_element.invalid_samples_begin = 0;
+    output_element.nr_invalid_samples = nr_output_bytes*8/bits_per_sample;
+
+    // Send random data
+    output_element.channel_data = allocate_random_element();
+    output_element.first_byte = 0;
+    output_element.nr_bytes = nr_output_bytes+1;
+    output_buffer_->push(output_element);
+
+    // Release the data
+    output_element.release_data = true;
+    output_buffer_->push(output_element);
+
+  } else if (byte_offset < 0) {
+    // Partially random data
+    output_element.invalid_samples_begin = 0;
+    // Either all data is random, or part of the second block contains valid data
+    output_element.nr_invalid_samples =
+      std::min(nr_output_bytes*8/bits_per_sample,
+               // random data in the first block
+               -byte_offset*8/bits_per_sample - output_element.delay + 
+               // random data in the second block
+               input_element.nr_invalid_samples);
+
+    // Send random data
+    output_element.channel_data = allocate_random_element();
+    output_element.first_byte = 0;
+    output_element.nr_bytes = -byte_offset;
+    output_buffer_->push(output_element);
+
+    // Release the data
+    output_element.release_data = true;
+    output_buffer_->push(output_element);
+
+    // Send real data
+    output_element.release_data = false;
+    // Don't send the delay again:
+    output_element.delay = -1;
+    output_element.channel_data = input_element.channel_data;
+    output_element.first_byte = 0;
+    output_element.nr_bytes = nr_output_bytes+1+byte_offset;
+    output_buffer_->push(output_element);
+
   }
 
   _current_time += delta_time;

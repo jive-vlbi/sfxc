@@ -3,7 +3,7 @@
  *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  *
- * $Id: channel_extractor.h 412 2007-12-05 12:13:20Z kruithof $
+ * $Id:$
  *
  */
 
@@ -27,10 +27,15 @@ get_input_node_tasklet_mark5a(boost::shared_ptr<Data_reader> reader) {
 
 Input_node_tasklet *
 get_input_node_tasklet_mark5b(boost::shared_ptr<Data_reader> reader) {
-  boost::shared_ptr<Mark5b_reader> mark5b_reader_ptr = 
-    boost::shared_ptr<Mark5b_reader>(new Mark5b_reader(reader));
+  unsigned char buffer[(SIZE_MK5B_FRAME+SIZE_MK5B_HEADER) *
+                       SIZE_MK5B_WORD *
+                       N_MK5B_BLOCKS_TO_READ];
 
-  return new Input_node_tasklet(mark5b_reader_ptr);
+
+  boost::shared_ptr<Mark5b_reader> mark5b_reader_ptr = 
+    boost::shared_ptr<Mark5b_reader>(new Mark5b_reader(reader, buffer));
+
+  return new Input_node_tasklet(mark5b_reader_ptr, buffer);
 }
 
 Input_node_tasklet *
@@ -80,7 +85,8 @@ Input_node_tasklet(Mark5a_reader_ptr_ mark5a_reader_ptr,
 }
 
 Input_node_tasklet::
-Input_node_tasklet(Mark5b_reader_ptr_ mark5b_reader_ptr)
+Input_node_tasklet(Mark5b_reader_ptr_ mark5b_reader_ptr,
+                   unsigned char buffer[])
     : mark5a_reader_(NULL),
     mark5b_reader_(NULL),
     channel_extractor_(N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME, sizeof(int32_t)),
@@ -88,7 +94,7 @@ Input_node_tasklet(Mark5b_reader_ptr_ mark5b_reader_ptr)
     n_bytes_per_input_word(sizeof(int32_t)),
     transport_type(MARK5B) {
 
-  mark5b_reader_ = new Mark5b_reader_tasklet(mark5b_reader_ptr),
+  mark5b_reader_ = new Mark5b_reader_tasklet(mark5b_reader_ptr, buffer),
 
   channel_extractor_.connect_to(mark5b_reader_->get_output_buffer());
 

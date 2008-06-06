@@ -43,7 +43,8 @@ public:
   Input_node_tasklet(Mark5a_reader_ptr_ mark5a_reader_ptr,
                      unsigned char buffer[]);
 
-  Input_node_tasklet(Mark5b_reader_ptr_ mark5b_reader);
+  Input_node_tasklet(Mark5b_reader_ptr_ mark5b_reader,
+                     unsigned char buffer[]);
 
   void initialise();
 
