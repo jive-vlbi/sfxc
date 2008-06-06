@@ -1,17 +1,28 @@
 #include "mark5b_reader.h"
 
 Mark5b_reader::
-Mark5b_reader(boost::shared_ptr<Data_reader> data_reader)
+Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
+                unsigned char *buffer)
     : data_reader_(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
     time_between_headers_(0) {
   assert(sizeof(current_header) == SIZE_MK5B_HEADER*SIZE_MK5B_WORD);
   data_reader_->get_bytes(sizeof(current_header), (char *)&current_header);
-
-  // Don't count the first header
-  data_reader_->reset_data_counter();
-
   assert(current_header.check());
+
+  data_reader_->get_bytes(SIZE_MK5B_FRAME * SIZE_MK5B_WORD,
+                          (char *)buffer);
+
+  for (int i=1; i<N_MK5B_BLOCKS_TO_READ; i++) {
+    buffer += SIZE_MK5B_FRAME * SIZE_MK5B_WORD;
+
+    data_reader_->get_bytes(sizeof(current_header), (char *)&tmp_header);
+    assert(tmp_header.check());
+    
+    data_reader_->get_bytes(SIZE_MK5B_FRAME * SIZE_MK5B_WORD,
+                            (char *)buffer);
+  }
+
   start_day_ = current_header.julian_day();
   start_time_ = current_header.microseconds();
 }
@@ -21,9 +32,10 @@ Mark5b_reader::~Mark5b_reader() {}
 
 int64_t
 Mark5b_reader::goto_time(unsigned char *mark5b_block, int64_t us_time) {
+  assert(current_header.check());
   assert(time_between_headers_ > 0);
   int64_t current_time_ = current_header.microseconds();
-  
+
   if (us_time <= current_time_) return current_time_;
 
   const int64_t delta_time = us_time-current_header.seconds()*1000000;
@@ -40,20 +52,18 @@ Mark5b_reader::goto_time(unsigned char *mark5b_block, int64_t us_time) {
   // Don't read the last header, to be able to check whether we are at the
   // right time
   int bytes_to_read = 
-    n_blocks*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header -
-    SIZE_MK5B_HEADER * SIZE_MK5B_WORD;
+    (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
 
   int bytes_read = data_reader_->get_bytes(bytes_to_read, NULL);
   assert(bytes_to_read == bytes_read);
 
-  // Read header separately to check the time stamp
-  data_reader_->get_bytes(sizeof(current_header), (char *)&current_header);
-
-  current_time_ = current_header.microseconds();
-  assert(us_time == current_time_);
-
+  // Read last block:
   read_new_block(mark5b_block);
 
+  assert((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) == 0);
+  current_time_ = current_header.microseconds();
+  assert(us_time == current_time_);
+  assert(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
 
   return current_time_;
 }
@@ -67,12 +77,19 @@ bool Mark5b_reader::read_new_block(unsigned char *mark5b_block) {
   assert(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
 
   for (int i=0; i<N_MK5B_BLOCKS_TO_READ; i++) {
+    if (i==0) {
+      data_reader_->get_bytes(sizeof(current_header), 
+                              (char *)&current_header);
+      assert(current_header.check());
+    } else {
+      data_reader_->get_bytes(sizeof(current_header), 
+                              (char *)&tmp_header);
+      assert(tmp_header.check());
+    }
+
     data_reader_->get_bytes(SIZE_MK5B_FRAME*SIZE_MK5B_WORD,
                             (char *)mark5b_block);
     mark5b_block += SIZE_MK5B_FRAME*SIZE_MK5B_WORD;
-    
-    data_reader_->get_bytes(sizeof(current_header), 
-                            (char *)&current_header);
   }
 
   return current_header.check();

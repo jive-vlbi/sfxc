@@ -2,17 +2,23 @@
 #include "utils.h"
 
 Mark5b_reader_tasklet::
-Mark5b_reader_tasklet(Mark5b_reader_ptr reader)
+Mark5b_reader_tasklet(Mark5b_reader_ptr reader,
+                      unsigned char *buffer)
     : memory_pool_(10), stop_time(-1) {
   assert(sizeof(value_type) == 1);
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
 
   mark5b_reader_ = reader;
   current_time = mark5b_reader_->get_current_time();
+
   allocate_element();
-  mark5b_reader_->read_new_block(&input_element_->mark5_data[0]);
-  
+
+  memcpy(&input_element_->mark5_data[0],
+         buffer,
+         SIZE_MK5B_FRAME * SIZE_MK5B_WORD * N_MK5B_BLOCKS_TO_READ);
   input_element_->start_time = current_time;
+  input_element_->invalid_bytes_begin = 0;
+  input_element_->nr_invalid_bytes = 0;
 
 
 #ifdef RUNTIME_STATISTIC
@@ -43,8 +49,6 @@ do_task() {
 
   push_element();
   allocate_element();
-  input_element_->start_time = current_time;
-
   if (mark5b_reader_->eof()) {
 #ifdef SFXC_INVALIDATE_SAMPLES
     input_element_->invalid_bytes_begin = 0;
@@ -56,33 +60,22 @@ do_task() {
 #endif
 
     current_time += mark5b_reader_->time_between_headers();
-  } else if (current_time < mark5b_reader_->get_current_time()) {
-    // We don't have data yet
-#ifdef SFXC_INVALIDATE_SAMPLES
-      input_element_->invalid_bytes_begin = 0;
-      input_element_->nr_invalid_bytes = 
-        SIZE_MK5B_FRAME*SIZE_MK5B_WORD*N_MK5B_BLOCKS_TO_READ;
-#else
-      input_element_->invalid_bytes_begin = 0;
-      input_element_->nr_invalid_bytes = 0;
-      randomize_block(0,SIZE_MK5B_FRAME*SIZE_MK5B_WORD*N_MK5B_BLOCKS_TO_READ);
-#endif
-
-    current_time += mark5b_reader_->time_between_headers();
   } else {
+    input_element_->invalid_bytes_begin = 0;
+    input_element_->nr_invalid_bytes = 0;
+    
     if (!mark5b_reader_->read_new_block(&input_element_->mark5_data[0])) {
 #ifdef SFXC_INVALIDATE_SAMPLES
-      input_element_->invalid_bytes_begin = 0;
       input_element_->nr_invalid_bytes = 
         SIZE_MK5B_FRAME*SIZE_MK5B_WORD*N_MK5B_BLOCKS_TO_READ;
 #else
-      input_element_->invalid_bytes_begin = 0;
-      input_element_->nr_invalid_bytes = 0;
       randomize_block(0,SIZE_MK5B_FRAME*SIZE_MK5B_WORD*N_MK5B_BLOCKS_TO_READ);
 #endif
     }
     current_time = mark5b_reader_->get_current_time();
   }
+  input_element_->start_time = current_time;
+
 
 #ifdef RUNTIME_STATISTIC
   monitor_.end_measure(SIZE_MK5B_FRAME*SIZE_MK5B_WORD);
@@ -121,17 +114,17 @@ goto_time(int ms_time) {
   int64_t new_time =
     mark5b_reader_->goto_time((unsigned char *)&input_element_->mark5_data[0],
                               us_time);
-  assert(new_time == mark5b_reader_->get_current_time());
-
-  if (us_time < new_time) {
-    // Going to a time before the data started, start sending invalid data
-    current_time = us_time;
-  } else {
-    // Normal case: 
-    current_time = new_time;
+  if (new_time != mark5b_reader_->get_current_time()) {
+    DEBUG_MSG(new_time << " vs. " << mark5b_reader_->get_current_time());
   }
+
+  // Set the current time to the actual time in the data stream.
+  // Might not be the requested time, if no data is available
+  current_time = new_time;
   
   input_element_->start_time = current_time;
+  input_element_->invalid_bytes_begin = 0;
+  input_element_->nr_invalid_bytes = 0;
 
   if (us_time != new_time) {
     DEBUG_MSG("Warning: Couldn't go to time " << us_time << "us.");
@@ -164,12 +157,9 @@ set_stop_time(int64_t ms_time) {
 void
 Mark5b_reader_tasklet::
 push_element() {
-  // Mark the mark5b header as invalid , if no invalid sequence is set yet
-  assert(input_element_->mark5_data.size() > 0);
-  if (input_element_->invalid_bytes_begin < 0) {
-    input_element_->invalid_bytes_begin = 0;
-    input_element_->nr_invalid_bytes = 0;
-  }
+  assert(input_element_->invalid_bytes_begin >= 0);
+  assert(input_element_->nr_invalid_bytes >= 0);
+
   output_buffer_->push(input_element_);
 }
 

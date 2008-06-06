@@ -19,6 +19,8 @@ Mark5a_reader_tasklet(Mark5a_reader_ptr reader,
 
   current_time = mark5a_reader_->get_current_time();
   input_element_->start_time = current_time;
+  input_element_->invalid_bytes_begin = 0;
+  input_element_->nr_invalid_bytes = SIZE_MK5A_HEADER*n_bytes_per_input_word;
 
 
 #ifdef RUNTIME_STATISTIC
@@ -74,6 +76,9 @@ do_task() {
 
     current_time += mark5a_reader_->time_between_headers();
   } else {
+    input_element_->invalid_bytes_begin = 0;
+    input_element_->nr_invalid_bytes = SIZE_MK5A_HEADER*n_bytes_per_input_word;
+
     if (!mark5a_reader_->read_new_block(&input_element_->mark5_data[0])) {
 #ifdef SFXC_INVALIDATE_SAMPLES
       input_element_->invalid_bytes_begin = 0;
@@ -125,13 +130,9 @@ goto_time(int ms_time) {
                               us_time);
   assert(new_time == mark5a_reader_->get_current_time());
 
-  if (us_time < new_time) {
-    // Going to a time before the data started, start sending invalid data
-    current_time = us_time;
-  } else {
-    // Normal case: 
-    current_time = new_time;
-  }
+  // Set the current time to the actual time in the data stream.
+  // Might not be the requested time, if no data is available
+  current_time = new_time;
   
   input_element_->start_time = current_time;
 
@@ -166,22 +167,9 @@ set_stop_time(int64_t ms_time) {
 void
 Mark5a_reader_tasklet::
 push_element() {
-  // Mark the mark5a header as invalid , if no invalid sequence is set yet
-#ifdef SFXC_INVALIDATE_SAMPLES
-  if (input_element_->invalid_bytes_begin < 0) {
-    input_element_->invalid_bytes_begin = 0;
-    input_element_->nr_invalid_bytes = SIZE_MK5A_HEADER*n_bytes_per_input_word;
-  }
-#  ifdef SFXC_CHECK_INVALID_SAMPLES
-  for (size_t i=0; i<SIZE_MK5A_HEADER*n_bytes_per_input_word; i++) {
-    input_element_.data().mark5_data[i] = value_type(INVALID_PATTERN);
-  }
-#  endif
-#else
-  input_element_->invalid_bytes_begin = 0;
-  input_element_->nr_invalid_bytes = 0;
-  randomize_block(0, SIZE_MK5A_HEADER*n_bytes_per_input_word);
-#endif
+  assert(input_element_->invalid_bytes_begin >= 0);
+  assert(input_element_->nr_invalid_bytes >= 0);
+
   output_buffer_->push(input_element_);
 }
 

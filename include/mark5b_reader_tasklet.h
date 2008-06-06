@@ -30,7 +30,8 @@ public:
   typedef Input_node_types::Mark5_buffer_element Output_buffer_element;
   typedef Input_node_types::Mark5_buffer_ptr     Output_buffer_ptr;
 
-  Mark5b_reader_tasklet(Mark5b_reader_ptr mark5b_reader);
+  Mark5b_reader_tasklet(Mark5b_reader_ptr mark5b_reader,
+                        unsigned char *buffer);
 
   /// For Tasklet
   void do_task();
