@@ -43,7 +43,7 @@ public:
   Channel_list                                 channels;
   // data rate of one subband
   int32_t                                     track_bit_rate; // in Ms/s
-  /// number of frequency channels (#samples per output data chunk)
+  /// number of frequency channels (\#samples per output data chunk)
   int32_t number_channels;
   /// The integration time
   int32_t integr_time;

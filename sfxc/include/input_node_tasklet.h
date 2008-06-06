@@ -58,7 +58,8 @@ public:
 
   /// Sets a new time interval for which it should output data
   /// (typically the duration of a scan, or part thereof).
-  /// @input Times are in milliseconds
+  /// \param start_time in milliseconds
+  /// \param stop_time in milliseconds
   void add_time_interval(int32_t start_time, int32_t stop_time);
 
   // Inherited from Input_node_tasklet
