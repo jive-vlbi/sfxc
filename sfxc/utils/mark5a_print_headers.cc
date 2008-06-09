@@ -15,6 +15,7 @@
 #include "utils.h"
 #include "mark5a_reader.h"
 
+// Prints the timestamps in the headers of a mark5a file
 int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG
   RANK_OF_NODE = 0;

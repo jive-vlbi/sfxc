@@ -46,6 +46,7 @@ bool copy_file(char *from, char *to) {
   return true;
 }
 
+// Generates the html-pages used for the ftp-fringe tests. 
 int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG
   RANK_OF_NODE = 0;

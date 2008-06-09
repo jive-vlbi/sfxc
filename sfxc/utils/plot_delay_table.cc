@@ -7,6 +7,11 @@
 
 typedef Control_parameters::Date Date;
 
+//converts a binary delay table to an interpolated ascii table
+//Usage: plot_delay_table <delay-table> <plot-file>
+//
+//each row contains a value for the time and the delay. 
+//Scans are separated with an extra newline, which makes gnuplot draw a new curve.
 int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG
   RANK_OF_NODE = 0;

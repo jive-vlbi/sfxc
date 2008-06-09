@@ -23,9 +23,9 @@
 class Multiple_data_writers_controller : public Controller {
   typedef Multiple_data_writers_controller  Self;
 public:
-  typedef Buffer_element<char,131072>                data_type;
-  typedef Memory_pool<data_type>                     Memory_pool;
-  typedef Memory_pool::value_type                    pool_type;
+  typedef Memory_pool_vector_element<char>             data_type;
+  typedef Memory_pool<data_type>                       Memory_pool;
+  typedef Memory_pool::value_type                      pool_type;
   struct value_type {
     int       actual_size;
     pool_type data;

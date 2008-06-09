@@ -3,7 +3,7 @@
 
 #include "uvw_model.h"
 
-
+// Generates a file with ascii uvw coordinates from a delay file
 int main(int argc, char *argv[]) {
   if (argc != 6) {
     std::cout << "Usage: " << argv[0]

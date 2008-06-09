@@ -65,7 +65,7 @@ private:
 
 private:
   // access functions to the correlation parameters
-  int number_channels();
+  size_t number_channels();
   int sample_rate();
   int bandwidth();
   int length_of_one_fft(); // Length of one fft in microseconds
@@ -91,7 +91,7 @@ private:
   Delay_table_akima   delay_table;
 
   // You need this one because the input and output are FLOATs (not complex)
-  Aligned_vector< std::complex<FLOAT> > frequency_buffer;
+  Memory_pool_vector_element< std::complex<FLOAT> > frequency_buffer;
 
   Timer delay_timer;
 

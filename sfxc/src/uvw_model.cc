@@ -126,7 +126,7 @@ void Uvw_model::initialise_spline_for_next_scan() {
 //get the next line from the delay table file
 std::ofstream& Uvw_model::uvw_values(std::ofstream &output, int64_t starttime,
                                      int64_t stoptime, double inttime) {
-  int64_t time=starttime + inttime*1000/2;
+  int64_t time=(int64_t)(starttime + inttime*1000/2);
   double gsl_u, gsl_v, gsl_w;
   output.precision(14);
   while (time < stoptime) {
@@ -140,7 +140,7 @@ std::ofstream& Uvw_model::uvw_values(std::ofstream &output, int64_t starttime,
     output.write(reinterpret_cast < char * > (&gsl_u), sizeof(double));
     output.write(reinterpret_cast < char * > (&gsl_v), sizeof(double));
     output.write(reinterpret_cast < char * > (&gsl_w), sizeof(double));
-    time += inttime*1000;
+    time += (int64_t)inttime*1000;
   }
   return output;
 }

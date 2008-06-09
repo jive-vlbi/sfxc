@@ -5,6 +5,8 @@
 
 #include "output_header.h"
 
+// Prints out all headers in the output correlation file to std::cout and 
+// writes the data to the file "output_new.txt".
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     std::cout << "usage: " << argv[0] << " <cor-file>" << std::endl;
