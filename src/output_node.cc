@@ -52,7 +52,6 @@ void Output_node::initialise() {
 }
 
 Output_node::~Output_node() {
-  DEBUG_MSG(__PRETTY_FUNCTION__);
   // empty the input buffers to the output
   assert(status == END_NODE);
   assert(input_streams_order.empty());
@@ -148,6 +147,8 @@ write_global_header(const Output_header_global &global_header) {
   output_value_type element;
   element.actual_size = sizeof(Output_header_global);
   element.data = output_memory_pool.allocate();
+  if (element.data->size() != 1000000)
+    element.data->resize(1000000);
   memcpy(element.data->buffer(), (char *)&global_header,
          sizeof(Output_header_global));
   output_queue->push(element);
@@ -184,7 +185,7 @@ void Output_node::time_slice_finished(int rank, int64_t nBytes) {
 void Output_node::write_output() {
   if (output_memory_pool.empty())
     return;
-  
+
   assert(curr_stream >= 0);
   assert(input_streams[curr_stream] != NULL);
   assert(!output_memory_pool.empty());
@@ -229,7 +230,10 @@ Output_node::Input_stream::Input_stream(boost::shared_ptr<Data_reader> reader)
 void
 Output_node::Input_stream::write_bytes(output_value_type &elem) {
   assert(reader != boost::shared_ptr<Data_reader>());
-  size_t nBytes = std::min(elem.data->size(), reader->get_size_dataslice());
+  if (elem.data->size() != 1000000)
+    elem.data->resize(1000000);
+  size_t nBytes = std::min(elem.data->size(),
+                           (size_t)reader->get_size_dataslice());
   elem.actual_size = reader->get_bytes(nBytes, elem.data->buffer());
 }
 

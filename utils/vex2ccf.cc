@@ -162,7 +162,15 @@ Json::Value get_channels(const Vex &vex) {
   return result;
 }
 
-
+/*
+ * Generates a skeleton for a ctrl-file from a vex file
+ * Usage: vex2ccf [--full|-f] [--das3] <vex-file> <ctrl-file>
+ * 
+ * Options:
+ *   --full, -f: generate more information, that can be used by the work flow
+ *               manager
+ *   --das3:     addes a das3 specific section
+ */
 int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG
   RANK_OF_NODE = 0;

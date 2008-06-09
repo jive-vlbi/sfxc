@@ -134,8 +134,7 @@ bool Benchmark::do_test(int n_channels, int fan_out,
 
 
   int bytes_per_sample = 8/track_positions[0].size()*size_input_word;
-  int word_per_sample = 8/track_positions[0].size();
-
+  
   // Initialise the input data
   const int input_size = size_input_word*(n_input_samples_to_process+1);
   unsigned char in_data1[input_size],in_data2[input_size];

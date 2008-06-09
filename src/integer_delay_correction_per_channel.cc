@@ -21,10 +21,26 @@ Integer_delay_correction_per_channel::do_task() {
   assert(has_work());
   assert(current_delay.first <= 0);
 
+  // Acquire the input and output buffers
   Input_buffer_element input_element = input_buffer_->front();
   Output_buffer_element output_element;
   output_element.delay = (char)current_delay.second;
   output_element.release_data = false;
+
+  // Compute the offset in bytes
+  // If byte_offset < -nr_output_bytes
+  //   The requested output lies before the input data, send invalid data
+  // If byte_offset < 0
+  //   The requested output lies partially before the input data,
+  //   send invalid data for the first part and then the data from the input
+  // If byte_offset > 0 && byte_offset + nr_output_bytes < input_element.size()
+  //   the data requested is in the input file and lies within one data block,
+  //   this is the normal case
+  // If byte_offset > 0 && byte_offset + nr_output_bytes >= input_element.size()
+  //   the data requested is in the input file and lies within two data block,
+  //   - send the data from the first block,
+  //   - send a message to release the first block,
+  //   - send the data from the second block
 
   int byte_offset =
     (_current_time-input_element.start_time) *
@@ -32,23 +48,27 @@ Integer_delay_correction_per_channel::do_task() {
     current_delay.first;
 
   if (byte_offset >= 0) {
-    if (byte_offset >= 
+    // we have valid data
+
+    if (byte_offset >=
         (int)input_element.channel_data.data().data.size()) {
       // This can happen when we go to a next integration slice
       // And the integer delay changes at the same time
+      // Release the current block
       output_element.channel_data = input_element.channel_data;
       output_element.release_data = true;
-      
+
       output_buffer_->push(output_element);
       input_buffer_->pop();
       return;
     }
-    
+
     // Default case with normal data
     assert (byte_offset >= 0);
     int input_data_size = input_element.channel_data.data().data.size();
     if ((byte_offset + nr_output_bytes) < input_data_size) {
-
+      // Normal case where all data lies within one input block
+      
       { // Set invalid samples
         output_element.invalid_samples_begin = 0;
         output_element.nr_invalid_samples = 0;
@@ -56,11 +76,11 @@ Integer_delay_correction_per_channel::do_task() {
         if ((byte_offset*8/bits_per_sample+output_element.delay) <
             (input_element.invalid_samples_begin + input_element.nr_invalid_samples)) {
           // nr of invalid samples from the beginning of the fft
-          int nr_invalid_samples = 
-            /* stop  */ (input_element.invalid_samples_begin + 
+          int nr_invalid_samples =
+            /* stop  */ (input_element.invalid_samples_begin +
                          input_element.nr_invalid_samples) -
             /* start */ (byte_offset * 8 / bits_per_sample + output_element.delay);
-          output_element.nr_invalid_samples = 
+          output_element.nr_invalid_samples =
             std::min(nr_output_bytes*8/bits_per_sample, nr_invalid_samples);
         }
         assert(output_element.nr_invalid_samples >= 0);
@@ -73,6 +93,8 @@ Integer_delay_correction_per_channel::do_task() {
       output_buffer_->push(output_element);
 
     } else {
+      // Case where the data lies within two input blocks
+
       int bytes_in_current_block = input_data_size-byte_offset;
       // Send first block of data
       output_element.channel_data = input_element.channel_data;
@@ -88,15 +110,15 @@ Integer_delay_correction_per_channel::do_task() {
         output_element.invalid_samples_begin = 0;
         output_element.nr_invalid_samples = 0;
 
-        // Simplification because the only invalid samples are missing data 
+        // Simplification because the only invalid samples are missing data
         // or mark5-headers
         assert(input_element.invalid_samples_begin == 0);
 
         // start of the invalid data is the begin of the second data block
-        output_element.invalid_samples_begin = 
+        output_element.invalid_samples_begin =
           bytes_in_current_block*8/bits_per_sample - output_element.delay;
-        
-        int samples_in_second_block = 
+
+        int samples_in_second_block =
           (nr_output_bytes-bytes_in_current_block)*8/bits_per_sample + output_element.delay;
 
         output_element.nr_invalid_samples =
@@ -137,14 +159,16 @@ Integer_delay_correction_per_channel::do_task() {
     output_element.release_data = true;
     output_buffer_->push(output_element);
 
-  } else if (byte_offset < 0) {
+  } else {
+    assert(byte_offset < 0);
+    
     // Partially random data
     output_element.invalid_samples_begin = 0;
     // Either all data is random, or part of the second block contains valid data
     output_element.nr_invalid_samples =
       std::min(nr_output_bytes*8/bits_per_sample,
                // random data in the first block
-               -byte_offset*8/bits_per_sample - output_element.delay + 
+               -byte_offset*8/bits_per_sample - output_element.delay +
                // random data in the second block
                input_element.nr_invalid_samples);
 
@@ -169,9 +193,13 @@ Integer_delay_correction_per_channel::do_task() {
 
   }
 
+  // Increase the time to the beginning of the next fft
   _current_time += delta_time;
   current_delay = get_delay(_current_time);
 
+  
+  // Check whether the next fft crosses an integration border
+  // Then we set the time to the beginning of the next integration slice
   if ((_current_time/integration_time) !=
       ((_current_time+delta_time-1)/integration_time)) {
     // Continue with the next integration slice
@@ -241,17 +269,17 @@ Integer_delay_correction_per_channel::get_delay(int64_t time) {
   // delay_in_bytes = std::floor(delay_in_samples/(8./bits_per_sample))
   assert(delay_in_samples < 0);
   int delay_in_bytes = -((-delay_in_samples)/(8/bits_per_sample))-1;
-  int delay_in_remaining_samples = 
+  int delay_in_remaining_samples =
     delay_in_samples-delay_in_bytes*(8/bits_per_sample);
   if (delay_in_remaining_samples*bits_per_sample == 8) {
     delay_in_bytes++;
     delay_in_remaining_samples = 0;
   }
 
-  assert((delay_in_bytes <= 0) && 
+  assert((delay_in_bytes <= 0) &&
          (delay_in_remaining_samples < 8));
-  assert((delay_in_bytes*(8/bits_per_sample) + 
-          delay_in_remaining_samples) == 
+  assert((delay_in_bytes*(8/bits_per_sample) +
+          delay_in_remaining_samples) ==
          delay_in_samples);
 
   return Delay_type(delay_in_bytes, delay_in_remaining_samples);
@@ -321,6 +349,7 @@ allocate_random_element() {
     result.data().data.resize(nr_output_bytes+1);
 #ifdef SFXC_INVALIDATE_SAMPLES
 #ifdef SFXC_CHECK_INVALID_SAMPLES
+
     for (int i=0; i<nr_output_bytes+1; i++) {
       result.data().data[i] = INVALID_PATTERN;
     }
@@ -331,6 +360,7 @@ allocate_random_element() {
       result.data().data[i] = (char)park_miller_random();
     }
 #endif
+
   }
 
   return result;

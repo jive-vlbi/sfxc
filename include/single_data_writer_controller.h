@@ -24,15 +24,15 @@
 class Single_data_writer_controller : public Controller {
   typedef Single_data_writer_controller  Self;
 public:
-  typedef Buffer_element_large<char, 250000>         data_type;
-  typedef Memory_pool<data_type>                     Memory_pool;
-  typedef Memory_pool::value_type                    pool_type;
+  typedef Memory_pool_vector_element<char>  data_type;
+  typedef Memory_pool<data_type>            Memory_pool;
+  typedef Memory_pool::value_type           pool_type;
   struct value_type {
     int       actual_size;
     pool_type data;
   };
-  typedef Threadsafe_queue<value_type>               Queue;
-  typedef boost::shared_ptr<Queue>                   Queue_ptr;
+  typedef Threadsafe_queue<value_type>      Queue;
+  typedef boost::shared_ptr<Queue>          Queue_ptr;
   
 
   Single_data_writer_controller(Node &node);

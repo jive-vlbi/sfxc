@@ -11,10 +11,13 @@
 
 class Correlation_core : public Tasklet {
 public:
-  typedef Delay_correction::Output_buffer_element        Input_buffer_element;
-  typedef Delay_correction::Output_buffer                Input_buffer;
-  typedef Delay_correction::Output_buffer_ptr            Input_buffer_ptr;
+  typedef Delay_correction::Output_buffer_element          Input_buffer_element;
+  typedef Delay_correction::Output_buffer                  Input_buffer;
+  typedef Delay_correction::Output_buffer_ptr              Input_buffer_ptr;
 
+  typedef Memory_pool_vector_element<FLOAT>                Float_buffer;
+  typedef Memory_pool_vector_element<std::complex<FLOAT> > Complex_buffer;
+  typedef Memory_pool_vector_element<std::complex<float> > Complex_buffer_float;
   Correlation_core();
   virtual ~Correlation_core();
 
@@ -69,22 +72,22 @@ private:
 
   int number_ffts_in_integration, current_fft, total_ffts;
 
-  FFTW_PLAN                             plan;
-  Aligned_vector<FLOAT>                 plan_input_buffer;
-  Aligned_vector<std::complex<FLOAT> >  plan_output_buffer;
+  FFTW_PLAN       plan;
+  Float_buffer    plan_input_buffer;
+  Complex_buffer  plan_output_buffer;
 
   //std::vector< FLOAT >               plan_input_buffer;
   //std::vector< std::complex<FLOAT> > plan_output_buffer;
 
 
-  Correlation_parameters                            correlation_parameters;
+  Correlation_parameters                               correlation_parameters;
 
-  std::vector< Aligned_vector< std::complex<FLOAT> > > frequency_buffer;
-  std::vector< std::vector<std::complex<FLOAT> > >     accumulation_buffers;
-  std::vector< std::complex<float> >                   accumulation_buffers_float;
+  std::vector< Complex_buffer >                        frequency_buffer;
+  std::vector< Complex_buffer >                        accumulation_buffers;
+  Complex_buffer_float                                 accumulation_buffers_float;
   std::vector< std::pair<size_t, size_t> >             baselines;
 
-  boost::shared_ptr<Data_writer>                    writer;
+  boost::shared_ptr<Data_writer>                       writer;
 
   Timer fft_timer;
 
@@ -94,9 +97,9 @@ private:
 
 #ifdef SFXC_WRITE_STATS
   // For plotting statistics on the height of the fringe and the phase
-  std::ofstream stats_out;
-  Aligned_vector<std::complex<FLOAT> >  backward_buffer;
-  FFTW_PLAN backward_plan_;
+  std::ofstream                                        stats_out;
+  Complex_buffer                                       backward_buffer;
+  FFTW_PLAN                                            backward_plan_;
 #endif // SFXC_WRITE_STATS
 
 };

@@ -20,7 +20,7 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node)
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
     status(STOPPED),
-    nr_corr_node(nr_corr_node) {
+nr_corr_node(nr_corr_node) {
   get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;
 
   add_controller(&correlator_node_ctrl);
@@ -39,6 +39,7 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node)
 
 
 #ifdef RUNTIME_STATISTIC
+
   std::stringstream inputid;
   std::stringstream compid;
   std::stringstream monid;
@@ -103,14 +104,14 @@ Correlator_node::~Correlator_node() {
 void Correlator_node::start() {
   while (true) {
     switch (status) {
-    case STOPPED: {
+      case STOPPED: {
         // blocking:
         if (check_and_process_message()==TERMINATE_NODE) {
           status = END_CORRELATING;
         }
         break;
       }
-    case CORRELATING: {
+      case CORRELATING: {
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           status = END_CORRELATING;
         }
@@ -137,7 +138,7 @@ void Correlator_node::start() {
         }
         break;
       }
-    case END_CORRELATING: {
+      case END_CORRELATING: {
         return;
       }
     }
@@ -169,7 +170,7 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
     }
     delay_modules[stream_nr] =
       Delay_correction_ptr(new Delay_correction());
-    
+
     // Connect the delay_correction to the bits2float_converter
     delay_modules[stream_nr]->connect_to(bit_sample_readers[stream_nr]->get_output_buffer());
   }
@@ -280,7 +281,8 @@ void
 Correlator_node::set_parameters() {
   assert(status == STOPPED);
 
-  if (integration_slices_queue.empty()) return;
+  if (integration_slices_queue.empty())
+    return;
 
   const Correlation_parameters &parameters =
     integration_slices_queue.front();

@@ -23,6 +23,8 @@
 #include "output_header.h"
 #include "fringe_info.h"
 
+//Shows the difference between two correlation output files. 
+//Very similar to produce_html_plotpage
 int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG
   RANK_OF_NODE = 0;

@@ -24,7 +24,7 @@
 class Multiple_data_readers_controller : public Controller {
   typedef Multiple_data_readers_controller  Self;
 public:
-  typedef Buffer_element_large<char,5000>            data_type;
+  typedef Memory_pool_fixed_size_element<char,5000>  data_type;
   typedef Data_reader2buffer<data_type>              Reader2buffer;
   typedef Data_reader_buffer<data_type>              Reader_buffer;
 

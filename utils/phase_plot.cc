@@ -5,6 +5,9 @@
 #include <fftw3.h>
 #include <output_header.h>
 
+//Writes out the phase of the fringe for every timeslice
+//Each row contains the phases for every baseline, in the order that they occur 
+//in the correlation file
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     std::cout << "Usage: " << argv[0] << " <cor-file>" << std::endl;

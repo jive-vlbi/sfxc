@@ -1,17 +1,16 @@
 SUBDIRS = delay
 
+pkginclude_HEADERS = *.h *.py
+
 AM_CXXFLAGS = $(SFXC_CXXFLAGS)
 LDADD = $(SFXC_LDADD)
 
-bin_PROGRAMS = create_delay_function \
-               produce_fringe \
-               print_headers \
+bin_PROGRAMS = mark5a_print_headers \
                produce_html_plotpage \
                produce_html_diffpage \
                vex2ccf \
                generate_uvw_coordinates \
                plot_delay_table \
-               produce_output_graphs \
                print_new_output_format \
                dnfp_fileserver \
                dnfp_fileclient \
@@ -20,10 +19,6 @@ bin_PROGRAMS = create_delay_function \
                baseline_info
 
 bin_SCRIPTS  = run_sfxc.py vumeter.py
-
-create_delay_function_SOURCES = create_delay_function.cc
-
-produce_fringe_SOURCES = produce_fringe.cc
 
 dnfp_fileserver_SOURCES = \
   dnfp_fileserver.cc \
@@ -45,8 +40,8 @@ dnfp_fileclient_SOURCES = \
    ../src/data_reader_blocking.cc  \
    ../src/utils.cc
 
-print_headers_SOURCES = \
-  print_headers.cc \
+mark5a_print_headers_SOURCES = \
+  mark5a_print_headers.cc \
   ../src/log_writer.cc \
   ../src/log_writer_cout.cc \
   ../src/data_reader.cc \
@@ -100,11 +95,6 @@ plot_delay_table_SOURCES = \
   plot_delay_table.cc \
   ../src/delay_table_akima.cc \
   ../src/utils.cc
-
-produce_output_graphs_SOURCES = \
-  produce_output_graphs.cc
-
-pkginclude_HEADERS = *.h *.py
 
 print_new_output_format_SOURCES = \
   print_new_output_format.cc \

@@ -1,0 +1,108 @@
+produce_html_plotpage
+---------------------
+Usage: produce_html_plotpage [-f] <vex-file> \
+          <correlation_file> [<output_directory>]
+          
+Generates the html-pages used for the ftp-fringe tests. 
+
+Options:
+  -f With this option produce_html_plotpage doesn't after generating the 
+     html-page continues reading in new integration slices and plots those.
+
+
+produce_html_diffpage
+---------------------
+Usage: produce_html_diffpage <vex-file> \
+          <correlation_file1> <correlation_file2> [<output_directory>]
+
+Shows the difference between two correlation output files. 
+Very similar to produce_html_plotpage
+
+vex2ccf
+-------
+Generates a skeleton for a ctrl-file from a vex file
+Usage: vex2ccf [--full|-f] [--das3] <vex-file> <ctrl-file>
+
+Options:
+  --full, -f: generate more information, that can be used by the work flow
+              manager
+  --das3:     addes a das3 specific section
+
+
+baseline_info
+-------------
+Prints out information about all integrations of one baseline
+Usage: baseline_info <cor-file> <ch_nr> <sideband> <st_nr1> <pol1> <st_nr2> <pol2>
+
+All arguments, except for the cor-file, are the values as found in the
+  baseline-header
+  
+The output is a table with a row for every integration containing:
+  - The location of the fringe
+  - The phase of the fringe
+  - The absolute value of the fringe
+  - The phase of the center lag
+  - The absolute value of the center lag
+  - The signal to noise ratio
+  - the weight
+
+
+phase_plot
+----------
+Usage: phase_plot <cor-file>
+Writes out the phase of the fringe for every timeslice
+Each row contains the phases for every baseline, in the order that they occur 
+in the correlation file
+
+plot_delay_table
+----------------
+converts a binary delay table to an interpolated ascii table
+Usage: plot_delay_table <delay-table> <plot-file>
+
+each row contains a value for the time and the delay. 
+Scans are separated with an extra newline, which makes gnuplot draw a new curve.
+
+mark5a_print_headers
+--------------------
+Prints the timestamps in the headers of a mark5a file
+Usage: mark5a_print_headers <mark5a-file>
+
+print_new_output_format
+-----------------------
+Usage: print_new_output_format <cor-file>
+
+Prints out all headers in the output correlation file to std::cout and 
+writes the data to the file "output_new.txt".
+
+
+generate_uvw_coordinates
+------------------------
+Usage: generate_uvw_coordinates <delay-file> <start> <stop> <integration-time> <output-file>
+
+Generates a file with ascii uvw coordinates from a delay file
+
+make_anim
+---------
+Usage: make_anim <ctrl-file> <station1_nr> <station2_nr>
+
+Makes an animated gif displaying the evolution of the fringe of a certain
+baseline over time
+
+  
+dnfp_fileclient
+---------------
+A utility made by Damien to transfer data from a dnfp_server 
+
+This file contains a little file client based on a simple protocol. 
+The application simply connect to a dnfp server and request a file.
+
+dnfp_fileserver
+---------------
+A utility made by Damien to serve data over a network
+
+This file contains a little file server based on a simple protocol. 
+The application use a config file named: dnfp_configfile.cfg
+
+this file stores the list of file to expose to the clients...and there 
+symbolic name in the format:
+name1 /path/to/real/file

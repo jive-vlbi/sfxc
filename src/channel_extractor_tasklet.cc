@@ -65,14 +65,19 @@ Channel_extractor_tasklet::do_task() {
 
   assert(has_work());
 
-  // Number of output streams
+  // Number of output streams, one output stream corresponds to one subband
   assert(n_subbands == output_buffers_.size());
   assert(n_subbands > 0);
 
   // The struct containing the data for processing
+  // This is the not-yet-channelized data.
   Input_buffer_element input_element = input_buffer_->front();
 
   // The number of input samples to process
+  // For mark5a this is 1 block
+  // For mark5b this is N_MK5B_BLOCKS_TO_READ as the input_element also contains
+  //   a time in microseconds and not all mark5b blocks start on an integer number
+  //   of microseconds
   int n_input_samples = input_element.data().mark5_data.size();
   assert(n_input_samples == samples_per_block*N);
 
@@ -81,7 +86,9 @@ Channel_extractor_tasklet::do_task() {
   int n_output_bytes = (samples_per_block*fan_out)/8;
   assert(n_output_bytes > 0);
 
+  // Array of dechannelized output buffers
   Output_buffer_element  output_elements[n_subbands];
+  // Array of pointers to the actual output data arrays
   unsigned char *output_positions[n_subbands];
   { // Acquire output buffers
     for (size_t subband=0; subband<n_subbands; subband++) {
@@ -113,10 +120,11 @@ Channel_extractor_tasklet::do_task() {
   }
 
   // Channel extract
+  // This is done in a separate class to allow for different optimizations
   ch_extractor->extract((unsigned char *) &input_element.data().mark5_data[0],
                         output_positions);
 
-  { // release the buffers
+  { // release the input buffer and put the output buffer
     for (size_t i=0; i<n_subbands; i++) {
       assert(output_buffers_[i] != Output_buffer_ptr());
       output_buffers_[i]->push(output_elements[i]);

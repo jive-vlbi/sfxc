@@ -52,7 +52,7 @@ private:
 class Correlator_node : public Node {
 public:
   typedef Correlator_node                              Self;
-  typedef Buffer_element_vector<char>                  output_value_type;
+  typedef Memory_pool_vector_element<char>             output_value_type;
 
 
 private:

@@ -22,12 +22,9 @@
 class Single_data_reader_controller : public Controller {
   typedef Single_data_reader_controller  Self;
 public:
-  typedef Buffer_element_large<char,256>             data_type;
+  typedef Memory_pool_fixed_size_element<char,256>   data_type;
   typedef Data_reader2buffer<data_type>              Reader2buffer;
-
-  typedef Reader2buffer::Memory_pool                 Memory_pool;
   typedef Reader2buffer::value_type                  value_type;
-  typedef Reader2buffer::Queue                       Queue;
   typedef Reader2buffer::Queue_ptr                   Queue_ptr;
 
   Single_data_reader_controller(Node &node);

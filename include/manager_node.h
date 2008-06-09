@@ -30,6 +30,10 @@ private:
 };
 
 
+/**
+ * The manager node 
+ * \ingroup Node
+ **/
 class Manager_node : public Abstract_manager_node {
 public:
   enum Status {

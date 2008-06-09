@@ -206,5 +206,6 @@ int main(int argc, char * argv[]) {
 
   char cmd[80];
   snprintf(cmd, 80, "convert -delay 50 -loop 0 %s/mov*.png anim.gif", tmp_dir);
-  system(cmd);
+  
+  return system(cmd);
 }

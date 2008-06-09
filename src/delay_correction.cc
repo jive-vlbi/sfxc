@@ -131,12 +131,13 @@ void Delay_correction::bit2float(const Input_buffer_element &input,
 #ifdef SFXC_INVALIDATE_SAMPLES
 
     { // zero out the invalid samples
-      const int invalid_samples_begin = input->invalid_samples_begin;
-      const int invalid_samples_end = invalid_samples_begin + input->nr_invalid_samples;
+      assert(input->invalid_samples_begin >= 0);
+      const size_t invalid_samples_begin = input->invalid_samples_begin;
+      const size_t invalid_samples_end = invalid_samples_begin + input->nr_invalid_samples;
       assert(invalid_samples_begin >= 0);
       assert(invalid_samples_begin <= invalid_samples_end);
       assert(invalid_samples_end <= number_channels());
-      for (int i=invalid_samples_begin; i<invalid_samples_end; i++) {
+      for (size_t i=invalid_samples_begin; i<invalid_samples_end; i++) {
 #ifdef SFXC_CHECK_INVALID_SAMPLES
         assert(output_buffer_[i] == sample_value_ms[INVALID_PATTERN&3]);
 #endif
@@ -167,7 +168,7 @@ void Delay_correction::fractional_bit_shift(FLOAT input[],
                          &input[0],
                          frequency_buffer_fftw);
     // Element 0 and number_channels()/2 are real numbers
-    for (int i=1; i<number_channels()/2; i++) {
+    for (size_t i=1; i<number_channels()/2; i++) {
       // frequency_buffer[i] = std::conj(frequency_buffer[i]);
       // This avoids the assignment of the real part
       frequency_buffer_fftw[i][1] = -frequency_buffer_fftw[i][1];
@@ -180,7 +181,7 @@ void Delay_correction::fractional_bit_shift(FLOAT input[],
   frequency_buffer[number_channels()/2] *= 0.5;//Nyquist
 
   // 4c) zero the unused subband (?)
-  for (int i=number_channels()/2+1; i<number_channels(); i++) {
+  for (size_t i=number_channels()/2+1; i<number_channels(); i++) {
     frequency_buffer[i] = 0.0;
   }
 
@@ -247,7 +248,7 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
     delta_phi = (phi_end-phi)*n_recompute_delay/number_channels();
   }
 
-  for (int i=0; i<number_channels(); i++) {
+  for (size_t i=0; i<number_channels(); i++) {
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     if ((i%n_recompute_delay)==0) {
 #ifdef HAVE_SINCOS
@@ -286,7 +287,7 @@ Delay_correction::get_output_buffer() {
 
 void
 Delay_correction::set_parameters(const Correlation_parameters &parameters) {
-  int prev_number_channels = number_channels();
+  size_t prev_number_channels = number_channels();
   correlation_parameters = parameters;
 
   current_time = parameters.start_time*(int64_t)1000;
@@ -296,7 +297,7 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   if (prev_number_channels != number_channels()) {
     frequency_buffer.resize(number_channels());
 
-    Aligned_vector<FLOAT> input_buffer;
+    Memory_pool_vector_element<FLOAT> input_buffer;
     input_buffer.resize(number_channels());
 
     plan_t2f = FFTW_PLAN_DFT_R2C_1D(number_channels(),
@@ -318,7 +319,8 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   current_fft = 0;
 }
 
-int Delay_correction::number_channels() {
+size_t Delay_correction::number_channels() {
+  assert(correlation_parameters.number_channels >= 0);
   return correlation_parameters.number_channels;
 }
 int Delay_correction::bandwidth() {
