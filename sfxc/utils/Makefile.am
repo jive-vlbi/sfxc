@@ -5,7 +5,6 @@ LDADD = $(SFXC_LDADD)
 
 bin_PROGRAMS = create_delay_function \
                produce_fringe \
-               analyse_fringes \
                print_headers \
                produce_html_plotpage \
                produce_html_diffpage \
@@ -57,8 +56,6 @@ print_headers_SOURCES = \
   ../src/channel_extractor_brute_force.cc \
   ../src/utils.cc \
   ../src/control_parameters.cc
-
-analyse_fringes_SOURCES = analyse_fringes.cc
 
 produce_html_plotpage_SOURCES = \
   produce_html_plotpage.cc \
