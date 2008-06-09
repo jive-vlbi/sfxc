@@ -21,9 +21,9 @@
 #include "exception_common.h"
 
 
-#ifdef SFXC_PRINT_DEBUG
+//#ifdef SFXC_PRINT_DEBUG
 int RANK_OF_NODE = -1; // Rank of the current node
-#endif
+//#endif
 
 int64_t get_us_time(int time[]) {
   int64_t result = 0;
