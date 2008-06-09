@@ -20,12 +20,9 @@
  **/
 template < class T >
 class Data_reader_buffer : public Data_reader {
-  typedef Data_reader2buffer<T>                      Reader2buffer;
-
-  typedef typename Reader2buffer::Memory_pool        Memory_pool;
-  typedef typename Reader2buffer::value_type         value_type;
-  typedef typename Reader2buffer::Queue              Queue;
-  typedef typename Reader2buffer::Queue_ptr          Queue_ptr;
+  typedef typename T::value_type         value_type;
+  typedef typename T::Queue              Queue;
+  typedef typename T::Queue_ptr          Queue_ptr;
 
 public:
   /** Constructor, reads from buffer
@@ -85,7 +82,7 @@ int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {
       size_t curr_read =
         (elements_to_read < (size_t)bytes_left ? elements_to_read : bytes_left);
       if (out != NULL) {
-        memcpy(out, &(*data_start.data)[data_start.actual_size-bytes_left], 
+        memcpy(out, &(*data_start.data)[data_start.actual_size-bytes_left],
                curr_read);
         out += curr_read;
       }

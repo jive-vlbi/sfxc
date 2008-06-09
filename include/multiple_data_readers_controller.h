@@ -26,13 +26,13 @@ class Multiple_data_readers_controller : public Controller {
 public:
   typedef Memory_pool_fixed_size_element<char,5000>  data_type;
   typedef Data_reader2buffer<data_type>              Reader2buffer;
-  typedef Data_reader_buffer<data_type>              Reader_buffer;
+  typedef Data_reader_buffer<Reader2buffer>          Reader_buffer;
 
   typedef Reader2buffer::Memory_pool                 Memory_pool;
   typedef Reader2buffer::value_type                  value_type;
   typedef Reader2buffer::Queue                       Queue;
   typedef Reader2buffer::Queue_ptr                   Queue_ptr;
-  
+
   Multiple_data_readers_controller(Node &node);
   ~Multiple_data_readers_controller();
 

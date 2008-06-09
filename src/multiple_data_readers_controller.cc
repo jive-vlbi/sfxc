@@ -93,7 +93,7 @@ enable_buffering(unsigned int i) {
   assert(data_readers[i] != NULL);
   assert(data_readers[i]->get_data_reader() != NULL);
   assert(data_readers[i]->get_queue() == Queue_ptr());
-  
+
   Queue_ptr queue(new Queue());
 
   // Make sure a pointer to the data reader has not been returned
@@ -102,13 +102,12 @@ enable_buffering(unsigned int i) {
   data_readers[i]->set_queue(queue);
   data_readers[i]->start();
 
-  buffer_readers[i] =
-    boost::shared_ptr<Reader_buffer>(new Reader_buffer(queue));
+  buffer_readers[i] = boost::shared_ptr<Reader_buffer>(new Reader_buffer(queue));
 }
 
 Multiple_data_readers_controller::Queue_ptr
 Multiple_data_readers_controller::get_queue(unsigned int i) {
-  if (i < buffer_readers.size()) 
+  if (i < buffer_readers.size())
     return buffer_readers[i]->get_queue();
   return Queue_ptr();
 }
