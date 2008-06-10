@@ -27,6 +27,9 @@ int main(int argc, char *argv[]) {
   std::ofstream out_phase("phases.txt");
   assert(out_phase.is_open());
 
+  std::ofstream out_abs("abs.txt");
+  assert(out_abs.is_open());
+
   std::ofstream out_index("index.txt");
   assert(out_index.is_open());
 
@@ -45,10 +48,12 @@ int main(int argc, char *argv[]) {
     struct Output_header_timeslice timeslice_header;
     infile.read((char *)&timeslice_header, sizeof(timeslice_header));
     if (timeslice_header.integration_slice != current_integration) {
+      out_abs   << std::endl;
       out_phase << std::endl;
       out_index << std::endl;
     }
     if (infile.eof()) {
+      out_abs   << std::endl;
       out_phase << std::endl;
       out_index << std::endl;
       return 0;
@@ -77,6 +82,7 @@ int main(int argc, char *argv[]) {
         }
 
         out_phase << std::arg(output_buffer[max_index]) << " ";
+        out_abs   << std::abs(output_buffer[max_index]) << " ";
         out_index << max_index << " ";
       }
     }
