@@ -14,6 +14,7 @@
 #include <assert.h>
 
 #include "data_writer.h"
+#include "utils.h"
 
 #include <threadsafe_queue.h>
 
@@ -157,7 +158,8 @@ Buffer2data_writer<T>::start_writing(void * self_) {
 template <class T>
 void
 Buffer2data_writer<T>::write() {
-  while (state != STOPPED) {
+  // Always empty the queue
+  while (!((state == STOPPED) && queue->empty())) {
     if ((state == SUSPENDED) || queue->empty()) {
       usleep(100000); // .1 second:
     } else {
@@ -169,7 +171,7 @@ Buffer2data_writer<T>::write() {
       while (size != size2) {
         int64_t new_size = data_writer->put_bytes(size,buff);
         if (new_size <= 0) {
-          std::cout << "1. Error writing data" << std::endl;
+          DEBUG_MSG("Error writing data");
           usleep(100000); // .1 second:
         } else {
           size2 += new_size;
@@ -177,7 +179,6 @@ Buffer2data_writer<T>::write() {
         }
       }
       assert((state != RUNNING) || (size == size2));
-      elem.data.release();
       queue->pop();
     }
   }

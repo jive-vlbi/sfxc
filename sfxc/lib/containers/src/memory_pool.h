@@ -25,6 +25,8 @@
 #include "allocator.h"
 #include "default_allocator.h"
 
+#include "utils.h"
+
 #ifdef ENABLE_TEST_UNIT
 #include "Test_unit.h"
 #endif // ENABLE_TEST_UNIT
@@ -154,6 +156,8 @@ class AutomaticResize_policy : public Resize_policy {
   public:
     Buffer_element();
     Buffer_element(const Buffer_element& src);
+    void operator=(const Buffer_element& src);
+    ~Buffer_element();
 
     /***************************************
      * Typedef to the real object type
@@ -171,15 +175,9 @@ class AutomaticResize_policy : public Resize_policy {
     Type *operator->() const;
 
     /***************************************
-     * The buffer_element is release and goes
-     * back into the Memory_pool. The data should
-     * not be access further. It is user responsability
-     * to not use the object return data() after
-     * the release call.
-     * throw an exception in case of double
-     * release.
+     * Test whether the memory element points
+     * to valid data.
      ****************************************/
-    void release();
     bool released() const {
       return m_data == NULL;
     }
@@ -193,6 +191,17 @@ class AutomaticResize_policy : public Resize_policy {
       return ! (*this == c);
     }
   private:
+    /***************************************
+     * The buffer_element is release and goes
+     * back into the Memory_pool. The data should
+     * not be access further. It is user responsability
+     * to not use the object return data() after
+     * the release call.
+     * throw an exception in case of double
+     * release.
+     ****************************************/
+    void release();
+
     friend class Memory_pool<T>;
     Buffer_element(Type* data, Memory_pool<T>* owner);
 
@@ -201,6 +210,9 @@ class AutomaticResize_policy : public Resize_policy {
 
     // Pointer to the buffer that allocated the data
     Memory_pool<T>* m_owner;
+
+    // Reference counter to do an automatic release of the element
+    int *m_reference_counter;
   };
 
   /***************************************
@@ -291,7 +303,8 @@ class Test : public Test_aclass< Memory_pool<T> > {
   };
 #endif //ENABLE_TEST_UNIT
 private:
-  Memory_pool<T>() {};
+  Memory_pool<T>() {}
+  ;
 
   /************************************
    * return the Buffer_element into the
@@ -343,7 +356,7 @@ Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>* allocator, R
     m_vectorelements.push_back( element );
   }
 }
-
+ 
 template<class T>
 Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>& allocator, Resize_policy& policy ) :
   allocator_(allocator), policy_(policy)
@@ -359,7 +372,7 @@ Memory_pool<T>::Memory_pool(unsigned int numelements, Allocator<T>& allocator, R
 
 template<class T>
 Memory_pool<T>::Memory_pool(unsigned int numelements, AllocatorPtr allocator, PolicyPtr policy) :
-    policy_(policy), allocator_(allocator) {
+policy_(policy), allocator_(allocator) {
   mid = sid++;
   for (unsigned int i=0;i<numelements;i++) {
     T* tmp = allocator_->allocate();
@@ -474,22 +487,50 @@ unsigned int Memory_pool<T>::size_no_lock() {
 
 
 template<class T>
-Memory_pool<T>::Buffer_element::Buffer_element() {
-  m_data = NULL;
-  m_owner = NULL;
+Memory_pool<T>::Buffer_element::Buffer_element()
+  : m_data(NULL), m_owner(NULL), m_reference_counter(new int(1)) {
 }
 
 template<class T>
-Memory_pool<T>::Buffer_element::Buffer_element(const Buffer_element& src) {
-  m_owner = src.m_owner;
-  m_data = src.m_data;
-}
-
-template<class T>
-Memory_pool<T>::Buffer_element::Buffer_element(Type* data, Memory_pool<T>* owner) :
-    m_owner(owner) {
+Memory_pool<T>::Buffer_element::Buffer_element(Type* data, 
+                                               Memory_pool<T>* owner) :
+  m_data(data), m_owner(owner), m_reference_counter(new int(1)) {
   MASSERT( data  != NULL );
-  m_data = data;
+}
+
+template<class T>
+Memory_pool<T>::Buffer_element::Buffer_element(const Buffer_element& src)
+: m_data(src.m_data), m_owner(src.m_owner), m_reference_counter(src.m_reference_counter) {
+  (*m_reference_counter)++;
+}
+
+template<class T>
+Memory_pool<T>::Buffer_element::~Buffer_element() {
+  (*m_reference_counter)--;
+  if ((*m_reference_counter)==0) {
+    if ( m_owner != NULL )
+      release();
+    delete(m_reference_counter);
+  }
+}
+
+template<class T>
+void
+Memory_pool<T>::Buffer_element::operator=(const Buffer_element& src) {
+  // Remove the link to the previous buffer element
+  (*m_reference_counter)--;
+  assert((*m_reference_counter) >= 0);
+  if ((*m_reference_counter)==0) {
+    if ( m_owner != NULL )
+      release();
+    delete(m_reference_counter);
+  }
+
+  // Construct a link to the new element
+  m_data = src.m_data;
+  m_owner = src.m_owner;
+  m_reference_counter = src.m_reference_counter;
+  (*m_reference_counter)++;
 }
 
 template<class T>

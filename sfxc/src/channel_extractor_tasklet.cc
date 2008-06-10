@@ -71,7 +71,7 @@ Channel_extractor_tasklet::do_task() {
 
   // The struct containing the data for processing
   // This is the not-yet-channelized data.
-  Input_buffer_element input_element = input_buffer_->front();
+  Input_buffer_element &input_element = input_buffer_->front();
 
   // The number of input samples to process
   // For mark5a this is 1 block
@@ -130,7 +130,6 @@ Channel_extractor_tasklet::do_task() {
       output_buffers_[i]->push(output_elements[i]);
     }
 
-    input_element.release();
     input_buffer_->pop();
   }
 

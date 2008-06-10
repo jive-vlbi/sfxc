@@ -72,13 +72,9 @@ public:
   /// Buffer for fft buffers
   struct Fft_buffer_element_ {
     Fft_buffer_element_()
-      : release_data(false), delay(-1),
+      : delay(-1),
         invalid_samples_begin(-1), nr_invalid_samples(-1),
         first_byte(-1), nr_bytes(-1) {}
-    // if release_data, the data should not be written, but the data block
-    // should be released
-    bool release_data;
-
     // The data
     Channel_memory_pool_element channel_data;
 

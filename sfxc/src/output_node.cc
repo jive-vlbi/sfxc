@@ -194,7 +194,8 @@ void Output_node::write_output() {
   output_value_type element;
   element.data = output_memory_pool.allocate();
   input_streams[curr_stream]->write_bytes(element);
-  output_queue->push(element);
+  if (element.actual_size > 0) 
+    output_queue->push(element);
 }
 
 void Output_node::hook_added_data_reader(size_t reader) {

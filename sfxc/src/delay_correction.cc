@@ -66,7 +66,7 @@ void Delay_correction::do_task() {
   }
   current_fft++;
 
-  Input_buffer_element input = input_buffer->front_and_pop(); //input_buffer->consume(input_size);
+  Input_buffer_element &input = input_buffer->front();
   Output_buffer_element output = output_memory_pool.allocate();
   size_t input_size = (input.data().bytes_count()-1)*8/ correlation_parameters.bits_per_sample;
 
@@ -98,7 +98,7 @@ void Delay_correction::do_task() {
     (*output)[i] = 0;
   }
 
-  input.release();
+  input_buffer->pop();
   output_buffer->push(output);
 }
 

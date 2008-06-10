@@ -60,13 +60,6 @@ do_task() {
 
   Input_buffer_element &input_element = input_buffer_->front();
 
-  // Check if we only need to release the block
-  if (input_element.release_data) {
-    input_element.channel_data.release();
-    input_buffer_->pop();
-    return;
-  }
-
   // Check whether we have to start a new timeslice
   if (data_writers_.front().slice_size > 0) {
     // Initialise the size of the data slice
