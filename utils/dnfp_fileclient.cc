@@ -23,29 +23,32 @@
 
 class Client_reader  : public Thread {
 public:
-  Client_reader(Data_reader_dnfp* reader) : m_reader(reader) {
-    m_buffersize = 10000;
+  Client_reader(Data_reader_dnfp* reader) {
+    m_buffersize = 100000;
     m_buffer = new char[m_buffersize];
-    m_monitor.set_name("data-reader");
+    //m_monitor.set_name("data-reader");
+    m_breader = new Data_reader_blocking(reader);
   }
 
   void do_execute() {
-    int count=100000;
-    while ( !m_reader->eof() && count-- > 0) {
-      //std::cout << "Still reading bytes :" << m_buffersize << std::endl;
-      if ( count % 1000 == 0) m_monitor.begin_measure();
-      int val = m_reader->get_bytes(m_buffersize, m_buffer);
+    uint64_t totalread=0;
+    while ( !m_breader->eof() ) {
+      //m_monitor.begin_measure();
+
+      int val = m_breader->get_bytes(m_buffersize, m_buffer);
       assert(val == m_buffersize);
-      if ( count % 1000 == 0) m_monitor.end_measure(val);
-      if ( count % 1000 == 0) std::cout << "reading speed:" << m_monitor.last_measure() << std::endl;
+
+      totalread += val;
+      //m_monitor.end_measure(val);
+
+      std::cout << "reading speed:" << totalread << std::endl;
     }
 
-    m_reader->closef();
     std::cout << "EOF" << std::endl;
   }
 
 private:
-  Data_reader_dnfp* m_reader;
+  Data_reader* m_breader;
   char* m_buffer;
   unsigned int m_buffersize;
   QOS_MonitorSpeed m_monitor;

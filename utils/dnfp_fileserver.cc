@@ -25,7 +25,6 @@
 #include "monitor.h"
 #include "exception_common.h"
 
-
 #include <signal.h>
 //void (*signal (int sig, void (*func)(int)))(int);
 
@@ -97,7 +96,7 @@ public:
     m_breader = new Data_reader_blocking( m_reader );
     m_buffersize = 10000000;
     m_buffer = new char[m_buffersize];
-    m_monitor.set_name("server_monitor");
+    //m_monitor.set_name("server_monitor");
   }
 
   void send_file(const std::string& str) {
@@ -107,36 +106,30 @@ public:
     int32_t cmd=0;
     unsigned int counter =0;
     try {
+      uint64_t totalsent=0;
       while ( !filereader->eof() ) {
-        if ( counter == 0 ) m_monitor.begin_measure();
+        //m_monitor.begin_measure();
         //*m_breader >> cmd;
         if ( cmd == -1 ) {
           return;
         }
-        //bytetoread = cmd;
-
-        //std::cout << "Client ask for: " << bytetoread << std::endl;
-        //assert(bytetoread <= m_buffersize);
 
         size_t byteread = filereader->get_bytes(bytetoread, m_buffer);
+        assert(bytetoread == byteread);
+
+        totalsent += byteread;
         counter += byteread;
-        std::cout << "Number of byte read " << byteread << std::endl;
-        //std::cout << "stream " << std::endl;
         while ( byteread != 0  ) {
-          char tmp;
-          int ret = m_writer->put_bytes(bytetoread, m_buffer);
+          int ret = m_writer->put_bytes(byteread, m_buffer);
           byteread -= ret;
         }
 
-        //std::cout << "Couter " <<  counter << std::endl;
-
-        //*m_writer << (uint32_t)filereader->eof();
-        //std::cout << "finished" << std::endl;
-        if (counter >= 10000000) {
-          m_monitor.end_measure(counter);
-          std::cout << "writing to client:"<< m_clientid<< " at speed:" << m_monitor.last_measure() << std::endl;
-          counter = 0;
-        }
+        std::cout << "Byte sent " << totalsent << std::endl;
+        //m_monitor.end_measure(bytetoread);
+        //if (counter >= 10000000) {
+        //std::cout << "writing to client:"<< m_clientid << " at speed:" << m_monitor << std::endl;
+        //counter = 0;
+        //}
       }
     } catch (...) {}
     std::cout << "THE FILE IS EOF" << std::endl;
