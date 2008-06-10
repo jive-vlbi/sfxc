@@ -146,6 +146,19 @@ public:
     std::string request;
     *m_breader >> request;
     std::cout << ": Client ask me for [" << request << "]" << std::endl;
+
+    //*m_breader >> protocol;
+    //std::cout << "PROTOCOL IS: " << protocol <<  std::endl;
+
+		//*m_breader >> clientaddress;
+		//std::cout << "ADDRESS IS: " << clientaddress <<  std::endl;
+
+    //*m_breader >> clientport;
+    //std::cout << "PORT: " << clientport << std::endl;
+
+    //std::cout << ": Protocol requested [" << protocol << "]" << std::endl;
+		//std::cout << ":   active requested [" << clientaddr_ << "," << clientport <<"]" << std::endl;
+
     *m_writer << "OK";
 
     if ( server_.can_stream(request) ) {

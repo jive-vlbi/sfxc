@@ -28,7 +28,8 @@ dnfp_fileserver_SOURCES = \
    ../src/data_writer_socket.cc \
    ../src/data_reader_socket.cc \
    ../src/data_reader_blocking.cc \
-   ../src/utils.cc   
+   ../src/data_reader_dnfp.cc \
+   ../src/utils.cc
 
 dnfp_fileclient_SOURCES = \
   dnfp_fileclient.cc \
@@ -38,6 +39,7 @@ dnfp_fileclient_SOURCES = \
    ../src/data_writer_socket.cc \
    ../src/data_reader_socket.cc \
    ../src/data_reader_blocking.cc  \
+   ../src/data_reader_dnfp.cc \
    ../src/utils.cc
 
 mark5a_print_headers_SOURCES = \
