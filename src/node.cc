@@ -18,8 +18,10 @@ Node::Node(int rank, Log_writer *writer) : rank(rank), log_writer(writer) {}
 
 Node::~Node() {
   int rank = get_rank();
-  MPI_Send(&rank, 1, MPI_INT,
-           RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
+  if (rank != RANK_LOG_NODE) {
+    MPI_Send(&rank, 1, MPI_INT,
+             RANK_LOG_NODE, MPI_TAG_LOG_MESSAGES_ENDED, MPI_COMM_WORLD);
+  }
 }
 
 Log_writer &Node::get_log_writer() {
