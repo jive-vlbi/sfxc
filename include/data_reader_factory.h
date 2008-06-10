@@ -1,3 +1,11 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * Copyright (c) 2007 University of Amsterdam (Netherlands)
+ * All rights reserved.
+ *
+ * Author(s): Damien Marchal <dmarchal@science.uva.nl>, 2007
+ *            Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ *
+ */
 #ifndef DATA_READER_DFACTORY_H
 #define DATA_READER_DFACTORY_H
 

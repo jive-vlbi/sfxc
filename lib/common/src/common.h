@@ -1,7 +1,13 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * Copyright (c) 2007 University of Amsterdam (Netherlands)
+ * All rights reserved.
+ *
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ *            Damien Marchal <dmarchal@science.uva.nl>, 2007
+ *
+ */
 #ifndef COMMON_H_INCLUDED
-
 #define COMMON_H_INCLUDED
-
 
 
 #include <string>
