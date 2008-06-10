@@ -1,3 +1,14 @@
+run_sfxc.py
+----------
+Usage: run_sfxc.py <vex_file> [<ctrl_file>]
+The default value for the control file is the vex-file with extension ".ctrl"
+
+If the control file does not exist, a default ctrl file will be generated and
+an editor will be opened to fill in the missing data fields.
+
+The script then starts the correlator and runs produce_html_plotpage after the
+software correlator finished.  
+
 produce_html_plotpage
 ---------------------
 Usage: produce_html_plotpage [-f] <vex-file> \
@@ -17,6 +28,24 @@ Usage: produce_html_diffpage <vex-file> \
 
 Shows the difference between two correlation output files. 
 Very similar to produce_html_plotpage
+
+vumeter.py
+----------
+Usage: vumenter.py
+You should run this script in the directory where you started the software
+correlator
+
+The script shows a text-based progress page in the console while the software
+correlator runs.
+
+generate_delay_model (in utils/delay)
+--------------------
+Usage: generate_delay_model <vexfile> <stationname> <outputfile>
+Depends on the environment variable CALC_DIR which should contain
+  ocean.dat, tilt.dat and DE405_le.jpl
+  
+The utility generates the delay model for the station <stationname> and the 
+experiment described by the vexfile. The output is written to file.
 
 vex2ccf
 -------
