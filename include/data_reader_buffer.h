@@ -92,7 +92,7 @@ int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {
     }
     if (bytes_left == 0) {
       // get a release the buffer element
-      data_start.data.release();
+      data_start = value_type();
     }
   }
   return nElements;

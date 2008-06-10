@@ -86,7 +86,6 @@ void Input_node::start() {
       }
     case WRITING: {
         if (process_all_waiting_messages() == TERMINATE_NODE) {
-          DEBUG_MSG("END_INPUT_NODE");
           status = END_NODE;
           break;
         }

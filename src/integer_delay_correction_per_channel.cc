@@ -25,7 +25,6 @@ Integer_delay_correction_per_channel::do_task() {
   Input_buffer_element input_element = input_buffer_->front();
   Output_buffer_element output_element;
   output_element.delay = (char)current_delay.second;
-  output_element.release_data = false;
 
   // Compute the offset in bytes
   // If byte_offset < -nr_output_bytes
@@ -55,10 +54,6 @@ Integer_delay_correction_per_channel::do_task() {
       // This can happen when we go to a next integration slice
       // And the integer delay changes at the same time
       // Release the current block
-      output_element.channel_data = input_element.channel_data;
-      output_element.release_data = true;
-
-      output_buffer_->push(output_element);
       input_buffer_->pop();
       return;
     }
@@ -126,14 +121,7 @@ Integer_delay_correction_per_channel::do_task() {
       }
       output_buffer_->push(output_element);
 
-
-      // Release the data
-      output_element.release_data = true;
-      output_buffer_->push(output_element);
-
-
       // Send second block of data
-      output_element.release_data = false;
       // Don't send the delay again:
       output_element.delay = -1;
       output_element.channel_data = input_element.channel_data;
@@ -154,11 +142,6 @@ Integer_delay_correction_per_channel::do_task() {
     output_element.first_byte = 0;
     output_element.nr_bytes = nr_output_bytes+1;
     output_buffer_->push(output_element);
-
-    // Release the data
-    output_element.release_data = true;
-    output_buffer_->push(output_element);
-
   } else {
     assert(byte_offset < 0);
     
@@ -178,12 +161,7 @@ Integer_delay_correction_per_channel::do_task() {
     output_element.nr_bytes = -byte_offset;
     output_buffer_->push(output_element);
 
-    // Release the data
-    output_element.release_data = true;
-    output_buffer_->push(output_element);
-
     // Send real data
-    output_element.release_data = false;
     // Don't send the delay again:
     output_element.delay = -1;
     output_element.channel_data = input_element.channel_data;

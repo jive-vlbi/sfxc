@@ -287,7 +287,6 @@ void Correlation_core::integration_step() {
 
   for (size_t i=0; i<number_input_streams_in_use(); i++) {
     input_buffers[i]->pop();
-    input_elements[i].release();
   }
 }
 
@@ -319,6 +318,13 @@ void Correlation_core::integration_average() {
 }
 
 void Correlation_core::integration_write() {
+
+  // Make sure that the input buffers are released
+  // This is done by reference counting
+  for (size_t i=0; i<number_input_streams_in_use(); i++) {
+    input_elements[i] = Input_buffer_element();
+  }
+
   assert(writer != boost::shared_ptr<Data_writer>());
   assert(accumulation_buffers.size() == baselines.size());
 
