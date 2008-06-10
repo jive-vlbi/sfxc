@@ -1,9 +1,7 @@
 #include "input_node_data_writer_tasklet.h"
 
 Input_node_data_writer_tasklet::
-Input_node_data_writer_tasklet() {
-
-}
+Input_node_data_writer_tasklet() {}
 
 Input_node_data_writer_tasklet::~Input_node_data_writer_tasklet() {
   if (input_buffer_ != Input_buffer_ptr()) {
@@ -58,23 +56,30 @@ do_task() {
 
   assert(has_work());
 
+  // Acquire the input data
   Input_buffer_element &input_element = input_buffer_->front();
 
   // Check whether we have to start a new timeslice
   if (data_writers_.front().slice_size > 0) {
     // Initialise the size of the data slice
+    // from the front(): writer.set_size_dataslice(slice_size), slice_size=0
     assert(data_writers_.front().writer->get_size_dataslice() <= 0);
     int nr_bytes = data_writers_.front().slice_size;
     assert(nr_bytes != 0);
     data_writers_.front().writer->set_size_dataslice(nr_bytes);
     data_writers_.front().slice_size = 0;
   }
+
+  // Check whether we have written all data to the data_writer
+  assert(data_writers_.front().slice_size == 0);
   assert(data_writers_.front().writer->get_size_dataslice() >= 0);
   if (data_writers_.front().writer->get_size_dataslice() == 0) {
     data_writers_.pop();
     return;
   }
 
+  // Start writing the actual data
+  Data_writer_ptr writer = data_writers_.front().writer;
   if ((int)input_element.delay >= 0) {
     assert((input_element.invalid_samples_begin >= 0) &&
            (input_element.invalid_samples_begin <= 1024));
@@ -83,15 +88,15 @@ do_task() {
     int nbytes = 0;
 
     // write the information on invalid samples
-    nbytes = data_writers_.front().writer->put_bytes(sizeof(input_element.invalid_samples_begin),
-                                                     (char*)&input_element.invalid_samples_begin);
+    nbytes = writer->put_bytes(sizeof(input_element.invalid_samples_begin),
+                               (char*)&input_element.invalid_samples_begin);
     assert(nbytes == sizeof(input_element.invalid_samples_begin));
-    nbytes = data_writers_.front().writer->put_bytes(sizeof(input_element.nr_invalid_samples),
-                                                     (char*)&input_element.nr_invalid_samples);
+    nbytes = writer->put_bytes(sizeof(input_element.nr_invalid_samples),
+                               (char*)&input_element.nr_invalid_samples);
     assert(nbytes == sizeof(input_element.nr_invalid_samples));
 
     do {
-      nbytes = data_writers_.front().writer->put_bytes(1, &input_element.delay);
+      nbytes = writer->put_bytes(1, &input_element.delay);
     } while (nbytes != 1);
   }
 
@@ -101,9 +106,7 @@ do_task() {
     (char*)&input_element.channel_data.data().data[input_element.first_byte];
 
   while (bytes_written < bytes_to_write) {
-    int nbytes =
-      data_writers_.front().writer->put_bytes(bytes_to_write - bytes_written,
-                                              data);
+    int nbytes = writer->put_bytes(bytes_to_write - bytes_written, data);
     assert(nbytes >= 0);
     bytes_written += nbytes;
     data          += nbytes;

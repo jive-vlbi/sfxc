@@ -4,7 +4,7 @@ Correlator_node_data_reader_tasklet::
 Correlator_node_data_reader_tasklet()
     : output_memory_pool(65000),
     output_buffer(Output_buffer_ptr(new Output_buffer())),
-    n_ffts_to_read(0) {}
+n_ffts_to_read(0) {}
 
 Correlator_node_data_reader_tasklet::
 ~Correlator_node_data_reader_tasklet() {}
@@ -32,11 +32,12 @@ void Correlator_node_data_reader_tasklet::do_task() {
     output_elem.data().resize_bytes_buffer(n_bytes_per_fft);
   }
 
+  // Read in one fft, with the extra data for invalid samples
   breader_->get_bytes(sizeof(output_elem.data().invalid_samples_begin),
                       (char*)&output_elem.data().invalid_samples_begin);
   breader_->get_bytes(sizeof(output_elem.data().nr_invalid_samples),
                       (char*)&output_elem.data().nr_invalid_samples);
-  breader_->get_bytes(output_elem.data().raw_size(), 
+  breader_->get_bytes(output_elem.data().raw_size(),
                       (char*)output_elem.data().raw_buffer());
 
   n_ffts_to_read --;
@@ -47,18 +48,16 @@ void Correlator_node_data_reader_tasklet::do_task() {
 bool Correlator_node_data_reader_tasklet::has_work() {
   if (n_ffts_to_read <= 0)
     return false;
-  if (reader == Data_reader_ptr()) {
-    //DEBUG_MSG_RANK(10, "reader == Data_reader_ptr()");
+
+  if (reader == Data_reader_ptr())
     return false;
-  }
-  if (output_memory_pool.empty()) {
-    //DEBUG_MSG("output_memory_pool.empty()");
+
+  if (output_memory_pool.empty())
     return false;
-  }
-  if (!reader->can_read()) {
-    //DEBUG_MSG("!can_read()");
+
+  if (!reader->can_read())
     return false;
-  }
+
   return true;
 }
 
