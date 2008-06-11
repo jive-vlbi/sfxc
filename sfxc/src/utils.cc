@@ -20,23 +20,23 @@
 #include <iostream>
 
 #include "sfxc_mpi.h"
-                
+
 int RANK_OF_NODE = -1; // Rank of the current node
 
-void abort_sfxc(char *file, int line, char *message) { 
-  std::cout << file << ", l" << line 
-            << ", Assertion failed: " << message << std::endl; 
-  sleep(1); 
-  
-  int32_t msg=0; 
-  MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE, 
-           MPI_TAG_ASSERTION_RAISED, MPI_COMM_WORLD); 
-  
+void abort_sfxc(char *file, int line, char *message) {
+  std::cout << "#" << RANK_OF_NODE << " "
+  << file << ", l" << line
+  << ", Assertion failed: " << message << std::endl;
+
+  int32_t msg=0;
+  MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
+           MPI_TAG_ASSERTION_RAISED, MPI_COMM_WORLD);
+
   // Close this node
-  MPI_Barrier( MPI_COMM_WORLD ); 
-  MPI_Finalize(); 
-  
-  exit(-1); 
+  MPI_Barrier( MPI_COMM_WORLD );
+  MPI_Finalize();
+
+  exit(-1);
 }
 
 int64_t get_us_time(int time[]) {
@@ -140,7 +140,8 @@ long unsigned int park_miller_random() {
   lo += (hi & 0x7FFF) << 16;
   lo += hi >> 15;
 
-  if (lo > 0x7FFFFFFF) lo -= 0x7FFFFFFF;
+  if (lo > 0x7FFFFFFF)
+    lo -= 0x7FFFFFFF;
 
   return (park_miller_seed = (long)lo);
 }
