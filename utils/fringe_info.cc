@@ -121,10 +121,12 @@ int Fringe_info::max_value_offset() const {
 
 // Fringe_info_container
 
-Fringe_info_container::Fringe_info_container(FILE *input) : input(input) {
-  //`read-in the global header
+Fringe_info_container::
+Fringe_info_container(FILE *input, bool stop_at_eof) : input(input) {
+  // read-in the global header
   read_data_from_file(sizeof(Output_header_global),
-                      (char *)&global_header, false);
+                      (char *)&global_header, stop_at_eof);
+  if (eof()) return;
 
   data_freq.resize(global_header.number_channels+1);
   data_lag.resize(global_header.number_channels+1);
@@ -137,10 +139,14 @@ Fringe_info_container::Fringe_info_container(FILE *input) : input(input) {
 
   // Read the first timeslice header:
   read_data_from_file(sizeof(Output_header_timeslice),
-                      (char*)&last_timeslice_header, false);
+                      (char*)&last_timeslice_header, stop_at_eof);
+  if (eof()) return;
   assert(last_timeslice_header.number_baselines != 0);
 }
 
+bool Fringe_info_container::eof() {
+  return feof(input);
+}
 void
 Fringe_info_container::read_data_from_file(int to_read, char * data,
     bool stop_at_eof) {
