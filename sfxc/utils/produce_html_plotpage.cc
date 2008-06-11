@@ -127,7 +127,12 @@ int main(int argc, char *argv[]) {
 
 
   // read the data in
-  Fringe_info_container fringe_info(input);
+  Fringe_info_container fringe_info(input, !update);
+  if ((!update) && fringe_info.eof()) {
+    std::cout << "Empty correlation file" << std::endl;
+    return 1;
+  }
+    
 
   do {
     fringe_info.read_plots(!update);

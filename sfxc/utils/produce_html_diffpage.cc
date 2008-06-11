@@ -77,11 +77,16 @@ int main(int argc, char *argv[]) {
 
 
   // read the data in
-  Fringe_info_container fringe_info1(input1);
-  Fringe_info_container fringe_info2(input2);
+  Fringe_info_container fringe_info1(input1, /* stop at eof */ true);
+  Fringe_info_container fringe_info2(input2, /* stop at eof */ true);
 
-  fringe_info1.read_plots(true);
-  fringe_info2.read_plots(true);
+  if (fringe_info1.eof() || fringe_info2.eof()) {
+    std::cout << "Empty correlation file" << std::endl;
+    return 1;
+  }
+    
+  fringe_info1.read_plots(/* stop at eof */ true);
+  fringe_info2.read_plots(/* stop at eof */ true);
 
   fringe_info1.print_diff_html(vex, fringe_info2, false);
 

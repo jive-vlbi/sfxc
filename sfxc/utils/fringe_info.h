@@ -45,7 +45,7 @@ class Fringe_info_container {
   typedef Container::iterator   iterator;
 
 public:
-  Fringe_info_container(FILE *input);
+  Fringe_info_container(FILE *input, bool stop_at_eof);
 
   void read_plots(bool stop_at_eof);
 
@@ -58,6 +58,7 @@ public:
                        const Fringe_info_container &other_info,
                        bool relative_error);
 
+  bool eof();
 private:
   void read_data_from_file(int to_read, char * data, bool stop_at_eof);
 

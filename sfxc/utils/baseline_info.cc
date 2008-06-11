@@ -55,8 +55,13 @@ int main(int argc, char *argv[]) {
   }
 
   // read the data in
-  Fringe_info_container fringes(input);
+  Fringe_info_container fringes(input, /* stop at eof */ true);
 
+  if (fringes.eof()) {
+    std::cout << "Empty correlation file" << std::endl;
+    return 1;
+  }
+    
   std::ofstream out("baseline.txt");
   out << "# fringe_pos, phase (max), ampl (max), phase (center), ampl (center),  snr, weight" << std::endl;
 
