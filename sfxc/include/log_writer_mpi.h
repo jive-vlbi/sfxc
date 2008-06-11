@@ -10,10 +10,6 @@
 #ifndef LOG_WRITER_MPI_H_
 #define LOG_WRITER_MPI_H_
 
-#include <string>
-#include <fstream>
-#include <assert.h>
-
 #include "log_writer.h"
 
 class Log_writer_mpi : public Log_writer {

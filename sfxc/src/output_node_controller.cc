@@ -7,16 +7,16 @@
  *
  */
 
-
-#include <iostream>
-#include <assert.h>
-
 // Output_node_controller is defined in Output_node.h:
 #include "output_node.h"
 
+#include "utils.h"
 #include "data_writer_file.h"
 #include "data_reader_tcp.h"
 #include "tcp_connection.h"
+
+#include <iostream>
+
 
 Output_node_controller::Output_node_controller(Output_node &node)
     : Controller(node), node(node) {}
@@ -28,7 +28,7 @@ Output_node_controller::process_event(MPI_Status &status) {
   case MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER: {
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
-      assert(size == sizeof(Output_header_global));
+      SFXC_ASSERT(size == sizeof(Output_header_global));
       Output_header_global global_header;
       MPI_Recv((char *)&global_header, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -42,8 +42,8 @@ Output_node_controller::process_event(MPI_Status &status) {
       MPI_Recv(&weight, 3, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
+      SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
+      SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
       // Create an output buffer:
       node.set_weight_of_input_stream(weight[0], weight[1], weight[2]);
@@ -55,7 +55,7 @@ Output_node_controller::process_event(MPI_Status &status) {
       int32_t nr_of_time_slices;
       MPI_Recv(&nr_of_time_slices, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      assert(nr_of_time_slices >= 0);
+      SFXC_ASSERT(nr_of_time_slices >= 0);
       node.set_number_of_time_slices(nr_of_time_slices);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;

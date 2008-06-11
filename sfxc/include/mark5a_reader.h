@@ -53,7 +53,7 @@ public:
 
 
   int time_between_headers() {
-    assert(data_rate() % (N*SIZE_MK5A_FRAME) == 0);
+    SFXC_ASSERT(data_rate() % (N*SIZE_MK5A_FRAME) == 0);
     return data_rate() / (N*SIZE_MK5A_FRAME);
   }
 

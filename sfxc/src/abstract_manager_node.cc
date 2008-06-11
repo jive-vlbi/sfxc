@@ -7,7 +7,6 @@
  *
  */
 
-#include <assert.h>
 #include <iostream>
 
 #include "abstract_manager_node.h"
@@ -37,7 +36,7 @@ start_input_node(int rank, const std::string &station) {
     MPI_Send(&rank, 1, MPI_INT32,
              rank, MPI_TAG_SET_INPUT_NODE_MARK5A, MPI_COMM_WORLD);
   } else {
-    assert(control_parameters.transport_type(station) == "Mark5B");
+    SFXC_ASSERT(control_parameters.transport_type(station) == "Mark5B");
     // starting an input reader
     MPI_Send(&rank, 1, MPI_INT32,
              rank, MPI_TAG_SET_INPUT_NODE_MARK5B, MPI_COMM_WORLD);
@@ -54,7 +53,7 @@ start_input_node(int rank, const std::string &station) {
 void
 Abstract_manager_node::
 start_output_node(int rank) {
-  assert(rank == RANK_OUTPUT_NODE);
+  SFXC_ASSERT(rank == RANK_OUTPUT_NODE);
   // starting an input reader
   int32_t msg=0;
   MPI_Send(&msg, 1, MPI_INT32,
@@ -73,7 +72,7 @@ start_correlator_node(int rank) {
   size_t correlator_node_nr = correlator_node_rank.size();
 #ifdef SFXC_DETERMINISTIC
   correlator_node_ready.resize(correlator_node_nr+1);
-  assert(correlator_node_nr < correlator_node_ready.size());
+  SFXC_ASSERT(correlator_node_nr < correlator_node_ready.size());
   set_correlator_node_ready(correlator_node_nr, false);
 #endif
   correlator_node_rank.push_back(rank);
@@ -94,7 +93,7 @@ start_correlator_node(int rank) {
 void
 Abstract_manager_node::
 start_log_node(int rank) {
-  assert(rank == RANK_LOG_NODE);
+  SFXC_ASSERT(rank == RANK_LOG_NODE);
   int msg=0;
   // Log node:
   MPI_Send(&msg, 1, MPI_INT32,
@@ -111,7 +110,7 @@ start_log_node(int rank) {
 void
 Abstract_manager_node::
 start_log_node(int rank, char *filename) {
-  assert(rank == RANK_LOG_NODE);
+  SFXC_ASSERT(rank == RANK_LOG_NODE);
   int msg=0;
   // Log node:
   MPI_Send(&msg, 1, MPI_INT32,
@@ -183,12 +182,12 @@ Abstract_manager_node::
 set_data_writer(int rank, int stream_nr,
                 const std::string &filename) {
   //DEBUG_MSG(rank << "[" << stream_nr << "] => " << filename);
-  assert(strncmp(filename.c_str(), "file://", 7) == 0);
+  SFXC_ASSERT(strncmp(filename.c_str(), "file://", 7) == 0);
   int len = sizeof(int32_t) + filename.size() +1; // for \0
   char msg[len];
   memcpy(msg,&stream_nr,sizeof(int32_t));
   memcpy(msg+sizeof(int32_t), filename.c_str(), filename.size()+1);
-  assert(msg[len-1] == '\0');
+  SFXC_ASSERT(msg[len-1] == '\0');
 
   MPI_Send(msg, len, MPI_CHAR,
            rank, MPI_TAG_ADD_DATA_WRITER_FILE2, MPI_COMM_WORLD);
@@ -231,7 +230,7 @@ void
 Abstract_manager_node::
 input_node_set_time(const std::string &station, 
                      int32_t start_time, int32_t stop_time) {
-  assert(start_time < stop_time);
+  SFXC_ASSERT(start_time < stop_time);
   int32_t time[2];
   time[0] = start_time;
   time[1] = stop_time;
@@ -254,13 +253,20 @@ void
 Abstract_manager_node::
 wait_for_setting_up_channel(int rank) {
   MPI_Status status;
-  int32_t channel;
   if (rank >= 0) {
-    MPI_Recv(&channel, 1, MPI_INT32, rank,
-             MPI_TAG_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
+    MPI_Probe(rank, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
   } else {
-    MPI_Recv(&channel, 1, MPI_INT32, MPI_ANY_SOURCE,
-             MPI_TAG_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status);
+    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+  }
+  if (status.MPI_TAG == MPI_TAG_CONNECTION_ESTABLISHED) {
+    int32_t channel;
+    MPI_Status status2;
+    MPI_Recv(&channel, 1, MPI_INT32, status.MPI_SOURCE,
+             MPI_TAG_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status2);
+  } else {
+    if (status.MPI_TAG == MPI_TAG_ASSERTION_RAISED) {
+      terminate_nodes_after_assertion(status.MPI_SOURCE);
+    }
   }
 }
 
@@ -286,13 +292,13 @@ size_t
 Abstract_manager_node::
 input_node(const std::string &station) const {
   std::map<std::string, int>::const_iterator it = input_node_map.find(station);
-  assert(it != input_node_map.end());
+  SFXC_ASSERT(it != input_node_map.end());
   return it->second;
 }
 size_t
 Abstract_manager_node::
 input_rank(size_t input_node_nr) const {
-  assert(input_node_nr < input_node_rank.size());
+  SFXC_ASSERT(input_node_nr < input_node_rank.size());
   return input_node_rank[input_node_nr];
 }
 size_t
@@ -333,7 +339,7 @@ void
 Abstract_manager_node::
 set_correlator_node_ready(size_t correlator_nr, bool ready) {
 #ifdef SFXC_DETERMINISTIC
-  assert(correlator_nr < correlator_node_ready.size());
+  SFXC_ASSERT(correlator_nr < correlator_node_ready.size());
   correlator_node_ready[correlator_nr] = ready;
 #else
   if (ready) {
@@ -364,7 +370,7 @@ Abstract_manager_node::get_channel(const std::string &channel) {
     }
   }
   // error message
-  assert(false);
+  SFXC_ASSERT(false);
   return control_parameters.number_frequency_channels();
 }
 
@@ -375,4 +381,25 @@ output_node_set_global_header(char* header_msg, int size) {
            RANK_OUTPUT_NODE,
            MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER,
            MPI_COMM_WORLD);
+}
+
+void 
+Abstract_manager_node::
+terminate_nodes_after_assertion(int calling_node) {
+  int numtasks;
+  // get the number of tasks set at commandline (= number of processors)
+  MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
+  for (int i=0; i<numtasks; i++) {
+    if ((i!=RANK_MANAGER_NODE) && (i!=calling_node)) {
+      int32_t msg=1; // 1 means error
+      MPI_Send(&msg, 1, MPI_INT32, i,
+               MPI_TAG_END_NODE, MPI_COMM_WORLD);
+    }
+  }
+
+  // Close this node
+  MPI_Barrier( MPI_COMM_WORLD );
+  MPI_Finalize();
+
+  exit(-1);
 }

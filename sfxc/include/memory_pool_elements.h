@@ -10,15 +10,14 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
+#include "utils.h"
 #include <vector>
-#include <assert.h>
 
 // Ugly dependency to fftw3...
 // needed for fftw_malloc that return
 // optimized alignment.
 #include <fftw3.h>
 
-#include "utils.h"
 
 /// Use this class if you want to allocate large number of element
 /// static array declaration may fail if the array is too large...
@@ -64,14 +63,14 @@ public:
 
 
   inline T& operator[](int i) {
-    assert(i >= 0);
-    assert(i < (int)size_ );
+    SFXC_ASSERT(i >= 0);
+    SFXC_ASSERT(i < (int)size_ );
     return buffer_[i];
   }
 
   inline const T& operator[](int i) const {
-    assert(i >= 0);
-    assert(i < (int)size_ );
+    SFXC_ASSERT(i >= 0);
+    SFXC_ASSERT(i < (int)size_ );
     return buffer_[i];
   }
 
@@ -107,14 +106,14 @@ public:
   }
 
   inline T& operator[](int i) {
-    assert(i >= 0);
-    assert(i < N );
+    SFXC_ASSERT(i >= 0);
+    SFXC_ASSERT(i < N );
     return buffer_[i];
   }
 
   inline const T& operator[](int i) const {
-    assert(i >= 0);
-    assert(i < N );
+    SFXC_ASSERT(i >= 0);
+    SFXC_ASSERT(i < N );
     return buffer_[i];
   }
 

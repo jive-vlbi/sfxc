@@ -12,14 +12,14 @@
 #ifndef Uvw_model_H
 #define Uvw_model_H
 
+#include "utils.h"
+
 #include <types.h>
 #include <vector>
 
 // GSL includes
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_errno.h>
-
-#include "utils.h"
 
 
 class MPI_Transfer;

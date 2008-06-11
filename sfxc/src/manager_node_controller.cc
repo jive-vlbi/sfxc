@@ -23,8 +23,8 @@ Manager_node_controller::process_event(MPI_Status &status) {
       MPI_Recv(&correlator, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
+      SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
+      SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
       node.set_correlator_node_ready(correlator);
 
@@ -36,11 +36,11 @@ Manager_node_controller::process_event(MPI_Status &status) {
       MPI_Recv(&stream, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
+      SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
+      SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
       DEBUG_MSG("Stream nr " << stream << " ended, terminating correlation");
-      assert(false);
+      SFXC_ASSERT(false);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

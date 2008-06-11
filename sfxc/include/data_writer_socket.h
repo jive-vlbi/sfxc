@@ -9,7 +9,6 @@
 #ifndef Data_writer_socket_HH
 #define Data_writer_socket_HH
 
-#include <cassert>
 #include "network.h"
 #include "data_writer.h"
 
@@ -24,7 +23,7 @@ public:
   //unsigned int get_port();
   void flush();
   void close() {
-    assert(false && "not implemented");
+    SFXC_ASSERT(false && "not implemented");
   }
 
 

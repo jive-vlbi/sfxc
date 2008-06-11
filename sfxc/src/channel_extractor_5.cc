@@ -11,9 +11,11 @@
  * This file contains:
  *   - Implementation of a channel extractor with look up table.
  */
-#include <cassert>
-#include <iostream>
+
 #include "channel_extractor_5.h"
+#include "utils.h"
+
+#include <iostream>
 
 template<int size_of_one_input_word_, int n_subbands_>
 class Channel_extractor_5_impl : public Channel_extractor_interface {
@@ -37,9 +39,9 @@ public:
     //n_subbands = track_positions.size();
     fan_out = track_positions[0].size();
     samples_per_byte = 8/fan_out;
-    assert(fan_out <= 8);
-    assert(8%fan_out == 0);
-    assert(fan_out*samples_per_byte == 8);
+    SFXC_ASSERT(fan_out <= 8);
+    SFXC_ASSERT(8%fan_out == 0);
+    SFXC_ASSERT(fan_out*samples_per_byte == 8);
 
     memset(lookup_table, 0, size_of_one_input_word_*256*n_subbands_);
     // Lookup table for the tracks
@@ -47,7 +49,7 @@ public:
       for (int track_nr=0; track_nr < fan_out; track_nr++) {
         int track = track_positions[subband][track_nr];
         int n = track/8;
-        assert(n < size_of_one_input_word_);
+        SFXC_ASSERT(n < size_of_one_input_word_);
         int bit = track % 8;
 
         for (int sample=0; sample<256; sample++) {
@@ -146,7 +148,7 @@ Channel_extractor_interface* create_number5_(int n_subbands) {
     return new Channel_extractor_5_impl<Tsize_of_word, 16>();
     break;
   default:
-    assert(false&&"Unsupported number of channel for this channelizer");
+    SFXC_ASSERT(false&&"Unsupported number of channel for this channelizer");
   }
   return NULL;
 }
@@ -167,7 +169,7 @@ Channel_extractor_interface* create_number5_(int size_of_one_input_word, int n_s
     break;
   default:
     std::cerr << " size_of_input_word: " << size_of_one_input_word << std::endl;
-    assert(false&&"Unsupported size of input word for channelization");
+    SFXC_ASSERT(false&&"Unsupported size of input word for channelization");
   }
   return NULL;
 }
@@ -192,6 +194,6 @@ void Channel_extractor_5::initialise(const std::vector< std::vector<int> > &trac
 
 void Channel_extractor_5::extract(unsigned char *in_data1,
                                   unsigned char **output_data) {
-  assert( hidden_implementation_ != NULL && "INVALID EXTRACTOR NULL POINTER" );
+  SFXC_ASSERT( hidden_implementation_ != NULL && "INVALID EXTRACTOR NULL POINTER" );
   hidden_implementation_->extract(in_data1, output_data);
 }

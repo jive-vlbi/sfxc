@@ -6,6 +6,10 @@
  * $Id$
  */
 
+#include "data_reader_file.h"
+#include "utils.h"
+#include "exception_common.h"
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -13,17 +17,27 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
-#include <assert.h>
 #include <iostream>
 
-#include "data_reader_file.h"
-#include "utils.h"
-#include "exception_common.h"
-
-
-//#ifdef SFXC_PRINT_DEBUG
+#include "sfxc_mpi.h"
+                
 int RANK_OF_NODE = -1; // Rank of the current node
-//#endif
+
+void abort_sfxc(char *file, int line, char *message) { 
+  std::cout << file << ", l" << line 
+            << ", Assertion failed: " << message << std::endl; 
+  sleep(1); 
+  
+  int32_t msg=0; 
+  MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE, 
+           MPI_TAG_ASSERTION_RAISED, MPI_COMM_WORLD); 
+  
+  // Close this node
+  MPI_Barrier( MPI_COMM_WORLD ); 
+  MPI_Finalize(); 
+  
+  exit(-1); 
+}
 
 int64_t get_us_time(int time[]) {
   int64_t result = 0;
@@ -79,7 +93,7 @@ void get_ip_address(std::list<Interface_pair> &addresses,
 //*****************************************************************************
 unsigned long iseed = 42;
 void set_seed_1_bit(unsigned long seed_) {
-  assert(seed_ != 0);
+  SFXC_ASSERT(seed_ != 0);
   iseed = seed_;
 }
 
@@ -112,7 +126,7 @@ int irbit2() {
 
 long park_miller_seed = 42;
 void park_miller_set_seed(unsigned long seed_) {
-  assert(seed_ != 0);
+  SFXC_ASSERT(seed_ != 0);
   park_miller_seed = seed_;
 }
 

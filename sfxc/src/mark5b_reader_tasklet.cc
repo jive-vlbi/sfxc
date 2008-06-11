@@ -5,7 +5,7 @@ Mark5b_reader_tasklet::
 Mark5b_reader_tasklet(Mark5b_reader_ptr reader,
                       unsigned char *buffer)
     : memory_pool_(10), stop_time(-1) {
-  assert(sizeof(value_type) == 1);
+  SFXC_ASSERT(sizeof(value_type) == 1);
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
 
   mark5b_reader_ = reader;
@@ -45,7 +45,7 @@ do_task() {
   monitor_.begin_measure();
 #endif // RUNTIME_STATISTIC
 
-  assert(has_work());
+  SFXC_ASSERT(has_work());
 
   push_element();
   allocate_element();
@@ -97,14 +97,14 @@ has_work() {
 void
 Mark5b_reader_tasklet::
 allocate_element() {
-  assert(!memory_pool_.empty());
+  SFXC_ASSERT(!memory_pool_.empty());
   input_element_ = memory_pool_.allocate();
   std::vector<value_type> &vector_ = input_element_->mark5_data;
   if (vector_.size() != 
       (N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME*SIZE_MK5B_WORD)) {
     vector_.resize(N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME*SIZE_MK5B_WORD);
   }
-  assert(input_element_->mark5_data.size() > 0);
+  SFXC_ASSERT(input_element_->mark5_data.size() > 0);
 }
 int
 Mark5b_reader_tasklet::
@@ -149,7 +149,7 @@ Mark5b_reader_tasklet::
 set_stop_time(int64_t ms_time) {
   int64_t us_time = int64_t(1000)*ms_time;
 
-  assert(current_time < us_time);
+  SFXC_ASSERT(current_time < us_time);
   stop_time = us_time;
 }
 
@@ -157,8 +157,8 @@ set_stop_time(int64_t ms_time) {
 void
 Mark5b_reader_tasklet::
 push_element() {
-  assert(input_element_->invalid_bytes_begin >= 0);
-  assert(input_element_->nr_invalid_bytes >= 0);
+  SFXC_ASSERT(input_element_->invalid_bytes_begin >= 0);
+  SFXC_ASSERT(input_element_->nr_invalid_bytes >= 0);
 
   output_buffer_->push(input_element_);
 }
@@ -182,7 +182,7 @@ get_tracks(const Input_node_parameters &input_node_param) {
       if (bps == 1) {
         result[i][j] = input_node_param.channels[i].sign_tracks[j];
       } else {
-        assert(bps == 2);
+        SFXC_ASSERT(bps == 2);
         result[i][2*j] = input_node_param.channels[i].sign_tracks[j];
         result[i][2*j+1] = input_node_param.channels[i].magn_tracks[j];
       }

@@ -147,9 +147,9 @@ void Correlator_node::start() {
 
 
 void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
-  assert((size_t)sn < delay_modules.size());
-  //  assert(integer_delay_modules[sn] != Integer_delay_correction_ptr());
-  assert(delay_modules[sn] != Delay_correction_ptr());
+  SFXC_ASSERT((size_t)sn < delay_modules.size());
+  //  SFXC_ASSERT(integer_delay_modules[sn] != Integer_delay_correction_ptr());
+  SFXC_ASSERT(delay_modules[sn] != Delay_correction_ptr());
   //  integer_delay_modules[sn]->set_delay_table(table);
   delay_modules[sn]->set_delay_table(table);
 }
@@ -181,7 +181,7 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
 }
 
 void Correlator_node::hook_added_data_writer(size_t i) {
-  assert(i == 0);
+  SFXC_ASSERT(i == 0);
 
   correlation_core.set_data_writer(data_writer_ctrl.get_data_writer(0));
 }
@@ -192,13 +192,13 @@ int Correlator_node::get_correlate_node_number() {
 
 /** Number of integration steps done in the current time slice **/
 int Correlator_node::number_of_integration_steps_in_time_slice() {
-  assert(false);
+  SFXC_ASSERT(false);
   return 0;
 }
 
 /** Size in bytes of the output of one integration step **/
 int Correlator_node::output_size_of_one_integration_step() {
-  assert(false);
+  SFXC_ASSERT(false);
   return 0;
 }
 
@@ -208,7 +208,7 @@ void Correlator_node::correlate() {
   // Execute all tasklets:
   bit_sample_reader_timer_.resume();
   for (size_t i=0; i<bit_sample_readers.size(); i++) {
-    assert(bit_sample_readers[i] != Bit_sample_reader_ptr());
+    SFXC_ASSERT(bit_sample_readers[i] != Bit_sample_reader_ptr());
     if (bit_sample_readers[i] != Bit_sample_reader_ptr()) {
       int count = 0;
       while ((count < 25) && bit_sample_readers[i]->has_work()) {
@@ -263,7 +263,7 @@ Correlator_node::receive_parameters(const Correlation_parameters &parameters) {
        parameters.sample_rate,
        parameters.number_channels);
     for (size_t i=0; i<bit_sample_readers.size(); i++) {
-      assert(bit_sample_readers[i] !=
+      SFXC_ASSERT(bit_sample_readers[i] !=
              Bit_sample_reader_ptr());
       if (i <parameters.station_streams.size()) {
         bit_sample_readers[i]->set_parameters(number_ffts_in_integration,
@@ -279,7 +279,7 @@ Correlator_node::receive_parameters(const Correlation_parameters &parameters) {
 }
 void
 Correlator_node::set_parameters() {
-  assert(status == STOPPED);
+  SFXC_ASSERT(status == STOPPED);
 
   if (integration_slices_queue.empty())
     return;
@@ -294,10 +294,10 @@ Correlator_node::set_parameters() {
      parameters.bits_per_sample,
      parameters.number_channels);
 
-  assert(((parameters.stop_time-parameters.start_time) /
+  SFXC_ASSERT(((parameters.stop_time-parameters.start_time) /
           parameters.integration_time) == 1);
 
-  assert(size_input_slice > 0);
+  SFXC_ASSERT(size_input_slice > 0);
 
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {

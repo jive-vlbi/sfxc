@@ -1,5 +1,5 @@
-#include <assert.h>
 #include "output_header.h"
+#include "utils.h"
 
 std::ostream &
 operator<<(std::ostream &out,
@@ -120,7 +120,7 @@ operator<(const Output_header_baseline &h1,
   if (h1.station_nr2 != h2.station_nr2)
     return (h1.station_nr2 < h2.station_nr2);
 
-  assert(h1 == h2);
+  SFXC_ASSERT(h1 == h2);
   return false;
 }
 

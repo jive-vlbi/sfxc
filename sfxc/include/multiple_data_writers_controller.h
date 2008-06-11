@@ -50,12 +50,12 @@ public:
   Data_writer_ptr get_data_writer(size_t i);
 
   int get_rank_node_reader(int i) {
-    assert((0<=i) && (i < (int)data_writers.size()));
+    SFXC_ASSERT((0<=i) && (i < (int)data_writers.size()));
     return data_writers[i].rank_node_reader;
   }
 
   int get_stream_number_reader(int i) {
-    assert((0<=i) && (i < (int)data_writers.size()));
+    SFXC_ASSERT((0<=i) && (i < (int)data_writers.size()));
     return data_writers[i].stream_number_reader;
   }
 

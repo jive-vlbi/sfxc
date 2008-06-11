@@ -36,7 +36,7 @@ Delay_correction::~Delay_correction() {
 }
 
 void Delay_correction::connect_to(Input_buffer_ptr new_input_buffer) {
-  assert(input_buffer == Input_buffer_ptr());
+  SFXC_ASSERT(input_buffer == Input_buffer_ptr());
   input_buffer = new_input_buffer;
 }
 
@@ -46,16 +46,16 @@ void Delay_correction::set_delay_table(const Delay_table_akima &delay_table_) {
 }
 
 double Delay_correction::get_delay(int64_t time) {
-  assert(delay_table_set);
+  SFXC_ASSERT(delay_table_set);
   return delay_table.delay(time);
 }
 
 void Delay_correction::do_task() {
-  assert(has_work());
-  assert(current_time >= 0);
+  SFXC_ASSERT(has_work());
+  SFXC_ASSERT(current_time >= 0);
 
   if (n_ffts_per_integration == current_fft) {
-    assert(current_time/correlation_parameters.integration_time !=
+    SFXC_ASSERT(current_time/correlation_parameters.integration_time !=
            (current_time+length_of_one_fft())/correlation_parameters.integration_time);
 
     current_time =
@@ -105,7 +105,7 @@ void Delay_correction::do_task() {
 void Delay_correction::bit2float(const Input_buffer_element &input,
                                  FLOAT* output_buffer_) {
   FLOAT* output_buffer = output_buffer_;
-  assert(correlation_parameters.bits_per_sample == 2);
+  SFXC_ASSERT(correlation_parameters.bits_per_sample == 2);
   unsigned char * input_data = input->bytes_buffer();
 
   if (correlation_parameters.bits_per_sample == 2) {
@@ -131,15 +131,15 @@ void Delay_correction::bit2float(const Input_buffer_element &input,
 #ifdef SFXC_INVALIDATE_SAMPLES
 
     { // zero out the invalid samples
-      assert(input->invalid_samples_begin >= 0);
+      SFXC_ASSERT(input->invalid_samples_begin >= 0);
       const size_t invalid_samples_begin = input->invalid_samples_begin;
       const size_t invalid_samples_end = invalid_samples_begin + input->nr_invalid_samples;
-      assert(invalid_samples_begin >= 0);
-      assert(invalid_samples_begin <= invalid_samples_end);
-      assert(invalid_samples_end <= number_channels());
+      SFXC_ASSERT(invalid_samples_begin >= 0);
+      SFXC_ASSERT(invalid_samples_begin <= invalid_samples_end);
+      SFXC_ASSERT(invalid_samples_end <= number_channels());
       for (size_t i=invalid_samples_begin; i<invalid_samples_end; i++) {
 #ifdef SFXC_CHECK_INVALID_SAMPLES
-        assert(output_buffer_[i] == sample_value_ms[INVALID_PATTERN&3]);
+        SFXC_ASSERT(output_buffer_[i] == sample_value_ms[INVALID_PATTERN&3]);
 #endif
 
         output_buffer_[i] = 0;
@@ -149,7 +149,7 @@ void Delay_correction::bit2float(const Input_buffer_element &input,
 
   } else {
     std::cout << "Not yet implemented" << std::endl;
-    assert(false);
+    SFXC_ASSERT(false);
   }
 
 }
@@ -240,7 +240,7 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
   phi = mult_factor_phi*(phi-floor_phi);
 
   { // compute delta_phi
-    assert((number_channels()*1000000)%sample_rate() == 0);
+    SFXC_ASSERT((number_channels()*1000000)%sample_rate() == 0);
     double phi_end = integer_mult_factor_phi * 
       get_delay(time + (number_channels()*1000000)/sample_rate());
     phi_end = mult_factor_phi*(phi_end-floor_phi);
@@ -281,7 +281,7 @@ bool Delay_correction::has_work() {
 
 Delay_correction::Output_buffer_ptr
 Delay_correction::get_output_buffer() {
-  assert(output_buffer != Output_buffer_ptr());
+  SFXC_ASSERT(output_buffer != Output_buffer_ptr());
   return output_buffer;
 }
 
@@ -292,7 +292,7 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 
   current_time = parameters.start_time*(int64_t)1000;
 
-  assert((((int64_t)number_channels())*1000000000)%sample_rate() == 0);
+  SFXC_ASSERT((((int64_t)number_channels())*1000000000)%sample_rate() == 0);
 
   if (prev_number_channels != number_channels()) {
     frequency_buffer.resize(number_channels());
@@ -309,7 +309,7 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
                                 (FFTW_COMPLEX *)&frequency_buffer[0],
                                 FFTW_FORWARD,  FFTW_MEASURE);
   }
-  assert(frequency_buffer.size() == number_channels());
+  SFXC_ASSERT(frequency_buffer.size() == number_channels());
 
   n_ffts_per_integration =
     Control_parameters::nr_ffts_per_integration_slice(
@@ -320,7 +320,7 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 }
 
 size_t Delay_correction::number_channels() {
-  assert(correlation_parameters.number_channels >= 0);
+  SFXC_ASSERT(correlation_parameters.number_channels >= 0);
   return correlation_parameters.number_channels;
 }
 int Delay_correction::bandwidth() {
@@ -333,7 +333,7 @@ int Delay_correction::length_of_one_fft() {
   return (((int64_t)number_channels())*1000000)/sample_rate();
 }
 int Delay_correction::sideband() {
-  assert((correlation_parameters.sideband == 'L') ||
+  SFXC_ASSERT((correlation_parameters.sideband == 'L') ||
          (correlation_parameters.sideband == 'U'));
   return (correlation_parameters.sideband == 'L' ? -1 : 1);
 }

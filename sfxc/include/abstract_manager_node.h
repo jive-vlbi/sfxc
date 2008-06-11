@@ -99,6 +99,10 @@ public:
   int integration_time() const {
     return control_parameters.integration_time();
   }
+
+  // Terminate all the nodes after an assertion has been raised in a node
+  void terminate_nodes_after_assertion(int calling_node);
+
 protected:
   void wait_for_setting_up_channel(int rank);
 

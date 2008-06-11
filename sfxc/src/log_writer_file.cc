@@ -7,11 +7,10 @@
  *
  */
 
-#include <fstream>
-#include <assert.h>
-
-#include "utils.h"
 #include "log_writer_file.h"
+#include "utils.h"
+
+#include <fstream>
 
 class Log_writer_file_buffer : public Log_writer_buffer {
 public:
@@ -41,8 +40,8 @@ Log_writer_file_buffer::Log_writer_file_buffer(char *filename,
     int buffer_size)
     : Log_writer_buffer(message_level, buffer_size),
     out(filename+7) {
-  assert(strncmp(filename, "file://", 7)==0);
-  assert(out.is_open());
+  SFXC_ASSERT(strncmp(filename, "file://", 7)==0);
+  SFXC_ASSERT(out.is_open());
 }
 
 Log_writer_file_buffer::~Log_writer_file_buffer() {

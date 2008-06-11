@@ -7,15 +7,14 @@
  *
  */
 
-#include <assert.h>
+#include "data_reader_mark5.h"
+#include "utils.h"
+
 #include <iostream>
 #include <algorithm>
 #include <sstream>
 #include <netinet/in.h> // sockaddr_in
 #include <netdb.h>      // getservbyname()
-
-#include "data_reader_mark5.h"
-#include "utils.h"
 
 Data_reader_mark5::Data_reader_mark5(const std::string& str) {
   int port;
@@ -163,7 +162,7 @@ int Data_reader_mark5::do_get_bytes(size_t nBytes, char*out) {
 }
 
 bool Data_reader_mark5::eof() {
-  assert(false);
+  SFXC_ASSERT(false);
   return false;
 }
 

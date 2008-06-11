@@ -12,9 +12,9 @@
 #ifndef DATA_READER_BLOCKING_H_INCLUDED
 #define DATA_READER_BLOCKING_H_INCLUDED
 
-#include <cassert>
-#include <unistd.h>
 #include "data_reader.h"
+
+#include <unistd.h>
 
 /****************************************************
 *

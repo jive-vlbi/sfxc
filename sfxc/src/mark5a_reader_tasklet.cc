@@ -6,12 +6,12 @@ Mark5a_reader_tasklet(Mark5a_reader_ptr reader,
     : memory_pool_(10), stop_time(-1),
     n_bytes_per_input_word(reader->N) {
 
-  assert(sizeof(value_type) == 1);
+  SFXC_ASSERT(sizeof(value_type) == 1);
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
   allocate_element();
   mark5a_reader_ = reader;
 
-  assert(&input_element_->mark5_data[0] != NULL);
+  SFXC_ASSERT(&input_element_->mark5_data[0] != NULL);
   // Copy the first data block
   memcpy((unsigned char *)&input_element_->mark5_data[0],
          (unsigned char *)buffer,
@@ -47,7 +47,7 @@ do_task() {
   monitor_.begin_measure();
 #endif // RUNTIME_STATISTIC
 
-  assert(has_work());
+  SFXC_ASSERT(has_work());
 
   push_element();
   allocate_element();
@@ -113,7 +113,7 @@ has_work() {
 void
 Mark5a_reader_tasklet::
 allocate_element() {
-  assert(!memory_pool_.empty());
+  SFXC_ASSERT(!memory_pool_.empty());
   input_element_ = memory_pool_.allocate();
   std::vector<value_type> &vector_ = input_element_->mark5_data;
   if (vector_.size() != (SIZE_MK5A_FRAME*n_bytes_per_input_word)) {
@@ -128,7 +128,7 @@ goto_time(int ms_time) {
   int64_t new_time =
     mark5a_reader_->goto_time((unsigned char *)&input_element_->mark5_data[0],
                               us_time);
-  assert(new_time == mark5a_reader_->get_current_time());
+  SFXC_ASSERT(new_time == mark5a_reader_->get_current_time());
 
   // Set the current time to the actual time in the data stream.
   // Might not be the requested time, if no data is available
@@ -159,7 +159,7 @@ Mark5a_reader_tasklet::
 set_stop_time(int64_t ms_time) {
   int64_t us_time = int64_t(1000)*ms_time;
 
-  assert(current_time < us_time);
+  SFXC_ASSERT(current_time < us_time);
   stop_time = us_time;
 }
 
@@ -167,8 +167,8 @@ set_stop_time(int64_t ms_time) {
 void
 Mark5a_reader_tasklet::
 push_element() {
-  assert(input_element_->invalid_bytes_begin >= 0);
-  assert(input_element_->nr_invalid_bytes >= 0);
+  SFXC_ASSERT(input_element_->invalid_bytes_begin >= 0);
+  SFXC_ASSERT(input_element_->nr_invalid_bytes >= 0);
 
   output_buffer_->push(input_element_);
 }

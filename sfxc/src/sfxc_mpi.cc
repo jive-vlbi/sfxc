@@ -33,7 +33,7 @@ void start_node() {
     }
   case MPI_TAG_LOG_MESSAGE: {
 
-      assert (RANK_LOG_NODE == rank);
+      SFXC_ASSERT (RANK_LOG_NODE == rank);
       int numtasks;
       MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
       if (PRINT_PID) {
@@ -128,7 +128,7 @@ void start_node() {
     }
   default: {
       std::cout << "Unknown node type " << status.MPI_TAG << std::endl;
-      assert(false);
+      SFXC_ASSERT(false);
     }
   }
 }

@@ -18,7 +18,7 @@
  *     an IntelCore2 is from [60MB/s (16 channel) to 130MB/s].
  *     On DAS3 cut the number by 2 to get a rule of thumb approximation.
  */
-#include <cassert>
+#include "utils.h"
 #include <iostream>
 #include "channel_extractor_fast.h"
 #include "channel_extractor_utils.h"
@@ -68,11 +68,11 @@ public:
   *    currbyteptr+=sequence_size
   */
   void initialise(const std::vector< std::vector<int> > &track_positions) {
-    assert( Tn_subbands == track_positions.size() );
-    assert( Tfan_out == track_positions[0].size() );
-    assert(Tfan_out <= 8);
-    assert(8%Tfan_out == 0);
-    assert(Tfan_out*Tsamples_per_byte == 8);
+    SFXC_ASSERT( Tn_subbands == track_positions.size() );
+    SFXC_ASSERT( Tfan_out == track_positions[0].size() );
+    SFXC_ASSERT(Tfan_out <= 8);
+    SFXC_ASSERT(8%Tfan_out == 0);
+    SFXC_ASSERT(Tfan_out*Tsamples_per_byte == 8);
     verbose = false;
     if (verbose) {
 
@@ -128,11 +128,11 @@ public:
         std::vector<Action>::iterator en = (*table[j][i]).end();
         int idefix=0;
         while ( bg != en ) {
-          assert( idefix < Tspan_out);
+          SFXC_ASSERT( idefix < Tspan_out);
           newtab[i][j][idefix] = ((unsigned char)(*bg).value);
           idefix+=1;
           if (i == 255 ) {
-            assert( tidx < Tseqsize*Tspan_out);
+            SFXC_ASSERT( tidx < Tseqsize*Tspan_out);
             order[tidx] = (*bg).channel;
             tidx++;
           }
@@ -222,7 +222,7 @@ Channel_extractor_interface* create_fast_(int input_sample_size, int span_out) {
     return create_fast_<Tsize_of_one_input_word, Tfan_out, Tn_subbands, 8>(input_sample_size);
   default:
     std::cerr << " invalid span_out for channel_extractor_fast: " << span_out << std::endl;
-    assert(false&&"Unsupported span_out for channel_extractor_fast");
+    SFXC_ASSERT(false&&"Unsupported span_out for channel_extractor_fast");
   }
   return NULL;
 }
@@ -245,7 +245,7 @@ Channel_extractor_interface* create_fast_(int n_subbands, int input_sample_size,
     return create_fast_<Tsize_of_one_input_word, Tfan_out,16>(input_sample_size, span_out);
   default:
     std::cerr << " invalid number of subbands for channel_extractor_fast: " << n_subbands << std::endl;
-    assert(false&&"Unsupported number of subbands for channel_extractor_fast");
+    SFXC_ASSERT(false&&"Unsupported number of subbands for channel_extractor_fast");
   }
   return NULL;
 }
@@ -266,7 +266,7 @@ Channel_extractor_interface* create_fast_(int fan_out,
     return create_fast_<Tsize_of_one_input_word,8>(n_subbands, input_sample_size, span_out);
   default:
     std::cerr << " invalid fan_out for channel_extractor_fast: " << fan_out << std::endl;
-    assert(false&&"Unsupported fan_out for channelization");
+    SFXC_ASSERT(false&&"Unsupported fan_out for channelization");
   }
   return NULL;
 }
@@ -286,7 +286,7 @@ Channel_extractor_interface* create_fast_(int size_of_one_input_word, int fan_ou
     return create_fast_<8>(fan_out, n_subbands, input_sample_size, span_out);
   default:
     std::cerr << " invalid size_of_input_word for channel_extractor_fast: " << size_of_one_input_word << std::endl;
-    assert(false&&"Unsupported size of input word for channelization");
+    SFXC_ASSERT(false&&"Unsupported size of input word for channelization");
   }
   return NULL;
 }
@@ -306,14 +306,14 @@ void Channel_extractor_fast::initialise(const std::vector< std::vector<int> > &t
   hidden_implementation_ = create_fast_(size_of_one_input_word, fan_out, n_subbands, input_sample_size, span_out);
   if ( hidden_implementation_ == NULL ) {
     std::cerr << " No channel_extractor can be build" << std::endl;
-    assert(false && "No channel extractor can be build with these parameters");
+    SFXC_ASSERT(false && "No channel extractor can be build with these parameters");
   }
   hidden_implementation_->initialise(track_positions, size_of_one_input_word_, input_sample_size);
 }
 
 void Channel_extractor_fast::extract(unsigned char *in_data1,
                                      unsigned char **output_data) {
-  assert( hidden_implementation_ != NULL && " NULL pointer usage" );
+  SFXC_ASSERT( hidden_implementation_ != NULL && " NULL pointer usage" );
   hidden_implementation_->extract(in_data1, output_data);
 }
 

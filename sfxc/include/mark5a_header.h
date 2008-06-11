@@ -10,8 +10,6 @@
 #ifndef MARK5A_HEADER_H
 #define MARK5A_HEADER_H
 
-#include <assert.h>
-
 #include "utils.h"
 
 /** Mark IV frame header in byte chunks, without parity bits. */

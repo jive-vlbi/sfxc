@@ -7,20 +7,19 @@
  *
  */
 
-#include <assert.h>
+#include "data_writer_file.h"
+#include "utils.h"
+
 #include <iostream>
 #include <algorithm>
 
 #include <fcntl.h> // file control
 
-#include "data_writer_file.h"
-#include "utils.h"
-
 Data_writer_file::Data_writer_file(const char *filename) :
     Data_writer() {
-  assert(strncmp(filename, "file://", 7)==0);
+  SFXC_ASSERT(strncmp(filename, "file://", 7)==0);
   file.open(filename+7, std::ios::out | std::ios::binary);
-  assert(file.is_open() );
+  SFXC_ASSERT(file.is_open() );
 }
 
 Data_writer_file::~Data_writer_file() {
@@ -29,7 +28,7 @@ Data_writer_file::~Data_writer_file() {
 
 size_t
 Data_writer_file::do_put_bytes(size_t nBytes, const char *buff) {
-  assert(file.good());
+  SFXC_ASSERT(file.good());
   file.write(buff, nBytes);
   if (file.good()) {
 //    DEBUG_MSG("Wrote nBytes: "<< nBytes);

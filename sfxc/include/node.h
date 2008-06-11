@@ -58,11 +58,6 @@ public:
    **/
   MESSAGE_RESULT check_and_process_message();
 
-  /** Process an MPI event.
-      Try to delegate it to the controllers, otherwise produce an error message.
-   **/
-  MESSAGE_RESULT process_event(MPI_Status &status);
-
   /**
      Produce an error message (either to std::cerr or to a specialised "Log-node")
    **/
@@ -92,11 +87,21 @@ public:
    **/
   virtual void hook_added_data_writer(size_t writer) = 0;
 
+  bool get_assertion_raised() {
+    return assertion_raised;
+  }
 private:
+  /** Process an MPI event.
+      Try to delegate it to the controllers, otherwise produce an error message.
+   **/
+  MESSAGE_RESULT process_event(MPI_Status &status);
+
   int rank;
   Controller_list controllers;
 
   Log_writer *log_writer;
+  
+  bool assertion_raised;
 };
 
 #endif // NODE_H

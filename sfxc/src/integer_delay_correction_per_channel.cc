@@ -13,13 +13,13 @@ Integer_delay_correction_per_channel()
     memory_pool_(10)
     /**/
 {
-  assert(!memory_pool_.empty());
+  SFXC_ASSERT(!memory_pool_.empty());
 }
 
 void
 Integer_delay_correction_per_channel::do_task() {
-  assert(has_work());
-  assert(current_delay.first <= 0);
+  SFXC_ASSERT(has_work());
+  SFXC_ASSERT(current_delay.first <= 0);
 
   // Acquire the input and output buffers
   Input_buffer_element input_element = input_buffer_->front();
@@ -59,7 +59,7 @@ Integer_delay_correction_per_channel::do_task() {
     }
 
     // Default case with normal data
-    assert (byte_offset >= 0);
+    SFXC_ASSERT (byte_offset >= 0);
     int input_data_size = input_element.channel_data.data().data.size();
     if ((byte_offset + nr_output_bytes) < input_data_size) {
       // Normal case where all data lies within one input block
@@ -78,7 +78,7 @@ Integer_delay_correction_per_channel::do_task() {
           output_element.nr_invalid_samples =
             std::min(nr_output_bytes*8/bits_per_sample, nr_invalid_samples);
         }
-        assert(output_element.nr_invalid_samples >= 0);
+        SFXC_ASSERT(output_element.nr_invalid_samples >= 0);
       }
 
       // Send data
@@ -98,7 +98,7 @@ Integer_delay_correction_per_channel::do_task() {
 
       // Get the second block of data
       input_buffer_->pop();
-      assert(!input_buffer_->empty());
+      SFXC_ASSERT(!input_buffer_->empty());
       input_element = input_buffer_->front();
 
       { // Set invalid samples
@@ -107,7 +107,7 @@ Integer_delay_correction_per_channel::do_task() {
 
         // Simplification because the only invalid samples are missing data
         // or mark5-headers
-        assert(input_element.invalid_samples_begin == 0);
+        SFXC_ASSERT(input_element.invalid_samples_begin == 0);
 
         // start of the invalid data is the begin of the second data block
         output_element.invalid_samples_begin =
@@ -143,7 +143,7 @@ Integer_delay_correction_per_channel::do_task() {
     output_element.nr_bytes = nr_output_bytes+1;
     output_buffer_->push(output_element);
   } else {
-    assert(byte_offset < 0);
+    SFXC_ASSERT(byte_offset < 0);
     
     // Partially random data
     output_element.invalid_samples_begin = 0;
@@ -189,7 +189,7 @@ Integer_delay_correction_per_channel::do_task() {
 
 bool
 Integer_delay_correction_per_channel::has_work() {
-  assert(output_buffer_ != Output_buffer_ptr());
+  SFXC_ASSERT(output_buffer_ != Output_buffer_ptr());
   if ((stop_time_ > 0) && (_current_time >= stop_time_))
     return false;
   if (sample_rate <= 0)
@@ -237,15 +237,15 @@ Integer_delay_correction_per_channel::delay(int64_t time) {
 
 Integer_delay_correction_per_channel::Delay_type
 Integer_delay_correction_per_channel::get_delay(int64_t time) {
-  assert(delay_table.initialised());
-  assert(delta_time > 0);
-  assert(delta_time%2 == 0);
+  SFXC_ASSERT(delay_table.initialised());
+  SFXC_ASSERT(delta_time > 0);
+  SFXC_ASSERT(delta_time%2 == 0);
   double delay_ = delay(time);
   int delay_in_samples = (int)std::floor(delay_*sample_rate+.5);
 
   // All because modulo doesn't work for negative values
   // delay_in_bytes = std::floor(delay_in_samples/(8./bits_per_sample))
-  assert(delay_in_samples < 0);
+  SFXC_ASSERT(delay_in_samples < 0);
   int delay_in_bytes = -((-delay_in_samples)/(8/bits_per_sample))-1;
   int delay_in_remaining_samples =
     delay_in_samples-delay_in_bytes*(8/bits_per_sample);
@@ -254,9 +254,9 @@ Integer_delay_correction_per_channel::get_delay(int64_t time) {
     delay_in_remaining_samples = 0;
   }
 
-  assert((delay_in_bytes <= 0) &&
+  SFXC_ASSERT((delay_in_bytes <= 0) &&
          (delay_in_remaining_samples < 8));
-  assert((delay_in_bytes*(8/bits_per_sample) +
+  SFXC_ASSERT((delay_in_bytes*(8/bits_per_sample) +
           delay_in_remaining_samples) ==
          delay_in_samples);
 
@@ -275,12 +275,12 @@ set_parameters(const Input_node_parameters &parameters,
                int node_nr) {
   bits_per_sample = parameters.bits_per_sample();
 
-  assert((parameters.number_channels*bits_per_sample)%8 == 0);
+  SFXC_ASSERT((parameters.number_channels*bits_per_sample)%8 == 0);
   // The offset is not counted
   nr_output_bytes = parameters.number_channels*bits_per_sample/8;
   sample_rate = parameters.sample_rate();
 
-  assert(((nr_output_bytes*(8/bits_per_sample))*1000000) % sample_rate== 0);
+  SFXC_ASSERT(((nr_output_bytes*(8/bits_per_sample))*1000000) % sample_rate== 0);
   delta_time = (nr_output_bytes*(8/bits_per_sample))*1000000/sample_rate;
   integration_time = parameters.integr_time*1000;
 
@@ -297,7 +297,7 @@ set_parameters(const Input_node_parameters &parameters,
 void
 Integer_delay_correction_per_channel::
 set_time(int64_t time) {
-  assert(delay_table.initialised());
+  SFXC_ASSERT(delay_table.initialised());
   _current_time = time;
 
   current_delay = get_delay(_current_time);

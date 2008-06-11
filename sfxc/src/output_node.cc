@@ -7,13 +7,10 @@
  *
  */
 
-#include <iostream>
-#include <assert.h>
-
 #include "output_node.h"
-#include "types.h"
-#include "data_writer_file.h"
-#include "data_reader_buffer.h"
+#include "utils.h"
+
+#include <iostream>
 
 Output_node::Output_node(int rank, int size)
     : Node(rank),
@@ -52,14 +49,18 @@ void Output_node::initialise() {
 }
 
 Output_node::~Output_node() {
-  // empty the input buffers to the output
-  assert(status == END_NODE);
-  assert(input_streams_order.empty());
+  if (!get_assertion_raised()) {
+    DEBUG_MSG("Output node finished");
+
+    // empty the input buffers to the output
+    SFXC_ASSERT(status == END_NODE);
+    SFXC_ASSERT(input_streams_order.empty());
 
 
-  // wait until the output buffer is empty (the memory pool is full)
-  while (!output_memory_pool.full()) {
-    usleep(10000);
+    // wait until the output buffer is empty (the memory pool is full)
+    while (!output_memory_pool.full()) {
+      usleep(10000);
+    }
   }
 }
 
@@ -67,7 +68,7 @@ void Output_node::start() {
   while (status != END_NODE) {
     switch (status) {
       case STOPPED: {
-        assert(curr_stream == -1);
+        SFXC_ASSERT(curr_stream == -1);
         // blocking:
         if (check_and_process_message() == TERMINATE_NODE) {
           status = END_NODE;
@@ -83,12 +84,12 @@ void Output_node::start() {
         break;
       }
       case START_NEW_SLICE: {
-        assert(curr_stream == -1);
+        SFXC_ASSERT(curr_stream == -1);
 
-        assert(!input_streams_order.empty());
-        assert(input_streams_order.begin()->first == curr_slice);
+        SFXC_ASSERT(!input_streams_order.empty());
+        SFXC_ASSERT(input_streams_order.begin()->first == curr_slice);
         curr_stream = input_streams_order.begin()->second;
-        assert(curr_stream >= 0);
+        SFXC_ASSERT(curr_stream >= 0);
         input_streams_order.erase(input_streams_order.begin());
         input_streams[curr_stream]->goto_next_slice();
 
@@ -97,7 +98,6 @@ void Output_node::start() {
       }
       case WRITE_OUTPUT: {
         if (process_all_waiting_messages() == TERMINATE_NODE) {
-          assert(false);
           status = END_NODE;
           break;
         }
@@ -127,13 +127,12 @@ void Output_node::start() {
         break;
       }
       case END_NODE: { // For completeness sake
-        assert(false);
+        SFXC_ASSERT(false);
         break;
       }
     }
   }
   // End the node;
-  DEBUG_MSG("Output node finished");
   int32_t msg=0;
   MPI_Send(&msg, 1, MPI_INT32,
            RANK_MANAGER_NODE, MPI_TAG_OUTPUT_NODE_FINISHED, MPI_COMM_WORLD);
@@ -142,7 +141,7 @@ void Output_node::start() {
 void
 Output_node::
 write_global_header(const Output_header_global &global_header) {
-  assert(!output_memory_pool.empty());
+  SFXC_ASSERT(!output_memory_pool.empty());
 
   output_value_type element;
   element.actual_size = sizeof(Output_header_global);
@@ -157,14 +156,14 @@ write_global_header(const Output_header_global &global_header) {
 void
 Output_node::
 set_weight_of_input_stream(int stream, int64_t weight, size_t size) {
-  assert(stream >= 0);
+  SFXC_ASSERT(stream >= 0);
 
-  assert(stream < (int)input_streams.size());
+  SFXC_ASSERT(stream < (int)input_streams.size());
   // Check that the weight does not exist yet:
-  assert(input_streams_order.find(weight) == input_streams_order.end());
+  SFXC_ASSERT(input_streams_order.find(weight) == input_streams_order.end());
   // Check that the ordering is right (not before the current element):
   if (!input_streams_order.empty()) {
-    assert(weight >= curr_slice);
+    SFXC_ASSERT(weight >= curr_slice);
   }
 
   // Add the weight to the priority queue:
@@ -173,12 +172,12 @@ set_weight_of_input_stream(int stream, int64_t weight, size_t size) {
   // Add the weight to the priority queue:
   input_streams[stream]->set_length_time_slice(size);
 
-  assert(status != END_NODE);
+  SFXC_ASSERT(status != END_NODE);
 }
 
 void Output_node::time_slice_finished(int rank, int64_t nBytes) {
-  assert(input_streams.size() > (unsigned int) rank);
-  assert(input_streams[rank] != NULL);
+  SFXC_ASSERT(input_streams.size() > (unsigned int) rank);
+  SFXC_ASSERT(input_streams[rank] != NULL);
   input_streams[rank]->set_length_time_slice(nBytes);
 }
 
@@ -186,15 +185,15 @@ void Output_node::write_output() {
   if (output_memory_pool.empty())
     return;
 
-  assert(curr_stream >= 0);
-  assert(input_streams[curr_stream] != NULL);
-  assert(!output_memory_pool.empty());
+  SFXC_ASSERT(curr_stream >= 0);
+  SFXC_ASSERT(input_streams[curr_stream] != NULL);
+  SFXC_ASSERT(!output_memory_pool.empty());
 
   // Write data ...
   output_value_type element;
   element.data = output_memory_pool.allocate();
   input_streams[curr_stream]->write_bytes(element);
-  if (element.actual_size > 0) 
+  if (element.actual_size > 0)
     output_queue->push(element);
 }
 
@@ -230,7 +229,7 @@ Output_node::Input_stream::Input_stream(boost::shared_ptr<Data_reader> reader)
 
 void
 Output_node::Input_stream::write_bytes(output_value_type &elem) {
-  assert(reader != boost::shared_ptr<Data_reader>());
+  SFXC_ASSERT(reader != boost::shared_ptr<Data_reader>());
   if (elem.data->size() != 1000000)
     elem.data->resize(1000000);
   size_t nBytes = std::min(elem.data->size(),
@@ -251,10 +250,10 @@ Output_node::Input_stream::set_length_time_slice(int64_t nBytes) {
 
 void
 Output_node::Input_stream::goto_next_slice() {
-  assert(!slice_size.empty());
-  assert(slice_size.front() > 0);
-  assert(reader->end_of_dataslice());
+  SFXC_ASSERT(!slice_size.empty());
+  SFXC_ASSERT(slice_size.front() > 0);
+  SFXC_ASSERT(reader->end_of_dataslice());
   reader->set_size_dataslice(slice_size.front());
-  assert(reader->get_size_dataslice() > 0);
+  SFXC_ASSERT(reader->get_size_dataslice() > 0);
   slice_size.pop();
 }

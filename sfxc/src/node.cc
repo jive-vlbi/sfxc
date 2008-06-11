@@ -7,14 +7,14 @@
  *
  */
 
-#include <assert.h>
-
 #include "node.h"
 #include "utils.h"
 
-Node::Node(int rank) : rank(rank), log_writer(new Log_writer_mpi(rank, 0)) {}
+Node::Node(int rank)
+    : rank(rank), log_writer(new Log_writer_mpi(rank, 0)), assertion_raised(false) {}
 
-Node::Node(int rank, Log_writer *writer) : rank(rank), log_writer(writer) {}
+Node::Node(int rank, Log_writer *writer)
+    : rank(rank), log_writer(writer), assertion_raised(false) {}
 
 Node::~Node() {
   int rank = get_rank();
@@ -25,7 +25,7 @@ Node::~Node() {
 }
 
 Log_writer &Node::get_log_writer() {
-  assert(log_writer != NULL);
+  SFXC_ASSERT(log_writer != NULL);
   return *log_writer;
 }
 
@@ -39,21 +39,21 @@ void Node::start() {
     MESSAGE_RESULT result = check_and_process_message();
 
     switch (result) {
-    case MESSAGE_PROCESSED: {
+      case MESSAGE_PROCESSED: {
         break;
       }
-    case TERMINATE_NODE: {
+      case TERMINATE_NODE: {
         return;
       }
-    case NO_MESSAGE: {
-        assert(false);
+      case NO_MESSAGE: {
+        SFXC_ASSERT(false);
         return;
       }
-    case ERROR_IN_PROCESSING: {
+      case ERROR_IN_PROCESSING: {
         get_log_writer()(0) << "Error, failed to process message" << std::endl;
         break;
       }
-    case MESSAGE_UNKNOWN: {
+      case MESSAGE_UNKNOWN: {
         break;
       }
     }
@@ -96,7 +96,8 @@ Node::process_event(MPI_Status &status) {
     int32_t msg;
     MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
-
+    assertion_raised = (msg == 1);
+    
     return TERMINATE_NODE;
   } else if (status.MPI_TAG == MPI_TAG_SET_MESSAGELEVEL) {
     MPI_Status status2;
@@ -113,14 +114,14 @@ Node::process_event(MPI_Status &status) {
        it++) {
     Controller::Process_event_status result = (*it)->process_event(status);
     switch (result) {
-    case Controller::PROCESS_EVENT_STATUS_SUCCEEDED: { // Processing succeeded
+      case Controller::PROCESS_EVENT_STATUS_SUCCEEDED: { // Processing succeeded
         return MESSAGE_PROCESSED;
       }
-    case Controller::PROCESS_EVENT_STATUS_UNKNOWN: { // Unknown command, try next controller
+      case Controller::PROCESS_EVENT_STATUS_UNKNOWN: { // Unknown command, try next controller
         continue;
         break;
       }
-    case Controller::PROCESS_EVENT_STATUS_FAILED: { // Processing failed
+      case Controller::PROCESS_EVENT_STATUS_FAILED: { // Processing failed
         get_log_writer()(0)
         << "Error in processing tag:" << status.MPI_TAG << std::endl;
         return ERROR_IN_PROCESSING;
@@ -133,13 +134,13 @@ Node::process_event(MPI_Status &status) {
     get_log_writer()(0) << msg << std::endl;
     DEBUG_MSG("Source: " << status.MPI_SOURCE);
     DEBUG_MSG(print_MPI_TAG(status.MPI_TAG));
-    assert(false);
+    SFXC_ASSERT(false);
   }
 
   // Remove event:
   int size;
   MPI_Get_elements(&status, MPI_CHAR, &size);
-  assert(size >= 0);
+  SFXC_ASSERT(size >= 0);
   char msg[size];
   MPI_Status status2;
   MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,

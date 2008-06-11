@@ -41,7 +41,7 @@ get_input_node_tasklet_mark5b(boost::shared_ptr<Data_reader> reader) {
 Input_node_tasklet *
 get_input_node_tasklet(boost::shared_ptr<Data_reader> reader,
                        TRANSPORT_TYPE type) {
-  assert(type != UNINITIALISED);
+  SFXC_ASSERT(type != UNINITIALISED);
 
   if (type == MARK5A) {
     return get_input_node_tasklet_mark5a(reader);
@@ -194,11 +194,11 @@ do_task() {
 
   mark5a_reader_timer_.resume();
   if (transport_type == MARK5A) {
-    assert(mark5a_reader_ != NULL);
+    SFXC_ASSERT(mark5a_reader_ != NULL);
     if (mark5a_reader_->has_work()) {
       
       RT_STAT( mark5a_reader_state_.begin_measure() );
-      assert(mark5a_reader_ != NULL);
+      SFXC_ASSERT(mark5a_reader_ != NULL);
       mark5a_reader_->do_task();
       RT_STAT(mark5a_reader_state_.end_measure(1) );
       
@@ -215,11 +215,11 @@ do_task() {
       }
     }
   } else if (transport_type == MARK5B) {
-    assert(mark5b_reader_ != NULL);
+    SFXC_ASSERT(mark5b_reader_ != NULL);
     if (mark5b_reader_->has_work()) {
       
       RT_STAT( mark5breader_state_.begin_measure() );
-      assert(mark5b_reader_ != NULL);
+      SFXC_ASSERT(mark5b_reader_ != NULL);
       mark5b_reader_->do_task();
       RT_STAT(mark5breader_state_.end_measure(1) );
       
@@ -236,7 +236,7 @@ do_task() {
       }
     }
   } else {
-    assert(false);
+    SFXC_ASSERT(false);
   }
   mark5a_reader_timer_.stop();
 
@@ -253,7 +253,7 @@ do_task() {
   integer_delay_timer_.resume();
   RT_STAT(integerdelay_state_.begin_measure() );
   for (size_t i=0; i<integer_delay_.size(); i++) {
-    assert(integer_delay_[i] != NULL);
+    SFXC_ASSERT(integer_delay_[i] != NULL);
     while (integer_delay_[i]->has_work()) {
 
       integer_delay_[i]->do_task();
@@ -290,7 +290,7 @@ Input_node_tasklet::
 set_delay_table(Delay_table_akima &table) {
   delay_table = table;
   for (size_t i=0; i<integer_delay_.size(); i++) {
-    assert(integer_delay_[i] != NULL);
+    SFXC_ASSERT(integer_delay_[i] != NULL);
     integer_delay_[i]->set_delay_table(table);
   }
 
@@ -310,7 +310,7 @@ set_parameters(const Input_node_parameters &input_node_param,
     channel_extractor_.set_parameters(input_node_param,
                                       mark5b_reader_->get_tracks(input_node_param));
   } else {
-    assert(false);
+    SFXC_ASSERT(false);
   }
 
   size_t number_frequency_channels = input_node_param.channels.size();
@@ -338,15 +338,15 @@ void
 Input_node_tasklet::
 set_time_interval(int32_t start_time, int32_t stop_time) {
   int new_time;
-  assert(!integer_delay_.empty());
-  assert(integer_delay_[0] != NULL);
+  SFXC_ASSERT(!integer_delay_.empty());
+  SFXC_ASSERT(integer_delay_[0] != NULL);
   if (transport_type == MARK5A) {
-    assert(mark5a_reader_ != NULL);
+    SFXC_ASSERT(mark5a_reader_ != NULL);
     new_time = mark5a_reader_->goto_time(start_time);
     mark5a_reader_->set_stop_time(stop_time);
   } else {
-    assert(transport_type == MARK5B);
-    assert(mark5b_reader_ != NULL);
+    SFXC_ASSERT(transport_type == MARK5B);
+    SFXC_ASSERT(mark5b_reader_ != NULL);
     new_time = mark5b_reader_->goto_time(start_time);
     mark5b_reader_->set_stop_time(stop_time);
   }
@@ -361,10 +361,10 @@ int
 Input_node_tasklet::
 get_current_time() {
   if (transport_type == MARK5A) {
-    assert(mark5a_reader_ != NULL);
+    SFXC_ASSERT(mark5a_reader_ != NULL);
     return mark5a_reader_->get_current_time();
   } else {
-    assert(mark5b_reader_ != NULL);
+    SFXC_ASSERT(mark5b_reader_ != NULL);
     return mark5b_reader_->get_current_time();
   }
 }
@@ -372,10 +372,10 @@ int
 Input_node_tasklet::
 get_stop_time() {
   if (transport_type == MARK5A) {
-    assert(mark5a_reader_ != NULL);
+    SFXC_ASSERT(mark5a_reader_ != NULL);
     return mark5a_reader_->get_stop_time();
   } else {
-    assert(mark5b_reader_ != NULL);
+    SFXC_ASSERT(mark5b_reader_ != NULL);
     return mark5b_reader_->get_stop_time();
   }
 }
@@ -386,9 +386,9 @@ add_data_writer(size_t i,
                 Data_writer_ptr_ data_writer,
                 int nr_seconds) {
   did_work = true;
-  assert(i < data_writers_.size());
-  assert(!integer_delay_.empty());
-  assert(integer_delay_[i] != NULL);
+  SFXC_ASSERT(i < data_writers_.size());
+  SFXC_ASSERT(!integer_delay_.empty());
+  SFXC_ASSERT(integer_delay_[i] != NULL);
   int size_slice = integer_delay_[i]->bytes_of_output(nr_seconds);
   data_writers_[i].add_data_writer(data_writer, size_slice);
 }

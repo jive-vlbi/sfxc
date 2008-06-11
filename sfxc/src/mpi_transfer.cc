@@ -7,11 +7,11 @@
  *
  */
 
-#include <assert.h>
-#include <iostream>
-
 #include "mpi_transfer.h"
 #include "types.h"
+#include "utils.h"
+
+#include <iostream>
 
 MPI_Transfer::MPI_Transfer() {}
 
@@ -34,7 +34,7 @@ send(Delay_table_akima &table, int sn, int rank) {
            buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&table.delays[0], n_datapoints, MPI_DOUBLE,
            buffer, size, &position, MPI_COMM_WORLD);
-  assert(position == size);
+  SFXC_ASSERT(position == size);
 
   MPI_Send(buffer, position, MPI_PACKED, rank,
            MPI_TAG_DELAY_TABLE, MPI_COMM_WORLD);
@@ -47,7 +47,7 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
 
   int size;
   MPI_Get_elements(&status, MPI_CHAR, &size);
-  assert(size > 0);
+  SFXC_ASSERT(size > 0);
   char buffer[size];
   MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE,
            status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -66,12 +66,12 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
   table.delays.resize(n_datapoints);
   MPI_Unpack(buffer, size, &position, &table.times[0],
              n_datapoints, MPI_DOUBLE, MPI_COMM_WORLD);
-  assert(table.times.size() == n_datapoints);
+  SFXC_ASSERT(table.times.size() == n_datapoints);
   MPI_Unpack(buffer, size, &position, &table.delays[0],
              n_datapoints, MPI_DOUBLE, MPI_COMM_WORLD);
-  assert(table.delays.size() == n_datapoints);
+  SFXC_ASSERT(table.delays.size() == n_datapoints);
 
-  assert(position == size);
+  SFXC_ASSERT(position == size);
 
   table.begin_scan  = 0;
   table.end_scan    = 0;
@@ -129,7 +129,7 @@ MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
              message_buffer, size, &position, MPI_COMM_WORLD);
   }
 
-  assert(position == size);
+  SFXC_ASSERT(position == size);
   MPI_Send(message_buffer, position, MPI_PACKED, rank,
            MPI_TAG_TRACK_PARAMETERS, MPI_COMM_WORLD);
 }
@@ -142,7 +142,7 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
 
   int size;
   MPI_Get_elements(&status, MPI_CHAR, &size);
-  assert(size > 0);
+  SFXC_ASSERT(size > 0);
   char buffer[size];
   MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE,
            status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -200,7 +200,7 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
 
     n_channels--;
   }
-  assert(position == size);
+  SFXC_ASSERT(position == size);
 }
 
 void
@@ -266,7 +266,7 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
     MPI_Pack(&station->stop_time, 1, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD);
   }
-  assert(position == size);
+  SFXC_ASSERT(position == size);
   MPI_Send(message_buffer, position, MPI_PACKED, rank,
            MPI_TAG_CORR_PARAMETERS, MPI_COMM_WORLD);
 }
@@ -279,7 +279,7 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
 
   int size;
   MPI_Get_elements(&status, MPI_CHAR, &size);
-  assert(size > 0);
+  SFXC_ASSERT(size > 0);
   char buffer[size];
   MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE,
            status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -335,7 +335,7 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
   if (cross_polarize=='y') {
     corr_param.cross_polarize = true;
   } else {
-    assert(cross_polarize=='n');
+    SFXC_ASSERT(cross_polarize=='n');
     corr_param.cross_polarize = false;
   }
   MPI_Unpack(buffer, size, &position,
@@ -360,5 +360,5 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
     corr_param.station_streams.push_back(station_param);
   }
 
-  assert(position == size);
+  SFXC_ASSERT(position == size);
 }

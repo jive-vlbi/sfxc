@@ -7,14 +7,13 @@
  *
  */
 
-#include <assert.h>
-// for inet_ntoa (debugging):
-#include <arpa/inet.h>
-
 #include "data_reader_tcp.h"
 #include "utils.h"
 
 #include "tcp_connection.h"
+
+// for inet_ntoa (debugging):
+#include <arpa/inet.h>
 
 #include <sys/poll.h>
 #include <errno.h>
@@ -28,7 +27,7 @@ Data_reader_tcp::Data_reader_tcp(uint64_t *ip_addr, int nAddr, unsigned short in
     socket = connection.do_connect(ip_addr[i], port);
   } while (socket <= 0);
 
-  assert(socket > 0);
+  SFXC_ASSERT(socket > 0);
 }
 
 Data_reader_tcp::~Data_reader_tcp() {
@@ -36,7 +35,7 @@ Data_reader_tcp::~Data_reader_tcp() {
 }
 
 int Data_reader_tcp::do_get_bytes(size_t nBytes, char*out) {
-  assert(socket > 0);
+  SFXC_ASSERT(socket > 0);
 
   if (out == NULL) {
     size_t buff_size = 1000000;

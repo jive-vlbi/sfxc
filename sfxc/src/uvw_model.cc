@@ -10,11 +10,14 @@
  * Class function definitions for station specific data
  */
 
+//the class definitions and function definitions
+#include "utils.h"
+#include "uvw_model.h"
+
 //standard c includes
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 //includes for system calls
 #include <sys/types.h>
@@ -27,9 +30,6 @@
 #include <fstream>
 #include <string>
 
-//the class definitions and function definitions
-#include "uvw_model.h"
-#include "utils.h"
 
 //*****************************************************************************
 //function definitions
@@ -74,7 +74,7 @@ int Uvw_model::open(char *delayTableName) {
 
 void Uvw_model::initialise_spline_for_next_scan() {
   std::cout << times[end_scan] << " " << end_scan << std::endl;
-  assert(end_scan < times.size()-1);
+  SFXC_ASSERT(end_scan < times.size()-1);
   size_t next_end_scan = end_scan+2;
   while ((next_end_scan < times.size()-1) &&
          (times[next_end_scan-1] != 0)) {

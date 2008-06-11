@@ -1,10 +1,8 @@
 #include "channel_extractor_brute_force.h"
+#include "utils.h"
 
 #include <iostream>
 #include <vector>
-#include <assert.h>
-
-#include "utils.h"
 
 
 Channel_extractor_brute_force::Channel_extractor_brute_force() {
@@ -19,7 +17,7 @@ initialise(const std::vector< std::vector<int> > &track_positions_,
   track_positions = track_positions_;
   size_of_one_input_word = size_of_one_input_word_;
   input_sample_size = input_sample_size_;
-  assert((input_sample_size_%2) == 0);
+  SFXC_ASSERT((input_sample_size_%2) == 0);
 
   fan_out = track_positions[0].size();
 
@@ -51,7 +49,7 @@ extract(unsigned char *in_data1,
       output_sample ++;
       bit = 0;
     }
-    assert(bit < 8);
+    SFXC_ASSERT(bit < 8);
   }
 }
 

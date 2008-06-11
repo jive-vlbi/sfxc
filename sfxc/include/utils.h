@@ -77,12 +77,6 @@ extern int RANK_OF_NODE; // Rank of the current node
 #ifdef SFXC_PRINT_DEBUG
 #include "sfxc_mpi.h"
 
-/*
-#define FORMAT_MSG(msg) \
-    "\033[32m#" << RANK_OF_NODE << " " \
-    << __PRETTY_FUNCTION__ << "," << __LINE__ << "\033[30m: " \
-    << msg
-*/
 #define FORMAT_MSG(msg) \
     "#" << RANK_OF_NODE << " " \
     << __FILE__ << ", " << __LINE__ << ": " \
@@ -101,6 +95,15 @@ extern int RANK_OF_NODE; // Rank of the current node
 #define DEBUG_MSG_RANK(rank,msg)
 #define MPI_DEBUG_MSG(msg)
 #endif
+
+
+void abort_sfxc(char *file, int line, char *message);
+
+#define SFXC_ASSERT(c) \
+  { if (!(c)) abort_sfxc(__FILE__, __LINE__, #c); }
+
+#define SFXC_ASSERT_MSG(c, msg) \
+  { if (!(c)) abort_sfxc(__FILE__, __LINE__, msg); }
 
 
 #define USE_DOUBLE

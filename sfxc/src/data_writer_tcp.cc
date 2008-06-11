@@ -7,16 +7,15 @@
  *
  */
 
+#include "data_writer_tcp.h"
+#include "tcp_connection.h"
+#include "utils.h"
+
 #include <iostream>
-#include <assert.h>
 // defines send:
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <errno.h>
-
-#include "data_writer_tcp.h"
-#include "tcp_connection.h"
-#include "utils.h"
 
 #include <sys/poll.h>
 
@@ -25,7 +24,7 @@ Data_writer_tcp::Data_writer_tcp()
 
 void Data_writer_tcp::open_connection(TCP_Connection &tcp_connection) {
   socket = tcp_connection.open_connection();
-  assert(socket > 0);
+  SFXC_ASSERT(socket > 0);
 }
 
 Data_writer_tcp::~Data_writer_tcp() {
@@ -35,7 +34,7 @@ Data_writer_tcp::~Data_writer_tcp() {
 size_t
 Data_writer_tcp::do_put_bytes(size_t nBytes, const char *buff) {
   if (socket <= 0) return 0;
-  assert(nBytes > 0);
+  SFXC_ASSERT(nBytes > 0);
   size_t bytes_written = 0;
   while (bytes_written != nBytes) {
     ssize_t result = write(socket, buff+bytes_written, nBytes-bytes_written);
@@ -45,7 +44,7 @@ Data_writer_tcp::do_put_bytes(size_t nBytes, const char *buff) {
     }
     bytes_written += result;
   }
-  assert(bytes_written == nBytes);
+  SFXC_ASSERT(bytes_written == nBytes);
   return bytes_written;
 }
 

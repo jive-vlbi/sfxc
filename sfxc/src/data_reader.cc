@@ -7,10 +7,9 @@
  *
  */
 
-#include <assert.h>
-
 #include "utils.h"
 #include "data_reader.h"
+
 #include <limits>
 
 Data_reader::Data_reader() : _data_counter(0), data_slice(-1) {}
@@ -19,7 +18,7 @@ Data_reader::~Data_reader() {}
 
 int
 Data_reader::get_bytes(size_t nBytes, char *buff) {
-  assert((data_slice==-1) || (nBytes <= (size_t)data_slice));
+  SFXC_ASSERT((data_slice==-1) || (nBytes <= (size_t)data_slice));
   // Read at most max_int bytes:
   //  otherwise we can't return the number of bytes read
   const size_t max_int = (size_t)(std::numeric_limits<int>::max());
@@ -43,7 +42,7 @@ Data_reader::reset_data_counter() {
 
 void
 Data_reader::set_size_dataslice(int data_size) {
-  assert(data_size >= -1);
+  SFXC_ASSERT(data_size >= -1);
   data_slice = data_size;
 }
 
