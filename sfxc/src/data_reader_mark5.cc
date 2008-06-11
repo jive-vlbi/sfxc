@@ -162,7 +162,8 @@ int Data_reader_mark5::do_get_bytes(size_t nBytes, char*out) {
 }
 
 bool Data_reader_mark5::eof() {
-  SFXC_ASSERT(false);
+  SFXC_ASSERT_MSG(false,
+                  "Data_reader_mark5::eof() not yet implemented");
   return false;
 }
 

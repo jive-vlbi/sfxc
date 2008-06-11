@@ -18,8 +18,8 @@
 #include <time.h>
 #include <math.h>
 
-Input_node::Input_node(int rank, 
-                       int station_number, 
+Input_node::Input_node(int rank,
+                       int station_number,
                        Log_writer *log_writer,
                        TRANSPORT_TYPE transport_type) :
     Node(rank, log_writer),
@@ -27,7 +27,7 @@ Input_node::Input_node(int rank,
     data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
     input_node_tasklet(NULL), status(WAITING),
-    transport_type(transport_type) {
+transport_type(transport_type) {
   initialise();
 }
 Input_node::Input_node(int rank, int station_number,
@@ -35,7 +35,7 @@ Input_node::Input_node(int rank, int station_number,
     Node(rank), input_node_ctrl(*this), data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
     input_node_tasklet(NULL), status(WAITING),
-    transport_type(transport_type) {
+transport_type(transport_type) {
   initialise();
 }
 void Input_node::initialise() {
@@ -69,7 +69,7 @@ int32_t Input_node::get_time_stamp() {
 void Input_node::start() {
   while (status != END_NODE) {
     switch (status) {
-    case WAITING: { // Wait until we can start sending new data
+      case WAITING: { // Wait until we can start sending new data
         // Wait for data_source to become ready
         if (check_and_process_message() == TERMINATE_NODE) {
           status = END_NODE;
@@ -79,7 +79,7 @@ void Input_node::start() {
           status = WRITING;
         break;
       }
-    case WRITING: {
+      case WRITING: {
         if (process_all_waiting_messages() == TERMINATE_NODE) {
           status = END_NODE;
           break;
@@ -92,8 +92,9 @@ void Input_node::start() {
         }
         break;
       }
-    case END_NODE: {
-        SFXC_ASSERT(false);
+      case END_NODE: {
+         // For completeness sake
+        break;
       }
     }
   }
@@ -126,7 +127,7 @@ void Input_node::add_time_interval(int32_t start_time, int32_t stop_time) {
 void Input_node::add_time_slice(int channel, int stream, int starttime_slice,
                                 int stoptime_slice) {
   SFXC_ASSERT(data_writers_ctrl.get_data_writer(stream) !=
-         Multiple_data_writers_controller::Data_writer_ptr());
+              Multiple_data_writers_controller::Data_writer_ptr());
 
   SFXC_ASSERT(input_node_tasklet != NULL);
 

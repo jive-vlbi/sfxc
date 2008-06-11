@@ -71,10 +71,12 @@ Abstract_manager_node::
 start_correlator_node(int rank) {
   size_t correlator_node_nr = correlator_node_rank.size();
 #ifdef SFXC_DETERMINISTIC
+
   correlator_node_ready.resize(correlator_node_nr+1);
   SFXC_ASSERT(correlator_node_nr < correlator_node_ready.size());
   set_correlator_node_ready(correlator_node_nr, false);
 #endif
+
   correlator_node_rank.push_back(rank);
 
   // starting a correlator node
@@ -228,8 +230,8 @@ input_node_get_current_time(const std::string &station) {
 
 void
 Abstract_manager_node::
-input_node_set_time(const std::string &station, 
-                     int32_t start_time, int32_t stop_time) {
+input_node_set_time(const std::string &station,
+                    int32_t start_time, int32_t stop_time) {
   SFXC_ASSERT(start_time < stop_time);
   int32_t time[2];
   time[0] = start_time;
@@ -252,23 +254,76 @@ input_node_set_time_slice(const std::string &station,
 void
 Abstract_manager_node::
 wait_for_setting_up_channel(int rank) {
-  MPI_Status status;
-  if (rank >= 0) {
-    MPI_Probe(rank, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-  } else {
-    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-  }
-  if (status.MPI_TAG == MPI_TAG_CONNECTION_ESTABLISHED) {
-    int32_t channel;
-    MPI_Status status2;
-    MPI_Recv(&channel, 1, MPI_INT32, status.MPI_SOURCE,
-             MPI_TAG_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status2);
-  } else {
-    if (status.MPI_TAG == MPI_TAG_ASSERTION_RAISED) {
-      terminate_nodes_after_assertion(status.MPI_SOURCE);
+  while (true) {
+    MPI_Status status;
+    if (rank >= 0) {
+      MPI_Probe(rank, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    } else {
+      MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     }
+
+    // Check whether we have found the message with the right tag
+    // and return if we did
+    if (status.MPI_TAG == MPI_TAG_CONNECTION_ESTABLISHED) {
+      int32_t channel;
+      MPI_Status status2;
+      MPI_Recv(&channel, 1, MPI_INT32, status.MPI_SOURCE,
+               MPI_TAG_CONNECTION_ESTABLISHED, MPI_COMM_WORLD, &status2);
+      return;
+    }
+
+    // We received another message, process it.
+    check_and_process_waiting_message();
   }
 }
+
+Node::MESSAGE_RESULT
+Abstract_manager_node::check_and_process_waiting_message() {
+  MPI_Status status;
+  int result;
+  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &result, &status);
+  if (result) {
+    if (status.MPI_TAG == MPI_TAG_ASSERTION_RAISED) {
+      MPI_Status status2;
+      int32_t msg;
+      MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
+               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+      terminate_nodes_after_assertion(status.MPI_SOURCE);
+      return TERMINATE_NODE;
+    } else {
+      return Node::check_and_process_waiting_message();
+    }
+  }
+  return NO_MESSAGE;
+}
+
+Node::MESSAGE_RESULT
+Abstract_manager_node::process_all_waiting_messages() {
+  MESSAGE_RESULT result;
+  do {
+    result = check_and_process_waiting_message();
+  } while (result == MESSAGE_PROCESSED);
+  return result;
+}
+
+Node::MESSAGE_RESULT
+Abstract_manager_node::check_and_process_message() {
+  MPI_Status status;
+  MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+  if (status.MPI_TAG == MPI_TAG_ASSERTION_RAISED) {
+    MPI_Status status2;
+    int32_t msg;
+    MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
+             status.MPI_TAG, MPI_COMM_WORLD, &status2);
+    terminate_nodes_after_assertion(status.MPI_SOURCE);
+    return TERMINATE_NODE;
+  } else {
+    return Node::check_and_process_message();
+  }
+}
+
+
 
 const Control_parameters &
 Abstract_manager_node::
@@ -342,6 +397,7 @@ set_correlator_node_ready(size_t correlator_nr, bool ready) {
   SFXC_ASSERT(correlator_nr < correlator_node_ready.size());
   correlator_node_ready[correlator_nr] = ready;
 #else
+
   if (ready) {
     ready_correlator_nodes.push(correlator_nr);
   }
@@ -370,7 +426,8 @@ Abstract_manager_node::get_channel(const std::string &channel) {
     }
   }
   // error message
-  SFXC_ASSERT(false);
+  SFXC_ASSERT_MSG(false,
+                  "Couldn't find the frequency channel.");
   return control_parameters.number_frequency_channels();
 }
 
@@ -383,7 +440,7 @@ output_node_set_global_header(char* header_msg, int size) {
            MPI_COMM_WORLD);
 }
 
-void 
+void
 Abstract_manager_node::
 terminate_nodes_after_assertion(int calling_node) {
   int numtasks;

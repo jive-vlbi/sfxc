@@ -212,17 +212,18 @@ Channel_extractor_interface* create_fast_(int input_sample_size) {
 template<int Tsize_of_one_input_word, int Tfan_out, int Tn_subbands>
 Channel_extractor_interface* create_fast_(int input_sample_size, int span_out) {
   switch (span_out) {
-  case 1:
+    case 1:
     return create_fast_<Tsize_of_one_input_word, Tfan_out, Tn_subbands, 1>(input_sample_size);
-  case 2:
+    case 2:
     return create_fast_<Tsize_of_one_input_word, Tfan_out, Tn_subbands, 2>(input_sample_size);
-  case 4:
+    case 4:
     return create_fast_<Tsize_of_one_input_word, Tfan_out, Tn_subbands, 4>(input_sample_size);
-  case 8:
+    case 8:
     return create_fast_<Tsize_of_one_input_word, Tfan_out, Tn_subbands, 8>(input_sample_size);
-  default:
+    default:
     std::cerr << " invalid span_out for channel_extractor_fast: " << span_out << std::endl;
-    SFXC_ASSERT(false&&"Unsupported span_out for channel_extractor_fast");
+    SFXC_ASSERT_MSG(false,
+                    "Unsupported span_out for channel_extractor_fast");
   }
   return NULL;
 }
@@ -233,19 +234,20 @@ Channel_extractor_interface* create_fast_(int input_sample_size, int span_out) {
 template<int Tsize_of_one_input_word, int Tfan_out>
 Channel_extractor_interface* create_fast_(int n_subbands, int input_sample_size, int span_out) {
   switch (n_subbands) {
-  case 1:
+    case 1:
     return create_fast_<Tsize_of_one_input_word, Tfan_out, 1>(input_sample_size, span_out);
-  case 2:
+    case 2:
     return create_fast_<Tsize_of_one_input_word, Tfan_out, 2>(input_sample_size, span_out);
-  case 4:
+    case 4:
     return create_fast_<Tsize_of_one_input_word, Tfan_out, 4>(input_sample_size, span_out);
-  case 8:
+    case 8:
     return create_fast_<Tsize_of_one_input_word, Tfan_out, 8>(input_sample_size, span_out);
-  case 16:
+    case 16:
     return create_fast_<Tsize_of_one_input_word, Tfan_out,16>(input_sample_size, span_out);
-  default:
+    default:
     std::cerr << " invalid number of subbands for channel_extractor_fast: " << n_subbands << std::endl;
-    SFXC_ASSERT(false&&"Unsupported number of subbands for channel_extractor_fast");
+    SFXC_ASSERT_MSG(false,
+                    "Unsupported number of subbands for channel_extractor_fast");
   }
   return NULL;
 }
@@ -256,17 +258,18 @@ template<int Tsize_of_one_input_word>
 Channel_extractor_interface* create_fast_(int fan_out,
     int n_subbands, int input_sample_size, int span_out) {
   switch (fan_out) {
-  case 1:
+    case 1:
     return create_fast_<Tsize_of_one_input_word,1>(n_subbands, input_sample_size, span_out);
-  case 2:
+    case 2:
     return create_fast_<Tsize_of_one_input_word,2>(n_subbands, input_sample_size, span_out);
-  case 4:
+    case 4:
     return create_fast_<Tsize_of_one_input_word,4>(n_subbands, input_sample_size, span_out);
-  case 8:
+    case 8:
     return create_fast_<Tsize_of_one_input_word,8>(n_subbands, input_sample_size, span_out);
-  default:
+    default:
     std::cerr << " invalid fan_out for channel_extractor_fast: " << fan_out << std::endl;
-    SFXC_ASSERT(false&&"Unsupported fan_out for channelization");
+    SFXC_ASSERT_MSG(false,
+                    "Unsupported fan_out for channelization");
   }
   return NULL;
 }
@@ -276,17 +279,18 @@ Channel_extractor_interface* create_fast_(int fan_out,
 Channel_extractor_interface* create_fast_(int size_of_one_input_word, int fan_out,
     int n_subbands, int input_sample_size, int span_out) {
   switch (size_of_one_input_word) {
-  case 1:
+    case 1:
     return create_fast_<1>(fan_out, n_subbands, input_sample_size, span_out);
-  case 2:
+    case 2:
     return create_fast_<2>(fan_out, n_subbands, input_sample_size, span_out);
-  case 4:
+    case 4:
     return create_fast_<4>(fan_out, n_subbands, input_sample_size, span_out);
-  case 8:
+    case 8:
     return create_fast_<8>(fan_out, n_subbands, input_sample_size, span_out);
-  default:
+    default:
     std::cerr << " invalid size_of_input_word for channel_extractor_fast: " << size_of_one_input_word << std::endl;
-    SFXC_ASSERT(false&&"Unsupported size of input word for channelization");
+    SFXC_ASSERT_MSG(false,
+                    "Unsupported size of input word for channelization");
   }
   return NULL;
 }
@@ -306,7 +310,8 @@ void Channel_extractor_fast::initialise(const std::vector< std::vector<int> > &t
   hidden_implementation_ = create_fast_(size_of_one_input_word, fan_out, n_subbands, input_sample_size, span_out);
   if ( hidden_implementation_ == NULL ) {
     std::cerr << " No channel_extractor can be build" << std::endl;
-    SFXC_ASSERT(false && "No channel extractor can be build with these parameters");
+    SFXC_ASSERT_MSG(false,
+                    "No channel extractor can be build with these parameters");
   }
   hidden_implementation_->initialise(track_positions, size_of_one_input_word_, input_sample_size);
 }

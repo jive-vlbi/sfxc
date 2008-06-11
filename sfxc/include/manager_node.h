@@ -75,11 +75,6 @@ public:
   void end_correlation();
 private:
 
-  // Override functions from node to be able to catch the assertion message
-  Node::MESSAGE_RESULT check_and_process_waiting_message();
-  Node::MESSAGE_RESULT process_all_waiting_messages();
-  Node::MESSAGE_RESULT check_and_process_message();
-
   std::string get_current_mode() const;
 
   Manager_node_controller manager_controller;

@@ -243,6 +243,8 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
     int read = reader->get_bytes(bytes_to_read, data);
     bytes_to_read -= read;
     data += read;
+    SFXC_ASSERT_MSG(!reader->eof(),
+                    "Didn't find a mark5a header before the end-of-file");
   } while (bytes_to_read > 0);
 
   int nOnes=0, header_start=-1, nTracks8 = -1;
@@ -256,6 +258,8 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
       int read = reader->get_bytes(bytes_to_read, data);
       bytes_to_read -= read;
       data += read;
+      SFXC_ASSERT_MSG(!reader->eof(),
+                      "Didn't find a mark5a header before the end-of-file");
     } while (bytes_to_read > 0);
 
 

@@ -100,6 +100,11 @@ public:
     return control_parameters.integration_time();
   }
 
+  // Override functions from node to be able to catch the assertion message
+  Node::MESSAGE_RESULT check_and_process_waiting_message();
+  Node::MESSAGE_RESULT process_all_waiting_messages();
+  Node::MESSAGE_RESULT check_and_process_message();
+
   // Terminate all the nodes after an assertion has been raised in a node
   void terminate_nodes_after_assertion(int calling_node);
 

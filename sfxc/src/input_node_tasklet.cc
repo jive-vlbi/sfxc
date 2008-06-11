@@ -236,7 +236,8 @@ do_task() {
       }
     }
   } else {
-    SFXC_ASSERT(false);
+    SFXC_ASSERT_MSG(false,
+                    "Unknown transport type (not Mark5A or Mark5B)");
   }
   mark5a_reader_timer_.stop();
 
@@ -310,7 +311,8 @@ set_parameters(const Input_node_parameters &input_node_param,
     channel_extractor_.set_parameters(input_node_param,
                                       mark5b_reader_->get_tracks(input_node_param));
   } else {
-    SFXC_ASSERT(false);
+    SFXC_ASSERT_MSG(false,
+                    "Unknown transport type (not Mark5A or Mark5B)");
   }
 
   size_t number_frequency_channels = input_node_param.channels.size();

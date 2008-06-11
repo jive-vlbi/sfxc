@@ -46,7 +46,6 @@ void Node::start() {
         return;
       }
       case NO_MESSAGE: {
-        SFXC_ASSERT(false);
         return;
       }
       case ERROR_IN_PROCESSING: {
@@ -97,7 +96,7 @@ Node::process_event(MPI_Status &status) {
     MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
     assertion_raised = (msg == 1);
-    
+
     return TERMINATE_NODE;
   } else if (status.MPI_TAG == MPI_TAG_SET_MESSAGELEVEL) {
     MPI_Status status2;
@@ -134,7 +133,8 @@ Node::process_event(MPI_Status &status) {
     get_log_writer()(0) << msg << std::endl;
     DEBUG_MSG("Source: " << status.MPI_SOURCE);
     DEBUG_MSG(print_MPI_TAG(status.MPI_TAG));
-    SFXC_ASSERT(false);
+    SFXC_ASSERT_MSG(false,
+                    "Unknown message, exiting.");
   }
 
   // Remove event:

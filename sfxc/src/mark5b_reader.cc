@@ -8,7 +8,8 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
     time_between_headers_(0) {
   SFXC_ASSERT(sizeof(current_header) == SIZE_MK5B_HEADER*SIZE_MK5B_WORD);
   data_reader_->get_bytes(sizeof(current_header), (char *)&current_header);
-  SFXC_ASSERT(current_header.check());
+  SFXC_ASSERT_MSG(current_header.check(),
+                  "Couldn't find the mark5b header in the mark5b file");
 
   data_reader_->get_bytes(SIZE_MK5B_FRAME * SIZE_MK5B_WORD,
                           (char *)buffer);
