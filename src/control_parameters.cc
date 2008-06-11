@@ -82,9 +82,9 @@ initialise(const char *ctrl_file, const char *vex_file,
       }
     }
     for (std::set<std::string>::const_iterator set_it = result_set.begin();
-           set_it != result_set.end(); ++set_it) {
-        ctrl["channels"].append(*set_it);
-      }
+         set_it != result_set.end(); ++set_it) {
+      ctrl["channels"].append(*set_it);
+    }
   }
 
   // Checking reference station
@@ -451,7 +451,7 @@ Control_parameters::get_vex() const {
 }
 
 
-void 
+void
 Control_parameters::
 get_mark5a_tracks(const std::string &mode,
                   const std::string &station,
@@ -496,7 +496,7 @@ get_mark5a_tracks(const std::string &mode,
   }
 }
 
-void 
+void
 Control_parameters::
 get_mark5b_tracks(const std::string &mode,
                   const std::string &station,
@@ -511,7 +511,7 @@ get_mark5b_tracks(const std::string &mode,
     for (bbc_it = root["MODE"][mode]->begin("BBC");
          bbc_it != root["MODE"][mode]->end("BBC");
          bbc_it ++) {
-      Vex::Node::const_iterator station_it = bbc_it->begin(); 
+      Vex::Node::const_iterator station_it = bbc_it->begin();
       station_it++;
       while (station_it != bbc_it->end()) {
         if (station_it->to_string() == station)
@@ -527,7 +527,7 @@ get_mark5b_tracks(const std::string &mode,
     for (freq_it = root["MODE"][mode]->begin("FREQ");
          freq_it != root["MODE"][mode]->end("FREQ");
          freq_it ++) {
-      Vex::Node::const_iterator station_it = freq_it->begin(); 
+      Vex::Node::const_iterator station_it = freq_it->begin();
       station_it++;
       while (station_it != freq_it->end()) {
         if (station_it->to_string() == station)
@@ -549,7 +549,7 @@ get_mark5b_tracks(const std::string &mode,
          bbc_it ++) {
       bbc_map[bbc_it[1]->to_int()] = bbc_it[0]->to_string();
     }
-    
+
     // Sorted list of bbc labels
     std::vector<std::string> bbc_labels;
     bbc_labels.resize(bbc_map.size());
@@ -569,7 +569,7 @@ get_mark5b_tracks(const std::string &mode,
              freq_it != root["FREQ"][freq]->end("chan_def");
              freq_it++) {
           if ((freq_it[2]->to_string() == std::string("U")) &&
-              (freq_it[5]->to_string() == bbc_labels[bbc_nr])){
+              (freq_it[5]->to_string() == bbc_labels[bbc_nr])) {
             subband_to_track[freq_it[4]->to_string()] = bit_stream;
             bit_stream++;
           }
@@ -581,7 +581,7 @@ get_mark5b_tracks(const std::string &mode,
              freq_it != root["FREQ"][freq]->end("chan_def");
              freq_it++) {
           if ((freq_it[2]->to_string() == std::string("L")) &&
-              (freq_it[5]->to_string() == bbc_labels[bbc_nr])){
+              (freq_it[5]->to_string() == bbc_labels[bbc_nr])) {
             subband_to_track[freq_it[4]->to_string()] = bit_stream;
             bit_stream++;
           }
@@ -599,12 +599,12 @@ get_mark5b_tracks(const std::string &mode,
       Input_node_parameters::Channel_parameters channel_param;
       if (bits_per_sample_ == 2) {
         for (; bit_stream_nr < 32; bit_stream_nr += nr_bit_streams) {
-            channel_param.sign_tracks.push_back(bit_stream_nr);
-            channel_param.magn_tracks.push_back(bit_stream_nr+1);
+          channel_param.sign_tracks.push_back(bit_stream_nr);
+          channel_param.magn_tracks.push_back(bit_stream_nr+1);
         }
       } else {
         for (; bit_stream_nr < 32; bit_stream_nr += nr_bit_streams) {
-            channel_param.sign_tracks.push_back(bit_stream_nr);
+          channel_param.sign_tracks.push_back(bit_stream_nr);
         }
       }
       input_parameters.channels.push_back(channel_param);
@@ -624,14 +624,14 @@ get_input_node_parameters(const std::string &mode_name,
   const std::string &freq_name =
     get_vex().get_frequency(mode_name, station_name);
   Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
-  
+
   // sample_rate
   for (Vex::Node::const_iterator chan = freq->begin("chan_def");
        chan != freq->end("chan_def"); ++chan) {
     result.track_bit_rate =
       (int)(freq["sample_rate"]->to_double_amount("Ms/sec")*1000000);
   }
-  
+
   std::string record_transport_type = transport_type(station_name);
   if (record_transport_type == "Mark5A") {
     get_mark5a_tracks(mode_name, station_name, result);
@@ -648,7 +648,7 @@ get_input_node_parameters(const std::string &mode_name,
 
 std::string
 Control_parameters::transport_type(const std::string &station) const {
-  std::string das = 
+  std::string das =
     get_vex().get_root_node()["STATION"][station]["DAS"]->to_string();
   Vex::Node::const_iterator das_it = get_vex().get_root_node()["DAS"][das];
 
@@ -1081,7 +1081,10 @@ Control_parameters::get_delay_directory() const {
 std::string
 Control_parameters::
 get_delay_table_name(const std::string &station_name) const {
-  SFXC_ASSERT(strncmp(ctrl["delay_directory"].asString().c_str(),"file://",7)==0);
+  SFXC_ASSERT_MSG(strncmp(ctrl["delay_directory"].asString().c_str(),
+                          "file://",7) == 0,
+                  "Delay directory doesn't start with 'file://'"
+                 );
   std::string delay_table_name =
     std::string(ctrl["delay_directory"].asString().c_str()+7) +
     "/" + ctrl["exper_name"].asString() +
@@ -1093,7 +1096,9 @@ get_delay_table_name(const std::string &station_name) const {
   if (access(delay_table_name.c_str(), R_OK) == 0) {
     return delay_table_name;
   }
-  SFXC_ASSERT(false);
+  DEBUG_MSG("Tried to create the delay table at " << delay_table_name);
+  SFXC_ASSERT_MSG(false,
+                  "Couldn't create the delay table.");
   return std::string("");
 }
 
@@ -1103,10 +1108,11 @@ generate_delay_table(const std::string &station_name,
                      const std::string &filename) const {
   std::string cmd =
     "generate_delay_model "+vex_filename+" "+station_name+" "+filename;
-  DEBUG_MSG(cmd);
+  DEBUG_MSG("Creating the delay model: " << cmd);
   int result = system(cmd.c_str());
   if (result != 0) {
-    SFXC_ASSERT(false);
+    SFXC_ASSERT_MSG(false,
+                    "Generation of the delay table failed (generate_delay_model)");
   }
 }
 
@@ -1181,7 +1187,7 @@ Input_node_parameters::bits_per_sample() const {
   for (Channel_const_iterator it=channels.begin();
        it!=channels.end(); it++) {
     SFXC_ASSERT(channels.begin()->bits_per_sample() ==
-           it->bits_per_sample());
+                it->bits_per_sample());
   }
   return channels.begin()->bits_per_sample();
 }
@@ -1192,7 +1198,7 @@ Input_node_parameters::subsamples_per_sample() const {
   for (Channel_const_iterator it=channels.begin();
        it!=channels.end(); it++) {
     SFXC_ASSERT(channels.begin()->sign_tracks.size() ==
-           it->sign_tracks.size());
+                it->sign_tracks.size());
   }
   return channels.begin()->sign_tracks.size();
 }

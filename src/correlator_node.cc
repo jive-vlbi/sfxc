@@ -190,18 +190,6 @@ int Correlator_node::get_correlate_node_number() {
   return nr_corr_node;
 }
 
-/** Number of integration steps done in the current time slice **/
-int Correlator_node::number_of_integration_steps_in_time_slice() {
-  SFXC_ASSERT(false);
-  return 0;
-}
-
-/** Size in bytes of the output of one integration step **/
-int Correlator_node::output_size_of_one_integration_step() {
-  SFXC_ASSERT(false);
-  return 0;
-}
-
 void Correlator_node::correlate() {
   RT_STAT( dotask_state_.begin_measure() );
 

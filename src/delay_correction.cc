@@ -56,7 +56,7 @@ void Delay_correction::do_task() {
 
   if (n_ffts_per_integration == current_fft) {
     SFXC_ASSERT(current_time/correlation_parameters.integration_time !=
-           (current_time+length_of_one_fft())/correlation_parameters.integration_time);
+                (current_time+length_of_one_fft())/correlation_parameters.integration_time);
 
     current_time =
       ((current_time+length_of_one_fft()) /
@@ -149,7 +149,8 @@ void Delay_correction::bit2float(const Input_buffer_element &input,
 
   } else {
     std::cout << "Not yet implemented" << std::endl;
-    SFXC_ASSERT(false);
+    SFXC_ASSERT_MSG(false,
+                    "Only 2 bits decoding implemented");
   }
 
 }
@@ -241,10 +242,10 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
 
   { // compute delta_phi
     SFXC_ASSERT((number_channels()*1000000)%sample_rate() == 0);
-    double phi_end = integer_mult_factor_phi * 
-      get_delay(time + (number_channels()*1000000)/sample_rate());
+    double phi_end = integer_mult_factor_phi *
+                     get_delay(time + (number_channels()*1000000)/sample_rate());
     phi_end = mult_factor_phi*(phi_end-floor_phi);
-    
+
     delta_phi = (phi_end-phi)*n_recompute_delay/number_channels();
   }
 
@@ -252,13 +253,14 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     if ((i%n_recompute_delay)==0) {
 #ifdef HAVE_SINCOS
-      
+
       sincos(phi, &sin_phi, &cos_phi);
 #else
-      
+
       sin_phi = sin(phi);
       cos_phi = cos(phi);
 #endif
+
       phi += delta_phi;
     }
 
@@ -334,7 +336,7 @@ int Delay_correction::length_of_one_fft() {
 }
 int Delay_correction::sideband() {
   SFXC_ASSERT((correlation_parameters.sideband == 'L') ||
-         (correlation_parameters.sideband == 'U'));
+              (correlation_parameters.sideband == 'U'));
   return (correlation_parameters.sideband == 'L' ? -1 : 1);
 }
 int64_t Delay_correction::channel_freq() {

@@ -89,12 +89,6 @@ public:
 
 
   int get_correlate_node_number();
-
-  /** Number of integration steps done in the current time slice **/
-  int number_of_integration_steps_in_time_slice();
-
-  /** Size in bytes of the output of one integration step **/
-  int output_size_of_one_integration_step();
 private:
   void correlate();
 

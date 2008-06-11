@@ -91,14 +91,14 @@ Single_data_reader_controller::eof() {
 
 Single_data_reader_controller::Queue_ptr
 Single_data_reader_controller::queue() {
-  SFXC_ASSERT(false); // No buffering for the time being
+  SFXC_ASSERT_MSG(false, "No buffering for the time being");
   return Queue_ptr();
 }
 
 void
 Single_data_reader_controller::
 set_queue(Queue_ptr queue) {
-  SFXC_ASSERT(false); // No buffering for the time being
+  SFXC_ASSERT_MSG(false, "No buffering for the time being");
 }
 
 boost::shared_ptr<Data_reader>

@@ -126,8 +126,8 @@ void Output_node::start() {
         }
         break;
       }
-      case END_NODE: { // For completeness sake
-        SFXC_ASSERT(false);
+      case END_NODE: {
+        // For completeness sake
         break;
       }
     }

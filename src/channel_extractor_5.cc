@@ -132,44 +132,46 @@ Channel_extractor_5::Channel_extractor_5() {
 template<int Tsize_of_word>
 Channel_extractor_interface* create_number5_(int n_subbands) {
   switch (n_subbands) {
-  case 1:
+    case 1:
     return new Channel_extractor_5_impl<Tsize_of_word, 1>();
     break;
-  case 2:
+    case 2:
     return new Channel_extractor_5_impl<Tsize_of_word, 2>();
     break;
-  case 4:
+    case 4:
     return new Channel_extractor_5_impl<Tsize_of_word, 4>();
     break;
-  case 8:
+    case 8:
     return new Channel_extractor_5_impl<Tsize_of_word, 8>();
     break;
-  case 16:
+    case 16:
     return new Channel_extractor_5_impl<Tsize_of_word, 16>();
     break;
-  default:
-    SFXC_ASSERT(false&&"Unsupported number of channel for this channelizer");
+    default:
+    SFXC_ASSERT_MSG(false,
+                    "Unsupported number of channel for this channelizer");
   }
   return NULL;
 }
 
 Channel_extractor_interface* create_number5_(int size_of_one_input_word, int n_subbands) {
   switch (size_of_one_input_word) {
-  case 1:
+    case 1:
     return create_number5_<1>(n_subbands);
     break;
-  case 2:
+    case 2:
     return create_number5_<2>(n_subbands);
     break;
-  case 4:
+    case 4:
     return create_number5_<4>(n_subbands);
     break;
-  case 8:
+    case 8:
     return create_number5_<8>(n_subbands);
     break;
-  default:
+    default:
     std::cerr << " size_of_input_word: " << size_of_one_input_word << std::endl;
-    SFXC_ASSERT(false&&"Unsupported size of input word for channelization");
+    SFXC_ASSERT_MSG(false,
+                    "Unsupported size of input word for channelization");
   }
   return NULL;
 }
