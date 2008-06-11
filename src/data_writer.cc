@@ -7,11 +7,10 @@
  *
  */
 
-#include <assert.h>
-#include <netinet/in.h>
-
 #include "data_writer.h"
 #include "utils.h"
+
+#include <netinet/in.h>
 
 Data_writer::Data_writer() : _data_counter(0), data_slice(-1) {}
 
@@ -19,7 +18,7 @@ Data_writer::~Data_writer() {}
 
 size_t
 Data_writer::put_bytes(size_t nBytes, const char *buff) {
-  assert((data_slice==-1) || (nBytes <= (size_t)data_slice));
+  SFXC_ASSERT((data_slice==-1) || (nBytes <= (size_t)data_slice));
   size_t result = do_put_bytes(nBytes, buff);
   _data_counter += (int64_t)result;
   data_slice -= result;
@@ -38,7 +37,7 @@ Data_writer::reset_data_counter() {
 
 void
 Data_writer::set_size_dataslice(int data_size) {
-  assert(data_size >= -1);
+  SFXC_ASSERT(data_size >= -1);
   data_slice = data_size;
 }
 

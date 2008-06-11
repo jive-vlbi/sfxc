@@ -100,11 +100,13 @@ plot_delay_table_SOURCES = \
 
 print_new_output_format_SOURCES = \
   print_new_output_format.cc \
-  ../src/output_header.cc
+  ../src/output_header.cc \
+   ../src/utils.cc
 
 phase_plot_SOURCES = \
-  phase_plot.cc\
-  ../src/output_header.cc
+  phase_plot.cc \
+  ../src/output_header.cc \
+   ../src/utils.cc
 
 make_anim_SOURCES = \
   make_anim.cc \

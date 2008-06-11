@@ -7,21 +7,16 @@
  *
  */
 
-#include <iostream>
-#include <assert.h>
-#include <time.h>
-#include <math.h>
-
 #include "input_node.h"
 #include "utils.h"
-
 #include "types.h"
-
 #include "data_reader_buffer.h"
-
 #include "mpi_transfer.h"
-
 #include "data_writer_file.h"
+
+#include <iostream>
+#include <time.h>
+#include <math.h>
 
 Input_node::Input_node(int rank, 
                        int station_number, 
@@ -56,7 +51,7 @@ void Input_node::initialise() {
 }
 
 void Input_node::set_input_node_parameters(const Input_node_parameters &input_node_param) {
-  assert(input_node_tasklet != NULL);
+  SFXC_ASSERT(input_node_tasklet != NULL);
   input_node_tasklet->set_parameters(input_node_param, get_rank()-3);
 }
 
@@ -66,7 +61,7 @@ Input_node::~Input_node() {
 }
 
 int32_t Input_node::get_time_stamp() {
-  assert(input_node_tasklet != NULL);
+  SFXC_ASSERT(input_node_tasklet != NULL);
   // the time in the tasklet is in micro seconds
   return input_node_tasklet->get_current_time()/1000;
 }
@@ -89,7 +84,7 @@ void Input_node::start() {
           status = END_NODE;
           break;
         }
-        assert(input_node_tasklet != NULL);
+        SFXC_ASSERT(input_node_tasklet != NULL);
         input_node_tasklet->do_task();
         if ( !input_node_tasklet->has_work() ) {
           usleep(1000);
@@ -98,7 +93,7 @@ void Input_node::start() {
         break;
       }
     case END_NODE: {
-        assert(false);
+        SFXC_ASSERT(false);
       }
     }
   }
@@ -112,28 +107,28 @@ void Input_node::start() {
 }
 
 void Input_node::hook_added_data_reader(size_t stream_nr) {
-  assert(stream_nr == 0);
+  SFXC_ASSERT(stream_nr == 0);
 
   input_node_tasklet =
     get_input_node_tasklet(data_reader_ctrl.get_data_reader(stream_nr),
                            transport_type);
-  assert(input_node_tasklet != NULL);
+  SFXC_ASSERT(input_node_tasklet != NULL);
 }
 
 void Input_node::hook_added_data_writer(size_t writer) {}
 
 // Start time and stop time in seconds
 void Input_node::add_time_interval(int32_t start_time, int32_t stop_time) {
-  assert(input_node_tasklet != NULL);
+  SFXC_ASSERT(input_node_tasklet != NULL);
   input_node_tasklet->add_time_interval(start_time, stop_time);
 }
 
 void Input_node::add_time_slice(int channel, int stream, int starttime_slice,
                                 int stoptime_slice) {
-  assert(data_writers_ctrl.get_data_writer(stream) !=
+  SFXC_ASSERT(data_writers_ctrl.get_data_writer(stream) !=
          Multiple_data_writers_controller::Data_writer_ptr());
 
-  assert(input_node_tasklet != NULL);
+  SFXC_ASSERT(input_node_tasklet != NULL);
 
   input_node_tasklet->add_data_writer(channel,
                                       data_writers_ctrl.get_data_writer(stream),
@@ -145,6 +140,6 @@ int Input_node::get_status() {
 }
 
 void Input_node::set_delay_table(Delay_table_akima &delay_table) {
-  assert(input_node_tasklet != NULL);
+  SFXC_ASSERT(input_node_tasklet != NULL);
   input_node_tasklet->set_delay_table(delay_table);
 }

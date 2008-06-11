@@ -10,7 +10,6 @@
 
 
 #include <fstream>
-#include <assert.h>
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>

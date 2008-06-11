@@ -10,11 +10,10 @@
 #ifndef DATA_READER_BUFFER_H
 #define DATA_READER_BUFFER_H
 
-#include <boost/shared_ptr.hpp>
-#include <assert.h>
-
 #include "utils.h"
 #include "data_reader.h"
+
+#include <boost/shared_ptr.hpp>
 
 /** Specialisation of Data_reader for reading from a buffer.
  **/
@@ -55,7 +54,7 @@ Data_reader_buffer<Element>::Data_reader_buffer(Queue_ptr queue)
     : Data_reader(),
     queue(queue), bytes_left(0),
     end_of_file(false) {
-  assert(queue != Queue_ptr());
+  SFXC_ASSERT(queue != Queue_ptr());
 }
 
 template <class Element>
@@ -63,7 +62,7 @@ Data_reader_buffer<Element>::~Data_reader_buffer() {}
 
 template <class Element>
 int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {
-  assert(queue!=Queue_ptr());
+  SFXC_ASSERT(queue!=Queue_ptr());
   if (queue->empty()) return 0;
   size_t elements_to_read = nElements;
   while (elements_to_read > 0) {
@@ -75,7 +74,7 @@ int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {
       data_start = queue->front();
       queue->pop();
       bytes_left = data_start.actual_size;
-      assert(bytes_left >= 0);
+      SFXC_ASSERT(bytes_left >= 0);
     }
     if (bytes_left != 0) {
       // Copy the data

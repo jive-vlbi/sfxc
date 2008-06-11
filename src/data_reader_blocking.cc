@@ -5,7 +5,7 @@
 
 Data_reader_blocking::Data_reader_blocking(Data_reader *rdr) {
   m_reader = rdr;
-  assert(rdr);
+  SFXC_ASSERT(rdr);
 }
 
 int Data_reader_blocking::do_get_bytes(size_t size, char* buffer) {

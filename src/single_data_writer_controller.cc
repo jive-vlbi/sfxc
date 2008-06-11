@@ -37,7 +37,7 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
-      assert(size > 0);
+      SFXC_ASSERT(size > 0);
       char msg[size];
       MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -45,8 +45,8 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
       memcpy(&stream_nr, msg, sizeof(int32_t));
       char *filename = msg+sizeof(int32_t);
 
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
+      SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
+      SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
       boost::shared_ptr<Data_writer> writer(new Data_writer_file(filename));
       set_data_writer(stream_nr, writer);
@@ -63,8 +63,8 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
       MPI_Recv(&stream_nr, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
+      SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
+      SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
       boost::shared_ptr<Data_writer> writer(new Data_writer_void());
       set_data_writer((int)stream_nr, writer);
@@ -93,7 +93,7 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
       if (tcp_connection.get_port() < 0) {
         tcp_connection.open_port(SFXC_PORT, MAX_TCP_CONNECTIONS);
       }
-      assert(tcp_connection.get_port() > 0);
+      SFXC_ASSERT(tcp_connection.get_port() > 0);
 
       std::vector<uint64_t>  ip_addresses;
       // Add number of the data stream:
@@ -130,7 +130,7 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
 
 Single_data_writer_controller::Queue_ptr
 Single_data_writer_controller::queue() {
-  assert(buffer2writer.get_queue() != Queue_ptr());
+  SFXC_ASSERT(buffer2writer.get_queue() != Queue_ptr());
   return buffer2writer.get_queue();
 }
 
@@ -150,8 +150,8 @@ Single_data_writer_controller::get_data_writer(int i) {
 void
 Single_data_writer_controller::
 set_data_writer(int streamnr, boost::shared_ptr<Data_writer> writer) {
-  assert(streamnr == 0);
-  assert(buffer2writer.get_data_writer() == NULL);
+  SFXC_ASSERT(streamnr == 0);
+  SFXC_ASSERT(buffer2writer.get_data_writer() == NULL);
   buffer2writer.set_data_writer(writer);
   buffer2writer.try_start();
 

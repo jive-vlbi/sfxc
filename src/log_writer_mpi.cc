@@ -7,13 +7,13 @@
  *
  */
 
+#include "log_writer_mpi.h"
+#include "sfxc_mpi.h"
+#include "utils.h"
+
 #include <fstream>
-#include <assert.h>
 #include <time.h>
 #include <sys/timeb.h>
-
-#include "sfxc_mpi.h"
-#include "log_writer_mpi.h"
 
 class Log_writer_mpi_buffer : public Log_writer_buffer {
 public:
@@ -75,7 +75,7 @@ void Log_writer_mpi_buffer::put_char(int chr) {
 void Log_writer_mpi_buffer::put_buffer() {
   if (pbase() != pptr()) {
     int     len = (pptr() - pbase());
-    assert(len > 0);
+    SFXC_ASSERT(len > 0);
     char    *buffer = new char[len + 20 + 1];
 
     if (current_level <= max_level) {
@@ -85,7 +85,7 @@ void Log_writer_mpi_buffer::put_buffer() {
       snprintf(buffer, 21, "%02dh%02dm%02ds%03dms, %02d, ",
                tm_struct->tm_hour, tm_struct->tm_min, tm_struct->tm_sec,
                time_struct.millitm, rank);
-      assert(strlen(buffer) == 20);
+      SFXC_ASSERT(strlen(buffer) == 20);
       strncpy(buffer+20, pbase(), len);
       buffer[len+20] = '\0';
 

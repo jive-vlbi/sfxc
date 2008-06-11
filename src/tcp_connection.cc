@@ -31,7 +31,7 @@ TCP_Connection::~TCP_Connection() {}
 
 bool
 TCP_Connection::open_port(unsigned short int port, int connections) {
-  assert(connection_socket < 0);
+  SFXC_ASSERT(connection_socket < 0);
 
   port_nr = port;
 
@@ -95,14 +95,14 @@ TCP_Connection::open_port(unsigned short int port, int connections) {
   // this thread of execution continues on.
   listen(connection_socket, connections);
 
-  assert(connection_socket >= 0);
+  SFXC_ASSERT(connection_socket >= 0);
 
   return true;
 }
 
 unsigned int
 TCP_Connection::open_connection() {
-  assert(connection_socket >= 0);
+  SFXC_ASSERT(connection_socket >= 0);
   int connectSocket;
   socklen_t clientAddressLength;
   struct sockaddr_in clientAddress;
@@ -191,7 +191,7 @@ TCP_Connection::do_connect(const char *hostname, unsigned short int port) {
     return -1;
   }
 
-  assert (output_socket >= 0);
+  SFXC_ASSERT (output_socket >= 0);
   return output_socket;
 }
 

@@ -6,7 +6,10 @@
  * $Id: DataWriter_socket.cc 278 2007-07-04 07:27:05Z kruithof $
  *
  */
-#include <assert.h>
+
+#include "data_reader_socket.h"
+#include "connexion.h"
+#include "utils.h"
 
 #include <iostream>
 
@@ -16,25 +19,22 @@
 #include <errno.h>
 #include <utils.h>
 
-#include "data_reader_socket.h"
-#include "connexion.h"
-
 Data_reader_socket::Data_reader_socket(int socket) {
   m_socket = socket;
-  assert(m_socket > 0);
+  SFXC_ASSERT(m_socket > 0);
 }
 
 Data_reader_socket::Data_reader_socket(Connexion* connexion) {
   m_socket = connexion->get_socket();
-  assert(m_socket > 0);
+  SFXC_ASSERT(m_socket > 0);
 }
 
 Data_reader_socket::~Data_reader_socket() {}
 
 
 int Data_reader_socket::do_get_bytes(size_t nBytes, char *out) {
-  assert(m_socket > 0);
-  assert(out != NULL);
+  SFXC_ASSERT(m_socket > 0);
+  SFXC_ASSERT(out != NULL);
   return read(m_socket, (void *) out, nBytes);
 }
 

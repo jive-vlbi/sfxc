@@ -10,11 +10,10 @@
 #ifndef BUFFER2DATA_WRITER_H
 #define BUFFER2DATA_WRITER_H
 
-#include <boost/shared_ptr.hpp>
-#include <assert.h>
-
 #include "data_writer.h"
 #include "utils.h"
+
+#include <boost/shared_ptr.hpp>
 
 #include <threadsafe_queue.h>
 
@@ -90,14 +89,14 @@ Buffer2data_writer<T>::~Buffer2data_writer() {
 template <class T>
 void
 Buffer2data_writer<T>::set_data_writer(boost::shared_ptr< Data_writer > writer) {
-  assert(state != RUNNING);
+  SFXC_ASSERT(state != RUNNING);
   data_writer = writer;
 }
 
 template <class T>
 void
 Buffer2data_writer<T>::set_queue(Queue_ptr queue_) {
-  assert(state != RUNNING);
+  SFXC_ASSERT(state != RUNNING);
   queue = queue_;
 }
 
@@ -124,9 +123,9 @@ Buffer2data_writer<T>::try_start() {
 template <class T>
 void
 Buffer2data_writer<T>::start() {
-  assert(data_writer != NULL);
-  assert(queue != Queue_ptr());
-  assert(state == STOPPED);
+  SFXC_ASSERT(data_writer != NULL);
+  SFXC_ASSERT(queue != Queue_ptr());
+  SFXC_ASSERT(state == STOPPED);
 
   state = RUNNING;
   pthread_create(&redirect_thread, NULL,
@@ -178,7 +177,7 @@ Buffer2data_writer<T>::write() {
           buff += new_size;
         }
       }
-      assert((state != RUNNING) || (size == size2));
+      SFXC_ASSERT((state != RUNNING) || (size == size2));
       queue->pop();
     }
   }

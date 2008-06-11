@@ -7,15 +7,14 @@
  *
  */
 
-#include <iostream>
-#include <assert.h>
-
 #include "log_node.h"
 #include "utils.h"
 #include "types.h"
 #include "log_writer.h"
 #include "log_writer_cout.h"
 #include "log_writer_file.h"
+
+#include <iostream>
 
 Log_node::Log_node(int rank, int nNodes)
     : Node(rank), log_node_ctrl(*this, nNodes) {
@@ -44,7 +43,8 @@ Log_node::~Log_node() {
 
 void Log_node::start() {
   while (!log_node_ctrl.ready()) {
-    check_and_process_message();
+    if (check_and_process_message() == TERMINATE_NODE)
+      return;
   }
 }
 

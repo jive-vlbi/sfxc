@@ -8,21 +8,21 @@ const int Mark5a_header::microsecond_offset[] = {
 
 
 Mark5a_header::Mark5a_header(int N_) : header_(NULL), N(N_) {
-  assert(N_ > 0);
+  SFXC_ASSERT(N_ > 0);
 }
 
 
 void Mark5a_header::set_header(unsigned char* hdr) {
   if (hdr == NULL) 
     std::cout << "Backtrace: " << Backtrace() << std::endl;
-  assert(hdr != NULL);
+  SFXC_ASSERT(hdr != NULL);
   header_ = hdr;
 }
 
 
 bool Mark5a_header::check_header() {
   // Check for a valid header
-  assert(header_ != NULL);
+  SFXC_ASSERT(header_ != NULL);
   if (!is_valid())
     return false;
   if (!checkCRC())
@@ -34,7 +34,7 @@ bool Mark5a_header::check_header() {
 
 bool Mark5a_header::is_valid() {
   for (size_t i=64*N; i<96*N; i++) {
-    assert((unsigned char)(-1)^(unsigned char)(0) == (unsigned char)(-1));
+    SFXC_ASSERT((unsigned char)(-1)^(unsigned char)(0) == (unsigned char)(-1));
     if (header_[i] != (unsigned char)(-1)) {
       char word[8*N];
       for (int j=64*N; j<96*(int)N; j++) {
@@ -55,7 +55,7 @@ int Mark5a_header::nTracks() {
 
 
 int Mark5a_header::year(int track) {
-  assert((track >= 0) && (track < (int)N*8));
+  SFXC_ASSERT((track >= 0) && (track < (int)N*8));
   return 2000 + BCD(96+ 0, track);
 }
 
@@ -84,15 +84,15 @@ int Mark5a_header::second(int track) {
 
 int Mark5a_header::milisecond(int track) {
   int unit = BCD(96+48, track);
-  assert(unit != 4);
-  assert(unit != 9);
+  SFXC_ASSERT(unit != 4);
+  SFXC_ASSERT(unit != 9);
   return BCD(96+40, track)*100 + BCD(96+44, track)*10 + unit;
 }
 
 int Mark5a_header::microsecond(int track, int milisec) {
   int unit = milisec%10;
-  assert(unit != 4);
-  assert(unit != 9);
+  SFXC_ASSERT(unit != 4);
+  SFXC_ASSERT(unit != 9);
   return microsecond_offset[unit];
 }
 
@@ -122,7 +122,7 @@ int Mark5a_header::find_track(int headstack_, int track_) {
       return i;
     }
   }
-  assert(false);
+  SFXC_ASSERT(false);
   return -1;
 }
 
@@ -161,7 +161,7 @@ bool Mark5a_header::checkCRC() {
       << std::endl;
       return false;
     }
-    assert(crcBlock[i] == 0);
+    SFXC_ASSERT(crcBlock[i] == 0);
   }
 
   return true;
@@ -208,10 +208,10 @@ template <class Type>
 void Mark5a_header::crc12(Type *crcBlock,
                          Type *data,
                          int datawords) {
-  assert(sizeof(Type) == N);
-  assert(Type(-1)^Type(0) == Type(-1));
+  SFXC_ASSERT(sizeof(Type) == N);
+  SFXC_ASSERT(Type(-1)^Type(0) == Type(-1));
   for (size_t i=64; i<96; i++) {
-    assert(data[i] == Type(-1));
+    SFXC_ASSERT(data[i] == Type(-1));
   }
   /* 'cr' CRC register is assumed to be initialized */
   /* with 12 data words. */
@@ -242,7 +242,7 @@ void Mark5a_header::crc12(Type *crcBlock,
 
 int
 Mark5a_header::BCD(int word, unsigned int track) {
-  assert(track<8*N);
+  SFXC_ASSERT(track<8*N);
   int result = get_bit(word,track)*8 +
                get_bit(word+1,track)*4 +
                get_bit(word+2,track)*2 +

@@ -24,7 +24,7 @@ Channel_extractor_tasklet(int samples_per_block, int N_)
     n_subbands(0),
     fan_out(0), 
     N(N_), samples_per_block(samples_per_block) {
-  assert(N_ > 0);
+  SFXC_ASSERT(N_ > 0);
 
 #ifdef USE_EXTRACTOR_5
   ch_extractor = new Channel_extractor_5();
@@ -63,11 +63,11 @@ Channel_extractor_tasklet::do_task() {
   monitor_.begin_measure();
 #endif // RUNTIME_STATISTIC
 
-  assert(has_work());
+  SFXC_ASSERT(has_work());
 
   // Number of output streams, one output stream corresponds to one subband
-  assert(n_subbands == output_buffers_.size());
-  assert(n_subbands > 0);
+  SFXC_ASSERT(n_subbands == output_buffers_.size());
+  SFXC_ASSERT(n_subbands > 0);
 
   // The struct containing the data for processing
   // This is the not-yet-channelized data.
@@ -79,12 +79,12 @@ Channel_extractor_tasklet::do_task() {
   //   a time in microseconds and not all mark5b blocks start on an integer number
   //   of microseconds
   int n_input_samples = input_element.data().mark5_data.size();
-  assert(n_input_samples == samples_per_block*N);
+  SFXC_ASSERT(n_input_samples == samples_per_block*N);
 
   // Number of bytes in the output chunk
-  assert((n_input_samples*fan_out)%8==0);
+  SFXC_ASSERT((n_input_samples*fan_out)%8==0);
   int n_output_bytes = (samples_per_block*fan_out)/8;
-  assert(n_output_bytes > 0);
+  SFXC_ASSERT(n_output_bytes > 0);
 
   // Array of dechannelized output buffers
   Output_buffer_element  output_elements[n_subbands];
@@ -92,7 +92,7 @@ Channel_extractor_tasklet::do_task() {
   unsigned char *output_positions[n_subbands];
   { // Acquire output buffers
     for (size_t subband=0; subband<n_subbands; subband++) {
-      assert(!output_memory_pool_.empty());
+      SFXC_ASSERT(!output_memory_pool_.empty());
       output_elements[subband].channel_data = output_memory_pool_.allocate();
 
       output_elements[subband].start_time = input_element.data().start_time;
@@ -102,7 +102,7 @@ Channel_extractor_tasklet::do_task() {
           (size_t)n_output_bytes) {
         output_elements[subband].channel_data.data().data.resize(n_output_bytes);
       }
-      assert(output_elements[subband].channel_data.data().data.size() == 
+      SFXC_ASSERT(output_elements[subband].channel_data.data().data.size() == 
              (size_t)n_output_bytes);
 
       output_positions[subband] = 
@@ -110,12 +110,12 @@ Channel_extractor_tasklet::do_task() {
 
       // Copy the invalid-data members
       // Mark5a-files have headers, which should be invalidated
-      assert(input_element->invalid_bytes_begin >= 0);
+      SFXC_ASSERT(input_element->invalid_bytes_begin >= 0);
       output_elements[subband].invalid_samples_begin =
         input_element->invalid_bytes_begin*fan_out/bits_per_sample;
       output_elements[subband].nr_invalid_samples =
         input_element->nr_invalid_bytes*fan_out/(bits_per_sample*N);
-      assert(output_elements[subband].nr_invalid_samples >= 0);
+      SFXC_ASSERT(output_elements[subband].nr_invalid_samples >= 0);
     }
   }
 
@@ -126,7 +126,7 @@ Channel_extractor_tasklet::do_task() {
 
   { // release the input buffer and put the output buffer
     for (size_t i=0; i<n_subbands; i++) {
-      assert(output_buffers_[i] != Output_buffer_ptr());
+      SFXC_ASSERT(output_buffers_[i] != Output_buffer_ptr());
       output_buffers_[i]->push(output_elements[i]);
     }
 
@@ -188,12 +188,12 @@ Channel_extractor_tasklet::Output_buffer_ptr
 Channel_extractor_tasklet::get_output_buffer(size_t stream) {
   if (stream >= output_buffers_.size()) {
     output_buffers_.resize(stream+1);
-    assert(stream < output_buffers_.size());
+    SFXC_ASSERT(stream < output_buffers_.size());
   }
   if (output_buffers_[stream] == Output_buffer_ptr()) {
     output_buffers_[stream] = Output_buffer_ptr(new Output_buffer());
   }
-  assert(output_buffers_[stream] != Output_buffer_ptr());
+  SFXC_ASSERT(output_buffers_[stream] != Output_buffer_ptr());
   return output_buffers_[stream];
 }
 

@@ -1,5 +1,8 @@
+#include "control_parameters.h"
+#include "output_header.h"
+#include "utils.h"
+
 #include <fstream>
-#include <assert.h>
 #include <set>
 #include <math.h>
 
@@ -8,9 +11,6 @@
 #include <json/json.h>
 #include <algorithm>
 
-#include "control_parameters.h"
-#include "output_header.h"
-#include "utils.h"
 
 Control_parameters::Control_parameters()
     : initialised(false) {}
@@ -34,7 +34,7 @@ initialise(const char *ctrl_file, const char *vex_file,
     std::ifstream in(ctrl_file);
     if (!in.is_open()) {
       log_writer << "Could not open control file [" << ctrl_file << "]" << std::endl;
-      assert(false);
+      SFXC_ASSERT(false);
       return false;
     }
     bool ok = reader.parse(in, ctrl);
@@ -43,7 +43,7 @@ initialise(const char *ctrl_file, const char *vex_file,
       log_writer  << "Failed to parse control file\n"
       << reader.getFormatedErrorMessages()
       << std::endl;
-      assert(false);
+      SFXC_ASSERT(false);
       return false;
     }
   }
@@ -52,14 +52,14 @@ initialise(const char *ctrl_file, const char *vex_file,
     std::ifstream in(vex_file);
     if (!in.is_open()) {
       log_writer << "Could not open vex file [" <<vex_file<<"]"<< std::endl;
-      assert(false);
+      SFXC_ASSERT(false);
       return false;
     }
 
     // parse the vex file
     if (!vex.open(vex_file)) {
       log_writer << "Could not parse vex file ["<<vex_file<<"]" << std::endl;
-      assert(false);
+      SFXC_ASSERT(false);
       return false;
     }
   }
@@ -265,7 +265,7 @@ std::vector<std::string>
 Control_parameters::data_sources(const std::string &station) const {
   std::vector<std::string> result;
   Json::Value data_sources = ctrl["data_sources"][station];
-  assert(data_sources != Json::Value());
+  SFXC_ASSERT(data_sources != Json::Value());
   for (size_t index = 0;
        index < ctrl["data_sources"][station].size(); ++index ) {
     result.push_back(create_path(ctrl["data_sources"][station][index].asString()));
@@ -356,7 +356,7 @@ Control_parameters::bits_per_sample() const {
 
     for (std::map<std::string, int>::iterator it = result.begin();
          it != result.end(); it++) {
-      assert(it->second == bits);
+      SFXC_ASSERT(it->second == bits);
     }
   }
 
@@ -368,7 +368,7 @@ Control_parameters::scan(int scan_nr) const {
   Vex::Node::const_iterator it = vex.get_root_node()["SCHED"]->begin();
   for (int curr=0; curr < scan_nr; ++curr) {
     ++it;
-    assert(it != vex.get_root_node()["SCHED"]->end());
+    SFXC_ASSERT(it != vex.get_root_node()["SCHED"]->end());
   }
   return it.key();
 }
@@ -399,7 +399,7 @@ station_in_scan(const std::string& scan, int station_nr) const {
     vex.get_root_node()["SCHED"][scan]->begin("station");
   for (int curr=0; curr < station_nr; curr++) {
     ++it;
-    assert(it != vex.get_root_node()["SCHED"][scan]->end("station"));
+    SFXC_ASSERT(it != vex.get_root_node()["SCHED"][scan]->end("station"));
   }
   return it[0]->to_string();
 }
@@ -440,13 +440,13 @@ Control_parameters::number_frequency_channels() const {
 
 std::string
 Control_parameters::frequency_channel(size_t channel_nr) const {
-  assert(channel_nr < number_frequency_channels());
+  SFXC_ASSERT(channel_nr < number_frequency_channels());
   return ctrl["channels"][channel_nr].asString();
 }
 
 const Vex &
 Control_parameters::get_vex() const {
-  assert(initialised);
+  SFXC_ASSERT(initialised);
   return vex;
 }
 
@@ -483,7 +483,7 @@ get_mark5a_tracks(const std::string &mode,
             channel_param.sign_tracks.push_back(it->to_int());
           }
         } else {
-          assert(fanout_def_it[2]->to_string() == "mag");
+          SFXC_ASSERT(fanout_def_it[2]->to_string() == "mag");
           channel_param.magn_headstack = it->to_int();
           ++it;
           for (; it != fanout_def_it->end(); ++it) {
@@ -636,11 +636,11 @@ get_input_node_parameters(const std::string &mode_name,
   if (record_transport_type == "Mark5A") {
     get_mark5a_tracks(mode_name, station_name, result);
   } else {
-    assert(record_transport_type == "Mark5B");
+    SFXC_ASSERT(record_transport_type == "Mark5B");
     get_mark5b_tracks(mode_name, station_name, result);
   }
 
-  assert(!result.channels[0].sign_tracks.empty());
+  SFXC_ASSERT(!result.channels[0].sign_tracks.empty());
   result.track_bit_rate /= result.channels[0].sign_tracks.size();
 
   return result;
@@ -685,7 +685,7 @@ get_mode(int32_t &start_time) const {
       return sched_block["mode"]->to_string();
     }
   }
-  assert(false);
+  SFXC_ASSERT(false);
   return std::string("");
 }
 
@@ -804,7 +804,7 @@ polarisation_type_for_global_output_header() const {
       if ((pol == 'L') || (pol == 'l')) {
         left = true;
       } else {
-        assert((pol == 'R') || (pol == 'r'));
+        SFXC_ASSERT((pol == 'R') || (pol == 'r'));
         right = true;
       }
     }
@@ -814,7 +814,7 @@ polarisation_type_for_global_output_header() const {
   if (left)
     return Output_header_global::LEFT_POLARISATION;
 
-  assert(right);
+  SFXC_ASSERT(right);
   return Output_header_global::RIGHT_POLARISATION;
 }
 std::string
@@ -1016,8 +1016,8 @@ get_correlation_parameters(const std::string &scan_name,
 
   corr_param.polarisation = vex.polarisation(if_mode, if_nr);
 
-  assert(corr_param.sideband != ' ');
-  assert(corr_param.sideband == 'L' || corr_param.sideband == 'U');
+  SFXC_ASSERT(corr_param.sideband != ' ');
+  SFXC_ASSERT(corr_param.sideband == 'L' || corr_param.sideband == 'U');
 
   corr_param.cross_polarize = cross_polarize();
   if (cross_channel(channel_name, mode_name) == -1) {
@@ -1032,7 +1032,7 @@ get_correlation_parameters(const std::string &scan_name,
         corr_param.reference_station = station_nr;
       }
     }
-    assert(corr_param.reference_station != -1);
+    SFXC_ASSERT(corr_param.reference_station != -1);
   }
 
   // now get the station streams
@@ -1081,7 +1081,7 @@ Control_parameters::get_delay_directory() const {
 std::string
 Control_parameters::
 get_delay_table_name(const std::string &station_name) const {
-  assert(strncmp(ctrl["delay_directory"].asString().c_str(),"file://",7)==0);
+  SFXC_ASSERT(strncmp(ctrl["delay_directory"].asString().c_str(),"file://",7)==0);
   std::string delay_table_name =
     std::string(ctrl["delay_directory"].asString().c_str()+7) +
     "/" + ctrl["exper_name"].asString() +
@@ -1093,7 +1093,7 @@ get_delay_table_name(const std::string &station_name) const {
   if (access(delay_table_name.c_str(), R_OK) == 0) {
     return delay_table_name;
   }
-  assert(false);
+  SFXC_ASSERT(false);
   return std::string("");
 }
 
@@ -1106,7 +1106,7 @@ generate_delay_table(const std::string &station_name,
   DEBUG_MSG(cmd);
   int result = system(cmd.c_str());
   if (result != 0) {
-    assert(false);
+    SFXC_ASSERT(false);
   }
 }
 
@@ -1177,10 +1177,10 @@ operator<<(std::ostream &out,
 
 int
 Input_node_parameters::bits_per_sample() const {
-  assert(!channels.empty());
+  SFXC_ASSERT(!channels.empty());
   for (Channel_const_iterator it=channels.begin();
        it!=channels.end(); it++) {
-    assert(channels.begin()->bits_per_sample() ==
+    SFXC_ASSERT(channels.begin()->bits_per_sample() ==
            it->bits_per_sample());
   }
   return channels.begin()->bits_per_sample();
@@ -1188,10 +1188,10 @@ Input_node_parameters::bits_per_sample() const {
 
 int
 Input_node_parameters::subsamples_per_sample() const {
-  assert(!channels.empty());
+  SFXC_ASSERT(!channels.empty());
   for (Channel_const_iterator it=channels.begin();
        it!=channels.end(); it++) {
-    assert(channels.begin()->sign_tracks.size() ==
+    SFXC_ASSERT(channels.begin()->sign_tracks.size() ==
            it->sign_tracks.size());
   }
   return channels.begin()->sign_tracks.size();

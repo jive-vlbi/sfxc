@@ -134,9 +134,18 @@ enum MPI_TAG {
   // Node specific commands
   //-------------------------------------------------------------------------//
   /** Terminate a node. Note that the Output node has its own message
-   * - int32_t: no specific value
+   * - int32_t: 0 on a normal exit, 1 on an error (assertion raised)
    **/
   MPI_TAG_END_NODE,
+
+  // Node specific commands
+  //-------------------------------------------------------------------------//
+  /** An assertion failed. Terminate all nodes nicely. 
+   * This message is sent from the node to the manager node that terminates all
+   * other nodes.
+   * - int32_t: no specific value
+   **/
+  MPI_TAG_ASSERTION_RAISED,
 
   // Input node specific commands
   //-------------------------------------------------------------------------//
@@ -328,6 +337,10 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
   case MPI_TAG_END_NODE: {
       return "MPI_TAG_END_NODE";
     }
+  case MPI_TAG_ASSERTION_RAISED: {
+      return "MPI_TAG_ASSERTION_RAISED";
+    }
+
   case MPI_TAG_OUTPUT_NODE_CORRELATION_READY: {
       return "MPI_TAG_OUTPUT_NODE_CORRELATION_READY";
     }

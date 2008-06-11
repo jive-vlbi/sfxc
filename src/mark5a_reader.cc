@@ -16,7 +16,7 @@ Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
   char *data = ((char *)mark5a_block) + SIZE_MK5A_FRAME*sizeof(unsigned char);
   while (bytes_to_read > 0) {
     int read = data_reader->get_bytes(bytes_to_read, data);
-    assert(read >= 0);
+    SFXC_ASSERT(read >= 0);
     bytes_to_read -= read;
     data += read;
   }
@@ -46,7 +46,7 @@ Mark5a_reader::goto_time(unsigned char *mark5a_block, int64_t us_time) {
     SIZE_MK5A_FRAME*N;
 
   // Read an integer number of frames
-  assert(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
+  SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
 
   // TODO having a blocking read would be nice.
   // as well as a goto function.
@@ -57,7 +57,7 @@ Mark5a_reader::goto_time(unsigned char *mark5a_block, int64_t us_time) {
   }
 
   if ( bytes_to_read != 0 ) {
-    assert(false);
+    SFXC_ASSERT(false);
     return get_current_time();
   }
 
@@ -70,7 +70,7 @@ Mark5a_reader::goto_time(unsigned char *mark5a_block, int64_t us_time) {
     DEBUG_MSG("time:         " << us_time);
     DEBUG_MSG("current time: " << get_current_time());
     sleep(1);
-    assert(get_current_time() == us_time);
+    SFXC_ASSERT(get_current_time() == us_time);
   }
 
   return get_current_time();
@@ -147,7 +147,7 @@ bool Mark5a_reader::check_time_stamp(Mark5a_header &header) {
 
   if (delta_time <= 0) {
     DEBUG_MSG("delta_time: " << delta_time)
-    assert(delta_time > 0);
+    SFXC_ASSERT(delta_time > 0);
   }
   int64_t computed_TBR =
     (data_reader_->data_counter()*1000000/(delta_time));
@@ -189,7 +189,7 @@ Mark5a_reader::get_tracks(const Input_node_parameters &input_node_param,
                          unsigned char *mark5a_block) {
   Mark5a_header header(N);
   header.set_header(mark5a_block);
-  assert(header.check_header());
+  SFXC_ASSERT(header.check_header());
 
   std::vector< std::vector<int> > result;
 
@@ -207,18 +207,18 @@ Mark5a_reader::get_tracks(const Input_node_parameters &input_node_param,
       result[curr_channel][track] =
         header.find_track(channel->sign_headstack-1,
                           channel->sign_tracks[i]);
-      assert(header.headstack(result[curr_channel][track]) ==
+      SFXC_ASSERT(header.headstack(result[curr_channel][track]) ==
              channel->sign_headstack-1);
-      assert(header.track(result[curr_channel][track]) ==
+      SFXC_ASSERT(header.track(result[curr_channel][track]) ==
              channel->sign_tracks[i]);
       track++;
       if (channel->bits_per_sample() == 2) {
         result[curr_channel][track] =
           header.find_track(channel->magn_headstack-1,
                             channel->magn_tracks[i]);
-        assert(header.headstack(result[curr_channel][track]) ==
+        SFXC_ASSERT(header.headstack(result[curr_channel][track]) ==
                channel->magn_headstack-1);
-        assert(header.track(result[curr_channel][track]) ==
+        SFXC_ASSERT(header.track(result[curr_channel][track]) ==
                channel->magn_tracks[i]);
         track++;
       }
@@ -297,14 +297,14 @@ get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
   Mark5a_header header(n_tracks_8);
   header.set_header(first_block);
   if (!header.checkCRC()) {
-    assert(false);
+    SFXC_ASSERT(false);
     return NULL;
   }
   return new Mark5a_reader(reader, n_tracks_8, first_block, first_block);
 }
 
 int Mark5a_reader::data_rate() const {
-  assert(DATA_RATE_ > 0);
+  SFXC_ASSERT(DATA_RATE_ > 0);
   return DATA_RATE_;
 }
 
@@ -312,5 +312,5 @@ void
 Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
   int tbr = input_node_param.track_bit_rate;
   DATA_RATE_ = (tbr * N * 8);
-  assert(DATA_RATE_ > 0);
+  SFXC_ASSERT(DATA_RATE_ > 0);
 }

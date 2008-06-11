@@ -24,7 +24,7 @@ get_output_buffer() {
 }
 
 void Correlator_node_data_reader_tasklet::do_task() {
-  assert(has_work());
+  SFXC_ASSERT(has_work());
 
   Output_memory_pool_element output_elem = output_memory_pool.allocate();
   // allocate the data array

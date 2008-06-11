@@ -36,13 +36,13 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
 
       int size;
       MPI_Get_elements(&status, MPI_INT64, &size);
-      assert(size >= 3); // stream_nr, [ip-addr]+, port
+      SFXC_ASSERT(size >= 3); // stream_nr, [ip-addr]+, port
       uint64_t ip_addr[size];
       MPI_Recv(&ip_addr, size, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
+      SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
+      SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
       int32_t stream_nr = ip_addr[0];
       uint64_t port = ip_addr[size-1];
@@ -62,7 +62,7 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
 
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
-      assert((size_t)size > sizeof(int32_t)); // rank + filename
+      SFXC_ASSERT((size_t)size > sizeof(int32_t)); // rank + filename
       char msg[size];
       MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -70,8 +70,8 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       memcpy(&stream_nr, msg, sizeof(int32_t));
       char *filename = msg+sizeof(int32_t);
 
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
+      SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
+      SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
       boost::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
       add_data_reader(stream_nr, reader);
@@ -89,15 +89,15 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
 void
 Multiple_data_readers_controller::
 enable_buffering(unsigned int i) {
-  assert(i < data_readers.size());
-  assert(data_readers[i] != NULL);
-  assert(data_readers[i]->get_data_reader() != NULL);
-  assert(data_readers[i]->get_queue() == Queue_ptr());
+  SFXC_ASSERT(i < data_readers.size());
+  SFXC_ASSERT(data_readers[i] != NULL);
+  SFXC_ASSERT(data_readers[i]->get_data_reader() != NULL);
+  SFXC_ASSERT(data_readers[i]->get_queue() == Queue_ptr());
 
   Queue_ptr queue(new Queue());
 
   // Make sure a pointer to the data reader has not been returned
-  assert(!reader_known[i]);
+  SFXC_ASSERT(!reader_known[i]);
 
   data_readers[i]->set_queue(queue);
   data_readers[i]->start();
@@ -114,8 +114,8 @@ Multiple_data_readers_controller::get_queue(unsigned int i) {
 
 boost::shared_ptr<Data_reader>
 Multiple_data_readers_controller::get_data_reader(int i) {
-  assert((size_t)i < data_readers.size());
-  assert(data_readers[i] != NULL);
+  SFXC_ASSERT((size_t)i < data_readers.size());
+  SFXC_ASSERT(data_readers[i] != NULL);
 
   reader_known[i] = true;
 
@@ -147,7 +147,7 @@ Multiple_data_readers_controller::add_data_reader
     reader_known.resize(i+1, false);
     buffer_readers.resize(i+1, boost::shared_ptr<Reader_buffer>());
   }
-  assert((uint32_t)i < data_readers.size());
+  SFXC_ASSERT((uint32_t)i < data_readers.size());
 
   if (data_readers[i] == NULL) {
     data_readers[i] = new Reader2buffer();

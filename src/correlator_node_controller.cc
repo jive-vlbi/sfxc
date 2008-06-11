@@ -7,10 +7,6 @@
  *
  */
 
-#include <signal.h>
-#include <iostream>
-#include <assert.h>
-
 #include "correlator_node.h"
 #include "data_reader_file.h"
 #include "data_reader_tcp.h"
@@ -22,6 +18,10 @@
 #include "utils.h"
 
 #include "mpi_transfer.h"
+
+#include <signal.h>
+#include <iostream>
+
 
 Correlator_node_controller::Correlator_node_controller(Correlator_node &node)
     : Controller(node), node(node) {}

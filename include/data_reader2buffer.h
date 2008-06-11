@@ -10,15 +10,14 @@
 #ifndef DATA_READER2BUFFER_H
 #define DATA_READER2BUFFER_H
 
-#include <assert.h>
-#include <pthread.h>
-#include <boost/shared_ptr.hpp>
-
 #include "data_reader.h"
 #include "utils.h"
 
 #include <memory_pool.h>
 #include <threadsafe_queue.h>
+
+#include <pthread.h>
+#include <boost/shared_ptr.hpp>
 
 /** Reads data from the data reader and puts it in a buffer,
  * which is useful for non-blocking IO.
@@ -42,7 +41,7 @@ public:
   enum State {
     STOPPED=0, ///< Not running, the additional thread is not active
     SUSPENDED, /**< Not running, the additional thread is waiting
-                            (e.g. for a change of buffers) **/
+                                            (e.g. for a change of buffers) **/
     RUNNING    ///< The thread is writing data from the buffer
   };
 
@@ -87,7 +86,7 @@ template <class T>
 Data_reader2buffer<T>::
 Data_reader2buffer(const Data_reader2buffer &buffer) {
   // No copy constructor, the threads don't like it
-  assert(false);
+  SFXC_ASSERT(false);
 }
 
 template <class T>
@@ -98,8 +97,8 @@ Data_reader2buffer<T>::~Data_reader2buffer() {
 template <class T>
 void
 Data_reader2buffer<T>::set_data_reader(Data_reader_ptr reader) {
-  assert(state != RUNNING);
-  assert(data_reader == Data_reader_ptr());
+  SFXC_ASSERT(state != RUNNING);
+  SFXC_ASSERT(data_reader == Data_reader_ptr());
   data_reader = reader;
 }
 
@@ -112,8 +111,8 @@ Data_reader2buffer<T>::get_data_reader() {
 template <class T>
 void
 Data_reader2buffer<T>::set_queue(Queue_ptr queue_) {
-  assert(queue == Queue_ptr());
-  assert(state == STOPPED);
+  SFXC_ASSERT(queue == Queue_ptr());
+  SFXC_ASSERT(state == STOPPED);
   queue = queue_;
 }
 
@@ -135,8 +134,8 @@ Data_reader2buffer<T>::try_start() {
 template <class T>
 void
 Data_reader2buffer<T>::start() {
-  assert(data_reader != Data_reader_ptr());
-  assert(queue != Queue_ptr());
+  SFXC_ASSERT(data_reader != Data_reader_ptr());
+  SFXC_ASSERT(queue != Queue_ptr());
 
   if (state == STOPPED) {
     set_state(RUNNING);
@@ -150,7 +149,8 @@ Data_reader2buffer<T>::start() {
 template <class T>
 void
 Data_reader2buffer<T>::stop() {
-  if (state == STOPPED) return;
+  if (state == STOPPED)
+    return;
   set_state(STOPPED);
   pthread_join(io_thread, NULL);
 }
@@ -190,20 +190,25 @@ Data_reader2buffer<T>::read() {
         DEBUG_MSG("data_reader->eof()");
         set_state(STOPPED);
       } else {
-        assert(!memory_pool.empty());
-        value_type elem;
-        elem.data = memory_pool.allocate();
-        assert(elem.data->size() > 0);
-        // Do not fill the buffer as this might cause deadlock, because
-        // the last part of a time slice will never be released to the
-        // buffer.
-        int size = data_reader->get_bytes(elem.data->size(), elem.data->buffer());
-        if (size < 0) {
-          // Make sure the error messages do not propagate in the buffer
-          size = 0;
+        if (data_reader->can_read()) {
+          SFXC_ASSERT(!memory_pool.empty());
+          value_type elem;
+          elem.data = memory_pool.allocate();
+          SFXC_ASSERT(elem.data->size() > 0);
+          // Do not fill the buffer as this might cause deadlock, because
+          // the last part of a time slice will never be released to the
+          // buffer.
+          int size = data_reader->get_bytes(elem.data->size(),
+                                            elem.data->buffer());
+          if (size < 0) {
+            // Make sure the error messages do not propagate in the buffer
+            size = 0;
+          }
+          elem.actual_size = size;
+          queue->push(elem);
+        } else {
+          usleep(100);
         }
-        elem.actual_size = size;
-        queue->push(elem);
       }
     }
   }

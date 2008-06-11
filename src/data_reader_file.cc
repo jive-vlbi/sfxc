@@ -7,23 +7,22 @@
  *
  */
 
-#include <assert.h>
-#include <iostream>
-#include <algorithm>
-
 #include "data_reader_file.h"
 #include "utils.h"
+
+#include <iostream>
+#include <algorithm>
 
 Data_reader_file::Data_reader_file(const char *filename) :
     Data_reader() {
   if (strncmp(filename, "file://", 7) != 0) {
     DEBUG_MSG("Filename '" << filename << "' doesn't start with file://");
-    assert(strncmp(filename, "file://", 7) == 0);
+    SFXC_ASSERT(strncmp(filename, "file://", 7) == 0);
   }
   file.open(filename+7, std::ios::in | std::ios::binary);
   if (!file.is_open()) {
     DEBUG_MSG("Filename '" << filename << "' doesn't exist");
-    assert(file.is_open());
+    SFXC_ASSERT(file.is_open());
   }
 }
 
@@ -31,13 +30,13 @@ Data_reader_file::Data_reader_file(const std::string &filename) :
     Data_reader() {
   if (strncmp(filename.c_str(), "file://", 7) != 0) {
     DEBUG_MSG("Filename '" << filename << "' doesn't start with file://");
-    assert(strncmp(filename.c_str(), "file://", 7) == 0);
+    SFXC_ASSERT(strncmp(filename.c_str(), "file://", 7) == 0);
   }
   file.open(filename.c_str()+7, std::ios::in | std::ios::binary);
   if (!file.is_open()) {
     DEBUG_MSG("Filename '" << filename << "' doesn't exist");
     sleep(1);
-    assert(file.is_open());
+    SFXC_ASSERT(file.is_open());
   }
 }
 

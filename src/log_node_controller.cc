@@ -7,8 +7,6 @@
  *
  */
 
-#include <assert.h>
-
 #include "sfxc_mpi.h"
 #include "utils.h"
 #include "log_node.h"
@@ -41,7 +39,7 @@ Log_node_controller::Log_node_controller(Node &node, int nNodes)
     if (result) {
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
-      assert(size >= 0);
+      SFXC_ASSERT(size >= 0);
       char filename[size];
       MPI_Recv(&filename, size, MPI_CHAR,
                status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, &status2);
@@ -69,13 +67,13 @@ Log_node_controller::process_event(MPI_Status &status) {
   case MPI_TAG_LOG_MESSAGE: {
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
-      assert(size > 0);
+      SFXC_ASSERT(size > 0);
       char message[size];
       MPI_Recv(&message, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
+      SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
+      SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
       get_log_writer_output()(0) << message << std::flush;
       return PROCESS_EVENT_STATUS_SUCCEEDED;
@@ -85,8 +83,8 @@ Log_node_controller::process_event(MPI_Status &status) {
       MPI_Recv(&node, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
-      assert(status.MPI_SOURCE == status2.MPI_SOURCE);
-      assert(status.MPI_TAG == status2.MPI_TAG);
+      SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
+      SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
       // Use the default mpi log writer:
       get_log_writer_output()(1) << "  *** Node " << status.MPI_SOURCE
@@ -101,12 +99,12 @@ Log_node_controller::process_event(MPI_Status &status) {
 }
 
 Log_writer &Log_node_controller::get_log_writer_output() {
-  assert(log_writer_output != NULL);
+  SFXC_ASSERT(log_writer_output != NULL);
   return *log_writer_output;
 }
 
 void Log_node_controller::set_log_writer_output(Log_writer *writer) {
-  assert(log_writer_output == NULL);
+  SFXC_ASSERT(log_writer_output == NULL);
   if (log_writer_output != NULL) delete log_writer_output;
   log_writer_output = writer;
 }

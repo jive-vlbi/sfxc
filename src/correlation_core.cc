@@ -15,7 +15,7 @@ Correlation_core::~Correlation_core() {
 }
 
 void Correlation_core::do_task() {
-  assert(has_work());
+  SFXC_ASSERT(has_work());
   if (current_fft % 1000 == 0) {
     PROGRESS_MSG("node " << node_nr_ << ", "
                  << current_fft << " of " << number_ffts_in_integration);
@@ -78,7 +78,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   // Crosses
   int ref_station = parameters.reference_station;
   if (parameters.cross_polarize) {
-    assert(n_stations() % 2 == 0);
+    SFXC_ASSERT(n_stations() % 2 == 0);
     size_t n_st_2 = n_stations()/2;
     if (ref_station >= 0) {
       // cross polarize with a reference station
@@ -177,9 +177,9 @@ void Correlation_core::integration_initialise() {
     }
   }
 
-  assert(accumulation_buffers.size() == baselines.size());
+  SFXC_ASSERT(accumulation_buffers.size() == baselines.size());
   for (size_t i=0; i<accumulation_buffers.size(); i++) {
-    assert(accumulation_buffers[i].size() == size_of_fft()/2+1);
+    SFXC_ASSERT(accumulation_buffers[i].size() == size_of_fft()/2+1);
     for (size_t j=0; j<accumulation_buffers[i].size(); j++) {
       accumulation_buffers[i][j] = 0;
     }
@@ -195,9 +195,9 @@ void Correlation_core::integration_step() {
   }
 
   // Do the fft from time to frequency:
-  assert(frequency_buffer.size() == number_input_streams_in_use());
+  SFXC_ASSERT(frequency_buffer.size() == number_input_streams_in_use());
   for (size_t i=0; i<frequency_buffer.size(); i++) {
-    assert((size_t)frequency_buffer[i].size() == (size_of_fft()/2+1));
+    SFXC_ASSERT((size_t)frequency_buffer[i].size() == (size_of_fft()/2+1));
 
     // zero out the data for padding
     for (size_t j=size_of_fft()/2; j<size_of_fft(); j++) {
@@ -216,7 +216,7 @@ void Correlation_core::integration_step() {
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
     // Auto correlations
     std::pair<size_t,size_t> &stations = baselines[i];
-    assert(stations.first == stations.second);
+    SFXC_ASSERT(stations.first == stations.second);
     auto_correlate_baseline(/* in1 */
       frequency_buffer[stations.first].buffer(),
       /* out */
@@ -226,7 +226,7 @@ void Correlation_core::integration_step() {
   for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
     // Cross correlations
     std::pair<size_t,size_t> &stations = baselines[i];
-    assert(stations.first != stations.second);
+    SFXC_ASSERT(stations.first != stations.second);
     correlate_baseline
       (/* in1 */ frequency_buffer[stations.first].buffer(),
        /* in2 */ frequency_buffer[stations.second].buffer(),
@@ -238,7 +238,7 @@ void Correlation_core::integration_step() {
 #ifndef SFXC_DETERMINISTIC
     DEBUG_MSG("SFXC_WRITE_STATS only works with SFXC_DETERMINISTIC");
     sleep(1);
-    assert(false);
+    SFXC_ASSERT(false);
 #endif
 
     if (! stats_out.is_open()) {
@@ -246,7 +246,7 @@ void Correlation_core::integration_step() {
       snprintf(filename, 80, "stats_%d.txt", RANK_OF_NODE);
       stats_out.open(filename);
     }
-    assert(stats_out.is_open());
+    SFXC_ASSERT(stats_out.is_open());
 
     // Reset buffer:
     for (size_t i=0; i<size_of_fft()/2+1; i++) 
@@ -325,14 +325,14 @@ void Correlation_core::integration_write() {
     input_elements[i] = Input_buffer_element();
   }
 
-  assert(writer != boost::shared_ptr<Data_writer>());
-  assert(accumulation_buffers.size() == baselines.size());
+  SFXC_ASSERT(writer != boost::shared_ptr<Data_writer>());
+  SFXC_ASSERT(accumulation_buffers.size() == baselines.size());
 
   int polarisation = 1;
   if (correlation_parameters.polarisation == 'R') {
     polarisation =0;
   } else {
-    assert(correlation_parameters.polarisation == 'L');
+    SFXC_ASSERT(correlation_parameters.polarisation == 'L');
   }
 
   { // Writing the timeslice header
@@ -362,7 +362,7 @@ void Correlation_core::integration_write() {
          i++) {
       size_t station_stream =
         correlation_parameters.station_streams[i].station_stream;
-      assert(station_stream < stream2station.size());
+      SFXC_ASSERT(station_stream < stream2station.size());
       stream2station[station_stream] =
         correlation_parameters.station_streams[i].station_number;
     }
@@ -379,14 +379,14 @@ void Correlation_core::integration_write() {
     hbaseline.weight = 0;       // The number of good samples
 
     // Station number in the vex-file
-    assert(stations.first < n_stations);
-    assert(stations.second < n_stations);
+    SFXC_ASSERT(stations.first < n_stations);
+    SFXC_ASSERT(stations.second < n_stations);
     hbaseline.station_nr1 = stream2station[stations.first];
     // Station number in the vex-file
     hbaseline.station_nr2 = stream2station[stations.second];
 
     // Polarisation for the first station
-    assert((polarisation == 0) || (polarisation == 1)); // (RCP: 0, LCP: 1)
+    SFXC_ASSERT((polarisation == 0) || (polarisation == 1)); // (RCP: 0, LCP: 1)
     hbaseline.polarisation1 = polarisation;
     hbaseline.polarisation2 = polarisation;
     if (correlation_parameters.cross_polarize) {
@@ -399,7 +399,7 @@ void Correlation_core::integration_write() {
     if (correlation_parameters.sideband=='U') {
       hbaseline.sideband = 1;
     } else {
-      assert(correlation_parameters.sideband == 'L');
+      SFXC_ASSERT(correlation_parameters.sideband == 'L');
       hbaseline.sideband = 0;
     }
     // The number of the channel in the vex-file,

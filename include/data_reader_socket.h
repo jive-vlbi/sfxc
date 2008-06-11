@@ -14,9 +14,9 @@
 #ifndef DATA_READER_SOCKET_HH
 #define DATA_READER_SOCKET_HH
 
-#include <cassert>
 #include "network.h"
 #include "data_reader.h"
+#include "utils.h"
 
 class Data_reader_socket : public Data_reader {
 public:
@@ -26,7 +26,7 @@ public:
   virtual ~Data_reader_socket();
   virtual bool eof();
   void closef() {
-    assert(false && "not implemented");
+    SFXC_ASSERT(false && "not implemented");
   }
 
   bool can_read();

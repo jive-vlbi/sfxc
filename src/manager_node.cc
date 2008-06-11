@@ -7,16 +7,15 @@
  *
  */
 
-#include <iostream>
-#include <assert.h>
-#include <fftw3.h>
-
 #include "manager_node.h"
 #include "sfxc_mpi.h"
 #include "utils.h"
 #include "mpi_transfer.h"
 #include "log_writer_cout.h"
+
+#include <iostream>
 #include <iomanip>
+#include <fftw3.h>
 
 Manager_node::
 Manager_node(int rank, int numtasks,
@@ -28,8 +27,8 @@ Manager_node(int rank, int numtasks,
     manager_controller(*this),
     integration_slice_nr(0),
     current_scan(0)
-    /**/ {
-  assert(rank == RANK_MANAGER_NODE);
+/**/ {
+  SFXC_ASSERT(rank == RANK_MANAGER_NODE);
 
   add_controller(&manager_controller);
 
@@ -82,15 +81,15 @@ Manager_node(int rank, int numtasks,
   // Input nodes:
   int n_stations = get_control_parameters().number_stations();
   for (int input_node=0; input_node<n_stations; input_node++) {
-    assert(input_node+3 != RANK_MANAGER_NODE);
-    assert(input_node+3 != RANK_LOG_NODE);
-    assert(input_node+3 != RANK_OUTPUT_NODE);
-    assert(input_node+3 < numtasks);
+    SFXC_ASSERT(input_node+3 != RANK_MANAGER_NODE);
+    SFXC_ASSERT(input_node+3 != RANK_LOG_NODE);
+    SFXC_ASSERT(input_node+3 != RANK_OUTPUT_NODE);
+    SFXC_ASSERT(input_node+3 < numtasks);
 
     start_input_node(/*rank_nr*/ input_node+3,
                                  get_control_parameters().station(input_node));
   }
-  assert(n_stations > 0);
+  SFXC_ASSERT(n_stations > 0);
 
   // correlator nodes:
   if (numtasks-(n_stations+3) - control_parameters.number_correlation_cores_per_timeslice(get_current_mode()) < 0) {
@@ -110,9 +109,9 @@ Manager_node(int rank, int numtasks,
        correlator_nr < n_corr_nodes;
        correlator_nr++) {
     int correlator_rank = correlator_nr + n_stations+3;
-    assert(correlator_rank != RANK_MANAGER_NODE);
-    assert(correlator_rank != RANK_LOG_NODE);
-    assert(correlator_rank != RANK_OUTPUT_NODE);
+    SFXC_ASSERT(correlator_rank != RANK_MANAGER_NODE);
+    SFXC_ASSERT(correlator_rank != RANK_LOG_NODE);
+    SFXC_ASSERT(correlator_rank != RANK_OUTPUT_NODE);
 
     start_correlator_node(/*rank_nr*/ correlator_rank);
 
@@ -158,9 +157,11 @@ void Manager_node::start() {
   initialise();
   status = START_NEW_SCAN;
   while (status != END_NODE) {
-    process_all_waiting_messages();
+    if (process_all_waiting_messages() == TERMINATE_NODE) {
+      status = END_NODE;
+    }
     switch (status) {
-    case START_NEW_SCAN: {
+      case START_NEW_SCAN: {
         // set track information
         initialise_scan(control_parameters.scan(current_scan));
 
@@ -185,22 +186,23 @@ void Manager_node::start() {
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
           input_node_set_time(control_parameters.station(station),
-                              start_time + 
+                              start_time +
                               integration_slice_nr*integration_time(),
                               stop_time_scan);
         }
         status = START_CORRELATION_TIME_SLICE;
         break;
       }
-    case START_CORRELATION_TIME_SLICE: {
+      case START_CORRELATION_TIME_SLICE: {
         current_channel = 0;
         current_correlator_node = 0;
         status = START_CORRELATOR_NODES_FOR_TIME_SLICE;
         break;
       }
-    case START_CORRELATOR_NODES_FOR_TIME_SLICE: {
+      case START_CORRELATOR_NODES_FOR_TIME_SLICE: {
         bool added_correlator_node = false;
 #ifdef SFXC_DETERMINISTIC
+
         if (correlator_node_ready[current_correlator_node]) {
           set_correlator_node_ready(current_correlator_node, false);
           start_next_timeslice_on_node(current_correlator_node);
@@ -221,12 +223,14 @@ void Manager_node::start() {
           }
         } else {
           // No correlator node added, wait for the next message
-          check_and_process_message();
+          if (check_and_process_message() == TERMINATE_NODE) {
+            status = END_NODE;
+          }
         }
 
         break;
       }
-    case GOTO_NEXT_TIMESLICE: {
+      case GOTO_NEXT_TIMESLICE: {
         integration_slice_nr += 1;
         PROGRESS_MSG("starting timeslice " << start_time+integration_slice_nr*integration_time());
 
@@ -251,7 +255,7 @@ void Manager_node::start() {
         }
         break;
       }
-    case STOP_CORRELATING: {
+      case STOP_CORRELATING: {
         // The status is set to END_NODE as soon as the output_node is ready
         MPI_Send(&output_slice_nr, 1, MPI_INT32,
                  RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_CORRELATION_READY,
@@ -260,12 +264,14 @@ void Manager_node::start() {
         status = WAIT_FOR_OUTPUT_NODE;
         break;
       }
-    case WAIT_FOR_OUTPUT_NODE: {
+      case WAIT_FOR_OUTPUT_NODE: {
         // The status is set to END_NODE as soon as the output_node is ready
-        check_and_process_message();
+        if (check_and_process_message() == TERMINATE_NODE) {
+          status = END_NODE;
+        }
         break;
       }
-    case END_NODE: {
+      case END_NODE: {
         break;
       }
     }
@@ -280,7 +286,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   if (control_parameters.cross_polarize()) {
     cross_channel = control_parameters.cross_channel(current_channel,
                     get_current_mode());
-    assert((cross_channel == -1) || (cross_channel > (int)current_channel));
+    SFXC_ASSERT((cross_channel == -1) || (cross_channel > (int)current_channel));
   }
 
   // Initialise the correlator node
@@ -343,7 +349,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   if (cross_channel != -1) {
     int n_stations = control_parameters.number_stations();
     int n_streams = correlation_parameters.station_streams.size();
-    assert(n_stations == n_streams);
+    SFXC_ASSERT(n_stations == n_streams);
     // Add the cross polarisations
     for (int i=0; i<n_stations; i++) {
       Correlation_parameters::Station_parameters stream =
@@ -419,7 +425,7 @@ Manager_node::initialise() {
       DEBUG_MSG("Delay table could not be read");
       control_parameters.generate_delay_table(station_name, delay_file);
       delay_table.open(delay_file.c_str());
-      assert(delay_table.initialised());
+      SFXC_ASSERT(delay_table.initialised());
     }
 
     send(delay_table, /* station_nr */ 0, input_rank(station));
@@ -435,8 +441,8 @@ Manager_node::initialise() {
 
   // Get a list of all scan names
   current_scan = control_parameters.scan(start);
-  assert(current_scan >= 0);
-  assert((size_t)current_scan < control_parameters.number_scans());
+  SFXC_ASSERT(current_scan >= 0);
+  SFXC_ASSERT((size_t)current_scan < control_parameters.number_scans());
 
   output_slice_nr = 0;
 
@@ -453,7 +459,7 @@ void Manager_node::initialise_scan(const std::string &scan) {
   // set the start time to the beginning of the scan
   if (start_time + integration_slice_nr*integration_time() <
       start_of_scan.to_miliseconds(start_day)) {
-    int64_t start_interval = 
+    int64_t start_interval =
       start_of_scan.to_miliseconds(start_day)-start_time;
     integration_slice_nr = start_interval/integration_time();
     if ((start_interval%integration_time()) != 0) {
@@ -466,9 +472,9 @@ void Manager_node::initialise_scan(const std::string &scan) {
   if (stop_time < stop_time_scan)
     stop_time_scan = stop_time;
   // Align the stop time with the time slices
-  assert(((stop_time_scan-start_time)%integration_time()) >= 0);
+  SFXC_ASSERT(((stop_time_scan-start_time)%integration_time()) >= 0);
   stop_time_scan -= (stop_time_scan-start_time)%integration_time();
-  assert(((stop_time_scan-start_time)%integration_time()) == 0);
+  SFXC_ASSERT(((stop_time_scan-start_time)%integration_time()) == 0);
 
 
   // Send the track parameters to the input nodes
@@ -486,7 +492,7 @@ void Manager_node::initialise_scan(const std::string &scan) {
 }
 
 void Manager_node::end_correlation() {
-  assert(status == WAIT_FOR_OUTPUT_NODE);
+  SFXC_ASSERT(status == WAIT_FOR_OUTPUT_NODE);
   status = END_NODE;
 }
 
@@ -494,3 +500,50 @@ std::string Manager_node::get_current_mode() const {
   std::string scan_name = control_parameters.scan(current_scan);
   return control_parameters.get_vex().get_mode(scan_name);
 }
+
+Node::MESSAGE_RESULT
+Manager_node::check_and_process_waiting_message() {
+  MPI_Status status;
+  int result;
+  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &result, &status);
+  if (result) {
+    if (status.MPI_TAG == MPI_TAG_ASSERTION_RAISED) {
+      MPI_Status status2;
+      int32_t msg;
+      MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
+               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+      terminate_nodes_after_assertion(status.MPI_SOURCE);
+      return TERMINATE_NODE;
+    } else {
+      return Node::check_and_process_waiting_message();
+    }
+  }
+  return NO_MESSAGE;
+}
+
+Node::MESSAGE_RESULT
+Manager_node::process_all_waiting_messages() {
+  MESSAGE_RESULT result;
+  do {
+    result = check_and_process_waiting_message();
+  } while (result == MESSAGE_PROCESSED);
+  return result;
+}
+
+Node::MESSAGE_RESULT
+Manager_node::check_and_process_message() {
+  MPI_Status status;
+  MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+  if (status.MPI_TAG == MPI_TAG_ASSERTION_RAISED) {
+    MPI_Status status2;
+    int32_t msg;
+    MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
+             status.MPI_TAG, MPI_COMM_WORLD, &status2);
+    terminate_nodes_after_assertion(status.MPI_SOURCE);
+    return TERMINATE_NODE;
+  } else {
+    return Node::check_and_process_message();
+  }
+}
+
