@@ -1,0 +1,28 @@
+POST /translationnode HTTP/1.1
+Host: huygens:8082
+Accept-Encoding: identity
+Content-Length: 871
+Content-Type: text/xml; charset="utf-8"
+SOAPAction: "urn:startTranslationJob"
+
+<SOAP-ENV:Envelope xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+						 xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+						 xmlns:ZSI="http://www.zolera.com/schemas/ZSI/"
+						 xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+						 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <SOAP-ENV:Header>
+  </SOAP-ENV:Header>
+  <SOAP-ENV:Body xmlns:ns1="http://broker.remote.expres.psnc.pl/xsd">
+	 <ns1:startTranslationJob>
+		<ns1:param0 xmlns:ns2="http://jobinfo.broker.remote.expres.psnc.pl/xsd">
+		  <ns2:brokerIPAddress>jop32</ns2:brokerIPAddress>
+		  <ns2:chunkSize>64000000</ns2:chunkSize>
+		  <ns2:dataLocation>n08c1.vix</ns2:dataLocation>
+		  <ns2:endTime>2008y070d17h09m03s</ns2:endTime>
+		  <ns2:experimentName>N08C1</ns2:experimentName>
+		  <ns2:startTime>2008y070d17h08m59s</ns2:startTime>
+		  <ns2:telescopeName>Wb</ns2:telescopeName>
+		</ns1:param0>
+	 </ns1:startTranslationJob>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope> 
