@@ -3,7 +3,8 @@
 # 2007, Developed by Nico Kruithof <Kruithof@jive.nl>
 
 import sys, re
-from vex_parser import Vex
+#from vex_parser import Vex
+from Vex import Vex
 import simplejson
 import pprint
 
