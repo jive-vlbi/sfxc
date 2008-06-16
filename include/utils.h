@@ -97,13 +97,13 @@ extern int RANK_OF_NODE; // Rank of the current node
 #endif
 
 
-void abort_sfxc(char *file, int line, char *message);
+void abort_sfxc(const char *file, int line, const char* message);
 
 #define SFXC_ASSERT(c) \
-  { if (!(c)) abort_sfxc(__FILE__, __LINE__, #c); }
+  { if (!(c)) abort_sfxc(__FILE__, __LINE__, #c ); }
 
 #define SFXC_ASSERT_MSG(c, msg) \
-  { if (!(c)) abort_sfxc(__FILE__, __LINE__, msg); }
+  { if (!(c)) abort_sfxc(__FILE__, __LINE__, msg ); }
 
 
 #define USE_DOUBLE
