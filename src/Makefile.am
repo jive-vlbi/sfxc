@@ -36,12 +36,10 @@ OBJ=\
   channel_extractor_brute_force.cc \
   channel_extractor_5.cc \
   channel_extractor_utils.cc \
-  tasklet/mutex.cc \
   tasklet/tasklet.cc \
   tasklet/tasklet_manager.cc \
   tasklet/tasklet_pool.cc \
-  tasklet/tasklet_worker.cc \
-  tasklet/thread.cc
+  tasklet/tasklet_worker.cc
 
 sfxc_SOURCES = $(OBJ) sfxc.cc \
   node.cc manager_node.cc log_node.cc \
@@ -64,6 +62,6 @@ sfxc_DEPENDENCIES = update_svn_version svn_version.$(OBJEXT)
 
 svn_version.cc: update_svn_version
 
-update_svn_version: 
+update_svn_version:
 	echo "char *SVN_VERSION=\"`svnversion -n ..`\";" > svn_version.cc
 
