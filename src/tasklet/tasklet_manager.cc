@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cassert>
+#include "thread.h"
 #include "tasklet/singleton.h"
-#include "tasklet/thread.h"
 #include "tasklet/tasklet_pool.h"
 #include "tasklet/tasklet_worker.h"
 #include "tasklet/tasklet_manager.h"
