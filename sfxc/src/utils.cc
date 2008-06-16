@@ -23,7 +23,7 @@
 
 int RANK_OF_NODE = -1; // Rank of the current node
 
-void abort_sfxc(char *file, int line, char *message) {
+void abort_sfxc(const char *file, int line, const char* message) {
   std::cout << "#" << RANK_OF_NODE << " "
   << file << ", l" << line
   << ", Assertion failed: " << message << std::endl;
