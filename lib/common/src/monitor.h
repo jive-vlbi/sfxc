@@ -342,4 +342,6 @@ std::string QOS_MonitorState<T>::toString() {
   return out.str();
 }
 
+double tickToSec(uint64_t ticks);
+
 #endif // MONITOR_HH
