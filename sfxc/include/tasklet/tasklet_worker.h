@@ -2,7 +2,7 @@
 #define TASKLETWORKER_HH
 
 #include <string>
-#include "tasklet/thread.h"
+#include "thread.h"
 
 class Tasklet_pool;
 

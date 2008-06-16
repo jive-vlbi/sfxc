@@ -2,6 +2,7 @@
 #define TASKLETMANAGER_HH
 
 #include <vector>
+#include "thread.h"
 
 class Tasklet;
 class Tasklet_pool;

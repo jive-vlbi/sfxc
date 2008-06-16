@@ -42,8 +42,9 @@ void ThreadPool::register_thread(Thread& thread) {
 void ThreadPool::wait_for_all_termination() {
   for (unsigned int i=0;i<m_vectorthread.size();i++) {
     void *retval;
-    pthread_join( (m_vectorthread[i]->m_threadid), &retval );
-    //std::cout << "Thread number " << i << " is terminated" << std::endl;
+
+    CHECK_ZERO( pthread_join( (m_vectorthread[i]->m_threadid), &retval ) );
+    std::cout << "Thread number " << i << " is terminated" << std::endl;
   }
   //std::cout << " Normal thread termination " << m_vectorthread.size() << " threads" << std::endl;
 }
@@ -56,6 +57,7 @@ void ThreadPool::start_all() {
 
 void ThreadPool::stop_all() {
   for (unsigned int i=0;i<m_vectorthread.size();i++) {
+  	std::cout << "Stopping thread:" << i << std::endl;
     m_vectorthread[i]->stop();
   }
 }
@@ -102,16 +104,16 @@ Thread::~Thread() {
 }
 
 Thread& Thread::start() {
-  int rc = pthread_create(&m_threadid, NULL, execute, (void *)this);
-  if (rc) {
-    Backtrace bt(__PRETTY_FUNCTION__);
-    throw ThreadException("Unable to create a thread", bt);
-  }
+  CHECK_ZERO( pthread_create(&m_threadid, NULL, execute, (void *)this) );
+  CHECK_ZERO( pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) );
+  set_cancel_state(true);
+
   return *this;
 }
 
 void Thread::stop() {
   isrunning_ = false;
+  CHECK_ZERO( pthread_cancel(m_threadid) );
 }
 
 void* Thread::execute(void *param) {
@@ -129,4 +131,13 @@ void* Thread::execute(void *param) {
   }
 
   return NULL;
+}
+
+void Thread::set_cancel_state(bool state)
+{
+	if( state == true ){
+		CHECK_ZERO( pthread_setcancelstate( PTHREAD_CANCEL_ENABLE, NULL ) );
+	}else{
+		CHECK_ZERO( pthread_setcancelstate( PTHREAD_CANCEL_DISABLE, NULL ) );
+	}
 }
