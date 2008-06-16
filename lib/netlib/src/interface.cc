@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <ifaddrs.h>
+#include <sys/socket.h>
 
 #include "common.h"
 #include "exception_common.h"
@@ -100,14 +101,14 @@ Connexion_listener* InterfaceIP::create_listener_autonum(const int portnum) {
   return new Connexion_listener(serversocket, port, this);
 }
 
-Connexion* InterfaceIP::connect_to(const std::string& ipaddress, const std::string& port) {
+Connexion* InterfaceIP::connect_to(const std::string& ipaddress, const std::string& port, int type) {
   uint16_t porto;
   std::istringstream s(port);
   s >> porto;
-  return connect_to(ipaddress, porto);
+  return connect_to(ipaddress, porto, type);
 }
 
-Connexion* InterfaceIP::connect_to(const std::string& ipaddress, unsigned short port) {
+Connexion* InterfaceIP::connect_to(const std::string& ipaddress, unsigned short port, int type) {
   int socketDescriptor;
   struct sockaddr_in serverAddress;
   struct sockaddr_in localAddress;
@@ -118,9 +119,9 @@ Connexion* InterfaceIP::connect_to(const std::string& ipaddress, unsigned short 
   // "SOCK_STREAM" means it will be a reliable connection (i.e., TCP;
   // for UDP use SOCK_DGRAM), and I'm not sure what the 0 for the last
   // parameter means, but it seems to work.
-  socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
+  socketDescriptor = socket(AF_INET, type, 0);
   if (socketDescriptor < 0) {
-    MTHROW("Unable to bind to a socket");
+    MTHROW("Unable to create the socket");
     return NULL;
   }
 
@@ -178,4 +179,50 @@ Connexion* InterfaceIP::connect_to(const std::string& ipaddress, unsigned short 
   }
 
   return new Connexion(socketDescriptor);
+}
+
+EndpointIP* InterfaceIP::create_endpoint()
+{
+  return create_endpoint( 0 );
+}
+
+EndpointIP* InterfaceIP::create_endpoint(unsigned short port)
+{
+  int socketDescriptor;
+  struct sockaddr_in localAddress;
+  struct hostent *hostInfo;
+
+  // Create a socket.  "AF_INET" means it will use the IPv4 protocol.
+  // "SOCK_STREAM" means it will be a reliable connection (i.e., TCP;
+  // for UDP use SOCK_DGRAM), and I'm not sure what the 0 for the last
+  // parameter means, but it seems to work.
+  socketDescriptor = socket(AF_INET, SOCK_DGRAM, 0);
+  if (socketDescriptor < 0) {
+    MTHROW("Unable to create a dgramm socket ");
+    return NULL;
+  }
+
+  // Get the info for the local host
+  if ( name() == "any" ) {
+    localAddress.sin_addr.s_addr = INADDR_ANY;
+  } else {
+    hostInfo = gethostbyname( ip().c_str() );
+    if (hostInfo == NULL) {
+      std::cout << "problem interpreting local host: " << ip() << "\n";
+      return NULL;
+    }
+    memcpy((char *) &localAddress.sin_addr.s_addr, hostInfo->h_addr_list[0], hostInfo->h_length);
+  }
+
+  localAddress.sin_family = AF_INET;
+  localAddress.sin_port = 0;
+
+  // The socket is bounded to the local address
+  if (bind(socketDescriptor, (struct sockaddr *) &localAddress, sizeof(localAddress)) == -1 ) {
+    std::cout << "cannot bind socket to " << ip() << ":" << 0 << std::endl;
+    close(socketDescriptor);
+    MTHROW("Unable to bind to a socket");
+  }
+
+  return new EndpointIP(socketDescriptor);
 }

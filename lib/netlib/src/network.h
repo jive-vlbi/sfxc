@@ -12,6 +12,7 @@
 #include "common.h"
 
 #include "interface.h"
+#include "connexion.h"
 
 #ifdef ENABLE_TEST_UNIT
 #include "Test_unit.h"
@@ -32,6 +33,9 @@ public:
 
   static pInterfaceIP scan_interfaces();
 
+	static pConnexion connect_to(const std::string& ipaddress, unsigned short port, int type=SOCK_STREAM);
+
+	static EndpointIP* create_endpoint(unsigned short port=0);
 protected:
 
 private:
