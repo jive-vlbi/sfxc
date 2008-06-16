@@ -79,6 +79,21 @@ protected:
     }
 
 
+#define CHECK_MALLOC( condi )     \
+    if ( !(condi) )  \
+    {                                       \
+        Backtrace bt;      \
+        throw Exception("Memory allocation exception: ", bt);  \
+    }
+
+
+#define CHECK_ZERO( condi )     \
+    if ( (condi) != 0 )  \
+    {                                       \
+        Backtrace bt;      \
+        throw Exception("Function call fails: "+String(#condi), bt);  \
+    }
+
 
 /******************************************
 * Use this in your code in order to allow
