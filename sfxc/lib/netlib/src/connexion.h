@@ -14,6 +14,8 @@
 #ifndef CONNEXION_H
 #define CONNEXION_H
 
+#include <sys/socket.h>
+
 #ifdef ENABLE_TEST_UNIT
 #include "Test_unit.h"
 #endif // ENABLE_TEST_UNIT
@@ -67,5 +69,52 @@ protected:
 };
 
 typedef Connexion* pConnexion;
+
+/****************************************
+* @class Connexion
+* @desc wrap around a socket descriptor
+****************************************/
+class EndpointIP {
+public:
+  /************************************
+  * Create a Connexion object. The
+  * objet is in a non-connected state.
+  *************************************/
+  EndpointIP() {
+    m_socket = -1;
+  }
+
+  /************************************
+  * Create a Connexion object using the
+  * given socket. The object is in a
+  * connected state.
+  *************************************/
+  EndpointIP(int socket) {
+    m_socket = socket;
+  }
+
+
+  /***************************************
+  * Accessor to the underlying socket id
+  ***************************************/
+  int get_socket() {
+    return m_socket;
+  }
+
+  int socket() {
+    return m_socket;
+  }
+
+  int get_port();
+
+  // those two function have to be implemented
+  //void connect_to();
+  //void connect_to(pInterface);
+protected:
+  int m_socket;
+};
+
+
+
 
 #endif // CONNEXION_H

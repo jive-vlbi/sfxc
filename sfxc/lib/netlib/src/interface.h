@@ -27,11 +27,10 @@
  */
 
 #ifndef INTERFACE_H
-
 #define INTERFACE_H
 
 
-
+#include <sys/socket.h>
 #include "common.h"
 
 #include "tcp_connection.h"
@@ -39,6 +38,7 @@
 
 
 class Connexion;
+class EndpointIP;
 
 class Connexion_listener;
 
@@ -101,9 +101,11 @@ public:
   Connexion_listener* create_listener_autonum(const int portnum);
 
   // return a valid connexion to the esthablished endpoint
-  Connexion* connect_to(const std::string& ipaddress, const std::string& port);
-  Connexion* connect_to(const std::string& ipaddress, unsigned short port);
+  Connexion* connect_to(const std::string& ipaddress, const std::string& port, int type=SOCK_STREAM);
+  Connexion* connect_to(const std::string& ipaddress, unsigned short port, int type=SOCK_STREAM);
 
+	EndpointIP* create_endpoint();
+  EndpointIP* create_endpoint(unsigned short port);
 private:
   int open_port(const String& interfacename, unsigned short int port);
 };

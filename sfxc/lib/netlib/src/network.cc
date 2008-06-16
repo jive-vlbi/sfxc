@@ -208,3 +208,12 @@ InterfaceIP* Network::get_interface_by_preffered(Vector_string& prefferedif) {
 
 }
 
+pConnexion Network::connect_to(const String& ipaddress, unsigned short port, int type)
+{
+		return get_any_interface()->connect_to(ipaddress, port, type);
+}
+
+EndpointIP* Network::create_endpoint(unsigned short port)
+{
+		return get_any_interface()->create_endpoint(port);
+}
