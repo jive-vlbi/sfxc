@@ -14,6 +14,12 @@ public:
     FREQUENCY =0,
     LAG
   };
+  enum VALUE {
+    REAL = 0,
+    IMAG,
+    ABS,
+    PHASE
+  };
 
   Fringe_info() : initialised(false) {}
 
@@ -22,7 +28,7 @@ public:
               const std::vector< std::complex<float> > &data_lag_);
 
   void plot(char *filename, char *filename_large,
-            char *title, SPACE space) const;
+            char *title, SPACE space, VALUE value) const;
 
   float signal_to_noise_ratio() const;
 
@@ -68,7 +74,9 @@ private:
                          char *filename_large,
                          char *title,
                          int size,
-                         const Fringe_info &data);
+                         const Fringe_info &data,
+                         const Fringe_info::SPACE space,
+                         const Fringe_info::VALUE value);
 
   void print_auto(std::ostream &index_html,
                   const Fringe_info &fringe_info);
