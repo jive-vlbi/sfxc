@@ -27,18 +27,58 @@ bool Fringe_info::operator<(const Fringe_info &other) const {
 }
 
 void Fringe_info::plot(char *filename, char *filename_large, char *title,
-                       SPACE space) const {
+                       SPACE space, VALUE value) const {
   std::vector<float> data;
   if (space == FREQUENCY) {
     data.resize(data_freq.size());
-    for (size_t i=0; i<data.size(); i++)
-      data[i] = std::abs(data_freq[i]);
+    switch (value) {
+    case REAL: {
+      for (size_t i=0; i<data.size(); i++)
+        data[i] = data_freq[i].real();
+      break;
+    }
+    case IMAG: {
+      for (size_t i=0; i<data.size(); i++)
+        data[i] = data_freq[i].imag();
+      break;
+    }
+    case ABS: {
+      for (size_t i=0; i<data.size(); i++)
+        data[i] = std::abs(data_freq[i]);
+      break;
+    }
+    case PHASE: {
+      for (size_t i=0; i<data.size(); i++)
+        data[i] = std::arg(data_freq[i]);
+      break;
+    }
+    }
   } else {
     assert(space == LAG);
     size_t size = data_lag.size();
     data.resize(size);
-    for (size_t i=0; i<size; i++)
-      data[i] = std::abs(data_lag[i]);
+    switch (value) {
+    case REAL: {
+      for (size_t i=0; i<data.size(); i++)
+        data[i] = data_lag[i].real();
+      break;
+    }
+    case IMAG: {
+      for (size_t i=0; i<data.size(); i++)
+        data[i] = data_lag[i].imag();
+      break;
+    }
+    case ABS: {
+      for (size_t i=0; i<data.size(); i++)
+        data[i] = std::abs(data_lag[i]);
+      break;
+    }
+    case PHASE: {
+      for (size_t i=0; i<data.size(); i++)
+        data[i] = std::arg(data_lag[i]);
+      break;
+    }
+    }
   }
 
   char cmd[80];
@@ -341,7 +381,8 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
         }
 
         char filename[80], filename_large[80], title[80];
-        generate_filename(filename, filename_large, title, 80, first_plot);
+        generate_filename(filename, filename_large, title, 80, first_plot,
+                          Fringe_info::FREQUENCY, Fringe_info::ABS);
         index_html << "<td rowspan=99><img src=\""
         << filename << "\" name=\"plot_image\"></td>" << std::endl;
         index_html << "</tr>" << std::endl;
@@ -462,7 +503,9 @@ generate_filename(char *filename,
                   char *filename_large,
                   char *title,
                   int size,
-                  const Fringe_info &data) {
+                  const Fringe_info &data,
+                  const Fringe_info::SPACE space,
+                  const Fringe_info::VALUE value) {
   int sideband = data.header.sideband;
   char sideband_ch = (sideband == 0 ? 'l' : 'u');
   int channel  = data.header.frequency_nr;
@@ -480,11 +523,13 @@ generate_filename(char *filename,
     assert(plots.find(data) != plots.end());
   }
   snprintf(filename, size,
-           "st%02d_%ccp-st%02d_%ccp-ch%01d-%csb.png",
-           station1, pol1_ch, station2, pol2_ch, channel, sideband_ch);
+           "st%02d_%ccp-st%02d_%ccp-ch%01d-%csb-%d-%d.png",
+           station1, pol1_ch, station2, pol2_ch, channel, sideband_ch,
+           (int)space, (int)value);
   snprintf(filename_large, size,
-           "st%02d_%ccp-st%02d_%ccp-ch%01d-%csb_large.png",
-           station1, pol1_ch, station2, pol2_ch, channel, sideband_ch);
+           "st%02d_%ccp-st%02d_%ccp-ch%01d-%csb-%d-%d_large.png",
+           station1, pol1_ch, station2, pol2_ch, channel, sideband_ch,
+           (int)space, (int)value);
   snprintf(title, size,
            "(st%02d,%ccp)-(st%02d,%ccp) ch%01d %csb",
            station1, pol1_ch, station2, pol2_ch, channel, sideband_ch);
@@ -499,8 +544,10 @@ print_auto(std::ostream &index_html,
   index_html << "<td>";
 
   char filename[80], filename_large[80], title[80];
-  generate_filename(filename, filename_large, title, 80, fringe_info);
-  fringe_info.plot(filename, filename_large, title, Fringe_info::FREQUENCY);
+  generate_filename(filename, filename_large, title, 80, fringe_info,
+                    Fringe_info::FREQUENCY, Fringe_info::ABS);
+  fringe_info.plot(filename, filename_large, title, 
+                   Fringe_info::FREQUENCY, Fringe_info::ABS);
   index_html << "<A href = '" << filename_large << "' "
   << "OnMouseOver=\"show('" << filename << "');\">"
   << "A" << "</a>";
@@ -513,10 +560,26 @@ print_cross(std::ostream &index_html,
             const Fringe_info &fringe_info) {
 
   if (fringe_info.initialised) {
-    char filename[80], filename_large[80], title[80];
-    generate_filename(filename, filename_large, title, 80, fringe_info);
+    char filename_abs[80], filename_large_abs[80], title[80];
+    generate_filename(filename_abs, filename_large_abs,
+                      title, 80, fringe_info,
+                      Fringe_info::FREQUENCY, Fringe_info::ABS);
+    fringe_info.plot(filename_abs, filename_large_abs, title,
+                     Fringe_info::FREQUENCY, Fringe_info::ABS);
+    
+    char filename_phase[80], filename_large_phase[80];
+    generate_filename(filename_phase, filename_large_phase,
+                      title, 80, fringe_info,
+                      Fringe_info::FREQUENCY, Fringe_info::PHASE);
+    fringe_info.plot(filename_phase, filename_large_phase, title,
+                     Fringe_info::FREQUENCY, Fringe_info::PHASE);
+
+    char filename[80], filename_large[80];
+    generate_filename(filename, filename_large,
+                      title, 80, fringe_info,
+                      Fringe_info::LAG, Fringe_info::ABS);
     fringe_info.plot(filename, filename_large, title,
-                     Fringe_info::LAG);
+                     Fringe_info::LAG, Fringe_info::ABS);
 
     double snr = fringe_info.signal_to_noise_ratio();
     int color_val =
@@ -539,12 +602,18 @@ print_cross(std::ostream &index_html,
     }
     index_html << "<A href = '" << filename_large << "' "
     << "OnMouseOver=\"show('" << filename << "');\">"
-    << snr << "<br>"
+    << snr << "</a>"
+    << " <A href = '" << filename_large_abs << "' "
+    << "OnMouseOver=\"show('" << filename_abs << "');\">"
+    << "A" << "</a>"
+    << " <A href = '" << filename_large_phase << "' "
+    << "OnMouseOver=\"show('" << filename_phase << "');\">"
+    << "P" << "</a>"
+    << "<br>"
     << "<font size=-2>offset: "
     << (fringe_info.max_value_offset() -
         global_header.number_channels/2 - 1)
-    << "</font>"
-    << "</a>";
+    << "</font>";
     index_html << "</td>";
   } else {
     index_html << "<td></td>";
@@ -595,8 +664,9 @@ print_diff(std::ostream &index_html,
   }
 
   char filename[80], filename_large[80], title[80];
-  generate_filename(filename, filename_large, title, 80, fringe_info1);
-  fringe_info1.plot(filename, filename_large, title, space);
+  generate_filename(filename, filename_large, title, 80, fringe_info1, 
+                    space, Fringe_info::ABS);
+  fringe_info1.plot(filename, filename_large, title, space, Fringe_info::ABS);
   index_html << "<A href = '" << filename_large << "' "
   << "OnMouseOver=\"show('" << filename << "');\">"
   << max_diff << "</a>";
@@ -748,7 +818,9 @@ print_diff_html(const Vex &vex,
         }
 
         char filename[80], filename_large[80], title[80];
-        generate_filename(filename, filename_large, title, 80, first_plot);
+        generate_filename(filename, filename_large, 
+                          title, 80, first_plot,
+                          Fringe_info::FREQUENCY, Fringe_info::ABS);
         index_html << "<td rowspan=99><img src=\""
         << filename << "\" name=\"plot_image\"></td>" << std::endl;
         index_html << "</tr>" << std::endl;
