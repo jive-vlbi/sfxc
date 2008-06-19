@@ -47,7 +47,7 @@ public:
 
   //read the delay table, do some checks and
   //calculate coefficients for parabolic interpolation
-  int open(const char *delayTableName);
+  void open(const char *delayTableName);
 
   //calculate the delay for the delayType at time in microseconds
   double delay(int64_t time);
