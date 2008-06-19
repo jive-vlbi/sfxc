@@ -2,7 +2,7 @@
 #define OUTPUT_NODE_DATA_READER_TASKLET_H
 
 #include "tasklet/tasklet.h"
-#include <boost/shared_ptr.hpp>
+#include <tr1/memory>
 
 #include "data_writer.h"
 #include "utils.h"

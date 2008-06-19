@@ -3,7 +3,7 @@
 #define ALLOCATOR_H_INCLUDED
 
 
-#include <boost/shared_ptr.hpp>
+#include <tr1/memory>
 
 
 template<class T>
@@ -11,7 +11,7 @@ template<class T>
 class Allocator {
 
 public:
-  typedef boost::shared_ptr< Allocator<T> > SelfPtr;
+  typedef std::tr1::shared_ptr< Allocator<T> > SelfPtr;
 
 
   virtual ~Allocator() {};

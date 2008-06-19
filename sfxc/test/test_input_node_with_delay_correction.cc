@@ -14,7 +14,7 @@
 #include "data_reader_file.h"
 #include "data_writer_file.h"
 #include "data_writer_void.h"
-#include <boost/shared_ptr.hpp>
+shared_pointer.hpp>/shared_ptr.hpp>
 
 int NR = 5;
 
@@ -40,7 +40,7 @@ int main(int argc, char*argv[]) {
   std::string data_source = control_parameters.data_sources(station)[0];
 
   // Open data reader
-  boost::shared_ptr<Data_reader> data_reader(new Data_reader_file(data_source));
+  std::tr1::shared_ptr<Data_reader> data_reader(new Data_reader_file(data_source));
 
   // Open input node tasklet
   Input_node_tasklet *input_node_tasklet;
@@ -84,14 +84,14 @@ int main(int argc, char*argv[]) {
 
   { // Set data writers
     assert(control_parameters.number_frequency_channels() > 0);
-    boost::shared_ptr<Data_writer> data_writer;
+    std::tr1::shared_ptr<Data_writer> data_writer;
 
     for (size_t i=0; i<control_parameters.number_frequency_channels(); i++) {
       char filename[80];
       sprintf(filename, "file://output%d.bin", (int)i);
       data_writer =
-        boost::shared_ptr<Data_writer>(new Data_writer_file(filename));
-      //data_writer = boost::shared_ptr<Data_writer>(new Data_writer_void());
+        std::tr1::shared_ptr<Data_writer>(new Data_writer_file(filename));
+      //data_writer = std::tr1::shared_ptr<Data_writer>(new Data_writer_void());
 
       // Output all data
       input_node_tasklet->add_data_writer(i, data_writer,

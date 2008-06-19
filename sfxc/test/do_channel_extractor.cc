@@ -10,7 +10,7 @@ const FLOAT sample_value_ms[] = {
 
 template <class Type>
 void print_tracks(Type /* No name */,
-                  boost::shared_ptr<Data_reader> reader,
+                  std::tr1::shared_ptr<Data_reader> reader,
                   char *buffer,
                   Control_parameters &parameters,
                   std::ostream &out) {
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
   std::string filename = parameters.data_sources(station)[0];
   std::cerr << "Filename: " << filename << std::endl;
 
-  boost::shared_ptr<Data_reader> data_reader(new Data_reader_file(filename));
+  std::tr1::shared_ptr<Data_reader> data_reader(new Data_reader_file(filename));
   char buffer[SIZE_MK5A_FRAME];
   int n_tracks = find_start_of_header(data_reader, buffer);
 

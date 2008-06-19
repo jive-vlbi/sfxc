@@ -24,9 +24,9 @@ public:
   void goto_time(int64_t time);
   void write_block();
 private:
-  boost::shared_ptr<Channel_extractor_mark5a> channel_extractor;
+  std::tr1::shared_ptr<Channel_extractor_mark5a> channel_extractor;
   Input_node_parameters input_node_parameters;
-  std::vector< boost::shared_ptr<Data_writer> >   output_writers;
+  std::vector< std::tr1::shared_ptr<Data_writer> >   output_writers;
 
   // fanout is at most 8/n_bits_per_sample
   std::vector< char* > buffer;
@@ -121,10 +121,10 @@ Channel_extractor_tester::
 Channel_extractor_tester(const std::string &input_filename,
                          Input_node_parameters &parameters)
     : input_node_parameters(parameters) {
-  boost::shared_ptr<Data_reader>
+  std::tr1::shared_ptr<Data_reader>
   reader(new Data_reader_file(input_filename.c_str()));
 
-  channel_extractor = boost::shared_ptr<Channel_extractor_mark5a>
+  channel_extractor = std::tr1::shared_ptr<Channel_extractor_mark5a>
                       (new Channel_extractor_mark5a(reader,
                                                    /*random headers*/false));
   channel_extractor->set_input_node_parameters(input_node_parameters);
@@ -139,10 +139,10 @@ Channel_extractor_tester(const std::string &input_filename,
 void
 Channel_extractor_tester::
 writer(int channel, const std::string &filename) {
-  // boost::shared_ptr<Data_writer>(new Data_writer_file(filename));
+  // std::tr1::shared_ptr<Data_writer>(new Data_writer_file(filename));
   assert ((size_t)channel < output_writers.size());
   output_writers[channel] =
-    boost::shared_ptr<Data_writer>(new Data_writer_file(filename.c_str()));
+    std::tr1::shared_ptr<Data_writer>(new Data_writer_file(filename.c_str()));
 }
 
 
@@ -158,7 +158,7 @@ Channel_extractor_tester::
 write_block() {
   int size = channel_extractor->get_bytes(buffer);
   for (size_t i=0; i<output_writers.size(); i++) {
-    if (output_writers[i] != boost::shared_ptr<Data_writer>()) {
+    if (output_writers[i] != std::tr1::shared_ptr<Data_writer>()) {
       assert(size < 8*SIZE_MK5A_FRAME);
       output_writers[i]->put_bytes(size, buffer[i]);
     }

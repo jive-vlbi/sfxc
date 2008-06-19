@@ -31,9 +31,9 @@ public:
     pool_type data;
   };
   typedef Threadsafe_queue<value_type>               Queue;
-  typedef boost::shared_ptr<Queue>                   Queue_ptr;
+  typedef std::tr1::shared_ptr<Queue>                   Queue_ptr;
 
-  typedef boost::shared_ptr<Data_writer>   Data_writer_ptr;
+  typedef std::tr1::shared_ptr<Data_writer>   Data_writer_ptr;
 
   Multiple_data_writers_controller(Node &node, int max_connections);
   ~Multiple_data_writers_controller();

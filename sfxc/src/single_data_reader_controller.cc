@@ -35,7 +35,7 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
       SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
       SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
-      boost::shared_ptr<Data_reader>
+      std::tr1::shared_ptr<Data_reader>
       reader(Data_reader_factory::get_reader(filename));
 
       set_data_reader(stream_nr, reader);
@@ -63,7 +63,7 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
       int32_t stream_nr = ip_addr[0];
       uint64_t port = ip_addr[size-1];
 
-      boost::shared_ptr<Data_reader>
+      std::tr1::shared_ptr<Data_reader>
       reader(new Data_reader_tcp(ip_addr+1, size-2, port));
       set_data_reader(stream_nr, reader);
 
@@ -101,7 +101,7 @@ set_queue(Queue_ptr queue) {
   SFXC_ASSERT_MSG(false, "No buffering for the time being");
 }
 
-boost::shared_ptr<Data_reader>
+std::tr1::shared_ptr<Data_reader>
 Single_data_reader_controller::get_data_reader(int reader) {
   SFXC_ASSERT(reader == 0);
   SFXC_ASSERT(reader2buffer.get_data_reader() != NULL);
@@ -110,7 +110,7 @@ Single_data_reader_controller::get_data_reader(int reader) {
 
 void
 Single_data_reader_controller::
-set_data_reader(int stream_nr, boost::shared_ptr<Data_reader> reader) {
+set_data_reader(int stream_nr, std::tr1::shared_ptr<Data_reader> reader) {
   SFXC_ASSERT(stream_nr == 0);
   SFXC_ASSERT(reader2buffer.get_data_reader() == NULL);
 

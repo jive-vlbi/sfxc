@@ -47,7 +47,7 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       int32_t stream_nr = ip_addr[0];
       uint64_t port = ip_addr[size-1];
 
-      boost::shared_ptr<Data_reader>
+      std::tr1::shared_ptr<Data_reader>
       reader(new Data_reader_tcp(ip_addr+1, size-2, port));
       add_data_reader(stream_nr, reader);
 
@@ -73,7 +73,7 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
       SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
-      boost::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
+      std::tr1::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
       add_data_reader(stream_nr, reader);
 
       MPI_Send(&stream_nr, 1, MPI_INT32,
@@ -102,7 +102,7 @@ enable_buffering(unsigned int i) {
   data_readers[i]->set_queue(queue);
   data_readers[i]->start();
 
-  buffer_readers[i] = boost::shared_ptr<Reader_buffer>(new Reader_buffer(queue));
+  buffer_readers[i] = std::tr1::shared_ptr<Reader_buffer>(new Reader_buffer(queue));
 }
 
 Multiple_data_readers_controller::Queue_ptr
@@ -112,14 +112,14 @@ Multiple_data_readers_controller::get_queue(unsigned int i) {
   return Queue_ptr();
 }
 
-boost::shared_ptr<Data_reader>
+std::tr1::shared_ptr<Data_reader>
 Multiple_data_readers_controller::get_data_reader(int i) {
   SFXC_ASSERT((size_t)i < data_readers.size());
   SFXC_ASSERT(data_readers[i] != NULL);
 
   reader_known[i] = true;
 
-  if (buffer_readers[i] != boost::shared_ptr<Reader_buffer>()) {
+  if (buffer_readers[i] != std::tr1::shared_ptr<Reader_buffer>()) {
     return buffer_readers[i];
   }
   return data_readers[i]->get_data_reader();
@@ -139,13 +139,13 @@ size_t Multiple_data_readers_controller::number_of_data_readers() {
 void
 Multiple_data_readers_controller::add_data_reader
 (int i,
- boost::shared_ptr<Data_reader> reader) {
+ std::tr1::shared_ptr<Data_reader> reader) {
   // This is false after the first call of get_vector_data_readers()
 
   if (data_readers.size() <= (unsigned int)i) {
     data_readers.resize(i+1, NULL);
     reader_known.resize(i+1, false);
-    buffer_readers.resize(i+1, boost::shared_ptr<Reader_buffer>());
+    buffer_readers.resize(i+1, std::tr1::shared_ptr<Reader_buffer>());
   }
   SFXC_ASSERT((uint32_t)i < data_readers.size());
 

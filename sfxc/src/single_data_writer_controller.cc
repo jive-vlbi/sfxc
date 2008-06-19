@@ -48,7 +48,7 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
       SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
       SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
-      boost::shared_ptr<Data_writer> writer(new Data_writer_file(filename));
+      std::tr1::shared_ptr<Data_writer> writer(new Data_writer_file(filename));
       set_data_writer(stream_nr, writer);
 
       MPI_Send(&stream_nr, 1, MPI_INT32,
@@ -66,7 +66,7 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
       SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
       SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
-      boost::shared_ptr<Data_writer> writer(new Data_writer_void());
+      std::tr1::shared_ptr<Data_writer> writer(new Data_writer_void());
       set_data_writer((int)stream_nr, writer);
 
       MPI_Send(&stream_nr, 1, MPI_INT32,
@@ -109,7 +109,7 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
 
       data_writer->open_connection(tcp_connection);
 
-      boost::shared_ptr<Data_writer> writer(data_writer);
+      std::tr1::shared_ptr<Data_writer> writer(data_writer);
       set_data_writer(ranks[0], writer);
       //add_data_writer(ranks[0], writer, ranks[2], ranks[1]);
 
@@ -141,7 +141,7 @@ set_queue(Queue_ptr queue) {
   buffer2writer.try_start();
 }
 
-boost::shared_ptr<Data_writer>
+std::tr1::shared_ptr<Data_writer>
 Single_data_writer_controller::get_data_writer(int i) {
   return buffer2writer.get_data_writer();
 }
@@ -149,7 +149,7 @@ Single_data_writer_controller::get_data_writer(int i) {
 
 void
 Single_data_writer_controller::
-set_data_writer(int streamnr, boost::shared_ptr<Data_writer> writer) {
+set_data_writer(int streamnr, std::tr1::shared_ptr<Data_writer> writer) {
   SFXC_ASSERT(streamnr == 0);
   SFXC_ASSERT(buffer2writer.get_data_writer() == NULL);
   buffer2writer.set_data_writer(writer);

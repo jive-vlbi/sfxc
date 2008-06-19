@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
   typedef Correlator_node_types::Bit_sample_queue Bit_sample_queue;
   typedef Bit_sample_queue::value_type            Bit_sample_queue_elem;
 
-  boost::shared_ptr<Data_reader> reader(new Data_reader_file(infile));
+  std::tr1::shared_ptr<Data_reader> reader(new Data_reader_file(infile));
   Correlator_node_data_reader_tasklet corr_data_reader;
 
   corr_data_reader.connect_to(reader);

@@ -11,7 +11,7 @@
 #define INPUT_NODE_TYPES_H
 
 #include <vector>
-#include <boost/shared_ptr.hpp>
+#include <tr1/memory>
 #include <threadsafe_queue.h>
 
 #include "memory_pool.h"
@@ -40,7 +40,7 @@ public:
   /// Buffer for mark5 data frames
   typedef Mark5_memory_pool_element                 Mark5_buffer_element;
   typedef Threadsafe_queue<Mark5_buffer_element>    Mark5_buffer;
-  typedef boost::shared_ptr<Mark5_buffer>           Mark5_buffer_ptr;
+  typedef std::tr1::shared_ptr<Mark5_buffer>           Mark5_buffer_ptr;
 
   // Memory pool for dechannelized data
   struct Channel_memory_pool_data {
@@ -67,7 +67,7 @@ public:
   };
   typedef Channel_buffer_element_                  Channel_buffer_element;
   typedef Threadsafe_queue<Channel_buffer_element> Channel_buffer;
-  typedef boost::shared_ptr<Channel_buffer>        Channel_buffer_ptr;
+  typedef std::tr1::shared_ptr<Channel_buffer>        Channel_buffer_ptr;
 
   /// Buffer for fft buffers
   struct Fft_buffer_element_ {
@@ -94,7 +94,7 @@ public:
   };
   typedef Fft_buffer_element_                      Fft_buffer_element;
   typedef Threadsafe_queue<Fft_buffer_element>     Fft_buffer;
-  typedef boost::shared_ptr<Fft_buffer>            Fft_buffer_ptr;
+  typedef std::tr1::shared_ptr<Fft_buffer>            Fft_buffer_ptr;
 
   Input_node_types() {}
 }

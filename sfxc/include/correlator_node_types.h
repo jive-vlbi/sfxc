@@ -46,12 +46,12 @@ public:
   typedef Memory_pool<Bit_sample_element>                  Bit_sample_memory_pool;
   typedef Bit_sample_memory_pool::Element                  Bit_sample_memory_pool_element;
   typedef Threadsafe_queue<Bit_sample_memory_pool_element> Bit_sample_queue;
-  typedef boost::shared_ptr<Bit_sample_queue>              Bit_sample_queue_ptr;
+  typedef std::tr1::shared_ptr<Bit_sample_queue>              Bit_sample_queue_ptr;
 
   typedef Memory_pool_vector_element<FLOAT>                Float_element;
   typedef Memory_pool<Float_element>                       Float_memory_pool;
   typedef Threadsafe_queue<Float_memory_pool::Element>     Float_queue;
-  typedef boost::shared_ptr<Float_queue>                   Float_queue_ptr;
+  typedef std::tr1::shared_ptr<Float_queue>                   Float_queue_ptr;
 };
 
 #endif // CORRELATOR_NODE_TYPES_H

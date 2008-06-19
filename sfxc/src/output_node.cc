@@ -222,14 +222,14 @@ Output_node::set_number_of_time_slices(int n_time_slices) {
  *  Input_stream
  */
 
-Output_node::Input_stream::Input_stream(boost::shared_ptr<Data_reader> reader)
+Output_node::Input_stream::Input_stream(std::tr1::shared_ptr<Data_reader> reader)
     : reader(reader) {
   reader->set_size_dataslice(0);
 }
 
 void
 Output_node::Input_stream::write_bytes(output_value_type &elem) {
-  SFXC_ASSERT(reader != boost::shared_ptr<Data_reader>());
+  SFXC_ASSERT(reader != std::tr1::shared_ptr<Data_reader>());
   if (elem.data->size() != 1000000)
     elem.data->resize(1000000);
   size_t nBytes = std::min(elem.data->size(),
