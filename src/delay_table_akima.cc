@@ -65,15 +65,18 @@ bool Delay_table_akima::operator==(const Delay_table_akima &other) const {
 
 //read the delay table, do some checks and
 //calculate coefficients for parabolic interpolation
-int Delay_table_akima::open(const char *delayTableName) {
+void Delay_table_akima::open(const char *delayTableName) {
   std::ifstream in(delayTableName);
   SFXC_ASSERT(in.is_open());
   int32_t header_size;
 
   // Read the header
   in.read(reinterpret_cast < char * > (&header_size), sizeof(int32_t));
+  if (in.eof()) return;
+
   char header[header_size];
   in.read(reinterpret_cast < char * > (header), header_size*sizeof(char));
+  if (in.eof()) return;
 
   // Read the data
   double line[5];
@@ -93,7 +96,7 @@ int Delay_table_akima::open(const char *delayTableName) {
     DEBUG_MSG("Could not read delay table " << delayTableName);
   }
 
-  return 0;
+  return;
 }
 
 bool Delay_table_akima::initialise_next_scan() {

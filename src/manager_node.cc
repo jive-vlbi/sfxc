@@ -425,7 +425,12 @@ Manager_node::initialise() {
       DEBUG_MSG("Delay table could not be read");
       control_parameters.generate_delay_table(station_name, delay_file);
       delay_table.open(delay_file.c_str());
-      SFXC_ASSERT(delay_table.initialised());
+      char msg[120];
+      snprintf(msg, 120, 
+               "Coudn't generate delay table, please remove '%s' and restart the correlator",
+               delay_file.c_str());
+      SFXC_ASSERT_MSG(delay_table.initialised(),
+                      msg);
     }
 
     send(delay_table, /* station_nr */ 0, input_rank(station));
