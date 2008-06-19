@@ -62,7 +62,7 @@ public:
    **/
   class Input_stream {
   public:
-    Input_stream(boost::shared_ptr<Data_reader> reader);
+    Input_stream(std::tr1::shared_ptr<Data_reader> reader);
 
     /** Fills the buffer with as much data as possible and returns the number of
      * bytes written.
@@ -80,7 +80,7 @@ public:
     void goto_next_slice();
   private:
     // Data_reader from which the input data can be read
-    boost::shared_ptr<Data_reader> reader;
+    std::tr1::shared_ptr<Data_reader> reader;
     // list with sizes of the time slices
     std::queue<int64_t> slice_size;
   };

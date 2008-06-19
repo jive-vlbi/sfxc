@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
   }
 
 
-  boost::shared_ptr<Data_reader> reader(new Data_reader_file(argv[1]));
+  std::tr1::shared_ptr<Data_reader> reader(new Data_reader_file(argv[1]));
 
   unsigned char buffer[sizeof(int64_t)*SIZE_MK5A_FRAME];
 

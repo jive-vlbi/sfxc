@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   }
 
   char *filename = argv[1];
-  boost::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
+  std::tr1::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
   Mark5b_reader mk5b_reader(reader);
 
   unsigned char data[16*2500*sizeof(int32_t)];

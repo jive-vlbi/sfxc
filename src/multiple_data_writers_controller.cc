@@ -27,7 +27,7 @@ Multiple_data_writers_controller::
 ~Multiple_data_writers_controller() {}
 
 
-boost::shared_ptr<Data_writer>
+std::tr1::shared_ptr<Data_writer>
 Multiple_data_writers_controller::get_data_writer(size_t i) {
   SFXC_ASSERT(i < data_writers.size());
   return data_writers[i].data_writer_;
@@ -70,7 +70,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 
       data_writer->open_connection(tcp_connection);
 
-      boost::shared_ptr<Data_writer> writer(data_writer);
+      std::tr1::shared_ptr<Data_writer> writer(data_writer);
       add_data_writer(ranks[0], writer, ranks[2], ranks[1]);
 
       int32_t return_msg = 0;
@@ -100,7 +100,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
       SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
-      boost::shared_ptr<Data_writer>
+      std::tr1::shared_ptr<Data_writer>
       data_writer(new Data_writer_file(filename));
 
       add_data_writer(stream_nr, data_writer, -1, -1);
@@ -122,7 +122,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
       SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
-      boost::shared_ptr<Data_writer> data_writer(new Data_writer_void());
+      std::tr1::shared_ptr<Data_writer> data_writer(new Data_writer_void());
 
       add_data_writer(msg, data_writer, -1, -1);
 
@@ -151,7 +151,7 @@ Multiple_data_writers_controller::ready() {
 
 void
 Multiple_data_writers_controller::
-add_data_writer(unsigned int i, boost::shared_ptr<Data_writer> writer,
+add_data_writer(unsigned int i, std::tr1::shared_ptr<Data_writer> writer,
                 int rank_node_reader_, int stream_number_reader_) {
   if (data_writers.size() <= i) {
     data_writers.resize(i+1);

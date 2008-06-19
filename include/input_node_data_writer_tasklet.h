@@ -2,7 +2,7 @@
 #define INPUT_NODE_DATA_WRITER_TASKLET
 
 #include "tasklet/tasklet.h"
-#include <boost/shared_ptr.hpp>
+#include <tr1/memory>
 
 #include "data_writer.h"
 #include "utils.h"
@@ -15,7 +15,7 @@ public:
   typedef Input_node_types::Fft_buffer_element Input_buffer_element;
   typedef Input_node_types::Fft_buffer_ptr     Input_buffer_ptr;
 
-  typedef boost::shared_ptr<Data_writer>       Data_writer_ptr;
+  typedef std::tr1::shared_ptr<Data_writer>       Data_writer_ptr;
   
   // The writer can, in principle, occur multiple times in the writer_queue
   // so we store the slice size in a separate integer and set 

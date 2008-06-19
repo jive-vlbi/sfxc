@@ -13,7 +13,7 @@
 #include "utils.h"
 #include "data_reader.h"
 
-#include <boost/shared_ptr.hpp>
+#include <tr1/memory>
 
 /** Specialisation of Data_reader for reading from a buffer.
  **/

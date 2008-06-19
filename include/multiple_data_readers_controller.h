@@ -46,7 +46,7 @@ public:
 
   /** Returns the data reader, which is either the real reader or the
    *  buffered reader if a buffer is set. **/
-  boost::shared_ptr<Data_reader> get_data_reader(int i);
+  std::tr1::shared_ptr<Data_reader> get_data_reader(int i);
 
 
   /* Reader2buffer *get_data_reader2buffer(int i); */
@@ -58,14 +58,14 @@ public:
   size_t number_of_data_readers();
 private:
 
-  void add_data_reader(int i, boost::shared_ptr<Data_reader> reader);
+  void add_data_reader(int i, std::tr1::shared_ptr<Data_reader> reader);
 
   // NGHK: TODO: Factorize into a single class?
   // These are pointers, because a resize of the vector will
   // copy construct all the elements and then destroy the old
   // elements and we can't copy construct the extra threads.
   std::vector< Reader2buffer * >        data_readers;
-  std::vector< boost::shared_ptr<Reader_buffer> >
+  std::vector< std::tr1::shared_ptr<Reader_buffer> >
   buffer_readers;
   std::vector< bool >                   reader_known;
 };

@@ -9,7 +9,7 @@
 
 #ifndef DELAY_CORRECTION_H
 #define DELAY_CORRECTION_H
-#include <boost/shared_ptr.hpp>
+#include <tr1/memory>
 #include <complex>
 #include <fftw3.h>
 

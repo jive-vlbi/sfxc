@@ -6,7 +6,7 @@
 template<class T>
 class Default_allocator : public Allocator<T> {
 public:
-  typedef boost::shared_ptr<Default_allocator<T> > SelfPtr;
+  typedef std::tr1::shared_ptr<Default_allocator<T> > SelfPtr;
 
   typedef T   Type;
   typedef T* pType;

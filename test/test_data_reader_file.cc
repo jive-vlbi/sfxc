@@ -84,11 +84,11 @@ int main(int argc, char *argv[]) {
   { // Read from data_reader and write to data_writer using a buffer and two threads
     {
       typedef Buffer_element<char, 100>  value_type;
-      boost::shared_ptr<Data_reader_file>
+      std::tr1::shared_ptr<Data_reader_file>
       reader(new Data_reader_file(infile));
-      boost::shared_ptr< Semaphore_buffer<value_type> >
+      std::tr1::shared_ptr< Semaphore_buffer<value_type> >
       buffer(new Semaphore_buffer<value_type>(1000));
-      boost::shared_ptr<Data_writer_file>
+      std::tr1::shared_ptr<Data_writer_file>
       writer(new Data_writer_file(outfile));
 
       Data_reader2buffer<value_type>     reader2buffer;

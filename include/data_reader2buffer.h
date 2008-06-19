@@ -17,7 +17,7 @@
 #include <threadsafe_queue.h>
 
 #include <pthread.h>
-#include <boost/shared_ptr.hpp>
+#include <tr1/memory>
 
 /** Reads data from the data reader and puts it in a buffer,
  * which is useful for non-blocking IO.
@@ -34,9 +34,9 @@ public:
     pool_type data;
   };
   typedef Threadsafe_queue<value_type>               Queue;
-  typedef boost::shared_ptr<Queue>                   Queue_ptr;
+  typedef std::tr1::shared_ptr<Queue>                   Queue_ptr;
 
-  typedef boost::shared_ptr< Data_reader > Data_reader_ptr;
+  typedef std::tr1::shared_ptr< Data_reader > Data_reader_ptr;
 
   enum State {
     STOPPED=0, ///< Not running, the additional thread is not active
@@ -49,8 +49,8 @@ public:
   Data_reader2buffer(const Data_reader2buffer &buffer);
   ~Data_reader2buffer();
 
-  boost::shared_ptr<Data_reader> get_data_reader();
-  void set_data_reader(boost::shared_ptr<Data_reader> data_reader);
+  std::tr1::shared_ptr<Data_reader> get_data_reader();
+  void set_data_reader(std::tr1::shared_ptr<Data_reader> data_reader);
 
   Queue_ptr get_queue();
   void set_queue(Queue_ptr queue);
