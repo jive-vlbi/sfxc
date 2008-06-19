@@ -86,7 +86,8 @@ template <class T>
 Data_reader2buffer<T>::
 Data_reader2buffer(const Data_reader2buffer &buffer) {
   // No copy constructor, the threads don't like it
-  SFXC_ASSERT(false);
+  SFXC_ASSERT_MSG(false,
+                  "No copy constructor available for Data_reader2buffer");
 }
 
 template <class T>

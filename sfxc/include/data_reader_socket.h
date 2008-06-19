@@ -26,7 +26,8 @@ public:
   virtual ~Data_reader_socket();
   virtual bool eof();
   void closef() {
-    SFXC_ASSERT(false && "not implemented");
+    SFXC_ASSERT_MSG(false,
+                    "Function not implemented");
   }
 
   bool can_read();

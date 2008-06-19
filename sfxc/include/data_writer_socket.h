@@ -23,7 +23,8 @@ public:
   //unsigned int get_port();
   void flush();
   void close() {
-    SFXC_ASSERT(false && "not implemented");
+    SFXC_ASSERT_MSG(false,
+                    "Function is not implemented");
   }
 
 

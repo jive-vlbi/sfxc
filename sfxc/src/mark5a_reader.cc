@@ -57,7 +57,8 @@ Mark5a_reader::goto_time(unsigned char *mark5a_block, int64_t us_time) {
   }
 
   if ( bytes_to_read != 0 ) {
-    SFXC_ASSERT(false);
+    SFXC_ASSERT_MSG(false,
+                    "Couldn't read the requested amount of data.");
     return get_current_time();
   }
 
