@@ -175,12 +175,6 @@ set_weight_of_input_stream(int stream, int64_t weight, size_t size) {
   SFXC_ASSERT(status != END_NODE);
 }
 
-void Output_node::time_slice_finished(int rank, int64_t nBytes) {
-  SFXC_ASSERT(input_streams.size() > (unsigned int) rank);
-  SFXC_ASSERT(input_streams[rank] != NULL);
-  input_streams[rank]->set_length_time_slice(nBytes);
-}
-
 void Output_node::write_output() {
   if (output_memory_pool.empty())
     return;
