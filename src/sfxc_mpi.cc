@@ -127,8 +127,7 @@ void start_node() {
       break;
     }
   default: {
-      std::cout << "Unknown node type " << status.MPI_TAG << std::endl;
-      SFXC_ASSERT(false);
+      SFXC_ASSERT_MSG(false, "Unknown node type");
     }
   }
 }

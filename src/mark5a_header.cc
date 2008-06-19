@@ -122,7 +122,8 @@ int Mark5a_header::find_track(int headstack_, int track_) {
       return i;
     }
   }
-  SFXC_ASSERT(false);
+  SFXC_ASSERT_MSG(false,
+                  "Couldn't find (headstack, track) in the mark5a header.");
   return -1;
 }
 

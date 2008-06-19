@@ -34,7 +34,8 @@ initialise(const char *ctrl_file, const char *vex_file,
     std::ifstream in(ctrl_file);
     if (!in.is_open()) {
       log_writer << "Could not open control file [" << ctrl_file << "]" << std::endl;
-      SFXC_ASSERT(false);
+      SFXC_ASSERT_MSG(false,
+                      "Couldn't open control file");
       return false;
     }
     bool ok = reader.parse(in, ctrl);
@@ -43,7 +44,8 @@ initialise(const char *ctrl_file, const char *vex_file,
       log_writer  << "Failed to parse control file\n"
       << reader.getFormatedErrorMessages()
       << std::endl;
-      SFXC_ASSERT(false);
+      SFXC_ASSERT_MSG(false,
+                      "Failed to parse the control file");
       return false;
     }
   }
@@ -52,14 +54,16 @@ initialise(const char *ctrl_file, const char *vex_file,
     std::ifstream in(vex_file);
     if (!in.is_open()) {
       log_writer << "Could not open vex file [" <<vex_file<<"]"<< std::endl;
-      SFXC_ASSERT(false);
+      SFXC_ASSERT_MSG(false,
+                      "Could not open the vex-file");
       return false;
     }
 
     // parse the vex file
     if (!vex.open(vex_file)) {
       log_writer << "Could not parse vex file ["<<vex_file<<"]" << std::endl;
-      SFXC_ASSERT(false);
+      SFXC_ASSERT_MSG(false,
+                      "Could not parse the vex-file");
       return false;
     }
   }
@@ -685,7 +689,8 @@ get_mode(int32_t &start_time) const {
       return sched_block["mode"]->to_string();
     }
   }
-  SFXC_ASSERT(false);
+  SFXC_ASSERT_MSG(false,
+                  "Mode not found in the vex-file.");
   return std::string("");
 }
 
