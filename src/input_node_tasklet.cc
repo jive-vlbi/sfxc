@@ -339,22 +339,22 @@ set_parameters(const Input_node_parameters &input_node_param,
 void
 Input_node_tasklet::
 set_time_interval(int32_t start_time, int32_t stop_time) {
-  int new_time;
   SFXC_ASSERT(!integer_delay_.empty());
   SFXC_ASSERT(integer_delay_[0] != NULL);
   if (transport_type == MARK5A) {
     SFXC_ASSERT(mark5a_reader_ != NULL);
-    new_time = mark5a_reader_->goto_time(start_time);
+    mark5a_reader_->goto_time(start_time);
     mark5a_reader_->set_stop_time(stop_time);
   } else {
     SFXC_ASSERT(transport_type == MARK5B);
     SFXC_ASSERT(mark5b_reader_ != NULL);
-    new_time = mark5b_reader_->goto_time(start_time);
+    mark5b_reader_->goto_time(start_time);
     mark5b_reader_->set_stop_time(stop_time);
   }
 
   for (size_t i=0; i < integer_delay_.size(); i++) {
-    integer_delay_[i]->set_time(int64_t(1000)*new_time);
+    integer_delay_[i]->set_time(int64_t(1000)*start_time);
+    integer_delay_[i]->set_stop_time(int64_t(1000)*stop_time);
   }
 
   did_work = true;
