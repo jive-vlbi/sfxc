@@ -30,7 +30,7 @@ Multiple_data_writers_controller::
 boost::shared_ptr<Data_writer>
 Multiple_data_writers_controller::get_data_writer(size_t i) {
   SFXC_ASSERT(i < data_writers.size());
-  return data_writers[i].data_writer_;
+  return data_writers[i];
 }
 
 Multiple_data_writers_controller::Process_event_status
@@ -71,7 +71,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       data_writer->open_connection(tcp_connection);
 
       boost::shared_ptr<Data_writer> writer(data_writer);
-      add_data_writer(ranks[0], writer, ranks[2], ranks[1]);
+      add_data_writer(ranks[0], writer);
 
       int32_t return_msg = 0;
       MPI_Recv(&return_msg, 1, MPI_INT32, ranks[1],
@@ -103,7 +103,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       boost::shared_ptr<Data_writer>
       data_writer(new Data_writer_file(filename));
 
-      add_data_writer(stream_nr, data_writer, -1, -1);
+      add_data_writer(stream_nr, data_writer);
 
       MPI_Send(&stream_nr, 1, MPI_INT32,
                status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
@@ -124,7 +124,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 
       boost::shared_ptr<Data_writer> data_writer(new Data_writer_void());
 
-      add_data_writer(msg, data_writer, -1, -1);
+      add_data_writer(msg, data_writer);
 
       MPI_Send(&msg, 1, MPI_INT32,
                status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
@@ -136,14 +136,6 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }
 
-Multiple_data_writers_controller::Data_writer_ptr
-Multiple_data_writers_controller::operator[](int i) {
-  SFXC_ASSERT(i >= 0);
-  SFXC_ASSERT((size_t)i < data_writers.size());
-
-  return data_writers[i].data_writer_;
-}
-
 bool
 Multiple_data_writers_controller::ready() {
   return true;
@@ -151,17 +143,13 @@ Multiple_data_writers_controller::ready() {
 
 void
 Multiple_data_writers_controller::
-add_data_writer(unsigned int i, boost::shared_ptr<Data_writer> writer,
-                int rank_node_reader_, int stream_number_reader_) {
+add_data_writer(unsigned int i, boost::shared_ptr<Data_writer> writer) {
   if (data_writers.size() <= i) {
     data_writers.resize(i+1);
   }
   SFXC_ASSERT(i < data_writers.size());
 
-  data_writers[i].rank_node_reader = rank_node_reader_;
-  data_writers[i].stream_number_reader = stream_number_reader_;
-
-  data_writers[i].data_writer_ = writer;
+  data_writers[i] = writer;
 
   node.hook_added_data_writer(i);
 }

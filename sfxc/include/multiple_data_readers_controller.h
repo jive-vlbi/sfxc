@@ -26,7 +26,11 @@ class Multiple_data_readers_controller : public Controller {
 public:
   typedef Memory_pool_fixed_size_element<char,5000>  data_type;
   typedef Data_reader2buffer<data_type>              Reader2buffer;
+  typedef boost::shared_ptr<Reader2buffer>        Reader2buffer_ptr;
   typedef Data_reader_buffer<Reader2buffer>          Reader_buffer;
+  typedef boost::shared_ptr<Reader_buffer>        Reader_buffer_ptr;
+
+  typedef boost::shared_ptr<Data_reader>          Data_reader_ptr;
 
   typedef Reader2buffer::Memory_pool                 Memory_pool;
   typedef Reader2buffer::value_type                  value_type;
@@ -38,7 +42,7 @@ public:
 
   Process_event_status process_event(MPI_Status &status);
 
-  /** This enables asynchronous io for a ceirtain stream
+  /** This enables asynchronous io for a certain stream
    **/
   void enable_buffering(unsigned int i);
 
@@ -46,10 +50,7 @@ public:
 
   /** Returns the data reader, which is either the real reader or the
    *  buffered reader if a buffer is set. **/
-  boost::shared_ptr<Data_reader> get_data_reader(int i);
-
-
-  /* Reader2buffer *get_data_reader2buffer(int i); */
+  Data_reader_ptr get_data_reader(int i);
 
   /* Returns true if data_reader(i) != NULL */
   bool initialised(unsigned int i);
@@ -60,14 +61,14 @@ private:
 
   void add_data_reader(int i, boost::shared_ptr<Data_reader> reader);
 
-  // NGHK: TODO: Factorize into a single class?
   // These are pointers, because a resize of the vector will
   // copy construct all the elements and then destroy the old
   // elements and we can't copy construct the extra threads.
-  std::vector< Reader2buffer * >        data_readers;
-  std::vector< boost::shared_ptr<Reader_buffer> >
-  buffer_readers;
-  std::vector< bool >                   reader_known;
+  struct Reader {
+    Reader2buffer_ptr  reader2buffer;
+    Reader_buffer_ptr  reader_buffer;
+  };
+  std::vector<Reader> readers;
 };
 
 #endif /* MULTIPLE_DATA_READERS_CONTROLLER_H */

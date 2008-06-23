@@ -19,12 +19,6 @@ Multiple_data_readers_controller(Node &node)
 
 Multiple_data_readers_controller::
 ~Multiple_data_readers_controller() {
-  for (std::vector< Reader2buffer* >::iterator
-       it = data_readers.begin(); it != data_readers.end(); it++) {
-    if ((*it) != NULL) {
-      delete *it;
-    }
-  }
 }
 
 Multiple_data_readers_controller::Process_event_status
@@ -89,50 +83,47 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
 void
 Multiple_data_readers_controller::
 enable_buffering(unsigned int i) {
-  SFXC_ASSERT(i < data_readers.size());
-  SFXC_ASSERT(data_readers[i] != NULL);
-  SFXC_ASSERT(data_readers[i]->get_data_reader() != NULL);
-  SFXC_ASSERT(data_readers[i]->get_queue() == Queue_ptr());
+  SFXC_ASSERT(i < readers.size());
+  SFXC_ASSERT(readers[i].reader2buffer != Reader2buffer_ptr());
+  SFXC_ASSERT(readers[i].reader2buffer->get_data_reader() != 
+              Data_reader_ptr());
+  SFXC_ASSERT(readers[i].reader2buffer->get_queue() == Queue_ptr());
 
   Queue_ptr queue(new Queue());
 
-  // Make sure a pointer to the data reader has not been returned
-  SFXC_ASSERT(!reader_known[i]);
+  readers[i].reader2buffer->set_queue(queue);
+  readers[i].reader2buffer->start();
 
-  data_readers[i]->set_queue(queue);
-  data_readers[i]->start();
-
-  buffer_readers[i] = boost::shared_ptr<Reader_buffer>(new Reader_buffer(queue));
+  readers[i].reader_buffer = Reader_buffer_ptr(new Reader_buffer(queue));
 }
 
 Multiple_data_readers_controller::Queue_ptr
 Multiple_data_readers_controller::get_queue(unsigned int i) {
-  if (i < buffer_readers.size())
-    return buffer_readers[i]->get_queue();
+  if (i < readers.size())
+    return readers[i].reader2buffer->get_queue();
   return Queue_ptr();
 }
 
-boost::shared_ptr<Data_reader>
+Multiple_data_readers_controller::Data_reader_ptr
 Multiple_data_readers_controller::get_data_reader(int i) {
-  SFXC_ASSERT((size_t)i < data_readers.size());
-  SFXC_ASSERT(data_readers[i] != NULL);
+  SFXC_ASSERT((size_t)i < readers.size());
+  SFXC_ASSERT(readers[i].reader2buffer != Reader2buffer_ptr());
 
-  reader_known[i] = true;
-
-  if (buffer_readers[i] != boost::shared_ptr<Reader_buffer>()) {
-    return buffer_readers[i];
-  }
-  return data_readers[i]->get_data_reader();
+  if (readers[i].reader_buffer != Reader_buffer_ptr())
+    return readers[i].reader_buffer;
+  
+  return readers[i].reader2buffer->get_data_reader();
 }
 
 bool Multiple_data_readers_controller::initialised(unsigned int i) {
-  if (i >= data_readers.size()) return false;
-  if (data_readers[i] == NULL) return false;
-  return (data_readers[i]->get_data_reader() != NULL);
+  if (i >= readers.size()) return false;
+  if (readers[i].reader2buffer == Reader2buffer_ptr()) return false;
+  return (readers[i].reader2buffer->get_data_reader() != 
+          Data_reader_ptr());
 }
 
 size_t Multiple_data_readers_controller::number_of_data_readers() {
-  return data_readers.size();
+  return readers.size();
 }
 
 
@@ -142,18 +133,16 @@ Multiple_data_readers_controller::add_data_reader
  boost::shared_ptr<Data_reader> reader) {
   // This is false after the first call of get_vector_data_readers()
 
-  if (data_readers.size() <= (unsigned int)i) {
-    data_readers.resize(i+1, NULL);
-    reader_known.resize(i+1, false);
-    buffer_readers.resize(i+1, boost::shared_ptr<Reader_buffer>());
+  if (readers.size() <= (unsigned int)i) {
+    readers.resize(i+1);
   }
-  SFXC_ASSERT((uint32_t)i < data_readers.size());
+  SFXC_ASSERT((uint32_t)i < readers.size());
 
-  if (data_readers[i] == NULL) {
-    data_readers[i] = new Reader2buffer();
+  if (readers[i].reader2buffer == Reader2buffer_ptr()) {
+    readers[i].reader2buffer = Reader2buffer_ptr(new Reader2buffer());
   }
 
-  data_readers[i]->set_data_reader(reader);
+  readers[i].reader2buffer->set_data_reader(reader);
 
   node.hook_added_data_reader(i);
 }
