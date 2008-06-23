@@ -36,9 +36,9 @@ public:
   Queue_ptr queue();
   void set_queue(Queue_ptr queue);
 
-  std::tr1::shared_ptr<Data_reader> get_data_reader(int i=0);
+  boost::shared_ptr<Data_reader> get_data_reader(int i=0);
 private:
-  void set_data_reader(int stream_nr, std::tr1::shared_ptr<Data_reader> reader);
+  void set_data_reader(int stream_nr, boost::shared_ptr<Data_reader> reader);
 
   Reader2buffer                                      reader2buffer;
 };

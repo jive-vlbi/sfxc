@@ -17,7 +17,7 @@
 #include <threadsafe_queue.h>
 
 #include <pthread.h>
-#include <tr1/memory>
+#include <boost/shared_ptr.hpp>
 
 /** Reads data from the data reader and puts it in a buffer,
  * which is useful for non-blocking IO.
@@ -34,9 +34,9 @@ public:
     pool_type data;
   };
   typedef Threadsafe_queue<value_type>               Queue;
-  typedef std::tr1::shared_ptr<Queue>                   Queue_ptr;
+  typedef boost::shared_ptr<Queue>                   Queue_ptr;
 
-  typedef std::tr1::shared_ptr< Data_reader > Data_reader_ptr;
+  typedef boost::shared_ptr< Data_reader > Data_reader_ptr;
 
   enum State {
     STOPPED=0, ///< Not running, the additional thread is not active
@@ -49,8 +49,8 @@ public:
   Data_reader2buffer(const Data_reader2buffer &buffer);
   ~Data_reader2buffer();
 
-  std::tr1::shared_ptr<Data_reader> get_data_reader();
-  void set_data_reader(std::tr1::shared_ptr<Data_reader> data_reader);
+  boost::shared_ptr<Data_reader> get_data_reader();
+  void set_data_reader(boost::shared_ptr<Data_reader> data_reader);
 
   Queue_ptr get_queue();
   void set_queue(Queue_ptr queue);
@@ -201,15 +201,19 @@ Data_reader2buffer<T>::read() {
           // buffer.
           int size = data_reader->get_bytes(elem.data->size(),
                                             elem.data->buffer());
-          if (size < 0) {
+          if (size > 0) {
             // Make sure the error messages do not propagate in the buffer
-            size = 0;
+            // And that we do not insert empty buffers in the queue
+            // The allocated elements are automatically released
+            elem.actual_size = size;
+            queue->push(elem);
+          } else {
+            // Couldn't read, sleep
+            usleep(100);
           }
-          elem.actual_size = size;
-          queue->push(elem);
         } else {
-          usleep(100);
-        }
+          usleep(100); 
+       }
       }
     }
   }

@@ -1,7 +1,7 @@
 #ifndef INPUT_NODE_TASKLET_H
 #define INPUT_NODE_TASKLET_H
 
-#include <tr1/memory>
+#include <boost/shared_ptr.hpp>
 #include <queue>
 
 #include "tasklet/tasklet.h"
@@ -29,10 +29,10 @@ enum TRANSPORT_TYPE {
 
 class Input_node_tasklet : public Tasklet {
 public:
-  typedef std::tr1::shared_ptr<Data_writer>             Data_writer_ptr_;
-  typedef std::tr1::shared_ptr<Mark5a_reader>            Mark5a_reader_ptr_;
+  typedef boost::shared_ptr<Data_writer>             Data_writer_ptr_;
+  typedef boost::shared_ptr<Mark5a_reader>            Mark5a_reader_ptr_;
   typedef Mark5a_reader_tasklet                       Mark5a_reader_tasklet_;
-  typedef std::tr1::shared_ptr<Mark5b_reader>           Mark5b_reader_ptr_;
+  typedef boost::shared_ptr<Mark5b_reader>           Mark5b_reader_ptr_;
   typedef Mark5b_reader_tasklet                      Mark5b_reader_tasklet_;
   typedef Channel_extractor_tasklet                  Channel_extractor_tasklet_;
   typedef Integer_delay_correction_per_channel       Integer_delay_tasklet_;
@@ -120,7 +120,7 @@ private:
  * It determines the number of tracks from the data
  **/
 Input_node_tasklet *
-get_input_node_tasklet(std::tr1::shared_ptr<Data_reader> reader,
+get_input_node_tasklet(boost::shared_ptr<Data_reader> reader,
                        TRANSPORT_TYPE type);
 
 #endif // INPUT_NODE_TASKLET_H

@@ -14,7 +14,7 @@
 #ifndef PC_BUFFER_H
 #define PC_BUFFER_H
 
-#include <tr1/memory>
+#include <boost/shared_ptr.hpp>
 #include <stack>
 #include <vector>
 #include "exception_common.h"
@@ -71,8 +71,8 @@ public:
 
   class Resize_policy;
 
-  typedef std::tr1::shared_ptr<Resize_policy> PolicyPtr;
-  typedef std::tr1::shared_ptr<Allocator<T> > AllocatorPtr;
+  typedef boost::shared_ptr<Resize_policy> PolicyPtr;
+  typedef boost::shared_ptr<Allocator<T> > AllocatorPtr;
 
   /************************************
    * @class Resize_policy

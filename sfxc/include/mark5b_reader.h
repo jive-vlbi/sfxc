@@ -12,7 +12,7 @@
 
 #include <fstream>
 #include <vector>
-#include <tr1/memory>
+#include <boost/shared_ptr.hpp>
 
 #include "data_reader.h"
 #include "control_parameters.h"
@@ -50,7 +50,7 @@ public:
 
   };
 
-  Mark5b_reader(std::tr1::shared_ptr<Data_reader> data_reader,
+  Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
                 unsigned char *buffer);
   virtual ~Mark5b_reader();
 
@@ -76,7 +76,7 @@ public:
 private:
   // Data reader: input stream
   // The file pointer is always after a header, but before the data
-  std::tr1::shared_ptr<Data_reader> data_reader_;
+  boost::shared_ptr<Data_reader> data_reader_;
 
   // Time information
   int start_day_;

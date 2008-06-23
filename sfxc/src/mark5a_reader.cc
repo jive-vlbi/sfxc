@@ -3,7 +3,7 @@
 #include "backtrace.h"
 
 Mark5a_reader::
-Mark5a_reader(std::tr1::shared_ptr<Data_reader> data_reader,
+Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
               int N_,
               unsigned char *buffer,
               unsigned char *mark5a_block)
@@ -233,7 +233,7 @@ bool Mark5a_reader::eof() {
   return data_reader_->eof();
 }
 
-int find_start_of_header(std::tr1::shared_ptr<Data_reader> reader,
+int find_start_of_header(boost::shared_ptr<Data_reader> reader,
                          unsigned char first_block[]) {
   // first_block is an array of SIZE_MK5A_FRAME bytes (8 is the smallest number of tracks).
   // We fill the first_block and then look for the header
@@ -295,7 +295,7 @@ int find_start_of_header(std::tr1::shared_ptr<Data_reader> reader,
 }
 
 Mark5a_reader *
-get_mark5a_reader(std::tr1::shared_ptr<Data_reader> reader,
+get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
                   unsigned char *first_block) {
   int n_tracks_8 = find_start_of_header(reader, first_block);
   SFXC_ASSERT_MSG(n_tracks_8 > 0,

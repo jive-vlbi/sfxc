@@ -32,7 +32,7 @@ public:
     pool_type data;
   };
   typedef Threadsafe_queue<value_type>      Queue;
-  typedef std::tr1::shared_ptr<Queue>          Queue_ptr;
+  typedef boost::shared_ptr<Queue>          Queue_ptr;
   
 
   Single_data_writer_controller(Node &node);
@@ -42,9 +42,9 @@ public:
 
   Queue_ptr queue();
   void set_queue(Queue_ptr queue);
-  std::tr1::shared_ptr<Data_writer> get_data_writer(int i);
+  boost::shared_ptr<Data_writer> get_data_writer(int i);
 private:
-  void set_data_writer(int streamnr, std::tr1::shared_ptr<Data_writer> writer);
+  void set_data_writer(int streamnr, boost::shared_ptr<Data_writer> writer);
 
   Buffer2data_writer<value_type>                 buffer2writer;
 

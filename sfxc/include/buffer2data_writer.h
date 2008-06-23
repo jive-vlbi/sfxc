@@ -13,7 +13,7 @@
 #include "data_writer.h"
 #include "utils.h"
 
-#include <tr1/memory>
+#include <boost/shared_ptr.hpp>
 
 #include <threadsafe_queue.h>
 
@@ -24,9 +24,9 @@ class Buffer2data_writer {
   typedef Buffer2data_writer<T> Self;
 
 public:
-  typedef std::tr1::shared_ptr< Data_writer > Data_writer_ptr;
+  typedef boost::shared_ptr< Data_writer > Data_writer_ptr;
   typedef Threadsafe_queue<T>              Queue;
-  typedef std::tr1::shared_ptr<Queue>         Queue_ptr;
+  typedef boost::shared_ptr<Queue>         Queue_ptr;
   
   enum State {
     STOPPED=0, ///< Not running, the additional thread is not active
@@ -64,8 +64,8 @@ private:
   static void *start_writing(void *);
   void write();
 
-  std::tr1::shared_ptr< Data_writer >         data_writer;
-  std::tr1::shared_ptr< Threadsafe_queue<T> > queue;
+  boost::shared_ptr< Data_writer >         data_writer;
+  boost::shared_ptr< Threadsafe_queue<T> > queue;
   State       state;
   pthread_t   redirect_thread;
 };
@@ -88,7 +88,7 @@ Buffer2data_writer<T>::~Buffer2data_writer() {
 
 template <class T>
 void
-Buffer2data_writer<T>::set_data_writer(std::tr1::shared_ptr< Data_writer > writer) {
+Buffer2data_writer<T>::set_data_writer(boost::shared_ptr< Data_writer > writer) {
   SFXC_ASSERT(state != RUNNING);
   data_writer = writer;
 }
@@ -101,7 +101,7 @@ Buffer2data_writer<T>::set_queue(Queue_ptr queue_) {
 }
 
 template <class T>
-std::tr1::shared_ptr< Data_writer >
+boost::shared_ptr< Data_writer >
 Buffer2data_writer<T>::get_data_writer() {
   return data_writer;
 }
