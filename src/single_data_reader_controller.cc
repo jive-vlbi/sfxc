@@ -77,30 +77,6 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }
 
-bool
-Single_data_reader_controller::eof() {
-  if (reader2buffer.get_data_reader() != NULL) {
-    if (!reader2buffer.get_data_reader()->eof()) return false;
-  }
-
-  if (reader2buffer.get_queue() != Queue_ptr()) {
-    return (reader2buffer.get_queue()->empty());
-  }
-  return true;
-}
-
-Single_data_reader_controller::Queue_ptr
-Single_data_reader_controller::queue() {
-  SFXC_ASSERT_MSG(false, "No buffering for the time being");
-  return Queue_ptr();
-}
-
-void
-Single_data_reader_controller::
-set_queue(Queue_ptr queue) {
-  SFXC_ASSERT_MSG(false, "No buffering for the time being");
-}
-
 boost::shared_ptr<Data_reader>
 Single_data_reader_controller::get_data_reader(int reader) {
   SFXC_ASSERT(reader == 0);
@@ -110,7 +86,7 @@ Single_data_reader_controller::get_data_reader(int reader) {
 
 void
 Single_data_reader_controller::
-set_data_reader(int stream_nr, boost::shared_ptr<Data_reader> reader) {
+set_data_reader(int stream_nr, Data_reader_ptr reader) {
   SFXC_ASSERT(stream_nr == 0);
   SFXC_ASSERT(reader2buffer.get_data_reader() == NULL);
 

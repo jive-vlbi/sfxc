@@ -12,7 +12,6 @@
 #include "data_writer_file.h"
 #include "data_writer_tcp.h"
 #include "data_writer_void.h"
-#include "tcp_connection.h"
 #include "utils.h"
 
 Single_data_writer_controller::

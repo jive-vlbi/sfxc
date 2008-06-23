@@ -27,20 +27,17 @@ public:
   typedef Reader2buffer::value_type                  value_type;
   typedef Reader2buffer::Queue_ptr                   Queue_ptr;
 
+  typedef boost::shared_ptr<Data_reader>          Data_reader_ptr;
+
   Single_data_reader_controller(Node &node);
 
   Process_event_status process_event(MPI_Status &status);
 
-  bool eof();
-
-  Queue_ptr queue();
-  void set_queue(Queue_ptr queue);
-
-  boost::shared_ptr<Data_reader> get_data_reader(int i=0);
+  Data_reader_ptr get_data_reader(int i=0);
 private:
-  void set_data_reader(int stream_nr, boost::shared_ptr<Data_reader> reader);
+  void set_data_reader(int stream_nr, Data_reader_ptr reader);
 
-  Reader2buffer                                      reader2buffer;
+  Reader2buffer                                       reader2buffer;
 };
 
 #endif /* SINGLE_DATA_READER_CONTROLLER_H */

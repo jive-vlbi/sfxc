@@ -14,12 +14,12 @@
 
 #include "data_writer.h"
 #include "buffer2data_writer.h"
-#include "tcp_connection.h"
 
 #include <memory_pool.h>
 #include "memory_pool_elements.h"
 #include <threadsafe_queue.h>
 
+#include "tcp_connection.h"
 
 class Single_data_writer_controller : public Controller {
   typedef Single_data_writer_controller  Self;
@@ -32,7 +32,7 @@ public:
     pool_type data;
   };
   typedef Threadsafe_queue<value_type>      Queue;
-  typedef boost::shared_ptr<Queue>          Queue_ptr;
+  typedef boost::shared_ptr<Queue>       Queue_ptr;
   
 
   Single_data_writer_controller(Node &node);
@@ -40,8 +40,10 @@ public:
 
   Process_event_status process_event(MPI_Status &status);
 
+  // We use a queue to be able to do asynchronous IO
   Queue_ptr queue();
   void set_queue(Queue_ptr queue);
+
   boost::shared_ptr<Data_writer> get_data_writer(int i);
 private:
   void set_data_writer(int streamnr, boost::shared_ptr<Data_writer> writer);
