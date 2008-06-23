@@ -42,6 +42,9 @@ public:
 
   void set_parameters(const Input_node_parameters &input_param);
 
+  // Empty the input queue, called from the destructor of Input_node
+  void empty_input_queue();
+
 private:
   Input_buffer_ptr    input_buffer_;
   Data_writer_queue    data_writers_;

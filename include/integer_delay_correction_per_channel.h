@@ -71,6 +71,11 @@ public:
 
   double delay(int64_t time);
 
+  // Empty the input queue, called from the destructor of Input_node
+  void empty_input_queue();
+
+
+
 private:
   Delay_type get_delay(int64_t time);
 

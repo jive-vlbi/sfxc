@@ -84,6 +84,10 @@ public:
   void set_parameters(const Input_node_parameters &input_node_param,
                       const std::vector< std::vector<int> > &track_positions);
 
+
+  // Empty the input queue, called from the destructor of Input_node
+  void empty_input_queue();
+
 private:
   /// Queue containing input data
   Input_buffer_ptr                input_buffer_;

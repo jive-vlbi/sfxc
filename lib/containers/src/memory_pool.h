@@ -231,7 +231,7 @@ class NoResize_policy : public Resize_policy {
    * accessible using  this Memory_pool
    ****************************************/
   typedef Buffer_element Element;
-  typedef Element        value_type             ;
+  typedef Element        value_type;
 
   /*****************************************
    * Construct a Memory_pool object containing
@@ -242,6 +242,12 @@ class NoResize_policy : public Resize_policy {
   //Memory_pool(unsigned int numelements, Allocator<T>* allocator, Resize_policy& policy=NoResize_policy());
   Memory_pool(unsigned int numelements, AllocatorPtr allocator= Default_allocator<T>::create(), PolicyPtr policy=AutomaticResize_policy::create(10));
   Memory_pool(unsigned int numelements, Resize_policy_type type, AllocatorPtr allocator= Default_allocator<T>::create());
+
+  ~Memory_pool() {
+    // Make sure all elements are in the memory pool, otherwise they
+    // will try to reinsert themselves into a non-existing pool.
+    MASSERT(full());
+  }
 
   /************************************
    * Return the number of free Buffer_elements

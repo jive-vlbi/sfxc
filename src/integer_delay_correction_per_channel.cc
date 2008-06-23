@@ -343,3 +343,11 @@ allocate_random_element() {
 
   return result;
 }
+
+// Empty the input queue, called from the destructor of Input_node
+void Integer_delay_correction_per_channel::empty_input_queue() {
+  while (!input_buffer_->empty()) {
+    input_buffer_->pop();
+  }
+}
+

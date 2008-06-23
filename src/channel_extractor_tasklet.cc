@@ -197,4 +197,9 @@ Channel_extractor_tasklet::get_output_buffer(size_t stream) {
   return output_buffers_[stream];
 }
 
+void Channel_extractor_tasklet::empty_input_queue() {
+  while (!input_buffer_->empty()) {
+    input_buffer_->pop();
+  }
+}
 
