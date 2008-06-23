@@ -35,12 +35,12 @@ public:
 
   void set_parameters(const Correlation_parameters &parameters,
                       int node_nr);
-  void set_data_writer(std::tr1::shared_ptr<Data_writer> writer);
+  void set_data_writer(boost::shared_ptr<Data_writer> writer);
 
   int number_of_baselines() {
     return baselines.size();
   }
-  std::tr1::shared_ptr<Data_writer> data_writer() {
+  boost::shared_ptr<Data_writer> data_writer() {
     return writer;
   }
 
@@ -87,7 +87,7 @@ private:
   Complex_buffer_float                                 accumulation_buffers_float;
   std::vector< std::pair<size_t, size_t> >             baselines;
 
-  std::tr1::shared_ptr<Data_writer>                       writer;
+  boost::shared_ptr<Data_writer>                       writer;
 
   Timer fft_timer;
 

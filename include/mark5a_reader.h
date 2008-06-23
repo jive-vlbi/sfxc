@@ -12,7 +12,7 @@
 
 #include <fstream>
 #include <vector>
-#include <tr1/memory>
+#include <boost/shared_ptr.hpp>
 
 #include "data_reader.h"
 #include "mark5a_header.h"
@@ -29,7 +29,7 @@ class Mark5a_reader {
 public:
 
   // unsigned char buffer[SIZE_MK5A_FRAME] contains the beginning of a mark5a-frame
-  Mark5a_reader(std::tr1::shared_ptr<Data_reader> data_reader,
+  Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
                int N,
                unsigned char *buffer,
                unsigned char *mark5a_block);
@@ -71,7 +71,7 @@ private:
   bool check_track_bit_statistics(unsigned char *mark5a_block);
 private:
   // Data reader: input stream
-  std::tr1::shared_ptr<Data_reader> data_reader_;
+  boost::shared_ptr<Data_reader> data_reader_;
 
   // Time information
   int start_day_;
@@ -95,10 +95,10 @@ public:
 /** Returns a mark5a reader based on the headers in the data stream
  **/
 Mark5a_reader *
-get_mark5a_reader(std::tr1::shared_ptr<Data_reader> reader,
+get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
                  unsigned char *first_block);
 
-int find_start_of_header(std::tr1::shared_ptr<Data_reader> reader,
+int find_start_of_header(boost::shared_ptr<Data_reader> reader,
                          unsigned char first_block[]);
 
 

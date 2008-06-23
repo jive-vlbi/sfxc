@@ -155,7 +155,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
 
 void
 Correlation_core::
-set_data_writer(std::tr1::shared_ptr<Data_writer> writer_) {
+set_data_writer(boost::shared_ptr<Data_writer> writer_) {
   writer = writer_;
 }
 
@@ -324,7 +324,7 @@ void Correlation_core::integration_write() {
     input_elements[i] = Input_buffer_element();
   }
 
-  SFXC_ASSERT(writer != std::tr1::shared_ptr<Data_writer>());
+  SFXC_ASSERT(writer != boost::shared_ptr<Data_writer>());
   SFXC_ASSERT(accumulation_buffers.size() == baselines.size());
 
   int polarisation = 1;

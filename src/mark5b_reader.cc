@@ -1,7 +1,7 @@
 #include "mark5b_reader.h"
 
 Mark5b_reader::
-Mark5b_reader(std::tr1::shared_ptr<Data_reader> data_reader,
+Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
                 unsigned char *buffer)
     : data_reader_(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),

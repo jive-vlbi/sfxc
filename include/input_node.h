@@ -12,7 +12,7 @@
 
 #include <map>
 #include <vector>
-#include <tr1/memory>
+#include <boost/shared_ptr.hpp>
 
 #include "node.h"
 #include "single_data_reader_controller.h"

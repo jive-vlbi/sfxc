@@ -56,10 +56,10 @@ public:
 
 
 private:
-  typedef std::tr1::shared_ptr<Correlator_node_data_reader_tasklet>
+  typedef boost::shared_ptr<Correlator_node_data_reader_tasklet>
   /**/                                                Bit_sample_reader_ptr;
-  //typedef std::tr1::shared_ptr<Bits_to_float_converter>  Bits2float_ptr;
-  typedef std::tr1::shared_ptr<Delay_correction>         Delay_correction_ptr;
+  //typedef boost::shared_ptr<Bits_to_float_converter>  Bits2float_ptr;
+  typedef boost::shared_ptr<Delay_correction>         Delay_correction_ptr;
 public:
   enum Status {
     // Initialise the Correlate node

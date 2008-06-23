@@ -166,7 +166,7 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   { // create the delay modules
     if (delay_modules.size() <= stream_nr) {
       delay_modules.resize(stream_nr+1,
-                           std::tr1::shared_ptr<Delay_correction>());
+                           boost::shared_ptr<Delay_correction>());
     }
     delay_modules[stream_nr] =
       Delay_correction_ptr(new Delay_correction());

@@ -10,7 +10,7 @@
 #ifndef MARK5A_READER_TASKLET_H
 #define MARK5A_READER_TASKLET_H
 
-#include <tr1/memory>
+#include <boost/shared_ptr.hpp>
 
 #include "tasklet/tasklet.h"
 #include "mark5a_reader.h"
@@ -22,7 +22,7 @@
 
 class Mark5a_reader_tasklet : public Tasklet {
 public:
-  typedef std::tr1::shared_ptr< Mark5a_reader >   Mark5a_reader_ptr;
+  typedef boost::shared_ptr< Mark5a_reader >   Mark5a_reader_ptr;
   typedef Input_node_types::value_type         value_type;
   typedef Input_node_types::Mark5_memory_pool    Input_memory_pool;
   typedef Input_node_types::Mark5_buffer_element Input_element;
