@@ -128,3 +128,10 @@ void
 Input_node_data_writer_tasklet::
 set_parameters(const Input_node_parameters &input_param) {}
 
+// Empty the input queue, called from the destructor of Input_node
+void Input_node_data_writer_tasklet::empty_input_queue() {
+  while (!input_buffer_->empty()) {
+    input_buffer_->pop();
+  }
+}
+

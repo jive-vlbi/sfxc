@@ -175,6 +175,16 @@ void Input_node_tasklet::initialise() {
 }
 
 Input_node_tasklet::~Input_node_tasklet() {
+  channel_extractor_.empty_input_queue();
+
+  for (size_t i = 0; i < integer_delay_.size(); i++) {
+    integer_delay_[i]->empty_input_queue();
+  }
+
+  for (size_t i = 0; i < data_writers_.size(); i++) {
+    data_writers_[i].empty_input_queue();
+  }
+
 #if PRINT_TIMER
   PROGRESS_MSG("Time mar4_reader:       " << mark5a_reader_timer_.measured_time());
   PROGRESS_MSG("Time integer_delay:     " << integer_delay_timer_.measured_time());
