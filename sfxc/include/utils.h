@@ -74,9 +74,9 @@ const int   BufTime       =   16384; //delta time for Bufs in micro seconds
 
 extern int RANK_OF_NODE; // Rank of the current node
 
-#ifdef SFXC_PRINT_DEBUG
 #include "sfxc_mpi.h"
 
+#ifdef SFXC_PRINT_DEBUG
 #define FORMAT_MSG(msg) \
     "#" << RANK_OF_NODE << " " \
     << __FILE__ << ", " << __LINE__ << ": " \
