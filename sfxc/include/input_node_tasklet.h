@@ -79,8 +79,7 @@ public:
 
   /// Sets the output writer for channel i
   void add_data_writer(size_t i,
-                       Data_writer_ptr_ data_writer,
-                       int nr_seconds);
+                       Data_writer_ptr_ data_writer);
 
 private:
   //  std::list<Time_slice>                time_slices_;

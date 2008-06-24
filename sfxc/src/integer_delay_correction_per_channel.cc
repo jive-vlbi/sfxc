@@ -311,10 +311,7 @@ set_stop_time(int64_t time) {
 
 int
 Integer_delay_correction_per_channel::
-bytes_of_output(int nr_seconds) {
-  if (nr_seconds < 0)
-    return nr_seconds;
-
+bytes_of_output() {
   return nr_bytes_per_integration_slice;
 }
 

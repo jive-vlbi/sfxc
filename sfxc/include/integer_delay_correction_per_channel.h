@@ -17,13 +17,14 @@
 
 class Integer_delay_correction_per_channel {
 public:
-  typedef Input_node_types::Channel_buffer         Input_buffer;
-  typedef Input_node_types::Channel_buffer_element Input_buffer_element;
-  typedef Input_node_types::Channel_buffer_ptr     Input_buffer_ptr;
-
+  // Input data, this comes from the channel extractor
+  typedef Input_node_types::Channel_buffer              Input_buffer;
+  typedef Input_node_types::Channel_buffer_element      Input_buffer_element;
+  typedef Input_node_types::Channel_buffer_ptr          Input_buffer_ptr;
   typedef Input_node_types::Channel_memory_pool         Input_memory_pool;
   typedef Input_node_types::Channel_memory_pool_element Input_memory_pool_element;
 
+  // Output data goes to the Input_node_data_writer
   typedef Input_node_types::Channel_memory_pool         Output_memory_pool;
   typedef Input_node_types::Fft_buffer_element          Output_buffer_element;
   typedef Input_node_types::Fft_buffer                  Output_buffer;
@@ -34,7 +35,7 @@ public:
   // - first is the delay in bytes
   // - second is the number of samples in the byte that should be shifted
   // Hence, integer bit shift = first*(8/bits_per_sample) + second
-  typedef std::pair<int,int>                                      Delay_type;
+  typedef std::pair<int,int>                            Delay_type;
 
   Integer_delay_correction_per_channel();
   ~Integer_delay_correction_per_channel() {}
@@ -54,29 +55,38 @@ public:
 
   Output_buffer_ptr get_output_buffer();
 
-  // Set the delay table
-  bool time_set() {
-    return _current_time > 0;
-  }
+  // Set the start time in microseconds
+  // This might be different from the time from which data arrives.
+  // If no data is available, invalid/random data will be sent
   void set_time(int64_t time);
+  // Setting of the stop time in microseconds
   void set_stop_time(int64_t time);
+  // Initialisation of the delay table
   void set_delay_table(Delay_table_akima &table);
-  void set_parameters(const Input_node_parameters &parameters,
-                      int node_nr);
-
-  int64_t current_time() {
-    return _current_time;
-  }
-  int bytes_of_output(int nr_seconds);
-
-  double delay(int64_t time);
+  // Set the information for one integration slice, some information is
+  // redundant (e.g. the bits/sample will not change during an experiment)
+  void set_parameters(const Input_node_parameters &parameters, int node_nr);
 
   // Empty the input queue, called from the destructor of Input_node
+  // This is necessary because of pre-extracting data
   void empty_input_queue();
-
-
-
+  
+  // Number of bytes per integration slice
+  int bytes_of_output();
 private:
+
+  // Checks whether the start time has been set
+  bool time_set() const {
+    return _current_time > 0;
+  }
+  // Returns the time we are currently processing
+  int64_t current_time() const {
+    return _current_time;
+  }
+  // Returns the delay in seconds for the time in microseconds 
+  double delay(int64_t time);
+  
+  // Returns the delay in terms of samples, time is in microseconds
   Delay_type get_delay(int64_t time);
 
   Input_data_block allocate_random_element();
