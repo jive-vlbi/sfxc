@@ -85,23 +85,23 @@ void Fringe_info::plot(char *filename, char *filename_large, char *title,
   gnuplot_ctrl * g = gnuplot_init();
 
   // This works on huygens
-  gnuplot_cmd(g, "set terminal png small size 300,200");
+  gnuplot_cmd(g, (char*)"set terminal png small size 300,200");
   // This works on das3
-  gnuplot_cmd(g, "set terminal png small picsize 300 200");
+  gnuplot_cmd(g, (char*)"set terminal png small picsize 300 200");
 
   snprintf(cmd, 80, "set output \"%s\"", filename);
   gnuplot_cmd(g, cmd);
-  gnuplot_setstyle(g, "lines");
+  gnuplot_setstyle(g, (char*)"lines");
   gnuplot_plot_x(g, &data[0], data.size(), title) ;
 
   // This works on huygens
-  gnuplot_cmd(g, "set terminal png large size 1024,768");
+  gnuplot_cmd(g, (char*)"set terminal png large size 1024,768");
   // This works on das3
-  gnuplot_cmd(g, "set terminal png large picsize 1024 768");
+  gnuplot_cmd(g, (char*)"set terminal png large picsize 1024 768");
 
   snprintf(cmd, 80, "set output \"%s\"", filename_large);
   gnuplot_cmd(g, cmd);
-  gnuplot_setstyle(g, "lines");
+  gnuplot_setstyle(g, (char*)"lines");
   gnuplot_plot_x(g, &data[0], data.size(), title) ;
 
   gnuplot_close(g);
@@ -299,7 +299,7 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
   double sec = (global_header.start_time +
                 integration_time * first_timeslice_header.integration_slice);
 
-  index_html << " Integration time: " 
+  index_html << " Integration time: "
              << integration_time << "s"
              << " -- Start of the integration: "
              << Date(global_header.start_year,
@@ -546,7 +546,7 @@ print_auto(std::ostream &index_html,
   char filename[80], filename_large[80], title[80];
   generate_filename(filename, filename_large, title, 80, fringe_info,
                     Fringe_info::FREQUENCY, Fringe_info::ABS);
-  fringe_info.plot(filename, filename_large, title, 
+  fringe_info.plot(filename, filename_large, title,
                    Fringe_info::FREQUENCY, Fringe_info::ABS);
   index_html << "<A href = '" << filename_large << "' "
   << "OnMouseOver=\"show('" << filename << "');\">"
@@ -566,7 +566,7 @@ print_cross(std::ostream &index_html,
                       Fringe_info::FREQUENCY, Fringe_info::ABS);
     fringe_info.plot(filename_abs, filename_large_abs, title,
                      Fringe_info::FREQUENCY, Fringe_info::ABS);
-    
+
     char filename_phase[80], filename_large_phase[80];
     generate_filename(filename_phase, filename_large_phase,
                       title, 80, fringe_info,
@@ -632,7 +632,7 @@ print_diff(std::ostream &index_html,
   assert(fringe_info2.initialised);
   assert(fringe_info1.header == fringe_info2.header);
   assert(fringe_info1.data_freq.size() == fringe_info2.data_freq.size());
-  
+
   float max_diff = 0;
 
   index_html << "<td>";
@@ -664,7 +664,7 @@ print_diff(std::ostream &index_html,
   }
 
   char filename[80], filename_large[80], title[80];
-  generate_filename(filename, filename_large, title, 80, fringe_info1, 
+  generate_filename(filename, filename_large, title, 80, fringe_info1,
                     space, Fringe_info::ABS);
   fringe_info1.plot(filename, filename_large, title, space, Fringe_info::ABS);
   index_html << "<A href = '" << filename_large << "' "
@@ -818,7 +818,7 @@ print_diff_html(const Vex &vex,
         }
 
         char filename[80], filename_large[80], title[80];
-        generate_filename(filename, filename_large, 
+        generate_filename(filename, filename_large,
                           title, 80, first_plot,
                           Fringe_info::FREQUENCY, Fringe_info::ABS);
         index_html << "<td rowspan=99><img src=\""
@@ -863,14 +863,14 @@ print_diff_html(const Vex &vex,
 
           // Print one plot
           if (it->header.station_nr1 == it->header.station_nr2) {
-            print_diff(index_html, *it, *it2, 
+            print_diff(index_html, *it, *it2,
                        relative_error, Fringe_info::FREQUENCY);
           } else {
             while (column < autos.size()) {
               index_html << "<td></td>";
               column ++;
             }
-            print_diff(index_html, *it, *it2, 
+            print_diff(index_html, *it, *it2,
                        relative_error, Fringe_info::LAG);
           }
           column ++;
