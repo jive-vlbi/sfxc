@@ -94,6 +94,12 @@ protected:
         throw Exception("Function call fails: "+String(#condi), bt);  \
     }
 
+#define CHECK_MPI( condi )     \
+    if ( (condi) != 0 )  \
+    {                                       \
+        Backtrace bt;      \
+        throw Exception("A MPI function fails: "+String(#condi), bt);  \
+    }
 
 /******************************************
 * Use this in your code in order to allow
