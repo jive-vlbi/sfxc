@@ -104,6 +104,9 @@ public:
   Connexion* connect_to(const std::string& ipaddress, const std::string& port, int type=SOCK_STREAM);
   Connexion* connect_to(const std::string& ipaddress, unsigned short port, int type=SOCK_STREAM);
 
+  Connexion* connect_to(uint64_t ipaddress, unsigned short port, int type=SOCK_STREAM);
+
+
 	EndpointIP* create_endpoint();
   EndpointIP* create_endpoint(unsigned short port);
 private:

@@ -105,6 +105,16 @@ Manager_node(int rank, int numtasks,
     exit(1);
   }
   n_corr_nodes = numtasks-(n_stations+3);
+
+  std::vector<MPI_Request> pending_requests;
+  int numrequest;
+	if( control_parameters.cross_polarize() ){
+			numrequest = (n_stations*2+1) * n_corr_nodes;
+	}else{
+			numrequest = (n_stations+1) * n_corr_nodes;
+	}
+	pending_requests.resize(numrequest);
+	int currreq=0;
   for (int correlator_nr = 0;
        correlator_nr < n_corr_nodes;
        correlator_nr++) {
@@ -117,27 +127,43 @@ Manager_node(int rank, int numtasks,
 
     // Set up the connection to the input nodes:
     for (int station_nr=0; station_nr<n_stations; station_nr++) {
-      set_TCP(input_rank(get_control_parameters().station(station_nr)),
-              correlator_nr,
-              correlator_rank, station_nr);
+    	connect_to(input_rank(get_control_parameters().station(station_nr)),
+								 correlator_nr,
+								 correlator_rank, station_nr,
+								 input_node_cnx_params_[station_nr]->ip_port_, correlator_rank, &pending_requests[currreq++] );
     }
-
-
 
     if (control_parameters.cross_polarize()) {
       // duplicate all stations:
+
       for (int station_nr=0; station_nr<n_stations; station_nr++) {
-        set_TCP(input_rank(get_control_parameters().station(station_nr)),
-                correlator_nr+n_corr_nodes,
-                correlator_rank, station_nr+n_stations);
+        connect_to(input_rank(get_control_parameters().station(station_nr)),
+									 correlator_nr+n_corr_nodes,
+									 correlator_rank,
+									 station_nr+n_stations,
+									 input_node_cnx_params_[station_nr]->ip_port_,
+									 correlator_rank, &pending_requests[currreq++] );
       }
     }
 
-
+		//currreq++;
     // Set up the connection to the output node:
-    set_TCP(correlator_rank, 0,
-            RANK_OUTPUT_NODE, correlator_nr);
-  }
+
+    connect_writer_to(
+									 correlator_rank, 0,
+									 RANK_OUTPUT_NODE, correlator_nr,
+									 output_node_cnx_params_[0]->ip_port_,
+									 correlator_rank, &pending_requests[currreq++] );
+	}
+
+	DEBUG_MSG("NUMBER OF REQUEST: " << currreq);
+
+  // We simply sum all of the number of connexion eshtablished
+  std::vector<MPI_Status> pending_status;
+  pending_status.resize( currreq );
+
+  MPI_Waitall( currreq, &pending_requests[0], &pending_status[0]);
+	std::cout << "ALL THE PENDING REQUEST HAVE SUCCEEDED ! " << std::endl;
 }
 
 Manager_node::~Manager_node() {
@@ -426,7 +452,7 @@ Manager_node::initialise() {
       control_parameters.generate_delay_table(station_name, delay_file);
       delay_table.open(delay_file.c_str());
       char msg[120];
-      snprintf(msg, 120, 
+      snprintf(msg, 120,
                "Coudn't generate delay table, please remove '%s' and restart the correlator",
                delay_file.c_str());
       SFXC_ASSERT_MSG(delay_table.initialised(),

@@ -226,3 +226,64 @@ EndpointIP* InterfaceIP::create_endpoint(unsigned short port)
 
   return new EndpointIP(socketDescriptor);
 }
+
+
+Connexion* InterfaceIP::connect_to(uint64_t ipaddress, unsigned short port, int type) {
+  int socketDescriptor;
+  struct sockaddr_in serverAddress;
+  struct sockaddr_in localAddress;
+  struct hostent *hostInfo;
+
+  // Create a socket.  "AF_INET" means it will use the IPv4 protocol.
+  // "SOCK_STREAM" means it will be a reliable connection (i.e., TCP;
+  // for UDP use SOCK_DGRAM), and I'm not sure what the 0 for the last
+  // parameter means, but it seems to work.
+  socketDescriptor = socket(AF_INET, type, 0);
+  if (socketDescriptor < 0) {
+    MTHROW("Unable to create the socket");
+    return NULL;
+  }
+
+
+  // Get the info for the local host
+  if ( name() == "any" ) {
+    localAddress.sin_addr.s_addr = INADDR_ANY;
+  } else {
+    hostInfo = gethostbyname( ip().c_str() );
+    if (hostInfo == NULL) {
+      std::cout << "problem interpreting local host: " << ip() << "\n";
+      return NULL;
+    }
+    memcpy((char *) &localAddress.sin_addr.s_addr, hostInfo->h_addr_list[0], hostInfo->h_length);
+  }
+
+  //int window_size = 1024 * 1024; /* 128 kilobytes */
+  //setsockopt(socketDescriptor, SOL_SOCKET, SO_SNDBUF, (char *) &window_size, sizeof(window_size));
+  //setsockopt(socketDescriptor, SOL_SOCKET, SO_RCVBUF, (char *) &window_size, sizeof(window_size));
+  localAddress.sin_family = AF_INET;
+  localAddress.sin_port = 0;
+
+  // The socket is bounded to the local address
+  if (bind(socketDescriptor, (struct sockaddr *) &localAddress, sizeof(localAddress)) == -1 ) {
+    std::cout << "cannot bind socket to " << ip() << ":" << 0 << std::endl;
+    close(socketDescriptor);
+    MTHROW("Unable to bind to a socket");
+  }
+
+
+  // Connect to server.  First we have to set some fields in the
+  // serverAddress structure.  The system will assign me an arbitrary
+  // local port that is not in use.
+  serverAddress.sin_family = AF_INET;
+	serverAddress.sin_addr.s_addr = ipaddress;
+  serverAddress.sin_port = htons(port);
+
+  if (connect(socketDescriptor, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
+    std::cout << "cannot connect to port " << port << "\n";
+    close(socketDescriptor);
+    MTHROW("Unable to connect to "+ipaddress);
+    return NULL;
+  }
+
+  return new Connexion(socketDescriptor);
+}

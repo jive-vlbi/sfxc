@@ -19,6 +19,9 @@
 #include <errno.h>
 #include <utils.h>
 
+#include <sys/poll.h>
+#include <errno.h>
+
 Data_reader_socket::Data_reader_socket(int socket) {
   m_socket = socket;
   SFXC_ASSERT(m_socket > 0);
@@ -43,6 +46,17 @@ bool Data_reader_socket::eof() {
 }
 
 bool Data_reader_socket::can_read() {
-  DEBUG_MSG("Data_reader_socket: can read not implemented");
-  return true;
+	//     int fd;           /* file descriptor */
+  //     short events;     /* requested events */
+  //     short revents;    /* returned events */
+  //   };
+
+  pollfd fds[1];
+  fds[0].fd = m_socket;
+  fds[0].events = POLLIN;
+
+  int ret = poll(fds, 1, /*timeout in miliseconds*/ 0);
+  if (ret > 0) {
+    return ((fds[0].revents & POLLIN) != 0);
+  }
 }

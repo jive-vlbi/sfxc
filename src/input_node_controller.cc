@@ -20,13 +20,13 @@ Input_node_controller::Input_node_controller(Input_node &node)
 Controller::Process_event_status
 Input_node_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
+
   switch (status.MPI_TAG) {
   case MPI_TAG_TRACK_PARAMETERS: {
       MPI_Transfer transfer;
       Input_node_parameters input_node_param;
       transfer.receive(status, input_node_param);
       node.set_input_node_parameters(input_node_param);
-
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
 

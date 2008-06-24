@@ -10,21 +10,117 @@
 #include "multiple_data_readers_controller.h"
 #include "data_reader_file.h"
 #include "data_reader_tcp.h"
+#include "data_reader_socket.h"
+
 #include "data_reader_buffer.h"
 #include "tcp_connection.h"
+#include "mpi_transfer.h"
+#include "network.h"
+
 
 Multiple_data_readers_controller::
 Multiple_data_readers_controller(Node &node)
-    : Controller(node) {}
+    : Controller(node) {
+
+	/// A bit tricky but this permit to avoid to much usless attemp to
+	/// create ports we now for sure that will not work.
+  int port = SFXC_PORT+RANK_OF_NODE*10;
+  while (!tcp_connection.open_port(port, 10)) {
+    port++;
+  }
+
+}
 
 Multiple_data_readers_controller::
 ~Multiple_data_readers_controller() {
+}
+
+#include <arpa/inet.h>
+void
+Multiple_data_readers_controller::get_listening_ip(
+std::vector<uint64_t>& ip_port)
+{
+	std::vector<uint64_t> addrs;
+
+	tcp_connection.get_ip_addresses( addrs );
+
+	for(unsigned int i=0;i<addrs.size();i++){
+			in_addr tmp;
+			tmp.s_addr = addrs[i];
+			DEBUG_MSG("ADDRESS: " << inet_ntoa( tmp ) << " port: " << tcp_connection.get_port() );
+			ip_port.push_back(addrs[i]);
+			ip_port.push_back( tcp_connection.get_port() );
+	}
 }
 
 Multiple_data_readers_controller::Process_event_status
 Multiple_data_readers_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
+    case MPI_TAG_ADD_TCP_READER_CONNECTED_TO: {
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+
+			uint32_t info[4];
+			std::vector<uint64_t> ip_ports;
+			MPI_Transfer::recv_connect_to_msg(info, ip_ports, status.MPI_SOURCE);
+
+			//DEBUG_MSG("Connexion: " << info[0] << " ->" <<  info[2] );
+			//DEBUG_MSG(" ip address:" <<  ip_ports.size() );
+
+      CHECK_MPI( MPI_Ssend(&info, 4, MPI_UINT32,
+													 info[0], MPI_TAG_ADD_TCP_WRITER_CONNECTED_FROM,
+													 MPI_COMM_WORLD ) );
+
+			// Connect to the given host
+			pConnexion cnx= NULL;
+			for(unsigned int i=0;i<ip_ports.size() && cnx == NULL;i+=2){
+					try{
+						cnx = Network::connect_to( ip_ports[i], ip_ports[i+1] );
+					}catch(Exception& e){}
+			}
+
+			if( cnx != NULL ){
+				boost::shared_ptr<Data_reader>
+				reader( new Data_reader_socket( cnx ) );
+				add_data_reader(info[3], reader);
+			}else{
+				MTHROW("Unable to connect");
+			}
+
+			CHECK_MPI( MPI_Send(NULL, 0, MPI_UINT32,
+													 status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
+													 MPI_COMM_WORLD ) );
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+		case MPI_TAG_ADD_TCP_READER_CONNECTED_FROM: {
+			get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+
+      MPI_Status status2;
+
+      /* - int32_t: data_writer_rank
+       * - int32_t: data_writer_stream_nr
+       * - int32_t: data_reader_rank
+       * - int32_t: data_reader_stream_nr
+       */
+      uint32_t params[4];
+      CHECK_MPI (
+								MPI_Recv(params, 4, MPI_UINT32,
+								status.MPI_SOURCE, status.MPI_TAG,
+								MPI_COMM_WORLD, &status)
+								);
+
+      SFXC_ASSERT(tcp_connection.get_port() > 0);
+
+			//DEBUG_MSG("Waiting for connexion between: "<< params[0] << " to:" << params[2]);
+      Data_reader_socket *data_reader = new Data_reader_socket( tcp_connection.open_connection() );
+
+      boost::shared_ptr<Data_reader> reader(data_reader);
+      add_data_reader(params[3], reader);
+      //DEBUG_MSG("A data reader is created from: "<< params[0] << " to:" << params[2]);
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+		}
   case MPI_TAG_ADD_DATA_READER_TCP2: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
@@ -85,7 +181,7 @@ Multiple_data_readers_controller::
 enable_buffering(unsigned int i) {
   SFXC_ASSERT(i < readers.size());
   SFXC_ASSERT(readers[i].reader2buffer != Reader2buffer_ptr());
-  SFXC_ASSERT(readers[i].reader2buffer->get_data_reader() != 
+  SFXC_ASSERT(readers[i].reader2buffer->get_data_reader() !=
               Data_reader_ptr());
   SFXC_ASSERT(readers[i].reader2buffer->get_queue() == Queue_ptr());
 
@@ -111,14 +207,14 @@ Multiple_data_readers_controller::get_data_reader(int i) {
 
   if (readers[i].reader_buffer != Reader_buffer_ptr())
     return readers[i].reader_buffer;
-  
+
   return readers[i].reader2buffer->get_data_reader();
 }
 
 bool Multiple_data_readers_controller::initialised(unsigned int i) {
   if (i >= readers.size()) return false;
   if (readers[i].reader2buffer == Reader2buffer_ptr()) return false;
-  return (readers[i].reader2buffer->get_data_reader() != 
+  return (readers[i].reader2buffer->get_data_reader() !=
           Data_reader_ptr());
 }
 
