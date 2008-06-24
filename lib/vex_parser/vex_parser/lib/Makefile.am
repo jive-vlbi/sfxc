@@ -2,7 +2,7 @@ AM_CXXFLAGS=-I@top_srcdir@/include -I@top_srcdir@/src -I.
 
 instdir = $(libdir)
 
-inst_LIBRARIES = libvex_parser.a libvex_parser32.a
+inst_LIBRARIES = libvex_parser32.a libvex_parser.a
 
 libvex_parser_a_SOURCES = \
   ../src/vex_parser.yy ../src/vex_scanner.ll \
