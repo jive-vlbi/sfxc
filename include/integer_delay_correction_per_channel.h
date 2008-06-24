@@ -14,8 +14,9 @@
 #include "utils.h"
 #include "delay_table_akima.h"
 #include "control_parameters.h"
+#include "tasklet/tasklet.h"
 
-class Integer_delay_correction_per_channel {
+class Integer_delay_correction_per_channel : public Tasklet {
 public:
   // Input data, this comes from the channel extractor
   typedef Input_node_types::Channel_buffer              Input_buffer;
