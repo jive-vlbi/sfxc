@@ -46,7 +46,7 @@ bool copy_file(char *from, char *to) {
   return true;
 }
 
-// Generates the html-pages used for the ftp-fringe tests. 
+// Generates the html-pages used for the ftp-fringe tests.
 int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG
   RANK_OF_NODE = 0;
@@ -93,11 +93,11 @@ int main(int argc, char *argv[]) {
   FILE *input = fopen(argv[2], "rb");
   assert(input != NULL);
 
-  char *output_dir = ".";
+  char *output_dir = (char*)".";
   if (argc==4)
     output_dir = argv[3];
   char *vex_file;
-  
+
   {
     // Copy the vex-file:
     char *from =argv[1];
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Empty correlation file" << std::endl;
     return 1;
   }
-    
+
 
   do {
     fringe_info.read_plots(!update);

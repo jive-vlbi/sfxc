@@ -156,14 +156,12 @@ Manager_node(int rank, int numtasks,
 									 correlator_rank, &pending_requests[currreq++] );
 	}
 
-	DEBUG_MSG("NUMBER OF REQUEST: " << currreq);
-
   // We simply sum all of the number of connexion eshtablished
   std::vector<MPI_Status> pending_status;
   pending_status.resize( currreq );
 
   MPI_Waitall( currreq, &pending_requests[0], &pending_status[0]);
-	std::cout << "ALL THE PENDING REQUEST HAVE SUCCEEDED ! " << std::endl;
+	std::cout << "All the connexion are established ! " << std::endl;
 }
 
 Manager_node::~Manager_node() {
