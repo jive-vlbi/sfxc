@@ -63,10 +63,6 @@
 #  endif
 #endif
 
-// NGHK: remove?
-const int   BufTime       =   16384; //delta time for Bufs in micro seconds
-
-
 #define RED(str) "[\033[31m"+str+"\033[30m]"
 #define GREEN(str) "[\033[32m"+str+"\033[30m]"
 #define YELLOW(str) "[\033[33m"+str+"\033[30m]"
