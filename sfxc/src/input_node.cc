@@ -30,6 +30,7 @@ Input_node::Input_node(int rank,
 transport_type(transport_type) {
   initialise();
 }
+
 Input_node::Input_node(int rank, int station_number,
                        TRANSPORT_TYPE transport_type) :
     Node(rank), input_node_ctrl(*this), data_reader_ctrl(*this),
@@ -43,6 +44,13 @@ void Input_node::initialise() {
   add_controller(&input_node_ctrl);
   add_controller(&data_reader_ctrl);
   add_controller(&data_writers_ctrl);
+
+	/// initialize and retreive the listening addresses/port
+  std::vector<uint64_t> addrs;
+	data_writers_ctrl.get_listening_ip( addrs );
+
+	/// send this to the manager NODE
+	MPI_Transfer::send_ip_address(addrs, RANK_MANAGER_NODE);
 
   int32_t msg;
   MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED,
@@ -132,7 +140,7 @@ void Input_node::add_time_slice(int channel, int stream, int starttime_slice,
   SFXC_ASSERT(input_node_tasklet != NULL);
 
   SFXC_ASSERT(stoptime_slice > starttime_slice);
-  
+
   input_node_tasklet->add_data_writer(channel,
                                       data_writers_ctrl.get_data_writer(stream));
 }

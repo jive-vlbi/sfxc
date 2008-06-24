@@ -10,6 +10,8 @@
 #ifndef MULTIPLE_DATA_READERS_CONTROLLER_H
 #define MULTIPLE_DATA_READERS_CONTROLLER_H
 
+#include "tcp_connection.h"
+
 #include "controller.h"
 
 #include "data_writer.h"
@@ -17,8 +19,8 @@
 #include "data_reader_buffer.h"
 
 #include "memory_pool_elements.h"
-#include <memory_pool.h>
-#include <threadsafe_queue.h>
+#include "memory_pool.h"
+#include "threadsafe_queue.h"
 
 
 class Multiple_data_readers_controller : public Controller {
@@ -57,6 +59,9 @@ public:
 
   /** The number of input readers **/
   size_t number_of_data_readers();
+
+  // This is the set of listening IP/port
+	void get_listening_ip(std::vector<uint64_t>& ip_port);
 private:
 
   void add_data_reader(int i, boost::shared_ptr<Data_reader> reader);
@@ -68,7 +73,10 @@ private:
     Reader2buffer_ptr  reader2buffer;
     Reader_buffer_ptr  reader_buffer;
   };
+
   std::vector<Reader> readers;
+
+  TCP_Connection tcp_connection;
 };
 
 #endif /* MULTIPLE_DATA_READERS_CONTROLLER_H */

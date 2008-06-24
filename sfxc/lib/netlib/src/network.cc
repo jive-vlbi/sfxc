@@ -213,6 +213,12 @@ pConnexion Network::connect_to(const String& ipaddress, unsigned short port, int
 		return get_any_interface()->connect_to(ipaddress, port, type);
 }
 
+
+pConnexion Network::connect_to(uint64_t ip, short port, int type)
+{
+		return get_any_interface()->connect_to(ip, port, type);
+}
+
 EndpointIP* Network::create_endpoint(unsigned short port)
 {
 		return get_any_interface()->create_endpoint(port);

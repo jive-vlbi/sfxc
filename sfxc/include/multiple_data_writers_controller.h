@@ -34,6 +34,9 @@ public:
 
   Data_writer_ptr get_data_writer(size_t i);
 
+	// This is the set of listening IP/port
+	void get_listening_ip(std::vector<uint64_t>& ip_port);
+
 private:
   void add_data_writer(unsigned int i, Data_writer_ptr writer);
 

@@ -16,6 +16,13 @@
 
 #include <queue>
 
+class Connexion_params
+{
+	public:
+		/// list of all listening ip/port
+		std::vector<uint64_t> ip_port_;
+};
+
 /** Abstract manager node which defines generic functions needed by
     manager nodes.
  **/
@@ -46,6 +53,22 @@ public:
   // for tcp
   void set_TCP(int writer_rank, int writer_stream_nr,
                int reader_rank, int reader_stream_nr);
+
+
+	// for tcp
+	// request that hte reader connect to the writer (this is simplified)
+	void connect_to( int writer_rank,
+									 int writer_stream_nr,
+                   int reader_rank,
+                   int reader_stream_nr,
+                   std::vector<uint64_t>& params, int rank, MPI_Request* req );
+
+	void connect_writer_to( int writer_rank,
+									 int writer_stream_nr,
+                   int reader_rank,
+                   int reader_stream_nr,
+                   std::vector<uint64_t>& params, int rank, MPI_Request* req );
+
   // for void
   void set_data_writer_void(int writer_rank, int writer_stream_nr);
 
@@ -62,7 +85,7 @@ public:
                       Input_node_parameters &input_node_params);
   /// Returns the time in milliseconds since midnight on the start-day
   int32_t input_node_get_current_time(const std::string &station);
-  void input_node_set_time(const std::string &station, 
+  void input_node_set_time(const std::string &station,
                            int32_t start_time, int32_t stop_time);
 
   // Send a new time slice, start and stop time are in milliseconds
@@ -119,6 +142,11 @@ protected:
   std::map<std::string, int> input_node_map;
   // Map from the input node number to the MPI_rank
   std::vector<int> input_node_rank;
+
+	// stores the connexion parameters to the input nodes
+  std::vector<Connexion_params*> input_node_cnx_params_;
+	std::vector<Connexion_params*> output_node_cnx_params_;
+
   // Map from the correlator node number to the MPI_rank
   std::vector<int> correlator_node_rank;
 

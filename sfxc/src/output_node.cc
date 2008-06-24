@@ -6,7 +6,7 @@
  * $Id$
  *
  */
-
+#include "mpi_transfer.h"
 #include "output_node.h"
 #include "utils.h"
 
@@ -42,6 +42,14 @@ void Output_node::initialise() {
   add_controller(&data_writer_ctrl);
 
   data_writer_ctrl.set_queue(output_queue);
+
+	/// initialize and retreive the listening addresses/port
+  std::vector<uint64_t> addrs;
+	data_readers_ctrl.get_listening_ip( addrs );
+
+	/// send this to the manager NODE
+	MPI_Transfer::send_ip_address(addrs, RANK_MANAGER_NODE);
+
 
   int32_t msg=0;
   MPI_Send(&msg, 1, MPI_INT32,

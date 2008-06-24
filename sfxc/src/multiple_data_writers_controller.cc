@@ -9,15 +9,22 @@
 
 #include "multiple_data_writers_controller.h"
 #include "sfxc_mpi.h"
+#include "mpi_transfer.h"
+#include "network.h"
+#include "interface.h"
 #include "data_writer_file.h"
 #include "data_writer_tcp.h"
+#include "data_writer_socket.h"
 #include "data_writer_void.h"
 #include "tcp_connection.h"
 
 Multiple_data_writers_controller::
 Multiple_data_writers_controller(Node &node, int max_connections)
     : Controller(node) {
-  int port = SFXC_PORT;
+
+	/// A bit tricky but this permit to avoid to much usless attemp to
+	/// create ports we now for sure that will not work.
+  int port = SFXC_PORT+RANK_OF_NODE*10;
   while (!tcp_connection.open_port(port, max_connections)) {
     port++;
   }
@@ -26,6 +33,23 @@ Multiple_data_writers_controller(Node &node, int max_connections)
 Multiple_data_writers_controller::
 ~Multiple_data_writers_controller() {}
 
+#include <arpa/inet.h>
+void
+Multiple_data_writers_controller::get_listening_ip(
+std::vector<uint64_t>& ip_port)
+{
+	std::vector<uint64_t> addrs;
+
+	tcp_connection.get_ip_addresses( addrs );
+
+	for(unsigned int i=0;i<addrs.size();i++){
+			in_addr tmp;
+			tmp.s_addr = addrs[i];
+			//DEBUG_MSG("ADDRESS: " << inet_ntoa( tmp ) << " port: " << tcp_connection.get_port() );
+			ip_port.push_back(addrs[i]);
+			ip_port.push_back( tcp_connection.get_port() );
+	}
+}
 
 boost::shared_ptr<Data_writer>
 Multiple_data_writers_controller::get_data_writer(size_t i) {
@@ -36,6 +60,71 @@ Multiple_data_writers_controller::get_data_writer(size_t i) {
 Multiple_data_writers_controller::Process_event_status
 Multiple_data_writers_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
+		case MPI_TAG_ADD_TCP_WRITER_CONNECTED_TO: {
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+
+			uint32_t info[4];
+			std::vector<uint64_t> ip_ports;
+			MPI_Transfer::recv_connect_writer_to_msg(info, ip_ports, status.MPI_SOURCE);
+
+			//DEBUG_MSG("Connexion: " << info[0] << " ->" <<  info[2] );
+			//DEBUG_MSG(" ip address:" <<  ip_ports.size() );
+
+      CHECK_MPI( MPI_Ssend(&info, 4, MPI_UINT32,
+													 info[0], MPI_TAG_ADD_TCP_READER_CONNECTED_FROM,
+													 MPI_COMM_WORLD ) );
+
+			// Connect to the given host
+			pConnexion cnx= NULL;
+			for(unsigned int i=0;i<ip_ports.size() && cnx == NULL;i+=2){
+					try{
+						cnx = Network::connect_to( ip_ports[i], ip_ports[i+1] );
+					}catch(Exception& e){}
+			}
+
+			if( cnx != NULL ){
+				boost::shared_ptr<Data_writer>
+				reader( new Data_writer_socket( cnx ) );
+				add_data_writer(info[1], reader);
+			}else{
+				MTHROW("Unable to connect");
+			}
+
+			CHECK_MPI( MPI_Send(NULL, 0, MPI_UINT32,
+													 status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
+													 MPI_COMM_WORLD ) );
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+  case MPI_TAG_ADD_TCP_WRITER_CONNECTED_FROM: {
+			get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+
+      MPI_Status status2;
+
+      /* - int32_t: data_writer_rank
+       * - int32_t: data_writer_stream_nr
+       * - int32_t: data_reader_rank
+       * - int32_t: data_reader_stream_nr
+       */
+      uint32_t params[4];
+      CHECK_MPI (
+								MPI_Recv(params, 4, MPI_UINT32,
+								status.MPI_SOURCE, status.MPI_TAG,
+								MPI_COMM_WORLD, &status)
+								);
+
+      SFXC_ASSERT(tcp_connection.get_port() > 0);
+
+			//DEBUG_MSG("Waiting for connexion between: "<< params[0] << " to:" << params[2]);
+      Data_writer_tcp *data_writer = new Data_writer_tcp();
+      data_writer->open_connection(tcp_connection);
+
+      boost::shared_ptr<Data_writer> writer(data_writer);
+      add_data_writer(params[1], writer);
+      //DEBUG_MSG("A data writer is created from: "<< params[0] << " to:" << params[2]);
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+	}
   case MPI_TAG_ADD_TCP: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 

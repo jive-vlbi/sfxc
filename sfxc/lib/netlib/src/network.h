@@ -34,6 +34,7 @@ public:
   static pInterfaceIP scan_interfaces();
 
 	static pConnexion connect_to(const std::string& ipaddress, unsigned short port, int type=SOCK_STREAM);
+	static pConnexion connect_to(uint64_t ip, short port, int type=SOCK_STREAM);
 
 	static EndpointIP* create_endpoint(unsigned short port=0);
 protected:

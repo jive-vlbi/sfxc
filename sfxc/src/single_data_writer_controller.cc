@@ -9,8 +9,13 @@
 
 #include "single_data_writer_controller.h"
 #include "sfxc_mpi.h"
+#include "mpi_transfer.h"
 #include "data_writer_file.h"
 #include "data_writer_tcp.h"
+#include "data_writer_socket.h"
+#include "network.h"
+#include "interface.h"
+
 #include "data_writer_void.h"
 #include "utils.h"
 
@@ -32,6 +37,46 @@ Single_data_writer_controller::Process_event_status
 Single_data_writer_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
+		case MPI_TAG_ADD_TCP_WRITER_CONNECTED_TO: {
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+
+			uint32_t info[4];
+			std::vector<uint64_t> ip_ports;
+			MPI_Transfer::recv_connect_writer_to_msg(info, ip_ports, status.MPI_SOURCE);
+
+			//DEBUG_MSG("SINGLE DATA Connexion: " << info[0] << " ->" <<  info[2] );
+			//DEBUG_MSG("SINGLE DATA  ip address:" <<  ip_ports.size() );
+
+      CHECK_MPI( MPI_Ssend(&info, 4, MPI_UINT32,
+													 info[2], MPI_TAG_ADD_TCP_READER_CONNECTED_FROM,
+													 MPI_COMM_WORLD ) );
+
+			//DEBUG_MSG("SINGLE DATA  connecting !:" );
+
+			// Connect to the given host
+			pConnexion cnx= NULL;
+			for(unsigned int i=0;i<ip_ports.size() && cnx == NULL;i+=2){
+					try{
+						cnx = Network::connect_to( ip_ports[i], ip_ports[i+1] );
+					}catch(Exception& e){}
+			}
+
+			if( cnx != NULL ){
+				boost::shared_ptr<Data_writer>
+				reader( new Data_writer_socket( cnx ) );
+				set_data_writer(info[1], reader);
+			}else{
+				MTHROW("Unable to connect");
+			}
+
+			CHECK_MPI( MPI_Send(NULL, 0, MPI_UINT32,
+													 status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
+													 MPI_COMM_WORLD ) );
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+
+
   case MPI_TAG_ADD_DATA_WRITER_FILE2: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       int size;

@@ -135,6 +135,24 @@ enum MPI_TAG {
    **/
   MPI_TAG_CONNEXION_INFO,
 
+  /** Be ready to accept a client.
+   **/
+  MPI_TAG_ADD_TCP_READER_CONNECTED_TO,
+
+	/** Be ready to accept a client.
+   **/
+  MPI_TAG_ADD_TCP_WRITER_CONNECTED_TO,
+
+
+	/** A message containing IP:PORT connexion info.
+   **/
+  MPI_TAG_ADD_TCP_WRITER_CONNECTED_FROM,
+
+	/** A message containing IP:PORT connexion info.
+   **/
+  MPI_TAG_ADD_TCP_READER_CONNECTED_FROM,
+
+
   // Node specific commands
   //-------------------------------------------------------------------------//
   /** Terminate a node. Note that the Output node has its own message
@@ -275,6 +293,20 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
 	case MPI_TAG_CONNEXION_INFO:{
 	    return "MPI_TAG_CONNEXION_INFO";
 		}
+	case MPI_TAG_ADD_TCP_READER_CONNECTED_TO:{
+	    return "MPI_TAG_ADD_TCP_READER_CONNECTED_TO";
+		}
+	case MPI_TAG_ADD_TCP_WRITER_CONNECTED_FROM:{
+	    return "MPI_TAG_ADD_TCP_WRITER_CONNECTED_FROM";
+	}
+
+	case MPI_TAG_ADD_TCP_WRITER_CONNECTED_TO:{
+	    return "MPI_TAG_ADD_TCP_WRITER_CONNECTED_TO";
+		}
+	case MPI_TAG_ADD_TCP_READER_CONNECTED_FROM:{
+	    return "MPI_TAG_ADD_TCP_READER_CONNECTED_FROM";
+		}
+
   case MPI_TAG_ADD_DATA_WRITER_FILE2: {
       return "MPI_TAG_ADD_DATA_WRITER_FILE";
     }
