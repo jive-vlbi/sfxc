@@ -1,1 +1,4 @@
-SUBDIRS = calc10 common containers netlib testunit jsoncpp gsl vex_parser common/test containers/test
+SUBDIRS = \
+  vex_parser calc10 \
+  jsoncpp gsl \
+  common common/test containers containers/test netlib testunit 
