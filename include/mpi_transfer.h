@@ -30,6 +30,9 @@ public:
 
   static void send(Correlation_parameters &corr_param, int rank);
   static void receive(MPI_Status &status, Correlation_parameters &corr_param);
+
+  static void send_ip_address(std::vector<uint64_t> params, const int rank);
+  static void receive_ip_address(std::vector<uint64_t> params, const int rank);
 };
 
 #endif /*MPI_TRANSFER_H_*/

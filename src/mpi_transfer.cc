@@ -10,10 +10,37 @@
 #include "mpi_transfer.h"
 #include "types.h"
 #include "utils.h"
+#include "exception_common.h"
 
 #include <iostream>
 
 MPI_Transfer::MPI_Transfer() {}
+
+
+void MPI_Transfer::send_ip_address(std::vector<uint64_t> param, const int rank)
+{
+	/// The param argument should contains a list of IP-port addresses
+	SFXC_ASSERT( param.size() % 2 == 0);
+
+  CHECK_MPI( MPI_Send(&param[0], param.size(), MPI_INT64, rank,
+											MPI_TAG_CONNEXION_INFO, MPI_COMM_WORLD) );
+}
+
+void MPI_Transfer::receive_ip_address(std::vector<uint64_t> param, const int rank)
+{
+	MPI_Status status;
+	int size;
+	MPI_Get_elements(&status, MPI_INT64, &size);
+  SFXC_ASSERT(size > 0);
+  SFXC_ASSERT(size % 2 == 0);
+
+	param.resize(size);
+
+  MPI_Recv(&param[0], size,
+					MPI_INT64, rank,
+					MPI_TAG_CONNEXION_INFO, MPI_COMM_WORLD, &status);
+}
+
 
 void
 MPI_Transfer::

@@ -131,6 +131,10 @@ enum MPI_TAG {
    **/
   MPI_TAG_CONNECTION_ESTABLISHED,
 
+  /** A message containing IP:PORT connexion info.
+   **/
+  MPI_TAG_CONNEXION_INFO,
+
   // Node specific commands
   //-------------------------------------------------------------------------//
   /** Terminate a node. Note that the Output node has its own message
@@ -140,7 +144,7 @@ enum MPI_TAG {
 
   // Node specific commands
   //-------------------------------------------------------------------------//
-  /** An assertion failed. Terminate all nodes nicely. 
+  /** An assertion failed. Terminate all nodes nicely.
    * This message is sent from the node to the manager node that terminates all
    * other nodes.
    * - int32_t: no specific value
@@ -268,6 +272,9 @@ enum MPI_TAG {
 //     -e "s:^\(.*\)$:    case \1\:\n      \{ return \"\1\"; \}:"
 inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
   switch (tag) {
+	case MPI_TAG_CONNEXION_INFO:{
+	    return "MPI_TAG_CONNEXION_INFO";
+		}
   case MPI_TAG_ADD_DATA_WRITER_FILE2: {
       return "MPI_TAG_ADD_DATA_WRITER_FILE";
     }

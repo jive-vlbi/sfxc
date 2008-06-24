@@ -133,17 +133,17 @@ void show_data() {
     { // Plot the data
       gnuplot_ctrl * g = gnuplot_init();
 
-      gnuplot_setstyle(g, "lines");
+      gnuplot_setstyle(g, (char*)"lines" );
       //gnuplot_cmd(g, "set hidden3d");
 
-      gnuplot_cmd(g, "set terminal png");
-      gnuplot_cmd(g, "set autoscale");
+      gnuplot_cmd(g, (char*)"set terminal png");
+      gnuplot_cmd(g, (char*)"set autoscale");
 
-      gnuplot_cmd(g, "set noxtics");
-      gnuplot_cmd(g, "set noytics");
-      gnuplot_cmd(g, "set noztics");
-      gnuplot_cmd(g, "set noborder");
-      gnuplot_cmd(g, "set view 70,150,.75,1.5");
+      gnuplot_cmd(g, (char*)"set noxtics");
+      gnuplot_cmd(g, (char*)"set noytics");
+      gnuplot_cmd(g, (char*)"set noztics");
+      gnuplot_cmd(g, (char*)"set noborder");
+      gnuplot_cmd(g, (char*)"set view 70,150,.75,1.5");
 
       snprintf(cmd, 80, "set output \"%s\"", plot_file);
       gnuplot_cmd(g, cmd);
@@ -206,6 +206,6 @@ int main(int argc, char * argv[]) {
 
   char cmd[80];
   snprintf(cmd, 80, "convert -delay 50 -loop 0 %s/mov*.png anim.gif", tmp_dir);
-  
+
   return system(cmd);
 }
