@@ -13,4 +13,4 @@ libvex_parser32_a_SOURCES  = \
   ../src/Vex++.cc ../src/Vexpp_node.cc
 libvex_parser32_a_CXXFLAGS = $(AM_CXXFLAGS) -m32
 
-../src/generic.h: vex_parser.h
+../src/Vex++.cc: vex_parser.cc
