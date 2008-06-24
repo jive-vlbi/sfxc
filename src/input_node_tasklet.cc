@@ -395,12 +395,12 @@ get_stop_time() {
 void
 Input_node_tasklet::
 add_data_writer(size_t i,
-                Data_writer_ptr_ data_writer,
-                int nr_seconds) {
+                Data_writer_ptr_ data_writer) {
   did_work = true;
   SFXC_ASSERT(i < data_writers_.size());
   SFXC_ASSERT(!integer_delay_.empty());
   SFXC_ASSERT(integer_delay_[i] != NULL);
-  int size_slice = integer_delay_[i]->bytes_of_output(nr_seconds);
+  // Number of bytes for one integration slice
+  int size_slice = integer_delay_[i]->bytes_of_output();
   data_writers_[i].add_data_writer(data_writer, size_slice);
 }

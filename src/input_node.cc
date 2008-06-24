@@ -131,9 +131,10 @@ void Input_node::add_time_slice(int channel, int stream, int starttime_slice,
 
   SFXC_ASSERT(input_node_tasklet != NULL);
 
+  SFXC_ASSERT(stoptime_slice > starttime_slice);
+  
   input_node_tasklet->add_data_writer(channel,
-                                      data_writers_ctrl.get_data_writer(stream),
-                                      stoptime_slice-starttime_slice);
+                                      data_writers_ctrl.get_data_writer(stream));
 }
 
 int Input_node::get_status() {

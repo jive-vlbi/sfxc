@@ -50,6 +50,7 @@ public:
   void open(const char *delayTableName);
 
   //calculate the delay for the delayType at time in microseconds
+  // delay is in seconds
   double delay(int64_t time);
 
   /// A spline only interpolates one scan.
