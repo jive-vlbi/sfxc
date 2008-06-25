@@ -96,6 +96,10 @@ extern int RANK_OF_NODE; // Rank of the current node
 void abort_sfxc(const char *file, int line, const char* message);
 void abort(const char *file, int line, const char* message);
 
+#ifdef NDEBUG
+#define SFXC_ASSERT(c)
+#define SFXC_ASSERT_MSG(c, msg)
+#else
 #ifdef USE_MPI
 #define SFXC_ASSERT(c) \
   { if (!(c)) abort_sfxc(__FILE__, __LINE__, #c ); }
@@ -109,6 +113,7 @@ void abort(const char *file, int line, const char* message);
 #define SFXC_ASSERT_MSG(c, msg) \
   { if (!(c)) abort(__FILE__, __LINE__, msg ); }
 #endif // USE_MPI
+#endif // NDEBUG
 
 #define USE_DOUBLE
 
