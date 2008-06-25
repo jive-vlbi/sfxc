@@ -29,8 +29,8 @@ def update_state(id, curr, max):
     process[id][0] = curr
     process[id][1] = max
   else:
-    process[id] = [1,1,0, "",0,0]     
-    #corrnode=corrnode+1  
+    process[id] = [1,1,0, "",0,0]
+    #corrnode=corrnode+1
 
 def count_packet():
   global process
@@ -44,7 +44,7 @@ def update_count(id, packet, time):
   if process.has_key(id):
     if process[id][3] == "" and process[id][5] == 0:
       corrnode=corrnode+1
-      process[id][5] = 1  
+      process[id][5] = 1
     process[id][2] = process[id][2]+1
     process[id][3] = time
     process[id][4] = packet
@@ -67,7 +67,7 @@ def time_to_int(time):
   #itime = itime*1000000
   #print " this give: "+`itime`
   return itime
-  
+
 def set_start_time(time):
   global start_time
   global current_time
@@ -87,7 +87,7 @@ def update_current(ctime):
 
 #funfun = ['-','\\','|', '/']
 funfun = ['>']
-funfunid = 0  
+funfunid = 0
 def bargraph(current, end, size):
   global funfun, funfunid
   current_pos = 0
@@ -107,16 +107,16 @@ def percent(current, total):
 
 def make_display(runtime, last_lines):
   global process, funfunid, runtimefull
-    
+
   funfunid+=funfunid+1
-  if funfunid >= len(funfun): 
+  if funfunid >= len(funfun):
     funfunid = 0
-  
+
   display =  "\x1b[2J"
   display += "-----------------------------========= SFXC MONITOR ========-----------------------------------\n"
-  display += "running since: "+`runtime`+"sec\n" 
-  display += "durationfull: "+`runtimefull`+"sec\n" 
-  display += "number of second to correlate: "+`(stop_time-start_time)/1000`+"sec\n" 
+  display += "running since: "+`runtime`+"sec\n"
+  display += "durationfull: "+`runtimefull`+"sec\n"
+  display += "number of second to correlate: "+`(stop_time-start_time)/1000`+"sec\n"
   display += "timeslice processed:"+`count_packet()`+"\n"
   if not runtime == 0:
     display+="processing speed:"+`(1.0*count_packet())/runtime`+" ts/s\n"
@@ -128,12 +128,12 @@ def make_display(runtime, last_lines):
 
   if not runtimefull == 0:
     display+="  Real-time full:"+`(current_time-start_time2)*100/(runtimefull*1000)`+"%"
-  
+
 
   display+="\n"
   idx = 0
   if len(process.keys()) < 25:
-    
+
     for i in process.keys():
       if i < 10:
         display+="Core["+`i`+"]:  P: "+process[i][3]+"["+`process[i][4]`+"]"
@@ -141,7 +141,7 @@ def make_display(runtime, last_lines):
         display+="Core["+`i`+"]: P: "+process[i][3]+"["+`process[i][4]`+"]"
       display+=bargraph(process[i][0], process[i][1], 40)
       display+=":"+`process[i][2]`+"\n"
-  elif len(process.keys()) < 50: 
+  elif len(process.keys()) < 50:
     for i in process.keys():
       idx=idx+1
       if i < 10:
@@ -154,7 +154,7 @@ def make_display(runtime, last_lines):
         display+="\n"
       else:
         display+="   "
-  elif len(process.keys()) < 150: 
+  elif len(process.keys()) < 150:
     for i in process.keys():
       idx = idx+1
       if i < 10:
@@ -167,7 +167,23 @@ def make_display(runtime, last_lines):
         display+="\n"
       else:
         display+="   "
-      
+  elif len(process.keys()) < 300:
+    for i in process.keys():
+      idx = idx+1
+      if i < 10:
+        display+="["+`i`+"]:  "
+      elif i < 100:
+        display+="["+`i`+"]: "
+      else:
+        display+="["+`i`+"]:"
+      display+=bargraph(process[i][0], process[i][1], 4)
+      display+=":"+`process[i][2]`
+      if (idx) % 8 == 0:
+        display+="\n"
+      else:
+        display+="   "
+
+
   display+="\n"
   display+="-----------------------------------------------------------------------------------------------\n"
   for i in last_lines:
@@ -180,7 +196,7 @@ def display(runtime, last_lines):
   global process, runtimefull,corrnode, start_time2, current_time
   displaystr = make_display(runtime, last_lines)
   print displaystr
-  
+
 
 last_lines=[]
 time_start_correlation = 0
@@ -212,23 +228,23 @@ for i in range(0,10000):
         except:
           print "BROKEN LINE:" + line
     if not ret:
-      ret = re.match(".* PROGRESS t=[0-9]*:.* start ([0-9a-z]*), channel ([0-9,]*) to correlation node ([0-9]+)", line)      
+      ret = re.match(".* PROGRESS t=[0-9]*:.* start ([0-9a-z]*), channel ([0-9,]*) to correlation node ([0-9]+)", line)
       if ret:
         update_count(int(ret.groups()[2]), ret.groups()[1], ret.groups()[0])
         update_current( ret.groups()[0] )
     if not ret:
-      ret = re.match(".* PROGRESS t=([0-9]*): start correlating", line)      
+      ret = re.match(".* PROGRESS t=([0-9]*): start correlating", line)
       if ret:
         if time_start_correlation == 0:
           time_start_correlation = int(ret.groups()[0])/1000000
         found_start_correlation = True
     if not ret:
-      ret = re.match(".* PROGRESS t=([0-9]*): terminating nodes", line)      
+      ret = re.match(".* PROGRESS t=([0-9]*): terminating nodes", line)
       if ret:
         if time_end_correlation == 0:
           time_end_correlation = int(ret.groups()[0])/1000000
     if not ret:
-      ret = re.match(".* PROGRESS t=([0-9]*): starting timeslice ([0-9]*)", line)      
+      ret = re.match(".* PROGRESS t=([0-9]*): starting timeslice ([0-9]*)", line)
       if ret:
         start_prev_timeslice = start_curr_timeslice
         start_curr_timeslice = int(ret.groups()[0])
@@ -237,7 +253,7 @@ for i in range(0,10000):
       last_lines.append(line)
       if( len(last_lines) > 6 ):
         last_lines.pop(0)
-  
+
   tmpfile.close()
 
   time.sleep(1);
