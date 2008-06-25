@@ -19,7 +19,7 @@ AC_CHECK_LIB(m, sin)
 AC_CHECK_LIB(pthread, sem_init)
 
 dnl setting flags for sfxc
-SFXC_CXXFLAGS='-I${top_srcdir}/include '
+SFXC_CXXFLAGS='-I${top_srcdir}/include -DUSE_MPI'
 SFXC_LDADD=' '
 
 AC_CHECK_FUNCS(sincos)
