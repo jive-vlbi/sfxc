@@ -36,6 +36,7 @@ OBJ=\
   channel_extractor_brute_force.cc \
   channel_extractor_5.cc \
   channel_extractor_utils.cc \
+  channel_extractor_dynamic.cc \
   tasklet/tasklet.cc \
   tasklet/tasklet_manager.cc \
   tasklet/tasklet_pool.cc \

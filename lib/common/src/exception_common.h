@@ -32,6 +32,7 @@ public:
   * be tiring to type evertime, use the macro
   * MTHROW when you want to throw an exception.
   *******************************************/
+  Exception(const std::string& message);
   Exception(const std::string& message, Backtrace& bt);
   virtual ~Exception() throw ();
 

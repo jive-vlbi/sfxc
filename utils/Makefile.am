@@ -2,7 +2,7 @@ SUBDIRS = delay
 
 pkginclude_HEADERS = *.h *.py
 
-AM_CXXFLAGS = $(SFXC_CXXFLAGS)
+CXXFLAGS = $(SFXC_CXXFLAGS)
 LDADD = $(SFXC_LDADD)
 
 bin_PROGRAMS = mark5a_print_headers \
@@ -16,9 +16,32 @@ bin_PROGRAMS = mark5a_print_headers \
                dnfp_fileclient \
                phase_plot \
                make_anim \
-               baseline_info
+               baseline_info \
+							 extract_channelizer
 
 bin_SCRIPTS  = run_sfxc.py vumeter.py
+
+extract_channelizer_CXXFLAGS=
+extract_channelizer_SOURCES = \
+  extract_channelizer.cc \
+  ../src/control_parameters.cc \
+  ../src/log_writer_cout.cc \
+  ../src/log_writer.cc \
+  ../src/data_reader.cc \
+  ../src/data_writer.cc \
+  ../src/data_reader_file.cc \
+  ../src/mark5a_reader.cc \
+  ../src/mark5a_header.cc \
+  ../src/data_reader_factory.cc \
+  ../src/data_reader_dnfp.cc \
+  ../src/data_reader_mark5.cc \
+	../src/data_reader_socket.cc \
+	../src/data_writer_socket.cc \
+	../src/data_reader_blocking.cc \
+	../src/channel_extractor_utils.cc \
+	../src/channel_extractor_dynamic.cc \
+	../src/channel_extractor_fast.cc \
+  ../src/utils.cc
 
 dnfp_fileserver_SOURCES = \
   dnfp_fileserver.cc \

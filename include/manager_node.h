@@ -31,7 +31,7 @@ private:
 
 
 /**
- * The manager node 
+ * The manager node
  * \ingroup Node
  **/
 class Manager_node : public Abstract_manager_node {
@@ -92,6 +92,7 @@ private:
 
   /// The number of the integration slice
   int32_t integration_slice_nr;
+
   /// Number of the slice for the output node
   int32_t output_slice_nr;
 

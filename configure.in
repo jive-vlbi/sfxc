@@ -73,6 +73,7 @@ DAMIEN_CXXFLAGS='-I${top_srcdir}/lib/common/src -I${top_srcdir}/lib/containers/s
 DAMIEN_LDADD='-L${top_srcdir}/lib/testunit -ltestunit -L${top_srcdir}/lib/netlib -lnetlib -L${top_srcdir}/lib/containers -lcontainers -L${top_srcdir}/lib/common -lcommon '
 AC_SUBST(DAMIEN_CXXFLAGS)
 AC_SUBST(DAMIEN_LDADD)
+
 SFXC_CXXFLAGS="$SFXC_CXXFLAGS $DAMIEN_CXXFLAGS"
 SFXC_LDADD="$SFXC_LDADD $DAMIEN_LDADD"
 
@@ -124,9 +125,21 @@ AC_SUBST(VEX_PARSER_LDADD)
 SFXC_CXXFLAGS="$SFXC_CXXFLAGS $VEX_PARSER_CXXFLAGS"
 SFXC_LDADD="$SFXC_LDADD $VEX_PARSER_LDADD"
 
+BASE_CXXFLAGS='-I${top_srcdir}/include '
+BASE_LDADD=' '
+
+AC_SUBST(BASE_CXXFLAGS)
+AC_SUBST(BASE_LDADD)
+
+UTILS_CXXFLAGS="$BASE_CXXFLAGS $VEX_PARSER_CXXFLAGS $JSONCPP_CXXFLAGS $DAMIEN_CXXFLAGS $FFTW_CXXFLAGS"
+UTILS_LDADD="$BASE_LDADD $VEX_PARSER_LDADD $JSONCPP_LDADD $DAMIEN_LDADD $FFTW_LDADD"
+
 dnl exporting sfxc flags
 AC_SUBST(SFXC_CXXFLAGS)
 AC_SUBST(SFXC_LDADD)
+
+AC_SUBST(UTILS_CXXFLAGS)
+AC_SUBST(UTILS_LDADD)
 
 
 dnl ---------------------------------------------------------------------------
@@ -137,7 +150,7 @@ AC_ARG_ENABLE(debug,
               [  --enable-debug          Enable debugging information],
               USE_DEBUG="$enableval", USE_DEBUG="no")
 
-if test $USE_DEBUG = "yes"; then 
+if test $USE_DEBUG = "yes"; then
   CFLAGS="$CFLAGS -g -DSFXC_PRINT_DEBUG -rdynamic"
   CXXFLAGS="$CXXFLAGS -g -DSFXC_PRINT_DEBUG -rdynamic"
 fi
@@ -148,7 +161,7 @@ AC_ARG_ENABLE(progress,
               [  --enable-progress        Enable progress messages],
               PRINT_PROGRESS="$enableval", PRINT_PROGRESS="no")
 
-if test $PRINT_PROGRESS = "yes"; then 
+if test $PRINT_PROGRESS = "yes"; then
   CFLAGS="$CFLAGS -DPRINT_PROGRESS -DSFXC_PRINT_DEBUG"
   CXXFLAGS="$CXXFLAGS -DPRINT_PROGRESS -DSFXC_PRINT_DEBUG"
 fi
@@ -156,7 +169,6 @@ fi
 
 dnl export these variable (so Makefile substitutions
 dnl can be made.
-AC_SUBST(CFLAGS)
 AC_SUBST(CFLAGS)
 AC_SUBST(CXXFLAGS)
 AC_SUBST(LDFLAGS)

@@ -120,14 +120,14 @@ baseline over time
   
 dnfp_fileclient
 ---------------
-A utility made by Damien to transfer data from a dnfp_server 
+Transfer data from a dnfp_server 
 
 This file contains a little file client based on a simple protocol. 
 The application simply connect to a dnfp server and request a file.
 
 dnfp_fileserver
 ---------------
-A utility made by Damien to serve data over a network
+Serve data over a network
 
 This file contains a little file server based on a simple protocol. 
 The application use a config file named: dnfp_configfile.cfg
@@ -135,3 +135,10 @@ The application use a config file named: dnfp_configfile.cfg
 this file stores the list of file to expose to the clients...and there 
 symbolic name in the format:
 name1 /path/to/real/file
+
+extract_channelizer
+-------------------
+Extract the channel bit-organization from the file involved in an
+experiment. This information is then used to generate a 
+optimized channel_extractor that can then be loaded by sfxc
+speeding its input_node processing by a factor of two.
