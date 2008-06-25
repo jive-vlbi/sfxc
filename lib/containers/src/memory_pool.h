@@ -69,6 +69,8 @@ class Memory_pool {
 public:
   class Resize_policy;
 
+	~Memory_pool();
+
   typedef boost::shared_ptr<Resize_policy> PolicyPtr;
   typedef boost::shared_ptr<Allocator<T> > AllocatorPtr;
 
@@ -469,6 +471,14 @@ policy_(policy), allocator_(allocator)
 		m_freerefqueue.push(ref);
   }
 }
+
+template<class T>
+Memory_pool<T>::~Memory_pool() {
+  // Make sure all elements are in the memory pool, otherwise they
+  // will try to reinsert themselves into a non-existing pool.
+  MASSERT(full());
+}
+
 
 template<class T>
 void Memory_pool<T>::resize(unsigned int newsize) {
