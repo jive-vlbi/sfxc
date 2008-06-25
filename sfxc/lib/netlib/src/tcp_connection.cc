@@ -19,6 +19,7 @@
 #include <assert.h>
 
 #include "tcp_connection.h"
+#include "utils.h"
 
 TCP_Connection::TCP_Connection(bool verbose)
     : verbose(verbose), connection_socket(-1), port_nr(-1) {}
@@ -97,13 +98,19 @@ TCP_Connection::open_connection() {
   // connections on listenSocket, before connectSocket is closed,
   // but this program doesn't do that.
   clientAddressLength = sizeof(clientAddress);
-  connectSocket = accept(connection_socket,
-                         (struct sockaddr *) &clientAddress,
-                         &clientAddressLength);
-  if (connectSocket < 0) {
-    std::cout << "cannot accept connection ";
-    return 0;
-  }
+  do {
+    connectSocket = accept(connection_socket,
+                           (struct sockaddr *) &clientAddress,
+                           &clientAddressLength);
+
+    if ((connectSocket <= 0) && 
+        (errno != EINTR)) {
+      std::cout << "cannot accept connection" << std::endl;
+      std::cout << "error message: " << strerror(errno) << std::endl;
+      return 0;
+    }
+
+  } while (connectSocket <= 0);
 
   // Show the IP address of the client.
   // inet_ntoa() converts an IP address from binary form to the
