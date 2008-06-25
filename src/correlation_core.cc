@@ -149,7 +149,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
                        reinterpret_cast<FFTW_COMPLEX*>(&backward_buffer[0]),
                        FFTW_BACKWARD,
                        FFTW_ESTIMATE);
-#endif // SFXC_WRITE_STATS    
+#endif // SFXC_WRITE_STATS
   }
 }
 
@@ -194,6 +194,8 @@ void Correlation_core::integration_step() {
     input_elements[i] = input_buffers[i]->front();
   }
 
+
+#ifndef DUMMY_CORRELATION
   // Do the fft from time to frequency:
   SFXC_ASSERT(frequency_buffer.size() == number_input_streams_in_use());
   for (size_t i=0; i<frequency_buffer.size(); i++) {
@@ -248,7 +250,7 @@ void Correlation_core::integration_step() {
     SFXC_ASSERT(stats_out.is_open());
 
     // Reset buffer:
-    for (size_t i=0; i<size_of_fft()/2+1; i++) 
+    for (size_t i=0; i<size_of_fft()/2+1; i++)
       backward_buffer[i] = 0;
 
     int baseline = number_input_streams_in_use();
@@ -283,6 +285,8 @@ void Correlation_core::integration_step() {
               << max_pos << std::endl;
   }
 #endif // SFXC_WRITE_STATS
+
+#endif // DUMMY_CORRELATION
 
   for (size_t i=0; i<number_input_streams_in_use(); i++) {
     input_buffers[i]->pop();
