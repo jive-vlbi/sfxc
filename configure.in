@@ -17,6 +17,8 @@ AC_LANG_CPLUSPLUS
 dnl Checking generic c libraries
 AC_CHECK_LIB(m, sin)
 AC_CHECK_LIB(pthread, sem_init)
+dnl Needed for the optimized channel extractor
+AC_CHECK_LIB(dl, dlopen)
 
 dnl setting flags for sfxc
 SFXC_CXXFLAGS='-I${top_srcdir}/include -DUSE_MPI'
