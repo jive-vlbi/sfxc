@@ -70,6 +70,8 @@ void Delay_correction::do_task() {
   Output_buffer_element output = output_memory_pool.allocate();
   size_t input_size = (input.data().bytes_count()-1)*8/ correlation_parameters.bits_per_sample;
 
+
+#ifndef DUMMY_CORRELATION
   // A factor of 2 for padding
   if (output->size() != 2*input_size) {
     output->resize(input_size*2);
@@ -77,11 +79,9 @@ void Delay_correction::do_task() {
 
   bit2float(input, output->buffer() );
 
-
   double delay = get_delay(current_time+length_of_one_fft()/2);
   double delay_in_samples = delay*sample_rate();
   int integer_delay = (int)std::floor(delay_in_samples+.5);
-
 
   // Output is in frequency_buffer
   fractional_bit_shift(output->buffer(),
@@ -97,6 +97,7 @@ void Delay_correction::do_task() {
   for (int i = n_channels; i < 2*n_channels; i++) {
     (*output)[i] = 0;
   }
+#endif // DUMMY_CORRELATION
 
   input_buffer->pop();
   output_buffer->push(output);
