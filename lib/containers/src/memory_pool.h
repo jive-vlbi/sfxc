@@ -9,7 +9,8 @@
  * This file is part of:
  *   - containers library
  * This file contains:
- *   - Declaration and definition of the pc_buffer
+ *   - Declaration and definition of the memory_pool object. It can be used
+ *     to manage a set of pre-allocated elements.
  */
 #ifndef PC_BUFFER_H
 #define PC_BUFFER_H
@@ -66,9 +67,6 @@ typedef enum
 template<class T>
 class Memory_pool {
 public:
-
-
-
   class Resize_policy;
 
   typedef boost::shared_ptr<Resize_policy> PolicyPtr;
@@ -88,8 +86,6 @@ public:
     virtual bool check_size(Memory_pool<T>& pool, unsigned int newsize) = 0;
     virtual void resize(Memory_pool<T>& pool) = 0 ;
   };
-
-
 
   /************************************
   * @class NoResize_policy
@@ -143,19 +139,49 @@ class NoResize_policy : public Resize_policy {
     }
 
     virtual void resize(Memory_pool<T>& pool) {
-      std::cout << "REQUEST FOR RESIZE THIS IS AN EXPERIMENTAL FEATURE:" << max_resize_count_ << std::endl;
+      //std::cout << "REQUEST FOR RESIZE THIS IS AN EXPERIMENTAL FEATURE:" << max_resize_count_ << std::endl;
       if ( cur_resize_count_ < max_resize_count_ ) {
-        std::cout << "REQUEST FOR RESIZE NEW BUFFER SIZE IS:" << pool.size_no_lock()*2 << std::endl;
+        DEBUG_MSG("REQUEST FOR RESIZE NEW BUFFER SIZE IS:" << pool.size_no_lock()*2 );
         pool.resize_no_lock(pool.size_no_lock()*2);
         cur_resize_count_++;
       } else {
-        MTHROW("The memory pool is definitively empty.")
+      	//std::cout << "Memory pool is empty...should block :" << pool.size_no_lock()*2 << std::endl;
+        //MTHROW("The memory pool is definitively empty.")
       }
     }
   private:
     int max_resize_count_;
     int cur_resize_count_;
   };
+
+	class TS_Reference
+	{
+		public:
+				int reference_;
+				Mutex mutex_;
+
+				TS_Reference(){
+					reference_=0;
+				}
+
+				void incr(){
+					RAIIMutex raii(mutex_);
+					MASSERT( reference_ >= 0 );
+					reference_++;
+				}
+
+				void decr(){
+					RAIIMutex raii(mutex_);
+					MASSERT( reference_ >= 0 );
+					reference_--;
+				}
+
+				int value(){
+					RAIIMutex raii(mutex_);
+					MASSERT( reference_ >= 0 );
+					return reference_;
+				}
+	};
 
 
   /************************************
@@ -214,7 +240,7 @@ class NoResize_policy : public Resize_policy {
     void release();
 
     friend class Memory_pool<T>;
-    Buffer_element(Type* data, Memory_pool<T>* owner);
+    Buffer_element(Type* data, Memory_pool<T>* owner, TS_Reference* ref);
 
     // Pointer to the data
     T* m_data;
@@ -223,7 +249,8 @@ class NoResize_policy : public Resize_policy {
     Memory_pool<T>* m_owner;
 
     // Reference counter to do an automatic release of the element
-    int *m_reference_counter;
+    //int *m_reference_counter;
+    TS_Reference* m_reference_counter;
   };
 
   /***************************************
@@ -231,7 +258,7 @@ class NoResize_policy : public Resize_policy {
    * accessible using  this Memory_pool
    ****************************************/
   typedef Buffer_element Element;
-  typedef Element        value_type;
+  typedef Element        value_type             ;
 
   /*****************************************
    * Construct a Memory_pool object containing
@@ -240,14 +267,8 @@ class NoResize_policy : public Resize_policy {
    *****************************************/
   //Memory_pool(unsigned int numelements=10, Allocator<T>* allocator=Default_allocator<T>(), Resize_policy& policy=NoResize_policy());
   //Memory_pool(unsigned int numelements, Allocator<T>* allocator, Resize_policy& policy=NoResize_policy());
-  Memory_pool(unsigned int numelements, AllocatorPtr allocator= Default_allocator<T>::create(), PolicyPtr policy=AutomaticResize_policy::create(10));
+  Memory_pool(unsigned int numelements, AllocatorPtr allocator= Default_allocator<T>::create(), PolicyPtr policy=AutomaticResize_policy::create(1));
   Memory_pool(unsigned int numelements, Resize_policy_type type, AllocatorPtr allocator= Default_allocator<T>::create());
-
-  ~Memory_pool() {
-    // Make sure all elements are in the memory pool, otherwise they
-    // will try to reinsert themselves into a non-existing pool.
-    MASSERT(full());
-  }
 
   /************************************
    * Return the number of free Buffer_elements
@@ -340,6 +361,12 @@ private:
   // vector of all the allocated Buffer_elements
   std::vector<T*> m_vectorelements;
 
+  // vector of all the reference associated with the
+  // buffer elements.
+  std::vector<TS_Reference*> m_vectorreferences;
+  std::stack<TS_Reference*> m_freerefqueue;
+
+
   // A static counter to give each buffer
   // an unique id.
   static int sid;
@@ -416,6 +443,10 @@ Memory_pool<T>::Memory_pool(unsigned int numelements,
     T* tmp = allocator_->allocate();
     m_freequeue.push( tmp );
     m_vectorelements.push_back( tmp );
+
+    TS_Reference* ref = new TS_Reference();
+    m_vectorreferences.push_back( ref );
+		m_freerefqueue.push(ref);
   }
 }
 
@@ -432,6 +463,10 @@ policy_(policy), allocator_(allocator)
     //pType element = new Type(tmp, *this);
     m_freequeue.push( tmp );
     m_vectorelements.push_back( tmp );
+
+    TS_Reference* ref = new TS_Reference();
+    m_vectorreferences.push_back( ref );
+		m_freerefqueue.push(ref);
   }
 }
 
@@ -443,6 +478,10 @@ void Memory_pool<T>::resize(unsigned int newsize) {
       T* tmp = allocator_->allocate();
       m_freequeue.push( tmp );
       m_vectorelements.push_back( tmp );
+
+      TS_Reference* ref = new TS_Reference();
+			m_vectorreferences.push_back( ref );
+			m_freerefqueue.push(ref);
     }
   }
 }
@@ -454,6 +493,10 @@ void Memory_pool<T>::resize_no_lock(unsigned int newsize) {
       T* tmp = allocator_->allocate();
       m_freequeue.push( tmp );
       m_vectorelements.push_back( tmp );
+
+      TS_Reference* ref = new TS_Reference();
+			m_vectorreferences.push_back( ref );
+			m_freerefqueue.push(ref);
     }
   } else {
     MTHROW("Unable to resize");
@@ -494,16 +537,21 @@ typename Memory_pool<T>::Element Memory_pool<T>::allocate() {
   T* element = m_freequeue.top();
   m_freequeue.pop();
 
+	TS_Reference* ref = m_freerefqueue.top();
+	m_freerefqueue.pop();
+
   //element->set_owner(this);
-  return Element(element, this);
+  return Element(element, this, ref);
 }
 
 template<class T>
 void Memory_pool<T>::release(Element& element) {
   RAIIMutex rc(m_freequeuecond);
   m_freequeue.push(element.m_data);
+  m_freerefqueue.push(element.m_reference_counter);
 
   MASSERT( m_freequeue.size() <= m_vectorelements.size() );
+  MASSERT( m_freerefqueue.size() <= m_vectorreferences.size() );
   if ( m_freequeue.size() == 1  ) {
     m_freequeuecond.signal();
   }
@@ -541,49 +589,66 @@ unsigned int Memory_pool<T>::size_no_lock() {
 
 template<class T>
 Memory_pool<T>::Buffer_element::Buffer_element()
-  : m_data(NULL), m_owner(NULL), m_reference_counter(new int(1)) {
-}
+  : m_data(NULL), m_owner(NULL), m_reference_counter( NULL )
+  {
+
+	}
 
 template<class T>
 Memory_pool<T>::Buffer_element::Buffer_element(Type* data,
-                                               Memory_pool<T>* owner) :
-  m_data(data), m_owner(owner), m_reference_counter(new int(1)) {
-  MASSERT( data  != NULL );
+                                               Memory_pool<T>* owner,
+                                               TS_Reference* ref
+                                               ) :
+  m_data(data), m_owner(owner), m_reference_counter(ref) {
+  SFXC_ASSERT( owner  != NULL );
+  SFXC_ASSERT( data  != NULL );
+  SFXC_ASSERT( ref  != NULL );
+  m_reference_counter->incr();
 }
 
 template<class T>
 Memory_pool<T>::Buffer_element::Buffer_element(const Buffer_element& src)
 : m_data(src.m_data), m_owner(src.m_owner), m_reference_counter(src.m_reference_counter) {
-  (*m_reference_counter)++;
+  if( m_owner != NULL ){
+		SFXC_ASSERT( m_reference_counter  != NULL );
+		m_reference_counter->incr();
+  }
 }
 
 template<class T>
 Memory_pool<T>::Buffer_element::~Buffer_element() {
-  (*m_reference_counter)--;
-  if ((*m_reference_counter)==0) {
-    if ( m_owner != NULL )
-      release();
-    delete(m_reference_counter);
-  }
+	if(m_owner != NULL ){
+		MASSERT( m_reference_counter  != NULL );
+
+		RAIIMutex raii( m_reference_counter->mutex_);
+		m_reference_counter->reference_--;
+		if ( m_reference_counter->reference_ ==0 ) {
+			if ( m_owner != NULL ) release();
+		}
+	}
 }
 
 template<class T>
 void
 Memory_pool<T>::Buffer_element::operator=(const Buffer_element& src) {
-  // Remove the link to the previous buffer element
-  (*m_reference_counter)--;
-  assert((*m_reference_counter) >= 0);
-  if ((*m_reference_counter)==0) {
-    if ( m_owner != NULL )
-      release();
-    delete(m_reference_counter);
-  }
+	if( m_owner != NULL ){
+		MASSERT( m_reference_counter  != NULL );
 
-  // Construct a link to the new element
+		RAIIMutex raii( m_reference_counter->mutex_);
+		m_reference_counter->reference_--;
+		if ( m_reference_counter->reference_ ==0 ) {
+			if ( m_owner != NULL ) release();
+		}
+	}
+
+	// Construct a link to the new element
   m_data = src.m_data;
   m_owner = src.m_owner;
   m_reference_counter = src.m_reference_counter;
-  (*m_reference_counter)++;
+  if( m_owner != NULL ){
+		MASSERT( m_reference_counter != NULL );
+		m_reference_counter->incr();
+  }
 }
 
 template<class T>
@@ -611,6 +676,8 @@ void Memory_pool<T>::Buffer_element::release() {
     MTHROW("double release is forbidden");
   m_owner->release( *this );
   m_owner = NULL;
+  m_reference_counter = NULL;
+  m_data = NULL;
 }
 
 #ifdef ENABLE_TEST_UNIT
