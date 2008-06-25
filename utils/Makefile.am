@@ -2,7 +2,7 @@ SUBDIRS = delay
 
 pkginclude_HEADERS = *.h *.py
 
-AM_CXXFLAGS = $(SFXC_CXXFLAGS)
+CXXFLAGS = $(SFXC_CXXFLAGS)
 LDADD = $(SFXC_LDADD)
 
 bin_PROGRAMS = mark5a_print_headers \
