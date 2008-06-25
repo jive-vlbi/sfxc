@@ -10,12 +10,13 @@
 #ifndef MARK5B_READER_H
 #define MARK5B_READER_H
 
+#include "data_reader.h"
+#include "input_node_types.h"
+#include "control_parameters.h"
+
 #include <fstream>
 #include <vector>
 #include <boost/shared_ptr.hpp>
-
-#include "data_reader.h"
-#include "control_parameters.h"
 
 class Mark5b_reader {
   enum Debug_level {
@@ -25,6 +26,7 @@ class Mark5b_reader {
     CHECK_BIT_STATISTICS
   };
 public:
+  typedef Input_node_types::Input_data_frame Data_frame;
 
   struct Header {
     uint32_t      syncword;
@@ -51,7 +53,7 @@ public:
   };
 
   Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
-                unsigned char *buffer);
+                Data_frame &data);
   virtual ~Mark5b_reader();
 
   /// Time in microseconds

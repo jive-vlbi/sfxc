@@ -20,8 +20,8 @@ class Input_node_types {
 public:
   typedef unsigned char  value_type;
   // Memory pool for Mark5 frames
-  struct Mark5_frame_data {
-    Mark5_frame_data() 
+  struct Input_data_frame {
+    Input_data_frame() 
       : invalid_bytes_begin(-1), nr_invalid_bytes(-1), start_time(-1) {}
     std::vector<value_type>        mark5_data;
 
@@ -34,7 +34,7 @@ public:
     // Start time of the mark5-block in microseconds from midnight
     int64_t                        start_time;
   };
-  typedef Memory_pool< Mark5_frame_data >           Mark5_memory_pool;
+  typedef Memory_pool< Input_data_frame >           Mark5_memory_pool;
   typedef Mark5_memory_pool::Element                Mark5_memory_pool_element;
 
   /// Buffer for mark5 data frames

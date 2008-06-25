@@ -16,6 +16,7 @@
 
 #include "data_reader.h"
 #include "mark5a_header.h"
+#include "mark5b_reader.h"
 #include "control_parameters.h"
 
 
@@ -27,12 +28,12 @@ class Mark5a_reader {
     CHECK_BIT_STATISTICS
   };
 public:
+  typedef Mark5b_reader::Data_frame            Data_frame;
 
   // unsigned char buffer[SIZE_MK5A_FRAME] contains the beginning of a mark5a-frame
   Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
-               int N,
-               unsigned char *buffer,
-               unsigned char *mark5a_block);
+                int N,
+                Data_frame &data);
   virtual ~Mark5a_reader();
 
   /// Time in microseconds
@@ -69,6 +70,8 @@ private:
   // checking the header:
   bool check_time_stamp(Mark5a_header &header);
   bool check_track_bit_statistics(unsigned char *mark5a_block);
+
+  void set_data_frame_info(Data_frame &data);
 private:
   // Data reader: input stream
   boost::shared_ptr<Data_reader> data_reader_;
@@ -96,10 +99,10 @@ public:
  **/
 Mark5a_reader *
 get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
-                 unsigned char *first_block);
+                  Mark5a_reader::Data_frame &data);
 
 int find_start_of_header(boost::shared_ptr<Data_reader> reader,
-                         unsigned char first_block[]);
+                         Mark5a_reader::Data_frame &data);
 
 
 #endif // MARK5A_READER_H

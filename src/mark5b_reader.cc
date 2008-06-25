@@ -2,7 +2,7 @@
 
 Mark5b_reader::
 Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
-                unsigned char *buffer)
+              Data_frame &data)
     : data_reader_(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
     time_between_headers_(0) {
@@ -11,8 +11,11 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
   SFXC_ASSERT_MSG(current_header.check(),
                   "Couldn't find the mark5b header in the mark5b file");
 
-  data_reader_->get_bytes(SIZE_MK5B_FRAME * SIZE_MK5B_WORD,
-                          (char *)buffer);
+  int blocksize = N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME*SIZE_MK5B_WORD;
+  data.mark5_data.resize(blocksize);
+  char *buffer = (char *)&data.mark5_data[0];
+
+  data_reader_->get_bytes(SIZE_MK5B_FRAME * SIZE_MK5B_WORD, buffer);
 
   for (int i=1; i<N_MK5B_BLOCKS_TO_READ; i++) {
     buffer += SIZE_MK5B_FRAME * SIZE_MK5B_WORD;

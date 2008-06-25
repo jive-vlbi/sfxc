@@ -23,80 +23,80 @@ std::string dstdir="./";
 
 int main(int argc, char** argv)
 {
-    try
+  try
     {
 
-        if (argc < 4)
+      if (argc < 4)
         {
-            std::cout << "Usage: " << argv[0] << " <ctrl-file> <vex-file> <output-dir>"  << std::endl;
-            exit(-1);
+          std::cout << "Usage: " << argv[0] << " <ctrl-file> <vex-file> <output-dir>"  << std::endl;
+          exit(-1);
         }
 
-        const char * ctrl_file = (const char*)argv[1];
-        const char * vex_file = (const char*)argv[2];
-				dstdir = argv[3];
+      const char * ctrl_file = (const char*)argv[1];
+      const char * vex_file = (const char*)argv[2];
+      dstdir = argv[3];
 
 
-        Control_parameters control_parameters;
-        Log_writer_cout log_writer(10);
-        control_parameters.initialise(ctrl_file, vex_file, log_writer);
+      Control_parameters control_parameters;
+      Log_writer_cout log_writer(10);
+      control_parameters.initialise(ctrl_file, vex_file, log_writer);
 
-        Control_parameters::Date start = control_parameters.get_start_time();
-        Control_parameters::Date stop = control_parameters.get_stop_time();
+      Control_parameters::Date start = control_parameters.get_start_time();
+      Control_parameters::Date stop = control_parameters.get_stop_time();
 
-        // Get a list of all scan names
-				int begin_scan = control_parameters.scan(start);
-        int current_scan = control_parameters.scan(start);
-        int end_scan = control_parameters.scan(stop);
+      // Get a list of all scan names
+      int begin_scan = control_parameters.scan(start);
+      int current_scan = control_parameters.scan(start);
+      int end_scan = control_parameters.scan(stop);
 
-        SFXC_ASSERT(current_scan >= 0);
-        SFXC_ASSERT((size_t)current_scan < control_parameters.number_scans());
+      SFXC_ASSERT(current_scan >= 0);
+      SFXC_ASSERT((size_t)current_scan < control_parameters.number_scans());
 
-        std::cout << "number of scans:" << end_scan-current_scan+1 << std::endl;
+      std::cout << "number of scans:" << end_scan-current_scan+1 << std::endl;
 
-        for (;current_scan<=end_scan;current_scan++)
+      for (;current_scan<=end_scan;current_scan++)
         {
-            std::string scan_name=control_parameters.scan(current_scan);
-            std::cout << "SCAN: " << scan_name << std::endl;
-            std::cout << "number of station:" << control_parameters.number_stations_in_scan(scan_name) << std::endl;
+          std::string scan_name=control_parameters.scan(current_scan);
+          std::cout << "SCAN: " << scan_name << std::endl;
+          std::cout << "number of station:" << control_parameters.number_stations_in_scan(scan_name) << std::endl;
 
-            const std::string &mode_name = control_parameters.get_vex().get_mode(scan_name);
-            std::cout << "MODE: " << mode_name << std::endl;
-            for (size_t station=0;station<control_parameters.number_stations(); station++)
+          const std::string &mode_name = control_parameters.get_vex().get_mode(scan_name);
+          std::cout << "MODE: " << mode_name << std::endl;
+          for (size_t station=0;station<control_parameters.number_stations(); station++)
             {
-                std::string station_name = control_parameters.station(station);
-                std::cout << "TRANSPORT TYPE:" << control_parameters.transport_type(station_name) << std::endl;
+              std::string station_name = control_parameters.station(station);
+              std::cout << "TRANSPORT TYPE:" << control_parameters.transport_type(station_name) << std::endl;
 
-                Input_node_parameters input_node_param = control_parameters.get_input_node_parameters(mode_name, station_name);
+              Input_node_parameters input_node_param = control_parameters.get_input_node_parameters(mode_name, station_name);
 
 
-                unsigned char buffer[SIZE_MK5A_FRAME*sizeof(uint64_t)];
+              Mark5a_reader::Data_frame data;
 
-								std::string urlsrc = control_parameters.data_sources(station_name)[current_scan-begin_scan];
-                boost::shared_ptr<Data_reader> reader= boost::shared_ptr<Data_reader>( Data_reader_factory::get_reader(urlsrc) );
-                boost::shared_ptr<Mark5a_reader> m_reader =
-                    boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, buffer) );
+              std::string urlsrc = control_parameters.data_sources(station_name)[current_scan-begin_scan];
+              boost::shared_ptr<Data_reader> reader= boost::shared_ptr<Data_reader>( Data_reader_factory::get_reader(urlsrc) );
+              boost::shared_ptr<Mark5a_reader> m_reader =
+                boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, data) );
 
-								int n_subbands = input_node_param.channels.size();
-								int bits_per_sample = input_node_param.bits_per_sample();
-								int fan_out    = bits_per_sample * input_node_param.subsamples_per_sample();
-								int samples_per_block = SIZE_MK5A_FRAME;
-								unsigned char tmp[SIZE_MK5A_FRAME*m_reader->N];
-								m_reader->get_current_time();
-								m_reader->read_new_block( tmp );
-								std::cout << "Channelizer !" << std::endl;
-								Channel_extractor_dynamic channelizer(dstdir, true);
-								channelizer.initialise(m_reader->get_tracks(input_node_param, tmp) ,
-																			 m_reader->N,
-																			 samples_per_block);
+              int n_subbands = input_node_param.channels.size();
+              int bits_per_sample = input_node_param.bits_per_sample();
+              int fan_out    = bits_per_sample * input_node_param.subsamples_per_sample();
+              int samples_per_block = SIZE_MK5A_FRAME;
+              unsigned char tmp[SIZE_MK5A_FRAME*m_reader->N];
+              m_reader->get_current_time();
+              m_reader->read_new_block( tmp );
+              std::cout << "Channelizer !" << std::endl;
+              Channel_extractor_dynamic channelizer(dstdir, true);
+              channelizer.initialise(m_reader->get_tracks(input_node_param, tmp) ,
+                                     m_reader->N,
+                                     samples_per_block);
 
-								std::cout << "The channelizer that is in use is so: " << channelizer.name() << std::endl;
-						}
+              std::cout << "The channelizer that is in use is so: " << channelizer.name() << std::endl;
+            }
         }
     }
-    catch (Exception& ex)
+  catch (Exception& ex)
     {
-        std::cout << ex << std::endl;
+      std::cout << ex << std::endl;
     }
 }
 
