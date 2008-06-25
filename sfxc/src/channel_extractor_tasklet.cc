@@ -11,6 +11,8 @@
 #include "channel_extractor_brute_force.h"
 #include "channel_extractor_5.h"
 #include "channel_extractor_fast.h"
+#include "channel_extractor_dynamic.h"
+
 
 #include "mark5a_header.h"
 
@@ -22,17 +24,18 @@ Channel_extractor_tasklet::
 Channel_extractor_tasklet(int samples_per_block, int N_)
     : output_memory_pool_(400*MAX_SUBBANDS),
     n_subbands(0),
-    fan_out(0), 
+    fan_out(0),
     N(N_), samples_per_block(samples_per_block) {
   SFXC_ASSERT(N_ > 0);
 
 #ifdef USE_EXTRACTOR_5
   ch_extractor = new Channel_extractor_5();
 #else
-  ch_extractor = new Channel_extractor_fast();
+	/// This one is much more better as it will select
+	/// dynamically the best channelizer that can handle the
+	/// input data-stream.
+	ch_extractor = new Channel_extractor_dynamic();
 #endif //USE_EXTRACTOR_5
-
-  //DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
 
 #ifdef RUNTIME_STATISTIC
   std::stringstream inputid;
@@ -102,10 +105,10 @@ Channel_extractor_tasklet::do_task() {
           (size_t)n_output_bytes) {
         output_elements[subband].channel_data.data().data.resize(n_output_bytes);
       }
-      SFXC_ASSERT(output_elements[subband].channel_data.data().data.size() == 
+      SFXC_ASSERT(output_elements[subband].channel_data.data().data.size() ==
              (size_t)n_output_bytes);
 
-      output_positions[subband] = 
+      output_positions[subband] =
         (unsigned char *)&(output_elements[subband].channel_data.data().data[0]);
 
       // Copy the invalid-data members
@@ -173,7 +176,9 @@ set_parameters(const Input_node_parameters &input_node_param,
   bits_per_sample = input_node_param.bits_per_sample();
   fan_out    = bits_per_sample *
                input_node_param.subsamples_per_sample();
-  ch_extractor->initialise(track_positions, N, samples_per_block);
+
+	ch_extractor->initialise(track_positions, N, samples_per_block);
+	DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
 }
 
 

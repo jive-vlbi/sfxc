@@ -23,7 +23,7 @@ public:
     bool operator==(const Channel_parameters &other) const;
 
     // Bits_per_sample is 1 if magn_tracks.size() == 0, otherwise 2
-    int bits_per_sample() const;            ///< Number of bits to encode one sample
+    int bits_per_sample() const;           ///< Number of bits to encode one sample
     int32_t              sign_headstack;   ///< The headstack for the sign bits
     std::vector<int32_t> sign_tracks;      ///< A list of the track numbers for sign
     int32_t              magn_headstack;   ///< The headstack for the magn bits

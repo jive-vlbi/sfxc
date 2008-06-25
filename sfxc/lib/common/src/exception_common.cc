@@ -3,6 +3,11 @@
 #include "exception_common.h"
 #include "demangler.h"
 
+Exception::Exception(const std::string& message) :
+    backtrace_( Backtrace() ) {
+  message_ = message;
+}
+
 Exception::Exception(const std::string& message, Backtrace& bt) :
     backtrace_(bt) {
   message_ = message;

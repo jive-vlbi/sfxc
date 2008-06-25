@@ -19,10 +19,10 @@
 #include <ifaddrs.h>
 #include <iostream>
 
+#ifdef USE_MPI
 #include "sfxc_mpi.h"
 
 int RANK_OF_NODE = -1; // Rank of the current node
-
 void abort_sfxc(const char *file, int line, const char* message) {
   std::cout << "#" << RANK_OF_NODE << " "
   << file << ", l" << line
@@ -35,6 +35,15 @@ void abort_sfxc(const char *file, int line, const char* message) {
   // Close this node
   MPI_Barrier( MPI_COMM_WORLD );
   MPI_Finalize();
+
+  exit(-1);
+}
+#endif // USE_MPI
+
+void abort(const char *file, int line, const char* message) {
+  std::cout << "#" << getpid() << " "
+  << file << ", l" << line
+  << ", Assertion failed: " << message << std::endl;
 
   exit(-1);
 }

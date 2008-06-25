@@ -18,8 +18,8 @@ get_input_node_tasklet_mark5a(boost::shared_ptr<Data_reader> reader) {
   // Maximal buffer size
   unsigned char buffer[SIZE_MK5A_FRAME*sizeof(uint64_t)];
 
-  boost::shared_ptr<Mark5a_reader> mark5a_reader_ptr = 
-    boost::shared_ptr<Mark5a_reader>(get_mark5a_reader(reader, buffer));
+  boost::shared_ptr<Mark5a_reader> mark5a_reader_ptr =
+    boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, buffer) );
 
   return new Input_node_tasklet(mark5a_reader_ptr, buffer);
 }
@@ -32,7 +32,7 @@ get_input_node_tasklet_mark5b(boost::shared_ptr<Data_reader> reader) {
                        N_MK5B_BLOCKS_TO_READ];
 
 
-  boost::shared_ptr<Mark5b_reader> mark5b_reader_ptr = 
+  boost::shared_ptr<Mark5b_reader> mark5b_reader_ptr =
     boost::shared_ptr<Mark5b_reader>(new Mark5b_reader(reader, buffer));
 
   return new Input_node_tasklet(mark5b_reader_ptr, buffer);
@@ -52,11 +52,11 @@ get_input_node_tasklet(boost::shared_ptr<Data_reader> reader,
   return NULL;
 }
 
-void 
+void
 Input_node_tasklet::add_time_interval(int32_t start_time, int32_t stop_time) {
   if (time_intervals.empty()) {
     // Check whether we are still processing
-    if ((get_current_time() == get_stop_time()) || 
+    if ((get_current_time() == get_stop_time()) ||
         (get_stop_time() < 0)) {
       set_time_interval(start_time, stop_time);
     } else {
@@ -206,12 +206,12 @@ do_task() {
   if (transport_type == MARK5A) {
     SFXC_ASSERT(mark5a_reader_ != NULL);
     if (mark5a_reader_->has_work()) {
-      
+
       RT_STAT( mark5a_reader_state_.begin_measure() );
       SFXC_ASSERT(mark5a_reader_ != NULL);
       mark5a_reader_->do_task();
       RT_STAT(mark5a_reader_state_.end_measure(1) );
-      
+
       did_work = true;
     } else {
       // Check whether we can go to a new time interval
@@ -227,12 +227,12 @@ do_task() {
   } else if (transport_type == MARK5B) {
     SFXC_ASSERT(mark5b_reader_ != NULL);
     if (mark5b_reader_->has_work()) {
-      
+
       RT_STAT( mark5breader_state_.begin_measure() );
       SFXC_ASSERT(mark5b_reader_ != NULL);
       mark5b_reader_->do_task();
       RT_STAT(mark5breader_state_.end_measure(1) );
-      
+
       did_work = true;
     } else {
       // Check whether we can go to a new time interval

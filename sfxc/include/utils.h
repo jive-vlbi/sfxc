@@ -68,9 +68,10 @@
 #define YELLOW(str) "[\033[33m"+str+"\033[30m]"
 #define CYAN(str) "[\033[36m"+str+"\033[30m]"
 
+#ifdef USE_MPI
 extern int RANK_OF_NODE; // Rank of the current node
-
 #include "sfxc_mpi.h"
+#endif //USE_MPI
 
 #ifdef SFXC_PRINT_DEBUG
 #define FORMAT_MSG(msg) \
@@ -92,15 +93,22 @@ extern int RANK_OF_NODE; // Rank of the current node
 #define MPI_DEBUG_MSG(msg)
 #endif
 
-
 void abort_sfxc(const char *file, int line, const char* message);
+void abort(const char *file, int line, const char* message);
 
+#ifdef USE_MPI
 #define SFXC_ASSERT(c) \
   { if (!(c)) abort_sfxc(__FILE__, __LINE__, #c ); }
 
 #define SFXC_ASSERT_MSG(c, msg) \
   { if (!(c)) abort_sfxc(__FILE__, __LINE__, msg ); }
+#else
+#define SFXC_ASSERT(c) \
+  { if (!(c)) abort(__FILE__, __LINE__, #c ); }
 
+#define SFXC_ASSERT_MSG(c, msg) \
+  { if (!(c)) abort(__FILE__, __LINE__, msg ); }
+#endif // USE_MPI
 
 #define USE_DOUBLE
 
