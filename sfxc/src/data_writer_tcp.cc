@@ -24,7 +24,8 @@ Data_writer_tcp::Data_writer_tcp()
 
 void Data_writer_tcp::open_connection(TCP_Connection &tcp_connection) {
   socket = tcp_connection.open_connection();
-  SFXC_ASSERT(socket > 0);
+  SFXC_ASSERT_MSG(socket > 0,
+                  "Couldn't connect nodes, please kill other sfxc: 'killall -9 sfxc'");
 }
 
 Data_writer_tcp::~Data_writer_tcp() {
