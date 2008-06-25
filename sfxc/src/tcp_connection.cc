@@ -118,13 +118,18 @@ TCP_Connection::open_connection() {
   // connections on listenSocket, before connectSocket is closed,
   // but this program doesn't do that.
   clientAddressLength = sizeof(clientAddress);
-  connectSocket = accept(connection_socket,
-                         (struct sockaddr *) &clientAddress,
-                         &clientAddressLength);
-  if (connectSocket < 0) {
-    std::cout << "cannot accept connection ";
-    return 0;
-  }
+  connectSocket = -1;
+  do {
+    connectSocket = accept(connection_socket,
+                           (struct sockaddr *) &clientAddress,
+                           &clientAddressLength);
+    if ((connection_socket == -1) && 
+        (errno != EINTR)) {
+      DEBUG_MSG("cannot accept connection");
+      return 0;
+    }
+
+  } while (connection_socket == -1);
 
   // Show the IP address of the client.
   // inet_ntoa() converts an IP address from binary form to the
