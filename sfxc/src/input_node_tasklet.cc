@@ -16,26 +16,23 @@ Input_node_tasklet *
 get_input_node_tasklet_mark5a(boost::shared_ptr<Data_reader> reader) {
 
   // Maximal buffer size
-  unsigned char buffer[SIZE_MK5A_FRAME*sizeof(uint64_t)];
+  Mark5a_reader::Data_frame data;
 
   boost::shared_ptr<Mark5a_reader> mark5a_reader_ptr =
-    boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, buffer) );
+    boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, data) );
 
-  return new Input_node_tasklet(mark5a_reader_ptr, buffer);
+  return new Input_node_tasklet(mark5a_reader_ptr, &data.mark5_data[0]);
 }
 
 
 Input_node_tasklet *
 get_input_node_tasklet_mark5b(boost::shared_ptr<Data_reader> reader) {
-  unsigned char buffer[(SIZE_MK5B_FRAME+SIZE_MK5B_HEADER) *
-                       SIZE_MK5B_WORD *
-                       N_MK5B_BLOCKS_TO_READ];
-
+  Mark5b_reader::Data_frame data;
 
   boost::shared_ptr<Mark5b_reader> mark5b_reader_ptr =
-    boost::shared_ptr<Mark5b_reader>(new Mark5b_reader(reader, buffer));
+    boost::shared_ptr<Mark5b_reader>(new Mark5b_reader(reader, data));
 
-  return new Input_node_tasklet(mark5b_reader_ptr, buffer);
+  return new Input_node_tasklet(mark5b_reader_ptr, &data.mark5_data[0]);
 }
 
 Input_node_tasklet *

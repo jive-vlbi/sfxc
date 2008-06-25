@@ -5,28 +5,18 @@
 Mark5a_reader::
 Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
               int N_,
-              unsigned char *buffer,
-              unsigned char *mark5a_block)
+              Data_frame &data)
     : data_reader_(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
 block_count_(0), DATA_RATE_(0), N(N_) {
-  // fill the first mark5a block
-  memmove(mark5a_block, buffer, SIZE_MK5A_FRAME*sizeof(unsigned char));
-  int bytes_to_read = SIZE_MK5A_FRAME*(N - sizeof(unsigned char));
-  char *data = ((char *)mark5a_block) + SIZE_MK5A_FRAME*sizeof(unsigned char);
-  while (bytes_to_read > 0) {
-    int read = data_reader->get_bytes(bytes_to_read, data);
-    SFXC_ASSERT(read >= 0);
-    bytes_to_read -= read;
-    data += read;
-  }
-
   Mark5a_header header(N);
-  header.set_header(mark5a_block);
+  header.set_header(&data.mark5_data[0]);
   header.check_header();
   start_day_ = header.day(0);
   start_time_ = header.get_time_in_us(0);
   current_time_ = header.get_time_in_us(0);
+
+  set_data_frame_info(data);
 }
 
 
@@ -233,28 +223,67 @@ bool Mark5a_reader::eof() {
   return data_reader_->eof();
 }
 
+
+void
+Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
+  int tbr = input_node_param.track_bit_rate;
+  DATA_RATE_ = (tbr * N * 8);
+  SFXC_ASSERT(DATA_RATE_ > 0);
+}
+
+void Mark5a_reader::set_data_frame_info(Data_frame &data) {
+  Mark5a_header header(N);
+  header.set_header(&data.mark5_data[0]);
+  data.start_time = header.get_time_in_us(0);
+
+#ifdef SFXC_INVALIDATE_SAMPLES
+  data.invalid_bytes_begin = 0;
+  data.nr_invalid_bytes = SIZE_MK5A_HEADER*N;
+
+#ifdef SFXC_CHECK_INVALID_SAMPLES
+  input_element_.data().mark5_data[i] = value_type(0);
+#endif
+
+#else
+  data.invalid_bytes_begin = 0;
+  data.nr_invalid_bytes = 0;
+
+  // Randomize data
+  // park_miller_random generates 31 random bits
+  input_element_.data().mark5_data[i] = (value_type)park_miller_random();
+#endif
+}
+
+Mark5a_reader *
+get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
+                  Mark5a_reader::Data_frame &data) {
+  int n_tracks_8 = find_start_of_header(reader, data);
+  SFXC_ASSERT_MSG(n_tracks_8 > 0,
+                  "Couldn't find a mark5a header in the data file");
+  Mark5a_header header(n_tracks_8);
+  header.set_header(&data.mark5_data[0]);
+  SFXC_ASSERT_MSG(header.checkCRC(),
+                  "Invalid crc-code in the mark5a data file");
+
+  return new Mark5a_reader(reader, n_tracks_8, data);
+}
+
+int Mark5a_reader::data_rate() const {
+  SFXC_ASSERT(DATA_RATE_ > 0);
+  return DATA_RATE_;
+}
+
 int find_start_of_header(boost::shared_ptr<Data_reader> reader,
-                         unsigned char first_block[]) {
-  // first_block is an array of SIZE_MK5A_FRAME bytes (8 is the smallest number of tracks).
-  // We fill the first_block and then look for the header
+                         Mark5a_reader::Data_frame &data) {
+  // We fill the "data" and then look for the header
   // if we don't find a header, read in another half block and continue.
-  size_t bytes_to_read = SIZE_MK5A_FRAME/2;
-  char *data = (char *)first_block+SIZE_MK5A_FRAME/2;
-  do {
-    int read = reader->get_bytes(bytes_to_read, data);
-    bytes_to_read -= read;
-    data += read;
-    SFXC_ASSERT_MSG(!reader->eof(),
-                    "Didn't find a mark5a header before the end-of-file");
-  } while (bytes_to_read > 0);
 
-  int nOnes=0, header_start=-1, nTracks8 = -1;
-  for (int block=0; (block<16) && (header_start<0); block++) {
-    // Move the last half to the first half and read frameMk5a/2 bytes:
-    memcpy(first_block, first_block+SIZE_MK5A_FRAME/2, SIZE_MK5A_FRAME/2);
+  data.mark5_data.resize(SIZE_MK5A_FRAME);
+  char *buffer_start = (char *)&data.mark5_data[0];
 
+  { // Read half a block
     size_t bytes_to_read = SIZE_MK5A_FRAME/2;
-    char *data = (char*)first_block+SIZE_MK5A_FRAME/2;
+    char *data = (char *)buffer_start+SIZE_MK5A_FRAME/2;
     do {
       int read = reader->get_bytes(bytes_to_read, data);
       bytes_to_read -= read;
@@ -262,13 +291,30 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
       SFXC_ASSERT_MSG(!reader->eof(),
                       "Didn't find a mark5a header before the end-of-file");
     } while (bytes_to_read > 0);
+  }
 
+  int nOnes=0, header_start=-1, nTracks8 = -1;
+  for (int block=0; (block<16) && (header_start<0); block++) {
+    // Move the last half to the first half and read frameMk5a/2 bytes:
+    memcpy(buffer_start, buffer_start+SIZE_MK5A_FRAME/2, SIZE_MK5A_FRAME/2);
+
+    { // Read half a block
+      size_t bytes_to_read = SIZE_MK5A_FRAME/2;
+      char *data = (char*)buffer_start+SIZE_MK5A_FRAME/2;
+      do {
+        int read = reader->get_bytes(bytes_to_read, data);
+        bytes_to_read -= read;
+        data += read;
+        SFXC_ASSERT_MSG(!reader->eof(),
+                        "Didn't find a mark5a header before the end-of-file");
+      } while (bytes_to_read > 0);
+    }
 
     // the header contains 64 bits before the syncword and
     //                     64 bits after the syncword.
     // We skip those bytes since we want to find an entire syncword
     for (int byte=0; (byte<SIZE_MK5A_FRAME-64*8) && (header_start<0); byte++) {
-      if ((char)first_block[byte] == (char)(~0)) {
+      if ((char)buffer_start[byte] == (char)(~0)) {
         nOnes ++;
       } else {
         if (nOnes>=32) {
@@ -279,10 +325,16 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
             // We found a complete header
             nTracks8 = nOnes/32;
 
-            memmove(first_block, first_block+header_start,
+            memmove(buffer_start, buffer_start+header_start,
                     SIZE_MK5A_FRAME-header_start);
             reader->get_bytes(header_start,
-                              (char *)first_block+SIZE_MK5A_FRAME-header_start);
+                              buffer_start+SIZE_MK5A_FRAME-header_start);
+            if (nTracks8 > 1) {
+              data.mark5_data.resize(nTracks8*SIZE_MK5A_FRAME);
+              buffer_start = (char *)&data.mark5_data[0];
+              reader->get_bytes((nTracks8-1)*SIZE_MK5A_FRAME,
+                                buffer_start+SIZE_MK5A_FRAME);
+            }
 
             return nTracks8;
           }
@@ -292,30 +344,4 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
     }
   }
   return -1;
-}
-
-Mark5a_reader *
-get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
-                  unsigned char *first_block) {
-  int n_tracks_8 = find_start_of_header(reader, first_block);
-  SFXC_ASSERT_MSG(n_tracks_8 > 0,
-                  "Couldn't find a mark5a header in the data file");
-  Mark5a_header header(n_tracks_8);
-  header.set_header(first_block);
-  SFXC_ASSERT_MSG(header.checkCRC(),
-                  "Invalid crc-code in the mark5a data file");
-
-  return new Mark5a_reader(reader, n_tracks_8, first_block, first_block);
-}
-
-int Mark5a_reader::data_rate() const {
-  SFXC_ASSERT(DATA_RATE_ > 0);
-  return DATA_RATE_;
-}
-
-void
-Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
-  int tbr = input_node_param.track_bit_rate;
-  DATA_RATE_ = (tbr * N * 8);
-  SFXC_ASSERT(DATA_RATE_ > 0);
 }

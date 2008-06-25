@@ -31,10 +31,10 @@ int main(int argc, char *argv[]) {
 
   boost::shared_ptr<Data_reader> reader(new Data_reader_file(argv[1]));
 
-  unsigned char buffer[sizeof(int64_t)*SIZE_MK5A_FRAME];
+  Mark5a_reader::Data_frame data;
 
   Mark5a_reader *mark5a_reader =
-    get_mark5a_reader(reader, buffer);
+    get_mark5a_reader(reader, data);
 
   int64_t prev_time = mark5a_reader->get_current_time(), current_time;
 
@@ -45,6 +45,6 @@ int main(int argc, char *argv[]) {
     << " \t" << current_time - prev_time
     << std::endl;
     prev_time = current_time;
-  } while (mark5a_reader->read_new_block(buffer));
+  } while (mark5a_reader->read_new_block(&data.mark5_data[0]));
 
 }
