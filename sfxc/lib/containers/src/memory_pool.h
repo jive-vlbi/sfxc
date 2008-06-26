@@ -143,7 +143,8 @@ class NoResize_policy : public Resize_policy {
     virtual void resize(Memory_pool<T>& pool) {
       //std::cout << "REQUEST FOR RESIZE THIS IS AN EXPERIMENTAL FEATURE:" << max_resize_count_ << std::endl;
       if ( cur_resize_count_ < max_resize_count_ ) {
-        DEBUG_MSG("REQUEST FOR RESIZE NEW BUFFER SIZE IS:" << pool.size_no_lock()*2 );
+        std::cout << "REQUEST FOR RESIZE NEW BUFFER SIZE IS:" << pool.size_no_lock()*2
+                  << std::endl;;
         pool.resize_no_lock(pool.size_no_lock()*2);
         cur_resize_count_++;
       } else {
