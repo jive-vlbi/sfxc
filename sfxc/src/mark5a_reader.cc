@@ -6,7 +6,7 @@ Mark5a_reader::
 Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
               int N_,
               Data_frame &data)
-    : data_reader_(data_reader),
+    : Input_data_format_reader(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
 block_count_(0), DATA_RATE_(0), N(N_) {
   Mark5a_header header(N);
@@ -19,11 +19,10 @@ block_count_(0), DATA_RATE_(0), N(N_) {
   set_data_frame_info(data);
 }
 
-
 Mark5a_reader::~Mark5a_reader() {}
 
 int64_t
-Mark5a_reader::goto_time(unsigned char *mark5a_block, int64_t us_time) {
+Mark5a_reader::goto_time(Data_frame &data, int64_t us_time) {
   // Compute with times in microseconds to find the exact time of the data
   if (us_time < get_current_time()) {
     return get_current_time();
@@ -53,7 +52,7 @@ Mark5a_reader::goto_time(unsigned char *mark5a_block, int64_t us_time) {
   }
 
   // Need to read the data to check the header
-  if (!read_new_block(mark5a_block)) {
+  if (!read_new_block(data)) {
     DEBUG_MSG("Couldn't read data");
   }
 
@@ -90,9 +89,13 @@ std::string Mark5a_reader::time_to_string(int64_t time) {
 
 }
 
-bool Mark5a_reader::read_new_block(unsigned char *mark5a_block) {
+bool Mark5a_reader::read_new_block(Data_frame &data) {
+  // Set to the right size
+  if (data.mark5_data.size() != (SIZE_MK5A_FRAME*N))
+    data.mark5_data.resize(SIZE_MK5A_FRAME*N);
+
   int to_read = SIZE_MK5A_FRAME*N;
-  unsigned char *buffer = (unsigned char *)mark5a_block;
+  unsigned char *buffer = (unsigned char *)&data.mark5_data[0];
   do {
     if (eof()) {
       current_time_ += time_between_headers();
@@ -110,7 +113,7 @@ bool Mark5a_reader::read_new_block(unsigned char *mark5a_block) {
 
   // at least we read the complete header. Check it
   Mark5a_header header(N);
-  header.set_header(mark5a_block);
+  header.set_header(&data.mark5_data[0]);
   current_time_ = header.get_time_in_us(0);
 
   if (debug_level_ >= CHECK_PERIODIC_HEADERS) {
@@ -119,12 +122,14 @@ bool Mark5a_reader::read_new_block(unsigned char *mark5a_block) {
       header.check_header();
       check_time_stamp(header);
       if (debug_level_ >= CHECK_BIT_STATISTICS) {
-        if (!check_track_bit_statistics(mark5a_block)) {
+        if (!check_track_bit_statistics(data)) {
           std::cout << "Track bit statistics are off." << std::endl;
         }
       }
     }
   }
+
+  set_data_frame_info(data);
 
   return true;
 }
@@ -151,7 +156,8 @@ bool Mark5a_reader::check_time_stamp(Mark5a_header &header) {
 
 
 bool
-Mark5a_reader::check_track_bit_statistics(unsigned char *mark5a_block) {
+Mark5a_reader::check_track_bit_statistics(Data_frame &data) {
+  unsigned char* mark5a_block = &data.mark5_data[0];
   double track_bit_statistics[N*8];
   for (int track=0; track<N*8; track++) {
     track_bit_statistics[track]=0;
@@ -177,9 +183,9 @@ Mark5a_reader::check_track_bit_statistics(unsigned char *mark5a_block) {
 
 std::vector< std::vector<int> >
 Mark5a_reader::get_tracks(const Input_node_parameters &input_node_param,
-                          unsigned char *mark5a_block) {
+                          Data_frame &data) {
   Mark5a_header header(N);
-  header.set_header(mark5a_block);
+  header.set_header(&data.mark5_data[0]);
   SFXC_ASSERT(header.check_header());
 
   std::vector< std::vector<int> > result;

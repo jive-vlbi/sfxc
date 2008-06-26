@@ -81,12 +81,11 @@ int main(int argc, char** argv)
               int bits_per_sample = input_node_param.bits_per_sample();
               int fan_out    = bits_per_sample * input_node_param.subsamples_per_sample();
               int samples_per_block = SIZE_MK5A_FRAME;
-              unsigned char tmp[SIZE_MK5A_FRAME*m_reader->N];
               m_reader->get_current_time();
-              m_reader->read_new_block( tmp );
               std::cout << "Channelizer !" << std::endl;
               Channel_extractor_dynamic channelizer(dstdir, true);
-              channelizer.initialise(m_reader->get_tracks(input_node_param, tmp) ,
+              channelizer.initialise(m_reader->get_tracks(input_node_param, 
+                                                          data) ,
                                      m_reader->N,
                                      samples_per_block);
 

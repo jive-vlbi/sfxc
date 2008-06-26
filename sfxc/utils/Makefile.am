@@ -30,6 +30,7 @@ extract_channelizer_SOURCES = \
   ../src/data_reader.cc \
   ../src/data_writer.cc \
   ../src/data_reader_file.cc \
+  ../src/input_data_format_reader.cc \
   ../src/mark5a_reader.cc \
   ../src/mark5a_header.cc \
   ../src/data_reader_factory.cc \
@@ -71,6 +72,7 @@ mark5a_print_headers_SOURCES = \
   ../src/log_writer_cout.cc \
   ../src/data_reader.cc \
   ../src/data_reader_file.cc \
+  ../src/input_data_format_reader.cc \
   ../src/mark5a_reader.cc \
   ../src/mark5a_header.cc \
   ../src/channel_extractor_brute_force.cc \

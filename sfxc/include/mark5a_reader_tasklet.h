@@ -22,16 +22,16 @@
 
 class Mark5a_reader_tasklet : public Tasklet {
 public:
-  typedef boost::shared_ptr< Mark5a_reader >   Mark5a_reader_ptr;
-  typedef Input_node_types::value_type         value_type;
-  typedef Input_node_types::Mark5_memory_pool    Input_memory_pool;
-  typedef Input_node_types::Mark5_buffer_element Input_element;
-  typedef Input_node_types::Mark5_buffer         Output_buffer;
-  typedef Input_node_types::Mark5_buffer_element Output_buffer_element;
-  typedef Input_node_types::Mark5_buffer_ptr     Output_buffer_ptr;
+  typedef boost::shared_ptr< Input_data_format_reader > Data_format_reader_ptr;
+  typedef Input_node_types::value_type                  value_type;
+  typedef Input_node_types::Mark5_memory_pool           Input_memory_pool;
+  typedef Input_node_types::Mark5_buffer_element        Input_element;
+  typedef Input_node_types::Mark5_buffer                Output_buffer;
+  typedef Input_node_types::Mark5_buffer_element        Output_buffer_element;
+  typedef Input_node_types::Mark5_buffer_ptr            Output_buffer_ptr;
 
-  Mark5a_reader_tasklet(Mark5a_reader_ptr mark5a_reader,
-                       unsigned char buffer[]);
+  Mark5a_reader_tasklet(Data_format_reader_ptr reader,
+                        unsigned char buffer[]);
 
   /// For Tasklet
   void do_task();
@@ -60,11 +60,11 @@ public:
   std::vector< std::vector<int> > get_tracks(const Input_node_parameters &input_node_param);
 
   int size_input_word() const {
-    return mark5a_reader_->N;
+    return reader_->bytes_per_input_word();
   }
 
   void set_parameters(const Input_node_parameters &input_node_param) {
-    mark5a_reader_->set_parameters(input_node_param);
+    reader_->set_parameters(input_node_param);
   }
 
 private:
@@ -77,7 +77,7 @@ private:
 
 private:
   /// Data stream to read from
-  Mark5a_reader_ptr                    mark5a_reader_;
+  Data_format_reader_ptr              reader_;
   /// Memory pool of data block that can be filled
   Input_memory_pool                   memory_pool_;
   /// Current mark5a data block

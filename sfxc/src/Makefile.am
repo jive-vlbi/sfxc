@@ -3,8 +3,7 @@ LDADD = $(SFXC_LDADD)
 
 bin_PROGRAMS = sfxc
 
-TESTS           = \
-	test_sfxc.py
+TESTS = test_sfxc.py
 
 OBJ=\
   channel_extractor_fast.cc \
@@ -13,6 +12,7 @@ OBJ=\
   sfxc_mpi.cc \
   utils.cc \
   delay_table_akima.cc \
+  input_data_format_reader.cc \
   mark5a_reader_tasklet.cc \
   mark5a_reader.cc \
   mark5a_header.cc \
