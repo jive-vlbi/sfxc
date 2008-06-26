@@ -97,6 +97,10 @@ int main(int argc, char *argv[]) {
   if (rank == 0)
     std::cout << "Application compiled with: -DMT_SFXC_ENABLE" << std::endl;
 #endif // MT_SFXC
+#ifdef DUMMY_CORRELATION
+  if (rank == 0)
+    std::cout << "Application compiled with: -DDUMMY_CORRELATION" << std::endl;
+#endif // MT_SFXC
 #ifdef MT_MPI_ENABLE
 #ifndef MT_SFXC_ENABLE
   std::cout << "Application compiled with: -DMT_MPI_ENABLE but without -DMT_SFXC_ENABLE" << std::endl;
