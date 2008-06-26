@@ -15,7 +15,6 @@
 #include "data_writer_file.h"
 #include "data_writer_tcp.h"
 #include "data_writer_socket.h"
-#include "data_writer_void.h"
 #include "tcp_connection.h"
 
 Multiple_data_writers_controller::
@@ -195,27 +194,6 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       add_data_writer(stream_nr, data_writer);
 
       MPI_Send(&stream_nr, 1, MPI_INT32,
-               status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
-               MPI_COMM_WORLD);
-
-      return PROCESS_EVENT_STATUS_SUCCEEDED;
-    }
-  case MPI_TAG_ADD_DATA_WRITER_VOID2: {
-      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
-
-      MPI_Status status2;
-      int32_t msg;
-      MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
-               status.MPI_TAG, MPI_COMM_WORLD, &status2);
-
-      SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
-      SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
-
-      boost::shared_ptr<Data_writer> data_writer(new Data_writer_void());
-
-      add_data_writer(msg, data_writer);
-
-      MPI_Send(&msg, 1, MPI_INT32,
                status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
                MPI_COMM_WORLD);
 

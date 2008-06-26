@@ -16,7 +16,6 @@
 #include "network.h"
 #include "interface.h"
 
-#include "data_writer_void.h"
 #include "utils.h"
 
 Single_data_writer_controller::
@@ -94,24 +93,6 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
 
       boost::shared_ptr<Data_writer> writer(new Data_writer_file(filename));
       set_data_writer(stream_nr, writer);
-
-      MPI_Send(&stream_nr, 1, MPI_INT32,
-               status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
-               MPI_COMM_WORLD);
-
-      return PROCESS_EVENT_STATUS_SUCCEEDED;
-    }
-  case MPI_TAG_ADD_DATA_WRITER_VOID2: {
-      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
-      int32_t stream_nr;
-      MPI_Recv(&stream_nr, 1, MPI_INT32, status.MPI_SOURCE,
-               status.MPI_TAG, MPI_COMM_WORLD, &status2);
-
-      SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
-      SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
-
-      boost::shared_ptr<Data_writer> writer(new Data_writer_void());
-      set_data_writer((int)stream_nr, writer);
 
       MPI_Send(&stream_nr, 1, MPI_INT32,
                status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
