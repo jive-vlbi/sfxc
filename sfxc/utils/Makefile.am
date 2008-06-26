@@ -35,7 +35,6 @@ extract_channelizer_SOURCES = \
   ../src/mark5a_header.cc \
   ../src/data_reader_factory.cc \
   ../src/data_reader_dnfp.cc \
-  ../src/data_reader_mark5.cc \
 	../src/data_reader_socket.cc \
 	../src/data_writer_socket.cc \
 	../src/data_reader_blocking.cc \

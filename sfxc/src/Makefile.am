@@ -22,11 +22,9 @@ OBJ=\
   data_reader_dnfp.cc \
   data_reader_blocking.cc \
   data_reader_socket.cc \
-  data_reader_mark5.cc \
   data_writer_socket.cc \
   data_reader_file.cc data_writer_file.cc \
-  data_writer_void.cc \
-  log_writer.cc log_writer_cout.cc log_writer_void.cc \
+  log_writer.cc log_writer_cout.cc \
   log_writer_file.cc \
   correlation_core.cc \
   delay_correction.cc \
