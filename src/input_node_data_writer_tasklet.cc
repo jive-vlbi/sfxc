@@ -32,16 +32,24 @@ connect_to(Input_buffer_ptr new_input_buffer) {
 bool
 Input_node_data_writer_tasklet::
 has_work() {
+  // No input data
   if (input_buffer_->empty())
     return false;
 
+  // No data writers to send the data to
   if (data_writers_.empty())
     return false;
 
-  if (!data_writers_.front().writer->can_write()) {
-    //DEBUG_MSG("Data writer can't write");
+  // The data writer in the front of the queue is still being used
+  // to send data from another channel
+  if ((data_writers_.front().slice_size > 0) &&
+      (data_writers_.front().writer->get_size_dataslice() > 0))
     return false;
-  }
+
+  // Check whether we can send data to the active writer
+  if (!data_writers_.front().writer->can_write())
+    return false;
+
   return true;
 }
 
