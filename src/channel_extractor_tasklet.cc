@@ -82,6 +82,9 @@ Channel_extractor_tasklet::do_task() {
   //   a time in microseconds and not all mark5b blocks start on an integer number
   //   of microseconds
   int n_input_samples = input_element.data().mark5_data.size();
+  if (n_input_samples != samples_per_block *N) {
+    DEBUG_MSG(n_input_samples <<" != " << samples_per_block << " * " <<N);
+  }
   SFXC_ASSERT(n_input_samples == samples_per_block*N);
 
   // Number of bytes in the output chunk

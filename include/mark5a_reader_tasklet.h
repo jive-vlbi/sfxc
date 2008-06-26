@@ -23,6 +23,7 @@
 class Mark5a_reader_tasklet : public Tasklet {
 public:
   typedef boost::shared_ptr< Input_data_format_reader > Data_format_reader_ptr;
+  typedef Input_data_format_reader::Data_frame          Data_frame;
   typedef Input_node_types::value_type                  value_type;
   typedef Input_node_types::Mark5_memory_pool           Input_memory_pool;
   typedef Input_node_types::Mark5_buffer_element        Input_element;
@@ -31,7 +32,7 @@ public:
   typedef Input_node_types::Mark5_buffer_ptr            Output_buffer_ptr;
 
   Mark5a_reader_tasklet(Data_format_reader_ptr reader,
-                        unsigned char buffer[]);
+                        Data_frame &data);
 
   /// For Tasklet
   void do_task();
@@ -73,7 +74,7 @@ private:
   /// Push the input_element_ to the output buffer
   void push_element();
   /// Randomize data in the mark5a block
-  void randomize_block(int start, int stop);
+  void randomize_block();
 
 private:
   /// Data stream to read from

@@ -16,23 +16,24 @@ Input_node_tasklet *
 get_input_node_tasklet_mark5a(boost::shared_ptr<Data_reader> reader) {
 
   // Maximal buffer size
-  Mark5a_reader::Data_frame data;
+  Input_data_format_reader::Data_frame data;
 
   boost::shared_ptr<Mark5a_reader> mark5a_reader_ptr =
     boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, data) );
 
-  return new Input_node_tasklet(mark5a_reader_ptr, &data.mark5_data[0]);
+  return new Input_node_tasklet(mark5a_reader_ptr, data);
 }
 
 
 Input_node_tasklet *
 get_input_node_tasklet_mark5b(boost::shared_ptr<Data_reader> reader) {
-  Mark5b_reader::Data_frame data;
+  typedef boost::shared_ptr<Input_data_format_reader> Input_reader_ptr;
 
-  boost::shared_ptr<Mark5b_reader> mark5b_reader_ptr =
-    boost::shared_ptr<Mark5b_reader>(new Mark5b_reader(reader, data));
+  Input_data_format_reader::Data_frame   data;
 
-  return new Input_node_tasklet(mark5b_reader_ptr, &data.mark5_data[0]);
+  Input_reader_ptr   mark5b_reader_ptr(new Mark5b_reader(reader, data));
+
+  return new Input_node_tasklet(mark5b_reader_ptr, data);
 }
 
 Input_node_tasklet *
@@ -65,35 +66,16 @@ Input_node_tasklet::add_time_interval(int32_t start_time, int32_t stop_time) {
 }
 
 Input_node_tasklet::
-Input_node_tasklet(Mark5a_reader_ptr_ mark5a_reader_ptr,
-                   unsigned char buffer[])
-    : mark5a_reader_(NULL),
-    mark5b_reader_(NULL),
-    channel_extractor_(SIZE_MK5A_FRAME, mark5a_reader_ptr->N),
+Input_node_tasklet(Input_reader_ptr_ reader_ptr,
+                   Input_reader_::Data_frame &data)
+  : reader_(reader_ptr, data),
+    channel_extractor_(reader_ptr->size_data_block() /
+                       reader_ptr->bytes_per_input_word(), 
+                       reader_ptr->bytes_per_input_word()),
     did_work(true),
-    n_bytes_per_input_word(mark5a_reader_ptr->N),
-    transport_type(MARK5A) {
+    n_bytes_per_input_word(reader_ptr->bytes_per_input_word()) {
 
-  mark5a_reader_ = new Mark5a_reader_tasklet(mark5a_reader_ptr, buffer),
-
-  channel_extractor_.connect_to(mark5a_reader_->get_output_buffer());
-
-  initialise();
-}
-
-Input_node_tasklet::
-Input_node_tasklet(Mark5b_reader_ptr_ mark5b_reader_ptr,
-                   unsigned char buffer[])
-    : mark5a_reader_(NULL),
-    mark5b_reader_(NULL),
-    channel_extractor_(N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME, sizeof(int32_t)),
-    did_work(true),
-    n_bytes_per_input_word(sizeof(int32_t)),
-    transport_type(MARK5B) {
-
-  mark5b_reader_ = new Mark5b_reader_tasklet(mark5b_reader_ptr, buffer),
-
-  channel_extractor_.connect_to(mark5b_reader_->get_output_buffer());
+  channel_extractor_.connect_to(reader_.get_output_buffer());
 
   initialise();
 }
@@ -118,13 +100,13 @@ void Input_node_tasklet::initialise() {
 
   compid.str("");
   monid.str("");
-  compid << inputid.str() << "_mark5a_reader";
+  compid << inputid.str() << "_reader";
   monid << compid.str() << "_monitor_state";
-  mark5a_reader_state_.init(monid.str());
-  mark5a_reader_state_.add_property(inputid.str(), "is_a", "inputnode");
-  mark5a_reader_state_.add_property(inputid.str(), "has", compid.str() );
-  mark5a_reader_state_.add_property(compid.str(), "is_a", "mark5a_reader");
-  mark5a_reader_state_.add_property(compid.str(), "has", monid.str() );
+  reader_state_.init(monid.str());
+  reader_state_.add_property(inputid.str(), "is_a", "inputnode");
+  reader_state_.add_property(inputid.str(), "has", compid.str() );
+  reader_state_.add_property(compid.str(), "is_a", "reader");
+  reader_state_.add_property(compid.str(), "has", monid.str() );
   dotask_state_.add_property(tt.str(), "contains", monid.str() );
 
 
@@ -183,7 +165,7 @@ Input_node_tasklet::~Input_node_tasklet() {
   }
 
 #if PRINT_TIMER
-  PROGRESS_MSG("Time mar4_reader:       " << mark5a_reader_timer_.measured_time());
+  PROGRESS_MSG("Time mar4_reader:       " << reader_timer_.measured_time());
   PROGRESS_MSG("Time integer_delay:     " << integer_delay_timer_.measured_time());
   PROGRESS_MSG("Time channel_extractor: " << channel_extractor_timer_.measured_time());
   PROGRESS_MSG("Time data_writers:      " << data_writers_timer_.measured_time());
@@ -199,54 +181,26 @@ do_task() {
 
   RT_STAT( dotask_state_.begin_measure() );
 
-  mark5a_reader_timer_.resume();
-  if (transport_type == MARK5A) {
-    SFXC_ASSERT(mark5a_reader_ != NULL);
-    if (mark5a_reader_->has_work()) {
+  reader_timer_.resume();
+  if (reader_.has_work()) {
 
-      RT_STAT( mark5a_reader_state_.begin_measure() );
-      SFXC_ASSERT(mark5a_reader_ != NULL);
-      mark5a_reader_->do_task();
-      RT_STAT(mark5a_reader_state_.end_measure(1) );
+    RT_STAT( reader_state_.begin_measure() );
+    reader_.do_task();
+    RT_STAT(reader_state_.end_measure(1) );
 
-      did_work = true;
-    } else {
-      // Check whether we can go to a new time interval
-      if (get_current_time() == get_stop_time()) {
-        if (!time_intervals.empty()) {
-          set_time_interval(time_intervals.front().first,
-                            time_intervals.front().second);
-          time_intervals.pop();
-          did_work = true;
-        }
-      }
-    }
-  } else if (transport_type == MARK5B) {
-    SFXC_ASSERT(mark5b_reader_ != NULL);
-    if (mark5b_reader_->has_work()) {
-
-      RT_STAT( mark5breader_state_.begin_measure() );
-      SFXC_ASSERT(mark5b_reader_ != NULL);
-      mark5b_reader_->do_task();
-      RT_STAT(mark5breader_state_.end_measure(1) );
-
-      did_work = true;
-    } else {
-      // Check whether we can go to a new time interval
-      if (get_current_time() == get_stop_time()) {
-        if (!time_intervals.empty()) {
-          set_time_interval(time_intervals.front().first,
-                            time_intervals.front().second);
-          time_intervals.pop();
-          did_work = true;
-        }
-      }
-    }
+    did_work = true;
   } else {
-    SFXC_ASSERT_MSG(false,
-                    "Unknown transport type (not Mark5A or Mark5B)");
+    // Check whether we can go to a new time interval
+    if (get_current_time() == get_stop_time()) {
+      if (!time_intervals.empty()) {
+        set_time_interval(time_intervals.front().first,
+                          time_intervals.front().second);
+        time_intervals.pop();
+        did_work = true;
+      }
+    }
   }
-  mark5a_reader_timer_.stop();
+  reader_timer_.stop();
 
 
   channel_extractor_timer_.resume();
@@ -309,18 +263,9 @@ void
 Input_node_tasklet::
 set_parameters(const Input_node_parameters &input_node_param,
                int node_nr) {
-  if (transport_type == MARK5A) {
-    mark5a_reader_->set_parameters(input_node_param);
-    channel_extractor_.set_parameters(input_node_param,
-                                      mark5a_reader_->get_tracks(input_node_param));
-  } else if (transport_type == MARK5B) {
-    mark5b_reader_->set_parameters(input_node_param);
-    channel_extractor_.set_parameters(input_node_param,
-                                      mark5b_reader_->get_tracks(input_node_param));
-  } else {
-    SFXC_ASSERT_MSG(false,
-                    "Unknown transport type (not Mark5A or Mark5B)");
-  }
+  reader_.set_parameters(input_node_param);
+  channel_extractor_.set_parameters(input_node_param,
+                                    reader_.get_tracks(input_node_param));
 
   size_t number_frequency_channels = input_node_param.channels.size();
   integer_delay_.resize(number_frequency_channels, NULL);
@@ -348,16 +293,9 @@ Input_node_tasklet::
 set_time_interval(int32_t start_time, int32_t stop_time) {
   SFXC_ASSERT(!integer_delay_.empty());
   SFXC_ASSERT(integer_delay_[0] != NULL);
-  if (transport_type == MARK5A) {
-    SFXC_ASSERT(mark5a_reader_ != NULL);
-    mark5a_reader_->goto_time(start_time);
-    mark5a_reader_->set_stop_time(stop_time);
-  } else {
-    SFXC_ASSERT(transport_type == MARK5B);
-    SFXC_ASSERT(mark5b_reader_ != NULL);
-    mark5b_reader_->goto_time(start_time);
-    mark5b_reader_->set_stop_time(stop_time);
-  }
+
+  reader_.goto_time(start_time);
+  reader_.set_stop_time(stop_time);
 
   for (size_t i=0; i < integer_delay_.size(); i++) {
     integer_delay_[i]->set_time(int64_t(1000)*start_time);
@@ -369,24 +307,12 @@ set_time_interval(int32_t start_time, int32_t stop_time) {
 int
 Input_node_tasklet::
 get_current_time() {
-  if (transport_type == MARK5A) {
-    SFXC_ASSERT(mark5a_reader_ != NULL);
-    return mark5a_reader_->get_current_time();
-  } else {
-    SFXC_ASSERT(mark5b_reader_ != NULL);
-    return mark5b_reader_->get_current_time();
-  }
+  return reader_.get_current_time();
 }
 int
 Input_node_tasklet::
 get_stop_time() {
-  if (transport_type == MARK5A) {
-    SFXC_ASSERT(mark5a_reader_ != NULL);
-    return mark5a_reader_->get_stop_time();
-  } else {
-    SFXC_ASSERT(mark5b_reader_ != NULL);
-    return mark5b_reader_->get_stop_time();
-  }
+  return reader_.get_stop_time();
 }
 
 void

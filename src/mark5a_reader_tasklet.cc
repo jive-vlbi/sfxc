@@ -2,7 +2,7 @@
 
 Mark5a_reader_tasklet::
 Mark5a_reader_tasklet(Data_format_reader_ptr reader,
-                     unsigned char buffer[])
+                     Data_frame &data)
     : memory_pool_(10), stop_time(-1),
     n_bytes_per_input_word(reader->bytes_per_input_word()) {
 
@@ -11,17 +11,11 @@ Mark5a_reader_tasklet(Data_format_reader_ptr reader,
   allocate_element();
   reader_ = reader;
 
-  SFXC_ASSERT(&input_element_->mark5_data[0] != NULL);
-  // Copy the first data block
-  memcpy((unsigned char *)&input_element_->mark5_data[0],
-         (unsigned char *)buffer,
-         SIZE_MK5A_FRAME*n_bytes_per_input_word);
+  assert(data.mark5_data.size() > 0);
+
+  *input_element_ = data;
 
   current_time = reader_->get_current_time();
-  input_element_->start_time = current_time;
-  input_element_->invalid_bytes_begin = 0;
-  input_element_->nr_invalid_bytes = SIZE_MK5A_HEADER*n_bytes_per_input_word;
-
 
 #ifdef RUNTIME_STATISTIC
   std::stringstream inputid;
@@ -53,48 +47,22 @@ do_task() {
   allocate_element();
 
   if (reader_->eof()) {
-#ifdef SFXC_INVALIDATE_SAMPLES
-    input_element_->invalid_bytes_begin = 0;
-    input_element_->nr_invalid_bytes = SIZE_MK5A_FRAME*n_bytes_per_input_word;
-#else
-    input_element_->invalid_bytes_begin = 0;
-    input_element_->nr_invalid_bytes = 0;
-    randomize_block(0,SIZE_MK5A_FRAME*n_bytes_per_input_word);
-#endif
-
+    randomize_block();
     current_time += reader_->time_between_headers();
   } else if (current_time < reader_->get_current_time()) {
-    // We don't have data yet
-#ifdef SFXC_INVALIDATE_SAMPLES
-    input_element_->invalid_bytes_begin = 0;
-    input_element_->nr_invalid_bytes = SIZE_MK5A_FRAME*n_bytes_per_input_word;
-#else
-    input_element_->invalid_bytes_begin = 0;
-    input_element_->nr_invalid_bytes = 0;
-    randomize_block(0,SIZE_MK5A_FRAME*n_bytes_per_input_word);
-#endif
-
+    randomize_block();
     current_time += reader_->time_between_headers();
   } else {
-    input_element_->invalid_bytes_begin = 0;
-    input_element_->nr_invalid_bytes = SIZE_MK5A_HEADER*n_bytes_per_input_word;
 
     if (!reader_->read_new_block(*input_element_)) {
-#ifdef SFXC_INVALIDATE_SAMPLES
-      input_element_->invalid_bytes_begin = 0;
-      input_element_->nr_invalid_bytes = SIZE_MK5A_FRAME*n_bytes_per_input_word;
-#else
-      input_element_->invalid_bytes_begin = 0;
-      input_element_->nr_invalid_bytes = 0;
-      randomize_block(0,SIZE_MK5A_FRAME*n_bytes_per_input_word);
-#endif
+      randomize_block();
     }
     current_time = reader_->get_current_time();
   }
   input_element_->start_time = current_time;
 
 #ifdef RUNTIME_STATISTIC
-  monitor_.end_measure(SIZE_MK5A_FRAME*n_bytes_per_input_word);
+  monitor_.end_measure(reader->size_data_block());
 #endif // RUNTIME_STATISTIC
 }
 
@@ -115,10 +83,6 @@ Mark5a_reader_tasklet::
 allocate_element() {
   SFXC_ASSERT(!memory_pool_.empty());
   input_element_ = memory_pool_.allocate();
-  std::vector<value_type> &vector_ = input_element_->mark5_data;
-  if (vector_.size() != (SIZE_MK5A_FRAME*n_bytes_per_input_word)) {
-    vector_.resize(SIZE_MK5A_FRAME*n_bytes_per_input_word);
-  }
 }
 int
 Mark5a_reader_tasklet::
@@ -169,6 +133,8 @@ push_element() {
   SFXC_ASSERT(input_element_->invalid_bytes_begin >= 0);
   SFXC_ASSERT(input_element_->nr_invalid_bytes >= 0);
 
+  SFXC_ASSERT(input_element_->mark5_data.size() == 
+              reader_->size_data_block());
   output_buffer_->push(input_element_);
 }
 
@@ -186,17 +152,32 @@ get_tracks(const Input_node_parameters &input_node_param) {
 
 void
 Mark5a_reader_tasklet::
-randomize_block(int start, int stop) {
-  // Randomize header
-  for (size_t i=0; i<SIZE_MK5A_HEADER*n_bytes_per_input_word; i++) {
+randomize_block() {
+  // Randomize/invalidate the data in the current block
+
+  // Make sure the data has the right size
+  size_t size = reader_->size_data_block();
+  if (input_element_->mark5_data.size() != size) {
+    input_element_->mark5_data.resize(size);
+  }
+
 #ifdef SFXC_INVALIDATE_SAMPLES
+  input_element_->invalid_bytes_begin = 0;
+  input_element_->nr_invalid_bytes = size;
+
 #ifdef SFXC_CHECK_INVALID_SAMPLES
-    input_element_.data().mark5_data[i] = value_type(0);
-#endif
-#else
+  for (size_t i=0; i<size; i++) {
+    input_element_->mark5_data[i] = value_type(0);
+  }
+#endif // SFXC_CHECK_INVALID_SAMPLES
+
+#else // !SFXC_INVALIDATE_SAMPLES
+  for (size_t i=0; i<size; i++) {
     // Randomize data
     // park_miller_random generates 31 random bits
-    input_element_.data().mark5_data[i] = (value_type)park_miller_random();
-#endif
+    input_element_->mark5_data[i] = (value_type)park_miller_random();
   }
+
+#endif // SFXC_INVALIDATE_SAMPLES
+
 }

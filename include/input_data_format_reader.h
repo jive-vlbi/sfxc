@@ -37,7 +37,8 @@ public:
   get_tracks(const Input_node_parameters &input_node_param, 
              Data_frame &data)= 0;
 
-  virtual int bytes_per_input_word() const = 0;
+  virtual size_t bytes_per_input_word() const = 0;
+  virtual size_t size_data_block() const = 0;
 
   virtual int time_between_headers() = 0;
 

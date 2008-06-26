@@ -30,20 +30,16 @@ enum TRANSPORT_TYPE {
 class Input_node_tasklet : public Tasklet {
 public:
   typedef boost::shared_ptr<Data_writer>             Data_writer_ptr_;
-  typedef boost::shared_ptr<Mark5a_reader>            Mark5a_reader_ptr_;
-  typedef Mark5a_reader_tasklet                       Mark5a_reader_tasklet_;
-  typedef boost::shared_ptr<Mark5b_reader>           Mark5b_reader_ptr_;
-  typedef Mark5b_reader_tasklet                      Mark5b_reader_tasklet_;
+  typedef Input_data_format_reader                   Input_reader_;
+  typedef boost::shared_ptr<Input_reader_>           Input_reader_ptr_;
+  typedef Mark5a_reader_tasklet                      Input_reader_tasklet_;
   typedef Channel_extractor_tasklet                  Channel_extractor_tasklet_;
   typedef Integer_delay_correction_per_channel       Integer_delay_tasklet_;
   typedef Input_node_data_writer_tasklet             Data_writer_tasklet_;
 
   // The mark5a-reader and the first data block
-  Input_node_tasklet(Mark5a_reader_ptr_ mark5a_reader_ptr,
-                     unsigned char buffer[]);
-
-  Input_node_tasklet(Mark5b_reader_ptr_ mark5b_reader,
-                     unsigned char buffer[]);
+  Input_node_tasklet(Input_reader_ptr_ input_reader_ptr,
+                     Input_reader_::Data_frame &data);
 
   void initialise();
 
@@ -83,8 +79,7 @@ public:
 
 private:
   //  std::list<Time_slice>                time_slices_;
-  Mark5a_reader_tasklet_                *mark5a_reader_;
-  Mark5b_reader_tasklet_               *mark5b_reader_;
+  Input_reader_tasklet_                reader_;
   Channel_extractor_tasklet_           channel_extractor_;
 
   // Pointer because we can not copy construct the Integer_delay_tasklet_
@@ -94,7 +89,7 @@ private:
 
   bool did_work;
 
-  Timer mark5a_reader_timer_, integer_delay_timer_, channel_extractor_timer_, data_writers_timer_;
+  Timer reader_timer_, integer_delay_timer_, channel_extractor_timer_, data_writers_timer_;
 
   Delay_table_akima delay_table;
 
@@ -110,8 +105,6 @@ private:
   QOS_MonitorSpeed dotask_state_;
 #endif //RUNTIME_STATISTIC
   const size_t n_bytes_per_input_word;
-
-  TRANSPORT_TYPE transport_type;
 };
 
 

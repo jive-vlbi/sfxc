@@ -3,29 +3,12 @@
 Mark5b_reader::
 Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
               Data_frame &data)
-    : data_reader_(data_reader),
+  : Input_data_format_reader(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
-    time_between_headers_(0) {
-  SFXC_ASSERT(sizeof(current_header) == SIZE_MK5B_HEADER*SIZE_MK5B_WORD);
-  data_reader_->get_bytes(sizeof(current_header), (char *)&current_header);
-  SFXC_ASSERT_MSG(current_header.check(),
-                  "Couldn't find the mark5b header in the mark5b file");
-
-  int blocksize = N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME*SIZE_MK5B_WORD;
-  data.mark5_data.resize(blocksize);
-  char *buffer = (char *)&data.mark5_data[0];
-
-  data_reader_->get_bytes(SIZE_MK5B_FRAME * SIZE_MK5B_WORD, buffer);
-
-  for (int i=1; i<N_MK5B_BLOCKS_TO_READ; i++) {
-    buffer += SIZE_MK5B_FRAME * SIZE_MK5B_WORD;
-
-    data_reader_->get_bytes(sizeof(current_header), (char *)&tmp_header);
-    SFXC_ASSERT(tmp_header.check());
-    
-    data_reader_->get_bytes(SIZE_MK5B_FRAME * SIZE_MK5B_WORD,
-                            (char *)buffer);
-  }
+    time_between_headers_(0)
+{
+  read_new_block(data);
+  SFXC_ASSERT(current_header.check());
 
   start_day_ = current_header.julian_day();
   start_time_ = current_header.microseconds();
@@ -78,7 +61,11 @@ int64_t Mark5b_reader::get_current_time() {
 
 
 bool Mark5b_reader::read_new_block(Data_frame &data) {
-  SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
+  if (data.mark5_data.size() != size_data_block()) {
+    data.mark5_data.resize(size_data_block());
+  }
+  data.invalid_bytes_begin = 0;
+  data.nr_invalid_bytes = 0;
 
   char * mark5b_block = (char *)&data.mark5_data[0];
   for (int i=0; i<N_MK5B_BLOCKS_TO_READ; i++) {
@@ -96,6 +83,8 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
     mark5b_block += SIZE_MK5B_FRAME*SIZE_MK5B_WORD;
   }
 
+  if (data_reader_->eof()) return false;
+  SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
   return current_header.check();
 }
 
@@ -126,15 +115,38 @@ int Mark5b_reader::Header::julian_day() const {
   return ((((int32_t)day1)*10+day2)*10+day3);
 }
 
-void Mark5b_reader::set_track_bit_rate(int tbr) {
+int Mark5b_reader::time_between_headers() {
+  SFXC_ASSERT(time_between_headers_ > 0);
+  return time_between_headers_;
+}
+
+std::vector< std::vector<int> >
+Mark5b_reader::get_tracks(const Input_node_parameters &input_node_param,
+                          Data_frame & /* data */) {
+  std::vector< std::vector<int> > result;
+  result.resize(input_node_param.channels.size());
+  for (size_t i=0; i<input_node_param.channels.size(); i++) {
+    int bps = input_node_param.channels[i].bits_per_sample();
+    int fo  = input_node_param.channels[i].sign_tracks.size();
+    result[i].resize(bps * fo);
+    for (size_t j=0; j<input_node_param.channels[i].sign_tracks.size(); j++) {
+      if (bps == 1) {
+        result[i][j] = input_node_param.channels[i].sign_tracks[j];
+      } else {
+        SFXC_ASSERT(bps == 2);
+        result[i][2*j] = input_node_param.channels[i].sign_tracks[j];
+        result[i][2*j+1] = input_node_param.channels[i].magn_tracks[j];
+      }
+    }
+  }
+  return result;
+}
+
+void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
+  int tbr = param.track_bit_rate;
   SFXC_ASSERT((tbr % 1000000) == 0);
   SFXC_ASSERT((N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME)%(tbr/1000000) == 0);
   time_between_headers_ = 
     (N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME)/(tbr/1000000);
   SFXC_ASSERT(time_between_headers_ > 0);
-}
-
-int Mark5b_reader::time_between_headers() {
-  SFXC_ASSERT(time_between_headers_ > 0);
-  return time_between_headers_;
 }

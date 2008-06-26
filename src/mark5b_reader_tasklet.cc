@@ -171,27 +171,11 @@ get_output_buffer() {
 std::vector< std::vector<int> >
 Mark5b_reader_tasklet::
 get_tracks(const Input_node_parameters &input_node_param) {
-  std::vector< std::vector<int> > result;
-  result.resize(input_node_param.channels.size());
-  for (size_t i=0; i<input_node_param.channels.size(); i++) {
-    int bps = input_node_param.channels[i].bits_per_sample();
-    int fo  = input_node_param.channels[i].sign_tracks.size();
-    result[i].resize(bps * fo);
-    for (size_t j=0; j<input_node_param.channels[i].sign_tracks.size(); j++) {
-      if (bps == 1) {
-        result[i][j] = input_node_param.channels[i].sign_tracks[j];
-      } else {
-        SFXC_ASSERT(bps == 2);
-        result[i][2*j] = input_node_param.channels[i].sign_tracks[j];
-        result[i][2*j+1] = input_node_param.channels[i].magn_tracks[j];
-      }
-    }
-  }
-  return result;
+  return mark5b_reader_->get_tracks(input_node_param, *input_element_);
 }
 
 void 
 Mark5b_reader_tasklet::
 set_parameters(const Input_node_parameters &input_param) {
-  mark5b_reader_->set_track_bit_rate(input_param.track_bit_rate);
+  mark5b_reader_->set_parameters(input_param);
 }
