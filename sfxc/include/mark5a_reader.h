@@ -61,8 +61,11 @@ public:
 
   void set_parameters(const Input_node_parameters &input_node_param);
 
-  int bytes_per_input_word() const {
+  size_t bytes_per_input_word() const {
     return N;
+  }
+  size_t size_data_block() const {
+    return SIZE_MK5A_FRAME*N;
   }
 
 private:

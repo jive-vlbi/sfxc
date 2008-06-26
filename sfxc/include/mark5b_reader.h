@@ -10,6 +10,8 @@
 #ifndef MARK5B_READER_H
 #define MARK5B_READER_H
 
+#include "input_data_format_reader.h"
+
 #include "data_reader.h"
 #include "input_node_types.h"
 #include "control_parameters.h"
@@ -18,7 +20,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
-class Mark5b_reader {
+class Mark5b_reader : public Input_data_format_reader {
   enum Debug_level {
     NO_CHECKS = 0,
     CHECK_PERIODIC_HEADERS,
@@ -26,7 +28,7 @@ class Mark5b_reader {
     CHECK_BIT_STATISTICS
   };
 public:
-  typedef Input_node_types::Input_data_frame Data_frame;
+  typedef Input_data_format_reader::Data_frame Data_frame;
 
   struct Header {
     uint32_t      syncword;
@@ -68,17 +70,23 @@ public:
 
   bool eof();
 
-  void set_track_bit_rate(int tbr);
   int time_between_headers();
 
+  size_t bytes_per_input_word() const {
+    return SIZE_MK5B_WORD;
+  }
+  size_t size_data_block() const {
+    return bytes_per_input_word()*SIZE_MK5B_FRAME*N_MK5B_BLOCKS_TO_READ;
+  }
+
   std::vector< std::vector<int> >
-  get_tracks(const Input_node_parameters &input_node_param);
+  get_tracks(const Input_node_parameters &input_node_param,
+             Data_frame &data);
 
+  void set_parameters(const Input_node_parameters &param);
+  
+  
 private:
-  // Data reader: input stream
-  // The file pointer is always after a header, but before the data
-  boost::shared_ptr<Data_reader> data_reader_;
-
   // Time information
   int start_day_;
   // start time and current time in miliseconds
