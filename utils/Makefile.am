@@ -1,9 +1,10 @@
+AM_CXXFLAGS = $(SFXC_CXXFLAGS)
+LDADD = $(SFXC_LDADD)
+
 SUBDIRS = delay
 
 pkginclude_HEADERS = *.h *.py
 
-CXXFLAGS = $(SFXC_CXXFLAGS)
-LDADD = $(SFXC_LDADD)
 
 bin_PROGRAMS = mark5a_print_headers \
                produce_html_plotpage \
@@ -21,7 +22,6 @@ bin_PROGRAMS = mark5a_print_headers \
 
 bin_SCRIPTS  = run_sfxc.py vumeter.py
 
-extract_channelizer_CXXFLAGS=
 extract_channelizer_SOURCES = \
   extract_channelizer.cc \
   ../src/control_parameters.cc \
