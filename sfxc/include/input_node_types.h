@@ -23,7 +23,7 @@ public:
   struct Input_data_frame {
     Input_data_frame() 
       : invalid_bytes_begin(-1), nr_invalid_bytes(-1), start_time(-1) {}
-    std::vector<value_type>        mark5_data;
+    std::vector<value_type>        buffer;
 
     // The following two members are for the randomization of the mark5-header
     // The number of the first invalid byte

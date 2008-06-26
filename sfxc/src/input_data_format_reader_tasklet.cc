@@ -11,7 +11,7 @@ Input_data_format_reader_tasklet(Data_format_reader_ptr reader,
   allocate_element();
   reader_ = reader;
 
-  assert(data.mark5_data.size() > 0);
+  assert(data.buffer.size() > 0);
 
   *input_element_ = data;
 
@@ -133,7 +133,7 @@ push_element() {
   SFXC_ASSERT(input_element_->invalid_bytes_begin >= 0);
   SFXC_ASSERT(input_element_->nr_invalid_bytes >= 0);
 
-  SFXC_ASSERT(input_element_->mark5_data.size() == 
+  SFXC_ASSERT(input_element_->buffer.size() == 
               reader_->size_data_block());
   output_buffer_->push(input_element_);
 }
@@ -157,8 +157,8 @@ randomize_block() {
 
   // Make sure the data has the right size
   size_t size = reader_->size_data_block();
-  if (input_element_->mark5_data.size() != size) {
-    input_element_->mark5_data.resize(size);
+  if (input_element_->buffer.size() != size) {
+    input_element_->buffer.resize(size);
   }
 
 #ifdef SFXC_INVALIDATE_SAMPLES
@@ -167,7 +167,7 @@ randomize_block() {
 
 #ifdef SFXC_CHECK_INVALID_SAMPLES
   for (size_t i=0; i<size; i++) {
-    input_element_->mark5_data[i] = value_type(0);
+    input_element_->buffer[i] = value_type(0);
   }
 #endif // SFXC_CHECK_INVALID_SAMPLES
 
@@ -175,7 +175,7 @@ randomize_block() {
   for (size_t i=0; i<size; i++) {
     // Randomize data
     // park_miller_random generates 31 random bits
-    input_element_->mark5_data[i] = (value_type)park_miller_random();
+    input_element_->buffer[i] = (value_type)park_miller_random();
   }
 
 #endif // SFXC_INVALIDATE_SAMPLES

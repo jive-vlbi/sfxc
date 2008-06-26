@@ -81,7 +81,7 @@ Channel_extractor_tasklet::do_task() {
   // For mark5b this is N_MK5B_BLOCKS_TO_READ as the input_element also contains
   //   a time in microseconds and not all mark5b blocks start on an integer number
   //   of microseconds
-  int n_input_samples = input_element.data().mark5_data.size();
+  int n_input_samples = input_element.data().buffer.size();
   if (n_input_samples != samples_per_block *N) {
     DEBUG_MSG(n_input_samples <<" != " << samples_per_block << " * " <<N);
   }
@@ -127,7 +127,7 @@ Channel_extractor_tasklet::do_task() {
 
   // Channel extract
   // This is done in a separate class to allow for different optimizations
-  ch_extractor->extract((unsigned char *) &input_element.data().mark5_data[0],
+  ch_extractor->extract((unsigned char *) &input_element.data().buffer[0],
                         output_positions);
 
   { // release the input buffer and put the output buffer
