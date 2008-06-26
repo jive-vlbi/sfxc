@@ -96,8 +96,6 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
 		case MPI_TAG_ADD_TCP_READER_CONNECTED_FROM: {
 			get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
-      MPI_Status status2;
-
       /* - int32_t: data_writer_rank
        * - int32_t: data_writer_stream_nr
        * - int32_t: data_reader_rank

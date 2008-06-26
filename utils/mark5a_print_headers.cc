@@ -45,6 +45,6 @@ int main(int argc, char *argv[]) {
     << " \t" << current_time - prev_time
     << std::endl;
     prev_time = current_time;
-  } while (mark5a_reader->read_new_block(&data.mark5_data[0]));
+  } while (mark5a_reader->read_new_block(data));
 
 }

@@ -10,17 +10,18 @@
 #ifndef MARK5A_READER_H
 #define MARK5A_READER_H
 
+#include "input_data_format_reader.h"
+
 #include <fstream>
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
 #include "data_reader.h"
 #include "mark5a_header.h"
-#include "mark5b_reader.h"
 #include "control_parameters.h"
 
 
-class Mark5a_reader {
+class Mark5a_reader : public Input_data_format_reader {
   enum Debug_level {
     NO_CHECKS = 0,
     CHECK_PERIODIC_HEADERS,
@@ -28,9 +29,8 @@ class Mark5a_reader {
     CHECK_BIT_STATISTICS
   };
 public:
-  typedef Mark5b_reader::Data_frame            Data_frame;
+  typedef Input_data_format_reader::Data_frame            Data_frame;
 
-  // unsigned char buffer[SIZE_MK5A_FRAME] contains the beginning of a mark5a-frame
   Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
                 int N,
                 Data_frame &data);
@@ -38,19 +38,18 @@ public:
 
   /// Time in microseconds
   /// Changed the order of the arguments when I changed from miliseconds to microseconds
-  int64_t goto_time(unsigned char *mark5a_block,
-                    int64_t us_time);
+  int64_t goto_time(Data_frame &data, int64_t us_time);
 
   /// Get the current time in microseconds
   int64_t get_current_time();
 
   /// Read another mark5a-frame
-  bool read_new_block(unsigned char *mark5a_block);
+  bool read_new_block(Data_frame &data);
 
   /// Get track information from a mark5a header
   std::vector< std::vector<int> >
-  get_tracks(const Input_node_parameters &input_node_param,
-             unsigned char *mark5a_block);
+  get_tracks(const Input_node_parameters &input_node_param, 
+             Data_frame &data);
 
 
   int time_between_headers() {
@@ -62,6 +61,9 @@ public:
 
   void set_parameters(const Input_node_parameters &input_node_param);
 
+  int bytes_per_input_word() const {
+    return N;
+  }
 
 private:
   // format a time in miliseconds
@@ -69,13 +71,10 @@ private:
 
   // checking the header:
   bool check_time_stamp(Mark5a_header &header);
-  bool check_track_bit_statistics(unsigned char *mark5a_block);
+  bool check_track_bit_statistics(Data_frame &data);
 
   void set_data_frame_info(Data_frame &data);
 private:
-  // Data reader: input stream
-  boost::shared_ptr<Data_reader> data_reader_;
-
   // Time information
   int start_day_;
   // start time and current time in miliseconds

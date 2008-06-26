@@ -58,14 +58,13 @@ public:
 
   /// Time in microseconds
   /// Changed the order of the arguments when I changed from miliseconds to microseconds
-  int64_t goto_time(unsigned char *mark5b_block,
-                    int64_t us_time);
+  int64_t goto_time(Data_frame &data, int64_t us_time);
 
   /// Get the current time in microseconds
   int64_t get_current_time();
 
   /// Read another mark5b-frame
-  bool read_new_block(unsigned char *mark5b_block);
+  bool read_new_block(Data_frame &data);
 
   bool eof();
 

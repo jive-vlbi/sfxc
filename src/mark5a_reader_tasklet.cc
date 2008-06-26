@@ -1,15 +1,15 @@
 #include "mark5a_reader_tasklet.h"
 
 Mark5a_reader_tasklet::
-Mark5a_reader_tasklet(Mark5a_reader_ptr reader,
+Mark5a_reader_tasklet(Data_format_reader_ptr reader,
                      unsigned char buffer[])
     : memory_pool_(10), stop_time(-1),
-    n_bytes_per_input_word(reader->N) {
+    n_bytes_per_input_word(reader->bytes_per_input_word()) {
 
   SFXC_ASSERT(sizeof(value_type) == 1);
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
   allocate_element();
-  mark5a_reader_ = reader;
+  reader_ = reader;
 
   SFXC_ASSERT(&input_element_->mark5_data[0] != NULL);
   // Copy the first data block
@@ -17,7 +17,7 @@ Mark5a_reader_tasklet(Mark5a_reader_ptr reader,
          (unsigned char *)buffer,
          SIZE_MK5A_FRAME*n_bytes_per_input_word);
 
-  current_time = mark5a_reader_->get_current_time();
+  current_time = reader_->get_current_time();
   input_element_->start_time = current_time;
   input_element_->invalid_bytes_begin = 0;
   input_element_->nr_invalid_bytes = SIZE_MK5A_HEADER*n_bytes_per_input_word;
@@ -52,7 +52,7 @@ do_task() {
   push_element();
   allocate_element();
 
-  if (mark5a_reader_->eof()) {
+  if (reader_->eof()) {
 #ifdef SFXC_INVALIDATE_SAMPLES
     input_element_->invalid_bytes_begin = 0;
     input_element_->nr_invalid_bytes = SIZE_MK5A_FRAME*n_bytes_per_input_word;
@@ -62,8 +62,8 @@ do_task() {
     randomize_block(0,SIZE_MK5A_FRAME*n_bytes_per_input_word);
 #endif
 
-    current_time += mark5a_reader_->time_between_headers();
-  } else if (current_time < mark5a_reader_->get_current_time()) {
+    current_time += reader_->time_between_headers();
+  } else if (current_time < reader_->get_current_time()) {
     // We don't have data yet
 #ifdef SFXC_INVALIDATE_SAMPLES
     input_element_->invalid_bytes_begin = 0;
@@ -74,12 +74,12 @@ do_task() {
     randomize_block(0,SIZE_MK5A_FRAME*n_bytes_per_input_word);
 #endif
 
-    current_time += mark5a_reader_->time_between_headers();
+    current_time += reader_->time_between_headers();
   } else {
     input_element_->invalid_bytes_begin = 0;
     input_element_->nr_invalid_bytes = SIZE_MK5A_HEADER*n_bytes_per_input_word;
 
-    if (!mark5a_reader_->read_new_block(&input_element_->mark5_data[0])) {
+    if (!reader_->read_new_block(*input_element_)) {
 #ifdef SFXC_INVALIDATE_SAMPLES
       input_element_->invalid_bytes_begin = 0;
       input_element_->nr_invalid_bytes = SIZE_MK5A_FRAME*n_bytes_per_input_word;
@@ -89,7 +89,7 @@ do_task() {
       randomize_block(0,SIZE_MK5A_FRAME*n_bytes_per_input_word);
 #endif
     }
-    current_time = mark5a_reader_->get_current_time();
+    current_time = reader_->get_current_time();
   }
   input_element_->start_time = current_time;
 
@@ -126,9 +126,8 @@ goto_time(int ms_time) {
   int64_t us_time = int64_t(1000)*ms_time;
 
   int64_t new_time =
-    mark5a_reader_->goto_time((unsigned char *)&input_element_->mark5_data[0],
-                              us_time);
-  SFXC_ASSERT(new_time == mark5a_reader_->get_current_time());
+    reader_->goto_time(*input_element_, us_time);
+  SFXC_ASSERT(new_time == reader_->get_current_time());
 
   // Set the current time to the actual time in the data stream.
   // Might not be the requested time, if no data is available
@@ -182,8 +181,7 @@ get_output_buffer() {
 std::vector< std::vector<int> >
 Mark5a_reader_tasklet::
 get_tracks(const Input_node_parameters &input_node_param) {
-  return mark5a_reader_->get_tracks(input_node_param,
-                                   (unsigned char *)&input_element_->mark5_data[0]);
+  return reader_->get_tracks(input_node_param, *input_element_);
 }
 
 void

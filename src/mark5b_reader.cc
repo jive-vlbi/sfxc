@@ -35,7 +35,7 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
 Mark5b_reader::~Mark5b_reader() {}
 
 int64_t
-Mark5b_reader::goto_time(unsigned char *mark5b_block, int64_t us_time) {
+Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
   SFXC_ASSERT(current_header.check());
   SFXC_ASSERT(time_between_headers_ > 0);
   int64_t current_time_ = current_header.microseconds();
@@ -62,7 +62,7 @@ Mark5b_reader::goto_time(unsigned char *mark5b_block, int64_t us_time) {
   SFXC_ASSERT(bytes_to_read == bytes_read);
 
   // Read last block:
-  read_new_block(mark5b_block);
+  read_new_block(data);
 
   SFXC_ASSERT((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) == 0);
   current_time_ = current_header.microseconds();
@@ -77,9 +77,10 @@ int64_t Mark5b_reader::get_current_time() {
 }
 
 
-bool Mark5b_reader::read_new_block(unsigned char *mark5b_block) {
+bool Mark5b_reader::read_new_block(Data_frame &data) {
   SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
 
+  char * mark5b_block = (char *)&data.mark5_data[0];
   for (int i=0; i<N_MK5B_BLOCKS_TO_READ; i++) {
     if (i==0) {
       data_reader_->get_bytes(sizeof(current_header), 
@@ -91,8 +92,7 @@ bool Mark5b_reader::read_new_block(unsigned char *mark5b_block) {
       SFXC_ASSERT(tmp_header.check());
     }
 
-    data_reader_->get_bytes(SIZE_MK5B_FRAME*SIZE_MK5B_WORD,
-                            (char *)mark5b_block);
+    data_reader_->get_bytes(SIZE_MK5B_FRAME*SIZE_MK5B_WORD, mark5b_block);
     mark5b_block += SIZE_MK5B_FRAME*SIZE_MK5B_WORD;
   }
 
