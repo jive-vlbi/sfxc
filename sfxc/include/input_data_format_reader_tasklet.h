@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef MARK5A_READER_TASKLET_H
-#define MARK5A_READER_TASKLET_H
+#ifndef INPUT_DATA_FORMAT_READER_TASKLET_H
+#define INPUT_DATA_FORMAT_READER_TASKLET_H
 
 #include <boost/shared_ptr.hpp>
 
@@ -20,7 +20,7 @@
 #include "monitor.h"
 #endif // RUNTIME_STATISTIC
 
-class Mark5a_reader_tasklet : public Tasklet {
+class Input_data_format_reader_tasklet : public Tasklet {
 public:
   typedef boost::shared_ptr< Input_data_format_reader > Data_format_reader_ptr;
   typedef Input_data_format_reader::Data_frame          Data_frame;
@@ -31,7 +31,7 @@ public:
   typedef Input_node_types::Mark5_buffer_element        Output_buffer_element;
   typedef Input_node_types::Mark5_buffer_ptr            Output_buffer_ptr;
 
-  Mark5a_reader_tasklet(Data_format_reader_ptr reader,
+  Input_data_format_reader_tasklet(Data_format_reader_ptr reader,
                         Data_frame &data);
 
   /// For Tasklet
@@ -41,7 +41,7 @@ public:
   bool has_work();
 
   const char* name() {
-    return "Mark5a_reader_tasklet";
+    return "Input_data_format_reader_tasklet";
   }
 
   /// Get the output
@@ -99,5 +99,5 @@ private:
   const size_t n_bytes_per_input_word;
 };
 
-#endif // MARK5A_READER_TASKLET_H
+#endif // INPUT_DATA_FORMAT_READER_TASKLET_H
 

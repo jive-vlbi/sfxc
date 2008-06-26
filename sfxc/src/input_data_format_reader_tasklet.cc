@@ -1,7 +1,7 @@
-#include "mark5a_reader_tasklet.h"
+#include "input_data_format_reader_tasklet.h"
 
-Mark5a_reader_tasklet::
-Mark5a_reader_tasklet(Data_format_reader_ptr reader,
+Input_data_format_reader_tasklet::
+Input_data_format_reader_tasklet(Data_format_reader_ptr reader,
                      Data_frame &data)
     : memory_pool_(10), stop_time(-1),
     n_bytes_per_input_word(reader->bytes_per_input_word()) {
@@ -35,7 +35,7 @@ Mark5a_reader_tasklet(Data_format_reader_ptr reader,
 #endif //RUNTIME_STATISTIC
 }
 void
-Mark5a_reader_tasklet::
+Input_data_format_reader_tasklet::
 do_task() {
 #ifdef RUNTIME_STATISTIC
   monitor_.begin_measure();
@@ -67,7 +67,7 @@ do_task() {
 }
 
 bool
-Mark5a_reader_tasklet::
+Input_data_format_reader_tasklet::
 has_work() {
   if (memory_pool_.empty()) {
     return false;
@@ -79,13 +79,13 @@ has_work() {
   return true;
 }
 void
-Mark5a_reader_tasklet::
+Input_data_format_reader_tasklet::
 allocate_element() {
   SFXC_ASSERT(!memory_pool_.empty());
   input_element_ = memory_pool_.allocate();
 }
 int
-Mark5a_reader_tasklet::
+Input_data_format_reader_tasklet::
 goto_time(int ms_time) {
   int64_t us_time = int64_t(1000)*ms_time;
 
@@ -108,17 +108,17 @@ goto_time(int ms_time) {
   return current_time/1000;
 }
 int
-Mark5a_reader_tasklet::
+Input_data_format_reader_tasklet::
 get_current_time() {
   return current_time;
 }
 int
-Mark5a_reader_tasklet::
+Input_data_format_reader_tasklet::
 get_stop_time() {
   return stop_time;
 }
 void
-Mark5a_reader_tasklet::
+Input_data_format_reader_tasklet::
 set_stop_time(int64_t ms_time) {
   int64_t us_time = int64_t(1000)*ms_time;
 
@@ -128,7 +128,7 @@ set_stop_time(int64_t ms_time) {
 
 
 void
-Mark5a_reader_tasklet::
+Input_data_format_reader_tasklet::
 push_element() {
   SFXC_ASSERT(input_element_->invalid_bytes_begin >= 0);
   SFXC_ASSERT(input_element_->nr_invalid_bytes >= 0);
@@ -138,20 +138,20 @@ push_element() {
   output_buffer_->push(input_element_);
 }
 
-Mark5a_reader_tasklet::Output_buffer_ptr
-Mark5a_reader_tasklet::
+Input_data_format_reader_tasklet::Output_buffer_ptr
+Input_data_format_reader_tasklet::
 get_output_buffer() {
   return output_buffer_;
 }
 
 std::vector< std::vector<int> >
-Mark5a_reader_tasklet::
+Input_data_format_reader_tasklet::
 get_tracks(const Input_node_parameters &input_node_param) {
   return reader_->get_tracks(input_node_param, *input_element_);
 }
 
 void
-Mark5a_reader_tasklet::
+Input_data_format_reader_tasklet::
 randomize_block() {
   // Randomize/invalidate the data in the current block
 

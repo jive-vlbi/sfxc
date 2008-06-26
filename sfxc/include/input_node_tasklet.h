@@ -10,8 +10,7 @@
 #include "delay_table_akima.h"
 #include "control_parameters.h"
 
-#include "mark5a_reader_tasklet.h"
-#include "mark5b_reader_tasklet.h"
+#include "input_data_format_reader_tasklet.h"
 #include "integer_delay_correction_per_channel.h"
 #include "channel_extractor_tasklet.h"
 #include "input_node_data_writer_tasklet.h"
@@ -32,7 +31,7 @@ public:
   typedef boost::shared_ptr<Data_writer>             Data_writer_ptr_;
   typedef Input_data_format_reader                   Input_reader_;
   typedef boost::shared_ptr<Input_reader_>           Input_reader_ptr_;
-  typedef Mark5a_reader_tasklet                      Input_reader_tasklet_;
+  typedef Input_data_format_reader_tasklet           Input_reader_tasklet_;
   typedef Channel_extractor_tasklet                  Channel_extractor_tasklet_;
   typedef Integer_delay_correction_per_channel       Integer_delay_tasklet_;
   typedef Input_node_data_writer_tasklet             Data_writer_tasklet_;

@@ -10,6 +10,7 @@
 #include "input_node_tasklet.h"
 #include "utils.h"
 #include "mark5a_reader.h"
+#include "mark5b_reader.h"
 #include "monitor.h"
 
 Input_node_tasklet *

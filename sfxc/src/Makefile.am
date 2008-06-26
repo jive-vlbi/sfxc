@@ -13,11 +13,10 @@ OBJ=\
   utils.cc \
   delay_table_akima.cc \
   input_data_format_reader.cc \
-  mark5a_reader_tasklet.cc \
+  input_data_format_reader_tasklet.cc \
   mark5a_reader.cc \
   mark5a_header.cc \
   mark5b_reader.cc \
-  mark5b_reader_tasklet.cc \
   data_writer.cc data_reader.cc \
   data_reader_factory.cc \
   data_reader_dnfp.cc \
