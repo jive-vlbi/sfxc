@@ -110,7 +110,9 @@ void Output_node::start() {
           break;
         }
 
-        write_output();
+        if (!write_output()) {
+          usleep(100);
+        }
 
         // Check whether we arrived at the end of the slice
         if (input_streams[curr_stream]->end_of_slice()) {
@@ -183,9 +185,9 @@ set_weight_of_input_stream(int stream, int64_t weight, size_t size) {
   SFXC_ASSERT(status != END_NODE);
 }
 
-void Output_node::write_output() {
+bool Output_node::write_output() {
   if (output_memory_pool.empty())
-    return;
+    return false;
 
   SFXC_ASSERT(curr_stream >= 0);
   SFXC_ASSERT(input_streams[curr_stream] != NULL);
@@ -195,8 +197,11 @@ void Output_node::write_output() {
   output_value_type element;
   element.data = output_memory_pool.allocate();
   input_streams[curr_stream]->write_bytes(element);
-  if (element.actual_size > 0)
-    output_queue->push(element);
+  if (element.actual_size <= 0)
+    return false;
+  
+  output_queue->push(element);
+  return true;
 }
 
 void Output_node::hook_added_data_reader(size_t reader) {
