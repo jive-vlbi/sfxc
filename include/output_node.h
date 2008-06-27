@@ -145,8 +145,9 @@ private:
 
   /**
    * Function that writes a bit of data.
+   * Returns whether it wrote something
    **/
-  void write_output();
+  bool write_output();
 
 
   // Output buffer and memory pool for asynchronous IO
