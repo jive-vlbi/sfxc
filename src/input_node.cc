@@ -74,24 +74,27 @@ int32_t Input_node::get_time_stamp() {
   return input_node_tasklet->get_current_time()/1000;
 }
 
+void Input_node::terminate()
+{
+	DEBUG_MSG("Input node terminate.");
+	status = END_NODE;
+}
+
 void Input_node::start() {
   while (status != END_NODE) {
     switch (status) {
-      case WAITING: { // Wait until we can start sending new data
+      case WAITING: {
+      	// Wait until we can start sending new data
         // Wait for data_source to become ready
-        if (check_and_process_message() == TERMINATE_NODE) {
-          status = END_NODE;
-          break;
-        }
+        check_and_process_message();
+
         if (input_node_tasklet != NULL)
           status = WRITING;
         break;
       }
       case WRITING: {
-        if (process_all_waiting_messages() == TERMINATE_NODE) {
-          status = END_NODE;
-          break;
-        }
+        process_all_waiting_messages();
+
         SFXC_ASSERT(input_node_tasklet != NULL);
         input_node_tasklet->do_task();
         if ( !input_node_tasklet->has_work() ) {

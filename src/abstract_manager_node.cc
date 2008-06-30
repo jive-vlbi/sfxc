@@ -351,7 +351,8 @@ Abstract_manager_node::check_and_process_waiting_message() {
       MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       terminate_nodes_after_assertion(status.MPI_SOURCE);
-      return TERMINATE_NODE;
+      terminate();
+      return MESSAGE_PROCESSED;
     } else {
       return Node::check_and_process_waiting_message();
     }
@@ -379,7 +380,8 @@ Abstract_manager_node::check_and_process_message() {
     MPI_Recv(&msg, 1, MPI_INT32, status.MPI_SOURCE,
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
     terminate_nodes_after_assertion(status.MPI_SOURCE);
-    return TERMINATE_NODE;
+    terminate();
+    return MESSAGE_PROCESSED;
   } else {
     return Node::check_and_process_message();
   }

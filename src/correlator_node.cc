@@ -101,20 +101,24 @@ Correlator_node::~Correlator_node() {
 #endif
 }
 
+
+void Correlator_node::terminate()
+{
+	DEBUG_MSG("Correlator node terminate.");
+	status = END_CORRELATING;
+}
+
+
 void Correlator_node::start() {
-  while (true) {
+  while ( status != END_CORRELATING ) {
     switch (status) {
       case STOPPED: {
         // blocking:
-        if (check_and_process_message()==TERMINATE_NODE) {
-          status = END_CORRELATING;
-        }
+        check_and_process_message();
         break;
       }
       case CORRELATING: {
-        if (process_all_waiting_messages() == TERMINATE_NODE) {
-          status = END_CORRELATING;
-        }
+        process_all_waiting_messages();
 
         correlate();
 
@@ -138,9 +142,8 @@ void Correlator_node::start() {
         }
         break;
       }
-      case END_CORRELATING: {
-        return;
-      }
+      case END_CORRELATING: break;
+
     }
   }
 }

@@ -41,6 +41,7 @@ public:
   ~Log_node();
 
   void start();
+	void terminate();
 
   // Callback functions:
   void hook_added_data_reader(size_t reader);

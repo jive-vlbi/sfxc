@@ -37,15 +37,19 @@ Log_node::Log_node(int rank, int nNodes, Log_writer *writer)
 }
 
 Log_node::~Log_node() {
-  sleep(1);
   check_and_process_waiting_message();
 }
 
 void Log_node::start() {
+
   while (!log_node_ctrl.ready()) {
-    if (check_and_process_message() == TERMINATE_NODE)
-      return;
+		check_and_process_message();
   }
+}
+
+void Log_node::terminate()
+{
+	DEBUG_MSG("Log node terminate.");
 }
 
 void Log_node::hook_added_data_reader(size_t reader) {}

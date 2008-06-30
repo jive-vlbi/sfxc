@@ -59,7 +59,7 @@ public:
   typedef Single_data_writer_controller::Queue       Output_queue;
   typedef Single_data_writer_controller::Queue_ptr   Output_queue_ptr;
 
-  /** 
+  /**
    * Manages the input from one correlator node. The input stream is
    * used to store the data from one correlator node. The data is read
    * from the reader and the slice_size queue contains the size of the
@@ -100,6 +100,7 @@ public:
   ~Output_node();
 
   void start();
+  void terminate();
 
   enum STATUS {
     STOPPED=0,

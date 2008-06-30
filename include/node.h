@@ -30,18 +30,25 @@ class Node {
 public:
   enum MESSAGE_RESULT {
     MESSAGE_PROCESSED = 0,
-    TERMINATE_NODE,
     NO_MESSAGE,
     ERROR_IN_PROCESSING,
     MESSAGE_UNKNOWN
   };
 
+	enum STATE {
+		RUNNING,
+		TERMINATED
+	};
+
   Node(int rank);
   Node(int rank, Log_writer *writer);
   virtual ~Node();
-  /** Start the node
-   **/
-  void start();
+
+  /** Start the node **/
+  virtual void start();
+
+  /** Terminate the node **/
+	virtual void terminate();
 
   /** Non-blocking check if a message is available and process it.
    * - -1: terminate node
@@ -100,8 +107,9 @@ private:
   Controller_list controllers;
 
   Log_writer *log_writer;
-  
+
   bool assertion_raised;
+  STATE state_;
 };
 
 #endif // NODE_H

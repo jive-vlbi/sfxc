@@ -72,16 +72,20 @@ Output_node::~Output_node() {
   }
 }
 
+void Output_node::terminate(){
+	DEBUG_MSG("Output node terminate");
+	status = END_NODE;
+}
+
 void Output_node::start() {
-  while (status != END_NODE) {
+  while (status != END_NODE) {  
     switch (status) {
+
       case STOPPED: {
         SFXC_ASSERT(curr_stream == -1);
         // blocking:
-        if (check_and_process_message() == TERMINATE_NODE) {
-          status = END_NODE;
-          break;
-        }
+        check_and_process_message();
+
         if (curr_slice == number_of_time_slices) {
           status = END_NODE;
         } else if (!input_streams_order.empty()) {
@@ -105,10 +109,7 @@ void Output_node::start() {
         break;
       }
       case WRITE_OUTPUT: {
-        if (process_all_waiting_messages() == TERMINATE_NODE) {
-          status = END_NODE;
-          break;
-        }
+        process_all_waiting_messages();
 
         if (!write_output()) {
           usleep(100);
@@ -199,7 +200,7 @@ bool Output_node::write_output() {
   input_streams[curr_stream]->write_bytes(element);
   if (element.actual_size <= 0)
     return false;
-  
+
   output_queue->push(element);
   return true;
 }
