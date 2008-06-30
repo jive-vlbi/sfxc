@@ -69,6 +69,7 @@ public:
 
   /// Start the state machine
   void start();
+  void terminate();
 
   /// Status of the state machine
   enum Status {

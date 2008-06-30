@@ -49,6 +49,7 @@ public:
     STOP_CORRELATING,
     /// Stop the correlator, wait for the nodes to finish
     WAIT_FOR_OUTPUT_NODE,
+
     /// Terminate the node
     END_NODE
   };
@@ -59,6 +60,7 @@ public:
   ~Manager_node();
 
   void start();
+  void terminate();
 
   void start_next_timeslice_on_node(int corr_node_nr);
 

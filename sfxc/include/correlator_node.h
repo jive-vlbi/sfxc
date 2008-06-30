@@ -73,6 +73,7 @@ public:
   ~Correlator_node();
 
   void start();
+  void terminate();
 
   void output_node_set_timeslice(int slice_nr, int slice_offset, int n_slices,
                                  int stream_nr, int bytes);

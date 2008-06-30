@@ -181,9 +181,8 @@ void Manager_node::start() {
   initialise();
   status = START_NEW_SCAN;
   while (status != END_NODE) {
-    if (process_all_waiting_messages() == TERMINATE_NODE) {
-      status = END_NODE;
-    }
+		process_all_waiting_messages();
+
     switch (status) {
       case START_NEW_SCAN: {
         // set track information
@@ -247,9 +246,7 @@ void Manager_node::start() {
           }
         } else {
           // No correlator node added, wait for the next message
-          if (check_and_process_message() == TERMINATE_NODE) {
-            status = END_NODE;
-          }
+          check_and_process_message();
         }
 
         break;
@@ -290,9 +287,7 @@ void Manager_node::start() {
       }
       case WAIT_FOR_OUTPUT_NODE: {
         // The status is set to END_NODE as soon as the output_node is ready
-        if (check_and_process_message() == TERMINATE_NODE) {
-          status = END_NODE;
-        }
+        check_and_process_message();
         break;
       }
       case END_NODE: {
@@ -303,6 +298,12 @@ void Manager_node::start() {
   PROGRESS_MSG("terminating nodes");
 
   get_log_writer()(1) << "Terminating nodes" << std::endl;
+}
+
+void Manager_node::terminate()
+{
+	  PROGRESS_MSG("MESSAGE TERMINATE !");
+		status = END_NODE;
 }
 
 void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {

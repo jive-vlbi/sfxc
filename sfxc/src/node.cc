@@ -34,16 +34,15 @@ Node::add_controller(Controller *controller) {
   controllers.push_back(controller);
 }
 
-void Node::start() {
-  while (true) {
+void Node::start()
+{
+	state_ = RUNNING;
+  while ( state_ != TERMINATED ) {
     MESSAGE_RESULT result = check_and_process_message();
 
     switch (result) {
       case MESSAGE_PROCESSED: {
         break;
-      }
-      case TERMINATE_NODE: {
-        return;
       }
       case NO_MESSAGE: {
         return;
@@ -57,6 +56,12 @@ void Node::start() {
       }
     }
   }
+}
+
+void Node::terminate()
+{
+	SFXC_ASSERT("PLEASE IMPLEMENT TERMINATING NODE!");
+	state_ = TERMINATED;
 }
 
 Node::MESSAGE_RESULT
@@ -97,7 +102,8 @@ Node::process_event(MPI_Status &status) {
              status.MPI_TAG, MPI_COMM_WORLD, &status2);
     assertion_raised = (msg == 1);
 
-    return TERMINATE_NODE;
+		terminate();
+    return MESSAGE_PROCESSED;
   } else if (status.MPI_TAG == MPI_TAG_SET_MESSAGELEVEL) {
     MPI_Status status2;
     int32_t msg;
