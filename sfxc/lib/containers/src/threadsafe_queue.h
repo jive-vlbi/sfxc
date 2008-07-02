@@ -28,6 +28,12 @@
 #include "Test_unit.h"
 #endif // ENABLE_TEST_UNIT
 
+class QueueClosedException : public Exception
+{
+	public:
+		QueueClosedException():Exception(""){};
+};
+
 /************************************************
 * @class Threadsafe_queue
 * @desc A queue implementation that is
@@ -50,30 +56,44 @@ public:
   typedef T     Type;
   typedef Type  value_type;
 
-  Threadsafe_queue() {}
-  virtual ~Threadsafe_queue() {}
+  Threadsafe_queue() { isclose_ = false; }
+  virtual ~Threadsafe_queue() { close(); }
 
   void push( Type element ) {
+		if( isclose_ )throw QueueClosedException();
+
     RAIIMutex rc(m_queuecond);
     m_queue.push(element);
-    if ( m_queue.size() != 0 ) m_queuecond.signal();
+    if( m_queue.size() != 0 ) m_queuecond.signal();
   }
 
   Type& front() {
     RAIIMutex rc(m_queuecond);
-    if ( m_queue.size() == 0 ) m_queuecond.wait();
+    while ( m_queue.size() == 0 ){
+			if( isclose_ )throw QueueClosedException();
+			m_queuecond.wait();
+			if( isclose_ )throw QueueClosedException();
+    }
     return m_queue.front();
   }
 
   void pop() {
     RAIIMutex rc(m_queuecond);
-    if ( m_queue.size() == 0 ) m_queuecond.wait();
+    while ( m_queue.size() == 0 ){
+			 if( isclose_ )throw QueueClosedException();
+    	 m_queuecond.wait();
+			 if( isclose_ )throw QueueClosedException();
+    }
     m_queue.pop();
   }
 
   Type front_and_pop() {
     RAIIMutex rc(m_queuecond);
-    if ( m_queue.size() == 0 ) m_queuecond.wait();
+    while ( m_queue.size() == 0 ){
+			 if( isclose_ )throw QueueClosedException();
+    	 m_queuecond.wait();
+			 if( isclose_ )throw QueueClosedException();
+    }
     Type element = m_queue.front();
     m_queue.pop();
     return element;
@@ -81,7 +101,10 @@ public:
 
   Type front_and_pop_non_blocking() {
     RAIIMutex rc(m_queuecond);
-    if ( m_queue.size() == 0 ) MTHROW("Trying to pop from an empty queue.");
+    if ( m_queue.size() == 0 ){
+			if( isclose_ )throw QueueClosedException();
+    	 MTHROW("Trying to pop from an empty queue.");
+    }
     Type element = m_queue.front();
     m_queue.pop();
     return element;
@@ -97,6 +120,19 @@ public:
     return m_queue.size();
   }
 
+	bool isclose(){ return isclose_;  }
+
+	void close()
+	{
+    RAIIMutex rc(m_queuecond);
+
+		/// the queue is closed
+		isclose_=true;
+
+		/// all the waiting classes now exit.
+		m_queuecond.broadcast();
+	}
+
 #ifdef ENABLE_TEST_UNIT
 class Test : public Test_aclass<Threadsafe_queue> {
   public:
@@ -107,6 +143,8 @@ class Test : public Test_aclass<Threadsafe_queue> {
 private:
   std::queue<Type> m_queue;
   Condition m_queuecond;
+
+  bool isclose_;
 };
 
 /////////////////// IMPLEMENTATION (I hate c++ template) ///////////////

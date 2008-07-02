@@ -36,7 +36,7 @@ public:
   Exception(const std::string& message, Backtrace& bt);
   virtual ~Exception() throw ();
 
-  /******************************************
+		/******************************************
     * return the backtrace of the exception
     * ideally this should include all the function
     * call stack. As this is compiler-depend some
@@ -68,6 +68,7 @@ public:
 protected:
   std::string message_;
   Backtrace backtrace_;
+
 };
 
 //Backtrace bt(__PRETTY_FUNCTION__);

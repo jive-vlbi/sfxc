@@ -152,6 +152,11 @@ Single_data_writer_controller::process_event(MPI_Status &status) {
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }
 
+void Single_data_writer_controller::stop(){
+	DEBUG_MSG("Stopping writer!");
+	buffer2writer.stop();
+	DEBUG_MSG("writer!");
+}
 
 Single_data_writer_controller::Queue_ptr
 Single_data_writer_controller::queue() {

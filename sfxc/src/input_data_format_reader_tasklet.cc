@@ -1,9 +1,10 @@
 #include "input_data_format_reader_tasklet.h"
 
 Input_data_format_reader_tasklet::
-Input_data_format_reader_tasklet(Data_format_reader_ptr reader,
+Input_data_format_reader_tasklet(
+										 Data_format_reader_ptr reader,
                      Data_frame &data)
-    : memory_pool_(10), stop_time(-1),
+    : memory_pool_(10, AUTOMATIC_RESIZE), stop_time(-1),
     n_bytes_per_input_word(reader->bytes_per_input_word()) {
 
   SFXC_ASSERT(sizeof(value_type) == 1);
@@ -16,6 +17,9 @@ Input_data_format_reader_tasklet(Data_format_reader_ptr reader,
   *input_element_ = data;
 
   current_time = reader_->get_current_time();
+	push_element();
+
+	data_read_=0;
 
 #ifdef RUNTIME_STATISTIC
   std::stringstream inputid;
@@ -34,6 +38,38 @@ Input_data_format_reader_tasklet(Data_format_reader_ptr reader,
 
 #endif //RUNTIME_STATISTIC
 }
+
+void Input_data_format_reader_tasklet::stop()
+{
+	/// There is a special associated with the empty interval.
+	/// as it will stop the reading thread.
+	add_time_interval(0,0);
+}
+
+void Input_data_format_reader_tasklet::do_execute() {
+  DEBUG_MSG(__PRETTY_FUNCTION__ << ":: ENTER");
+
+  /// blocks until we have an interval to process
+  fetch_next_time_interval();
+
+	timer_read_.start();
+	timer_allocate_.start();
+
+  /// then let's work
+  while ( !current_interval_.empty() ) {
+  	/// if there is still some data to process we do it
+    if ( current_time < current_interval_.stop_time_ ) do_task();
+
+    /// otherwise we fetch a new interval.
+    else fetch_next_time_interval();
+  }
+
+  DEBUG_MSG(" INPUT READER WILL EXIT ITS LOOP ");
+
+  /// We close the queue in which we output our data.
+  output_buffer_->close();
+}
+
 void
 Input_data_format_reader_tasklet::
 do_task() {
@@ -41,11 +77,11 @@ do_task() {
   monitor_.begin_measure();
 #endif // RUNTIME_STATISTIC
 
-  SFXC_ASSERT(has_work());
-
-  push_element();
+	timer_allocate_.resume();
   allocate_element();
+	timer_allocate_.stop();
 
+	timer_read_.resume();
   if (reader_->eof()) {
     randomize_block();
     current_time += reader_->time_between_headers();
@@ -60,11 +96,49 @@ do_task() {
     current_time = reader_->get_current_time();
   }
   input_element_->start_time = current_time;
+	timer_read_.stop();
+
+	data_read_ += input_element_->buffer.size();
+
+	double duration = (timer_read_.measured_time()+timer_allocate_.measured_time());
+	if( duration >= 2.0 )
+	{
+			double ratio = ((100.0*timer_read_.measured_time())/duration);
+			PROGRESS_MSG( "reading speed:" <<  1.0*toMB(data_read_)/duration << "MB/s" << " reading:("<< ratio <<"%)" );
+			data_read_ = 0;
+			timer_read_.restart();
+			timer_allocate_.restart();
+	}
+
+  push_element();
 
 #ifdef RUNTIME_STATISTIC
   monitor_.end_measure(reader->size_data_block());
 #endif // RUNTIME_STATISTIC
 }
+
+void
+Input_data_format_reader_tasklet::fetch_next_time_interval()
+{
+  /// Blocking function until a new interval is available
+  current_interval_ = intervals_.front_and_pop();
+
+  if ( !current_interval_.empty() ) {
+    /// Otherwise the new interval is loaded.
+    DEBUG_MSG(__PRETTY_FUNCTION__ << ":: SET TIME");
+    DEBUG_MSG(__PRETTY_FUNCTION__ << ":: val:"<< current_interval_.start_time_ << " cur: "<< current_time);
+    current_time = goto_time( current_interval_.start_time_ );
+  }
+}
+
+
+void
+Input_data_format_reader_tasklet::
+add_time_interval(uint64_t us_start_time, uint64_t us_stop_time) {
+  DEBUG_MSG("Time interval added: " << us_start_time << ":"<< us_stop_time );
+  intervals_.push( Time_interval(us_start_time, us_stop_time ) );
+}
+
 
 bool
 Input_data_format_reader_tasklet::
@@ -78,16 +152,17 @@ has_work() {
 
   return true;
 }
+
 void
 Input_data_format_reader_tasklet::
 allocate_element() {
-  SFXC_ASSERT(!memory_pool_.empty());
   input_element_ = memory_pool_.allocate();
 }
-int
+
+uint64_t
 Input_data_format_reader_tasklet::
-goto_time(int ms_time) {
-  int64_t us_time = int64_t(1000)*ms_time;
+goto_time(uint64_t us_time) {
+  //int64_t us_time = int64_t(1000)*ms_time;
 
   int64_t new_time =
     reader_->goto_time(*input_element_, us_time);
@@ -96,7 +171,7 @@ goto_time(int ms_time) {
   // Set the current time to the actual time in the data stream.
   // Might not be the requested time, if no data is available
   current_time = new_time;
-  
+
   input_element_->start_time = current_time;
 
   if (us_time != new_time) {
@@ -105,21 +180,26 @@ goto_time(int ms_time) {
     DEBUG_MSG("Time found is                " << new_time << "us.");
   }
 
-  return current_time/1000;
-}
-int
-Input_data_format_reader_tasklet::
-get_current_time() {
   return current_time;
 }
+
+uint64_t
+Input_data_format_reader_tasklet::
+get_current_time() {
+	return current_time;
+}
+
 int
 Input_data_format_reader_tasklet::
 get_stop_time() {
+	SFXC_ASSERT(false && "DEPRECATED !");
   return stop_time;
 }
+
 void
 Input_data_format_reader_tasklet::
 set_stop_time(int64_t ms_time) {
+	SFXC_ASSERT(false && "DEPRECATED !");
   int64_t us_time = int64_t(1000)*ms_time;
 
   SFXC_ASSERT(current_time < us_time);
@@ -132,9 +212,9 @@ Input_data_format_reader_tasklet::
 push_element() {
   SFXC_ASSERT(input_element_->invalid_bytes_begin >= 0);
   SFXC_ASSERT(input_element_->nr_invalid_bytes >= 0);
-
-  SFXC_ASSERT(input_element_->buffer.size() == 
+  SFXC_ASSERT(input_element_->buffer.size() ==
               reader_->size_data_block());
+
   output_buffer_->push(input_element_);
 }
 
@@ -179,5 +259,4 @@ randomize_block() {
   }
 
 #endif // SFXC_INVALIDATE_SAMPLES
-
 }

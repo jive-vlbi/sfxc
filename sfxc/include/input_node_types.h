@@ -16,12 +16,30 @@
 
 #include "memory_pool.h"
 
+class Time_interval {
+	public:
+		Time_interval(){
+				start_time_ = 0;
+				stop_time_ = 0;
+		}
+
+		Time_interval(uint64_t start_time, uint64_t stop_time){
+				start_time_ = start_time;
+				stop_time_ = stop_time;
+		}
+
+		bool empty(){ return stop_time_ <= start_time_; }
+
+		uint64_t start_time_;
+		uint64_t stop_time_;
+};
+
 class Input_node_types {
 public:
   typedef unsigned char  value_type;
   // Memory pool for Mark5 frames
   struct Input_data_frame {
-    Input_data_frame() 
+    Input_data_frame()
       : invalid_bytes_begin(-1), nr_invalid_bytes(-1), start_time(-1) {}
     std::vector<value_type>        buffer;
 
@@ -79,7 +97,7 @@ public:
     Channel_memory_pool_element channel_data;
 
     // If delay >= 0, then we print the header of the fft
-    // (otherwise the fft is split over two mark5-fft frames and we are 
+    // (otherwise the fft is split over two mark5-fft frames and we are
     //  processing the second mark5-block);
 
     // Integer delay of samples within one byte

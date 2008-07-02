@@ -51,27 +51,14 @@ get_input_node_tasklet(boost::shared_ptr<Data_reader> reader,
   return NULL;
 }
 
-void
-Input_node_tasklet::add_time_interval(int32_t start_time, int32_t stop_time) {
-  if (time_intervals.empty()) {
-    // Check whether we are still processing
-    if ((get_current_time() == get_stop_time()) ||
-        (get_stop_time() < 0)) {
-      set_time_interval(start_time, stop_time);
-    } else {
-      time_intervals.push(std::make_pair(start_time, stop_time));
-    }
-  } else {
-    time_intervals.push(std::make_pair(start_time, stop_time));
-  }
-}
+
 
 Input_node_tasklet::
 Input_node_tasklet(Input_reader_ptr_ reader_ptr,
                    Input_reader_::Data_frame &data)
   : reader_(reader_ptr, data),
     channel_extractor_(reader_ptr->size_data_block() /
-                       reader_ptr->bytes_per_input_word(), 
+                       reader_ptr->bytes_per_input_word(),
                        reader_ptr->bytes_per_input_word()),
     did_work(true),
     n_bytes_per_input_word(reader_ptr->bytes_per_input_word()) {
@@ -79,6 +66,25 @@ Input_node_tasklet(Input_reader_ptr_ reader_ptr,
   channel_extractor_.connect_to(reader_.get_output_buffer());
 
   initialise();
+}
+
+
+void
+Input_node_tasklet::
+add_time_interval(int32_t start_time, int32_t stop_time) {
+  SFXC_ASSERT(!integer_delay_.empty());
+  SFXC_ASSERT(integer_delay_[0] != NULL);
+
+	/// A new interval is added to the mark5 reader-tasklet. It is converted into
+	/// usec
+  reader_.add_time_interval(uint64_t(1000)*start_time, uint64_t(1000)*stop_time);
+
+	/// Each of the the integer-delay-correction module also need to be
+	/// configure with the same time interval to process.
+  for (size_t i=0; i < integer_delay_.size(); i++) {
+    integer_delay_[i]->add_time_interval(uint64_t(1000)*start_time,
+                                         uint64_t(1000)*stop_time);
+  }
 }
 
 void Input_node_tasklet::initialise() {
@@ -174,6 +180,42 @@ Input_node_tasklet::~Input_node_tasklet() {
 }
 
 
+void
+Input_node_tasklet::wait_termination() {
+	wait( pool_ );
+}
+
+void
+Input_node_tasklet::start_tasklets() {
+  pool_.register_thread( reader_.start() );
+  pool_.register_thread( channel_extractor_.start() );
+  pool_.register_thread( this->start() );
+}
+
+void
+Input_node_tasklet::stop_tasklets() {
+	isrunning_=false;
+	reader_.stop();
+	channel_extractor_.stop();
+}
+
+
+void
+Input_node_tasklet::
+do_execute()
+{
+  DEBUG_MSG(__PRETTY_FUNCTION__ << ":: ENTER");
+
+  while ( has_work() || isrunning_ ) {
+    do_task();
+    if ( !did_work) {
+      usleep(100000);
+    } else {//DEBUG_MSG(__PRETTY_FUNCTION__<< ":: WORKED");
+    }
+  }
+
+  DEBUG_MSG(" INPUT_TASKLET WILL EXIT ITS LOOP ");
+}
 
 void
 Input_node_tasklet::
@@ -181,37 +223,6 @@ do_task() {
   did_work = false;
 
   RT_STAT( dotask_state_.begin_measure() );
-
-  reader_timer_.resume();
-  if (reader_.has_work()) {
-
-    RT_STAT( reader_state_.begin_measure() );
-    reader_.do_task();
-    RT_STAT(reader_state_.end_measure(1) );
-
-    did_work = true;
-  } else {
-    // Check whether we can go to a new time interval
-    if (get_current_time() == get_stop_time()) {
-      if (!time_intervals.empty()) {
-        set_time_interval(time_intervals.front().first,
-                          time_intervals.front().second);
-        time_intervals.pop();
-        did_work = true;
-      }
-    }
-  }
-  reader_timer_.stop();
-
-
-  channel_extractor_timer_.resume();
-  if (channel_extractor_.has_work()) {
-    RT_STAT(chex_state_.begin_measure());
-    channel_extractor_.do_task();
-    RT_STAT(chex_state_.end_measure(1));
-    did_work = true;
-  }
-  channel_extractor_timer_.stop();
 
   integer_delay_timer_.resume();
   RT_STAT(integerdelay_state_.begin_measure() );
@@ -289,27 +300,13 @@ set_parameters(const Input_node_parameters &input_node_param,
   did_work = true;
 }
 
-void
-Input_node_tasklet::
-set_time_interval(int32_t start_time, int32_t stop_time) {
-  SFXC_ASSERT(!integer_delay_.empty());
-  SFXC_ASSERT(integer_delay_[0] != NULL);
 
-  reader_.goto_time(start_time);
-  reader_.set_stop_time(stop_time);
-
-  for (size_t i=0; i < integer_delay_.size(); i++) {
-    integer_delay_[i]->set_time(int64_t(1000)*start_time);
-    integer_delay_[i]->set_stop_time(int64_t(1000)*stop_time);
-  }
-
-  did_work = true;
-}
 int
 Input_node_tasklet::
 get_current_time() {
   return reader_.get_current_time();
 }
+
 int
 Input_node_tasklet::
 get_stop_time() {

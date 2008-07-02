@@ -41,10 +41,10 @@ Log_node::~Log_node() {
 }
 
 void Log_node::start() {
-
   while (!log_node_ctrl.ready()) {
 		check_and_process_message();
   }
+  DEBUG_MSG("Log node is terminate.");
 }
 
 void Log_node::terminate()

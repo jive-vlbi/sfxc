@@ -33,7 +33,8 @@ public:
   };
   typedef Threadsafe_queue<value_type>      Queue;
   typedef boost::shared_ptr<Queue>       Queue_ptr;
-  
+
+	void stop();
 
   Single_data_writer_controller(Node &node);
   ~Single_data_writer_controller();

@@ -30,7 +30,6 @@ Input_node_controller::process_event(MPI_Status &status) {
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
 
-
   case MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP: {
       int32_t time_stamp;
       MPI_Recv(&time_stamp, 1, MPI_INT32, status.MPI_SOURCE,
@@ -41,6 +40,7 @@ Input_node_controller::process_event(MPI_Status &status) {
                MPI_COMM_WORLD);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
+
   case MPI_TAG_INPUT_NODE_SET_TIME: {
       int32_t times[2]; // start and stop time
       MPI_Recv(&times[0], 2, MPI_INT32, status.MPI_SOURCE,
@@ -52,7 +52,7 @@ Input_node_controller::process_event(MPI_Status &status) {
       int32_t message[4];
       MPI_Recv(&message, 4, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      node.add_time_slice(message[0],message[1],message[2],message[3]);
+      node.add_time_slice_to_stream(message[0],message[1],message[2],message[3]);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_GET_STATUS: {

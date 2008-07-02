@@ -16,9 +16,9 @@ public:
   typedef Input_node_types::Fft_buffer_ptr     Input_buffer_ptr;
 
   typedef boost::shared_ptr<Data_writer>       Data_writer_ptr;
-  
+
   // The writer can, in principle, occur multiple times in the writer_queue
-  // so we store the slice size in a separate integer and set 
+  // so we store the slice size in a separate integer and set
   // set_size_dataslice(slice_size) when we start writing
   struct Writer_struct {
     Data_writer_ptr writer;

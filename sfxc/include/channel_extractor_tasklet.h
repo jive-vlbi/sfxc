@@ -14,6 +14,7 @@
 
 #include "utils.h"
 #include "tasklet/tasklet.h"
+#include "thread.h"
 #include "input_node_types.h"
 #include "control_parameters.h"
 
@@ -29,7 +30,7 @@
 /**
  * The channel extractor gets a chunk of data and outputs the dechannelized data
  **/
-class Channel_extractor_tasklet : public Tasklet {
+class Channel_extractor_tasklet : public Tasklet, public Thread {
 public:
   typedef Input_node_types                     Types;
 
@@ -59,6 +60,8 @@ public:
   virtual ~Channel_extractor_tasklet();
 
   /// For tasklet
+	void do_execute();
+	void stop();
 
   /// Process one piece of data
   void do_task();
@@ -78,8 +81,8 @@ public:
 
   /**
    * Initialises the channel extractor. The track_positions describe the layout
-   * of the channels on the tracks. For channel i you need tracks 
-   * track_positions[i]. 
+   * of the channels on the tracks. For channel i you need tracks
+   * track_positions[i].
    **/
   void set_parameters(const Input_node_parameters &input_node_param,
                       const std::vector< std::vector<int> > &track_positions);

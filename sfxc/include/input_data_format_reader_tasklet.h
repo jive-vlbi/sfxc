@@ -13,14 +13,18 @@
 #include <boost/shared_ptr.hpp>
 
 #include "tasklet/tasklet.h"
+#include "thread.h"
+
 #include "mark5a_reader.h"
 #include "input_node_types.h"
+
+#include "timer.h"
 
 #ifdef RUNTIME_STATISTIC
 #include "monitor.h"
 #endif // RUNTIME_STATISTIC
 
-class Input_data_format_reader_tasklet : public Tasklet {
+class Input_data_format_reader_tasklet : public Tasklet, public Thread {
 public:
   typedef boost::shared_ptr< Input_data_format_reader > Data_format_reader_ptr;
   typedef Input_data_format_reader::Data_frame          Data_frame;
@@ -33,6 +37,15 @@ public:
 
   Input_data_format_reader_tasklet(Data_format_reader_ptr reader,
                         Data_frame &data);
+
+	/// The main thread.
+	void do_execute();
+	void stop();
+	void fetch_next_time_interval();
+
+	/// set a time interval to process (after which the tasklet is blocking)
+  /// The start and stop time are given in micro-seconds.
+  void add_time_interval(uint64_t us_start_time, uint64_t us_stop_time);
 
   /// For Tasklet
   void do_task();
@@ -48,10 +61,12 @@ public:
   Output_buffer_ptr get_output_buffer();
 
   /// Goto a time in the future.
-  int goto_time(int time);
+  /// Given in micro-second
+  uint64_t goto_time(uint64_t time);
 
   /// get the current time in miliseconds
-  int get_current_time();
+  uint64_t get_current_time();
+
   /// get the stop time in miliseconds
   int get_stop_time();
 
@@ -86,6 +101,15 @@ private:
   /// Output buffer of mark5a data blocks
   Output_buffer_ptr                   output_buffer_;
 
+
+	/// The current interval to process
+	Time_interval current_interval_;
+
+	/// Storing all the pending interval to process
+	Threadsafe_queue<Time_interval>     intervals_;
+
+
+
   /// Current time in microseconds
   int64_t current_time;
 
@@ -95,6 +119,10 @@ private:
 #ifdef RUNTIME_STATISTIC
   QOS_MonitorSpeed monitor_;
 #endif // RUNTIME_STATISTIC
+
+	uint64_t data_read_;
+	Timer timer_read_;
+	Timer timer_allocate_;
 
   const size_t n_bytes_per_input_word;
 };

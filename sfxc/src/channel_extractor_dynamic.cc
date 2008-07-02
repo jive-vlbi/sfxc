@@ -25,9 +25,12 @@ void Channel_extractor_dynamic::initialise(
 	/// filesystem compatible char-codes.
   unsigned char table[64];
   int idx=0;
+
+  /// letters and number are ok
   for (unsigned char i='a';i<'z';i++) table[idx++] = i;
   for (unsigned char i='A';i<'Z';i++) table[idx++] = i;
   for (unsigned char i='0';i<'9';i++) table[idx++] = i;
+  /// Then complete with filesystem friendly symbols.
   table[idx++] = '-';
   table[idx++] = '_';
   table[idx++] = '@';

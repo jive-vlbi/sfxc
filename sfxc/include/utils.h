@@ -191,4 +191,9 @@ long unsigned int park_miller_random();
 bool directory_exist(const std::string& path);
 void create_directory(const std::string& path);
 
+inline double toMB(unsigned int size) {
+  return (1.0*size)/(1024*1024);
+}
+
+
 #endif // UTILS_H
