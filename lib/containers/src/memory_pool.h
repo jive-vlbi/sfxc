@@ -611,9 +611,9 @@ Memory_pool<T>::Buffer_element::Buffer_element(Type* data,
                                                TS_Reference* ref
                                                ) :
   m_data(data), m_owner(owner), m_reference_counter(ref) {
-  SFXC_ASSERT( owner  != NULL );
-  SFXC_ASSERT( data  != NULL );
-  SFXC_ASSERT( ref  != NULL );
+  MASSERT( owner  != NULL );
+  MASSERT( data  != NULL );
+  MASSERT( ref  != NULL );
   m_reference_counter->incr();
 }
 
@@ -621,7 +621,7 @@ template<class T>
 Memory_pool<T>::Buffer_element::Buffer_element(const Buffer_element& src)
 : m_data(src.m_data), m_owner(src.m_owner), m_reference_counter(src.m_reference_counter) {
   if( m_owner != NULL ){
-		SFXC_ASSERT( m_reference_counter  != NULL );
+		MASSERT( m_reference_counter  != NULL );
 		m_reference_counter->incr();
   }
 }
