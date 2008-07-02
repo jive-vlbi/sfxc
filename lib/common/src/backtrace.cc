@@ -2,12 +2,12 @@
 #include "demangler.h"
 
 void get_trace (Vector_string& trace_) {
-  void *array[20];
+  void *array[50];
   size_t size;
   char **strings;
   size_t i;
 
-  size = backtrace (array, 20);
+  size = backtrace (array, 50);
   strings = backtrace_symbols (array, size);
 
 //printf ("Obtained %zd stack frames.\n", size);
@@ -46,12 +46,16 @@ Backtrace::Backtrace(const Backtrace& bt) {
 }
 
 Backtrace::Backtrace(const std::string& trace) {
+#ifdef ENABLE_BACKTRACE
   get_trace( trace_ );
+#endif //ENABLE_BACKTRACE
   trace_.push_back(trace);
 }
 
 Backtrace::Backtrace() {
+#ifdef ENABLE_BACKTRACE
   get_trace( trace_ );
+#endif //ENABLE_BACKTRACE
 }
 
 std::ostream& operator<<(std::ostream& out, const Backtrace& backtrace) {

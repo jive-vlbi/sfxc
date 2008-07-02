@@ -93,6 +93,7 @@ Data_reader2buffer(const Data_reader2buffer &buffer) {
 template <class T>
 Data_reader2buffer<T>::~Data_reader2buffer() {
   stop();
+  DEBUG_MSG("STOPPED ")
 }
 
 template <class T>
@@ -138,6 +139,7 @@ Data_reader2buffer<T>::start() {
   SFXC_ASSERT(data_reader != Data_reader_ptr());
   SFXC_ASSERT(queue != Queue_ptr());
 
+	DEBUG_MSG("Threaded reader !");
   if (state == STOPPED) {
     set_state(RUNNING);
     pthread_create(&io_thread, NULL,
@@ -154,6 +156,7 @@ Data_reader2buffer<T>::stop() {
     return;
   set_state(STOPPED);
   pthread_join(io_thread, NULL);
+  DEBUG_MSG("Threaded reader stopped !");
 }
 
 template <class T>
@@ -174,6 +177,7 @@ template <class T>
 void *
 Data_reader2buffer<T>::start_reading(void * self_) {
   Self *self = static_cast<Self *>(self_);
+  DEBUG_MSG("Threaded reading !");
   self->read();
   return NULL;
 }
@@ -212,7 +216,7 @@ Data_reader2buffer<T>::read() {
             usleep(100);
           }
         } else {
-          usleep(100); 
+          usleep(100);
        }
       }
     }

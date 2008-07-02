@@ -60,6 +60,8 @@ public:
   /** The number of input readers **/
   size_t number_of_data_readers();
 
+	void stop();
+
   // This is the set of listening IP/port
 	void get_listening_ip(std::vector<uint64_t>& ip_port);
 private:

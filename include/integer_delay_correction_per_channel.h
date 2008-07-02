@@ -41,6 +41,7 @@ public:
   Integer_delay_correction_per_channel();
   ~Integer_delay_correction_per_channel() {}
 
+
   /// For tasklet
 
   /// Process one piece of data
@@ -59,9 +60,24 @@ public:
   // Set the start time in microseconds
   // This might be different from the time from which data arrives.
   // If no data is available, invalid/random data will be sent
-  void set_time(int64_t time);
+  //void set_time(int64_t time);
   // Setting of the stop time in microseconds
-  void set_stop_time(int64_t time);
+  //void set_stop_time(int64_t time);
+
+	/// Add a time interval to process
+	void add_time_interval(uint64_t us_start_time, uint64_t us_stop_time);
+
+	/// The queue storing all the intervals
+  Threadsafe_queue<Time_interval> intervals_;
+
+  /// The currently processed interval
+  Time_interval current_interval_;
+
+  /// Go to the next time interval. This function is blocking until
+  /// an interval is available using the function add_time_interval
+	void fetch_next_time_interval();
+
+
   // Initialisation of the delay table
   void set_delay_table(Delay_table_akima &table);
   // Set the information for one integration slice, some information is
@@ -71,7 +87,7 @@ public:
   // Empty the input queue, called from the destructor of Input_node
   // This is necessary because of pre-extracting data
   void empty_input_queue();
-  
+
   // Number of bytes per integration slice
   int bytes_of_output();
 private:
@@ -84,9 +100,9 @@ private:
   int64_t current_time() const {
     return _current_time;
   }
-  // Returns the delay in seconds for the time in microseconds 
+  // Returns the delay in seconds for the time in microseconds
   double delay(int64_t time);
-  
+
   // Returns the delay in terms of samples, time is in microseconds
   Delay_type get_delay(int64_t time);
 
@@ -105,8 +121,7 @@ private:
   int                  sample_rate;
   /// Current time in microseconds
   int64_t              _current_time;
-  /// Stop time in microseconds
-  int64_t              stop_time_;
+
   /// Length of one output data block in microseconds
   int64_t              delta_time;
 

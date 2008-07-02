@@ -27,7 +27,7 @@ public:
   typedef boost::shared_ptr< Data_writer > Data_writer_ptr;
   typedef Threadsafe_queue<T>              Queue;
   typedef boost::shared_ptr<Queue>         Queue_ptr;
-  
+
   enum State {
     STOPPED=0, ///< Not running, the additional thread is not active
     SUSPENDED, /**< Not running, the additional thread is waiting
@@ -126,6 +126,8 @@ Buffer2data_writer<T>::start() {
   SFXC_ASSERT(data_writer != NULL);
   SFXC_ASSERT(queue != Queue_ptr());
   SFXC_ASSERT(state == STOPPED);
+
+	DEBUG_MSG("Threaded writer");
 
   state = RUNNING;
   pthread_create(&redirect_thread, NULL,

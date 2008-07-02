@@ -61,6 +61,9 @@ void Input_node::initialise() {
 void Input_node::set_input_node_parameters(const Input_node_parameters &input_node_param) {
   SFXC_ASSERT(input_node_tasklet != NULL);
   input_node_tasklet->set_parameters(input_node_param, get_rank()-3);
+
+  status=WRITING;
+  input_node_tasklet->start_tasklets();
 }
 
 Input_node::~Input_node() {
@@ -74,41 +77,22 @@ int32_t Input_node::get_time_stamp() {
   return input_node_tasklet->get_current_time()/1000;
 }
 
-void Input_node::terminate()
-{
-	DEBUG_MSG("Input node terminate.");
-	status = END_NODE;
-}
 
 void Input_node::start() {
-  while (status != END_NODE) {
-    switch (status) {
-      case WAITING: {
-      	// Wait until we can start sending new data
-        // Wait for data_source to become ready
-        check_and_process_message();
+  main_loop();
+}
 
-        if (input_node_tasklet != NULL)
-          status = WRITING;
-        break;
-      }
-      case WRITING: {
-        process_all_waiting_messages();
-
-        SFXC_ASSERT(input_node_tasklet != NULL);
-        input_node_tasklet->do_task();
-        if ( !input_node_tasklet->has_work() ) {
-          usleep(1000);
-          //status = WAITING;
-        }
-        break;
-      }
-      case END_NODE: {
-         // For completeness sake
-        break;
-      }
-    }
+void Input_node::main_loop() {
+  while ( status != END_NODE )
+	{
+    check_and_process_message();
   }
+}
+
+void Input_node::terminate() {
+  DEBUG_MSG("WAITING FOR THE TASKLET TO FINISH");
+  input_node_tasklet->stop_tasklets();
+	input_node_tasklet->wait_termination();
 
   while (!data_writers_ctrl.ready())
     usleep(100000); // .1 second:
@@ -116,7 +100,11 @@ void Input_node::start() {
   int32_t rank = get_rank();
   MPI_Send(&rank, 1, MPI_INT32,
            RANK_MANAGER_NODE, MPI_TAG_DATASTREAM_EMPTY, MPI_COMM_WORLD);
+
+  DEBUG_MSG("Input node terminate.");
+  status = END_NODE;
 }
+
 
 void Input_node::hook_added_data_reader(size_t stream_nr) {
   SFXC_ASSERT(stream_nr == 0);
@@ -135,13 +123,12 @@ void Input_node::add_time_interval(int32_t start_time, int32_t stop_time) {
   input_node_tasklet->add_time_interval(start_time, stop_time);
 }
 
-void Input_node::add_time_slice(int channel, int stream, int starttime_slice,
+void Input_node::add_time_slice_to_stream(int channel, int stream, int starttime_slice,
                                 int stoptime_slice) {
   SFXC_ASSERT(data_writers_ctrl.get_data_writer(stream) !=
               Multiple_data_writers_controller::Data_writer_ptr());
 
   SFXC_ASSERT(input_node_tasklet != NULL);
-
   SFXC_ASSERT(stoptime_slice > starttime_slice);
 
   input_node_tasklet->add_data_writer(channel,

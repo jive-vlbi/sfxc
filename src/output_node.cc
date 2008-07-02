@@ -78,7 +78,7 @@ void Output_node::terminate(){
 }
 
 void Output_node::start() {
-  while (status != END_NODE) {  
+  while (status != END_NODE) {
     switch (status) {
 
       case STOPPED: {
@@ -143,6 +143,13 @@ void Output_node::start() {
       }
     }
   }
+
+	DEBUG_MSG("WANT TO SHUT DOWN THE READER !");
+	data_readers_ctrl.stop();
+	DEBUG_MSG("WANT TO SHUT DOWN THE WRITER !");
+	data_writer_ctrl.stop();
+	DEBUG_MSG("WANT TO SHUT DOWN THE WRITER & READER !");
+
   // End the node;
   int32_t msg=0;
   MPI_Send(&msg, 1, MPI_INT32,

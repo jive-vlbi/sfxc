@@ -16,7 +16,7 @@
 
 #include "mark5a_header.h"
 
-#define USE_EXTRACTOR_5
+//#define USE_EXTRACTOR_5
 
 // Increase the size of the output_memory_pool_ to allow more buffering
 // (8M/SIZE_MK5A_FRAME=) 400 input blocks is 1 second of data
@@ -59,6 +59,38 @@ Channel_extractor_tasklet(int samples_per_block, int N_)
 
 Channel_extractor_tasklet::~Channel_extractor_tasklet() {}
 
+void Channel_extractor_tasklet::do_execute(){
+	/// The thread is in a running state
+	isrunning_ = true;
+
+	/// Exception handler to insure to catch the QueueClosedException event
+	/// This Exception is thrown when the current thread is blocked on a
+	/// queue.front() operation and that the queue is closed on its other side.
+	try{
+
+		/// Main thread loop
+		while( isrunning_ && !input_buffer_->isclose() ){
+			do_task();
+		}
+
+	/// The queue has been closed and is empty.
+	}catch(QueueClosedException&e ){
+			DEBUG_MSG("My input queue has been closed ! I should probably stop then");
+	}
+
+	/// If the input queue is not empty something was wrong.
+	/// To much data has been sent to dechannelization.
+	SFXC_ASSERT( input_buffer_->empty() );
+
+	/// We close our own output queues
+	for(unsigned int i=0;i<output_buffers_.size();i++){
+		output_buffers_[i]->close();
+	}
+}
+
+void Channel_extractor_tasklet::stop(){
+	isrunning_=false;
+}
 
 void
 Channel_extractor_tasklet::do_task() {
@@ -66,7 +98,7 @@ Channel_extractor_tasklet::do_task() {
   monitor_.begin_measure();
 #endif // RUNTIME_STATISTIC
 
-  SFXC_ASSERT(has_work());
+  //SFXC_ASSERT(has_work());
 
   // Number of output streams, one output stream corresponds to one subband
   SFXC_ASSERT(n_subbands == output_buffers_.size());
@@ -98,7 +130,6 @@ Channel_extractor_tasklet::do_task() {
   unsigned char *output_positions[n_subbands];
   { // Acquire output buffers
     for (size_t subband=0; subband<n_subbands; subband++) {
-      SFXC_ASSERT(!output_memory_pool_.empty());
       output_elements[subband].channel_data = output_memory_pool_.allocate();
 
       output_elements[subband].start_time = input_element.data().start_time;

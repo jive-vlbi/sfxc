@@ -22,7 +22,8 @@
 
 Demangler::Demangler(const char* name) {
   if (name == NULL ) {
-    MTHROW("NULL pointer");
+    //MTHROW("NULL pointer");
+		assert(false && "Null pointer");
   } else {
     int status;
     buffer_ = abi::__cxa_demangle( name, NULL, NULL, &status );

@@ -5,6 +5,8 @@
 #include <queue>
 
 #include "tasklet/tasklet.h"
+#include "thread.h"
+
 #include "data_reader.h"
 #include "data_writer.h"
 #include "delay_table_akima.h"
@@ -26,7 +28,8 @@ enum TRANSPORT_TYPE {
   MARK5B
 };
 
-class Input_node_tasklet : public Tasklet {
+
+class Input_node_tasklet : public Tasklet, public Thread {
 public:
   typedef boost::shared_ptr<Data_writer>             Data_writer_ptr_;
   typedef Input_data_format_reader                   Input_reader_;
@@ -44,6 +47,12 @@ public:
 
   ~Input_node_tasklet();
 
+
+	void start_tasklets();
+	void stop_tasklets();
+	void wait_termination();
+
+	void do_execute();
   void do_task();
   bool has_work();
 
@@ -55,6 +64,9 @@ public:
   /// (typically the duration of a scan, or part thereof).
   /// \param start_time in milliseconds
   /// \param stop_time in milliseconds
+  /// It is not possible to go back in time, as the data might be
+  /// streamed in to the input node and not be buffered anymore.
+  /// Time is in milliseconds
   void add_time_interval(int32_t start_time, int32_t stop_time);
 
   // Inherited from Input_node_tasklet
@@ -62,10 +74,6 @@ public:
   void set_parameters(const Input_node_parameters &input_node_param,
                       int node_nr);
 
-  /// Set the current time interval in the data reader. It is not
-  /// possible to go back in time, as the data might be streamed in to
-  /// the input node and not be buffered anymore. Time is in milliseconds
-  void set_time_interval(int32_t start_time, int32_t stop_time);
 
   /// Returns the current time in microseconds
   int get_current_time();
@@ -77,13 +85,15 @@ public:
                        Data_writer_ptr_ data_writer);
 
 private:
+	ThreadPool pool_;
+
   //  std::list<Time_slice>                time_slices_;
-  Input_reader_tasklet_                reader_;
-  Channel_extractor_tasklet_           channel_extractor_;
+  Input_reader_tasklet_            reader_;
+  Channel_extractor_tasklet_       channel_extractor_;
 
   // Pointer because we can not copy construct the Integer_delay_tasklet_
   // because of the memory pool
-  std::vector<Integer_delay_tasklet_ *>  integer_delay_;
+	std::vector<Integer_delay_tasklet_ *>  integer_delay_;
   std::vector<Data_writer_tasklet_>    data_writers_;
 
   bool did_work;

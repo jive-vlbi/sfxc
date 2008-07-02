@@ -7,7 +7,6 @@ Integer_delay_correction_per_channel()
     bits_per_sample(-1),
     sample_rate(-1),
     _current_time(-1),
-    stop_time_(-1),
     integration_time(-1),
     current_delay(1,1),
     memory_pool_(10)
@@ -63,7 +62,7 @@ Integer_delay_correction_per_channel::do_task() {
     int input_data_size = input_element.channel_data.data().data.size();
     if ((byte_offset + nr_output_bytes) < input_data_size) {
       // Normal case where all data lies within one input block
-      
+
       { // Set invalid samples
         output_element.invalid_samples_begin = 0;
         output_element.nr_invalid_samples = 0;
@@ -144,7 +143,7 @@ Integer_delay_correction_per_channel::do_task() {
     output_buffer_->push(output_element);
   } else {
     SFXC_ASSERT(byte_offset < 0);
-    
+
     // Partially random data
     output_element.invalid_samples_begin = 0;
     // Either all data is random, or part of the second block contains valid data
@@ -175,7 +174,7 @@ Integer_delay_correction_per_channel::do_task() {
   _current_time += delta_time;
   current_delay = get_delay(_current_time);
 
-  
+
   // Check whether the next fft crosses an integration border
   // Then we set the time to the beginning of the next integration slice
   if ((_current_time/integration_time) !=
@@ -187,11 +186,37 @@ Integer_delay_correction_per_channel::do_task() {
   }
 }
 
+
+void
+Integer_delay_correction_per_channel::fetch_next_time_interval() {
+  SFXC_ASSERT(delay_table.initialised());
+
+  // We retreive the current interval
+  current_interval_ = intervals_.front_and_pop();
+  SFXC_ASSERT( !current_interval_.empty() );
+
+  _current_time = current_interval_.start_time_;
+  current_delay = get_delay(_current_time);
+
+  //DEBUG_MSG(__PRETTY_FUNCTION__<<":: set interval["<<current_interval_.start_time_ <<":"<< current_interval_.stop_time_<<"]")
+}
+
+void
+Integer_delay_correction_per_channel::add_time_interval(
+	uint64_t start, uint64_t stop) {
+  SFXC_ASSERT( start < stop );
+  intervals_.push( Time_interval(start, stop) );
+}
+
 bool
 Integer_delay_correction_per_channel::has_work() {
   SFXC_ASSERT(output_buffer_ != Output_buffer_ptr());
-  if ((stop_time_ > 0) && (_current_time >= stop_time_))
-    return false;
+
+  if ( _current_time >= current_interval_.stop_time_ ) {
+    if ( intervals_.empty() ) return false;
+    fetch_next_time_interval();
+  }
+
   if (sample_rate <= 0)
     return false;
   if (current_delay.first > 0)
@@ -292,21 +317,6 @@ set_parameters(const Input_node_parameters &parameters,
      parameters.number_channels);
 
 
-}
-
-void
-Integer_delay_correction_per_channel::
-set_time(int64_t time) {
-  SFXC_ASSERT(delay_table.initialised());
-  _current_time = time;
-
-  current_delay = get_delay(_current_time);
-}
-
-void
-Integer_delay_correction_per_channel::
-set_stop_time(int64_t time) {
-  stop_time_ = time;
 }
 
 int

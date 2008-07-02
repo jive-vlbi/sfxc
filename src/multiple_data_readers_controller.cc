@@ -175,6 +175,16 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
 }
 
 void
+Multiple_data_readers_controller::stop()
+{
+		for(unsigned int i=0;i<readers.size();i++)
+		{
+			/// we should kill the reader2buffers.
+			readers[i].reader2buffer->stop();
+		}
+}
+
+void
 Multiple_data_readers_controller::
 enable_buffering(unsigned int i) {
   SFXC_ASSERT(i < readers.size());

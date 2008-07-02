@@ -2,11 +2,11 @@
  * All rights reserved.
  *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ *            Damien Marchal <dmarchal@science.uva.nl> 2008
  *
  * $Id$
  *
  */
-
 #ifndef INPUT_NODE_H
 #define INPUT_NODE_H
 
@@ -17,9 +17,7 @@
 #include "node.h"
 #include "single_data_reader_controller.h"
 #include "multiple_data_writers_controller.h"
-
 #include "data_reader2buffer.h"
-
 #include "input_node_tasklet.h"
 
 
@@ -69,6 +67,7 @@ public:
 
   /// Start the state machine
   void start();
+  void main_loop();
   void terminate();
 
   /// Status of the state machine
@@ -84,7 +83,7 @@ public:
   // Times in seconds
   void add_time_interval(int32_t start_time, int32_t stop_time);
 
-  void add_time_slice(int channel, int stream, int starttime, int stoptime);
+  void add_time_slice_to_stream(int channel, int stream, int starttime, int stoptime);
 
   int get_status();
 
