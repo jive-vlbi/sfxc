@@ -121,7 +121,7 @@ Connexion* InterfaceIP::connect_to(const std::string& ipaddress, unsigned short 
   // parameter means, but it seems to work.
   socketDescriptor = socket(AF_INET, type, 0);
   if (socketDescriptor < 0) {
-    MTHROW("Unable to create the socket");
+    //MTHROW("Unable to create the socket");
     return NULL;
   }
 
@@ -148,7 +148,8 @@ Connexion* InterfaceIP::connect_to(const std::string& ipaddress, unsigned short 
   if (bind(socketDescriptor, (struct sockaddr *) &localAddress, sizeof(localAddress)) == -1 ) {
     std::cout << "cannot bind socket to " << ip() << ":" << 0 << std::endl;
     close(socketDescriptor);
-    MTHROW("Unable to bind to a socket");
+    //MTHROW("Unable to bind to a socket");
+		return NULL;
   }
 
 
@@ -159,7 +160,7 @@ Connexion* InterfaceIP::connect_to(const std::string& ipaddress, unsigned short 
   hostInfo = gethostbyname(ipaddress.c_str());
   if (hostInfo == NULL) {
     std::cout << "problem interpreting host: " << ipaddress << "\n";
-    MTHROW("Unable to find host:"+ipaddress);
+    //MTHROW("Unable to find host:"+ipaddress);
     return NULL;
   }
 
@@ -174,7 +175,7 @@ Connexion* InterfaceIP::connect_to(const std::string& ipaddress, unsigned short 
   if (connect(socketDescriptor, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
     std::cout << "cannot connect to port " << port << "\n";
     close(socketDescriptor);
-    MTHROW("Unable to connect to "+ipaddress);
+    //MTHROW("Unable to connect to "+ipaddress);
     return NULL;
   }
 
@@ -198,7 +199,7 @@ EndpointIP* InterfaceIP::create_endpoint(unsigned short port)
   // parameter means, but it seems to work.
   socketDescriptor = socket(AF_INET, SOCK_DGRAM, 0);
   if (socketDescriptor < 0) {
-    MTHROW("Unable to create a dgramm socket ");
+    //MTHROW("Unable to create a dgramm socket ");
     return NULL;
   }
 
@@ -221,7 +222,8 @@ EndpointIP* InterfaceIP::create_endpoint(unsigned short port)
   if (bind(socketDescriptor, (struct sockaddr *) &localAddress, sizeof(localAddress)) == -1 ) {
     std::cout << "cannot bind socket to " << ip() << ":" << 0 << std::endl;
     close(socketDescriptor);
-    MTHROW("Unable to bind to a socket");
+    //MTHROW("Unable to bind to a socket");
+		return NULL;
   }
 
   return new EndpointIP(socketDescriptor);
@@ -240,7 +242,7 @@ Connexion* InterfaceIP::connect_to(uint64_t ipaddress, unsigned short port, int 
   // parameter means, but it seems to work.
   socketDescriptor = socket(AF_INET, type, 0);
   if (socketDescriptor < 0) {
-    MTHROW("Unable to create the socket");
+    //MTHROW("Unable to create the socket");
     return NULL;
   }
 
@@ -267,7 +269,8 @@ Connexion* InterfaceIP::connect_to(uint64_t ipaddress, unsigned short port, int 
   if (bind(socketDescriptor, (struct sockaddr *) &localAddress, sizeof(localAddress)) == -1 ) {
     std::cout << "cannot bind socket to " << ip() << ":" << 0 << std::endl;
     close(socketDescriptor);
-    MTHROW("Unable to bind to a socket");
+    //MTHROW("Unable to bind to a socket");
+		return NULL;
   }
 
 
@@ -281,7 +284,7 @@ Connexion* InterfaceIP::connect_to(uint64_t ipaddress, unsigned short port, int 
   if (connect(socketDescriptor, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
     std::cout << "cannot connect to port " << port << "\n";
     close(socketDescriptor);
-    MTHROW("Unable to connect to "+ipaddress);
+    //MTHROW("Unable to connect to "+ipaddress);
     return NULL;
   }
 

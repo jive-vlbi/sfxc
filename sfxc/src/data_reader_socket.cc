@@ -59,4 +59,6 @@ bool Data_reader_socket::can_read() {
   if (ret > 0) {
     return ((fds[0].revents & POLLIN) != 0);
   }
+
+  return false;
 }
