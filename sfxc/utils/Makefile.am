@@ -40,7 +40,7 @@ extract_channelizer_SOURCES = \
 	../src/data_reader_blocking.cc \
 	../src/channel_extractor_utils.cc \
 	../src/channel_extractor_dynamic.cc \
-	../src/channel_extractor_fast.cc \
+	../src/channel_extractor_5.cc \
   ../src/utils.cc
 
 dnfp_fileserver_SOURCES = \
