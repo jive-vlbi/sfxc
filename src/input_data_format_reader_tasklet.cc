@@ -4,7 +4,7 @@ Input_data_format_reader_tasklet::
 Input_data_format_reader_tasklet(
 										 Data_format_reader_ptr reader,
                      Data_frame &data)
-    : memory_pool_(10, AUTOMATIC_RESIZE), stop_time(-1),
+    : memory_pool_(10), stop_time(-1),
     n_bytes_per_input_word(reader->bytes_per_input_word()) {
 
   SFXC_ASSERT(sizeof(value_type) == 1);

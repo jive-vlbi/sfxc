@@ -5,7 +5,7 @@
 #include "exception_common.h"
 #include "channel_extractor_dynamic.h"
 #include "channel_extractor_utils.h"
-#include "channel_extractor_fast.h"
+#include "channel_extractor_5.h"
 #include "utils.h"
 
 Channel_extractor_dynamic::Channel_extractor_dynamic
@@ -70,14 +70,14 @@ void Channel_extractor_dynamic::initialise(
 					if( hidden_implementation_ == NULL ){
 							DEBUG_MSG("Compiling optimized extractor fails ! use slow one instead");
 							name_ = "Channel_extractor_dynamic (slow mode!)";
-							hidden_implementation_ = new Channel_extractor_fast();
+							hidden_implementation_ = new Channel_extractor_5();
 
 					}
         }
 			else {
 							DEBUG_MSG("Unable to compile extractor ! use slow one instead");
 							name_ = "Channel_extractor_dynamic (slow mode!)";
-							hidden_implementation_ = new Channel_extractor_fast();
+							hidden_implementation_ = new Channel_extractor_5();
 			}
     }
 	/// Check it was succesfully loaded.
