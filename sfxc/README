@@ -1,5 +1,16 @@
 #
 # SFXC software Correlator
 #  
-
 Compilation instructions can be found in docs/compile_sfxc.txt
+
+This version is a development version and thus may be unstable/unusable.
+
+
+For production you probably prefer to use the latest stable version that can be 
+retreived from the svn by using:
+svn co svn+ssh://loginl@jop41.astron.nl/auto/home/jive_cvs/SOFTC/svn/tags/stable
+
+
+
+
+
