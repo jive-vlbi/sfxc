@@ -22,8 +22,8 @@ Multiple_data_readers_controller::
 Multiple_data_readers_controller(Node &node)
     : Controller(node) {
 
-	/// A bit tricky but this permit to avoid to much usless attemp to
-	/// create ports we now for sure that will not work.
+  /// A bit tricky but this permit to avoid to much usless attemp to
+  /// create ports we now for sure that will not work.
   int port = SFXC_PORT+RANK_OF_NODE*10;
   while (!tcp_connection.open_port(port, 10)) {
     port++;
@@ -38,63 +38,72 @@ Multiple_data_readers_controller::
 #include <arpa/inet.h>
 void
 Multiple_data_readers_controller::get_listening_ip(
-std::vector<uint64_t>& ip_port)
-{
-	std::vector<uint64_t> addrs;
+  std::vector<uint64_t>& ip_port) {
+  std::vector<uint64_t> addrs;
 
-	tcp_connection.get_ip_addresses( addrs );
+  Vector_string if_names;
+  std::vector<InterfaceIP*> interfaces;
+  if_names.push_back(String("myri0"));
+  if_names.push_back(String("eth0"));
+  Network::get_interfaces_ordered_by_name(if_names, interfaces);
 
-	for(unsigned int i=0;i<addrs.size();i++){
-			in_addr tmp;
-			tmp.s_addr = addrs[i];
-			DEBUG_MSG("ADDRESS: " << inet_ntoa( tmp ) << " port: " << tcp_connection.get_port() );
-			ip_port.push_back(addrs[i]);
-			ip_port.push_back( tcp_connection.get_port() );
-	}
+  for (unsigned int i=0;i<interfaces.size();i++) {
+    ip_port.push_back( interfaces[i]->get_ip64() );
+    ip_port.push_back( tcp_connection.get_port() );
+  }
+
 }
 
 Multiple_data_readers_controller::Process_event_status
 Multiple_data_readers_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
-    case MPI_TAG_ADD_TCP_READER_CONNECTED_TO: {
+  case MPI_TAG_ADD_TCP_READER_CONNECTED_TO: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
-			uint32_t info[4];
-			std::vector<uint64_t> ip_ports;
-			MPI_Transfer::recv_connect_to_msg(info, ip_ports, status.MPI_SOURCE);
+      uint32_t info[4];
+      std::vector<uint64_t> ip_ports;
+      MPI_Transfer::recv_connect_to_msg(info, ip_ports, status.MPI_SOURCE);
 
-			//DEBUG_MSG("Connexion: " << info[0] << " ->" <<  info[2] );
-			//DEBUG_MSG(" ip address:" <<  ip_ports.size() );
+      //DEBUG_MSG("Connexion: " << info[0] << " ->" <<  info[2] );
+      //DEBUG_MSG(" ip address:" <<  ip_ports.size() );
 
       CHECK_MPI( MPI_Ssend(&info, 4, MPI_UINT32,
-													 info[0], MPI_TAG_ADD_TCP_WRITER_CONNECTED_FROM,
-													 MPI_COMM_WORLD ) );
+                           info[0], MPI_TAG_ADD_TCP_WRITER_CONNECTED_FROM,
+                           MPI_COMM_WORLD ) );
 
-			// Connect to the given host
-			pConnexion cnx= NULL;
-			for(unsigned int i=0;i<ip_ports.size() && cnx == NULL;i+=2){
-					try{
-						cnx = Network::connect_to( ip_ports[i], ip_ports[i+1] );
-					}catch(Exception& e){}
-			}
+      // Connect to the given host
+      pConnexion cnx= NULL;
+      unsigned int i=0;
+      for (i=0;i<ip_ports.size() && cnx == NULL;i+=2) {
+        try {
+          in_addr tmp;
+          tmp.s_addr = ip_ports[i];
 
-			if( cnx != NULL ){
-				boost::shared_ptr<Data_reader>
-				reader( new Data_reader_socket( cnx ) );
-				add_data_reader(info[3], reader);
-			}else{
-				MTHROW("Unable to connect");
-			}
+          DEBUG_MSG("TRYING: " << inet_ntoa( tmp ) << " port: " << ip_ports[i+1] );
+          cnx = Network::connect_to( ip_ports[i], ip_ports[i+1] );
+        } catch (Exception& e) {}
+      }
 
-			CHECK_MPI( MPI_Send(NULL, 0, MPI_UINT32,
-													 status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
-													 MPI_COMM_WORLD ) );
+      if ( cnx != NULL ) {
+        in_addr tmp;
+        tmp.s_addr = ip_ports[i-2];
+        DEBUG_MSG("Connected using: " << inet_ntoa( tmp ) << ":" << ip_ports[i+1] );
+        boost::shared_ptr<Data_reader>
+        reader( new Data_reader_socket( cnx ) );
+        add_data_reader(info[3], reader);
+      } else {
+        MTHROW("Unable to connect");
+      }
+
+      CHECK_MPI( MPI_Send(NULL, 0, MPI_UINT32,
+                          status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
+                          MPI_COMM_WORLD ) );
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-		case MPI_TAG_ADD_TCP_READER_CONNECTED_FROM: {
-			get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+  case MPI_TAG_ADD_TCP_READER_CONNECTED_FROM: {
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
       /* - int32_t: data_writer_rank
        * - int32_t: data_writer_stream_nr
@@ -103,14 +112,14 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
        */
       uint32_t params[4];
       CHECK_MPI (
-								MPI_Recv(params, 4, MPI_UINT32,
-								status.MPI_SOURCE, status.MPI_TAG,
-								MPI_COMM_WORLD, &status)
-								);
+        MPI_Recv(params, 4, MPI_UINT32,
+                 status.MPI_SOURCE, status.MPI_TAG,
+                 MPI_COMM_WORLD, &status)
+      );
 
       SFXC_ASSERT(tcp_connection.get_port() > 0);
 
-			//DEBUG_MSG("Waiting for connexion between: "<< params[0] << " to:" << params[2]);
+      //DEBUG_MSG("Waiting for connexion between: "<< params[0] << " to:" << params[2]);
       Data_reader_socket *data_reader = new Data_reader_socket( tcp_connection.open_connection() );
 
       boost::shared_ptr<Data_reader> reader(data_reader);
@@ -118,7 +127,7 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       //DEBUG_MSG("A data reader is created from: "<< params[0] << " to:" << params[2]);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
-		}
+    }
   case MPI_TAG_ADD_DATA_READER_TCP2: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
@@ -175,13 +184,11 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
 }
 
 void
-Multiple_data_readers_controller::stop()
-{
-		for(unsigned int i=0;i<readers.size();i++)
-		{
-			/// we should kill the reader2buffers.
-			readers[i].reader2buffer->stop();
-		}
+Multiple_data_readers_controller::stop() {
+  for (unsigned int i=0;i<readers.size();i++) {
+    /// we should kill the reader2buffers.
+    readers[i].reader2buffer->stop();
+  }
 }
 
 void

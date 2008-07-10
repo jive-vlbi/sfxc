@@ -4,7 +4,7 @@ Correlator_node_data_reader_tasklet::
 Correlator_node_data_reader_tasklet()
     : output_memory_pool(65000),
     output_buffer(Output_buffer_ptr(new Output_buffer())),
-n_ffts_to_read(0) {}
+    n_ffts_to_read(0) {}
 
 Correlator_node_data_reader_tasklet::
 ~Correlator_node_data_reader_tasklet() {}
@@ -42,7 +42,12 @@ void Correlator_node_data_reader_tasklet::do_task() {
 
   n_ffts_to_read --;
 
+
   output_buffer->push(output_elem);
+}
+
+int Correlator_node_data_reader_tasklet::data_to_read() {
+  return n_ffts_to_read;
 }
 
 bool Correlator_node_data_reader_tasklet::has_work() {
@@ -59,6 +64,10 @@ bool Correlator_node_data_reader_tasklet::has_work() {
     return false;
 
   return true;
+}
+
+int Correlator_node_data_reader_tasklet::get_fd() {
+  return reader->get_fd();
 }
 
 void

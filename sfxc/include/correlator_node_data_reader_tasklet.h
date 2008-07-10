@@ -30,6 +30,11 @@ public:
 
   void do_task();
   bool has_work();
+
+  int data_to_read();
+
+  int get_fd();
+
   const char *name() {
     return __PRETTY_FUNCTION__;
   }

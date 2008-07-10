@@ -31,6 +31,10 @@
 
 
 #include <sys/socket.h>
+#include <arpa/inet.h>
+
+#include <netdb.h>
+#include <netinet/in.h>
 #include "common.h"
 
 #include "tcp_connection.h"
@@ -90,6 +94,12 @@ public:
     return m_address;
   }
 
+  uint64_t get_ip64() {
+    struct in_addr address;
+    inet_aton(m_address.c_str(), &address);
+    return address.s_addr;
+  }
+
   friend std::ostream& operator<<(std::ostream& out, InterfaceIP&);
   friend std::ostream& operator<<(std::ostream& out, InterfaceIP*);
 
@@ -107,7 +117,7 @@ public:
   Connexion* connect_to(uint64_t ipaddress, unsigned short port, int type=SOCK_STREAM);
 
 
-	EndpointIP* create_endpoint();
+  EndpointIP* create_endpoint();
   EndpointIP* create_endpoint(unsigned short port);
 private:
   int open_port(const String& interfacename, unsigned short int port);

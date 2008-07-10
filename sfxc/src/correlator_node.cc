@@ -20,7 +20,8 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node)
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
     status(STOPPED),
-nr_corr_node(nr_corr_node) {
+    isinitialized_(false),
+    nr_corr_node(nr_corr_node) {
   get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;
 
   add_controller(&correlator_node_ctrl);
@@ -36,6 +37,7 @@ nr_corr_node(nr_corr_node) {
            RANK_MANAGER_NODE, MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
            MPI_COMM_WORLD);
 
+  has_requested=true;
 
 
 #ifdef RUNTIME_STATISTIC
@@ -101,37 +103,59 @@ Correlator_node::~Correlator_node() {
 #endif
 }
 
-
-void Correlator_node::terminate()
-{
-	DEBUG_MSG("Correlator node terminate.");
-	status = END_CORRELATING;
+void Correlator_node::start_threads() {
+  threadpool_.register_thread( reader_thread_.start() );
 }
 
+void Correlator_node::stop_threads() {
+  reader_thread_.stop();
+
+  /// We wait the termination of the threads
+  threadpool_.wait_for_all_termination();
+}
 
 void Correlator_node::start() {
+
+
+  /// We enter the main loop of the coorelator node.
+  DEBUG_MSG("START MAIN LOOp !");
+  main_loop();
+}
+
+void Correlator_node::terminate() {
+  DEBUG_MSG("Correlator node terminate.");
+  status = END_CORRELATING;
+}
+
+void Correlator_node::main_loop() {
   while ( status != END_CORRELATING ) {
     switch (status) {
-      case STOPPED: {
-        // blocking:
+    case STOPPED: {
+        /// We wait for a message
         check_and_process_message();
+        // blocking:
         break;
       }
-      case CORRELATING: {
+    case CORRELATING: {
         process_all_waiting_messages();
 
         correlate();
+        if (!has_requested && correlation_core.almost_finished()) {
+          //if (n_integration_slice_in_time_slice==1)
+          //{
+          DEBUG_MSG("TIME TO GET NEW DATA !");
+          // Notify manager node:
+          int32_t msg = get_correlate_node_number();
+          MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
+                   MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
+                   MPI_COMM_WORLD);
 
-        if (correlation_core.almost_finished()) {
-          if (n_integration_slice_in_time_slice==1) {
-            // Notify manager node:
-            int32_t msg = get_correlate_node_number();
-            MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
-                     MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
-                     MPI_COMM_WORLD);
-          }
+          has_requested = true;
+          //}
         }
         if (correlation_core.finished()) {
+          DEBUG_MSG("CORRELATION CORE FINISHED !" << n_integration_slice_in_time_slice);
+
           n_integration_slice_in_time_slice--;
           if (n_integration_slice_in_time_slice==0) {
             // Notify manager node:
@@ -142,10 +166,13 @@ void Correlator_node::start() {
         }
         break;
       }
-      case END_CORRELATING: break;
+    case END_CORRELATING:
+      break;
 
     }
   }
+
+  stop_threads();
 }
 
 
@@ -159,12 +186,12 @@ void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   // create the bit sample reader tasklet
-  if (bit_sample_readers.size() <= stream_nr) {
-    bit_sample_readers.resize(stream_nr+1, Bit_sample_reader_ptr());
+  if (reader_thread_.bit_sample_readers().size() <= stream_nr) {
+    reader_thread_.bit_sample_readers().resize(stream_nr+1, Bit_sample_reader_ptr());
   }
-  bit_sample_readers[stream_nr] =
+  reader_thread_.bit_sample_readers()[stream_nr] =
     Bit_sample_reader_ptr(new Correlator_node_data_reader_tasklet());
-  bit_sample_readers[stream_nr]->connect_to(data_readers_ctrl.get_data_reader(stream_nr));
+  reader_thread_.bit_sample_readers()[stream_nr]->connect_to(data_readers_ctrl.get_data_reader(stream_nr));
 
   { // create the delay modules
     if (delay_modules.size() <= stream_nr) {
@@ -175,7 +202,7 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
       Delay_correction_ptr(new Delay_correction());
 
     // Connect the delay_correction to the bits2float_converter
-    delay_modules[stream_nr]->connect_to(bit_sample_readers[stream_nr]->get_output_buffer());
+    delay_modules[stream_nr]->connect_to(reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
   }
 
   // Connect the correlation_core to delay_correction
@@ -195,24 +222,6 @@ int Correlator_node::get_correlate_node_number() {
 
 void Correlator_node::correlate() {
   RT_STAT( dotask_state_.begin_measure() );
-
-  // Execute all tasklets:
-  bit_sample_reader_timer_.resume();
-  for (size_t i=0; i<bit_sample_readers.size(); i++) {
-    SFXC_ASSERT(bit_sample_readers[i] != Bit_sample_reader_ptr());
-    if (bit_sample_readers[i] != Bit_sample_reader_ptr()) {
-      int count = 0;
-      while ((count < 25) && bit_sample_readers[i]->has_work()) {
-        RT_STAT( reader_state_.begin_measure() );
-
-        bit_sample_readers[i]->do_task();
-        RT_STAT( reader_state_.end_measure(1) );
-
-        count++;
-      }
-    }
-  }
-  bit_sample_reader_timer_.stop();
 
   delay_timer_.resume();
   for (size_t i=0; i<delay_modules.size(); i++) {
@@ -247,22 +256,8 @@ void
 Correlator_node::receive_parameters(const Correlation_parameters &parameters) {
   integration_slices_queue.push(parameters);
 
-  { // Immediately start prefetching the data:
-    int number_ffts_in_integration =
-      Control_parameters::nr_ffts_per_integration_slice
-      (parameters.integration_time,
-       parameters.sample_rate,
-       parameters.number_channels);
-    for (size_t i=0; i<bit_sample_readers.size(); i++) {
-      SFXC_ASSERT(bit_sample_readers[i] !=
-             Bit_sample_reader_ptr());
-      if (i <parameters.station_streams.size()) {
-        bit_sample_readers[i]->set_parameters(number_ffts_in_integration,
-                                              parameters.bits_per_sample,
-                                              parameters.number_channels);
-      }
-    }
-  }
+  /// We add the new timeslice to the readers.
+  reader_thread_.add_time_slice_to_read(parameters);
 
   if (status == STOPPED)
     set_parameters();
@@ -271,6 +266,12 @@ Correlator_node::receive_parameters(const Correlation_parameters &parameters) {
 void
 Correlator_node::set_parameters() {
   SFXC_ASSERT(status == STOPPED);
+
+  if ( !isinitialized_ ) {
+    DEBUG_MSG("START THE THREADS !");
+    isinitialized_ = true;
+    start_threads();
+  }
 
   if (integration_slices_queue.empty())
     return;
@@ -286,7 +287,7 @@ Correlator_node::set_parameters() {
      parameters.number_channels);
 
   SFXC_ASSERT(((parameters.stop_time-parameters.start_time) /
-          parameters.integration_time) == 1);
+               parameters.integration_time) == 1);
 
   SFXC_ASSERT(size_input_slice > 0);
 
@@ -297,7 +298,7 @@ Correlator_node::set_parameters() {
   }
   correlation_core.set_parameters(parameters, get_correlate_node_number());
 
-
+  has_requested=false;
   status = CORRELATING;
 
   n_integration_slice_in_time_slice =

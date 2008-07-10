@@ -25,7 +25,7 @@ public:
   /** Reads nBytes from channel into the buff starting from the
       read_pointer. If buff == NULL, then the buffer is not
       filled and the read pointer is only increased by the amount of bytes.
-    
+
       \return the number of bytes read into the buffer.
       \pre buff is allocated. nBytes >= 0
   **/
@@ -61,6 +61,10 @@ public:
 
   /** returns true if at least one byte can be read **/
   virtual bool can_read() = 0;
+
+  virtual int get_fd() {
+    return -1;
+  }
 
 private:
   /** Function that actually writes the data to the output device.
