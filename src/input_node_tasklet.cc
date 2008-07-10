@@ -191,9 +191,9 @@ Input_node_tasklet::wait_termination() {
 
 void
 Input_node_tasklet::start_tasklets() {
-  pool_.register_thread( reader_.start() );
-  pool_.register_thread( channel_extractor_.start() );
   pool_.register_thread( this->start() );
+  pool_.register_thread( channel_extractor_.start() );
+  pool_.register_thread( reader_.start() );
 }
 
 void
@@ -207,7 +207,7 @@ Input_node_tasklet::stop_tasklets() {
 void
 Input_node_tasklet::
 do_execute() {
-  DEBUG_MSG(__PRETTY_FUNCTION__ << ":: ENTER");
+  ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: ENTER");
 
   while ( has_work() || isrunning_ ) {
 
@@ -219,8 +219,7 @@ do_execute() {
     } else {//DEBUG_MSG(__PRETTY_FUNCTION__<< ":: WORKED");
     }
   }
-
-  DEBUG_MSG(" INPUT_TASKLET WILL EXIT ITS LOOP ");
+  //DEBUG_MSG(" INPUT_TASKLET WILL EXIT ITS LOOP ");
 }
 
 void
@@ -230,7 +229,7 @@ do_task() {
 
   RT_STAT( dotask_state_.begin_measure() );
 
-  //timer_delaying_.resume();
+  timer_delaying_.resume();
   RT_STAT(integerdelay_state_.begin_measure() );
   for (size_t i=0; i<integer_delay_.size(); i++) {
     SFXC_ASSERT(integer_delay_[i] != NULL);
@@ -242,9 +241,9 @@ do_task() {
     }
   }
   RT_STAT(integerdelay_state_.end_measure(1));
-  //timer_delaying_.stop();
+  timer_delaying_.stop();
 
-  //timer_writing_.resume();
+  timer_writing_.resume();
   RT_STAT( outputwriter_state_.begin_measure() );
   for (size_t i=0; i<data_writers_.size(); i++) {
     while (data_writers_[i].has_work()) {
@@ -256,7 +255,7 @@ do_task() {
     }
   }
   RT_STAT( outputwriter_state_.end_measure(1) );
-  //timer_writing_.stop();
+  timer_writing_.stop();
 
   RT_STAT( dotask_state_.end_measure(1) );
 }

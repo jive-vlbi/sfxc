@@ -4,7 +4,7 @@ Input_data_format_reader_tasklet::
 Input_data_format_reader_tasklet(
   Data_format_reader_ptr reader,
   Data_frame &data)
-    : memory_pool_(10), stop_time(-1),
+    : memory_pool_(10, AUTOMATIC_RESIZE), stop_time(-1),
     n_bytes_per_input_word(reader->bytes_per_input_word()) {
 
   SFXC_ASSERT(sizeof(value_type) == 1);
@@ -55,7 +55,7 @@ void Input_data_format_reader_tasklet::stop() {
 }
 
 void Input_data_format_reader_tasklet::do_execute() {
-  DEBUG_MSG(__PRETTY_FUNCTION__ << ":: ENTER");
+  ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: ENTER");
 
   /// blocks until we have an interval to process
   fetch_next_time_interval();
@@ -132,8 +132,8 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
 
   if ( !current_interval_.empty() ) {
     /// Otherwise the new interval is loaded.
-    DEBUG_MSG(__PRETTY_FUNCTION__ << ":: SET TIME");
-    DEBUG_MSG(__PRETTY_FUNCTION__ << ":: val:"<< current_interval_.start_time_ << " cur: "<< current_time);
+    ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: SET TIME");
+    ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: val:"<< current_interval_.start_time_ << " cur: "<< current_time);
     current_time = goto_time( current_interval_.start_time_ );
   }
 }
@@ -142,7 +142,7 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
 void
 Input_data_format_reader_tasklet::
 add_time_interval(uint64_t us_start_time, uint64_t us_stop_time) {
-  DEBUG_MSG("Time interval added: " << us_start_time << ":"<< us_stop_time );
+  ///DEBUG_MSG("Time interval added: " << us_start_time << ":"<< us_stop_time );
   intervals_.push( Time_interval(us_start_time, us_stop_time ) );
 }
 

@@ -90,8 +90,6 @@ Log_node_controller::process_event(MPI_Status &status) {
       get_log_writer_output()(2) << "  *** Node " << status.MPI_SOURCE
       << " finished." << std::endl;
 
-			DEBUG_MSG(   "*** Node " << status.MPI_SOURCE  << " finished." );
-
       nConnections --;
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
