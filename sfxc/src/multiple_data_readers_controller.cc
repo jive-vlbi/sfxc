@@ -80,7 +80,7 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
           in_addr tmp;
           tmp.s_addr = ip_ports[i];
 
-          DEBUG_MSG("TRYING: " << inet_ntoa( tmp ) << " port: " << ip_ports[i+1] );
+          ///DEBUG_MSG("TRYING: " << inet_ntoa( tmp ) << " port: " << ip_ports[i+1] );
           cnx = Network::connect_to( ip_ports[i], ip_ports[i+1] );
         } catch (Exception& e) {}
       }
@@ -88,7 +88,7 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       if ( cnx != NULL ) {
         in_addr tmp;
         tmp.s_addr = ip_ports[i-2];
-        DEBUG_MSG("Connected using: " << inet_ntoa( tmp ) << ":" << ip_ports[i+1] );
+        ///DEBUG_MSG("Connected using: " << inet_ntoa( tmp ) << ":" << ip_ports[i+1] );
         boost::shared_ptr<Data_reader>
         reader( new Data_reader_socket( cnx ) );
         add_data_reader(info[3], reader);

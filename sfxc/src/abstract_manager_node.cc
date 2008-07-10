@@ -43,16 +43,16 @@ start_input_node(int rank, const std::string &station) {
              rank, MPI_TAG_SET_INPUT_NODE_MARK5B, MPI_COMM_WORLD);
   }
 
-	DEBUG_MSG("WAITING FOR NODE PARAMTERS !");
-	/// add a new set of parameters
-	Connexion_params* params= new Connexion_params();
-	input_node_cnx_params_.push_back( params );
+  ///DEBUG_MSG("WAITING FOR NODE PARAMTERS !");
+  /// add a new set of parameters
+  Connexion_params* params= new Connexion_params();
+  input_node_cnx_params_.push_back( params );
 
-	/// receive the connexion parameters for the current input_node
-	MPI_Transfer::receive_ip_address( params->ip_port_, rank );
+  /// receive the connexion parameters for the current input_node
+  MPI_Transfer::receive_ip_address( params->ip_port_, rank );
 
-	/// wait to receive the the acknowledment showing that hte node
-	/// is correctly initialized.
+  /// wait to receive the the acknowledment showing that hte node
+  /// is correctly initialized.
   MPI_Status status;
   int msg;
   MPI_Recv(&msg, 1, MPI_INT32,
@@ -71,13 +71,13 @@ start_output_node(int rank) {
            rank, MPI_TAG_SET_OUTPUT_NODE, MPI_COMM_WORLD);
 
 
-	DEBUG_MSG("WAITING FOR OUTPUT_NODE PARAMETERS !");
-	/// add a new set of parameters
-	Connexion_params* params= new Connexion_params();
-	output_node_cnx_params_.push_back( params );
+  ///DEBUG_MSG("WAITING FOR OUTPUT_NODE PARAMETERS !");
+  /// add a new set of parameters
+  Connexion_params* params= new Connexion_params();
+  output_node_cnx_params_.push_back( params );
 
-	/// receive the connexion parameters for the current input_node
-	MPI_Transfer::receive_ip_address( params->ip_port_, rank );
+  /// receive the connexion parameters for the current input_node
+  MPI_Transfer::receive_ip_address( params->ip_port_, rank );
 
   MPI_Status status;
   MPI_Recv(&msg, 1, MPI_INT32,
@@ -231,44 +231,44 @@ Abstract_manager_node::set_TCP(int writer_rank, int writer_stream_nr,
 
 void
 Abstract_manager_node::connect_to(
-															 int writer_rank,
-															 int writer_stream_nr,
-                               int reader_rank,
-                               int reader_stream_nr,
-                               std::vector<uint64_t>& params, int rank, MPI_Request* req) {
+  int writer_rank,
+  int writer_stream_nr,
+  int reader_rank,
+  int reader_stream_nr,
+  std::vector<uint64_t>& params, int rank, MPI_Request* req) {
   // DEBUG_MSG(writer_rank << "[" << writer_stream_nr << "] => "
   //          << reader_rank << "[" << reader_stream << "]");
   uint32_t msg[4] = {writer_rank, writer_stream_nr, reader_rank, reader_stream_nr};
 
-	// connect to some tcp endpoint
+  // connect to some tcp endpoint
   MPI_Transfer::send_connect_to_msg(msg, params, rank);
 
   // req is used to receive the acknowledgment
   CHECK_MPI( MPI_Irecv( NULL, 0, MPI_UINT32,
-						 rank, MPI_TAG_CONNECTION_ESTABLISHED,
-						 MPI_COMM_WORLD,
-						 req ) );
+                        rank, MPI_TAG_CONNECTION_ESTABLISHED,
+                        MPI_COMM_WORLD,
+                        req ) );
 }
 
 void
 Abstract_manager_node::connect_writer_to(
-															 int writer_rank,
-															 int writer_stream_nr,
-                               int reader_rank,
-                               int reader_stream_nr,
-                               std::vector<uint64_t>& params, int rank, MPI_Request* req) {
+  int writer_rank,
+  int writer_stream_nr,
+  int reader_rank,
+  int reader_stream_nr,
+  std::vector<uint64_t>& params, int rank, MPI_Request* req) {
   // DEBUG_MSG(writer_rank << "[" << writer_stream_nr << "] => "
   //          << reader_rank << "[" << reader_stream << "]");
   uint32_t msg[4] = {writer_rank, writer_stream_nr, reader_rank, reader_stream_nr};
 
-	// connect to some tcp endpoint
+  // connect to some tcp endpoint
   MPI_Transfer::send_connect_writer_to_msg(msg, params, rank);
 
   // req is used to receive the acknowledgment
   CHECK_MPI( MPI_Irecv( NULL, 0, MPI_UINT32,
-						 rank, MPI_TAG_CONNECTION_ESTABLISHED,
-						 MPI_COMM_WORLD,
-						 req ) );
+                        rank, MPI_TAG_CONNECTION_ESTABLISHED,
+                        MPI_COMM_WORLD,
+                        req ) );
 }
 
 void

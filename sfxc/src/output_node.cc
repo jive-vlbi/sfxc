@@ -20,7 +20,7 @@ Output_node::Output_node(int rank, int size)
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
     status(STOPPED),
-curr_slice(0), number_of_time_slices(-1), curr_stream(-1) {
+    curr_slice(0), number_of_time_slices(-1), curr_stream(-1) {
   initialise();
 }
 
@@ -32,7 +32,7 @@ Output_node::Output_node(int rank, Log_writer *writer, int size)
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
     status(STOPPED),
-curr_slice(0), number_of_time_slices(-1), curr_stream(-1) {
+    curr_slice(0), number_of_time_slices(-1), curr_stream(-1) {
   initialise();
 }
 
@@ -43,12 +43,12 @@ void Output_node::initialise() {
 
   data_writer_ctrl.set_queue(output_queue);
 
-	/// initialize and retreive the listening addresses/port
+  /// initialize and retreive the listening addresses/port
   std::vector<uint64_t> addrs;
-	data_readers_ctrl.get_listening_ip( addrs );
+  data_readers_ctrl.get_listening_ip( addrs );
 
-	/// send this to the manager NODE
-	MPI_Transfer::send_ip_address(addrs, RANK_MANAGER_NODE);
+  /// send this to the manager NODE
+  MPI_Transfer::send_ip_address(addrs, RANK_MANAGER_NODE);
 
 
   int32_t msg=0;
@@ -72,16 +72,16 @@ Output_node::~Output_node() {
   }
 }
 
-void Output_node::terminate(){
-	DEBUG_MSG("Output node terminate");
-	status = END_NODE;
+void Output_node::terminate() {
+  DEBUG_MSG("Output node terminate");
+  status = END_NODE;
 }
 
 void Output_node::start() {
   while (status != END_NODE) {
     switch (status) {
 
-      case STOPPED: {
+    case STOPPED: {
         SFXC_ASSERT(curr_stream == -1);
         // blocking:
         check_and_process_message();
@@ -95,7 +95,7 @@ void Output_node::start() {
         }
         break;
       }
-      case START_NEW_SLICE: {
+    case START_NEW_SLICE: {
         SFXC_ASSERT(curr_stream == -1);
 
         SFXC_ASSERT(!input_streams_order.empty());
@@ -108,7 +108,7 @@ void Output_node::start() {
         status = WRITE_OUTPUT;
         break;
       }
-      case WRITE_OUTPUT: {
+    case WRITE_OUTPUT: {
         process_all_waiting_messages();
 
         if (!write_output()) {
@@ -123,7 +123,7 @@ void Output_node::start() {
 
         break;
       }
-      case END_SLICE: {
+    case END_SLICE: {
         curr_stream = -1;
         curr_slice ++;
         if (curr_slice == number_of_time_slices) {
@@ -137,18 +137,18 @@ void Output_node::start() {
         }
         break;
       }
-      case END_NODE: {
+    case END_NODE: {
         // For completeness sake
         break;
       }
     }
   }
 
-	DEBUG_MSG("WANT TO SHUT DOWN THE READER !");
-	data_readers_ctrl.stop();
-	DEBUG_MSG("WANT TO SHUT DOWN THE WRITER !");
-	data_writer_ctrl.stop();
-	DEBUG_MSG("WANT TO SHUT DOWN THE WRITER & READER !");
+  DEBUG_MSG("Shutting down !");
+  data_readers_ctrl.stop();
+  ///DEBUG_MSG("WANT TO SHUT DOWN THE WRITER !");
+  data_writer_ctrl.stop();
+  ///DEBUG_MSG("WANT TO SHUT DOWN THE WRITER & READER !");
 
   // End the node;
   int32_t msg=0;

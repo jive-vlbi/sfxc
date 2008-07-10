@@ -42,14 +42,13 @@ Log_node::~Log_node() {
 
 void Log_node::start() {
   while (!log_node_ctrl.ready()) {
-		check_and_process_message();
+    check_and_process_message();
   }
-  DEBUG_MSG("Log node is terminate.");
+  //DEBUG_MSG("Log node is terminate.");
 }
 
-void Log_node::terminate()
-{
-	DEBUG_MSG("Log node terminate.");
+void Log_node::terminate() {
+  DEBUG_MSG("Log node terminate.");
 }
 
 void Log_node::hook_added_data_reader(size_t reader) {}

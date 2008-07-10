@@ -23,8 +23,8 @@ public:
 
 
 void wait(Thread& thread) {
-    void *retval;
-    pthread_join( thread.m_threadid, &retval );
+  void *retval;
+  pthread_join( thread.m_threadid, &retval );
 }
 
 
@@ -44,7 +44,7 @@ void ThreadPool::wait_for_all_termination() {
     void *retval;
 
     CHECK_ZERO( pthread_join( (m_vectorthread[i]->m_threadid), &retval ) );
-    std::cout << "Thread number " << i << " is terminated" << std::endl;
+    //std::cout << "Thread number " << i << " is terminated" << std::endl;
   }
   //std::cout << " Normal thread termination " << m_vectorthread.size() << " threads" << std::endl;
 }
@@ -57,7 +57,7 @@ void ThreadPool::start_all() {
 
 void ThreadPool::stop_all() {
   for (unsigned int i=0;i<m_vectorthread.size();i++) {
-  	std::cout << "Stopping thread:" << i << std::endl;
+    std::cout << "Stopping thread:" << i << std::endl;
     m_vectorthread[i]->stop();
   }
 }
@@ -133,11 +133,10 @@ void* Thread::execute(void *param) {
   return NULL;
 }
 
-void Thread::set_cancel_state(bool state)
-{
-	if( state == true ){
-		CHECK_ZERO( pthread_setcancelstate( PTHREAD_CANCEL_ENABLE, NULL ) );
-	}else{
-		CHECK_ZERO( pthread_setcancelstate( PTHREAD_CANCEL_DISABLE, NULL ) );
-	}
+void Thread::set_cancel_state(bool state) {
+  if ( state == true ) {
+    CHECK_ZERO( pthread_setcancelstate( PTHREAD_CANCEL_ENABLE, NULL ) );
+  } else {
+    CHECK_ZERO( pthread_setcancelstate( PTHREAD_CANCEL_DISABLE, NULL ) );
+  }
 }

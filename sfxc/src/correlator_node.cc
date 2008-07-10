@@ -118,12 +118,12 @@ void Correlator_node::start() {
 
 
   /// We enter the main loop of the coorelator node.
-  DEBUG_MSG("START MAIN LOOp !");
+  ///DEBUG_MSG("START MAIN LOOp !");
   main_loop();
 }
 
 void Correlator_node::terminate() {
-  DEBUG_MSG("Correlator node terminate.");
+  DEBUG_MSG("Correlator node received terminate signal.");
   status = END_CORRELATING;
 }
 
@@ -143,7 +143,7 @@ void Correlator_node::main_loop() {
         if (!has_requested && correlation_core.almost_finished()) {
           //if (n_integration_slice_in_time_slice==1)
           //{
-          DEBUG_MSG("TIME TO GET NEW DATA !");
+          ///DEBUG_MSG("TIME TO GET NEW DATA !");
           // Notify manager node:
           int32_t msg = get_correlate_node_number();
           MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
@@ -154,7 +154,7 @@ void Correlator_node::main_loop() {
           //}
         }
         if (correlation_core.finished()) {
-          DEBUG_MSG("CORRELATION CORE FINISHED !" << n_integration_slice_in_time_slice);
+          ///DEBUG_MSG("CORRELATION CORE FINISHED !" << n_integration_slice_in_time_slice);
 
           n_integration_slice_in_time_slice--;
           if (n_integration_slice_in_time_slice==0) {
@@ -268,7 +268,7 @@ Correlator_node::set_parameters() {
   SFXC_ASSERT(status == STOPPED);
 
   if ( !isinitialized_ ) {
-    DEBUG_MSG("START THE THREADS !");
+    ///DEBUG_MSG("START THE THREADS !");
     isinitialized_ = true;
     start_threads();
   }

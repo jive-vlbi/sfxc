@@ -175,7 +175,7 @@ class Reader_thread : public Thread {
           }
         }
       } catch (QueueClosedException& exp) {
-        std::cout << "The queue is closed !" << std::endl;
+        ///std::cout << "The queue is closed !" << std::endl;
       }
     }
 
@@ -187,14 +187,14 @@ class Reader_thread : public Thread {
     void fetch_new_time_slice() {
       // Immediately start prefetching the data:
       struct job jb = queue_.front();
-      DEBUG_MSG("I HAVE NOW SOME DATA :" << jb.station_streams_size);
+      DEBUG_MSG("New input fetched:" << jb.station_streams_size);
 
       num_reading_=0;
       for (size_t i=0; i<bit_sample_readers_.size(); i++) {
         SFXC_ASSERT(bit_sample_readers_[i] !=
                     Bit_sample_reader_ptr());
         if (i < jb.station_streams_size ) {
-          DEBUG_MSG("CONFIGURING THE READER ! :" << jb.number_ffts_in_integration);
+          ///DEBUG_MSG("CONFIGURING THE READER ! :" << jb.number_ffts_in_integration);
 
           bit_sample_readers_[i]->set_parameters(
             jb.number_ffts_in_integration,
@@ -220,9 +220,8 @@ class Reader_thread : public Thread {
       jb.number_channels = parameters.number_channels;
       jb.station_streams_size = parameters.station_streams.size();
 
-      DEBUG_MSG("Add A Time slice:" << jb.station_streams_size );
+      //DEBUG_MSG("Add A Time slice:" << jb.station_streams_size );
       queue_.push(jb);
-
     }
   };
 

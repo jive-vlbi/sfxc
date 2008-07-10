@@ -25,15 +25,15 @@ Input_node_data_writer_tasklet::~Input_node_data_writer_tasklet() {
   }
 
 
+  /*
+    double wait_duration = (timer_waiting_.measured_time()+timer_other_.measured_time());
+    double total_duration = wait_duration+timer_writing_.measured_time();
 
-  double wait_duration = (timer_waiting_.measured_time()+timer_other_.measured_time());
-  double total_duration = wait_duration+timer_writing_.measured_time();
-
-  double ratio1 = ((100.0*timer_waiting_.measured_time())/total_duration);
-  double ratio2 = ((100.0*timer_other_.measured_time())/total_duration);
-  double ratio3 = ((100.0*timer_writing_.measured_time())/total_duration);
-  PROGRESS_MSG( "data_writer:" << " ratio:(wa:"<< ratio1 <<"%, ot:"<< ratio2 <<"%, wr:"<< ratio3 <<"%, )");
-
+    double ratio1 = ((100.0*timer_waiting_.measured_time())/total_duration);
+    double ratio2 = ((100.0*timer_other_.measured_time())/total_duration);
+    double ratio3 = ((100.0*timer_writing_.measured_time())/total_duration);
+    PROGRESS_MSG( "data_writer:" << " ratio:(wa:"<< ratio1 <<"%, ot:"<< ratio2 <<"%, wr:"<< ratio3 <<"%, )");
+  */
 }
 
 void

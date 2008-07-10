@@ -78,7 +78,7 @@ Channel_extractor_tasklet::~Channel_extractor_tasklet() {
     double ratio2 = ((100.0*timer_waiting_input_.measured_time())/total_duration);
     double ratio3 = ((100.0*timer_waiting_output_.measured_time())/total_duration);
     PROGRESS_MSG( "channelizing speed:" <<  1.0*toMB(data_processed_)/total_duration
-                  << "MB/s" << " ratio:("<< ratio1 <<"%, "<< ratio2 <<"%, "<< ratio3 <<"%, )");
+                  << "MB/s" << " processing:"<< ratio1 <<"% input:"<< ratio2 <<"% output:"<< ratio3 <<"%");
     //init_stats();
   }
 }
@@ -122,17 +122,15 @@ Channel_extractor_tasklet::do_task() {
   monitor_.begin_measure();
 #endif // RUNTIME_STATISTIC
 
-  //SFXC_ASSERT(has_work());
-
   // Number of output streams, one output stream corresponds to one subband
   SFXC_ASSERT(n_subbands == output_buffers_.size());
   SFXC_ASSERT(n_subbands > 0);
 
   // The struct containing the data for processing
   // This is the not-yet-channelized data.
-  //timer_waiting_input_.resume();
+  timer_waiting_input_.resume();
   Input_buffer_element &input_element = input_buffer_->front();
-  //timer_waiting_input_.stop();
+  timer_waiting_input_.stop();
 
 
   // The number of input samples to process
@@ -156,7 +154,7 @@ Channel_extractor_tasklet::do_task() {
   // Array of pointers to the actual output data arrays
   unsigned char *output_positions[n_subbands];
   { // Acquire output buffers
-    //timer_waiting_output_.resume();
+    timer_waiting_output_.resume();
     for (size_t subband=0; subband<n_subbands; subband++) {
       output_elements[subband].channel_data = output_memory_pool_.allocate();
 
@@ -182,15 +180,15 @@ Channel_extractor_tasklet::do_task() {
         input_element->nr_invalid_bytes*fan_out/(bits_per_sample*N);
       SFXC_ASSERT(output_elements[subband].nr_invalid_samples >= 0);
     }
-    //timer_waiting_output_.stop();
+    timer_waiting_output_.stop();
   }
 
   // Channel extract
   // This is done in a separate class to allow for different optimizations
-  //timer_processing_.resume();
+  timer_processing_.resume();
   ch_extractor->extract((unsigned char *) &input_element.data().buffer[0],
                         output_positions);
-  //timer_processing_.stop();
+  timer_processing_.stop();
 
   data_processed_ +=  input_element.data().buffer.size();
 
@@ -199,26 +197,24 @@ Channel_extractor_tasklet::do_task() {
       SFXC_ASSERT(output_buffers_[i] != Output_buffer_ptr());
       output_buffers_[i]->push(output_elements[i]);
     }
-
     input_buffer_->pop();
   }
 
-
-  /// Print statistics info
   /*
+   /// Print statistics info
    double wait_duration = (timer_waiting_input_.measured_time()+timer_waiting_output_.measured_time());
    double total_duration = wait_duration+timer_processing_.measured_time();
 
-  if( total_duration >= last_duration_ + 2.0 )
-  {
-    double ratio1 = ((100.0*timer_processing_.measured_time())/total_duration);
-    double ratio2 = ((100.0*timer_waiting_input_.measured_time())/total_duration);
-    double ratio3 = ((100.0*timer_waiting_output_.measured_time())/total_duration);
-    PROGRESS_MSG( "channelizing speed:" <<  1.0*toMB(data_processed_)/total_duration
-           << "MB/s" << " ratio:("<< ratio1 <<"%, "<< ratio2 <<"%, "<< ratio3 <<"%, )");
-    //init_stats();
-    last_duration_ = total_duration;
-  }
+   if( total_duration >= last_duration_ + 2.0 )
+   {
+     double ratio1 = ((100.0*timer_processing_.measured_time())/total_duration);
+     double ratio2 = ((100.0*timer_waiting_input_.measured_time())/total_duration);
+     double ratio3 = ((100.0*timer_waiting_output_.measured_time())/total_duration);
+     PROGRESS_MSG( "channelizing speed:" <<  1.0*toMB(data_processed_)/total_duration
+            << "MB/s" << " processing:"<< ratio1 <<"%, input:"<< ratio2 <<"%, output:"<< ratio3 <<"%");
+     //init_stats();
+     last_duration_ = total_duration;
+   }
   */
 
 #ifdef RUNTIME_STATISTIC
