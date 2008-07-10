@@ -195,7 +195,6 @@ AC_OUTPUT(Makefile
           include/Makefile
           utils/Makefile
           utils/delay/Makefile
-          tests/Makefile
           doc/Makefile
           doc/html/Makefile
          )
