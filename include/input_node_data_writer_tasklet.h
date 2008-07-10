@@ -6,6 +6,7 @@
 
 #include "data_writer.h"
 #include "utils.h"
+#include "timer.h"
 #include "input_node_types.h"
 #include "control_parameters.h"
 
@@ -42,12 +43,17 @@ public:
 
   void set_parameters(const Input_node_parameters &input_param);
 
-  // Empty the input queue, called from the destructor of Input_node
+  /// Empty the input queue, called from the destructor of Input_node
   void empty_input_queue();
 
 private:
   Input_buffer_ptr    input_buffer_;
   Data_writer_queue    data_writers_;
+
+  uint64_t data_written_;
+  Timer timer_waiting_;
+  Timer timer_other_;
+  Timer timer_writing_;
 };
 
 #endif // INPUT_NODE_DATA_WRITER_TASKLET

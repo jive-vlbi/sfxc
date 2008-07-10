@@ -22,6 +22,38 @@
 
 
 
+
+void Network::get_interfaces_ordered_by_name(const Vector_string& ifname, std::vector<InterfaceIP*>& ifs) {
+  /// We retreive the list of network interfaces
+  std::vector<InterfaceIP*> interfaces;
+  std::vector<bool> selected;
+
+  /// Get the list of interfaces...
+  Network::get_interfaces(interfaces);
+
+  for (unsigned int i=0;i<interfaces.size();i++)
+    selected.push_back(false);
+
+  /// order the given interface
+  for (unsigned int i=0;i<ifname.size();i++) {
+    for (unsigned int j=0;j<interfaces.size();j++) {
+      if ( ifname[i].find( interfaces[j]->name() ) != String::npos  ||
+           ifname[i].find( interfaces[j]->ip() ) != String::npos ) {
+        ifs.push_back( interfaces[j] );
+        selected[j] = true;
+      }
+    }
+  }
+
+  /// add the remaining ones.
+  for (unsigned int i=0;i<interfaces.size();i++) {
+    if ( !selected[i] )
+      ifs.push_back( interfaces[i] );
+  }
+}
+
+
+
 InterfaceIP* Network::get_interface_by_name(const std::string& name) {
 
   std::vector<InterfaceIP*> interface;
@@ -208,18 +240,15 @@ InterfaceIP* Network::get_interface_by_preffered(Vector_string& prefferedif) {
 
 }
 
-pConnexion Network::connect_to(const String& ipaddress, unsigned short port, int type)
-{
-		return get_any_interface()->connect_to(ipaddress, port, type);
+pConnexion Network::connect_to(const String& ipaddress, unsigned short port, int type) {
+  return get_any_interface()->connect_to(ipaddress, port, type);
 }
 
 
-pConnexion Network::connect_to(uint64_t ip, short port, int type)
-{
-		return get_any_interface()->connect_to(ip, port, type);
+pConnexion Network::connect_to(uint64_t ip, short port, int type) {
+  return get_any_interface()->connect_to(ip, port, type);
 }
 
-EndpointIP* Network::create_endpoint(unsigned short port)
-{
-		return get_any_interface()->create_endpoint(port);
+EndpointIP* Network::create_endpoint(unsigned short port) {
+  return get_any_interface()->create_endpoint(port);
 }

@@ -32,6 +32,10 @@ public:
 
   bool can_read();
 
+  int get_fd() {
+    return m_socket;
+  }
+
 protected:
   int do_get_bytes(size_t nBytes, char *buff);
 

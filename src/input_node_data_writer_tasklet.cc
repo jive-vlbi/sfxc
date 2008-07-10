@@ -1,7 +1,9 @@
 #include "input_node_data_writer_tasklet.h"
 
 Input_node_data_writer_tasklet::
-Input_node_data_writer_tasklet() {}
+Input_node_data_writer_tasklet() {
+
+}
 
 Input_node_data_writer_tasklet::~Input_node_data_writer_tasklet() {
   if (input_buffer_ != Input_buffer_ptr()) {
@@ -21,6 +23,17 @@ Input_node_data_writer_tasklet::~Input_node_data_writer_tasklet() {
   if (!data_writers_.empty()) {
     DEBUG_MSG("Data_writers are still waiting to produce output.");
   }
+
+
+
+  double wait_duration = (timer_waiting_.measured_time()+timer_other_.measured_time());
+  double total_duration = wait_duration+timer_writing_.measured_time();
+
+  double ratio1 = ((100.0*timer_waiting_.measured_time())/total_duration);
+  double ratio2 = ((100.0*timer_other_.measured_time())/total_duration);
+  double ratio3 = ((100.0*timer_writing_.measured_time())/total_duration);
+  PROGRESS_MSG( "data_writer:" << " ratio:(wa:"<< ratio1 <<"%, ot:"<< ratio2 <<"%, wr:"<< ratio3 <<"%, )");
+
 }
 
 void
@@ -65,37 +78,45 @@ do_task() {
   SFXC_ASSERT(has_work());
 
   // Acquire the input data
+  //timer_waiting_.resume();
   Input_buffer_element &input_element = input_buffer_->front();
+  //timer_waiting_.stop();
+
+  //timer_other_.resume();
+  struct Writer_struct& data_writer = data_writers_.front();
 
   // Check whether we have to start a new timeslice
-  if (data_writers_.front().slice_size > 0) {
+  if ( data_writer.slice_size > 0) {
     // Initialise the size of the data slice
     // from the front(): writer.set_size_dataslice(slice_size), slice_size=0
-    SFXC_ASSERT(data_writers_.front().writer->get_size_dataslice() <= 0);
-    int nr_bytes = data_writers_.front().slice_size;
+    SFXC_ASSERT(data_writer.writer->get_size_dataslice() <= 0);
+    int nr_bytes = data_writer.slice_size;
     SFXC_ASSERT(nr_bytes != 0);
-    data_writers_.front().writer->set_size_dataslice(nr_bytes);
-    data_writers_.front().slice_size = 0;
+    data_writer.writer->set_size_dataslice(nr_bytes);
+    data_writer.slice_size = 0;
   }
 
   // Check whether we have written all data to the data_writer
-  SFXC_ASSERT(data_writers_.front().slice_size == 0);
-  SFXC_ASSERT(data_writers_.front().writer->get_size_dataslice() >= 0);
-  if (data_writers_.front().writer->get_size_dataslice() == 0) {
+  SFXC_ASSERT(data_writer.slice_size == 0);
+  SFXC_ASSERT(data_writer.writer->get_size_dataslice() >= 0);
+  if (data_writer.writer->get_size_dataslice() == 0) {
     data_writers_.pop();
     return;
   }
 
+  //timer_other_.stop();
+
   // Start writing the actual data
-  Data_writer_ptr writer = data_writers_.front().writer;
+  Data_writer_ptr writer = data_writer.writer;
   if ((int)input_element.delay >= 0) {
     SFXC_ASSERT((input_element.invalid_samples_begin >= 0) &&
-           (input_element.invalid_samples_begin <= 1024));
+                (input_element.invalid_samples_begin <= 1024));
     SFXC_ASSERT((input_element.nr_invalid_samples >= 0) &&
-           (input_element.nr_invalid_samples <= 1024));
+                (input_element.nr_invalid_samples <= 1024));
     int nbytes = 0;
 
     // write the information on invalid samples
+    //timer_writing_.resume();
     nbytes = writer->put_bytes(sizeof(input_element.invalid_samples_begin),
                                (char*)&input_element.invalid_samples_begin);
     SFXC_ASSERT(nbytes == sizeof(input_element.invalid_samples_begin));
@@ -106,6 +127,8 @@ do_task() {
     do {
       nbytes = writer->put_bytes(1, &input_element.delay);
     } while (nbytes != 1);
+    //timer_writing_.stop();
+
   }
 
   int bytes_to_write = input_element.nr_bytes;
@@ -113,12 +136,14 @@ do_task() {
   char *data =
     (char*)&input_element.channel_data.data().data[input_element.first_byte];
 
+  //timer_writing_.resume();
   while (bytes_written < bytes_to_write) {
     int nbytes = writer->put_bytes(bytes_to_write - bytes_written, data);
     SFXC_ASSERT(nbytes >= 0);
     bytes_written += nbytes;
     data          += nbytes;
   }
+  //timer_writing_.stop();
 
   input_buffer_->pop();
 }
@@ -129,7 +154,9 @@ add_data_writer(Data_writer_ptr data_writer, int nr_bytes) {
   Writer_struct writer;
   writer.writer = data_writer;
   writer.slice_size = nr_bytes;
+
   data_writers_.push(writer);
+  DEBUG_MSG(": This data writer as a waiting queue with " << data_writers_.size() );
 }
 
 void

@@ -28,13 +28,18 @@ Channel_extractor_tasklet(int samples_per_block, int N_)
     N(N_), samples_per_block(samples_per_block) {
   SFXC_ASSERT(N_ > 0);
 
+  init_stats();
+
+  last_duration_=0;
+
+
 #ifdef USE_EXTRACTOR_5
   ch_extractor = new Channel_extractor_5();
 #else
-	/// This one is much more better as it will select
-	/// dynamically the best channelizer that can handle the
-	/// input data-stream.
-	ch_extractor = new Channel_extractor_dynamic();
+  /// This one is much more better as it will select
+  /// dynamically the best channelizer that can handle the
+  /// input data-stream.
+  ch_extractor = new Channel_extractor_dynamic();
 #endif //USE_EXTRACTOR_5
 
 #ifdef RUNTIME_STATISTIC
@@ -56,40 +61,59 @@ Channel_extractor_tasklet(int samples_per_block, int N_)
 
 }
 
-
-Channel_extractor_tasklet::~Channel_extractor_tasklet() {}
-
-void Channel_extractor_tasklet::do_execute(){
-	/// The thread is in a running state
-	isrunning_ = true;
-
-	/// Exception handler to insure to catch the QueueClosedException event
-	/// This Exception is thrown when the current thread is blocked on a
-	/// queue.front() operation and that the queue is closed on its other side.
-	try{
-
-		/// Main thread loop
-		while( isrunning_ && !input_buffer_->isclose() ){
-			do_task();
-		}
-
-	/// The queue has been closed and is empty.
-	}catch(QueueClosedException&e ){
-			DEBUG_MSG("My input queue has been closed ! I should probably stop then");
-	}
-
-	/// If the input queue is not empty something was wrong.
-	/// To much data has been sent to dechannelization.
-	SFXC_ASSERT( input_buffer_->empty() );
-
-	/// We close our own output queues
-	for(unsigned int i=0;i<output_buffers_.size();i++){
-		output_buffers_[i]->close();
-	}
+void Channel_extractor_tasklet::init_stats() {
+  data_processed_ = 0;
+  timer_waiting_input_.restart();
+  timer_waiting_output_.restart();
+  timer_processing_.restart();
 }
 
-void Channel_extractor_tasklet::stop(){
-	isrunning_=false;
+Channel_extractor_tasklet::~Channel_extractor_tasklet() {
+  /// Print statistics info
+  double wait_duration = (timer_waiting_input_.measured_time()+timer_waiting_output_.measured_time());
+  double total_duration = wait_duration+timer_processing_.measured_time();
+
+  if ( total_duration >= 1.0 ) {
+    double ratio1 = ((100.0*timer_processing_.measured_time())/total_duration);
+    double ratio2 = ((100.0*timer_waiting_input_.measured_time())/total_duration);
+    double ratio3 = ((100.0*timer_waiting_output_.measured_time())/total_duration);
+    PROGRESS_MSG( "channelizing speed:" <<  1.0*toMB(data_processed_)/total_duration
+                  << "MB/s" << " ratio:("<< ratio1 <<"%, "<< ratio2 <<"%, "<< ratio3 <<"%, )");
+    //init_stats();
+  }
+}
+
+void Channel_extractor_tasklet::do_execute() {
+  /// The thread is in a running state
+  isrunning_ = true;
+
+  /// Exception handler to insure to catch the QueueClosedException event
+  /// This Exception is thrown when the current thread is blocked on a
+  /// queue.front() operation and that the queue is closed on its other side.
+  try {
+
+    /// Main thread loop
+    while ( isrunning_ && !input_buffer_->isclose() ) {
+      do_task();
+    }
+
+    /// The queue has been closed and is empty.
+  } catch (QueueClosedException&e ) {
+    DEBUG_MSG("My input queue has been closed ! I should probably stop then");
+  }
+
+  /// If the input queue is not empty something was wrong.
+  /// To much data has been sent to dechannelization.
+  ///SFXC_ASSERT( input_buffer_->empty() );
+
+  /// We close our own output queues
+  for (unsigned int i=0;i<output_buffers_.size();i++) {
+    output_buffers_[i]->close();
+  }
+}
+
+void Channel_extractor_tasklet::stop() {
+  isrunning_=false;
 }
 
 void
@@ -106,7 +130,10 @@ Channel_extractor_tasklet::do_task() {
 
   // The struct containing the data for processing
   // This is the not-yet-channelized data.
+  //timer_waiting_input_.resume();
   Input_buffer_element &input_element = input_buffer_->front();
+  //timer_waiting_input_.stop();
+
 
   // The number of input samples to process
   // For mark5a this is 1 block
@@ -129,6 +156,7 @@ Channel_extractor_tasklet::do_task() {
   // Array of pointers to the actual output data arrays
   unsigned char *output_positions[n_subbands];
   { // Acquire output buffers
+    //timer_waiting_output_.resume();
     for (size_t subband=0; subband<n_subbands; subband++) {
       output_elements[subband].channel_data = output_memory_pool_.allocate();
 
@@ -140,7 +168,7 @@ Channel_extractor_tasklet::do_task() {
         output_elements[subband].channel_data.data().data.resize(n_output_bytes);
       }
       SFXC_ASSERT(output_elements[subband].channel_data.data().data.size() ==
-             (size_t)n_output_bytes);
+                  (size_t)n_output_bytes);
 
       output_positions[subband] =
         (unsigned char *)&(output_elements[subband].channel_data.data().data[0]);
@@ -154,12 +182,17 @@ Channel_extractor_tasklet::do_task() {
         input_element->nr_invalid_bytes*fan_out/(bits_per_sample*N);
       SFXC_ASSERT(output_elements[subband].nr_invalid_samples >= 0);
     }
+    //timer_waiting_output_.stop();
   }
 
   // Channel extract
   // This is done in a separate class to allow for different optimizations
+  //timer_processing_.resume();
   ch_extractor->extract((unsigned char *) &input_element.data().buffer[0],
                         output_positions);
+  //timer_processing_.stop();
+
+  data_processed_ +=  input_element.data().buffer.size();
 
   { // release the input buffer and put the output buffer
     for (size_t i=0; i<n_subbands; i++) {
@@ -169,6 +202,24 @@ Channel_extractor_tasklet::do_task() {
 
     input_buffer_->pop();
   }
+
+
+  /// Print statistics info
+  /*
+   double wait_duration = (timer_waiting_input_.measured_time()+timer_waiting_output_.measured_time());
+   double total_duration = wait_duration+timer_processing_.measured_time();
+
+  if( total_duration >= last_duration_ + 2.0 )
+  {
+    double ratio1 = ((100.0*timer_processing_.measured_time())/total_duration);
+    double ratio2 = ((100.0*timer_waiting_input_.measured_time())/total_duration);
+    double ratio3 = ((100.0*timer_waiting_output_.measured_time())/total_duration);
+    PROGRESS_MSG( "channelizing speed:" <<  1.0*toMB(data_processed_)/total_duration
+           << "MB/s" << " ratio:("<< ratio1 <<"%, "<< ratio2 <<"%, "<< ratio3 <<"%, )");
+    //init_stats();
+    last_duration_ = total_duration;
+  }
+  */
 
 #ifdef RUNTIME_STATISTIC
   monitor_.end_measure(n_output_bytes*n_subbands);
@@ -211,8 +262,8 @@ set_parameters(const Input_node_parameters &input_node_param,
   fan_out    = bits_per_sample *
                input_node_param.subsamples_per_sample();
 
-	ch_extractor->initialise(track_positions, N, samples_per_block);
-	DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
+  ch_extractor->initialise(track_positions, N, samples_per_block);
+  DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
 }
 
 

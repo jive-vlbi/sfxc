@@ -2,8 +2,8 @@
 
 Input_data_format_reader_tasklet::
 Input_data_format_reader_tasklet(
-										 Data_format_reader_ptr reader,
-                     Data_frame &data)
+  Data_format_reader_ptr reader,
+  Data_frame &data)
     : memory_pool_(10), stop_time(-1),
     n_bytes_per_input_word(reader->bytes_per_input_word()) {
 
@@ -17,9 +17,10 @@ Input_data_format_reader_tasklet(
   *input_element_ = data;
 
   current_time = reader_->get_current_time();
-	push_element();
+  push_element();
 
-	data_read_=0;
+  data_read_=0;
+  last_duration_=0;
 
 #ifdef RUNTIME_STATISTIC
   std::stringstream inputid;
@@ -39,11 +40,18 @@ Input_data_format_reader_tasklet(
 #endif //RUNTIME_STATISTIC
 }
 
-void Input_data_format_reader_tasklet::stop()
-{
-	/// There is a special associated with the empty interval.
-	/// as it will stop the reading thread.
-	add_time_interval(0,0);
+Input_data_format_reader_tasklet::~Input_data_format_reader_tasklet() {
+  double duration = (timer_read_.measured_time()+timer_allocate_.measured_time());
+
+  double ratio = ((100.0*timer_read_.measured_time())/duration);
+  PROGRESS_MSG( "reading speed:" <<  1.0*toMB(data_read_)/duration << "MB/s" << " reading:("<< ratio <<"%)" );
+
+}
+
+void Input_data_format_reader_tasklet::stop() {
+  /// There is a special associated with the empty interval.
+  /// as it will stop the reading thread.
+  add_time_interval(0,0);
 }
 
 void Input_data_format_reader_tasklet::do_execute() {
@@ -52,12 +60,12 @@ void Input_data_format_reader_tasklet::do_execute() {
   /// blocks until we have an interval to process
   fetch_next_time_interval();
 
-	timer_read_.start();
-	timer_allocate_.start();
+  timer_read_.start();
+  timer_allocate_.start();
 
   /// then let's work
   while ( !current_interval_.empty() ) {
-  	/// if there is still some data to process we do it
+    /// if there is still some data to process we do it
     if ( current_time < current_interval_.stop_time_ ) do_task();
 
     /// otherwise we fetch a new interval.
@@ -77,11 +85,11 @@ do_task() {
   monitor_.begin_measure();
 #endif // RUNTIME_STATISTIC
 
-	timer_allocate_.resume();
+  timer_allocate_.resume();
   allocate_element();
-	timer_allocate_.stop();
+  timer_allocate_.stop();
 
-	timer_read_.resume();
+  timer_read_.resume();
   if (reader_->eof()) {
     randomize_block();
     current_time += reader_->time_between_headers();
@@ -96,19 +104,19 @@ do_task() {
     current_time = reader_->get_current_time();
   }
   input_element_->start_time = current_time;
-	timer_read_.stop();
+  timer_read_.stop();
 
-	data_read_ += input_element_->buffer.size();
+  data_read_ += input_element_->buffer.size();
 
-	double duration = (timer_read_.measured_time()+timer_allocate_.measured_time());
-	if( duration >= 2.0 )
-	{
-			double ratio = ((100.0*timer_read_.measured_time())/duration);
-			PROGRESS_MSG( "reading speed:" <<  1.0*toMB(data_read_)/duration << "MB/s" << " reading:("<< ratio <<"%)" );
-			data_read_ = 0;
-			timer_read_.restart();
-			timer_allocate_.restart();
-	}
+  double duration = (timer_read_.measured_time()+timer_allocate_.measured_time());
+  if ( duration >= last_duration_+2.0 ) {
+    double ratio = ((100.0*timer_read_.measured_time())/duration);
+    PROGRESS_MSG( "reading speed:" <<  1.0*toMB(data_read_)/duration << "MB/s" << " reading:("<< ratio <<"%)" );
+    //data_read_ = 0;
+    //timer_read_.restart();
+    //timer_allocate_.restart();
+    last_duration_ = duration;
+  }
 
   push_element();
 
@@ -118,8 +126,7 @@ do_task() {
 }
 
 void
-Input_data_format_reader_tasklet::fetch_next_time_interval()
-{
+Input_data_format_reader_tasklet::fetch_next_time_interval() {
   /// Blocking function until a new interval is available
   current_interval_ = intervals_.front_and_pop();
 
@@ -186,20 +193,20 @@ goto_time(uint64_t us_time) {
 uint64_t
 Input_data_format_reader_tasklet::
 get_current_time() {
-	return current_time;
+  return current_time;
 }
 
 int
 Input_data_format_reader_tasklet::
 get_stop_time() {
-	SFXC_ASSERT(false && "DEPRECATED !");
+  SFXC_ASSERT(false && "DEPRECATED !");
   return stop_time;
 }
 
 void
 Input_data_format_reader_tasklet::
 set_stop_time(int64_t ms_time) {
-	SFXC_ASSERT(false && "DEPRECATED !");
+  SFXC_ASSERT(false && "DEPRECATED !");
   int64_t us_time = int64_t(1000)*ms_time;
 
   SFXC_ASSERT(current_time < us_time);

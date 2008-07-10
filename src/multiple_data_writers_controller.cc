@@ -38,15 +38,29 @@ Multiple_data_writers_controller::get_listening_ip(
   std::vector<uint64_t>& ip_port) {
   std::vector<uint64_t> addrs;
 
-  tcp_connection.get_ip_addresses( addrs );
+  //tcp_connection.get_ip_addresses( addrs );
 
-  for(unsigned int i=0;i<addrs.size();i++) {
-    in_addr tmp;
-    tmp.s_addr = addrs[i];
-    //DEBUG_MSG("ADDRESS: " << inet_ntoa( tmp ) << " port: " << tcp_connection.get_port() );
-    ip_port.push_back(addrs[i]);
+  Vector_string if_names;
+  std::vector<InterfaceIP*> interfaces;
+  if_names.push_back(String("myri0"));
+  if_names.push_back(String("eth0"));
+  Network::get_interfaces_ordered_by_name(if_names, interfaces);
+
+  for (unsigned int i=0;i<interfaces.size();i++) {
+    //in_addr tmp;
+    //tmp.s_addr = addrs[i];
+    //DEBUG_MSG("CHECKING: " << interfaces[i]->name() << " port: " << tcp_connection.get_port() );
+    ip_port.push_back( interfaces[i]->get_ip64() );
     ip_port.push_back( tcp_connection.get_port() );
   }
+
+  //for(unsigned int i=0;i<addrs.size();i++) {
+  //in_addr tmp;
+  //tmp.s_addr = addrs[i];
+  //DEBUG_MSG("ADDRESS: " << inet_ntoa( tmp ) << " port: " << tcp_connection.get_port() );
+  //ip_port.push_back(addrs[i]);
+  //ip_port.push_back( tcp_connection.get_port() );
+  //}
 }
 
 boost::shared_ptr<Data_writer>
@@ -58,7 +72,7 @@ Multiple_data_writers_controller::get_data_writer(size_t i) {
 Multiple_data_writers_controller::Process_event_status
 Multiple_data_writers_controller::process_event(MPI_Status &status) {
   switch (status.MPI_TAG) {
-    case MPI_TAG_ADD_TCP_WRITER_CONNECTED_TO: {
+  case MPI_TAG_ADD_TCP_WRITER_CONNECTED_TO: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
       uint32_t info[4];
@@ -74,13 +88,13 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 
       // Connect to the given host
       pConnexion cnx= NULL;
-      for(unsigned int i=0;i<ip_ports.size() && cnx == NULL;i+=2) {
+      for (unsigned int i=0;i<ip_ports.size() && cnx == NULL;i+=2) {
         try {
           cnx = Network::connect_to( ip_ports[i], ip_ports[i+1] );
-        } catch(Exception& e) {}
+        } catch (Exception& e) {}
       }
 
-      if( cnx != NULL ) {
+      if ( cnx != NULL ) {
         boost::shared_ptr<Data_writer>
         reader( new Data_writer_socket( cnx ) );
         add_data_writer(info[1], reader);
@@ -94,7 +108,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-    case MPI_TAG_ADD_TCP_WRITER_CONNECTED_FROM: {
+  case MPI_TAG_ADD_TCP_WRITER_CONNECTED_FROM: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
       /* - int32_t: data_writer_rank
@@ -119,7 +133,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-    case MPI_TAG_ADD_TCP: {
+  case MPI_TAG_ADD_TCP: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
       MPI_Status status2;
@@ -166,7 +180,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-    case MPI_TAG_ADD_DATA_WRITER_FILE2: {
+  case MPI_TAG_ADD_DATA_WRITER_FILE2: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
       MPI_Status status2;

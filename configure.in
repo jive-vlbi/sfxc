@@ -72,7 +72,7 @@ dnl ---------------------------------------------------------------------------
 
 dnl setting Damien's libraries
 DAMIEN_CXXFLAGS='-I${top_srcdir}/lib/common/src -I${top_srcdir}/lib/containers/src -I${top_srcdir}/lib/netlib/src -I${top_srcdir}/lib/testunit/src '
-DAMIEN_LDADD='-L${top_srcdir}/lib/testunit -ltestunit -L${top_srcdir}/lib/netlib -lnetlib -L${top_srcdir}/lib/containers -lcontainers -L${top_srcdir}/lib/common -lcommon '
+DAMIEN_LDADD='-L${top_srcdir}/lib/testunit -ltestunit -L${top_srcdir}/lib/netlib -lnetlib -L${top_srcdir}/lib/containers -lcontainers -L${top_srcdir}/lib/common -lcommon -ltestunit'
 AC_SUBST(DAMIEN_CXXFLAGS)
 AC_SUBST(DAMIEN_LDADD)
 
@@ -195,6 +195,7 @@ AC_OUTPUT(Makefile
           include/Makefile
           utils/Makefile
           utils/delay/Makefile
+          tests/Makefile
           doc/Makefile
           doc/html/Makefile
          )

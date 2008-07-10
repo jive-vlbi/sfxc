@@ -36,14 +36,16 @@ public:
   typedef Input_node_types::Mark5_buffer_ptr            Output_buffer_ptr;
 
   Input_data_format_reader_tasklet(Data_format_reader_ptr reader,
-                        Data_frame &data);
+                                   Data_frame &data);
 
-	/// The main thread.
-	void do_execute();
-	void stop();
-	void fetch_next_time_interval();
+  ~Input_data_format_reader_tasklet();
 
-	/// set a time interval to process (after which the tasklet is blocking)
+  /// The main thread.
+  void do_execute();
+  void stop();
+  void fetch_next_time_interval();
+
+  /// set a time interval to process (after which the tasklet is blocking)
   /// The start and stop time are given in micro-seconds.
   void add_time_interval(uint64_t us_start_time, uint64_t us_stop_time);
 
@@ -102,11 +104,12 @@ private:
   Output_buffer_ptr                   output_buffer_;
 
 
-	/// The current interval to process
-	Time_interval current_interval_;
+  /// The current interval to process
+  Time_interval current_interval_;
 
-	/// Storing all the pending interval to process
-	Threadsafe_queue<Time_interval>     intervals_;
+
+  /// Storing all the pending interval to process
+  Threadsafe_queue<Time_interval>     intervals_;
 
 
 
@@ -120,9 +123,10 @@ private:
   QOS_MonitorSpeed monitor_;
 #endif // RUNTIME_STATISTIC
 
-	uint64_t data_read_;
-	Timer timer_read_;
-	Timer timer_allocate_;
+  uint64_t data_read_;
+  Timer timer_read_;
+  Timer timer_allocate_;
+  double last_duration_;
 
   const size_t n_bytes_per_input_word;
 };

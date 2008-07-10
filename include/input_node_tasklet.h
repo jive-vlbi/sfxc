@@ -48,11 +48,11 @@ public:
   ~Input_node_tasklet();
 
 
-	void start_tasklets();
-	void stop_tasklets();
-	void wait_termination();
+  void start_tasklets();
+  void stop_tasklets();
+  void wait_termination();
 
-	void do_execute();
+  void do_execute();
   void do_task();
   bool has_work();
 
@@ -85,7 +85,7 @@ public:
                        Data_writer_ptr_ data_writer);
 
 private:
-	ThreadPool pool_;
+  ThreadPool pool_;
 
   //  std::list<Time_slice>                time_slices_;
   Input_reader_tasklet_            reader_;
@@ -93,12 +93,16 @@ private:
 
   // Pointer because we can not copy construct the Integer_delay_tasklet_
   // because of the memory pool
-	std::vector<Integer_delay_tasklet_ *>  integer_delay_;
+  std::vector<Integer_delay_tasklet_ *>  integer_delay_;
   std::vector<Data_writer_tasklet_>    data_writers_;
 
   bool did_work;
 
-  Timer reader_timer_, integer_delay_timer_, channel_extractor_timer_, data_writers_timer_;
+  Timer timer_nothing_;
+  Timer timer_delaying_;
+  Timer timer_writing_;
+  Timer timer_rwriting_;
+
 
   Delay_table_akima delay_table;
 

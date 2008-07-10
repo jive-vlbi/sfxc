@@ -56,7 +56,7 @@ get_input_node_tasklet(boost::shared_ptr<Data_reader> reader,
 Input_node_tasklet::
 Input_node_tasklet(Input_reader_ptr_ reader_ptr,
                    Input_reader_::Data_frame &data)
-  : reader_(reader_ptr, data),
+    : reader_(reader_ptr, data),
     channel_extractor_(reader_ptr->size_data_block() /
                        reader_ptr->bytes_per_input_word(),
                        reader_ptr->bytes_per_input_word()),
@@ -75,12 +75,12 @@ add_time_interval(int32_t start_time, int32_t stop_time) {
   SFXC_ASSERT(!integer_delay_.empty());
   SFXC_ASSERT(integer_delay_[0] != NULL);
 
-	/// A new interval is added to the mark5 reader-tasklet. It is converted into
-	/// usec
+  /// A new interval is added to the mark5 reader-tasklet. It is converted into
+  /// usec
   reader_.add_time_interval(uint64_t(1000)*start_time, uint64_t(1000)*stop_time);
 
-	/// Each of the the integer-delay-correction module also need to be
-	/// configure with the same time interval to process.
+  /// Each of the the integer-delay-correction module also need to be
+  /// configure with the same time interval to process.
   for (size_t i=0; i < integer_delay_.size(); i++) {
     integer_delay_[i]->add_time_interval(uint64_t(1000)*start_time,
                                          uint64_t(1000)*stop_time);
@@ -171,18 +171,22 @@ Input_node_tasklet::~Input_node_tasklet() {
     data_writers_[i].empty_input_queue();
   }
 
-#if PRINT_TIMER
-  PROGRESS_MSG("Time mar4_reader:       " << reader_timer_.measured_time());
-  PROGRESS_MSG("Time integer_delay:     " << integer_delay_timer_.measured_time());
-  PROGRESS_MSG("Time channel_extractor: " << channel_extractor_timer_.measured_time());
-  PROGRESS_MSG("Time data_writers:      " << data_writers_timer_.measured_time());
-#endif
+  double total_duration = timer_nothing_.measured_time() +
+                          timer_delaying_.measured_time() +
+                          timer_writing_.measured_time() +
+                          timer_rwriting_.measured_time();
+
+  double ratio1 = ((100.0*timer_nothing_.measured_time())/total_duration);
+  double ratio2 = ((100.0*timer_delaying_.measured_time())/total_duration);
+  double ratio3 = ((100.0*timer_writing_.measured_time())/total_duration);
+  double ratio4 = ((100.0*timer_rwriting_.measured_time())/total_duration);
+  PROGRESS_MSG( " efficiency:" << " ratio:(idle:"<< ratio1 <<"%, delay:"<< ratio2 <<"%, write:"<< ratio3 <<"%, r:"<< ratio4 <<"%)");
 }
 
 
 void
 Input_node_tasklet::wait_termination() {
-	wait( pool_ );
+  wait( pool_ );
 }
 
 void
@@ -194,22 +198,24 @@ Input_node_tasklet::start_tasklets() {
 
 void
 Input_node_tasklet::stop_tasklets() {
-	isrunning_=false;
-	reader_.stop();
-	channel_extractor_.stop();
+  isrunning_=false;
+  reader_.stop();
+  channel_extractor_.stop();
 }
 
 
 void
 Input_node_tasklet::
-do_execute()
-{
+do_execute() {
   DEBUG_MSG(__PRETTY_FUNCTION__ << ":: ENTER");
 
   while ( has_work() || isrunning_ ) {
+
     do_task();
     if ( !did_work) {
+      timer_nothing_.resume();
       usleep(100000);
+      timer_nothing_.stop();
     } else {//DEBUG_MSG(__PRETTY_FUNCTION__<< ":: WORKED");
     }
   }
@@ -224,7 +230,7 @@ do_task() {
 
   RT_STAT( dotask_state_.begin_measure() );
 
-  integer_delay_timer_.resume();
+  //timer_delaying_.resume();
   RT_STAT(integerdelay_state_.begin_measure() );
   for (size_t i=0; i<integer_delay_.size(); i++) {
     SFXC_ASSERT(integer_delay_[i] != NULL);
@@ -236,19 +242,21 @@ do_task() {
     }
   }
   RT_STAT(integerdelay_state_.end_measure(1));
-  integer_delay_timer_.stop();
+  //timer_delaying_.stop();
 
-
-  data_writers_timer_.resume();
+  //timer_writing_.resume();
   RT_STAT( outputwriter_state_.begin_measure() );
   for (size_t i=0; i<data_writers_.size(); i++) {
     while (data_writers_[i].has_work()) {
+      //timer_rwriting_.resume();
       data_writers_[i].do_task();
+      //timer_rwriting_.stop();
+
       did_work = true;
     }
   }
   RT_STAT( outputwriter_state_.end_measure(1) );
-  data_writers_timer_.stop();
+  //timer_writing_.stop();
 
   RT_STAT( dotask_state_.end_measure(1) );
 }
