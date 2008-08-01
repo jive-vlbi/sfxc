@@ -1,14 +1,19 @@
-import struct, os
+import struct, os, time, datetime
+import simplejson, glob
+import TranslationNode_vex as vextools
+
 SEEK_BEG = 0
 SEEK_CUR = 1
 SEEK_END = 2
 
 import datetime, time, math
 
+conf =  simplejson.load(file('service_conf.js'))
+
 def strptime(s, f):
     return datetime.datetime(*(time.strptime(s, f)[0:6]))
 
-def getsize(f):
+def getfilesize(f):
     pos = f.tell()
     f.seek(0, SEEK_END)
     end = f.tell()
@@ -39,20 +44,50 @@ def fromLong(l):
 def formatTime(t):
     return t.strftime("%Yy%jd%Hh%Mm%S.")+("%04d" % (t.microsecond//100))+'s'
 
-class Mark5Handler(object):
-    def __init__(self, f, timeoffset=0, dataoffset=0):
-        self.f = f
-        self.fsize = getsize(f)
+# /data4/sfxc/scans/n07c1/m5a + ef =>
+
+# n07c1_ef_no0101.m5a  
+# n07c1_ef_no0117.m5a  
+# n07c1_ef_no0119.m5a  
+
+blockSize = conf["block_size"]
+
+class Mark5Emulator(object):
+    def __init__(self, experiment_name, station, vex):
+        mark5scansPath = conf["mark5scansPath"]
+        self.vex = vex
+        self.fns = glob.glob(os.path.join(mark5scansPath, 
+                               "%s/m5a/%s_%s_*" % (experiment_name.lower(), 
+                                                   experiment_name.lower(),
+                                                   station.lower())))
+        self.handlers = [Mark5ScanHandler(fn) for fn in self.fns]
+    def getScanStart(self, scan):
+        return self.vex['SCHED'][scan]['start']
+    def getChunksByTime(self, oFilename, chunk_start, chunk_end):
+        for h in self.handlers:
+            print datetime.datetime.fromtimestamp(chunk_start), \
+                datetime.datetime.fromtimestamp(chunk_end), h.reftime, h.tinterval
+            if (h.reftime < datetime.datetime.fromtimestamp(chunk_start) and
+                datetime.datetime.fromtimestamp(chunk_end) < h.endtime):
+                break
+        else:
+            raise RuntimeError, "Chunk not inside a scan"
+        return h.getChunksByTime(oFilename, chunk_start, chunk_end)
+    def disconnect(self):
+        pass
+
+class Mark5ScanHandler(object):
+    def __init__(self, fn):
+        self.fn = fn
+        self.f = file(fn)
+        self.fsize = getfilesize(self.f)
         self.state = 'unknown'
-        self.timeoffset = timeoffset
-        self.dataoffset = dataoffset
         self.wordsize = self.getWordSize()
-        reftime, refpos, self.tinterval = self.getReferenceTime()
+        self.reftime, self.refpos, self.tinterval = self.getReferenceTime()
         self.datarate = int(1000000* # microseconds -> seconds
                             20000.0*self.wordsize/ # framesize
                             (toLong(self.tinterval)))
-        self.reftime = reftime 
-        self.refpos = refpos # - dataoffset?
+        self.endtime = self.reftime + datetime.timedelta(seconds=self.fsize/self.datarate)
     def timeToByte(self, t):
         return self.refpos+(t-time.mktime(self.reftime.timetuple()))*self.datarate
     def getWordSize(self):
@@ -123,7 +158,12 @@ class Mark5Handler(object):
         self.f.seek(offset, SEEK_CUR)
         self.state = 'startOfHeader'
     ## Husseyin's interface below
-    def get_chunks(self, fileName, blockSize, chunkSize, startPosition):
+    def getChunksByTime(self, filename, chunk_start, chunk_end):
+        startPosition = self.timeToByte(chunk_start)
+        chunk_real_size = int(self.datarate*(chunk_end-chunk_start))
+        self.get_chunks(filename, chunk_real_size, startPosition)
+        return chunk_real_size
+    def get_chunks(self, fileName, chunkSize, startPosition):
         of = open(fileName, "w")
         self.f.seek(startPosition)
         pos = startPosition
@@ -136,30 +176,7 @@ class Mark5Handler(object):
             of.write(data)
             pos += len(data)
 
-if __name__=='__main__':
-    f = open("/data4/sfxc/scans/n08c1/m5a/n08c1_wb_no0017")
-    mk5 = Mark5Handler(f)
-
-    times = []
-    poses = []
-    for i in range(20):
-        poses.append(f.tell())
-        dt = mk5.extractDatetime()
-        times.append(dt)
-        try:
-            mk5.skipData()
-        except EOFError:
-            break
-    for t, p in zip(times, poses):
-        t1 = mk5.bytes_starting_position(p)
-        print t, p, t1
-    size = 40*1024
-    start = 1024
-    fn = "chunk1"
-    mk5.get_chunks("chunk1", 4096, size, start)
-    f.seek(start)
-    s1 = f.read(size)
-    f2 = open(fn)
-    s2 = f2.read(size)
-    if s1!=s2:
-        raise RuntimeError, "chunking fails"
+if __name__=="__main__":
+    m = Mark5Emulator("n08c1", "wb", "")
+    h = m.handlers[0]
+    print h.reftime, h.tinterval

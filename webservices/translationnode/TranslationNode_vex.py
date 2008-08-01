@@ -6,6 +6,7 @@ that are (roughly) a given size.
 """
 
 from Vex import Vex as AntlrVex
+import time
 from time import strptime, strftime, mktime, localtime
 
 # Conversion factors for sample rates
@@ -100,7 +101,19 @@ MODE and STATION."""
         return len(_freq[freq].getall('chan_def'))
 
 def parse_vex_time(vex_time):
-    return mktime(strptime(vex_time, "%Yy%jd%Hh%Mm%Ss"))
+    return time.mktime(time.strptime(vex_time, "%Yy%jd%Hh%Mm%Ss"))
 
 def format_vex_time(t): 
-    return strftime("%Yy%jd%Hh%Mm%Ss", localtime(t))
+    return time.strftime("%Yy%jd%Hh%Mm%Ss", time.localtime(t))
+
+import re
+def parseFractionalTime(s):
+    ms = re.search("\.(\d{4})s", s)
+    if not ms is None:
+        ms = float("0." + ms.group(1))
+        s = re.sub("\.\d{4}","", s)
+    else:
+        ms = 0.0
+    t = time.mktime(time.strptime(s, "%Yy%jd%Hh%Mm%Ss")) + ms
+    return t
+    

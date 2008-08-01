@@ -51,5 +51,8 @@ class Mark5(object):
 
 	f.close()
 	tn.close()
+    def disconnect(self):
+	tn = telnetlib.Telnet(ipMark5, portMark5)
+	tn.write("disk2net=disconnect\n")
 
     
