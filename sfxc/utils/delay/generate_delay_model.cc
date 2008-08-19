@@ -203,7 +203,7 @@ int initialise_data(const char *vex_filename,
   if (vex.get_root_node()["ANTENNA"][site_name]["axis_type"][0]->to_string()=="az")
     station_data.axis_type=3;
   if (vex.get_root_node()["ANTENNA"][site_name]["axis_type"][0]->to_string()=="ha")
-    station_data.axis_type=4;
+    station_data.axis_type=1;
 
   station_data.axis_offset =
     vex.get_root_node()["ANTENNA"][site_name]["axis_offset"]->to_double_amount("m");
