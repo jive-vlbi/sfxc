@@ -22,7 +22,7 @@ struct Station_data {
 
   // EOP information.
   double tai_utc; // s
-  long   eop_ref_epoch; // julian day
+  double eop_ref_epoch; // julian day
   int    num_eop_points;
   double ut1_utc[10];  // sec
   double x_wobble[10]; // asec
