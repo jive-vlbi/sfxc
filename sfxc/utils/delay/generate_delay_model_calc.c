@@ -7,11 +7,6 @@
   authors    : RHJ Oerlemans, M Kettenis
 
   dependencies: files ocean.dat tilt.dat and DE405_le.jpl should be in $HOME/bin.
-
-
-  TODO RHJO
-  1) eop_ref_epoch (Julian Day) in double or long?
-
 */
 
 #include <generate_delay_model.h>
@@ -38,6 +33,7 @@ int interval = 0;   // Interval number in the current scan
 
 // Calculated delay.
 double delay[2] = { NAN }; //sec
+double uvw[3];
 
 
 
@@ -113,7 +109,7 @@ get4(const char *name, double *value, short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "SITEZENS", 8) == 0) {
-    assert(*n1 == 2); 
+    assert(*n1 == 2);
     value[0] = 0.0;
     value[1] = 0.0;
     *err = 0;
@@ -126,8 +122,8 @@ get4(const char *name, double *value, short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "SITERECS", 8) == 0) {
-    assert(*n1 == 3); 
-    assert(*n2 == 2); 
+    assert(*n1 == 3);
+    assert(*n2 == 2);
     value[0] = 0.0;
     value[1] = 0.0;
     value[2] = 0.0;
@@ -159,8 +155,8 @@ get4(const char *name, double *value, short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "STAR2000", 8) == 0) {
-    assert(*n1 == 2); 
-    assert(*n2 == 1); 
+    assert(*n1 == 2);
+    assert(*n2 == 1);
     value[0] = scan_data[scan_nr].ra;
     value[1] = scan_data[scan_nr].dec;
     *err = 0;
@@ -168,7 +164,7 @@ get4(const char *name, double *value, short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "FUT1 INF", 8) == 0) {
-    assert(*n1 == 4); 
+    assert(*n1 == 4);
     value[0] = station_data.eop_ref_epoch;
     value[1] = 1.0;
     value[2] = station_data.num_eop_points;
@@ -178,7 +174,7 @@ get4(const char *name, double *value, short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "FUT1 PTS", 8) == 0) {
-    assert(*n1 == station_data.num_eop_points); 
+    assert(*n1 == station_data.num_eop_points);
     for (i = 0; i < station_data.num_eop_points; i++)
       value[i] = station_data.tai_utc - station_data.ut1_utc[i];
     *err = 0;
@@ -186,7 +182,7 @@ get4(const char *name, double *value, short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "FWOB INF", 8) == 0) {
-    assert(*n1 == 3); 
+    assert(*n1 == 3);
     value[0] = station_data.eop_ref_epoch;
     value[1] = 1.0;
     value[2] = station_data.num_eop_points;
@@ -195,8 +191,8 @@ get4(const char *name, double *value, short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "FWOBX&YT", 8) == 0) {
-    assert(*n1 == 2); 
-    assert(*n2 == station_data.num_eop_points); 
+    assert(*n1 == 2);
+    assert(*n2 == station_data.num_eop_points);
     for (i = 0; i < station_data.num_eop_points; i++) {
       value[i * 2] = station_data.x_wobble[i] * 1000.;
       value[i * 2 + 1] = station_data.y_wobble[i] * 1000.;
@@ -206,7 +202,7 @@ get4(const char *name, double *value, short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "TAI- UTC", 8) == 0) {
-    assert(*n1 == 3); 
+    assert(*n1 == 3);
     value[0] = station_data.eop_ref_epoch;
     value[1] = station_data.tai_utc;
     value[2] = 0.0;
@@ -215,7 +211,7 @@ get4(const char *name, double *value, short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "A1 - TAI", 8) == 0) {
-    assert(*n1 == 3); 
+    assert(*n1 == 3);
     value[0] = station_data.eop_ref_epoch;
     value[1] = 0.0;
     value[2] = 0.0;
@@ -260,8 +256,8 @@ geta(const char *name, char value[][8], short *n1, short *n2, short *n3,
      short *ndo, short *err)
 {
   if (strncmp(name, "SITNAMES", 8) == 0) {
-    assert(*n1 == 4); 
-    assert(*n2 == 2); 
+    assert(*n1 == 4);
+    assert(*n2 == 2);
     strncpy(value[0], "C_OF_E", sizeof(value[0]));
     strncpy(value[1], station_data.site_name, sizeof(value[1]));
     *err = 0;
@@ -269,24 +265,24 @@ geta(const char *name, char value[][8], short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "STRNAMES", 8) == 0) {
-    assert(*n1 == 4); 
-    assert(*n2 == 1); 
+    assert(*n1 == 4);
+    assert(*n2 == 1);
     strncpy(value[0], scan_data[scan_nr].source_name, sizeof(value[0]));
     *err = 0;
     return;
   }
 
   if (strncmp(name, "EOPSCALE", 8) == 0) {
-    assert(*n1 == 4); 
-    assert(*n2 == 1); 
+    assert(*n1 == 4);
+    assert(*n2 == 1);
     strncpy(value[0], "UTC     ", 8);
     *err = 0;
     return;
   }
 
   if (strncmp(name, "BASELINE", 8) == 0) {
-    assert(*n1 == 4); 
-    assert(*n2 == 2); 
+    assert(*n1 == 4);
+    assert(*n2 == 2);
     strncpy(value[0], "C_OF_E", sizeof(value[0]));
     strncpy(value[1], station_data.site_name, sizeof(value[1]));
     *err = 0;
@@ -294,8 +290,8 @@ geta(const char *name, char value[][8], short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "STAR ID", 7) == 0) {
-    assert(*n1 == 4); 
-    assert(*n2 == 1); 
+    assert(*n1 == 4);
+    assert(*n2 == 1);
     strncpy(value[0], scan_data[scan_nr].source_name, sizeof(value[0]));
     *err = 0;
     return;
@@ -316,7 +312,7 @@ geti(const char *name, short *value, short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "AXISTYPS", 8) == 0) {
-    assert(*n1 == 2); 
+    assert(*n1 == 2);
     value[0] = 0;
     value[1] = station_data.axis_type;
     *err = 0;
@@ -324,15 +320,15 @@ geti(const char *name, short *value, short *n1, short *n2, short *n3,
   }
 
   if (strncmp(name, "INTRVAL4", 8) == 0) {
-    assert(*n1 == 5); 
-    assert(*n2 == 2); 
+    assert(*n1 == 5);
+    assert(*n2 == 2);
     *err = 1;
     return;
   }
 
   if (strncmp(name, "INTERVAL", 8) == 0) {
-    assert(*n1 == 5); 
-    assert(*n2 == 2); 
+    assert(*n1 == 5);
+    assert(*n2 == 2);
     *err = 1;
     return;
   }
@@ -367,28 +363,25 @@ void
 put4(const char *name, double *value, short *n1, short *n2, short *n3)
 {
   if (strncmp(name, "CONSNDEL", 8) == 0) {
-    assert (*n1 == 2); 
+    assert (*n1 == 2);
     delay[0] = (value[0] + value[1]) * 1e-6;
     return;
   }
 
   if (strncmp(name, "CONSNRAT", 8) == 0) {
-    assert (*n1 == 1); 
+    assert (*n1 == 1);
     delay[1] = value[0] * 1e-6;
     return;
   }
 
-/*#if 0*/
   if (strncmp(name, "UVW", 3) == 0) {
-    assert (*n1 == 3); 
-    assert (*n2 == 2); 
-		fwrite(&scan_data[scan_nr].sec_of_day,1,sizeof(double), output_file);
-		fwrite(value,3,sizeof(double), output_file);
-//    fprintf(output_file,"%15.14e %15.14e %15.14e %15.14e", 
-//		       scan_data[scan_nr].sec_of_day, value[0], value[1], value[2]);
+    assert (*n1 == 3);
+    assert (*n2 == 2);
+    uvw[0] = value[0];
+    uvw[1] = value[1];
+    uvw[2] = value[2];
     return;
   }
-/*#endif*/
 
 #if 0
   printf("%s: %.8s(%d, %d, %d)\n", __func__, name, *n1, *n2, *n3);
@@ -427,46 +420,44 @@ stai(void)
 
 
 //moves to the next record and writes delay to file 
-void mvrec(short *ntoc, short *kmode, short *knum, short *err)
+void
+mvrec(short *ntoc, short *kmode, short *knum, short *err)
 {
+  double offset, total_delay;
 
-  double offset;
-  
   if (!isnan(delay[0])) {
-    //delay[0]=delay, delay[1]=delay_rate
-    //delay record for "Huygens type" delay correction
-    offset = station_data.clock_early + 
-      station_data.clock_rate*((scan_data[scan_nr].scan_start
-                                + interval*delta_time
-                                - station_data.clock_epoch));
-		double delaytime = delay[0]+offset;
-		
-		fwrite(&delaytime, 1, sizeof(double), output_file);
-//    fprintf(output_file," %15.14e\n", 
-//            delay[0] + offset);
+    offset = station_data.clock_early +
+      station_data.clock_rate * (scan_data[scan_nr].scan_start
+				 + interval * delta_time
+				 - station_data.clock_epoch);
+    total_delay = delay[0] + offset;
 
-//    delay[0] = NAN;
-  }
+    fwrite(&scan_data[scan_nr].sec_of_day, 1, sizeof(double), output_file);
+    fwrite(uvw, 3, sizeof(double), output_file);
+    fwrite(&total_delay, 1, sizeof(double), output_file);
 
-  if (interval < scan_data[scan_nr].nr_of_intervals) {
-	 delay[0] = NAN;
-    *err = 0;
     interval++;
     scan_data[scan_nr].sec = 
       scan_data[scan_nr].sec + delta_time ;
     scan_data[scan_nr].sec_of_day = 
       scan_data[scan_nr].sec_of_day + delta_time ;
+  }
+
+  if (interval < scan_data[scan_nr].nr_of_intervals) {
+    delay[0] = NAN;
+    *err = 0;
     return;
   }
-  double emptyline[]={0,0,0,0,0};
-  fwrite(emptyline,5,sizeof(double),output_file);
-//  fprintf(output_file,"0 0 0 0 0\n");
+
+  double empty[] = { 0, 0, 0, 0, 0 };
+  fwrite(empty, 5, sizeof(double), output_file);
   delay[0] = NAN;
 
   *err = 1;
 }
 
-void wridr(void)
+void
+wridr(void)
 {
   // UNUSED
 }
@@ -614,34 +605,6 @@ finis(void)
 {
 }
 
-
-//below this line developed by Ruud Oerlemans
-
-void 
-get_eop_data(FILE* ctrlP, int num_eop_points) 
-{
-  int i;
-  char contents[128],key[64],value[64];
-
-  for (i=0; i<num_eop_points; i++) {
-    fgets(contents,128,ctrlP);
-    sscanf(contents,"%s %s\n",key,value);
-    station_data.ut1_utc[i]=atof(value);        
-  }
-
-  for (i=0; i<num_eop_points; i++) {
-    fgets(contents,128,ctrlP);
-    sscanf(contents,"%s %s\n",key,value);
-    station_data.x_wobble[i]=atof(value);        
-  }
-
-  for (i=0; i<num_eop_points; i++) {
-    fgets(contents,128,ctrlP);
-    sscanf(contents,"%s %s\n",key,value);
-    station_data.y_wobble[i]=atof(value);        
-  }
-}
-
 //below this line developed by Nico Kruithof
 
 void generate_delay_tables(FILE *output, char *stationname) {
@@ -649,11 +612,9 @@ void generate_delay_tables(FILE *output, char *stationname) {
 
   assert(stationname[2]=='\0');
 
-  int32_t header_size=3;
+  int32_t header_size = 3;
   fwrite(&header_size, 1, sizeof(int32_t), output_file);
   fwrite(stationname, 3, sizeof(char), output_file);
-
-//fprintf(output_file, "%s\n", argv[2]);	
 
   // scan_nr is a global variable
   for (scan_nr=0; scan_nr<n_scans; scan_nr++) {
