@@ -58,7 +58,7 @@
 #ifdef SFXC_INVALIDATE_SAMPLES
 //#  define SFXC_CHECK_INVALID_SAMPLES
 #  ifdef SFXC_CHECK_INVALID_SAMPLES
-  // Used to fill the random data for testing. Should be char(0) or char(-1)
+// Used to fill the random data for testing. Should be char(0) or char(-1)
 #    define INVALID_PATTERN          char(-1)
 #  endif
 #endif
@@ -68,9 +68,18 @@
 #define YELLOW(str) "[\033[33m"+str+"\033[30m]"
 #define CYAN(str) "[\033[36m"+str+"\033[30m]"
 
+/// This is the MPI rank or the processID
+extern int RANK_OF_NODE; 
+// Rank of the current node
+
 #ifdef USE_MPI
-extern int RANK_OF_NODE; // Rank of the current node
 #include "sfxc_mpi.h"
+#endif //USE_MPI
+
+#ifdef USE_MPI
+  #define IF_MPI(a) (a)
+#else
+  #define IF_MPI(a) 
 #endif //USE_MPI
 
 #ifdef SFXC_PRINT_DEBUG
@@ -79,13 +88,13 @@ extern int RANK_OF_NODE; // Rank of the current node
     << __FILE__ << ", " << __LINE__ << ": " \
     << msg
 #define DEBUG_MSG(msg) \
-    { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
+    { IF_MPI(if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; ) \
       std::cout << FORMAT_MSG(msg) << std::endl << std::flush; }
 #define DEBUG_MSG_RANK(rank, msg) \
-    { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
+    { IF_MPI( if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; ) \
       if (RANK_OF_NODE == rank) { std::cout << FORMAT_MSG(msg) << std::endl << std::flush; } }
 #define DEBUG_MSG_MPI(msg) \
-    { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
+    { IF_MPI( if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; )\
       get_log_writer()(0) << FORMAT_MSG(msg) << std::endl << std::flush; }
 #else
 #define DEBUG_MSG(msg)
@@ -194,6 +203,16 @@ void create_directory(const std::string& path);
 inline double toMB(unsigned int size) {
   return (1.0*size)/(1024*1024);
 }
+
+std::string itoa (int32_t n);
+
+#ifndef MIN
+#define MIN(x, y) (((x)<(y))?(x):(y))
+#endif // MIN
+
+#ifndef MAX
+#define MAX(x, y) (((x)>(y))?(x):(y))
+#endif // MAX
 
 
 #endif // UTILS_H

@@ -11,14 +11,33 @@ Data_reader_blocking::Data_reader_blocking(Data_reader *rdr) {
 int Data_reader_blocking::do_get_bytes(size_t size, char* buffer) {
   int numretry = 0;
   size_t remains = size;
+
+  /// Loop until the file is ended or that there is more requested byte
+  /// unsatisfiad.
   while ( !eof() && remains != 0 ) {
-    size_t read = m_reader->get_bytes(remains, buffer+ (size-remains) );
-    remains -= read;
-    numretry++;
-    if ( numretry >= 100 ) {
-      numretry = 100;
+    int read = m_reader->get_bytes(remains, buffer+ (size-remains) );
+    if ( read >= 0 ) {
+      remains -= read;
+
+      /// For each incomplete read request we increase a counter
+      numretry++;
+      if ( numretry >= 100 ) {
+        numretry = 100;
+      }
+
+      /// We may even sleep a bit in case the system is really slow.
+      if ( remains != 10 ) {
+        usleep( numretry*100 );
+      }
+    } else if ( read == 0 && numretry == 100 ) {
+      /// Check if the file is closed and that this would explain that
+      /// it is not possible to read data anymore. (this may be possible with
+      /// if the data_reader is a socket.
+      if ( eof() ) return 0;
+    } else {
+      /// Return the error value
+      return read;
     }
-    if ( remains != 0 ) usleep(numretry*100);
   }
   return size-remains;
 }

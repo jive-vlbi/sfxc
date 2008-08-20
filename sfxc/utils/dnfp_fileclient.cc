@@ -18,34 +18,43 @@
 #include "connexion_listener_thread.h"
 #include "monitor.h"
 #include "exception_common.h"
-
-
+#include "rttimer.h"
 
 class Client_reader  : public Thread {
 public:
   Client_reader(Data_reader_dnfp* reader) {
-    m_buffersize = 100000;
+    m_buffersize =1000000;
     m_buffer = new char[m_buffersize];
-    //m_monitor.set_name("data-reader");
     m_breader = new Data_reader_blocking(reader);
   }
 
   void do_execute() {
+    RTTimer timer;
     uint64_t totalread=0;
-    while ( !m_breader->eof() ) {
-      //m_monitor.begin_measure();
+    uint64_t begin,end;
+    int state=0;
+    double lasttime=0;
+    try {
+      timer.start();
+      while ( !m_breader->eof() ) {
+        int val = m_breader->get_bytes(m_buffersize, m_buffer);
+        totalread += val;
+        if ( timer.measured_time()-lasttime >= 1 ) {
+          std::cout << " read:" << 1.0*toMB(totalread) << "MB, speed:"
+          << 1.0*toMB(totalread)/timer.measured_time()
+          << "MB/sec" << std::endl;
+          lasttime = timer.measured_time();
+        }
 
-      int val = m_breader->get_bytes(m_buffersize, m_buffer);
-      assert(val == m_buffersize);
-
-      totalread += val;
-      //m_monitor.end_measure(val);
-
-      std::cout << "reading speed:" << totalread << std::endl;
+      }
+    } catch (Exception& e) {
+      std::cerr << e << std::endl;
     }
 
     std::cout << "EOF" << std::endl;
   }
+
+  typedef Client_reader* Client_reader_ptr;
 
 private:
   Data_reader* m_breader;
@@ -54,17 +63,11 @@ private:
   QOS_MonitorSpeed m_monitor;
 };
 
-typedef Client_reader* Client_reader_ptr;
 
 void print_usage(char* appname) {
   std::cerr << "Syntax: "<< appname << "  dnfp://<host>:<port>/<fileid>" << std::endl;
 }
 
-
-
-/*
-  Client for the SC07 demo
-*/
 int main(int argc, char** argv) {
   try {
     InterfaceIP* interface = Network::get_any_interface();

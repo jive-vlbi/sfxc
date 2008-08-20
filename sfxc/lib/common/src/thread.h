@@ -53,7 +53,11 @@ public:
   *****************************************************************************/
   virtual void do_execute() = 0;
 
-	void set_cancel_state(bool state);
+  void set_cancel_state(bool state);
+
+  bool isrunning() {
+    return isrunning_;
+  }
 
 protected:
   Thread();
@@ -128,18 +132,16 @@ void wait(Thread& thread);
 
 
 template<class Th>
-class SimpleThread : public Thread
-{
-	Th& object_;
+class SimpleThread : public Thread {
+  Th& object_;
 
-	public:
-		SimpleThread(Th& object) : object_(object) {};
+public:
+  SimpleThread(Th& object) : object_(object) {};
 
-		void do_execute()
-		{
-			while(isrunning_){
-					object_.do_task();
-			}
-		}
+  void do_execute() {
+    while (isrunning_) {
+      object_.do_task();
+    }
+  }
 };
 #endif // THREAD_HH

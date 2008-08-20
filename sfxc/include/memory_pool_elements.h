@@ -13,10 +13,7 @@
 #include "utils.h"
 #include <vector>
 
-// Ugly dependency to fftw3...
-// needed for fftw_malloc that return
-// optimized alignment.
-#include <fftw3.h>
+#include "align_malloc.h"
 
 
 /// Use this class if you want to allocate large number of element
@@ -37,26 +34,26 @@ public:
   ~Memory_pool_vector_element() {
     // DEBUG_MSG("Deleting array element of size " << size());
     if (buffer_ != NULL) {
-      fftw_free(buffer_);
+      aligned_free(buffer_);
     }
   }
 
   void resize(size_t size) {
     if ( size != size_ ) {
       if ( buffer_ == NULL ) {
-        // fftw_malloc insure that the allocated data
+        // aligned_malloc insure that the allocated data
         // is nicely aligned.
-        buffer_ = static_cast<T*>( fftw_malloc( sizeof(T)*size ) );
+        buffer_ = static_cast<T*>( aligned_malloc( sizeof(T)*size ) );
         size_ = size;
       } else {
         T* oldbuffer = buffer_;
-        buffer_ = static_cast<T*>( fftw_malloc( sizeof(T)*size ) );
+        buffer_ = static_cast<T*>( aligned_malloc( sizeof(T)*size ) );
         size_t min_size = std::min(size_,size);
         size_ = size;
 
         memcpy(buffer_, oldbuffer, sizeof(T)*min_size);
 
-        fftw_free(oldbuffer);
+        aligned_free(oldbuffer);
       }
     }
   }
@@ -96,13 +93,13 @@ public:
   }
 
   Memory_pool_fixed_size_element() {
-    // fftw_malloc insure that the allocated data
+    // aligned_malloc insure that the allocated data
     // is nicely aligned.
-    buffer_ = static_cast<T*>( fftw_malloc(sizeof(T)*N) );
+    buffer_ = static_cast<T*>( aligned_malloc(sizeof(T)*N) );
   }
 
   ~Memory_pool_fixed_size_element() {
-    fftw_free(buffer_);
+    aligned_free(buffer_);
   }
 
   inline T& operator[](int i) {

@@ -21,7 +21,7 @@ dnl Needed for the optimized channel extractor
 AC_CHECK_LIB(dl, dlopen)
 
 dnl setting flags for sfxc
-SFXC_CXXFLAGS='-I${top_srcdir}/include -DUSE_MPI'
+SFXC_CXXFLAGS='-I${top_srcdir}/include'
 SFXC_LDADD=' '
 
 AC_CHECK_FUNCS(sincos)
@@ -157,6 +157,14 @@ if test $USE_DEBUG = "yes"; then
   CXXFLAGS="$CXXFLAGS -g -DSFXC_PRINT_DEBUG -rdynamic"
 fi
 
+AC_ARG_ENABLE(nompi,
+              [   --disable-mpi          Compile without the dependency to MPI],
+              USE_MPI="$nompi", USE_DEBUG="yes")
+
+if test $USE_MPI = "yes"; then
+  CFLAGS="$CFLAGS -DUSE_MPI"
+  CXXFLAGS="$CXXFLAGS -DUSE_MPI"
+fi
 
 dnl progress
 AC_ARG_ENABLE(progress,

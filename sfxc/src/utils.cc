@@ -38,6 +38,8 @@ void abort_sfxc(const char *file, int line, const char* message) {
 
   exit(-1);
 }
+#else
+int RANK_OF_NODE = getpid(); // Rank of the current node
 #endif // USE_MPI
 
 void abort(const char *file, int line, const char* message) {
@@ -175,5 +177,30 @@ void create_directory(const std::string& path) {
   if ( mkdir(path.c_str(), S_IRWXU) < 0 ) {
     MTHROW(std::string("Unable to create a directory :")+path+" because of:"+strerror(errno));
   }
+}
+
+std::string itoa (int32_t n) {
+  char s[17];
+  std::string u;
+
+  if (n < 0) { //turns n positive
+    n = (-1 * n);
+    u = "-"; //adds '-' on result string
+  }
+
+  int i=0; //s counter
+
+  do {
+    s[i++]= n%10 + '0'; //conversion of each digit of n to char
+    n -= n%10; //update n value
+  }
+
+  while ((n /= 10) > 0);
+
+  for (int j = i-1; j >= 0; j--) {
+    u += s[j]; //building our string number
+  }
+
+  return u;
 }
 
