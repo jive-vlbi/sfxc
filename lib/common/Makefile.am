@@ -12,6 +12,7 @@ libcommon_a_SOURCES = \
   src/condition.cc \
   src/exception_indexoutofbound.cc \
   src/signal_handler.cc \
-  src/monitor.cc
+  src/monitor.cc \
+  src/align_malloc.cc 
 
 pkginclude_HEADERS = src/*.h

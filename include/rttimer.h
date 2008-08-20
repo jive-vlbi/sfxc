@@ -1,41 +1,52 @@
-#ifndef TIMER_H
-#define TIMER_H
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * Copyright (c) 2007 University of Amsterdam (Netherlands)
+ * All rights reserved.
+ *
+ * Author(s): Damien Marchal <dmarchal@science.uva.nl>, 2008
+ *
+ *  This file contains:
+ *     - A real-time timer with the same interface as the timer.h. The difference
+ *       is that timer.h return the amount of CPU time the process had while
+ *       rttimer.h return the real clock wall time.
+ */
+#ifndef RTTIMER_H
+#define RTTIMER_H
 
 #include "utils.h"
-
-#include <ctime>
 #include <iostream>
 #include <iomanip>
+#include <unistd.h>
+#include <time.h>
+#include <sys/time.h>
+#include <ctime>
 
-class Timer {
-  friend std::ostream& operator<<(std::ostream& os, const Timer& t);
+class RTTimer {
+  friend std::ostream& operator<<(std::ostream& os, const RTTimer& t);
 
 private:
   bool running;
-  clock_t start_clock;
-  time_t start_time;
-  double acc_time;
 
-  double elapsed_time() const;
+  uint64_t start_time;
+  uint64_t acc_time;
+
+  uint64_t elapsed_time() const;
 
   char *name;
-
 public:
-  // 'running' is initially false.  A Timer needs to be explicitly started
+  // 'running' is initially false.  A RTTimer needs to be explicitly started
   // using 'start' or 'restart'
-  Timer()
-      : running(false), start_clock(0), start_time(0), acc_time(0), name(NULL) {}
-  Timer(const char * name_)
-      : running(false), start_clock(0), start_time(0), acc_time(0) {
+  RTTimer()
+      : running(false), start_time(0), acc_time(0), name(NULL) {}
+  RTTimer(const char * name_)
+      : running(false), start_time(0), acc_time(0) {
     int size = strlen(name_);
     name = (char*)malloc((size+1)*sizeof(char));
     strncpy(name, name_, size+1);
   }
 
-  ~Timer() {
+  ~RTTimer() {
     if ((measured_time() != 0) && (name != NULL)) {
-      std::cout
-      << "Timer["<< RANK_OF_NODE << ", " << name << "]: "
+      std::cout << "RTTimer[" << name << "]: "
       << (*this) << std::endl;
     }
   }
@@ -47,8 +58,30 @@ public:
   void check(const char* msg = 0);
 
   double measured_time() const;
+
+private:
+  inline void getusec(uint64_t &utime) const {
+    struct timeval tv;
+    gettimeofday(&tv,0);
+    utime=tv.tv_sec*1000000;
+    utime+=tv.tv_usec;
+  }
+
+  inline uint64_t ticksPerSec(void) const {
+    return 1000000;
+  }
+
+  inline uint64_t ticksPerMSec(void) const {
+    return 1000000/1000;
+  }
+
+
+  inline double tickToSec(const uint64_t ticks) const {
+    return 1.0*ticks/ticksPerSec();
+  }
+
 }
-; // class Timer
+; // class RTTimer
 
 //===========================================================================
 // Return the total time that the timer has been in the "running"
@@ -56,20 +89,17 @@ public:
 // "short" time periods (less than an hour), the actual cpu time
 // used is reported instead of the elapsed time.
 
-inline double Timer::elapsed_time() const {
-  time_t acc_sec = time(0) - start_time;
-  if (acc_sec < 3600)
-    return (clock() - start_clock) / (1.0 * CLOCKS_PER_SEC);
-  else
-    return (1.0 * acc_sec);
-
-} // Timer::elapsed_time
+inline uint64_t RTTimer::elapsed_time() const {
+  uint64_t acc_sec;
+  getusec(acc_sec);
+  return acc_sec - start_time;
+}
 
 //===========================================================================
 // Start a timer.  If it is already running, let it continue running.
 // Print an optional message.
 
-inline void Timer::start(const char* msg) {
+inline void RTTimer::start(const char* msg) {
 // Print an optional message, something like "Starting timer t";
   if (msg) std::cout << msg << std::endl;
 
@@ -78,30 +108,28 @@ inline void Timer::start(const char* msg) {
 
 // Set timer status to running and set the start time
   running = true;
-  start_clock = clock();
-  start_time = time(0);
+  getusec(start_time);
 
-} // Timer::start
+} // RTTimer::start
 
 //===========================================================================
 // Turn the timer off and start it again from 0.  Print an optional message.
 
-inline void Timer::restart(const char* msg) {
+inline void RTTimer::restart(const char* msg) {
 // Print an optional message, something like "Restarting timer t";
   if (msg) std::cout << msg << std::endl;
 
 // Set timer status to running, reset accumulated time, and set start time
   running = true;
   acc_time = 0;
-  start_clock = clock();
-  start_time = time(0);
+  getusec(start_time);
 
-} // Timer::restart
+} // RTTimer::restart
 
 //===========================================================================
 // Turn the timer on again.  Print an optional message.
 
-inline void Timer::resume(const char* msg) {
+inline void RTTimer::resume(const char* msg) {
 // Print an optional message, something like "Restarting timer t";
   if (msg) std::cout << msg << std::endl;
 
@@ -110,15 +138,14 @@ inline void Timer::resume(const char* msg) {
 
   // Set timer status to running, reset accumulated time, and set start time
   running = true;
-  start_clock = clock();
-  start_time = time(0);
+  getusec(start_time);
 
-} // Timer::restart
+} // RTTimer::restart
 
 //===========================================================================
 // Stop the timer and print an optional message.
 
-inline void Timer::stop(const char* msg) {
+inline void RTTimer::stop(const char* msg) {
 // Print an optional message, something like "Stopping timer t";
   if (msg) std::cout << msg << std::endl;
 
@@ -126,37 +153,37 @@ inline void Timer::stop(const char* msg) {
   if (running) acc_time += elapsed_time();
   running = false;
 
-} // Timer::stop
+} // RTTimer::stop
 
 //===========================================================================
 // Print out an optional message followed by the current timer timing.
 
-inline void Timer::check(const char* msg) {
+inline void RTTimer::check(const char* msg) {
 // Print an optional message, something like "Checking timer t";
   if (msg) std::cout << msg << " : ";
 
   std::cout << "Elapsed time [" << std::setiosflags(std::ios::fixed )
   << std::setprecision(2)
-  << acc_time + (running ? elapsed_time() : 0) << "] seconds\n";
+  << tickToSec(acc_time + (running ? elapsed_time() : 0)) << "] seconds\n";
 
-} // Timer::check
+} // RTTimer::check
 
 //===========================================================================
 // Allow timers to be printed to ostreams using the syntax 'os << t'
 // for an ostream 'os' and a timer 't'.  For example, "cout << t" will
 // print out the total amount of time 't' has been "running".
 
-inline std::ostream& operator<<(std::ostream& os, const Timer& t) {
+inline std::ostream& operator<<(std::ostream& os, const RTTimer& t) {
   os << std::setprecision(2) << std::setiosflags(std::ios::fixed )
-  << t.acc_time + (t.running ? t.elapsed_time() : 0);
+  << tickToSec(t.acc_time + (t.running ? t.elapsed_time() : 0));
   return os;
 }
 
 //===========================================================================
 
 
-inline double Timer::measured_time() const {
-  return acc_time + (running ? elapsed_time() : 0);
+inline double RTTimer::measured_time() const {
+  return tickToSec(acc_time + (running ? elapsed_time() : 0) );
 }
-#endif // TIMER_H
+#endif // RTTIMER_H
 

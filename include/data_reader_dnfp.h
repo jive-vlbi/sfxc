@@ -37,7 +37,7 @@ public:
   // dnfp://serverip:port/Filename?protocol=[tcp|udp]
   Data_reader_dnfp(pInterfaceIP interface, const std::string url);
   Data_reader_dnfp(const std::string url);
-  ~Data_reader_dnfp(){};
+  ~Data_reader_dnfp() {};
 
   bool eof();
   bool can_read() {
@@ -47,22 +47,32 @@ public:
 
 private:
   void parse_url(const std::string url, String& server, String& port,
-                String& filename);
+                 String& filename);
   void connect(pInterfaceIP interface);
   void negociate();
   int do_get_bytes(size_t readb, char *buffer);
 
 
-  String m_filename;
-  String m_serverip;
-  String m_serverport;
-  String m_url;
+  String filename_;
+  String serverip_;
+  String serverport_;
+  String url_;
 
-  bool m_isEof;
+  String protocol_;
+  String udpport_;
+  String udpaddress_;
 
-  Data_writer_socket* m_writer;
-  Data_reader_socket* m_reader;
-  Data_reader_blocking* m_breader;
+  bool isEof_;
+
+  // These are the control connexions
+  Data_writer_socket* ctrlwriter_;
+  Data_reader_socket* ctrlreader_;
+  Data_reader_blocking* ctrlbreader_;
+
+  // These are the data connexions.
+  Data_writer* datawriter_;
+  Data_reader* datareader_;
+  Data_reader* databreader_;
 };
 
 

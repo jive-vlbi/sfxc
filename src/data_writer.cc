@@ -18,7 +18,7 @@ Data_writer::~Data_writer() {}
 
 size_t
 Data_writer::put_bytes(size_t nBytes, const char *buff) {
-  SFXC_ASSERT((data_slice==-1) || (nBytes <= (size_t)data_slice));
+  //SFXC_ASSERT((data_slice==-1) || (nBytes <= (size_t)data_slice));
   size_t result = do_put_bytes(nBytes, buff);
   _data_counter += (int64_t)result;
   data_slice -= result;

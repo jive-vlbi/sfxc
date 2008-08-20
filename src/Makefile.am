@@ -22,6 +22,7 @@ OBJ=\
   data_reader_dnfp.cc \
   data_reader_blocking.cc \
   data_reader_socket.cc \
+  data_reader_udp.cc \
   data_writer_socket.cc \
   data_reader_file.cc data_writer_file.cc \
   log_writer.cc log_writer_cout.cc \

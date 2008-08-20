@@ -36,6 +36,7 @@ extract_channelizer_SOURCES = \
   ../src/data_reader_factory.cc \
   ../src/data_reader_dnfp.cc \
 	../src/data_reader_socket.cc \
+	../src/data_reader_udp.cc \
 	../src/data_writer_socket.cc \
 	../src/data_reader_blocking.cc \
 	../src/channel_extractor_utils.cc \
@@ -48,6 +49,7 @@ dnfp_fileserver_SOURCES = \
    ../src/data_reader.cc \
    ../src/data_writer.cc \
    ../src/data_reader_file.cc \
+   ../src/data_reader_udp.cc \
    ../src/data_writer_socket.cc \
    ../src/data_reader_socket.cc \
    ../src/data_reader_blocking.cc \
@@ -59,6 +61,7 @@ dnfp_fileclient_SOURCES = \
    ../src/data_reader.cc \
    ../src/data_writer.cc \
    ../src/data_reader_file.cc \
+   ../src/data_reader_udp.cc \
    ../src/data_writer_socket.cc \
    ../src/data_reader_socket.cc \
    ../src/data_reader_blocking.cc  \
