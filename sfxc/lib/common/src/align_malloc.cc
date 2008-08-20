@@ -19,9 +19,14 @@
  */
 
 #include<stdlib.h>
-//#include "ifftw.h"
+#include<stdio.h>
+#include <sys/types.h>
+#include <stdint.h>             /* uintptr_t, maybe */
 
 /* ``kernel'' malloc(), with proper memory alignment */
+
+#define MIN_ALIGNMENT 16
+#define WITH_OUR_MALLOC16
 
 #if defined(HAVE_DECL_MEMALIGN) && !HAVE_DECL_MEMALIGN
 #  if defined(HAVE_MALLOC_H)
@@ -66,7 +71,6 @@ static void our_free16(void *p)
      if (p) free(*((void **) p - 1));
 }
 #endif
-
 
 void *aligned_malloc(size_t n)
 {
@@ -132,6 +136,7 @@ void *aligned_malloc(size_t n)
 #  endif
 
 #else /* !defined(MIN_ALIGNMENT) */
+     printf("Unaligned Malloc");
      p = malloc(n);
 #endif
 
