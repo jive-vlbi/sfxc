@@ -69,33 +69,39 @@
 #define CYAN(str) "[\033[36m"+str+"\033[30m]"
 
 /// This is the MPI rank or the processID
-extern int RANK_OF_NODE; 
+extern int RANK_OF_NODE;
 // Rank of the current node
 
 #ifdef USE_MPI
 #include "sfxc_mpi.h"
 #endif //USE_MPI
 
-#ifdef USE_MPI
-  #define IF_MPI(a) (a)
-#else
-  #define IF_MPI(a) 
-#endif //USE_MPI
 
 #ifdef SFXC_PRINT_DEBUG
 #define FORMAT_MSG(msg) \
     "#" << RANK_OF_NODE << " " \
     << __FILE__ << ", " << __LINE__ << ": " \
     << msg
+
+#ifdef USE_MPI
 #define DEBUG_MSG(msg) \
-    { IF_MPI(if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; ) \
+    { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
       std::cout << FORMAT_MSG(msg) << std::endl << std::flush; }
 #define DEBUG_MSG_RANK(rank, msg) \
-    { IF_MPI( if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; ) \
+    { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
       if (RANK_OF_NODE == rank) { std::cout << FORMAT_MSG(msg) << std::endl << std::flush; } }
 #define DEBUG_MSG_MPI(msg) \
-    { IF_MPI( if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; )\
+    { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
       get_log_writer()(0) << FORMAT_MSG(msg) << std::endl << std::flush; }
+#else // USE_MPI
+#define DEBUG_MSG(msg) \
+    { std::cout << FORMAT_MSG(msg) << std::endl << std::flush; }
+#define DEBUG_MSG_RANK(rank, msg) \
+    { if (RANK_OF_NODE == rank) { std::cout << FORMAT_MSG(msg) << std::endl << std::flush; } }
+#define DEBUG_MSG_MPI(msg) \
+    { get_log_writer()(0) << FORMAT_MSG(msg) << std::endl << std::flush; }
+#endif // USE_MPI
+
 #else
 #define DEBUG_MSG(msg)
 #define DEBUG_MSG_RANK(rank,msg)
