@@ -33,15 +33,49 @@ LDFLAGS_IN=$LDFLAGS
 LIBS_IN=$LIBS
 
 dnl ---------------------------------------------------------------------------
-dnl Checking external libraries
+dnl Checking for ./configure options
 dnl ---------------------------------------------------------------------------
+dnl debug
+AC_ARG_ENABLE(debug,
+              [  --enable-debug          Enable debugging information],
+              USE_DEBUG="$enableval", USE_DEBUG="no")
 
-dnl resetting generic flags
-CXXFLAGS=$CXXFLAGS_IN
-CFLAGS=$CFLAGS_IN
-LDFLAGS=$LDFLAGS_IN
+AC_ARG_ENABLE(mpi,
+              [  --enable-mpi          Compile with with dependency to MPI],
+              USE_MPI="$enableval", USE_MPI="yes")
 
-dnl Check for fftw
+AC_ARG_ENABLE(progress,
+              [  --enable-progress        Enable progress messages],
+              PRINT_PROGRESS="$enableval", PRINT_PROGRESS="no")
+
+AC_ARG_ENABLE(fftw3,
+              [  --enable-fftw3          Compile with with dependency to FFTW3],
+              USE_FFTW3="$enableval", USE_FFTW3="yes")
+
+AC_ARG_ENABLE(gsl,
+              [  --enable-gsl          Compile with with dependency to GSL],
+              USE_GSL="$enableval", USE_GSL="yes")
+
+
+dnl ---------------------------------------------------------------------------
+dnl Checking external libraries and dependency 
+dnl ---------------------------------------------------------------------------
+if test $USE_DEBUG = "yes"; then
+  SFXC_CFLAGS="$SFXC_CFLAGS -g -DSFXC_PRINT_DEBUG -rdynamic"
+  SFXC_CXXFLAGS="$SFXC_CXXFLAGS -g -DSFXC_PRINT_DEBUG -rdynamic"
+fi
+
+if test $PRINT_PROGRESS = "yes"; then
+  SFXC_CFLAGS="$SFXC_CFLAGS -DPRINT_PROGRESS -DSFXC_PRINT_DEBUG"
+  SFXC_CXXFLAGS="$SFXC_CXXFLAGS -DPRINT_PROGRESS -DSFXC_PRINT_DEBUG"
+fi
+
+if test $USE_MPI = "yes"; then
+  SFXC_CFLAGS="$SFXC_CFLAGS -DUSE_MPI"
+  SFXC_CXXFLAGS="$SFXC_CXXFLAGS -DUSE_MPI"
+fi
+
+if test $USE_FFTW3 = "yes"; then
 AC_CHECK_LIB(fftw3, fftw_execute, [], [
         echo "Couldn't find fftw3 library."
         exit -1
@@ -52,39 +86,23 @@ AC_CHECK_LIB(fftw3f, fftwf_execute, [], [
         ])
 FFTW_CXXFLAGS=
 FFTW_LDADD=" -lfftw3 -lfftw3f"
-AC_SUBST(FFTW_CXXFLAGS)
-AC_SUBST(FFTW_LDADD)
+fi 
 SFXC_CXXFLAGS="$SFXC_CXXFLAGS $FFTW_CXXFLAGS"
 SFXC_LDADD="$SFXC_LDADD $FFTW_LDADD"
-
-dnl resetting generic flags
-CXXFLAGS=$CXXFLAGS_IN
-CFLAGS=$CFLAGS_IN
-LDFLAGS=$LDFLAGS_IN
-
-LIBS=$LIBS_IN
-
-
 
 dnl ---------------------------------------------------------------------------
 dnl setting shipped libraries
 dnl ---------------------------------------------------------------------------
-
 dnl setting Damien's libraries
 DAMIEN_CXXFLAGS='-I${top_srcdir}/lib/common/src -I${top_srcdir}/lib/containers/src -I${top_srcdir}/lib/netlib/src -I${top_srcdir}/lib/testunit/src '
 DAMIEN_LDADD='-L${top_srcdir}/lib/testunit -ltestunit -L${top_srcdir}/lib/netlib -lnetlib -L${top_srcdir}/lib/containers -lcontainers -L${top_srcdir}/lib/common -lcommon -ltestunit'
-AC_SUBST(DAMIEN_CXXFLAGS)
-AC_SUBST(DAMIEN_LDADD)
 
 SFXC_CXXFLAGS="$SFXC_CXXFLAGS $DAMIEN_CXXFLAGS"
 SFXC_LDADD="$SFXC_LDADD $DAMIEN_LDADD"
 
-
 dnl setting json-cpp
 JSONCPP_CXXFLAGS=' -I${top_srcdir}/lib/jsoncpp/include '
 JSONCPP_LDADD=' -L${top_srcdir}/lib/jsoncpp -ljsoncpp '
-AC_SUBST(JSONCPP_CXXFLAGS)
-AC_SUBST(JSONCPP_LDADD)
 
 SFXC_CXXFLAGS="$SFXC_CXXFLAGS $JSONCPP_CXXFLAGS"
 SFXC_LDADD="$SFXC_LDADD $JSONCPP_LDADD"
@@ -92,31 +110,23 @@ SFXC_LDADD="$SFXC_LDADD $JSONCPP_LDADD"
 
 dnl setting gsl
 dnl first check gslcblas
-AC_CHECK_LIB([gslcblas],[cblas_dgemm])
-AC_CHECK_LIB([gsl],[gsl_blas_dgemm],
-dnl found gsl, use the global version
-GSL_CXXFLAGS=''
-GSL_LDADD='-lgsl -lgslcblas'
-HAS_GSL='yes'
-,
-dnl gsl not found, install a local copy
-GSL_CXXFLAGS='-I${top_srcdir}/lib/gsl/install/include '
-GSL_LDADD='-L${top_srcdir}/lib/gsl/install/lib -lgsl -lgslcblas'
-HAS_GSL='no'
-)
-
-AC_SUBST(GSL_CXXFLAGS)
-AC_SUBST(GSL_LDADD)
-AC_SUBST(HAS_GSL)
+if test $USE_GSL = "yes"; then
+  AC_CHECK_LIB([gslcblas],[cblas_dgemm])
+  AC_CHECK_LIB([gsl],[gsl_blas_dgemm],
+  dnl found gsl, use the global version
+  GSL_CXXFLAGS=''
+  GSL_LDADD='-lgsl -lgslcblas'
+  HAS_GSL='yes'
+  ,
+  dnl gsl not found, install a local copy
+  GSL_CXXFLAGS='-I${top_srcdir}/lib/gsl/install/include '
+  GSL_LDADD='-L${top_srcdir}/lib/gsl/install/lib -lgsl -lgslcblas'
+  HAS_GSL='no'
+  )
+fi
 
 SFXC_CXXFLAGS="$SFXC_CXXFLAGS $GSL_CXXFLAGS"
 SFXC_LDADD="$SFXC_LDADD $GSL_LDADD"
-
-dnl resetting generic flags
-CXXFLAGS=$CXXFLAGS_IN
-CFLAGS=$CFLAGS_IN
-LDFLAGS=$LDFLAGS_IN
-LIBS=$LIBS_IN
 
 dnl setting vex_parser
 VEX_PARSER_CXXFLAGS='-I${top_srcdir}/lib/vex_parser/install/include '
@@ -130,61 +140,55 @@ SFXC_LDADD="$SFXC_LDADD $VEX_PARSER_LDADD"
 BASE_CXXFLAGS='-I${top_srcdir}/include '
 BASE_LDADD=' '
 
-AC_SUBST(BASE_CXXFLAGS)
-AC_SUBST(BASE_LDADD)
 
 UTILS_CXXFLAGS="$BASE_CXXFLAGS $VEX_PARSER_CXXFLAGS $JSONCPP_CXXFLAGS $DAMIEN_CXXFLAGS $FFTW_CXXFLAGS"
 UTILS_LDADD="$BASE_LDADD $VEX_PARSER_LDADD $JSONCPP_LDADD $DAMIEN_LDADD $FFTW_LDADD"
 
-dnl exporting sfxc flags
-AC_SUBST(SFXC_CXXFLAGS)
-AC_SUBST(SFXC_LDADD)
 
-AC_SUBST(UTILS_CXXFLAGS)
-AC_SUBST(UTILS_LDADD)
-
-
-dnl ---------------------------------------------------------------------------
-dnl Checking for ./configure options
-dnl ---------------------------------------------------------------------------
-dnl debug
-AC_ARG_ENABLE(debug,
-              [  --enable-debug          Enable debugging information],
-              USE_DEBUG="$enableval", USE_DEBUG="no")
-
-if test $USE_DEBUG = "yes"; then
-  CFLAGS="$CFLAGS -g -DSFXC_PRINT_DEBUG -rdynamic"
-  CXXFLAGS="$CXXFLAGS -g -DSFXC_PRINT_DEBUG -rdynamic"
-fi
-
-AC_ARG_ENABLE(nompi,
-              [  --disable-mpi          Compile without the dependency to MPI],
-              USE_MPI="$nompi", USE_MPI="yes")
-
-if test $USE_MPI = "yes"; then
-  CFLAGS="$CFLAGS -DUSE_MPI"
-  CXXFLAGS="$CXXFLAGS -DUSE_MPI"
-fi
-
-
-
-dnl progress
-AC_ARG_ENABLE(progress,
-              [  --enable-progress        Enable progress messages],
-              PRINT_PROGRESS="$enableval", PRINT_PROGRESS="no")
-
-if test $PRINT_PROGRESS = "yes"; then
-  CFLAGS="$CFLAGS -DPRINT_PROGRESS -DSFXC_PRINT_DEBUG"
-  CXXFLAGS="$CXXFLAGS -DPRINT_PROGRESS -DSFXC_PRINT_DEBUG"
-fi
-
+dnl resetting generic flags
+CXXFLAGS=$CXXFLAGS_IN
+CFLAGS=$CFLAGS_IN
+LDFLAGS=$LDFLAGS_IN
+LIBS=$LIBS_IN
 
 dnl export these variable (so Makefile substitutions
 dnl can be made.
+AC_SUBST(FFTW_CXXFLAGS)
+AC_SUBST(FFTW_LDADD)
+AC_SUBST(DAMIEN_CXXFLAGS)
+AC_SUBST(DAMIEN_LDADD)
+AC_SUBST(JSONCPP_CXXFLAGS)
+AC_SUBST(JSONCPP_LDADD)
+
+AC_SUBST(UTILS_CXXFLAGS)
+AC_SUBST(UTILS_LDADD)
+AC_SUBST(BASE_CXXFLAGS)
+AC_SUBST(BASE_LDADD)
+AC_SUBST(GSL_CXXFLAGS)
+AC_SUBST(GSL_LDADD)
+AC_SUBST(HAS_GSL)
+
 AC_SUBST(CFLAGS)
 AC_SUBST(CXXFLAGS)
 AC_SUBST(LDFLAGS)
 AC_SUBST(LDADD)
+
+AC_SUBST(SFXC_CFLAGS)
+AC_SUBST(SFXC_CXXFLAGS)
+AC_SUBST(SFXC_LDFLAGS)
+AC_SUBST(SFXC_LDADD)
+
+echo "Building with mpi: $USE_MPI"
+echo "Building with fftw3: $USE_FFTW3"
+echo "Building with gsl: $USE_GSL"
+
+dnl echo "SFXC_CFLAGS: $SFXC_CFLAGS"
+dnl echo "SFXC_CXXFLAGS: $SFXC_CXXFLAGS"
+dnl echo "SFXC_LDFLAGS: $SFXC_LDFLAGS"
+dnl echo "SFXC_LDADD: $SFXC_LDADD"
+
+AM_CONDITIONAL(SFXC, [test "$USE_MPI" = "yes"])
+AM_CONDITIONAL(FFTW3, [test "$USE_FFTW3" = "yes"])
 
 AC_OUTPUT(Makefile
           lib/Makefile

@@ -5,20 +5,22 @@ SUBDIRS = delay
 
 pkginclude_HEADERS = *.h *.py
 
-
 bin_PROGRAMS = mark5a_print_headers \
-               produce_html_plotpage \
-               produce_html_diffpage \
-               vex2ccf \
-               generate_uvw_coordinates \
-               plot_delay_table \
                print_new_output_format \
                dnfp_fileserver \
                dnfp_fileclient \
-               phase_plot \
-               make_anim \
-               baseline_info \
-							 extract_channelizer
+               extract_channelizer
+
+if FFTW3
+bin_PROGRAMS += generate_uvw_coordinates \
+                plot_delay_table \
+                phase_plot \
+                make_anim \
+                produce_html_plotpage \
+                produce_html_diffpage \
+                vex2ccf \               
+                baseline_info 
+endif
 
 bin_SCRIPTS  = run_sfxc.py vumeter.py
 

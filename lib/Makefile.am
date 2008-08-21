@@ -1,5 +1,5 @@
 SUBDIRS = \
-  vex_parser calc10 \
-  jsoncpp gsl \
+  vex_parser  \
+  gsl \
   common containers netlib testunit \
   common/test containers/test

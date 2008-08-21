@@ -9,7 +9,8 @@
 
 #ifndef LOG_WRITER_H_
 #define LOG_WRITER_H_
-
+#include <stdlib.h>
+#include <algorithm>
 #include <string>
 #include <sstream>
 #include <iostream>

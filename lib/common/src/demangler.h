@@ -18,7 +18,7 @@
 #define DEMANGLER_H
 
 #include <iostream>
-
+#include <typeinfo>
 
 /*********************************************
 * @class Demangler

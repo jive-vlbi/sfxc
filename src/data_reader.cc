@@ -9,7 +9,8 @@
 
 #include "utils.h"
 #include "data_reader.h"
-
+#include <stdlib.h>
+#include <string.h>
 #include <limits>
 
 Data_reader::Data_reader() : _data_counter(0), data_slice(-1) {}

@@ -6,7 +6,8 @@
  * $Id: tcp_connection.cc 412 2007-12-05 12:13:20Z kruithof $
  *
  */
-
+#include <stdlib.h>
+#include <string.h>
 #include <arpa/inet.h>
 
 #include <netdb.h>

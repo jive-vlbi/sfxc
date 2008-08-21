@@ -13,10 +13,12 @@ distclean-local:
 	rm -rf install
 
 installed.txt:
+	if test "${USE_GSL}" = "yes"; then \
 	if test "${HAS_GSL}" = "no"; then \
 	  tar xzvf gsl-1.9.tar.gz; \
 	  cd gsl-1.9; ./configure --prefix=@abs_top_srcdir@/lib/gsl/install; \
 	  cd gsl-1.9; $(MAKE) -j1 all install; \
 	  rm -f install/lib/*.so* install/lib/*.la*; \
-	fi;
-	touch installed.txt
+	fi; \
+	fi; 
+	touch installed.txt 

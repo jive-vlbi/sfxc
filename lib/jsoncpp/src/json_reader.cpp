@@ -1,6 +1,7 @@
 #include <json/reader.h>
 #include <json/value.h>
 #include <utility>
+#include <string.h>
 #include <stdio.h>
 #include <assert.h>
 #include <iostream>

@@ -12,6 +12,7 @@
  *   - the definition of the Demangler object.
  */
 #include <string>
+#include <stdlib.h>
 #include<iostream>
 #include <cassert>
 

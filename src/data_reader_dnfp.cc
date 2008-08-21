@@ -80,6 +80,7 @@ void Data_reader_dnfp::connect(pInterfaceIP interface) {
   std::cout << "DNFP-Message: Connecting to:"+serverip_+":"+serverport_;
   std::cout << " from interface:"+interface->name() << std::endl;
   pConnexion connexion= interface->connect_to( serverip_, serverport_ );
+  if( connexion == NULL )MTHROW("Unable to connect to remote host");
   ctrlreader_ = new Data_reader_socket( connexion->socket() );
   ctrlwriter_ = new Data_writer_socket( connexion->socket() );
   ctrlbreader_  = new Data_reader_blocking( ctrlreader_ );
