@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "common.h"
 
 int& operator<<(int& dest, const String& s) {

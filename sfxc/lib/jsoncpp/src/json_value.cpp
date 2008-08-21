@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string.h>
 #include <json/value.h>
 #include <json/writer.h>
 #include <utility>

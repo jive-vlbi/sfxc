@@ -1,7 +1,9 @@
 AM_CXXFLAGS = $(SFXC_CXXFLAGS)
 LDADD = $(SFXC_LDADD)
 
+if SFXC
 bin_PROGRAMS = sfxc
+endif
 
 TESTS = test_sfxc.py
 

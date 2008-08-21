@@ -1,4 +1,4 @@
-SUBDIRS = lib src include doc utils 
+SUBDIRS = lib include src doc utils 
 
 doxygen:
 	cd doc; $(MAKE) doxygen

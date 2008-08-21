@@ -9,7 +9,7 @@
 
 #include "data_reader_file.h"
 #include "utils.h"
-
+#include <string.h>
 #include <iostream>
 #include <algorithm>
 

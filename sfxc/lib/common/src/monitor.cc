@@ -1,5 +1,5 @@
 #include "monitor.h"
-
+#include <stdlib.h>
 #include <cassert>
 #include <iostream>
 #include <sstream>

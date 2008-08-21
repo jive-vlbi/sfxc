@@ -1,3 +1,5 @@
+#include <string.h>
+#include <stdlib.h>
 #include "backtrace.h"
 #include "demangler.h"
 
