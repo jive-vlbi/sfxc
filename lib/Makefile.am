@@ -1,10 +1,13 @@
 SUBDIRS = \
-  vex_parser  \
-  gsl \
-  jsoncpp \
-  common containers netlib testunit \
-  common/test containers/test
+    vex_parser  \
+    gsl \
+    jsoncpp \
+    common containers netlib testunit \
+    common/test containers/test
 
-if CALC10
-	SUBDIRS+= calc10
+if CALCTEN
+  SUBDIRS += calc10
 endif
+
+
+
