@@ -1,7 +1,9 @@
 AM_CXXFLAGS = $(SFXC_CXXFLAGS)
 LDADD = $(SFXC_LDADD)
 
-SUBDIRS = delay
+if GENDELAY
+  SUBDIRS = delay
+endif
 
 pkginclude_HEADERS = *.h *.py
 
@@ -11,14 +13,14 @@ bin_PROGRAMS = mark5a_print_headers \
                dnfp_fileclient \
                extract_channelizer
 
-if FFTW3
+if SFXC_UTILS
 bin_PROGRAMS += generate_uvw_coordinates \
                 plot_delay_table \
                 phase_plot \
                 make_anim \
                 produce_html_plotpage \
                 produce_html_diffpage \
-                vex2ccf \               
+                vex2ccf \
                 baseline_info 
 endif
 
