@@ -14,7 +14,9 @@
 
 Single_data_reader_controller::
 Single_data_reader_controller(Node &node)
-    : Controller(node) {}
+    : Controller(node) {
+      use_buffering_=false;
+      }
 
 Single_data_reader_controller::Process_event_status
 Single_data_reader_controller::process_event(MPI_Status &status) {
@@ -80,18 +82,32 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
 boost::shared_ptr<Data_reader>
 Single_data_reader_controller::get_data_reader(int reader) {
   SFXC_ASSERT(reader == 0);
-  SFXC_ASSERT(reader2buffer.get_data_reader() != NULL);
-  return reader2buffer.get_data_reader();
+  SFXC_ASSERT(reader_ != Data_reader_ptr() );
+
+  if( use_buffering_  ){
+    return reader2buffer_->get_data_reader();
+  }else{
+    return reader_;
+  }
 }
 
 void
 Single_data_reader_controller::
-set_data_reader(int stream_nr, Data_reader_ptr reader) {
+set_data_reader(int stream_nr, Data_reader_ptr reader, bool use_buffering) {
   SFXC_ASSERT(stream_nr == 0);
-  SFXC_ASSERT(reader2buffer.get_data_reader() == NULL);
+  SFXC_ASSERT(reader_ == Data_reader_ptr());
 
-  reader2buffer.set_data_reader(reader);
-  reader2buffer.try_start();
+  reader_ = reader;
+  use_buffering_ = use_buffering;
+
+  if( use_buffering_ ){
+    // @todo (damien#1#): This buffering stuff should be removed.
+    /// This is probably deprecated code. If nobody set a queue to this it
+    /// will never make use of bufferring.
+    reader2buffer_ = Data_buffered_reader_ptr(new Reader2buffer());
+    reader2buffer_->set_data_reader(reader);
+    reader2buffer_->try_start();
+  }
 
   node.hook_added_data_reader(0);
 }

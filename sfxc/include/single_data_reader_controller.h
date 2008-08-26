@@ -27,7 +27,8 @@ public:
   typedef Reader2buffer::value_type                  value_type;
   typedef Reader2buffer::Queue_ptr                   Queue_ptr;
 
-  typedef boost::shared_ptr<Data_reader>          Data_reader_ptr;
+  typedef boost::shared_ptr<Data_reader>            Data_reader_ptr;
+  typedef boost::shared_ptr<Reader2buffer>          Data_buffered_reader_ptr;
 
   Single_data_reader_controller(Node &node);
 
@@ -35,9 +36,12 @@ public:
 
   Data_reader_ptr get_data_reader(int i=0);
 private:
-  void set_data_reader(int stream_nr, Data_reader_ptr reader);
+  void set_data_reader(int stream_nr, Data_reader_ptr reader, bool use_buffering=false);
 
-  Reader2buffer                                       reader2buffer;
+  bool use_buffering_;
+
+  Data_buffered_reader_ptr  reader2buffer_;
+  Data_reader_ptr           reader_;
 };
 
 #endif /* SINGLE_DATA_READER_CONTROLLER_H */
