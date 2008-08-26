@@ -17,7 +17,7 @@ Data_reader_dnfp::Data_reader_dnfp(pInterfaceIP interface,
   url_ = url;
   parse_url(url, serverip_, serverport_, filename_);
 
-  std::cout << "INFO: " << serverip_ << " et " << serverport_ << " et " << filename_;
+  DEBUG_MSG( "INFO: " << serverip_ << " et " << serverport_ << " et " << filename_);
 
   connect(interface);
   negociate();
@@ -28,7 +28,7 @@ Data_reader_dnfp::Data_reader_dnfp(const std::string url) {
   url_ = url;
   parse_url(url, serverip_, serverport_, filename_);
 
-  std::cout << "INFO: " << serverip_ << " et " << serverport_ << " et " << filename_;
+ DEBUG_MSG( "INFO: " << serverip_ << " et " << serverport_ << " et " << filename_);
 
   connect(Network::get_any_interface());
   negociate();
@@ -37,7 +37,7 @@ Data_reader_dnfp::Data_reader_dnfp(const std::string url) {
 
 
 bool Data_reader_dnfp::eof() {
-  return isEof_ || datareader_->eof() || ctrlreader_->eof() ;
+  return isEof_ || datareader_->eof();
 }
 
 void Data_reader_dnfp::parse_url(const std::string url,
@@ -60,12 +60,12 @@ void Data_reader_dnfp::parse_url(const std::string url,
     serverb  = tmp.find("?");
     filename = tmp.substr(0,serverb);
     std::string options  = tmp.substr(serverb+1);
-    std::cout << "OPTIONS: " << options << std::endl;
+    DEBUG_MSG( "OPTIONS: " << options );
     if ( options.find("proto=") >= 0 ) {
-      std::cout << "The protocol is finally:" << options.substr(6) << std::endl;
+      DEBUG_MSG( "The protocol is finally:" << options.substr(6) );
       protocol_ = options.substr(6);
       if ( protocol_ != "tcp" && protocol_ != "udp") {
-        std::cout << "This is not a supported protocol:" << protocol_ << std::endl;
+        DEBUG_MSG( "This is not a supported protocol:" << protocol_ );
         MTHROW("Invalid protocol !");
       }
     }
@@ -77,8 +77,8 @@ void Data_reader_dnfp::parse_url(const std::string url,
 
 void Data_reader_dnfp::connect(pInterfaceIP interface) {
   if ( interface == NULL ) MTHROW("No valid interface to host");
-  std::cout << "DNFP-Message: Connecting to:"+serverip_+":"+serverport_;
-  std::cout << " from interface:"+interface->name() << std::endl;
+  DEBUG_MSG( "DNFP-Message: Connecting to:"+serverip_+":"+serverport_ );
+  DEBUG_MSG(  " from interface:"+interface->name() << std::endl );
   pConnexion connexion= interface->connect_to( serverip_, serverport_ );
   if( connexion == NULL )MTHROW("Unable to connect to remote host");
   ctrlreader_ = new Data_reader_socket( connexion->socket() );
@@ -97,7 +97,7 @@ void Data_reader_dnfp::negociate() {
   std::string response;
   *ctrlwriter_ << String("data_reader_dnfp");
   *ctrlbreader_ >> response;
-  std::cout << "Server responded:" << response << std::endl;
+  DEBUG_MSG( "Server responded:" << response << std::endl );
 
   // first we send the file to get
   *ctrlwriter_ << filename_;
@@ -119,7 +119,7 @@ void Data_reader_dnfp::negociate() {
   *ctrlbreader_ >> response;
 
   if ( strcmp( response.c_str(), "OK") ) MTHROW("The server refuse to serve the file");
-  std::cout << "You are not throwing an exception ?"<< std::endl;
+  DEBUG_MSG( "Negotiation with the server terminated" );
 }
 
 int Data_reader_dnfp::do_get_bytes(size_t readb, char *buffer) {
@@ -130,7 +130,6 @@ int Data_reader_dnfp::do_get_bytes(size_t readb, char *buffer) {
     int ret = datareader_->get_bytes(readb, buff);
     return ret;
   }
-
   int ret = datareader_->get_bytes(readb, buffer);
   return ret;
 }

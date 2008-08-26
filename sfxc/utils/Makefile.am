@@ -39,13 +39,13 @@ extract_channelizer_SOURCES = \
   ../src/mark5a_header.cc \
   ../src/data_reader_factory.cc \
   ../src/data_reader_dnfp.cc \
-	../src/data_reader_socket.cc \
-	../src/data_reader_udp.cc \
-	../src/data_writer_socket.cc \
-	../src/data_reader_blocking.cc \
-	../src/channel_extractor_utils.cc \
-	../src/channel_extractor_dynamic.cc \
-	../src/channel_extractor_5.cc \
+  ../src/data_reader_socket.cc \
+  ../src/data_reader_udp.cc \
+  ../src/data_writer_socket.cc \
+  ../src/data_reader_blocking.cc \
+  ../src/channel_extractor_utils.cc \
+  ../src/channel_extractor_dynamic.cc \
+  ../src/channel_extractor_5.cc \
   ../src/utils.cc
 
 dnfp_fileserver_SOURCES = \
@@ -64,6 +64,7 @@ dnfp_fileclient_SOURCES = \
   dnfp_fileclient.cc \
    ../src/data_reader.cc \
    ../src/data_writer.cc \
+   ../src/data_writer_file.cc \
    ../src/data_reader_file.cc \
    ../src/data_reader_udp.cc \
    ../src/data_writer_socket.cc \
@@ -78,6 +79,7 @@ mark5a_print_headers_SOURCES = \
   ../src/log_writer_cout.cc \
   ../src/data_reader.cc \
   ../src/data_reader_file.cc \
+  ../src/data_reader_blocking.cc  \
   ../src/input_data_format_reader.cc \
   ../src/mark5a_reader.cc \
   ../src/mark5a_header.cc \

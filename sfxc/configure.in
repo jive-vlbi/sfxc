@@ -65,7 +65,7 @@ AC_ARG_ENABLE(calc10,
               WITH_CALC="$enableval", WITH_CALC="yes")
 
 dnl ---------------------------------------------------------------------------
-dnl Checking external libraries and dependency 
+dnl Checking external libraries and dependency
 dnl ---------------------------------------------------------------------------
 if test $USE_DEBUG = "yes"; then
   SFXC_CFLAGS="$SFXC_CFLAGS -g -DSFXC_PRINT_DEBUG -rdynamic"
@@ -93,7 +93,7 @@ AC_CHECK_LIB(fftw3f, fftwf_execute, [], [
         ])
 FFTW_CXXFLAGS=
 FFTW_LDADD=" -lfftw3 -lfftw3f"
-fi 
+fi
 SFXC_CXXFLAGS="$SFXC_CXXFLAGS $FFTW_CXXFLAGS"
 SFXC_LDADD="$SFXC_LDADD $FFTW_LDADD"
 
@@ -147,9 +147,9 @@ if test $USE_GSL = "yes"; then
       WITH_SFXC_UTILS="yes"
       if test $USE_MPI = "yes"; then
         WITH_SFXC="yes"
-      fi  
+      fi
   fi
-fi 
+fi
 
 if test $USE_FFTW3 = "no"; then
       WITH_GENDELAY="no"
@@ -174,8 +174,8 @@ SFXC_LDADD="$SFXC_LDADD $VEX_PARSER_LDADD"
 BASE_CXXFLAGS='-I${top_srcdir}/include '
 BASE_LDADD=' '
 
-UTILS_CXXFLAGS="$BASE_CXXFLAGS $VEX_PARSER_CXXFLAGS $JSONCPP_CXXFLAGS $DAMIEN_CXXFLAGS $FFTW_CXXFLAGS"
-UTILS_LDADD="$BASE_LDADD $VEX_PARSER_LDADD $JSONCPP_LDADD $DAMIEN_LDADD $FFTW_LDADD"
+UTILS_CXXFLAGS="$BASE_CXXFLAGS $VEX_PARSER_CXXFLAGS $JSONCPP_CXXFLAGS $DAMIEN_CXXFLAGS $FFTW_CXXFLAGS $GSL_CXXFLAGS"
+UTILS_LDADD="$BASE_LDADD $VEX_PARSER_LDADD $JSONCPP_LDADD $DAMIEN_LDADD $FFTW_LDADD $GSL_LDADD"
 
 dnl resetting generic flags
 CXXFLAGS=$CXXFLAGS_IN
