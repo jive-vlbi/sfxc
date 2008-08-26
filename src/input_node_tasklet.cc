@@ -181,6 +181,11 @@ Input_node_tasklet::~Input_node_tasklet() {
   double ratio3 = ((100.0*timer_writing_.measured_time())/total_duration);
   double ratio4 = ((100.0*timer_rwriting_.measured_time())/total_duration);
   PROGRESS_MSG( " efficiency:" << " ratio:(idle:"<< ratio1 <<"%, delay:"<< ratio2 <<"%, write:"<< ratio3 <<"%, r:"<< ratio4 <<"%)");
+  PROGRESS_MSG( " timming:" << total_duration << " sec"
+                            << " detail:(nothing: " << timer_nothing_.measured_time() <<"sec "
+                            << " delay: " << timer_delaying_.measured_time() << "sec "
+                            << " writing: " << timer_writing_.measured_time() << "sec )");
+
 }
 
 
@@ -210,14 +215,13 @@ do_execute() {
   ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: ENTER");
 
   while ( has_work() || isrunning_ ) {
-
     do_task();
-    if ( !did_work) {
-      timer_nothing_.resume();
-      usleep(100000);
-      timer_nothing_.stop();
-    } else {//DEBUG_MSG(__PRETTY_FUNCTION__<< ":: WORKED");
-    }
+    //if ( !did_work ) {
+    //  timer_nothing_.resume();
+    //  usleep(100000);
+    //  timer_nothing_.stop();
+    //} else {//DEBUG_MSG(__PRETTY_FUNCTION__<< ":: WORKED");
+    //}
   }
   //DEBUG_MSG(" INPUT_TASKLET WILL EXIT ITS LOOP ");
 }
@@ -234,9 +238,7 @@ do_task() {
   for (size_t i=0; i<integer_delay_.size(); i++) {
     SFXC_ASSERT(integer_delay_[i] != NULL);
     while (integer_delay_[i]->has_work()) {
-
       integer_delay_[i]->do_task();
-
       did_work = true;
     }
   }
@@ -247,11 +249,8 @@ do_task() {
   RT_STAT( outputwriter_state_.begin_measure() );
   for (size_t i=0; i<data_writers_.size(); i++) {
     while (data_writers_[i].has_work()) {
-      //timer_rwriting_.resume();
-      data_writers_[i].do_task();
-      //timer_rwriting_.stop();
-
-      did_work = true;
+     data_writers_[i].do_task();
+     did_work = true;
     }
   }
   RT_STAT( outputwriter_state_.end_measure(1) );
