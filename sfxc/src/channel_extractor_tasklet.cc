@@ -77,10 +77,12 @@ Channel_extractor_tasklet::~Channel_extractor_tasklet() {
     double ratio1 = ((100.0*timer_processing_.measured_time())/total_duration);
     double ratio2 = ((100.0*timer_waiting_input_.measured_time())/total_duration);
     double ratio3 = ((100.0*timer_waiting_output_.measured_time())/total_duration);
-    PROGRESS_MSG( "channelizing speed:" <<  1.0*toMB(data_processed_)/total_duration
-                  << "MB/s" << " processing:"<< ratio1 <<"% input:"<< ratio2 <<"% output:"<< ratio3 <<"%");
+    PROGRESS_MSG( "channelizing avg:" << 1.0*toMB(data_processed_)/total_duration << "MB/s"
+                                << " burst:" << 1.0*toMB(data_processed_)/timer_processing_.measured_time() << "MB/s"
+                                << " details(active:"<< ratio1 <<"% waitinput:"<< ratio2 <<"% waitoutput:"<< ratio3 <<"%)");
     //init_stats();
   }
+
 }
 
 void Channel_extractor_tasklet::do_execute() {
@@ -200,22 +202,19 @@ Channel_extractor_tasklet::do_task() {
     input_buffer_->pop();
   }
 
-  /*
-   /// Print statistics info
-   double wait_duration = (timer_waiting_input_.measured_time()+timer_waiting_output_.measured_time());
-   double total_duration = wait_duration+timer_processing_.measured_time();
+  double wait_duration = (timer_waiting_input_.measured_time()+timer_waiting_output_.measured_time());
+  double total_duration = wait_duration+timer_processing_.measured_time();
 
-   if( total_duration >= last_duration_ + 2.0 )
-   {
-     double ratio1 = ((100.0*timer_processing_.measured_time())/total_duration);
-     double ratio2 = ((100.0*timer_waiting_input_.measured_time())/total_duration);
-     double ratio3 = ((100.0*timer_waiting_output_.measured_time())/total_duration);
-     PROGRESS_MSG( "channelizing speed:" <<  1.0*toMB(data_processed_)/total_duration
-            << "MB/s" << " processing:"<< ratio1 <<"%, input:"<< ratio2 <<"%, output:"<< ratio3 <<"%");
-     //init_stats();
-     last_duration_ = total_duration;
-   }
-  */
+  if ( total_duration-last_duration_ >= 3.0 ) {
+    last_duration_ = total_duration;
+    double ratio1 = ((100.0*timer_processing_.measured_time())/total_duration);
+    double ratio2 = ((100.0*timer_waiting_input_.measured_time())/total_duration);
+    double ratio3 = ((100.0*timer_waiting_output_.measured_time())/total_duration);
+    PROGRESS_MSG( "channelizing avg:" << 1.0*toMB(data_processed_)/total_duration << "MB/s" << std::endl
+                                << " burst:" << 1.0*toMB(data_processed_)/timer_processing_.measured_time() << "MB/s" << std::endl
+                                << " details(active:"<< ratio1 <<"% waitinput:"<< ratio2 <<"% waitoutput:"<< ratio3 <<"%)");
+  }
+
 
 #ifdef RUNTIME_STATISTIC
   monitor_.end_measure(n_output_bytes*n_subbands);
