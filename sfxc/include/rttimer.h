@@ -67,16 +67,16 @@ private:
     utime+=tv.tv_usec;
   }
 
-  inline uint64_t ticksPerSec(void) const {
+  static inline uint64_t ticksPerSec(void)  {
     return 1000000;
   }
 
-  inline uint64_t ticksPerMSec(void) const {
+  static inline uint64_t ticksPerMSec(void)  {
     return 1000000/1000;
   }
 
 
-  inline double tickToSec(const uint64_t ticks) const {
+  static inline double tickToSec(const uint64_t ticks)  {
     return 1.0*ticks/ticksPerSec();
   }
 
@@ -175,7 +175,7 @@ inline void RTTimer::check(const char* msg) {
 
 inline std::ostream& operator<<(std::ostream& os, const RTTimer& t) {
   os << std::setprecision(2) << std::setiosflags(std::ios::fixed )
-  << tickToSec(t.acc_time + (t.running ? t.elapsed_time() : 0));
+  << RTTimer::tickToSec(t.acc_time + (t.running ? t.elapsed_time() : 0));
   return os;
 }
 
