@@ -7,6 +7,8 @@
 #include "data_writer.h"
 #include "utils.h"
 #include "timer.h"
+#include "rttimer.h"
+
 #include "input_node_types.h"
 #include "control_parameters.h"
 
@@ -51,9 +53,16 @@ private:
   Data_writer_queue    data_writers_;
 
   uint64_t data_written_;
-  Timer timer_waiting_;
-  Timer timer_other_;
-  Timer timer_writing_;
+  uint64_t total_data_written_;
+
+  uint64_t data_written_in_slice_;
+  uint64_t size_of_slice_;
+
+  double last_duration_;
+  RTTimer timer_waiting_;
+  RTTimer timer_other_;
+  RTTimer timer_writing_;
+
 };
 
 #endif // INPUT_NODE_DATA_WRITER_TASKLET

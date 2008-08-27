@@ -127,7 +127,7 @@ class Reader_thread : public Thread {
       double total_duration = timer_waiting_.measured_time()+timer_reading_.measured_time();
       double ratio1 = ((100.0*timer_waiting_.measured_time())/total_duration);
       double ratio2 = ((100.0*timer_reading_.measured_time())/total_duration);
-      PROGRESS_MSG( "reading ratio:("<< ratio1 <<"%, "<< ratio2 <<"%)" );
+      PROGRESS_MSG( "reading ratio:(waiting: "<< ratio1 <<"%, reading:"<< ratio2 <<"%)" );
     }
 
   class Listener : public FdEventListener {
@@ -159,7 +159,7 @@ class Reader_thread : public Thread {
       DEBUG_MSG("reading thread started !");
       try {
         while ( isrunning_ ) {
-          if ( num_reading_ == 0 ) {
+					if ( num_reading_ == 0 ) {
             timer_waiting_.resume();
             fetch_new_time_slice();
             timer_waiting_.stop();
@@ -194,7 +194,7 @@ class Reader_thread : public Thread {
         SFXC_ASSERT(bit_sample_readers_[i] !=
                     Bit_sample_reader_ptr());
         if (i < jb.station_streams_size ) {
-          ///DEBUG_MSG("CONFIGURING THE READER ! :" << jb.number_ffts_in_integration);
+          DEBUG_MSG("CONFIGURING THE READER ! :" << jb.number_ffts_in_integration);
 
           bit_sample_readers_[i]->set_parameters(
             jb.number_ffts_in_integration,

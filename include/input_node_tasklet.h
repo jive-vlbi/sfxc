@@ -102,6 +102,7 @@ private:
   Timer timer_delaying_;
   Timer timer_writing_;
   Timer timer_rwriting_;
+  double last_duration_;
 
 
   Delay_table_akima delay_table;
