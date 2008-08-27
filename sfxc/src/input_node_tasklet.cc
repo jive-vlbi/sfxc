@@ -7,6 +7,7 @@
  *
  */
 
+#include <sched.h>
 #include "input_node_tasklet.h"
 #include "utils.h"
 #include "mark5a_reader.h"
@@ -64,6 +65,8 @@ Input_node_tasklet(Input_reader_ptr_ reader_ptr,
     n_bytes_per_input_word(reader_ptr->bytes_per_input_word()) {
 
   channel_extractor_.connect_to(reader_.get_output_buffer());
+
+	last_duration_ = 0;
 
   initialise();
 }
@@ -151,13 +154,7 @@ void Input_node_tasklet::initialise() {
   outputwriter_state_.add_property(compid.str(), "is_a", "output_writers");
   outputwriter_state_.add_property(compid.str(), "has", monid.str() );
   dotask_state_.add_property(tt.str(), "contains", monid.str() );
-
-
-
-
 #endif //RUNTIME_STATISTIC
-
-
 }
 
 Input_node_tasklet::~Input_node_tasklet() {
@@ -213,16 +210,19 @@ void
 Input_node_tasklet::
 do_execute() {
   ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: ENTER");
-
+  timer_delaying_.start();
   while ( has_work() || isrunning_ ) {
     do_task();
-    //if ( !did_work ) {
-    //  timer_nothing_.resume();
-    //  usleep(100000);
-    //  timer_nothing_.stop();
-    //} else {//DEBUG_MSG(__PRETTY_FUNCTION__<< ":: WORKED");
-    //}
+    if ( !did_work ) {
+
+      usleep(10000);
+      sched_yield();
+    } else {
+    	//DEBUG_MSG(__PRETTY_FUNCTION__<< ":: WORKED");
+    }
   }
+  timer_delaying_.stop();
+
   //DEBUG_MSG(" INPUT_TASKLET WILL EXIT ITS LOOP ");
 }
 
@@ -231,32 +231,57 @@ Input_node_tasklet::
 do_task() {
   did_work = false;
 
+
   RT_STAT( dotask_state_.begin_measure() );
 
-  timer_delaying_.resume();
+  //timer_delaying_.resume();
   RT_STAT(integerdelay_state_.begin_measure() );
   for (size_t i=0; i<integer_delay_.size(); i++) {
     SFXC_ASSERT(integer_delay_[i] != NULL);
-    while (integer_delay_[i]->has_work()) {
-      integer_delay_[i]->do_task();
+    while(integer_delay_[i]->has_work()) {
+   	  integer_delay_[i]->do_task();
       did_work = true;
     }
   }
   RT_STAT(integerdelay_state_.end_measure(1));
-  timer_delaying_.stop();
+  //timer_delaying_.stop();
 
-  timer_writing_.resume();
+  //timer_writing_.resume();
   RT_STAT( outputwriter_state_.begin_measure() );
   for (size_t i=0; i<data_writers_.size(); i++) {
-    while (data_writers_[i].has_work()) {
+    while(data_writers_[i].has_work()) {
+     //timer_nothing_.resume();
      data_writers_[i].do_task();
      did_work = true;
+     //timer_nothing_.stop();
     }
   }
-  RT_STAT( outputwriter_state_.end_measure(1) );
-  timer_writing_.stop();
+	//timer_writing_.stop();
 
+  RT_STAT( outputwriter_state_.end_measure(1) );
   RT_STAT( dotask_state_.end_measure(1) );
+
+/*
+  double total_duration = timer_nothing_.measured_time() +
+                          timer_delaying_.measured_time() +
+                          timer_writing_.measured_time() +
+                          timer_rwriting_.measured_time();
+
+	if( did_work && total_duration-last_duration_ > 2 ){
+		last_duration_=total_duration;
+		double ratio1 = ((100.0*timer_nothing_.measured_time())/total_duration);
+		double ratio2 = ((100.0*timer_delaying_.measured_time())/total_duration);
+		double ratio3 = ((100.0*timer_writing_.measured_time())/total_duration);
+		double ratio4 = ((100.0*timer_rwriting_.measured_time())/total_duration);
+		PROGRESS_MSG( " efficiency:" << " ratio:(idle:"<< ratio1 <<"%, delay:"<< ratio2 <<"%, write:"<< ratio3 <<"%, r:"<< ratio4 <<"%)");
+		PROGRESS_MSG( " timming:" << total_duration << " sec"
+															<< " detail:(nothing: " << timer_nothing_.measured_time() <<"sec "
+															<< " delay: " << timer_delaying_.measured_time() << "sec "
+															<< " writing: " << timer_writing_.measured_time() << "sec )");
+	}else if(total_duration-last_duration_ > 4){
+			//DEBUG_MSG("C; EST LE GROS BRIN ");
+	}
+	*/
 }
 
 bool
@@ -330,4 +355,6 @@ add_data_writer(size_t i,
   // Number of bytes for one integration slice
   int size_slice = integer_delay_[i]->bytes_of_output();
   data_writers_[i].add_data_writer(data_writer, size_slice);
+
+  DEBUG_MSG("CONFIGURING THE DATA WRITER !!!!!!!!!!!!!!!!!!!!!!!!!!");
 }

@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
-# include <unistd.h>
+#include <unistd.h>
+#include <sched.h>
 #include "data_reader_blocking.h"
 #include "utils.h"
 
@@ -52,8 +53,10 @@ int Data_reader_blocking::get_bytes_s(Data_reader* reader, size_t size, char* bu
       }
 
       /// We may even sleep a bit in case the system is really slow.
-      if ( remains != 10 ) {
-        usleep( (1.0*numretry/5)*(1.0*numretry/5) );
+      if( remains != 0 )
+      {
+      	if( numretry <= 10 ) usleep(1000);
+				else sched_yield();
       }
     } else if ( read == 0 && numretry == max_retry ) {
       /// Check if the file is closed and that this would explain that
@@ -88,8 +91,10 @@ int Data_reader_blocking::do_get_bytes(size_t size, char* buffer) {
       }
 
       /// We may even sleep a bit in case the system is really slow.
-      if ( remains != 10 ) {
-        usleep( numretry*100 );
+			if( remains != 0 )
+      {
+      	if( numretry <= 10 ) usleep(100);
+				else sched_yield();
       }
     } else if ( read == 0 && numretry == 100 ) {
       /// Check if the file is closed and that this would explain that
