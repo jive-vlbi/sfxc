@@ -1,0 +1,62 @@
+Command line utility to access the Autobahn webservice. 
+
+1) INSTALL
+ The cli is composed of autobahn_cli and autobahn_proxy. 
+ The following library need to be installed:
+    - ZSI (the webservice library)
+ To generate the python backend (The files starting with UserAccessPointxxxxx)
+ from the wsdl of the autobahn webservice you need to use the wsdl2py script 
+ included in ZSI.   
+ python  wsdl2py --complexType --url url_to_the_autobahn_service_wsdl
+
+
+2) USAGES:
+######################## To list the available domain 
+$ autobahn_cli -h
+Available domains:
+	* http://srv2.lon.uk.geant2.net:8080/autobahn/uap
+	  http://poznan.autobahn.psnc.pl:8080/autobahn/uap
+(the star indicates the default idm)
+
+
+######################## To list the ports on the local domain: 
+$ autobahn_cli -l
+Listing all ports:
+   Ports 10.10.32.26 :Internet2 B
+   Ports 10.10.32.27 :Internet2 A
+   Ports 10.10.32.30 :Amsterdam 3903
+   Ports 10.10.32.28 :Amsterdam 3901
+   Ports 10.10.32.29 :Amsterdam 3902
+   Ports 10.10.32.31 :Amsterdam 3904
+
+######################## To list all the ports: 
+$ autobahn_cli -L
+Listing all ports:
+   Ports 10.10.32.28 :Amsterdam 3901
+   Ports 10.12.32.5 :Dublin 2
+   Ports 10.11.32.6 :Athens
+   Ports 10.10.32.30 :Amsterdam 3903
+   Ports 10.10.32.27 :Internet2 A
+   Ports 10.10.32.26 :Internet2 B
+   Ports 10.14.32.2 :Rome
+   Ports 10.12.32.6 :Dublin 1
+   Ports 10.11.32.7 :UoC
+   Ports 10.13.32.4 :Poznan
+   Ports 10.10.32.31 :Amsterdam 3904
+   Ports 10.10.32.29 :Amsterdam 3902
+
+######################## To submit a service: 
+$ autobahn_cli -s "Amsterdam 3904-10.12.32.6"
+A service has been submitted: srv2.lon.uk.geant2.net:8080@1218534456630
+
+######################## To submit a service with multiple path-reservation: 
+$ autobahn_cli -s "Amsterdam 3904-10.12.32.6, Amsterdam 3901-Dublin 2, Amsterdam 3903-Zagreb"
+A service has been submitted: srv2.lon.uk.geant2.net:8080@1218534456630
+
+
+######################## To cancel a service: 
+$ autobahn_cli -c -r srv2.lon.uk.geant2.net:8080@1218534456630
+
+######################## To show the info about a service in a infinite loop: 
+$ autobahn_cli -p -r srv2.lon.uk.geant2.net:8080@1218534456630
+
