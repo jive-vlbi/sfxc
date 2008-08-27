@@ -37,15 +37,19 @@ dnl Checking for ./configure options
 dnl ---------------------------------------------------------------------------
 dnl debug
 AC_ARG_ENABLE(debug,
-              [  --enable-debug          Enable debugging information],
+              [  --enable-debug          Enable debugging information [default=no]],
               USE_DEBUG="$enableval", USE_DEBUG="no")
+
+AC_ARG_ENABLE(optimization,
+              [  --enable-optimization          Enable optimization [default=no]],
+              USE_OPTIMIZE="$enableval", USE_OPTIMIZE="no")
 
 AC_ARG_ENABLE(mpi,
               [  --enable-mpi          Compile with dependency to MPI [default=yes]],
               USE_MPI="$enableval", USE_MPI="yes")
 
 AC_ARG_ENABLE(progress,
-              [  --enable-progress        Enable progress messages],
+              [  --enable-progress        Enable progress messages [default=no]],
               PRINT_PROGRESS="$enableval", PRINT_PROGRESS="no")
 
 AC_ARG_ENABLE(fftw3,
@@ -70,6 +74,11 @@ dnl ---------------------------------------------------------------------------
 if test $USE_DEBUG = "yes"; then
   SFXC_CFLAGS="$SFXC_CFLAGS -g -DSFXC_PRINT_DEBUG -rdynamic"
   SFXC_CXXFLAGS="$SFXC_CXXFLAGS -g -DSFXC_PRINT_DEBUG -rdynamic"
+fi
+
+if test $USE_OPTIMIZE = "yes"; then
+  OPTIMIZE_CFLAGS="-O2 "
+  OPTIMIZE_CXXFLAGS="-O2 "
 fi
 
 if test $PRINT_PROGRESS = "yes"; then
@@ -168,14 +177,14 @@ VEX_PARSER_LDADD='-L${top_srcdir}/lib/vex_parser/install/lib -lvex_parser '
 AC_SUBST(VEX_PARSER_CXXFLAGS)
 AC_SUBST(VEX_PARSER_LDADD)
 
-SFXC_CXXFLAGS="$SFXC_CXXFLAGS $VEX_PARSER_CXXFLAGS"
-SFXC_LDADD="$SFXC_LDADD $VEX_PARSER_LDADD"
+SFXC_CXXFLAGS="$SFXC_CXXFLAGS $VEX_PARSER_CXXFLAGS $OPTIMIZE_CXXFLAGS"
+SFXC_LDADD="$SFXC_LDADD $VEX_PARSER_LDADD $OPTIMIZE_LDADD"
 
 BASE_CXXFLAGS='-I${top_srcdir}/include '
 BASE_LDADD=' '
 
-UTILS_CXXFLAGS="$BASE_CXXFLAGS $VEX_PARSER_CXXFLAGS $JSONCPP_CXXFLAGS $DAMIEN_CXXFLAGS $FFTW_CXXFLAGS $GSL_CXXFLAGS"
-UTILS_LDADD="$BASE_LDADD $VEX_PARSER_LDADD $JSONCPP_LDADD $DAMIEN_LDADD $FFTW_LDADD $GSL_LDADD"
+UTILS_CXXFLAGS="$BASE_CXXFLAGS $VEX_PARSER_CXXFLAGS $JSONCPP_CXXFLAGS $DAMIEN_CXXFLAGS $FFTW_CXXFLAGS $GSL_CXXFLAGS $OPTIMIZE_CXXFLAGS"
+UTILS_LDADD="$BASE_LDADD $VEX_PARSER_LDADD $JSONCPP_LDADD $DAMIEN_LDADD $FFTW_LDADD $GSL_LDADD $OPTIMIZE_LDADD"
 
 dnl resetting generic flags
 CXXFLAGS=$CXXFLAGS_IN
@@ -253,6 +262,8 @@ echo "=================== compilation summary =================="
 echo "Use mpi: $USE_MPI"
 echo "Use fftw3: $USE_FFTW3"
 echo "Use gsl: $USE_GSL"
+echo "Compile sfxc with: $SFXC_CXXFLAGS $CXXFLAGS"
+echo "Compile utils with: $UTILS_CXXFLAGS $CXXFLAGS"
 echo "Build sfxc: $WITH_SFXC"
 echo "Build utils/*: $WITH_SFXC_UTILS"
 echo "Build generate_delay_model: $WITH_GENDELAY"
