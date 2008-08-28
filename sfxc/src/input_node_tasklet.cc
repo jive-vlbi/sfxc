@@ -61,7 +61,6 @@ Input_node_tasklet(Input_reader_ptr_ reader_ptr,
     channel_extractor_(reader_ptr->size_data_block() /
                        reader_ptr->bytes_per_input_word(),
                        reader_ptr->bytes_per_input_word()),
-    did_work(true),
     n_bytes_per_input_word(reader_ptr->bytes_per_input_word()) {
 
   channel_extractor_.connect_to(reader_.get_output_buffer());
@@ -75,8 +74,8 @@ Input_node_tasklet(Input_reader_ptr_ reader_ptr,
 void
 Input_node_tasklet::
 add_time_interval(int32_t start_time, int32_t stop_time) {
-  SFXC_ASSERT(!integer_delay_.empty());
-  SFXC_ASSERT(integer_delay_[0] != NULL);
+  //SFXC_ASSERT(!integer_delay_.empty());
+  //SFXC_ASSERT(integer_delay_[0] != NULL);
 
   /// A new interval is added to the mark5 reader-tasklet. It is converted into
   /// usec
@@ -84,222 +83,54 @@ add_time_interval(int32_t start_time, int32_t stop_time) {
 
   /// Each of the the integer-delay-correction module also need to be
   /// configure with the same time interval to process.
-  for (size_t i=0; i < integer_delay_.size(); i++) {
-    integer_delay_[i]->add_time_interval(uint64_t(1000)*start_time,
-                                         uint64_t(1000)*stop_time);
-  }
+	integer_delay_.add_time_interval(uint64_t(1000)*start_time,
+                                   uint64_t(1000)*stop_time);
 }
 
-void Input_node_tasklet::initialise() {
-#ifdef RUNTIME_STATISTIC
-  std::stringstream inputid;
-  std::stringstream compid;
-  std::stringstream monid;
-  std::stringstream tt;
-
-  inputid << "inputnode" << RANK_OF_NODE;
-
-  compid << inputid.str() << "_dotask";
-  monid << compid.str() << "_monitor_state";
-  dotask_state_.init(monid.str());
-  dotask_state_.add_property(inputid.str(), "is_a", "inputnode");
-  dotask_state_.add_property(inputid.str(), "has", compid.str() );
-  dotask_state_.add_property(compid.str(), "is_a", "inputnode_dotaskloop");
-  dotask_state_.add_property(compid.str(), "has", monid.str() );
-  tt.str(monid.str());
-
-  compid.str("");
-  monid.str("");
-  compid << inputid.str() << "_reader";
-  monid << compid.str() << "_monitor_state";
-  reader_state_.init(monid.str());
-  reader_state_.add_property(inputid.str(), "is_a", "inputnode");
-  reader_state_.add_property(inputid.str(), "has", compid.str() );
-  reader_state_.add_property(compid.str(), "is_a", "reader");
-  reader_state_.add_property(compid.str(), "has", monid.str() );
-  dotask_state_.add_property(tt.str(), "contains", monid.str() );
-
-
-  compid.str("");
-  monid.str("");
-  compid << inputid.str() << "_channelextractor";
-  monid << compid.str() << "_monitor_state";
-  chex_state_.init(monid.str());
-  chex_state_.add_property(inputid.str(), "is_a", "inputnode");
-  chex_state_.add_property(inputid.str(), "has", compid.str() );
-  chex_state_.add_property(compid.str(), "is_a", "channel_extractor");
-  chex_state_.add_property(compid.str(), "has", monid.str() );
-  dotask_state_.add_property(tt.str(), "contains", monid.str() );
-
-
-  compid.str("");
-  monid.str("");
-  compid << inputid.str() << "_integerdelaycorr";
-  monid << compid.str() << "_monitor_state";
-  integerdelay_state_.init(monid.str());
-  integerdelay_state_.add_property(inputid.str(), "is_a", "inputnode");
-  integerdelay_state_.add_property(inputid.str(), "has", compid.str() );
-  integerdelay_state_.add_property(compid.str(), "is_a", "integer_delay_correction");
-  integerdelay_state_.add_property(compid.str(), "has", monid.str() );
-  dotask_state_.add_property(tt.str(), "contains", monid.str() );
-
-
-  compid.str("");
-  monid.str("");
-  compid << inputid.str() << "_outputwriter";
-  monid << compid.str() << "_monitor_state";
-  outputwriter_state_.init(monid.str());
-  outputwriter_state_.add_property(inputid.str(), "is_a", "inputnode");
-  outputwriter_state_.add_property(inputid.str(), "has", compid.str() );
-  outputwriter_state_.add_property(compid.str(), "is_a", "output_writers");
-  outputwriter_state_.add_property(compid.str(), "has", monid.str() );
-  dotask_state_.add_property(tt.str(), "contains", monid.str() );
-#endif //RUNTIME_STATISTIC
+void Input_node_tasklet::initialise()
+{
 }
 
 Input_node_tasklet::~Input_node_tasklet() {
   channel_extractor_.empty_input_queue();
+  integer_delay_.empty_input_queue();
+  data_writer_.empty_input_queue();
 
-  for (size_t i = 0; i < integer_delay_.size(); i++) {
-    integer_delay_[i]->empty_input_queue();
-  }
-
-  for (size_t i = 0; i < data_writers_.size(); i++) {
-    data_writers_[i].empty_input_queue();
-  }
-
-  double total_duration = timer_nothing_.measured_time() +
-                          timer_delaying_.measured_time() +
-                          timer_writing_.measured_time() +
-                          timer_rwriting_.measured_time();
-
-  double ratio1 = ((100.0*timer_nothing_.measured_time())/total_duration);
-  double ratio2 = ((100.0*timer_delaying_.measured_time())/total_duration);
-  double ratio3 = ((100.0*timer_writing_.measured_time())/total_duration);
-  double ratio4 = ((100.0*timer_rwriting_.measured_time())/total_duration);
-  PROGRESS_MSG( " efficiency:" << " ratio:(idle:"<< ratio1 <<"%, delay:"<< ratio2 <<"%, write:"<< ratio3 <<"%, r:"<< ratio4 <<"%)");
-  PROGRESS_MSG( " timming:" << total_duration << " sec"
-                            << " detail:(nothing: " << timer_nothing_.measured_time() <<"sec "
-                            << " delay: " << timer_delaying_.measured_time() << "sec "
-                            << " writing: " << timer_writing_.measured_time() << "sec )");
-
+	PROGRESS_MSG( "Total duration:" << rttimer_processing_.measured_time() << " sec" );
+	PROGRESS_MSG( "      reading:" << toMB(reader_.get_num_processed_bytes())/rttimer_processing_.measured_time() << " MB/s" );
+	PROGRESS_MSG( "  channelizer:" << toMB(channel_extractor_.get_num_processed_bytes())/rttimer_processing_.measured_time() << " MB/s duration:" << channel_extractor_.get_sec() );
+	PROGRESS_MSG( "integer_delay:" << toMB(integer_delay_.get_num_processed_bytes())/rttimer_processing_.measured_time() << " MB/s" );
+	PROGRESS_MSG( "      writing:" << toMB(data_writer_.get_num_processed_bytes())/data_writer_.get_sec() << " MB/s duration:" << data_writer_.get_sec() );
 }
 
 
 void
 Input_node_tasklet::wait_termination() {
+  /// Block until all the thread into the pool terminates.
   wait( pool_ );
 }
 
 void
 Input_node_tasklet::start_tasklets() {
-  pool_.register_thread( this->start() );
+	rttimer_processing_.start();
+  pool_.register_thread( data_writer_.start() );
+  pool_.register_thread( integer_delay_.start() );
   pool_.register_thread( channel_extractor_.start() );
   pool_.register_thread( reader_.start() );
 }
 
 void
 Input_node_tasklet::stop_tasklets() {
-  isrunning_=false;
   reader_.stop();
   channel_extractor_.stop();
+  integer_delay_.stop();
+  data_writer_.stop();
+  rttimer_processing_.stop();
 }
 
-
-void
-Input_node_tasklet::
-do_execute() {
-  ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: ENTER");
-  timer_delaying_.start();
-  while ( has_work() || isrunning_ ) {
-    do_task();
-    if ( !did_work ) {
-
-      usleep(10000);
-      sched_yield();
-    } else {
-    	//DEBUG_MSG(__PRETTY_FUNCTION__<< ":: WORKED");
-    }
-  }
-  timer_delaying_.stop();
-
-  //DEBUG_MSG(" INPUT_TASKLET WILL EXIT ITS LOOP ");
-}
-
-void
-Input_node_tasklet::
-do_task() {
-  did_work = false;
-
-
-  RT_STAT( dotask_state_.begin_measure() );
-
-  //timer_delaying_.resume();
-  RT_STAT(integerdelay_state_.begin_measure() );
-  for (size_t i=0; i<integer_delay_.size(); i++) {
-    SFXC_ASSERT(integer_delay_[i] != NULL);
-    while(integer_delay_[i]->has_work()) {
-   	  integer_delay_[i]->do_task();
-      did_work = true;
-    }
-  }
-  RT_STAT(integerdelay_state_.end_measure(1));
-  //timer_delaying_.stop();
-
-  //timer_writing_.resume();
-  RT_STAT( outputwriter_state_.begin_measure() );
-  for (size_t i=0; i<data_writers_.size(); i++) {
-    while(data_writers_[i].has_work()) {
-     //timer_nothing_.resume();
-     data_writers_[i].do_task();
-     did_work = true;
-     //timer_nothing_.stop();
-    }
-  }
-	//timer_writing_.stop();
-
-  RT_STAT( outputwriter_state_.end_measure(1) );
-  RT_STAT( dotask_state_.end_measure(1) );
-
-/*
-  double total_duration = timer_nothing_.measured_time() +
-                          timer_delaying_.measured_time() +
-                          timer_writing_.measured_time() +
-                          timer_rwriting_.measured_time();
-
-	if( did_work && total_duration-last_duration_ > 2 ){
-		last_duration_=total_duration;
-		double ratio1 = ((100.0*timer_nothing_.measured_time())/total_duration);
-		double ratio2 = ((100.0*timer_delaying_.measured_time())/total_duration);
-		double ratio3 = ((100.0*timer_writing_.measured_time())/total_duration);
-		double ratio4 = ((100.0*timer_rwriting_.measured_time())/total_duration);
-		PROGRESS_MSG( " efficiency:" << " ratio:(idle:"<< ratio1 <<"%, delay:"<< ratio2 <<"%, write:"<< ratio3 <<"%, r:"<< ratio4 <<"%)");
-		PROGRESS_MSG( " timming:" << total_duration << " sec"
-															<< " detail:(nothing: " << timer_nothing_.measured_time() <<"sec "
-															<< " delay: " << timer_delaying_.measured_time() << "sec "
-															<< " writing: " << timer_writing_.measured_time() << "sec )");
-	}else if(total_duration-last_duration_ > 4){
-			//DEBUG_MSG("C; EST LE GROS BRIN ");
-	}
-	*/
-}
-
-bool
-Input_node_tasklet::
-has_work() {
-  return did_work;
-}
-
-void
-Input_node_tasklet::
-set_delay_table(Delay_table_akima &table) {
+void Input_node_tasklet::set_delay_table(Delay_table_akima &table) {
   delay_table = table;
-  for (size_t i=0; i<integer_delay_.size(); i++) {
-    SFXC_ASSERT(integer_delay_[i] != NULL);
-    integer_delay_[i]->set_delay_table(table);
-  }
-
-  did_work = true;
+  integer_delay_.set_delay_table(table);
 }
 
 void
@@ -311,24 +142,23 @@ set_parameters(const Input_node_parameters &input_node_param,
                                     reader_.get_tracks(input_node_param));
 
   size_t number_frequency_channels = input_node_param.channels.size();
-  integer_delay_.resize(number_frequency_channels, NULL);
-  data_writers_.resize(number_frequency_channels);
 
-  for (size_t i=0; i < number_frequency_channels; i++) {
-    if (integer_delay_[i] == NULL) {
-      integer_delay_[i] = new Integer_delay_tasklet_();
-      if (delay_table.initialised()) {
-        integer_delay_[i]->set_delay_table(delay_table);
-      }
-    }
-    integer_delay_[i]->connect_to(channel_extractor_.get_output_buffer(i));
-    integer_delay_[i]->set_parameters(input_node_param, node_nr);
+	for (size_t i=0; i < number_frequency_channels; i++) {
+		integer_delay_.add_channel();
+		data_writer_.add_channel();
+	}
 
-    data_writers_[i].connect_to(integer_delay_[i]->get_output_buffer());
-    data_writers_[i].set_parameters(input_node_param);
+	if (delay_table.initialised()) {
+      integer_delay_.set_delay_table(delay_table);
   }
 
-  did_work = true;
+  for (size_t i=0; i < number_frequency_channels; i++) {
+	  integer_delay_.connect_to(i, channel_extractor_.get_output_buffer(i) );
+    integer_delay_.set_parameters(i, input_node_param, node_nr);
+
+    data_writer_.connect_to(i, integer_delay_.get_output_buffer(i) );
+    data_writer_.set_parameters(i, input_node_param);
+  }
 }
 
 
@@ -345,16 +175,11 @@ get_stop_time() {
 }
 
 void
-Input_node_tasklet::
-add_data_writer(size_t i,
-                Data_writer_ptr_ data_writer) {
-  did_work = true;
-  SFXC_ASSERT(i < data_writers_.size());
-  SFXC_ASSERT(!integer_delay_.empty());
-  SFXC_ASSERT(integer_delay_[i] != NULL);
+Input_node_tasklet::add_data_writer(size_t i, Data_writer_sptr data_writer) {
   // Number of bytes for one integration slice
-  int size_slice = integer_delay_[i]->bytes_of_output();
-  data_writers_[i].add_data_writer(data_writer, size_slice);
+  int size_slice = integer_delay_.bytes_of_output();
 
-  DEBUG_MSG("CONFIGURING THE DATA WRITER !!!!!!!!!!!!!!!!!!!!!!!!!!");
+  /// Add a new timeslice to stream to the given data_writer into the
+  /// data_writer queue.
+  data_writer_.add_timeslice_to_stream(i, data_writer, size_slice);
 }

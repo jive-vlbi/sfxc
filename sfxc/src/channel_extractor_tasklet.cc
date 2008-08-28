@@ -41,51 +41,21 @@ Channel_extractor_tasklet(int samples_per_block, int N_)
   /// input data-stream.
   ch_extractor = new Channel_extractor_dynamic();
 #endif //USE_EXTRACTOR_5
-
-#ifdef RUNTIME_STATISTIC
-  std::stringstream inputid;
-  std::stringstream chexid;
-  std::stringstream monid;
-
-  inputid << "inputnode" << RANK_OF_NODE;
-  chexid << inputid.str() << "_channelextractor";
-  monid << chexid.str() << "_monitor_speed";
-
-  monitor_.init(monid.str(), 1000, "stats/");
-  monitor_.add_property(inputid.str(), "is_a", "inputnode");
-  monitor_.add_property(inputid.str(), "has", chexid.str() );
-  monitor_.add_property(chexid.str(), "is_a", "channel_extractor");
-  monitor_.add_property(chexid.str(), "has", monid.str() );
-
-#endif //RUNTIME_STATISTIC
-
 }
 
 void Channel_extractor_tasklet::init_stats() {
   data_processed_ = 0;
-  timer_waiting_input_.restart();
-  timer_waiting_output_.restart();
-  timer_processing_.restart();
 }
 
-Channel_extractor_tasklet::~Channel_extractor_tasklet() {
-  /// Print statistics info
-  double wait_duration = (timer_waiting_input_.measured_time()+timer_waiting_output_.measured_time());
-  double total_duration = timer_processing_.measured_time();
-
-  if ( total_duration >= 1.0 ) {
-    //double ratio1 = ((100.0*timer_processing_.measured_time())/total_duration);
-    //double ratio2 = ((100.0*timer_waiting_input_.measured_time())/total_duration);
-    double ratio3 = ((100.0*timer_waiting_output_.measured_time())/total_duration);
-    PROGRESS_MSG( "channelizing speed:" << 1.0*toMB(data_processed_)/total_duration << "MB/s duration: "<< total_duration <<"sec.");
-    //init_stats();
-  }
+Channel_extractor_tasklet::~Channel_extractor_tasklet()
+{
 
 }
 
 void Channel_extractor_tasklet::do_execute() {
   /// The thread is in a running state
   isrunning_ = true;
+	timer_.start();
 
   /// Exception handler to insure to catch the QueueClosedException event
   /// This Exception is thrown when the current thread is blocked on a
@@ -93,11 +63,9 @@ void Channel_extractor_tasklet::do_execute() {
   try {
 
     /// Main thread loop
-    timer_processing_.start();
     while ( isrunning_ && !input_buffer_->isclose() ) {
       do_task();
     }
-    timer_processing_.stop();
 
     /// The queue has been closed and is empty.
   } catch (QueueClosedException&e ) {
@@ -112,6 +80,8 @@ void Channel_extractor_tasklet::do_execute() {
   for (unsigned int i=0;i<output_buffers_.size();i++) {
     output_buffers_[i]->close();
   }
+
+  timer_.stop();
 }
 
 void Channel_extractor_tasklet::stop() {
@@ -120,10 +90,6 @@ void Channel_extractor_tasklet::stop() {
 
 void
 Channel_extractor_tasklet::do_task() {
-#ifdef RUNTIME_STATISTIC
-  monitor_.begin_measure();
-#endif // RUNTIME_STATISTIC
-
   // Number of output streams, one output stream corresponds to one subband
   SFXC_ASSERT(n_subbands == output_buffers_.size());
   SFXC_ASSERT(n_subbands > 0);
@@ -190,6 +156,7 @@ Channel_extractor_tasklet::do_task() {
   //timer_processing_.resume();
   ch_extractor->extract((unsigned char *) &input_element.data().buffer[0],
                         output_positions);
+
   //timer_processing_.stop();
 
   data_processed_ +=  input_element.data().buffer.size();
@@ -201,25 +168,6 @@ Channel_extractor_tasklet::do_task() {
     }
     input_buffer_->pop();
   }
-
-  /*
-  double wait_duration = (timer_waiting_input_.measured_time()+timer_waiting_output_.measured_time());
-  double total_duration = wait_duration+timer_processing_.measured_time();
-
-  if ( total_duration-last_duration_ >= 3.0 ) {
-    last_duration_ = total_duration;
-    double ratio1 = ((100.0*timer_processing_.measured_time())/total_duration);
-    double ratio2 = ((100.0*timer_waiting_input_.measured_time())/total_duration);
-    double ratio3 = ((100.0*timer_waiting_output_.measured_time())/total_duration);
-    PROGRESS_MSG( "channelizing avg:" << 1.0*toMB(data_processed_)/total_duration << "MB/s" << std::endl
-                                << " burst:" << 1.0*toMB(data_processed_)/timer_processing_.measured_time() << "MB/s" << std::endl
-                                << " details(active:"<< ratio1 <<"% waitinput:"<< ratio2 <<"% waitoutput:"<< ratio3 <<"%)");
-  }
-  */
-
-#ifdef RUNTIME_STATISTIC
-  monitor_.end_measure(n_output_bytes*n_subbands);
-#endif // RUNTIME_STATISTIC
 }
 
 

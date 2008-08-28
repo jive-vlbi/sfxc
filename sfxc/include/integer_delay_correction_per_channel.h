@@ -14,9 +14,11 @@
 #include "utils.h"
 #include "delay_table_akima.h"
 #include "control_parameters.h"
-#include "tasklet/tasklet.h"
 
-class Integer_delay_correction_per_channel : public Tasklet {
+class Integer_delay_correction_per_channel;
+typedef boost::shared_ptr<Integer_delay_correction_per_channel> Integer_delay_correction_per_channel_sptr;
+
+class Integer_delay_correction_per_channel  {
 public:
   // Input data, this comes from the channel extractor
   typedef Input_node_types::Channel_buffer              Input_buffer;
@@ -44,10 +46,12 @@ public:
 
   /// For tasklet
 
-  /// Process one piece of data
-  void do_task();
+  /// Process one piece of data, return the amount of data processed
+  uint64_t do_task();
+
   /// Check if we can process data
   bool has_work();
+
   /// Set the input
   void connect_to(Input_buffer_ptr new_Input_buffer);
   /// Get the output
@@ -67,6 +71,7 @@ public:
 	/// Add a time interval to process
 	void add_time_interval(uint64_t us_start_time, uint64_t us_stop_time);
 
+// TODO (damien#2#): This Queue should be factored into the integer_delay_tasklet.
 	/// The queue storing all the intervals
   Threadsafe_queue<Time_interval> intervals_;
 
@@ -76,7 +81,6 @@ public:
   /// Go to the next time interval. This function is blocking until
   /// an interval is available using the function add_time_interval
 	void fetch_next_time_interval();
-
 
   // Initialisation of the delay table
   void set_delay_table(Delay_table_akima &table);
@@ -90,6 +94,9 @@ public:
 
   // Number of bytes per integration slice
   int bytes_of_output();
+
+  static Integer_delay_correction_per_channel_sptr new_sptr();
+
 private:
 
   // Checks whether the start time has been set

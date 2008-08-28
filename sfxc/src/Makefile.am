@@ -56,6 +56,8 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   single_data_writer_controller.cc \
   single_data_reader_controller.cc \
   input_node_tasklet.cc \
+  input_node_integer_delay_tasklet.cc \
+  input_node_data_writer.cc \
   input_node_data_writer_tasklet.cc \
   output_header.cc \
   svn_version.cc

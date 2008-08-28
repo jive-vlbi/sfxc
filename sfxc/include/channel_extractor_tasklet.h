@@ -42,6 +42,7 @@ public:
   /// Pointer to an Input_buffer
   typedef boost::shared_ptr<Input_buffer>      Input_buffer_ptr;
 
+
   /// Output memory pool for the dechannelized data
   typedef Types::Channel_memory_pool           Output_memory_pool;
   /// Queue for sending out the dechannalized data
@@ -50,6 +51,7 @@ public:
   typedef Types::Channel_buffer_element        Output_buffer_element;
   /// A pointer to the Output_buffer
   typedef boost::shared_ptr<Output_buffer>     Output_buffer_ptr;
+
 
   /**
    * Constructor
@@ -92,6 +94,14 @@ public:
   // Empty the input queue, called from the destructor of Input_node
   void empty_input_queue();
 
+	inline uint64_t get_num_processed_bytes(){ return data_processed_; }
+
+	/*****************************************************************************
+  * @desc Return the number of seconds since the start() is called.
+  *****************************************************************************/
+ 	inline double get_sec(){ return timer_.measured_time(); }
+
+
 private:
   /// Queue containing input data
   Input_buffer_ptr                input_buffer_;
@@ -119,16 +129,8 @@ private:
   /// Amount of data processed by this channel extractor
   uint64_t data_processed_;
 
-  /// Amount of time spend blocked on an empty input queue
-  /// If this number is high then the previous elements is too slow.
-  Timer timer_waiting_input_;
-
-  /// Amount of time spend blocked on a full output queue
-  /// If this number is high, then the next elements are too slow.
-  Timer timer_waiting_output_;
-
-  /// Amount of time really spend on doing something usefull (dechannelization).
-  Timer timer_processing_;
+   /// Amount of time really spend on doing something usefull (dechannelization).
+  Timer timer_;
   double last_duration_;
 
 #ifdef RUNTIME_STATISTIC
