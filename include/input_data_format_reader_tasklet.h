@@ -85,6 +85,8 @@ public:
     reader_->set_parameters(input_node_param);
   }
 
+	inline uint64_t get_num_processed_bytes(){ return data_read_; }
+
 private:
   /// Get an element from the memory pool into input_element_
   void allocate_element();
@@ -119,14 +121,8 @@ private:
   /// Stop time in microseconds
   int64_t stop_time;
 
-#ifdef RUNTIME_STATISTIC
-  QOS_MonitorSpeed monitor_;
-#endif // RUNTIME_STATISTIC
-
+	/// Amount of data that was received by this component
   uint64_t data_read_;
-  Timer timer_read_;
-  Timer timer_allocate_;
-  double last_duration_;
 
   const size_t n_bytes_per_input_word;
 };

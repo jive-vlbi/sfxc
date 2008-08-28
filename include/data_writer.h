@@ -13,6 +13,7 @@
 #include <types.h>
 #include <stddef.h> // defines size_t
 #include <string>
+#include <boost/shared_ptr.hpp>
 
 class Data_writer {
 public:
@@ -66,5 +67,7 @@ private:
 Data_writer& operator<<(Data_writer& dr, const std::string& str);
 Data_writer& operator<<(Data_writer& dr, uint32_t value);
 Data_writer& operator<<(Data_writer& dr, int32_t value);
+
+typedef boost::shared_ptr<Data_writer>       Data_writer_sptr;
 
 #endif // DATA_WRITER_H

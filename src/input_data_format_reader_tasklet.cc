@@ -20,33 +20,9 @@ Input_data_format_reader_tasklet(
   push_element();
 
   data_read_=0;
-  last_duration_=0;
-
-#ifdef RUNTIME_STATISTIC
-  std::stringstream inputid;
-  std::stringstream chexid;
-  std::stringstream monid;
-
-  inputid << "inputnode" << RANK_OF_NODE;
-  chexid << inputid.str() << "_mark5a_reader";
-  monid << chexid.str() << "_monitor_speed";
-
-  monitor_.init(monid.str(), 1000, "stats/");
-  monitor_.add_property(inputid.str(), "is_a", "inputnode");
-  monitor_.add_property(inputid.str(), "has", chexid.str() );
-  monitor_.add_property(chexid.str(), "is_a", "mark5a_reader");
-  monitor_.add_property(chexid.str(), "has", monid.str() );
-
-#endif //RUNTIME_STATISTIC
 }
 
-Input_data_format_reader_tasklet::~Input_data_format_reader_tasklet() {
-  double duration = (timer_read_.measured_time()+timer_allocate_.measured_time());
-
-  double ratio = ((100.0*timer_read_.measured_time())/duration);
-  PROGRESS_MSG( "reading speed:" <<  1.0*toMB(data_read_)/duration << "MB/s" << " reading:("<< ratio <<"%)" );
-
-}
+Input_data_format_reader_tasklet::~Input_data_format_reader_tasklet(){  }
 
 void Input_data_format_reader_tasklet::stop() {
   /// There is a special associated with the empty interval.
@@ -59,9 +35,6 @@ void Input_data_format_reader_tasklet::do_execute() {
 
   /// blocks until we have an interval to process
   fetch_next_time_interval();
-
-  timer_read_.start();
-  timer_allocate_.start();
 
   /// then let's work
   while ( !current_interval_.empty() ) {
@@ -81,15 +54,8 @@ void Input_data_format_reader_tasklet::do_execute() {
 void
 Input_data_format_reader_tasklet::
 do_task() {
-#ifdef RUNTIME_STATISTIC
-  monitor_.begin_measure();
-#endif // RUNTIME_STATISTIC
-
-  timer_allocate_.resume();
   allocate_element();
-  timer_allocate_.stop();
 
-  timer_read_.resume();
   if (reader_->eof()) {
     randomize_block();
     current_time += reader_->time_between_headers();
@@ -104,25 +70,10 @@ do_task() {
     current_time = reader_->get_current_time();
   }
   input_element_->start_time = current_time;
-  timer_read_.stop();
 
   data_read_ += input_element_->buffer.size();
 
-  double duration = (timer_read_.measured_time()+timer_allocate_.measured_time());
-  if ( duration >= last_duration_+2.0 ) {
-    double ratio = ((100.0*timer_read_.measured_time())/duration);
-    PROGRESS_MSG( "reading speed:" <<  1.0*toMB(data_read_)/duration << "MB/s" << " reading:("<< ratio <<"%)" );
-    //data_read_ = 0;
-    //timer_read_.restart();
-    //timer_allocate_.restart();
-    last_duration_ = duration;
-  }
-
   push_element();
-
-#ifdef RUNTIME_STATISTIC
-  monitor_.end_measure(reader->size_data_block());
-#endif // RUNTIME_STATISTIC
 }
 
 void

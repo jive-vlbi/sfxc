@@ -15,9 +15,11 @@
 #include "input_data_format_reader_tasklet.h"
 #include "integer_delay_correction_per_channel.h"
 #include "channel_extractor_tasklet.h"
-#include "input_node_data_writer_tasklet.h"
 
-#include "timer.h"
+#include "input_node_data_writer_tasklet.h"
+#include "input_node_integer_delay_tasklet.h"
+
+#include "rttimer.h"
 
 // for RUNTIME_STATISTIC
 #include "monitor.h"
@@ -29,36 +31,23 @@ enum TRANSPORT_TYPE {
 };
 
 
-class Input_node_tasklet : public Tasklet, public Thread {
+class Input_node_tasklet {
 public:
-  typedef boost::shared_ptr<Data_writer>             Data_writer_ptr_;
   typedef Input_data_format_reader                   Input_reader_;
   typedef boost::shared_ptr<Input_reader_>           Input_reader_ptr_;
   typedef Input_data_format_reader_tasklet           Input_reader_tasklet_;
-  typedef Channel_extractor_tasklet                  Channel_extractor_tasklet_;
-  typedef Integer_delay_correction_per_channel       Integer_delay_tasklet_;
-  typedef Input_node_data_writer_tasklet             Data_writer_tasklet_;
 
   // The mark5a-reader and the first data block
   Input_node_tasklet(Input_reader_ptr_ input_reader_ptr,
                      Input_reader_::Data_frame &data);
 
-  void initialise();
 
   ~Input_node_tasklet();
 
-
+  void initialise();
   void start_tasklets();
   void stop_tasklets();
   void wait_termination();
-
-  void do_execute();
-  void do_task();
-  bool has_work();
-
-  const char *name() {
-    return __PRETTY_FUNCTION__;
-  }
 
   /// Sets a new time interval for which it should output data
   /// (typically the duration of a scan, or part thereof).
@@ -77,47 +66,34 @@ public:
 
   /// Returns the current time in microseconds
   int get_current_time();
+
   /// Returns the stop time of the current time interval in microseconds
   int get_stop_time();
 
   /// Sets the output writer for channel i
-  void add_data_writer(size_t i,
-                       Data_writer_ptr_ data_writer);
+  void add_data_writer(size_t i, Data_writer_sptr data_writer);
 
 private:
+  /// All the thread created in this class are stored in the thread pool
   ThreadPool pool_;
 
-  //  std::list<Time_slice>                time_slices_;
+  /// we need one thread for reading
   Input_reader_tasklet_            reader_;
-  Channel_extractor_tasklet_       channel_extractor_;
 
-  // Pointer because we can not copy construct the Integer_delay_tasklet_
-  // because of the memory pool
-  std::vector<Integer_delay_tasklet_ *>  integer_delay_;
-  std::vector<Data_writer_tasklet_>    data_writers_;
+  /// We need one thread for the allocation
+  Channel_extractor_tasklet       channel_extractor_;
 
-  bool did_work;
+  /// We need one thread for the writing
+  Input_node_data_writer_tasklet   data_writer_;
 
-  Timer timer_nothing_;
-  Timer timer_delaying_;
-  Timer timer_writing_;
-  Timer timer_rwriting_;
+  /// We need one thread for the integer delay correction
+  Input_node_integer_delay_tasklet   integer_delay_;
+
+  Timer rttimer_processing_;
   double last_duration_;
-
 
   Delay_table_akima delay_table;
 
-  // List of start and stop-times (in seconds) that the reader should output
-  std::queue< std::pair<int32_t, int32_t> > time_intervals;
-
-
-#ifdef RUNTIME_STATISTIC
-  QOS_MonitorSpeed mark5areader_state_;
-  QOS_MonitorSpeed chex_state_;
-  QOS_MonitorSpeed integerdelay_state_;
-  QOS_MonitorSpeed outputwriter_state_;
-  QOS_MonitorSpeed dotask_state_;
-#endif //RUNTIME_STATISTIC
   const size_t n_bytes_per_input_word;
 };
 

@@ -15,7 +15,7 @@ Integer_delay_correction_per_channel()
   SFXC_ASSERT(!memory_pool_.empty());
 }
 
-void
+uint64_t
 Integer_delay_correction_per_channel::do_task() {
   SFXC_ASSERT(has_work());
   SFXC_ASSERT(current_delay.first <= 0);
@@ -54,7 +54,7 @@ Integer_delay_correction_per_channel::do_task() {
       // And the integer delay changes at the same time
       // Release the current block
       input_buffer_->pop();
-      return;
+      return 0;
     }
 
     // Default case with normal data
@@ -184,6 +184,8 @@ Integer_delay_correction_per_channel::do_task() {
       ((_current_time+delta_time-1)/integration_time)*integration_time;
     current_delay = get_delay(_current_time);
   }
+
+  return 0;
 }
 
 
@@ -356,5 +358,10 @@ void Integer_delay_correction_per_channel::empty_input_queue() {
   while (!input_buffer_->empty()) {
     input_buffer_->pop();
   }
+}
+
+Integer_delay_correction_per_channel_sptr
+Integer_delay_correction_per_channel::new_sptr(){
+		return Integer_delay_correction_per_channel_sptr(new Integer_delay_correction_per_channel());
 }
 

@@ -1,186 +1,123 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * Copyright (c) 2007 University of Amsterdam (Netherlands)
+ * All rights reserved.
+ *
+ * Author(s): Damien Marchal <dmarchal@science.uva.nl>, 2008
+ *
+ *  This file contains:
+ *     - The definition of the Input_node_data_writer_tasklet.
+ */
+#include <sched.h>
 #include "input_node_data_writer_tasklet.h"
 
-Input_node_data_writer_tasklet::
-Input_node_data_writer_tasklet() {
-	last_duration_ = 0;
-	total_data_written_ = 0;
+Input_node_data_writer_tasklet::Input_node_data_writer_tasklet(){}
+Input_node_data_writer_tasklet::~Input_node_data_writer_tasklet(){}
+
+
+/*****************************************************************************
+* @desc Empy all the queue.
+*****************************************************************************/
+void Input_node_data_writer_tasklet::empty_input_queue()
+{
+    for (size_t i = 0; i < data_writers_.size(); i++)
+    {
+        data_writers_[i]->empty_input_queue();
+    }
 }
 
-Input_node_data_writer_tasklet::~Input_node_data_writer_tasklet() {
-  if (input_buffer_ != Input_buffer_ptr()) {
-      if (!input_buffer_->empty()) {
-          DEBUG_MSG("There is still data to be written. "
-                    << input_buffer_->size());
+
+/*****************************************************************************
+* @desc Stop the thread.
+*****************************************************************************/
+void Input_node_data_writer_tasklet::stop()
+{
+  isrunning_=false;
+}
+
+
+/*****************************************************************************
+* @desc The main computation loop that is executed in the data_writing thread
+*****************************************************************************/
+void Input_node_data_writer_tasklet::do_execute()
+{
+  bool did_work=false;
+
+  data_processed_ = 0;
+
+	timer_.start();
+  while( isrunning_ ){
+    did_work = false;
+    for (size_t i=0; i<data_writers_.size(); i++)
+    {
+        while (data_writers_[i]->has_work())
+        {
+            data_processed_+=data_writers_[i]->do_task();
+            did_work=true;
         }
     }
-  while  (!data_writers_.empty()) {
-      if ((data_writers_.front().writer->get_size_dataslice() <= 0) &&
-          (data_writers_.front().slice_size == 0)) {
-          data_writers_.pop();
-        } else {
-          break;
-        }
+    if( !did_work )
+    {
+    	//sched_yield();
+      usleep(10000);
     }
-  if (!data_writers_.empty()) {
-      DEBUG_MSG("Data_writers are still waiting to produce output.");
-    }
-
-
-
-
-  double wait_duration = (timer_waiting_.measured_time()+timer_other_.measured_time());
-  double total_duration = wait_duration+timer_writing_.measured_time();
-	double ratio1 = ((100.0*timer_waiting_.measured_time())/total_duration);
-	double ratio2 = ((100.0*timer_other_.measured_time())/total_duration);
-	double ratio3 = ((100.0*timer_writing_.measured_time())/total_duration);
-
-	last_duration_ = total_duration;
-	//DEBUG_MSG( "data_writer:" << " ratio:(wa:"<< ratio1 <<"%, ot:"<< ratio2 <<"%, wr:"<< ratio3 <<"%, )");
-	//DEBUG_MSG( "data_writer:" << " time:(wa:"<< timer_waiting_.measured_time() <<"s, other:"<< timer_other_.measured_time() <<"s, writing:"<< timer_writing_.measured_time() <<"s, )");
-	DEBUG_MSG( "data_writer byte sent:" << toMB(total_data_written_) << "MB and speed: " << toMB(total_data_written_)/total_duration );
+  }
+	timer_.stop();
 
 }
 
-void
-Input_node_data_writer_tasklet::
-connect_to(Input_buffer_ptr new_input_buffer) {
-  input_buffer_ = new_input_buffer;
+/*****************************************************************************
+* @desc Add a new channel.
+*****************************************************************************/
+void Input_node_data_writer_tasklet::add_channel()
+{
+    data_writers_.push_back( Input_node_data_writer::new_sptr() );
 }
 
-bool
-Input_node_data_writer_tasklet::
-has_work() {
-  // No input data
-  if (input_buffer_->empty())
-    return false;
-
-  // No data writers to send the data to
-  if (data_writers_.empty())
-    return false;
-
-  // The data writer in the front of the queue is still being used
-  // to send data from another channel
-  if ((data_writers_.front().slice_size > 0) &&
-      (data_writers_.front().writer->get_size_dataslice() > 0))
-			return false;
-
-  // Check whether we can send data to the active writer
-  if (!data_writers_.front().writer->can_write())
-		return false;
-
-  return true;
+/*****************************************************************************
+* @desc Channel count
+*****************************************************************************/
+size_t Input_node_data_writer_tasklet::number_channel()
+{
+    return data_writers_.size();
 }
 
-void
-Input_node_data_writer_tasklet::
-do_task() {
-  // Header contains
-  // - int32_t invalid_samples_begin
-  // - int32_t nr_invalid_samples
-  // - char offset (in samples within the first byte)
-  // The data contains nr_channels/samples_per_byte+1 bytes
-  SFXC_ASSERT(has_work());
 
-  //timer_writing_.resume();
-
-  // Acquire the input data
-  //timer_waiting_.resume();
-  Input_buffer_element &input_element = input_buffer_->front();
-  //timer_waiting_.stop();
-
-  //timer_other_.resume();
-  struct Writer_struct& data_writer = data_writers_.front();
-
-  // Check whether we have to start a new timeslice
-  if ( data_writer.slice_size > 0) {
-      // Initialise the size of the data slice
-      // from the front(): writer.set_size_dataslice(slice_size), slice_size=0
-      //timer_other_.stop();
-
-      SFXC_ASSERT(data_writer.writer->get_size_dataslice() <= 0);
-      int nr_bytes = data_writer.slice_size;
-      SFXC_ASSERT(nr_bytes != 0);
-      data_writer.writer->set_size_dataslice(nr_bytes);
-      data_writer.slice_size = 0;
-      DEBUG_MSG("FETCHING FOR A NEW READER......");
-    }
-
-  // Check whether we have written all data to the data_writer
-  SFXC_ASSERT(data_writer.slice_size == 0);
-  SFXC_ASSERT(data_writer.writer->get_size_dataslice() >= 0);
-  if (data_writer.writer->get_size_dataslice() == 0) {
-      data_writers_.pop();
-      DEBUG_MSG("POPPING FOR A NEW READER......");
-      //timer_other_.restart();
-      //timer_writing_.stop();
-      return;
-    }
-
-  //timer_other_.stop();
-	//timer_writing_.resume();
-  // Start writing the actual data
-  Data_writer_ptr writer = data_writer.writer;
-  if ((int)input_element.delay >= 0) {
-      SFXC_ASSERT((input_element.invalid_samples_begin >= 0) &&
-                  (input_element.invalid_samples_begin <= 1024));
-      SFXC_ASSERT((input_element.nr_invalid_samples >= 0) &&
-                  (input_element.nr_invalid_samples <= 1024));
-      int nbytes = 0;
-
-      // write the information on invalid samples
-
-      nbytes = writer->put_bytes(sizeof(input_element.invalid_samples_begin),
-                                 (char*)&input_element.invalid_samples_begin);
-      SFXC_ASSERT(nbytes == sizeof(input_element.invalid_samples_begin));
-      nbytes = writer->put_bytes(sizeof(input_element.nr_invalid_samples),
-                                 (char*)&input_element.nr_invalid_samples);
-      SFXC_ASSERT(nbytes == sizeof(input_element.nr_invalid_samples));
-
-      do {
-          nbytes = writer->put_bytes(1, &input_element.delay);
-        } while (nbytes != 1);
-    }
-
-
-  int bytes_to_write = input_element.nr_bytes;
-  int bytes_written = 0;
-  char *data =
-    (char*)&input_element.channel_data.data().data[input_element.first_byte];
-
-  //timer_writing_.resume();
-  while (bytes_written < bytes_to_write) {
-      int nbytes = writer->put_bytes(bytes_to_write - bytes_written, data);
-      SFXC_ASSERT(nbytes >= 0);
-      bytes_written += nbytes;
-      data          += nbytes;
-    }
-
-	total_data_written_ += bytes_written;
-
-  input_buffer_->pop();
-
-	//timer_writing_.stop();
+/*****************************************************************************
+* @desc Connect the input queue of a datawriter to an external output queue.
+* @param int nr_stream The identifier of the stream.
+* @param Input_node_types::Fft_buffer_ptr buffer is a queue containing FFTs
+*****************************************************************************/
+void Input_node_data_writer_tasklet::connect_to(int nr_stream,
+                                        Input_node_types::Fft_buffer_ptr buffer)
+{
+  SFXC_ASSERT( nr_stream < data_writers_.size() );
+  data_writers_[nr_stream]->connect_to(buffer);
 }
 
-void
-Input_node_data_writer_tasklet::
-add_data_writer(Data_writer_ptr data_writer, int nr_bytes) {
-  Writer_struct writer;
-  writer.writer = data_writer;
-  writer.slice_size = nr_bytes;
-
-  data_writers_.push(writer);
-  DEBUG_MSG(": This data writer as a waiting queue with " << data_writers_.size() << " value: " << writer.slice_size );
+/*****************************************************************************
+* @desc Initialize the stream with the given parameters.
+* @param int nr_stream The identifier of the stream.
+* @param const Input_node_parameters &params
+*****************************************************************************/
+void Input_node_data_writer_tasklet::set_parameters(int nr_stream,
+                                            const Input_node_parameters &params)
+{
+  SFXC_ASSERT( nr_stream < data_writers_.size() );
+  data_writers_[nr_stream]->set_parameters(params);
 }
 
-void
-Input_node_data_writer_tasklet::
-set_parameters(const Input_node_parameters &input_param) {}
 
-// Empty the input queue, called from the destructor of Input_node
-void Input_node_data_writer_tasklet::empty_input_queue() {
-  while (!input_buffer_->empty()) {
-      input_buffer_->pop();
-    }
+/*****************************************************************************
+* @desc Add a pair of (data_writer, size_slice) to a given channel-queue.
+* @param int nr_stream The identifier of the stream.
+* @param Data_writer_sptr wr The writer on which to stream the data
+* @param int size the amount of byte to send to the given writer
+*****************************************************************************/
+void Input_node_data_writer_tasklet::add_timeslice_to_stream(int nr_stream,
+                                                     Data_writer_sptr wr,
+                                                     int size)
+{
+  SFXC_ASSERT( nr_stream < data_writers_.size() );
+  data_writers_[nr_stream]->add_timeslice(wr, size);
 }
 
