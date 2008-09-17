@@ -57,21 +57,26 @@ class Mark5Emulator(object):
         mark5scansPath = conf["mark5scansPath"]
         self.vex = vex
         self.fns = glob.glob(os.path.join(mark5scansPath, 
-                               "%s/m5a/%s_%s_*" % (experiment_name.lower(), 
-                                                   experiment_name.lower(),
-                                                   station.lower())))
+                                          "%s/m5a/%s_%s_*" % (experiment_name.lower(), 
+                                                              experiment_name.lower(),
+                                                              station.lower())))
+        if not self.fns:
+            s = ("No files for experiment %s, station %s in %s" % 
+                 (experiment_name, station, mark5scansPath))
+            raise RuntimeError, s
         self.handlers = [Mark5ScanHandler(fn) for fn in self.fns]
     def getScanStart(self, scan):
         return self.vex['SCHED'][scan]['start']
     def getChunksByTime(self, oFilename, chunk_start, chunk_end):
+        dtdt = datetime.datetime.fromtimestamp
         for h in self.handlers:
-            print datetime.datetime.fromtimestamp(chunk_start), \
-                datetime.datetime.fromtimestamp(chunk_end), h.reftime, h.tinterval
-            if (h.reftime < datetime.datetime.fromtimestamp(chunk_start) and
-                datetime.datetime.fromtimestamp(chunk_end) < h.endtime):
+            print "Get chunks by time", dtdt(chunk_start), dtdt(chunk_end), h.reftime, h.tinterval
+            if (h.reftime < dtdt(chunk_start) and dtdt(chunk_end) < h.endtime):
                 break
         else:
-            raise RuntimeError, "Chunk not inside a scan"
+            raise RuntimeError, "Chunk not inside a scan: %s, %s, %s" % (str(self.handlers),
+                                                                        dtdt(chunk_start),
+                                                                        dtdt(chunk_end))
         return h.getChunksByTime(oFilename, chunk_start, chunk_end)
     def disconnect(self):
         pass
