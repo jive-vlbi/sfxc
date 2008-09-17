@@ -2,7 +2,8 @@
 import sys, re, time, os, math, glob
 import Numeric as Nu, itertools
 import simplejson
-from ZSI.ServiceContainer import AsServer
+# from ZSI.ServiceContainer import AsServer
+from ZSI import dispatch
 from NewTranslationJobZSI.NewTranslationJob_services_server import *
 from Notification.TranslationNodeNotification import *
 # import TranslationNode_mark5 as mk5tools
@@ -89,83 +90,101 @@ def quantizeChunkDT(requested_chunk_size, data_byte_rate):
     chunk_length = max(math.floor(requested_chunk_size/data_byte_rate), 1.0)
     return chunk_length
 
+def dataChunker(station, vex_fn, exptname, job_start, job_end, requested_chunk_size):
+    vex = vextools.Vex(vex_fn)
+    sched = Sched(vex['SCHED'])
+    #mark5 = mk5tools.Mark5(portMark5Control, ipMark, experiment_name, station)
+    mark5 = mk5tools.Mark5Emulator(exptname, station, vex)
+    globalChunkNumber = 0
+    for scan in sched.getScans():
+        if not sched.isScanRelevant(scan, job_start, job_end):
+            ## print "Scan %s irrelevant" % scan
+            continue
+        print "Scan:", scan
+        scan_start, scan_end = sched.getScanRange(scan)
+        data_byte_rate = vexGetDataRate(vex, scan, station)
+        scan_size_bytes = (scan_end-scan_start)*data_byte_rate
+        if (requested_chunk_size == 0):
+            chunk_dt = quantizeChunkDT(scan_size_bytes, data_byte_rate)
+        else:
+            chunk_dt = quantizeChunkDT(requested_chunk_size, data_byte_rate)
+        print "Scan boundaries:", 
+        print vextools.format_vex_time(scan_start), vextools.format_vex_time(scan_end)
+        print "Job boundaries:", 
+        print vextools.format_vex_time(job_start), vextools.format_vex_time(job_end)
+        scan_data_start = vextools.parseFractionalTime(mark5.getScanStart(scan))
+        start_time = max(job_start, scan_start)
+        end_time = min(job_end, scan_end)
+
+        if scan_data_start > end_time:
+            print "scan_data_start > end_time: Skipping", 
+            print vextools.format_vex_time(scan_data_start), vextools.format_vex_time(end_time)
+        print "t1, t2, dt", 
+        print vextools.format_vex_time(start_time), vextools.format_vex_time(end_time), chunk_dt
+        chunk_times = Nu.arange(start_time, end_time, chunk_dt).tolist() + [end_time]
+        if scan_data_start > start_time:
+            chunk_times = fixStartTime(chunk_times, scan_data_start)
+        print "Chunk times:", ", ".join([vextools.format_vex_time(t) for t in chunk_times])
+        for i, (chunk_start, chunk_end) in enumerate(pairwise(chunk_times)):
+            sendFile = os.path.join(localPath, (exptname + '_' + station + '_' + 
+                                                str(scan) + "_" + "%03d" % i + '.m5a').lower())
+            chunk_real_size = mark5.getChunksByTime(sendFile, chunk_start, chunk_end)
+            yield (sendFile, globalChunkNumber, chunk_real_size, chunk_start, chunk_end) 
+            globalChunkNumber += 1
+    mark5.disconnect()
+
+def processRequest(param):
+    station = param.TelescopeName
+    brokerIPAddress = param.BrokerIPAddress
+    requested_chunk_size = param.ChunkSize
+    vex_file_name = param.DataLocation[0]
+    experiment_name = param.ExperimentName
+    job_start = vextools.parse_vex_time(param.StartTime)
+    job_end = vextools.parse_vex_time(param.EndTime)
+    tnn_loc = TranslationNodeNotificationLocator()
+    tnn_port = TranslationNodeNotificationSOAP11BindingSOAP(tnn_notificationService, 
+                                                            tracefile=sys.stdout)
+    dc = dataChunker(station, vex_file_name, experiment_name, 
+                     job_start, job_end, requested_chunk_size)
+    for (sendFile, chunk_id, chunk_real_size, chunk_start, chunk_end) in dc:
+        gftpCommand = 'globus-url-copy file://%s  gsiftp://%s/' % (sendFile, gridFtpBaseURL)
+        print "Command:", gftpCommand
+        os.system(gftpCommand)
+
+        ## Notify:
+        print "send notification to grid broker..."
+        translation_node_ip = "http://huygens.nfra.nl"
+        translation_node_id = 20001
+        req = makeTranslationNodeNotification(chunk_id, gridFtpBaseURL,
+                                              chunk_real_size, chunk_start, chunk_end,
+                                              translation_node_ip, translation_node_id)
+        tnn_service = conf['notificationService'] 
+        sendTranslationNodeNotification(req, tnn_service)
+    mark5.disconnect()
+    return rsp
+
+
+
 class Service(NewTranslationJob):
     def soap_startTranslationJob(self, ps):
 	rsp = NewTranslationJob.soap_startTranslationJob(self, ps)
         print ps
 	param = self.request.Param0
         ackJob(param)
+        processRequest(param)
 
-	station = param.TelescopeName
-	brokerIPAddress = param.BrokerIPAddress
-	requested_chunk_size = param.ChunkSize
-	vex_file_name = param.DataLocation[0]
-	experiment_name = param.ExperimentName
-	job_start = vextools.parse_vex_time(param.StartTime)
-	job_end = vextools.parse_vex_time(param.EndTime)
-	vex = vextools.Vex(vex_file_name)
-	sched = Sched(vex['SCHED'])
-        
-        #mark5 = mk5tools.Mark5(portMark5Control, ipMark, experiment_name, station)
-        
-        mark5 = mk5tools.Mark5Emulator(experiment_name, station, vex)
-        globalChunkNumber = 0
-
-        tnn_loc = TranslationNodeNotificationLocator()
-        tnn_port = tnn_loc.getTranslationNodeNotificationPortType(brokerIPAddress, tracefile=sys.stdout)
-        tnn_port = TranslationNodeNotificationSOAP11BindingSOAP(tnn_notificationService, 
-                                                                tracefile=sys.stdout)
-	for scan in sched.getScans():
-            if not sched.isScanRelevant(scan, job_start, job_end):
-                continue
-            print "Scan:", scan
-            scan_start, scan_end = sched.getScanRange(scan)
-            data_byte_rate = vexGetDataRate(vex, scan, station)
-            scan_size_bytes = (scan_end-scan_start)*data_byte_rate
-            if (requested_chunk_size == 0):
-                chunk_dt = quantizeChunkDT(scan_size_bytes, data_byte_rate)
-            else:
-                chunk_dt = quantizeChunkDT(requested_chunk_size, data_byte_rate)
-            print "Scan boundaries:", 
-            print vextools.format_vex_time(scan_start), vextools.format_vex_time(scan_end)
-            print "Job boundaries:", 
-            print vextools.format_vex_time(job_start), vextools.format_vex_time(job_end)
-            scan_data_start = vextools.parseFractionalTime(mark5.getScanStart(scan))
-            start_time = max(job_start, scan_start)
-            end_time = min(job_end, scan_end)
-
-            if scan_data_start > end_time:
-                print "scan_data_start > end_time: Skipping", 
-                print vextools.format_vex_time(scan_data_start), vextools.format_vex_time(end_time)
-            print "t1, t2, dt", 
-            print vextools.format_vex_time(start_time), vextools.format_vex_time(end_time), chunk_dt
-            chunk_times = Nu.arange(start_time, end_time, chunk_dt).tolist() + [end_time]
-            if scan_data_start > start_time:
-                chunk_times = fixStartTime(chunk_times, scan_data_start)
-            print "Chunk times:", ", ".join([vextools.format_vex_time(t) for t in chunk_times])
-            for i, (chunk_start, chunk_end) in enumerate(pairwise(chunk_times)):
-                sendFile = os.path.join(localPath, (experiment_name + '_' + station + '_' + 
-                                                    str(scan) + "_" + "%03d" % i + '.m5a').lower())
-                chunk_real_size = mark5.getChunksByTime(sendFile, chunk_start, chunk_end)
-
-                ## Transfer:
-                gftpCommand = 'globus-url-copy file://%s  gsiftp://%s/' % (sendFile, gridFtpBaseURL)
-                print "Command:", gftpCommand
-                os.system(gftpCommand)
-                
-                ## Notify:
-                print "send notification to grid broker..."
-                chunk_id = globalChunkNumber
-                translation_node_ip = "http://huygens.nfra.nl"
-                translation_node_id = 20001
-                req = makeTranslationNodeNotification(chunk_id, gridFtpBaseURL,
-                                                      chunk_real_size, chunk_start, chunk_end,
-                                                      translation_node_ip, translation_node_id)
-                tnn_service = conf['notificationService'] 
-                sendTranslationNodeNotification(req, tnn_service)
-                globalChunkNumber += 1
-            mark5.disconnect()
-        return rsp
 
 if __name__ == "__main__" :
-    AsServer(portNumber, (Service('translationnode'),))
+    # dispatch.AsServer(portNumber, (Service('translationnode'),))
+    param = simplejson.load(file("trialTranslationRequest.js"))["param0"]
+    station = param["telescopeName"]
+    requested_chunk_size = param["chunkSize"]
+    vex_fn = param["dataLocation"][0]
+    exptname = param["experimentName"]
+    job_start = vextools.parse_vex_time(param["startTime"])
+    job_end = vextools.parse_vex_time(param["endTime"])
+    if job_end <= job_start:
+        raise RuntimeError, "endtime <= starttime"
+    for it in dataChunker(station, vex_fn, exptname, job_start, job_end, requested_chunk_size):
+        print it
+    print "Finished"
