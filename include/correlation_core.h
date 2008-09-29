@@ -5,6 +5,7 @@
 #include "delay_correction.h"
 #include "control_parameters.h"
 #include "data_writer.h"
+#include "uvw_model.h"
 
 #include "timer.h"
 #include <fstream>
@@ -43,6 +44,9 @@ public:
   boost::shared_ptr<Data_writer> data_writer() {
     return writer;
   }
+
+  void add_uvw_table(int sn, Uvw_model &table);
+  std::vector< Uvw_model>  uvw_tables; // Should be private
 
 private:
   void integration_initialise();

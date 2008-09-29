@@ -13,6 +13,7 @@
 #include "types.h"
 #include "sfxc_mpi.h"
 #include "delay_table_akima.h"
+#include "uvw_model.h"
 
 #include "control_parameters.h"
 
@@ -24,6 +25,9 @@ public:
 
   static void send(Delay_table_akima &table, int sn, int rank);
   static void receive(MPI_Status &status, Delay_table_akima &table, int &sn);
+
+  static void send(Uvw_model &table, int sn, int rank);
+  static void receive(MPI_Status &status, Uvw_model &table, int &sn);
 
   static void send(Input_node_parameters &input_node_param, int rank);
   static void receive(MPI_Status &status, Input_node_parameters &input_node_param);

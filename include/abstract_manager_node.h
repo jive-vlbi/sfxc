@@ -13,6 +13,7 @@
 #include "node.h"
 #include "control_parameters.h"
 #include "delay_table_akima.h"
+#include "uvw_model.h"
 
 #include <queue>
 
@@ -109,6 +110,8 @@ public:
   void correlator_node_set(Correlation_parameters &parameters,
                            int corr_node_nr);
   void correlator_node_set_all(Delay_table_akima &delay_table,
+                               const std::string &station_name);
+  void correlator_node_set_all(Uvw_model &uvw_table,
                                const std::string &station_name);
 
   void set_correlator_node_ready(size_t correlator_rank, bool ready=true);

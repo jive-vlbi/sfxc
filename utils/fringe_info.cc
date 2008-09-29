@@ -181,6 +181,14 @@ Fringe_info_container(FILE *input, bool stop_at_eof) : input(input) {
   read_data_from_file(sizeof(Output_header_timeslice),
                       (char*)&last_timeslice_header, stop_at_eof);
   if (eof()) return;
+  
+  // Read the UVW coordinates, these are not used at the moment
+  for(int i=0 ; i<last_timeslice_header.number_uvw_coordinates ; i++){
+    struct Output_uvw_coordinates uvw_coordinates;
+    read_data_from_file(sizeof(Output_uvw_coordinates),
+                      (char*)&uvw_coordinates, stop_at_eof);
+    if (eof()) return;
+  }
   assert(last_timeslice_header.number_baselines != 0);
 }
 
@@ -251,6 +259,13 @@ Fringe_info_container::read_plots(bool stop_at_eof) {
         return;
       }
       first = false;
+      // Read the UVW coordinates, these are not used at the moment
+      for(int i=0 ; i<last_timeslice_header.number_uvw_coordinates ; i++){
+        struct Output_uvw_coordinates uvw_coordinates;
+        read_data_from_file(sizeof(Output_uvw_coordinates),
+                      (char*)&uvw_coordinates, stop_at_eof);
+        if (eof()) return;
+      }
     }
   }
 }

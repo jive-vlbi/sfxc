@@ -12,6 +12,7 @@
 #include "utils.h"
 #include "mpi_transfer.h"
 #include "log_writer_cout.h"
+#include "uvw_model.h"
 
 #include <iostream>
 #include <iomanip>
@@ -105,7 +106,6 @@ Manager_node(int rank, int numtasks,
     exit(1);
   }
   n_corr_nodes = numtasks-(n_stations+3);
-
   std::vector<MPI_Request> pending_requests;
   int numrequest;
 	if( control_parameters.cross_polarize() ){
@@ -460,6 +460,19 @@ Manager_node::initialise() {
 
     send(delay_table, /* station_nr */ 0, input_rank(station));
     correlator_node_set_all(delay_table, station_name);
+  }
+
+  // Send the UVW tables:
+  get_log_writer() << "Set uvw_table" << std::endl;
+  for (size_t station=0;
+       station < control_parameters.number_stations(); station++) {
+    Uvw_model uvw_table;
+    const std::string &station_name = control_parameters.station(station);
+    const std::string &delay_file =
+      control_parameters.get_delay_table_name(station_name);
+    uvw_table.open(delay_file.c_str());
+
+    correlator_node_set_all(uvw_table, station_name);
   }
 
   Control_parameters::Date start = control_parameters.get_start_time();

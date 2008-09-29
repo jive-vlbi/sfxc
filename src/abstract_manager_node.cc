@@ -456,6 +456,17 @@ correlator_node_set_all(Delay_table_akima &delay_table,
 
 void
 Abstract_manager_node::
+correlator_node_set_all(Uvw_model &uvw_table,
+                        const std::string &station_name) {
+  for (size_t i=0; i<correlator_node_rank.size(); i++) {
+    MPI_Transfer::send(uvw_table,
+                       input_node(station_name),
+                       correlator_node_rank[i]);
+  }
+}
+
+void
+Abstract_manager_node::
 set_correlator_node_ready(size_t correlator_nr, bool ready) {
 #ifdef SFXC_DETERMINISTIC
   SFXC_ASSERT(correlator_nr < correlator_node_ready.size());
