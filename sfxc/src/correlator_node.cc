@@ -175,7 +175,6 @@ void Correlator_node::main_loop() {
   stop_threads();
 }
 
-
 void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
   SFXC_ASSERT((size_t)sn < delay_modules.size());
   //  SFXC_ASSERT(integer_delay_modules[sn] != Integer_delay_correction_ptr());
@@ -307,12 +306,13 @@ Correlator_node::set_parameters() {
   int nBaselines = correlation_core.number_of_baselines();
   int size_of_one_baseline = sizeof(fftwf_complex)*
                              (parameters.number_channels*PADDING/2+1);
+  int size_uvw = correlation_core.uvw_tables.size()*sizeof(Output_uvw_coordinates);
 
   output_node_set_timeslice(parameters.slice_nr,
                             parameters.slice_offset,
                             n_integration_slice_in_time_slice,
                             get_correlate_node_number(),
-                            sizeof(Output_header_timeslice) +
+                            sizeof(Output_header_timeslice) + size_uvw +
                             ( nBaselines *
                               (size_of_one_baseline +
                                sizeof(Output_header_baseline) ) ) );

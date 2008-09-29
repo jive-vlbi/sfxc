@@ -221,6 +221,87 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
 }
 
 void
+MPI_Transfer::
+send(Uvw_model &table, int sn, int rank) {
+  uint32_t n_datapoints = table.times.size();
+  int size = 2*sizeof(int32_t) + 4*n_datapoints*sizeof(double);
+  int position=0;
+  char buffer[size];
+
+  // First integer is the station number
+  MPI_Pack(&sn, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+
+  // Arrays
+  // Send the length for convenience
+  MPI_Pack(&n_datapoints, 1, MPI_UINT32, buffer, size,
+           &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.times[0], n_datapoints, MPI_DOUBLE,
+           buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.u[0], n_datapoints, MPI_DOUBLE,
+           buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.v[0], n_datapoints, MPI_DOUBLE,
+           buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.w[0], n_datapoints, MPI_DOUBLE,
+           buffer, size, &position, MPI_COMM_WORLD);
+  SFXC_ASSERT(position == size);
+
+  MPI_Send(buffer, position, MPI_PACKED, rank,
+           MPI_TAG_UVW_TABLE, MPI_COMM_WORLD);
+}
+
+void
+MPI_Transfer::
+receive(MPI_Status &status, Uvw_model &table, int &sn) {
+  MPI_Status status2;
+
+  int size;
+  MPI_Get_elements(&status, MPI_CHAR, &size);
+  SFXC_ASSERT(size > 0);
+  char buffer[size];
+
+  MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE,
+           status.MPI_TAG, MPI_COMM_WORLD, &status2);
+
+  int position = 0;
+
+  // First, get the station number
+  MPI_Unpack(buffer, size, &position, &sn, 1, MPI_INT32, MPI_COMM_WORLD);
+
+  // Arrays
+  // first the size of the array
+  uint32_t n_datapoints;
+  MPI_Unpack(buffer, size, &position, &n_datapoints,
+             1, MPI_UINT32, MPI_COMM_WORLD);
+  table.times.resize(n_datapoints);
+  table.u.resize(n_datapoints);
+  table.v.resize(n_datapoints);
+  table.w.resize(n_datapoints);
+
+  MPI_Unpack(buffer, size, &position, &table.times[0],
+             n_datapoints, MPI_DOUBLE, MPI_COMM_WORLD);
+  SFXC_ASSERT(table.times.size() == n_datapoints);
+  MPI_Unpack(buffer, size, &position, &table.u[0],
+             n_datapoints, MPI_DOUBLE, MPI_COMM_WORLD);
+  SFXC_ASSERT(table.u.size() == n_datapoints);
+  MPI_Unpack(buffer, size, &position, &table.v[0],
+             n_datapoints, MPI_DOUBLE, MPI_COMM_WORLD);
+  SFXC_ASSERT(table.v.size() == n_datapoints);
+  MPI_Unpack(buffer, size, &position, &table.w[0],
+             n_datapoints, MPI_DOUBLE, MPI_COMM_WORLD);
+  SFXC_ASSERT(table.w.size() == n_datapoints);
+
+  SFXC_ASSERT(position == size);
+
+  table.end_scan      = 0;
+  table.acc_u         = NULL;
+  table.acc_v         = NULL;
+  table.acc_w         = NULL;
+  table.splineakima_u = NULL;
+  table.splineakima_v = NULL;
+  table.splineakima_w = NULL;}
+
+
+void
 MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
   int size = 0;
   size = 4*sizeof(int32_t);

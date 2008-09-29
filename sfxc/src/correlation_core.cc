@@ -324,6 +324,7 @@ void Correlation_core::integration_write() {
 
   // Make sure that the input buffers are released
   // This is done by reference counting
+
   for (size_t i=0; i<number_input_streams_in_use(); i++) {
     input_elements[i] = Input_buffer_element();
   }
@@ -344,10 +345,27 @@ void Correlation_core::integration_write() {
     htimeslice.number_baselines = baselines.size();
     htimeslice.integration_slice =
       correlation_parameters.integration_nr + current_integration;
-    htimeslice.number_uvw_coordinates = 0;
+    htimeslice.number_uvw_coordinates = uvw_tables.size();
 
-    uint64_t nWrite = sizeof(htimeslice);
+   // write the uvw coordinates
+    Output_uvw_coordinates uvw[htimeslice.number_uvw_coordinates];
+    // We evaluate in the middle of time slice (nb: the factor 1000 is for the conversion to microseconds)
+    int64_t time;
+    time=(int64_t)correlation_parameters.start_time*1000+(int64_t)correlation_parameters.integration_time*500;
+    if (node_nr_==3) printf("%d : Time = %ld\n", node_nr_, time);
+    for (size_t station=0; station < uvw_tables.size(); station++){
+     double u,v,w;
+     uvw_tables[station].get_uvw(time, &u, &v, &w);
+     uvw[station].station_nr=station+1;
+     uvw[station].u=u;
+     uvw[station].v=v;
+     uvw[station].w=w;
+    }
+
+    size_t nWrite = sizeof(htimeslice);
     writer->put_bytes(nWrite, (char *)&htimeslice);
+    nWrite=sizeof(uvw);
+    writer->put_bytes(nWrite, (char *)&uvw[0]);
 
     current_integration++;
   }
@@ -439,6 +457,14 @@ correlate_baseline(std::complex<FLOAT> in1[],
     out[i] += in1[i]*std::conj(in2[i]);
   }
 }
+
+void Correlation_core::add_uvw_table(int sn, Uvw_model &table) {
+  if (sn>=uvw_tables.size())
+    uvw_tables.resize(sn+1);
+
+  uvw_tables[sn]=table;
+}
+
 
 size_t Correlation_core::n_channels() {
   return correlation_parameters.number_channels;

@@ -37,11 +37,22 @@
 
 //default constructor, set default values
 Uvw_model::Uvw_model()
-    : end_scan(0), acc(NULL), splineakima_u(NULL), splineakima_v(NULL),
+    : end_scan(0), acc_u(NULL), acc_v(NULL), acc_w(NULL), splineakima_u(NULL), splineakima_v(NULL),
     splineakima_w(NULL) {}
 
 //destructor
 Uvw_model::~Uvw_model() {}
+
+void Uvw_model::operator=(const Uvw_model &other) {
+  Uvw_model();
+
+  times = other.times;
+  u = other.u;
+  v = other.v;
+  w = other.w;
+  initialise_spline_for_next_scan();
+}
+
 
 bool Uvw_model::operator==(const Uvw_model &other) const {
   return true;
@@ -49,11 +60,10 @@ bool Uvw_model::operator==(const Uvw_model &other) const {
 
 //read the delay table, do some checks and
 //calculate coefficients for parabolic interpolation
-int Uvw_model::open(char *delayTableName) {
+int Uvw_model::open(const char *delayTableName) {
   std::ifstream in(delayTableName);
   double line[5];
   int32_t hsize;
-
 
   in.read(reinterpret_cast < char * > (&hsize), sizeof(int32_t));
   char station[hsize];
@@ -73,29 +83,32 @@ int Uvw_model::open(char *delayTableName) {
 }
 
 void Uvw_model::initialise_spline_for_next_scan() {
-  std::cout << times[end_scan] << " " << end_scan << std::endl;
+
   SFXC_ASSERT(end_scan < times.size()-1);
   size_t next_end_scan = end_scan+2;
-  while ((next_end_scan < times.size()-1) &&
-         (times[next_end_scan-1] != 0)) {
+
+  while ((next_end_scan < times.size()) &&
+         (times[next_end_scan] != 0)) {
     next_end_scan ++;
   }
 
-
-
   if (splineakima_u != NULL) {
     gsl_spline_free(splineakima_u);
-    gsl_interp_accel_free(acc);
+    gsl_interp_accel_free(acc_u);
   }
   if (splineakima_v != NULL) {
     gsl_spline_free(splineakima_v);
+    gsl_interp_accel_free(acc_v);
   }
   if (splineakima_w != NULL) {
     gsl_spline_free(splineakima_w);
+    gsl_interp_accel_free(acc_w);
   }
 
   // Initialise the Akima spline
-  acc = gsl_interp_accel_alloc();
+  acc_u = gsl_interp_accel_alloc();
+  acc_v = gsl_interp_accel_alloc();
+  acc_w = gsl_interp_accel_alloc();
   if (end_scan != 0) end_scan++;
   int n_pts = next_end_scan-end_scan;
 
@@ -117,10 +130,25 @@ void Uvw_model::initialise_spline_for_next_scan() {
                   &times[end_scan],
                   &w[end_scan],
                   n_pts);
-
   end_scan = next_end_scan;
 }
 
+//calculates u,v, and w at time(microseconds)
+void Uvw_model::get_uvw(int64_t time, double *u, double *v, double *w) {
+  if (times.empty()) {
+    DEBUG_MSG("times.empty()");
+    SFXC_ASSERT(!times.empty());
+  }
+  while (times[end_scan-1] < time) {
+    initialise_spline_for_next_scan();
+  }
+  SFXC_ASSERT(splineakima_u != NULL);
+  SFXC_ASSERT(splineakima_v != NULL);
+  SFXC_ASSERT(splineakima_w != NULL);
+  *u = gsl_spline_eval (splineakima_u, time, acc_u);
+  *v = gsl_spline_eval (splineakima_v, time, acc_v);
+  *w = gsl_spline_eval (splineakima_w, time, acc_w);
+}
 
 //calculates the delay for the delayType at time in microseconds
 //get the next line from the delay table file
@@ -131,9 +159,9 @@ std::ofstream& Uvw_model::uvw_values(std::ofstream &output, int64_t starttime,
   output.precision(14);
   while (time < stoptime) {
     while (times[end_scan] < time) initialise_spline_for_next_scan();
-    gsl_u = gsl_spline_eval (splineakima_u, time, acc);
-    gsl_v = gsl_spline_eval (splineakima_v, time, acc);
-    gsl_w = gsl_spline_eval (splineakima_w, time, acc);
+    gsl_u = gsl_spline_eval (splineakima_u, time, acc_u);
+    gsl_v = gsl_spline_eval (splineakima_v, time, acc_v);
+    gsl_w = gsl_spline_eval (splineakima_w, time, acc_w);
     double ttime  = time/1000;
 
     output.write(reinterpret_cast < char * > (&ttime), sizeof(double));

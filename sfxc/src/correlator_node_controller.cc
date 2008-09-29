@@ -14,6 +14,7 @@
 #include "data_writer_file.h"
 #include "data_writer_tcp.h"
 #include "delay_table_akima.h"
+#include "uvw_model.h"
 
 #include "utils.h"
 
@@ -38,6 +39,15 @@ Correlator_node_controller::process_event(MPI_Status &status) {
       int sn;
       mpi_transfer.receive(status, table, sn);
       node.add_delay_table(sn, table);
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+  case MPI_TAG_UVW_TABLE: {
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      MPI_Transfer mpi_transfer;
+      Uvw_model table;
+      int sn;
+      mpi_transfer.receive(status, table, sn);
+      node.correlation_core.add_uvw_table(sn, table);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_CORR_PARAMETERS: {

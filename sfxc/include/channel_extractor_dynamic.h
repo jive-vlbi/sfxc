@@ -31,7 +31,7 @@
 
 class Channel_extractor_dynamic : public Channel_extractor_interface {
     public:
-      Channel_extractor_dynamic(const std::string& dirname="./", bool compile=false);
+      Channel_extractor_dynamic(const std::string& dirname="./", bool compile=true);
 
       void initialise(const std::vector< std::vector<int> > &track_positions_,
                       int size_of_one_input_word_,

@@ -51,6 +51,7 @@ private:
  * \ingroup Node
  **/
 class Correlator_node : public Node {
+friend class Correlator_node_controller;
 public:
   typedef Correlator_node                              Self;
   typedef Memory_pool_vector_element<char>             output_value_type;

@@ -33,6 +33,14 @@ int main(int argc, char *argv[]) {
     if (in.eof()) return 0;
     std::cout << std::endl << timeslice_header;
 
+    // read the UVW coordinates
+    for (int i=0 ; i < timeslice_header.number_uvw_coordinates ; i++){
+      struct Output_uvw_coordinates uvw_header;
+      in.read((char *)&uvw_header, sizeof(uvw_header));
+      if (in.eof()) return 0;
+      std::cout << uvw_header;
+    }
+
     // read the baselines
     for (int i=0; i<(int)timeslice_header.number_baselines; i++) {
       struct Output_header_baseline baseline_header;
