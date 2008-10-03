@@ -352,7 +352,6 @@ void Correlation_core::integration_write() {
     // We evaluate in the middle of time slice (nb: the factor 1000 is for the conversion to microseconds)
     int64_t time;
     time=(int64_t)correlation_parameters.start_time*1000+(int64_t)correlation_parameters.integration_time*500;
-    if (node_nr_==3) printf("%d : Time = %ld\n", node_nr_, time);
     for (size_t station=0; station < uvw_tables.size(); station++){
      double u,v,w;
      uvw_tables[station].get_uvw(time, &u, &v, &w);

@@ -199,23 +199,28 @@ void Delay_correction::fractional_bit_shift(FLOAT input[],
   const int size = number_channels()/2+1;
 
   double phi = constant_term;
-  for (int i = 0; i < size; i++) {
-    // the following should be double
-    double cos_phi, sin_phi;
-
-    // Compute sin_phi=sin(phi); cos_phi = cos(phi);
+  // in the loop we calculate sin(phi) and cos(phi) with phi=contant_term + i*linear_term
+  // This we do efficiently using a recurrence relation
+  // sin(t+delta)=sin(t)-[a*sin(t)-b*cos(t)] ; cos(t+delta)=cos(t)-[a*cos(t)+b*sin(t)]
+  // a=2*sin^2(delta/2) ; b=sin(delta)
+  double temp=sin(linear_term/2);
+  double a=2*temp*temp,b=sin(linear_term);
+  double cos_phi, sin_phi;
 #ifdef HAVE_SINCOS
-
-    sincos(phi, &sin_phi, &cos_phi);
+  sincos(phi, &sin_phi, &cos_phi);
 #else
-
-    sin_phi = sin(phi);
-    cos_phi = cos(phi);
+  sin_phi = sin(phi);
+  cos_phi = cos(phi);
 #endif
 
-    frequency_buffer[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
+  for (int i = 0; i < size; i++) {
+    // the following should be double
 
-    phi += linear_term;
+    frequency_buffer[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
+    // Compute sin_phi=sin(phi); cos_phi = cos(phi);
+    temp=sin_phi-(a*sin_phi-b*cos_phi);
+    cos_phi=cos_phi-(a*cos_phi+b*sin_phi);
+    sin_phi=temp;
   }
 
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
