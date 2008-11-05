@@ -44,7 +44,7 @@ Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
 
   /// int bytes_read = data_reader_->get_bytes(bytes_to_read, NULL);
   int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
-
+  
   SFXC_ASSERT(bytes_to_read == byte_read);
 
   // Read last block:
@@ -69,7 +69,6 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
   }
   data.invalid_bytes_begin = 0;
   data.nr_invalid_bytes = 0;
-
   char * mark5b_block = (char *)&data.buffer[0];
   for (int i=0; i<N_MK5B_BLOCKS_TO_READ; i++) {
     if (i==0) {
@@ -89,12 +88,12 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
    																											SIZE_MK5B_FRAME*SIZE_MK5B_WORD,
 																												mark5b_block);
 
-
     mark5b_block += SIZE_MK5B_FRAME*SIZE_MK5B_WORD;
   }
 
   if (data_reader_->eof()) return false;
   SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
+  data.start_time = current_header.microseconds();
   return current_header.check();
 }
 
