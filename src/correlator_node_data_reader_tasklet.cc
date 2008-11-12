@@ -41,8 +41,6 @@ void Correlator_node_data_reader_tasklet::do_task() {
                       (char*)output_elem.data().raw_buffer());
 
   n_ffts_to_read --;
-
-
   output_buffer->push(output_elem);
 }
 

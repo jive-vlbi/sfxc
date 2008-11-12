@@ -25,7 +25,7 @@ def which (filename):
       return f
   return None
 
-def run_sfxc(vex_file, ctrl_file):
+def run_sfxc(swap, vex_file, ctrl_file):
   if not os.path.exists(vex_file):
     print "Vex file does not exist"
     sys.exit(1)
@@ -52,8 +52,13 @@ def run_sfxc(vex_file, ctrl_file):
   number_of_processes = 3 + len(ctrl["channels"]) + len(ctrl["stations"])
 
   # run the software correlator
-  cmd="time mpirun -np "+str(number_of_processes)+" "+which("sfxc")+ \
-      " "+ctrl_file+" "+vex_file+" | tee std_output.txt | grep -v PROGRESS"
+  if swap==1:
+    cmd="time mpirun -np "+str(number_of_processes)+" "+which("sfxc")+ \
+        " "+"-s"+" "+ctrl_file+" "+vex_file+" | tee std_output.txt | grep -v PROGRESS"
+  else:
+    cmd="time mpirun -np "+str(number_of_processes)+" "+which("sfxc")+ \
+        " "+ctrl_file+" "+vex_file+" | tee std_output.txt | grep -v PROGRESS"
+
   print cmd
   status = os.system(cmd)
   if (status != 0):
@@ -97,11 +102,17 @@ def run_sfxc(vex_file, ctrl_file):
 ######### MAIN CODE
 if __name__ == "__main__":
   if len(sys.argv) == 2:
-    run_sfxc(sys.argv[1], "")
+    run_sfxc(0,sys.argv[1], "")
   elif len(sys.argv) == 3:
-    run_sfxc(sys.argv[1], sys.argv[2])
+    run_sfxc(0,sys.argv[1], sys.argv[2])
+  elif len(sys.argv) == 4:
+    if sys.argv[1]=="-s":
+      run_sfxc(1,sys.argv[2], sys.argv[3])
+    else:
+      print "Usage", sys.argv[0], " [-s] <vex-file> [<ctrl-file>]"
+      sys.exit(1)
   else:
-    print "Usage", sys.argv[0], " <vex-file> [<ctrl-file>]"
+    print "Usage", sys.argv[0], " [-s] <vex-file> [<ctrl-file>]"
     sys.exit(1)
 
   sys.exit(0)

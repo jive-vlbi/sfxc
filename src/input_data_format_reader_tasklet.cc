@@ -192,7 +192,6 @@ void
 Input_data_format_reader_tasklet::
 randomize_block() {
   // Randomize/invalidate the data in the current block
-
   // Make sure the data has the right size
   size_t size = reader_->size_data_block();
   if (input_element_->buffer.size() != size) {

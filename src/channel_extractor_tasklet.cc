@@ -32,7 +32,6 @@ Channel_extractor_tasklet(int samples_per_block, int N_)
 
   last_duration_=0;
 
-
 #ifdef USE_EXTRACTOR_5
   ch_extractor = new Channel_extractor_5();
 #else

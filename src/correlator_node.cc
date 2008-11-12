@@ -2,6 +2,7 @@
  * All rights reserved.
  *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ *            Aard Keimpema <Keimpema@JIVE.nl>, 2008
  *
  * $Id$
  *
@@ -13,15 +14,19 @@
 #include "data_writer.h"
 #include "utils.h"
 #include "output_header.h"
+#include "delay_correction_swapped.h"
+#include "delay_correction_default.h"
 
-Correlator_node::Correlator_node(int rank, int nr_corr_node)
+
+Correlator_node::Correlator_node(int rank, int nr_corr_node, int swap_)
     : Node(rank),
     correlator_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
     status(STOPPED),
     isinitialized_(false),
-    nr_corr_node(nr_corr_node) {
+    nr_corr_node(nr_corr_node), 
+    correlation_core(swap_), swap(swap_) {
   get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;
 
   add_controller(&correlator_node_ctrl);
@@ -115,8 +120,6 @@ void Correlator_node::stop_threads() {
 }
 
 void Correlator_node::start() {
-
-
   /// We enter the main loop of the coorelator node.
   ///DEBUG_MSG("START MAIN LOOp !");
   main_loop();
@@ -191,22 +194,27 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   reader_thread_.bit_sample_readers()[stream_nr] =
     Bit_sample_reader_ptr(new Correlator_node_data_reader_tasklet());
   reader_thread_.bit_sample_readers()[stream_nr]->connect_to(data_readers_ctrl.get_data_reader(stream_nr));
-
+  
   { // create the delay modules
     if (delay_modules.size() <= stream_nr) {
       delay_modules.resize(stream_nr+1,
-                           boost::shared_ptr<Delay_correction>());
+                           boost::shared_ptr<Delay_correction_base>());
     }
-    delay_modules[stream_nr] =
-      Delay_correction_ptr(new Delay_correction());
-
-    // Connect the delay_correction to the bits2float_converter
-    delay_modules[stream_nr]->connect_to(reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
+    if(swap==0){
+      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default());
+      Delay_correction_default *mod = (Delay_correction_default *)delay_modules[stream_nr].get();
+      // Connect the delay_correction to the bits2float_converter
+      mod->connect_to(reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
+      correlation_core.connect_to(stream_nr,mod->get_output_buffer());
+    }else{
+      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_swapped());
+      Delay_correction_swapped *mod = (Delay_correction_swapped *)delay_modules[stream_nr].get();      
+      // Connect the delay_correction to the bits2float_converter
+      mod->connect_to(reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
+      correlation_core.connect_to(stream_nr,mod->get_output_buffer());
+    }
   }
 
-  // Connect the correlation_core to delay_correction
-  correlation_core.connect_to(stream_nr,
-                              delay_modules[stream_nr]->get_output_buffer());
 }
 
 void Correlator_node::hook_added_data_writer(size_t i) {

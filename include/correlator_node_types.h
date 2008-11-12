@@ -52,6 +52,11 @@ public:
   typedef Memory_pool<Float_element>                       Float_memory_pool;
   typedef Threadsafe_queue<Float_memory_pool::Element>     Float_queue;
   typedef boost::shared_ptr<Float_queue>                   Float_queue_ptr;
+
+  typedef Memory_pool_vector_element< std::complex<FLOAT> >   ComplexFloat_element;
+  typedef Memory_pool<ComplexFloat_element>                   ComplexFloat_memory_pool;
+  typedef Threadsafe_queue<ComplexFloat_memory_pool::Element> ComplexFloat_queue;
+  typedef boost::shared_ptr<ComplexFloat_queue>               ComplexFloat_queue_ptr;
 };
 
 #endif // CORRELATOR_NODE_TYPES_H

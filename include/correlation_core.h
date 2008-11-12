@@ -2,7 +2,9 @@
 #define CORRELATION_CORE_H_
 
 #include "tasklet/tasklet.h"
-#include "delay_correction.h"
+#include "delay_correction_base.h"
+#include "delay_correction_default.h"
+#include "delay_correction_swapped.h"
 #include "control_parameters.h"
 #include "data_writer.h"
 #include "uvw_model.h"
@@ -12,14 +14,18 @@
 
 class Correlation_core : public Tasklet {
 public:
-  typedef Delay_correction::Output_buffer_element          Input_buffer_element;
-  typedef Delay_correction::Output_buffer                  Input_buffer;
-  typedef Delay_correction::Output_buffer_ptr              Input_buffer_ptr;
+  // Input buffer types, the parameter "swap" determines which is used
+  typedef Delay_correction_default::Output_buffer_element       Input_buffer_float_element;
+  typedef Delay_correction_default::Output_buffer               Input_buffer_float;
+  typedef Delay_correction_default::Output_buffer_ptr           Input_buffer_float_ptr;
+  typedef Delay_correction_swapped::Output_buffer_cmplx_element Input_buffer_cmplx_element;
+  typedef Delay_correction_swapped::Output_buffer_cmplx         Input_buffer_cmplx;
+  typedef Delay_correction_swapped::Output_buffer_cmplx_ptr     Input_buffer_cmplx_ptr;
 
   typedef Memory_pool_vector_element<FLOAT>                Float_buffer;
   typedef Memory_pool_vector_element<std::complex<FLOAT> > Complex_buffer;
   typedef Memory_pool_vector_element<std::complex<float> > Complex_buffer_float;
-  Correlation_core();
+  Correlation_core(int swap_);
   virtual ~Correlation_core();
 
   /// For Tasklet
@@ -32,7 +38,8 @@ public:
   bool finished();
   bool almost_finished();
 
-  void connect_to(size_t stream, Input_buffer_ptr buffer);
+  void connect_to(size_t stream, Input_buffer_float_ptr buffer);
+  void connect_to(size_t stream, Input_buffer_cmplx_ptr buffer);
 
   void set_parameters(const Correlation_parameters &parameters,
                       int node_nr);
@@ -69,20 +76,18 @@ private:
   size_t number_input_streams_in_use();
 
 private:
-  std::vector<Input_buffer_ptr>  input_buffers;
+  std::vector<Input_buffer_float_ptr>  input_float_buffers;
+  std::vector<Input_buffer_cmplx_ptr>  input_cmplx_buffers;
 
   // Used in integration_step(), avoids contruction and destroying the vectors
-  std::vector<Input_buffer_element>     input_elements;
+  std::vector<Input_buffer_float_element>     input_float_elements;
+  std::vector<Input_buffer_cmplx_element>     input_cmplx_elements;
 
   int number_ffts_in_integration, current_fft, total_ffts;
 
   FFTW_PLAN       plan;
   Float_buffer    plan_input_buffer;
   Complex_buffer  plan_output_buffer;
-
-  //std::vector< FLOAT >               plan_input_buffer;
-  //std::vector< std::complex<FLOAT> > plan_output_buffer;
-
 
   Correlation_parameters                               correlation_parameters;
 
@@ -98,6 +103,11 @@ private:
   // Needed for writing the progress messages
   int node_nr_;
   int current_integration;
+
+  // Indicates if the order of the fractional bitshift and the fringe rotation is to be reversed.
+  // This reduces the amount of data that has to be Fourier transformed by 25%, but at the cost
+  // of some accuracy.
+  int swap;
 
 #ifdef SFXC_WRITE_STATS
   // For plotting statistics on the height of the fringe and the phase

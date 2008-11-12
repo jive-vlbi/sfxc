@@ -30,7 +30,6 @@ get_input_node_tasklet_mark5a(boost::shared_ptr<Data_reader> reader) {
 Input_node_tasklet *
 get_input_node_tasklet_mark5b(boost::shared_ptr<Data_reader> reader) {
   typedef boost::shared_ptr<Input_data_format_reader> Input_reader_ptr;
-
   Input_data_format_reader::Data_frame   data;
 
   Input_reader_ptr   mark5b_reader_ptr(new Mark5b_reader(reader, data));
