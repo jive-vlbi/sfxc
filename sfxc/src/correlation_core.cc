@@ -2,8 +2,13 @@
 #include "output_header.h"
 #include <utils.h>
 
-Correlation_core::Correlation_core()
-    : current_fft(0), total_ffts(0) {}
+Correlation_core::Correlation_core(int swap_)
+    : current_fft(0), total_ffts(0), swap(swap_) {
+  #ifdef SFXC_WRITE_STATS
+    SFXC_ASSERT_MSG(swap==0,
+                    "SFXC_WRITE_STATS currently doesn't work if swap is set");
+  #endif
+}
 
 Correlation_core::~Correlation_core() {
 #if PRINT_TIMER
@@ -46,11 +51,18 @@ bool Correlation_core::finished() {
   return current_fft == number_ffts_in_integration;
 }
 
-void Correlation_core::connect_to(size_t stream, Input_buffer_ptr buffer) {
-  if (stream >= input_buffers.size()) {
-    input_buffers.resize(stream+1);
+void Correlation_core::connect_to(size_t stream, Input_buffer_float_ptr buffer) {
+  if (stream >= input_float_buffers.size()) {
+    input_float_buffers.resize(stream+1);
   }
-  input_buffers[stream] = buffer;
+  input_float_buffers[stream] = buffer;
+}
+
+void Correlation_core::connect_to(size_t stream, Input_buffer_cmplx_ptr buffer) {
+  if (stream >= input_cmplx_buffers.size()) {
+    input_cmplx_buffers.resize(stream+1);
+  }
+  input_cmplx_buffers[stream] = buffer;
 }
 
 
@@ -124,32 +136,34 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
     }
   }
 
-  if (frequency_buffer.size() != number_input_streams_in_use()) {
-    frequency_buffer.resize(number_input_streams_in_use());
-  }
-  for (size_t i=0; i < frequency_buffer.size(); i++) {
-    if (frequency_buffer[i].size() != (size_of_fft()/2+1)) {
-      frequency_buffer[i].resize(size_of_fft()/2+1);
+  if(swap==0){
+    if (frequency_buffer.size() != number_input_streams_in_use()) {
+      frequency_buffer.resize(number_input_streams_in_use());
     }
-  }
+    for (size_t i=0; i < frequency_buffer.size(); i++) {
+      if (frequency_buffer[i].size() != (size_of_fft()/2+1)) {
+        frequency_buffer[i].resize(size_of_fft()/2+1);
+      }
+    }
 
-  if (prev_size_of_fft != size_of_fft()) {
-    plan_input_buffer.resize(size_of_fft());
-    plan_output_buffer.resize(size_of_fft()/2+1);
-    plan = FFTW_PLAN_DFT_R2C_1D(size_of_fft(),
-                                (FLOAT *)plan_input_buffer.buffer(),
-                                (FFTW_COMPLEX *)plan_output_buffer.buffer(),
-                                FFTW_MEASURE);
+    if (prev_size_of_fft != size_of_fft()) {
+      plan_input_buffer.resize(size_of_fft());
+      plan_output_buffer.resize(size_of_fft()/2+1);
+      plan = FFTW_PLAN_DFT_R2C_1D(size_of_fft(),
+                                  (FLOAT *)plan_input_buffer.buffer(),
+                                  (FFTW_COMPLEX *)plan_output_buffer.buffer(),
+                                  FFTW_MEASURE);
 
 #ifdef SFXC_WRITE_STATS
-    backward_buffer.resize(size_of_fft()/2+1);
-    backward_plan_ =
-      FFTW_PLAN_DFT_1D(size_of_fft()/2+1,
-                       reinterpret_cast<FFTW_COMPLEX*>(plan_output_buffer.buffer()),
-                       reinterpret_cast<FFTW_COMPLEX*>(&backward_buffer[0]),
-                       FFTW_BACKWARD,
-                       FFTW_ESTIMATE);
+      backward_buffer.resize(size_of_fft()/2+1);
+      backward_plan_ =
+        FFTW_PLAN_DFT_1D(size_of_fft()/2+1,
+                         reinterpret_cast<FFTW_COMPLEX*>(plan_output_buffer.buffer()),
+                         reinterpret_cast<FFTW_COMPLEX*>(&backward_buffer[0]),
+                         FFTW_BACKWARD,
+                         FFTW_ESTIMATE);
 #endif // SFXC_WRITE_STATS
+    }
   }
 }
 
@@ -161,8 +175,12 @@ set_data_writer(boost::shared_ptr<Data_writer> writer_) {
 
 bool Correlation_core::has_work() {
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
-    if (input_buffers[i]->empty()) {
-      return false;
+    if(swap==0){
+      if (input_float_buffers[i]->empty())
+        return false;
+    }else{
+      if (input_cmplx_buffers[i]->empty()) 
+        return false;
     }
   }
   return true;
@@ -187,52 +205,67 @@ void Correlation_core::integration_initialise() {
 }
 
 void Correlation_core::integration_step() {
-  if (input_elements.size() != number_input_streams_in_use()) {
-    input_elements.resize(number_input_streams_in_use());
+  if(swap==0){
+    if (input_float_elements.size() != number_input_streams_in_use()) {
+      input_float_elements.resize(number_input_streams_in_use());
+    }
+    for (size_t i=0; i<number_input_streams_in_use(); i++) {
+      input_float_elements[i] = input_float_buffers[i]->front();
+    }
+  }else{
+    if (input_cmplx_elements.size() != number_input_streams_in_use()) {
+      input_cmplx_elements.resize(number_input_streams_in_use());
+    }
+    for (size_t i=0; i<number_input_streams_in_use(); i++) {
+      input_cmplx_elements[i] = input_cmplx_buffers[i]->front();
+    }
   }
-  for (size_t i=0; i<number_input_streams_in_use(); i++) {
-    input_elements[i] = input_buffers[i]->front();
-  }
-
 
 #ifndef DUMMY_CORRELATION
-  // Do the fft from time to frequency:
-  SFXC_ASSERT(frequency_buffer.size() == number_input_streams_in_use());
-  for (size_t i=0; i<frequency_buffer.size(); i++) {
-    SFXC_ASSERT((size_t)frequency_buffer[i].size() == (size_of_fft()/2+1));
+  if(swap==0){
+    // Do the fft from time to frequency:
+    SFXC_ASSERT(frequency_buffer.size() == number_input_streams_in_use());
+    for (size_t i=0; i<frequency_buffer.size(); i++) {
+      SFXC_ASSERT((size_t)frequency_buffer[i].size() == (size_of_fft()/2+1));
 
-    // zero out the data for padding
-    for (size_t j=size_of_fft()/2; j<size_of_fft(); j++) {
-      (*input_elements[i])[j] = 0;
+      // zero out the data for padding
+      for (size_t j=size_of_fft()/2; j<size_of_fft(); j++) {
+        (*input_float_elements[i])[j] = 0;
+      }
+
+      fft_timer.resume();
+      FFTW_EXECUTE_DFT_R2C(plan,
+                           (FLOAT *)input_float_elements[i]->buffer(),
+                           (FFTW_COMPLEX *)frequency_buffer[i].buffer());
+      fft_timer.stop();
+      total_ffts++;
     }
-
-    fft_timer.resume();
-    FFTW_EXECUTE_DFT_R2C(plan,
-                         (FLOAT *)input_elements[i]->buffer(),
-                         (FFTW_COMPLEX *)frequency_buffer[i].buffer());
-    fft_timer.stop();
-    total_ffts++;
   }
-
   // do the correlation
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
     // Auto correlations
     std::pair<size_t,size_t> &stations = baselines[i];
     SFXC_ASSERT(stations.first == stations.second);
-    auto_correlate_baseline(/* in1 */
-      frequency_buffer[stations.first].buffer(),
-      /* out */
-      &accumulation_buffers[i][0]);
+    if(swap==0)
+      auto_correlate_baseline(/* in1 */ frequency_buffer[stations.first].buffer(),
+                              /* out */  &accumulation_buffers[i][0]);
+    else
+      auto_correlate_baseline(/* in1 */ input_cmplx_elements[stations.first]->buffer(),
+                              /* out */  &accumulation_buffers[i][0]);
   }
 
   for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
     // Cross correlations
     std::pair<size_t,size_t> &stations = baselines[i];
     SFXC_ASSERT(stations.first != stations.second);
-    correlate_baseline
-      (/* in1 */ frequency_buffer[stations.first].buffer(),
-       /* in2 */ frequency_buffer[stations.second].buffer(),
-       /* out */ &accumulation_buffers[i][0]);
+    if(swap==0)
+      correlate_baseline(/* in1 */ frequency_buffer[stations.first].buffer(),
+                         /* in2 */ frequency_buffer[stations.second].buffer(),
+                         /* out */ &accumulation_buffers[i][0]);
+  else
+      correlate_baseline(/* in1 */ input_cmplx_elements[stations.first]->buffer(),
+                         /* in2 */ input_cmplx_elements[stations.second]->buffer(),
+                         /* out */ &accumulation_buffers[i][0]);
   }
 
 #ifdef SFXC_WRITE_STATS
@@ -285,11 +318,14 @@ void Correlation_core::integration_step() {
               << max_pos << std::endl;
   }
 #endif // SFXC_WRITE_STATS
-
 #endif // DUMMY_CORRELATION
 
-  for (size_t i=0; i<number_input_streams_in_use(); i++) {
-    input_buffers[i]->pop();
+  if(swap==0){
+    for (size_t i=0; i<number_input_streams_in_use(); i++)
+      input_float_buffers[i]->pop();
+  }else{
+    for (size_t i=0; i<number_input_streams_in_use(); i++)
+      input_cmplx_buffers[i]->pop();
   }
 }
 
@@ -326,7 +362,10 @@ void Correlation_core::integration_write() {
   // This is done by reference counting
 
   for (size_t i=0; i<number_input_streams_in_use(); i++) {
-    input_elements[i] = Input_buffer_element();
+    if(swap==0)
+      input_float_elements[i] = Input_buffer_float_element();
+    else
+      input_cmplx_elements[i] = Input_buffer_cmplx_element();
   }
 
   SFXC_ASSERT(writer != boost::shared_ptr<Data_writer>());
@@ -375,7 +414,10 @@ void Correlation_core::integration_write() {
 
   {
     // initialise with -1
-    stream2station.resize(input_buffers.size(), -1);
+    if(swap==0)
+      stream2station.resize(input_float_buffers.size(), -1);
+    else
+      stream2station.resize(input_cmplx_buffers.size(), -1);
 
     for (size_t i=0;
          i < correlation_parameters.station_streams.size();

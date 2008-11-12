@@ -112,16 +112,37 @@ int main(int argc, char *argv[]) {
 
   park_miller_set_seed(rank+1);
 
-  if ( argc != 3 ) {
+  int swap=0; 
+  char *ctrl_file, *vex_file;
+  if( argc == 4){
+    if(strcmp(argv[1],"-s")==0){
+      swap=1;
+      ctrl_file = argv[2];
+      vex_file = argv[3];
+    }
+    else{
+      if ( rank == 0 ) {
+        std::cerr << "ERROR: invalid parameters." << std::endl;
+        std::cerr << "usage: sfxc [-s] controlfile.ctrl vexfile.vex." << std::endl;
+        std::cerr << "Parameters : \n " <<  "     -s  : Swaps the order of the fringe rotation and the fractional bitshift\n";
+        std::cerr << "            giving a speed increase at the cost of some accuracy.\n";
+      }
+      MPI_Abort(MPI_COMM_WORLD, stat);
+    }
+  }
+  else if ( argc == 3 ){
+    ctrl_file = argv[1];
+    vex_file = argv[2];
+  }
+  else{
     if ( rank == 0 ) {
       std::cerr << "ERROR: not enough parameter." << std::endl;
-      std::cerr << "usage: sfxc controlfile.ctrl vexfile.vex." << std::endl;
+      std::cerr << "usage: sfxc [-s] controlfile.ctrl vexfile.vex." << std::endl;
+      std::cerr << "Parameters : \n " <<  "     -s  : Swaps the order of the fringe rotation and the fractional bitshift\n";
+      std::cerr << "            giving a speed increase at the cost of some accuracy.\n";
     }
     MPI_Abort(MPI_COMM_WORLD, stat);
   }
-
-  char *ctrl_file = argv[1];
-  char *vex_file = argv[2];
 
   if (rank == RANK_MANAGER_NODE) {
     Control_parameters control_parameters;
@@ -149,7 +170,7 @@ int main(int argc, char *argv[]) {
       node.start();
     }
   } else {
-    start_node();
+    start_node(swap);
   }
 
   //close the mpi stuff

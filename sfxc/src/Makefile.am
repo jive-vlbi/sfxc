@@ -30,7 +30,9 @@ OBJ=\
   log_writer.cc log_writer_cout.cc \
   log_writer_file.cc \
   correlation_core.cc \
-  delay_correction.cc \
+  delay_correction_base.cc \
+  delay_correction_default.cc \
+  delay_correction_swapped.cc \
   integer_delay_correction_per_channel.cc \
   uvw_model.cc \
   channel_extractor_tasklet.cc \

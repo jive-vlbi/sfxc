@@ -17,7 +17,7 @@
 #include "correlator_node_data_reader_tasklet.h"
 #include "log_writer_mpi.h"
 #include "correlation_core.h"
-#include "delay_correction.h"
+#include "delay_correction_base.h"
 #include <tasklet/tasklet_manager.h>
 #include "timer.h"
 
@@ -58,7 +58,7 @@ public:
   typedef boost::shared_ptr<Correlator_node_data_reader_tasklet>
   Bit_sample_reader_ptr;
 
-  typedef boost::shared_ptr<Delay_correction>         Delay_correction_ptr;
+  typedef boost::shared_ptr<Delay_correction_base>     Delay_correction_ptr;
 
   bool has_requested;
 
@@ -71,7 +71,7 @@ public:
     END_CORRELATING
   };
 
-  Correlator_node(int rank, int nr_corr_node);
+  Correlator_node(int rank, int nr_corr_node, int swap_);
   ~Correlator_node();
 
   /// The the main_loop of the correlator node.
@@ -236,6 +236,11 @@ private:
   /// done.
   void correlate();
   void main_loop();
+
+  // Indicates if the order of the fractional bitshift and the fringe rotation is to be reversed.
+  // This reduces the amount of data that has to be Fourier transformed by 25%, but at the cost
+  // of some accuracy.
+  int swap;
 
   //std::vector< Bit_sample_reader_ptr>         bit_sample_readers;
 
