@@ -3,20 +3,7 @@
 #include "config.h"
 
 Delay_correction_default::
-Delay_correction_default(): Delay_correction_base(),
-                            output_buffer(Output_buffer_ptr(new Output_buffer())),
-                            output_memory_pool(10){
-}
-
-bool Delay_correction_default::has_work() {
-  if (input_buffer->empty())
-    return false;
-  if (output_memory_pool.empty())
-    return false;
-  if (n_ffts_per_integration == current_fft)
-    return false;
-
-  return true;
+Delay_correction_default(): Delay_correction_base(){
 }
 
 void Delay_correction_default::do_task() {
@@ -47,26 +34,35 @@ void Delay_correction_default::do_task() {
   if (time_buffer.size() != 2*input_size)
     time_buffer.resize(input_size*2);
 
-  bit2float(input, output->buffer() );
+  bit2float(input, &time_buffer[0] );
 
   double delay = get_delay(current_time+length_of_one_fft()/2);
   double delay_in_samples = delay*sample_rate();
   int integer_delay = (int)std::floor(delay_in_samples+.5);
 
   // Output is in frequency_buffer
-  fractional_bit_shift(output->buffer(),
+  fractional_bit_shift(&time_buffer[0],
                        integer_delay,
                        delay_in_samples - integer_delay);
 
   // Input is from frequency_buffer
-  fringe_stopping(output->buffer());
+  fringe_stopping(&time_buffer[0]);
 
   current_time += length_of_one_fft();
 
-  const int n_channels = number_channels();
-  for (int i = n_channels; i < 2*n_channels; i++) {
-    (*output)[i] = 0;
+  // Do the final fft from time to frequency:
+  // zero out the data for padding
+  for (size_t j=size_of_fft()/2; j<size_of_fft(); j++) {
+       time_buffer[j] = 0;
   }
+
+  delay_timer.resume();
+  FFTW_EXECUTE_DFT_R2C(plan_t2f_cor,
+                       (FLOAT *)&time_buffer[0],
+                       (FFTW_COMPLEX *)output->buffer());
+  delay_timer.stop();
+  total_ffts++;
+
 #endif // DUMMY_CORRELATION
 
   input_buffer->pop();
@@ -190,11 +186,6 @@ void Delay_correction_default::fringe_stopping(FLOAT output[]) {
       frequency_buffer[i].real()*cos_phi - frequency_buffer[i].imag()*sin_phi;
   }
 }
-Delay_correction_default::Output_buffer_ptr
-Delay_correction_default::get_output_buffer() {
-  SFXC_ASSERT(output_buffer != Output_buffer_ptr());
-  return output_buffer;
-}
 
 void
 Delay_correction_default::set_parameters(const Correlation_parameters &parameters) {
@@ -219,6 +210,13 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
                                 (FFTW_COMPLEX *)&frequency_buffer[0],
                                 (FFTW_COMPLEX *)&frequency_buffer[0],
                                 FFTW_FORWARD,  FFTW_MEASURE);
+
+    plan_input_buffer.resize(size_of_fft());
+    plan_output_buffer.resize(size_of_fft()/2+1);
+    plan_t2f_cor = FFTW_PLAN_DFT_R2C_1D(size_of_fft(),
+                                  (FLOAT *)plan_input_buffer.buffer(),
+                                  (FFTW_COMPLEX *)plan_output_buffer.buffer(),
+                                  FFTW_MEASURE);
   }
   SFXC_ASSERT(frequency_buffer.size() == number_channels());
 

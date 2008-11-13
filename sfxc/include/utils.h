@@ -33,6 +33,10 @@
 #endif // PRINT_TIMER
 
 /// Constants
+#define SIZE_VLBA_FRAME           2500
+#define SIZE_VLBA_HEADER          12
+#define SIZE_VLBA_AUX_HEADER      8
+
 #define SIZE_MK5A_FRAME           20000
 // Size of a mark5a header
 #define SIZE_MK5A_HEADER          160
