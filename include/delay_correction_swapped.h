@@ -24,19 +24,9 @@
 
 class Delay_correction_swapped : public Delay_correction_base {
 public:
-  // Types used when order frac. bitshift and fringe rot. is reversed
-  typedef Correlator_node_types::ComplexFloat_memory_pool  Output_memory_pool_cmplx;
-  typedef Correlator_node_types::ComplexFloat_queue        Output_buffer_cmplx;
-  typedef Correlator_node_types::ComplexFloat_queue_ptr    Output_buffer_cmplx_ptr;
-  typedef Output_buffer_cmplx::value_type                  Output_buffer_cmplx_element;
-
   Delay_correction_swapped();
   ~Delay_correction_swapped(){};
 
-  /// Get the output
-  Output_buffer_cmplx_ptr get_output_buffer();
-
-  bool has_work();
   void set_parameters(const Correlation_parameters &parameters);
   /// Do one delay step
   void do_task();
@@ -49,8 +39,8 @@ private:
   void fringe_stopping(FLOAT output[]);
 
 private:
-  Output_buffer_cmplx_ptr   output_buffer;
-  Output_memory_pool_cmplx  output_memory_pool;
+
+  FFTW_PLAN       plan_t2f;
 
 };
 

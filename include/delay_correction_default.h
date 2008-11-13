@@ -24,23 +24,12 @@
 
 class Delay_correction_default : public Delay_correction_base {
 public:
-  typedef Correlator_node_types::Float_memory_pool    Output_memory_pool;
-  typedef Correlator_node_types::Float_queue          Output_buffer;
-  typedef Correlator_node_types::Float_queue_ptr      Output_buffer_ptr;
-  typedef Output_buffer::value_type                   Output_buffer_element;
-
-
   Delay_correction_default();
   ~Delay_correction_default(){};
 
-  /// Get the output
-  Output_buffer_ptr get_output_buffer();
-
-  bool has_work();
   void set_parameters(const Correlation_parameters &parameters);
   /// Do one delay step
   void do_task();
-
 
 private:
   ///
@@ -50,8 +39,10 @@ private:
   void fringe_stopping(FLOAT output[]);
 
 private:
-  Output_buffer_ptr   output_buffer;
-  Output_memory_pool  output_memory_pool;
+  FFTW_PLAN       plan_t2f, plan_f2t, plan_t2f_cor;
+  Memory_pool_vector_element<FLOAT >                 plan_input_buffer;
+  Memory_pool_vector_element< std::complex<FLOAT> >  plan_output_buffer;
+
 };
 
 #endif /*DELAY_CORRECTION_DEFAULT_H*/

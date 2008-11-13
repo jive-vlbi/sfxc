@@ -32,8 +32,16 @@ public:
   typedef Correlator_node_types::Bit_sample_queue_ptr Input_buffer_ptr;
   typedef Input_buffer::value_type                    Input_buffer_element;
 
+  typedef Correlator_node_types::ComplexFloat_memory_pool  Output_memory_pool;
+  typedef Correlator_node_types::ComplexFloat_queue        Output_buffer;
+  typedef Correlator_node_types::ComplexFloat_queue_ptr    Output_buffer_ptr;
+  typedef Output_buffer::value_type                        Output_buffer_element;
+
   Delay_correction_base();
   virtual ~Delay_correction_base();
+
+  /// Get the output
+  Output_buffer_ptr get_output_buffer();
 
   /// Set the input
   void connect_to(Input_buffer_ptr new_input_buffer);
@@ -46,7 +54,7 @@ public:
   /// Do one delay step
   virtual void do_task()=0;
 
-  virtual bool has_work()=0;
+  bool has_work();
   const char *name() {
     return __PRETTY_FUNCTION__;
   }
@@ -57,6 +65,7 @@ private:
 private:
   // access functions to the correlation parameters
   size_t number_channels();
+  size_t size_of_fft();
   int sample_rate();
   int bandwidth();
   int length_of_one_fft(); // Length of one fft in microseconds
@@ -72,8 +81,6 @@ private:
 
   int n_ffts_per_integration, current_fft, total_ffts;
 
-  FFTW_PLAN          plan_t2f, plan_f2t;
-
   bool delay_table_set;
   Delay_table_akima   delay_table;
 
@@ -83,6 +90,11 @@ private:
   Timer delay_timer;
 
   FLOAT lookup_table[256][4];
+
+private:
+  Output_buffer_ptr   output_buffer;
+  Output_memory_pool  output_memory_pool;
+
 };
 
 #endif /*DELAY_CORRECTION_BASE_H*/

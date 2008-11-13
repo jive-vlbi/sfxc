@@ -3,20 +3,7 @@
 #include "config.h"
 
 Delay_correction_swapped::
-Delay_correction_swapped(): Delay_correction_base(),
-                            output_buffer(Output_buffer_cmplx_ptr(new Output_buffer_cmplx())),
-                            output_memory_pool(10){
-}
-
-bool Delay_correction_swapped::has_work() {
-  if (input_buffer->empty())
-    return false;
-  if (output_memory_pool.empty())
-    return false;
-  if (n_ffts_per_integration == current_fft)
-    return false;
-
-  return true;
+Delay_correction_swapped(): Delay_correction_base(){
 }
 
 void Delay_correction_swapped::do_task() {
@@ -36,7 +23,7 @@ void Delay_correction_swapped::do_task() {
   current_fft++;
 
   Input_buffer_element &input = input_buffer->front();
-  Output_buffer_cmplx_element output = output_memory_pool.allocate();
+  Output_buffer_element output = output_memory_pool.allocate();
   size_t input_size = (input.data().bytes_count()-1)*8/ correlation_parameters.bits_per_sample;
 
 
@@ -174,12 +161,6 @@ void Delay_correction_swapped::fringe_stopping(FLOAT input[]) {
     // 7)subtract dopplers for the current segment
     frequency_buffer[i] = input[i]*std::complex<FLOAT>(cos_phi,-sin_phi);
   }
-}
-
-Delay_correction_swapped::Output_buffer_cmplx_ptr
-Delay_correction_swapped::get_output_buffer() {
-  SFXC_ASSERT(output_buffer != Output_buffer_cmplx_ptr());
-  return output_buffer;
 }
 
 void

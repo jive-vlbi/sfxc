@@ -15,12 +15,9 @@
 class Correlation_core : public Tasklet {
 public:
   // Input buffer types, the parameter "swap" determines which is used
-  typedef Delay_correction_default::Output_buffer_element       Input_buffer_float_element;
-  typedef Delay_correction_default::Output_buffer               Input_buffer_float;
-  typedef Delay_correction_default::Output_buffer_ptr           Input_buffer_float_ptr;
-  typedef Delay_correction_swapped::Output_buffer_cmplx_element Input_buffer_cmplx_element;
-  typedef Delay_correction_swapped::Output_buffer_cmplx         Input_buffer_cmplx;
-  typedef Delay_correction_swapped::Output_buffer_cmplx_ptr     Input_buffer_cmplx_ptr;
+  typedef Delay_correction_base::Output_buffer_element       Input_buffer_element;
+  typedef Delay_correction_base::Output_buffer               Input_buffer;
+  typedef Delay_correction_base::Output_buffer_ptr           Input_buffer_ptr;
 
   typedef Memory_pool_vector_element<FLOAT>                Float_buffer;
   typedef Memory_pool_vector_element<std::complex<FLOAT> > Complex_buffer;
@@ -38,8 +35,7 @@ public:
   bool finished();
   bool almost_finished();
 
-  void connect_to(size_t stream, Input_buffer_float_ptr buffer);
-  void connect_to(size_t stream, Input_buffer_cmplx_ptr buffer);
+  void connect_to(size_t stream, Input_buffer_ptr buffer);
 
   void set_parameters(const Correlation_parameters &parameters,
                       int node_nr);
@@ -76,22 +72,15 @@ private:
   size_t number_input_streams_in_use();
 
 private:
-  std::vector<Input_buffer_float_ptr>  input_float_buffers;
-  std::vector<Input_buffer_cmplx_ptr>  input_cmplx_buffers;
+  std::vector<Input_buffer_ptr>  input_buffers;
 
   // Used in integration_step(), avoids contruction and destroying the vectors
-  std::vector<Input_buffer_float_element>     input_float_elements;
-  std::vector<Input_buffer_cmplx_element>     input_cmplx_elements;
+  std::vector<Input_buffer_element>    input_elements;
 
   int number_ffts_in_integration, current_fft, total_ffts;
 
-  FFTW_PLAN       plan;
-  Float_buffer    plan_input_buffer;
-  Complex_buffer  plan_output_buffer;
-
   Correlation_parameters                               correlation_parameters;
 
-  std::vector< Complex_buffer >                        frequency_buffer;
   std::vector< Complex_buffer >                        accumulation_buffers;
   Complex_buffer_float                                 accumulation_buffers_float;
   std::vector< std::pair<size_t, size_t> >             baselines;

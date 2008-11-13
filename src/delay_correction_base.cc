@@ -10,7 +10,8 @@ const FLOAT sample_value_m[]  = {
                                 };
 
 Delay_correction_base::Delay_correction_base()
-    : current_time(-1),
+    : output_buffer(Output_buffer_ptr(new Output_buffer())),
+      output_memory_pool(10),current_time(-1),
       delay_table_set(false) {
   // Bit2Float table initialization
   // For 1 bit samples:
@@ -101,10 +102,33 @@ void Delay_correction_base::bit2float(const Input_buffer_element &input,
 
 }
 
+bool Delay_correction_base::has_work() {
+  if (input_buffer->empty())
+    return false;
+  if (output_memory_pool.empty())
+    return false;
+  if (n_ffts_per_integration == current_fft)
+    return false;
+
+  return true;
+}
+
+Delay_correction_base::Output_buffer_ptr
+Delay_correction_base::get_output_buffer() {
+  SFXC_ASSERT(output_buffer != Output_buffer_ptr());
+  return output_buffer;
+}
+
 size_t Delay_correction_base::number_channels() {
   SFXC_ASSERT(correlation_parameters.number_channels >= 0);
   return correlation_parameters.number_channels;
 }
+
+size_t Delay_correction_base::size_of_fft() {
+  SFXC_ASSERT(correlation_parameters.number_channels >= 0);
+  return 2*correlation_parameters.number_channels;
+}
+
 int Delay_correction_base::bandwidth() {
   return correlation_parameters.bandwidth;
 }
