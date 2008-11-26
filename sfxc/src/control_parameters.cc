@@ -251,7 +251,6 @@ Control_parameters::check(std::ostream &writer) const {
       writer << "ctrl-file: output file not defined" << std::endl;
     }
   }
-
   return ok;
 }
 
@@ -467,6 +466,13 @@ get_mark5a_tracks(const std::string &mode,
   Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
   Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
 
+  // Determine if data modulation is active
+  Vex::Node::const_iterator mod_it = track->begin("data_modulation");
+  if(mod_it->to_string()=="on")
+    input_parameters.data_modulation=1;
+  else
+    input_parameters.data_modulation=0;
+
   for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
     const std::string &channel_name = frequency_channel(ch_nr);
 
@@ -624,7 +630,6 @@ get_input_node_parameters(const std::string &mode_name,
   result.track_bit_rate = -1;
   result.number_channels = number_channels();
   result.integr_time = integration_time();
-
   const std::string &freq_name =
     get_vex().get_frequency(mode_name, station_name);
   Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
@@ -659,7 +664,14 @@ Control_parameters::transport_type(const std::string &station) const {
   return das_it["record_transport_type"]->to_string();
 }
 
+std::string
+Control_parameters::rack_type(const std::string &station) const {
+  std::string das =
+    get_vex().get_root_node()["STATION"][station]["DAS"]->to_string();
+  Vex::Node::const_iterator das_it = get_vex().get_root_node()["DAS"][das];
 
+  return das_it["electronics_rack_type"]->to_string();
+}
 
 bool
 Control_parameters::cross_polarize() const {

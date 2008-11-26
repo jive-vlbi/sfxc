@@ -27,7 +27,8 @@
 enum TRANSPORT_TYPE {
   UNINITIALISED = 0,
   MARK5A,
-  MARK5B
+  MARK5B,
+  VLBA
 };
 
 

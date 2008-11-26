@@ -34,7 +34,7 @@ Data_reader_tcp::~Data_reader_tcp() {
   if (socket > 0) close(socket);
 }
 
-int Data_reader_tcp::do_get_bytes(size_t nBytes, char*out) {
+size_t Data_reader_tcp::do_get_bytes(size_t nBytes, char*out) {
   SFXC_ASSERT(socket > 0);
 
   if (out == NULL) {

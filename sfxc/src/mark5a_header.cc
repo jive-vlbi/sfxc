@@ -90,6 +90,7 @@ int Mark5a_header::milisecond(int track) {
 }
 
 int Mark5a_header::microsecond(int track, int milisec) {
+  // See table 2 of Mark IIIA/IV/VLBA tape format specs(rev 1.21), whitney 2005
   int unit = milisec%10;
   SFXC_ASSERT(unit != 4);
   SFXC_ASSERT(unit != 9);

@@ -18,6 +18,8 @@ OBJ=\
   input_data_format_reader_tasklet.cc \
   mark5a_reader.cc \
   mark5a_header.cc \
+  vlba_reader.cc \
+  vlba_header.cc \
   mark5b_reader.cc \
   data_writer.cc data_reader.cc \
   data_reader_factory.cc \

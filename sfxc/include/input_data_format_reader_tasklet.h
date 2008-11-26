@@ -82,6 +82,7 @@ public:
   }
 
   void set_parameters(const Input_node_parameters &input_node_param) {
+    data_modulation = input_node_param.data_modulation;
     reader_->set_parameters(input_node_param);
   }
 
@@ -94,6 +95,11 @@ private:
   void push_element();
   /// Randomize data in the mark5a block
   void randomize_block();
+  /// Used for data modulation (see p.6 of Mark4 memo 230A, Whitney 2005)
+  void demodulate(Input_element &data);
+  void gen_demodulation_sequence(int sequence_length);
+  std::vector<unsigned char> demodulation_sequence; // contains the pseudo-random sequence
+
 
 private:
   /// Data stream to read from
@@ -123,6 +129,9 @@ private:
 
 	/// Amount of data that was received by this component
   uint64_t data_read_;
+
+  /// Determines if data modulation is turned on(p.6 of Mark4 memo 230A, Whitney 2005)
+  bool data_modulation;
 
   const size_t n_bytes_per_input_word;
 };

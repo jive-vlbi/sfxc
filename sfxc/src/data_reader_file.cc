@@ -44,7 +44,7 @@ Data_reader_file::~Data_reader_file() {
   file.close();
 }
 
-int
+size_t
 Data_reader_file::do_get_bytes(size_t nBytes, char*out) {
   if (!file.good()) {
     return -1;

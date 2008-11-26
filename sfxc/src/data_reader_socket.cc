@@ -35,11 +35,11 @@ Data_reader_socket::Data_reader_socket(Connexion* connexion) {
 Data_reader_socket::~Data_reader_socket() {}
 
 
-int Data_reader_socket::do_get_bytes(size_t nBytes, char *out) {
+size_t Data_reader_socket::do_get_bytes(size_t nBytes, char *out) {
   SFXC_ASSERT(m_socket > 0);
   SFXC_ASSERT(out != NULL);
 
-  int val = read(m_socket, (void *) out, nBytes);
+  size_t val = read(m_socket, (void *) out, nBytes);
   if ( val >= 0 ) return val;
   iseof = true;
   std::cout << "Read a negative number of bytes "<< std::endl;

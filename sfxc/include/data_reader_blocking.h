@@ -38,11 +38,11 @@ public:
   bool eof();
   bool can_read();
 
-  static int get_bytes_s(Data_reader* reader, size_t size, char* buffer);
-  static int get_bytes_s(Data_reader* reader, size_t size, char* buffer, int scaling);
+  static size_t get_bytes_s(Data_reader* reader, size_t size, char* buffer);
+  static size_t get_bytes_s(Data_reader* reader, size_t size, char* buffer, int scaling);
 
 private:
-  int do_get_bytes(size_t size, char* buffer);
+  size_t do_get_bytes(size_t size, char* buffer);
 };
 
 Data_reader_blocking& operator>>(Data_reader_blocking& dr, std::string& str);

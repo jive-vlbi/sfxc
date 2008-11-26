@@ -5,7 +5,8 @@ Input_data_format_reader_tasklet(
   Data_format_reader_ptr reader,
   Data_frame &data)
     : memory_pool_(10), stop_time(-1),
-    n_bytes_per_input_word(reader->bytes_per_input_word()) {
+      n_bytes_per_input_word(reader->bytes_per_input_word()),
+      data_modulation(false) {
 
   SFXC_ASSERT(sizeof(value_type) == 1);
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
@@ -67,6 +68,8 @@ do_task() {
     if (!reader_->read_new_block(*input_element_)) {
       randomize_block();
     }
+    if(data_modulation)
+      demodulate(input_element_);
     current_time = reader_->get_current_time();
   }
   input_element_->start_time = current_time;
@@ -216,4 +219,44 @@ randomize_block() {
   }
 
 #endif // SFXC_INVALIDATE_SAMPLES
+}
+
+void 
+Input_data_format_reader_tasklet::demodulate(Input_element &data)
+// See page 6 of Whitney 2005
+{
+  int frame_size=data->buffer.size()/n_bytes_per_input_word;
+  // The factor frame_size/8 is there because the sequence also advances at parity bits
+  int sequence_length=frame_size+frame_size/8;
+
+  if(demodulation_sequence.size()!=sequence_length){
+    demodulation_sequence.resize(sequence_length); 
+    gen_demodulation_sequence(sequence_length);
+  }
+  int index=0;
+  for(int i=0;i<frame_size;i++){
+    if(demodulation_sequence[i+i/8]!=0){
+      for(int j=0;j<n_bytes_per_input_word;j++)
+        data->buffer[index+j]=data->buffer[index+j]^0xff;
+    }
+    index+=n_bytes_per_input_word;
+  }
+}
+
+void
+Input_data_format_reader_tasklet::gen_demodulation_sequence(int sequence_length){
+// See page 7 of Whitney 2005 (Mark4 memo 230a)
+  unsigned int ret_val;
+  unsigned int gen_sequence[16];
+  //reset generator sequence
+  for(int i=0;i<16;i++)
+    gen_sequence[i]=1;
+
+  for(int n=0;n<sequence_length;n++){
+    ret_val = gen_sequence[10]^gen_sequence[12]^gen_sequence[13]^gen_sequence[15];
+    for (int i=15;i>0;i--)
+      gen_sequence[i]=gen_sequence[i-1];
+    gen_sequence[0]=ret_val;
+    demodulation_sequence[n]=(unsigned char)ret_val;
+  }
 }

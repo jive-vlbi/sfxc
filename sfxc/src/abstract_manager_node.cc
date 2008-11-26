@@ -34,8 +34,12 @@ start_input_node(int rank, const std::string &station) {
 
   if (control_parameters.transport_type(station) == "Mark5A") {
     // starting an input reader
-    MPI_Send(&rank, 1, MPI_INT32,
-             rank, MPI_TAG_SET_INPUT_NODE_MARK5A, MPI_COMM_WORLD);
+    if(control_parameters.rack_type(station) == "VLBA")
+      MPI_Send(&rank, 1, MPI_INT32,
+               rank, MPI_TAG_SET_INPUT_NODE_VLBA, MPI_COMM_WORLD); // vlba data
+    else
+      MPI_Send(&rank, 1, MPI_INT32,
+               rank, MPI_TAG_SET_INPUT_NODE_MARK5A, MPI_COMM_WORLD); // mark 4 data
   } else {
     SFXC_ASSERT(control_parameters.transport_type(station) == "Mark5B");
     // starting an input reader

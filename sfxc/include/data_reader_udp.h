@@ -60,7 +60,7 @@ public:
   }
 
 protected:
-  int do_get_bytes(size_t nBytes, char *buff);
+  size_t do_get_bytes(size_t nBytes, char *buff);
 
   int socket_;
   int baseidx;
