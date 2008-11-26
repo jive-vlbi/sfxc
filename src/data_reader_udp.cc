@@ -157,7 +157,7 @@ void Data_reader_udp::Reading_thread::do_execute()
 		}
 }
 
-int Data_reader_udp::do_get_bytes(size_t readb, char *buffer)
+size_t Data_reader_udp::do_get_bytes(size_t readb, char *buffer)
 {
 		static int old_p;
 		static int prev_pack=-1;

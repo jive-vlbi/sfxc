@@ -2,6 +2,7 @@
  * All rights reserved.
  *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+ *            Aard Keimpema <keimpema@jive.nl>, 2008
  *
  * $Id:$
  *
@@ -12,11 +13,11 @@
 #include "utils.h"
 #include "mark5a_reader.h"
 #include "mark5b_reader.h"
+#include "vlba_reader.h"
 #include "monitor.h"
 
 Input_node_tasklet *
 get_input_node_tasklet_mark5a(boost::shared_ptr<Data_reader> reader) {
-
   // Maximal buffer size
   Input_data_format_reader::Data_frame data;
 
@@ -26,6 +27,16 @@ get_input_node_tasklet_mark5a(boost::shared_ptr<Data_reader> reader) {
   return new Input_node_tasklet(mark5a_reader_ptr, data);
 }
 
+Input_node_tasklet *
+get_input_node_tasklet_vlba(boost::shared_ptr<Data_reader> reader) {
+  // Maximal buffer size
+  Input_data_format_reader::Data_frame data;
+
+  boost::shared_ptr<VLBA_reader> vlba_reader_ptr =
+    boost::shared_ptr<VLBA_reader>( get_vlba_reader(reader, data) );
+
+  return new Input_node_tasklet(vlba_reader_ptr, data);
+}
 
 Input_node_tasklet *
 get_input_node_tasklet_mark5b(boost::shared_ptr<Data_reader> reader) {
@@ -44,6 +55,9 @@ get_input_node_tasklet(boost::shared_ptr<Data_reader> reader,
 
   if (type == MARK5A) {
     return get_input_node_tasklet_mark5a(reader);
+  }
+  if (type == VLBA) {
+    return get_input_node_tasklet_vlba(reader);
   }
   if (type == MARK5B) {
     return get_input_node_tasklet_mark5b(reader);

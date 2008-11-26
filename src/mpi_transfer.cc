@@ -304,7 +304,7 @@ receive(MPI_Status &status, Uvw_model &table, int &sn) {
 void
 MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
   int size = 0;
-  size = 4*sizeof(int32_t);
+  size = 5*sizeof(int32_t);
   for (Input_node_parameters::Channel_iterator channel =
          input_node_param.channels.begin();
        channel != input_node_param.channels.end(); channel++) {
@@ -325,6 +325,9 @@ MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&input_node_param.integr_time, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&input_node_param.data_modulation, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+
 
   length = (int32_t)input_node_param.channels.size();
   MPI_Pack(&length, 1, MPI_INT32,
@@ -350,7 +353,6 @@ MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
     MPI_Pack(&channel->magn_tracks[0], length, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD);
   }
-
   SFXC_ASSERT(position == size);
   MPI_Send(message_buffer, position, MPI_PACKED, rank,
            MPI_TAG_TRACK_PARAMETERS, MPI_COMM_WORLD);
@@ -380,6 +382,9 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
              MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
              &input_node_param.integr_time, 1, MPI_INT32,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &input_node_param.data_modulation, 1, MPI_INT32,
              MPI_COMM_WORLD);
 
   int32_t n_channels;

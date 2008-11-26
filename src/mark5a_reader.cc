@@ -47,7 +47,7 @@ Mark5a_reader::goto_time(Data_frame &data, int64_t us_time) {
   //}
   /// A blocking read operation. The operation is looping until the file
   /// is eof or the requested amount of data is retreived.
-  int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
+  size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
 
   if ( byte_read != read_n_bytes) {
     SFXC_ASSERT_MSG(false,

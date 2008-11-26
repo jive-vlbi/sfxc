@@ -13,7 +13,7 @@
 class Input_node_parameters {
 public:
   Input_node_parameters()
-      : track_bit_rate(0), number_channels(-1), integr_time(-1) {}
+      : track_bit_rate(0), number_channels(-1), integr_time(-1), data_modulation(0) {}
 
   class Channel_parameters {
   public:
@@ -47,6 +47,8 @@ public:
   int32_t number_channels;
   /// The integration time
   int32_t integr_time;
+  /// Indicates if data modulation is used (p.6 of Mark4 memo 230A, Whitney 2005)
+  int32_t data_modulation;
 };
 
 std::ostream &operator<<(std::ostream &out, const Input_node_parameters &param);
@@ -241,7 +243,7 @@ public:
                              const std::string &channel_name,
                              const std::vector<std::string> &station_name,
                              const std::map<std::string, int> &correlator_node_station_to_input) const;
-
+  std::string rack_type(const std::string &station) const;
   std::string transport_type(const std::string &station) const;
 
   const Vex &get_vex() const;

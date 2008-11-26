@@ -50,7 +50,7 @@ private:
                  String& filename);
   void connect(pInterfaceIP interface);
   void negociate();
-  int do_get_bytes(size_t readb, char *buffer);
+  size_t do_get_bytes(size_t readb, char *buffer);
 
 
   String filename_;

@@ -38,7 +38,7 @@ public:
     return queue;
   }
 private:
-  int do_get_bytes(size_t nElements, char *out);
+  size_t do_get_bytes(size_t nElements, char *out);
 
   // The input buffer
   Queue_ptr    queue;
@@ -61,7 +61,7 @@ template <class Element>
 Data_reader_buffer<Element>::~Data_reader_buffer() {}
 
 template <class Element>
-int Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {
+size_t Data_reader_buffer<Element>::do_get_bytes(size_t nElements, char *out) {
   SFXC_ASSERT(queue!=Queue_ptr());
   if (queue->empty()) return 0;
   size_t elements_to_read = nElements;

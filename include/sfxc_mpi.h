@@ -48,10 +48,15 @@ enum MPI_TAG {
   // INITIALISATION OF THE DIFFERENT TYPES OF NODES:
   //------------------------------------------------------------------------
 
-  /** Add an input node containing mark5a data
+  /** Add an input node containing mark5a data (mark4 format)
    * - MPI_INT32: number of the input node
    **/
   MPI_TAG_SET_INPUT_NODE_MARK5A,
+
+  /** Add an input node containing mark5a data (VLBA format)
+   * - MPI_INT32: number of the input node
+   **/
+  MPI_TAG_SET_INPUT_NODE_VLBA,
 
   /** Add an input node containing mark5b data
    * - MPI_INT32: number of the input node
@@ -326,6 +331,9 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
     }
   case MPI_TAG_SET_INPUT_NODE_MARK5A: {
       return "MPI_TAG_SET_INPUT_NODE_MARK5A";
+    }
+  case MPI_TAG_SET_INPUT_NODE_VLBA: {
+      return "MPI_TAG_SET_INPUT_NODE_VLBA";
     }
   case MPI_TAG_SET_INPUT_NODE_MARK5B: {
       return "MPI_TAG_SET_INPUT_NODE_MARK5B";

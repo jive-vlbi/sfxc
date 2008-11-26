@@ -39,7 +39,7 @@ public:
 
   bool can_read();
 private:
-  int do_get_bytes(size_t nBytes, char *out);
+  size_t do_get_bytes(size_t nBytes, char *out);
 
 
   int connection_socket, socket;

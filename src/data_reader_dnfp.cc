@@ -122,7 +122,7 @@ void Data_reader_dnfp::negociate() {
   DEBUG_MSG( "Negotiation with the server terminated" );
 }
 
-int Data_reader_dnfp::do_get_bytes(size_t readb, char *buffer) {
+size_t Data_reader_dnfp::do_get_bytes(size_t readb, char *buffer) {
   if (buffer == NULL) {
     size_t buff_size = 1000000;
     readb = (readb < buff_size ? readb : buff_size);

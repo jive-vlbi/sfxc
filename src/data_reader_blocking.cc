@@ -9,7 +9,7 @@ Data_reader_blocking::Data_reader_blocking(Data_reader *rdr) {
   SFXC_ASSERT(rdr);
 }
 
-int Data_reader_blocking::get_bytes_s(Data_reader* reader, size_t size, char* buffer)
+size_t Data_reader_blocking::get_bytes_s(Data_reader* reader, size_t size, char* buffer)
 {
   int numretry = 0;
   size_t remains = size;
@@ -34,7 +34,7 @@ int Data_reader_blocking::get_bytes_s(Data_reader* reader, size_t size, char* bu
 }
 
 
-int Data_reader_blocking::get_bytes_s(Data_reader* reader, size_t size, char* buffer, int max_retry)
+size_t Data_reader_blocking::get_bytes_s(Data_reader* reader, size_t size, char* buffer, int max_retry)
 {
   int numretry = 0;
   size_t remains = size;
@@ -73,7 +73,7 @@ int Data_reader_blocking::get_bytes_s(Data_reader* reader, size_t size, char* bu
 }
 
 
-int Data_reader_blocking::do_get_bytes(size_t size, char* buffer) {
+size_t Data_reader_blocking::do_get_bytes(size_t size, char* buffer) {
   int numretry = 0;
   size_t remains = size;
 
