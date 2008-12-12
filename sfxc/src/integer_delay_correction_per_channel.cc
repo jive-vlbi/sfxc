@@ -6,8 +6,8 @@ Integer_delay_correction_per_channel()
     nr_output_bytes(-1),
     bits_per_sample(-1),
     sample_rate(-1),
-    _current_time(-1),
-    integration_time(-1),
+    _current_time(INVALID_TIME),
+    integration_time(INVALID_TIME),
     current_delay(1,1),
     memory_pool_(10)
     /**/
@@ -24,7 +24,6 @@ Integer_delay_correction_per_channel::do_task() {
   Input_buffer_element input_element = input_buffer_->front();
   Output_buffer_element output_element;
   output_element.delay = (char)current_delay.second;
-
   // Compute the offset in bytes
   // If byte_offset < -nr_output_bytes
   //   The requested output lies before the input data, send invalid data
@@ -326,7 +325,6 @@ Integer_delay_correction_per_channel::
 bytes_of_output() {
   return nr_bytes_per_integration_slice;
 }
-
 
 Integer_delay_correction_per_channel::Input_data_block
 Integer_delay_correction_per_channel::

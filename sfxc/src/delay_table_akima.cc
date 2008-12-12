@@ -102,9 +102,8 @@ void Delay_table_akima::open(const char *delayTableName) {
 bool Delay_table_akima::initialise_next_scan() {
   if (times.empty()) return false;
   // make end_scan point to the start of the next scan
-  if (end_scan != 0) end_scan += 2;
+  if (end_scan != 0) end_scan++;
   begin_scan = end_scan;
-
   if (end_scan >= times.size()) return false;
 
   // next_end_scan is the past-the-end iterator of the next scan

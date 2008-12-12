@@ -16,6 +16,8 @@
 
 #include "memory_pool.h"
 
+#define INVALID_TIME -1
+
 class Time_interval {
 	public:
 		Time_interval(){
