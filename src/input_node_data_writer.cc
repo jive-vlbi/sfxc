@@ -90,7 +90,8 @@ do_task() {
   struct Writer_struct& data_writer = data_writers_.front();
 
   // Check whether we have to start a new timeslice
-  if ( data_writer.slice_size > 0) {
+  if (data_writers_.front().slice_size > 0
+      && data_writers_.front().writer->get_size_dataslice() <= 0) {
       // Initialise the size of the data slice
       // from the front(): writer.set_size_dataslice(slice_size), slice_size=0
       //timer_other_.stop();
@@ -104,7 +105,7 @@ do_task() {
     }
 
   // Check whether we have written all data to the data_writer
-  SFXC_ASSERT(data_writer.slice_size == 0);
+  //SFXC_ASSERT(data_writer.slice_size == 0);
   SFXC_ASSERT(data_writer.writer->get_size_dataslice() >= 0);
   if (data_writer.writer->get_size_dataslice() == 0) {
       data_writers_.pop();
@@ -139,7 +140,6 @@ do_task() {
         } while (nbytes != 1);
     }
 
-
   int bytes_to_write = input_element.nr_bytes;
   int bytes_written = 0;
   char *data =
@@ -156,7 +156,6 @@ do_task() {
 	total_data_written_ += bytes_written;
 
   input_buffer_->pop();
-
 	return bytes_written;
 	//timer_writing_.stop();
 }

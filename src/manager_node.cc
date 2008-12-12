@@ -46,8 +46,8 @@ Manager_node(int rank, int numtasks,
 
   { // Send the global header
     Output_header_global output_header;
+    memset(&output_header, 0, sizeof(Output_header_global));
     output_header.header_size = sizeof(Output_header_global);
-
 
     strcpy(output_header.experiment,control_parameters.experiment().c_str());      // Name of the experiment
     Control_parameters::Date start = control_parameters.get_start_time();

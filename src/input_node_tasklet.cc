@@ -178,7 +178,13 @@ set_parameters(const Input_node_parameters &input_node_param,
 int
 Input_node_tasklet::
 get_current_time() {
-  return reader_.get_current_time();
+  // Current time in [ms], if the delay correction hasn't progressed as far as
+  // the reader we return the current time position of the delay correction
+  int time = reader_.get_current_time()/1000;
+
+  if (integer_delay_.get_current_time()!=INVALID_TIME)
+    time = std::min(time, (int)(integer_delay_.get_current_time()/1000));
+  return time;
 }
 
 int

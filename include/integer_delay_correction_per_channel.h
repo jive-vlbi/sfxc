@@ -95,6 +95,11 @@ public:
   // Number of bytes per integration slice
   int bytes_of_output();
 
+  // Returns the time we are currently processing
+  int64_t current_time() const {
+    return _current_time;
+  }
+
   static Integer_delay_correction_per_channel_sptr new_sptr();
 
 private:
@@ -102,10 +107,6 @@ private:
   // Checks whether the start time has been set
   bool time_set() const {
     return _current_time > 0;
-  }
-  // Returns the time we are currently processing
-  int64_t current_time() const {
-    return _current_time;
   }
   // Returns the delay in seconds for the time in microseconds
   double delay(int64_t time);

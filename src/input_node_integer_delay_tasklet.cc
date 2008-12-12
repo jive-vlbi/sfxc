@@ -139,6 +139,22 @@ Input_node_integer_delay_tasklet::get_output_buffer(int nr_stream)
   return integer_delays_[nr_stream]->get_output_buffer();
 }
 
+/*****************************************************************************
+* @desc Get the current time position of the delay modules
+*****************************************************************************/
+int64_t 
+Input_node_integer_delay_tasklet::get_current_time(){
+  int i,j;
+  int64_t time=INVALID_TIME;
+  // First find a valid time
+  for (i = 0; i < (integer_delays_.size()&&time==INVALID_TIME); i++)
+    time = integer_delays_[i]->current_time();
+
+  for (int j = i; j < integer_delays_.size(); j++)
+    time = std::min(time, integer_delays_[j]->current_time());
+  return time;
+}
+
 int Input_node_integer_delay_tasklet::bytes_of_output()
 {
   SFXC_ASSERT( 0 < integer_delays_.size() );

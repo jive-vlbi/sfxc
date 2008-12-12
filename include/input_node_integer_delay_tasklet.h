@@ -115,6 +115,11 @@ public:
   *****************************************************************************/
  	inline double get_sec(){ return timer_.measured_time(); }
 
+  /*****************************************************************************
+  * @desc Get the current time position of the delay modules
+  *****************************************************************************/
+  int64_t get_current_time();
+
 private:
   /// Writers that will stream the data.
   std::vector<Integer_delay_correction_per_channel_sptr>    integer_delays_;

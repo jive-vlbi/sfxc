@@ -161,9 +161,9 @@ class Reader_thread : public Thread {
       try {
         while ( isrunning_ ) {
 					if ( num_reading_ == 0 ) {
-            timer_waiting_.resume();
+//            timer_waiting_.resume();
             fetch_new_time_slice();
-            timer_waiting_.stop();
+//            timer_waiting_.stop();
           } else {
             timer_reading_.resume();
             /// Wait something happens.
