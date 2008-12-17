@@ -264,6 +264,7 @@ void Correlation_core::integration_average() {
     for (size_t i = 0; i < size_of_fft()/2+1; i++) {
       norms[station] += accumulation_buffers[station][i].real();
     }
+    norms[station] /= (size_of_fft()/2);
     for (size_t i = 0; i < size_of_fft()/2+1; i++) {
       // imaginary part should be zero!
       accumulation_buffers[station][i] =
