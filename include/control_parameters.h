@@ -1,6 +1,7 @@
 #ifndef CONTROL_PARAMETERS_H_
 #define CONTROL_PARAMETERS_H_
 
+#include <boost/shared_ptr.hpp>
 #include <json/json.h>
 #include <vex/Vex++.h>
 #include <list>
@@ -49,6 +50,8 @@ public:
   int32_t integr_time;
   /// Indicates if data modulation is used (p.6 of Mark4 memo 230A, Whitney 2005)
   int32_t data_modulation;
+  /// The date of the first scan in the vex file, all times are calculated relative to this day
+  int16_t start_day, start_year;
 };
 
 std::ostream &operator<<(std::ostream &out, const Input_node_parameters &param);
@@ -247,6 +250,10 @@ public:
   std::string transport_type(const std::string &station) const;
 
   const Vex &get_vex() const;
+
+  /// The start date of the first scan in the vex file
+  boost::shared_ptr<Vex::Date> start_date;
+
 private:
   std::string create_path(const std::string &path) const;
 private:

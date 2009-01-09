@@ -423,7 +423,7 @@ stai(void)
 void
 mvrec(short *ntoc, short *kmode, short *knum, short *err)
 {
-  double offset, total_delay;
+  double offset, total_delay, sec_of_day;
 
   if (!isnan(delay[0])) {
     offset = station_data.clock_early +
@@ -431,8 +431,13 @@ mvrec(short *ntoc, short *kmode, short *knum, short *err)
 				 + interval * delta_time
 				 - station_data.clock_epoch);
     total_delay = delay[0] + offset;
+    // We ouput the number of seconds since midnight on the day of the FIRST scan
+    if(scan_data[0].day != scan_data[scan_nr].day)
+      sec_of_day=scan_data[scan_nr].sec_of_day + (double)24*60*60;
+    else
+      sec_of_day=scan_data[scan_nr].sec_of_day;
 
-    fwrite(&scan_data[scan_nr].sec_of_day, 1, sizeof(double), output_file);
+    fwrite(&sec_of_day, 1, sizeof(double), output_file);
     fwrite(uvw, 3, sizeof(double), output_file);
     fwrite(&total_delay, 1, sizeof(double), output_file);
 

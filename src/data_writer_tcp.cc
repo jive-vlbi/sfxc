@@ -38,7 +38,7 @@ Data_writer_tcp::do_put_bytes(size_t nBytes, const char *buff) {
   SFXC_ASSERT(nBytes > 0);
   size_t bytes_written = 0;
   while (bytes_written != nBytes) {
-    ssize_t result = write(socket, buff+bytes_written, nBytes-bytes_written);
+    size_t result = write(socket, buff+bytes_written, nBytes-bytes_written);
 
     if (result <= 0) {
       return bytes_written;

@@ -108,6 +108,8 @@ private:
   int32_t start_time;
 
   int64_t stop_time;
+  // Reference date relative to which all dates are calculated
+  int ref_year,ref_day;
 
   TRANSPORT_TYPE transport_type;
 };
