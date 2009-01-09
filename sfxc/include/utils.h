@@ -210,6 +210,9 @@ long unsigned int park_miller_random();
 bool directory_exist(const std::string& path);
 void create_directory(const std::string& path);
 
+// Modified julian day
+int mjd(int day, int month, int year);
+
 inline double toMB(unsigned int size) {
   return (1.0*size)/(1024*1024);
 }

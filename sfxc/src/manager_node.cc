@@ -315,8 +315,9 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   }
 
   // Initialise the correlator node
+  int32_t ms_per_day=1000*24*60*60;
   if (cross_channel == -1) {
-    int32_t time = start_time + integration_time()*integration_slice_nr;
+    int32_t time = (start_time + integration_time()*integration_slice_nr)%ms_per_day;
     get_log_writer()(1)
     << "start "
     << Vex::Date(start_year, start_day, time/1000).to_string()
@@ -329,7 +330,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
                  << ", channel " << current_channel << " to correlation node "
                  << corr_node_nr);
   } else {
-    int32_t time = start_time + integration_time()*integration_slice_nr;
+    int32_t time = (start_time + integration_time()*integration_slice_nr)%ms_per_day;
     get_log_writer()(1)
     << "start "
     << Vex::Date(start_year, start_day, time/1000).to_string()
@@ -444,7 +445,7 @@ Manager_node::initialise() {
     Delay_table_akima delay_table;
     const std::string &station_name = control_parameters.station(station);
     const std::string &delay_file =
-      control_parameters.get_delay_table_name(station_name);
+      control_parameters.get_delay_table_name(station_name); // also generates delay file if it doesn't exist
     delay_table.open(delay_file.c_str());
     if (!delay_table.initialised()) {
       DEBUG_MSG("Delay table could not be read");
@@ -479,9 +480,9 @@ Manager_node::initialise() {
   Control_parameters::Date stop = control_parameters.get_stop_time();
   start_year = start.year;
   start_day  = start.day;
-  start_time = start.to_miliseconds();
-  stop_time  = stop.to_miliseconds(start_day);
-
+  // ms since midnight on the day of the first scan in the vex file
+  start_time = start.to_miliseconds(control_parameters.start_date->day);
+  stop_time  = stop.to_miliseconds(control_parameters.start_date->day);
   // Get a list of all scan names
   current_scan = control_parameters.scan(start);
   SFXC_ASSERT(current_scan >= 0);
@@ -511,7 +512,7 @@ void Manager_node::initialise_scan(const std::string &scan) {
   }
 
   stop_time_scan =
-    control_parameters.get_vex().stop_of_scan(scan).to_miliseconds(start_day);
+    control_parameters.get_vex().stop_of_scan(scan).to_miliseconds(control_parameters.start_date->day);
   if (stop_time < stop_time_scan)
     stop_time_scan = stop_time;
   // Align the stop time with the time slices

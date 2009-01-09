@@ -76,11 +76,16 @@ private:
   bool check_time_stamp(Mark5a_header &header);
   bool check_track_bit_statistics(Data_frame &data);
 
+  // Convert time read from input stream to time relative to midnight on the reference day
+  int64_t correct_raw_time(int64_t raw_time);
+
   void set_data_frame_info(Data_frame &data);
 private:
   // Time information
-  int start_day_;
-  // start time and current time in miliseconds
+  int start_day_, current_day_;
+  int ref_day, ref_year;
+  int64_t us_per_day;
+  // start time and current time in microseconds
   // start time is used to check the data rate
   int64_t start_time_, current_time_;
 

@@ -36,9 +36,12 @@ int main(int argc, char *argv[]) {
     int64_t stop_time_scan = delay_table.stop_time_scan();
 
     // year and day are set to zero
+    int64_t us_per_day = (int64_t)24*60*60*1000000;
+    int64_t print_start_time = start_time_scan < us_per_day ?  start_time_scan : start_time_scan - us_per_day;
+    int64_t print_stop_time  = stop_time_scan < us_per_day ?  stop_time_scan : stop_time_scan - us_per_day;
     std::cout << scan 
-              << " \t" << Date(0,0,start_time_scan/1000000).to_string()
-              << " \t" << Date(0,0,stop_time_scan/1000000).to_string()
+              << " \t" << Date(0,0,print_start_time/1000000).to_string()
+              << " \t" << Date(0,0,print_stop_time/1000000).to_string()
               << std::endl;
     for (int64_t time = start_time_scan; time<stop_time_scan; time += 10000) {
       out << time << " \t" << delay_table.delay(time) << std::endl;

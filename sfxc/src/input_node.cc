@@ -59,6 +59,9 @@ void Input_node::initialise() {
 }
 
 void Input_node::set_input_node_parameters(const Input_node_parameters &input_node_param) {
+  ref_day=input_node_param.start_day;
+  ref_year=input_node_param.start_year;
+
   SFXC_ASSERT(input_node_tasklet != NULL);
   input_node_tasklet->set_parameters(input_node_param, get_rank()-3);
 

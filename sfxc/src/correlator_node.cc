@@ -227,16 +227,15 @@ int Correlator_node::get_correlate_node_number() {
 
 void Correlator_node::correlate() {
   RT_STAT( dotask_state_.begin_measure() );
-
+  bool done_work=false; 
   delay_timer_.resume();
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
       if (delay_modules[i]->has_work()) {
         RT_STAT( delaycorrection_state_.begin_measure() );
-
         delay_modules[i]->do_task();
         RT_STAT( delaycorrection_state_.end_measure(1) );
-
+        done_work=true;
       }
     }
   }
@@ -247,14 +246,18 @@ void Correlator_node::correlate() {
     RT_STAT( correlation_state_.begin_measure() );
 
     correlation_core.do_task();
+    done_work=true;
+
     RT_STAT( correlation_state_.end_measure(1) );
-
-
   }
 
   correlation_timer_.stop();
 
   RT_STAT( dotask_state_.end_measure(1) );
+
+  if (!done_work)
+    usleep(1000);
+
 }
 
 void

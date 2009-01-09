@@ -88,7 +88,9 @@ public:
   
 private:
   // Time information
-  int start_day_;
+  int start_day_; // start date of data(mod Julian day)
+  int ref_jday; //date relative to which times are calculated(mod Julian day)
+  int64_t us_per_day;
   // start time and current time in miliseconds
   // start time is used to check the data rate
   int64_t start_time_, current_time_;
@@ -102,6 +104,9 @@ private:
   Header current_header, tmp_header;
 
   int time_between_headers_;
+
+  // Convert time read from input stream to time relative to midnight on the reference day
+  int64_t correct_raw_time(int64_t raw_time);
 };
 
 std::ostream &operator<<(std::ostream &out,

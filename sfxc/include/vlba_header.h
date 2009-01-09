@@ -34,7 +34,7 @@ public:
   int64_t microseconds(int track);
   // Time in secons since midnight (truncated time)
   int64_t seconds(int track);
-  // Julian day % 1000
+  // Modified Julian day % 1000
   int julian_day(int track);
 
   int find_track(int headstack, int track);

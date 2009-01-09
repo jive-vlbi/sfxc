@@ -96,7 +96,8 @@ initialise(const char *ctrl_file, const char *vex_file,
     ctrl["reference_station"] = "";
   }
 
-
+  // Get start date
+  start_date = boost::shared_ptr<Vex::Date>(new Date(vex.get_start_time_of_experiment()));
   initialised = true;
 
   return true;
@@ -651,7 +652,8 @@ get_input_node_parameters(const std::string &mode_name,
 
   SFXC_ASSERT(!result.channels[0].sign_tracks.empty());
   result.track_bit_rate /= result.channels[0].sign_tracks.size();
-
+  result.start_year=start_date->year;
+  result.start_day=start_date->day;
   return result;
 }
 

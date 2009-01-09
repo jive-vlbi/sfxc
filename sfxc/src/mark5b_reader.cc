@@ -8,11 +8,15 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
     debug_level_(CHECK_PERIODIC_HEADERS),
     time_between_headers_(0)
 {
+  // initially use start_date as reference
   read_new_block(data);
+  ref_jday = current_header.julian_day(); 
   SFXC_ASSERT(current_header.check());
 
   start_day_ = current_header.julian_day();
   start_time_ = current_header.microseconds();
+
+  us_per_day=(int64_t)24*60*60*1000000;
 }
 
 
@@ -22,11 +26,11 @@ int64_t
 Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
   SFXC_ASSERT(current_header.check());
   SFXC_ASSERT(time_between_headers_ > 0);
-  int64_t current_time_ = current_header.microseconds();
+  int64_t current_time_ = correct_raw_time(current_header.microseconds());
 
   if (us_time <= current_time_) return current_time_;
 
-  const int64_t delta_time = us_time-current_header.seconds()*1000000;
+  const int64_t delta_time = us_time-correct_raw_time((int64_t)current_header.seconds()*1000000);
 
   SFXC_ASSERT(delta_time % time_between_headers_ == 0);
   SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
@@ -44,24 +48,36 @@ Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
 
   /// int bytes_read = data_reader_->get_bytes(bytes_to_read, NULL);
   int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
-  
+
   SFXC_ASSERT(bytes_to_read == byte_read);
 
   // Read last block:
   read_new_block(data);
 
   SFXC_ASSERT((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) == 0);
-  current_time_ = current_header.microseconds();
+  current_time_ = correct_raw_time(current_header.microseconds());
   SFXC_ASSERT(us_time == current_time_);
   SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
 
   return current_time_;
 }
 
-int64_t Mark5b_reader::get_current_time() {
-  return current_header.microseconds();
+int64_t Mark5b_reader::correct_raw_time(int64_t raw_time){
+  // Convert time read from input stream to time relative to midnight on the reference day
+  int cur_jday = current_header.julian_day();
+  int64_t ret_val;
+  if(cur_jday >= ref_jday)
+    ret_val = raw_time + (cur_jday-ref_jday)*us_per_day;
+  else
+    ret_val = raw_time + (1000+cur_jday-ref_jday)*us_per_day;
+
+  return ret_val;
 }
 
+int64_t Mark5b_reader::get_current_time() {
+
+  return correct_raw_time(current_header.microseconds());
+}
 
 bool Mark5b_reader::read_new_block(Data_frame &data) {
   if (data.buffer.size() != size_data_block()) {
@@ -93,7 +109,7 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
 
   if (data_reader_->eof()) return false;
   SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
-  data.start_time = current_header.microseconds();
+  data.start_time = correct_raw_time(current_header.microseconds());
   return current_header.check();
 }
 
@@ -158,4 +174,5 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
   time_between_headers_ =
     (N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME)/(tbr/1000000);
   SFXC_ASSERT(time_between_headers_ > 0);
+  ref_jday = (mjd(1,1,param.start_year) + param.start_day -1 )%1000;
 }
