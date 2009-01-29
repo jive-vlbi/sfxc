@@ -134,7 +134,7 @@ void abort(const char *file, int line, const char* message);
 #endif // USE_MPI
 #endif // NDEBUG
 
-#define USE_DOUBLE
+//#define USE_DOUBLE
 
 #ifdef USE_DOUBLE
 # define FLOAT                   double
