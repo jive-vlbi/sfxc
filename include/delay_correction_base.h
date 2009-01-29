@@ -90,6 +90,7 @@ private:
   Timer delay_timer;
 
   FLOAT lookup_table[256][4];
+  FLOAT lookup_table_1bit[256][8];
 
 private:
   Output_buffer_ptr   output_buffer;
