@@ -100,25 +100,25 @@ void Delay_correction_default::fractional_bit_shift(FLOAT input[],
 
   // 5a)calculate the fract bit shift (=phase corrections in freq domain)
   // the following should be double
-  const FLOAT dfr  = sample_rate()*1.0/number_channels(); // delta frequency
-  const FLOAT tmp1 = -2.0*M_PI*fractional_delay/sample_rate();
-  const FLOAT tmp2 = 0.5*M_PI*(integer_shift&3);/* was: / ovrfl */
-  const FLOAT constant_term = tmp2 - sideband()*tmp1*0.5*bandwidth();
-  const FLOAT linear_term = tmp1*sideband()*dfr;
+  const double dfr  = sample_rate()*1.0/number_channels(); // delta frequency
+  const double tmp1 = -2.0*M_PI*fractional_delay/sample_rate();
+  const double tmp2 = 0.5*M_PI*(integer_shift&3);/* was: / ovrfl */
+  const double constant_term = tmp2 - sideband()*tmp1*0.5*bandwidth();
+  const double linear_term = tmp1*sideband()*dfr;
 
   // 5b)apply phase correction in frequency range
   const int size = number_channels()/2+1;
 
-  FLOAT phi = constant_term;
+  double phi = constant_term;
   // in the loop we calculate sin(phi) and cos(phi) with phi=contant_term + i*linear_term
   // This we do efficiently using a recurrence relation
   // sin(t+delta)=sin(t)-[a*sin(t)-b*cos(t)] ; cos(t+delta)=cos(t)-[a*cos(t)+b*sin(t)]
   // a=2*sin^2(delta/2) ; b=sin(delta)
-  FLOAT temp=sin(linear_term/2);
-  FLOAT a=2*temp*temp,b=sin(linear_term);
-  FLOAT cos_phi, sin_phi;
+  double temp=sin(linear_term/2);
+  double a=2*temp*temp,b=sin(linear_term);
+  double cos_phi, sin_phi;
 #ifdef HAVE_SINCOS
-  sincosf(phi, &sin_phi, &cos_phi);
+  sincos(phi, &sin_phi, &cos_phi);
 #else
   sin_phi = sin(phi);
   cos_phi = cos(phi);
@@ -126,6 +126,7 @@ void Delay_correction_default::fractional_bit_shift(FLOAT input[],
 
   for (int i = 0; i < size; i++) {
     // the following should be double
+
     frequency_buffer[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     temp=sin_phi-(a*sin_phi-b*cos_phi);
