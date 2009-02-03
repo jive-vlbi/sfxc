@@ -147,11 +147,14 @@ Input_node_integer_delay_tasklet::get_current_time(){
   int i,j;
   int64_t time=INVALID_TIME;
   // First find a valid time
-  for (i = 0; i < (integer_delays_.size()&&time==INVALID_TIME); i++)
+  for (i = 0; (i < integer_delays_.size())&&time==INVALID_TIME; i++)
     time = integer_delays_[i]->current_time();
 
-  for (int j = i; j < integer_delays_.size(); j++)
-    time = std::min(time, integer_delays_[j]->current_time());
+  for (int j = i; j < integer_delays_.size(); j++){
+    if(integer_delays_[j]->current_time()!=INVALID_TIME)
+      time = std::min(time, integer_delays_[j]->current_time());
+  }
+
   return time;
 }
 
