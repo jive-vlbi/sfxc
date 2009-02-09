@@ -14,27 +14,27 @@ class NewTranslationJob(ServiceSOAPBinding):
 <wsdl:definitions targetNamespace=\"http://broker.remote.expres.psnc.pl\" xmlns:axis2=\"http://broker.remote.expres.psnc.pl\" xmlns:http=\"http://schemas.xmlsoap.org/wsdl/http/\" xmlns:mime=\"http://schemas.xmlsoap.org/wsdl/mime/\" xmlns:ns0=\"http://broker.remote.expres.psnc.pl/xsd\" xmlns:ns1=\"http://jobinfo.broker.remote.expres.psnc.pl/xsd\" xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\" xmlns:soap12=\"http://schemas.xmlsoap.org/wsdl/soap12/\" xmlns:wsaw=\"http://www.w3.org/2006/05/addressing/wsdl\" xmlns:wsdl=\"http://schemas.xmlsoap.org/wsdl/\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">
   <wsdl:types>
     <xs:schema attributeFormDefault=\"qualified\" elementFormDefault=\"qualified\" targetNamespace=\"http://broker.remote.expres.psnc.pl/xsd\" xmlns:xsd=\"http://broker.remote.expres.psnc.pl/xsd\">
-		<xs:element name=\"startTranslationJob\">
+      <xs:element name=\"startTranslationJob\">
         <xs:complexType>
           <xs:sequence>
             <xs:element minOccurs=\"0\" name=\"param0\" nillable=\"true\" type=\"ns1:JobInfo\"/>
           </xs:sequence>
         </xs:complexType>
-		</xs:element>
-	 </xs:schema>
+      </xs:element>
+    </xs:schema>
     <xs:schema attributeFormDefault=\"qualified\" elementFormDefault=\"qualified\" targetNamespace=\"http://jobinfo.broker.remote.expres.psnc.pl/xsd\" xmlns:ax21=\"http://jobinfo.broker.remote.expres.psnc.pl/xsd\">
-		<xs:complexType name=\"JobInfo\">
+      <xs:complexType name=\"JobInfo\">
         <xs:sequence>
-          <xs:element minOccurs=\"0\" name=\"brokerIPAddress\" nillable=\"true\" type=\"xs:string\"/>
+          <xs:element minOccurs=\"0\" name=\"brokerLocation\" nillable=\"true\" type=\"xs:string\"/>
           <xs:element minOccurs=\"0\" name=\"chunkSize\" type=\"xs:long\"/>
-          <xs:element maxOccurs=\"unbounded\" minOccurs=\"0\" name=\"dataLocation\" nillable=\"true\" type=\"xs:string\"/>
           <xs:element minOccurs=\"0\" name=\"endTime\" nillable=\"true\" type=\"xs:string\"/>
           <xs:element minOccurs=\"0\" name=\"experimentName\" nillable=\"true\" type=\"xs:string\"/>
+          <xs:element minOccurs=\"0\" name=\"gridFtpLocation\" nillable=\"true\" type=\"xs:string\"/>
           <xs:element minOccurs=\"0\" name=\"startTime\" nillable=\"true\" type=\"xs:string\"/>
           <xs:element minOccurs=\"0\" name=\"telescopeName\" nillable=\"true\" type=\"xs:string\"/>
         </xs:sequence>
-		</xs:complexType>
-	 </xs:schema>
+      </xs:complexType>
+    </xs:schema>
   </wsdl:types>
   <wsdl:message name=\"startTranslationJobRequest\">
     <wsdl:part element=\"ns0:startTranslationJob\" name=\"parameters\"/>

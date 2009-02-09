@@ -8,7 +8,7 @@ SEEK_END = 2
 
 import datetime, time, math
 
-conf =  simplejson.load(file('service_conf.js'))
+conf =  simplejson.load(file('/home/small/code/webservices/translationnode/service_conf.js'))
 
 def strptime(s, f):
     return datetime.datetime(*(time.strptime(s, f)[0:6]))
