@@ -22,7 +22,7 @@ class ns1:
         type = (schema, "JobInfo")
         def __init__(self, pname, ofwhat=(), attributes=None, extend=False, restrict=False, **kw):
             ns = ns1.JobInfo_Def.schema
-            TClist = [ZSI.TC.String(pname=(ns,"brokerIPAddress"), aname="_brokerIPAddress", minOccurs=0, maxOccurs=1, nillable=True, typed=False, encoded=kw.get("encoded")), ZSI.TCnumbers.Ilong(pname=(ns,"chunkSize"), aname="_chunkSize", minOccurs=0, maxOccurs=1, nillable=False, typed=False, encoded=kw.get("encoded")), ZSI.TC.String(pname=(ns,"dataLocation"), aname="_dataLocation", minOccurs=0, maxOccurs="unbounded", nillable=True, typed=False, encoded=kw.get("encoded")), ZSI.TC.String(pname=(ns,"endTime"), aname="_endTime", minOccurs=0, maxOccurs=1, nillable=True, typed=False, encoded=kw.get("encoded")), ZSI.TC.String(pname=(ns,"experimentName"), aname="_experimentName", minOccurs=0, maxOccurs=1, nillable=True, typed=False, encoded=kw.get("encoded")), ZSI.TC.String(pname=(ns,"startTime"), aname="_startTime", minOccurs=0, maxOccurs=1, nillable=True, typed=False, encoded=kw.get("encoded")), ZSI.TC.String(pname=(ns,"telescopeName"), aname="_telescopeName", minOccurs=0, maxOccurs=1, nillable=True, typed=False, encoded=kw.get("encoded"))]
+            TClist = [ZSI.TC.String(pname=(ns,"brokerLocation"), aname="_brokerLocation", minOccurs=0, maxOccurs=1, nillable=True, typed=False, encoded=kw.get("encoded")), ZSI.TCnumbers.Ilong(pname=(ns,"chunkSize"), aname="_chunkSize", minOccurs=0, maxOccurs=1, nillable=False, typed=False, encoded=kw.get("encoded")), ZSI.TC.String(pname=(ns,"endTime"), aname="_endTime", minOccurs=0, maxOccurs=1, nillable=True, typed=False, encoded=kw.get("encoded")), ZSI.TC.String(pname=(ns,"experimentName"), aname="_experimentName", minOccurs=0, maxOccurs=1, nillable=True, typed=False, encoded=kw.get("encoded")), ZSI.TC.String(pname=(ns,"gridFtpLocation"), aname="_gridFtpLocation", minOccurs=0, maxOccurs=1, nillable=True, typed=False, encoded=kw.get("encoded")), ZSI.TC.String(pname=(ns,"startTime"), aname="_startTime", minOccurs=0, maxOccurs=1, nillable=True, typed=False, encoded=kw.get("encoded")), ZSI.TC.String(pname=(ns,"telescopeName"), aname="_telescopeName", minOccurs=0, maxOccurs=1, nillable=True, typed=False, encoded=kw.get("encoded"))]
             self.attribute_typecode_dict = attributes or {}
             if extend: TClist += ofwhat
             if restrict: TClist = ofwhat
@@ -32,11 +32,11 @@ class ns1:
                 typecode = self
                 def __init__(self):
                     # pyclass
-                    self._brokerIPAddress = None
+                    self._brokerLocation = None
                     self._chunkSize = None
-                    self._dataLocation = []
                     self._endTime = None
                     self._experimentName = None
+                    self._gridFtpLocation = None
                     self._startTime = None
                     self._telescopeName = None
                     return

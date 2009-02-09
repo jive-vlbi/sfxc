@@ -6,8 +6,10 @@
 	 "host" : "192.42.120.69",
 	 "gridFtpBaseURL" : "melisa.man.poznan.pl/~/",
 	 "localPath" : "/home/small/data",
+	 "vexFilePath" : "/home/small/code/webservices/translationnode",
 	 "block_size" : 8192,
 	 "portNumber" : 8082,
-	 "notificationService" : "http://melisa.man.poznan.pl:8086/vlbiBroker/services/TranslationNodeNotification"
+	 "notificationService" : 
+	 "http://melisa.man.poznan.pl:8086/vlbiBroker/services/TranslationNodeNotification"
 }
 
