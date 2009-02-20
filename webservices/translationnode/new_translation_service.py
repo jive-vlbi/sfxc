@@ -1,17 +1,15 @@
 #!/usr/bin/env python2.4
 import sys, re, time, os, math, glob
+import traceback, datetime
 import Numeric as Nu, itertools
 import simplejson
-# from ZSI.ServiceContainer import AsServer
 from ZSI import dispatch
-from NewTranslationJobZSI.NewTranslationJob_services_server import *
+#from NewTranslationJobZSI.NewTranslationJob_services_server import *
+# 2009-02-09: new WSDL from Poznan, with new name
+from NewTranslationJobZSI.TranslationJob_services_server import *
 from Notification.TranslationNodeNotification import *
-# import TranslationNode_mark5 as mk5tools
 import mark5 as mk5tools
 import TranslationNode_vex as vextools
-
-#os.environ["PATH"] = '/huygens_1/jops/globus/bin:' + os.environ["PATH"]
-
 conf =  simplejson.load(file('/home/small/code/webservices/translationnode/service_conf.js'))
 portMark5Data = conf['portMark5Data']
 portMark5Control = conf['portMark5Control']
@@ -20,7 +18,6 @@ host = conf['host']
 # gridFtpBaseURL = conf['gridFtpBaseURL']
 localPath = conf['localPath']
 portNumber = conf['portNumber']
-tnn_notificationService = conf["notificationService"]
 vexFilePath = conf["vexFilePath"]
 
 def pairwise(l):
@@ -137,7 +134,7 @@ def dataChunker(station, vex_fn, exptname, job_start, job_end, requested_chunk_s
     mark5.disconnect()
 
 def startTranslationJob(p):
-    print >>sys.stderr, "Welcome to startTranslationNode"
+    print >>sys.stderr, datetime.datetime.now(), "Welcome to startTranslationNode"
     print >>sys.stderr, p
     param = p["param0"]
     station = param["telescopeName"]
@@ -148,37 +145,49 @@ def startTranslationJob(p):
     gridFtpBaseUrl = param["gridFtpLocation"]
     job_start = vextools.parse_vex_time(param["startTime"])
     job_end = vextools.parse_vex_time(param["endTime"])
-    print >> sys.stderr, "Decoded request"
-#     tnn_loc = TranslationNodeNotificationLocator()
-#     tnn_port = TranslationNodeNotificationSOAP11BindingSOAP(tnn_notificationService, 
-#                                                             tracefile=sys.stdout)
+    print >>sys.stderr, "Decoded request"
+    try:
+        tnn_loc = TranslationNotificationLocator()
+        port = tnn_loc.getTranslationNotificationPortType(brokerIPAddress)
+    except Exception, e:
+        print >>sys.stderr, "Didn't get TranslationNodeNotifier", e
+        traceback.print_exc(file=sys.stderr)
+        print >>sys.stderr, "Got TranslationNodeNotifier"
+        sys.exit(1)
 
-    print >>sys.stderr, "Got TranslationNodeNotifier"
     dc = dataChunker(station, vex_file_name, experiment_name, 
                      job_start, job_end, requested_chunk_size)
+    translation_node_ip = "http://huygens.nfra.nl"
+    translation_node_id = 20001
     print >>sys.stderr, "Got dataChunker"
-    for (sendFile, chunk_id, chunk_real_size, chunk_start, chunk_end) in dc:
-        gftpCommand = ('/huygens_1/jops/globus/bin/globus-url-copy file://%s  gsiftp://%s/' %
-                       (sendFile, gridFtpBaseUrl))
-        print "Command:", gftpCommand
-        os.system(gftpCommand)
-        ## Notify:
-#         print "send notification to grid broker..."
-#         translation_node_ip = "http://huygens.nfra.nl"
-#         translation_node_id = 20001
-#         req = makeTranslationNodeNotification(chunk_id, gridFtpBaseUrl,
-#                                               chunk_real_size, chunk_start, chunk_end,
-#                                               translation_node_ip, translation_node_id)
-#         tnn_service = conf['notificationService'] 
-#         sendTranslationNodeNotification(req, tnn_service)
+    if not dc:
+        print >>sys.stderr, "dataChunker empty"
+    try:
+        for (sendFile, chunk_id, chunk_real_size, chunk_start, chunk_end) in dc:
+            gftpCommand = ('/huygens_1/jops/globus/bin/globus-url-copy file://%s  gsiftp://%s/' %
+                           (sendFile, gridFtpBaseUrl))
+            print >>sys.stderr, "Command:", gftpCommand
+            os.system(gftpCommand)
+            print >>sys.stderr, "send notification to grid broker..."
+            req = makeTranslationNotification(chunk_id, gridFtpBaseUrl,
+                                              chunk_real_size, chunk_start, chunk_end,
+                                              translation_node_ip, translation_node_id)
+            try:
+                port.chunkIsReady(req)
+            except httplib.ResponseNotReady:
+                print >>sys.stdout, "Axis server returned 202; proceeding"
+            except Exception, e:
+                print >>sys.stderr, "Failed to send notification to Axis:"
+                traceback.print_exc(file=sys.stderr)
 
+    except Exception, e:
+        traceback.print_exc(file=sys.stderr)
 
+    print >>sys.stderr, "sent notification to grid broker..."
 
-
-
-class Service(NewTranslationJob):
+class Service(TranslationJob):
     def soap_startTranslationJob(self, ps):
-	rsp = NewTranslationJob.soap_startTranslationJob(self, ps)
+	rsp = TranslationJob.soap_startTranslationJob(self, ps)
         print ps
 	param = self.request.Param0
         ackJob(param)

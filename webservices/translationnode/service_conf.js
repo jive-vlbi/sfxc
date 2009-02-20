@@ -8,8 +8,6 @@
 	 "localPath" : "/home/small/data",
 	 "vexFilePath" : "/home/small/code/webservices/translationnode",
 	 "block_size" : 8192,
-	 "portNumber" : 8082,
-	 "notificationService" : 
-	 "http://melisa.man.poznan.pl:8086/vlbiBroker/services/TranslationNodeNotification"
+	 "portNumber" : 8082
 }
 

@@ -12,9 +12,9 @@
 						xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/">
   <wsdl:types>
     <xs:schema attributeFormDefault="qualified"
-						elementFormDefault="qualified"
-						targetNamespace="http://jobinfo.broker.remote.expres.psnc.pl/xsd"
-						xmlns:ax24="http://jobinfo.broker.remote.expres.psnc.pl/xsd">
+					elementFormDefault="qualified"
+					targetNamespace="http://jobinfo.broker.remote.expres.psnc.pl/xsd"
+					xmlns:ax24="http://jobinfo.broker.remote.expres.psnc.pl/xsd">
       <xs:complexType name="ChunkInfo">
         <xs:sequence>
           <xs:element minOccurs="0" name="chunkId" type="xs:long"/>
