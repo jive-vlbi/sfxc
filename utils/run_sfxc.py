@@ -48,7 +48,12 @@ def run_sfxc(swap, vex_file, ctrl_file):
         sys.exit(1);
 
   # compute the number of processes needed from the control file
-  ctrl = simplejson.load(open(ctrl_file, "r"))
+  try:
+    ctrl = simplejson.load(open(ctrl_file, "r"))
+  except StandardError, err:
+    print "Error loading control file : " + str(err)
+    sys.exit(1);
+
   number_of_processes = 3 + len(ctrl["channels"]) + len(ctrl["stations"])
 
   # run the software correlator
