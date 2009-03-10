@@ -76,6 +76,9 @@ private:
   bool check_time_stamp(Mark5a_header &header);
   bool check_track_bit_statistics(Data_frame &data);
 
+  // Resync header if there is mising data in the input stream
+  bool resync_header(Data_frame &data);
+
   // Convert time read from input stream to time relative to midnight on the reference day
   int64_t correct_raw_time(int64_t raw_time);
 

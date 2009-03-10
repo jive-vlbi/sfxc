@@ -135,8 +135,13 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
   // at least we read the complete header. Check it
   Mark5a_header header(N);
   header.set_header(&data.buffer[0]);
-  current_time_ = correct_raw_time(header.get_time_in_us(0));
+  if((!header.is_valid())&&(!resync_header(data))){
+    current_time_ += time_between_headers(); // Could't find valid header before EOF
+    return false;
+  }
   current_day_ = header.day(0);
+  current_time_ = correct_raw_time(header.get_time_in_us(0));
+
   if (debug_level_ >= CHECK_PERIODIC_HEADERS) {
     if ((debug_level_ >= CHECK_ALL_HEADERS) ||
         ((++block_count_ % 100) == 0)) {
@@ -155,7 +160,39 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
   return true;
 }
 
+bool Mark5a_reader::resync_header(Data_frame &data) {
+  // Find the next header in the input stream, NB: data already contains one mark5a block worth of input data
 
+  char *buffer=(char *)&data.buffer[0];
+  int bytes_read=0, header_start=0, nOnes=0;
+
+  do{
+    for(int i=0;i<N*SIZE_MK5A_FRAME;i++){
+      if(buffer[i]==~(0))
+        nOnes++;
+      else{
+        if (nOnes >= N*32){
+          // Check if we found a header
+          header_start = i - 64*N-nOnes; // There are 64bits before the sync word
+          if(header_start >0){
+            memmove(&buffer[0], &buffer[header_start],N*SIZE_MK5A_FRAME-header_start);
+            bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start,
+                                                           &buffer[N*SIZE_MK5A_FRAME-header_start]);
+            return true;
+          }
+        } 
+        nOnes=0;
+      }
+    }
+    header_start = N*SIZE_MK5A_FRAME-nOnes - 64*N; // There are 64bits before the sync word
+    memcpy(&buffer[0], &buffer[header_start],N*SIZE_MK5A_FRAME-header_start);
+    bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start,
+                                                   &buffer[N*SIZE_MK5A_FRAME-header_start]);
+  }while(bytes_read>0);
+
+  std::cout << "Couldn't find new sync word before EOF\n";
+  return false;
+}
 
 bool Mark5a_reader::check_time_stamp(Mark5a_header &header) {
   int64_t time_in_us = header.get_time_in_us(0);
@@ -294,7 +331,8 @@ get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
   header.set_header(&data.buffer[0]);
   SFXC_ASSERT_MSG(header.checkCRC(),
                   "Invalid crc-code in the mark5a data file");
-
+  DEBUG_MSG("Mark5a reader found start of data at : y=" << header.year(0)
+            << ", day = " << header.day(0) << ", time =" << header.get_time_in_us(0));
   return new Mark5a_reader(reader, n_tracks_8, data);
 }
 
