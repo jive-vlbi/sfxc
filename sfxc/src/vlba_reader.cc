@@ -136,6 +136,10 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
 
   // at least we read the complete header. Check it
   header.set_header(&buf_header[0],&buf_aux_header[0]);
+  if((!header.is_valid())&&(!resync_header(data))){
+    current_time_ += time_between_headers(); // Could't find valid header before EOF
+    return false;
+  }
   current_time_ = correct_raw_time(header.microseconds(0));
 
   if (debug_level_ >= CHECK_PERIODIC_HEADERS) {
@@ -155,6 +159,39 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
   return true;
 }
 
+bool VLBA_reader::resync_header(Data_frame &data) {
+  // Find the next header in the input stream, NB: data already contains one VLBA block worth of input data
+
+  char *buffer=(char *)&data.buffer[0];
+  int bytes_read=0, header_start=0, nOnes=0;
+
+  do{
+    for(int i=0;i<N*SIZE_VLBA_FRAME;i++){
+      if(buffer[i]==~(0))
+        nOnes++;
+      else{
+        if (nOnes >= N*32){
+          // Check if we found a header
+          header_start = i - nOnes; 
+          if(header_start >0){
+            memmove(&buffer[0], &buffer[header_start],N*SIZE_VLBA_FRAME-header_start);
+            bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start,
+                                                           &buffer[N*SIZE_VLBA_FRAME-header_start]);
+            return true;
+          }
+        } 
+        nOnes=0;
+      }
+    }
+    header_start = N*SIZE_VLBA_FRAME-nOnes; 
+    memcpy(&buffer[0], &buffer[header_start],N*SIZE_VLBA_FRAME-header_start);
+    bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start,
+                                                   &buffer[N*SIZE_VLBA_FRAME-header_start]);
+  }while(bytes_read>0);
+
+  std::cout << "Could find new sync word\n";
+  return false;
+}
 
 bool VLBA_reader::check_time_stamp(VLBA_header &header) {
   int64_t time_in_us = header.microseconds(0);
