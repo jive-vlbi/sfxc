@@ -67,8 +67,22 @@ TCP_Connection::open_port(unsigned short int port, int connections) {
     return false;
   }
 
+  if (port == 0) {
+    socklen_t len = sizeof(serverAddress);
+    if (getsockname(connection_socket, (struct sockaddr *)&serverAddress, &len) < 0) {
+      if (verbose) {
+	std::cout << "cannot get socket name" << std::endl;
+	std::cout << "error message: " << strerror(errno) << std::endl;
+      }
+      close(connection_socket);
+      connection_socket = -1;
+      return false;
+    }
+    port_nr = ntohs(serverAddress.sin_port);
+  }
+
   if (verbose)
-    std::cout << "Port used is: " << port << std::endl;
+    std::cout << "Port used is: " << port_nr << std::endl;
 
   // Wait for connections from clients.
   // This is a non-blocking call; i.e., it registers this program with
