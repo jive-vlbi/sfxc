@@ -21,12 +21,8 @@ Multiple_data_writers_controller::
 Multiple_data_writers_controller(Node &node, int max_connections)
     : Controller(node) {
 
-  /// A bit tricky but this permit to avoid to much usless attemp to
-  /// create ports we now for sure that will not work.
-  int port = SFXC_PORT+RANK_OF_NODE*10;
-  while (!tcp_connection.open_port(port, max_connections)) {
-    port++;
-  }
+  if (!tcp_connection.open_port(0, max_connections))
+    std::cout << "cannot open tcp port" << std::endl;
 }
 
 Multiple_data_writers_controller::
@@ -44,6 +40,9 @@ Multiple_data_writers_controller::get_listening_ip(
   std::vector<InterfaceIP*> interfaces;
   if_names.push_back(String("myri0"));
   if_names.push_back(String("eth0"));
+  if_names.push_back(String("eth1"));
+  if_names.push_back(String("eth2"));
+  if_names.push_back(String("eth3"));
   Network::get_interfaces_ordered_by_name(if_names, interfaces);
 
   for (unsigned int i=0;i<interfaces.size();i++) {
