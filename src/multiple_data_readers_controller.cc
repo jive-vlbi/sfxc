@@ -20,15 +20,10 @@
 
 Multiple_data_readers_controller::
 Multiple_data_readers_controller(Node &node)
-    : Controller(node) {
+  : Controller(node) {
 
-  /// A bit tricky but this permit to avoid to much usless attemp to
-  /// create ports we now for sure that will not work.
-  int port = SFXC_PORT+RANK_OF_NODE*10;
-  while (!tcp_connection.open_port(port, 10)) {
-    port++;
-  }
-
+  if (!tcp_connection.open_port(0, 16))
+    std::cout << "cannot open tcp port" << std::endl;
 }
 
 Multiple_data_readers_controller::
@@ -45,13 +40,15 @@ Multiple_data_readers_controller::get_listening_ip(
   std::vector<InterfaceIP*> interfaces;
   if_names.push_back(String("myri0"));
   if_names.push_back(String("eth0"));
+  if_names.push_back(String("eth1"));
+  if_names.push_back(String("eth2"));
+  if_names.push_back(String("eth3"));
   Network::get_interfaces_ordered_by_name(if_names, interfaces);
 
   for (unsigned int i=0;i<interfaces.size();i++) {
     ip_port.push_back( interfaces[i]->get_ip64() );
     ip_port.push_back( tcp_connection.get_port() );
   }
-
 }
 
 Multiple_data_readers_controller::Process_event_status
