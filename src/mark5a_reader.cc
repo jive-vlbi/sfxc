@@ -3,6 +3,12 @@
 #include "utils.h"
 #include "backtrace.h"
 
+#ifdef SFXC_CHECK_INVALID_SAMPLES
+// Buffer to store the first header. This is needed because the headers are 
+// when this define is set.
+unsigned char saved_header[SIZE_MK5A_HEADER*16];
+#endif
+
 Mark5a_reader::
 Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
               int N_,
@@ -243,7 +249,11 @@ std::vector< std::vector<int> >
 Mark5a_reader::get_tracks(const Input_node_parameters &input_node_param,
                           Data_frame &data) {
   Mark5a_header header(N);
+#ifdef SFXC_CHECK_INVALID_SAMPLES
+  header.set_header(&saved_header[0]);
+#else
   header.set_header(&data.buffer[0]);
+#endif
   SFXC_ASSERT(header.check_header());
 
   std::vector< std::vector<int> > result;
@@ -279,7 +289,6 @@ Mark5a_reader::get_tracks(const Input_node_parameters &input_node_param,
       }
     }
   }
-
   return result;
 }
 
@@ -308,7 +317,8 @@ void Mark5a_reader::set_data_frame_info(Data_frame &data) {
   data.nr_invalid_bytes = SIZE_MK5A_HEADER*N;
 
 #ifdef SFXC_CHECK_INVALID_SAMPLES
-  input_element_.data().buffer[i] = value_type(0);
+  for(int i=0;i<SIZE_MK5A_HEADER*N;i++)
+    data.buffer[i] = INVALID_PATTERN;
 #endif
 
 #else
@@ -317,7 +327,8 @@ void Mark5a_reader::set_data_frame_info(Data_frame &data) {
 
   // Randomize data
   // park_miller_random generates 31 random bits
-  input_element_.data().buffer[i] = (value_type)park_miller_random();
+  for(int i=0;i<SIZE_MK5A_HEADER*N;i++)
+    data.buffer[i] = park_miller_random();
 #endif
 }
 
@@ -329,6 +340,9 @@ get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
                   "Couldn't find a mark5a header in the data file");
   Mark5a_header header(n_tracks_8);
   header.set_header(&data.buffer[0]);
+#ifdef SFXC_CHECK_INVALID_SAMPLES
+  memcpy(&saved_header[0], &data.buffer[0], SIZE_MK5A_HEADER*n_tracks_8);
+#endif
   SFXC_ASSERT_MSG(header.checkCRC(),
                   "Invalid crc-code in the mark5a data file");
   DEBUG_MSG("Mark5a reader found start of data at : y=" << header.year(0)

@@ -104,6 +104,7 @@ set_data_reader(int stream_nr, Data_reader_ptr reader, bool use_buffering) {
     // @todo (damien#1#): This buffering stuff should be removed.
     /// This is probably deprecated code. If nobody set a queue to this it
     /// will never make use of bufferring.
+    std::cout << "KKK We are buffering\n";
     reader2buffer_ = Data_buffered_reader_ptr(new Reader2buffer());
     reader2buffer_->set_data_reader(reader);
     reader2buffer_->try_start();

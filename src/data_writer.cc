@@ -44,7 +44,6 @@ Data_writer::set_size_dataslice(int data_size) {
 int
 Data_writer::get_size_dataslice() {
   return data_slice;
-
 }
 
 bool
@@ -59,7 +58,6 @@ Data_writer& operator<<(Data_writer& dr, const std::string& str) {
   return  dr;
 }
 
-
 Data_writer& operator<<(Data_writer& dr, uint32_t value) {
   value = htonl(value);
   dr.put_bytes(sizeof(uint32_t), (char*)&value);
@@ -72,3 +70,4 @@ Data_writer& operator<<(Data_writer& dr, int32_t value) {
   dr.put_bytes(sizeof(int32_t), (char*)&value);
   return  dr;
 }
+

@@ -32,7 +32,13 @@
 #define PRINT_TIMER       false
 #endif // PRINT_TIMER
 
+#define INVALID_TIME              -1
+
 /// Constants
+// Number of bytes transferred between input- and correlator node, 
+// should be a multiple of the channel size(no of lags) + 1 
+#define INPUT_NODE_PACKET_SIZE    2049
+
 #define SIZE_VLBA_FRAME           20000
 #define SIZE_VLBA_HEADER          96
 #define SIZE_VLBA_AUX_HEADER      64
@@ -63,7 +69,7 @@
 //#  define SFXC_CHECK_INVALID_SAMPLES
 #  ifdef SFXC_CHECK_INVALID_SAMPLES
 // Used to fill the random data for testing. Should be char(0) or char(-1)
-#    define INVALID_PATTERN          char(-1)
+#    define INVALID_PATTERN          char(0)
 #  endif
 #endif
 

@@ -40,14 +40,13 @@ size_t Data_reader_socket::do_get_bytes(size_t nBytes, char *out) {
   SFXC_ASSERT(out != NULL);
 
   size_t val = read(m_socket, (void *) out, nBytes);
-  if ( val >= 0 ) return val;
+  if ( val > 0 ) return val;
   iseof = true;
-  std::cout << "Read a negative number of bytes "<< std::endl;
+//  std::cout << "EOF is reached"<< std::endl;
   return val;
 }
 
 bool Data_reader_socket::eof() {
-
 // This is linux specific code.
 #ifdef POLLRDHUP
   pollfd fds[1];

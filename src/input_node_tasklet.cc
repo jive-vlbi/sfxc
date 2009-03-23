@@ -74,7 +74,8 @@ Input_node_tasklet(Input_reader_ptr_ reader_ptr,
     channel_extractor_(reader_ptr->size_data_block() /
                        reader_ptr->bytes_per_input_word(),
                        reader_ptr->bytes_per_input_word()),
-    n_bytes_per_input_word(reader_ptr->bytes_per_input_word()) {
+    n_bytes_per_input_word(reader_ptr->bytes_per_input_word()),
+    delay_pool(10) {
 
   channel_extractor_.connect_to(reader_.get_output_buffer());
 
@@ -90,14 +91,16 @@ add_time_interval(int32_t start_time, int32_t stop_time) {
   //SFXC_ASSERT(!integer_delay_.empty());
   //SFXC_ASSERT(integer_delay_[0] != NULL);
 
+  SFXC_ASSERT(!delay_pool.empty());
+  /// Add a list of delays to the data writers
+  Delay_memory_pool_element delay_list=delay_pool.allocate();
+  get_delays((uint64_t)start_time*1000, (uint64_t) stop_time*1000, delay_list);
+  data_writer_.add_delay(delay_list);
+  data_writer_.add_time_interval(uint64_t(1000)*start_time, uint64_t(1000)*stop_time);
+
   /// A new interval is added to the mark5 reader-tasklet. It is converted into
   /// usec
   reader_.add_time_interval(uint64_t(1000)*start_time, uint64_t(1000)*stop_time);
-
-  /// Each of the the integer-delay-correction module also need to be
-  /// configure with the same time interval to process.
-	integer_delay_.add_time_interval(uint64_t(1000)*start_time,
-                                   uint64_t(1000)*stop_time);
 }
 
 void Input_node_tasklet::initialise()
@@ -106,13 +109,13 @@ void Input_node_tasklet::initialise()
 
 Input_node_tasklet::~Input_node_tasklet() {
   channel_extractor_.empty_input_queue();
-  integer_delay_.empty_input_queue();
+//  integer_delay_.empty_input_queue();
   data_writer_.empty_input_queue();
 
 	PROGRESS_MSG( "Total duration:" << rttimer_processing_.measured_time() << " sec" );
 	PROGRESS_MSG( "      reading:" << toMB(reader_.get_num_processed_bytes())/rttimer_processing_.measured_time() << " MB/s" );
 	PROGRESS_MSG( "  channelizer:" << toMB(channel_extractor_.get_num_processed_bytes())/rttimer_processing_.measured_time() << " MB/s duration:" << channel_extractor_.get_sec() );
-	PROGRESS_MSG( "integer_delay:" << toMB(integer_delay_.get_num_processed_bytes())/rttimer_processing_.measured_time() << " MB/s" );
+//	PROGRESS_MSG( "integer_delay:" << toMB(integer_delay_.get_num_processed_bytes())/rttimer_processing_.measured_time() << " MB/s" );
 	PROGRESS_MSG( "      writing:" << toMB(data_writer_.get_num_processed_bytes())/data_writer_.get_sec() << " MB/s duration:" << data_writer_.get_sec() );
 }
 
@@ -127,7 +130,6 @@ void
 Input_node_tasklet::start_tasklets() {
 	rttimer_processing_.start();
   pool_.register_thread( data_writer_.start() );
-  pool_.register_thread( integer_delay_.start() );
   pool_.register_thread( channel_extractor_.start() );
   pool_.register_thread( reader_.start() );
 }
@@ -136,14 +138,12 @@ void
 Input_node_tasklet::stop_tasklets() {
   reader_.stop();
   channel_extractor_.stop();
-  integer_delay_.stop();
   data_writer_.stop();
   rttimer_processing_.stop();
 }
 
 void Input_node_tasklet::set_delay_table(Delay_table_akima &table) {
   delay_table = table;
-  integer_delay_.set_delay_table(table);
 }
 
 void
@@ -156,22 +156,23 @@ set_parameters(const Input_node_parameters &input_node_param,
 
   size_t number_frequency_channels = input_node_param.channels.size();
 
-	for (size_t i=0; i < number_frequency_channels; i++) {
-		integer_delay_.add_channel();
-		data_writer_.add_channel();
-	}
+  sample_rate=input_node_param.sample_rate();
+  bits_per_sample=input_node_param.bits_per_sample();
+  int nr_output_bytes = input_node_param.number_channels*bits_per_sample/8;
+  SFXC_ASSERT(((nr_output_bytes*(8/bits_per_sample))*1000000) % sample_rate== 0);
+  delta_time = (nr_output_bytes*(8/bits_per_sample))*1000000/sample_rate;
 
-	if (delay_table.initialised()) {
-      integer_delay_.set_delay_table(delay_table);
-  }
+	for (size_t i=0; i < number_frequency_channels; i++)
+		data_writer_.add_channel();
 
   for (size_t i=0; i < number_frequency_channels; i++) {
-	  integer_delay_.connect_to(i, channel_extractor_.get_output_buffer(i) );
-    integer_delay_.set_parameters(i, input_node_param, node_nr);
-
-    data_writer_.connect_to(i, integer_delay_.get_output_buffer(i) );
+    data_writer_.connect_to(i, channel_extractor_.get_output_buffer(i) );
     data_writer_.set_parameters(i, input_node_param);
   }
+  // Number of bytes for one integration slice
+  int nr_ffts = Control_parameters::nr_ffts_per_integration_slice(input_node_param.integr_time, 
+                                                  sample_rate, input_node_param.number_channels);
+  size_slice = nr_ffts*input_node_param.number_channels*bits_per_sample/8;
 }
 
 
@@ -182,8 +183,9 @@ get_current_time() {
   // the reader we return the current time position of the delay correction
   int time = reader_.get_current_time()/1000;
 
-  if (integer_delay_.get_current_time()!=INVALID_TIME)
-    time = std::min(time, (int)(integer_delay_.get_current_time()/1000));
+  int writer_time = data_writer_.get_current_time()/1000;
+  if (writer_time != INVALID_TIME)
+    time = std::min(time, writer_time);
   return time;
 }
 
@@ -195,10 +197,58 @@ get_stop_time() {
 
 void
 Input_node_tasklet::add_data_writer(size_t i, Data_writer_sptr data_writer) {
-  // Number of bytes for one integration slice
-  int size_slice = integer_delay_.bytes_of_output();
-
   /// Add a new timeslice to stream to the given data_writer into the
   /// data_writer queue.
   data_writer_.add_timeslice_to_stream(i, data_writer, size_slice);
+}
+
+void
+Input_node_tasklet::get_delays(uint64_t start_time, uint64_t stop_time, 
+                               Delay_memory_pool_element &delay_list)
+{
+  // TODO: this can be implemented much more efficiently
+  int nffts=(stop_time-start_time)/delta_time;
+  int ndelays=1;
+  uint64_t cur_time=start_time+delta_time/2;
+  Delay old_delay, new_delay;
+  delay_list.data().resize(nffts);
+  old_delay=get_delay(cur_time);
+  delay_list.data()[0]=old_delay;
+
+  for(int i=1;i<nffts;i++){
+    cur_time+=delta_time;
+    new_delay=get_delay(cur_time);
+    if((new_delay.bytes!=old_delay.bytes)||
+       (new_delay.remaining_samples!=old_delay.remaining_samples)){
+      delay_list.data()[ndelays++]=new_delay;
+      old_delay=new_delay;
+    }
+  }
+  delay_list.data().resize(ndelays);
+}
+
+Delay
+Input_node_tasklet::get_delay(int64_t time) {
+  SFXC_ASSERT(delay_table.initialised());
+  SFXC_ASSERT(delta_time > 0);
+  SFXC_ASSERT(delta_time%2 == 0);
+  double delay_ = delay_table.delay(time);
+  int32_t delay_in_samples = (int32_t) std::floor(delay_*sample_rate+.5);
+  SFXC_ASSERT(delay_in_samples <= 0);
+
+  int32_t delay_in_bytes = -((-delay_in_samples)/(8/bits_per_sample))-1;
+  int32_t delay_in_remaining_samples =
+                    delay_in_samples-delay_in_bytes*(8/bits_per_sample);
+  if (delay_in_remaining_samples*bits_per_sample == 8) {
+    delay_in_bytes++;
+    delay_in_remaining_samples = 0;
+  }
+
+  SFXC_ASSERT((delay_in_bytes <= 0) &&
+         (delay_in_remaining_samples < 8));
+  SFXC_ASSERT((delay_in_bytes*(8/bits_per_sample) +
+          delay_in_remaining_samples) ==
+         delay_in_samples);
+
+  return (Delay){time, delay_in_bytes, delay_in_remaining_samples};
 }

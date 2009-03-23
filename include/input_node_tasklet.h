@@ -13,11 +13,9 @@
 #include "control_parameters.h"
 
 #include "input_data_format_reader_tasklet.h"
-#include "integer_delay_correction_per_channel.h"
 #include "channel_extractor_tasklet.h"
 
 #include "input_node_data_writer_tasklet.h"
-#include "input_node_integer_delay_tasklet.h"
 
 #include "rttimer.h"
 
@@ -74,9 +72,18 @@ public:
   /// Sets the output writer for channel i
   void add_data_writer(size_t i, Data_writer_sptr data_writer);
 
+  /// Compute a list of delays, note we only store the times(+delay) 
+  /// where the integer delay changes
+  void get_delays(uint64_t start_time, uint64_t stop_time, 
+                               Delay_memory_pool_element &delay_list);
+  /// Calculates the delay at time
+  Delay get_delay(int64_t time);
 private:
   /// All the thread created in this class are stored in the thread pool
   ThreadPool pool_;
+
+  /// Memory pool to store the delays for each time interval
+  Delay_memory_pool delay_pool;
 
   /// we need one thread for reading
   Input_reader_tasklet_            reader_;
@@ -87,15 +94,17 @@ private:
   /// We need one thread for the writing
   Input_node_data_writer_tasklet   data_writer_;
 
-  /// We need one thread for the integer delay correction
-  Input_node_integer_delay_tasklet   integer_delay_;
-
   Timer rttimer_processing_;
   double last_duration_;
 
   Delay_table_akima delay_table;
 
   const size_t n_bytes_per_input_word;
+
+  int delta_time; // the time between two ffts
+  int sample_rate;
+  int bits_per_sample;
+  int size_slice; // Number of bytes for one integration slice
 };
 
 

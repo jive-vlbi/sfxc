@@ -23,42 +23,55 @@ void Delay_correction_swapped::do_task() {
   current_fft++;
 
   Input_buffer_element &input = input_buffer->front();
-  Output_buffer_element output = output_memory_pool.allocate();
-  size_t input_size = (input.data().bytes_count()-1)*8/ correlation_parameters.bits_per_sample;
+  int input_size = input->data.size()*8/correlation_parameters.bits_per_sample;
+  int nbuffer=input_size/number_channels();
 
+  // Allocate output buffer
+  cur_output=output_memory_pool.allocate();
+  if(cur_output.data().size() != nbuffer){
+    // Avoid resizes later on
+    if(cur_output.data().capacity() < nfft_max)
+      cur_output.data().reserve(nfft_max);
 
+    cur_output.data().resize(nbuffer);
+  }
+
+  for(int buf=0;buf<nbuffer;buf++)
+  {
+    Output_data &output = cur_output.data()[buf];
 #ifndef DUMMY_CORRELATION
-  const int n_channels = number_channels();
-  // A factor of 2 for padding
-  if (output->size() != 2*input_size)
-    output->resize(input_size*2);
-  if (time_buffer.size() != 2*input_size)
-    time_buffer.resize(input_size*2);
+    const int n_channels = number_channels();
+    // A factor of 2 for padding
+    if (output.size() != 2*n_channels)
+      output.resize(n_channels*2);
+    if (time_buffer.size() != 2*n_channels)
+      time_buffer.resize(n_channels*2);
 
-  bit2float(input, &time_buffer[0] );
+    //convert the input samples to floating point
+    bit2float(input, buf, &time_buffer[0]);
 
-  double delay = get_delay(current_time+length_of_one_fft()/2);
-  double delay_in_samples = delay*sample_rate();
-  int integer_delay = (int)std::floor(delay_in_samples+.5);
+    double delay = get_delay(current_time+length_of_one_fft()/2);
+    double delay_in_samples = delay*sample_rate();
+    int integer_delay = (int)std::floor(delay_in_samples+.5);
 
-  // Output is in frequency_buffer
-  fringe_stopping(&time_buffer[0]);
+    // Output is in frequency_buffer
+    fringe_stopping(&time_buffer[0]);
 
-  // zero padding
-  for (int i = n_channels; i < 2*n_channels; i++) 
-    frequency_buffer[i] = 0;
+    // zero padding
+    for (int i = n_channels; i < 2*n_channels; i++) 
+      frequency_buffer[i] = 0;
 
-  // Input is from frequency_buffer
-  fractional_bit_shift(output->buffer(),
-                       integer_delay,
-                       delay_in_samples - integer_delay);
+    // Input is from frequency_buffer
+    fractional_bit_shift(output.buffer(),
+                         integer_delay,
+                         delay_in_samples - integer_delay);
 
-  current_time += length_of_one_fft();
+    current_time += length_of_one_fft();
 
 #endif // DUMMY_CORRELATION
-
+  }
   input_buffer->pop();
-  output_buffer->push(output);
+  output_buffer->push(cur_output);
 }
 
 void Delay_correction_swapped::fractional_bit_shift(std::complex<FLOAT> output[],
@@ -68,7 +81,6 @@ void Delay_correction_swapped::fractional_bit_shift(std::complex<FLOAT> output[]
   //    input: sls. output sls_freq
   const int n_channels = number_channels();
   {
-    delay_timer.resume();
     //DM replaced: FFTW_EXECUTE_DFT(plan_t2f, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
     FFTW_COMPLEX *frequency_buffer_fftw = (FFTW_COMPLEX *)&frequency_buffer[0];
     FFTW_EXECUTE_DFT(plan_t2f,
@@ -78,7 +90,6 @@ void Delay_correction_swapped::fractional_bit_shift(std::complex<FLOAT> output[]
   // Element 0 and number_channels() should be real numbers
     frequency_buffer[0]=frequency_buffer[0].real()/2;
     frequency_buffer[n_channels]=frequency_buffer[n_channels].real()/2;
-    delay_timer.stop();
     total_ffts++;
   }
 
@@ -167,6 +178,8 @@ void
 Delay_correction_swapped::set_parameters(const Correlation_parameters &parameters) {
   size_t prev_number_channels = number_channels();
   correlation_parameters = parameters;
+  int fft_size = parameters.number_channels*parameters.bits_per_sample/8;
+  nfft_max = INPUT_NODE_PACKET_SIZE/fft_size;
 
   current_time = parameters.start_time*(int64_t)1000;
 

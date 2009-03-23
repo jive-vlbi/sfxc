@@ -3,7 +3,7 @@
 #include <utils.h>
 
 Correlation_core::Correlation_core(int swap_)
-    : current_fft(0), total_ffts(0), swap(swap_) {
+    : current_fft(0), total_ffts(0), swap(swap_), check_input_elements(true){
   #ifdef SFXC_WRITE_STATS
     SFXC_ASSERT_MSG(swap==0,
                     "SFXC_WRITE_STATS currently doesn't work if swap is set");
@@ -146,9 +146,11 @@ set_data_writer(boost::shared_ptr<Data_writer> writer_) {
 }
 
 bool Correlation_core::has_work() {
-  for (size_t i=0; i < number_input_streams_in_use(); i++) {
-    if (input_buffers[i]->empty())
-      return false;
+  if(check_input_elements){
+    for (size_t i=0, nstreams=number_input_streams_in_use(); i < nstreams; i++) {
+      if (input_buffers[i]->empty())
+        return false;
+    }
   }
   return true;
 }
@@ -175,8 +177,13 @@ void Correlation_core::integration_step() {
   if (input_elements.size() != number_input_streams_in_use()) {
     input_elements.resize(number_input_streams_in_use());
   }
-  for (size_t i=0; i<number_input_streams_in_use(); i++) {
-    input_elements[i] = input_buffers[i]->front();
+  if(check_input_elements){
+    for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++) {
+      if(!input_elements[i].valid()) 
+        input_elements[i].set(&input_buffers[i]->front().data()[0],
+                              input_buffers[i]->front().data().size());
+    }
+    check_input_elements=false;
   }
 
 #ifndef DUMMY_CORRELATION
@@ -185,7 +192,7 @@ void Correlation_core::integration_step() {
     // Auto correlations
     std::pair<size_t,size_t> &stations = baselines[i];
     SFXC_ASSERT(stations.first == stations.second);
-    auto_correlate_baseline(/* in1 */ input_elements[stations.first]->buffer(),
+    auto_correlate_baseline(/* in1 */ &input_elements[stations.first][0],
                             /* out */ &accumulation_buffers[i][0]);
   }
 
@@ -193,8 +200,8 @@ void Correlation_core::integration_step() {
     // Cross correlations
     std::pair<size_t,size_t> &stations = baselines[i];
     SFXC_ASSERT(stations.first != stations.second);
-    correlate_baseline(/* in1 */ input_elements[stations.first]->buffer(),
-                       /* in2 */ input_elements[stations.second]->buffer(),
+    correlate_baseline(/* in1 */  &input_elements[stations.first][0],
+                       /* in2 */  &input_elements[stations.second][0],
                        /* out */ &accumulation_buffers[i][0]);
   }
 
@@ -218,6 +225,7 @@ void Correlation_core::integration_step() {
 
     int baseline = number_input_streams_in_use();
     std::pair<size_t,size_t> &stations = baselines[baseline];
+
     correlate_baseline
       (/* in1 */ input_elements[stations.first].buffer(),
        /* in2 */ input_elements[stations.second].buffer(),
@@ -250,8 +258,14 @@ void Correlation_core::integration_step() {
 #endif // SFXC_WRITE_STATS
 #endif // DUMMY_CORRELATION
 
-  for (size_t i=0; i<number_input_streams_in_use(); i++)
-    input_buffers[i]->pop();
+
+  for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++){
+    input_elements[i]++; // advance the iterator
+    if(!input_elements[i].valid()){
+      input_buffers[i]->pop();
+      check_input_elements=true;
+    }
+  }
 }
 
 void Correlation_core::integration_average() {
@@ -265,6 +279,7 @@ void Correlation_core::integration_average() {
       norms[station] += accumulation_buffers[station][i].real();
     }
     norms[station] /= (size_of_fft()/2);
+
     for (size_t i = 0; i < size_of_fft()/2+1; i++) {
       // imaginary part should be zero!
       accumulation_buffers[station][i] =
@@ -286,10 +301,6 @@ void Correlation_core::integration_write() {
 
   // Make sure that the input buffers are released
   // This is done by reference counting
-
-  for (size_t i=0; i<number_input_streams_in_use(); i++) {
-    input_elements[i] = Input_buffer_element();
-  }
 
   SFXC_ASSERT(writer != boost::shared_ptr<Data_writer>());
   SFXC_ASSERT(accumulation_buffers.size() == baselines.size());

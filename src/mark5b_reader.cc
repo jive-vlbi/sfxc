@@ -15,7 +15,8 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
 
   start_day_ = current_header.julian_day();
   start_time_ = current_header.microseconds();
-
+  DEBUG_MSG("Start of Mark5b data at jday=" << start_day_
+            << ", time = " << start_time_);
   us_per_day=(int64_t)24*60*60*1000000;
 }
 
@@ -175,4 +176,5 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
     (N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME)/(tbr/1000000);
   SFXC_ASSERT(time_between_headers_ > 0);
   ref_jday = (mjd(1,1,param.start_year) + param.start_day -1 )%1000;
+  DEBUG_MSG("Ref_jday=" << ref_jday);
 }
