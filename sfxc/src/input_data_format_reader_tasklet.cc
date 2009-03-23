@@ -64,12 +64,12 @@ do_task() {
     randomize_block();
     current_time += reader_->time_between_headers();
   } else {
-
-    if (!reader_->read_new_block(*input_element_)) {
+    if (!reader_->read_new_block(*input_element_))
       randomize_block();
-    }
+
     if(data_modulation)
       demodulate(input_element_);
+
     current_time = reader_->get_current_time();
   }
   input_element_->start_time = current_time;
@@ -83,7 +83,7 @@ void
 Input_data_format_reader_tasklet::fetch_next_time_interval() {
   /// Blocking function until a new interval is available
   current_interval_ = intervals_.front_and_pop();
-
+  
   if ( !current_interval_.empty() ) {
     /// Otherwise the new interval is loaded.
     ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: SET TIME");

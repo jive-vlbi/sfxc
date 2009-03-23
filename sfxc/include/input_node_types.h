@@ -13,10 +13,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include <threadsafe_queue.h>
-
 #include "memory_pool.h"
-
-#define INVALID_TIME -1
 
 class Time_interval {
 	public:
@@ -35,6 +32,14 @@ class Time_interval {
 		uint64_t start_time_;
 		uint64_t stop_time_;
 };
+
+  struct Delay{
+    uint64_t time; 
+    int32_t  bytes; // the delay in bytes
+    int32_t  remaining_samples; // the number of samples to delay after the byte delay
+  };
+  typedef Memory_pool< std::vector<Delay> >   Delay_memory_pool;
+  typedef Delay_memory_pool::Element          Delay_memory_pool_element;
 
 class Input_node_types {
 public:

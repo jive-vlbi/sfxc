@@ -28,11 +28,13 @@ class Delay_correction_base : public Tasklet {
 friend class Delay_correction_default;
 friend class Delay_correction_swapped;
 public:
-  typedef Correlator_node_types::Bit_sample_queue     Input_buffer;
-  typedef Correlator_node_types::Bit_sample_queue_ptr Input_buffer_ptr;
+
+  typedef Correlator_node_types::Channel_buffer     Input_buffer;
+  typedef Correlator_node_types::Channel_buffer_ptr Input_buffer_ptr;
   typedef Input_buffer::value_type                    Input_buffer_element;
 
   typedef Correlator_node_types::ComplexFloat_memory_pool  Output_memory_pool;
+  typedef Correlator_node_types::ComplexFloat_element      Output_data;
   typedef Correlator_node_types::ComplexFloat_queue        Output_buffer;
   typedef Correlator_node_types::ComplexFloat_queue_ptr    Output_buffer_ptr;
   typedef Output_buffer::value_type                        Output_buffer_element;
@@ -53,6 +55,7 @@ public:
 
   /// Do one delay step
   virtual void do_task()=0;
+  int flag;
 
   bool has_work();
   const char *name() {
@@ -60,19 +63,20 @@ public:
   }
 private:
   ///
-  void bit2float(const Input_buffer_element &input, FLOAT *output_buffer);
+  void bit2float(const Input_buffer_element &input, int buf_nr, FLOAT *output_buffer);
+  void get_invalid(const Input_buffer_element &input, int buf_nr, int &invalid_start, int &nr_invalid);
 
 private:
   // access functions to the correlation parameters
   size_t number_channels();
   size_t size_of_fft();
+  int buffer_size;
   int sample_rate();
   int bandwidth();
   int length_of_one_fft(); // Length of one fft in microseconds
   int sideband();
   int64_t channel_freq();
   double get_delay(int64_t time);
-
 private:
   Input_buffer_ptr    input_buffer;
 
@@ -80,7 +84,7 @@ private:
   Correlation_parameters correlation_parameters;
 
   int n_ffts_per_integration, current_fft, total_ffts;
-
+  int nfft_max; // The maximum number of fft's in an input frame
   bool delay_table_set;
   Delay_table_akima   delay_table;
 
@@ -95,6 +99,7 @@ private:
 private:
   Output_buffer_ptr   output_buffer;
   Output_memory_pool  output_memory_pool;
+  Output_buffer_element cur_output;
 
 };
 

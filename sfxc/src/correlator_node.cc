@@ -96,7 +96,6 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, int swap_)
   correlation_state_.add_property(compid.str(), "has", monid.str() );
   correlation_state_.add_property(tt.str(), "contains", monid.str() );
 #endif //RUNTIME_STATISTIC
-
 }
 
 Correlator_node::~Correlator_node() {
@@ -121,7 +120,7 @@ void Correlator_node::stop_threads() {
 
 void Correlator_node::start() {
   /// We enter the main loop of the coorelator node.
-  ///DEBUG_MSG("START MAIN LOOp !");
+  //DEBUG_MSG("START MAIN LOOp !");
   main_loop();
 }
 
@@ -192,7 +191,7 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
     reader_thread_.bit_sample_readers().resize(stream_nr+1, Bit_sample_reader_ptr());
   }
   reader_thread_.bit_sample_readers()[stream_nr] =
-    Bit_sample_reader_ptr(new Correlator_node_data_reader_tasklet());
+       Bit_sample_reader_ptr(new Correlator_node_data_reader_tasklet());
   reader_thread_.bit_sample_readers()[stream_nr]->connect_to(data_readers_ctrl.get_data_reader(stream_nr));
 
   { // create the delay modules
@@ -205,9 +204,9 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
       delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default());
     else
       delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_swapped());
-
     // Connect the delay_correction to the bits2float_converter
     delay_modules[stream_nr]->connect_to(reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
+    delay_modules[stream_nr]->flag=1;
   }
 
   // Connect the correlation_core to delay_correction
@@ -325,7 +324,6 @@ Correlator_node::set_parameters() {
                             ( nBaselines *
                               (size_of_one_baseline +
                                sizeof(Output_header_baseline) ) ) );
-
   integration_slices_queue.pop();
 }
 
@@ -333,6 +331,7 @@ void
 Correlator_node::
 output_node_set_timeslice(int slice_nr, int slice_offset, int n_slices,
                           int stream_nr, int bytes) {
+
   correlation_core.data_writer()->set_size_dataslice(bytes*n_slices);
   int32_t msg_output_node[] = {stream_nr, slice_nr, bytes};
   for (int i=0; i<n_slices; i++) {

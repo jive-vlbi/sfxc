@@ -99,7 +99,6 @@ Channel_extractor_tasklet::do_task() {
   Input_buffer_element &input_element = input_buffer_->front();
   //timer_waiting_input_.stop();
 
-
   // The number of input samples to process
   // For mark5a this is 1 block
   // For mark5b this is N_MK5B_BLOCKS_TO_READ as the input_element also contains

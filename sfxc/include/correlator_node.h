@@ -157,7 +157,7 @@ class Reader_thread : public Thread {
       //eventsrc_.randomize();
 
       isrunning_ = true;
-      DEBUG_MSG("reading thread started !");
+      DEBUG_MSG("reading thread started ! n_readers = " << bit_sample_readers_.size());
       try {
         while ( isrunning_ ) {
 					if ( num_reading_ == 0 ) {
@@ -228,6 +228,7 @@ class Reader_thread : public Thread {
 
 private:
   Reader_thread reader_thread_;
+  /// We need one thread for the integer delay correction
   ThreadPool threadpool_;
   void start_threads();
   void stop_threads();
@@ -241,8 +242,6 @@ private:
   // This reduces the amount of data that has to be Fourier transformed by 25%, but at the cost
   // of some accuracy.
   int swap;
-
-  //std::vector< Bit_sample_reader_ptr>         bit_sample_readers;
 
   Correlator_node_controller       correlator_node_ctrl;
 

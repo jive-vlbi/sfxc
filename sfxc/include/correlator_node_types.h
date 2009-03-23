@@ -8,45 +8,48 @@
 
 class Correlator_node_types {
 public:
-
-  class Bit_sample_element {
+  class Time_interval {
   public:
-    Bit_sample_element() {
-      data_.resize(2);
-    }
-    inline int raw_size() {
-      return data_.size();
-    }
-    inline unsigned char* raw_buffer() {
-      return &data_[0];
+    Time_interval(){
+        start_time_ = 0;
+        stop_time_ = 0;
     }
 
-    inline void resize_bytes_buffer(const unsigned int newsize) {
-      data_.resize(newsize+1);
-    }
-    inline unsigned int bytes_count() {
-      return data_.size()-1;
-    }
-    inline unsigned char* bytes_buffer() {
-      return &data_[1];
+    Time_interval(uint64_t start_time, uint64_t stop_time){
+        start_time_ = start_time;
+        stop_time_ = stop_time;
     }
 
-    inline unsigned int offset() {
-      return data_[0];
-    }
+    bool empty(){ return stop_time_ <= start_time_; }
 
-    int32_t invalid_samples_begin, nr_invalid_samples;
+    uint64_t start_time_;
+    uint64_t stop_time_;
+  };
 
-  private:
-    std::vector<unsigned char> data_;
+  struct Channel_memory_pool_data { // was called Channel_memory_pool_data
+    Channel_memory_pool_data()
+//      : invalid_samples_begin(-1), nr_invalid_samples(-1)
+      : start_time(-1), data(INPUT_NODE_PACKET_SIZE) {}
+    typedef unsigned char      value_type;
+    // The channel extracted from a mark5 frame
+    std::vector<value_type> data;
+
+    // The number of the first invalid sample
+    int invalid_samples_begin;
+    // Number of invalid samples in this fft
+    int nr_invalid_samples;
+    // The delay in samples
+    int delay;
+    // The start time of the data in microseconds
+    int64_t start_time;
   };
 
 
+  typedef Memory_pool< Channel_memory_pool_data >         Channel_memory_pool;
+  typedef Channel_memory_pool::Element                    Channel_memory_pool_element;
 
-  typedef Memory_pool<Bit_sample_element>                  Bit_sample_memory_pool;
-  typedef Bit_sample_memory_pool::Element                  Bit_sample_memory_pool_element;
-  typedef Threadsafe_queue<Bit_sample_memory_pool_element> Bit_sample_queue;
-  typedef boost::shared_ptr<Bit_sample_queue>              Bit_sample_queue_ptr;
+  typedef Threadsafe_queue<Channel_memory_pool_element>   Channel_buffer;
+  typedef boost::shared_ptr<Channel_buffer>               Channel_buffer_ptr;
 
   typedef Memory_pool_vector_element<FLOAT>                Float_element;
   typedef Memory_pool<Float_element>                       Float_memory_pool;
@@ -54,7 +57,8 @@ public:
   typedef boost::shared_ptr<Float_queue>                   Float_queue_ptr;
 
   typedef Memory_pool_vector_element< std::complex<FLOAT> >   ComplexFloat_element;
-  typedef Memory_pool<ComplexFloat_element>                   ComplexFloat_memory_pool;
+  typedef std::vector<ComplexFloat_element>                   ComplexFloat_buffer;
+  typedef Memory_pool<ComplexFloat_buffer>                    ComplexFloat_memory_pool;
   typedef Threadsafe_queue<ComplexFloat_memory_pool::Element> ComplexFloat_queue;
   typedef boost::shared_ptr<ComplexFloat_queue>               ComplexFloat_queue_ptr;
 };

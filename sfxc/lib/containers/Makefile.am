@@ -6,6 +6,5 @@ libcontainers_a_SOURCES = \
   src/memory_pool.cc \
   src/pc_buffer.cc \
   src/pc_queue.cc \
-  src/threadsafe_queue.cc
-
+  src/threadsafe_queue.cc 
 pkginclude_HEADERS = src/*.h

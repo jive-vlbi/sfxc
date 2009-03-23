@@ -28,12 +28,12 @@ bool VLBA_header::is_valid() {
   for (size_t i=0*N; i<32*N; i++) {
     SFXC_ASSERT((unsigned char)(-1)^(unsigned char)(0) == (unsigned char)(-1));
     if (header[i] != (unsigned char)(-1)) {
-      char word[8*N];
-      for (int j=0*N; j<32*(int)N; j++) {
-        itoa(header[j], word, 2);
-        printf(" Word (vlba): %03d %16s\n", j, word);
-      }
-      std::cout << " No synchword found " << i << std::endl;
+//      char word[8*N];
+//      for (int j=0*N; j<32*(int)N; j++) {
+//        itoa(header[j], word, 2);
+//        printf(" Word (vlba): %03d %16s\n", j, word);
+//      }
+      std::cout << "Invalid VLBA frame : No syncword found " << i << std::endl;
       return false;
     }
   }

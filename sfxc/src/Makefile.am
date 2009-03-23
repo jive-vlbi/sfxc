@@ -35,7 +35,6 @@ OBJ=\
   delay_correction_base.cc \
   delay_correction_default.cc \
   delay_correction_swapped.cc \
-  integer_delay_correction_per_channel.cc \
   uvw_model.cc \
   channel_extractor_tasklet.cc \
   channel_extractor_brute_force.cc \
@@ -61,7 +60,6 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   single_data_writer_controller.cc \
   single_data_reader_controller.cc \
   input_node_tasklet.cc \
-  input_node_integer_delay_tasklet.cc \
   input_node_data_writer.cc \
   input_node_data_writer_tasklet.cc \
   output_header.cc \

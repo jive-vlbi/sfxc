@@ -14,14 +14,48 @@
 
 class Correlation_core : public Tasklet {
 public:
+  // Simple iterator class TODO 
+  template<class T, typename U>
+  class simple_it{
+  public:
+    simple_it(T *data_, int size_):data(data_),index(0) {}
+    simple_it():data(NULL), index(0), size(-1) {}
+    void set(T *data_, int size_){
+      data=data_;
+      size=size_;
+      index=0;
+    }
+    inline T *operator->(){
+      return &data[index];
+    }
+    inline T &operator*(){
+      return data[index];
+    }
+    inline U &operator[](int i){
+      return data[index][i];
+    }
+    inline void operator++(int){
+      index++;
+    }
+    inline bool valid(){
+      return index<size;
+    }
+    // TODO make private again
+    int size;
+    int index;
+  private:
+    T *data;
+  };
   // Input buffer types, the parameter "swap" determines which is used
   typedef Delay_correction_base::Output_buffer_element       Input_buffer_element;
   typedef Delay_correction_base::Output_buffer               Input_buffer;
   typedef Delay_correction_base::Output_buffer_ptr           Input_buffer_ptr;
+  typedef Delay_correction_base::Output_data                 Input_data;
 
   typedef Memory_pool_vector_element<FLOAT>                Float_buffer;
   typedef Memory_pool_vector_element<std::complex<FLOAT> > Complex_buffer;
   typedef Memory_pool_vector_element<std::complex<float> > Complex_buffer_float;
+
   Correlation_core(int swap_);
   virtual ~Correlation_core();
 
@@ -73,17 +107,15 @@ private:
 
 private:
   std::vector<Input_buffer_ptr>  input_buffers;
-
   // Used in integration_step(), avoids contruction and destroying the vectors
-  std::vector<Input_buffer_element>    input_elements;
-
-  int number_ffts_in_integration, current_fft, total_ffts;
+  std::vector< simple_it< Input_data, std::complex<FLOAT> > >    input_elements;
 
   Correlation_parameters                               correlation_parameters;
 
   std::vector< Complex_buffer >                        accumulation_buffers;
   Complex_buffer_float                                 accumulation_buffers_float;
   std::vector< std::pair<size_t, size_t> >             baselines;
+  int number_ffts_in_integration, current_fft, total_ffts;
 
   boost::shared_ptr<Data_writer>                       writer;
 
@@ -97,6 +129,7 @@ private:
   // This reduces the amount of data that has to be Fourier transformed by 25%, but at the cost
   // of some accuracy.
   int swap;
+  bool check_input_elements;
 
 #ifdef SFXC_WRITE_STATS
   // For plotting statistics on the height of the fringe and the phase

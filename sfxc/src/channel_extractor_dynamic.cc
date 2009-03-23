@@ -114,7 +114,7 @@ Channel_extractor_interface* Channel_extractor_dynamic::compile_load_construct(
 	fprintf(fpt, "outputname= \"%s\";\n", ch_filename.c_str());
   fprintf(fpt, "track_positions = [\n");
   for (unsigned int i=0;i<track_positions.size();i++) {
-    fprintf(fpt, "\t\t\t[", i);
+    fprintf(fpt, "\t\t\t[");
     for (unsigned int j=0;j<track_positions[i].size();j++) {
       if ( j != track_positions[i].size()-1 )
         fprintf(fpt, "%d, ", track_positions[i][j]);

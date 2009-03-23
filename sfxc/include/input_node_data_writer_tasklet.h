@@ -29,7 +29,6 @@
  * location in parallel.
  ******************************************************************************/
 class Input_node_data_writer_tasklet : public Thread {
-
 public:
   /** Ctor **/
   Input_node_data_writer_tasklet();
@@ -64,7 +63,7 @@ public:
   * @param Input_node_types::Fft_buffer_ptr buffer is a queue containing FFTs
   * assert( nr_stream < number_channels() )
   *****************************************************************************/
-  void connect_to(int nr_stream, Input_node_types::Fft_buffer_ptr buffer);
+  void connect_to(int nr_stream, Input_node_types::Channel_buffer_ptr buffer);
 
   /*****************************************************************************
   * @desc Initialize the stream with the given parameters.
@@ -97,6 +96,24 @@ public:
   * @desc Return the number of seconds since the start() is called.
   *****************************************************************************/
  	inline double get_sec(){ return timer_.measured_time(); }
+  /*****************************************************************************
+  * @desc Add a new delay table to the writer, the content is to be send to
+  * the correlator node.
+  * @param delay only contains the delay at time positions where the integer delay changes
+  *****************************************************************************/
+  void add_delay(Delay_memory_pool_element delay);
+
+  /*****************************************************************************
+  *  @desc Add a new time interval to the writer
+  * @param start Start time of interval
+  * @param sop Stop time of interval
+  *****************************************************************************/
+  void add_time_interval(uint64_t start, uint64_t stop);
+
+  /*****************************************************************************
+  * @desc Return the earliest current_time from the data writers
+  *****************************************************************************/
+  int64_t get_current_time();
 
 private:
   /// Writers that will stream the data.
