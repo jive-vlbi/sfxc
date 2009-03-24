@@ -152,12 +152,12 @@ Delay_correction_base::get_output_buffer() {
 }
 
 size_t Delay_correction_base::number_channels() {
-  SFXC_ASSERT(correlation_parameters.number_channels >= 0);
+//  SFXC_ASSERT(correlation_parameters.number_channels >= 0);
   return correlation_parameters.number_channels;
 }
 
 size_t Delay_correction_base::size_of_fft() {
-  SFXC_ASSERT(correlation_parameters.number_channels >= 0);
+//  SFXC_ASSERT(correlation_parameters.number_channels >= 0);
   return 2*correlation_parameters.number_channels;
 }
 

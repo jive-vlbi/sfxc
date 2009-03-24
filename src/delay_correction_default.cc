@@ -155,7 +155,7 @@ void Delay_correction_default::fringe_stopping(FLOAT output[]) {
     channel_freq() + sideband()*bandwidth()*0.5;
 
   // Only compute the delay at integer microseconds
-  int n_recompute_delay = sample_rate()/1000000;
+ //  int n_recompute_delay = sample_rate()/1000000;
 
   double phi, delta_phi, sin_phi, cos_phi;
   int64_t time = current_time;
@@ -169,27 +169,30 @@ void Delay_correction_default::fringe_stopping(FLOAT output[]) {
                      get_delay(time + (number_channels()*1000000)/sample_rate());
     phi_end = mult_factor_phi*(phi_end-floor_phi);
 
-    delta_phi = (phi_end-phi)*n_recompute_delay/number_channels();
+    delta_phi = (phi_end-phi)/number_channels();
   }
+
+  // We perform a recursion for the (co)sines similar to what is done in the fractional bitshift
+  double temp=sin(delta_phi/2);
+  double a=2*temp*temp,b=sin(delta_phi);
+#ifdef HAVE_SINCOS
+  sincos(phi, &sin_phi, &cos_phi);
+#else
+  sin_phi = sin(phi);
+  cos_phi = cos(phi);
+#endif
 
   for (size_t i=0; i<number_channels(); i++) {
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
-    if ((i%n_recompute_delay)==0) {
-#ifdef HAVE_SINCOS
-
-      sincos(phi, &sin_phi, &cos_phi);
-#else
-
-      sin_phi = sin(phi);
-      cos_phi = cos(phi);
-#endif
-
-      phi += delta_phi;
-    }
-
     // 7)subtract dopplers and put real part in Bufs for the current segment
     output[i] =
       frequency_buffer[i].real()*cos_phi - frequency_buffer[i].imag()*sin_phi;
+
+    // Compute sin_phi=sin(phi); cos_phi = cos(phi);
+    temp=sin_phi-(a*sin_phi-b*cos_phi);
+    cos_phi=cos_phi-(a*cos_phi+b*sin_phi);
+    sin_phi=temp;
+
   }
 }
 
