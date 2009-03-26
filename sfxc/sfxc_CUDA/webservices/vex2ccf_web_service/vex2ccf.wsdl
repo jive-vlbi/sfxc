@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><wsdl:definitions name="vex2ccf" targetNamespace="http://vex2ccf.fabric.express.jive.nl" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:v2c="http://vex2ccf.fabric.express.jive.nl">
+    <wsdl:types><xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://vex2ccf.fabric.express.jive.nl">
+	<xsd:element name="convertRequest">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="vex_file" type="xsd:string"></xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="convertResponse">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="ccf_file" type="xsd:string"></xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element></xsd:schema></wsdl:types>
+    <wsdl:message name="convertRequest">
+    	<wsdl:part name="parameters" element="v2c:convertRequest"></wsdl:part>
+    </wsdl:message>
+    <wsdl:message name="convertResponse">
+    	<wsdl:part name="parameters" element="v2c:convertResponse"></wsdl:part>
+    </wsdl:message>
+    <wsdl:portType name="vex2ccf_port_type">
+    	<wsdl:operation name="convert">
+    		<wsdl:input message="v2c:convertRequest"></wsdl:input>
+    		<wsdl:output message="v2c:convertResponse"></wsdl:output>
+    	</wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="vex2ccf_binding" type="v2c:vex2ccf_port_type">
+    	<soap:binding style="document"
+    		transport="http://schemas.xmlsoap.org/soap/http" />
+    	<wsdl:operation name="convert">
+    		<soap:operation
+    			soapAction="http://localhost:8080/vex2ccf/convert" />
+    		<wsdl:input>
+    			<soap:body use="literal" />
+    		</wsdl:input>
+    		<wsdl:output>
+    			<soap:body use="literal" />
+    		</wsdl:output>
+    	</wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="Vex2ccf">
+		<wsdl:port name="converter_port" binding="v2c:vex2ccf_binding">
+			<soap:address location="http://localhost/"></soap:address>
+		</wsdl:port>
+	</wsdl:service></wsdl:definitions>

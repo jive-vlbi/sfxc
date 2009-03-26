@@ -1,0 +1,69 @@
+ERRORS 
+3. add "scp jive@jop13:/jop13_1/softcorr/ftpdata/ftpdata/* mk4/"
+
+
+This document describes the steps to do a ftp-fringe-test using the
+JIVE sfxc correlator..
+
+1. Compile the software correlator and the utilities.
+   See the comments below. 
+   This is already done for the ftp-fringe-tests on huygens
+2. Get the vexfile from ccsops:
+   scp jops@ccsops:/ccs/expr/<experiment_name>/<vexfile>
+3. create the directory skeleton (e.g. in /data4/sfxc/ftp/2007_october):
+   <experiment-name>
+     - m5a    - directory containing the mark5a data files
+     - ctrl   - directory containing the vex and control file
+     - output - directory containing the correlation output file
+     - html   - directory containing the html output plots
+4. go to the ctrl directory and copy the vex file there
+5. run_sfxc.py <vex-file>
+   this will
+     - generete a skeleton for the ctrl-file
+     - open an emacs to be able to edit the ctrl-file
+       it won't overwrite the ctrl-file if it exists
+     - run the software
+     - produce the html-output
+
+
+
+=====================
+ compilation of sfxc
+=====================
+
+1. ./compile.sh
+2. ./configure
+3. make
+4. make install
+
+===========================
+ example sfxc-control file
+===========================
+
+The sfxc-control file is a json file (www.json.org) that provides the
+data needed to correlate the experiment.
+
+{
+   "channels" : [ "CH01", "CH02", "CH03", "CH04", "CH05"],
+   "cross_polarize" : true,
+   "data_sources" : {
+      "Cm" : ["file://../mk4/n07l3_cm_no0003.m5a"],
+      "Ef" : ["file://../mk4/n07l3_ef_no0003.m5a"],
+      "Hh" : ["file://../mk4/n07l3_hh_no0003.m5a"],
+      "Jb" : ["file://../mk4/n07l3_jb_no0003.m5a"],
+      "Mc" : ["file://../mk4/n07l3_mc_no0003.m5a"],
+      "Nt" : ["file://../mk4/n07l3_nt_no0003.m5a"],
+      "On" : ["file://../mk4/n07l3_on_no0003.m5a"],
+      "Tr" : ["file://../mk4/n07l3_tr_no0003.m5a"],
+      "Wb" : ["file://../mk4/n07l3_wb_no0003.m5a"]
+   },
+   "exper_name" : "N07L3",
+   "integr_time" : 1,
+   "message_level" : 0,
+   "number_channels" : 1024,
+   "output_file" : "file://../output/n07l3.cor",
+   "reference_station" : "",
+   "start" : "2007y291d14h36m38s",
+   "stations" : [ "Cm", "Ef", "Hh", "Jb", "Mc"],
+   "stop" : "2007y291d14h36m39s"
+}

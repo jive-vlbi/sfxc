@@ -1,0 +1,173 @@
+
+  A step-by-step guide on how to run the software correlator 
+  ==========================================================
+   (e.g. for ftp-fringe tests)
+
+
+# in session 1/2008, we started to use skype for a (text only) chat between
+# the support scientist(s) and the VLBI friends at the stations. The support 
+# scientist in charge of hte NME can use the official skype name "jiveops". 
+
+
+# the software correlator currently resides on huygens, may be moved to ADAM 
+# in the future
+
+ssh -X huygens -l jops
+
+
+# create the directory structure
+# ==============================
+
+cd /data4/sfxc/ftp/<session_name e.g. "2007_october">
+mkdir <expname, e.g. n07m3>
+
+cd <expname>
+mkdir m5a
+mkdir ctrl
+mkdir output
+mkdir html
+
+
+# copy the vex-file over to huygens: 
+# ==================================
+ 
+scp jops@ccsops:/ccs/expr/<expname>/<expname>.vax  ctrl/ 
+#e.g. scp -p jops@ccsops:/ccs/expr/N07M3/n07m3.vax ctrl/ 
+
+
+# edit the ctrl-file and start up the correlator
+# ==============================================
+
+cd ctrl
+run_sfxc.py <expname, e.g. n07m3>.vax  
+
+# opens an emacs window; items to be edited in the ctrl-file:
+
+   "cross_polarize" : true,        # set to false if no cross-pols needed   
+   "channels" : [ "CH01", "CH02", "CH03", "CH04", ... ],
+                                   # edit if not all channels are to be 
+                                   # included in this correlation run
+   "data_sources" : {              # specify names of the ftp'd files 
+      "Cm" : ["file:///data1/fringetest/ftpdata/<expname>_cm_no<scan#>.m5a"],
+#e.g. "Cm" : ["file:///data1/fringetest/ftpdata/n08k1_cm_no0042.m5a"],
+      "Ef" : ["file:///data1/fringetest/ftpdata/<expname>_ef_no<scan#>.m5a"],
+      "Hh" : ["file:///data1/fringetest/ftpdata/<expname>_hh_no<scan#>.m5a"],
+      "Jb" : ["file:///data1/fringetest/ftpdata/<expname>_jb_no<scan#>.m5a"],
+      "Mc" : ["file:///data1/fringetest/ftpdata/<expname>_mc_no<scan#>.m5a"],
+      "Nt" : ["file:///data1/fringetest/ftpdata/<expname>_nt_no<scan#>.m5a"],
+      "On" : ["file:///data1/fringetest/ftpdata/<expname>_on_no<scan#>.m5a"],
+      "Tr" : ["file:///data1/fringetest/ftpdata/<expname>_tr_no<scan#>.m5a"],
+      "Wb" : ["file:///data1/fringetest/ftpdata/<expname>_wb_no<scan#>.m5a"]
+                                   # files names can be filled in, even if the 
+                                   # files don't exist in m5a yet
+
+   "exper_name" : "<expname>",     # experiment name e.g. N07M3    
+   "integr_time" : 1,              # duration of data to be correlated, 
+                                   # can be > 1sec, but must be \leq length of 
+                                   # ftp'd data 
+   "message_level" : 1,            # 1 gives progress messages, 0 prints very 
+                                   # little feedback
+
+   "output_file" : "file://../output/<expname>.cor",  # specify an output file
+   "reference_station" : "",       # if specified, correlation only with this 
+                                   # reference antenna
+   "start" : "2007y291d14h36m38s", # start time of data to be correlated(*)
+   "stations" : [ "Cm", "Ef", "Hh", "Jb", "Mc"], # edit if not all stations 
+                                   # are to be included in this correlation run
+   "stop" : "2007y291d14h36m39s"   # stop time of data to be correlated(*)
+
+# (*) start and stop time have to be within the time range covered by the 
+#     ftp'd data, check in skd-file or vax-file
+    
+  save and close emacs window (Ctrl-x Ctrl-s, Ctrl-x Ctrl-c)
+
+# the correlator starts automatically, when emacs is closed
+ 
+# to rerun the correlation, e.g. after modifying the existing .ctrl-file, 
+# type in the previous command again:
+
+run_sfxc.py <expname>.vax
+
+# The softcorr currently can't handle files with multiple setups yet. If there 
+# is more than one setup in the .vax-file, please edit the file (and save under
+# a new name), so that it only contains the setup of the scan to be correlated.
+
+# The .ctrl-file is called up automatically by run_sfxc.py and thus _must_ be 
+# named <expname>.ctrl; save previous/alternative versions under other names, 
+# if you like to keep them handy  
+
+
+
+# when finished, check the output in subdir "html":
+# =================================================
+
+cd ../html
+firefox index.html &
+
+# check the autocorrelations and fringes and track down problems (RFI, low 
+# sensitivity) of individual stations in each subband 
+
+# translate channel numbers "CH<nn>" to BBC#<nn> or VC#<nn>
+# (VLBA racks: use BBC#, MarkIV racks: use VC#)
+
+
+# let the world know of your findings
+# ===================================
+
+# copy plots to the web page
+
+ssh -X dop40 -l jive
+cd /www/evlbi.org/tog/ftp_fringes
+mkdir <expname>
+cd <expname>
+scp -r jops@huygens:/data4/sfxc/ftp/<session, e.g. 2008_march/<expname>/html .
+mv html/* .
+rmdir html
+
+cd ../
+emacs ftp.html &  
+  add link to the new directory <expname>
+
+# email results of check to EVNtech 
+# template message file:
+-------------------------------------------------------------------------------
+To: EVNtech <EVNtech@jb.man.ac.uk>
+Subject: EVNtech: <exp name> ftp fringes
+
+First message date: 30 Oct 2007, 09:30 UT <edit!>
+Last updated on:                          <edit!> 
+
+Summary:        Ftp data arrived for <add participating station names>
+                There were fringes to ... (see notes below).
+                <briefly summarize (new) fringes & problems>
+
+                The fringe plots can be found here:
+                "http://www.evlbi.org/tog/ftp_fringes/<expname e.g. N07M3>"
+
+Legend: Y = Performed as expected
+        N = Did not perform as expected
+        ? = No feedback available from station
+        Blank = Not applicable or waiting for further tests
+
+<experiment setup, e.g. N07M3, Freq=6668.52 MHz; Mode=256-8-2; obs date=30/10/2007>
+
+                   | Cm | Ef | Hh | Jb | Mc | Nt | On | Tr | Wb | <edit!>
+Observed           |    |    |    |    |    |    |    |    |    | <fill in>
+Fringes (ftp)      |    |    |    |    |    |    |    |    |    | <fill in>
+Clock offset (ftp) |    |    |    |    |    |    |    |    |    |
+Fringes (Disk)     |    |    |    |    |    |    |    |    |    |
+Recording o.k.     |    |    |    |    |    |    |    |    |    | <fill in>
+Cross pols o.k.    |    |    |    |    |    |    |    |    |    | <fill in>
+Check VCs          |    |    |    |    |    |    |    |    |    |
+See notes below    |    |    |    |    |    |    |    |    |    | <fill in>
+
+
+Notes:
+
+a) <specify problems, e.g. RFI, low sensitivity, noting station and BBC>
+-------------------------------------------------------------------------------
+
+
+
+questions/comments/corrections? please email muehle@jive.nl
+

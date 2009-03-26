@@ -1,0 +1,36 @@
+.Dd $Mdocdate: June 9 2008 $
+.Dt DNFP_FILESERVER 3
+.Os
+.Sh NAME
+.Nm dnfp_fileserver
+.Nd very simple file server program for e-vlbi experiment. 
+.Sh SYNOPSIS
+.Nm dnfp_fileserver
+.Bk -words
+.Op ip
+.Op port
+.Sh DESCRIPTION
+.Nm 
+is a file transfer program to stream data from disk to 
+the software correlator. The dnf_fileserver support streaming 
+either tcp protocol.
+
+.Pp
+.Nm
+The file to serve are read from a configuration file called dnfp_configfile.cfg.
+The entry of dnfp_configfile.cfg are in the following format:
+.Pp
+file1 path_to_file1
+.Pp
+file2 path_to_file2
+.Pp
+The validity of each entry is checked as well as the availability of the 
+corresponding file.  
+
+.Sh SEE ALSO
+.Xr dnfp_fileclient 3 , 
+.Xr sfxc 1 ,
+.Rs
+.%A D. Marchal
+.%O work in progress material
+.Re

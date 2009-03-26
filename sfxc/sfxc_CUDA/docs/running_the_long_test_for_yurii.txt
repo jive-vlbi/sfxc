@@ -1,0 +1,13 @@
+Yurii regularly checks the software correlator by 
+verifying the output on a longer run.
+
+We use the experiment "n07k1" for that. The data and control-files are
+located on huygens in /data4/sfxc/scans/n07k1
+
+You can start the job from /data4/sfxc/scans/n07k1/ctrl with the command:
+
+time mpirun -np 14 /home/kruithof/share/sfxc/bin/sfxc n07k1.ctrl n07k1.vix | tee std_output.txt
+
+The output will be in n07k1.cor in the same directory.
+
+Yurii knows how to check the output

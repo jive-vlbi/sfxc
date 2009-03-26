@@ -1,0 +1,41 @@
+This file describes how to run the testsuite for the software correlator.
+
+The test suite is located on huygens at /data4/sfxc/test_suite/
+
+It contains directories:
+  * data
+  * origininal
+  * other test suites
+
+data
+----
+
+The data directory contains the input data: the vex-files and the
+mark5 data. The data is from old ftp-fringe tests.
+
+original
+--------
+
+This contains the original test suite. I ran the testsuite once in
+this directory to have a reverence output.
+
+The directory contains two scripts:
+ * clear_all.py that removes all previous output
+ * run_all.py   that runs all tests in the test-suite
+    - it runs the software correlator for every control file
+    - it generates a difference plot with respect to the output in
+      original
+
+The original directory contains a subdirectory for every experiment
+that we want to test. These directories contain:
+ * control files
+ * html directories where html_produce_plotpage puts its output
+ * html_diff directories where html_produce_diffpage puts its output
+   The output in the original directory is taken for reference.
+
+
+
+other directories
+-----------------
+
+The other directories are copies of the "original" directory.

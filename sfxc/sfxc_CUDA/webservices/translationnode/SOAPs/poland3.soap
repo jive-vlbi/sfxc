@@ -1,0 +1,34 @@
+POST /translationnode HTTP/1.0
+Content-Type: text/xml; charset=UTF-8
+SOAPAction: "urn:startTranslationJob"
+User-Agent: Axis2
+Host: 192.42.120.69:8082
+Content-Length: 1453
+
+<?xml version='1.0' encoding='UTF-8'?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+						xmlns:wsa="http://www.w3.org/2005/08/addressing">
+  <soapenv:Header>
+	 <wsa:To>http://192.42.120.69:8082/translationnode</wsa:To>
+	 <wsa:ReplyTo>
+		<wsa:Address>http://www.w3.org/2005/08/addressing/none</wsa:Address>
+	 </wsa:ReplyTo>
+	 <wsa:MessageID>urn:uuid:8FFC2EE3289AB7C82A1211882488560</wsa:MessageID>
+	 <wsa:Action>urn:startTranslationJob</wsa:Action>
+  </soapenv:Header>
+  <soapenv:Body>
+	 <ns2:startTranslationJob xmlns:ns2="http://broker.remote.expres.psnc.pl/xsd">
+		<ns2:param0>
+		  <ns1:brokerIPAddress xmlns:ns1="http://jobinfo.broker.remote.expres.psnc.pl/xsd">
+			 http://melisa.man.poznan.pl:8086/vlbiBroker/services/TranslationNodeNotification
+		  </ns1:brokerIPAddress>
+		  <ns1:chunkSize xmlns:ns1="http://jobinfo.broker.remote.expres.psnc.pl/xsd">64000000</ns1:chunkSize>
+		  <ns1:dataLocation xmlns:ns1="http://jobinfo.broker.remote.expres.psnc.pl/xsd">n08c1.vix</ns1:dataLocation>
+		  <ns1:endTime xmlns:ns1="http://jobinfo.broker.remote.expres.psnc.pl/xsd">2008y070d17h09m03s</ns1:endTime>
+		  <ns1:experimentName xmlns:ns1="http://jobinfo.broker.remote.expres.psnc.pl/xsd">N08C1</ns1:experimentName>
+		  <ns1:startTime xmlns:ns1="http://jobinfo.broker.remote.expres.psnc.pl/xsd">2008y070d17h08m59s</ns1:startTime>
+		  <ns1:telescopeName xmlns:ns1="http://jobinfo.broker.remote.expres.psnc.pl/xsd">Wb</ns1:telescopeName>
+		</ns2:param0>
+	 </ns2:startTranslationJob>
+  </soapenv:Body>
+</soapenv:Envelope>

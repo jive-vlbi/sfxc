@@ -1,0 +1,34 @@
+env = Environment(tools=['default', 'options', 'scanreplace', 'installer'], toolpath=['tools'])
+#env.Option.Update(env)
+Help( env.Option.GenerateHelpText( env ) )
+
+if ARGUMENTS.get("prefix", None) == None:
+	pass
+elif ARGUMENTS.get("prefix", None) == "":
+	pass
+else:		
+	env.__setitem__("prefix", ARGUMENTS.get("prefix", "/usr") )
+
+print "Using prefix: " + env.get('prefix', "/usr")
+env['prefix'] = env.get('prefix', "/usr")
+
+#env['CXX']='g++';
+#env['CXX']='/home/damien/code/style/gccchecker'
+
+env.Append( LINKFLAGS=['-rdynamic'])
+env.Append( CCFLAGS=['-O3', '-Wall', '-Isrc/', '-pg', '-g', '-fPIC'] )
+#env.Append( CCFLAGS=['-DENABLE_TEST_UNIT'] )
+
+Export('env')
+
+# BUILDING THE LIBRARY
+SConscript(['src/SConscript'])
+
+# BUILDING THE TEST PROGRAM
+#SConscript(['test/SConscript'])
+
+# GENERATION OF THE VEX_PARSER FILE
+pc = env.ScanReplace('common.pc.in')
+env.installer.AddPkgconfig(pc)
+
+
