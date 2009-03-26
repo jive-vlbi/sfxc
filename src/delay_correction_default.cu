@@ -1,5 +1,6 @@
 #include "delay_correction_default.h"
 #include "config.h"
+#include <cufft.h>
 
 Delay_correction_default::
 Delay_correction_default(): Delay_correction_base(){
