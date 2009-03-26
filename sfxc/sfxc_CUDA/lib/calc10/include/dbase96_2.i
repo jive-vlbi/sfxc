@@ -1,5 +1,0 @@
-!
-!@DBCO2
-!
-      COMMON /DBCO2/ IC(22),KNUM,NSEG,NSBR,IRETN,IMPAR(5),LLEM(500),
-     .               MXWDS,IHOME

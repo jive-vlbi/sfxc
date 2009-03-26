@@ -1,4 +1,0 @@
-!@This is the start of file &BELEV
-      REAL*8 ELDEF,ELC(MAX_STA)
-      INTEGER*2 NEL,IELNM(4,MAX_STA)
-      COMMON/BELEV/ELDEF,ELC,NEL,IELNM
