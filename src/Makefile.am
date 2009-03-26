@@ -1,6 +1,9 @@
 AM_CXXFLAGS = $(SFXC_CXXFLAGS)
 LDADD = $(SFXC_LDADD)
 
+.cu.o:
+	nvcc -c $@ $< -I.. -I../include -g -DSFXC_PRINT_DEBUG -DPRINT_PROGRESS -DUSE_MPI -I../lib/common/src -I../lib/containers/src -I../lib/netlib/src -I../lib/testunit/src -I../lib/jsoncpp/include -I../lib/vex_parser/install/include -L../lib/testunit -L../lib/netlib -L../lib/containers -L../lib/common -L../lib/jsoncpp -L../lib/vex_parser/install/lib
+
 if SFXC
 bin_PROGRAMS = sfxc
 endif
@@ -33,7 +36,7 @@ OBJ=\
   log_writer_file.cc \
   correlation_core.cc \
   delay_correction_base.cc \
-  delay_correction_default.cc \
+  delay_correction_default.cu \
   delay_correction_swapped.cc \
   uvw_model.cc \
   channel_extractor_tasklet.cc \

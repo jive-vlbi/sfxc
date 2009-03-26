@@ -68,9 +68,12 @@ void Delay_correction_default::do_task() {
          time_buffer[j] = 0;
     }
 
-    FFTW_EXECUTE_DFT_R2C(plan_t2f_cor,
-                         (FLOAT *)&time_buffer[0],
-                         (FFTW_COMPLEX *)output.buffer());
+    cufftExecR2C(plan_t2f_cor,
+            (FLOAT *)&time_buffer[0],
+            (cufftComplex *)output->buffer());
+    //MSS FFTW_EXECUTE_DFT_R2C(plan_t2f_cor,
+    //MSS                      (FLOAT *)&time_buffer[0],
+    //MSS                      (FFTW_COMPLEX *)output.buffer());
 
     total_ffts++;
 #endif // DUMMY_CORRELATION
@@ -87,9 +90,10 @@ void Delay_correction_default::fractional_bit_shift(FLOAT input[],
   {
     //DM replaced: FFTW_EXECUTE_DFT(plan_t2f, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
     FFTW_COMPLEX *frequency_buffer_fftw = (FFTW_COMPLEX *)&frequency_buffer[0];
-    FFTW_EXECUTE_DFT_R2C(plan_t2f,
-                         &input[0],
-                         frequency_buffer_fftw);
+    cufftExecR2C(plan_t2f, &input[0], (cufftComplex *)frequency_buffer_fftw);
+    //MSS FFTW_EXECUTE_DFT_R2C(plan_t2f,
+    //MSS                      &input[0],
+    //MSS                      frequency_buffer_fftw);
     // Element 0 and number_channels()/2 are real numbers
     for (size_t i=1; i<number_channels()/2; i++) {
       // This avoids the assignment of the real part
@@ -145,7 +149,11 @@ void Delay_correction_default::fractional_bit_shift(FLOAT input[],
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
   //DM replaced: FFTW_EXECUTE_DFT(plan_f2t, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
-  FFTW_EXECUTE(plan_f2t);
+  cufftExecC2C(plan_f2t,
+          (cufftComplex *)&frequency_buffer[0],
+          (cufftComplex *)&frequency_buffer[0],
+          CUFFT_FORWARD);
+  // MSS FFTW_EXECUTE(plan_f2t);
   total_ffts++;
 }
 
@@ -213,21 +221,24 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
     Memory_pool_vector_element<FLOAT> input_buffer;
     input_buffer.resize(number_channels());
 
-    plan_t2f = FFTW_PLAN_DFT_R2C_1D(number_channels(),
-                                    &input_buffer[0],
-                                    (FFTW_COMPLEX *)&frequency_buffer[0],
-                                    FFTW_MEASURE);
-    plan_f2t = FFTW_PLAN_DFT_1D(number_channels(),
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
-                                FFTW_FORWARD,  FFTW_MEASURE);
+    cufftPlan1d(&plan_t2f,number_channels(),CUFFT_R2C,n_ffts_per_integration);
+// MSS    plan_t2f = FFTW_PLAN_DFT_R2C_1D(number_channels(),
+// MSS                                    &input_buffer[0],
+// MSS                                    (FFTW_COMPLEX *)&frequency_buffer[0],
+// MSS                                    FFTW_MEASURE);
+    cufftPlan1d(&plan_f2t,number_channels(),CUFFT_C2C,n_ffts_per_integration);
+// MSS    plan_f2t = FFTW_PLAN_DFT_1D(number_channels(),
+// MSS                                (FFTW_COMPLEX *)&frequency_buffer[0],
+// MSS                                (FFTW_COMPLEX *)&frequency_buffer[0],
+// MSS                                FFTW_FORWARD,  FFTW_MEASURE);
 
     plan_input_buffer.resize(size_of_fft());
     plan_output_buffer.resize(size_of_fft()/2+1);
-    plan_t2f_cor = FFTW_PLAN_DFT_R2C_1D(size_of_fft(),
-                                  (FLOAT *)plan_input_buffer.buffer(),
-                                  (FFTW_COMPLEX *)plan_output_buffer.buffer(),
-                                  FFTW_MEASURE);
+    cufftPlan1d(&plan_t2f_cor,size_of_fft(),CUFFT_R2C,n_ffts_per_integration);
+// MSS    plan_t2f_cor = FFTW_PLAN_DFT_R2C_1D(size_of_fft(),
+// MSS                                  (FLOAT *)plan_input_buffer.buffer(),
+// MSS                                  (FFTW_COMPLEX *)plan_output_buffer.buffer(),
+// MSS                                  FFTW_MEASURE);
   }
   SFXC_ASSERT(frequency_buffer.size() == number_channels());
 
