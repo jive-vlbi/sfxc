@@ -8,7 +8,6 @@ Input_node_data_writer(){
   delay_index=0;
   _current_time=INVALID_TIME;
   interval=0;
-  flag=0;
 }
 
 Input_node_data_writer::~Input_node_data_writer() {
@@ -60,11 +59,13 @@ has_work() {
   }
 
  // Not sufficient input data
-  if ((input_buffer_->size()<2)&&
-      (_current_time - current_interval_.stop_time_ > packet_time) )
+  if(input_buffer_->empty())
     return false;
-  else if(input_buffer_->empty())
+  else if ((input_buffer_->size()<2)&&
+           (current_interval_.stop_time_ - _current_time  >
+            input_buffer_->front().channel_data.data().data.size()*time_per_byte) )
     return false;
+
 
   // No data writers to send the data to
   if (data_writers_.empty())
@@ -73,13 +74,12 @@ has_work() {
   // The data writer in the front of the queue is still being used
   // to send data from another channel
   //TODO check if it is possible that the same data_writer is used multiple times
-//  if ((data_writers_.front().slice_size > 0) &&
-//      (data_writers_.front().writer->get_size_dataslice() > 0))
-//                        return false;
+  if ((!data_writers_.front().active) && (data_writers_.front().writer->is_active()))
+    return false;
 
   // Check whether we can send data to the active writer
   if (!data_writers_.front().writer->can_write())
-		return false;
+    return false;
 
   return true;
 }
@@ -100,6 +100,7 @@ do_task() {
     // from the front(): writer.set_size_dataslice(slice_size), slice_size=0
     SFXC_ASSERT(data_writer.slice_size>0);
     data_writer.writer->set_size_dataslice(-1);
+    data_writer.writer->activate();
     data_writer.active = true;
     DEBUG_MSG("FETCHING FOR A NEW WRITER......");
   }
@@ -107,6 +108,7 @@ do_task() {
   // Check whether we have written all data to the data_writer
   if (data_writer.slice_size == 0) {
       data_writers_.pop();
+      data_writer.writer->deactivate();
       DEBUG_MSG("POPPING FOR A NEW WRITER......");
       return 0;
   }
@@ -115,7 +117,7 @@ do_task() {
   if((delay_index<cur_delay.size()-1)&&(cur_delay[delay_index+1].time<_current_time+time_fft))
     delay_index++;
 
-  // Obtain the amount of data to write and count the number of invalid blocks
+  // Obtain the amount of data to write
   int64_t dtime = (int64_t)(_current_time-input_element.start_time);
   int byte_offset = dtime*sample_rate*bits_per_sample/8/1000000 +
                     cur_delay[delay_index].bytes;
@@ -206,7 +208,7 @@ set_parameters(const Input_node_parameters &input_param) {
   bits_per_sample = input_param.bits_per_sample();
   fftsize = input_param.number_channels*bits_per_sample/8; // size of one fft window in bytes
   time_fft = (((int64_t)input_param.number_channels)*1000000)/sample_rate;
-  packet_time = (((int64_t)(INPUT_NODE_PACKET_SIZE*8/bits_per_sample))*1000000)/sample_rate;
+  time_per_byte=(((int64_t)(8/bits_per_sample))*1000000)/sample_rate;
 }
 
 // Empty the input queue, called from the destructor of Input_node

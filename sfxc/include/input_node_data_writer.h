@@ -80,7 +80,6 @@ public:
   void add_time_interval(uint64_t start, uint64_t stop);
   void fetch_next_time_interval();
   int64_t get_current_time();
-  int flag;
 
 private:
   Input_buffer_ptr    input_buffer_;
@@ -91,7 +90,7 @@ private:
   int bits_per_sample;
   int fftsize;
   int time_fft;
-  int64_t packet_time;
+  int64_t time_per_byte;
 
   /// The queue storing all the delays
   Threadsafe_queue<Delay_memory_pool_element> delays_;
