@@ -103,4 +103,24 @@ private:
 
 };
 
+inline size_t Delay_correction_base::number_channels() {
+  return correlation_parameters.number_channels;
+}
+
+inline size_t Delay_correction_base::size_of_fft() {
+  return 2*correlation_parameters.number_channels;
+}
+
+inline int Delay_correction_base::bandwidth() {
+  return correlation_parameters.bandwidth;
+}
+inline int Delay_correction_base::sample_rate() {
+  return correlation_parameters.sample_rate;
+}
+
+inline int64_t Delay_correction_base::channel_freq() {
+  return correlation_parameters.channel_freq;
+}
+
+
 #endif /*DELAY_CORRECTION_BASE_H*/
