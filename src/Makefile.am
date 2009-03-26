@@ -2,7 +2,7 @@ AM_CXXFLAGS = $(SFXC_CXXFLAGS)
 LDADD = $(SFXC_LDADD)
 
 .cu.o:
-	nvcc -c $@ $< -I.. -I/usr/local/cuda/include -I../include -g -DSFXC_PRINT_DEBUG -DPRINT_PROGRESS -DUSE_MPI -I../lib/common/src -I../lib/containers/src -I../lib/netlib/src -I../lib/testunit/src -I../lib/jsoncpp/include -I../lib/vex_parser/install/include -L/usr/local/cuda/lib -L../lib/testunit -L../lib/netlib -L../lib/containers -L../lib/common -L../lib/jsoncpp -L../lib/vex_parser/install/lib
+	nvcc -c $@ $< -I.. -I/usr/local/cuda/include -I../include -g -DSFXC_PRINT_DEBUG -DPRINT_PROGRESS -DUSE_MPI -I../lib/common/src -I../lib/containers/src -I../lib/netlib/src -I../lib/testunit/src -I../lib/jsoncpp/include -I../lib/vex_parser/install/include -L/usr/local/cuda/lib -L../lib/testunit -L../lib/netlib -L../lib/containers -L../lib/common -L../lib/jsoncpp -L../lib/vex_parser/install/lib -lcufft
 
 if SFXC
 bin_PROGRAMS = sfxc
