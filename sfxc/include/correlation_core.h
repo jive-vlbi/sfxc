@@ -140,4 +140,21 @@ private:
 
 };
 
+inline size_t Correlation_core::n_channels() {
+  return correlation_parameters.number_channels;
+}
+
+inline size_t Correlation_core::size_of_fft() {
+  return n_channels()*2;
+}
+
+inline size_t Correlation_core::n_stations() {
+  return correlation_parameters.station_streams.size();
+}
+
+inline size_t Correlation_core::number_input_streams_in_use() {
+  return correlation_parameters.station_streams.size();
+}
+
+
 #endif /*CORRELATION_CORE_H_*/

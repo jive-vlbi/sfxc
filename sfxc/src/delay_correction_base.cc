@@ -151,30 +151,10 @@ Delay_correction_base::get_output_buffer() {
   return output_buffer;
 }
 
-size_t Delay_correction_base::number_channels() {
-//  SFXC_ASSERT(correlation_parameters.number_channels >= 0);
-  return correlation_parameters.number_channels;
-}
-
-size_t Delay_correction_base::size_of_fft() {
-//  SFXC_ASSERT(correlation_parameters.number_channels >= 0);
-  return 2*correlation_parameters.number_channels;
-}
-
-int Delay_correction_base::bandwidth() {
-  return correlation_parameters.bandwidth;
-}
-int Delay_correction_base::sample_rate() {
-  return correlation_parameters.sample_rate;
-}
 int Delay_correction_base::length_of_one_fft() {
   return (((int64_t)number_channels())*1000000)/sample_rate();
 }
+
 int Delay_correction_base::sideband() {
-  SFXC_ASSERT((correlation_parameters.sideband == 'L') ||
-              (correlation_parameters.sideband == 'U'));
   return (correlation_parameters.sideband == 'L' ? -1 : 1);
-}
-int64_t Delay_correction_base::channel_freq() {
-  return correlation_parameters.channel_freq;
 }
