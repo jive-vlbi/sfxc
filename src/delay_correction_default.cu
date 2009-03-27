@@ -1,6 +1,5 @@
 #include "delay_correction_default.h"
 #include "config.h"
-#include <cufft.h>
 
 Delay_correction_default::
 Delay_correction_default(): Delay_correction_base(){
@@ -71,7 +70,7 @@ void Delay_correction_default::do_task() {
 
     cufftExecR2C(plan_t2f_cor,
             (FLOAT *)&time_buffer[0],
-            (cufftComplex *)output->buffer());
+            (cufftComplex *)output.buffer());
     //MSS FFTW_EXECUTE_DFT_R2C(plan_t2f_cor,
     //MSS                      (FLOAT *)&time_buffer[0],
     //MSS                      (FFTW_COMPLEX *)output.buffer());
