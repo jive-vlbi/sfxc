@@ -10,21 +10,10 @@ void Delay_correction_swapped::do_task() {
   SFXC_ASSERT(has_work());
   SFXC_ASSERT(current_time >= 0);
 
-  if (n_ffts_per_integration == current_fft) {
-    SFXC_ASSERT(current_time/correlation_parameters.integration_time !=
-                (current_time+length_of_one_fft())/correlation_parameters.integration_time);
-
-    current_time =
-      ((current_time+length_of_one_fft()) /
-       correlation_parameters.integration_time)*
-      correlation_parameters.integration_time;
-    current_fft = 0;
-  }
-  current_fft++;
-
   Input_buffer_element &input = input_buffer->front();
   int input_size = input->data.size()*8/correlation_parameters.bits_per_sample;
   int nbuffer=input_size/number_channels();
+  current_fft+=nbuffer;
 
   // Allocate output buffer
   cur_output=output_memory_pool.allocate();

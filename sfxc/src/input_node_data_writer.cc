@@ -95,7 +95,7 @@ do_task() {
   struct Writer_struct& data_writer = data_writers_.front();
 
   // Check whether we have to start a new timeslice
-  if(!data_writers_.front().active){  
+  if(!data_writer.active){  
     // Initialise the size of the data slice
     // from the front(): writer.set_size_dataslice(slice_size), slice_size=0
     SFXC_ASSERT(data_writer.slice_size>0);
@@ -107,8 +107,8 @@ do_task() {
 
   // Check whether we have written all data to the data_writer
   if (data_writer.slice_size == 0) {
-      data_writers_.pop();
       data_writer.writer->deactivate();
+      data_writers_.pop();
       DEBUG_MSG("POPPING FOR A NEW WRITER......");
       return 0;
   }
@@ -176,7 +176,6 @@ do_task() {
       }
     }
     delay=cur_delay[delay_index].remaining_samples;
-
     write_header(writer, data_to_write, invalid_start, nr_inv_samples, delay);
     if(invalid_bytes>0) write_random_data(writer, invalid_bytes);
     write_data(writer, valid_bytes, byte_offset);
