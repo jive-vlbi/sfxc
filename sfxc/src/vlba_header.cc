@@ -1,3 +1,4 @@
+#include <cstring>
 #include "vlba_header.h"
 #include "backtrace.h"
 

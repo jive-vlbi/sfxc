@@ -10,6 +10,7 @@
 #include "log_writer_file.h"
 #include "utils.h"
 
+#include <cstring>
 #include <fstream>
 
 class Log_writer_file_buffer : public Log_writer_buffer {

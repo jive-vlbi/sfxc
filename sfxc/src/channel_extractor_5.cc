@@ -16,6 +16,7 @@
 #include "utils.h"
 
 #include <iostream>
+#include <cstring>
 
 template<int size_of_one_input_word_, int n_subbands_>
 class Channel_extractor_5_impl : public Channel_extractor_interface {

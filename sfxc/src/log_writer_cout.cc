@@ -8,6 +8,7 @@
  */
 
 #include <iostream>
+#include <cstring>
 
 #include "log_writer_cout.h"
 

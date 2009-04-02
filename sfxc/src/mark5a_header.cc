@@ -1,3 +1,4 @@
+#include <cstring>
 #include "mark5a_header.h"
 #include "backtrace.h"
 

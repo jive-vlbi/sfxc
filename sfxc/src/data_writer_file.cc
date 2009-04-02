@@ -10,6 +10,7 @@
 #include "data_writer_file.h"
 #include "utils.h"
 
+#include <cstring>
 #include <iostream>
 #include <algorithm>
 

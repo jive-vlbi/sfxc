@@ -17,6 +17,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fftw3.h>
+#include <cstring>
 
 Manager_node::
 Manager_node(int rank, int numtasks,

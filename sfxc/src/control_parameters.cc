@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <set>
+#include <cstring>
 #include <math.h>
 
 #include <libgen.h>

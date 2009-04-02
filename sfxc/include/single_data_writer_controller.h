@@ -25,8 +25,8 @@ class Single_data_writer_controller : public Controller {
   typedef Single_data_writer_controller  Self;
 public:
   typedef Memory_pool_vector_element<char>  data_type;
-  typedef Memory_pool<data_type>            Memory_pool;
-  typedef Memory_pool::value_type           pool_type;
+  typedef Memory_pool<data_type>            Writer_memory_pool;
+  typedef Writer_memory_pool::value_type    pool_type;
   struct value_type {
     int       actual_size;
     pool_type data;

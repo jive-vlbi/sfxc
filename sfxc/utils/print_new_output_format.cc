@@ -2,6 +2,7 @@
 #include <fstream>
 #include <assert.h>
 #include <complex>
+#include <cstdlib>
 
 #include "output_header.h"
 

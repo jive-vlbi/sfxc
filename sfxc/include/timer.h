@@ -4,6 +4,7 @@
 #include "utils.h"
 
 #include <ctime>
+#include <cstring>
 #include <iostream>
 #include <iomanip>
 
