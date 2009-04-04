@@ -2,7 +2,7 @@
 
 Correlator_node_data_reader_tasklet::
 Correlator_node_data_reader_tasklet()
-    :output_memory_pool(2000),//old version 65000
+    :output_memory_pool(4000),//old version 65000
     output_buffer(Output_buffer_ptr(new Output_buffer())),
     n_bytes_to_read(0) {
 }
