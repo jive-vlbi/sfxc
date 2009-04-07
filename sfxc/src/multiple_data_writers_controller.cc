@@ -39,6 +39,7 @@ Multiple_data_writers_controller::get_listening_ip(
   Vector_string if_names;
   std::vector<InterfaceIP*> interfaces;
   if_names.push_back(String("myri0"));
+  if_names.push_back(String("ib0"));
   if_names.push_back(String("eth0"));
   if_names.push_back(String("eth1"));
   if_names.push_back(String("eth2"));
