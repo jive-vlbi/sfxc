@@ -79,14 +79,9 @@ void Delay_correction_default::fractional_bit_shift(FLOAT input[],
     FFTW_EXECUTE_DFT_R2C(plan_t2f,
                          &input[0],
                          frequency_buffer_fftw);
-    // Element 0 and number_channels()/2 are real numbers
-    for (size_t i=1; i<number_channels()/2; i++) {
-      // This avoids the assignment of the real part
-      frequency_buffer_fftw[i][1] = -frequency_buffer_fftw[i][1];
-    }
     total_ffts++;
   }
-
+  // Element 0 and number_channels()/2 are real numbers
   frequency_buffer[0] *= 0.5;
   frequency_buffer[number_channels()/2] *= 0.5;//Nyquist frequency
 
@@ -124,7 +119,7 @@ void Delay_correction_default::fractional_bit_shift(FLOAT input[],
   for (int i = 0; i < size; i++) {
     // the following should be double
 
-    frequency_buffer[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
+    frequency_buffer[i] *= std::complex<FLOAT>(cos_phi,-sin_phi);
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     temp=sin_phi-(a*sin_phi-b*cos_phi);
     cos_phi=cos_phi-(a*cos_phi+b*sin_phi);
@@ -175,7 +170,7 @@ void Delay_correction_default::fringe_stopping(FLOAT output[]) {
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     // 7)subtract dopplers and put real part in Bufs for the current segment
     output[i] =
-      frequency_buffer[i].real()*cos_phi - frequency_buffer[i].imag()*sin_phi;
+      frequency_buffer[i].real()*cos_phi + frequency_buffer[i].imag()*sin_phi;
 
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     temp=sin_phi-(a*sin_phi-b*cos_phi);
@@ -209,7 +204,7 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
     plan_f2t = FFTW_PLAN_DFT_1D(number_channels(),
                                 (FFTW_COMPLEX *)&frequency_buffer[0],
                                 (FFTW_COMPLEX *)&frequency_buffer[0],
-                                FFTW_FORWARD,  FFTW_MEASURE);
+                                FFTW_BACKWARD,  FFTW_MEASURE);
 
     plan_input_buffer.resize(size_of_fft());
     plan_output_buffer.resize(size_of_fft()/2+1);
