@@ -12,7 +12,8 @@
 #define DELAY_CORRECTION_BASE_H
 #include <boost/shared_ptr.hpp>
 #include <complex>
-#include <fftw3.h>
+// #include <fftw3.h>
+#include <cufft.h>
 
 #include "tasklet/tasklet.h"
 #include "delay_table_akima.h"
@@ -88,8 +89,8 @@ private:
   bool delay_table_set;
   Delay_table_akima   delay_table;
 
-  Memory_pool_vector_element< std::complex<FLOAT> > frequency_buffer;
-  std::vector< FLOAT > time_buffer;
+  cufftComplex *frequency_buffer;
+  cufftComplex *time_buffer;
 
   Timer delay_timer;
 

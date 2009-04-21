@@ -66,50 +66,56 @@ void Delay_correction_base::get_invalid(const Input_buffer_element &input, int b
   }
 }
 
-void Delay_correction_base::bit2float(const Input_buffer_element &input, int buf_nr, FLOAT *output_buffer_) {
-  FLOAT *output_buffer = output_buffer_;
+void Delay_correction_base::bit2float(const Input_buffer_element &input, int buf_nr, cufftComplex *output_buffer_) {
+  cufftComplex *output_buffer = output_buffer_;
   int start=buf_nr*number_channels()*correlation_parameters.bits_per_sample/8;
   unsigned char *input_data = &input->data[start];
 
   if (correlation_parameters.bits_per_sample == 2) {
     // First byte:
-    memcpy(output_buffer,
+    cudaMemcpy(output_buffer,
            &lookup_table[(int)input_data[0]][(int)input->delay],
-           (4-input->delay)*sizeof(FLOAT));
+           (4-input->delay)*sizeof(FLOAT),
+           cudaMemcpyHostToDevice);
     output_buffer += 4-input->delay;
 
     int size=number_channels()*correlation_parameters.bits_per_sample/8;
     for (int byte = 1; byte < size; byte++) {
-      memcpy(output_buffer, // byte * 4
+      cudaMemcpy(output_buffer, // byte * 4
              &lookup_table[(int)input_data[byte]][0],
-             4*sizeof(FLOAT));
+             4*sizeof(FLOAT),
+             cudaMemcpyHostToDevice);
       output_buffer += 4;
     }
     // Last byte:
-    memcpy(output_buffer,
+    cudaMemcpy(output_buffer,
            &lookup_table[(int)(unsigned char)input_data[size]][0],
-           input->delay*sizeof(FLOAT));
+           input->delay*sizeof(FLOAT),
+           cudaMemcpyHostToDevice);
   }
   else { // 1 bit samples
     SFXC_ASSERT(correlation_parameters.bits_per_sample == 1);
     // First byte:
-    memcpy(output_buffer,
+    cudaMemcpy(output_buffer,
            &lookup_table_1bit[(int)input_data[0]][(int)input->delay],
-           (8-input->delay)*sizeof(FLOAT));
+           (8-input->delay)*sizeof(FLOAT),
+           cudaMemcpyHostToDevice);
     output_buffer += 8-input->delay;
 
     int size=number_channels()*correlation_parameters.bits_per_sample/8;
     for (int byte = 1; byte < size; byte++) {
-      memcpy(output_buffer, // byte * 4
+      cudaMemcpy(output_buffer, // byte * 4
              &lookup_table_1bit[(int)input_data[byte]][0],
-             8*sizeof(FLOAT));
+             8*sizeof(FLOAT),
+             cudaMemcpyHostToDevice);
       output_buffer += 8;
     }
 
     // Last byte:
-    memcpy(output_buffer,
+    cudaMemcpy(output_buffer,
            &lookup_table_1bit[(int)(unsigned char)input_data[size]][0],
-           input->delay*sizeof(FLOAT));
+           input->delay*sizeof(FLOAT),
+           cudaMemcpyHostToDevice);
   }
   #ifdef SFXC_INVALIDATE_SAMPLES
   int invalid_samples_begin, nr_invalid_samples;
