@@ -64,7 +64,7 @@ public:
   }
 private:
   ///
-  void bit2float(const Input_buffer_element &input, int buf_nr, FLOAT *output_buffer);
+  void bit2float(const Input_buffer_element &input, int buf_nr, cufftComplex *output_buffer);
   void get_invalid(const Input_buffer_element &input, int buf_nr, int &invalid_start, int &nr_invalid);
 
 private:
