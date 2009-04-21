@@ -36,7 +36,7 @@ OBJ=\
   log_writer.cc log_writer_cout.cc \
   log_writer_file.cc \
   correlation_core.cc \
-  delay_correction_base.cc \
+  delay_correction_base.cu \
   delay_correction_default.cu \
   delay_correction_swapped.cc \
   uvw_model.cc \
