@@ -47,15 +47,14 @@ void Delay_correction_swapped::do_task() {
     fringe_stopping(&time_buffer[0]);
 
     // zero padding
-    for (int i = n_channels; i < 2*n_channels; i++) 
-      frequency_buffer[i] = 0;
+    IPPS_ZERO_FC((IPP_CPLX_FLOAT*)&frequency_buffer[number_channels()],number_channels());
 
     // Input is from frequency_buffer
     fractional_bit_shift(output.buffer(),
                          integer_delay,
                          delay_in_samples - integer_delay);
 
-    current_time += length_of_one_fft();
+  current_time += length_of_one_fft();
 
 #endif // DUMMY_CORRELATION
   }
@@ -70,11 +69,7 @@ void Delay_correction_swapped::fractional_bit_shift(std::complex<FLOAT> output[]
   //    input: sls. output sls_freq
   const int n_channels = number_channels();
   {
-    //DM replaced: FFTW_EXECUTE_DFT(plan_t2f, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
-    FFTW_COMPLEX *frequency_buffer_fftw = (FFTW_COMPLEX *)&frequency_buffer[0];
-    FFTW_EXECUTE_DFT(plan_t2f,
-                     (FFTW_COMPLEX *) &frequency_buffer[0],
-                     (FFTW_COMPLEX *) &frequency_buffer[0]);
+    IPPS_FFTFWD_CToC_FC_I((IPP_CPLX_FLOAT*)&frequency_buffer[0], plan_t2f, &buffer_t2f[0]);
 
   // Element 0 and number_channels() should be real numbers
     frequency_buffer[0]=frequency_buffer[0].real()/2;
@@ -83,17 +78,15 @@ void Delay_correction_swapped::fractional_bit_shift(std::complex<FLOAT> output[]
   }
 
   // 4c) zero the unused subband 
-  for (size_t i=n_channels+1; i<2*n_channels; i++) {
-    frequency_buffer[i] = 0.0;
-  }
+//  IPPS_ZERO_FC((IPP_CPLX_FLOAT*)&frequency_buffer[number_channels()+1],number_channels()-1);
 
   // 5a)calculate the fract bit shift (=phase corrections in freq domain)
   // the following should be double
   const double dfr  = sample_rate()*1.0/(2*n_channels); // delta frequency 
   const double tmp1 = -2.0*M_PI*fractional_delay/sample_rate(); 
   const double tmp2 = 0.5*M_PI*(integer_shift&3);/* was: / ovrfl */ 
-  const double constant_term = tmp2 - sideband()*tmp1*0.5*bandwidth();
-  const double linear_term = tmp1*sideband()*dfr; 
+  const double constant_term = -tmp2 + sideband()*tmp1*0.5*bandwidth();
+  const double linear_term = -tmp1*sideband()*dfr; 
 
   // 5b)apply phase correction in frequency range
   const int size = n_channels+1;
@@ -114,14 +107,14 @@ void Delay_correction_swapped::fractional_bit_shift(std::complex<FLOAT> output[]
 #endif
 
   for (int i = 0; i < size; i++) {
+    exp_array[i]=std::complex<FLOAT>(cos_phi,sin_phi);
     // the following should be double
-    output[i] = std::conj(frequency_buffer[i]*std::complex<FLOAT>(cos_phi,sin_phi)); 
-
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     temp=sin_phi-(a*sin_phi-b*cos_phi);
     cos_phi=cos_phi-(a*cos_phi+b*sin_phi);
     sin_phi=temp;
   }
+  IPPS_MUL_FC((IPP_CPLX_FLOAT*)&exp_array[0],(IPP_CPLX_FLOAT*)&frequency_buffer[0],(IPP_CPLX_FLOAT*)&output[0], size);
 }
 
 void Delay_correction_swapped::fringe_stopping(FLOAT input[]) {
@@ -157,15 +150,15 @@ void Delay_correction_swapped::fringe_stopping(FLOAT input[]) {
   cos_phi = cos(phi);
 #endif
 
-  for (size_t i=0; i<number_channels(); i++) {
-    // Compute sin_phi=sin(phi); cos_phi = cos(phi);
-    // 7)subtract dopplers for the current segment
-    frequency_buffer[i] = input[i]*std::complex<FLOAT>(cos_phi,-sin_phi);
+  for (int i = 0; i < number_channels(); i++) {
+    exp_array[i]=std::complex<FLOAT>(cos_phi,sin_phi);
+    // the following should be double
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     temp=sin_phi-(a*sin_phi-b*cos_phi);
     cos_phi=cos_phi-(a*cos_phi+b*sin_phi);
     sin_phi=temp;
   }
+ IPPS_MUL_FFC((IPP_FLOAT*)&input[0], (IPP_CPLX_FLOAT*)&exp_array[0], (IPP_CPLX_FLOAT*)&frequency_buffer[0], number_channels());
 }
 
 void
@@ -180,12 +173,17 @@ Delay_correction_swapped::set_parameters(const Correlation_parameters &parameter
   SFXC_ASSERT((((int64_t)number_channels())*1000000000)%sample_rate() == 0);
 
   if (prev_number_channels != number_channels()) {
+    exp_array.resize(number_channels()+1);
     frequency_buffer.resize(2*number_channels());
 
-    plan_t2f = FFTW_PLAN_DFT_1D(2*number_channels(),
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
-                                FFTW_BACKWARD, FFTW_MEASURE); //
+    int order=-1, buffersize;
+    for(int n=number_channels();n>0;order++)
+      n/=2;
+
+    int IppStatus = IPPS_FFTINITALLOC_C_FC(&plan_t2f, order+1, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+    SFXC_ASSERT(IppStatus == ippStsNoErr);
+    IPPS_FFTGETBUFSIZE_C_FC(plan_t2f, &buffersize);
+    buffer_t2f.resize(buffersize);
   }
   SFXC_ASSERT(frequency_buffer.size() == 2*number_channels());
 

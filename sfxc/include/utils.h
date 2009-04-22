@@ -14,8 +14,8 @@
 #include <string>
 #include <assert.h>
 
-# include <unistd.h>
-# include <sys/time.h>
+#include <unistd.h>
+#include <sys/time.h>
 
 #include "types.h"
 #include "log_writer.h"
@@ -152,6 +152,24 @@ void abort(const char *file, int line, const char* message);
 # define FFTW_EXECUTE_DFT        fftw_execute_dft
 # define FFTW_EXECUTE_DFT_R2C    fftw_execute_dft_r2c
 # define FFTW_DESTROY_PLAN       fftw_destroy_plan
+
+# define IPP_FLOAT               Ipp64f
+# define IPP_CPLX_FLOAT          Ipp64fc
+# define IPPS_ZERO_F             ippsZero_64f
+# define IPPS_ZERO_FC            ippsZero_64fc
+# define IPPS_MUL_FC             ippsMul_64fc
+# define IPPS_MUL_FC_I           ippsMul_64fc_I
+# define IPPS_CONJ_FC            ippsConj_64fc
+# define IPPS_CONJ_FC_I          ippsConj_64fc_I
+# define IPPS_FFTINITALLOC_R_F   ippsFFTInitAlloc_R_64f
+# define IPPS_FFTINITALLOC_C_FC  ippsFFTInitAlloc_C_64fc
+# define IPPS_FFTGETBUFSIZE_R_F  ippsFFTGetBufSize_R_64f
+# define IPPS_FFTGETBUFSIZE_C_FC ippsFFTGetBufSize_C_64fc
+# define IPPS_FFTFWD_RTOCSS_F    ippsFFTFwd_RToCCS_64f
+# define IPPS_FFTFWD_CToC_FC_I   ippsFFTFwd_CToC_64fc_I
+# define IPPS_FFTINV_CToC_FC_I   ippsFFTInv_CToC_64fc_I
+# define IPPS_FFTSPEC_R_F        IppsFFTSpec_R_64f
+# define IPPS_FFTSPEC_C_FC       IppsFFTSpec_C_64fc
 #else // !USE_DOUBLE
 # define FLOAT                   float
 # define FFTW_COMPLEX            fftwf_complex
@@ -162,6 +180,25 @@ void abort(const char *file, int line, const char* message);
 # define FFTW_EXECUTE_DFT        fftwf_execute_dft
 # define FFTW_EXECUTE_DFT_R2C    fftwf_execute_dft_r2c
 # define FFTW_DESTROY_PLAN       fftwf_destroy_plan
+
+# define IPP_FLOAT               Ipp32f
+# define IPP_CPLX_FLOAT          Ipp32fc
+# define IPPS_ZERO_F             ippsZero_32f
+# define IPPS_ZERO_FC            ippsZero_32fc
+# define IPPS_MUL_FC             ippsMul_32fc
+# define IPPS_MUL_FC_I           ippsMul_32fc_I
+# define IPPS_MUL_FFC            ippsMul_32f32fc
+# define IPPS_CONJ_FC            ippsConj_32fc
+# define IPPS_CONJ_FC_I          ippsConj_32fc_I
+# define IPPS_FFTINITALLOC_R_F   ippsFFTInitAlloc_R_32f
+# define IPPS_FFTINITALLOC_C_FC  ippsFFTInitAlloc_C_32fc
+# define IPPS_FFTGETBUFSIZE_R_F  ippsFFTGetBufSize_R_32f
+# define IPPS_FFTGETBUFSIZE_C_FC ippsFFTGetBufSize_C_32fc
+# define IPPS_FFTFWD_RTOCSS_F    ippsFFTFwd_RToCCS_32f
+# define IPPS_FFTFWD_CToC_FC_I   ippsFFTFwd_CToC_32fc_I
+# define IPPS_FFTINV_CToC_FC_I   ippsFFTInv_CToC_32fc_I
+# define IPPS_FFTSPEC_R_F        IppsFFTSpec_R_32f
+# define IPPS_FFTSPEC_C_FC       IppsFFTSpec_C_32fc
 #endif // USE_FLOAT
 
 

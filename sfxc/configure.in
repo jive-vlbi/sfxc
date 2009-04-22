@@ -109,8 +109,14 @@ AC_CHECK_LIB(fftw3f, fftwf_execute, [], [
 FFTW_CXXFLAGS=
 FFTW_LDADD=" -lfftw3 -lfftw3f"
 fi
-SFXC_CXXFLAGS="$SFXC_CXXFLAGS $FFTW_CXXFLAGS"
-SFXC_LDADD="$SFXC_LDADD $FFTW_LDADD"
+AC_CHECK_LIB(ippsem64t, ippsGetLibVersion, [], [
+        echo "Could not find Intel IPP library."
+        exit -1
+        ])
+IPP_LDADD="-lippsem64t -lippvmem64t"
+
+SFXC_CXXFLAGS="$SFXC_CXXFLAGS"
+SFXC_LDADD="$SFXC_LDADD $IPP_LDADD"
 
 dnl ---------------------------------------------------------------------------
 dnl setting shipped libraries
@@ -159,18 +165,18 @@ WITH_SFXC="no"
 WITH_SFXC_UTILS="no"
 if test $USE_GSL = "yes"; then
   if test $USE_FFTW3 = "yes"; then
-      WITH_SFXC_UTILS="yes"
-      if test $USE_MPI = "yes"; then
-        WITH_SFXC="yes"
-      fi
+    WITH_SFXC_UTILS="yes"
+    if test $USE_MPI = "yes"; then
+      WITH_SFXC="yes"
+    fi
   fi
 fi
-
+ 
 if test $USE_FFTW3 = "no"; then
       WITH_GENDELAY="no"
 fi
 if test $USE_GSL = "no"; then
-      WITH_GENDELAY="no"
+     WITH_GENDELAY="no"
 fi
 
 

@@ -1,6 +1,7 @@
 #include "correlation_core.h"
 #include "output_header.h"
 #include <utils.h>
+#include <ipps.h>
 
 Correlation_core::Correlation_core(int swap_)
     : current_fft(0), total_ffts(0), swap(swap_), check_input_elements(true){
@@ -67,6 +68,15 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
 
   size_t prev_size_of_fft = size_of_fft();
   correlation_parameters = parameters;
+
+  if (input_elements.size() != number_input_streams_in_use())
+    input_elements.resize(number_input_streams_in_use());
+
+  if (input_conj_buffers.size() != number_input_streams_in_use()) {
+    input_conj_buffers.resize(number_input_streams_in_use());
+    for(int i=0;i<number_input_streams_in_use();i++)
+        input_conj_buffers[i].resize(size_of_fft()/2+1);
+  }
 
   number_ffts_in_integration =
     Control_parameters::nr_ffts_per_integration_slice(
@@ -174,17 +184,18 @@ void Correlation_core::integration_initialise() {
 }
 
 void Correlation_core::integration_step() {
-  if (input_elements.size() != number_input_streams_in_use()) {
-    input_elements.resize(number_input_streams_in_use());
-  }
   if(check_input_elements){
     for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++) {
       if(!input_elements[i].valid()) 
         input_elements[i].set(&input_buffers[i]->front().data()[0],
-                              input_buffers[i]->front().data().size());
+                               input_buffers[i]->front().data().size());
     }
     check_input_elements=false;
   }
+  // get the complex conjugates of the input
+  for (int i=0; i<number_input_streams_in_use(); i++) 
+    IPPS_CONJ_FC((IPP_CPLX_FLOAT*)&input_elements[i][0], (IPP_CPLX_FLOAT*)&(input_conj_buffers[i])[0], size_of_fft()/2+1);
+
 
 #ifndef DUMMY_CORRELATION
   // do the correlation
@@ -192,8 +203,9 @@ void Correlation_core::integration_step() {
     // Auto correlations
     std::pair<size_t,size_t> &stations = baselines[i];
     SFXC_ASSERT(stations.first == stations.second);
-    auto_correlate_baseline(/* in1 */ &input_elements[stations.first][0],
-                            /* out */ &accumulation_buffers[i][0]);
+    correlate_baseline(/* in1 */  &input_elements[stations.first][0],
+                       /* in2 */  &input_conj_buffers[stations.first][0],
+                       /* out */ &accumulation_buffers[i][0]);
   }
 
   for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
@@ -201,7 +213,7 @@ void Correlation_core::integration_step() {
     std::pair<size_t,size_t> &stations = baselines[i];
     SFXC_ASSERT(stations.first != stations.second);
     correlate_baseline(/* in1 */  &input_elements[stations.first][0],
-                       /* in2 */  &input_elements[stations.second][0],
+                       /* in2 */  &input_conj_buffers[stations.second][0],
                        /* out */ &accumulation_buffers[i][0]);
   }
 
@@ -271,7 +283,7 @@ void Correlation_core::integration_step() {
 void Correlation_core::integration_average() {
   std::vector<FLOAT> norms;
   norms.resize(n_stations());
-  for (size_t i=0; i<norms.size(); i++) norms[i] = 0;
+  IPPS_ZERO_F((IPP_FLOAT*)&norms[0],n_stations());
 
   // Average the auto correlations
   for (size_t station=0; station < n_stations(); station++) {
@@ -412,6 +424,7 @@ void
 Correlation_core::
 auto_correlate_baseline(std::complex<FLOAT> in[],
                         std::complex<FLOAT> out[]) {
+  // FOR IPP VERSION USE correlate_baseline INSTEAD OF THIS FUNCTION
   int size = size_of_fft()/2+1;
   for (int i=0; i<size; i++) {
     out[i] += (in[i].real()*in[i].real() +
@@ -425,9 +438,7 @@ correlate_baseline(std::complex<FLOAT> in1[],
                    std::complex<FLOAT> in2[],
                    std::complex<FLOAT> out[]) {
   int size = size_of_fft()/2+1;
-  for (int i=0; i<size; i++) {
-    out[i] += in1[i]*std::conj(in2[i]);
-  }
+  ippsAddProduct_32fc((IPP_CPLX_FLOAT*)in1,(IPP_CPLX_FLOAT*)in2,(IPP_CPLX_FLOAT*)out,size);
 }
 
 void Correlation_core::add_uvw_table(int sn, Uvw_model &table) {

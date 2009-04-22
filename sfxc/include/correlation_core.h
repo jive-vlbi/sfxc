@@ -108,8 +108,10 @@ private:
 private:
   std::vector<Input_buffer_ptr>  input_buffers;
   // Used in integration_step(), avoids contruction and destroying the vectors
-  std::vector< simple_it< Input_data, std::complex<FLOAT> > >    input_elements;
-
+  std::vector< simple_it< Input_data, std::complex<FLOAT> > >  input_elements;
+  // the complex conjugate of input_elements
+  std::vector< Input_data >                                    input_conj_buffers; 
+  
   Correlation_parameters                               correlation_parameters;
 
   std::vector< Complex_buffer >                        accumulation_buffers;

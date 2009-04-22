@@ -13,6 +13,8 @@
 #include <boost/shared_ptr.hpp>
 #include <complex>
 #include <fftw3.h>
+#include <ipps.h>
+#include <ippvm.h>
 
 #include "delay_correction_base.h"
 #include "tasklet/tasklet.h"
@@ -40,8 +42,9 @@ private:
 
 private:
 
-  FFTW_PLAN       plan_t2f;
-
+  IPPS_FFTSPEC_C_FC   *plan_t2f;
+  std::vector<Ipp8u> buffer_t2f;
+  std::vector< std::complex<FLOAT> > exp_array;
 };
 
 #endif /*DELAY_CORRECTION_SWAPPED_H*/

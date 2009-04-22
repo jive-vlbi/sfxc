@@ -13,6 +13,8 @@
 #include <boost/shared_ptr.hpp>
 #include <complex>
 #include <fftw3.h>
+#include <ipps.h>
+#include <ippvm.h>
 
 #include "delay_correction_base.h"
 #include "tasklet/tasklet.h"
@@ -39,7 +41,11 @@ private:
   void fringe_stopping(FLOAT output[]);
 
 private:
-  FFTW_PLAN       plan_t2f, plan_f2t, plan_t2f_cor;
+  IPPS_FFTSPEC_R_F  *plan_t2f, *plan_t2f_cor;
+  IPPS_FFTSPEC_C_FC *plan_f2t;
+  std::vector<Ipp8u> buffer_t2f, buffer_t2f_cor, buffer_f2t;
+  std::vector< std::complex<FLOAT> > exp_array;
+  
   Memory_pool_vector_element<FLOAT >                 plan_input_buffer;
   Memory_pool_vector_element< std::complex<FLOAT> >  plan_output_buffer;
 
