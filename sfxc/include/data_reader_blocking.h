@@ -39,7 +39,6 @@ public:
   bool can_read();
 
   static size_t get_bytes_s(Data_reader* reader, size_t size, char* buffer);
-  static size_t get_bytes_s(Data_reader* reader, size_t size, char* buffer, int scaling);
 
 private:
   size_t do_get_bytes(size_t size, char* buffer);
