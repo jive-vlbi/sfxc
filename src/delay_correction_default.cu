@@ -25,7 +25,7 @@ void Delay_correction_default::do_task() {
   int input_size = input->data.size()*8/correlation_parameters.bits_per_sample;
   int nbuffer=input_size/number_channels();
 
-  cudaMalloc((void**)&time_buffer,sizeof(cufftComplex)*
+  cudaMalloc((void**)&time_buffer,sizeof(cufftReal)*
           n_ffts_per_integration*(size_of_fft()/2 + 1));
   cudaMalloc((void**)&frequency_buffer,sizeof(cufftComplex)); //FIXME
 

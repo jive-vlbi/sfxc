@@ -66,8 +66,8 @@ void Delay_correction_base::get_invalid(const Input_buffer_element &input, int b
   }
 }
 
-void Delay_correction_base::bit2float(const Input_buffer_element &input, int buf_nr, cufftComplex *output_buffer_) {
-  cufftComplex *output_buffer = output_buffer_;
+void Delay_correction_base::bit2float(const Input_buffer_element &input, int buf_nr, cufftReal *output_buffer_) {
+  cufftReal *output_buffer = output_buffer_;
   int start=buf_nr*number_channels()*correlation_parameters.bits_per_sample/8;
   unsigned char *input_data = &input->data[start];
 
@@ -75,7 +75,7 @@ void Delay_correction_base::bit2float(const Input_buffer_element &input, int buf
     // First byte:
     cudaMemcpy(output_buffer,
            &lookup_table[(int)input_data[0]][(int)input->delay],
-           (4-input->delay)*sizeof(FLOAT),
+           (4-input->delay)*sizeof(cufftReal),
            cudaMemcpyHostToDevice);
     output_buffer += 4-input->delay;
 
@@ -83,14 +83,14 @@ void Delay_correction_base::bit2float(const Input_buffer_element &input, int buf
     for (int byte = 1; byte < size; byte++) {
       cudaMemcpy(output_buffer, // byte * 4
              &lookup_table[(int)input_data[byte]][0],
-             4*sizeof(FLOAT),
+             4*sizeof(cufftReal),
              cudaMemcpyHostToDevice);
       output_buffer += 4;
     }
     // Last byte:
     cudaMemcpy(output_buffer,
            &lookup_table[(int)(unsigned char)input_data[size]][0],
-           input->delay*sizeof(FLOAT),
+           input->delay*sizeof(cufftReal),
            cudaMemcpyHostToDevice);
   }
   else { // 1 bit samples
@@ -98,7 +98,7 @@ void Delay_correction_base::bit2float(const Input_buffer_element &input, int buf
     // First byte:
     cudaMemcpy(output_buffer,
            &lookup_table_1bit[(int)input_data[0]][(int)input->delay],
-           (8-input->delay)*sizeof(FLOAT),
+           (8-input->delay)*sizeof(cufftReal),
            cudaMemcpyHostToDevice);
     output_buffer += 8-input->delay;
 
@@ -106,7 +106,7 @@ void Delay_correction_base::bit2float(const Input_buffer_element &input, int buf
     for (int byte = 1; byte < size; byte++) {
       cudaMemcpy(output_buffer, // byte * 4
              &lookup_table_1bit[(int)input_data[byte]][0],
-             8*sizeof(FLOAT),
+             8*sizeof(cufftReal),
              cudaMemcpyHostToDevice);
       output_buffer += 8;
     }
@@ -114,7 +114,7 @@ void Delay_correction_base::bit2float(const Input_buffer_element &input, int buf
     // Last byte:
     cudaMemcpy(output_buffer,
            &lookup_table_1bit[(int)(unsigned char)input_data[size]][0],
-           input->delay*sizeof(FLOAT),
+           input->delay*sizeof(cufftReal),
            cudaMemcpyHostToDevice);
   }
   #ifdef SFXC_INVALIDATE_SAMPLES
