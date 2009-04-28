@@ -1,5 +1,5 @@
 import struct, os, time, datetime
-import simplejson, glob
+import simplejson, glob, sys
 import TranslationNode_vex as vextools
 
 SEEK_BEG = 0
@@ -69,14 +69,17 @@ class Mark5Emulator(object):
         return self.vex['SCHED'][scan]['start']
     def getChunksByTime(self, oFilename, chunk_start, chunk_end):
         dtdt = datetime.datetime.fromtimestamp
+        starttime, endtime = dtdt(chunk_start), dtdt(chunk_end)
+        result = []
         for h in self.handlers:
-            print "Get chunks by time", dtdt(chunk_start), dtdt(chunk_end), h.reftime, h.tinterval
-            if (h.reftime < dtdt(chunk_start) and dtdt(chunk_end) < h.endtime):
+            print >>sys.stderr, "Get chunks by time", starttime, endtime, h.reftime, h.tinterval
+            if (h.reftime <= starttime and endtime <= h.endtime):
                 break
         else:
-            raise RuntimeError, "Chunk not inside a scan: %s, %s, %s" % (str(self.handlers),
-                                                                        dtdt(chunk_start),
-                                                                        dtdt(chunk_end))
+            raise RuntimeError, ("Chunk not inside a scan: "
+                                 "chunkstart %s, chunkend %s, "
+                                 "first data %s, last data %s" % (starttime, endtime,
+                                                               h[0].reftime, h[-1].endtime))
         return h.getChunksByTime(oFilename, chunk_start, chunk_end)
     def disconnect(self):
         pass
@@ -103,13 +106,13 @@ class Mark5ScanHandler(object):
                 count += 1
             else:
                 if count > 31:
-                    print "Count:", count
+                    print >>sys.stderr, "Count:", count
                     self.f.seek(-1, SEEK_CUR)
                     break
                 count = 0
         wordsize, rem = divmod(count, 32)
         if rem != 0:
-            print "Correcting byte alignment"
+            print >>sys.stderr, "Correcting byte alignment"
             self.f.seek(-wordsize, SEEK_CUR)
         self.f.seek(-wordsize*(64+32), SEEK_CUR)
         self.state = 'startOfHeader'
@@ -184,4 +187,4 @@ class Mark5ScanHandler(object):
 if __name__=="__main__":
     m = Mark5Emulator("n08c1", "wb", "")
     h = m.handlers[0]
-    print h.reftime, h.tinterval
+    print >>sys.stderr, h.reftime, h.tinterval
