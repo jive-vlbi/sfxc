@@ -102,6 +102,9 @@ do_task() {
     data_writer.writer->set_size_dataslice(-1);
     data_writer.writer->activate();
     data_writer.active = true;
+    // Set the current time to the beginning of the integration slice
+    _current_time = ((_current_time+time_fft)/integration_time)*integration_time;
+
     DEBUG_MSG("FETCHING FOR A NEW WRITER......");
   }
 
@@ -208,6 +211,7 @@ set_parameters(const Input_node_parameters &input_param) {
   fftsize = input_param.number_channels*bits_per_sample/8; // size of one fft window in bytes
   time_fft = (((int64_t)input_param.number_channels)*1000000)/sample_rate;
   time_per_byte=(((int64_t)(8/bits_per_sample))*1000000)/sample_rate;
+  integration_time = input_param.integr_time*1000;
 }
 
 // Empty the input queue, called from the destructor of Input_node

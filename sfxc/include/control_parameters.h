@@ -6,6 +6,7 @@
 #include <vex/Vex++.h>
 #include <list>
 #include <algorithm>
+#include <math.h>
 #include "utils.h"
 
 
@@ -208,7 +209,7 @@ public:
   (int integration_time,
    int data_rate,
    int number_channels) {
-    return (integration_time * (data_rate / 1000) / number_channels);
+    return ceil((integration_time * (data_rate / 1000) * 1.0 / number_channels));
   }
 
   /**

@@ -91,6 +91,7 @@ private:
   int fftsize;
   int time_fft;
   int64_t time_per_byte;
+  int integration_time;
 
   /// The queue storing all the delays
   Threadsafe_queue<Delay_memory_pool_element> delays_;
