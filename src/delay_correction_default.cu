@@ -99,7 +99,7 @@ void Delay_correction_default::fractional_bit_shift(cufftReal *input,
     //MSS                      &input[0],
     //MSS                      frequency_buffer_fftw);
     // Element 0 and number_channels()/2 are real numbers
-    for (size_t i=1; i<number_channels()/2; i++) {
+    for (int i=1; i<number_channels()/2; i++) {
       // This avoids the assignment of the real part
       frequency_buffer_fftw[i][1] = -frequency_buffer_fftw[i][1];
     }
@@ -110,7 +110,7 @@ void Delay_correction_default::fractional_bit_shift(cufftReal *input,
   frequency_buffer[number_channels()/2] *= 0.5;//Nyquist frequency
 
   // 4c) zero the unused subband (?)
-  for (size_t i=number_channels()/2+1; i<number_channels(); i++) {
+  for (int i=number_channels()/2+1; i<number_channels(); i++) {
     frequency_buffer[i] = 0.0;
   }
 
@@ -194,7 +194,7 @@ void Delay_correction_default::fringe_stopping(FLOAT output[]) {
   cos_phi = cos(phi);
 #endif
 
-  for (size_t i=0; i<number_channels(); i++) {
+  for (int i=0; i<number_channels(); i++) {
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     // 7)subtract dopplers and put real part in Bufs for the current segment
     output[i] =
