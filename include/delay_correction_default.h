@@ -34,7 +34,7 @@ public:
 
 private:
   ///
-  void fractional_bit_shift(FLOAT input[],
+  void fractional_bit_shift(cufftReal* input,
                             int integer_shift,
                             FLOAT fractional_delay);
   void fringe_stopping(FLOAT output[]);

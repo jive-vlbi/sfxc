@@ -73,8 +73,8 @@ void Delay_correction_default::do_task() {
     }
 
     cufftExecR2C(plan_t2f_cor,
-            (cufftReal *)time_buffer,
-            time_buffer);
+            time_buffer,
+            (cufftComplex *)time_buffer);
     //MSS FFTW_EXECUTE_DFT_R2C(plan_t2f_cor,
     //MSS                      (FLOAT *)&time_buffer[0],
     //MSS                      (FFTW_COMPLEX *)output.buffer());
@@ -86,7 +86,7 @@ void Delay_correction_default::do_task() {
   output_buffer->push(cur_output);
 }
 
-void Delay_correction_default::fractional_bit_shift(cufftComplex *input,
+void Delay_correction_default::fractional_bit_shift(cufftReal *input,
     int integer_shift,
     FLOAT fractional_delay) {
   // 3) execute the complex to complex FFT, from Time to Frequency domain
@@ -94,7 +94,7 @@ void Delay_correction_default::fractional_bit_shift(cufftComplex *input,
   {
     //DM replaced: FFTW_EXECUTE_DFT(plan_t2f, (FFTW_COMPLEX *)output, (FFTW_COMPLEX *)output);
     cufftComplex *frequency_buffer_fftw = frequency_buffer;
-    cufftExecR2C(plan_t2f, (cufftReal *)input, frequency_buffer_fftw);
+    cufftExecR2C(plan_t2f, input, frequency_buffer_fftw);
     //MSS FFTW_EXECUTE_DFT_R2C(plan_t2f,
     //MSS                      &input[0],
     //MSS                      frequency_buffer_fftw);
