@@ -101,7 +101,7 @@ void Delay_correction_default::fractional_bit_shift(cufftReal *input,
     // Element 0 and number_channels()/2 are real numbers
     for (int i=1; i<number_channels()/2; i++) {
       // This avoids the assignment of the real part
-      frequency_buffer_fftw[i][1] = -frequency_buffer_fftw[i][1];
+      frequency_buffer_fftw[i].y = -frequency_buffer_fftw[i].y;
     }
     total_ffts++;
   }
