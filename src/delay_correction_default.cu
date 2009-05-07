@@ -113,7 +113,8 @@ void Delay_correction_default::fractional_bit_shift(cufftReal *input,
 
   // 4c) zero the unused subband (?)
   for (int i=number_channels()/2+1; i<number_channels(); i++) {
-    frequency_buffer[i] = 0.0;
+    frequency_buffer[i].x = 0.0;
+    frequency_buffer[i].y = 0.0;
   }
 
   // 5a)calculate the fract bit shift (=phase corrections in freq domain)
@@ -145,7 +146,13 @@ void Delay_correction_default::fractional_bit_shift(cufftReal *input,
   for (int i = 0; i < size; i++) {
     // the following should be double
 
-    frequency_buffer[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
+    float a,b;
+    a = (frequency_buffer[i].x * cos_phi) - (frequency_buffer[i].y * sin_phi);
+    b = (frequency_buffer[i].x * sin_phi) + (frequency_buffer[i].y * cos_phi);
+    frequency_buffer[i].x = a;
+    frequency_buffer[i].y = b;
+    // frequency_buffer[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
+
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     temp=sin_phi-(a*sin_phi-b*cos_phi);
     cos_phi=cos_phi-(a*cos_phi+b*sin_phi);
@@ -199,8 +206,7 @@ void Delay_correction_default::fringe_stopping(FLOAT output[]) {
   for (int i=0; i<number_channels(); i++) {
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     // 7)subtract dopplers and put real part in Bufs for the current segment
-    output[i] =
-      frequency_buffer[i].real()*cos_phi - frequency_buffer[i].imag()*sin_phi;
+    output[i] = frequency_buffer[i].x*cos_phi - frequency_buffer[i].y*sin_phi;
 
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     temp=sin_phi-(a*sin_phi-b*cos_phi);
