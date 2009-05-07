@@ -106,8 +106,10 @@ void Delay_correction_default::fractional_bit_shift(cufftReal *input,
     total_ffts++;
   }
 
-  frequency_buffer[0] *= 0.5;
-  frequency_buffer[number_channels()/2] *= 0.5;//Nyquist frequency
+  frequency_buffer[0].x *= 0.5;
+  frequency_buffer[0].y *= 0.5;
+  frequency_buffer[number_channels()/2].x *= 0.5;//Nyquist frequency
+  frequency_buffer[number_channels()/2].y *= 0.5;//Nyquist frequency
 
   // 4c) zero the unused subband (?)
   for (int i=number_channels()/2+1; i<number_channels(); i++) {
