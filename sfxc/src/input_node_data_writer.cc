@@ -131,7 +131,7 @@ do_task() {
 
   if(byte_offset <= -INPUT_NODE_PACKET_SIZE){
     //The requested output lies completely before the input data, send invalid data
-    data_to_write = INPUT_NODE_PACKET_SIZE;
+    data_to_write = std::min(INPUT_NODE_PACKET_SIZE, data_writer.slice_size+1);
     int invalid_start=0, nr_inv_samples=data_to_write*8/bits_per_sample, delay=0;
     write_header(writer,data_to_write, invalid_start, nr_inv_samples, delay);
     write_random_data(writer,data_to_write);
