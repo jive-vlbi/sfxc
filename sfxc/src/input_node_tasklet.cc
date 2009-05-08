@@ -208,23 +208,22 @@ Input_node_tasklet::get_delays(uint64_t start_time, uint64_t stop_time,
 {
   // TODO: this can be implemented much more efficiently
   int nffts=(stop_time-start_time)/delta_time;
-  int ndelays=1;
   uint64_t cur_time=start_time+delta_time/2;
   Delay old_delay, new_delay;
-  delay_list.data().resize(nffts);
   old_delay=get_delay(cur_time);
-  delay_list.data()[0]=old_delay;
+  delay_list.data().resize(0);
+  delay_list.data().push_back(old_delay);
 
   for(int i=1;i<nffts;i++){
     cur_time+=delta_time;
     new_delay=get_delay(cur_time);
     if((new_delay.bytes!=old_delay.bytes)||
        (new_delay.remaining_samples!=old_delay.remaining_samples)){
-      delay_list.data()[ndelays++]=new_delay;
+      delay_list.data().push_back(new_delay);
       old_delay=new_delay;
     }
   }
-  delay_list.data().resize(ndelays);
+  std::cout << "ndelays = " << delay_list.data().size();
 }
 
 Delay
