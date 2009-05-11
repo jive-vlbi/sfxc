@@ -223,7 +223,6 @@ Input_node_tasklet::get_delays(uint64_t start_time, uint64_t stop_time,
       old_delay=new_delay;
     }
   }
-  std::cout << "ndelays = " << delay_list.data().size();
 }
 
 Delay
