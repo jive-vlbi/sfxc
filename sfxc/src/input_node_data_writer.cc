@@ -102,6 +102,9 @@ do_task() {
     data_writer.writer->set_size_dataslice(-1);
     data_writer.writer->activate();
     data_writer.active = true;
+    // Set the current time to the beginning of the integration slice
+    _current_time = ((_current_time+time_fft)/integration_time)*integration_time;
+
     DEBUG_MSG("FETCHING FOR A NEW WRITER......");
   }
 
@@ -128,7 +131,7 @@ do_task() {
 
   if(byte_offset <= -INPUT_NODE_PACKET_SIZE){
     //The requested output lies completely before the input data, send invalid data
-    data_to_write = INPUT_NODE_PACKET_SIZE;
+    data_to_write = std::min(INPUT_NODE_PACKET_SIZE, data_writer.slice_size+1);
     int invalid_start=0, nr_inv_samples=data_to_write*8/bits_per_sample, delay=0;
     write_header(writer,data_to_write, invalid_start, nr_inv_samples, delay);
     write_random_data(writer,data_to_write);
@@ -208,6 +211,7 @@ set_parameters(const Input_node_parameters &input_param) {
   fftsize = input_param.number_channels*bits_per_sample/8; // size of one fft window in bytes
   time_fft = (((int64_t)input_param.number_channels)*1000000)/sample_rate;
   time_per_byte=(((int64_t)(8/bits_per_sample))*1000000)/sample_rate;
+  integration_time = input_param.integr_time*1000;
 }
 
 // Empty the input queue, called from the destructor of Input_node

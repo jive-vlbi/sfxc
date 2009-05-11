@@ -52,6 +52,7 @@ public:
   //calculate the delay for the delayType at time in microseconds
   // delay is in seconds
   double delay(int64_t time);
+  double rate(int64_t time);
 
   /// A spline only interpolates one scan.
   /// This functions preprocesses the spline for the next scan.
