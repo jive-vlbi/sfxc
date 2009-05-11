@@ -25,10 +25,6 @@ void Delay_correction_default::do_task() {
   int input_size = input->data.size()*8/correlation_parameters.bits_per_sample;
   int nbuffer=input_size/number_channels();
 
-  cudaMalloc((void**)&time_buffer,sizeof(cufftReal)*
-          n_ffts_per_integration*(size_of_fft()/2 + 1));
-  cudaMalloc((void**)&frequency_buffer,sizeof(cufftComplex)); //FIXME
-
   // Allocate output buffer
   cur_output=output_memory_pool.allocate();
   if(cur_output.data().size() != nbuffer){
@@ -47,8 +43,8 @@ void Delay_correction_default::do_task() {
     // A factor of 2 for padding
     if (output.size() != 2*n_channels)
       output.resize(n_channels*2);
-    if (time_buffer.size() != 2*n_channels)
-      time_buffer.resize(n_channels*2);
+// MSS    if (time_buffer.size() != 2*n_channels)
+// MSS      time_buffer.resize(n_channels*2);
 
     //convert the input samples to floating point
     bit2float(input, buf, time_buffer);
@@ -74,7 +70,7 @@ void Delay_correction_default::do_task() {
 
     cufftExecR2C(plan_t2f_cor,
             time_buffer,
-            (cufftComplex *)time_buffer);
+            (cufftComplex *)time_buffer); //FIXME Should be output.buffer()?
     //MSS FFTW_EXECUTE_DFT_R2C(plan_t2f_cor,
     //MSS                      (FLOAT *)&time_buffer[0],
     //MSS                      (FFTW_COMPLEX *)output.buffer());
@@ -228,7 +224,11 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
   SFXC_ASSERT((((int64_t)number_channels())*1000000000)%sample_rate() == 0);
 
   if (prev_number_channels != number_channels()) {
-    frequency_buffer.resize(number_channels());
+
+// MSS    frequency_buffer.resize(number_channels());
+    cudaMalloc((void**)&time_buffer,sizeof(cufftReal)*number_channels()*2);
+    cudaMalloc((void**)&frequency_buffer,
+            sizeof(cufftComplex)*number_channels());
 
     Memory_pool_vector_element<FLOAT> input_buffer;
     input_buffer.resize(number_channels());
@@ -252,7 +252,7 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
 // MSS                                  (FFTW_COMPLEX *)plan_output_buffer.buffer(),
 // MSS                                  FFTW_MEASURE);
   }
-  SFXC_ASSERT(frequency_buffer.size() == number_channels());
+// MSS  SFXC_ASSERT(frequency_buffer.size() == number_channels());
 
   n_ffts_per_integration =
     Control_parameters::nr_ffts_per_integration_slice(
