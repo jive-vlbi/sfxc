@@ -142,11 +142,11 @@ void Delay_correction_default::fractional_bit_shift(cufftReal *input,
   for (int i = 0; i < size; i++) {
     // the following should be double
 
-    float a,b;
-    a = (frequency_buffer[i].x * cos_phi) - (frequency_buffer[i].y * sin_phi);
-    b = (frequency_buffer[i].x * sin_phi) + (frequency_buffer[i].y * cos_phi);
-    frequency_buffer[i].x = a;
-    frequency_buffer[i].y = b;
+    float c,d;
+    c = (frequency_buffer[i].x * cos_phi) - (frequency_buffer[i].y * sin_phi);
+    d = (frequency_buffer[i].x * sin_phi) + (frequency_buffer[i].y * cos_phi);
+    frequency_buffer[i].x = c;
+    frequency_buffer[i].y = d;
     // frequency_buffer[i] *= std::complex<FLOAT>(cos_phi,sin_phi);
 
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
