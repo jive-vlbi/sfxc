@@ -10,9 +10,11 @@ const FLOAT sample_value_m[]  = {
                                   -5, 5
                                 };
 
-Delay_correction_base::Delay_correction_base()
+Delay_correction_base::Delay_correction_base(int stream_nr)
     : output_buffer(Output_buffer_ptr(new Output_buffer())),
-      output_memory_pool(64),current_time(-1), delay_table_set(false) {
+      output_memory_pool(64),current_time(-1), delay_table_set(false),
+      stream_nr(stream_nr)
+{
   // Lookup tables used in the bit2float conversion
   for (int i=0; i<256; i++) {
     lookup_table[i][0] = sample_value_ms[(i>>6) & 3];
@@ -68,17 +70,17 @@ void Delay_correction_base::get_invalid(const Input_buffer_element &input, int b
 
 void Delay_correction_base::bit2float(const Input_buffer_element &input, int buf_nr, FLOAT *output_buffer_) {
   FLOAT *output_buffer = output_buffer_;
-  int start=buf_nr*number_channels()*correlation_parameters.bits_per_sample/8;
+  int start = buf_nr * (number_channels() * bits_per_sample) / 8;
   unsigned char *input_data = &input->data[start];
 
-  if (correlation_parameters.bits_per_sample == 2) {
+  if (bits_per_sample == 2) {
     // First byte:
     memcpy(output_buffer,
            &lookup_table[(int)input_data[0]][(int)input->delay],
            (4-input->delay)*sizeof(FLOAT));
     output_buffer += 4-input->delay;
 
-    int size=number_channels()*correlation_parameters.bits_per_sample/8;
+    int size = (number_channels() * bits_per_sample) / 8;
     for (int byte = 1; byte < size; byte++) {
       memcpy(output_buffer, // byte * 4
              &lookup_table[(int)input_data[byte]][0],
@@ -91,14 +93,14 @@ void Delay_correction_base::bit2float(const Input_buffer_element &input, int buf
            input->delay*sizeof(FLOAT));
   }
   else { // 1 bit samples
-    SFXC_ASSERT(correlation_parameters.bits_per_sample == 1);
+    SFXC_ASSERT(bits_per_sample == 1);
     // First byte:
     memcpy(output_buffer,
            &lookup_table_1bit[(int)input_data[0]][(int)input->delay],
            (8-input->delay)*sizeof(FLOAT));
     output_buffer += 8-input->delay;
 
-    int size=number_channels()*correlation_parameters.bits_per_sample/8;
+    int size = (number_channels() * bits_per_sample) / 8;
     for (int byte = 1; byte < size; byte++) {
       memcpy(output_buffer, // byte * 4
              &lookup_table_1bit[(int)input_data[byte]][0],

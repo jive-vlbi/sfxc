@@ -39,7 +39,7 @@ public:
   typedef Correlator_node_types::ComplexFloat_queue_ptr    Output_buffer_ptr;
   typedef Output_buffer::value_type                        Output_buffer_element;
 
-  Delay_correction_base();
+  Delay_correction_base(int stream_nr);
   virtual ~Delay_correction_base();
 
   /// Get the output
@@ -82,6 +82,8 @@ private:
 
   int64_t             current_time; // In microseconds
   Correlation_parameters correlation_parameters;
+  int	stream_nr;
+  int	bits_per_sample;
 
   int n_ffts_per_integration, current_fft, total_ffts;
   int nfft_max; // The maximum number of fft's in an input frame

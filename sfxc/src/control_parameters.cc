@@ -333,35 +333,17 @@ int Control_parameters::message_level() const {
 }
 
 int
-Control_parameters::bits_per_sample() const {
-  Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"]->begin();
+Control_parameters::bits_per_sample(const std::string &mode,
+				    const std::string &station) const
+{
+  const std::string &track_name = get_vex().get_track(mode, station);
+
+  Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
   int bits = 1;
   for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
        fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
     if (fanout_def_it[2]->to_string() == "mag") {
       bits = 2;
-    }
-  }
-
-  // NGHK: still a hack, assumes all samples use the same number of bits
-  // Checking the precondition here
-  for (track = vex.get_root_node()["TRACKS"]->begin();
-       track != vex.get_root_node()["TRACKS"]->end(); ++track) {
-    std::map<std::string, int> result;
-    // set all channels to zero:
-    for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
-         fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
-      result[fanout_def_it[1]->to_string()] = 0;
-    }
-    // Count the number of bits
-    for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
-         fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
-      result[fanout_def_it[1]->to_string()] += 1;
-    }
-
-    for (std::map<std::string, int>::iterator it = result.begin();
-         it != result.end(); it++) {
-      SFXC_ASSERT(it->second == bits);
     }
   }
 
@@ -515,7 +497,7 @@ get_mark5b_tracks(const std::string &mode,
                   Input_node_parameters &input_parameters) const {
   const Vex::Node &root=get_vex().get_root_node();
   // Find the number of bits per sample
-  int bits_per_sample_ = bits_per_sample();
+  int bits_per_sample_ = bits_per_sample(mode, station);
 
   std::string bbc = "NO BBC FOUND";
   { // Find the bbc
@@ -988,9 +970,6 @@ get_correlation_parameters(const std::string &scan_name,
   corr_param.sample_rate =
     (int)(1000000*freq["sample_rate"]->to_double_amount("Ms/sec"));
 
-  // assumes the same bits per sample for all stations
-  corr_param.bits_per_sample = bits_per_sample();
-
   corr_param.sideband = ' ';
   std::string freq_temp;
   for (Vex::Node::const_iterator ch_it = freq->begin("chan_def");
@@ -1091,6 +1070,7 @@ get_correlation_parameters(const std::string &scan_name,
         station_param.station_stream = station_nr_it->second;
         station_param.start_time = station[1]->to_int_amount("sec");
         station_param.stop_time = station[2]->to_int_amount("sec");
+	station_param.bits_per_sample = bits_per_sample(mode_name, station[0]->to_string());
         corr_param.station_streams.push_back(station_param);
       }
     }
@@ -1278,8 +1258,6 @@ Correlation_parameters::operator==(const Correlation_parameters& other) const {
 
   if (sample_rate != other.sample_rate)
     return false;
-  if (bits_per_sample != other.bits_per_sample)
-    return false;
 
   if (channel_freq != other.channel_freq)
     return false;
@@ -1303,7 +1281,6 @@ std::ostream &operator<<(std::ostream &out,
   out << "  \"slice_nr\": " << param.slice_nr << ", " << std::endl;
   out << "  \"slice_offset\": " << param.slice_offset << ", " << std::endl;
   out << "  \"sample_rate\": " << param.sample_rate << ", " << std::endl;
-  out << "  \"bits_per_sample\": " << param.bits_per_sample << ", " << std::endl;
   out << "  \"channel_freq\": " << param.channel_freq << ", " << std::endl;
   out << "  \"bandwidth\": " << param.bandwidth<< ", " << std::endl;
   out << "  \"sideband\": " << param.sideband << ", " << std::endl;
@@ -1317,6 +1294,7 @@ std::ostream &operator<<(std::ostream &out,
     out << "{ \"stream\" : " <<param.station_streams[i].station_stream
     << ", \"start\" : " <<param.station_streams[i].start_time
     << ", \"stop\" : " <<param.station_streams[i].stop_time
+    << ",  \"bits_per_sample\": " << param.station_streams[i].bits_per_sample
     << " }";
   }
   out << "] }" << std::endl;

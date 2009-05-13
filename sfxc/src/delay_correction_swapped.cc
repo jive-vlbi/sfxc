@@ -2,8 +2,9 @@
 
 #include "config.h"
 
-Delay_correction_swapped::
-Delay_correction_swapped(): Delay_correction_base(){
+Delay_correction_swapped::Delay_correction_swapped(int stream_nr)
+  : Delay_correction_base(stream_nr)
+{
 }
 
 void Delay_correction_swapped::do_task() {
@@ -11,7 +12,7 @@ void Delay_correction_swapped::do_task() {
   SFXC_ASSERT(current_time >= 0);
 
   Input_buffer_element &input = input_buffer->front();
-  int input_size = input->data.size()*8/correlation_parameters.bits_per_sample;
+  int input_size = (input->data.size() * 8) / bits_per_sample;
   int nbuffer=input_size/number_channels();
   current_fft+=nbuffer;
 
@@ -172,7 +173,8 @@ void
 Delay_correction_swapped::set_parameters(const Correlation_parameters &parameters) {
   size_t prev_number_channels = number_channels();
   correlation_parameters = parameters;
-  int fft_size = parameters.number_channels*parameters.bits_per_sample/8;
+  bits_per_sample = correlation_parameters.station_streams[stream_nr].bits_per_sample;
+  int fft_size = (parameters.number_channels * bits_per_sample) / 8;
   nfft_max = INPUT_NODE_PACKET_SIZE/fft_size;
 
   current_time = parameters.start_time*(int64_t)1000;

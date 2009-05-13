@@ -201,9 +201,9 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
     }
 
     if(swap==0)
-      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default());
+      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default(stream_nr));
     else
-      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_swapped());
+      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_swapped(stream_nr));
     // Connect the delay_correction to the bits2float_converter
     delay_modules[stream_nr]->connect_to(reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
     delay_modules[stream_nr]->flag=1;
@@ -286,17 +286,8 @@ Correlator_node::set_parameters() {
   const Correlation_parameters &parameters =
     integration_slices_queue.front();
 
-  int size_input_slice =
-    Control_parameters::nr_bytes_per_integration_slice_input_node_to_correlator_node
-    (parameters.integration_time,
-     parameters.sample_rate,
-     parameters.bits_per_sample,
-     parameters.number_channels);
-
   SFXC_ASSERT(((parameters.stop_time-parameters.start_time) /
                parameters.integration_time) == 1);
-
-  SFXC_ASSERT(size_input_slice > 0);
 
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {

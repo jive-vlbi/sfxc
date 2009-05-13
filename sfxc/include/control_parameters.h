@@ -64,7 +64,7 @@ public:
   Correlation_parameters()
       : start_time(0), stop_time(0), integration_time(0),
       number_channels(0), integration_nr(-1), slice_nr(-1), slice_offset(-1),
-      sample_rate(0), bits_per_sample(0), channel_freq(0), bandwidth(0),
+      sample_rate(0), channel_freq(0), bandwidth(0),
       sideband('n'), channel_nr(0), polarisation('n') {}
 
 
@@ -81,6 +81,7 @@ public:
     int32_t station_stream; // input stream (from multiple_data_readers)
     int32_t start_time;     // Start and stop time for the station
     int32_t stop_time;
+    int32_t bits_per_sample;
   };
 
   typedef std::vector<Station_parameters> Station_list;
@@ -97,7 +98,6 @@ public:
   // between one integration slice and the next
   // in case of subsecond integrations
   int32_t sample_rate;      // #Samples per second
-  int32_t bits_per_sample;  // For all stations equal
   int64_t channel_freq;     // Center frequency of the band in Hz
   int32_t bandwidth;        // Bandwidth of the channel in Hz
   char    sideband;         // U or L
@@ -162,7 +162,7 @@ public:
   /****************************************************/
   /* Get functions from the vex file:                 */
   /****************************************************/
-  int bits_per_sample() const;
+  int bits_per_sample(const std::string& mode, const std::string& station) const;
 
   std::string scan(int i) const;
   int scan(const Date &date) const;

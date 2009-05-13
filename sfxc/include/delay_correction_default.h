@@ -24,7 +24,7 @@
 
 class Delay_correction_default : public Delay_correction_base {
 public:
-  Delay_correction_default();
+  Delay_correction_default(int stream_nr);
   ~Delay_correction_default(){};
 
   void set_parameters(const Correlation_parameters &parameters);

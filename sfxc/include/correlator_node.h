@@ -103,7 +103,7 @@ class Reader_thread : public Thread {
 
     struct job {
       int number_ffts_in_integration;
-      int bits_per_sample;
+      std::vector<int> bits_per_sample;
       int number_channels;
       int station_streams_size;
     };
@@ -199,7 +199,7 @@ class Reader_thread : public Thread {
 
           bit_sample_readers_[i]->set_parameters(
             jb.number_ffts_in_integration,
-            jb.bits_per_sample,
+            jb.bits_per_sample[i],
             jb.number_channels
           );
           num_reading_++;
@@ -217,7 +217,8 @@ class Reader_thread : public Thread {
         (parameters.integration_time,
          parameters.sample_rate,
          parameters.number_channels);
-      jb.bits_per_sample = parameters.bits_per_sample;
+      for(int i = 0; i < parameters.station_streams.size(); i++)
+	jb.bits_per_sample.push_back(parameters.station_streams[i].bits_per_sample);
       jb.number_channels = parameters.number_channels;
       jb.station_streams_size = parameters.station_streams.size();
 
