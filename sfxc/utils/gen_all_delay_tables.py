@@ -39,7 +39,7 @@ def gen_table(vex_file, ctrl_file):
   if not ctrl.has_key("stations"):
     print "Control file does not have a stations field"
     exit(0)
-  experiment_name = os.path.splitext(os.path.basename(vex_file))[0]
+  experiment_name = ctrl["exper_name"]
   
   for s in ctrl["stations"]:
     delay_file = delay_directory + "/" + experiment_name.upper() + "_" + s + ".del"
