@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <algorithm>
+#include <stdio.h>
 
 #include "vex/Vex++.h"
 

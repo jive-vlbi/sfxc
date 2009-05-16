@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <dlfcn.h>
+#include <stdio.h>
 #include "exception_common.h"
 #include "channel_extractor_dynamic.h"
 #include "channel_extractor_utils.h"

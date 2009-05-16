@@ -18,6 +18,7 @@ class QOS_MonitorLatency;
 #include <cassert>
 #include <iostream>
 #include <fstream>
+#include <stdint.h>
 
 // Those two are needed for getusec()
 # include <unistd.h>
