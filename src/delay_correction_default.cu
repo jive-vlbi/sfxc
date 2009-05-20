@@ -77,7 +77,8 @@ void Delay_correction_default::do_task() {
     //MSS                      (FFTW_COMPLEX *)output.buffer());
     
     for (int i = 0; i < output.size(); i++) {
-        output[i] = complex(gpu_output_buffer[i].x,gpu_output_buffer[i].y);
+        output[i] = complex<float>(gpu_output_buffer[i].x,
+                gpu_output_buffer[i].y);
     }
     total_ffts++;
 #endif // DUMMY_CORRELATION
