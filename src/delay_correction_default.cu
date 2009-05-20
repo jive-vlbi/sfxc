@@ -76,7 +76,7 @@ void Delay_correction_default::do_task() {
     //MSS                      (FLOAT *)&time_buffer[0],
     //MSS                      (FFTW_COMPLEX *)output.buffer());
     
-    for (i = 0; i < output.size(); i++) {
+    for (int i = 0; i < output.size(); i++) {
         output[i] = complex(gpu_output_buffer[i].x,gpu_output_buffer[i].y);
     }
     total_ffts++;
