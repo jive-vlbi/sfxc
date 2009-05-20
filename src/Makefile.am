@@ -38,7 +38,6 @@ OBJ=\
   correlation_core.cc \
   delay_correction_base.cu \
   delay_correction_default.cu \
-#  delay_correction_swapped.cc \
   uvw_model.cc \
   channel_extractor_tasklet.cc \
   channel_extractor_brute_force.cc \
