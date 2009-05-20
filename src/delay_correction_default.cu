@@ -70,11 +70,15 @@ void Delay_correction_default::do_task() {
 
     cufftExecR2C(plan_t2f_cor,
             time_buffer,
-            (cufftComplex *)time_buffer); //FIXME Should be output.buffer()?
+            gpu_output_buffer); 
+
     //MSS FFTW_EXECUTE_DFT_R2C(plan_t2f_cor,
     //MSS                      (FLOAT *)&time_buffer[0],
     //MSS                      (FFTW_COMPLEX *)output.buffer());
-
+    
+    for (i = 0; i < output.size(); i++) {
+        output[i] = complex(gpu_output_buffer[i].x,gpu_output_buffer[i].y);
+    }
     total_ffts++;
 #endif // DUMMY_CORRELATION
   }
@@ -227,6 +231,8 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
 
 // MSS    frequency_buffer.resize(number_channels());
     cudaMalloc((void**)&time_buffer,sizeof(cufftReal)*number_channels()*2);
+    cudaMalloc((void**)&gpu_output_buffer,
+            sizeof(cufftComplex)*number_channels()*2);
     cudaMalloc((void**)&frequency_buffer,
             sizeof(cufftComplex)*number_channels());
 

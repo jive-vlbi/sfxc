@@ -90,6 +90,7 @@ private:
   Delay_table_akima   delay_table;
 
   cufftComplex *frequency_buffer;
+  cufftComplex *gpu_output_buffer;
   cufftReal *time_buffer;
 
   Timer delay_timer;
