@@ -1266,7 +1266,7 @@ Correlation_parameters::operator==(const Correlation_parameters& other) const {
   if (sideband != other.sideband)
     return false;
 
-  if (station_streams != station_streams)
+  if (station_streams != other.station_streams)
     return false;
   return true;
 }
