@@ -1,6 +1,5 @@
 #include <fstream>
 #include "fringe_info.h"
-#include "control_parameters.h"
 
 #define MAX_SNR_VALUE 8
 #define MIN_SNR_VALUE 3
@@ -270,10 +269,35 @@ Fringe_info_container::read_plots(bool stop_at_eof) {
   }
 }
 
+bool
+Fringe_info_container::get_frequencies(const Vex &vex, Date &start_time, std::vector<double> &frequencies)
+{
+  std::string mode;
+  Vex::Node root_node = vex.get_root_node();
+  for(Vex::Node::iterator it = root_node["SCHED"]->begin();it!=root_node["SCHED"]->end();it++)
+  {
+    if((start_time>=vex.start_of_scan(it.key()))&&(start_time<vex.stop_of_scan(it.key()))){
+      mode = it["mode"]->to_string();
+    }
+  }
+  Vex::Node::iterator mode_it = root_node["MODE"][mode];
+  std::string freq_mode = mode_it->begin("FREQ")[0]->to_string();
+  std::set<double> freq_set;
+  for (Vex::Node::iterator chan_it = root_node["FREQ"][freq_mode]->begin("chan_def");
+       chan_it != root_node["FREQ"][freq_mode]->end("chan_def"); ++chan_it) {
+    freq_set.insert((*chan_it)[1]->to_double_amount("MHz")*1000000);
+  }
+
+  frequencies.resize(0);
+  for (std::set<double>::iterator freq_it = freq_set.begin();
+       freq_it != freq_set.end(); freq_it++) {
+    frequencies.push_back(*freq_it);
+  }
+  return true;
+}
+
 void
 Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
-  typedef Control_parameters::Date Date;
-
   // Array with the station names
   std::vector<std::string> stations;
 
@@ -286,8 +310,6 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
        it != root_node["STATION"]->end(); it++) {
     stations.push_back(it.key());
   }
-
-  vex.get_frequencies(frequencies);
 
   std::ofstream index_html("index2.html");
   assert(index_html.is_open());
@@ -313,6 +335,9 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
   double integration_time = pow(2, global_header.integration_time);
   double sec = (global_header.start_time +
                 integration_time * first_timeslice_header.integration_slice);
+
+  Date start_time(global_header.start_year, global_header.start_day, (int) sec);
+  get_frequencies(vex, start_time, frequencies);
 
   index_html << " Integration time: "
              << integration_time << "s"
