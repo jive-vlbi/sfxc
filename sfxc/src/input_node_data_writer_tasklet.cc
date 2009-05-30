@@ -63,7 +63,7 @@ void Input_node_data_writer_tasklet::do_execute()
     }
   }
 	timer_.stop();
-
+  empty_input_queue();
 }
 
 /*****************************************************************************
