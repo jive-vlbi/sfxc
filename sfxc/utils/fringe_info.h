@@ -70,7 +70,9 @@ public:
 private:
   void read_data_from_file(int to_read, char * data, bool stop_at_eof);
 
-  bool get_frequencies(const Vex &vex, Date &start_time, std::vector<double> &frequencies);
+  bool get_frequencies(const Vex &vex, std::string &mode, std::vector<double> &frequencies);
+  void get_bbc(const Vex &vex, std::vector<std::string> &stations, std::string &mode,
+               std::vector< std::vector<int> > &bbcs);
 
   void set_plot(const Fringe_info &fringe_info);
 
@@ -83,7 +85,7 @@ private:
                          const Fringe_info::VALUE value);
 
   void print_auto(std::ostream &index_html,
-                  const Fringe_info &fringe_info);
+                  const Fringe_info &fringe_info, int bbc);
 
   void print_cross(std::ostream &index_html,
                    const Fringe_info &fringe_info);
