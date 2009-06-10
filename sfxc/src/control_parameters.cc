@@ -1095,10 +1095,13 @@ get_delay_table_name(const std::string &station_name) const {
                           "file://",7) == 0,
                   "Delay directory doesn't start with 'file://'"
                  );
-  std::string delay_table_name =
-    std::string(ctrl["delay_directory"].asString().c_str()+7) +
-    "/" + ctrl["exper_name"].asString() +
-    "_" +station_name + ".del";
+  std::string delay_table_name;
+  if(ctrl["delay_directory"].asString().size()==7)
+    // delay files are in the current directory
+    delay_table_name = ctrl["exper_name"].asString() + "_" +station_name + ".del";
+  else
+    delay_table_name = std::string(ctrl["delay_directory"].asString().c_str()+7) +
+                       "/" + ctrl["exper_name"].asString() + "_" +station_name + ".del";
   if (access(delay_table_name.c_str(), R_OK) == 0) {
     return delay_table_name;
   }
