@@ -24,7 +24,7 @@
 
 class Delay_correction_swapped : public Delay_correction_base {
 public:
-  Delay_correction_swapped();
+  Delay_correction_swapped(int stream_nr);
   ~Delay_correction_swapped(){};
 
   void set_parameters(const Correlation_parameters &parameters);

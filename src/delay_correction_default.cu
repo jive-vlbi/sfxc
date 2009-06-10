@@ -1,29 +1,19 @@
 #include "delay_correction_default.h"
 #include "config.h"
 
-Delay_correction_default::
-Delay_correction_default(): Delay_correction_base(){
+Delay_correction_default::Delay_correction_default(int stream_nr)
+  : Delay_correction_base(stream_nr) 
+{
 }
 
 void Delay_correction_default::do_task() {
   SFXC_ASSERT(has_work());
   SFXC_ASSERT(current_time >= 0);
 
-  if (n_ffts_per_integration == current_fft) {
-    SFXC_ASSERT(current_time/correlation_parameters.integration_time !=
-                (current_time+length_of_one_fft())/correlation_parameters.integration_time);
-
-    current_time =
-      ((current_time+length_of_one_fft()) /
-       correlation_parameters.integration_time)*
-      correlation_parameters.integration_time;
-    current_fft = 0;
-  }
-  current_fft++;
-
   Input_buffer_element &input = input_buffer->front();
-  int input_size = input->data.size()*8/correlation_parameters.bits_per_sample;
+  int input_size = (input->data.size() * 8) / bits_per_sample;
   int nbuffer=input_size/number_channels();
+  current_fft+=nbuffer;
 
   // Allocate output buffer
   cur_output=output_memory_pool.allocate();
@@ -113,7 +103,7 @@ void Delay_correction_default::fractional_bit_shift(cufftReal *input,
   frequency_buffer[number_channels()/2].y *= 0.5;//Nyquist frequency
 
   // 4c) zero the unused subband (?)
-  for (int i=number_channels()/2+1; i<number_channels(); i++) {
+  for (size_t i=number_channels()/2+1; i<number_channels(); i++) {
     frequency_buffer[i].x = 0.0;
     frequency_buffer[i].y = 0.0;
   }
@@ -204,7 +194,7 @@ void Delay_correction_default::fringe_stopping(FLOAT output[]) {
   cos_phi = cos(phi);
 #endif
 
-  for (int i=0; i<number_channels(); i++) {
+  for (size_t i=0; i<number_channels(); i++) {
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     // 7)subtract dopplers and put real part in Bufs for the current segment
     output[i] = frequency_buffer[i].x*cos_phi - frequency_buffer[i].y*sin_phi;
@@ -221,7 +211,8 @@ void
 Delay_correction_default::set_parameters(const Correlation_parameters &parameters) {
   size_t prev_number_channels = number_channels();
   correlation_parameters = parameters;
-  int fft_size = parameters.number_channels*parameters.bits_per_sample/8;
+  bits_per_sample = correlation_parameters.station_streams[stream_nr].bits_per_sample;
+  int fft_size = (parameters.number_channels * bits_per_sample) / 8;
   nfft_max = INPUT_NODE_PACKET_SIZE/fft_size;
 
   current_time = parameters.start_time*(int64_t)1000;

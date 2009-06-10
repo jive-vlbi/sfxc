@@ -54,10 +54,10 @@ public:
   typedef Input_stream_priority_map::value_type     Input_stream_priority_map_value;
 
   // Output types
-  typedef Single_data_writer_controller::value_type  output_value_type;
-  typedef Single_data_writer_controller::Memory_pool Output_memory_pool;
-  typedef Single_data_writer_controller::Queue       Output_queue;
-  typedef Single_data_writer_controller::Queue_ptr   Output_queue_ptr;
+  typedef Single_data_writer_controller::value_type         output_value_type;
+  typedef Single_data_writer_controller::Writer_memory_pool Output_memory_pool;
+  typedef Single_data_writer_controller::Queue              Output_queue;
+  typedef Single_data_writer_controller::Queue_ptr          Output_queue_ptr;
 
   /**
    * Manages the input from one correlator node. The input stream is

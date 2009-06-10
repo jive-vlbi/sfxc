@@ -158,6 +158,20 @@ double Delay_table_akima::delay(int64_t time) {
   return result;
 }
 
+double Delay_table_akima::rate(int64_t time) {
+  if (times.empty()) {
+    DEBUG_MSG("times.empty()");
+    SFXC_ASSERT(!times.empty());
+  }
+  while (times[end_scan-1] < time) {
+    bool result = initialise_next_scan();
+    SFXC_ASSERT(result);
+  }
+  SFXC_ASSERT(splineakima != NULL);
+  double result = gsl_spline_eval_deriv (splineakima, time, acc);
+  return result;
+}
+
 int64_t Delay_table_akima::start_time_scan() {
   SFXC_ASSERT(begin_scan<times.size());
   return (int64_t)times[begin_scan];

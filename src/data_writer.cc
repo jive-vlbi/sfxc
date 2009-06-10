@@ -12,7 +12,7 @@
 
 #include <netinet/in.h>
 
-Data_writer::Data_writer() : _data_counter(0), data_slice(-1) {}
+Data_writer::Data_writer() : _data_counter(0), data_slice(-1), active(false) {}
 
 Data_writer::~Data_writer() {}
 
@@ -49,6 +49,19 @@ Data_writer::get_size_dataslice() {
 bool
 Data_writer::end_of_dataslice() {
   return data_slice == 0;
+}
+
+bool Data_writer::activate(){
+  if(active)
+    return false;
+  active=true;
+  return true;
+}
+void Data_writer::deactivate(){
+  active=false;
+}
+bool Data_writer::is_active(){
+  return active;
 }
 
 Data_writer& operator<<(Data_writer& dr, const std::string& str) {

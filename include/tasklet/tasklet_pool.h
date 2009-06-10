@@ -12,7 +12,7 @@
 class Tasklet;
 class Tasklet_worker;
 
-typedef enum {TASK_AVAILABLE,  NO_TASK_AVAILABLE, NO_MORE_TASK};
+enum {TASK_AVAILABLE,  NO_TASK_AVAILABLE, NO_MORE_TASK};
 
 //
 // A tasklet pool contains a set of

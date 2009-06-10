@@ -36,13 +36,13 @@ public:
   void reset_data_counter();
 
 
-  /** Sets the size of the data slice to read.
+  /** Sets the size of the data slice to write.
       - -1: Don't use the dataslice counter
       - 0: End of data slice
       - >0: Number of bytes to read in the current dataslice
    **/
   void set_size_dataslice(int data_size);
-  /** Gets the size of the data slice to read.
+  /** Gets the size of the data slice to write.
       - -1: The dataslice counter is not in use
       - 0: End of data slice
       - >0: Number of bytes to read in the current dataslice
@@ -55,6 +55,12 @@ public:
   /** returns whether we can write at least 1 byte **/
   virtual bool can_write() = 0;
 
+  /** Mark the data writer as active (currently writing data), returns false if already active **/
+  bool activate();
+  void deactivate();
+  /** check whether the data writer is currently active **/
+  bool is_active();
+
 private:
   /** Function that actually writes the data to the output device.
   **/
@@ -62,6 +68,8 @@ private:
 
   uint64_t _data_counter;
   int data_slice;
+  bool active; // Flag that indicates if data writer is currently in use
+
 };
 
 Data_writer& operator<<(Data_writer& dr, const std::string& str);

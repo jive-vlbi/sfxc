@@ -34,7 +34,7 @@ public:
 
   typedef boost::shared_ptr<Data_reader>          Data_reader_ptr;
 
-  typedef Reader2buffer::Memory_pool                 Memory_pool;
+  typedef Reader2buffer::Reader_memory_pool          Reader_memory_pool;
   typedef Reader2buffer::value_type                  value_type;
   typedef Reader2buffer::Queue                       Queue;
   typedef Reader2buffer::Queue_ptr                   Queue_ptr;

@@ -16,6 +16,8 @@ import re
 cfile = """
 #include <cassert>
 #include <iostream>
+#include <string.h>
+#include <stdint.h>
 #include "../include/channel_extractor_interface.h"
 #include "../include/channel_extractor_utils.h"
 @dynamic_header@

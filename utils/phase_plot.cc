@@ -2,8 +2,10 @@
 #include <iostream>
 #include <complex>
 #include <assert.h>
+#include <cstdlib>
 #include <fftw3.h>
 #include <output_header.h>
+
 
 //Writes out the phase of the fringe for every timeslice
 //Each row contains the phases for every baseline, in the order that they occur 

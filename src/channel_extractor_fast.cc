@@ -22,7 +22,7 @@
 #include <iostream>
 #include "channel_extractor_fast.h"
 #include "channel_extractor_utils.h"
-
+#include <cstring>
 
 // We use a lot of template to enforce all of this
 // to be consider constant by the compiler

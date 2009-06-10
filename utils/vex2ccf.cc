@@ -1,5 +1,5 @@
 #include <assert.h>
-#include <string>
+#include <cstring>
 #include <stdio.h>
 #include <fstream>
 #include <set>

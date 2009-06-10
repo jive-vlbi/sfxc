@@ -23,14 +23,22 @@
 #include "sfxc_mpi.h"
 
 int RANK_OF_NODE = -1; // Rank of the current node
-void abort_sfxc(const char *file, int line, const char* message) {
+void abort_sfxc(const char *file, int line, const char* message) 
+{
   std::cout << "#" << RANK_OF_NODE << " "
   << file << ", l" << line
   << ", Assertion failed: " << message << std::endl;
 
-  int32_t msg=0;
-  MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
-           MPI_TAG_ASSERTION_RAISED, MPI_COMM_WORLD);
+  int numtasks;
+  // get the number of tasks set at commandline (= number of processors)
+  MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
+  for (int i=0; i<numtasks; i++) {
+    if (i!=RANK_OF_NODE) {
+      int32_t msg=1; // 1 means error
+      MPI_Send(&msg, 1, MPI_INT32, i,
+               MPI_TAG_END_NODE, MPI_COMM_WORLD);
+    }
+  }
 
   // Close this node
   MPI_Barrier( MPI_COMM_WORLD );
@@ -38,6 +46,7 @@ void abort_sfxc(const char *file, int line, const char* message) {
 
   exit(-1);
 }
+
 #else
 int RANK_OF_NODE = getpid(); // Rank of the current node
 #endif // USE_MPI

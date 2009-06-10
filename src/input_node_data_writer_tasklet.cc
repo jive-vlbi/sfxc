@@ -143,7 +143,6 @@ void
 Input_node_data_writer_tasklet::add_time_interval(uint64_t start, uint64_t stop) {
   for (size_t i=0; i<data_writers_.size(); i++)
     data_writers_[i]->add_time_interval(start, stop);
-  data_writers_[0]->flag=1;
 }
 
 /*****************************************************************************

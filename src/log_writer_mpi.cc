@@ -14,6 +14,7 @@
 #include <fstream>
 #include <time.h>
 #include <sys/timeb.h>
+#include <cstring>
 
 class Log_writer_mpi_buffer : public Log_writer_buffer {
 public:

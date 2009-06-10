@@ -200,7 +200,7 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
                            boost::shared_ptr<Delay_correction_base>());
     }
 
-    delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default());
+    delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default(stream_nr));
 // MSS    if(swap==0)
 // MSS      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default());
 // MSS    else
@@ -287,17 +287,8 @@ Correlator_node::set_parameters() {
   const Correlation_parameters &parameters =
     integration_slices_queue.front();
 
-  int size_input_slice =
-    Control_parameters::nr_bytes_per_integration_slice_input_node_to_correlator_node
-    (parameters.integration_time,
-     parameters.sample_rate,
-     parameters.bits_per_sample,
-     parameters.number_channels);
-
   SFXC_ASSERT(((parameters.stop_time-parameters.start_time) /
                parameters.integration_time) == 1);
-
-  SFXC_ASSERT(size_input_slice > 0);
 
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {

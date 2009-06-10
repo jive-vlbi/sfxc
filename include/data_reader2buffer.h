@@ -27,8 +27,8 @@ class Data_reader2buffer {
   typedef Data_reader2buffer<T> Self;
 public:
   typedef T                                          data_type;
-  typedef Memory_pool<data_type>                     Memory_pool;
-  typedef typename Memory_pool::value_type           pool_type;
+  typedef Memory_pool<data_type>                     Reader_memory_pool;
+  typedef typename Reader_memory_pool::value_type    pool_type;
   struct value_type {
     int       actual_size;
     pool_type data;
@@ -65,11 +65,11 @@ private:
   static void *start_reading(void *);
   void read();
 private:
-  Data_reader_ptr data_reader;
-  Memory_pool     memory_pool;
-  Queue_ptr       queue;
-  State           state;
-  pthread_t       io_thread;
+  Data_reader_ptr     data_reader;
+  Reader_memory_pool  memory_pool;
+  Queue_ptr           queue;
+  State               state;
+  pthread_t           io_thread;
 
   pthread_mutex_t mutex_for_set_state;
 };

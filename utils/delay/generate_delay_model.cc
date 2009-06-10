@@ -15,9 +15,10 @@
 */
 
 #include <iostream>
-#include <string>
+#include <cstring>
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <fstream>
 #include <vector>
 #include <time.h>

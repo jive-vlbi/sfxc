@@ -48,7 +48,7 @@ private:
 };
 
 void find_add( std::vector<Action> *v, int channel, int value, int shift);
-void find_add( std::vector<Action>& v, int channel, int value, int shift);
+//void find_add( std::vector<Action>& v, int channel, int value, int shift);
 int compute_span_out(const std::vector< std::vector<int> > &track_positions);
 
 

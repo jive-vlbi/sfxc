@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 #include "thread.h"
 #include "tasklet/tasklet.h"
 #include "tasklet/tasklet_worker.h"

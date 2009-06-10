@@ -17,7 +17,7 @@
 #include <iostream>
 
 Log_node::Log_node(int rank, int nNodes)
-    : Node(rank), log_node_ctrl(*this, nNodes) {
+    : Node(rank), log_node_ctrl(*this, nNodes), running(true) {
   get_log_writer()(1) << "Log_node()" << std::endl;
   add_controller(&log_node_ctrl);
 
@@ -41,13 +41,14 @@ Log_node::~Log_node() {
 }
 
 void Log_node::start() {
-  while (!log_node_ctrl.ready()) {
+  while ((!log_node_ctrl.ready()) && running) {
     check_and_process_message();
   }
   //DEBUG_MSG("Log node is terminate.");
 }
 
 void Log_node::terminate() {
+  running=false;
   DEBUG_MSG("Log node terminate.");
 }
 
