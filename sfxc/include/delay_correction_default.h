@@ -12,7 +12,6 @@
 #define DELAY_CORRECTION_DEFAULT_H
 #include <boost/shared_ptr.hpp>
 #include <complex>
-#include <cufft.h>
 #include <fftw3.h>
 
 #include "delay_correction_base.h"
@@ -34,14 +33,13 @@ public:
 
 private:
   ///
-  void fractional_bit_shift(cufftReal* input,
+  void fractional_bit_shift(FLOAT input[],
                             int integer_shift,
                             FLOAT fractional_delay);
   void fringe_stopping(FLOAT output[]);
 
 private:
-  cufftHandle       plan_t2f, plan_f2t, plan_t2f_cor;
-  //MSS FFTW_PLAN       plan_t2f, plan_f2t, plan_t2f_cor;
+  FFTW_PLAN       plan_t2f, plan_f2t, plan_t2f_cor;
   Memory_pool_vector_element<FLOAT >                 plan_input_buffer;
   Memory_pool_vector_element< std::complex<FLOAT> >  plan_output_buffer;
 

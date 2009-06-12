@@ -1,12 +1,8 @@
 AM_CXXFLAGS = $(SFXC_CXXFLAGS)
 LDADD = $(SFXC_LDADD)
-LDADD += -lcudart -lcufft
-
-.cu.o:
-	nvcc -c $@ $< -I.. -I/usr/local/cuda/include -I../include -g -DSFXC_PRINT_DEBUG -DPRINT_PROGRESS -DUSE_MPI -I../lib/common/src -I../lib/containers/src -I../lib/netlib/src -I../lib/testunit/src -I../lib/jsoncpp/include -I../lib/vex_parser/install/include -L/usr/local/cuda/lib -L../lib/testunit -L../lib/netlib -L../lib/containers -L../lib/common -L../lib/jsoncpp -L../lib/vex_parser/install/lib
 
 if SFXC
-bin_PROGRAMS = sfxc_cuda
+bin_PROGRAMS = sfxc
 endif
 
 TESTS = test_sfxc.py
@@ -36,8 +32,9 @@ OBJ=\
   log_writer.cc log_writer_cout.cc \
   log_writer_file.cc \
   correlation_core.cc \
-  delay_correction_base.cu \
-  delay_correction_default.cu \
+  delay_correction_base.cc \
+  delay_correction_default.cc \
+  delay_correction_swapped.cc \
   uvw_model.cc \
   channel_extractor_tasklet.cc \
   channel_extractor_brute_force.cc \
@@ -49,7 +46,7 @@ OBJ=\
   tasklet/tasklet_pool.cc \
   tasklet/tasklet_worker.cc
 
-sfxc_cuda_SOURCES = $(OBJ) sfxc.cc \
+sfxc_SOURCES = $(OBJ) sfxc.cc \
   node.cc manager_node.cc log_node.cc \
   correlator_node.cc input_node.cc output_node.cc \
   controller.cc input_node_controller.cc output_node_controller.cc \
@@ -68,7 +65,7 @@ sfxc_cuda_SOURCES = $(OBJ) sfxc.cc \
   output_header.cc \
   svn_version.cc 
 
-sfxc_cuda_DEPENDENCIES = update_svn_version svn_version.$(OBJEXT)
+sfxc_DEPENDENCIES = update_svn_version svn_version.$(OBJEXT)
 
 svn_version.cc: update_svn_version
 

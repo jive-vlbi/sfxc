@@ -12,8 +12,7 @@
 #define DELAY_CORRECTION_BASE_H
 #include <boost/shared_ptr.hpp>
 #include <complex>
-// #include <fftw3.h>
-#include <cufft.h>
+#include <fftw3.h>
 
 #include "tasklet/tasklet.h"
 #include "delay_table_akima.h"
@@ -64,7 +63,7 @@ public:
   }
 private:
   ///
-  void bit2float(const Input_buffer_element &input, int buf_nr, cufftReal *output_buffer);
+  void bit2float(const Input_buffer_element &input, int buf_nr, FLOAT *output_buffer);
   void get_invalid(const Input_buffer_element &input, int buf_nr, int &invalid_start, int &nr_invalid);
 
 private:
@@ -83,16 +82,16 @@ private:
 
   int64_t             current_time; // In microseconds
   Correlation_parameters correlation_parameters;
-  int stream_nr;
-  int bits_per_sample;
+  int	stream_nr;
+  int	bits_per_sample;
+
   int n_ffts_per_integration, current_fft, total_ffts;
   int nfft_max; // The maximum number of fft's in an input frame
   bool delay_table_set;
   Delay_table_akima   delay_table;
 
-  cufftComplex *frequency_buffer;
-  cufftComplex *gpu_output_buffer;
-  cufftReal *time_buffer;
+  Memory_pool_vector_element< std::complex<FLOAT> > frequency_buffer;
+  std::vector< FLOAT > time_buffer;
 
   Timer delay_timer;
 

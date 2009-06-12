@@ -200,11 +200,10 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
                            boost::shared_ptr<Delay_correction_base>());
     }
 
-    delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default(stream_nr));
-// MSS    if(swap==0)
-// MSS      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default());
-// MSS    else
-// MSS      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_swapped());
+    if(swap==0)
+      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default(stream_nr));
+    else
+      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_swapped(stream_nr));
     // Connect the delay_correction to the bits2float_converter
     delay_modules[stream_nr]->connect_to(reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
     delay_modules[stream_nr]->flag=1;
