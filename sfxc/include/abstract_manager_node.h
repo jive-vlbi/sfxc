@@ -29,8 +29,8 @@ class Connexion_params
  **/
 class Abstract_manager_node : public Node {
 public:
-  Abstract_manager_node(int rank, int numtasks,
-                        const Control_parameters &param);
+//   Abstract_manager_node(int rank, int numtasks,
+//                         const Control_parameters &param);
   Abstract_manager_node(int rank, int numtasks,
                         Log_writer *writer,
                         const Control_parameters &param);
@@ -113,6 +113,7 @@ public:
                                const std::string &station_name);
   void correlator_node_set_all(Uvw_model &uvw_table,
                                const std::string &station_name);
+  void correlator_node_set_all(Pulsar_parameters &pulsar);
 
   void set_correlator_node_ready(size_t correlator_rank, bool ready=true);
 
@@ -139,6 +140,7 @@ protected:
 
   // Data
   Control_parameters control_parameters;
+  Pulsar_parameters pulsar_parameters;
   int numtasks;
 
   // Map from a station name to the Input_node number

@@ -97,6 +97,31 @@ initialise(const char *ctrl_file, const char *vex_file,
     ctrl["reference_station"] = "";
   }
 
+  if (ctrl["pulsar_binning"] == Json::Value()){
+    ctrl["pulsar_binning"] = false;
+  }else if(ctrl["pulsar_binning"].asBool()==true){
+    // use pulsar binning
+    DEBUG_MSG("Using pulsar binning");
+
+    if (ctrl["pulsars"] == Json::Value())
+      SFXC_ASSERT_MSG(false, "Error : No pulsars block in control file.");
+    Json::Value::iterator it = ctrl["pulsars"].begin();
+    if(*it==Json::Value())
+      SFXC_ASSERT_MSG(false, "Error : Empty pulsars block in control file.");
+    while(it!=ctrl["pulsars"].end()){
+      if((*it)["interval"] == Json::Value()){
+        (*it)["interval"].append(0.0); 
+        (*it)["interval"].append(1.0);
+      }
+      if((*it)["nbins"]==Json::Value()){
+        // If nbins is not set we default to the maxium possible (PULSAR_PERIOD/DURATION_SINGLE_FFT)
+        // signalled by nbins = 0 
+        (*it)["nbins"] = 0;
+      }
+      it++;
+    }
+  }
+
   // Get start date
   start_date = boost::shared_ptr<Vex::Date>(new Date(vex.get_start_time_of_experiment()));
   initialised = true;
@@ -192,9 +217,10 @@ Control_parameters::check(std::ostream &writer) const {
                source_it != data_source_it.end(); ++source_it) {
             std::string filename = create_path((*source_it).asString());
 
-            if (filename.find("file://") != 0 &&
-                filename.find("mark5://") != 0 ) {
-              //               ok = false;
+            if (filename.find("file://")  != 0 &&
+                filename.find("mark5://") != 0 &&
+                filename.find("dnfp://")  !=0) {
+              ok = false;
               writer
               << "Ctrl-file: invalid data source '" << filename << "'"
               << std::endl;
@@ -253,6 +279,70 @@ Control_parameters::check(std::ostream &writer) const {
       writer << "ctrl-file: output file not defined" << std::endl;
     }
   }
+  // Check pulsar binning
+  if (ctrl["pulsar_binning"].asBool()){
+    // use pulsar binning
+    if (ctrl["pulsars"] == Json::Value()){
+      ok=false;
+      writer << "ctrl-file : No pulsars block in control file.\n";
+    }else{
+      Json::Value::const_iterator it = ctrl["pulsars"].begin();
+      if(*it==Json::Value()){
+        ok = false;
+        writer << "ctrl-file : Empty pulsars block in control file.\n";
+      }else{
+        while(it!=ctrl["pulsars"].end()){
+          if((*it)["interval"].size() != 2){
+            ok = false;
+            writer << "ctrl-file : Invalid number of arguments in interval field.\n";
+          }else{
+            Json::Value interval = (*it)["interval"];
+            unsigned int zero=0,one=1; // needed to prevent compilation error
+            if ((interval[zero].asDouble()<0.)||(interval[zero].asDouble()>1)||
+                (interval[one].asDouble()<0.)||(interval[one].asDouble()>1)||
+                (interval[one].asDouble()<interval[zero].asDouble())){
+              ok = false;
+              writer << "ctrl-file : Invalid range in interval field.\n";
+            }
+          }
+          if((*it)["nbins"].asInt() < 0){
+            ok= false;
+            writer << "ctrl-file : Invalid number of bins : " << (*it)["nbins"].asInt()<<".\n";
+          }
+          if((*it)["polyco_file"] == Json::Value()){
+            ok = false;
+            writer << "ctrl-file : No polyco files specified.\n";
+          }else if((*it)["polyco_file"].size() > 1 ){
+            ok = false;
+            writer << "ctrl-file : More than one polyco file specified for a pulsar.\n";
+          } else {
+            std::string filename = create_path((*it)["polyco_file"].asString());
+            if (filename.find("file://") != 0){
+              ok = false;
+              writer << "Ctrl-file: polyco file definition doesn't start with file://  '" << filename << "'\n";
+            }else{
+              // Check whether the file exists
+              std::ifstream in(create_path(filename).c_str()+7);
+              if (!in.is_open()) {
+               ok = false;
+               writer << "Ctrl-file: Could not open polyco file : " << filename << std::endl;
+              }else{
+                writer << "Parsing polyco file : " << filename << "\n";
+                Pulsar_parameters pc(writer);
+                std::vector<Pulsar_parameters::Polyco_params> param;
+                if (!pc.parse_polyco(param, filename.substr(7))){
+                  ok = false;
+                  writer << "Ctrl-file: Error parsing polyco file : " << filename << std::endl;
+                }
+              }
+            }
+          }
+          it++;
+        }
+      }
+    }
+  }
+
   return ok;
 }
 
@@ -332,6 +422,32 @@ int Control_parameters::message_level() const {
   return ctrl["message_level"].asInt();
 }
 
+bool Control_parameters::pulsar_binning() const{
+  return ctrl["pulsar_binning"].asBool();
+}
+
+bool
+Control_parameters::get_pulsar_parameters(Pulsar_parameters &pars) const{
+  if(!pulsar_binning())
+    return false;
+  for(Json::Value::const_iterator it = ctrl["pulsars"].begin();
+      it!=ctrl["pulsars"].end(); it++){
+    std::string name= it.key().asString();
+    Pulsar_parameters::Pulsar newPulsar;
+    if(name.size() > 10)
+      name.resize(10);
+    strcpy(&newPulsar.name[0], name.c_str());
+    newPulsar.nbins = (*it)["nbins"].asInt();
+    unsigned int zero=0, one=1; //needed to prevent compiler error
+    newPulsar.interval.start = (*it)["interval"][zero].asDouble();
+    newPulsar.interval.stop  = (*it)["interval"][one].asDouble();
+    if(!pars.parse_polyco(newPulsar.polyco_params,(*it)["polyco_file"].asString().substr(7)))
+      return false;
+    pars.pulsars.insert(std::pair<std::string,Pulsar_parameters::Pulsar>(name,newPulsar));
+  }
+  return true;
+}
+
 int
 Control_parameters::bits_per_sample(const std::string &mode,
 				    const std::string &station) const
@@ -358,6 +474,11 @@ Control_parameters::scan(int scan_nr) const {
     SFXC_ASSERT(it != vex.get_root_node()["SCHED"]->end());
   }
   return it.key();
+}
+
+std::string
+Control_parameters::scan_source(const std::string &scan) const {
+  return vex.get_root_node()["SCHED"][scan]["source"]->to_string();
 }
 
 int Control_parameters::scan(const Date &date) const {
@@ -1102,6 +1223,7 @@ get_delay_table_name(const std::string &station_name) const {
   else
     delay_table_name = std::string(ctrl["delay_directory"].asString().c_str()+7) +
                        "/" + ctrl["exper_name"].asString() + "_" +station_name + ".del";
+
   if (access(delay_table_name.c_str(), R_OK) == 0) {
     return delay_table_name;
   }
@@ -1319,3 +1441,74 @@ operator==(const Correlation_parameters::Station_parameters& other) const {
   return true;
 }
 
+Pulsar_parameters::Pulsar_parameters(std::ostream& log_writer_):log_writer(log_writer_){
+}
+
+bool 
+Pulsar_parameters::parse_polyco(std::vector<Polyco_params> &param, std::string filename){
+  bool ok=false;
+  std::ifstream inp(filename.c_str());
+  std::string line, temp;
+
+  if(!inp){
+    log_writer << "Could not open polyco file [" <<filename<<"]\n";
+    return false;
+  }
+  int line_nr=0;
+  int coef_idx=0;
+  int n_coef=0;
+  int block_index=0;
+  int end_of_prev_block=0;
+  param.resize(0);
+  std::getline(inp, line);
+  while(!inp.eof()){
+    std::stringstream inpline(line);
+    if(line_nr-end_of_prev_block==0){
+      inpline >> temp;
+      param.resize(block_index+1);
+      strncpy(param[block_index].name,temp.c_str(),11);
+      param[block_index].name[10]=0; // make sure sting is null terminated
+      inpline >> temp;
+      strncpy(param[block_index].date,temp.c_str(),10);
+      param[block_index].date[9]=0; // make sure sting is null terminated
+      inpline >> param[block_index].utc;
+      inpline >> param[block_index].tmid;
+      inpline >> param[block_index].DM;
+      inpline >> param[block_index].doppler;
+      inpline >> param[block_index].residual;
+      ok=false;
+    }else if(line_nr-end_of_prev_block == 1){
+      inpline >> param[block_index].ref_phase;
+      inpline >> param[block_index].ref_freq;
+      inpline >> temp;
+      strncpy(param[block_index].site,temp.c_str(),6);
+      param[block_index].site[5]=0; // make sure sting is null terminated
+      inpline >> param[block_index].data_span;
+      inpline >> param[block_index].n_coef;
+      n_coef = param[block_index].n_coef;
+      param[block_index].coef.resize(n_coef);
+      inpline >> param[block_index].obs_freq;
+      inpline >> param[block_index].bin_phase[0];
+      inpline >> param[block_index].bin_phase[1];
+    }else{
+      while((!inpline.eof())&&(!inpline.fail())&&(coef_idx<n_coef)){
+        inpline >> param[block_index].coef[coef_idx];
+        coef_idx++;
+      }
+      if((!inpline.fail())&&(coef_idx == n_coef)){
+        ok=true;
+        block_index++;
+        coef_idx=0;
+        end_of_prev_block=line_nr+1;
+      }
+    }
+    if(inpline.fail()){
+      log_writer << " Error parsing line " << line_nr << " of polyco file [" << filename << "]\n";
+      return false;
+    }
+    line_nr++;
+    std::getline(inp, line);
+  }
+  if(!ok) log_writer << " Eof reached prematurely while parsing polyco file [" << filename << "]\n";
+  return ok;
+}

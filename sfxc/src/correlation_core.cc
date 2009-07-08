@@ -2,12 +2,8 @@
 #include "output_header.h"
 #include <utils.h>
 
-Correlation_core::Correlation_core(int swap_)
-    : current_fft(0), total_ffts(0), swap(swap_), check_input_elements(true){
-  #ifdef SFXC_WRITE_STATS
-    SFXC_ASSERT_MSG(swap==0,
-                    "SFXC_WRITE_STATS currently doesn't work if swap is set");
-  #endif
+Correlation_core::Correlation_core()
+    : current_fft(0), total_ffts(0), check_input_elements(true){
 }
 
 Correlation_core::~Correlation_core() {
@@ -68,6 +64,20 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   size_t prev_size_of_fft = size_of_fft();
   correlation_parameters = parameters;
 
+  create_baselines(parameters);
+
+#ifdef SFXC_WRITE_STATS
+  backward_buffer.resize(size_of_fft()/2+1);
+  backward_plan_ =
+  FFTW_PLAN_DFT_1D(size_of_fft()/2+1,
+                   reinterpret_cast<FFTW_COMPLEX*>(plan_output_buffer.buffer()),
+                   reinterpret_cast<FFTW_COMPLEX*>(&backward_buffer[0]),
+                   FFTW_BACKWARD,
+                   FFTW_ESTIMATE);
+#endif // SFXC_WRITE_STATS
+}
+void 
+Correlation_core::create_baselines(const Correlation_parameters &parameters){
   number_ffts_in_integration =
     Control_parameters::nr_ffts_per_integration_slice(
       parameters.integration_time,
@@ -127,16 +137,6 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
       }
     }
   }
-
-#ifdef SFXC_WRITE_STATS
-  backward_buffer.resize(size_of_fft()/2+1);
-  backward_plan_ =
-  FFTW_PLAN_DFT_1D(size_of_fft()/2+1,
-                   reinterpret_cast<FFTW_COMPLEX*>(plan_output_buffer.buffer()),
-                   reinterpret_cast<FFTW_COMPLEX*>(&backward_buffer[0]),
-                   FFTW_BACKWARD,
-                   FFTW_ESTIMATE);
-#endif // SFXC_WRITE_STATS
 }
 
 void
@@ -271,7 +271,7 @@ void Correlation_core::integration_step() {
 void Correlation_core::integration_average() {
   std::vector<FLOAT> norms;
   norms.resize(n_stations());
-  for (size_t i=0; i<norms.size(); i++) norms[i] = 0;
+  memset(&norms[0], norms.size()*sizeof(FLOAT), 0);
 
   // Average the auto correlations
   for (size_t station=0; station < n_stations(); station++) {

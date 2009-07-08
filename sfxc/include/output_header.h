@@ -88,6 +88,7 @@ struct Output_header_timeslice {
   int32_t integration_slice; // Integration slice number
   int32_t number_baselines;  // The number of baselines that follow
   int32_t number_uvw_coordinates; // The number of uvw coordinates that follow
+// int32_t polyco_nr; // Index of the polyco file used
 };
 
 struct Output_uvw_coordinates {
@@ -119,6 +120,20 @@ unsigned char frequency_nr:
   char empty;
 };
 
+struct Output_header_polyco {
+  /// All parameters from the polyco file
+  int32_t data_span;        // Data span [minutes]
+  int32_t n_coef;           // The number of coefficients in the polynomial
+  int32_t npblk;            // Nr of blocks(rows) in polyco
+  char nsite[8];            // Observertary code
+  double ref_freq;          // Reference frequency for phase
+  double pred_phs;          // Predicted pulse phase at start of experiment
+  double ref_mjd;           // Reference MJD
+  double ref_phs;           // Reference phase
+  double ref_F0;            // Zero'th order pulsar frequency[Hz]
+  double logfiterr;         // Log_10 of polynomial fit error [periods]
+  double coef[15];          // The polynomial coefficients
+};
 
 std::ostream &
 operator<<(std::ostream &out,

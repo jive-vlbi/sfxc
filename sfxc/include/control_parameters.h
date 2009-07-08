@@ -6,6 +6,7 @@
 #include <vex/Vex++.h>
 #include <list>
 #include <algorithm>
+#include <map>
 #include <math.h>
 #include "utils.h"
 
@@ -58,6 +59,44 @@ public:
 std::ostream &operator<<(std::ostream &out, const Input_node_parameters &param);
 
 
+class Pulsar_parameters {
+public:
+  Pulsar_parameters(std::ostream& log_writer_);
+  /// All parameters from the polyco file
+  struct Polyco_params{
+    char name[11];            // Pulsar name
+    char date[10];            // Date 
+    float utc;                // UTC 
+    double tmid;              // Reference time [mjd]
+    double DM;                // Dispersion measure
+    float doppler;            // Doppler shift due to earth motion (10^-4)
+    float residual;           // Log10 of fit rms residual in periods
+    double ref_phase;         // Reference phase (RPHASE)
+    double ref_freq;          // Reference rotation frequency (F0)
+    char site[6];             // Observatory name
+    int32_t data_span;        // Data span [minutes]
+    int32_t n_coef;           // The number of coefficients in the polynomial
+    double obs_freq;          // Observing frequency
+    float bin_phase[2];        // Binary phase
+    std::vector<double> coef; // The polynomial coefficients
+  };
+
+  struct Pulsar{
+    char name[11];
+    int32_t nbins;
+    struct Interval{double start; double stop;} interval;
+    std::vector<Polyco_params> polyco_params;
+  };
+
+  bool parse_polyco(std::vector<Polyco_params> &param, std::string filename);
+
+  // maps pulsar name to vector of pulsar pa
+  std::map<std::string, Pulsar> pulsars;
+private:
+  std::ostream& log_writer;
+};
+
+
 /** Information about the correlation neede by the correlator node. **/
 class Correlation_parameters {
 public:
@@ -65,7 +104,7 @@ public:
       : start_time(0), stop_time(0), integration_time(0),
       number_channels(0), integration_nr(-1), slice_nr(-1), slice_offset(-1),
       sample_rate(0), channel_freq(0), bandwidth(0),
-      sideband('n'), channel_nr(0), polarisation('n') {}
+      sideband('n'), channel_nr(0), polarisation('n'), pulsar_binning(false) {}
 
 
   bool operator==(const Correlation_parameters& other) const;
@@ -90,6 +129,7 @@ public:
   // Data members
   int32_t start_time;       // Start of the slice in milliseconds
   int32_t stop_time;        // End of the slice in milliseconds
+  int32_t mjd;              // mjd at start of slice
   int32_t integration_time; // In milliseconds
   int32_t number_channels;  // number of frequency channels
   int32_t integration_nr;   // number of the integration
@@ -107,12 +147,14 @@ public:
   bool    cross_polarize;   // do the cross polarisations
   int32_t reference_station;// use a reference station
 
-
   Station_list station_streams; // input streams used
+  char source[11];              // name of the source under observation
+  int32_t pulsar_binning;
+  Pulsar_parameters *pulsar_parameters;
 };
 
-std::ostream &operator<<(std::ostream &out, const Correlation_parameters &param);
 
+std::ostream &operator<<(std::ostream &out, const Correlation_parameters &param);
 
 /** Class containing all control variables needed for the experiment **/
 class Control_parameters {
@@ -129,6 +171,7 @@ public:
                   std::ostream& log_writer);
 
   bool check(std::ostream &log_writer) const;
+  bool get_pulsar_parameters(Pulsar_parameters &pars) const;
 
   /****************************************************/
   /* Get functions from the correlation control file: */
@@ -149,6 +192,8 @@ public:
   int reference_station_number() const;
   std::string experiment() const;
 
+  bool pulsar_binning() const;
+
   std::string get_delay_directory() const;
   std::string get_delay_table_name(const std::string &station_name) const;
   void generate_delay_table(const std::string &station_name,
@@ -166,6 +211,8 @@ public:
 
   std::string scan(int i) const;
   int scan(const Date &date) const;
+  std::string scan_source(const std::string &scan) const;
+
   size_t number_scans() const;
 
 
@@ -279,6 +326,4 @@ private:
   bool        initialised; // The control parameters are initialised
 
 };
-
-
 #endif /*CONTROL_PARAMETERS_H_*/

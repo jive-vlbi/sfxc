@@ -71,7 +71,7 @@ public:
     END_CORRELATING
   };
 
-  Correlator_node(int rank, int nr_corr_node, int swap_);
+  Correlator_node(int rank, int nr_corr_node, int swap_, bool psr_binning);
   ~Correlator_node();
 
   /// The the main_loop of the correlator node.
@@ -243,7 +243,7 @@ private:
   // This reduces the amount of data that has to be Fourier transformed by 25%, but at the cost
   // of some accuracy.
   int swap;
-
+  bool pulsar_binning; // Set to true if pulsar binning is enabled
   Correlator_node_controller       correlator_node_ctrl;
 
   /// The correlator node is connected to each of the input nodes.
@@ -258,7 +258,7 @@ private:
   int nr_corr_node;
 
   std::vector< Delay_correction_ptr >         delay_modules;
-  Correlation_core                            correlation_core;
+  Correlation_core                            *correlation_core;
 
   int n_integration_slice_in_time_slice;
 
@@ -268,6 +268,8 @@ private:
 
   bool isinitialized_;
 
+  // Contains all timing/binning parameters relating to any pulsar in the current experiment
+  Pulsar_parameters pulsar_parameters; 
 #ifdef RUNTIME_STATISTIC
   QOS_MonitorSpeed reader_state_;
   QOS_MonitorSpeed delaycorrection_state_;

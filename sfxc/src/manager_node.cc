@@ -75,7 +75,7 @@ Manager_node(int rank, int numtasks,
       control_parameters.polarisation_type_for_global_output_header();
     output_header.empty[0] = 0;
     output_header.empty[1] = 0;
-
+    
     output_node_set_global_header((char *)&output_header,
                                   sizeof(Output_header_global));
   }
@@ -357,9 +357,10 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   for (int i=0; i<nr_stations; i++) {
     station_name.push_back(get_control_parameters().station(i));
   }
+  std::string scan_name = control_parameters.scan(current_scan);
   correlation_parameters =
     control_parameters.
-    get_correlation_parameters(control_parameters.scan(current_scan),
+    get_correlation_parameters(scan_name,
                                channel_name,
                                station_name,
                                get_input_node_map());
@@ -367,8 +368,20 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     start_time + integration_slice_nr*integration_time();
   correlation_parameters.stop_time  =
     start_time + (integration_slice_nr+1)*integration_time();
+  correlation_parameters.mjd  = mjd(1,1,start_year)+start_day-1;
   correlation_parameters.integration_nr = integration_slice_nr;
   correlation_parameters.slice_nr = output_slice_nr;
+  strncpy(correlation_parameters.source, control_parameters.scan_source(scan_name).c_str(), 11);
+  if(control_parameters.pulsar_binning()){
+    if(pulsar_parameters.pulsars.find(correlation_parameters.source) == pulsar_parameters.pulsars.end()){
+      std::string msg = std::string("Pulsar binning is enabled but current source (" )
+                        + control_parameters.scan_source(scan_name)
+                        + std::string(") is not found in the list of pulsars\n");
+      SFXC_ASSERT_MSG(false, msg.c_str());
+    }
+    correlation_parameters.pulsar_binning = true;
+  }else
+    correlation_parameters.pulsar_binning = false;
 
   correlation_parameters.cross_polarize = (cross_channel != -1);
 
@@ -475,6 +488,12 @@ Manager_node::initialise() {
     uvw_table.open(delay_file.c_str());
 
     correlator_node_set_all(uvw_table, station_name);
+  }
+
+  // If pulsar binning is enabled : get all pulsar parameters (polyco files, etc.)
+  if(control_parameters.pulsar_binning()){
+    SFXC_ASSERT(control_parameters.get_pulsar_parameters(pulsar_parameters));
+    correlator_node_set_all(pulsar_parameters);
   }
 
   Control_parameters::Date start = control_parameters.get_start_time();

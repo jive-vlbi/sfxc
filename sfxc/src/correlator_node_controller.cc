@@ -47,15 +47,22 @@ Correlator_node_controller::process_event(MPI_Status &status) {
       Uvw_model table;
       int sn;
       mpi_transfer.receive(status, table, sn);
-      node.correlation_core.add_uvw_table(sn, table);
+      node.correlation_core->add_uvw_table(sn, table);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_CORR_PARAMETERS: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       Correlation_parameters parameters;
       MPI_Transfer::receive(status, parameters);
-
+      if(parameters.pulsar_binning)
+        parameters.pulsar_parameters = &node.pulsar_parameters;
       node.receive_parameters(parameters);
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+  case MPI_TAG_PULSAR_PARAMETERS: {
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      MPI_Transfer::receive(status, node.pulsar_parameters);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

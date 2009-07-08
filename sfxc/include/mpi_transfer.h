@@ -29,6 +29,9 @@ public:
   static void send(Uvw_model &table, int sn, int rank);
   static void receive(MPI_Status &status, Uvw_model &table, int &sn);
 
+  static void send(Pulsar_parameters &table, int rank);
+  static void receive(MPI_Status &status, Pulsar_parameters &pulsar_param);
+
   static void send(Input_node_parameters &input_node_param, int rank);
   static void receive(MPI_Status &status, Input_node_parameters &input_node_param);
 

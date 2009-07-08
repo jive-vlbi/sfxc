@@ -120,6 +120,7 @@ void start_node(int swap) {
       node.start();
       break;
     }
+  case MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING:
   case MPI_TAG_SET_CORRELATOR_NODE: {
       int32_t msg;
       MPI_Recv(&msg, 1, MPI_INT32,
@@ -133,7 +134,8 @@ void start_node(int swap) {
         gethostname(hostname, 255);
         DEBUG_MSG("Correlator node, hostname = " << hostname);
       }
-      Correlator_node node(rank, msg, swap);
+      bool binning = status.MPI_TAG == MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING;
+      Correlator_node node(rank, msg, swap, binning);
       node.start();
       break;
     }

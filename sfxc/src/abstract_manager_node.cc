@@ -14,14 +14,15 @@
 #include "utils.h"
 #include "exception_common.h"
 
-Abstract_manager_node::
-Abstract_manager_node(int rank, int numtasks, const Control_parameters &param)
-    : Node(rank), control_parameters(param), numtasks(numtasks) {}
+// Abstract_manager_node::
+// Abstract_manager_node(int rank, int numtasks, const Control_parameters &param)
+//     : Node(rank), control_parameters(param), numtasks(numtasks) {}
 Abstract_manager_node::
 Abstract_manager_node(int rank, int numtasks,
                       Log_writer *writer,
                       const Control_parameters &param)
-    : Node(rank, writer), control_parameters(param), numtasks(numtasks) {}
+    : Node(rank, writer), control_parameters(param), numtasks(numtasks), pulsar_parameters(*writer) {
+  }
 Abstract_manager_node::~Abstract_manager_node() {}
 
 
@@ -104,8 +105,12 @@ start_correlator_node(int rank) {
   correlator_node_rank.push_back(rank);
 
   // starting a correlator node
-  MPI_Send(&correlator_node_nr, 1, MPI_INT32, rank,
-           MPI_TAG_SET_CORRELATOR_NODE, MPI_COMM_WORLD);
+  if(control_parameters.pulsar_binning())
+    MPI_Send(&correlator_node_nr, 1, MPI_INT32, rank,
+             MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING, MPI_COMM_WORLD);
+  else
+    MPI_Send(&correlator_node_nr, 1, MPI_INT32, rank,
+             MPI_TAG_SET_CORRELATOR_NODE, MPI_COMM_WORLD);
 
   int msg;
   MPI_Status status;
@@ -469,6 +474,13 @@ correlator_node_set_all(Uvw_model &uvw_table,
   }
 }
 
+void
+Abstract_manager_node::
+correlator_node_set_all(Pulsar_parameters &pulsar) {
+  for (size_t i=0; i<correlator_node_rank.size(); i++) {
+    MPI_Transfer::send(pulsar, correlator_node_rank[i]);
+  }
+}
 void
 Abstract_manager_node::
 set_correlator_node_ready(size_t correlator_nr, bool ready) {

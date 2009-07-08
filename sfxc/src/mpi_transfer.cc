@@ -300,6 +300,125 @@ receive(MPI_Status &status, Uvw_model &table, int &sn) {
   table.splineakima_v = NULL;
   table.splineakima_w = NULL;}
 
+void
+MPI_Transfer::send(Pulsar_parameters &pulsar_param, int rank) {
+  int polyco_params_fixed_size = (11+10+6)*sizeof(char)+5*sizeof(double)+5*sizeof(float)+2*sizeof(int32_t);
+  int size = 0;
+
+  // first count all the data
+  int32_t npulsar = pulsar_param.pulsars.size();
+  size += sizeof(int32_t);
+  std::map<std::string, Pulsar_parameters::Pulsar>::iterator it = pulsar_param.pulsars.begin();
+  while(it!=pulsar_param.pulsars.end()){
+    size += 11*sizeof(char) + sizeof(int32_t)+2*sizeof(double);
+    size += sizeof(int32_t); // because we send the number of polyco tables
+    std::vector<Pulsar_parameters::Polyco_params>::iterator poly = it->second.polyco_params.begin();
+    while(poly != it->second.polyco_params.end()){
+      size += polyco_params_fixed_size + poly->n_coef*sizeof(double);
+      poly++;
+    }
+    it++;
+  }
+
+  // pack all data
+  int position = 0;
+  char message_buffer[size];
+
+  MPI_Pack(&npulsar, 1, MPI_INT32, message_buffer, size, &position, MPI_COMM_WORLD);
+  it = pulsar_param.pulsars.begin();
+  while(it!=pulsar_param.pulsars.end()){
+    Pulsar_parameters::Pulsar &cur = it->second;
+    MPI_Pack(&cur.name[0], 11, MPI_CHAR, message_buffer, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&cur.nbins, 1, MPI_INT32, message_buffer, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&cur.interval.start, 1, MPI_DOUBLE, message_buffer, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&cur.interval.stop, 1, MPI_DOUBLE, message_buffer, size, &position, MPI_COMM_WORLD);
+    int32_t npolyco = cur.polyco_params.size();
+    MPI_Pack(&npolyco, 1, MPI_INT32, message_buffer, size, &position, MPI_COMM_WORLD);
+
+    std::vector<Pulsar_parameters::Polyco_params>::iterator poly = cur.polyco_params.begin();
+
+    while(poly != cur.polyco_params.end()){
+      MPI_Pack(&poly->name[0], 11, MPI_CHAR, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->date[0], 10, MPI_CHAR, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->utc, 1, MPI_FLOAT, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->tmid, 1, MPI_DOUBLE, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->DM, 1, MPI_DOUBLE, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->doppler, 1, MPI_FLOAT, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->residual, 1, MPI_FLOAT, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->ref_phase, 1, MPI_DOUBLE, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->ref_freq, 1, MPI_DOUBLE, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->site[0], 6, MPI_CHAR, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->data_span, 1, MPI_INT32, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->n_coef, 1, MPI_INT32, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->obs_freq, 1, MPI_DOUBLE, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->bin_phase[0], 1, MPI_FLOAT, message_buffer, size, &position, MPI_COMM_WORLD);
+      MPI_Pack(&poly->bin_phase[1], 1, MPI_FLOAT, message_buffer, size, &position, MPI_COMM_WORLD);
+      for(int i=0;i<poly->n_coef;i++){
+        MPI_Pack(&poly->coef[i], 1, MPI_DOUBLE, message_buffer, size, &position, MPI_COMM_WORLD);
+      }
+      poly++;
+    }
+    it++;
+  }
+
+  // And finally send the data
+  SFXC_ASSERT(position == size);
+  MPI_Send(message_buffer, position, MPI_PACKED, rank, MPI_TAG_PULSAR_PARAMETERS, MPI_COMM_WORLD);
+}
+
+void
+MPI_Transfer::receive(MPI_Status &status, Pulsar_parameters &pulsar_param) {
+  MPI_Status status2;
+
+  int size;
+  MPI_Get_elements(&status, MPI_CHAR, &size);
+  SFXC_ASSERT(size > 0);
+  char buffer[size];
+  MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, &status2);
+
+  int32_t npulsars;
+  int position = 0;
+  MPI_Unpack(buffer, size, &position, &npulsars, 1, MPI_INT32, MPI_COMM_WORLD);
+  if(RANK_OF_NODE==14) std::cout << "unpacking npulsar : " << npulsars << "\n";
+
+  for(int i=0; i<npulsars; i++){
+    Pulsar_parameters::Pulsar newPulsar;
+    MPI_Unpack(buffer, size, &position, &newPulsar.name[0], 11, MPI_CHAR, MPI_COMM_WORLD);
+    MPI_Unpack(buffer, size, &position, &newPulsar.nbins, 1, MPI_INT32, MPI_COMM_WORLD);
+    MPI_Unpack(buffer, size, &position, &newPulsar.interval.start, 1, MPI_DOUBLE, MPI_COMM_WORLD);
+    MPI_Unpack(buffer, size, &position, &newPulsar.interval.stop,  1, MPI_DOUBLE, MPI_COMM_WORLD);
+    int32_t npolyco;
+    MPI_Unpack(buffer, size, &position, &npolyco, 1, MPI_INT32, MPI_COMM_WORLD);
+    if(RANK_OF_NODE==14) std::cout << "unpacking npolyco : " << npolyco << "\n";
+    newPulsar.polyco_params.resize(npolyco);
+    for(int j=0;j<npolyco;j++){
+      Pulsar_parameters::Polyco_params *poly = &newPulsar.polyco_params[j];
+      MPI_Unpack(buffer, size, &position, &poly->name[0], 11, MPI_CHAR, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->date[0], 10, MPI_CHAR, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->utc, 1, MPI_FLOAT, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->tmid, 1, MPI_DOUBLE, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->DM, 1, MPI_DOUBLE, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->doppler, 1, MPI_FLOAT, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->residual, 1, MPI_FLOAT, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->ref_phase, 1, MPI_DOUBLE, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->ref_freq, 1, MPI_DOUBLE, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->site[0], 6, MPI_CHAR, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->data_span, 1, MPI_INT32, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->n_coef, 1, MPI_INT32, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->obs_freq, 1, MPI_DOUBLE, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->bin_phase[0], 1, MPI_FLOAT, MPI_COMM_WORLD);
+      MPI_Unpack(buffer, size, &position, &poly->bin_phase[1], 1, MPI_FLOAT, MPI_COMM_WORLD);
+
+      poly->coef.resize(poly->n_coef);
+      for(int k=0;k<poly->n_coef;k++){
+        MPI_Unpack(buffer, size, &position, &poly->coef[k], 1, MPI_DOUBLE, MPI_COMM_WORLD);
+      }
+    }
+    std::string key(&newPulsar.name[0]);
+    pulsar_param.pulsars.insert(std::pair<std::string,Pulsar_parameters::Pulsar>(key,newPulsar));
+  }
+  SFXC_ASSERT(position == size);
+}
 
 void
 MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
@@ -443,14 +562,17 @@ void
 MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   int size = 0;
   size =
-    11*sizeof(int32_t) + sizeof(int64_t) + 3*sizeof(char) +
-    corr_param.station_streams.size()*5*sizeof(int32_t);
+    12*sizeof(int32_t) + sizeof(int64_t) + 3*sizeof(char) +
+    corr_param.station_streams.size()*5*sizeof(int32_t) + 
+    sizeof(int32_t) + 11*sizeof(char);
   int position = 0;
   char message_buffer[size];
 
   MPI_Pack(&corr_param.start_time, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.stop_time, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&corr_param.mjd, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.integration_time, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
@@ -488,6 +610,11 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   MPI_Pack(&corr_param.reference_station, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
 
+  MPI_Pack(&corr_param.pulsar_binning, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&corr_param.source[0], 11, MPI_CHAR,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+
   for (Correlation_parameters::Station_iterator station =
          corr_param.station_streams.begin();
        station != corr_param.station_streams.end(); station++) {
@@ -502,6 +629,7 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
     MPI_Pack(&station->bits_per_sample, 1, MPI_INT32,
 	     message_buffer, size, &position, MPI_COMM_WORLD);
   }
+
   SFXC_ASSERT(position == size);
   MPI_Send(message_buffer, position, MPI_PACKED, rank,
            MPI_TAG_CORR_PARAMETERS, MPI_COMM_WORLD);
@@ -525,6 +653,9 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
              MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
              &corr_param.stop_time, 1, MPI_INT32,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.mjd, 1, MPI_INT32,
              MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
              &corr_param.integration_time, 1, MPI_INT32,
@@ -574,6 +705,11 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
   MPI_Unpack(buffer, size, &position,
              &corr_param.reference_station, 1, MPI_INT32,
              MPI_COMM_WORLD);
+
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.pulsar_binning, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+               &corr_param.source[0], 11, MPI_CHAR, MPI_COMM_WORLD);
 
   while (position < size) {
 
