@@ -253,7 +253,7 @@ Input_node_data_writer::fetch_next_time_interval() {
 }
 
 void
-Input_node_data_writer::write_header(Data_writer_sptr writer, size_t ndata, int inv_start, int nr_inv, int delay)
+Input_node_data_writer::write_header(Data_writer_sptr writer, int32_t ndata, int inv_start, int nr_inv, int delay)
 {
   SFXC_ASSERT((delay>=0)&&(delay<8/bits_per_sample));
   // The start time of the block

@@ -102,7 +102,7 @@ private:
   int bytes_to_write(int byte_offset, int next_delay_pos);
   int get_next_delay_pos(std::vector<Delay> &cur_delay, uint64_t start_time);
 
-  void write_header(Data_writer_sptr writer, size_t ndata, int inv_start, int nr_inv, int delay);
+  void write_header(Data_writer_sptr writer, int32_t ndata, int inv_start, int nr_inv, int delay);
   void write_random_data(Data_writer_sptr writer, int ndata);
   void write_data(Data_writer_sptr writer, int ndata, int byte_offset);
   void write_invalid_blocks(Data_writer_sptr writer, int byte_offset, int n_bytes, 
