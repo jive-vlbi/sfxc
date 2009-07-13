@@ -87,9 +87,6 @@ has_work() {
 uint64_t
 Input_node_data_writer::
 do_task() {
-
-  SFXC_ASSERT(has_work());
-
   // Acquire the input data
   Input_buffer_element &input_element = input_buffer_->front();
   struct Writer_struct& data_writer = data_writers_.front();
