@@ -148,7 +148,8 @@ int main(int argc, char *argv[]) {
     Control_parameters control_parameters;
 
     Log_writer_cout log_writer(10);
-    control_parameters.initialise(ctrl_file, vex_file, log_writer);
+    if(!control_parameters.initialise(ctrl_file, vex_file, log_writer))
+      sfxc_abort();
     if (!control_parameters.check(std::cout)) {
       for (int i=0; i<numtasks; i++) {
         if (i != RANK_MANAGER_NODE) {

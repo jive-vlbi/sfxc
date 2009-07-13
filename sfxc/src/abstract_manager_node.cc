@@ -517,8 +517,7 @@ Abstract_manager_node::get_channel(const std::string &channel) {
     }
   }
   // error message
-  SFXC_ASSERT_MSG(false,
-                  "Couldn't find the frequency channel.");
+  sfxc_abort((std::string("Couldn't find the frequency channel : ")+channel).c_str());
   return control_parameters.number_frequency_channels();
 }
 

@@ -9,9 +9,10 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
     time_between_headers_(0)
 {
   // initially use start_date as reference
-  read_new_block(data);
+  if(!read_new_block(data)){
+    sfxc_abort("Couldn't find valid mark5b header");
+  }
   ref_jday = current_header.julian_day(); 
-  SFXC_ASSERT(current_header.check());
 
   start_day_ = current_header.julian_day();
   start_time_ = current_header.microseconds();

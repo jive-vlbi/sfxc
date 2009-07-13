@@ -20,7 +20,8 @@ Control_parameters::Control_parameters(const char *ctrl_file,
                                        const char *vex_file,
                                        std::ostream& log_writer)
     : initialised(false) {
-  initialise(ctrl_file, vex_file, log_writer);
+  if(!initialise(ctrl_file, vex_file, log_writer))
+    sfxc_abort();
 }
 
 bool
@@ -103,11 +104,15 @@ initialise(const char *ctrl_file, const char *vex_file,
     // use pulsar binning
     DEBUG_MSG("Using pulsar binning");
 
-    if (ctrl["pulsars"] == Json::Value())
-      SFXC_ASSERT_MSG(false, "Error : No pulsars block in control file.");
+    if (ctrl["pulsars"] == Json::Value()){
+      log_writer << "Error : No pulsars block in control file.\n";
+      return false;
+    }
     Json::Value::iterator it = ctrl["pulsars"].begin();
-    if(*it==Json::Value())
-      SFXC_ASSERT_MSG(false, "Error : Empty pulsars block in control file.");
+    if(*it==Json::Value()){
+      log_writer <<  "Error : Empty pulsars block in control file.\n";
+      return false;
+    }
     while(it!=ctrl["pulsars"].end()){
       if((*it)["interval"] == Json::Value()){
         (*it)["interval"].append(0.0); 
@@ -807,8 +812,7 @@ get_mode(int32_t &start_time) const {
       return sched_block["mode"]->to_string();
     }
   }
-  SFXC_ASSERT_MSG(false,
-                  "Mode not found in the vex-file.");
+  sfxc_abort("Mode not found in the vex-file.");
   return std::string("");
 }
 
@@ -1212,10 +1216,8 @@ Control_parameters::get_delay_directory() const {
 std::string
 Control_parameters::
 get_delay_table_name(const std::string &station_name) const {
-  SFXC_ASSERT_MSG(strncmp(ctrl["delay_directory"].asString().c_str(),
-                          "file://",7) == 0,
-                  "Delay directory doesn't start with 'file://'"
-                 );
+  if(strncmp(ctrl["delay_directory"].asString().c_str(), "file://",7) != 0)
+    sfxc_abort("Ctrl-file: Delay directory doesn't start with 'file://'");
   std::string delay_table_name;
   if(ctrl["delay_directory"].asString().size()==7)
     // delay files are in the current directory
@@ -1232,8 +1234,7 @@ get_delay_table_name(const std::string &station_name) const {
     return delay_table_name;
   }
   DEBUG_MSG("Tried to create the delay table at " << delay_table_name);
-  SFXC_ASSERT_MSG(false,
-                  "Couldn't create the delay table.");
+  sfxc_abort("Couldn't create the delay table.");
   return std::string("");
 }
 
@@ -1246,8 +1247,7 @@ generate_delay_table(const std::string &station_name,
   DEBUG_MSG("Creating the delay model: " << cmd);
   int result = system(cmd.c_str());
   if (result != 0) {
-    SFXC_ASSERT_MSG(false,
-                    "Generation of the delay table failed (generate_delay_model)");
+    sfxc_abort("Generation of the delay table failed (generate_delay_model)");
   }
 }
 

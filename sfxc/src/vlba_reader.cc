@@ -53,8 +53,7 @@ VLBA_reader::goto_time(Data_frame &data, int64_t us_time) {
   size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
   if ( byte_read != read_n_bytes) {
     std::cout << "Tried to read " << read_n_bytes << " but read " << byte_read << " instead\n";
-    SFXC_ASSERT_MSG(false,
-                    "Couldn't read the requested amount of data.");
+    sfxc_abort("Couldn't read the requested amount of data.");
     return get_current_time();
   }
 
@@ -306,13 +305,12 @@ get_vlba_reader(boost::shared_ptr<Data_reader> reader,
   
   VLBA_reader::Data_frame header, aux_header;
   int n_tracks_8 = find_start_of_vlba_header(reader, data, header, aux_header);
-  SFXC_ASSERT_MSG(n_tracks_8 > 0,
-                  "Couldn't find a vlba header in the data file");
+  if(n_tracks_8 <= 0)
+    sfxc_abort("Couldn't find a vlba header in the data file");
   VLBA_header test_header(n_tracks_8);
   test_header.set_header(&header.buffer[0],&aux_header.buffer[0]);
 
-  SFXC_ASSERT_MSG(test_header.checkCRC(),
-                  "Invalid crc-code in the vlba data file");
+  sfxc_abort("Invalid crc-code in the vlba data file");
 
   return new VLBA_reader(reader, n_tracks_8, data, header, aux_header);
 }
@@ -339,7 +337,7 @@ int find_start_of_vlba_header(boost::shared_ptr<Data_reader> reader,
 
     if( byte_read != bytes_to_read ){
       DEBUG_MSG("Unable to read enough bytes of data, cannot find a vlba header before the end-of-file");
-      SFXC_ASSERT(false && "We should exit");
+      sfxc_abort();
     }
   }
 

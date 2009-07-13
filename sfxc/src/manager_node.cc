@@ -377,7 +377,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
       std::string msg = std::string("Pulsar binning is enabled but current source (" )
                         + control_parameters.scan_source(scan_name)
                         + std::string(") is not found in the list of pulsars\n");
-      SFXC_ASSERT_MSG(false, msg.c_str());
+      sfxc_abort(msg.c_str());
     }
     correlation_parameters.pulsar_binning = true;
   }else
@@ -465,12 +465,11 @@ Manager_node::initialise() {
       DEBUG_MSG("Delay table could not be read");
       control_parameters.generate_delay_table(station_name, delay_file);
       delay_table.open(delay_file.c_str());
-      char msg[120];
-      snprintf(msg, 120,
-               "Coudn't generate delay table, please remove '%s' and restart the correlator",
-               delay_file.c_str());
-      SFXC_ASSERT_MSG(delay_table.initialised(),
-                      msg);
+      if(!delay_table.initialised()){
+        std::string msg = std::string("Couldn't generate delay table, please remove '") +
+                          delay_file + std::string("' and restart the correlator");
+        sfxc_abort(msg.c_str());
+      }
     }
 
     send(delay_table, /* station_nr */ 0, input_rank(station));
@@ -492,7 +491,8 @@ Manager_node::initialise() {
 
   // If pulsar binning is enabled : get all pulsar parameters (polyco files, etc.)
   if(control_parameters.pulsar_binning()){
-    SFXC_ASSERT(control_parameters.get_pulsar_parameters(pulsar_parameters));
+    if (!control_parameters.get_pulsar_parameters(pulsar_parameters))
+      sfxc_abort("Error parsing pulsar information from control file\n");
     correlator_node_set_all(pulsar_parameters);
   }
 

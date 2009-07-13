@@ -208,8 +208,7 @@ void Correlation_core::integration_step() {
 #ifdef SFXC_WRITE_STATS
   {
 #ifndef SFXC_DETERMINISTIC
-    SFXC_ASSERT_MSG(false,
-                    "SFXC_WRITE_STATS only works with SFXC_DETERMINISTIC");
+    sfxc_abort("SFXC_WRITE_STATS only works with SFXC_DETERMINISTIC\n");
 #endif
 
     if (! stats_out.is_open()) {

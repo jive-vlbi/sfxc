@@ -63,8 +63,7 @@ Mark5a_reader::goto_time(Data_frame &data, int64_t us_time) {
   size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
 
   if ( byte_read != read_n_bytes) {
-    SFXC_ASSERT_MSG(false,
-                    "Couldn't read the requested amount of data.");
+    sfxc_abort("Couldn't read the requested amount of data.");
     return get_current_time();
   }
 
@@ -336,15 +335,15 @@ Mark5a_reader *
 get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
                   Mark5a_reader::Data_frame &data) {
   int n_tracks_8 = find_start_of_header(reader, data);
-  SFXC_ASSERT_MSG(n_tracks_8 > 0,
-                  "Couldn't find a mark5a header in the data file");
+  if(n_tracks_8 <= 0)
+    sfxc_abort("Couldn't find a mark5a header in the data file");
   Mark5a_header header(n_tracks_8);
   header.set_header(&data.buffer[0]);
 #ifdef SFXC_CHECK_INVALID_SAMPLES
   memcpy(&saved_header[0], &data.buffer[0], SIZE_MK5A_HEADER*n_tracks_8);
 #endif
-  SFXC_ASSERT_MSG(header.checkCRC(),
-                  "Invalid crc-code in the mark5a data file");
+  if(!header.checkCRC())
+    sfxc_abort("Invalid crc-code in the mark5a data file");
   DEBUG_MSG("Mark5a reader found start of data at : y=" << header.year(0)
             << ", day = " << header.day(0) << ", time =" << header.get_time_in_us(0));
   return new Mark5a_reader(reader, n_tracks_8, data);
@@ -370,8 +369,7 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
     int byte_read = Data_reader_blocking::get_bytes_s( reader.get(), bytes_to_read, data);
 
     if( byte_read != bytes_to_read ){
-      DEBUG_MSG("Unable to read enough bytes of data, cannot find a mark5a header before the end-of-file");
-      SFXC_ASSERT(false && "We should exit");
+      sfxc_abort("Unable to read enough bytes of data, cannot find a mark5a header before the end-of-file");
     }
 
   }

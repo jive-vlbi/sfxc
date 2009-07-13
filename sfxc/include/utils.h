@@ -118,26 +118,18 @@ extern int RANK_OF_NODE;
 #define MPI_DEBUG_MSG(msg)
 #endif
 
-void abort_sfxc(const char *file, int line, const char* message);
-void abort(const char *file, int line, const char* message);
+void abort_sfxc_assertion(const char *file, int line, const char* message);
+void sfxc_abort(const char *msg="");
 
 #ifdef NDEBUG
 #define SFXC_ASSERT(c)
 #define SFXC_ASSERT_MSG(c, msg)
 #else
-#ifdef USE_MPI
 #define SFXC_ASSERT(c) \
-  { if (!(c)) abort_sfxc(__FILE__, __LINE__, #c ); }
+  { if (!(c)) abort_sfxc_assertion(__FILE__, __LINE__, #c ); }
 
 #define SFXC_ASSERT_MSG(c, msg) \
-  { if (!(c)) abort_sfxc(__FILE__, __LINE__, msg ); }
-#else
-#define SFXC_ASSERT(c) \
-  { if (!(c)) abort(__FILE__, __LINE__, #c ); }
-
-#define SFXC_ASSERT_MSG(c, msg) \
-  { if (!(c)) abort(__FILE__, __LINE__, msg ); }
-#endif // USE_MPI
+  { if (!(c)) abort_sfxc_assertion(__FILE__, __LINE__, msg ); }
 #endif // NDEBUG
 
 //#define USE_DOUBLE

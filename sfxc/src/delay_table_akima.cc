@@ -67,7 +67,8 @@ bool Delay_table_akima::operator==(const Delay_table_akima &other) const {
 //calculate coefficients for parabolic interpolation
 void Delay_table_akima::open(const char *delayTableName) {
   std::ifstream in(delayTableName);
-  SFXC_ASSERT(in.is_open());
+  if(!in.is_open())
+    sfxc_abort((std::string("Could not open delay table ")+std::string(delayTableName)).c_str());
   int32_t header_size;
 
   // Read the header
@@ -93,10 +94,8 @@ void Delay_table_akima::open(const char *delayTableName) {
   end_scan   = 0;
   bool result = initialise_next_scan();
   if (!result) {
-    DEBUG_MSG("Could not read delay table " << delayTableName);
+    sfxc_abort((std::string("Could not read delay table ")+std::string(delayTableName)).c_str());
   }
-
-  return;
 }
 
 bool Delay_table_akima::initialise_next_scan() {
@@ -150,7 +149,8 @@ double Delay_table_akima::delay(int64_t time) {
   }
   while (times[end_scan-1] < time) {
     bool result = initialise_next_scan();
-    SFXC_ASSERT(result);
+    if(!result)
+      sfxc_abort("Couldn't initialize next scan in delay table.");
   }
   SFXC_ASSERT(splineakima != NULL);
   double result = gsl_spline_eval (splineakima, time, acc);
