@@ -140,9 +140,9 @@ void Delay_correction_swapped::fringe_stopping(FLOAT input[]) {
   phi = mult_factor_phi*(phi-floor_phi); 
 
   { // compute delta_phi
-    SFXC_ASSERT((number_channels()*1000000)%sample_rate() == 0);
+    SFXC_ASSERT((number_channels()*1000000LL)%sample_rate() == 0);
     double phi_end = integer_mult_factor_phi *
-                     get_delay(time + (number_channels()*1000000)/sample_rate());
+                     get_delay(time + (number_channels()*1000000LL)/sample_rate());
     phi_end = mult_factor_phi*(phi_end-floor_phi);
 
 //    delta_phi = (phi_end-phi)*n_recompute_delay/number_channels(); 
