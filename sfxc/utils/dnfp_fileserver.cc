@@ -218,14 +218,18 @@ public:
 
             while( towrite > 0 ){
               prog = writer.put_bytes( towrite, &buffer[elemread-towrite] );
+	      if (prog == 0)
+		break;
               towrite -= prog;
               totalsend+=prog;
             }
+	    if (towrite > 0)
+	      break;
             totalsent += elemread;
             if ( timer.measured_time()-lasttime >= 1 ) {
               lasttime = timer.measured_time();
               std::cout << " ["<<  m_clientid << "]: streaming speed: " << toMB(totalsent) / timer.measured_time();
-              std::cout << "MB/s"<< std::endl;
+              std::cout << "MB/s" << std::endl;
             }
         }
         std::cout << " ["<<  m_clientid << "]: streaming speed: " << toMB(totalsent) / timer.measured_time();
