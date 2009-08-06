@@ -173,7 +173,13 @@ void
 Delay_correction_swapped::set_parameters(const Correlation_parameters &parameters) {
   size_t prev_number_channels = number_channels();
   correlation_parameters = parameters;
-  bits_per_sample = correlation_parameters.station_streams[stream_nr].bits_per_sample;
+  int i=0;
+  while ((i<correlation_parameters.station_streams.size())&&
+         (correlation_parameters.station_streams[i].station_stream!=stream_nr))
+    i++;
+  SFXC_ASSERT(i<correlation_parameters.station_streams.size());
+  bits_per_sample = correlation_parameters.station_streams[i].bits_per_sample;
+
   int fft_size = (parameters.number_channels * bits_per_sample) / 8;
   nfft_max = INPUT_NODE_PACKET_SIZE/fft_size;
 
