@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
   Mark5a_reader::Data_frame data;
 
   Mark5a_reader *mark5a_reader =
-    get_mark5a_reader(reader, data);
+    get_mark5a_reader(reader, data,-1,-1);
 
   int64_t prev_time = mark5a_reader->get_current_time(), current_time;
 

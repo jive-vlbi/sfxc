@@ -17,50 +17,50 @@
 #include "monitor.h"
 
 Input_node_tasklet *
-get_input_node_tasklet_mark5a(boost::shared_ptr<Data_reader> reader) {
+get_input_node_tasklet_mark5a(boost::shared_ptr<Data_reader> reader, int ref_year, int ref_day) {
   // Maximal buffer size
   Input_data_format_reader::Data_frame data;
 
   boost::shared_ptr<Mark5a_reader> mark5a_reader_ptr =
-    boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, data) );
+    boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, data, ref_year, ref_day) );
 
   return new Input_node_tasklet(mark5a_reader_ptr, data);
 }
 
 Input_node_tasklet *
-get_input_node_tasklet_vlba(boost::shared_ptr<Data_reader> reader) {
+get_input_node_tasklet_vlba(boost::shared_ptr<Data_reader> reader, int ref_year, int ref_day) {
   // Maximal buffer size
   Input_data_format_reader::Data_frame data;
 
   boost::shared_ptr<VLBA_reader> vlba_reader_ptr =
-    boost::shared_ptr<VLBA_reader>( get_vlba_reader(reader, data) );
+    boost::shared_ptr<VLBA_reader>( get_vlba_reader(reader, data, ref_year, ref_day) );
 
   return new Input_node_tasklet(vlba_reader_ptr, data);
 }
 
 Input_node_tasklet *
-get_input_node_tasklet_mark5b(boost::shared_ptr<Data_reader> reader) {
+get_input_node_tasklet_mark5b(boost::shared_ptr<Data_reader> reader, int ref_year, int ref_day) {
   typedef boost::shared_ptr<Input_data_format_reader> Input_reader_ptr;
   Input_data_format_reader::Data_frame   data;
 
-  Input_reader_ptr   mark5b_reader_ptr(new Mark5b_reader(reader, data));
+  Input_reader_ptr   mark5b_reader_ptr(new Mark5b_reader(reader, data, ref_year, ref_day));
 
   return new Input_node_tasklet(mark5b_reader_ptr, data);
 }
 
 Input_node_tasklet *
 get_input_node_tasklet(boost::shared_ptr<Data_reader> reader,
-                       TRANSPORT_TYPE type) {
+                       TRANSPORT_TYPE type, int ref_year, int ref_day) {
   SFXC_ASSERT(type != UNINITIALISED);
 
   if (type == MARK5A) {
-    return get_input_node_tasklet_mark5a(reader);
+    return get_input_node_tasklet_mark5a(reader, ref_year, ref_day);
   }
   if (type == VLBA) {
-    return get_input_node_tasklet_vlba(reader);
+    return get_input_node_tasklet_vlba(reader, ref_year, ref_day);
   }
   if (type == MARK5B) {
-    return get_input_node_tasklet_mark5b(reader);
+    return get_input_node_tasklet_mark5b(reader, ref_year, ref_day);
   }
   return NULL;
 }

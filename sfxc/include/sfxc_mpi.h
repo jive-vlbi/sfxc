@@ -63,6 +63,16 @@ enum MPI_TAG {
    **/
   MPI_TAG_SET_INPUT_NODE_MARK5B,
 
+  /** Sets the reference date
+   * - MPI_INT32: Reference year
+   **/
+  MPI_TAG_SET_INPUT_NODE_REF_YEAR,
+
+  /** Sets the reference date
+   * - MPI_INT32: Reference day
+   **/
+  MPI_TAG_SET_INPUT_NODE_REF_DAY,
+
   /** Add a correlator node
    * - MPI_INT32: no content
    **/
@@ -345,6 +355,12 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
     }
   case MPI_TAG_SET_INPUT_NODE_MARK5B: {
       return "MPI_TAG_SET_INPUT_NODE_MARK5B";
+    }
+  case MPI_TAG_SET_INPUT_NODE_REF_YEAR: {
+      return "MPI_TAG_SET_INPUT_NODE_REF_YEAR";
+    }
+  case MPI_TAG_SET_INPUT_NODE_REF_DAY: {
+      return "MPI_TAG_SET_INPUT_NODE_REF_DAY";
     }
   case MPI_TAG_SET_CORRELATOR_NODE: {
       return "MPI_TAG_SET_CORRELATOR_NODE";

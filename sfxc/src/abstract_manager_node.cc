@@ -47,7 +47,11 @@ start_input_node(int rank, const std::string &station) {
     MPI_Send(&rank, 1, MPI_INT32,
              rank, MPI_TAG_SET_INPUT_NODE_MARK5B, MPI_COMM_WORLD);
   }
-
+  Control_parameters::Date ref_date(control_parameters.get_vex().get_start_time_of_experiment());
+  int32_t ref_year=ref_date.year;
+  int32_t ref_day=ref_date.day;
+  MPI_Send(&ref_year, 1, MPI_INT32, rank, MPI_TAG_SET_INPUT_NODE_REF_YEAR, MPI_COMM_WORLD);
+  MPI_Send(&ref_day,  1, MPI_INT32, rank, MPI_TAG_SET_INPUT_NODE_REF_DAY,  MPI_COMM_WORLD);
   ///DEBUG_MSG("WAITING FOR NODE PARAMTERS !");
   /// add a new set of parameters
   Connexion_params* params= new Connexion_params();

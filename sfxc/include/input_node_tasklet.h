@@ -113,6 +113,6 @@ private:
  **/
 Input_node_tasklet *
 get_input_node_tasklet(boost::shared_ptr<Data_reader> reader,
-                       TRANSPORT_TYPE type);
+                       TRANSPORT_TYPE type, int ref_year, int ref_day);
 
 #endif // INPUT_NODE_TASKLET_H

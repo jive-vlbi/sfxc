@@ -4,12 +4,17 @@
 #include "backtrace.h"
 
 VLBA_reader::
-VLBA_reader(boost::shared_ptr<Data_reader> data_reader,
-              int N_,
-              Data_frame &data, Data_frame &header_, Data_frame &aux_header_)
+VLBA_reader(boost::shared_ptr<Data_reader> data_reader, int N_, Data_frame &data, 
+            Data_frame &header_, Data_frame &aux_header_, int ref_year_, int ref_day_)
     : Input_data_format_reader(data_reader),
-    debug_level_(CHECK_PERIODIC_HEADERS),
-block_count_(0), DATA_RATE_(0), N(N_), header(N_){
+      debug_level_(CHECK_PERIODIC_HEADERS),
+      block_count_(0), DATA_RATE_(0), N(N_), header(N_)
+{
+  // Reference date : All times are relative to midnight on ref_jday
+  ref_jday = (mjd(1,1,ref_year_) + ref_day_ -1 )%1000;
+  DEBUG_MSG("Ref_jday=" << ref_jday);
+  us_per_day=(int64_t)24*60*60*1000000;
+
   // SET HEADER
   buf_header.resize(SIZE_VLBA_HEADER*N);
   memcpy(&buf_header[0], &header_.buffer[0], SIZE_VLBA_HEADER*N);
@@ -20,12 +25,9 @@ block_count_(0), DATA_RATE_(0), N(N_), header(N_){
   header.check_header();
   start_day_ = header.julian_day(0);
   start_time_ = header.microseconds(0);
-  // initially use start_date as reference
-  ref_jday = header.julian_day(0);
   current_time_ = correct_raw_time(header.microseconds(0));
 
   set_data_frame_info(data);
-  us_per_day=(int64_t)24*60*60*1000000;
 }
 
 VLBA_reader::~VLBA_reader() {}
@@ -286,7 +288,6 @@ bool VLBA_reader::eof() {
 void
 VLBA_reader::set_parameters(const Input_node_parameters &input_node_param) {
   int tbr = input_node_param.track_bit_rate;
-  ref_jday = (mjd(1,1,input_node_param.start_year) + input_node_param.start_day -1 )%1000;
   current_time_=correct_raw_time(current_time_);
   DATA_RATE_ = (tbr * N * 8);
   SFXC_ASSERT(DATA_RATE_ > 0);
@@ -301,7 +302,7 @@ void VLBA_reader::set_data_frame_info(Data_frame &data) {
 
 VLBA_reader *
 get_vlba_reader(boost::shared_ptr<Data_reader> reader,
-                  VLBA_reader::Data_frame &data) {
+                  VLBA_reader::Data_frame &data, int ref_year, int ref_day) {
   
   VLBA_reader::Data_frame header, aux_header;
   int n_tracks_8 = find_start_of_vlba_header(reader, data, header, aux_header);
@@ -312,7 +313,7 @@ get_vlba_reader(boost::shared_ptr<Data_reader> reader,
 
   sfxc_abort("Invalid crc-code in the vlba data file");
 
-  return new VLBA_reader(reader, n_tracks_8, data, header, aux_header);
+  return new VLBA_reader(reader, n_tracks_8, data, header, aux_header, ref_year, ref_day);
 }
 
 int VLBA_reader::data_rate() const {

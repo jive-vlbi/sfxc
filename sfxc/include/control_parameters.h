@@ -52,8 +52,6 @@ public:
   int32_t integr_time;
   /// Indicates if data modulation is used (p.6 of Mark4 memo 230A, Whitney 2005)
   int32_t data_modulation;
-  /// The date of the first scan in the vex file, all times are calculated relative to this day
-  int16_t start_day, start_year;
 };
 
 std::ostream &operator<<(std::ostream &out, const Input_node_parameters &param);

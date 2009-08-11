@@ -12,19 +12,22 @@ unsigned char saved_header[SIZE_MK5A_HEADER*16];
 Mark5a_reader::
 Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
               int N_,
-              Data_frame &data)
+              Data_frame &data, 
+              int ref_year_,
+              int ref_day_)
     : Input_data_format_reader(data_reader),
-    debug_level_(CHECK_PERIODIC_HEADERS),
-block_count_(0), DATA_RATE_(0), N(N_) {
+      debug_level_(CHECK_PERIODIC_HEADERS),
+      block_count_(0), DATA_RATE_(0), N(N_),
+      ref_year(ref_year_), ref_day(ref_day_) {
   Mark5a_header header(N);
   header.set_header(&data.buffer[0]);
   header.check_header();
   start_day_ = header.day(0);
   start_time_ = header.get_time_in_us(0); 
-  // initially we use the start date of the header as reference
-  ref_year=header.year(0);
-  ref_day=header.day(0);
-
+  // If no reference day is known then setting ref_day < 0 sets the current day as reference
+  // this is needed e.g. for the mark5a_print_headers utility. 
+  if(ref_day < 0)
+    ref_day = start_day_;
   current_time_ = header.get_time_in_us(0);
   current_day_ = header.day(0);
 
@@ -301,8 +304,6 @@ Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
   int tbr = input_node_param.track_bit_rate;
   DATA_RATE_ = (tbr * N * 8);
   SFXC_ASSERT(DATA_RATE_ > 0);
-  ref_year=input_node_param.start_year;
-  ref_day=input_node_param.start_day;
   current_time_=correct_raw_time(current_time_);
 }
 
@@ -310,7 +311,6 @@ void Mark5a_reader::set_data_frame_info(Data_frame &data) {
   Mark5a_header header(N);
   header.set_header(&data.buffer[0]);
   data.start_time = correct_raw_time(header.get_time_in_us(0));
-
 #ifdef SFXC_INVALIDATE_SAMPLES
   data.invalid_bytes_begin = 0;
   data.nr_invalid_bytes = SIZE_MK5A_HEADER*N;
@@ -333,7 +333,7 @@ void Mark5a_reader::set_data_frame_info(Data_frame &data) {
 
 Mark5a_reader *
 get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
-                  Mark5a_reader::Data_frame &data) {
+                  Mark5a_reader::Data_frame &data, int ref_year, int ref_day) {
   int n_tracks_8 = find_start_of_header(reader, data);
   if(n_tracks_8 <= 0)
     sfxc_abort("Couldn't find a mark5a header in the data file");
@@ -346,7 +346,7 @@ get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
     sfxc_abort("Invalid crc-code in the mark5a data file");
   DEBUG_MSG("Mark5a reader found start of data at : y=" << header.year(0)
             << ", day = " << header.day(0) << ", time =" << header.get_time_in_us(0));
-  return new Mark5a_reader(reader, n_tracks_8, data);
+  return new Mark5a_reader(reader, n_tracks_8, data, ref_year, ref_day);
 }
 
 int Mark5a_reader::data_rate() const {

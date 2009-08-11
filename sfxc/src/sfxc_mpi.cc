@@ -63,7 +63,11 @@ void start_node(int swap) {
         gethostname(hostname, 255);
         DEBUG_MSG("Input node, hostname = " << hostname);
       }
-      Input_node input_node(rank, msg, MARK5A);
+      int32_t ref_year, ref_day;
+      MPI_Recv(&ref_year, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      MPI_Recv(&ref_day, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+      Input_node input_node(rank, msg, MARK5A, ref_year, ref_day);
       input_node.start();
       break;
     }
@@ -81,7 +85,11 @@ void start_node(int swap) {
         gethostname(hostname, 255);
         DEBUG_MSG("Input node, hostname = " << hostname);
       }
-      Input_node input_node(rank, msg, VLBA);
+      int32_t ref_year, ref_day;
+      MPI_Recv(&ref_year, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      MPI_Recv(&ref_day, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+      Input_node input_node(rank, msg, VLBA, ref_year, ref_day);
       input_node.start();
       break;
     }
@@ -99,7 +107,11 @@ void start_node(int swap) {
         gethostname(hostname, 255);
         DEBUG_MSG("Input node, hostname = " << hostname);
       }
-      Input_node input_node(rank, msg, MARK5B);
+      int32_t ref_year, ref_day;
+      MPI_Recv(&ref_year, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      MPI_Recv(&ref_day, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+      Input_node input_node(rank, msg, MARK5B, ref_year, ref_day);
       input_node.start();
       break;
     }

@@ -55,7 +55,7 @@ public:
   };
 
   Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
-                Data_frame &data);
+                Data_frame &data, int ref_year, int ref_day);
   virtual ~Mark5b_reader();
 
   /// Time in microseconds

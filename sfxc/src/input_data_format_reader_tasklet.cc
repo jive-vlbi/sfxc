@@ -124,7 +124,6 @@ uint64_t
 Input_data_format_reader_tasklet::
 goto_time(uint64_t us_time) {
   //int64_t us_time = int64_t(1000)*ms_time;
-
   int64_t new_time =
     reader_->goto_time(*input_element_, us_time);
   SFXC_ASSERT(new_time == reader_->get_current_time());

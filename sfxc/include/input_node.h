@@ -51,9 +51,9 @@ class Input_node : public Node {
 
 public:
   Input_node(int rank, int station_number, Log_writer *log_writer,
-             TRANSPORT_TYPE transport_type);
+             TRANSPORT_TYPE transport_type, int ref_year_, int ref_day_);
   Input_node(int rank, int station_number,
-             TRANSPORT_TYPE transport_type);
+             TRANSPORT_TYPE transport_type, int ref_year_, int ref_day_);
   ~Input_node();
 
   /** Generic constructor function, that is called in the body of

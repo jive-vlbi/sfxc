@@ -32,9 +32,8 @@ class VLBA_reader : public Input_data_format_reader {
 public:
   typedef Input_data_format_reader::Data_frame            Data_frame;
 
-  VLBA_reader(boost::shared_ptr<Data_reader> data_reader,
-                int N,
-                Data_frame &data, Data_frame &header_, Data_frame &aux_header_);
+  VLBA_reader(boost::shared_ptr<Data_reader> data_reader, int N, Data_frame &data, 
+              Data_frame &header_, Data_frame &aux_header_, int ref_year_, int ref_day_);
   virtual ~VLBA_reader();
 
   /// Time in microseconds
@@ -111,7 +110,7 @@ public:
  **/
 VLBA_reader *
 get_vlba_reader(boost::shared_ptr<Data_reader> reader,
-                  VLBA_reader::Data_frame &data);
+                  VLBA_reader::Data_frame &data, int ref_year, int ref_day);
 
 int find_start_of_vlba_header(boost::shared_ptr<Data_reader> reader,
                               VLBA_reader::Data_frame &data, 

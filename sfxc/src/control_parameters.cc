@@ -761,8 +761,6 @@ get_input_node_parameters(const std::string &mode_name,
 
   SFXC_ASSERT(!result.channels[0].sign_tracks.empty());
   result.track_bit_rate /= result.channels[0].sign_tracks.size();
-  result.start_year=start_date->year;
-  result.start_day=start_date->day;
   return result;
 }
 
