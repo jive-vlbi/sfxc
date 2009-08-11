@@ -89,6 +89,8 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
     ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: SET TIME");
     ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: val:"<< current_interval_.start_time_ << " cur: "<< current_time);
     current_time = goto_time( current_interval_.start_time_);
+    data_read_ += input_element_->buffer.size();
+    push_element();
   }
 }
 
