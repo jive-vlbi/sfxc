@@ -90,7 +90,7 @@ private:
   int bits_per_sample;
   int fftsize;
   int time_fft;
-  int64_t time_per_byte;
+  double time_per_byte;
   int integration_time;
 
   /// The queue storing all the delays
