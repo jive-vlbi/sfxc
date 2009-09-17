@@ -274,19 +274,19 @@ Mark5a_reader::get_tracks(const Input_node_parameters &input_node_param,
       result[curr_channel][track] = 32*(channel->sign_headstack-1)+(channel->sign_tracks[i]-2);
 //        header.find_track(channel->sign_headstack-1,
 //                          channel->sign_tracks[i]);        
-      SFXC_ASSERT(header.headstack(result[curr_channel][track]) ==
-                  channel->sign_headstack-1);
-      SFXC_ASSERT(header.track(result[curr_channel][track]) ==
-                  channel->sign_tracks[i]);
+//      SFXC_ASSERT(header.headstack(result[curr_channel][track]) ==
+//                  channel->sign_headstack-1);
+//      SFXC_ASSERT(header.track(result[curr_channel][track]) ==
+//                  channel->sign_tracks[i]);
       track++;
       if (channel->bits_per_sample() == 2) {
         result[curr_channel][track] = 32*(channel->magn_headstack-1)+(channel->magn_tracks[i]-2);
 //          header.find_track(channel->magn_headstack-1,
 //                            channel->magn_tracks[i]);
-        SFXC_ASSERT(header.headstack(result[curr_channel][track]) ==
-                    channel->magn_headstack-1);
-        SFXC_ASSERT(header.track(result[curr_channel][track]) ==
-                    channel->magn_tracks[i]);
+//        SFXC_ASSERT(header.headstack(result[curr_channel][track]) ==
+//                    channel->magn_headstack-1);
+//        SFXC_ASSERT(header.track(result[curr_channel][track]) ==
+//                    channel->magn_tracks[i]);
         track++;
       }
     }
