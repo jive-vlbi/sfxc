@@ -3,12 +3,6 @@
 #include "utils.h"
 #include "backtrace.h"
 
-#ifdef SFXC_CHECK_INVALID_SAMPLES
-// Buffer to store the first header. This is needed because the headers are 
-// when this define is set.
-unsigned char saved_header[SIZE_MK5A_HEADER*16];
-#endif
-
 Mark5a_reader::
 Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
               int N_,
@@ -250,14 +244,6 @@ Mark5a_reader::check_track_bit_statistics(Data_frame &data) {
 std::vector< std::vector<int> >
 Mark5a_reader::get_tracks(const Input_node_parameters &input_node_param,
                           Data_frame &data) {
-  Mark5a_header header(N);
-#ifdef SFXC_CHECK_INVALID_SAMPLES
-  header.set_header(&saved_header[0]);
-#else
-  header.set_header(&data.buffer[0]);
-#endif
-  SFXC_ASSERT(header.check_header());
-
   std::vector< std::vector<int> > result;
 
   result.resize(input_node_param.channels.size());
@@ -272,21 +258,9 @@ Mark5a_reader::get_tracks(const Input_node_parameters &input_node_param,
     int track =0;
     for (size_t i=0; i<channel->sign_tracks.size(); i++) {
       result[curr_channel][track] = 32*(channel->sign_headstack-1)+(channel->sign_tracks[i]-2);
-//        header.find_track(channel->sign_headstack-1,
-//                          channel->sign_tracks[i]);        
-//      SFXC_ASSERT(header.headstack(result[curr_channel][track]) ==
-//                  channel->sign_headstack-1);
-//      SFXC_ASSERT(header.track(result[curr_channel][track]) ==
-//                  channel->sign_tracks[i]);
       track++;
       if (channel->bits_per_sample() == 2) {
         result[curr_channel][track] = 32*(channel->magn_headstack-1)+(channel->magn_tracks[i]-2);
-//          header.find_track(channel->magn_headstack-1,
-//                            channel->magn_tracks[i]);
-//        SFXC_ASSERT(header.headstack(result[curr_channel][track]) ==
-//                    channel->magn_headstack-1);
-//        SFXC_ASSERT(header.track(result[curr_channel][track]) ==
-//                    channel->magn_tracks[i]);
         track++;
       }
     }
@@ -339,9 +313,6 @@ get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
     sfxc_abort("Couldn't find a mark5a header in the data file");
   Mark5a_header header(n_tracks_8);
   header.set_header(&data.buffer[0]);
-#ifdef SFXC_CHECK_INVALID_SAMPLES
-  memcpy(&saved_header[0], &data.buffer[0], SIZE_MK5A_HEADER*n_tracks_8);
-#endif
   if(!header.checkCRC())
     sfxc_abort("Invalid crc-code in the mark5a data file");
   DEBUG_MSG("Mark5a reader found start of data at : y=" << header.year(0)
