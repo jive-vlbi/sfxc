@@ -180,7 +180,8 @@ TCP_Connection::do_connect(const char *hostname, unsigned short int port) {
   if (connect(output_socket,
               (struct sockaddr *) &serverAddress,
               sizeof(serverAddress)) < 0) {
-    std::cout << "cannot connect to port " << port << std::endl;
+    std::cout << "cannot connect to port " << port << " on "
+	      << inet_ntoa(serverAddress.sin_addr) << std::endl;
     close(output_socket);
     return -1;
   }
@@ -229,10 +230,8 @@ TCP_Connection::do_connect(uint64_t ip, unsigned short int port) {
   if (connect(socketDescriptor,
               (struct sockaddr *) &serverAddress,
               sizeof(serverAddress)) < 0) {
-    std::cout << "cannot connect to port ";
-    printf("%d.%d.%d.%d",
-           (int)ip&255, (int)(ip>>8)&255, (int)(ip>>16)&255, (int)ip>>24);
-    std::cout << ", " << port << "\n";
+    std::cout << "cannot connect to port " << port << " on "
+	      << inet_ntoa(serverAddress.sin_addr) << std::endl;
     close(socketDescriptor);
     return -1;
   }

@@ -173,12 +173,15 @@ Connexion* InterfaceIP::connect_to(const std::string& ipaddress, unsigned short 
   serverAddress.sin_port = htons(port);
 
   if (connect(socketDescriptor, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
-    std::cout << "cannot connect to port " << port << "\n";
+    std::cout << "cannot connect to port " << port << " on "
+	      << inet_ntoa(serverAddress.sin_addr) << std::endl;
     close(socketDescriptor);
     //MTHROW("Unable to connect to "+ipaddress);
     return NULL;
   }
 
+  std::cout << "connected to port " << port << " on "
+	    << inet_ntoa(serverAddress.sin_addr) << std::endl;
   return new Connexion(socketDescriptor);
 }
 
@@ -282,11 +285,14 @@ Connexion* InterfaceIP::connect_to(uint64_t ipaddress, unsigned short port, int 
   serverAddress.sin_port = htons(port);
 
   if (connect(socketDescriptor, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
-    std::cout << "cannot connect to port " << port << "\n";
+    std::cout << "cannot connect to port " << port << " on "
+	      << inet_ntoa(serverAddress.sin_addr) << std::endl;
     close(socketDescriptor);
     //MTHROW("Unable to connect to "+ipaddress);
     return NULL;
   }
 
+  std::cout << "connected to port " << port << " on "
+	    << inet_ntoa(serverAddress.sin_addr) << std::endl;
   return new Connexion(socketDescriptor);
 }
