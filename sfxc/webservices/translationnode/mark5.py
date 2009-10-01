@@ -52,14 +52,24 @@ def formatTime(t):
 
 blockSize = conf["block_size"]
 
+def intersects((t1, t2), (t3, t4)):
+    """Find intersection of time intervals (t1, t2) and (t3, t4)"""
+    i1 = max(t1, t3)
+    i2 = min(t2, t4)
+    if i1>i2:
+        res = ()
+    else:
+        res = (i1, i2)
+    print >>sys.stderr, "Intersection", res
+    return res
+
 class Mark5Emulator(object):
     def __init__(self, experiment_name, station, vex):
         mark5scansPath = conf["mark5scansPath"]
         self.vex = vex
-        self.fns = glob.glob(os.path.join(mark5scansPath, 
-                                          "%s/m5a/%s_%s_*" % (experiment_name.lower(), 
-                                                              experiment_name.lower(),
-                                                              station.lower())))
+        self.fns = glob.glob(os.path.join(mark5scansPath, experiment_name.upper(), 
+                                          "%s_%s_*" % (experiment_name.lower(),
+                                                       station.lower())))
         if not self.fns:
             s = ("No files for experiment %s, station %s in %s" % 
                  (experiment_name, station, mark5scansPath))
@@ -71,16 +81,21 @@ class Mark5Emulator(object):
         dtdt = datetime.datetime.fromtimestamp
         starttime, endtime = dtdt(chunk_start), dtdt(chunk_end)
         result = []
+        print >>sys.stderr, [h.fn for h in self.handlers]
         for h in self.handlers:
-            print >>sys.stderr, "Get chunks by time", starttime, endtime, h.reftime, h.tinterval
-            if (h.reftime <= starttime and endtime <= h.endtime):
+            print >>sys.stderr, h.fn
+            print >>sys.stderr, "[mark5] Get chunks by time", starttime, endtime, h.reftime, h.tinterval
+            if intersects((starttime, endtime), (h.reftime, h.endtime)):
+                print "Intersected!"
+                realsize = h.getChunksByTime(oFilename, chunk_start, chunk_end)
                 break
+            else:
+                print >>sys.stderr, "No match for"
+                print >>sys.stderr, h.fn, starttime, endtime, h.reftime, h.endtime
         else:
-            raise RuntimeError, ("Chunk not inside a scan: "
-                                 "chunkstart %s, chunkend %s, "
-                                 "first data %s, last data %s" % (starttime, endtime,
-                                                               h[0].reftime, h[-1].endtime))
-        return h.getChunksByTime(oFilename, chunk_start, chunk_end)
+            open(oFilename, 'w').close() # touch file
+            realsize = 0
+        return realsize
     def disconnect(self):
         pass
 
@@ -97,7 +112,8 @@ class Mark5ScanHandler(object):
                             (toLong(self.tinterval)))
         self.endtime = self.reftime + datetime.timedelta(seconds=self.fsize/self.datarate)
     def timeToByte(self, t):
-        return self.refpos+(t-time.mktime(self.reftime.timetuple()))*self.datarate
+        b = self.refpos+(t-time.mktime(self.reftime.timetuple()))*self.datarate
+        return b
     def getWordSize(self):
         count = 0
         while True:  
@@ -167,7 +183,7 @@ class Mark5ScanHandler(object):
         self.state = 'startOfHeader'
     ## Husseyin's interface below
     def getChunksByTime(self, filename, chunk_start, chunk_end):
-        startPosition = self.timeToByte(chunk_start)
+        startPosition = max(self.timeToByte(chunk_start), 0)
         chunk_real_size = int(self.datarate*(chunk_end-chunk_start))
         self.get_chunks(filename, chunk_real_size, startPosition)
         return chunk_real_size

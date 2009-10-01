@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+						xmlns:ax215="http://jobinfo.broker.remote.expres.psnc.pl/xsd"
+						xmlns:ns1="http://org.apache.axis2/xsd"
+						xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl"
+						xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+						xmlns:xsd="http://tn.remote.expres.psnc.pl"
+						xmlns:ax216="http://protocol.remote.expres.psnc.pl/xsd"
+						xmlns:xs="http://www.w3.org/2001/XMLSchema"
+						xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+						xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+						xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/"
+						targetNamespace="http://tn.remote.expres.psnc.pl">
+
+  <wsdl:types>
+    <xs:schema xmlns:ax217="http://protocol.remote.expres.psnc.pl/xsd"
+					attributeFormDefault="qualified"
+					elementFormDefault="qualified"
+					targetNamespace="http://jobinfo.broker.remote.expres.psnc.pl/xsd">
+      <xs:import namespace="http://protocol.remote.expres.psnc.pl/xsd"/>
+      <xs:complexType name="TranslationJobInfo">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="dataLocation"
+							 nillable="true" type="xs:string"/>
+          <xs:element minOccurs="0" name="endTime" 
+							 nillable="true" type="xs:string"/>
+          <xs:element minOccurs="0" name="header" 
+							 nillable="true" type="ax216:MessageHeader"/>
+          <xs:element minOccurs="0" name="startTime"
+							 nillable="true" type="xs:string"/>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:schema>
+    <xs:schema attributeFormDefault="qualified"
+					elementFormDefault="qualified"
+					targetNamespace="http://protocol.remote.expres.psnc.pl/xsd">
+      <xs:complexType name="MessageHeader">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="chunkCount" type="xs:long"/>
+          <xs:element minOccurs="0" name="chunkId" type="xs:long"/>
+          <xs:element minOccurs="0" name="chunkSize" type="xs:long"/>
+          <xs:element minOccurs="0" name="experimentName" 
+							 nillable="true" type="xs:string"/>
+          <xs:element minOccurs="0" name="jobId" 
+							 nillable="true" type="xs:string"/>
+          <xs:element minOccurs="0" name="senderLocation" 
+							 nillable="true" type="xs:string"/>
+          <xs:element minOccurs="0" name="telescopeAbbr" 
+							 nillable="true" type="xs:string"/>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:schema>
+    <xs:schema xmlns:ax218="http://jobinfo.broker.remote.expres.psnc.pl/xsd"
+					attributeFormDefault="qualified"
+					elementFormDefault="qualified"
+					targetNamespace="http://tn.remote.expres.psnc.pl"> 
+      <xs:import namespace="http://jobinfo.broker.remote.expres.psnc.pl/xsd"/>
+      <xs:element name="startTranslationJob">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element minOccurs="0"
+                        name="translationJobInfo" nillable="true"
+                        type="ax218:TranslationJobInfo"/> 
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="startTranslationJobRequest">
+    <wsdl:part name="parameters" element="xsd:startTranslationJob"/>
+  </wsdl:message>
+  <wsdl:portType name="TranslationJobPortType">
+    <wsdl:operation name="startTranslationJob">
+      <wsdl:input message="xsd:startTranslationJobRequest"
+						wsaw:Action="urn:startTranslationJob"/> 
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="TranslationJobSoap11Binding" type="xsd:TranslationJobPortType">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+    <wsdl:operation name="startTranslationJob">
+      <soap:operation soapAction="urn:startTranslationJob" style="document"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="TranslationJobSoap12Binding" type="xsd:TranslationJobPortType">
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+    <wsdl:operation name="startTranslationJob">
+      <soap12:operation soapAction="urn:startTranslationJob" style="document"/>
+      <wsdl:input>
+        <soap12:body use="literal"/>
+      </wsdl:input>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="TranslationJobHttpBinding" type="xsd:TranslationJobPortType">
+    <http:binding verb="POST"/>
+    <wsdl:operation name="startTranslationJob">
+      <http:operation location="TranslationJob/startTranslationJob"/>
+      <wsdl:input>
+        <mime:content type="text/xml" part="startTranslationJob"/>
+      </wsdl:input>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="TranslationJob">
+    <wsdl:port name="TranslationJobHttpSoap11Endpoint"
+					binding="xsd:TranslationJobSoap11Binding"> 
+      <soap:address location="http://localhost:8080/axis2/services/TranslationJob"/>
+    </wsdl:port>
+    <wsdl:port name="TranslationJobHttpSoap12Endpoint"
+					binding="xsd:TranslationJobSoap12Binding"> 
+      <soap12:address location="http://localhost:8080/axis2/services/TranslationJob"/>
+    </wsdl:port>
+    <wsdl:port name="TranslationJobHttpEndpoint"
+					binding="xsd:TranslationJobHttpBinding"> 
+      <http:address location="http://localhost:8080/axis2/services/TranslationJob"/> 
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

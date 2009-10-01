@@ -1,0 +1,155 @@
+\documentclass[11pt]{article}
+\usepackage{url}
+\usepackage[dvips]{graphicx,rotating,color}
+\usepackage{charter}
+\title{Translation node web service: \\ Implementation details}
+\author{Des Small, \textsc{expr}e\textsc{s} scientific
+  programmer, \textsc{jive}}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+This document describes some implementation details of the web services
+used to make it possible to run the software correlator on the Grid.
+
+\begin{figure}[h]
+\includegraphics[width=1.0\linewidth, angle=0]{old-docs/figures/grid.eps}
+\caption{Architecture of Grid-based correlation system}
+\end{figure}
+
+Grid\cite{grid} technologies are designed to ``enable the sharing,
+selection, and aggregation of a wide variety of geographically
+distributed computational resources (such as supercomputers, compute
+clusters, storage systems, data sources, instruments, people) and
+presents them as a single, unified resource for solving large-scale
+compute and data intensive computing applications''.  However, the
+model of Grid computing implemented to date does not support
+\emph{streaming} data -- the basis of e-\textsc{vlbi} -- but only a
+form of batch-mode in which data is transferred to the \textsc{cpu} by
+the Grid version of \textsc{ftp} (Grid\textsc{ftp}).
+
+Much of the architectural complexity described in this document is due
+to reconciling the streams of data implicit in e-\textsc{vlbi} with the
+batch model of Grid computing.  (A lot of the rest is a result of the
+'Web Services' framework adopted by the Grid.)  The basic idea is
+simple enough, though: as data streams in we simply cut it up into
+chunks, and transfer the chunks to the software correlator hosted on
+the Grid.
+
+
+\section{Details}
+
+\subsection{Servers and services}
+
+\begin{description}
+  \item[Work-Flow Manager (WFM)]
+  \item[VLBI broker] 
+  \item[Translation node service]
+    (\url{http://huygens:8082/translationnode}).  Hosted at
+    \textsc{jive}, this is used by the \textsc{vlbi} broker to request
+    data for a specific time range and station.  The data is then cut
+    up into chunks and transferred to the Grid\textsc{ftp} service,
+    after which the Notification Service is informed of their availability.
+  \item[GridFTP server] (\url{melisa.man.poznan.pl/~/})
+  \item[Notification Service]  (temporarily at \url{juw32} but intended for 
+     \url{http://melisa.man.poznan.pl:8086/vlbiBroker/services/TranslationNodeNotification})
+  \item[Mark5 units] (various IP addresses). It is the job of the
+    translation node server to find the appropriate Mark5 server given an
+    experiment and telescope name.
+\end{description}
+
+\subsection{Workflow}
+
+\begin{enumerate}
+\item The VLBI broker sends a request (described in
+  Table~\ref{tab:transNodeClient}) to the translation node 
+  service;
+\item The translation node service chops up the data from the Mark5 into
+  chunks (on its local file system), and for each chunk the service:
+  \begin{enumerate}
+    \item Transfers the chunk to the GridFTP server, and 
+    \item Sends a message (described in Table~\ref{tab:toNotification}) to
+      the notification service. 
+  \end{enumerate}
+\end{enumerate}
+
+\subsection{SOAP packets}
+The contents of the SOAP packet sent from the VLBI broker to the
+translation node service is described in
+Table~\ref{tab:transNodeClient}.  (Note that fields labelled
+-\texttt{IP} and -\texttt{IPAddress} these are in fact generally host
+names rather than 4-byte IP addresses.)  All times are given in
+so-called Vex format (eg., \texttt{2007y158d18h41m32s}).
+
+The contents of each of the SOAP packets sent from the translation node
+service to the notification server is described in
+Table~\ref{tab:toNotification}.
+
+Both these packets contain the address of the VLBI broker -- the initiating
+client, from our perspective.  Additionally the translation node service
+passes its own address to the notification service in the field
+\texttt{translationNodeIP}.
+
+Okon\cite{okon} says:
+\begin{quotation}
+\noindent\texttt{chunkId} - every chunk should have its assigned unique
+id number, for easy identification and ordering. So for every new
+translation job (experiment), start the counter from value '1' (we
+prefer to do not use and skip '0') and just increment the value with
+each new chunk. Remember to number the chunks in proper order. This will
+make things for VLBI broker a little bit easier.
+
+\vspace{0.5\baselineskip}\noindent\texttt{translationNodeId} - also to help VLBI broker
+to instantly distinguish the chunk provider. The IDs will be assigned
+to TNs when we will have a complete list of them, right now we can
+assume that your TN has an id of '100' (taken from my hat) ;-)
+\end{quotation}
+
+Note that \"Ozdemir\cite{oz} implies that there is a one-to-one mapping between
+telescopes (ie., Mark5s) and translation nodes, so we should expect to
+have multiple translation nodes at \textsc{jive}, and more than one (or
+indeed all of them) may run on a single server; this makes it useful to
+have a \texttt{translationNodeId} field as well as a
+\texttt{translationNodeIP} field.
+
+\begin{table}\label{tab:transNodeClient}
+\begin{tabular}{l}
+\texttt{TranslationJobRequest} \\ \hline
+\texttt{brokerIPAddress} \\
+\texttt{chunkSize} (bytes) \\
+\texttt{startTime} (in vex format) \\
+\texttt{endTime} (in vex format) \\
+\texttt{dataLocation} (filename) \\
+\texttt{telescopeName} (two-letter code) \\
+\texttt{experimentName} (eg. N08C1) 
+\end{tabular}
+\caption{Packet sent from the VLBI broker to the translation node service}
+\end{table}
+
+\begin{table}\label{tab:toNotification}
+\begin{tabular}{l}
+\texttt{TranslationNodeNotification}\\ \hline
+\texttt{brokerIPAddress} \\
+\texttt{chunkId} (an integer) \\
+\texttt{chunkLocation} (ie., GridFTP server)  \\
+\texttt{chunkSize} (bytes)\\
+\texttt{startTime} (vex format)\\ 
+\texttt{endTime} (vex format)\\
+\texttt{translationNodeIP} (ie., sending host) \\
+\texttt{translationNodeId} (an integer)
+\end{tabular}
+\caption{Packet sent from translation node service to notification service} 
+\end{table}
+
+\subsection{Omissions}
+The transfer to GridFTP servers is not yet implemented in the code.
+
+\begin{thebibliography}{99} 
+\bibitem[1]{oz}{\it A short manual on web services},
+  H\"usseyin \"Ozdemir (Internal \textsc{jive} report, March, 2008).
+\bibitem[2]{okon}{\it Email communication} Marcin Okon, June 2008 
+\bibitem[3]{grid}\url{http://www.gridcomputing.com/}
+\end{thebibliography}.
+
+\end{document}

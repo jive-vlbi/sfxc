@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+  <soapenv:Body>
+	 <ns3:dataSetIsReady xmlns:ns3="http://cds.remote.expres.psnc.pl">
+		<ns3:dataSetInfo>
+		  <chunkInfo xmlns="http://jobinfo.broker.remote.expres.psnc.pl/xsd">
+			 <ns1:chunkCount xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">14</ns1:chunkCount>
+			 <ns1:chunkId xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">1</ns1:chunkId>
+			 <ns1:chunkLocation xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">scp://expres@expres.reef.man.poznan.pl:/opt/expres_fast/test/experiments/N08C1-001-reef/N08C1-001-9.cor</ns1:chunkLocation>
+			 <ns1:chunkSize xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">20</ns1:chunkSize>
+		  </chunkInfo>
+		  <header xmlns="http://jobinfo.broker.remote.expres.psnc.pl/xsd">
+			 <ns1:callbackLocation xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">http://Callback.location</ns1:callbackLocation>
+			 <ns1:experimentName xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">n08c1</ns1:experimentName>
+			 <ns1:jobId xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">JOB_ID_99288</ns1:jobId>
+			 <ns1:senderLocation xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">Sender location not used.</ns1:senderLocation>
+		  </header>
+		</ns3:dataSetInfo>
+	 </ns3:dataSetIsReady>
+  </soapenv:Body>
+</soapenv:Envelope>

@@ -4,9 +4,7 @@ import traceback, datetime, threading
 import Numeric as Nu, itertools
 import simplejson
 from ZSI import dispatch
-#from NewTranslationJobZSI.NewTranslationJob_services_server import *
-# 2009-02-09: new WSDL from Poznan, with new name
-from NewTranslationJobZSI.TranslationJob_services_server import *
+from TranslationJobZSI.TranslationJob_services_server import *
 from Notification.TranslationNodeNotification import *
 import mark5 as mk5tools
 import TranslationNode_vex as vextools
@@ -15,7 +13,6 @@ portMark5Data = conf['portMark5Data']
 portMark5Control = conf['portMark5Control']
 ipMark = conf['ipMark']
 host = conf['host']
-# gridFtpBaseURL = conf['gridFtpBaseURL']
 localPath = conf['localPath']
 portNumber = conf['portNumber']
 vexFilePath = conf["vexFilePath"]
@@ -136,7 +133,7 @@ def dataChunker(station, vex_fn, exptname, job_start, job_end, requested_chunk_s
             globalChunkNumber += 1
 
     print >>sys.stderr, "Disconnecting from mark5"
-    mark5.disconnect()
+    # mark5.disconnect()
 
 def startTranslationJob(p):
     print >>sys.stderr, datetime.datetime.now(), "Welcome to startTranslationNode"
@@ -187,7 +184,7 @@ def startTranslationJob2(p):
         for (sendFile, chunk_id, chunk_real_size, chunk_start, chunk_end) in dc:
             basefn = os.path.basename(sendFile)
             gridURL = os.path.join(gridFtpBaseUrl, basefn)
-            gftpCommand = ('/huygens_1/jops/globus/bin/globus-url-copy -cd file://%s  %s' %
+            gftpCommand = ('/huygens_1/jops/globus/bin/globus-url-copy -p 4 -cd file://%s  %s' %
                            (sendFile, gridURL))
             print >>sys.stderr, "Command:", gftpCommand
             os.system(gftpCommand)

@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='UTF-8'?>
+   <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+      <soapenv:Body>
+         <ns7:startTranslationJob xmlns:ns7="http://tn.remote.expres.psnc.pl">
+            <ns7:translationJobInfo>
+               <chunkInfo xmlns="http://value.tn.remote.expres.psnc.pl/xsd">
+                  <ns1:chunkLocation xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">scp://expres@expres.reef.man.poznan.pl/opt/expres/data/</ns1:chunkLocation>
+                  <ns1:chunkSize xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">1024</ns1:chunkSize>
+                  <ns1:telescopeAbbr xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">Mc</ns1:telescopeAbbr>
+               </chunkInfo>
+               <ns6:dataLocation xmlns:ns6="http://value.tn.remote.expres.psnc.pl/xsd">scp://expres@expres.reef.man.poznan.pl/opt/expres/data/</ns6:dataLocation>
+               <ns6:startTime xmlns:ns6="http://value.tn.remote.expres.psnc.pl/xsd">2008y070d18h30m10s</ns6:startTime>
+               <ns6:endTime xmlns:ns6="http://value.tn.remote.expres.psnc.pl/xsd">2008y070d18h30m22s</ns6:endTime>
+               <header xmlns="http://value.tn.remote.expres.psnc.pl/xsd">
+                  <ns1:callbackLocation xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">http://10.88.0.190:8080/vlbiBroker/services/Notification</ns1:callbackLocation>
+                  <ns1:experimentName xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">N08C1</ns1:experimentName>
+                  <ns1:jobId xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">JOB_ID_99288</ns1:jobId>
+                  <ns1:senderLocation xmlns:ns1="http://protocol.remote.expres.psnc.pl/xsd">Sender location not used.</ns1:senderLocation>
+               </header>
+            </ns7:translationJobInfo>
+         </ns7:startTranslationJob>
+      </soapenv:Body>
+   </soapenv:Envelope>
