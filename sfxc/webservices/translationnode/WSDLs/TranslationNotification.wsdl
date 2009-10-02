@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:ax220="http://protocol.remote.expres.psnc.pl/xsd" xmlns:ns1="http://org.apache.axis2/xsd" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:xsd="http://notification.tn.remote.expres.psnc.pl" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ax219="http://jobinfo.broker.remote.expres.psnc.pl/xsd" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" targetNamespace="http://notification.tn.remote.expres.psnc.pl">
+    <wsdl:types>
+        <xs:schema xmlns:ax222="http://jobinfo.broker.remote.expres.psnc.pl/xsd" xmlns:ax223="http://protocol.remote.expres.psnc.pl/xsd" attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://notification.tn.remote.expres.psnc.pl">
+            <xs:import namespace="http://jobinfo.broker.remote.expres.psnc.pl/xsd"/>
+            <xs:import namespace="http://protocol.remote.expres.psnc.pl/xsd"/>
+            <xs:element name="chunkIsReady">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="chunkInfo" nillable="true" type="ax219:ChunkInfo"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="updateStatus">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="operationStatus" nillable="true" type="ax223:OperationStatus"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:schema>
+        <xs:schema xmlns:ax221="http://protocol.remote.expres.psnc.pl/xsd" attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://jobinfo.broker.remote.expres.psnc.pl/xsd">
+            <xs:import namespace="http://protocol.remote.expres.psnc.pl/xsd"/>
+            <xs:complexType name="ChunkInfo">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="chunkEndTime" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="chunkLocation" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="chunkStartTime" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="header" nillable="true" type="ax221:MessageHeader"/>
+                </xs:sequence>
+            </xs:complexType>
+        </xs:schema>
+        <xs:schema attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://protocol.remote.expres.psnc.pl/xsd">
+            <xs:complexType name="MessageHeader">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="chunkCount" type="xs:long"/>
+                    <xs:element minOccurs="0" name="chunkId" type="xs:long"/>
+                    <xs:element minOccurs="0" name="chunkSize" type="xs:long"/>
+                    <xs:element minOccurs="0" name="experimentName" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="jobId" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="senderLocation" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="telescopeAbbr" nillable="true" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="OperationStatus">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="errorOccurred" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="header" nillable="true" type="ax220:MessageHeader"/>
+                    <xs:element minOccurs="0" name="message" nillable="true" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+        </xs:schema>
+    </wsdl:types>
+    <wsdl:message name="updateStatusRequest">
+        <wsdl:part name="parameters" element="xsd:updateStatus"/>
+    </wsdl:message>
+    <wsdl:message name="chunkIsReadyRequest">
+        <wsdl:part name="parameters" element="xsd:chunkIsReady"/>
+    </wsdl:message>
+    <wsdl:portType name="TranslationNotificationPortType">
+        <wsdl:operation name="updateStatus">
+            <wsdl:input message="xsd:updateStatusRequest" wsaw:Action="urn:updateStatus"/>
+        </wsdl:operation>
+        <wsdl:operation name="chunkIsReady">
+            <wsdl:input message="xsd:chunkIsReadyRequest" wsaw:Action="urn:chunkIsReady"/>
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="TranslationNotificationSoap11Binding" type="xsd:TranslationNotificationPortType">
+        <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+        <wsdl:operation name="updateStatus">
+            <soap:operation soapAction="urn:updateStatus" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+        </wsdl:operation>
+        <wsdl:operation name="chunkIsReady">
+            <soap:operation soapAction="urn:chunkIsReady" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:binding name="TranslationNotificationSoap12Binding" type="xsd:TranslationNotificationPortType">
+        <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+        <wsdl:operation name="updateStatus">
+            <soap12:operation soapAction="urn:updateStatus" style="document"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+        </wsdl:operation>
+        <wsdl:operation name="chunkIsReady">
+            <soap12:operation soapAction="urn:chunkIsReady" style="document"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:binding name="TranslationNotificationHttpBinding" type="xsd:TranslationNotificationPortType">
+        <http:binding verb="POST"/>
+        <wsdl:operation name="updateStatus">
+            <http:operation location="TranslationNotification/updateStatus"/>
+            <wsdl:input>
+                <mime:content type="text/xml" part="updateStatus"/>
+            </wsdl:input>
+        </wsdl:operation>
+        <wsdl:operation name="chunkIsReady">
+            <http:operation location="TranslationNotification/chunkIsReady"/>
+            <wsdl:input>
+                <mime:content type="text/xml" part="chunkIsReady"/>
+            </wsdl:input>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="TranslationNotification">
+        <wsdl:port name="TranslationNotificationHttpSoap11Endpoint" binding="xsd:TranslationNotificationSoap11Binding">
+            <soap:address location="http://localhost:8080/axis2/services/TranslationNotification"/>
+        </wsdl:port>
+        <wsdl:port name="TranslationNotificationHttpSoap12Endpoint" binding="xsd:TranslationNotificationSoap12Binding">
+            <soap12:address location="http://localhost:8080/axis2/services/TranslationNotification"/>
+        </wsdl:port>
+        <wsdl:port name="TranslationNotificationHttpEndpoint" binding="xsd:TranslationNotificationHttpBinding">
+            <http:address location="http://localhost:8080/axis2/services/TranslationNotification"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

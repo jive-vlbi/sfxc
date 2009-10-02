@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:ns1="http://org.apache.axis2/xsd" xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:xsd="http://notification.cds.remote.expres.psnc.pl" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ax228="http://protocol.remote.expres.psnc.pl/xsd" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" targetNamespace="http://notification.cds.remote.expres.psnc.pl">
+    <wsdl:types>
+        <xs:schema xmlns:ax229="http://protocol.remote.expres.psnc.pl/xsd" attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://notification.cds.remote.expres.psnc.pl">
+            <xs:import namespace="http://protocol.remote.expres.psnc.pl/xsd"/>
+            <xs:element name="updateStatus">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element minOccurs="0" name="operationStatus" nillable="true" type="ax228:OperationStatus"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:schema>
+        <xs:schema attributeFormDefault="qualified" elementFormDefault="qualified" targetNamespace="http://protocol.remote.expres.psnc.pl/xsd">
+            <xs:complexType name="OperationStatus">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="errorOccurred" type="xs:boolean"/>
+                    <xs:element minOccurs="0" name="header" nillable="true" type="ax228:MessageHeader"/>
+                    <xs:element minOccurs="0" name="message" nillable="true" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+            <xs:complexType name="MessageHeader">
+                <xs:sequence>
+                    <xs:element minOccurs="0" name="chunkCount" type="xs:long"/>
+                    <xs:element minOccurs="0" name="chunkId" type="xs:long"/>
+                    <xs:element minOccurs="0" name="chunkSize" type="xs:long"/>
+                    <xs:element minOccurs="0" name="experimentName" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="jobId" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="senderLocation" nillable="true" type="xs:string"/>
+                    <xs:element minOccurs="0" name="telescopeAbbr" nillable="true" type="xs:string"/>
+                </xs:sequence>
+            </xs:complexType>
+        </xs:schema>
+    </wsdl:types>
+    <wsdl:message name="updateStatusRequest">
+        <wsdl:part name="parameters" element="xsd:updateStatus"/>
+    </wsdl:message>
+    <wsdl:portType name="CorrelatedDataNotificationPortType">
+        <wsdl:operation name="updateStatus">
+            <wsdl:input message="xsd:updateStatusRequest" wsaw:Action="urn:updateStatus"/>
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="CorrelatedDataNotificationSoap11Binding" type="xsd:CorrelatedDataNotificationPortType">
+        <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+        <wsdl:operation name="updateStatus">
+            <soap:operation soapAction="urn:updateStatus" style="document"/>
+            <wsdl:input>
+                <soap:body use="literal"/>
+            </wsdl:input>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:binding name="CorrelatedDataNotificationSoap12Binding" type="xsd:CorrelatedDataNotificationPortType">
+        <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+        <wsdl:operation name="updateStatus">
+            <soap12:operation soapAction="urn:updateStatus" style="document"/>
+            <wsdl:input>
+                <soap12:body use="literal"/>
+            </wsdl:input>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:binding name="CorrelatedDataNotificationHttpBinding" type="xsd:CorrelatedDataNotificationPortType">
+        <http:binding verb="POST"/>
+        <wsdl:operation name="updateStatus">
+            <http:operation location="CorrelatedDataNotification/updateStatus"/>
+            <wsdl:input>
+                <mime:content type="text/xml" part="updateStatus"/>
+            </wsdl:input>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="CorrelatedDataNotification">
+        <wsdl:port name="CorrelatedDataNotificationHttpSoap11Endpoint" binding="xsd:CorrelatedDataNotificationSoap11Binding">
+            <soap:address location="http://localhost:8080/axis2/services/CorrelatedDataNotification"/>
+        </wsdl:port>
+        <wsdl:port name="CorrelatedDataNotificationHttpSoap12Endpoint" binding="xsd:CorrelatedDataNotificationSoap12Binding">
+            <soap12:address location="http://localhost:8080/axis2/services/CorrelatedDataNotification"/>
+        </wsdl:port>
+        <wsdl:port name="CorrelatedDataNotificationHttpEndpoint" binding="xsd:CorrelatedDataNotificationHttpBinding">
+            <http:address location="http://localhost:8080/axis2/services/CorrelatedDataNotification"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>
