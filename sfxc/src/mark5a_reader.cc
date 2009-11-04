@@ -22,8 +22,8 @@ Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
   // this is needed e.g. for the mark5a_print_headers utility. 
   if(ref_day < 0)
     ref_day = start_day_;
-  current_time_ = header.get_time_in_us(0);
   current_day_ = header.day(0);
+  current_time_ = correct_raw_time(header.get_time_in_us(0));
 
   set_data_frame_info(data);
   us_per_day=(int64_t)24*60*60*1000000;
@@ -315,8 +315,8 @@ get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
   header.set_header(&data.buffer[0]);
   if(!header.checkCRC())
     sfxc_abort("Invalid crc-code in the mark5a data file");
-  DEBUG_MSG("Mark5a reader found start of data at : y=" << header.year(0)
-            << ", day = " << header.day(0) << ", time =" << header.get_time_in_us(0));
+  std::cout << RANK_OF_NODE << " : Mark5a reader found start of data at : y=" << header.year(0)
+            << ", day = " << header.day(0) << ", time =" << header.get_time_in_us(0) << "\n";
   return new Mark5a_reader(reader, n_tracks_8, data, ref_year, ref_day);
 }
 
