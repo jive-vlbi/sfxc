@@ -75,7 +75,7 @@ public:
   /// Compute a list of delays, note we only store the times(+delay) 
   /// where the integer delay changes
   void get_delays(uint64_t start_time, uint64_t stop_time, 
-                               Delay_memory_pool_element &delay_list);
+                               std::vector<Delay> &delay_list);
   /// Calculates the delay at time
   Delay get_delay(int64_t time);
 private:
@@ -104,7 +104,7 @@ private:
   int delta_time; // the time between two ffts
   int sample_rate;
   int bits_per_sample;
-  int size_slice; // Number of bytes for one integration slice
+  int64_t size_slice; // Number of samples for one integration slice
 };
 
 

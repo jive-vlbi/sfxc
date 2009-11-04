@@ -77,6 +77,16 @@ public:
     return m_queue.front();
   }
 
+  Type& back() {
+    RAIIMutex rc(m_queuecond);
+    while ( m_queue.size() == 0 ){
+      if( isclose_ )throw QueueClosedException();
+      m_queuecond.wait();
+      if( isclose_ )throw QueueClosedException();
+    }
+    return m_queue.back();
+  }
+
   void pop() {
     RAIIMutex rc(m_queuecond);
     while ( m_queue.size() == 0 ){

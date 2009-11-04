@@ -26,30 +26,37 @@ public:
     uint64_t stop_time_;
   };
 
-  struct Channel_memory_pool_data { // was called Channel_memory_pool_data
-    Channel_memory_pool_data()
-//      : invalid_samples_begin(-1), nr_invalid_samples(-1)
-      : start_time(-1), data(INPUT_NODE_PACKET_SIZE) {}
+  struct Channel_circular_input_buffer { 
+    Channel_circular_input_buffer(int size_)
+      : read(0), write(0), data(size_), size(size_){}
+    // NB: We can correlate 36years worth of data @16gb/s per channel before we get
+    // integer overflow, therefore we can be sure that read<=write 
+    inline int bytes_free(){
+      return size + read - write;
+    }
+    inline int bytes_read(){
+      return write - read;
+    }
     typedef unsigned char      value_type;
-    // The channel extracted from a mark5 frame
-    std::vector<value_type> data;
-
-    // The number of the first invalid sample
-    int invalid_samples_begin;
-    // Number of invalid samples in this fft
-    int nr_invalid_samples;
-    // The delay in samples
-    int delay;
-    // The start time of the data in microseconds
-    int64_t start_time;
+    std::vector<value_type> data; // The channel extracted from a mark5 frame
+    int size; // The size of the data buffer
+    uint64_t read;  // The index where the next data byte will be read from
+    uint64_t write; // The index where the next data byte will be written to
   };
+  typedef Channel_circular_input_buffer  *Channel_circular_input_buffer_ptr;
 
+
+  struct Channel_memory_pool_data {
+    Channel_memory_pool_data(): nfft(0) {}
+    int nfft;
+    Memory_pool_vector_element<FLOAT> data;
+  };
 
   typedef Memory_pool< Channel_memory_pool_data >         Channel_memory_pool;
   typedef Channel_memory_pool::Element                    Channel_memory_pool_element;
 
-  typedef Threadsafe_queue<Channel_memory_pool_element>   Channel_buffer;
-  typedef boost::shared_ptr<Channel_buffer>               Channel_buffer_ptr;
+  typedef Threadsafe_queue<Channel_memory_pool_element>   Channel_queue;
+  typedef boost::shared_ptr<Channel_queue>                Channel_queue_ptr;
 
   typedef Memory_pool_vector_element<FLOAT>                Float_element;
   typedef Memory_pool<Float_element>                       Float_memory_pool;

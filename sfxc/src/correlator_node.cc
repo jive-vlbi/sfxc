@@ -17,7 +17,6 @@
 #include "delay_correction_swapped.h"
 #include "delay_correction_default.h"
 
-
 Correlator_node::Correlator_node(int rank, int nr_corr_node, int swap_, bool pulsar_binning_)
     : Node(rank),
     correlator_node_ctrl(*this),
@@ -113,10 +112,12 @@ Correlator_node::~Correlator_node() {
 
 void Correlator_node::start_threads() {
   threadpool_.register_thread( reader_thread_.start() );
+  threadpool_.register_thread( bit2float_thread_.start() );
 }
 
 void Correlator_node::stop_threads() {
   reader_thread_.stop();
+  bit2float_thread_.stop();
 
   /// We wait the termination of the threads
   threadpool_.wait_for_all_termination();
@@ -174,10 +175,8 @@ void Correlator_node::main_loop() {
       }
     case END_CORRELATING:
       break;
-
     }
   }
-
   stop_threads();
 }
 
@@ -198,20 +197,23 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
        Bit_sample_reader_ptr(new Correlator_node_data_reader_tasklet());
   reader_thread_.bit_sample_readers()[stream_nr]->connect_to(data_readers_ctrl.get_data_reader(stream_nr));
 
+  // connect reader to data stream worker
+
+  bit2float_thread_.connect_to(stream_nr, reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
+
   { // create the delay modules
     if (delay_modules.size() <= stream_nr) {
       delay_modules.resize(stream_nr+1,
                            boost::shared_ptr<Delay_correction_base>());
     }
-
     if(swap==0)
       delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default(stream_nr));
     else
       delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_swapped(stream_nr));
     // Connect the delay_correction to the bits2float_converter
-    delay_modules[stream_nr]->connect_to(reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
-    delay_modules[stream_nr]->flag=1;
+    delay_modules[stream_nr]->connect_to(bit2float_thread_.get_output_buffer(stream_nr));
   }
+
 
   // Connect the correlation_core to delay_correction
   correlation_core->connect_to(stream_nr,
@@ -299,6 +301,7 @@ Correlator_node::set_parameters() {
       delay_modules[i]->set_parameters(parameters);
     }
   }
+  bit2float_thread_.set_parameters(parameters);
   correlation_core->set_parameters(parameters, get_correlate_node_number());
 
   has_requested=false;
@@ -334,7 +337,6 @@ void
 Correlator_node::
 output_node_set_timeslice(int slice_nr, int slice_offset, int n_slices,
                           int stream_nr, int bytes) {
-
   correlation_core->data_writer()->set_size_dataslice(bytes*n_slices);
   int32_t msg_output_node[] = {stream_nr, slice_nr, bytes};
   for (int i=0; i<n_slices; i++) {

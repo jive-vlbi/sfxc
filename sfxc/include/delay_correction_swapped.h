@@ -36,7 +36,7 @@ private:
   void fractional_bit_shift(std::complex<FLOAT> input[],
                             int integer_shift,
                             FLOAT fractional_delay);
-  void fringe_stopping(FLOAT output[]);
+  void fringe_stopping(FLOAT input[]);
 
 private:
 

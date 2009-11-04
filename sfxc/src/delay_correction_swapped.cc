@@ -11,9 +11,8 @@ void Delay_correction_swapped::do_task() {
   SFXC_ASSERT(has_work());
   SFXC_ASSERT(current_time >= 0);
 
-  Input_buffer_element &input = input_buffer->front();
-  int input_size = (input->data.size() * 8) / bits_per_sample;
-  int nbuffer=input_size/number_channels();
+  Input_buffer_element input = input_buffer->front_and_pop();
+  int nbuffer=input->nfft;
   current_fft+=nbuffer;
 
   // Allocate output buffer
@@ -37,15 +36,12 @@ void Delay_correction_swapped::do_task() {
     if (time_buffer.size() != 2*n_channels)
       time_buffer.resize(n_channels*2);
 
-    //convert the input samples to floating point
-    bit2float(input, buf, &time_buffer[0]);
-
     double delay = get_delay(current_time+length_of_one_fft()/2);
     double delay_in_samples = delay*sample_rate();
     int integer_delay = (int)std::floor(delay_in_samples+.5);
 
     // Output is in frequency_buffer
-    fringe_stopping(&time_buffer[0]);
+    fringe_stopping(&input->data[buf*n_channels]);
 
     // zero padding
     for (int i = n_channels; i < 2*n_channels; i++) 
@@ -60,7 +56,6 @@ void Delay_correction_swapped::do_task() {
 
 #endif // DUMMY_CORRELATION
   }
-  input_buffer->pop();
   output_buffer->push(cur_output);
 }
 
@@ -180,8 +175,7 @@ Delay_correction_swapped::set_parameters(const Correlation_parameters &parameter
   SFXC_ASSERT(i<correlation_parameters.station_streams.size());
   bits_per_sample = correlation_parameters.station_streams[i].bits_per_sample;
 
-  int fft_size = (parameters.number_channels * bits_per_sample) / 8;
-  nfft_max = INPUT_NODE_PACKET_SIZE/fft_size;
+  nfft_max = std::max(CORRELATOR_BUFFER_SIZE/parameters.number_channels,1);
 
   current_time = parameters.start_time*(int64_t)1000;
 

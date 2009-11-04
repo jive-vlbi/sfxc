@@ -50,7 +50,7 @@ void Input_node_data_writer_tasklet::do_execute()
     did_work = false;
     for (size_t i=0; i<data_writers_.size(); i++)
     {
-        while (data_writers_[i]->has_work())
+        if (data_writers_[i]->has_work())
         {
             data_processed_+=data_writers_[i]->do_task();
             did_work=true;
@@ -59,7 +59,7 @@ void Input_node_data_writer_tasklet::do_execute()
     if( !did_work )
     {
     	//sched_yield();
-      usleep(10000);
+      usleep(1000);
     }
   }
 	timer_.stop();
@@ -116,7 +116,7 @@ void Input_node_data_writer_tasklet::set_parameters(int nr_stream,
 *****************************************************************************/
 void Input_node_data_writer_tasklet::add_timeslice_to_stream(int nr_stream,
                                                      Data_writer_sptr wr,
-                                                     int size)
+                                                     int64_t size)
 {
   SFXC_ASSERT( nr_stream < data_writers_.size() );
   data_writers_[nr_stream]->add_timeslice(wr, size);

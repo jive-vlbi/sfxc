@@ -80,7 +80,6 @@ Input_node_tasklet(Input_reader_ptr_ reader_ptr,
   channel_extractor_.connect_to(reader_.get_output_buffer());
 
 	last_duration_ = 0;
-
   initialise();
 }
 
@@ -94,7 +93,9 @@ add_time_interval(int32_t start_time, int32_t stop_time) {
   SFXC_ASSERT(!delay_pool.empty());
   /// Add a list of delays to the data writers
   Delay_memory_pool_element delay_list=delay_pool.allocate();
-  get_delays((uint64_t)start_time*1000, (uint64_t) stop_time*1000, delay_list);
+  delay_list.data().resize(0);
+  delay_list.data().push_back(get_delay((uint64_t)start_time*1000));
+  get_delays((uint64_t)start_time*1000, (uint64_t)stop_time*1000-1, delay_list.data());
   data_writer_.add_delay(delay_list);
   data_writer_.add_time_interval(uint64_t(1000)*start_time, uint64_t(1000)*stop_time);
 
@@ -169,10 +170,10 @@ set_parameters(const Input_node_parameters &input_node_param,
     data_writer_.connect_to(i, channel_extractor_.get_output_buffer(i) );
     data_writer_.set_parameters(i, input_node_param);
   }
-  // Number of bytes for one integration slice
-  int nr_ffts = Control_parameters::nr_ffts_per_integration_slice(input_node_param.integr_time, 
+  // Number of samples for one integration slice
+  int nr_ffts = Control_parameters::nr_ffts_per_integration_slice(input_node_param.integr_time,
                                                   sample_rate, input_node_param.number_channels);
-  size_slice = nr_ffts*input_node_param.number_channels*bits_per_sample/8;
+  size_slice = nr_ffts*input_node_param.number_channels;
 }
 
 
@@ -203,27 +204,49 @@ Input_node_tasklet::add_data_writer(size_t i, Data_writer_sptr data_writer) {
 }
 
 void
-Input_node_tasklet::get_delays(uint64_t start_time, uint64_t stop_time, 
-                               Delay_memory_pool_element &delay_list)
+Input_node_tasklet::get_delays(uint64_t start_time, uint64_t stop_time,
+                               std::vector<Delay> &delay_list)
+{
+  SFXC_ASSERT(stop_time>start_time);
+  uint64_t dif_time = stop_time-start_time;
+  Delay dstart=get_delay(start_time);
+  Delay dstop=get_delay(stop_time);
+  bool delay_different=((dstop.bytes!=dstart.bytes)||
+                        (dstop.remaining_samples!=dstart.remaining_samples));
+
+  if(delay_different){
+    if(dif_time<3){
+      delay_list.push_back(dstop);
+    }else{
+      get_delays(start_time,start_time+dif_time/2,delay_list);
+      get_delays(start_time+dif_time/2,stop_time,delay_list);
+    }
+  }
+}
+
+/*void
+Input_node_tasklet::get_delays(uint64_t start_time, uint64_t stop_time,
+                               std::vector<Delay> &delay_list)
 {
   // TODO: this can be implemented much more efficiently
   int nffts=(stop_time-start_time)/delta_time;
   uint64_t cur_time=start_time+delta_time/2;
   Delay old_delay, new_delay;
   old_delay=get_delay(cur_time);
-  delay_list.data().resize(0);
-  delay_list.data().push_back(old_delay);
+
+  delay_list.resize(0);
+  delay_list.push_back(old_delay);
 
   for(int i=1;i<nffts;i++){
     cur_time+=delta_time;
     new_delay=get_delay(cur_time);
     if((new_delay.bytes!=old_delay.bytes)||
        (new_delay.remaining_samples!=old_delay.remaining_samples)){
-      delay_list.data().push_back(new_delay);
+      delay_list.push_back(new_delay);
       old_delay=new_delay;
     }
   }
-}
+}*/
 
 Delay
 Input_node_tasklet::get_delay(int64_t time) {

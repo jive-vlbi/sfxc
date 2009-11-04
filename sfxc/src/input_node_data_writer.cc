@@ -6,8 +6,9 @@ Input_node_data_writer(){
 	last_duration_ = 0;
 	total_data_written_ = 0;
   delay_index=0;
-  _current_time=INVALID_TIME;
+  _current_time=0;
   interval=0;
+  sync_stream=false;
 }
 
 Input_node_data_writer::~Input_node_data_writer() {
@@ -37,7 +38,6 @@ Input_node_data_writer::~Input_node_data_writer() {
 
 	last_duration_ = total_duration;
 	DEBUG_MSG( "data_writer byte sent:" << toMB(total_data_written_) << "MB" );
-
 }
 
 void
@@ -49,32 +49,28 @@ connect_to(Input_buffer_ptr new_input_buffer) {
 bool
 Input_node_data_writer::
 has_work() {
-  // Check for new time interval
-  if ( _current_time >= current_interval_.stop_time_ ) {
-    if (( intervals_.empty() ) || ( delays_.empty() )){
-     return false;
-    }
-    interval++;
-    fetch_next_time_interval();
-  }
-
- // Not sufficient input data
-  if(input_buffer_->empty())
-    return false;
-  else if ((input_buffer_->size()<2)&&
-           (current_interval_.stop_time_ - _current_time  >
-            input_buffer_->front().channel_data.data().data.size()*time_per_byte) )
-    return false;
-
-
   // No data writers to send the data to
   if (data_writers_.empty())
     return false;
 
-  // The data writer in the front of the queue is still being used
-  // to send data from another channel
-  //TODO check if it is possible that the same data_writer is used multiple times
-  if ((!data_writers_.front().active) && (data_writers_.front().writer->is_active()))
+  // Check for new time interval
+  if (!data_writers_.front().active){
+    if ( _current_time >= current_interval_.stop_time_ ) {
+      if (( intervals_.empty() ) || ( delays_.empty() )){
+        return false;
+      }
+      interval++;
+      fetch_next_time_interval();
+    }
+    // The data writer in the front of the queue is still being used
+    // to send data from another channel
+    //TODO check if it is possible that the same data_writer is used multiple times
+    if (data_writers_.front().writer->is_active())
+      return false;
+  }
+
+ // Not sufficient input data
+  if(input_buffer_->empty())
     return false;
 
   // Check whether we can send data to the active writer
@@ -91,109 +87,116 @@ do_task() {
   Input_buffer_element &input_element = input_buffer_->front();
   struct Writer_struct& data_writer = data_writers_.front();
 
+  int byte_offset=0;
+  int samples_per_byte = 8/bits_per_sample;
+
+  // Go to the current positition in the delay table
+  std::vector<Delay> &cur_delay = delay_list.data();
+  int delay_size = cur_delay.size();
+
   // Check whether we have to start a new timeslice
-  if(!data_writer.active){  
+  if(!data_writer.active){
     // Initialise the size of the data slice
-    // from the front(): writer.set_size_dataslice(slice_size), slice_size=0
     SFXC_ASSERT(data_writer.slice_size>0);
     data_writer.writer->set_size_dataslice(-1);
     data_writer.writer->activate();
     data_writer.active = true;
-    // Set the current time to the beginning of the integration slice
-    _current_time = ((_current_time+time_fft)/integration_time)*integration_time;
+    // Save the start time of the current slice, _current_time is calculated relative to this
+    _slice_start = _current_time;
+    samples_written_ = 0;
 
     DEBUG_MSG("FETCHING FOR A NEW WRITER......");
+    sync_stream = true;
   }
 
+  if(sync_stream){
+    block_size=input_element.channel_data.data().data.size();
+    int64_t dtime = (int64_t)(_current_time-input_element.start_time);
+    byte_offset = dtime*sample_rate*bits_per_sample/8/1000000 + cur_delay[delay_index].bytes;
+
+    if(byte_offset < 0){
+      // The requested output lies (partly) before the input data, send invalid data
+      int initial_delay = cur_delay[delay_index].remaining_samples;
+      int64_t invalid_samples = write_initial_invalid_data(data_writer, byte_offset);
+      data_writer.slice_size -= invalid_samples;
+      samples_written_ += (invalid_samples-initial_delay);
+
+      _current_time = _slice_start+(1000000LL*samples_written_+sample_rate/2)/sample_rate;
+      sync_stream = false;
+      return 0;
+    }else if (byte_offset >= block_size){
+      // This can happen if there is still a bit of old data left in the input queue
+      input_buffer_->pop();
+      return 0;
+    }else{
+      data_writer.slice_size += cur_delay[delay_index].remaining_samples;
+      write_delay(data_writer.writer, cur_delay[delay_index].remaining_samples);
+      samples_written_ -= cur_delay[delay_index].remaining_samples;
+      sync_stream = false;
+    }
+  }
+  Data_writer_sptr writer = data_writer.writer;
+
   // Check whether we have written all data to the data_writer
-  if (data_writer.slice_size == 0) {
+  if (data_writer.slice_size <= 0) {
+      write_end_of_stream(data_writer.writer);
+      // resync clock to a multiple of the integration time
+      _current_time=((_current_time+integration_time/2)/integration_time)*integration_time;
       data_writer.writer->deactivate();
       data_writers_.pop();
       DEBUG_MSG("POPPING FOR A NEW WRITER......");
       return 0;
   }
-  //go to the correct positition in the delay table
-  std::vector<Delay> &cur_delay = delay_list.data();
-  if((delay_index<cur_delay.size()-1)&&(cur_delay[delay_index+1].time<_current_time+time_fft))
-    delay_index++;
 
-  // Obtain the amount of data to write
-  int64_t dtime = (int64_t)(_current_time-input_element.start_time);
-  int byte_offset = dtime*sample_rate*bits_per_sample/8/1000000 +
-                    cur_delay[delay_index].bytes;
+  int index;
+  int block_inv_samples=std::max(0, input_element.nr_invalid_samples-byte_offset*samples_per_byte);
+  if(block_inv_samples>0){
+    write_invalid(writer, block_inv_samples);
+    index = input_element.nr_invalid_samples/samples_per_byte; // We don't actually write the invalid bytes
+  }else
+    index=byte_offset;
 
-  Data_writer_sptr writer = data_writer.writer;
-  block_size=input_element.channel_data.data().data.size();
-  int data_to_write;
+  int next_delay_pos=get_next_delay_pos(cur_delay, _current_time)+byte_offset;
+  int total_to_write = std::min(block_size-byte_offset,
+                           (int)(data_writer.slice_size+samples_per_byte-1)/samples_per_byte);
+  int end_index = total_to_write+byte_offset;
+  while(index<end_index){
+    if(index>=next_delay_pos){
+      delay_index++;
 
-  if(byte_offset <= -INPUT_NODE_PACKET_SIZE){
-    //The requested output lies completely before the input data, send invalid data
-    data_to_write = std::min(INPUT_NODE_PACKET_SIZE, data_writer.slice_size+1);
-    int invalid_start=0, nr_inv_samples=data_to_write*8/bits_per_sample, delay=0;
-    write_header(writer,data_to_write, invalid_start, nr_inv_samples, delay);
-    write_random_data(writer,data_to_write);
-  }else if (byte_offset >= block_size){
-    // This can happen when we go to a next integration slice
-    // And the integer delay changes at the same time
-    // Release the current block
-    input_buffer_->pop();
-    return 0;
-  }else{
-    int invalid_bytes, valid_bytes;
-    int invalid_start, nr_inv_samples, delay;
-    int block_inv_samples=input_element.nr_invalid_samples;
-
-    int next_delay_pos=get_next_delay_pos(cur_delay, _current_time);
-    data_to_write = bytes_to_write(byte_offset, next_delay_pos);
-    SFXC_ASSERT(data_to_write -1 <= next_delay_pos);
-    // Check if there was enough data to send 
-    if(data_to_write==1)
-      return 0;
-
-    SFXC_ASSERT(data_to_write-1 <= data_writers_.front().slice_size);
-    SFXC_ASSERT((data_to_write-1)%fftsize==0);
-    SFXC_ASSERT(data_to_write<=INPUT_NODE_PACKET_SIZE);
-
-    if(byte_offset<0){
-      invalid_bytes=-byte_offset;
-      valid_bytes=data_to_write-invalid_bytes;
-      nr_inv_samples=invalid_bytes*8/bits_per_sample + 
-                      std::min(valid_bytes*8/bits_per_sample, block_inv_samples);
-      invalid_start=0;
-      byte_offset=0;
+      write_delay(writer, cur_delay[delay_index].remaining_samples);
+      // at delay change adjust the amount of samples to be sent
+      int d_delay = cur_delay[delay_index].remaining_samples-cur_delay[delay_index-1].remaining_samples;
+      if((d_delay>1)||(d_delay==-1))
+        data_writer.slice_size -= 1;
+      else 
+        data_writer.slice_size += 1;
+      next_delay_pos=get_next_delay_pos(cur_delay, _current_time)+byte_offset;
+      total_to_write = std::min(block_size-byte_offset,
+                              (int)(data_writer.slice_size+samples_per_byte-1)/samples_per_byte);
+      end_index = total_to_write+byte_offset;
     }else{
-      invalid_bytes=0;
-      valid_bytes=data_to_write;
+      int data_to_write = std::min(next_delay_pos-index, end_index-index);
 
-      int second_block_start = block_size - byte_offset;
-      int sample_offset = byte_offset*8/bits_per_sample;
-      if( data_to_write < second_block_start){
-        invalid_start = 0;
-        nr_inv_samples = std::max(block_inv_samples - sample_offset, 0);
-      }else{
-        invalid_start = second_block_start*8/bits_per_sample;
-        nr_inv_samples = std::min(data_to_write*8/bits_per_sample - invalid_start, block_inv_samples);
-      }
+      write_data(writer, data_to_write, index);
+      index += data_to_write;
     }
-    delay=cur_delay[delay_index].remaining_samples;
-    write_header(writer, data_to_write, invalid_start, nr_inv_samples, delay);
-    if(invalid_bytes>0) write_random_data(writer, invalid_bytes);
-    write_data(writer, valid_bytes, byte_offset);
   }
+  total_data_written_ += total_to_write;
+  data_writer.slice_size-=total_to_write*samples_per_byte;
+  samples_written_ += total_to_write*samples_per_byte;
 
-  total_data_written_ += data_to_write;
-  data_writer.slice_size-=(data_to_write-1); // -1 because we allways send 1 extra byte of data
+  _current_time = _slice_start+(1000000LL*samples_written_+sample_rate/2)/sample_rate;
 
-  _current_time += (uint64_t)(data_to_write-1)*8*1000000/(sample_rate*bits_per_sample);
-  return data_to_write-1;
+  return total_to_write;
 }
 
 void
 Input_node_data_writer::
-add_timeslice(Data_writer_sptr data_writer, int nr_bytes) {
+add_timeslice(Data_writer_sptr data_writer, int64_t nr_samples) {
   Writer_struct writer;
   writer.writer = data_writer;
-  writer.slice_size = nr_bytes;
+  writer.slice_size = nr_samples;
 
   data_writers_.push(writer);
   DEBUG_MSG(": This data writer has a waiting queue of " << data_writers_.size() 
@@ -250,24 +253,38 @@ Input_node_data_writer::fetch_next_time_interval() {
 }
 
 void
-Input_node_data_writer::write_header(Data_writer_sptr writer, int32_t ndata, int inv_start, int nr_inv, int delay)
-{
-  SFXC_ASSERT((delay>=0)&&(delay<8/bits_per_sample));
-  // The start time of the block
-  int nbytes = writer->put_bytes(sizeof(_current_time), (char*)&_current_time);
-  SFXC_ASSERT(nbytes == sizeof(_current_time));
-  // No of bytes in block
-  nbytes = writer->put_bytes(sizeof(ndata), (char*)&ndata);
-  SFXC_ASSERT(nbytes == sizeof(ndata));
-  //The invalid block parameters
-  nbytes = writer->put_bytes(sizeof(inv_start), (char*)&inv_start);
-  SFXC_ASSERT(nbytes == sizeof(inv_start));
-  nbytes = writer->put_bytes(sizeof(nr_inv), (char*)&nr_inv);
-  SFXC_ASSERT(nbytes == sizeof(nr_inv));
-  // The integer delay in number of samples
+Input_node_data_writer::write_invalid(Data_writer_sptr writer, int nInvalid){
+  int8_t header = HEADER_INVALID;
+  int bytes_written=0;
+
+  while(bytes_written < nInvalid){
+    // first write a header containing the number of bytes to be send
+    int16_t data_to_write = (int16_t) std::min(nInvalid-bytes_written, SHRT_MAX);
+    writer->put_bytes(sizeof(header), (char *)&header);
+    writer->put_bytes(sizeof(data_to_write), (char *)&data_to_write);
+    bytes_written += data_to_write;
+  }
+}
+
+void
+Input_node_data_writer::write_end_of_stream(Data_writer_sptr writer){
+  int8_t header = HEADER_ENDSTREAM;
+  writer->put_bytes(sizeof(header), (char *)&header);
+}
+
+
+void
+Input_node_data_writer::write_delay(Data_writer_sptr writer, int8_t delay){
+  // The header
+  int8_t header_type = HEADER_DELAY;
+  int nbytes = writer->put_bytes(sizeof(header_type), (char*)&header_type);
+  SFXC_ASSERT(nbytes == sizeof(header_type));
+
+  //The number delay in samples
   nbytes = writer->put_bytes(sizeof(delay), (char*)&delay);
   SFXC_ASSERT(nbytes == sizeof(delay));
 }
+
 
 int 
 Input_node_data_writer::get_next_delay_pos(std::vector<Delay> &cur_delay, uint64_t start_time){
@@ -286,77 +303,74 @@ Input_node_data_writer::get_next_delay_pos(std::vector<Delay> &cur_delay, uint64
 void
 Input_node_data_writer::write_data(Data_writer_sptr writer, int ndata, int byte_offset)
 {
+  if(ndata==0)
+    return;
   SFXC_ASSERT(byte_offset>=0);
-  int buffer_size=input_buffer_->front().channel_data.data().data.size();
   int bytes_written=0;
+  int8_t header=HEADER_DATA;
 
   int start=byte_offset;
 
   while(bytes_written < ndata){
+    // first write a header containing the number of bytes to be send
+    int16_t data_to_write = (int16_t) std::min(ndata-bytes_written, SHRT_MAX);
+    writer->put_bytes(sizeof(header), (char *)&header);
+    writer->put_bytes(sizeof(data_to_write), (char *)&data_to_write);
+
     Input_buffer_element &input_element = input_buffer_->front();
     char *data =(char*)&input_element.channel_data.data().data[start];
-    int towrite=std::min((int)ndata-bytes_written, buffer_size-start);
     int written = 0;
 
-    while(written < towrite){
-      written += writer->put_bytes(towrite, data);
+    while(written < data_to_write){
+      written += writer->put_bytes((int)data_to_write, data);
       bytes_written+=written;
       data+=written;
     }
-    start=0;
-    if((bytes_written+byte_offset)%buffer_size==0){
-      input_buffer_->pop();
-    }
+    start += data_to_write;
+  }
+  // If we are at the end of the input buffer remove it from the queue
+  if((bytes_written+byte_offset)%block_size==0){
+    input_buffer_->pop();
   }
 }
 
-void
-Input_node_data_writer::write_random_data(Data_writer_sptr writer, int ndata)
-{
-  int bytes_written=0;
+int64_t 
+Input_node_data_writer::write_initial_invalid_data(Writer_struct &data_writer, int byte_offset){
+  int samples_per_byte = 8/bits_per_sample;
+  std::vector<Delay> &cur_delay = delay_list.data();
+  int delay_size = cur_delay.size();
 
-  init_random_block(random_data_, ndata);
+  // The initial delay
+  write_delay(data_writer.writer, cur_delay[delay_index].remaining_samples);
+  data_writer.slice_size += cur_delay[delay_index].remaining_samples;
 
-  //send the actual data
-  while(bytes_written < ndata)
-   bytes_written += writer->put_bytes(ndata-bytes_written, &random_data_[bytes_written]);
-}
-
-
-int
-Input_node_data_writer::bytes_to_write(int byte_offset, int next_delay_pos)
-{
-  int data_in_first_block = block_size-byte_offset; //including bytes before start of data
-  int data_in_second_block = std::min((int)(input_buffer_->size()-1), 1)*block_size;
-  // Subtract one byte from available_data, because we always send an extra byte with each data packet
-  int available_bytes = std::min(data_in_first_block+data_in_second_block-1, next_delay_pos);
-  int nr_ffts = available_bytes/fftsize;
-
-  // amount of available data
-  int nbytes = std::min(nr_ffts*fftsize, INPUT_NODE_PACKET_SIZE-1);
-  // The amount of data still to be send for this time slice
-  int slice_left=data_writers_.front().slice_size;
-
-  return std::min(nbytes,slice_left)+1;
-}
-
-void
-Input_node_data_writer::init_random_block(std::vector<char> &data, int length) {
-  if (data.size() != length) {
-    data.resize(length);
-#ifdef SFXC_INVALIDATE_SAMPLES
-  #ifdef SFXC_CHECK_INVALID_SAMPLES
-    for (int i=0; i<length; i++) {
-      data[i] = INVALID_PATTERN;
+  int64_t invalid_samples=std::min((int64_t)-byte_offset*samples_per_byte, data_writer.slice_size);
+  int64_t written=0;
+  while(written<invalid_samples){
+    int64_t next_delay_pos;
+    if(delay_index<delay_size-1){
+      int64_t dt=(cur_delay[delay_index+1].time-_current_time);
+      next_delay_pos=dt*sample_rate/1000000LL;
+    }else{
+      next_delay_pos=data_writer.slice_size*2;
     }
-  #endif
-#else
-    // Randomize data
-    for (int i=0; i<length; i++) {
-      data[i] = (char)park_miller_random();
+    if(written==next_delay_pos){
+      delay_index++;
+      write_delay(data_writer.writer, cur_delay[delay_index].remaining_samples);
+      // at delay change adjust the amount of samples to be sent
+      int d_delay = cur_delay[delay_index].remaining_samples-cur_delay[delay_index-1].remaining_samples;
+      if((d_delay>1)||(d_delay==-1))
+        data_writer.slice_size -= 1;
+      else
+        data_writer.slice_size += 1;
+      invalid_samples=std::min((int64_t)-byte_offset*samples_per_byte, data_writer.slice_size);
+    }else{
+      int data_to_write = std::min(next_delay_pos-written, invalid_samples-written);
+      write_invalid(data_writer.writer, data_to_write);
+      written += data_to_write;
     }
-#endif
   }
+  return invalid_samples;
 }
 
 int64_t 

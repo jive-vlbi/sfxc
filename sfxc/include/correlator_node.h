@@ -15,6 +15,7 @@
 #include "single_data_writer_controller.h"
 #include "control_parameters.h"
 #include "correlator_node_data_reader_tasklet.h"
+#include "correlator_node_bit2float_tasklet.h"
 #include "log_writer_mpi.h"
 #include "correlation_core.h"
 #include "delay_correction_base.h"
@@ -109,7 +110,7 @@ class Reader_thread : public Thread {
     };
 
     Threadsafe_queue<struct job> queue_;
-    int num_reading_;
+    bool readers_active_;
     /// Time spend in waiting for new slice
     Timer timer_waiting_;
 
@@ -160,7 +161,7 @@ class Reader_thread : public Thread {
       DEBUG_MSG("reading thread started ! n_readers = " << bit_sample_readers_.size());
       try {
         while ( isrunning_ ) {
-					if ( num_reading_ == 0 ) {
+					if ( readers_active_ == false ) {
 //            timer_waiting_.resume();
             fetch_new_time_slice();
 //            timer_waiting_.stop();
@@ -168,15 +169,15 @@ class Reader_thread : public Thread {
             timer_reading_.resume();
             /// Wait something happens.
             eventsrc_.wait_until_any_event();
-            num_reading_ = 0;
-            for ( unsigned int i= 0;i<bit_sample_readers_.size();i++) {
-              num_reading_+=bit_sample_readers_[i]->data_to_read();
+            readers_active_ = false;
+            for ( unsigned int i= 0;(i<bit_sample_readers_.size())&&(!readers_active_);i++) {
+             readers_active_=bit_sample_readers_[i]->active();
             }
             timer_reading_.stop();
           }
         }
       } catch (QueueClosedException& exp) {
-        ///std::cout << "The queue is closed !" << std::endl;
+        DEBUG_MSG(" : The queue is closed !");
       }
     }
 
@@ -190,7 +191,7 @@ class Reader_thread : public Thread {
       struct job jb = queue_.front();
       DEBUG_MSG("New input fetched:" << jb.station_streams_size);
 
-      num_reading_=0;
+      readers_active_=false;
       for (size_t i=0; i<bit_sample_readers_.size(); i++) {
         SFXC_ASSERT(bit_sample_readers_[i] !=
                     Bit_sample_reader_ptr());
@@ -202,7 +203,7 @@ class Reader_thread : public Thread {
             jb.bits_per_sample[i],
             jb.number_channels
           );
-          num_reading_++;
+          readers_active_=true;
         }
       }
       queue_.pop();
@@ -229,6 +230,7 @@ class Reader_thread : public Thread {
 
 private:
   Reader_thread reader_thread_;
+  Correlator_node_bit2float_tasklet bit2float_thread_;
   /// We need one thread for the integer delay correction
   ThreadPool threadpool_;
   void start_threads();

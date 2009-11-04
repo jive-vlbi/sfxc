@@ -87,8 +87,7 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
         in_addr tmp;
         tmp.s_addr = ip_ports[i-2];
         ///DEBUG_MSG("Connected using: " << inet_ntoa( tmp ) << ":" << ip_ports[i+1] );
-        boost::shared_ptr<Data_reader>
-        reader( new Data_reader_socket( cnx ) );
+        boost::shared_ptr<Data_reader> reader( new Data_reader_socket( cnx ) );
         add_data_reader(info[3], reader);
       } else {
         MTHROW("Unable to connect");
@@ -97,7 +96,6 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       CHECK_MPI( MPI_Send(NULL, 0, MPI_UINT32,
                           status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
                           MPI_COMM_WORLD ) );
-
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_ADD_TCP_READER_CONNECTED_FROM: {
@@ -252,6 +250,5 @@ Multiple_data_readers_controller::add_data_reader
   }
 
   readers[i].reader2buffer->set_data_reader(reader);
-
   node.hook_added_data_reader(i);
 }

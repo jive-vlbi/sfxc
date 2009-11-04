@@ -77,10 +77,10 @@ public:
   * @desc Add a pair of (data_writer, size_slice) to a given channel-queue.
   * @param int nr_stream The identifier of the stream.
   * @param Data_writer_sptr wr The writer on which to stream the data
-  * @param int size the amount of byte to send to the given writer
+  * @param int64_t size the amount of samples to send to the given writer
   * assert( nr_stream < number_channels() )
   *****************************************************************************/
-  void add_timeslice_to_stream(int nr_stream, Data_writer_sptr wr, int size);
+  void add_timeslice_to_stream(int nr_stream, Data_writer_sptr wr, int64_t size);
 
   /*****************************************************************************
   * @desc Deplate the input_queues of all of the data_writers.

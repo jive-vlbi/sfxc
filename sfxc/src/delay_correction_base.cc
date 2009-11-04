@@ -2,28 +2,11 @@
 
 #include "config.h"
 
-const FLOAT sample_value_ms[] = {
-                                  -7, -2, 2, 7
-                                };
-
-const FLOAT sample_value_m[]  = {
-                                  -5, 5
-                                };
-
 Delay_correction_base::Delay_correction_base(int stream_nr)
     : output_buffer(Output_buffer_ptr(new Output_buffer())),
-      output_memory_pool(64),current_time(-1), delay_table_set(false),
+      output_memory_pool(32),current_time(-1), delay_table_set(false),
       stream_nr(stream_nr)
 {
-  // Lookup tables used in the bit2float conversion
-  for (int i=0; i<256; i++) {
-    lookup_table[i][0] = sample_value_ms[(i>>6) & 3];
-    lookup_table[i][1] = sample_value_ms[(i>>4) & 3];
-    lookup_table[i][2] = sample_value_ms[(i>>2) & 3];
-    lookup_table[i][3] = sample_value_ms[i & 3];
-    for (int j=0; j<8 ; j++)
-      lookup_table_1bit[i][j] = sample_value_m[(i>>(7-j)) & 1];
-  }
 }
 
 Delay_correction_base::~Delay_correction_base() {
@@ -50,92 +33,6 @@ double Delay_correction_base::get_delay(int64_t time) {
   return delay_table.delay(time);
 }
 
-void Delay_correction_base::get_invalid(const Input_buffer_element &input, int buf_nr, 
-                                        int &invalid_start, int &nr_invalid){
-  int fft_size=number_channels();
-  int sample_index=buf_nr*fft_size+input->delay;
-  int input_invalid_end = input->invalid_samples_begin + input->nr_invalid_samples;
-
-  if((input_invalid_end > sample_index)&&
-     (input->invalid_samples_begin < sample_index+fft_size))
-  {
-    int ds=input->invalid_samples_begin-sample_index;
-    invalid_start = std::max(ds,0);
-    nr_invalid=std::min(input_invalid_end, sample_index+fft_size)-(sample_index+invalid_start);
-  }else{
-    invalid_start = 0 ;
-    nr_invalid = 0;
-  }
-}
-
-void Delay_correction_base::bit2float(const Input_buffer_element &input, int buf_nr, FLOAT *output_buffer_) {
-  FLOAT *output_buffer = output_buffer_;
-  int start = buf_nr * (number_channels() * bits_per_sample) / 8;
-  unsigned char *input_data = &input->data[start];
-
-  if (bits_per_sample == 2) {
-    // First byte:
-    memcpy(output_buffer,
-           &lookup_table[(int)input_data[0]][(int)input->delay],
-           (4-input->delay)*sizeof(FLOAT));
-    output_buffer += 4-input->delay;
-
-    int size = (number_channels() * bits_per_sample) / 8;
-    for (int byte = 1; byte < size; byte++) {
-      memcpy(output_buffer, // byte * 4
-             &lookup_table[(int)input_data[byte]][0],
-             4*sizeof(FLOAT));
-      output_buffer += 4;
-    }
-    // Last byte:
-    memcpy(output_buffer,
-           &lookup_table[(int)(unsigned char)input_data[size]][0],
-           input->delay*sizeof(FLOAT));
-  }
-  else { // 1 bit samples
-    SFXC_ASSERT(bits_per_sample == 1);
-    // First byte:
-    memcpy(output_buffer,
-           &lookup_table_1bit[(int)input_data[0]][(int)input->delay],
-           (8-input->delay)*sizeof(FLOAT));
-    output_buffer += 8-input->delay;
-
-    int size = (number_channels() * bits_per_sample) / 8;
-    for (int byte = 1; byte < size; byte++) {
-      memcpy(output_buffer, // byte * 4
-             &lookup_table_1bit[(int)input_data[byte]][0],
-             8*sizeof(FLOAT));
-      output_buffer += 8;
-    }
-
-    // Last byte:
-    memcpy(output_buffer,
-           &lookup_table_1bit[(int)(unsigned char)input_data[size]][0],
-           input->delay*sizeof(FLOAT));
-  }
-  #ifdef SFXC_INVALIDATE_SAMPLES
-  int invalid_samples_begin, nr_invalid_samples;
-  get_invalid(input, buf_nr, invalid_samples_begin, nr_invalid_samples);
-  { // zero out the invalid samples
-    SFXC_ASSERT(invalid_samples_begin >= 0);
-    int invalid_samples_end = invalid_samples_begin + nr_invalid_samples;
-    SFXC_ASSERT(invalid_samples_begin >= 0);
-    SFXC_ASSERT(invalid_samples_begin <= invalid_samples_end);
-    SFXC_ASSERT(invalid_samples_end <= number_channels());
-    for (size_t i=invalid_samples_begin; i<invalid_samples_end; i++) {
-      #ifdef SFXC_CHECK_INVALID_SAMPLES
-      if(output_buffer_[i] != sample_value_ms[INVALID_PATTERN&3])
-        std::cout << "Noes : " << i-invalid_samples_begin 
-                  << "/" << nr_invalid_samples-1<<"\n";
-      SFXC_ASSERT(output_buffer_[i] == sample_value_ms[INVALID_PATTERN&3]);
-      #endif
-      output_buffer_[i] = 0;
-    }
-  }
-  #endif
-}
-
-
 bool Delay_correction_base::has_work() {
   if (input_buffer->empty())
     return false;
@@ -143,7 +40,7 @@ bool Delay_correction_base::has_work() {
     return false;
   if (n_ffts_per_integration == current_fft)
     return false;
-
+  SFXC_ASSERT((current_fft<=n_ffts_per_integration)&&(current_fft>=0))
   return true;
 }
 

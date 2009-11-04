@@ -40,18 +40,17 @@ public:
   struct Writer_struct {
     Writer_struct():active(false) {}
     Data_writer_sptr writer;
-    int             slice_size;
+    int64_t         slice_size;
     bool            active;
   };
   typedef Threadsafe_queue< Writer_struct >      Data_writer_queue;
-
   Input_node_data_writer();
   virtual ~Input_node_data_writer();
 
   /// Set the input
   void connect_to(Input_buffer_ptr new_input_buffer);
 
-  void add_timeslice(Data_writer_sptr data_writer, int nr_bytes);
+  void add_timeslice(Data_writer_sptr data_writer, int64_t nr_samples);
 
 	/// return the amount of data sent...
   uint64_t do_task();
@@ -85,13 +84,13 @@ private:
   Input_buffer_ptr    input_buffer_;
   Data_writer_queue   data_writers_;
   int                 delay_index;
-
   int sample_rate;
   int bits_per_sample;
   int fftsize;
   int time_fft;
   double time_per_byte;
   int integration_time;
+  bool sync_stream;
 
   /// The queue storing all the delays
   Threadsafe_queue<Delay_memory_pool_element> delays_;
@@ -99,22 +98,17 @@ private:
   std::vector<int> invalid_samples_begin;
   std::vector<int> nr_invalid_samples;
 
-  int bytes_to_write(int byte_offset, int next_delay_pos);
   int get_next_delay_pos(std::vector<Delay> &cur_delay, uint64_t start_time);
 
-  void write_header(Data_writer_sptr writer, int32_t ndata, int inv_start, int nr_inv, int delay);
-  void write_random_data(Data_writer_sptr writer, int ndata);
+  void write_invalid(Data_writer_sptr writer, int nInvalid);
+  void write_delay(Data_writer_sptr writer, int8_t delay);
   void write_data(Data_writer_sptr writer, int ndata, int byte_offset);
   void write_invalid_blocks(Data_writer_sptr writer, int byte_offset, int n_bytes, 
                             int invalid_samples_per_block, int block_size);
-  void write_delays(Data_writer_sptr writer, int ndelays);
+  void write_end_of_stream(Data_writer_sptr writer);
 
-  int nr_delays(uint64_t start_time, uint64_t stop_time);
-
-  void init_random_block(std::vector<char> &data, int size);
-  std::vector<char> random_data_;
-
-  uint64_t data_written_;
+  int64_t write_initial_invalid_data(Writer_struct &data_writer, int byte_offset);
+  int64_t samples_written_;
   uint64_t total_data_written_;
   int block_size;
 
@@ -125,6 +119,7 @@ private:
   Time_interval current_interval_;
 
   int64_t _current_time;
+  int64_t _slice_start;
 
   double last_duration_;
   RTTimer timer_waiting_;
