@@ -90,7 +90,7 @@ public:
   void add_delay_table(int sn, Delay_table_akima &table);
 
   void output_node_set_timeslice(int slice_nr, int slice_offset, int n_slices,
-                                 int stream_nr, int bytes);
+                                 int stream_nr, int bytes, int nbins);
 
   void receive_parameters(const Correlation_parameters &parameters);
 

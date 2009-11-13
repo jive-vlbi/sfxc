@@ -207,40 +207,35 @@ void Correlation_core_pulsar::integration_write() {
     }
   }
 
-  { // Writing the timeslice header
-    Output_header_timeslice htimeslice;
+  // Create the timeslice header
+  Output_header_timeslice htimeslice;
+  htimeslice.number_baselines = baselines.size();
+  htimeslice.integration_slice = correlation_parameters.integration_nr + current_integration;
+  htimeslice.number_uvw_coordinates = uvw_tables.size();
 
-    htimeslice.number_baselines = baselines.size();
-    htimeslice.integration_slice =
-      correlation_parameters.integration_nr + current_integration;
-    htimeslice.number_uvw_coordinates = uvw_tables.size();
-
-   // write the uvw coordinates
-    Output_uvw_coordinates uvw[htimeslice.number_uvw_coordinates];
-    // We evaluate in the middle of time slice (nb: the factor 1000 is for the conversion to microseconds)
-    int64_t time;
-    time=(int64_t)correlation_parameters.start_time*1000+(int64_t)correlation_parameters.integration_time*500;
-    for (size_t station=0; station < uvw_tables.size(); station++){
-     double u,v,w;
-     uvw_tables[station].get_uvw(time, &u, &v, &w);
-     uvw[station].station_nr=stream2station[station];
-     uvw[station].u=u;
-     uvw[station].v=v;
-     uvw[station].w=w;
-    }
-
-    size_t nWrite = sizeof(htimeslice);
-    writer->put_bytes(nWrite, (char *)&htimeslice);
-    nWrite=sizeof(uvw);
-    writer->put_bytes(nWrite, (char *)&uvw[0]);
-
-    current_integration++;
+  // Compute the uvw coordinates
+  Output_uvw_coordinates uvw[htimeslice.number_uvw_coordinates];
+  // We evaluate in the middle of time slice (nb: the factor 1000 is for the conversion to microseconds)
+  int64_t time;
+  time=(int64_t)correlation_parameters.start_time*1000+(int64_t)correlation_parameters.integration_time*500;
+  for (size_t station=0; station < uvw_tables.size(); station++){
+    double u,v,w;
+    uvw_tables[station].get_uvw(time, &u, &v, &w);
+    uvw[station].station_nr=stream2station[station];
+    uvw[station].u=u;
+    uvw[station].v=v;
+    uvw[station].w=w;
   }
 
-  accumulation_buffers_float.resize(size_of_fft()/2+1);
-
-  Output_header_baseline hbaseline;
   for (int bin =0 ; bin < accumulation_buffers.size(); bin++){
+    // Writing the timeslice header and uvw coordinates
+    writer->put_bytes(sizeof(htimeslice), (char *)&htimeslice);
+    writer->put_bytes(sizeof(uvw), (char *)&uvw[0]);
+
+    if(accumulation_buffers_float.size()!= size_of_fft()/2+1)
+      accumulation_buffers_float.resize(size_of_fft()/2+1);
+
+    Output_header_baseline hbaseline;
     for (size_t i=0; i<baselines.size(); i++) {
       std::pair<size_t,size_t> &stations = baselines[i];
 
@@ -287,6 +282,7 @@ void Correlation_core_pulsar::integration_write() {
                         ((char*)&accumulation_buffers_float[0]));
     }
   }
+  current_integration++;
 }
 
 void Correlation_core_pulsar::dedisperse_buffer() {

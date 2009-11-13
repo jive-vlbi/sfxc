@@ -91,7 +91,10 @@ int main(int argc, char *argv[]) {
 
   // open the input file
   FILE *input = fopen(argv[2], "rb");
-  assert(input != NULL);
+  if(input == NULL){
+    std::cout << "Couldn't open correlator file : " << argv[2] << "\n";
+    exit(1);
+  }
 
   char *output_dir = (char*)".";
   if (argc==4)

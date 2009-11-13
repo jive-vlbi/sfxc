@@ -316,31 +316,34 @@ Correlator_node::set_parameters() {
   int size_uvw = correlation_core->uvw_tables.size()*sizeof(Output_uvw_coordinates);
 
   int slice_size;
+  int nBins=1;
   if(parameters.pulsar_binning){
     Pulsar_parameters::Pulsar &pulsar = pulsar_parameters.pulsars[std::string(&parameters.source[0])];
-    slice_size = sizeof(Output_header_timeslice) + size_uvw + 
-                 pulsar.nbins * nBaselines * ( size_of_one_baseline + sizeof(Output_header_baseline));
+    slice_size = pulsar.nbins * ( sizeof(Output_header_timeslice) + size_uvw + 
+                 nBaselines * ( size_of_one_baseline + sizeof(Output_header_baseline)));
+    nBins = pulsar.nbins;
   }
   else{
     slice_size = sizeof(Output_header_timeslice) + size_uvw + 
                  nBaselines * (size_of_one_baseline + sizeof(Output_header_baseline));
   }
 
+  SFXC_ASSERT(nBins >= 1);
   output_node_set_timeslice(parameters.slice_nr,
                             parameters.slice_offset,
                             n_integration_slice_in_time_slice,
-                            get_correlate_node_number(),slice_size);
+                            get_correlate_node_number(),slice_size, nBins);
   integration_slices_queue.pop();
 }
 
 void
 Correlator_node::
 output_node_set_timeslice(int slice_nr, int slice_offset, int n_slices,
-                          int stream_nr, int bytes) {
+                          int stream_nr, int bytes, int bins) {
   correlation_core->data_writer()->set_size_dataslice(bytes*n_slices);
-  int32_t msg_output_node[] = {stream_nr, slice_nr, bytes};
+  int32_t msg_output_node[] = {stream_nr, slice_nr, bytes, bins};
   for (int i=0; i<n_slices; i++) {
-    MPI_Send(&msg_output_node, 3, MPI_INT32,
+    MPI_Send(&msg_output_node, 4, MPI_INT32,
              RANK_OUTPUT_NODE,
              MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
              MPI_COMM_WORLD);

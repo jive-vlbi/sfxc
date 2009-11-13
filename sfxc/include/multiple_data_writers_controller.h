@@ -25,6 +25,7 @@ class Multiple_data_writers_controller : public Controller {
 public:
   typedef boost::shared_ptr<Data_writer>            Data_writer_ptr;
 
+  Multiple_data_writers_controller(Node &node);
   Multiple_data_writers_controller(Node &node, int max_connections);
   ~Multiple_data_writers_controller();
 

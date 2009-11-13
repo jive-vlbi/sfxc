@@ -12,7 +12,7 @@
 
 #include "node.h"
 #include "multiple_data_readers_controller.h"
-#include "single_data_writer_controller.h"
+#include "multiple_data_writers_controller.h"
 #include "output_header.h"
 
 #include <memory_pool.h>
@@ -53,12 +53,6 @@ public:
   typedef std::map<int32_t, int>                    Input_stream_priority_map;
   typedef Input_stream_priority_map::value_type     Input_stream_priority_map_value;
 
-  // Output types
-  typedef Single_data_writer_controller::value_type         output_value_type;
-  typedef Single_data_writer_controller::Writer_memory_pool Output_memory_pool;
-  typedef Single_data_writer_controller::Queue              Output_queue;
-  typedef Single_data_writer_controller::Queue_ptr          Output_queue_ptr;
-
   /**
    * Manages the input from one correlator node. The input stream is
    * used to store the data from one correlator node. The data is read
@@ -75,22 +69,26 @@ public:
     /** Fills the buffer with as much data as possible and returns the number of
      * bytes written.
      **/
-    void write_bytes(output_value_type &elem);
+    int read_bytes(std::vector<char> &buffer);
     /** returns whether we reached the end of the current time slice
      **/
     bool end_of_slice();
 
     /** sets the length of a new time slice
      **/
-    void set_length_time_slice(int64_t nBytes);
+    void set_length_time_slice(int64_t nBytes, int nbins);
 
     /** Goto the next data slice **/
-    void goto_next_slice();
+    void goto_next_slice(int &new_slice_size, int &new_nbins);
+    struct Slice{
+      int64_t nBytes;
+      int32_t nBins;
+    };
   private:
     // Data_reader from which the input data can be read
     boost::shared_ptr<Data_reader> reader;
     // list with sizes of the time slices
-    std::queue<int64_t> slice_size;
+    std::queue<Slice> slice_size;
   };
 
   Output_node(int rank, Log_writer *writer, int buffer_size = 10);
@@ -129,7 +127,7 @@ public:
    *
    * \param size The size of the data block in bytes
    **/
-  void set_weight_of_input_stream(int num, int64_t weight, size_t size);
+  void set_weight_of_input_stream(int num, int64_t weight, size_t size, int nbins);
 
   /**
    * This function sets the total number of time slices so that the
@@ -148,17 +146,18 @@ private:
    * Function that writes a bit of data.
    * Returns whether it wrote something
    **/
-  bool write_output();
+  bool write_output(int nBytes);
 
+  /// The number of output files we are writing to
+  int n_data_writers;
 
-  // Output buffer and memory pool for asynchronous IO
-  Output_memory_pool                  output_memory_pool;
-  Output_queue_ptr                    output_queue;
+  /// Data buffer into which the data from the correlator node is read
+  std::vector<char>                   input_buffer;
 
   // Controllers:
   Output_node_controller              output_node_ctrl;
   Multiple_data_readers_controller    data_readers_ctrl;
-  Single_data_writer_controller       data_writer_ctrl;
+  Multiple_data_writers_controller     data_writer_ctrl;
 
   STATUS                              status;
   // Priority map of the input streams, based on the weight (sequence
@@ -167,7 +166,8 @@ private:
   // One input stream for every correlate node
   std::vector<Input_stream *>         input_streams;
 
-  int32_t curr_slice, number_of_time_slices, curr_stream;
+  int32_t curr_slice, number_of_time_slices, curr_stream, curr_slice_size;
+  int32_t total_bytes_written, number_of_bins;
 };
 
 #endif // OUTPUT_NODE_H
