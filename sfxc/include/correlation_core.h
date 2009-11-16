@@ -58,7 +58,7 @@ public:
   virtual ~Correlation_core();
 
   /// For Tasklet
-  void do_task();
+  virtual void do_task();
   bool has_work();
   const char *name() {
     return __PRETTY_FUNCTION__;
@@ -86,9 +86,9 @@ public:
 
 protected:
   virtual void integration_initialise();
-  virtual void integration_step();
-  virtual void integration_average();
-  virtual void integration_write();
+  void integration_step(std::vector<Complex_buffer> &integration_buffer);
+  void integration_normalize(std::vector<Complex_buffer> &integration_buffer);
+  void integration_write(std::vector<Complex_buffer> &integration_buffer);
 
   void auto_correlate_baseline(std::complex<FLOAT> in[],
                                std::complex<FLOAT> out[]);
@@ -112,7 +112,7 @@ protected:
   Correlation_parameters                               correlation_parameters;
 
   std::vector<Complex_buffer>                          accumulation_buffers;
-  Complex_buffer_float                                 accumulation_buffers_float;
+  Complex_buffer_float                                 integration_buffer_float;
   std::vector< std::pair<size_t, size_t> >             baselines;
   int number_ffts_in_integration, current_fft, total_ffts;
 
