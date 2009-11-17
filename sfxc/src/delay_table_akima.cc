@@ -106,7 +106,7 @@ bool Delay_table_akima::initialise_next_scan() {
   if (end_scan >= times.size()) return false;
 
   // next_end_scan is the past-the-end iterator of the next scan
-  while ((end_scan < times.size()) && (times[end_scan] != 0)) {
+  while ((end_scan < times.size()) && ((times[end_scan] != 0) || (delays[end_scan] != 0))) {
     SFXC_ASSERT(delays[end_scan] <= 0);
     end_scan ++;
   }

@@ -18,8 +18,8 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
 
   start_day_ = current_header.julian_day();
   start_time_ = current_header.microseconds();
-  DEBUG_MSG("Start of Mark5b data at jday=" << start_day_
-            << ", time = " << start_time_);
+  std::cout << RANK_OF_NODE << "Start of Mark5b data at jday=" << start_day_
+            << ", time = " << start_time_ << "\n";
   us_per_day=(int64_t)24*60*60*1000000;
 }
 
@@ -42,17 +42,16 @@ Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
     delta_time/time_between_headers_ -
     current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
 
-  const int size_mk5b_block_header =
+  const size_t size_mk5b_block_header =
     (SIZE_MK5B_HEADER+SIZE_MK5B_FRAME)*SIZE_MK5B_WORD;
 
   // Don't read the last header, to be able to check whether we are at the
   // right time
-  int bytes_to_read =
+  size_t bytes_to_read =
     (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
 
   /// int bytes_read = data_reader_->get_bytes(bytes_to_read, NULL);
-  int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
-
+  size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
   SFXC_ASSERT(bytes_to_read == byte_read);
 
   // Read last block:
