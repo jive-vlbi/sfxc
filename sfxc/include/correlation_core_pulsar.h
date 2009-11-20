@@ -29,7 +29,6 @@ protected:
   std::vector<int>                              bins;
   /// The time bins are accumulated here
   std::vector< std::vector<Complex_buffer> >    accumulation_buffers;
-  Complex_buffer_float                          accumulation_buffers_float;
 
   int nbins;
   struct{double begin;double end;} gate;

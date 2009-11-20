@@ -69,6 +69,7 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
     double freq = (polyco->n_coef>=2)?polyco->ref_freq+polyco->coef[1]/60:polyco->ref_freq;
     double period = 1000/freq;// in [ms]
 
+    SFXC_ASSERT(offsets.size()==size_of_fft()/2+1);
     for(int i=0;i<size_of_fft()/2+1;i++){
       offsets[i] = 4.149*polyco->DM*(1/pow(base_freq+i*dfreq,2)-ref_offset)/period;
     }
@@ -117,7 +118,7 @@ void Correlation_core_pulsar::do_task() {
 
 void Correlation_core_pulsar::integration_initialise() {
   int size = (size_of_fft()/2+1);
-  for(int bin=0;bin<accumulation_buffers.size();bin++){
+  for(int bin=0;bin<nbins;bin++){
     if (accumulation_buffers[bin].size() != baselines.size()) {
       accumulation_buffers[bin].resize(baselines.size());
       for (int j=0; j<accumulation_buffers[bin].size(); j++) {
@@ -132,15 +133,16 @@ void Correlation_core_pulsar::integration_initialise() {
     }
   }
 
-  for (int bin=0; bin<accumulation_buffers.size(); bin++) {
+  for (int bin=0; bin<nbins; bin++) {
     for (int j=0; j<accumulation_buffers[bin].size(); j++) {
       SFXC_ASSERT(accumulation_buffers[bin][j].size() == size);
-      memset(&accumulation_buffers[bin][j][0], size*sizeof(std::complex<FLOAT>), 0);
+      memset(&accumulation_buffers[bin][j][0], 0, size*sizeof(std::complex<FLOAT>));
+
     }
   }
   for (int j=0; j<dedispersion_buffer.size(); j++) {
-    SFXC_ASSERT(dedispersion_buffer[j].size() == size_of_fft()/2+1);
-    memset(&dedispersion_buffer[j][0], size*sizeof(std::complex<FLOAT>), 0);
+    SFXC_ASSERT(dedispersion_buffer[j].size() == size);
+    memset(&dedispersion_buffer[j][0], 0, size*sizeof(std::complex<FLOAT>));
   }
 }
 
@@ -149,6 +151,7 @@ void Correlation_core_pulsar::dedisperse_buffer() {
   double ref_phase = get_phase();
   double len=gate.end-gate.begin;
   // first compute the phase bins
+  SFXC_ASSERT(bins.size()==size_of_fft()/2+1);
   for(int j=0;j<size_of_fft()/2+1;j++){
     double phase = ref_phase+offsets[j];
     double dph = (phase-floor(phase)-gate.begin);
@@ -160,10 +163,12 @@ void Correlation_core_pulsar::dedisperse_buffer() {
 
   // TODO check performance agains loop interchange
   for (int i=0; i < baselines.size(); i++) {
+    SFXC_ASSERT(dedispersion_buffer[i].size()==size_of_fft()/2+1);
     for(int j=0;j<size_of_fft()/2+1;j++){
       int bin = bins[j];
       if(bin >= 0){
         accumulation_buffers[bin][i][j] += dedispersion_buffer[i][j];
+        dedispersion_buffer[i][j]=0;
       }
     }
   }

@@ -175,6 +175,7 @@ void Correlation_core::integration_initialise() {
 }
 
 void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer) {
+  SFXC_ASSERT(n_channels()==32); //TODO REMOVE ME
   if (input_elements.size() != number_input_streams_in_use()) {
     input_elements.resize(number_input_streams_in_use());
   }
@@ -271,7 +272,7 @@ void Correlation_core::integration_step(std::vector<Complex_buffer> &integration
 void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integration_buffer) {
   std::vector<FLOAT> norms;
   norms.resize(n_stations());
-  memset(&norms[0], norms.size()*sizeof(FLOAT), 0);
+  memset(&norms[0], 0, norms.size()*sizeof(FLOAT));
 
   // Average the auto correlations
   for (size_t station=0; station < n_stations(); station++) {

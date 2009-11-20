@@ -379,7 +379,6 @@ MPI_Transfer::receive(MPI_Status &status, Pulsar_parameters &pulsar_param) {
   int32_t npulsars;
   int position = 0;
   MPI_Unpack(buffer, size, &position, &npulsars, 1, MPI_INT32, MPI_COMM_WORLD);
-  if(RANK_OF_NODE==14) std::cout << "unpacking npulsar : " << npulsars << "\n";
 
   for(int i=0; i<npulsars; i++){
     Pulsar_parameters::Pulsar newPulsar;
@@ -389,7 +388,6 @@ MPI_Transfer::receive(MPI_Status &status, Pulsar_parameters &pulsar_param) {
     MPI_Unpack(buffer, size, &position, &newPulsar.interval.stop,  1, MPI_DOUBLE, MPI_COMM_WORLD);
     int32_t npolyco;
     MPI_Unpack(buffer, size, &position, &npolyco, 1, MPI_INT32, MPI_COMM_WORLD);
-    if(RANK_OF_NODE==14) std::cout << "unpacking npolyco : " << npolyco << "\n";
     newPulsar.polyco_params.resize(npolyco);
     for(int j=0;j<npolyco;j++){
       Pulsar_parameters::Polyco_params *poly = &newPulsar.polyco_params[j];
@@ -408,7 +406,6 @@ MPI_Transfer::receive(MPI_Status &status, Pulsar_parameters &pulsar_param) {
       MPI_Unpack(buffer, size, &position, &poly->obs_freq, 1, MPI_DOUBLE, MPI_COMM_WORLD);
       MPI_Unpack(buffer, size, &position, &poly->bin_phase[0], 1, MPI_FLOAT, MPI_COMM_WORLD);
       MPI_Unpack(buffer, size, &position, &poly->bin_phase[1], 1, MPI_FLOAT, MPI_COMM_WORLD);
-
       poly->coef.resize(poly->n_coef);
       for(int k=0;k<poly->n_coef;k++){
         MPI_Unpack(buffer, size, &position, &poly->coef[k], 1, MPI_DOUBLE, MPI_COMM_WORLD);

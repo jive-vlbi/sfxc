@@ -1486,8 +1486,14 @@ Pulsar_parameters::parse_polyco(std::vector<Polyco_params> &param, std::string f
       n_coef = param[block_index].n_coef;
       param[block_index].coef.resize(n_coef);
       inpline >> param[block_index].obs_freq;
-      inpline >> param[block_index].bin_phase[0];
-      inpline >> param[block_index].bin_phase[1];
+      if(!inpline.eof()){
+        // The binary phase parameters are optional
+        inpline >> param[block_index].bin_phase[0];
+        inpline >> param[block_index].bin_phase[1];
+      }else{
+        param[block_index].bin_phase[0]=0;
+        param[block_index].bin_phase[1]=0;
+      }
     }else{
       while((!inpline.eof())&&(!inpline.fail())&&(coef_idx<n_coef)){
         inpline >> param[block_index].coef[coef_idx];

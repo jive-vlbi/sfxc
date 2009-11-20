@@ -318,16 +318,22 @@ Correlator_node::set_parameters() {
   int slice_size;
   int nBins=1;
   if(parameters.pulsar_binning){
-    Pulsar_parameters::Pulsar &pulsar = pulsar_parameters.pulsars[std::string(&parameters.source[0])];
-    slice_size = pulsar.nbins * ( sizeof(Output_header_timeslice) + size_uvw + 
+    std::map<std::string, Pulsar_parameters::Pulsar>::iterator cur_pulsar_it =
+                           pulsar_parameters.pulsars.find(std::string(&parameters.source[0]));
+    if(cur_pulsar_it == pulsar_parameters.pulsars.end()){
+      // Current source is not a pulsar
+      nBins = 1;
+    }else{
+      Pulsar_parameters::Pulsar &pulsar = cur_pulsar_it->second;
+      nBins = pulsar.nbins;
+    }
+    slice_size = nBins * ( sizeof(Output_header_timeslice) + size_uvw + 
                  nBaselines * ( size_of_one_baseline + sizeof(Output_header_baseline)));
-    nBins = pulsar.nbins;
   }
   else{
     slice_size = sizeof(Output_header_timeslice) + size_uvw + 
                  nBaselines * (size_of_one_baseline + sizeof(Output_header_baseline));
   }
-
   SFXC_ASSERT(nBins >= 1);
   output_node_set_timeslice(parameters.slice_nr,
                             parameters.slice_offset,
