@@ -175,7 +175,6 @@ void Correlation_core::integration_initialise() {
 }
 
 void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer) {
-  SFXC_ASSERT(n_channels()==32); //TODO REMOVE ME
   if (input_elements.size() != number_input_streams_in_use()) {
     input_elements.resize(number_input_streams_in_use());
   }
