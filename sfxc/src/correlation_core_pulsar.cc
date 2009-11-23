@@ -62,17 +62,15 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 
     // Find the time offsets between frequency components
     int sb = correlation_parameters.sideband == 'L' ? -1 : 1;
-    double base_freq = (parameters.channel_freq + sb*parameters.bandwidth*0.5)*1e-9; // [GHZ]
-    double dfreq = parameters.bandwidth*1e-9/(n_channels()+1);
+    double base_freq = (parameters.channel_freq - (1-sb)*parameters.bandwidth*0.5)*1e-6; // [MHZ]
+    double dfreq = parameters.bandwidth*1e-6/n_channels();
     // TODO check accuracy
-    double ref_offset = 1/pow(polyco->obs_freq/1000,2);
+    double inv_freq_obs2 = 1/(polyco->obs_freq*polyco->obs_freq);
     double freq = (polyco->n_coef>=2)?polyco->ref_freq+polyco->coef[1]/60:polyco->ref_freq;
-    double period = 1000/freq;// in [ms]
-
+    double period = 1./freq;// in [s]
     SFXC_ASSERT(offsets.size()==size_of_fft()/2+1);
-    for(int i=0;i<size_of_fft()/2+1;i++){
-      offsets[i] = 4.149*polyco->DM*(1/pow(base_freq+i*dfreq,2)-ref_offset)/period;
-    }
+    for(int i=0;i<size_of_fft()/2+1;i++)
+      offsets[i] = 4149.*polyco->DM*(1/pow(base_freq+i*dfreq,2)-inv_freq_obs2)/period;
 
     // Compute the phase at the start of the period
     double DT=(start_mjd+fft_duration/(2*us_per_day) - polyco->tmid)*1440;
@@ -137,9 +135,9 @@ void Correlation_core_pulsar::integration_initialise() {
     for (int j=0; j<accumulation_buffers[bin].size(); j++) {
       SFXC_ASSERT(accumulation_buffers[bin][j].size() == size);
       memset(&accumulation_buffers[bin][j][0], 0, size*sizeof(std::complex<FLOAT>));
-
     }
   }
+
   for (int j=0; j<dedispersion_buffer.size(); j++) {
     SFXC_ASSERT(dedispersion_buffer[j].size() == size);
     memset(&dedispersion_buffer[j][0], 0, size*sizeof(std::complex<FLOAT>));
@@ -148,16 +146,16 @@ void Correlation_core_pulsar::integration_initialise() {
 
 
 void Correlation_core_pulsar::dedisperse_buffer() {
-  double ref_phase = get_phase();
+  double obs_freq_phase = get_phase();
   double len=gate.end-gate.begin;
   // first compute the phase bins
   SFXC_ASSERT(bins.size()==size_of_fft()/2+1);
   for(int j=0;j<size_of_fft()/2+1;j++){
-    double phase = ref_phase+offsets[j];
+    double phase = obs_freq_phase+offsets[j];
     double dph = (phase-floor(phase)-gate.begin);
-    if((dph>=0)&&(dph<=len))
+    if((dph>=0)&&(dph<=len)){
       bins[j] = (int)(dph*nbins/len);
-    else
+    }else
       bins[j]=-1;
   }
 
@@ -168,8 +166,8 @@ void Correlation_core_pulsar::dedisperse_buffer() {
       int bin = bins[j];
       if(bin >= 0){
         accumulation_buffers[bin][i][j] += dedispersion_buffer[i][j];
-        dedispersion_buffer[i][j]=0;
       }
+      dedispersion_buffer[i][j]=0;
     }
   }
 }

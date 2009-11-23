@@ -24,7 +24,7 @@ protected:
   Pulsar_parameters::Polyco_params              *polyco;
   /// Temporary buffer to store un-dispersed data
   std::vector<Complex_buffer>                   dedispersion_buffer;
-  // Time offsets of each frequency component relative to the reference frequency
+  // Time offsets[ms] of each frequency component relative to the reference frequency
   std::vector<double>                           offsets;
   std::vector<int>                              bins;
   /// The time bins are accumulated here
@@ -40,11 +40,7 @@ protected:
 inline double Correlation_core_pulsar::get_phase(){
   // Because our time span is in the order of seconds we can increment the phase
   // with just the first order terms
-/*  if(RANK_OF_NODE==13)
-    std::cout << "coef=" << polyco->coef[1] << ", ref = " << polyco->ref_freq
-              << ", duur="<< fft_duration << ", dt = " << (current_fft*1.+1./2)/us_per_day
-              << "\n";*/
-  return start_phase + (polyco->coef[1]+60*polyco->ref_freq)*fft_duration*(current_fft*1.+1./2)*1440/us_per_day;
+  return start_phase + (polyco->coef[1]+60*polyco->ref_freq)*fft_duration*current_fft*1440/us_per_day;
 }
 
 #endif /*CORRELATION_CORE_H_*/
