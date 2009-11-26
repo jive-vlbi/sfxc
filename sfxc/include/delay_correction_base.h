@@ -79,6 +79,7 @@ private:
   Correlation_parameters correlation_parameters;
   int	stream_nr;
   int	bits_per_sample;
+  int oversamp; // The amount of oversampling
 
   int n_ffts_per_integration, current_fft, total_ffts;
   int nfft_max; // The maximum number of fft's in an input frame

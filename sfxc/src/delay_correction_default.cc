@@ -90,10 +90,9 @@ void Delay_correction_default::fractional_bit_shift(FLOAT *input,
   // the following should be double
   const double dfr  = sample_rate()*1.0/number_channels(); // delta frequency
   const double tmp1 = -2.0*M_PI*fractional_delay/sample_rate();
-  const double tmp2 = 0.5*M_PI*(integer_shift&3);/* was: / ovrfl */
+  const double tmp2 = M_PI*(integer_shift&3)/(2*oversamp);
   const double constant_term = tmp2 - sideband()*tmp1*0.5*bandwidth();
   const double linear_term = tmp1*sideband()*dfr;
-
   // 5b)apply phase correction in frequency range
   const int size = number_channels()/2+1;
 
@@ -187,6 +186,7 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
   SFXC_ASSERT(i<correlation_parameters.station_streams.size());
   bits_per_sample = correlation_parameters.station_streams[i].bits_per_sample;
   nfft_max = std::max(CORRELATOR_BUFFER_SIZE/parameters.number_channels,1);
+  oversamp = round(correlation_parameters.sample_rate/(2*correlation_parameters.bandwidth));
 
   current_time = parameters.start_time*(int64_t)1000;
 

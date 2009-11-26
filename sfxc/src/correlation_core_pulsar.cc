@@ -26,7 +26,7 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 
   double ms_per_day = 1000*24*60*60;
   double start_mjd = parameters.start_time/ms_per_day + parameters.mjd;
-  fft_duration = (((double)n_channels())*1000000)/correlation_parameters.sample_rate;
+  fft_duration = (((double)n_channels())*1000000)/parameters.sample_rate;
 
   if(offsets.size()!=size_of_fft()/2+1)
     offsets.resize(size_of_fft()/2+1);
@@ -61,9 +61,9 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
     polyco = &cur_pulsar.polyco_params[closest];
 
     // Find the time offsets between frequency components
-    int sb = correlation_parameters.sideband == 'L' ? -1 : 1;
+    int sb = parameters.sideband == 'L' ? -1 : 1;
     double base_freq = (parameters.channel_freq - (1-sb)*parameters.bandwidth*0.5)*1e-6; // [MHZ]
-    double dfreq = parameters.bandwidth*1e-6/n_channels();
+    double dfreq = parameters.sample_rate*1e-6/(2*n_channels());
     // TODO check accuracy
     double inv_freq_obs2 = 1/(polyco->obs_freq*polyco->obs_freq);
     double freq = (polyco->n_coef>=2)?polyco->ref_freq+polyco->coef[1]/60:polyco->ref_freq;
