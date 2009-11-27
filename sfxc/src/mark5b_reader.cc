@@ -34,33 +34,39 @@ Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
 
   if (us_time <= current_time_) return current_time_;
 
-  const int64_t delta_time = us_time-correct_raw_time((int64_t)current_header.seconds()*1000000);
-
-  SFXC_ASSERT(delta_time % time_between_headers_ == 0);
-  SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
-  int n_blocks =
-    delta_time/time_between_headers_ -
-    current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
-
   const size_t size_mk5b_block_header =
     (SIZE_MK5B_HEADER+SIZE_MK5B_FRAME)*SIZE_MK5B_WORD;
 
-  // Don't read the last header, to be able to check whether we are at the
-  // right time
-  size_t bytes_to_read =
-    (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
+  // first skip through the file in 1 second steps.
+  int64_t one_sec=1000000LL;
+  int64_t delta_time = us_time-correct_raw_time((int64_t)current_header.seconds()*1000000);
+  while (delta_time >= one_sec){
+    SFXC_ASSERT(delta_time % time_between_headers_ == 0);
+    SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
+    int n_blocks = one_sec/time_between_headers_ - current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
 
-  /// int bytes_read = data_reader_->get_bytes(bytes_to_read, NULL);
-  size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
-  SFXC_ASSERT(bytes_to_read == byte_read);
+    // Don't read the last header, to be able to check whether we are at the
+    // right time
+    size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
+    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
+    SFXC_ASSERT(bytes_to_read == byte_read);
 
-  // Read last block:
-  read_new_block(data);
+    // Read last block:
+    read_new_block(data);
+    delta_time = us_time-correct_raw_time((int64_t)current_header.seconds()*1000000);
+  }
+  // Now read the last bit of data up to the requested time
+  int n_blocks = delta_time/time_between_headers_ - current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
+  if(n_blocks>0){
+    // Don't read the last header, to be able to check whether we are at the right time
+    size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
+    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
+    SFXC_ASSERT(bytes_to_read == byte_read);
 
-  SFXC_ASSERT((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) == 0);
+    read_new_block(data);
+    SFXC_ASSERT((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) == 0);
+  }
   current_time_ = correct_raw_time(current_header.microseconds());
-  SFXC_ASSERT(us_time == current_time_);
-  SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
 
   return current_time_;
 }

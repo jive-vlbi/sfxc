@@ -41,34 +41,57 @@ VLBA_reader::goto_time(Data_frame &data, int64_t us_time) {
     return us_time;
   }
 
-  // Read an integer number of frames
+  // first skip through the file in 1 second steps.
+  int64_t one_sec=1000000LL;
   int64_t delta_time=us_time-get_current_time();
-  size_t bytes_data_to_read = 
-          (size_t)(delta_time*data_rate()/(8*1000000)) - SIZE_VLBA_FRAME*N;
-  SFXC_ASSERT(bytes_data_to_read %(SIZE_VLBA_FRAME*N)==0);
+  while(delta_time>=one_sec){
+    // Read an integer number of frames
+    size_t bytes_data_to_read = 
+            (size_t)(one_sec*data_rate()/(8*1000000)) - SIZE_VLBA_FRAME*N;
+    SFXC_ASSERT(bytes_data_to_read %(SIZE_VLBA_FRAME*N)==0);
 
-  int no_frames_to_read=bytes_data_to_read/(SIZE_VLBA_FRAME*N);
-  size_t read_n_bytes = bytes_data_to_read + no_frames_to_read*N*(SIZE_VLBA_HEADER+SIZE_VLBA_AUX_HEADER);
+    int no_frames_to_read=bytes_data_to_read/(SIZE_VLBA_FRAME*N);
+    size_t read_n_bytes = bytes_data_to_read + no_frames_to_read*N*(SIZE_VLBA_HEADER+SIZE_VLBA_AUX_HEADER);
 
-  /// A blocking read operation. The operation is looping until the file
-  /// is eof or the requested amount of data is retreived.
-  size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
-  if ( byte_read != read_n_bytes) {
-    std::cout << "Tried to read " << read_n_bytes << " but read " << byte_read << " instead\n";
-    sfxc_abort("Couldn't read the requested amount of data.");
-    return get_current_time();
+    /// A blocking read operation. The operation is looping until the file
+    /// is eof or the requested amount of data is retreived.
+    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
+    if ( byte_read != read_n_bytes) {
+      std::cout << "Tried to read " << read_n_bytes << " but read " << byte_read << " instead\n";
+      sfxc_abort("Couldn't read the requested amount of data.");
+      return get_current_time();
+    }
+
+    // Need to read the data to check the header
+    if (!read_new_block(data)) {
+      DEBUG_MSG("Couldn't read data");
+    }
+    delta_time=us_time-get_current_time();
   }
+  // Now read the last bit of data up to the requested time
+  ssize_t bytes_data_to_read = (delta_time*data_rate()/(8*1000000)) - SIZE_VLBA_FRAME*N;
+  if(bytes_data_to_read>0){
+    SFXC_ASSERT(bytes_data_to_read %(SIZE_VLBA_FRAME*N)==0);
 
-  // Need to read the data to check the header
-  if (!read_new_block(data)) {
-    DEBUG_MSG("Couldn't read data");
+    int no_frames_to_read=bytes_data_to_read/(SIZE_VLBA_FRAME*N);
+    size_t read_n_bytes = bytes_data_to_read + no_frames_to_read*N*(SIZE_VLBA_HEADER+SIZE_VLBA_AUX_HEADER);
+
+    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
+    if ( byte_read != read_n_bytes) {
+      std::cout << "Tried to read " << read_n_bytes << " but read " << byte_read << " instead\n";
+      sfxc_abort("Couldn't read the requested amount of data.");
+      return get_current_time();
+    }
+
+    // Need to read the data to check the header
+    if (!read_new_block(data)) {
+      DEBUG_MSG("Couldn't read data");
+    }
   }
-
   if (get_current_time() != us_time) {
-    DEBUG_MSG("time:         " << us_time);
-    DEBUG_MSG("current time: " << get_current_time());
-    sleep(1);
-    SFXC_ASSERT(get_current_time() == us_time);
+    // When jumping to the start of the scan, it can happen that we don't end up exactly
+    // at us_time, because the station might have started recording late.
+    DEBUG_MSG("Attempted to jump to time " << us_time << ", but found timestamp" << get_current_time());
   }
 
   return get_current_time();

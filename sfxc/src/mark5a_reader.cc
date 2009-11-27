@@ -40,42 +40,58 @@ Mark5a_reader::goto_time(Data_frame &data, int64_t us_time) {
     return us_time;
   }
 
-  // Read an integer number of frames
+  // first skip through the file in 1 second steps.
+  int64_t one_sec=1000000LL;
   int64_t delta_time=us_time-get_current_time();
-  size_t read_n_bytes = 
-             (delta_time*data_rate()/(8*1000000)) - SIZE_MK5A_FRAME*N;
+  while(delta_time>=one_sec){
+    // Read an integer number of frames
+    size_t read_n_bytes = 
+               (one_sec*data_rate()/(8*1000000)) - SIZE_MK5A_FRAME*N;
+    SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
 
-  // Read an integer number of frames
-  SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
+    // TODO having a blocking read would be nice.
+    // as well as a goto function.
+    // size_t bytes_to_read = read_n_bytes;
+    //while ( bytes_to_read > 0 && !data_reader_->eof() ) {
+    //  size_t result = data_reader_->get_bytes(bytes_to_read,NULL);
+    //  bytes_to_read -= result;
+    //}
+    /// A blocking read operation. The operation is looping until the file
+    /// is eof or the requested amount of data is retreived.
+    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
 
-  // TODO having a blocking read would be nice.
-  // as well as a goto function.
-  // size_t bytes_to_read = read_n_bytes;
-  //while ( bytes_to_read > 0 && !data_reader_->eof() ) {
-  //  size_t result = data_reader_->get_bytes(bytes_to_read,NULL);
-  //  bytes_to_read -= result;
-  //}
-  /// A blocking read operation. The operation is looping until the file
-  /// is eof or the requested amount of data is retreived.
-  size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
+    if ( byte_read != read_n_bytes) {
+      sfxc_abort("Couldn't read the requested amount of data.");
+      return get_current_time();
+    }
 
-  if ( byte_read != read_n_bytes) {
-    sfxc_abort("Couldn't read the requested amount of data.");
-    return get_current_time();
+    // Need to read the data to check the header
+    if (!read_new_block(data)) {
+      DEBUG_MSG("Couldn't read data");
+    }
+    delta_time=us_time-get_current_time();
   }
+  // Now read the last bit of data up to the requested time
+//  if(delta_time >= (SIZE_MK5A_FRAME*N)*8*1000000LL/data_rate()){
+  ssize_t read_n_bytes = (delta_time*data_rate()/(8*1000000)) - SIZE_MK5A_FRAME*N;
+  if(read_n_bytes > 0){
+    SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
+    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
+    if ( byte_read != read_n_bytes) {
+      sfxc_abort("Couldn't read the requested amount of data.");
+      return get_current_time();
+    }
 
-  // Need to read the data to check the header
-  if (!read_new_block(data)) {
-    DEBUG_MSG("Couldn't read data");
+    // Need to read the data to check the header
+    if (!read_new_block(data)) {
+      DEBUG_MSG("Couldn't read data");
+    }
   }
-
   if (get_current_time() != us_time) {
-    DEBUG_MSG("time:         " << us_time);
-    DEBUG_MSG("current time: " << get_current_time());
-    sleep(1);
-    SFXC_ASSERT(get_current_time() == us_time);
+    // When jumping to the start of the scan, it can happen that we don't end up exactly
+    // at us_time, because the station might have started recording late.
+    DEBUG_MSG("Attempted to jump to time " << us_time << ", but found timestamp" << get_current_time());
   }
-
   return get_current_time();
 }
 
