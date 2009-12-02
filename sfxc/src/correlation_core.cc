@@ -64,6 +64,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
 
   size_t prev_size_of_fft = size_of_fft();
   correlation_parameters = parameters;
+  oversamp = round(parameters.sample_rate/(2*parameters.bandwidth));
 
   create_baselines(parameters);
 
@@ -278,7 +279,7 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
     for (size_t i = 0; i < size_of_fft()/2+1; i++) {
       norms[station] += integration_buffer[station][i].real();
     }
-    norms[station] /= (size_of_fft()/2);
+    norms[station] /= (size_of_fft()/(2*oversamp));
 
     for (size_t i = 0; i < size_of_fft()/2+1; i++) {
       // imaginary part should be zero!

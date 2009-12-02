@@ -87,7 +87,7 @@ void Delay_correction_swapped::fractional_bit_shift(std::complex<FLOAT> output[]
   // the following should be double
   const double dfr  = sample_rate()*1.0/(2*n_channels); // delta frequency 
   const double tmp1 = -2.0*M_PI*fractional_delay/sample_rate(); 
-  const double tmp2 = 0.5*M_PI*(integer_shift&3);/* was: / ovrfl */ 
+  const double tmp2 = M_PI*(integer_shift&3)/(2*oversamp);
   const double constant_term = tmp2 - sideband()*tmp1*0.5*bandwidth();
   const double linear_term = tmp1*sideband()*dfr; 
 
@@ -176,6 +176,7 @@ Delay_correction_swapped::set_parameters(const Correlation_parameters &parameter
   bits_per_sample = correlation_parameters.station_streams[i].bits_per_sample;
 
   nfft_max = std::max(CORRELATOR_BUFFER_SIZE/parameters.number_channels,1);
+  oversamp = round(parameters.sample_rate/(2*parameters.bandwidth));
 
   current_time = parameters.start_time*(int64_t)1000;
 

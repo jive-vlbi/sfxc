@@ -61,16 +61,17 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
     polyco = &cur_pulsar.polyco_params[closest];
 
     // Find the time offsets between frequency components
+
     int sb = parameters.sideband == 'L' ? -1 : 1;
     double base_freq = (parameters.channel_freq - (1-sb)*parameters.bandwidth*0.5)*1e-6; // [MHZ]
     double dfreq = parameters.sample_rate*1e-6/(2*n_channels());
     // TODO check accuracy
     double inv_freq_obs2 = 1/(polyco->obs_freq*polyco->obs_freq);
     double freq = (polyco->n_coef>=2)?polyco->ref_freq+polyco->coef[1]/60:polyco->ref_freq;
-    double period = 1./freq;// in [s]
     SFXC_ASSERT(offsets.size()==size_of_fft()/2+1);
-    for(int i=0;i<size_of_fft()/2+1;i++)
-      offsets[i] = 4149.*polyco->DM*(1/pow(base_freq+i*dfreq,2)-inv_freq_obs2)/period;
+    for(int i=0;i<size_of_fft()/2+1;i++){
+      offsets[i] = 4149.*polyco->DM*(1/pow(base_freq+i*dfreq,2)-inv_freq_obs2)*freq;
+    }
 
     // Compute the phase at the start of the period
     double DT=(start_mjd+fft_duration/(2*us_per_day) - polyco->tmid)*1440;

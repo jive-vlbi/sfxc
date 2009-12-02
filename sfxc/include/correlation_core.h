@@ -110,6 +110,7 @@ protected:
   std::vector< simple_it< Input_data, std::complex<FLOAT> > >    input_elements;
 
   Correlation_parameters                               correlation_parameters;
+  int                                                  oversamp; // Oversample factor
 
   std::vector<Complex_buffer>                          accumulation_buffers;
   Complex_buffer_float                                 integration_buffer_float;
