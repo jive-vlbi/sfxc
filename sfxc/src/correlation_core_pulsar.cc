@@ -21,6 +21,7 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 
   size_t prev_size_of_fft = size_of_fft();
   correlation_parameters = parameters;
+  oversamp = round(parameters.sample_rate/(2*parameters.bandwidth));
 
   create_baselines(parameters);
 
