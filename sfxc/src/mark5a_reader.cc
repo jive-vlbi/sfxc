@@ -16,6 +16,7 @@ Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
   Mark5a_header header(N);
   header.set_header(&data.buffer[0]);
   header.check_header();
+  us_per_day=(int64_t)24*60*60*1000000;
   start_day_ = header.day(0);
   start_time_ = header.get_time_in_us(0); 
   // If no reference day is known then setting ref_day < 0 sets the current day as reference
@@ -26,7 +27,6 @@ Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
   current_time_ = correct_raw_time(header.get_time_in_us(0));
 
   set_data_frame_info(data);
-  us_per_day=(int64_t)24*60*60*1000000;
 }
 
 Mark5a_reader::~Mark5a_reader() {}
@@ -137,7 +137,7 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
 
     /// I'm not sure why we are increasing the time between header in case of
     /// failed reading. Maybe a kind of packet-missing detection.
-    /// Todo check that.
+    /// Todo check that.0
     //int result = data_reader_->get_bytes(to_read, (char *)buffer);
     int result = Data_reader_blocking::get_bytes_s( data_reader_.get(), to_read, (char*)buffer );
 
@@ -294,7 +294,6 @@ Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
   int tbr = input_node_param.track_bit_rate;
   DATA_RATE_ = (tbr * N * 8);
   SFXC_ASSERT(DATA_RATE_ > 0);
-  current_time_=correct_raw_time(current_time_);
 }
 
 void Mark5a_reader::set_data_frame_info(Data_frame &data) {

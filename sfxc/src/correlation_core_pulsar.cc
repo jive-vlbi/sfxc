@@ -28,7 +28,6 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
   double ms_per_day = 1000*24*60*60;
   double start_mjd = parameters.start_time/ms_per_day + parameters.mjd;
   fft_duration = (((double)n_channels())*1000000)/parameters.sample_rate;
-
   if(offsets.size()!=size_of_fft()/2+1)
     offsets.resize(size_of_fft()/2+1);
   if(bins.size() != size_of_fft()/2+1)
@@ -154,7 +153,7 @@ void Correlation_core_pulsar::dedisperse_buffer() {
   SFXC_ASSERT(bins.size()==size_of_fft()/2+1);
   for(int j=0;j<size_of_fft()/2+1;j++){
     double phase = obs_freq_phase+offsets[j];
-    double dph = (phase-floor(phase)-gate.begin);
+    double dph = (phase-floor(phase))-gate.begin;
     if((dph>=0)&&(dph<=len)){
       bins[j] = (int)(dph*nbins/len);
     }else

@@ -8,6 +8,7 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
     debug_level_(CHECK_PERIODIC_HEADERS),
     time_between_headers_(0)
 {
+  us_per_day=(int64_t)24*60*60*1000000;
   // Reference date : All times are relative to midnight on ref_jday
   ref_jday = (mjd(1,1,ref_year) + ref_day -1 )%1000;
   DEBUG_MSG("Ref_jday=" << ref_jday);
@@ -20,7 +21,6 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
   start_time_ = current_header.microseconds();
   std::cout << RANK_OF_NODE << "Start of Mark5b data at jday=" << start_day_
             << ", time = " << start_time_ << "\n";
-  us_per_day=(int64_t)24*60*60*1000000;
 }
 
 

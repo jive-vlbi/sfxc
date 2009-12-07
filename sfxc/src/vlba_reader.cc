@@ -311,7 +311,6 @@ bool VLBA_reader::eof() {
 void
 VLBA_reader::set_parameters(const Input_node_parameters &input_node_param) {
   int tbr = input_node_param.track_bit_rate;
-  current_time_=correct_raw_time(current_time_);
   DATA_RATE_ = (tbr * N * 8);
   SFXC_ASSERT(DATA_RATE_ > 0);
 }
