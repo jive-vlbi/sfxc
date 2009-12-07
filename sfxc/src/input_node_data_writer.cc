@@ -87,7 +87,7 @@ do_task() {
   Input_buffer_element &input_element = input_buffer_->front();
   struct Writer_struct& data_writer = data_writers_.front();
 
-  int byte_offset=0;
+  int64_t byte_offset=0;
   int samples_per_byte = 8/bits_per_sample;
 
   // Go to the current positition in the delay table
@@ -149,7 +149,7 @@ do_task() {
   }
 
   int index;
-  int block_inv_samples=std::max(0, input_element.nr_invalid_samples-byte_offset*samples_per_byte);
+  int block_inv_samples=std::max((int64_t)0, input_element.nr_invalid_samples-byte_offset*samples_per_byte);
   if(block_inv_samples>0){
     write_invalid(writer, block_inv_samples);
     index = input_element.nr_invalid_samples/samples_per_byte; // We don't actually write the invalid bytes
@@ -158,7 +158,7 @@ do_task() {
 
   int next_delay_pos=get_next_delay_pos(cur_delay, _current_time)+byte_offset;
   int total_to_write = std::min(block_size-byte_offset,
-                           (int)(data_writer.slice_size+samples_per_byte-1)/samples_per_byte);
+                       (int64_t)(data_writer.slice_size+samples_per_byte-1)/samples_per_byte);
   int end_index = total_to_write+byte_offset;
   while(index<end_index){
     if(index>=next_delay_pos){
@@ -173,7 +173,7 @@ do_task() {
         data_writer.slice_size += 1;
       next_delay_pos=get_next_delay_pos(cur_delay, _current_time)+byte_offset;
       total_to_write = std::min(block_size-byte_offset,
-                              (int)(data_writer.slice_size+samples_per_byte-1)/samples_per_byte);
+                       (int64_t)(data_writer.slice_size+samples_per_byte-1)/samples_per_byte);
       end_index = total_to_write+byte_offset;
     }else{
       int data_to_write = std::min(next_delay_pos-index, end_index-index);
