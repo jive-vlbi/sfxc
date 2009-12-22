@@ -26,19 +26,18 @@ Input_data_format_reader_tasklet(
 Input_data_format_reader_tasklet::~Input_data_format_reader_tasklet(){  }
 
 void Input_data_format_reader_tasklet::stop() {
-  /// There is a special associated with the empty interval.
-  /// as it will stop the reading thread.
+  isRunning = false;
+  /// We add an empty interval to unblock the thread
   add_time_interval(0,0);
 }
 
 void Input_data_format_reader_tasklet::do_execute() {
-  ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: ENTER");
-
+  isRunning = true;
   /// blocks until we have an interval to process
   fetch_next_time_interval();
 
   /// then let's work
-  while ( !current_interval_.empty() ) {
+  while ( isRunning ) {
     /// if there is still some data to process we do it
     if ( current_time < current_interval_.stop_time_ ) do_task();
 
