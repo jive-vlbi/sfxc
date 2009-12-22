@@ -63,7 +63,7 @@ private:
   inline void getusec(uint64_t &utime) const {
     struct timeval tv;
     gettimeofday(&tv,0);
-    utime=tv.tv_sec*1000000;
+    utime=tv.tv_sec*1000000LL;
     utime+=tv.tv_usec;
   }
 

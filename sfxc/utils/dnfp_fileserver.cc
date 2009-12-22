@@ -198,15 +198,14 @@ public:
         uint64_t toread;
         uint64_t read;
         uint64_t lasttime=0;
-        int buffersize = 1234;
+        int buffersize = SIZE_MK5A_FRAME;
         int elemread;
         int towrite, prog;
 
         RTTimer timer;
         timer.start();
-        uint64_t totalsent=0;
 
-        char buffer [1234];
+        char buffer [SIZE_MK5A_FRAME];
         uint64_t totalread=0;
         uint64_t totalsend=0;
 
@@ -218,23 +217,22 @@ public:
 
             while( towrite > 0 ){
               prog = writer.put_bytes( towrite, &buffer[elemread-towrite] );
-	      if (prog == 0)
-		break;
+              if (prog == 0)
+                break;
               towrite -= prog;
               totalsend+=prog;
             }
-	    if (towrite > 0)
-	      break;
-            totalsent += elemread;
+            if (towrite > 0)
+              break;
             if ( timer.measured_time()-lasttime >= 1 ) {
               lasttime = timer.measured_time();
-              std::cout << " ["<<  m_clientid << "]: streaming speed: " << toMB(totalsent) / timer.measured_time();
+              std::cout << " ["<<  m_clientid << "]: streaming speed: " << toMB(totalsend) / timer.measured_time();
               std::cout << "MB/s" << std::endl;
             }
         }
-        std::cout << " ["<<  m_clientid << "]: streaming speed: " << toMB(totalsent) / timer.measured_time();
+        std::cout << " ["<<  m_clientid << "]: streaming speed: " << toMB(totalsend) / timer.measured_time();
         std::cout << "MB/s"<< std::endl;
-        std::cout << " ["<<  m_clientid << "]: data streamed: "<< toMB(totalsent) << "MB" << std::endl;
+        std::cout << " ["<<  m_clientid << "]: data streamed: "<< toMB(totalsend) << "MB" << std::endl;
     }
 
     /*****************************************************************************
