@@ -335,15 +335,9 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   correlation_parameters.integration_nr = integration_slice_nr;
   correlation_parameters.slice_nr = output_slice_nr;
   strncpy(correlation_parameters.source, control_parameters.scan_source(scan_name).c_str(), 11);
-  if(control_parameters.pulsar_binning()){
-    if(pulsar_parameters.pulsars.find(correlation_parameters.source) == pulsar_parameters.pulsars.end()){
-      std::string msg = std::string("Pulsar binning is enabled but current source (" )
-                        + control_parameters.scan_source(scan_name)
-                        + std::string(") is not found in the list of pulsars\n");
-      sfxc_abort(msg.c_str());
-    }
+  if(control_parameters.pulsar_binning())
     correlation_parameters.pulsar_binning = true;
-  }else
+  else
     correlation_parameters.pulsar_binning = false;
 
   correlation_parameters.cross_polarize = (cross_channel != -1);

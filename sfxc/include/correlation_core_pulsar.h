@@ -4,9 +4,6 @@
 #include <fstream>
 #include "correlation_core.h"
 
-//the number of elements in the dedispersion buffer
-#define DEDISPERSION_BUFFER_LENGTH 1048576
-
 class Correlation_core_pulsar : public Correlation_core{
 public:
   Correlation_core_pulsar();
@@ -24,7 +21,7 @@ protected:
   Pulsar_parameters::Polyco_params              *polyco;
   /// Temporary buffer to store un-dispersed data
   std::vector<Complex_buffer>                   dedispersion_buffer;
-  // Time offsets[ms] of each frequency component relative to the reference frequency
+  // Offsets [in units of pulsar period] of frequency components relative to the reference frequency
   std::vector<double>                           offsets;
   std::vector<int>                              bins;
   /// The time bins are accumulated here

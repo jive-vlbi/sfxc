@@ -60,24 +60,26 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
     }
     polyco = &cur_pulsar.polyco_params[closest];
 
-    // Find the time offsets between frequency components
-
-    int sb = parameters.sideband == 'L' ? -1 : 1;
-    double base_freq = (parameters.channel_freq - (1-sb)*parameters.sample_rate*0.25)*1e-6; // [MHZ]
-    double dfreq = parameters.sample_rate*1e-6/(2*n_channels());
-    // TODO check accuracy
-    double inv_freq_obs2 = 1/(polyco->obs_freq*polyco->obs_freq);
-    double freq = (polyco->n_coef>=2)?polyco->ref_freq+polyco->coef[1]/60:polyco->ref_freq;
-    SFXC_ASSERT(offsets.size()==size_of_fft()/2+1);
-    for(int i=0;i<size_of_fft()/2+1;i++){
-      offsets[i] = 0.004149*polyco->DM*(1/pow(base_freq+i*dfreq,2)-inv_freq_obs2)*freq;
-    }
-
     // Compute the phase at the start of the period
     double DT=(start_mjd+fft_duration/(2*us_per_day) - polyco->tmid)*1440;
     start_phase = (polyco->ref_phase-floor(polyco->ref_phase))+DT*60*polyco->ref_freq + polyco->coef[0];
     for (int i=1; i<polyco->coef.size(); i++){
       start_phase += polyco->coef[i]*pow(DT,i);
+    }
+
+    // Find the time offsets between frequency components
+    int sb = parameters.sideband == 'L' ? -1 : 1;
+    double base_freq = (parameters.channel_freq - (1-sb)*parameters.sample_rate*0.25)*1e-6; // [MHZ]
+    double dfreq = parameters.sample_rate*1e-6/(2*n_channels());
+    // TODO check accuracy
+    double inv_freq_obs2 = 1/(polyco->obs_freq*polyco->obs_freq);
+    double freq = polyco->ref_freq;
+    for(int i=1;i<polyco->n_coef;i++)
+      freq += i*pow(DT,i-1)*polyco->coef[i]/60;
+
+    SFXC_ASSERT(offsets.size()==size_of_fft()/2+1);
+    for(int i=0;i<size_of_fft()/2+1;i++){
+      offsets[i] = 4149.*polyco->DM*(1/pow(base_freq+i*dfreq,2)-inv_freq_obs2)*freq;
     }
     gate.begin = cur_pulsar.interval.start;
     gate.end = cur_pulsar.interval.stop;
