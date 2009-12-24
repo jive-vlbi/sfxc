@@ -18,6 +18,8 @@ AC_PROG_RANLIB
 
 AC_LANG_CPLUSPLUS
 
+AC_F77_LIBRARY_LDFLAGS
+
 dnl Checking generic c libraries
 AC_CHECK_LIB(m, sin)
 AC_CHECK_LIB(pthread, sem_init)
