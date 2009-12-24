@@ -66,9 +66,6 @@ public:
   /// Returns the current time in microseconds
   int get_current_time();
 
-  /// Returns the stop time of the current time interval in microseconds
-  int get_stop_time();
-
   /// Sets the output writer for channel i
   void add_data_writer(size_t i, Data_writer_sptr data_writer);
 

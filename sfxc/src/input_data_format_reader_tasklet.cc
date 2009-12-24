@@ -4,7 +4,7 @@ Input_data_format_reader_tasklet::
 Input_data_format_reader_tasklet(
   Data_format_reader_ptr reader,
   Data_frame &data)
-    : memory_pool_(10), stop_time(-1),
+    : memory_pool_(10),
       n_bytes_per_input_word(reader->bytes_per_input_word()),
       data_modulation(false) {
 
@@ -112,9 +112,6 @@ has_work() {
   if (memory_pool_.empty()) {
     return false;
   }
-  if (stop_time <= current_time) {
-    return false;
-  }
 
   return true;
 }
@@ -153,24 +150,6 @@ Input_data_format_reader_tasklet::
 get_current_time() {
   return current_time;
 }
-
-int
-Input_data_format_reader_tasklet::
-get_stop_time() {
-  SFXC_ASSERT(false && "DEPRECATED !");
-  return stop_time;
-}
-
-void
-Input_data_format_reader_tasklet::
-set_stop_time(int64_t ms_time) {
-  SFXC_ASSERT(false && "DEPRECATED !");
-  int64_t us_time = int64_t(1000)*ms_time;
-
-  SFXC_ASSERT(current_time < us_time);
-  stop_time = us_time;
-}
-
 
 void
 Input_data_format_reader_tasklet::

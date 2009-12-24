@@ -190,12 +190,6 @@ get_current_time() {
   return time;
 }
 
-int
-Input_node_tasklet::
-get_stop_time() {
-  return reader_.get_stop_time();
-}
-
 void
 Input_node_tasklet::add_data_writer(size_t i, Data_writer_sptr data_writer) {
   /// Add a new timeslice to stream to the given data_writer into the
