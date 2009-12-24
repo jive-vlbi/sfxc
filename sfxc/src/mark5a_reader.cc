@@ -49,15 +49,8 @@ Mark5a_reader::goto_time(Data_frame &data, int64_t us_time) {
                (one_sec*data_rate()/(8*1000000)) - SIZE_MK5A_FRAME*N;
     SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
 
-    // TODO having a blocking read would be nice.
-    // as well as a goto function.
-    // size_t bytes_to_read = read_n_bytes;
-    //while ( bytes_to_read > 0 && !data_reader_->eof() ) {
-    //  size_t result = data_reader_->get_bytes(bytes_to_read,NULL);
-    //  bytes_to_read -= result;
-    //}
-    /// A blocking read operation. The operation is looping until the file
-    /// is eof or the requested amount of data is retreived.
+    // A blocking read operation. The operation is looping until the file
+    // is eof or the requested amount of data is retreived.
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
 
     if ( byte_read != read_n_bytes) {
@@ -135,9 +128,9 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
       return false;
     }
 
-    /// I'm not sure why we are increasing the time between header in case of
-    /// failed reading. Maybe a kind of packet-missing detection.
-    /// Todo check that.0
+    // I'm not sure why we are increasing the time between header in case of
+    // failed reading. Maybe a kind of packet-missing detection.
+    // Todo check that.0
     //int result = data_reader_->get_bytes(to_read, (char *)buffer);
     int result = Data_reader_blocking::get_bytes_s( data_reader_.get(), to_read, (char*)buffer );
 
@@ -369,13 +362,6 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
       size_t bytes_to_read = SIZE_MK5A_FRAME/2;
       char *data = (char*)buffer_start+SIZE_MK5A_FRAME/2;
 
-      //do {
-      //  int read = reader->get_bytes(bytes_to_read, data);
-      //  bytes_to_read -= read;
-      //  data += read;
-      //  SFXC_ASSERT_MSG(!reader->eof(),
-      //                  "Didn't find a mark5a header before the end-of-file");
-      //} while (bytes_to_read > 0);
       int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(), bytes_to_read, data);
 
     }
@@ -398,14 +384,6 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
             memmove(buffer_start, buffer_start+header_start,
                     SIZE_MK5A_FRAME-header_start);
 
-
-            //int byte_to_read = header_start;
-            //int byte_read;
-            //while(byte_to_read > 0){
-            //  byte_read = reader->get_bytes(byte_to_read,
-            //                               );
-            //  byte_to_read -= byte_read;
-            //}
             int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),
                                      header_start,
                                      buffer_start+SIZE_MK5A_FRAME-header_start);
@@ -414,13 +392,9 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
               data.buffer.resize(nTracks8*SIZE_MK5A_FRAME);
               buffer_start = (char *)&data.buffer[0];
 
-
-              //reader->get_bytes((nTracks8-1)*SIZE_MK5A_FRAME,
-              //                  buffer_start+SIZE_MK5A_FRAME);
-               int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),
+	      int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),
                                                   (nTracks8-1)*SIZE_MK5A_FRAME,
                                                    buffer_start+SIZE_MK5A_FRAME);
-
             }
 
             return nTracks8;
