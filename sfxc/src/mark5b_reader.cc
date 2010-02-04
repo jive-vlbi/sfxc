@@ -49,7 +49,8 @@ Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
     // right time
     size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
-    SFXC_ASSERT(bytes_to_read == byte_read);
+    if (bytes_to_read != byte_read)
+	return current_time_;
 
     // Read last block:
     read_new_block(data);
@@ -61,7 +62,8 @@ Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
     // Don't read the last header, to be able to check whether we are at the right time
     size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
-    SFXC_ASSERT(bytes_to_read == byte_read);
+    if (bytes_to_read != byte_read)
+	return current_time_;
 
     read_new_block(data);
     SFXC_ASSERT((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) == 0);
