@@ -52,11 +52,8 @@ Mark5a_reader::goto_time(Data_frame &data, int64_t us_time) {
     // A blocking read operation. The operation is looping until the file
     // is eof or the requested amount of data is retreived.
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
-
-    if ( byte_read != read_n_bytes) {
-      sfxc_abort("Couldn't read the requested amount of data.");
-      return get_current_time();
-    }
+    if (byte_read != read_n_bytes)
+	return current_time_;
 
     // Need to read the data to check the header
     if (!read_new_block(data)) {
@@ -70,10 +67,8 @@ Mark5a_reader::goto_time(Data_frame &data, int64_t us_time) {
   if(read_n_bytes > 0){
     SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
-    if ( byte_read != read_n_bytes) {
-      sfxc_abort("Couldn't read the requested amount of data.");
-      return get_current_time();
-    }
+    if (byte_read != read_n_bytes)
+	return current_time_;
 
     // Need to read the data to check the header
     if (!read_new_block(data)) {
@@ -150,6 +145,11 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
     current_time_ += time_between_headers(); // Could't find valid header before EOF
     return false;
   }
+  if (header.day(0) == 0 && header.get_time_in_us(0) == 0) {
+      current_time_ += time_between_headers(); // Could't find valid header before EOF
+      return false;
+  }
+
   current_day_ = header.day(0);
   current_time_ = correct_raw_time(header.get_time_in_us(0));
 
