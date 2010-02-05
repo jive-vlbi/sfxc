@@ -91,6 +91,11 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
       current_time = reader_->get_current_time();
     else{
       current_time = goto_time( current_interval_.start_time_);
+      if (current_time > current_interval_.stop_time_) {
+	  current_time = current_interval_.stop_time_;
+	  randomize_block();
+	  input_element_->start_time = current_time;
+      }
       data_read_ += input_element_->buffer.size();
       push_element();
     }
