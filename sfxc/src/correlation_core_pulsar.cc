@@ -69,8 +69,8 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 
     // Find the time offsets between frequency components
     int sb = parameters.sideband == 'L' ? -1 : 1;
-    double base_freq = (parameters.channel_freq - (1-sb)*parameters.sample_rate*0.25)*1e-6; // [MHZ]
-    double dfreq = parameters.sample_rate*1e-6/(2*n_channels());
+    double base_freq = parameters.channel_freq*1e-6; // [MHZ]
+    double dfreq = sb*parameters.sample_rate*1e-6/(2*n_channels());
     // TODO check accuracy
     double inv_freq_obs2 = 1/(polyco->obs_freq*polyco->obs_freq);
     double freq = polyco->ref_freq;
