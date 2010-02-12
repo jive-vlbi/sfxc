@@ -35,9 +35,14 @@
 #define INVALID_TIME              -1
 
 /// Constants
-// Number of bytes transferred between input- and correlator node, 
-// should be a multiple of the channel size(no of lags) + 1 
-#define INPUT_NODE_PACKET_SIZE    2049
+// Some constants define the headers in the input -> correlator_node steam
+#define HEADER_DATA       0
+#define HEADER_INVALID    1
+#define HEADER_DELAY      2
+#define HEADER_ENDSTREAM  3
+
+// The (maximum) amount of samples processed per iteration, this is automatically set to a multiple of nchannels
+#define CORRELATOR_BUFFER_SIZE    8192
 
 #define SIZE_VLBA_FRAME           20000
 #define SIZE_VLBA_HEADER          96
@@ -51,6 +56,7 @@
 #define SIZE_MK5B_FRAME           2500
 #define SIZE_MK5B_HEADER             4
 #define SIZE_MK5B_WORD            sizeof(int32_t)
+
 // Number of mark5b frames to read at once
 // To make sure that the first sample lies exactly on an integer microsecond
 // duration of one block: SIZE_MK5B_FRAME/MAX_SAMPLE_RATE = 2500/64 = 625/16
@@ -118,26 +124,18 @@ extern int RANK_OF_NODE;
 #define MPI_DEBUG_MSG(msg)
 #endif
 
-void abort_sfxc(const char *file, int line, const char* message);
-void abort(const char *file, int line, const char* message);
+void abort_sfxc_assertion(const char *file, int line, const char* message);
+void sfxc_abort(const char *msg="");
 
 #ifdef NDEBUG
 #define SFXC_ASSERT(c)
 #define SFXC_ASSERT_MSG(c, msg)
 #else
-#ifdef USE_MPI
 #define SFXC_ASSERT(c) \
-  { if (!(c)) abort_sfxc(__FILE__, __LINE__, #c ); }
+  { if (!(c)) abort_sfxc_assertion(__FILE__, __LINE__, #c ); }
 
 #define SFXC_ASSERT_MSG(c, msg) \
-  { if (!(c)) abort_sfxc(__FILE__, __LINE__, msg ); }
-#else
-#define SFXC_ASSERT(c) \
-  { if (!(c)) abort(__FILE__, __LINE__, #c ); }
-
-#define SFXC_ASSERT_MSG(c, msg) \
-  { if (!(c)) abort(__FILE__, __LINE__, msg ); }
-#endif // USE_MPI
+  { if (!(c)) abort_sfxc_assertion(__FILE__, __LINE__, msg ); }
 #endif // NDEBUG
 
 //#define USE_DOUBLE
@@ -256,7 +254,7 @@ void create_directory(const std::string& path);
 // Modified julian day
 int mjd(int day, int month, int year);
 
-inline double toMB(unsigned int size) {
+inline double toMB(unsigned long long size) {
   return (1.0*size)/(1024*1024);
 }
 

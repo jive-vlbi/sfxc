@@ -13,7 +13,7 @@
 
 #include <fstream>
 #include <time.h>
-#include <sys/timeb.h>
+#include <sys/time.h>
 #include <cstring>
 
 class Log_writer_mpi_buffer : public Log_writer_buffer {
@@ -80,12 +80,12 @@ void Log_writer_mpi_buffer::put_buffer() {
     char    *buffer = new char[len + 20 + 1];
 
     if (current_level <= max_level) {
-      struct timeb time_struct;
-      ftime(&time_struct);
-      struct tm *tm_struct = localtime(&time_struct.time);
+      struct timeval time_struct;
+      gettimeofday(&time_struct,NULL);
+      struct tm *tm_struct = localtime(&time_struct.tv_sec);
       snprintf(buffer, 21, "%02dh%02dm%02ds%03dms, %02d, ",
                tm_struct->tm_hour, tm_struct->tm_min, tm_struct->tm_sec,
-               time_struct.millitm, rank);
+               (time_struct.tv_usec+500)/1000, rank);
       SFXC_ASSERT(strlen(buffer) == 20);
       strncpy(buffer+20, pbase(), len);
       buffer[len+20] = '\0';

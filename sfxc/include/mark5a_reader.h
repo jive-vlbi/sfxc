@@ -33,7 +33,9 @@ public:
 
   Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
                 int N,
-                Data_frame &data);
+                Data_frame &data,
+                int ref_year_,
+                int ref_day_);
   virtual ~Mark5a_reader();
 
   /// Time in microseconds
@@ -109,7 +111,7 @@ public:
  **/
 Mark5a_reader *
 get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
-                  Mark5a_reader::Data_frame &data);
+                  Mark5a_reader::Data_frame &data, int ref_year, int ref_day);
 
 int find_start_of_header(boost::shared_ptr<Data_reader> reader,
                          Mark5a_reader::Data_frame &data);

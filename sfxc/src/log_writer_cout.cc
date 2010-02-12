@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <stdio.h>
 
 #include "log_writer_cout.h"
 

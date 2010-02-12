@@ -3,21 +3,24 @@
 
 Mark5b_reader::
 Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
-              Data_frame &data)
+              Data_frame &data, int ref_year, int ref_day)
   : Input_data_format_reader(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
     time_between_headers_(0)
 {
-  // initially use start_date as reference
-  read_new_block(data);
-  ref_jday = current_header.julian_day(); 
-  SFXC_ASSERT(current_header.check());
+  us_per_day=(int64_t)24*60*60*1000000;
+  // Reference date : All times are relative to midnight on ref_jday
+  ref_jday = (mjd(1,1,ref_year) + ref_day -1 )%1000;
+  DEBUG_MSG("Ref_jday=" << ref_jday);
+
+  if(!read_new_block(data)){
+    sfxc_abort("Couldn't find valid mark5b header");
+  }
 
   start_day_ = current_header.julian_day();
   start_time_ = current_header.microseconds();
-  DEBUG_MSG("Start of Mark5b data at jday=" << start_day_
-            << ", time = " << start_time_);
-  us_per_day=(int64_t)24*60*60*1000000;
+  std::cout << RANK_OF_NODE << "Start of Mark5b data at jday=" << start_day_
+            << ", time = " << start_time_ << "\n";
 }
 
 
@@ -31,34 +34,41 @@ Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
 
   if (us_time <= current_time_) return current_time_;
 
-  const int64_t delta_time = us_time-correct_raw_time((int64_t)current_header.seconds()*1000000);
-
-  SFXC_ASSERT(delta_time % time_between_headers_ == 0);
-  SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
-  int n_blocks =
-    delta_time/time_between_headers_ -
-    current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
-
-  const int size_mk5b_block_header =
+  const size_t size_mk5b_block_header =
     (SIZE_MK5B_HEADER+SIZE_MK5B_FRAME)*SIZE_MK5B_WORD;
 
-  // Don't read the last header, to be able to check whether we are at the
-  // right time
-  int bytes_to_read =
-    (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
+  // first skip through the file in 1 second steps.
+  int64_t one_sec=1000000LL;
+  int64_t delta_time = us_time-correct_raw_time((int64_t)current_header.seconds()*1000000);
+  while (delta_time >= one_sec){
+    SFXC_ASSERT(delta_time % time_between_headers_ == 0);
+    SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
+    int n_blocks = one_sec/time_between_headers_ - current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
 
-  /// int bytes_read = data_reader_->get_bytes(bytes_to_read, NULL);
-  int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
+    // Don't read the last header, to be able to check whether we are at the
+    // right time
+    size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
+    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
+    if (bytes_to_read != byte_read)
+	return current_time_;
 
-  SFXC_ASSERT(bytes_to_read == byte_read);
+    // Read last block:
+    read_new_block(data);
+    delta_time = us_time-correct_raw_time((int64_t)current_header.seconds()*1000000);
+  }
+  // Now read the last bit of data up to the requested time
+  int n_blocks = delta_time/time_between_headers_ - current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
+  if(n_blocks>0){
+    // Don't read the last header, to be able to check whether we are at the right time
+    size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
+    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
+    if (bytes_to_read != byte_read)
+	return current_time_;
 
-  // Read last block:
-  read_new_block(data);
-
-  SFXC_ASSERT((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) == 0);
+    read_new_block(data);
+    SFXC_ASSERT((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) == 0);
+  }
   current_time_ = correct_raw_time(current_header.microseconds());
-  SFXC_ASSERT(us_time == current_time_);
-  SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
 
   return current_time_;
 }
@@ -175,6 +185,4 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
   time_between_headers_ =
     (N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME)/(tbr/1000000);
   SFXC_ASSERT(time_between_headers_ > 0);
-  ref_jday = (mjd(1,1,param.start_year) + param.start_day -1 )%1000;
-  DEBUG_MSG("Ref_jday=" << ref_jday);
 }

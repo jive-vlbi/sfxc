@@ -6,6 +6,7 @@
 #include <map>
 #include <iostream>
 #include <assert.h>
+#include <stdlib.h>
 
 template <class Vexpp_node_iterator_type>
 class Vexpp_node_iterator;

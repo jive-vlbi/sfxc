@@ -1,6 +1,5 @@
 #include <fstream>
 #include "fringe_info.h"
-#include "control_parameters.h"
 
 #define MAX_SNR_VALUE 8
 #define MIN_SNR_VALUE 3
@@ -271,14 +270,66 @@ Fringe_info_container::read_plots(bool stop_at_eof) {
 }
 
 void
-Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
-  typedef Control_parameters::Date Date;
+Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &stations, std::string &mode,
+                               std::vector< std::vector<int> > &bbcs)
+{
+  Vex::Node root_node = vex.get_root_node();
+  for(int station=0; station < stations.size(); station++){
+    std::string freq = vex.get_frequency(mode, stations[station]);
+    // First get an ordered list of all BBC's in the FREQ block
+    std::set<std::string> all_bbcs;
+    for(Vex::Node::iterator freq_it = root_node["FREQ"][freq]->begin("chan_def");
+      freq_it != root_node["FREQ"][freq]->end("chan_def"); freq_it++){
+      all_bbcs.insert((*freq_it)[5]->to_string());
+    }
+    // Now find the index of the BBC for each frequency
+    std::vector<int> bbc_list;
+    for(Vex::Node::iterator freq_it = root_node["FREQ"][freq]->begin("chan_def");
+        freq_it != root_node["FREQ"][freq]->end("chan_def"); freq_it++){
+      std::string cur_bbc = (*freq_it)[5]->to_string();
+      int bbc_index = 0;
+      bool found=false;
+      for(std::set<std::string>::iterator bbc_it = all_bbcs.begin(); 
+          (bbc_it != all_bbcs.end())&&(found == false); bbc_it++){
+        if(*bbc_it == cur_bbc){
+           found = true;
+           bbc_list.push_back(bbc_index);
+        }
+        bbc_index++ ;
+      }
+    }
+    bbcs.push_back(bbc_list);
+  }
+}
 
+bool
+Fringe_info_container::get_frequencies(const Vex &vex, std::string &mode, std::vector<double> &frequencies)
+{
+  Vex::Node root_node = vex.get_root_node();
+  Vex::Node::iterator mode_it = root_node["MODE"][mode];
+  std::string freq_mode = mode_it->begin("FREQ")[0]->to_string();
+  std::set<double> freq_set;
+  for (Vex::Node::iterator chan_it = root_node["FREQ"][freq_mode]->begin("chan_def");
+       chan_it != root_node["FREQ"][freq_mode]->end("chan_def"); ++chan_it) {
+    freq_set.insert((*chan_it)[1]->to_double_amount("MHz")*1000000);
+  }
+
+  frequencies.resize(0);
+  for (std::set<double>::iterator freq_it = freq_set.begin();
+       freq_it != freq_set.end(); freq_it++) {
+    frequencies.push_back(*freq_it);
+  }
+  return true;
+}
+
+void
+Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
   // Array with the station names
   std::vector<std::string> stations;
 
   // Array with frequencies for a channel nr
   std::vector<double>      frequencies;
+  std::vector< std::vector<int> >      bbcs;
 
 
   const Vex::Node root_node = vex.get_root_node();
@@ -286,8 +337,6 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
        it != root_node["STATION"]->end(); it++) {
     stations.push_back(it.key());
   }
-
-  vex.get_frequencies(frequencies);
 
   std::ofstream index_html("index2.html");
   assert(index_html.is_open());
@@ -313,6 +362,11 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
   double integration_time = pow(2, global_header.integration_time);
   double sec = (global_header.start_time +
                 integration_time * first_timeslice_header.integration_slice);
+
+  Date start_time(global_header.start_year, global_header.start_day, (int) sec);
+  std::string mode = vex.get_mode(vex.get_scan_name(start_time));
+  get_frequencies(vex, mode, frequencies);
+  get_bbc(vex, stations, mode, bbcs);
 
   index_html << " Integration time: "
              << integration_time << "s"
@@ -415,8 +469,8 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
         begin_data_row(index_html,
                        frequencies,
                        first_plot);
-
         size_t column = 0;
+        int freq_index=0;
         for (iterator it = plots.begin(); it != plots.end(); it++) {
           if (!((it->header.frequency_nr == curr_freq) &&
                 (it->header.sideband == curr_sideband) &&
@@ -427,16 +481,17 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
             curr_pol1 = it->header.polarisation1;
             curr_pol2 = it->header.polarisation2;
             column = 0;
-
+            if(curr_pol1 == curr_pol2) 
+              freq_index++; // don't increment when doing cross-polarizations
             end_data_row(index_html);
             begin_data_row(index_html,
                            frequencies,
                            *it);
           }
-
           // Print one plot
           if (it->header.station_nr1 == it->header.station_nr2) {
-            print_auto(index_html, *it);
+            int bbc = bbcs[(int)it->header.station_nr1][freq_index];
+            print_auto(index_html, *it, bbc);
           } else {
             if (column < autos.size()) {
               index_html << "<td colspan='" << autos.size()-column << "'>Cross hands</td>";
@@ -552,8 +607,7 @@ generate_filename(char *filename,
 
 void
 Fringe_info_container::
-print_auto(std::ostream &index_html,
-           const Fringe_info &fringe_info) {
+print_auto(std::ostream &index_html, const Fringe_info &fringe_info, int bbc) {
   assert(fringe_info.initialised);
 
   index_html << "<td>";
@@ -565,7 +619,7 @@ print_auto(std::ostream &index_html,
                    Fringe_info::FREQUENCY, Fringe_info::ABS);
   index_html << "<A href = '" << filename_large << "' "
   << "OnMouseOver=\"show('" << filename << "');\">"
-  << "A" << "</a>";
+  << bbc+1 << "</a>";
 
   index_html << "</td>";
 }

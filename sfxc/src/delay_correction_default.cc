@@ -2,16 +2,15 @@
 #include "config.h"
 
 Delay_correction_default::
-Delay_correction_default(): Delay_correction_base(){
+Delay_correction_default(int stream_nr): Delay_correction_base(stream_nr){
 }
 
 void Delay_correction_default::do_task() {
   SFXC_ASSERT(has_work());
   SFXC_ASSERT(current_time >= 0);
 
-  Input_buffer_element &input = input_buffer->front();
-  int input_size = input->data.size()*8/correlation_parameters.bits_per_sample;
-  int nbuffer=input_size/number_channels();
+  Input_buffer_element input = input_buffer->front_and_pop();
+  int nbuffer=input->nfft;
   current_fft+=nbuffer;
 
   // Allocate output buffer
@@ -23,9 +22,7 @@ void Delay_correction_default::do_task() {
 
     cur_output.data().resize(nbuffer);
   }
-
-  for(int buf=0;buf<nbuffer;buf++)
-  {
+  for(int buf=0;buf<nbuffer;buf++){
     Output_data &output = cur_output.data()[buf];
 #ifndef DUMMY_CORRELATION
     const int n_channels = number_channels();
@@ -35,14 +32,12 @@ void Delay_correction_default::do_task() {
     if (time_buffer.size() != 2*n_channels)
       time_buffer.resize(n_channels*2);
 
-    //convert the input samples to floating point
-    bit2float(input, buf, &time_buffer[0]);
     double delay = get_delay(current_time+length_of_one_fft()/2);
     double delay_in_samples = delay*sample_rate();
     int integer_delay = (int)std::floor(delay_in_samples+.5);
 
     // Output is in frequency_buffer
-    fractional_bit_shift(&time_buffer[0],
+    fractional_bit_shift(&input->data[buf*n_channels],
                          integer_delay,
                          delay_in_samples - integer_delay);
 
@@ -60,11 +55,10 @@ void Delay_correction_default::do_task() {
     total_ffts++;
 #endif // DUMMY_CORRELATION
   }
-  input_buffer->pop();
   output_buffer->push(cur_output);
 }
 
-void Delay_correction_default::fractional_bit_shift(FLOAT input[],
+void Delay_correction_default::fractional_bit_shift(FLOAT *input,
     int integer_shift,
     FLOAT fractional_delay) {
   // 3) execute the complex to complex FFT, from Time to Frequency domain
@@ -73,6 +67,7 @@ void Delay_correction_default::fractional_bit_shift(FLOAT input[],
     IPPS_FFTFWD_RTOCSS_F(&input[0], (IPP_FLOAT*)&frequency_buffer[0], plan_t2f, &buffer_t2f[0]);
     total_ffts++;
   }
+
   // Element 0 and number_channels()/2 are real numbers
   frequency_buffer[0] *= 0.5;
   frequency_buffer[number_channels()/2] *= 0.5;//Nyquist frequency
@@ -84,7 +79,7 @@ void Delay_correction_default::fractional_bit_shift(FLOAT input[],
   // the following should be double
   const double dfr  = sample_rate()*1.0/number_channels(); // delta frequency
   const double tmp1 = -2.0*M_PI*fractional_delay/sample_rate();
-  const double tmp2 = 0.5*M_PI*(integer_shift&3);/* was: / ovrfl */
+  const double tmp2 = M_PI*(integer_shift&3)/(2*oversamp);
   const double constant_term = - tmp2 + sideband()*tmp1*0.5*bandwidth();
   const double linear_term = -tmp1*sideband()*dfr;
 
@@ -137,9 +132,9 @@ void Delay_correction_default::fringe_stopping(FLOAT output[]) {
   phi = mult_factor_phi*(phi-floor_phi);
 
   { // compute delta_phi
-    SFXC_ASSERT((number_channels()*1000000)%sample_rate() == 0);
+    SFXC_ASSERT((number_channels()*1000000LL)%sample_rate() == 0);
     double phi_end = integer_mult_factor_phi *
-                     get_delay(time + (number_channels()*1000000)/sample_rate());
+                     get_delay(time + (number_channels()*1000000LL)/sample_rate());
     phi_end = mult_factor_phi*(phi_end-floor_phi);
 
     delta_phi = (phi_end-phi)/number_channels();
@@ -172,8 +167,14 @@ void
 Delay_correction_default::set_parameters(const Correlation_parameters &parameters) {
   size_t prev_number_channels = number_channels();
   correlation_parameters = parameters;
-  int fft_size = parameters.number_channels*parameters.bits_per_sample/8;
-  nfft_max = INPUT_NODE_PACKET_SIZE/fft_size;
+  int i=0;
+  while ((i<correlation_parameters.station_streams.size())&&
+         (correlation_parameters.station_streams[i].station_stream!=stream_nr))
+    i++;
+  SFXC_ASSERT(i<correlation_parameters.station_streams.size());
+  bits_per_sample = correlation_parameters.station_streams[i].bits_per_sample;
+  nfft_max = std::max(CORRELATOR_BUFFER_SIZE/parameters.number_channels,1);
+  oversamp = round(correlation_parameters.sample_rate/(2*correlation_parameters.bandwidth));
 
   current_time = parameters.start_time*(int64_t)1000;
 

@@ -40,11 +40,8 @@ size_t Data_writer_socket::do_put_bytes(size_t nBytes, char const *buff) {
 
   while (bytes_written != nBytes) {
     int result = write(m_socket, buff+bytes_written, nBytes-bytes_written);
-    if (result == 0) {
+    if (result <= 0) {
       return bytes_written;
-    }
-    if (result < 0) {
-      MTHROW("Exception :)");
     }
     bytes_written += result;
   }

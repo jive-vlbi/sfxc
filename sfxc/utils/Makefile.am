@@ -24,7 +24,7 @@ bin_PROGRAMS += generate_uvw_coordinates \
                 baseline_info 
 endif
 
-bin_SCRIPTS  = run_sfxc.py vumeter.py
+bin_SCRIPTS  = run_sfxc.py vumeter.py gen_all_delay_tables.py
 
 extract_channelizer_SOURCES = \
   extract_channelizer.cc \

@@ -4,7 +4,7 @@ Input_data_format_reader_tasklet::
 Input_data_format_reader_tasklet(
   Data_format_reader_ptr reader,
   Data_frame &data)
-    : memory_pool_(10), stop_time(-1),
+    : memory_pool_(10),
       n_bytes_per_input_word(reader->bytes_per_input_word()),
       data_modulation(false) {
 
@@ -26,19 +26,18 @@ Input_data_format_reader_tasklet(
 Input_data_format_reader_tasklet::~Input_data_format_reader_tasklet(){  }
 
 void Input_data_format_reader_tasklet::stop() {
-  /// There is a special associated with the empty interval.
-  /// as it will stop the reading thread.
+  isRunning = false;
+  /// We add an empty interval to unblock the thread
   add_time_interval(0,0);
 }
 
 void Input_data_format_reader_tasklet::do_execute() {
-  ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: ENTER");
-
+  isRunning = true;
   /// blocks until we have an interval to process
   fetch_next_time_interval();
 
   /// then let's work
-  while ( !current_interval_.empty() ) {
+  while ( isRunning ) {
     /// if there is still some data to process we do it
     if ( current_time < current_interval_.stop_time_ ) do_task();
 
@@ -88,7 +87,18 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
     /// Otherwise the new interval is loaded.
     ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: SET TIME");
     ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: val:"<< current_interval_.start_time_ << " cur: "<< current_time);
-    current_time = goto_time( current_interval_.start_time_);
+    if(current_interval_.start_time_<=reader_->get_current_time())
+      current_time = reader_->get_current_time();
+    else{
+      current_time = goto_time( current_interval_.start_time_);
+      if (current_time > current_interval_.stop_time_) {
+	  current_time = current_interval_.stop_time_;
+	  randomize_block();
+	  input_element_->start_time = current_time;
+      }
+      data_read_ += input_element_->buffer.size();
+      push_element();
+    }
   }
 }
 
@@ -107,9 +117,6 @@ has_work() {
   if (memory_pool_.empty()) {
     return false;
   }
-  if (stop_time <= current_time) {
-    return false;
-  }
 
   return true;
 }
@@ -124,7 +131,6 @@ uint64_t
 Input_data_format_reader_tasklet::
 goto_time(uint64_t us_time) {
   //int64_t us_time = int64_t(1000)*ms_time;
-
   int64_t new_time =
     reader_->goto_time(*input_element_, us_time);
   SFXC_ASSERT(new_time == reader_->get_current_time());
@@ -149,24 +155,6 @@ Input_data_format_reader_tasklet::
 get_current_time() {
   return current_time;
 }
-
-int
-Input_data_format_reader_tasklet::
-get_stop_time() {
-  SFXC_ASSERT(false && "DEPRECATED !");
-  return stop_time;
-}
-
-void
-Input_data_format_reader_tasklet::
-set_stop_time(int64_t ms_time) {
-  SFXC_ASSERT(false && "DEPRECATED !");
-  int64_t us_time = int64_t(1000)*ms_time;
-
-  SFXC_ASSERT(current_time < us_time);
-  stop_time = us_time;
-}
-
 
 void
 Input_data_format_reader_tasklet::

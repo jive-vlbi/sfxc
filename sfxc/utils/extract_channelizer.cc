@@ -75,7 +75,7 @@ int main(int argc, char** argv)
               std::string urlsrc = control_parameters.data_sources(station_name)[current_scan-begin_scan];
               boost::shared_ptr<Data_reader> reader= boost::shared_ptr<Data_reader>( Data_reader_factory::get_reader(urlsrc) );
               boost::shared_ptr<Mark5a_reader> m_reader =
-                boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, data) );
+                boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, data, -1, -1) );
 
               int n_subbands = input_node_param.channels.size();
               int bits_per_sample = input_node_param.bits_per_sample();

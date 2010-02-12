@@ -3,16 +3,15 @@
 #include "config.h"
 
 Delay_correction_swapped::
-Delay_correction_swapped(): Delay_correction_base(){
+Delay_correction_swapped(int stream_nr): Delay_correction_base(stream_nr){
 }
 
 void Delay_correction_swapped::do_task() {
   SFXC_ASSERT(has_work());
   SFXC_ASSERT(current_time >= 0);
 
-  Input_buffer_element &input = input_buffer->front();
-  int input_size = input->data.size()*8/correlation_parameters.bits_per_sample;
-  int nbuffer=input_size/number_channels();
+  Input_buffer_element input = input_buffer->front_and_pop();
+  int nbuffer=input->nfft;
   current_fft+=nbuffer;
 
   // Allocate output buffer
@@ -36,15 +35,12 @@ void Delay_correction_swapped::do_task() {
     if (time_buffer.size() != 2*n_channels)
       time_buffer.resize(n_channels*2);
 
-    //convert the input samples to floating point
-    bit2float(input, buf, &time_buffer[0]);
-
     double delay = get_delay(current_time+length_of_one_fft()/2);
     double delay_in_samples = delay*sample_rate();
     int integer_delay = (int)std::floor(delay_in_samples+.5);
 
     // Output is in frequency_buffer
-    fringe_stopping(&time_buffer[0]);
+    fringe_stopping(&input->data[buf*n_channels]);
 
     // zero padding
     IPPS_ZERO_FC((IPP_CPLX_FLOAT*)&frequency_buffer[number_channels()],number_channels());
@@ -58,7 +54,6 @@ void Delay_correction_swapped::do_task() {
 
 #endif // DUMMY_CORRELATION
   }
-  input_buffer->pop();
   output_buffer->push(cur_output);
 }
 
@@ -84,7 +79,7 @@ void Delay_correction_swapped::fractional_bit_shift(std::complex<FLOAT> output[]
   // the following should be double
   const double dfr  = sample_rate()*1.0/(2*n_channels); // delta frequency 
   const double tmp1 = -2.0*M_PI*fractional_delay/sample_rate(); 
-  const double tmp2 = 0.5*M_PI*(integer_shift&3);/* was: / ovrfl */ 
+  const double tmp2 = M_PI*(integer_shift&3)/(2*oversamp);
   const double constant_term = -tmp2 + sideband()*tmp1*0.5*bandwidth();
   const double linear_term = -tmp1*sideband()*dfr; 
 
@@ -132,9 +127,9 @@ void Delay_correction_swapped::fringe_stopping(FLOAT input[]) {
   phi = mult_factor_phi*(phi-floor_phi); 
 
   { // compute delta_phi
-    SFXC_ASSERT((number_channels()*1000000)%sample_rate() == 0);
+    SFXC_ASSERT((number_channels()*1000000LL)%sample_rate() == 0);
     double phi_end = integer_mult_factor_phi *
-                     get_delay(time + (number_channels()*1000000)/sample_rate());
+                     get_delay(time + (number_channels()*1000000LL)/sample_rate());
     phi_end = mult_factor_phi*(phi_end-floor_phi);
 
 //    delta_phi = (phi_end-phi)*n_recompute_delay/number_channels(); 
@@ -165,8 +160,15 @@ void
 Delay_correction_swapped::set_parameters(const Correlation_parameters &parameters) {
   size_t prev_number_channels = number_channels();
   correlation_parameters = parameters;
-  int fft_size = parameters.number_channels*parameters.bits_per_sample/8;
-  nfft_max = INPUT_NODE_PACKET_SIZE/fft_size;
+  int i=0;
+  while ((i<correlation_parameters.station_streams.size())&&
+         (correlation_parameters.station_streams[i].station_stream!=stream_nr))
+    i++;
+  SFXC_ASSERT(i<correlation_parameters.station_streams.size());
+  bits_per_sample = correlation_parameters.station_streams[i].bits_per_sample;
+
+  nfft_max = std::max(CORRELATOR_BUFFER_SIZE/parameters.number_channels,1);
+  oversamp = round(parameters.sample_rate/(2*parameters.bandwidth));
 
   current_time = parameters.start_time*(int64_t)1000;
 

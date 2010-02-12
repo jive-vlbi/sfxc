@@ -49,6 +49,7 @@ public:
 
 private:
   Log_node_controller log_node_ctrl;
+  bool running;
 };
 
 #endif // LOG_NODE_H

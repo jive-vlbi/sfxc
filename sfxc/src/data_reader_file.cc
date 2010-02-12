@@ -16,27 +16,26 @@
 Data_reader_file::Data_reader_file(const char *filename) :
     Data_reader() {
   if (strncmp(filename, "file://", 7) != 0) {
-    DEBUG_MSG("Filename '" << filename << "' doesn't start with file://");
-    SFXC_ASSERT(strncmp(filename, "file://", 7) == 0);
+    std::string msg = std::string("Filename '")+std::string(filename)+std::string("' doesn't start with file://");
+    sfxc_abort(msg.c_str());
   }
   file.open(filename+7, std::ios::in | std::ios::binary);
   if (!file.is_open()) {
-    DEBUG_MSG("Filename '" << filename << "' doesn't exist");
-    SFXC_ASSERT(file.is_open());
+    std::string msg = std::string("Filename '")+std::string(filename)+std::string("' doesn't exist");
+    sfxc_abort(msg.c_str());
   }
 }
 
 Data_reader_file::Data_reader_file(const std::string &filename) :
     Data_reader() {
   if (strncmp(filename.c_str(), "file://", 7) != 0) {
-    DEBUG_MSG("Filename '" << filename << "' doesn't start with file://");
-    SFXC_ASSERT(strncmp(filename.c_str(), "file://", 7) == 0);
+    std::string msg = std::string("Filename '")+filename+std::string("' doesn't start with file://");
+    sfxc_abort(msg.c_str());
   }
   file.open(filename.c_str()+7, std::ios::in | std::ios::binary);
   if (!file.is_open()) {
-    DEBUG_MSG("Filename '" << filename << "' doesn't exist");
-    sleep(1);
-    SFXC_ASSERT(file.is_open());
+    std::string msg = std::string("Filename '")+filename+std::string("' doesn't exist");
+    sfxc_abort(msg.c_str());
   }
 }
 

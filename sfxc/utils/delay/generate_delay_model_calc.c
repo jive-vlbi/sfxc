@@ -448,7 +448,7 @@ mvrec(short *ntoc, short *kmode, short *knum, short *err)
       scan_data[scan_nr].sec_of_day + delta_time ;
   }
 
-  if (interval < scan_data[scan_nr].nr_of_intervals) {
+  if (interval <= scan_data[scan_nr].nr_of_intervals) {
     delay[0] = NAN;
     *err = 0;
     return;

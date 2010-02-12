@@ -26,7 +26,7 @@
 
 class Delay_correction_swapped : public Delay_correction_base {
 public:
-  Delay_correction_swapped();
+  Delay_correction_swapped(int stream_nr);
   ~Delay_correction_swapped(){};
 
   void set_parameters(const Correlation_parameters &parameters);
@@ -38,7 +38,7 @@ private:
   void fractional_bit_shift(std::complex<FLOAT> input[],
                             int integer_shift,
                             FLOAT fractional_delay);
-  void fringe_stopping(FLOAT output[]);
+  void fringe_stopping(FLOAT input[]);
 
 private:
 

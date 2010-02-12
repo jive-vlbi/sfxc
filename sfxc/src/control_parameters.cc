@@ -20,7 +20,8 @@ Control_parameters::Control_parameters(const char *ctrl_file,
                                        const char *vex_file,
                                        std::ostream& log_writer)
     : initialised(false) {
-  initialise(ctrl_file, vex_file, log_writer);
+  if(!initialise(ctrl_file, vex_file, log_writer))
+    sfxc_abort();
 }
 
 bool
@@ -95,6 +96,35 @@ initialise(const char *ctrl_file, const char *vex_file,
   // Checking reference station
   if (ctrl["reference_station"] == Json::Value()) {
     ctrl["reference_station"] = "";
+  }
+
+  if (ctrl["pulsar_binning"] == Json::Value()){
+    ctrl["pulsar_binning"] = false;
+  }else if(ctrl["pulsar_binning"].asBool()==true){
+    // use pulsar binning
+    DEBUG_MSG("Using pulsar binning");
+
+    if (ctrl["pulsars"] == Json::Value()){
+      log_writer << "Error : No pulsars block in control file.\n";
+      return false;
+    }
+    Json::Value::iterator it = ctrl["pulsars"].begin();
+    if(*it==Json::Value()){
+      log_writer <<  "Error : Empty pulsars block in control file.\n";
+      return false;
+    }
+    while(it!=ctrl["pulsars"].end()){
+      if((*it)["interval"] == Json::Value()){
+        (*it)["interval"].append(0.0); 
+        (*it)["interval"].append(1.0);
+      }
+      if((*it)["nbins"]==Json::Value()){
+        // If nbins is not set we default to the maxium possible (PULSAR_PERIOD/DURATION_SINGLE_FFT)
+        // signalled by nbins = 0 
+        (*it)["nbins"] = 0;
+      }
+      it++;
+    }
   }
 
   // Get start date
@@ -192,9 +222,10 @@ Control_parameters::check(std::ostream &writer) const {
                source_it != data_source_it.end(); ++source_it) {
             std::string filename = create_path((*source_it).asString());
 
-            if (filename.find("file://") != 0 &&
-                filename.find("mark5://") != 0 ) {
-              //               ok = false;
+            if (filename.find("file://")  != 0 &&
+                filename.find("mark5://") != 0 &&
+                filename.find("dnfp://")  !=0) {
+              ok = false;
               writer
               << "Ctrl-file: invalid data source '" << filename << "'"
               << std::endl;
@@ -253,6 +284,70 @@ Control_parameters::check(std::ostream &writer) const {
       writer << "ctrl-file: output file not defined" << std::endl;
     }
   }
+  // Check pulsar binning
+  if (ctrl["pulsar_binning"].asBool()){
+    // use pulsar binning
+    if (ctrl["pulsars"] == Json::Value()){
+      ok=false;
+      writer << "ctrl-file : No pulsars block in control file.\n";
+    }else{
+      Json::Value::const_iterator it = ctrl["pulsars"].begin();
+      if(*it==Json::Value()){
+        ok = false;
+        writer << "ctrl-file : Empty pulsars block in control file.\n";
+      }else{
+        while(it!=ctrl["pulsars"].end()){
+          if((*it)["interval"].size() != 2){
+            ok = false;
+            writer << "ctrl-file : Invalid number of arguments in interval field.\n";
+          }else{
+            Json::Value interval = (*it)["interval"];
+            unsigned int zero=0,one=1; // needed to prevent compilation error
+            if ((interval[zero].asDouble()<0.)||(interval[zero].asDouble()>1)||
+                (interval[one].asDouble()<0.)||(interval[one].asDouble()>1)||
+                (interval[one].asDouble()<interval[zero].asDouble())){
+              ok = false;
+              writer << "ctrl-file : Invalid range in interval field.\n";
+            }
+          }
+          if((*it)["nbins"].asInt() < 0){
+            ok= false;
+            writer << "ctrl-file : Invalid number of bins : " << (*it)["nbins"].asInt()<<".\n";
+          }
+          if((*it)["polyco_file"] == Json::Value()){
+            ok = false;
+            writer << "ctrl-file : No polyco files specified.\n";
+          }else if((*it)["polyco_file"].size() > 1 ){
+            ok = false;
+            writer << "ctrl-file : More than one polyco file specified for a pulsar.\n";
+          } else {
+            std::string filename = create_path((*it)["polyco_file"].asString());
+            if (filename.find("file://") != 0){
+              ok = false;
+              writer << "Ctrl-file: polyco file definition doesn't start with file://  '" << filename << "'\n";
+            }else{
+              // Check whether the file exists
+              std::ifstream in(create_path(filename).c_str()+7);
+              if (!in.is_open()) {
+               ok = false;
+               writer << "Ctrl-file: Could not open polyco file : " << filename << std::endl;
+              }else{
+                writer << "Parsing polyco file : " << filename << "\n";
+                Pulsar_parameters pc(writer);
+                std::vector<Pulsar_parameters::Polyco_params> param;
+                if (!pc.parse_polyco(param, filename.substr(7))){
+                  ok = false;
+                  writer << "Ctrl-file: Error parsing polyco file : " << filename << std::endl;
+                }
+              }
+            }
+          }
+          it++;
+        }
+      }
+    }
+  }
+
   return ok;
 }
 
@@ -332,36 +427,44 @@ int Control_parameters::message_level() const {
   return ctrl["message_level"].asInt();
 }
 
+bool Control_parameters::pulsar_binning() const{
+  return ctrl["pulsar_binning"].asBool();
+}
+
+bool
+Control_parameters::get_pulsar_parameters(Pulsar_parameters &pars) const{
+  if(!pulsar_binning())
+    return false;
+  for(Json::Value::const_iterator it = ctrl["pulsars"].begin();
+      it!=ctrl["pulsars"].end(); it++){
+    std::string name= it.key().asString();
+    Pulsar_parameters::Pulsar newPulsar;
+    if(name.size() > 10)
+      name.resize(10);
+    strcpy(&newPulsar.name[0], name.c_str());
+    newPulsar.nbins = (*it)["nbins"].asInt();
+    unsigned int zero=0, one=1; //needed to prevent compiler error
+    newPulsar.interval.start = (*it)["interval"][zero].asDouble();
+    newPulsar.interval.stop  = (*it)["interval"][one].asDouble();
+    if(!pars.parse_polyco(newPulsar.polyco_params,(*it)["polyco_file"].asString().substr(7)))
+      return false;
+    pars.pulsars.insert(std::pair<std::string,Pulsar_parameters::Pulsar>(name,newPulsar));
+  }
+  return true;
+}
+
 int
-Control_parameters::bits_per_sample() const {
-  Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"]->begin();
+Control_parameters::bits_per_sample(const std::string &mode,
+				    const std::string &station) const
+{
+  const std::string &track_name = get_vex().get_track(mode, station);
+
+  Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
   int bits = 1;
   for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
        fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
     if (fanout_def_it[2]->to_string() == "mag") {
       bits = 2;
-    }
-  }
-
-  // NGHK: still a hack, assumes all samples use the same number of bits
-  // Checking the precondition here
-  for (track = vex.get_root_node()["TRACKS"]->begin();
-       track != vex.get_root_node()["TRACKS"]->end(); ++track) {
-    std::map<std::string, int> result;
-    // set all channels to zero:
-    for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
-         fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
-      result[fanout_def_it[1]->to_string()] = 0;
-    }
-    // Count the number of bits
-    for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
-         fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
-      result[fanout_def_it[1]->to_string()] += 1;
-    }
-
-    for (std::map<std::string, int>::iterator it = result.begin();
-         it != result.end(); it++) {
-      SFXC_ASSERT(it->second == bits);
     }
   }
 
@@ -376,6 +479,11 @@ Control_parameters::scan(int scan_nr) const {
     SFXC_ASSERT(it != vex.get_root_node()["SCHED"]->end());
   }
   return it.key();
+}
+
+std::string
+Control_parameters::scan_source(const std::string &scan) const {
+  return vex.get_root_node()["SCHED"][scan]["source"]->to_string();
 }
 
 int Control_parameters::scan(const Date &date) const {
@@ -515,7 +623,7 @@ get_mark5b_tracks(const std::string &mode,
                   Input_node_parameters &input_parameters) const {
   const Vex::Node &root=get_vex().get_root_node();
   // Find the number of bits per sample
-  int bits_per_sample_ = bits_per_sample();
+  int bits_per_sample_ = bits_per_sample(mode, station);
 
   std::string bbc = "NO BBC FOUND";
   { // Find the bbc
@@ -653,8 +761,6 @@ get_input_node_parameters(const std::string &mode_name,
 
   SFXC_ASSERT(!result.channels[0].sign_tracks.empty());
   result.track_bit_rate /= result.channels[0].sign_tracks.size();
-  result.start_year=start_date->year;
-  result.start_day=start_date->day;
   return result;
 }
 
@@ -704,8 +810,7 @@ get_mode(int32_t &start_time) const {
       return sched_block["mode"]->to_string();
     }
   }
-  SFXC_ASSERT_MSG(false,
-                  "Mode not found in the vex-file.");
+  sfxc_abort("Mode not found in the vex-file.");
   return std::string("");
 }
 
@@ -988,9 +1093,6 @@ get_correlation_parameters(const std::string &scan_name,
   corr_param.sample_rate =
     (int)(1000000*freq["sample_rate"]->to_double_amount("Ms/sec"));
 
-  // assumes the same bits per sample for all stations
-  corr_param.bits_per_sample = bits_per_sample();
-
   corr_param.sideband = ' ';
   std::string freq_temp;
   for (Vex::Node::const_iterator ch_it = freq->begin("chan_def");
@@ -1091,6 +1193,7 @@ get_correlation_parameters(const std::string &scan_name,
         station_param.station_stream = station_nr_it->second;
         station_param.start_time = station[1]->to_int_amount("sec");
         station_param.stop_time = station[2]->to_int_amount("sec");
+	station_param.bits_per_sample = bits_per_sample(mode_name, station[0]->to_string());
         corr_param.station_streams.push_back(station_param);
       }
     }
@@ -1111,14 +1214,16 @@ Control_parameters::get_delay_directory() const {
 std::string
 Control_parameters::
 get_delay_table_name(const std::string &station_name) const {
-  SFXC_ASSERT_MSG(strncmp(ctrl["delay_directory"].asString().c_str(),
-                          "file://",7) == 0,
-                  "Delay directory doesn't start with 'file://'"
-                 );
-  std::string delay_table_name =
-    std::string(ctrl["delay_directory"].asString().c_str()+7) +
-    "/" + ctrl["exper_name"].asString() +
-    "_" +station_name + ".del";
+  if(strncmp(ctrl["delay_directory"].asString().c_str(), "file://",7) != 0)
+    sfxc_abort("Ctrl-file: Delay directory doesn't start with 'file://'");
+  std::string delay_table_name;
+  if(ctrl["delay_directory"].asString().size()==7)
+    // delay files are in the current directory
+    delay_table_name = ctrl["exper_name"].asString() + "_" +station_name + ".del";
+  else
+    delay_table_name = std::string(ctrl["delay_directory"].asString().c_str()+7) +
+                       "/" + ctrl["exper_name"].asString() + "_" +station_name + ".del";
+
   if (access(delay_table_name.c_str(), R_OK) == 0) {
     return delay_table_name;
   }
@@ -1127,8 +1232,7 @@ get_delay_table_name(const std::string &station_name) const {
     return delay_table_name;
   }
   DEBUG_MSG("Tried to create the delay table at " << delay_table_name);
-  SFXC_ASSERT_MSG(false,
-                  "Couldn't create the delay table.");
+  sfxc_abort("Couldn't create the delay table.");
   return std::string("");
 }
 
@@ -1141,8 +1245,7 @@ generate_delay_table(const std::string &station_name,
   DEBUG_MSG("Creating the delay model: " << cmd);
   int result = system(cmd.c_str());
   if (result != 0) {
-    SFXC_ASSERT_MSG(false,
-                    "Generation of the delay table failed (generate_delay_model)");
+    sfxc_abort("Generation of the delay table failed (generate_delay_model)");
   }
 }
 
@@ -1278,8 +1381,6 @@ Correlation_parameters::operator==(const Correlation_parameters& other) const {
 
   if (sample_rate != other.sample_rate)
     return false;
-  if (bits_per_sample != other.bits_per_sample)
-    return false;
 
   if (channel_freq != other.channel_freq)
     return false;
@@ -1288,7 +1389,7 @@ Correlation_parameters::operator==(const Correlation_parameters& other) const {
   if (sideband != other.sideband)
     return false;
 
-  if (station_streams != station_streams)
+  if (station_streams != other.station_streams)
     return false;
   return true;
 }
@@ -1303,7 +1404,6 @@ std::ostream &operator<<(std::ostream &out,
   out << "  \"slice_nr\": " << param.slice_nr << ", " << std::endl;
   out << "  \"slice_offset\": " << param.slice_offset << ", " << std::endl;
   out << "  \"sample_rate\": " << param.sample_rate << ", " << std::endl;
-  out << "  \"bits_per_sample\": " << param.bits_per_sample << ", " << std::endl;
   out << "  \"channel_freq\": " << param.channel_freq << ", " << std::endl;
   out << "  \"bandwidth\": " << param.bandwidth<< ", " << std::endl;
   out << "  \"sideband\": " << param.sideband << ", " << std::endl;
@@ -1317,6 +1417,7 @@ std::ostream &operator<<(std::ostream &out,
     out << "{ \"stream\" : " <<param.station_streams[i].station_stream
     << ", \"start\" : " <<param.station_streams[i].start_time
     << ", \"stop\" : " <<param.station_streams[i].stop_time
+    << ",  \"bits_per_sample\": " << param.station_streams[i].bits_per_sample
     << " }";
   }
   out << "] }" << std::endl;
@@ -1338,3 +1439,80 @@ operator==(const Correlation_parameters::Station_parameters& other) const {
   return true;
 }
 
+Pulsar_parameters::Pulsar_parameters(std::ostream& log_writer_):log_writer(log_writer_){
+}
+
+bool 
+Pulsar_parameters::parse_polyco(std::vector<Polyco_params> &param, std::string filename){
+  bool ok=false;
+  std::ifstream inp(filename.c_str());
+  std::string line, temp;
+
+  if(!inp){
+    log_writer << "Could not open polyco file [" <<filename<<"]\n";
+    return false;
+  }
+  int line_nr=0;
+  int coef_idx=0;
+  int n_coef=0;
+  int block_index=0;
+  int end_of_prev_block=0;
+  param.resize(0);
+  std::getline(inp, line);
+  while(!inp.eof()){
+    std::stringstream inpline(line);
+    if(line_nr-end_of_prev_block==0){
+      inpline >> temp;
+      param.resize(block_index+1);
+      strncpy(param[block_index].name,temp.c_str(),11);
+      param[block_index].name[10]=0; // make sure sting is null terminated
+      inpline >> temp;
+      strncpy(param[block_index].date,temp.c_str(),10);
+      param[block_index].date[9]=0; // make sure sting is null terminated
+      inpline >> param[block_index].utc;
+      inpline >> param[block_index].tmid;
+      inpline >> param[block_index].DM;
+      inpline >> param[block_index].doppler;
+      inpline >> param[block_index].residual;
+      ok=false;
+    }else if(line_nr-end_of_prev_block == 1){
+      inpline >> param[block_index].ref_phase;
+      inpline >> param[block_index].ref_freq;
+      inpline >> temp;
+      strncpy(param[block_index].site,temp.c_str(),6);
+      param[block_index].site[5]=0; // make sure sting is null terminated
+      inpline >> param[block_index].data_span;
+      inpline >> param[block_index].n_coef;
+      n_coef = param[block_index].n_coef;
+      param[block_index].coef.resize(n_coef);
+      inpline >> param[block_index].obs_freq;
+      if(!inpline.eof()){
+        // The binary phase parameters are optional
+        inpline >> param[block_index].bin_phase[0];
+        inpline >> param[block_index].bin_phase[1];
+      }else{
+        param[block_index].bin_phase[0]=0;
+        param[block_index].bin_phase[1]=0;
+      }
+    }else{
+      while((!inpline.eof())&&(!inpline.fail())&&(coef_idx<n_coef)){
+        inpline >> param[block_index].coef[coef_idx];
+        coef_idx++;
+      }
+      if((!inpline.fail())&&(coef_idx == n_coef)){
+        ok=true;
+        block_index++;
+        coef_idx=0;
+        end_of_prev_block=line_nr+1;
+      }
+    }
+    if(inpline.fail()){
+      log_writer << " Error parsing line " << line_nr << " of polyco file [" << filename << "]\n";
+      return false;
+    }
+    line_nr++;
+    std::getline(inp, line);
+  }
+  if(!ok) log_writer << " Eof reached prematurely while parsing polyco file [" << filename << "]\n";
+  return ok;
+}

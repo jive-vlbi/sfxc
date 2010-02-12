@@ -6,13 +6,11 @@
  * $Id: channel_extractor.h 440 2007-12-16 20:26:04Z kruithof $
  *
  */
-
 #include "channel_extractor_tasklet.h"
 #include "channel_extractor_brute_force.h"
 #include "channel_extractor_5.h"
 #include "channel_extractor_fast.h"
 #include "channel_extractor_dynamic.h"
-
 
 #include "mark5a_header.h"
 
@@ -71,9 +69,10 @@ void Channel_extractor_tasklet::do_execute() {
     DEBUG_MSG("My input queue has been closed ! I should probably stop then");
   }
 
-  /// If the input queue is not empty something was wrong.
-  /// To much data has been sent to dechannelization.
-  ///SFXC_ASSERT( input_buffer_->empty() );
+  // Empty input buffer
+  while(!input_buffer_->empty()){
+    input_buffer_->pop();
+  }
 
   /// We close our own output queues
   for (unsigned int i=0;i<output_buffers_.size();i++) {

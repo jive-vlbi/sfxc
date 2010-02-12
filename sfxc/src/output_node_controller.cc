@@ -38,15 +38,15 @@ Output_node_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
-      int32_t weight[3]; // stream, slicenr, size (in bytes)
-      MPI_Recv(&weight, 3, MPI_INT32, status.MPI_SOURCE,
+      int32_t weight[4]; // stream, slicenr, size (in bytes), n_bins
+      MPI_Recv(&weight, 4, MPI_INT32, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
       SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
       // Create an output buffer:
-      node.set_weight_of_input_stream(weight[0], weight[1], weight[2]);
+      node.set_weight_of_input_stream(weight[0], weight[1], weight[2], weight[3]);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

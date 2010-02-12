@@ -7,6 +7,7 @@
 
 #include "gnuplot_i.h"
 #include "output_header.h"
+#include "control_parameters.h"
 
 class Fringe_info {
 public:
@@ -47,6 +48,7 @@ public:
 
 // Container for all plots
 class Fringe_info_container {
+  typedef Control_parameters::Date Date;
   typedef std::set<Fringe_info> Container;
   typedef Container::iterator   iterator;
 
@@ -68,6 +70,10 @@ public:
 private:
   void read_data_from_file(int to_read, char * data, bool stop_at_eof);
 
+  bool get_frequencies(const Vex &vex, std::string &mode, std::vector<double> &frequencies);
+  void get_bbc(const Vex &vex, std::vector<std::string> &stations, std::string &mode,
+               std::vector< std::vector<int> > &bbcs);
+
   void set_plot(const Fringe_info &fringe_info);
 
   void generate_filename(char *filename,
@@ -79,7 +85,7 @@ private:
                          const Fringe_info::VALUE value);
 
   void print_auto(std::ostream &index_html,
-                  const Fringe_info &fringe_info);
+                  const Fringe_info &fringe_info, int bbc);
 
   void print_cross(std::ostream &index_html,
                    const Fringe_info &fringe_info);

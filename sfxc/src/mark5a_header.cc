@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <cstring>
 #include "mark5a_header.h"
 #include "backtrace.h"
@@ -124,8 +125,7 @@ int Mark5a_header::find_track(int headstack_, int track_) {
       return i;
     }
   }
-  SFXC_ASSERT_MSG(false,
-                  "Couldn't find (headstack, track) in the mark5a header.");
+  sfxc_abort("Couldn't find (headstack, track) in the mark5a header.");
   return -1;
 }
 
@@ -164,7 +164,6 @@ bool Mark5a_header::checkCRC() {
       << std::endl;
       return false;
     }
-    SFXC_ASSERT(crcBlock[i] == 0);
   }
 
   return true;

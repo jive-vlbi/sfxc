@@ -15,6 +15,7 @@
 #include "single_data_writer_controller.h"
 #include "control_parameters.h"
 #include "correlator_node_data_reader_tasklet.h"
+#include "correlator_node_bit2float_tasklet.h"
 #include "log_writer_mpi.h"
 #include "correlation_core.h"
 #include "delay_correction_base.h"
@@ -71,7 +72,7 @@ public:
     END_CORRELATING
   };
 
-  Correlator_node(int rank, int nr_corr_node, int swap_);
+  Correlator_node(int rank, int nr_corr_node, int swap_, bool psr_binning);
   ~Correlator_node();
 
   /// The the main_loop of the correlator node.
@@ -89,7 +90,7 @@ public:
   void add_delay_table(int sn, Delay_table_akima &table);
 
   void output_node_set_timeslice(int slice_nr, int slice_offset, int n_slices,
-                                 int stream_nr, int bytes);
+                                 int stream_nr, int bytes, int nbins);
 
   void receive_parameters(const Correlation_parameters &parameters);
 
@@ -103,13 +104,13 @@ class Reader_thread : public Thread {
 
     struct job {
       int number_ffts_in_integration;
-      int bits_per_sample;
+      std::vector<int> bits_per_sample;
       int number_channels;
       int station_streams_size;
     };
 
     Threadsafe_queue<struct job> queue_;
-    int num_reading_;
+    bool readers_active_;
     /// Time spend in waiting for new slice
     Timer timer_waiting_;
 
@@ -160,7 +161,7 @@ class Reader_thread : public Thread {
       DEBUG_MSG("reading thread started ! n_readers = " << bit_sample_readers_.size());
       try {
         while ( isrunning_ ) {
-					if ( num_reading_ == 0 ) {
+					if ( readers_active_ == false ) {
 //            timer_waiting_.resume();
             fetch_new_time_slice();
 //            timer_waiting_.stop();
@@ -168,15 +169,15 @@ class Reader_thread : public Thread {
             timer_reading_.resume();
             /// Wait something happens.
             eventsrc_.wait_until_any_event();
-            num_reading_ = 0;
-            for ( unsigned int i= 0;i<bit_sample_readers_.size();i++) {
-              num_reading_+=bit_sample_readers_[i]->data_to_read();
+            readers_active_ = false;
+            for ( unsigned int i= 0;(i<bit_sample_readers_.size())&&(!readers_active_);i++) {
+             readers_active_=bit_sample_readers_[i]->active();
             }
             timer_reading_.stop();
           }
         }
       } catch (QueueClosedException& exp) {
-        ///std::cout << "The queue is closed !" << std::endl;
+        DEBUG_MSG(" : The queue is closed !");
       }
     }
 
@@ -190,7 +191,7 @@ class Reader_thread : public Thread {
       struct job jb = queue_.front();
       DEBUG_MSG("New input fetched:" << jb.station_streams_size);
 
-      num_reading_=0;
+      readers_active_=false;
       for (size_t i=0; i<bit_sample_readers_.size(); i++) {
         SFXC_ASSERT(bit_sample_readers_[i] !=
                     Bit_sample_reader_ptr());
@@ -199,10 +200,10 @@ class Reader_thread : public Thread {
 
           bit_sample_readers_[i]->set_parameters(
             jb.number_ffts_in_integration,
-            jb.bits_per_sample,
+            jb.bits_per_sample[i],
             jb.number_channels
           );
-          num_reading_++;
+          readers_active_=true;
         }
       }
       queue_.pop();
@@ -217,7 +218,8 @@ class Reader_thread : public Thread {
         (parameters.integration_time,
          parameters.sample_rate,
          parameters.number_channels);
-      jb.bits_per_sample = parameters.bits_per_sample;
+      for(int i = 0; i < parameters.station_streams.size(); i++)
+	jb.bits_per_sample.push_back(parameters.station_streams[i].bits_per_sample);
       jb.number_channels = parameters.number_channels;
       jb.station_streams_size = parameters.station_streams.size();
 
@@ -228,6 +230,7 @@ class Reader_thread : public Thread {
 
 private:
   Reader_thread reader_thread_;
+  Correlator_node_bit2float_tasklet bit2float_thread_;
   /// We need one thread for the integer delay correction
   ThreadPool threadpool_;
   void start_threads();
@@ -242,7 +245,7 @@ private:
   // This reduces the amount of data that has to be Fourier transformed by 25%, but at the cost
   // of some accuracy.
   int swap;
-
+  bool pulsar_binning; // Set to true if pulsar binning is enabled
   Correlator_node_controller       correlator_node_ctrl;
 
   /// The correlator node is connected to each of the input nodes.
@@ -257,7 +260,7 @@ private:
   int nr_corr_node;
 
   std::vector< Delay_correction_ptr >         delay_modules;
-  Correlation_core                            correlation_core;
+  Correlation_core                            *correlation_core;
 
   int n_integration_slice_in_time_slice;
 
@@ -267,6 +270,8 @@ private:
 
   bool isinitialized_;
 
+  // Contains all timing/binning parameters relating to any pulsar in the current experiment
+  Pulsar_parameters pulsar_parameters; 
 #ifdef RUNTIME_STATISTIC
   QOS_MonitorSpeed reader_state_;
   QOS_MonitorSpeed delaycorrection_state_;

@@ -17,6 +17,11 @@
 #include "data_writer_socket.h"
 #include "tcp_connection.h"
 
+
+Multiple_data_writers_controller::
+Multiple_data_writers_controller(Node &node)
+    : Controller(node) {}
+
 Multiple_data_writers_controller::
 Multiple_data_writers_controller(Node &node, int max_connections)
     : Controller(node) {
@@ -193,7 +198,6 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       int stream_nr;
       memcpy(&stream_nr, msg, sizeof(int32_t));
       char *filename = msg+sizeof(int32_t);
-
       SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
       SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
@@ -226,7 +230,6 @@ add_data_writer(unsigned int i, boost::shared_ptr<Data_writer> writer) {
   SFXC_ASSERT(i < data_writers.size());
 
   data_writers[i] = writer;
-
   node.hook_added_data_writer(i);
 }
 

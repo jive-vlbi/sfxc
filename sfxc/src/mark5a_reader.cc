@@ -3,33 +3,30 @@
 #include "utils.h"
 #include "backtrace.h"
 
-#ifdef SFXC_CHECK_INVALID_SAMPLES
-// Buffer to store the first header. This is needed because the headers are 
-// when this define is set.
-unsigned char saved_header[SIZE_MK5A_HEADER*16];
-#endif
-
 Mark5a_reader::
 Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
               int N_,
-              Data_frame &data)
+              Data_frame &data, 
+              int ref_year_,
+              int ref_day_)
     : Input_data_format_reader(data_reader),
-    debug_level_(CHECK_PERIODIC_HEADERS),
-block_count_(0), DATA_RATE_(0), N(N_) {
+      debug_level_(CHECK_PERIODIC_HEADERS),
+      block_count_(0), DATA_RATE_(0), N(N_),
+      ref_year(ref_year_), ref_day(ref_day_) {
   Mark5a_header header(N);
   header.set_header(&data.buffer[0]);
   header.check_header();
+  us_per_day=(int64_t)24*60*60*1000000;
   start_day_ = header.day(0);
   start_time_ = header.get_time_in_us(0); 
-  // initially we use the start date of the header as reference
-  ref_year=header.year(0);
-  ref_day=header.day(0);
-
-  current_time_ = header.get_time_in_us(0);
+  // If no reference day is known then setting ref_day < 0 sets the current day as reference
+  // this is needed e.g. for the mark5a_print_headers utility. 
+  if(ref_day < 0)
+    ref_day = start_day_;
   current_day_ = header.day(0);
+  current_time_ = correct_raw_time(header.get_time_in_us(0));
 
   set_data_frame_info(data);
-  us_per_day=(int64_t)24*60*60*1000000;
 }
 
 Mark5a_reader::~Mark5a_reader() {}
@@ -43,43 +40,46 @@ Mark5a_reader::goto_time(Data_frame &data, int64_t us_time) {
     return us_time;
   }
 
-  // Read an integer number of frames
+  // first skip through the file in 1 second steps.
+  int64_t one_sec=1000000LL;
   int64_t delta_time=us_time-get_current_time();
-  size_t read_n_bytes = 
-             (delta_time*data_rate()/(8*1000000)) - SIZE_MK5A_FRAME*N;
+  while(delta_time>=one_sec){
+    // Read an integer number of frames
+    size_t read_n_bytes = 
+               (one_sec*data_rate()/(8*1000000)) - SIZE_MK5A_FRAME*N;
+    SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
 
-  // Read an integer number of frames
-  SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
+    // A blocking read operation. The operation is looping until the file
+    // is eof or the requested amount of data is retreived.
+    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
+    if (byte_read != read_n_bytes)
+	return current_time_;
 
-  // TODO having a blocking read would be nice.
-  // as well as a goto function.
-  // size_t bytes_to_read = read_n_bytes;
-  //while ( bytes_to_read > 0 && !data_reader_->eof() ) {
-  //  size_t result = data_reader_->get_bytes(bytes_to_read,NULL);
-  //  bytes_to_read -= result;
-  //}
-  /// A blocking read operation. The operation is looping until the file
-  /// is eof or the requested amount of data is retreived.
-  size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
-
-  if ( byte_read != read_n_bytes) {
-    SFXC_ASSERT_MSG(false,
-                    "Couldn't read the requested amount of data.");
-    return get_current_time();
+    // Need to read the data to check the header
+    if (!read_new_block(data)) {
+      DEBUG_MSG("Couldn't read data");
+    }
+    delta_time=us_time-get_current_time();
   }
+  // Now read the last bit of data up to the requested time
+//  if(delta_time >= (SIZE_MK5A_FRAME*N)*8*1000000LL/data_rate()){
+  ssize_t read_n_bytes = (delta_time*data_rate()/(8*1000000)) - SIZE_MK5A_FRAME*N;
+  if(read_n_bytes > 0){
+    SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
+    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
+    if (byte_read != read_n_bytes)
+	return current_time_;
 
-  // Need to read the data to check the header
-  if (!read_new_block(data)) {
-    DEBUG_MSG("Couldn't read data");
+    // Need to read the data to check the header
+    if (!read_new_block(data)) {
+      DEBUG_MSG("Couldn't read data");
+    }
   }
-
   if (get_current_time() != us_time) {
-    DEBUG_MSG("time:         " << us_time);
-    DEBUG_MSG("current time: " << get_current_time());
-    sleep(1);
-    SFXC_ASSERT(get_current_time() == us_time);
+    // When jumping to the start of the scan, it can happen that we don't end up exactly
+    // at us_time, because the station might have started recording late.
+    DEBUG_MSG("Attempted to jump to time " << us_time << ", but found timestamp" << get_current_time());
   }
-
   return get_current_time();
 }
 
@@ -123,9 +123,9 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
       return false;
     }
 
-    /// I'm not sure why we are increasing the time between header in case of
-    /// failed reading. Maybe a kind of packet-missing detection.
-    /// Todo check that.
+    // I'm not sure why we are increasing the time between header in case of
+    // failed reading. Maybe a kind of packet-missing detection.
+    // Todo check that.0
     //int result = data_reader_->get_bytes(to_read, (char *)buffer);
     int result = Data_reader_blocking::get_bytes_s( data_reader_.get(), to_read, (char*)buffer );
 
@@ -145,6 +145,11 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
     current_time_ += time_between_headers(); // Could't find valid header before EOF
     return false;
   }
+  if (header.day(0) == 0 && header.get_time_in_us(0) == 0) {
+      current_time_ += time_between_headers(); // Could't find valid header before EOF
+      return false;
+  }
+
   current_day_ = header.day(0);
   current_time_ = correct_raw_time(header.get_time_in_us(0));
 
@@ -248,14 +253,6 @@ Mark5a_reader::check_track_bit_statistics(Data_frame &data) {
 std::vector< std::vector<int> >
 Mark5a_reader::get_tracks(const Input_node_parameters &input_node_param,
                           Data_frame &data) {
-  Mark5a_header header(N);
-#ifdef SFXC_CHECK_INVALID_SAMPLES
-  header.set_header(&saved_header[0]);
-#else
-  header.set_header(&data.buffer[0]);
-#endif
-  SFXC_ASSERT(header.check_header());
-
   std::vector< std::vector<int> > result;
 
   result.resize(input_node_param.channels.size());
@@ -269,22 +266,10 @@ Mark5a_reader::get_tracks(const Input_node_parameters &input_node_param,
 
     int track =0;
     for (size_t i=0; i<channel->sign_tracks.size(); i++) {
-      result[curr_channel][track] =
-        header.find_track(channel->sign_headstack-1,
-                          channel->sign_tracks[i]);
-      SFXC_ASSERT(header.headstack(result[curr_channel][track]) ==
-                  channel->sign_headstack-1);
-      SFXC_ASSERT(header.track(result[curr_channel][track]) ==
-                  channel->sign_tracks[i]);
+      result[curr_channel][track] = 32*(channel->sign_headstack-1)+(channel->sign_tracks[i]-2);
       track++;
       if (channel->bits_per_sample() == 2) {
-        result[curr_channel][track] =
-          header.find_track(channel->magn_headstack-1,
-                            channel->magn_tracks[i]);
-        SFXC_ASSERT(header.headstack(result[curr_channel][track]) ==
-                    channel->magn_headstack-1);
-        SFXC_ASSERT(header.track(result[curr_channel][track]) ==
-                    channel->magn_tracks[i]);
+        result[curr_channel][track] = 32*(channel->magn_headstack-1)+(channel->magn_tracks[i]-2);
         track++;
       }
     }
@@ -302,16 +287,12 @@ Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
   int tbr = input_node_param.track_bit_rate;
   DATA_RATE_ = (tbr * N * 8);
   SFXC_ASSERT(DATA_RATE_ > 0);
-  ref_year=input_node_param.start_year;
-  ref_day=input_node_param.start_day;
-  current_time_=correct_raw_time(current_time_);
 }
 
 void Mark5a_reader::set_data_frame_info(Data_frame &data) {
   Mark5a_header header(N);
   header.set_header(&data.buffer[0]);
   data.start_time = correct_raw_time(header.get_time_in_us(0));
-
 #ifdef SFXC_INVALIDATE_SAMPLES
   data.invalid_bytes_begin = 0;
   data.nr_invalid_bytes = SIZE_MK5A_HEADER*N;
@@ -334,20 +315,17 @@ void Mark5a_reader::set_data_frame_info(Data_frame &data) {
 
 Mark5a_reader *
 get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
-                  Mark5a_reader::Data_frame &data) {
+                  Mark5a_reader::Data_frame &data, int ref_year, int ref_day) {
   int n_tracks_8 = find_start_of_header(reader, data);
-  SFXC_ASSERT_MSG(n_tracks_8 > 0,
-                  "Couldn't find a mark5a header in the data file");
+  if(n_tracks_8 <= 0)
+    sfxc_abort("Couldn't find a mark5a header in the data file");
   Mark5a_header header(n_tracks_8);
   header.set_header(&data.buffer[0]);
-#ifdef SFXC_CHECK_INVALID_SAMPLES
-  memcpy(&saved_header[0], &data.buffer[0], SIZE_MK5A_HEADER*n_tracks_8);
-#endif
-  SFXC_ASSERT_MSG(header.checkCRC(),
-                  "Invalid crc-code in the mark5a data file");
-  DEBUG_MSG("Mark5a reader found start of data at : y=" << header.year(0)
-            << ", day = " << header.day(0) << ", time =" << header.get_time_in_us(0));
-  return new Mark5a_reader(reader, n_tracks_8, data);
+  if(!header.checkCRC())
+    sfxc_abort("Invalid crc-code in the mark5a data file");
+  std::cout << RANK_OF_NODE << " : Mark5a reader found start of data at : y=" << header.year(0)
+            << ", day = " << header.day(0) << ", time =" << header.get_time_in_us(0) << "\n";
+  return new Mark5a_reader(reader, n_tracks_8, data, ref_year, ref_day);
 }
 
 int Mark5a_reader::data_rate() const {
@@ -370,8 +348,7 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
     int byte_read = Data_reader_blocking::get_bytes_s( reader.get(), bytes_to_read, data);
 
     if( byte_read != bytes_to_read ){
-      DEBUG_MSG("Unable to read enough bytes of data, cannot find a mark5a header before the end-of-file");
-      SFXC_ASSERT(false && "We should exit");
+      sfxc_abort("Unable to read enough bytes of data, cannot find a mark5a header before the end-of-file");
     }
 
   }
@@ -385,13 +362,6 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
       size_t bytes_to_read = SIZE_MK5A_FRAME/2;
       char *data = (char*)buffer_start+SIZE_MK5A_FRAME/2;
 
-      //do {
-      //  int read = reader->get_bytes(bytes_to_read, data);
-      //  bytes_to_read -= read;
-      //  data += read;
-      //  SFXC_ASSERT_MSG(!reader->eof(),
-      //                  "Didn't find a mark5a header before the end-of-file");
-      //} while (bytes_to_read > 0);
       int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(), bytes_to_read, data);
 
     }
@@ -414,14 +384,6 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
             memmove(buffer_start, buffer_start+header_start,
                     SIZE_MK5A_FRAME-header_start);
 
-
-            //int byte_to_read = header_start;
-            //int byte_read;
-            //while(byte_to_read > 0){
-            //  byte_read = reader->get_bytes(byte_to_read,
-            //                               );
-            //  byte_to_read -= byte_read;
-            //}
             int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),
                                      header_start,
                                      buffer_start+SIZE_MK5A_FRAME-header_start);
@@ -430,13 +392,9 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
               data.buffer.resize(nTracks8*SIZE_MK5A_FRAME);
               buffer_start = (char *)&data.buffer[0];
 
-
-              //reader->get_bytes((nTracks8-1)*SIZE_MK5A_FRAME,
-              //                  buffer_start+SIZE_MK5A_FRAME);
-               int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),
+	      int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),
                                                   (nTracks8-1)*SIZE_MK5A_FRAME,
                                                    buffer_start+SIZE_MK5A_FRAME);
-
             }
 
             return nTracks8;

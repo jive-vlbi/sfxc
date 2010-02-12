@@ -69,12 +69,6 @@ public:
   /// get the current time in miliseconds
   uint64_t get_current_time();
 
-  /// get the stop time in miliseconds
-  int get_stop_time();
-
-  /// set a stop time (after which no data is sent)
-  void set_stop_time(int64_t time);
-
   std::vector< std::vector<int> > get_tracks(const Input_node_parameters &input_node_param);
 
   int size_input_word() const {
@@ -110,7 +104,8 @@ private:
   Input_element                       input_element_;
   /// Output buffer of mark5a data blocks
   Output_buffer_ptr                   output_buffer_;
-
+  /// Flag that indicates if the reader is active
+  bool isRunning;
 
   /// The current interval to process
   Time_interval current_interval_;
@@ -123,9 +118,6 @@ private:
 
   /// Current time in microseconds
   int64_t current_time;
-
-  /// Stop time in microseconds
-  int64_t stop_time;
 
 	/// Amount of data that was received by this component
   uint64_t data_read_;

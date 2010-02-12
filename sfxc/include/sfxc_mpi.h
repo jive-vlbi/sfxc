@@ -63,11 +63,25 @@ enum MPI_TAG {
    **/
   MPI_TAG_SET_INPUT_NODE_MARK5B,
 
+  /** Sets the reference date
+   * - MPI_INT32: Reference year
+   **/
+  MPI_TAG_SET_INPUT_NODE_REF_YEAR,
+
+  /** Sets the reference date
+   * - MPI_INT32: Reference day
+   **/
+  MPI_TAG_SET_INPUT_NODE_REF_DAY,
+
   /** Add a correlator node
    * - MPI_INT32: no content
    **/
   MPI_TAG_SET_CORRELATOR_NODE,
 
+  /** Add a correlator node with pulsar binning enabled
+   * - MPI_INT32: no content
+   **/
+  MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING,
   /** Add an output node
    * - MPI_INT32: no content
    **/
@@ -219,7 +233,11 @@ enum MPI_TAG {
    * - ?
    **/
   MPI_TAG_CORR_PARAMETERS,
+  /** Send the Pulsar parameters defined in Control_parameters.h
+   * - ?
+   **/
 
+  MPI_TAG_PULSAR_PARAMETERS,
   /** Send a delay table
    * - ?
    **/
@@ -338,8 +356,17 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
   case MPI_TAG_SET_INPUT_NODE_MARK5B: {
       return "MPI_TAG_SET_INPUT_NODE_MARK5B";
     }
+  case MPI_TAG_SET_INPUT_NODE_REF_YEAR: {
+      return "MPI_TAG_SET_INPUT_NODE_REF_YEAR";
+    }
+  case MPI_TAG_SET_INPUT_NODE_REF_DAY: {
+      return "MPI_TAG_SET_INPUT_NODE_REF_DAY";
+    }
   case MPI_TAG_SET_CORRELATOR_NODE: {
       return "MPI_TAG_SET_CORRELATOR_NODE";
+    }
+  case MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING: {
+      return "MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING";
     }
   case MPI_TAG_SET_OUTPUT_NODE: {
       return "MPI_TAG_SET_OUTPUT_NODE";
@@ -379,6 +406,9 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
     }
   case   MPI_TAG_CORR_PARAMETERS: {
       return "MPI_TAG_CORR_PARAMETERS";
+    }
+  case   MPI_TAG_PULSAR_PARAMETERS: {
+      return "MPI_TAG_PULSAR_PARAMETERS";
     }
   case MPI_TAG_DELAY_TABLE: {
       return "MPI_TAG_DELAY_TABLE";

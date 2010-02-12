@@ -29,9 +29,9 @@ friend class Delay_correction_default;
 friend class Delay_correction_swapped;
 public:
 
-  typedef Correlator_node_types::Channel_buffer     Input_buffer;
-  typedef Correlator_node_types::Channel_buffer_ptr Input_buffer_ptr;
-  typedef Input_buffer::value_type                    Input_buffer_element;
+  typedef Correlator_node_types::Channel_queue      Input_buffer;
+  typedef Correlator_node_types::Channel_queue_ptr  Input_buffer_ptr;
+  typedef Input_buffer::value_type                  Input_buffer_element;
 
   typedef Correlator_node_types::ComplexFloat_memory_pool  Output_memory_pool;
   typedef Correlator_node_types::ComplexFloat_element      Output_data;
@@ -39,7 +39,7 @@ public:
   typedef Correlator_node_types::ComplexFloat_queue_ptr    Output_buffer_ptr;
   typedef Output_buffer::value_type                        Output_buffer_element;
 
-  Delay_correction_base();
+  Delay_correction_base(int stream_nr);
   virtual ~Delay_correction_base();
 
   /// Get the output
@@ -55,16 +55,11 @@ public:
 
   /// Do one delay step
   virtual void do_task()=0;
-  int flag;
 
   bool has_work();
   const char *name() {
     return __PRETTY_FUNCTION__;
   }
-private:
-  ///
-  void bit2float(const Input_buffer_element &input, int buf_nr, FLOAT *output_buffer);
-  void get_invalid(const Input_buffer_element &input, int buf_nr, int &invalid_start, int &nr_invalid);
 
 private:
   // access functions to the correlation parameters
@@ -82,6 +77,9 @@ private:
 
   int64_t             current_time; // In microseconds
   Correlation_parameters correlation_parameters;
+  int   stream_nr;
+  int   bits_per_sample;
+  int oversamp; // The amount of oversampling
 
   int n_ffts_per_integration, current_fft, total_ffts;
   int nfft_max; // The maximum number of fft's in an input frame
@@ -89,12 +87,9 @@ private:
   Delay_table_akima   delay_table;
 
   Memory_pool_vector_element< std::complex<FLOAT> > frequency_buffer;
-  std::vector< FLOAT > time_buffer;
+  Memory_pool_vector_element<FLOAT> time_buffer;
 
   Timer delay_timer;
-
-  FLOAT lookup_table[256][4];
-  FLOAT lookup_table_1bit[256][8];
 
 private:
   Output_buffer_ptr   output_buffer;

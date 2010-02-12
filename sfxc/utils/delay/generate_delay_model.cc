@@ -67,7 +67,10 @@ main(int argc, char *argv[]) {
 
   // Open the output file
   FILE *output_file = fopen(argv[3], "w");
-  assert(output_file!=NULL);
+  if(output_file == NULL){
+    std::cout << "Error: Could not open delay file \"" << argv[3] << "\" for writing\n";
+    exit(1);
+  }
 
   // Change to the CALC-directory
   // Goto the location of calc-10 files ocean.dat, tilt.dat and DE405_le.jpl

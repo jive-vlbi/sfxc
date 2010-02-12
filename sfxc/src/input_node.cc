@@ -21,22 +21,22 @@
 Input_node::Input_node(int rank,
                        int station_number,
                        Log_writer *log_writer,
-                       TRANSPORT_TYPE transport_type) :
+                       TRANSPORT_TYPE transport_type, int ref_year_, int ref_day_):
     Node(rank, log_writer),
     input_node_ctrl(*this),
     data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
     input_node_tasklet(NULL), status(WAITING),
-transport_type(transport_type) {
+    transport_type(transport_type), ref_year(ref_year_), ref_day(ref_day_){
   initialise();
 }
 
 Input_node::Input_node(int rank, int station_number,
-                       TRANSPORT_TYPE transport_type) :
+                       TRANSPORT_TYPE transport_type, int ref_year_, int ref_day_) :
     Node(rank), input_node_ctrl(*this), data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
     input_node_tasklet(NULL), status(WAITING),
-transport_type(transport_type) {
+    transport_type(transport_type), ref_year(ref_year_), ref_day(ref_day_) {
   initialise();
 }
 void Input_node::initialise() {
@@ -60,9 +60,6 @@ void Input_node::initialise() {
 
 void Input_node::set_input_node_parameters(const Input_node_parameters &input_node_param) {
   if(status==WAITING){
-    ref_day=input_node_param.start_day;
-    ref_year=input_node_param.start_year;
-
     SFXC_ASSERT(input_node_tasklet != NULL);
     input_node_tasklet->set_parameters(input_node_param, get_rank()-3);
 
@@ -116,7 +113,7 @@ void Input_node::hook_added_data_reader(size_t stream_nr) {
 
   input_node_tasklet =
     get_input_node_tasklet(data_reader_ctrl.get_data_reader(stream_nr),
-                           transport_type);
+                           transport_type, ref_year, ref_day);
   SFXC_ASSERT(input_node_tasklet != NULL);
 }
 

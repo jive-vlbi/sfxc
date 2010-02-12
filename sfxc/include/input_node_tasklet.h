@@ -66,16 +66,13 @@ public:
   /// Returns the current time in microseconds
   int get_current_time();
 
-  /// Returns the stop time of the current time interval in microseconds
-  int get_stop_time();
-
   /// Sets the output writer for channel i
   void add_data_writer(size_t i, Data_writer_sptr data_writer);
 
   /// Compute a list of delays, note we only store the times(+delay) 
   /// where the integer delay changes
   void get_delays(uint64_t start_time, uint64_t stop_time, 
-                               Delay_memory_pool_element &delay_list);
+                               std::vector<Delay> &delay_list);
   /// Calculates the delay at time
   Delay get_delay(int64_t time);
 private:
@@ -104,7 +101,7 @@ private:
   int delta_time; // the time between two ffts
   int sample_rate;
   int bits_per_sample;
-  int size_slice; // Number of bytes for one integration slice
+  int64_t size_slice; // Number of samples for one integration slice
 };
 
 
@@ -113,6 +110,6 @@ private:
  **/
 Input_node_tasklet *
 get_input_node_tasklet(boost::shared_ptr<Data_reader> reader,
-                       TRANSPORT_TYPE type);
+                       TRANSPORT_TYPE type, int ref_year, int ref_day);
 
 #endif // INPUT_NODE_TASKLET_H

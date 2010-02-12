@@ -3,8 +3,6 @@
 
 #include "tasklet/tasklet.h"
 #include "delay_correction_base.h"
-#include "delay_correction_default.h"
-#include "delay_correction_swapped.h"
 #include "control_parameters.h"
 #include "data_writer.h"
 #include "uvw_model.h"
@@ -13,6 +11,7 @@
 #include <fstream>
 
 class Correlation_core : public Tasklet {
+friend class Correlation_core_pulsar;
 public:
   // Simple iterator class TODO 
   template<class T, typename U>
@@ -46,7 +45,6 @@ public:
   private:
     T *data;
   };
-  // Input buffer types, the parameter "swap" determines which is used
   typedef Delay_correction_base::Output_buffer_element       Input_buffer_element;
   typedef Delay_correction_base::Output_buffer               Input_buffer;
   typedef Delay_correction_base::Output_buffer_ptr           Input_buffer_ptr;
@@ -56,11 +54,11 @@ public:
   typedef Memory_pool_vector_element<std::complex<FLOAT> > Complex_buffer;
   typedef Memory_pool_vector_element<std::complex<float> > Complex_buffer_float;
 
-  Correlation_core(int swap_);
+  Correlation_core();
   virtual ~Correlation_core();
 
   /// For Tasklet
-  void do_task();
+  virtual void do_task();
   bool has_work();
   const char *name() {
     return __PRETTY_FUNCTION__;
@@ -71,8 +69,9 @@ public:
 
   void connect_to(size_t stream, Input_buffer_ptr buffer);
 
-  void set_parameters(const Correlation_parameters &parameters,
+  virtual void set_parameters(const Correlation_parameters &parameters,
                       int node_nr);
+  void create_baselines(const Correlation_parameters &parameters);
   void set_data_writer(boost::shared_ptr<Data_writer> writer);
 
   int number_of_baselines() {
@@ -85,11 +84,11 @@ public:
   void add_uvw_table(int sn, Uvw_model &table);
   std::vector< Uvw_model>  uvw_tables; // Should be private
 
-private:
-  void integration_initialise();
-  void integration_step();
-  void integration_average();
-  void integration_write();
+protected:
+  virtual void integration_initialise();
+  void integration_step(std::vector<Complex_buffer> &integration_buffer);
+  void integration_normalize(std::vector<Complex_buffer> &integration_buffer);
+  void integration_write(std::vector<Complex_buffer> &integration_buffer);
 
   void auto_correlate_baseline(std::complex<FLOAT> in[],
                                std::complex<FLOAT> out[]);
@@ -105,7 +104,7 @@ private:
 
   size_t number_input_streams_in_use();
 
-private:
+protected:
   std::vector<Input_buffer_ptr>  input_buffers;
   // Used in integration_step(), avoids contruction and destroying the vectors
   std::vector< simple_it< Input_data, std::complex<FLOAT> > >  input_elements;
@@ -113,9 +112,10 @@ private:
   std::vector< Input_data >                                    input_conj_buffers; 
   
   Correlation_parameters                               correlation_parameters;
+  int                                                  oversamp; // Oversample factor
 
-  std::vector< Complex_buffer >                        accumulation_buffers;
-  Complex_buffer_float                                 accumulation_buffers_float;
+  std::vector<Complex_buffer>                          accumulation_buffers;
+  Complex_buffer_float                                 integration_buffer_float;
   std::vector< std::pair<size_t, size_t> >             baselines;
   int number_ffts_in_integration, current_fft, total_ffts;
 
@@ -127,10 +127,6 @@ private:
   int node_nr_;
   int current_integration;
 
-  // Indicates if the order of the fractional bitshift and the fringe rotation is to be reversed.
-  // This reduces the amount of data that has to be Fourier transformed by 25%, but at the cost
-  // of some accuracy.
-  int swap;
   bool check_input_elements;
 
 #ifdef SFXC_WRITE_STATS

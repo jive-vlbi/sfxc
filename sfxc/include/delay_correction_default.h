@@ -26,7 +26,7 @@
 
 class Delay_correction_default : public Delay_correction_base {
 public:
-  Delay_correction_default();
+  Delay_correction_default(int stream_nr);
   ~Delay_correction_default(){};
 
   void set_parameters(const Correlation_parameters &parameters);
@@ -35,7 +35,7 @@ public:
 
 private:
   ///
-  void fractional_bit_shift(FLOAT input[],
+  void fractional_bit_shift(FLOAT *input,
                             int integer_shift,
                             FLOAT fractional_delay);
   void fringe_stopping(FLOAT output[]);

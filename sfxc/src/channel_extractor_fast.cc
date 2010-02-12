@@ -310,8 +310,7 @@ void Channel_extractor_fast::initialise(const std::vector< std::vector<int> > &t
   hidden_implementation_ = create_fast_(size_of_one_input_word, fan_out, n_subbands, input_sample_size, span_out);
   if ( hidden_implementation_ == NULL ) {
     std::cerr << " No channel_extractor can be build" << std::endl;
-    SFXC_ASSERT_MSG(false,
-                    "No channel extractor can be build with these parameters");
+    sfxc_abort("No channel extractor can be build with these parameters");
   }
   hidden_implementation_->initialise(track_positions, size_of_one_input_word_, input_sample_size);
 }

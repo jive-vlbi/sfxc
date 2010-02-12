@@ -3,12 +3,8 @@
 #include <utils.h>
 #include <ipps.h>
 
-Correlation_core::Correlation_core(int swap_)
-    : current_fft(0), total_ffts(0), swap(swap_), check_input_elements(true){
-  #ifdef SFXC_WRITE_STATS
-    SFXC_ASSERT_MSG(swap==0,
-                    "SFXC_WRITE_STATS currently doesn't work if swap is set");
-  #endif
+Correlation_core::Correlation_core()
+    : current_fft(0), total_ffts(0), check_input_elements(true){
 }
 
 Correlation_core::~Correlation_core() {
@@ -32,15 +28,16 @@ void Correlation_core::do_task() {
   }
 
   // Process the data of the current fft
-  integration_step();
+  integration_step(accumulation_buffers);
   current_fft ++;
 
   if (current_fft == number_ffts_in_integration) {
     PROGRESS_MSG("node " << node_nr_ << ", "
                  << current_fft << " of " << number_ffts_in_integration);
 
-    integration_average();
-    integration_write();
+    integration_normalize(accumulation_buffers);
+    integration_write(accumulation_buffers);
+    current_integration++;
   }
 }
 
@@ -68,6 +65,19 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
 
   size_t prev_size_of_fft = size_of_fft();
   correlation_parameters = parameters;
+  oversamp = round(parameters.sample_rate/(2*parameters.bandwidth));
+
+  create_baselines(parameters);
+
+#ifdef SFXC_WRITE_STATS
+  backward_buffer.resize(size_of_fft()/2+1);
+  backward_plan_ =
+  FFTW_PLAN_DFT_1D(size_of_fft()/2+1,
+                   reinterpret_cast<FFTW_COMPLEX*>(plan_output_buffer.buffer()),
+                   reinterpret_cast<FFTW_COMPLEX*>(&backward_buffer[0]),
+                   FFTW_BACKWARD,
+                   FFTW_ESTIMATE);
+#endif // SFXC_WRITE_STATS
 
   if (input_elements.size() != number_input_streams_in_use())
     input_elements.resize(number_input_streams_in_use());
@@ -77,7 +87,9 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
     for(int i=0;i<number_input_streams_in_use();i++)
         input_conj_buffers[i].resize(size_of_fft()/2+1);
   }
-
+}
+void
+Correlation_core::create_baselines(const Correlation_parameters &parameters){
   number_ffts_in_integration =
     Control_parameters::nr_ffts_per_integration_slice(
       parameters.integration_time,
@@ -137,16 +149,6 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
       }
     }
   }
-
-#ifdef SFXC_WRITE_STATS
-  backward_buffer.resize(size_of_fft()/2+1);
-  backward_plan_ =
-  FFTW_PLAN_DFT_1D(size_of_fft()/2+1,
-                   reinterpret_cast<FFTW_COMPLEX*>(plan_output_buffer.buffer()),
-                   reinterpret_cast<FFTW_COMPLEX*>(&backward_buffer[0]),
-                   FFTW_BACKWARD,
-                   FFTW_ESTIMATE);
-#endif // SFXC_WRITE_STATS
 }
 
 void
@@ -183,7 +185,7 @@ void Correlation_core::integration_initialise() {
   }
 }
 
-void Correlation_core::integration_step() {
+void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer) {
   if(check_input_elements){
     for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++) {
       if(!input_elements[i].valid()) 
@@ -205,7 +207,7 @@ void Correlation_core::integration_step() {
     SFXC_ASSERT(stations.first == stations.second);
     correlate_baseline(/* in1 */  &input_elements[stations.first][0],
                        /* in2 */  &input_conj_buffers[stations.first][0],
-                       /* out */ &accumulation_buffers[i][0]);
+                       /* out */  &integration_buffer[i][0]);
   }
 
   for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
@@ -214,14 +216,13 @@ void Correlation_core::integration_step() {
     SFXC_ASSERT(stations.first != stations.second);
     correlate_baseline(/* in1 */  &input_elements[stations.first][0],
                        /* in2 */  &input_conj_buffers[stations.second][0],
-                       /* out */ &accumulation_buffers[i][0]);
+                       /* out */  &integration_buffer[i][0]);
   }
 
 #ifdef SFXC_WRITE_STATS
   {
 #ifndef SFXC_DETERMINISTIC
-    SFXC_ASSERT_MSG(false,
-                    "SFXC_WRITE_STATS only works with SFXC_DETERMINISTIC");
+  sfxc_abort("SFXC_WRITE_STATS only works with SFXC_DETERMINISTIC\n");
 #endif
 
     if (! stats_out.is_open()) {
@@ -253,7 +254,7 @@ void Correlation_core::integration_step() {
     FLOAT fft_phase = std::arg(backward_buffer[fringe_pos]);
 
     FFTW_EXECUTE_DFT(backward_plan_,
-                     (FFTW_COMPLEX *)&accumulation_buffers[baseline][0],
+                     (FFTW_COMPLEX *)&integration_buffer[baseline][0],
                      (FFTW_COMPLEX *)&backward_buffer[0]);
     FLOAT integr_abs   = std::abs(backward_buffer[fringe_pos]);
     FLOAT integr_phase = std::arg(backward_buffer[fringe_pos]);
@@ -280,7 +281,7 @@ void Correlation_core::integration_step() {
   }
 }
 
-void Correlation_core::integration_average() {
+void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integration_buffer) {
   std::vector<FLOAT> norms;
   norms.resize(n_stations());
   IPPS_ZERO_F((IPP_FLOAT*)&norms[0],n_stations());
@@ -288,14 +289,14 @@ void Correlation_core::integration_average() {
   // Average the auto correlations
   for (size_t station=0; station < n_stations(); station++) {
     for (size_t i = 0; i < size_of_fft()/2+1; i++) {
-      norms[station] += accumulation_buffers[station][i].real();
+      norms[station] += integration_buffer[station][i].real();
     }
-    norms[station] /= (size_of_fft()/2);
+    norms[station] /= (size_of_fft()/(2*oversamp));
 
     for (size_t i = 0; i < size_of_fft()/2+1; i++) {
       // imaginary part should be zero!
-      accumulation_buffers[station][i] =
-        accumulation_buffers[station][i].real() / norms[station];
+      integration_buffer[station][i] =
+        integration_buffer[station][i].real() / norms[station];
     }
   }
 
@@ -304,18 +305,18 @@ void Correlation_core::integration_average() {
     std::pair<size_t,size_t> &stations = baselines[station];
     FLOAT norm = sqrt(norms[stations.first]*norms[stations.second]);
     for (size_t i = 0 ; i < size_of_fft()/2+1; i++) {
-      accumulation_buffers[station][i] /= norm;
+      integration_buffer[station][i] /= norm;
     }
   }
 }
 
-void Correlation_core::integration_write() {
+void Correlation_core::integration_write(std::vector<Complex_buffer> &integration_buffer) {
 
   // Make sure that the input buffers are released
   // This is done by reference counting
 
   SFXC_ASSERT(writer != boost::shared_ptr<Data_writer>());
-  SFXC_ASSERT(accumulation_buffers.size() == baselines.size());
+  SFXC_ASSERT(integration_buffer.size() == baselines.size());
 
   int polarisation = 1;
   if (correlation_parameters.polarisation == 'R') {
@@ -368,18 +369,16 @@ void Correlation_core::integration_write() {
     writer->put_bytes(nWrite, (char *)&htimeslice);
     nWrite=sizeof(uvw);
     writer->put_bytes(nWrite, (char *)&uvw[0]);
-
-    current_integration++;
   }
 
-  accumulation_buffers_float.resize(size_of_fft()/2+1);
+  integration_buffer_float.resize(size_of_fft()/2+1);
 
   Output_header_baseline hbaseline;
   for (size_t i=0; i<baselines.size(); i++) {
     std::pair<size_t,size_t> &stations = baselines[i];
 
     for (size_t ii=0; ii<(size_of_fft()/2+1); ii++ ) {
-      accumulation_buffers_float[ii] = accumulation_buffers[i][ii];
+      integration_buffer_float[ii] = integration_buffer[i][ii];
     }
 
     hbaseline.weight = 0;       // The number of good samples
@@ -417,7 +416,7 @@ void Correlation_core::integration_write() {
     int nWrite = sizeof(hbaseline);
     writer->put_bytes(nWrite, (char *)&hbaseline);
     writer->put_bytes((size_of_fft()/2+1)*sizeof(std::complex<float>),
-                      ((char*)&accumulation_buffers_float[0]));
+                      ((char*)&integration_buffer_float[0]));
   }
 }
 

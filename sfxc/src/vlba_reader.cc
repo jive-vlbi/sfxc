@@ -4,12 +4,17 @@
 #include "backtrace.h"
 
 VLBA_reader::
-VLBA_reader(boost::shared_ptr<Data_reader> data_reader,
-              int N_,
-              Data_frame &data, Data_frame &header_, Data_frame &aux_header_)
+VLBA_reader(boost::shared_ptr<Data_reader> data_reader, int N_, Data_frame &data, 
+            Data_frame &header_, Data_frame &aux_header_, int ref_year_, int ref_day_)
     : Input_data_format_reader(data_reader),
-    debug_level_(CHECK_PERIODIC_HEADERS),
-block_count_(0), DATA_RATE_(0), N(N_), header(N_){
+      debug_level_(CHECK_PERIODIC_HEADERS),
+      block_count_(0), DATA_RATE_(0), N(N_), header(N_)
+{
+  // Reference date : All times are relative to midnight on ref_jday
+  ref_jday = (mjd(1,1,ref_year_) + ref_day_ -1 )%1000;
+  DEBUG_MSG("Ref_jday=" << ref_jday);
+  us_per_day=(int64_t)24*60*60*1000000;
+
   // SET HEADER
   buf_header.resize(SIZE_VLBA_HEADER*N);
   memcpy(&buf_header[0], &header_.buffer[0], SIZE_VLBA_HEADER*N);
@@ -20,12 +25,9 @@ block_count_(0), DATA_RATE_(0), N(N_), header(N_){
   header.check_header();
   start_day_ = header.julian_day(0);
   start_time_ = header.microseconds(0);
-  // initially use start_date as reference
-  ref_jday = header.julian_day(0);
   current_time_ = correct_raw_time(header.microseconds(0));
 
   set_data_frame_info(data);
-  us_per_day=(int64_t)24*60*60*1000000;
 }
 
 VLBA_reader::~VLBA_reader() {}
@@ -39,35 +41,57 @@ VLBA_reader::goto_time(Data_frame &data, int64_t us_time) {
     return us_time;
   }
 
-  // Read an integer number of frames
+  // first skip through the file in 1 second steps.
+  int64_t one_sec=1000000LL;
   int64_t delta_time=us_time-get_current_time();
-  size_t bytes_data_to_read = 
-          (size_t)(delta_time*data_rate()/(8*1000000)) - SIZE_VLBA_FRAME*N;
-  SFXC_ASSERT(bytes_data_to_read %(SIZE_VLBA_FRAME*N)==0);
+  while(delta_time>=one_sec){
+    // Read an integer number of frames
+    size_t bytes_data_to_read = 
+            (size_t)(one_sec*data_rate()/(8*1000000)) - SIZE_VLBA_FRAME*N;
+    SFXC_ASSERT(bytes_data_to_read %(SIZE_VLBA_FRAME*N)==0);
 
-  int no_frames_to_read=bytes_data_to_read/(SIZE_VLBA_FRAME*N);
-  size_t read_n_bytes = bytes_data_to_read + no_frames_to_read*N*(SIZE_VLBA_HEADER+SIZE_VLBA_AUX_HEADER);
+    int no_frames_to_read=bytes_data_to_read/(SIZE_VLBA_FRAME*N);
+    size_t read_n_bytes = bytes_data_to_read + no_frames_to_read*N*(SIZE_VLBA_HEADER+SIZE_VLBA_AUX_HEADER);
 
-  /// A blocking read operation. The operation is looping until the file
-  /// is eof or the requested amount of data is retreived.
-  size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
-  if ( byte_read != read_n_bytes) {
-    std::cout << "Tried to read " << read_n_bytes << " but read " << byte_read << " instead\n";
-    SFXC_ASSERT_MSG(false,
-                    "Couldn't read the requested amount of data.");
-    return get_current_time();
+    /// A blocking read operation. The operation is looping until the file
+    /// is eof or the requested amount of data is retreived.
+    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
+    if ( byte_read != read_n_bytes) {
+      std::cout << "Tried to read " << read_n_bytes << " but read " << byte_read << " instead\n";
+      sfxc_abort("Couldn't read the requested amount of data.");
+      return get_current_time();
+    }
+
+    // Need to read the data to check the header
+    if (!read_new_block(data)) {
+      DEBUG_MSG("Couldn't read data");
+    }
+    delta_time=us_time-get_current_time();
   }
+  // Now read the last bit of data up to the requested time
+  ssize_t bytes_data_to_read = (delta_time*data_rate()/(8*1000000)) - SIZE_VLBA_FRAME*N;
+  if(bytes_data_to_read>0){
+    SFXC_ASSERT(bytes_data_to_read %(SIZE_VLBA_FRAME*N)==0);
 
-  // Need to read the data to check the header
-  if (!read_new_block(data)) {
-    DEBUG_MSG("Couldn't read data");
+    int no_frames_to_read=bytes_data_to_read/(SIZE_VLBA_FRAME*N);
+    size_t read_n_bytes = bytes_data_to_read + no_frames_to_read*N*(SIZE_VLBA_HEADER+SIZE_VLBA_AUX_HEADER);
+
+    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
+    if ( byte_read != read_n_bytes) {
+      std::cout << "Tried to read " << read_n_bytes << " but read " << byte_read << " instead\n";
+      sfxc_abort("Couldn't read the requested amount of data.");
+      return get_current_time();
+    }
+
+    // Need to read the data to check the header
+    if (!read_new_block(data)) {
+      DEBUG_MSG("Couldn't read data");
+    }
   }
-
   if (get_current_time() != us_time) {
-    DEBUG_MSG("time:         " << us_time);
-    DEBUG_MSG("current time: " << get_current_time());
-    sleep(1);
-    SFXC_ASSERT(get_current_time() == us_time);
+    // When jumping to the start of the scan, it can happen that we don't end up exactly
+    // at us_time, because the station might have started recording late.
+    DEBUG_MSG("Attempted to jump to time " << us_time << ", but found timestamp" << get_current_time());
   }
 
   return get_current_time();
@@ -287,8 +311,6 @@ bool VLBA_reader::eof() {
 void
 VLBA_reader::set_parameters(const Input_node_parameters &input_node_param) {
   int tbr = input_node_param.track_bit_rate;
-  ref_jday = (mjd(1,1,input_node_param.start_year) + input_node_param.start_day -1 )%1000;
-  current_time_=correct_raw_time(current_time_);
   DATA_RATE_ = (tbr * N * 8);
   SFXC_ASSERT(DATA_RATE_ > 0);
 }
@@ -302,19 +324,18 @@ void VLBA_reader::set_data_frame_info(Data_frame &data) {
 
 VLBA_reader *
 get_vlba_reader(boost::shared_ptr<Data_reader> reader,
-                  VLBA_reader::Data_frame &data) {
+                  VLBA_reader::Data_frame &data, int ref_year, int ref_day) {
   
   VLBA_reader::Data_frame header, aux_header;
   int n_tracks_8 = find_start_of_vlba_header(reader, data, header, aux_header);
-  SFXC_ASSERT_MSG(n_tracks_8 > 0,
-                  "Couldn't find a vlba header in the data file");
+  if(n_tracks_8 <= 0)
+    sfxc_abort("Couldn't find a vlba header in the data file");
   VLBA_header test_header(n_tracks_8);
   test_header.set_header(&header.buffer[0],&aux_header.buffer[0]);
 
-  SFXC_ASSERT_MSG(test_header.checkCRC(),
-                  "Invalid crc-code in the vlba data file");
+  sfxc_abort("Invalid crc-code in the vlba data file");
 
-  return new VLBA_reader(reader, n_tracks_8, data, header, aux_header);
+  return new VLBA_reader(reader, n_tracks_8, data, header, aux_header, ref_year, ref_day);
 }
 
 int VLBA_reader::data_rate() const {
@@ -339,7 +360,7 @@ int find_start_of_vlba_header(boost::shared_ptr<Data_reader> reader,
 
     if( byte_read != bytes_to_read ){
       DEBUG_MSG("Unable to read enough bytes of data, cannot find a vlba header before the end-of-file");
-      SFXC_ASSERT(false && "We should exit");
+      sfxc_abort();
     }
   }
 

@@ -42,43 +42,6 @@ Manager_node(int rank, int numtasks,
 
   // initialise the output node
   start_output_node(RANK_OUTPUT_NODE);
-  set_data_writer(RANK_OUTPUT_NODE, 0,
-                  control_parameters.get_output_file());
-
-  { // Send the global header
-    Output_header_global output_header;
-    memset(&output_header, 0, sizeof(Output_header_global));
-    output_header.header_size = sizeof(Output_header_global);
-
-    strcpy(output_header.experiment,control_parameters.experiment().c_str());      // Name of the experiment
-    Control_parameters::Date start = control_parameters.get_start_time();
-    output_header.start_year = start.year;       // Start year of the experiment
-    output_header.start_day = start.day;        // Start day of the experiment (day of year)
-    output_header.start_time = start.to_miliseconds()/1000;
-    // Start time of the correlation in seconds since
-    // midnight
-    output_header.number_channels = control_parameters.number_channels();  // Number of frequency channels
-    // 3 bytes left:
-    int int_time_tmp=0;
-    int int_time_count=0;
-    int_time_tmp = control_parameters.integration_time();// Integration time: 2^integration_time seconds
-    while (int_time_tmp > 1000) {
-      int_time_tmp /= 2;
-      int_time_count++;
-    }
-    while (int_time_tmp < 1000) {
-      int_time_tmp *= 2;
-      int_time_count--;
-    }
-    output_header.integration_time = (int8_t)(int_time_count);
-    output_header.polarisation_type =
-      control_parameters.polarisation_type_for_global_output_header();
-    output_header.empty[0] = 0;
-    output_header.empty[1] = 0;
-
-    output_node_set_global_header((char *)&output_header,
-                                  sizeof(Output_header_global));
-  }
 
   // Input nodes:
   int n_stations = get_control_parameters().number_stations();
@@ -357,9 +320,10 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   for (int i=0; i<nr_stations; i++) {
     station_name.push_back(get_control_parameters().station(i));
   }
+  std::string scan_name = control_parameters.scan(current_scan);
   correlation_parameters =
     control_parameters.
-    get_correlation_parameters(control_parameters.scan(current_scan),
+    get_correlation_parameters(scan_name,
                                channel_name,
                                station_name,
                                get_input_node_map());
@@ -367,8 +331,14 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     start_time + integration_slice_nr*integration_time();
   correlation_parameters.stop_time  =
     start_time + (integration_slice_nr+1)*integration_time();
+  correlation_parameters.mjd  = mjd(1,1,start_year)+start_day-1;
   correlation_parameters.integration_nr = integration_slice_nr;
   correlation_parameters.slice_nr = output_slice_nr;
+  strncpy(correlation_parameters.source, control_parameters.scan_source(scan_name).c_str(), 11);
+  if(control_parameters.pulsar_binning())
+    correlation_parameters.pulsar_binning = true;
+  else
+    correlation_parameters.pulsar_binning = false;
 
   correlation_parameters.cross_polarize = (cross_channel != -1);
 
@@ -452,12 +422,11 @@ Manager_node::initialise() {
       DEBUG_MSG("Delay table could not be read");
       control_parameters.generate_delay_table(station_name, delay_file);
       delay_table.open(delay_file.c_str());
-      char msg[120];
-      snprintf(msg, 120,
-               "Coudn't generate delay table, please remove '%s' and restart the correlator",
-               delay_file.c_str());
-      SFXC_ASSERT_MSG(delay_table.initialised(),
-                      msg);
+      if(!delay_table.initialised()){
+        std::string msg = std::string("Couldn't generate delay table, please remove '") +
+                          delay_file + std::string("' and restart the correlator");
+        sfxc_abort(msg.c_str());
+      }
     }
 
     send(delay_table, /* station_nr */ 0, input_rank(station));
@@ -476,6 +445,30 @@ Manager_node::initialise() {
 
     correlator_node_set_all(uvw_table, station_name);
   }
+
+  // If pulsar binning is enabled : get all pulsar parameters (polyco files, etc.)
+  if(control_parameters.pulsar_binning()){
+    if (!control_parameters.get_pulsar_parameters(pulsar_parameters))
+      sfxc_abort("Error parsing pulsar information from control file\n");
+    correlator_node_set_all(pulsar_parameters);
+    // Set the output files
+    int max_nbins=1;
+    std::map<std::string, Pulsar_parameters::Pulsar>::iterator it;
+    for ( it=pulsar_parameters.pulsars.begin() ; it != pulsar_parameters.pulsars.end(); it++ ){
+      max_nbins = std::max(it->second.nbins, max_nbins);
+    }
+    std::string base_filename = control_parameters.get_output_file();
+    // Open one output file per pulsar bin
+    for(int bin=0;bin<max_nbins;bin++){
+      std::ostringstream outfile;
+      outfile << base_filename << ".bin" << bin;
+      set_data_writer(RANK_OUTPUT_NODE, bin, outfile.str());
+    }
+  }else
+    set_data_writer(RANK_OUTPUT_NODE, 0, control_parameters.get_output_file());
+
+  // Write the global header in the outpul file
+  send_global_header();
 
   Control_parameters::Date start = control_parameters.get_start_time();
   Control_parameters::Date stop = control_parameters.get_stop_time();
@@ -546,3 +539,38 @@ std::string Manager_node::get_current_mode() const {
   return control_parameters.get_vex().get_mode(scan_name);
 }
 
+void Manager_node::send_global_header(){ 
+    // Send the global header
+    Output_header_global output_header;
+    memset(&output_header, 0, sizeof(Output_header_global));
+    output_header.header_size = sizeof(Output_header_global);
+
+    strcpy(output_header.experiment,control_parameters.experiment().c_str());      // Name of the experiment
+    Control_parameters::Date start = control_parameters.get_start_time();
+    output_header.start_year = start.year;       // Start year of the experiment
+    output_header.start_day = start.day;        // Start day of the experiment (day of year)
+    output_header.start_time = start.to_miliseconds()/1000;
+    // Start time of the correlation in seconds since
+    // midnight
+    output_header.number_channels = control_parameters.number_channels();  // Number of frequency channels
+    // 3 bytes left:
+    int int_time_tmp=0;
+    int int_time_count=0;
+    int_time_tmp = control_parameters.integration_time();// Integration time: 2^integration_time seconds
+    while (int_time_tmp > 1000) {
+      int_time_tmp /= 2;
+      int_time_count++;
+    }
+    while (int_time_tmp < 1000) {
+      int_time_tmp *= 2;
+      int_time_count--;
+    }
+    output_header.integration_time = (int8_t)(int_time_count);
+    output_header.polarisation_type =
+      control_parameters.polarisation_type_for_global_output_header();
+    output_header.empty[0] = 0;
+    output_header.empty[1] = 0;
+
+    output_node_set_global_header((char *)&output_header,
+                                  sizeof(Output_header_global));
+  }

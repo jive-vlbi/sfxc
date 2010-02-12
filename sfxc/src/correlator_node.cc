@@ -9,7 +9,7 @@
  */
 
 #include "correlator_node.h"
-
+#include "correlation_core_pulsar.h"
 #include "data_reader_buffer.h"
 #include "data_writer.h"
 #include "utils.h"
@@ -17,8 +17,7 @@
 #include "delay_correction_swapped.h"
 #include "delay_correction_default.h"
 
-
-Correlator_node::Correlator_node(int rank, int nr_corr_node, int swap_)
+Correlator_node::Correlator_node(int rank, int nr_corr_node, int swap_, bool pulsar_binning_)
     : Node(rank),
     correlator_node_ctrl(*this),
     data_readers_ctrl(*this),
@@ -26,9 +25,13 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, int swap_)
     status(STOPPED),
     isinitialized_(false),
     nr_corr_node(nr_corr_node), 
-    correlation_core(swap_), swap(swap_) {
+    swap(swap_), pulsar_parameters(get_log_writer()),
+    pulsar_binning(pulsar_binning_) {
   get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;
-
+  if(pulsar_binning)
+    correlation_core = new Correlation_core_pulsar();
+  else
+    correlation_core = new Correlation_core();
   add_controller(&correlator_node_ctrl);
   add_controller(&data_readers_ctrl);
   add_controller(&data_writer_ctrl);
@@ -109,10 +112,12 @@ Correlator_node::~Correlator_node() {
 
 void Correlator_node::start_threads() {
   threadpool_.register_thread( reader_thread_.start() );
+  threadpool_.register_thread( bit2float_thread_.start() );
 }
 
 void Correlator_node::stop_threads() {
   reader_thread_.stop();
+  bit2float_thread_.stop();
 
   /// We wait the termination of the threads
   threadpool_.wait_for_all_termination();
@@ -142,7 +147,7 @@ void Correlator_node::main_loop() {
         process_all_waiting_messages();
 
         correlate();
-        if (!has_requested && correlation_core.almost_finished()) {
+        if (!has_requested && correlation_core->almost_finished()) {
           //if (n_integration_slice_in_time_slice==1)
           //{
           ///DEBUG_MSG("TIME TO GET NEW DATA !");
@@ -155,7 +160,7 @@ void Correlator_node::main_loop() {
           has_requested = true;
           //}
         }
-        if (correlation_core.finished()) {
+        if (correlation_core->finished()) {
           ///DEBUG_MSG("CORRELATION CORE FINISHED !" << n_integration_slice_in_time_slice);
 
           n_integration_slice_in_time_slice--;
@@ -170,10 +175,8 @@ void Correlator_node::main_loop() {
       }
     case END_CORRELATING:
       break;
-
     }
   }
-
   stop_threads();
 }
 
@@ -194,30 +197,33 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
        Bit_sample_reader_ptr(new Correlator_node_data_reader_tasklet());
   reader_thread_.bit_sample_readers()[stream_nr]->connect_to(data_readers_ctrl.get_data_reader(stream_nr));
 
+  // connect reader to data stream worker
+
+  bit2float_thread_.connect_to(stream_nr, reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
+
   { // create the delay modules
     if (delay_modules.size() <= stream_nr) {
       delay_modules.resize(stream_nr+1,
                            boost::shared_ptr<Delay_correction_base>());
     }
-
     if(swap==0)
-      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default());
+      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default(stream_nr));
     else
-      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_swapped());
+      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_swapped(stream_nr));
     // Connect the delay_correction to the bits2float_converter
-    delay_modules[stream_nr]->connect_to(reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
-    delay_modules[stream_nr]->flag=1;
+    delay_modules[stream_nr]->connect_to(bit2float_thread_.get_output_buffer(stream_nr));
   }
 
+
   // Connect the correlation_core to delay_correction
-  correlation_core.connect_to(stream_nr,
+  correlation_core->connect_to(stream_nr,
                               delay_modules[stream_nr]->get_output_buffer());
 }
 
 void Correlator_node::hook_added_data_writer(size_t i) {
   SFXC_ASSERT(i == 0);
 
-  correlation_core.set_data_writer(data_writer_ctrl.get_data_writer(0));
+  correlation_core->set_data_writer(data_writer_ctrl.get_data_writer(0));
 }
 
 int Correlator_node::get_correlate_node_number() {
@@ -241,10 +247,10 @@ void Correlator_node::correlate() {
   delay_timer_.stop();
 
   correlation_timer_.resume();
-  if (correlation_core.has_work()) {
+  if (correlation_core->has_work()) {
     RT_STAT( correlation_state_.begin_measure() );
 
-    correlation_core.do_task();
+    correlation_core->do_task();
     done_work=true;
 
     RT_STAT( correlation_state_.end_measure(1) );
@@ -270,6 +276,7 @@ Correlator_node::receive_parameters(const Correlation_parameters &parameters) {
     set_parameters();
 
 }
+
 void
 Correlator_node::set_parameters() {
   SFXC_ASSERT(status == STOPPED);
@@ -286,24 +293,16 @@ Correlator_node::set_parameters() {
   const Correlation_parameters &parameters =
     integration_slices_queue.front();
 
-  int size_input_slice =
-    Control_parameters::nr_bytes_per_integration_slice_input_node_to_correlator_node
-    (parameters.integration_time,
-     parameters.sample_rate,
-     parameters.bits_per_sample,
-     parameters.number_channels);
-
   SFXC_ASSERT(((parameters.stop_time-parameters.start_time) /
                parameters.integration_time) == 1);
-
-  SFXC_ASSERT(size_input_slice > 0);
 
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
       delay_modules[i]->set_parameters(parameters);
     }
   }
-  correlation_core.set_parameters(parameters, get_correlate_node_number());
+  bit2float_thread_.set_parameters(parameters);
+  correlation_core->set_parameters(parameters, get_correlate_node_number());
 
   has_requested=false;
   status = CORRELATING;
@@ -311,31 +310,46 @@ Correlator_node::set_parameters() {
   n_integration_slice_in_time_slice =
     (parameters.stop_time-parameters.start_time) / parameters.integration_time;
   // set the output stream
-  int nBaselines = correlation_core.number_of_baselines();
+  int nBaselines = correlation_core->number_of_baselines();
   int size_of_one_baseline = sizeof(fftwf_complex)*
                              (parameters.number_channels*PADDING/2+1);
-  int size_uvw = correlation_core.uvw_tables.size()*sizeof(Output_uvw_coordinates);
+  int size_uvw = correlation_core->uvw_tables.size()*sizeof(Output_uvw_coordinates);
 
+  int slice_size;
+  int nBins=1;
+  if(parameters.pulsar_binning){
+    std::map<std::string, Pulsar_parameters::Pulsar>::iterator cur_pulsar_it =
+                           pulsar_parameters.pulsars.find(std::string(&parameters.source[0]));
+    if(cur_pulsar_it == pulsar_parameters.pulsars.end()){
+      // Current source is not a pulsar
+      nBins = 1;
+    }else{
+      Pulsar_parameters::Pulsar &pulsar = cur_pulsar_it->second;
+      nBins = pulsar.nbins;
+    }
+    slice_size = nBins * ( sizeof(Output_header_timeslice) + size_uvw + 
+                 nBaselines * ( size_of_one_baseline + sizeof(Output_header_baseline)));
+  }
+  else{
+    slice_size = sizeof(Output_header_timeslice) + size_uvw + 
+                 nBaselines * (size_of_one_baseline + sizeof(Output_header_baseline));
+  }
+  SFXC_ASSERT(nBins >= 1);
   output_node_set_timeslice(parameters.slice_nr,
                             parameters.slice_offset,
                             n_integration_slice_in_time_slice,
-                            get_correlate_node_number(),
-                            sizeof(Output_header_timeslice) + size_uvw +
-                            ( nBaselines *
-                              (size_of_one_baseline +
-                               sizeof(Output_header_baseline) ) ) );
+                            get_correlate_node_number(),slice_size, nBins);
   integration_slices_queue.pop();
 }
 
 void
 Correlator_node::
 output_node_set_timeslice(int slice_nr, int slice_offset, int n_slices,
-                          int stream_nr, int bytes) {
-
-  correlation_core.data_writer()->set_size_dataslice(bytes*n_slices);
-  int32_t msg_output_node[] = {stream_nr, slice_nr, bytes};
+                          int stream_nr, int bytes, int bins) {
+  correlation_core->data_writer()->set_size_dataslice(bytes*n_slices);
+  int32_t msg_output_node[] = {stream_nr, slice_nr, bytes, bins};
   for (int i=0; i<n_slices; i++) {
-    MPI_Send(&msg_output_node, 3, MPI_INT32,
+    MPI_Send(&msg_output_node, 4, MPI_INT32,
              RANK_OUTPUT_NODE,
              MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY,
              MPI_COMM_WORLD);

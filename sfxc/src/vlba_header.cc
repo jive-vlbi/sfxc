@@ -109,13 +109,13 @@ int VLBA_header::track(int track_) {
         retval=34;
         break;
       default:
-          std::cerr << "illigal track digit : " << track_digit << std::endl;
-          SFXC_ASSERT(false);
+          std::cerr << "illegal track digit : " << track_digit << std::endl;
+          sfxc_abort(); // TODO: trigger resync
       }
       break;
     default:
-          std::cerr << "illigal group digit : " << group_digit << std::endl;
-          SFXC_ASSERT(false);
+          std::cerr << "illegal group digit : " << group_digit << std::endl;
+          sfxc_abort(); // TODO: trigger resync
   }
   return retval;
 }
@@ -137,8 +137,7 @@ int VLBA_header::find_track(int headstack_, int track_) {
       return i;
     }
   }
-  SFXC_ASSERT_MSG(false,
-                  "Couldn't find (headstack, track) in the vlba header.");
+  sfxc_abort("Couldn't find (headstack, track) in the vlba header.");
   return -1;
 }
 
@@ -180,7 +179,6 @@ bool VLBA_header::checkCRC() {
       << std::endl;
       return false;
     }
-    SFXC_ASSERT(crcBlock[i] == 0);
   }
 
   return true;

@@ -52,6 +52,8 @@ public:
   std::string get_start_time_of_scan(const std::string &scan) const;
   /// Returns the stop time of a given scan
   std::string get_stop_time_of_scan(const std::string &scan) const;
+  /// Returns the name of the scan in which the date is located
+  std::string get_scan_name(Vex::Date &start_time) const;
 
   /// Returns the start time of a given scan
   Date start_of_scan(const std::string &scan) const;

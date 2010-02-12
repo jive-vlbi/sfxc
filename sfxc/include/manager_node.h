@@ -78,6 +78,7 @@ public:
 private:
 
   std::string get_current_mode() const;
+  void send_global_header();
 
   Manager_node_controller manager_controller;
   Status status;
