@@ -10,6 +10,20 @@ import tempfile
 import os,sys, types
 import re
 
+def which (filename):
+  if not os.environ.has_key('PATH') or os.environ['PATH'] == '':
+    p = os.defpath
+  else:
+    p = os.environ['PATH']
+
+  pathlist = p.split (os.pathsep)
+
+  for path in pathlist:
+    f = os.path.join(path, filename)
+    if os.access(f, os.X_OK):
+      return f
+  return None
+
 #
 # The C++ code that will be used to generate the Chanel_extractor final class
 #
@@ -366,13 +380,25 @@ totalfile = reg2.sub(mainloop, tmp1)
 fpt = open(tmpfile, "w")
 fpt.write(totalfile)
 fpt.close()
-
 if do_compile:
-	cmd = "g++ -fPIC -O3 -DNDEBUG "+tmpfile+" -I./ -I../../include/ -shared -Wl,-soname,"+outputname+" -o "+outputname
-	print "Performing precalculation....: "+cmd
-	os.system(cmd);
-	#os.unlink(tmpfile)
-	print "[OK]"
+  # First find include directory
+  position=sys.argv[0].rfind('/')
+  if(position>=0):
+    filename=sys.argv[0][position+1:]
+  else:
+    filename = sys.argv[0]
+  path_filename = which(filename)
+  position=path_filename[0:path_filename.rfind('/')].rfind('/')
+  if(position>=0):
+    include_dir = ' -I'+path_filename[0:position+1]+'include/'
+  else:
+    include_dir = ""
+  # Perform actual compilation
+  cmd = "g++ -fPIC -O3 -DNDEBUG "+tmpfile+include_dir+" -I./ -shared -Wl,-soname,"+outputname+" -o "+outputname
+  print "Performing precalculation....: "+cmd
+  os.system(cmd);
+  #os.unlink(tmpfile)
+  print "[OK]"
 
 sys.exit(0);
 
