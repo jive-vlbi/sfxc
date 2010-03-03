@@ -35,7 +35,7 @@ class Channel_extractor_dynamic : public Channel_extractor_interface {
 
       void initialise(const std::vector< std::vector<int> > &track_positions_,
                       int size_of_one_input_word_,
-                      int input_sample_size_);
+                      int input_sample_size_, int bits_per_sample_);
 
       void extract(unsigned char *in_data1,
                    unsigned char **output_data);
@@ -46,6 +46,7 @@ class Channel_extractor_dynamic : public Channel_extractor_interface {
       int size_of_one_input_word;
       int input_sample_size;
       int n_subbands;
+      int bits_per_sample;
 
       // Computed
       int fan_out;

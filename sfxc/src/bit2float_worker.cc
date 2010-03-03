@@ -22,12 +22,12 @@ Bit2float_worker::Bit2float_worker(int stream_nr_)
   SFXC_ASSERT(!memory_pool_.empty());
   // Lookup tables used in the bit2float conversion
   for (int i=0; i<256; i++) {
-    lookup_table[i][0] = sample_value_ms[(i>>6) & 3];
-    lookup_table[i][1] = sample_value_ms[(i>>4) & 3];
-    lookup_table[i][2] = sample_value_ms[(i>>2) & 3];
-    lookup_table[i][3] = sample_value_ms[i & 3];
+    lookup_table[i][0] = sample_value_ms[i & 3];
+    lookup_table[i][1] = sample_value_ms[(i>>2) & 3];
+    lookup_table[i][2] = sample_value_ms[(i>>4) & 3];
+    lookup_table[i][3] = sample_value_ms[(i>>6) & 3];
     for (int j=0; j<8 ; j++)
-      lookup_table_1bit[i][j] = sample_value_m[(i>>(7-j)) & 1];
+      lookup_table_1bit[i][j] = sample_value_m[(i>>j) & 1];
   }
 }
 

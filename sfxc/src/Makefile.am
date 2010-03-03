@@ -8,7 +8,6 @@ endif
 TESTS = test_sfxc.py
 
 OBJ=\
-  channel_extractor_fast.cc \
   abstract_manager_node.cc \
   control_parameters.cc \
   sfxc_mpi.cc \
@@ -38,7 +37,6 @@ OBJ=\
   delay_correction_swapped.cc \
   uvw_model.cc \
   channel_extractor_tasklet.cc \
-  channel_extractor_brute_force.cc \
   channel_extractor_5.cc \
   channel_extractor_utils.cc \
   channel_extractor_dynamic.cc \

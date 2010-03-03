@@ -7,9 +7,7 @@
  *
  */
 #include "channel_extractor_tasklet.h"
-#include "channel_extractor_brute_force.h"
 #include "channel_extractor_5.h"
-#include "channel_extractor_fast.h"
 #include "channel_extractor_dynamic.h"
 
 #include "mark5a_header.h"
@@ -203,7 +201,7 @@ set_parameters(const Input_node_parameters &input_node_param,
   fan_out    = bits_per_sample *
                input_node_param.subsamples_per_sample();
 
-  ch_extractor->initialise(track_positions, N, samples_per_block);
+  ch_extractor->initialise(track_positions, N, samples_per_block, bits_per_sample);
   DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
 }
 

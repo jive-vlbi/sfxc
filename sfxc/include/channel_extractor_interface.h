@@ -34,7 +34,7 @@ public:
   // size of one input sample in bytes
   virtual void initialise(const std::vector< std::vector<int> > &track_positions,
                           int size_of_one_input_word,
-                          int input_sample_size) = 0;
+                          int input_sample_size, int bits_per_sample) = 0;
 
   // extract samples 0..(samples_in_data1-1) from data1
   // extract samples samples_in_data1..size_of_one_input_word from data2

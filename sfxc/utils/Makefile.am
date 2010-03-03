@@ -83,7 +83,7 @@ mark5a_print_headers_SOURCES = \
   ../src/input_data_format_reader.cc \
   ../src/mark5a_reader.cc \
   ../src/mark5a_header.cc \
-  ../src/channel_extractor_brute_force.cc \
+  ../src/channel_extractor_5.cc \
   ../src/utils.cc \
   ../src/control_parameters.cc
 

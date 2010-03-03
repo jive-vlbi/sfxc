@@ -20,13 +20,14 @@ Channel_extractor_dynamic::Channel_extractor_dynamic
 void Channel_extractor_dynamic::initialise(
   const std::vector< std::vector<int> > &track_positions_,
   int size_of_one_input_word_,
-  int input_sample_size_)
+  int input_sample_size_,
+  int bits_per_sample_)
 {
+  bits_per_sample=bits_per_sample_;
 	/// Table to convert the channels configuration in a unique filename using
 	/// filesystem compatible char-codes.
   unsigned char table[64];
   int idx=0;
-
   /// letters and number are ok
   for (unsigned char i='a';i<'z';i++) table[idx++] = i;
   for (unsigned char i='A';i<'Z';i++) table[idx++] = i;
@@ -85,7 +86,8 @@ void Channel_extractor_dynamic::initialise(
   assert( hidden_implementation_ != NULL );
 
   /// If so initialize it
-	hidden_implementation_->initialise(track_positions_, size_of_one_input_word_, input_sample_size_);
+  hidden_implementation_->initialise(track_positions_, size_of_one_input_word_, input_sample_size_,
+                                     bits_per_sample_);
 }
 
 Channel_extractor_interface* Channel_extractor_dynamic::compile_load_construct(
@@ -108,12 +110,14 @@ Channel_extractor_interface* Channel_extractor_dynamic::compile_load_construct(
   char* filename = (char*)"ch_ex_params.txt";
   FILE* fpt = fopen(filename,"wt");
   fprintf(fpt, "n_subbands = %d;\n", n_subbands);
+  fprintf(fpt, "bits_per_sample= %d;\n", bits_per_sample);
   fprintf(fpt, "fan_out= %d;\n", fan_out);
   fprintf(fpt, "span_out= %d;\n", span_out);
 	fprintf(fpt, "input_sample_size= %d;\n", input_sample_size);
 	fprintf(fpt, "size_of_one_input_word= %d;\n", size_of_one_input_word);
 	fprintf(fpt, "outputname= \"%s\";\n", ch_filename.c_str());
   fprintf(fpt, "track_positions = [\n");
+
   for (unsigned int i=0;i<track_positions.size();i++) {
     fprintf(fpt, "\t\t\t[");
     for (unsigned int j=0;j<track_positions[i].size();j++) {
