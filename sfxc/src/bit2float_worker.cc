@@ -9,14 +9,14 @@ const FLOAT sample_value_m[]  = {
                                   -5, 5
                                 };
 
-Bit2float_worker::Bit2float_worker(int stream_nr_)
+Bit2float_worker::Bit2float_worker(int stream_nr_, bit_statistics_ptr statistics_)
     : output_buffer_(new Output_queue()),
     fft_size(-1),
     bits_per_sample(-1),
     sample_rate(-1),
     memory_pool_(32),
     have_new_parameters(false), stream_nr(stream_nr_),
-    n_ffts_per_integration(0), current_fft(0), state(IDLE)
+    n_ffts_per_integration(0), current_fft(0), state(IDLE), statistics(statistics_)
     /**/
 {
   SFXC_ASSERT(!memory_pool_.empty());
@@ -88,6 +88,7 @@ Bit2float_worker::do_task() {
         inp_read++;
         invalid_buffer[1] = inp_data[inp_read%inp_size];
         inp_read++;
+        statistics->inc_invalid(invalid_left);
         state = SEND_INVALID;
         break;
       }default:
@@ -173,8 +174,9 @@ Bit2float_worker::do_task() {
   if(out_index == output_buffer_size){
     output_buffer_->push(out_element);
     current_fft += out_element.data().nfft;
-    if(current_fft == n_ffts_per_integration)
+    if(current_fft == n_ffts_per_integration){
       state=PURGE_STREAM;
+    }
     else
       allocate_element();
   }
@@ -244,7 +246,6 @@ void
 Bit2float_worker::
 set_parameters() {
   bits_per_sample = new_parameters.bits_per_sample;
-
   sample_rate = new_parameters.sample_rate;
 
   n_channels = new_parameters.n_channels;
@@ -252,6 +253,7 @@ set_parameters() {
   SFXC_ASSERT(((fft_size*(8/bits_per_sample))*1000000LL) % sample_rate== 0);
   nfft_max = std::max(CORRELATOR_BUFFER_SIZE/n_channels,1);
   n_ffts_per_integration = new_parameters.n_ffts_per_integration;
+  statistics->reset_statistics(bits_per_sample);
 
   current_fft = 0;
   invalid_left = 0;
@@ -267,8 +269,8 @@ void Bit2float_worker::empty_input_queue() {
 }
 
 Bit2float_worker_sptr
-Bit2float_worker::new_sptr(int stream_nr_){
-  return Bit2float_worker_sptr(new Bit2float_worker(stream_nr_));
+Bit2float_worker::new_sptr(int stream_nr_, bit_statistics_ptr statistics_){
+  return Bit2float_worker_sptr(new Bit2float_worker(stream_nr_, statistics_));
 }
 
 int 
@@ -276,6 +278,9 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples) {
   std::vector<unsigned char> &input_data = input_buffer_->data;
   int dsize = input_data.size();
   uint64_t &iin = input_buffer_->read;
+  // avoid the overhead of the boost shared pointer by derefferencing it
+  bit_statistics *stats = statistics.get();
+
   int iout = 0;
   if (bits_per_sample == 2) {
     // Write the first byte
@@ -283,6 +288,7 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples) {
     memcpy((char*)&output[iout],
            &lookup_table[(int)input_data[iin%dsize]][start],
            samp_to_write*sizeof(FLOAT));
+    stats->inc_counter(input_data[iin%dsize]);
     nsamples -= samp_to_write;
     iout += samp_to_write;
     if(samp_to_write+start == 4)
@@ -299,6 +305,7 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples) {
         memcpy((char*)&output[iout],
                &lookup_table[(int)input_data[index]][0],
                4*sizeof(FLOAT));
+        stats->inc_counter(input_data[index]);
         iout+=4;
       }
       nbytes -= towrite;
@@ -319,6 +326,7 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples) {
     memcpy((char*)&output[iout],
            &lookup_table_1bit[(int)input_data[iin%dsize]][start],
            samp_to_write*sizeof(FLOAT));
+    stats->inc_counter(input_data[iin%dsize]);
     nsamples -= samp_to_write;
     iout += samp_to_write;
     if(samp_to_write+start == 8)
@@ -335,6 +343,7 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples) {
         memcpy((char*)&output[iout],
                &lookup_table_1bit[(int)input_data[index]][0],
                8*sizeof(FLOAT));
+        stats->inc_counter(input_data[index]);
         iout++;
       }
       nbytes -= towrite;

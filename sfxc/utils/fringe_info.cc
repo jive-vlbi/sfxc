@@ -188,6 +188,12 @@ Fringe_info_container(FILE *input, bool stop_at_eof) : input(input) {
                       (char*)&uvw_coordinates, stop_at_eof);
     if (eof()) return;
   }
+
+  // Read in the bit statistics and process them
+  new_statistics.resize(last_timeslice_header.number_statistics);
+  read_data_from_file(sizeof(Output_header_bitstatistics)*new_statistics.size(),
+                     (char*)&new_statistics[0], stop_at_eof);
+
   assert(last_timeslice_header.number_baselines != 0);
 }
 
@@ -214,12 +220,12 @@ void
 Fringe_info_container::read_plots(bool stop_at_eof) {
   // Clear previous plots
   plots.clear();
-
   first_timeslice_header = last_timeslice_header;
 
   bool first = true;
   while (first_timeslice_header.integration_slice ==
          last_timeslice_header.integration_slice) {
+    process_new_bit_statistics();
     int n_baselines = last_timeslice_header.number_baselines;
 
     for (int i=0; i<n_baselines; i++) {
@@ -265,9 +271,26 @@ Fringe_info_container::read_plots(bool stop_at_eof) {
                       (char*)&uvw_coordinates, stop_at_eof);
         if (eof()) return;
       }
+      // Read in the bit statistics and process them
+      new_statistics.resize(last_timeslice_header.number_statistics);
+      read_data_from_file(sizeof(Output_header_bitstatistics)*new_statistics.size(),
+                         (char*)&new_statistics[0], stop_at_eof);
     }
   }
 }
+
+void
+Fringe_info_container::process_new_bit_statistics(){
+  for(int i=0;i<new_statistics.size();i++){
+    Output_header_bitstatistics stats;
+    stats.station_nr=new_statistics[i].station_nr; 
+    stats.frequency_nr=new_statistics[i].frequency_nr;
+    stats.sideband=new_statistics[i].sideband;
+    stats.polarisation=new_statistics[i].polarisation;
+    statistics.insert(new_statistics[i]);
+  }
+}
+
 
 void
 Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &stations, std::string &mode,
@@ -303,21 +326,41 @@ Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &station
 }
 
 bool
-Fringe_info_container::get_frequencies(const Vex &vex, std::string &mode, std::vector<double> &frequencies)
+Fringe_info_container::get_channels(const Vex &vex, const std::string &mode, std::vector<Channel> &channels)
 {
   Vex::Node root_node = vex.get_root_node();
   Vex::Node::iterator mode_it = root_node["MODE"][mode];
-  std::string freq_mode = mode_it->begin("FREQ")[0]->to_string();
-  std::set<double> freq_set;
-  for (Vex::Node::iterator chan_it = root_node["FREQ"][freq_mode]->begin("chan_def");
-       chan_it != root_node["FREQ"][freq_mode]->end("chan_def"); ++chan_it) {
-    freq_set.insert((*chan_it)[1]->to_double_amount("MHz")*1000000);
-  }
+  std::string freq_node = mode_it->begin("FREQ")[0]->to_string();
+  std::string station = mode_it->begin("FREQ")[1]->to_string();
+  std::string if_node = vex.get_IF_node(mode,station);
+  std::string bbc_node = vex.get_BBC_node(mode,station);
 
-  frequencies.resize(0);
-  for (std::set<double>::iterator freq_it = freq_set.begin();
-       freq_it != freq_set.end(); freq_it++) {
-    frequencies.push_back(*freq_it);
+  channels.resize(0);
+  int freq_nr=-1;
+  double old_freq=-1;
+  for (Vex::Node::iterator chan_it = root_node["FREQ"][freq_node]->begin("chan_def");
+       chan_it != root_node["FREQ"][freq_node]->end("chan_def"); ++chan_it) {
+    Channel new_chan;
+    double new_freq = (*chan_it)[1]->to_double_amount("MHz")*1000000;
+    if(new_freq!=old_freq){
+      old_freq=new_freq;
+      freq_nr++;
+    }
+    new_chan.frequency_nr = freq_nr;
+    new_chan.frequency = new_freq;
+    new_chan.sideband=(*chan_it)[2]->to_char()=='L'?0:1;
+    std::string bbc = (*chan_it)[5]->to_string();
+    std::string if_name;
+    for (Vex::Node::const_iterator bbc_block = vex.get_root_node()["BBC"][bbc_node]->begin();
+         bbc_block != vex.get_root_node()["BBC"][bbc_node]->end(); ++bbc_block) {
+      if(bbc_block[0]->to_string()==bbc){
+        if_name = bbc_block[2]->to_string();
+        break;
+      }
+    }
+    char pol = vex.polarisation(if_node, if_name);
+    new_chan.polarization=(pol=='R')?0:1;
+    channels.push_back(new_chan);
   }
   return true;
 }
@@ -372,7 +415,7 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
 
   Date start_time(global_header.start_year, global_header.start_day, (int) sec);
   std::string mode = vex.get_mode(vex.get_scan_name(start_time));
-  get_frequencies(vex, mode, frequencies);
+  vex.get_frequencies(mode,frequencies);
   get_bbc(vex, stations, mode, bbcs);
 
   index_html << " Integration time: "
@@ -385,10 +428,7 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
              << std::endl;
 
   { // Print the table
-    index_html << "<table border=1 bgcolor='#dddddd' cellspacing=0>"
-    << std::endl;
-
-
+    index_html << "<table border=1 bgcolor='#dddddd' cellspacing=0>" << std::endl;
 
     // Print header
     std::vector<int>                  autos;
@@ -417,12 +457,9 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
 
       { // first row
         index_html << "<tr>" << std::endl;
-        index_html << "  <th rowspan=2>" << global_header.experiment << "</th>"
-        << std::endl;
-        index_html << "  <th colspan="<< autos.size() << ">Auto correlations</th>"
-        << std::endl;
-        index_html << "  <th colspan="<< crosses.size() << ">Cross correlations</th>"
-        << std::endl;
+        index_html << "  <th rowspan=2>" << global_header.experiment << "</th>" << std::endl;
+        index_html << "  <th colspan="<< autos.size() << ">Auto correlations</th>" << std::endl;
+        index_html << "  <th colspan="<< crosses.size() << ">Cross correlations</th>" << std::endl;
         index_html << "</tr>" << std::endl;
       }
 
@@ -514,6 +551,9 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
       end_data_row(index_html);
       index_html << "</table>" << std::endl;
     }
+
+    // Print the bit statistics
+    print_html_bitstatistics(vex, mode, index_html);
     index_html << "</html>" << std::endl;
 
     index_html.close();
@@ -522,6 +562,98 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
     rename("index2.html", "index.html");
   }
 }
+
+std::string Fringe_info_container::get_statistics_color(int64_t val, int64_t N){
+  // compute color for the html_plot_page according to how many standard
+  // deviations val is away from the average assuming a binomial distribution
+  // where 0 and 1 are equally likely.
+  if(N==0)
+    return std::string("#FF0000");
+
+  double std = sqrt(N)/2;
+  double n_std = fabs((val-N/2)*1./std);
+  if(n_std <= 2){
+    char color[8];
+    int color_val = 255-128*n_std/2;
+    snprintf(color, 7, "#00%2X00", color_val);
+    return std::string(color);
+  }else if (n_std <= 3)
+    return std::string("#FF8C00");
+
+  return std::string("#FF0000");
+}
+void Fringe_info_container::
+print_html_bitstatistics(const Vex &vex, const std::string &mode, std::ofstream &index_html){
+  // Array with all channels sorted on channel nr
+  std::vector<Channel> channels;
+  get_channels(vex, mode, channels);
+
+  // Get list of stations
+  std::vector<std::string> stations;
+  const Vex::Node root_node = vex.get_root_node();
+  for (Vex::Node::const_iterator it = root_node["STATION"]->begin();
+       it != root_node["STATION"]->end(); it++) {
+    stations.push_back(it.key());
+  }
+
+  index_html << "<h1> Sampler statistics </h1><br>" << std::endl;
+  // Iterate over all stations
+  statistics_set::iterator it=statistics.begin();
+  while(it!=statistics.end()){
+    // Write table header
+    index_html << "<table border=1 bgcolor='#dddddd' cellspacing=0>" << std::endl;
+    index_html << "<tr>" << "\n";
+    index_html << "  <th>" << stations[(int)(*it).station_nr] << "</th>" << std::endl;
+    index_html << "  <th> -0 </th>" << std::endl;
+    index_html << "  <th> -1 </th>"<< std::endl;
+    index_html << "  <th> +0 </th>" << std::endl;
+    index_html << "  <th> +1 </th>"<< std::endl;
+    index_html << "  <th> invalid </th>"<< std::endl;
+    index_html << "  <th> avg sign bit </th>"<< std::endl;
+    index_html << "  <th> avg mag bit </th>"<< std::endl;
+    index_html << "</tr>" << std::endl;
+
+    // Iterate over all channels
+    for(int i=0;i<channels.size();i++){
+      // Find the current channel in the statistics set
+      Output_header_bitstatistics chan;
+      chan.station_nr=(*it).station_nr;
+      chan.frequency_nr=channels[i].frequency_nr;
+      chan.sideband=channels[i].sideband;
+      chan.polarisation=channels[i].polarization;
+      statistics_set::iterator chan_it=statistics.find(chan);
+      // Get the total number of samples
+      const int32_t (&levels)[4] = (*chan_it).levels;
+      int32_t n_invalid = (*chan_it).n_invalid;
+      int64_t N=0;
+      for(int j=0;j<4;j++)
+        N += levels[j];
+      N+=n_invalid;
+      // Print the statistics
+      begin_data_row(index_html, channels[i]);
+      for(int j=0;j<4;j++){
+        index_html << "  <td> " << levels[j]*100./N <<"%" << "</td>";
+      }
+      index_html << "  <td> " << n_invalid*100./N <<"%" << "</td>";
+      double b0=(levels[2]+levels[3])*1./(N-n_invalid);
+      double b1=(levels[1]+levels[3])*1./(N-n_invalid);
+      index_html << "  <td> " << b0 << "</td>";
+      index_html << "  <td> " << b1 << "</td>";
+/*      std::string color = get_statistics_color(levels[2]+levels[3],N-n_invalid);
+      index_html << "  <td bgcolor=" << color << "> " << b0 << "</td>";
+      color = get_statistics_color(levels[1]+levels[3],N-n_invalid);
+      index_html << "  <td bgcolor=" << color << "> " << b1 << "</td>";
+      end_data_row(index_html); */
+      index_html << "\n  ";
+    }
+    index_html << "</table><br>" << std::endl;
+    // Find the next station within the set
+    int cur_station=(*it).station_nr;
+    while((it!=statistics.end())&&(cur_station==(*it).station_nr))
+      it++;
+  }
+}
+
 
 void Fringe_info_container::
 begin_data_row(std::ostream &index_html,
@@ -551,8 +683,30 @@ begin_data_row(std::ostream &index_html,
     index_html << "-Lcp";
   }
   index_html << "</th>" << std::endl;
-
 }
+
+void Fringe_info_container::
+begin_data_row(std::ostream &index_html, Channel &channel){
+  index_html << "<tr>" << std::endl;
+  // First cell
+  index_html << "<th>";
+
+  index_html.precision(10);
+  index_html << channel.frequency/1000000 << "MHz";
+  index_html.precision(4);
+  if (channel.sideband == 0) {
+    index_html << ", LSB";
+  } else {
+    index_html << ", USB";
+  }
+  if (channel.polarization == 0) {
+    index_html << ", Rcp";
+  } else {
+    index_html << ", Lcp";
+  }
+  index_html << "</th>" << std::endl;
+}
+
 
 void Fringe_info_container::end_data_row(std::ostream &index_html) {
   index_html << "</tr>" << std::endl;
@@ -787,12 +941,17 @@ print_diff_html(const Vex &vex,
     }
   }
 
+  // Get the mode of the current scan
+  double integration_time = pow(2, global_header.integration_time);
+  double sec = (global_header.start_time + integration_time * first_timeslice_header.integration_slice);
+  Date start_time(global_header.start_year, global_header.start_day, (int) sec);
+  std::string mode = vex.get_mode(vex.get_scan_name(start_time));
+
   // Array with the station names
   std::vector<std::string> stations;
 
   // Array with frequencies for a channel nr
   std::vector<double>      frequencies;
-
 
   const Vex::Node root_node = vex.get_root_node();
   for (Vex::Node::const_iterator it = root_node["STATION"]->begin();
@@ -800,7 +959,7 @@ print_diff_html(const Vex &vex,
     stations.push_back(it.key());
   }
 
-  vex.get_frequencies(frequencies);
+  vex.get_frequencies(mode, frequencies);
 
   std::ofstream index_html("index2.html");
   assert(index_html.is_open());

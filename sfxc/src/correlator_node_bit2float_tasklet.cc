@@ -1,5 +1,6 @@
 #include <sched.h>
 #include "correlator_node_bit2float_tasklet.h"
+#include "bit_statistics.h"
 
 #define MINIMUM_PROCESSED_SAMPLES 1024
 
@@ -38,22 +39,18 @@ void Correlator_node_bit2float_tasklet::do_execute(){
   }
   timer_.stop();
 }
-void Correlator_node_bit2float_tasklet::add_stream(){
-  bit2float_workers_.push_back( Bit2float_worker::new_sptr(bit2float_workers_.size()) );
-}
-
 size_t Correlator_node_bit2float_tasklet::number_channel(){
   return bit2float_workers_.size();
 }
 
 void
-Correlator_node_bit2float_tasklet::connect_to(int nr_stream,
+Correlator_node_bit2float_tasklet::connect_to(int nr_stream, bit_statistics_ptr statistics,
     Channel_circular_input_buffer_ptr buffer)
 {
   if (bit2float_workers_.size() <= nr_stream) {
     bit2float_workers_.resize(nr_stream+1, boost::shared_ptr<Bit2float_worker>());
   }
-  bit2float_workers_[nr_stream] = Bit2float_worker::new_sptr(nr_stream);
+  bit2float_workers_[nr_stream] = Bit2float_worker::new_sptr(nr_stream, statistics);
   SFXC_ASSERT( nr_stream < bit2float_workers_.size() );
   bit2float_workers_[nr_stream]->connect_to(buffer);
 }

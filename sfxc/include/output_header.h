@@ -34,10 +34,20 @@
        (time = start_time + integration_slice*2^integration_time): int32_t
       number_baselines: int32_t
       number_uvw_coordinates: int32_t
+      number_statistics: int32_t
       (
         station_nr : int32_t
         u,v,w : double
       ){number_uvw_coordinates times}
+      (
+        # The bit statistics
+        station_nr: uint8_t
+        frequency_nr: uint8_t
+        sideband:uint8_t (LSB: 0, USB: 1)
+        polarisation:uint8_t (RCP: 0, LCP: 1)
+        levels[4] : int32_t[4]
+        n_invalid : int32_t
+      ){number_statistics times}
     )
     ( # one baseline
       weight: int32_t
@@ -88,6 +98,7 @@ struct Output_header_timeslice {
   int32_t integration_slice; // Integration slice number
   int32_t number_baselines;  // The number of baselines that follow
   int32_t number_uvw_coordinates; // The number of uvw coordinates that follow
+  int32_t number_statistics;  // The number of bitstatistics that follow;
 // int32_t polyco_nr; // Index of the polyco file used
 };
 
@@ -118,6 +129,16 @@ unsigned char frequency_nr:
   // sorted increasingly
   // 1 byte left:
   char empty;
+};
+
+struct Output_header_bitstatistics{
+  uint8_t station_nr;   // Station number in the vex-file
+  uint8_t frequency_nr; // The number of the channel in the vex-file
+  uint8_t sideband;     // (LSB: 0, USB: 1)
+  uint8_t polarisation; // (RCP: 0, LCP: 1)
+  // order : -0 -1 +0 +1 ; for 1 bit data levels[2]=level[3]=0 ; here - means sign bit = 0
+  int32_t levels[4];
+  int32_t n_invalid;    // The number of invalid samples
 };
 
 struct Output_header_polyco {

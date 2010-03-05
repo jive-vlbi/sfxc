@@ -51,6 +51,12 @@ class Fringe_info_container {
   typedef Control_parameters::Date Date;
   typedef std::set<Fringe_info> Container;
   typedef Container::iterator   iterator;
+  struct Channel{
+    double frequency;
+    int frequency_nr;
+    int sideband;
+    int polarization;
+  };
 
 public:
   Fringe_info_container(FILE *input, bool stop_at_eof);
@@ -58,7 +64,7 @@ public:
   void read_plots(bool stop_at_eof);
 
   void print_html(const Vex &vex, char *vex_filename);
-
+  void print_html_bitstatistics(const Vex &vex, const std::string &mode, std::ofstream &index_html);
   const Fringe_info &get_first_plot() const;
   const Fringe_info &get_plot(const Output_header_baseline &baseline_header) const;
 
@@ -69,12 +75,14 @@ public:
   bool eof();
 private:
   void read_data_from_file(int to_read, char * data, bool stop_at_eof);
+  std::string get_statistics_color(int64_t val, int64_t N);
 
-  bool get_frequencies(const Vex &vex, std::string &mode, std::vector<double> &frequencies);
+  bool get_channels(const Vex &vex, const std::string &mode, std::vector<Channel> &channels);
   void get_bbc(const Vex &vex, std::vector<std::string> &stations, std::string &mode,
                std::vector< std::vector<int> > &bbcs);
 
   void set_plot(const Fringe_info &fringe_info);
+  void process_new_bit_statistics();
 
   void generate_filename(char *filename,
                          char *filename_large,
@@ -100,6 +108,7 @@ private:
   void begin_data_row(std::ostream &index_html,
                       const std::vector<double> &frequencies,
                       const Fringe_info &fringe_info);
+  void begin_data_row(std::ostream &index_html, Channel &channel);
   void end_data_row(std::ostream &index_html);
 
   // input file
@@ -112,6 +121,29 @@ private:
 
   // Header of the last timeslice read;
   Output_header_timeslice first_timeslice_header, last_timeslice_header;
+
+  // Bit statistics, the bitstatistics are stored in an ordered set
+  struct stats_comp {
+    bool operator() (const Output_header_bitstatistics& lhs, const Output_header_bitstatistics& rhs) const
+    {
+      if(lhs.station_nr<rhs.station_nr)
+        return true;
+      else if(lhs.station_nr==rhs.station_nr){
+        if(lhs.frequency_nr<rhs.frequency_nr)
+          return true;
+        else if(lhs.frequency_nr==rhs.frequency_nr){
+          if(lhs.sideband<rhs.sideband)
+            return true;
+          else if(lhs.sideband==rhs.sideband)
+            return lhs.polarisation<rhs.polarisation;
+        }
+      }
+      return false;
+    }
+  };
+  typedef std::set<Output_header_bitstatistics, stats_comp> statistics_set;
+  std::vector<Output_header_bitstatistics> new_statistics;
+  statistics_set statistics;
 
   // Arrays containing one fft
   fftwf_plan fftwf_plan_;

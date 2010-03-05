@@ -199,7 +199,9 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
 
   // connect reader to data stream worker
 
-  bit2float_thread_.connect_to(stream_nr, reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
+  bit_statistics_ptr statistics = bit_statistics_ptr(new bit_statistics());
+  bit2float_thread_.connect_to(stream_nr, statistics,
+                               reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
 
   { // create the delay modules
     if (delay_modules.size() <= stream_nr) {
@@ -216,7 +218,7 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
 
 
   // Connect the correlation_core to delay_correction
-  correlation_core->connect_to(stream_nr,
+  correlation_core->connect_to(stream_nr, statistics,
                               delay_modules[stream_nr]->get_output_buffer());
 }
 
@@ -314,6 +316,8 @@ Correlator_node::set_parameters() {
   int size_of_one_baseline = sizeof(fftwf_complex)*
                              (parameters.number_channels*PADDING/2+1);
   int size_uvw = correlation_core->uvw_tables.size()*sizeof(Output_uvw_coordinates);
+  // when the cross_polarize flag is set then the correlator node receives 2 polarizations
+  int size_stats = delay_modules.size()*sizeof(Output_header_bitstatistics);
 
   int slice_size;
   int nBins=1;
@@ -327,13 +331,9 @@ Correlator_node::set_parameters() {
       Pulsar_parameters::Pulsar &pulsar = cur_pulsar_it->second;
       nBins = pulsar.nbins;
     }
-    slice_size = nBins * ( sizeof(Output_header_timeslice) + size_uvw + 
-                 nBaselines * ( size_of_one_baseline + sizeof(Output_header_baseline)));
   }
-  else{
-    slice_size = sizeof(Output_header_timeslice) + size_uvw + 
-                 nBaselines * (size_of_one_baseline + sizeof(Output_header_baseline));
-  }
+  slice_size = nBins * ( sizeof(Output_header_timeslice) + size_uvw + size_stats +
+               nBaselines * ( size_of_one_baseline + sizeof(Output_header_baseline)));
   SFXC_ASSERT(nBins >= 1);
   output_node_set_timeslice(parameters.slice_nr,
                             parameters.slice_offset,

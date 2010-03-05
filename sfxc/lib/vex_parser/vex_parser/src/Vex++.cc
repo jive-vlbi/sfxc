@@ -134,9 +134,26 @@ Vex::get_track(const std::string &mode, const std::string &station) const {
 
 std::string
 Vex::get_frequency(const std::string &mode, const std::string &station) const {
+  return get_block_node("FREQ", mode, station);
+}
+
+std::string
+Vex::get_IF_node(const std::string &mode, const std::string &station) const {
+  return get_block_node("IF", mode, station);
+}
+
+std::string
+Vex::get_BBC_node(const std::string &mode, const std::string &station) const {
+  return get_block_node("BBC", mode, station);
+}
+
+std::string
+Vex::get_block_node(const std::string &block, const std::string &mode,
+                      const std::string &station) const {
+  // Given a mode and a station find the start node (block is e.g. IF, BBC, FREQ, ...)
   Vex::Node::const_iterator mode_it = root["MODE"][mode];
-  for (Vex::Node::const_iterator frequency_it = mode_it->begin("FREQ");
-       frequency_it != mode_it->end("FREQ"); ++frequency_it) {
+  for (Vex::Node::const_iterator frequency_it = mode_it->begin(block);
+       frequency_it != mode_it->end(block); ++frequency_it) {
     Vex::Node::const_iterator station_it = frequency_it->begin();
     ++station_it;
     for (;station_it != frequency_it->end(); ++station_it) {
@@ -202,18 +219,19 @@ Vex::Node parse_vex(char *filename) {
   return parse_result;
 }
 
-void Vex::get_frequencies(std::vector<double> &frequencies) const {
-  std::set<double> freqs_;
-  for (Vex::Node::const_iterator freq_it = get_root_node()["FREQ"]->begin();
-       freq_it != get_root_node()["FREQ"]->end(); ++freq_it) {
-    for (Vex::Node::const_iterator chan_it =
-           freq_it->begin("chan_def");
-         chan_it != freq_it->end("chan_def"); ++chan_it) {
-      freqs_.insert((*chan_it)[1]->to_double_amount("MHz")*1000000);
-    }
+void Vex::get_frequencies(const std::string &mode, std::vector<double> &frequencies) const {
+  Node root_node = get_root_node();
+  Node::iterator mode_it = root_node["MODE"][mode];
+  std::string freq_node = mode_it->begin("FREQ")[0]->to_string();
+  std::set<double> freq_set;
+  for (Node::iterator chan_it = root_node["FREQ"][freq_node]->begin("chan_def");
+       chan_it != root_node["FREQ"][freq_node]->end("chan_def"); ++chan_it) {
+    freq_set.insert((*chan_it)[1]->to_double_amount("MHz")*1000000);
   }
-  for (std::set<double>::iterator freq_it = freqs_.begin();
-         freq_it != freqs_.end(); freq_it++) {
-      frequencies.push_back(*freq_it);
-    }
+
+  frequencies.resize(0);
+  for (std::set<double>::iterator freq_it = freq_set.begin();
+       freq_it != freq_set.end(); freq_it++) {
+    frequencies.push_back(*freq_it);
+  }
 }

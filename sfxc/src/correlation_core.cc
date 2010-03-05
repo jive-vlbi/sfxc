@@ -48,11 +48,13 @@ bool Correlation_core::finished() {
   return current_fft == number_ffts_in_integration;
 }
 
-void Correlation_core::connect_to(size_t stream, Input_buffer_ptr buffer) {
+void Correlation_core::connect_to(size_t stream, bit_statistics_ptr statistics_, Input_buffer_ptr buffer) {
   if (stream >= input_buffers.size()) {
     input_buffers.resize(stream+1);
+    statistics.resize(stream+1);
   }
   input_buffers[stream] = buffer;
+  statistics[stream] = statistics_;
 }
 
 void
@@ -338,6 +340,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     htimeslice.integration_slice =
       correlation_parameters.integration_nr + current_integration;
     htimeslice.number_uvw_coordinates = uvw_tables.size();
+    htimeslice.number_statistics = input_buffers.size();
 
    // write the uvw coordinates
     Output_uvw_coordinates uvw[htimeslice.number_uvw_coordinates];
@@ -353,10 +356,34 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
      uvw[station].w=w;
     }
 
+    // Write the bit statistics
+    Output_header_bitstatistics stats[input_buffers.size()];
+    for (size_t stream=0; stream < input_buffers.size(); stream++){
+      int station = stream2station[stream]-1;
+      int32_t *levels=statistics[stream]->get_statistics();
+      if(correlation_parameters.cross_polarize){
+        int nstreams=correlation_parameters.station_streams.size();
+        stats[stream].polarisation=(stream>=nstreams/2)?1-polarisation:polarisation;
+      }else{
+        stats[stream].polarisation=polarisation;
+      }
+      stats[stream].station_nr=station+1;
+      stats[stream].sideband = (correlation_parameters.sideband=='L') ? 0 : 1;
+
+      stats[stream].frequency_nr=(unsigned char)correlation_parameters.channel_nr;
+      stats[stream].levels[0]=levels[0];
+      stats[stream].levels[1]=levels[1];
+      stats[stream].levels[2]=levels[2];
+      stats[stream].levels[3]=levels[3];
+      stats[stream].n_invalid=levels[4];
+    }
+
     size_t nWrite = sizeof(htimeslice);
     writer->put_bytes(nWrite, (char *)&htimeslice);
     nWrite=sizeof(uvw);
     writer->put_bytes(nWrite, (char *)&uvw[0]);
+    nWrite=sizeof(stats);
+    writer->put_bytes(nWrite, (char *)&stats[0]);
   }
 
   integration_buffer_float.resize(size_of_fft()/2+1);

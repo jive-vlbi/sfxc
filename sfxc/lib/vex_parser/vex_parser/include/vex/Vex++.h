@@ -37,12 +37,22 @@ public:
   /// Returns the name of the frequency section given a mode and a station
   std::string
   get_frequency(const std::string &mode, const std::string &station) const;
+  /// Returns the name of the IF section given a mode and a station
+  std::string
+  get_IF_node(const std::string &mode, const std::string &station) const;
+  /// Returns the name of the BBC node given a mode and a station
+  std::string
+  get_BBC_node(const std::string &mode, const std::string &station) const;
+  /// Returns the name of the node for a block given the mode and station
+  std::string
+  get_block_node(const std::string &block, const std::string &mode, 
+                   const std::string &station) const;
 
   /// Returns the mode for a scan
   std::string get_mode(const std::string &scan) const;
 
-  /// Returns the mode for a scan
-  void get_frequencies(std::vector<double> &frequencies) const;
+  /// Returns the frequencies for a given mode
+  void get_frequencies(const std::string &mode, std::vector<double> &frequencies) const;
 
   /// Returns the time at which the first scan starts
   std::string get_start_time_of_experiment() const;
