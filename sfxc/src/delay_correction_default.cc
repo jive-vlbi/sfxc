@@ -130,21 +130,20 @@ void Delay_correction_default::fractional_bit_shift(FLOAT *input,
 
 void Delay_correction_default::fringe_stopping(FLOAT output[]) {
   const double mult_factor_phi = -sideband()*2.0*M_PI;
-  const double integer_mult_factor_phi =
-    channel_freq() + sideband()*bandwidth()*0.5;
+  const double center_freq = channel_freq() + sideband()*bandwidth()*0.5;
 
   // Only compute the delay at integer microseconds
  //  int n_recompute_delay = sample_rate()/1000000;
 
   double phi, delta_phi, sin_phi, cos_phi;
   int64_t time = current_time;
-  phi = integer_mult_factor_phi * get_delay(time);
+  phi = center_freq * get_delay(time);
   int floor_phi = (int)std::floor(phi);
   phi = mult_factor_phi*(phi-floor_phi);
 
   { // compute delta_phi
     SFXC_ASSERT((number_channels()*1000000LL)%sample_rate() == 0);
-    double phi_end = integer_mult_factor_phi *
+    double phi_end = center_freq *
                      get_delay(time + (number_channels()*1000000LL)/sample_rate());
     phi_end = mult_factor_phi*(phi_end-floor_phi);
 
