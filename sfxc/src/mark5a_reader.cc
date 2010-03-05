@@ -16,6 +16,8 @@ Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
   Mark5a_header header(N);
   header.set_header(&data.buffer[0]);
   header.check_header();
+  std::cout << RANK_OF_NODE << " : Mark5a reader found start of data at : y=" << header.year(0)
+            << ", day = " << header.day(0) << ", time =" << header.get_time_in_us(0) << "\n";
   us_per_day=(int64_t)24*60*60*1000000;
   start_day_ = header.day(0);
   start_time_ = header.get_time_in_us(0); 
@@ -316,15 +318,22 @@ void Mark5a_reader::set_data_frame_info(Data_frame &data) {
 Mark5a_reader *
 get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
                   Mark5a_reader::Data_frame &data, int ref_year, int ref_day) {
-  int n_tracks_8 = find_start_of_header(reader, data);
-  if(n_tracks_8 <= 0)
-    sfxc_abort("Couldn't find a mark5a header in the data file");
-  Mark5a_header header(n_tracks_8);
-  header.set_header(&data.buffer[0]);
-  if(!header.checkCRC())
-    sfxc_abort("Invalid crc-code in the mark5a data file");
-  std::cout << RANK_OF_NODE << " : Mark5a reader found start of data at : y=" << header.year(0)
-            << ", day = " << header.day(0) << ", time =" << header.get_time_in_us(0) << "\n";
+  int n_tracks_8;
+  bool header_correct;
+  bool first_msg=true;
+  do{
+    n_tracks_8 = find_start_of_header(reader, data);
+    if(n_tracks_8 <= 0)
+      sfxc_abort("Couldn't find a mark5a header in the data file");
+    Mark5a_header header(n_tracks_8);
+    header.set_header(&data.buffer[0]);
+    header_correct = header.checkCRC();
+    if((first_msg)&&(!header_correct)){
+      std::cout << RANK_OF_NODE 
+                << " Warning : Invalid crc-code in the mark5a data file, further warnings are supressed.\n";
+      first_msg=false;
+    }
+  }while(!header_correct);
   return new Mark5a_reader(reader, n_tracks_8, data, ref_year, ref_day);
 }
 
