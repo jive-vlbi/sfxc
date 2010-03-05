@@ -17,9 +17,9 @@ VLBA_reader(boost::shared_ptr<Data_reader> data_reader, int N_, Data_frame &data
 
   // SET HEADER
   buf_header.resize(SIZE_VLBA_HEADER*N);
-  memcpy(&buf_header[0], &header_.buffer[0], SIZE_VLBA_HEADER*N);
+  memcpy(&buf_header[0], &header_.buffer->data[0], SIZE_VLBA_HEADER*N);
   buf_aux_header.resize(SIZE_VLBA_AUX_HEADER*N);
-  memcpy(&buf_aux_header[0], &aux_header_.buffer[0], SIZE_VLBA_AUX_HEADER*N);
+  memcpy(&buf_aux_header[0], &aux_header_.buffer->data[0], SIZE_VLBA_AUX_HEADER*N);
   header.set_header(&buf_header[0], &buf_aux_header[0]);
   DEBUG_MSG("CHECKING HDR");
   header.check_header();
@@ -135,9 +135,10 @@ std::string VLBA_reader::time_to_string(int64_t time) {
 }
 
 bool VLBA_reader::read_new_block(Data_frame &data) {
+  std::vector<value_type> &buffer = data.buffer->data;
   // Set to the right size
-  if (data.buffer.size() != (SIZE_VLBA_FRAME*N))
-    data.buffer.resize(SIZE_VLBA_FRAME*N);
+  if (buffer.size() != (SIZE_VLBA_FRAME*N))
+    buffer.resize(SIZE_VLBA_FRAME*N);
 
   if (eof()) {
     current_time_ += time_between_headers();
@@ -147,7 +148,7 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
   int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
                                                        SIZE_VLBA_HEADER*N, (char *)&buf_header[0] );
   // READ THE DATA FRAME  
-  int result = Data_reader_blocking::get_bytes_s( data_reader_.get(), SIZE_VLBA_FRAME*N, (char *)&data.buffer[0] );
+  int result = Data_reader_blocking::get_bytes_s( data_reader_.get(), SIZE_VLBA_FRAME*N, (char *)&buffer[0] );
   if (result < 0) {
     DEBUG_MSG("FAILURE IN READING");
     current_time_ += time_between_headers();
@@ -186,7 +187,7 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
 bool VLBA_reader::resync_header(Data_frame &data) {
   // Find the next header in the input stream, NB: data already contains one VLBA block worth of input data
 
-  char *buffer=(char *)&data.buffer[0];
+  char *buffer=(char *)&data.buffer->data[0];
   int bytes_read=0, header_start=0, nOnes=0;
 
   do{
@@ -242,7 +243,7 @@ bool VLBA_reader::check_time_stamp(VLBA_header &header) {
 
 bool
 VLBA_reader::check_track_bit_statistics(Data_frame &data) {
-  unsigned char* vlba_block = &data.buffer[SIZE_VLBA_HEADER];
+  unsigned char* vlba_block = &data.buffer->data[SIZE_VLBA_HEADER];
   double track_bit_statistics[N*8];
   for (int track=0; track<N*8; track++) {
     track_bit_statistics[track]=0;
@@ -331,7 +332,7 @@ get_vlba_reader(boost::shared_ptr<Data_reader> reader,
   if(n_tracks_8 <= 0)
     sfxc_abort("Couldn't find a vlba header in the data file");
   VLBA_header test_header(n_tracks_8);
-  test_header.set_header(&header.buffer[0],&aux_header.buffer[0]);
+  test_header.set_header(&header.buffer->data[0],&aux_header.buffer->data[0]);
 
   sfxc_abort("Invalid crc-code in the vlba data file");
 
@@ -349,8 +350,8 @@ int find_start_of_vlba_header(boost::shared_ptr<Data_reader> reader,
                               VLBA_reader::Data_frame &aux_header) {
   // We fill the "data" and then look for the header
   // if we don't find a header, read in another half block and continue.
-  data.buffer.resize(SIZE_VLBA_FRAME);
-  char *buffer_start = (char *)&data.buffer[0];
+  data.buffer->data.resize(SIZE_VLBA_FRAME);
+  char *buffer_start = (char *)&data.buffer->data[0];
 
   { // Read half a block
     size_t bytes_to_read = SIZE_VLBA_FRAME/2;
@@ -390,24 +391,24 @@ int find_start_of_vlba_header(boost::shared_ptr<Data_reader> reader,
 
             // Store the header and get the first track8 worth of data
             int ndata_read=SIZE_VLBA_FRAME-header_start-nTracks8*SIZE_VLBA_HEADER;
-            header.buffer.resize(nTracks8*SIZE_VLBA_HEADER);
-            memcpy(&header.buffer[0], buffer_start+header_start, nTracks8*SIZE_VLBA_HEADER);
+            header.buffer->data.resize(nTracks8*SIZE_VLBA_HEADER);
+            memcpy(&header.buffer->data[0], buffer_start+header_start, nTracks8*SIZE_VLBA_HEADER);
             memmove(buffer_start, buffer_start+header_start+nTracks8*SIZE_VLBA_HEADER, ndata_read);
             int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),SIZE_VLBA_FRAME-ndata_read,
-                                                                          (char*)&data.buffer[ndata_read]);
+                                                               (char*)&data.buffer->data[ndata_read]);
 
             // read the remaining data
             if (nTracks8 > 1) {
-              data.buffer.resize(nTracks8*SIZE_VLBA_FRAME);
+              data.buffer->data.resize(nTracks8*SIZE_VLBA_FRAME);
 
-              buffer_start = (char *)&data.buffer[0];
+              buffer_start = (char *)&data.buffer->data[0];
               int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),
                                                   (nTracks8-1)*SIZE_VLBA_FRAME,
                                                    buffer_start+SIZE_VLBA_FRAME);
             }
             // read the aux header
-              aux_header.buffer.resize(nTracks8*SIZE_VLBA_AUX_HEADER);
-              buffer_start = (char *)&aux_header.buffer[0];
+              aux_header.buffer->data.resize(nTracks8*SIZE_VLBA_AUX_HEADER);
+              buffer_start = (char *)&aux_header.buffer->data[0];
               bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),
                                                    nTracks8*SIZE_VLBA_AUX_HEADER,
                                                    buffer_start);

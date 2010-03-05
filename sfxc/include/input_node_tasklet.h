@@ -14,6 +14,7 @@
 
 #include "input_data_format_reader_tasklet.h"
 #include "channel_extractor_tasklet.h"
+#include "channel_extractor_tasklet_vdif.h"
 
 #include "input_node_data_writer_tasklet.h"
 
@@ -22,22 +23,17 @@
 // for RUNTIME_STATISTIC
 #include "monitor.h"
 
-enum TRANSPORT_TYPE {
-  UNINITIALISED = 0,
-  MARK5A,
-  MARK5B,
-  VLBA
-};
-
-
 class Input_node_tasklet {
 public:
-  typedef Input_data_format_reader                   Input_reader_;
-  typedef boost::shared_ptr<Input_reader_>           Input_reader_ptr_;
-  typedef Input_data_format_reader_tasklet           Input_reader_tasklet_;
+  typedef Input_data_format_reader                     Input_reader_;
+  typedef boost::shared_ptr<Input_reader_>             Input_reader_ptr_;
+  typedef Input_data_format_reader_tasklet             Input_reader_tasklet_;
+  typedef Input_node_types::Data_memory_pool           Data_memory_pool;
+  typedef boost::shared_ptr<Data_memory_pool>          Data_memory_pool_ptr;
+  typedef boost::shared_ptr<Channel_extractor_tasklet> Channel_extractor_tasklet_ptr;
 
   // The mark5a-reader and the first data block
-  Input_node_tasklet(Input_reader_ptr_ input_reader_ptr,
+  Input_node_tasklet(Input_reader_ptr_ input_reader_ptr, Data_memory_pool_ptr memory_pool_,
                      Input_reader_::Data_frame &data);
 
 
@@ -86,7 +82,7 @@ private:
   Input_reader_tasklet_            reader_;
 
   /// We need one thread for the allocation
-  Channel_extractor_tasklet       channel_extractor_;
+  Channel_extractor_tasklet_ptr    channel_extractor_;
 
   /// We need one thread for the writing
   Input_node_data_writer_tasklet   data_writer_;

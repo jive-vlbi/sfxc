@@ -29,13 +29,15 @@ public:
   typedef boost::shared_ptr< Input_data_format_reader > Data_format_reader_ptr;
   typedef Input_data_format_reader::Data_frame          Data_frame;
   typedef Input_node_types::value_type                  value_type;
-  typedef Input_node_types::Mark5_memory_pool           Input_memory_pool;
-  typedef Input_node_types::Mark5_buffer_element        Input_element;
-  typedef Input_node_types::Mark5_buffer                Output_buffer;
-  typedef Input_node_types::Mark5_buffer_element        Output_buffer_element;
-  typedef Input_node_types::Mark5_buffer_ptr            Output_buffer_ptr;
+  typedef Input_node_types::Data_memory_pool            Input_memory_poolzor;
+  typedef boost::shared_ptr<Input_memory_poolzor>          Input_memory_pool_ptr;
+  typedef Input_node_types::Input_data_frame            Input_element;
+  typedef Input_node_types::Input_buffer                Output_buffer;
+//  typedef Input_node_types::Input_buffer_element        Output_buffer_element;
+  typedef Input_node_types::Input_buffer_ptr            Output_buffer_ptr;
 
   Input_data_format_reader_tasklet(Data_format_reader_ptr reader,
+                                   Input_memory_pool_ptr memory_pool, 
                                    Data_frame &data);
 
   ~Input_data_format_reader_tasklet();
@@ -75,12 +77,9 @@ public:
     return reader_->bytes_per_input_word();
   }
 
-  void set_parameters(const Input_node_parameters &input_node_param) {
-    data_modulation = input_node_param.data_modulation;
-    reader_->set_parameters(input_node_param);
-  }
+  void set_parameters(const Input_node_parameters &input_node_param);
 
-	inline uint64_t get_num_processed_bytes(){ return data_read_; }
+  inline uint64_t get_num_processed_bytes(){ return data_read_; }
 
 private:
   /// Get an element from the memory pool into input_element_
@@ -99,7 +98,7 @@ private:
   /// Data stream to read from
   Data_format_reader_ptr              reader_;
   /// Memory pool of data block that can be filled
-  Input_memory_pool                   memory_pool_;
+  Input_memory_pool_ptr               memory_pool_;
   /// Current mark5a data block
   Input_element                       input_element_;
   /// Output buffer of mark5a data blocks

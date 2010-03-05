@@ -81,6 +81,10 @@ private:
   int64_t correct_raw_time(int64_t raw_time);
 
   void set_data_frame_info(Data_frame &data);
+
+  TRANSPORT_TYPE get_transport_type() const{
+    return VLBA;
+  }
 private:
   // Time information
   int start_day_; // start date of data(mod Julian day%1000)

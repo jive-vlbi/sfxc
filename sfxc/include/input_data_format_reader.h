@@ -19,7 +19,7 @@
 class Input_data_format_reader {
 public:
   typedef Input_node_types::Input_data_frame            Data_frame;
-
+  typedef Input_node_types::value_type                  value_type;
   Input_data_format_reader(boost::shared_ptr<Data_reader> data_reader);
   virtual ~Input_data_format_reader();
 
@@ -46,6 +46,7 @@ public:
 
   virtual void set_parameters(const Input_node_parameters &param) = 0;
 
+  virtual TRANSPORT_TYPE get_transport_type() const = 0;
 
 protected:
   // Data reader: input stream

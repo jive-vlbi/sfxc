@@ -754,6 +754,10 @@ get_input_node_parameters(const std::string &mode_name,
   std::string record_transport_type = transport_type(station_name);
   if (record_transport_type == "Mark5A") {
     get_mark5a_tracks(mode_name, station_name, result);
+  }else if (record_transport_type == "VDIF") {
+    // In VDIF the track section is not used, but seeing that the length of the channel_parameter 
+    // arrays is used in various places we generate a track layout anyway.
+    get_mark5b_tracks(mode_name, station_name, result);
   } else {
     SFXC_ASSERT(record_transport_type == "Mark5B");
     get_mark5b_tracks(mode_name, station_name, result);
@@ -880,7 +884,6 @@ polarisation(const std::string &channel_name,
       }
     }
   }
-
 
   for (Vex::Node::const_iterator frq_block =
          vex.get_root_node()["FREQ"][if_mode_freq]->begin("chan_def");
@@ -1193,7 +1196,7 @@ get_correlation_parameters(const std::string &scan_name,
         station_param.station_stream = station_nr_it->second;
         station_param.start_time = station[1]->to_int_amount("sec");
         station_param.stop_time = station[2]->to_int_amount("sec");
-	station_param.bits_per_sample = bits_per_sample(mode_name, station[0]->to_string());
+        station_param.bits_per_sample = bits_per_sample(mode_name, station[0]->to_string());
         corr_param.station_streams.push_back(station_param);
       }
     }

@@ -15,6 +15,7 @@ OBJ=\
   delay_table_akima.cc \
   input_data_format_reader.cc \
   input_data_format_reader_tasklet.cc \
+  vdif_reader.cc \
   mark5a_reader.cc \
   mark5a_header.cc \
   vlba_reader.cc \
@@ -37,6 +38,7 @@ OBJ=\
   delay_correction_swapped.cc \
   uvw_model.cc \
   channel_extractor_tasklet.cc \
+  channel_extractor_tasklet_vdif.cc \
   channel_extractor_5.cc \
   channel_extractor_utils.cc \
   channel_extractor_dynamic.cc \

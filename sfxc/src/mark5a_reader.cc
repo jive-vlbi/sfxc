@@ -14,7 +14,7 @@ Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
       block_count_(0), DATA_RATE_(0), N(N_),
       ref_year(ref_year_), ref_day(ref_day_) {
   Mark5a_header header(N);
-  header.set_header(&data.buffer[0]);
+  header.set_header(&data.buffer->data[0]);
   header.check_header();
   std::cout << RANK_OF_NODE << " : Mark5a reader found start of data at : y=" << header.year(0)
             << ", day = " << header.day(0) << ", time =" << header.get_time_in_us(0) << "\n";
@@ -27,7 +27,6 @@ Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
     ref_day = start_day_;
   current_day_ = header.day(0);
   current_time_ = correct_raw_time(header.get_time_in_us(0));
-
   set_data_frame_info(data);
 }
 
@@ -113,12 +112,13 @@ std::string Mark5a_reader::time_to_string(int64_t time) {
 }
 
 bool Mark5a_reader::read_new_block(Data_frame &data) {
+  std::vector<value_type> &databuffer = data.buffer->data;
   // Set to the right size
-  if (data.buffer.size() != (SIZE_MK5A_FRAME*N))
-    data.buffer.resize(SIZE_MK5A_FRAME*N);
+  if (databuffer.size() != (SIZE_MK5A_FRAME*N))
+    databuffer.resize(SIZE_MK5A_FRAME*N);
 
   int to_read = SIZE_MK5A_FRAME*N;
-  unsigned char *buffer = (unsigned char *)&data.buffer[0];
+  unsigned char *buffer = (unsigned char *)&databuffer[0];
   do {
     if (eof()) {
       current_time_ += time_between_headers();
@@ -142,7 +142,7 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
 
   // at least we read the complete header. Check it
   Mark5a_header header(N);
-  header.set_header(&data.buffer[0]);
+  header.set_header(&databuffer[0]);
   if((!header.is_valid())&&(!resync_header(data))){
     current_time_ += time_between_headers(); // Could't find valid header before EOF
     return false;
@@ -176,7 +176,7 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
 bool Mark5a_reader::resync_header(Data_frame &data) {
   // Find the next header in the input stream, NB: data already contains one mark5a block worth of input data
 
-  char *buffer=(char *)&data.buffer[0];
+  char *buffer=(char *)&data.buffer->data[0];
   int bytes_read=0, header_start=0, nOnes=0;
 
   do{
@@ -228,7 +228,7 @@ bool Mark5a_reader::check_time_stamp(Mark5a_header &header) {
 
 bool
 Mark5a_reader::check_track_bit_statistics(Data_frame &data) {
-  unsigned char* mark5a_block = &data.buffer[0];
+  unsigned char* mark5a_block = &data.buffer->data[0];
   double track_bit_statistics[N*8];
   for (int track=0; track<N*8; track++) {
     track_bit_statistics[track]=0;
@@ -293,7 +293,7 @@ Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
 
 void Mark5a_reader::set_data_frame_info(Data_frame &data) {
   Mark5a_header header(N);
-  header.set_header(&data.buffer[0]);
+  header.set_header(&data.buffer->data[0]);
   data.start_time = correct_raw_time(header.get_time_in_us(0));
 #ifdef SFXC_INVALIDATE_SAMPLES
   data.invalid_bytes_begin = 0;
@@ -326,7 +326,7 @@ get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
     if(n_tracks_8 <= 0)
       sfxc_abort("Couldn't find a mark5a header in the data file");
     Mark5a_header header(n_tracks_8);
-    header.set_header(&data.buffer[0]);
+    header.set_header(&data.buffer->data[0]);
     header_correct = header.checkCRC();
     if((first_msg)&&(!header_correct)){
       std::cout << RANK_OF_NODE 
@@ -347,9 +347,9 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
   // We fill the "data" and then look for the header
   // if we don't find a header, read in another half block and continue.
 
-  data.buffer.resize(SIZE_MK5A_FRAME);
-  char *buffer_start = (char *)&data.buffer[0];
-
+  data.buffer->data.resize(SIZE_MK5A_FRAME);
+  char *buffer_start = (char *)&data.buffer->data[0];
+  
   { // Read half a block
     size_t bytes_to_read = SIZE_MK5A_FRAME/2;
     char *data = (char *)buffer_start+SIZE_MK5A_FRAME/2;
@@ -398,14 +398,13 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
                                      buffer_start+SIZE_MK5A_FRAME-header_start);
 
             if (nTracks8 > 1) {
-              data.buffer.resize(nTracks8*SIZE_MK5A_FRAME);
-              buffer_start = (char *)&data.buffer[0];
+              data.buffer->data.resize(nTracks8*SIZE_MK5A_FRAME);
+              buffer_start = (char *)&data.buffer->data[0];
 
 	      int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),
                                                   (nTracks8-1)*SIZE_MK5A_FRAME,
                                                    buffer_start+SIZE_MK5A_FRAME);
             }
-
             return nTracks8;
           }
         }

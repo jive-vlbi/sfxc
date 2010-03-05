@@ -3,8 +3,8 @@
 #include "input_node_data_writer.h"
 Input_node_data_writer::
 Input_node_data_writer(){
-	last_duration_ = 0;
-	total_data_written_ = 0;
+  last_duration_ = 0;
+  total_data_written_ = 0;
   delay_index=0;
   _current_time=0;
   interval=0;
@@ -32,12 +32,12 @@ Input_node_data_writer::~Input_node_data_writer() {
 
   double wait_duration = (timer_waiting_.measured_time()+timer_other_.measured_time());
   double total_duration = wait_duration+timer_writing_.measured_time();
-	double ratio1 = ((100.0*timer_waiting_.measured_time())/total_duration);
-	double ratio2 = ((100.0*timer_other_.measured_time())/total_duration);
-	double ratio3 = ((100.0*timer_writing_.measured_time())/total_duration);
+  double ratio1 = ((100.0*timer_waiting_.measured_time())/total_duration);
+  double ratio2 = ((100.0*timer_other_.measured_time())/total_duration);
+  double ratio3 = ((100.0*timer_writing_.measured_time())/total_duration);
 
-	last_duration_ = total_duration;
-	DEBUG_MSG( "data_writer byte sent:" << toMB(total_data_written_) << "MB" );
+  last_duration_ = total_duration;
+  DEBUG_MSG( "data_writer byte sent:" << toMB(total_data_written_) << "MB" );
 }
 
 void
@@ -113,7 +113,6 @@ do_task() {
     block_size=input_element.channel_data.data().data.size();
     int64_t dtime = (int64_t)(_current_time-input_element.start_time);
     byte_offset = dtime*sample_rate*bits_per_sample/8/1000000 + cur_delay[delay_index].bytes;
-
     if(byte_offset < 0){
       // The requested output lies (partly) before the input data, send invalid data
       int initial_delay = cur_delay[delay_index].remaining_samples;

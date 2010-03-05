@@ -44,7 +44,6 @@ void Channel_extractor_tasklet::init_stats() {
 
 Channel_extractor_tasklet::~Channel_extractor_tasklet()
 {
-
 }
 
 void Channel_extractor_tasklet::do_execute() {
@@ -101,7 +100,7 @@ Channel_extractor_tasklet::do_task() {
   // For mark5b this is N_MK5B_BLOCKS_TO_READ as the input_element also contains
   //   a time in microseconds and not all mark5b blocks start on an integer number
   //   of microseconds
-  int n_input_samples = input_element.data().buffer.size();
+  int n_input_samples = input_element.buffer->data.size();
   if (n_input_samples != samples_per_block *N) {
     DEBUG_MSG(n_input_samples <<" != " << samples_per_block << " * " <<N);
   }
@@ -121,7 +120,7 @@ Channel_extractor_tasklet::do_task() {
     for (size_t subband=0; subband<n_subbands; subband++) {
       output_elements[subband].channel_data = output_memory_pool_.allocate();
 
-      output_elements[subband].start_time = input_element.data().start_time;
+      output_elements[subband].start_time = input_element.start_time;
 
       // allocate the right amount of memory for each output block
       if (output_elements[subband].channel_data.data().data.size() !=
@@ -136,11 +135,11 @@ Channel_extractor_tasklet::do_task() {
 
       // Copy the invalid-data members
       // Mark5a-files have headers, which should be invalidated
-      SFXC_ASSERT(input_element->invalid_bytes_begin >= 0);
+      SFXC_ASSERT(input_element.invalid_bytes_begin >= 0);
       output_elements[subband].invalid_samples_begin =
-        input_element->invalid_bytes_begin*fan_out/bits_per_sample;
+        input_element.invalid_bytes_begin*fan_out/bits_per_sample;
       output_elements[subband].nr_invalid_samples =
-        input_element->nr_invalid_bytes*fan_out/(bits_per_sample*N);
+        input_element.nr_invalid_bytes*fan_out/(bits_per_sample*N);
       SFXC_ASSERT(output_elements[subband].nr_invalid_samples >= 0);
     }
     //timer_waiting_output_.stop();
@@ -149,12 +148,11 @@ Channel_extractor_tasklet::do_task() {
   // Channel extract
   // This is done in a separate class to allow for different optimizations
   //timer_processing_.resume();
-  ch_extractor->extract((unsigned char *) &input_element.data().buffer[0],
+  ch_extractor->extract((unsigned char *) &input_element.buffer->data[0],
                         output_positions);
 
   //timer_processing_.stop();
-
-  data_processed_ +=  input_element.data().buffer.size();
+  data_processed_ +=  input_element.buffer->data.size();
 
   { // release the input buffer and put the output buffer
     for (size_t i=0; i<n_subbands; i++) {
@@ -231,4 +229,3 @@ void Channel_extractor_tasklet::empty_input_queue() {
     input_buffer_->pop();
   }
 }
-

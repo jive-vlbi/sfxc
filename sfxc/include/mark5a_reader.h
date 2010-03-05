@@ -70,6 +70,10 @@ public:
     return SIZE_MK5A_FRAME*N;
   }
 
+  TRANSPORT_TYPE get_transport_type() const{
+    return MARK5A;
+  }
+
 private:
   // format a time in miliseconds
   std::string time_to_string(int64_t time);
