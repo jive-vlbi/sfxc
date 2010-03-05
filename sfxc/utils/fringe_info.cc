@@ -333,9 +333,16 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
 
 
   const Vex::Node root_node = vex.get_root_node();
+
+  // Get an alphabetically sorted list of stations
+  std::set<std::string> station_names;
   for (Vex::Node::const_iterator it = root_node["STATION"]->begin();
        it != root_node["STATION"]->end(); it++) {
-    stations.push_back(it.key());
+    station_names.insert(it.key());
+  }
+  for (std::set<std::string>::iterator it = station_names.begin();
+       it != station_names.end(); it++) {
+    stations.push_back(*it);
   }
 
   std::ofstream index_html("index2.html");
