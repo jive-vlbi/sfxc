@@ -299,29 +299,31 @@ Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &station
   Vex::Node root_node = vex.get_root_node();
   for(int station=0; station < stations.size(); station++){
     std::string freq = vex.get_frequency(mode, stations[station]);
-    // First get an ordered list of all BBC's in the FREQ block
-    std::set<std::string> all_bbcs;
-    for(Vex::Node::iterator freq_it = root_node["FREQ"][freq]->begin("chan_def");
-      freq_it != root_node["FREQ"][freq]->end("chan_def"); freq_it++){
-      all_bbcs.insert((*freq_it)[5]->to_string());
-    }
-    // Now find the index of the BBC for each frequency
-    std::vector<int> bbc_list;
-    for(Vex::Node::iterator freq_it = root_node["FREQ"][freq]->begin("chan_def");
+    if(freq != std::string()){
+      // First get an ordered list of all BBC's in the FREQ block
+      std::set<std::string> all_bbcs;
+      for(Vex::Node::iterator freq_it = root_node["FREQ"][freq]->begin("chan_def");
         freq_it != root_node["FREQ"][freq]->end("chan_def"); freq_it++){
-      std::string cur_bbc = (*freq_it)[5]->to_string();
-      int bbc_index = 0;
-      bool found=false;
-      for(std::set<std::string>::iterator bbc_it = all_bbcs.begin(); 
-          (bbc_it != all_bbcs.end())&&(found == false); bbc_it++){
-        if(*bbc_it == cur_bbc){
-           found = true;
-           bbc_list.push_back(bbc_index);
-        }
-        bbc_index++ ;
+        all_bbcs.insert((*freq_it)[5]->to_string());
       }
+      // Now find the index of the BBC for each frequency
+      std::vector<int> bbc_list;
+      for(Vex::Node::iterator freq_it = root_node["FREQ"][freq]->begin("chan_def");
+          freq_it != root_node["FREQ"][freq]->end("chan_def"); freq_it++){
+        std::string cur_bbc = (*freq_it)[5]->to_string();
+        int bbc_index = 0;
+        bool found=false;
+        for(std::set<std::string>::iterator bbc_it = all_bbcs.begin(); 
+            (bbc_it != all_bbcs.end())&&(found == false); bbc_it++){
+          if(*bbc_it == cur_bbc){
+             found = true;
+             bbc_list.push_back(bbc_index);
+          }
+          bbc_index++ ;
+        }
+      }
+      bbcs.push_back(bbc_list);
     }
-    bbcs.push_back(bbc_list);
   }
 }
 
@@ -564,7 +566,7 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
 }
 
 std::string Fringe_info_container::get_statistics_color(int64_t val, int64_t N){
-  // compute color for the html_plot_page according to how many standard
+  // Compute color for the html_plot_page according to how many standard
   // deviations val is away from the average assuming a binomial distribution
   // where 0 and 1 are equally likely.
   if(N==0)
@@ -588,12 +590,17 @@ print_html_bitstatistics(const Vex &vex, const std::string &mode, std::ofstream 
   std::vector<Channel> channels;
   get_channels(vex, mode, channels);
 
-  // Get list of stations
-  std::vector<std::string> stations;
+  // Get an alphabetically sorted list of stations
   const Vex::Node root_node = vex.get_root_node();
+  std::set<std::string> station_names;
   for (Vex::Node::const_iterator it = root_node["STATION"]->begin();
        it != root_node["STATION"]->end(); it++) {
-    stations.push_back(it.key());
+    station_names.insert(it.key());
+  }
+  std::vector<std::string> stations;
+  for (std::set<std::string>::iterator it = station_names.begin();
+       it != station_names.end(); it++) {
+    stations.push_back(*it);
   }
 
   index_html << "<h1> Sampler statistics </h1><br>" << std::endl;

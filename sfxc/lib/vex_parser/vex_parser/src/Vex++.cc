@@ -162,7 +162,6 @@ Vex::get_block_node(const std::string &block, const std::string &mode,
       }
     }
   }
-  assert(false);
   return std::string();
 }
 
