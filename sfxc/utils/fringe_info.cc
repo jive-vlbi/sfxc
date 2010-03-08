@@ -299,6 +299,7 @@ Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &station
   Vex::Node root_node = vex.get_root_node();
   for(int station=0; station < stations.size(); station++){
     std::string freq = vex.get_frequency(mode, stations[station]);
+    std::vector<int> bbc_list;
     if(freq != std::string()){
       // First get an ordered list of all BBC's in the FREQ block
       std::set<std::string> all_bbcs;
@@ -307,7 +308,6 @@ Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &station
         all_bbcs.insert((*freq_it)[5]->to_string());
       }
       // Now find the index of the BBC for each frequency
-      std::vector<int> bbc_list;
       for(Vex::Node::iterator freq_it = root_node["FREQ"][freq]->begin("chan_def");
           freq_it != root_node["FREQ"][freq]->end("chan_def"); freq_it++){
         std::string cur_bbc = (*freq_it)[5]->to_string();
@@ -322,8 +322,8 @@ Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &station
           bbc_index++ ;
         }
       }
-      bbcs.push_back(bbc_list);
     }
+    bbcs.push_back(bbc_list);
   }
 }
 
