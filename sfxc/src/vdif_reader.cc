@@ -10,7 +10,7 @@ VDIF_reader(boost::shared_ptr<Data_reader> data_reader,
 {
   us_per_day=(int64_t)24*60*60*1000000;
   // Reference date : All times are relative to midnight on ref_jday
-  ref_jday = mjd(1,1,ref_year) + ref_day -1
+  ref_jday = mjd(1,1,ref_year) + ref_day -1;
   DEBUG_MSG("Ref_jday=" << ref_jday);
 
   if(!read_new_block(data)){
