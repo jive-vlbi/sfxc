@@ -315,7 +315,9 @@ private:
   void get_mark5b_tracks(const std::string &mode,
                          const std::string &station,
                          Input_node_parameters &input_parameters) const;
-
+  void get_mark5b_standard_mapping(const std::string &mode,
+                                   const std::string &station,
+                                   Input_node_parameters &input_parameters) const;
   std::string ctrl_filename;
   std::string vex_filename;
 

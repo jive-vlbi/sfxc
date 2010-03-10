@@ -334,8 +334,8 @@ Fringe_info_container::get_channels(const Vex &vex, const std::string &mode, std
   Vex::Node::iterator mode_it = root_node["MODE"][mode];
   std::string freq_node = mode_it->begin("FREQ")[0]->to_string();
   std::string station = mode_it->begin("FREQ")[1]->to_string();
-  std::string if_node = vex.get_IF_node(mode,station);
-  std::string bbc_node = vex.get_BBC_node(mode,station);
+  std::string if_node = vex.get_IF(mode,station);
+  std::string bbc_node = vex.get_BBC(mode,station);
 
   channels.resize(0);
   int freq_nr=-1;

@@ -455,19 +455,35 @@ Control_parameters::get_pulsar_parameters(Pulsar_parameters &pars) const{
 
 int
 Control_parameters::bits_per_sample(const std::string &mode,
-				    const std::string &station) const
+                                    const std::string &station) const
 {
-  const std::string &track_name = get_vex().get_track(mode, station);
-
-  Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
   int bits = 1;
-  for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
-       fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
-    if (fanout_def_it[2]->to_string() == "mag") {
-      bits = 2;
+  const std::string &track_name = get_vex().get_track(mode, station);
+  if(track_name != std::string()){
+    // Mark5a data
+    Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
+    for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
+         fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
+      if (fanout_def_it[2]->to_string() == "mag") {
+        bits = 2;
+      }
+    }
+  }else{
+    // Mark5b data
+    const std::string &bitstreams_name = get_vex().get_bitstreams(mode, station);
+    if(bitstreams_name == std::string()){
+      char buffer[67];
+      snprintf(buffer, 67, "Error : couldn't find a tracks/bitstreams section for station %s.", station.c_str());
+      sfxc_abort(buffer);
+    }
+    Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
+    for (Vex::Node::const_iterator fanout_def_it = bitstream->begin("stream_def");
+         fanout_def_it != bitstream->end("stream_def"); ++fanout_def_it) {
+      if (fanout_def_it[1]->to_string() == "mag") {
+        bits = 2;
+      }
     }
   }
-
   return bits;
 }
 
@@ -621,43 +637,70 @@ Control_parameters::
 get_mark5b_tracks(const std::string &mode,
                   const std::string &station,
                   Input_node_parameters &input_parameters) const {
+  // First determine if there is a bitstreams section for the current station in the vex file.
+
+  const Vex::Node &root=get_vex().get_root_node();
+  const std::string bitstreams_name = get_vex().get_bitstreams(mode, station);
+  if(bitstreams_name == std::string()){
+    get_mark5b_standard_mapping(mode, station, input_parameters);
+  }else{
+    // Parse the bitstream section
+    const std::string &freq_name = get_vex().get_frequency(mode, station);
+    Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
+    Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
+
+    for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
+      const std::string &channel_name = frequency_channel(ch_nr);
+
+      // Iterate over the bitstreams
+      Input_node_parameters::Channel_parameters channel_param;
+      for (Vex::Node::const_iterator bitstream_it = bitstream->begin("stream_def");
+          bitstream_it != bitstream->end("stream_def"); ++bitstream_it) {
+        if (channel_name == bitstream_it[0]->to_string()) {
+          Vex::Node::const_iterator it = bitstream_it->begin();
+          ++it;
+          ++it;
+          if (bitstream_it[1]->to_string() == "sign") {
+            for (; it != bitstream_it->end(); ++it) {
+              channel_param.sign_tracks.push_back(it->to_int());
+            }
+          } else {
+            SFXC_ASSERT(bitstream_it[1]->to_string() == "mag");
+            for (; it != bitstream_it->end(); ++it) {
+              channel_param.magn_tracks.push_back(it->to_int());
+            }
+          }
+        }
+      }
+      input_parameters.channels.push_back(channel_param);
+    }
+  }
+}
+
+void
+Control_parameters::
+get_mark5b_standard_mapping(const std::string &mode,
+                            const std::string &station,
+                            Input_node_parameters &input_parameters) const {
+ std::cout << RANK_OF_NODE << " : WARNING - No bitstream section for station " <<  station 
+                           << ", using standard mapping.\n";
   const Vex::Node &root=get_vex().get_root_node();
   // Find the number of bits per sample
   int bits_per_sample_ = bits_per_sample(mode, station);
 
-  std::string bbc = "NO BBC FOUND";
-  { // Find the bbc
-    Vex::Node::const_iterator bbc_it;
-    for (bbc_it = root["MODE"][mode]->begin("BBC");
-         bbc_it != root["MODE"][mode]->end("BBC");
-         bbc_it ++) {
-      Vex::Node::const_iterator station_it = bbc_it->begin();
-      station_it++;
-      while (station_it != bbc_it->end()) {
-        if (station_it->to_string() == station)
-          bbc = bbc_it->begin()->to_string();
-        station_it++;
-      }
-    }
+  // Get BBC and FREQUENCY nodes
+  const std::string bbc = get_vex().get_BBC(mode, station);
+  const std::string freq = get_vex().get_frequency(mode, station);
+  if(bbc==std::string()){
+    char buffer[52];
+    snprintf(buffer, 52, "Error : couldn't find BBC section for station %s.", station.c_str());
+    sfxc_abort(buffer);
   }
-
-  std::string freq = "NO FREQ FOUND";
-  { // Find the frequency label
-    Vex::Node::const_iterator freq_it;
-    for (freq_it = root["MODE"][mode]->begin("FREQ");
-         freq_it != root["MODE"][mode]->end("FREQ");
-         freq_it ++) {
-      Vex::Node::const_iterator station_it = freq_it->begin();
-      station_it++;
-      while (station_it != freq_it->end()) {
-        if (station_it->to_string() == station)
-          freq = freq_it->begin()->to_string();
-        station_it++;
-      }
-    }
+  if(freq==std::string()){
+    char buffer[52];
+    snprintf(buffer, 52, "Error : couldn't find FREQ section for station %s.", station.c_str());
+    sfxc_abort(buffer);
   }
-
-
   // subband to bit-stream-nr conversion
   std::map<std::string, int> subband_to_track;
   {

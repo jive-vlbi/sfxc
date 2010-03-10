@@ -117,48 +117,41 @@ Vex::get_scan_name(Vex::Date &start_time) const{
 
 std::string
 Vex::get_track(const std::string &mode, const std::string &station) const {
-  Vex::Node::const_iterator mode_it = root["MODE"][mode];
-  for (Vex::Node::const_iterator track_it = mode_it->begin("TRACKS");
-       track_it != mode_it->end("TRACKS"); ++track_it) {
-    Vex::Node::const_iterator station_it = track_it->begin();
-    ++station_it;
-    for (;station_it != track_it->end(); ++station_it) {
-      if (station_it->to_string() == station) {
-        return track_it[0]->to_string();
-      }
-    }
-  }
-  assert(false);
-  return std::string();
+  return get_section("TRACKS", mode, station);
+}
+
+std::string
+Vex::get_bitstreams(const std::string &mode, const std::string &station) const {
+  return get_section("BITSTREAMS", mode, station);
 }
 
 std::string
 Vex::get_frequency(const std::string &mode, const std::string &station) const {
-  return get_block_node("FREQ", mode, station);
+  return get_section("FREQ", mode, station);
 }
 
 std::string
-Vex::get_IF_node(const std::string &mode, const std::string &station) const {
-  return get_block_node("IF", mode, station);
+Vex::get_IF(const std::string &mode, const std::string &station) const {
+  return get_section("IF", mode, station);
 }
 
 std::string
-Vex::get_BBC_node(const std::string &mode, const std::string &station) const {
-  return get_block_node("BBC", mode, station);
+Vex::get_BBC(const std::string &mode, const std::string &station) const {
+  return get_section("BBC", mode, station);
 }
 
 std::string
-Vex::get_block_node(const std::string &block, const std::string &mode,
-                      const std::string &station) const {
-  // Given a mode and a station find the start node (block is e.g. IF, BBC, FREQ, ...)
+Vex::get_section(const std::string &section, const std::string &mode,
+                 const std::string &station) const {
+  // Given a mode and a station find the start node (section is e.g. IF, BBC, FREQ, ...)
   Vex::Node::const_iterator mode_it = root["MODE"][mode];
-  for (Vex::Node::const_iterator frequency_it = mode_it->begin(block);
-       frequency_it != mode_it->end(block); ++frequency_it) {
-    Vex::Node::const_iterator station_it = frequency_it->begin();
+  for (Vex::Node::const_iterator section_it = mode_it->begin(section);
+       section_it != mode_it->end(section); ++section_it) {
+    Vex::Node::const_iterator station_it = section_it->begin();
     ++station_it;
-    for (;station_it != frequency_it->end(); ++station_it) {
+    for (;station_it != section_it->end(); ++station_it) {
       if (station_it->to_string() == station) {
-        return frequency_it[0]->to_string();
+        return section_it[0]->to_string();
       }
     }
   }

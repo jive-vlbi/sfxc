@@ -33,20 +33,22 @@ public:
   /// Returns the name of the track section given a mode and a station
   std::string
   get_track(const std::string &mode, const std::string &station) const;
-
+  /// Returns the name of the track section given a mode and a station
+  std::string
+  get_bitstreams(const std::string &mode, const std::string &station) const;
   /// Returns the name of the frequency section given a mode and a station
   std::string
   get_frequency(const std::string &mode, const std::string &station) const;
   /// Returns the name of the IF section given a mode and a station
   std::string
-  get_IF_node(const std::string &mode, const std::string &station) const;
-  /// Returns the name of the BBC node given a mode and a station
+  get_IF(const std::string &mode, const std::string &station) const;
+  /// Returns the name of the BBC section given a mode and a station
   std::string
-  get_BBC_node(const std::string &mode, const std::string &station) const;
-  /// Returns the name of the node for a block given the mode and station
+  get_BBC(const std::string &mode, const std::string &station) const;
+  /// Returns the name of a section given the mode and station
   std::string
-  get_block_node(const std::string &block, const std::string &mode, 
-                   const std::string &station) const;
+  get_section(const std::string &section, const std::string &mode, 
+              const std::string &station) const;
 
   /// Returns the mode for a scan
   std::string get_mode(const std::string &scan) const;
