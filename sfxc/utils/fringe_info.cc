@@ -1,3 +1,10 @@
+/* Copyright (c) 2007 Joint Institute for VLBI in Europe (Netherlands)
+ * All rights reserved.
+ *
+ * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
+            : Aard Keimpema <keimpema@jive.nl>, 2010
+  $Id$
+*/
 #include <fstream>
 #include "fringe_info.h"
 
@@ -611,10 +618,10 @@ print_html_bitstatistics(const Vex &vex, const std::string &mode, std::ofstream 
     index_html << "<table border=1 bgcolor='#dddddd' cellspacing=0>" << std::endl;
     index_html << "<tr>" << "\n";
     index_html << "  <th>" << stations[(int)(*it).station_nr] << "</th>" << std::endl;
-    index_html << "  <th> -0 </th>" << std::endl;
-    index_html << "  <th> -1 </th>"<< std::endl;
-    index_html << "  <th> +0 </th>" << std::endl;
-    index_html << "  <th> +1 </th>"<< std::endl;
+    index_html << "  <th> -- </th>" << std::endl;
+    index_html << "  <th> -+ </th>"<< std::endl;
+    index_html << "  <th> +- </th>" << std::endl;
+    index_html << "  <th> ++ </th>"<< std::endl;
     index_html << "  <th> invalid </th>"<< std::endl;
     index_html << "  <th> avg sign bit </th>"<< std::endl;
     index_html << "  <th> avg mag bit </th>"<< std::endl;
