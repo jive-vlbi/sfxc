@@ -618,10 +618,10 @@ print_html_bitstatistics(const Vex &vex, const std::string &mode, std::ofstream 
     index_html << "<table border=1 bgcolor='#dddddd' cellspacing=0>" << std::endl;
     index_html << "<tr>" << "\n";
     index_html << "  <th>" << stations[(int)(*it).station_nr] << "</th>" << std::endl;
-    index_html << "  <th> -- </th>" << std::endl;
-    index_html << "  <th> -+ </th>"<< std::endl;
-    index_html << "  <th> +- </th>" << std::endl;
-    index_html << "  <th> ++ </th>"<< std::endl;
+    index_html << "  <th> - - </th>" << std::endl;
+    index_html << "  <th> - + </th>"<< std::endl;
+    index_html << "  <th> + - </th>" << std::endl;
+    index_html << "  <th> + + </th>"<< std::endl;
     index_html << "  <th> invalid </th>"<< std::endl;
     index_html << "  <th> avg sign bit </th>"<< std::endl;
     index_html << "  <th> avg mag bit </th>"<< std::endl;
@@ -650,9 +650,12 @@ print_html_bitstatistics(const Vex &vex, const std::string &mode, std::ofstream 
       }
       index_html << "  <td> " << n_invalid*100./N <<"%" << "</td>";
       double b0=(levels[2]+levels[3])*1./(N-n_invalid);
-      double b1=(levels[1]+levels[3])*1./(N-n_invalid);
       index_html << "  <td> " << b0 << "</td>";
-      index_html << "  <td> " << b1 << "</td>";
+      if((levels[0]>0)||(levels[3]>0)){
+        double b1=(levels[1]+levels[3])*1./(N-n_invalid);
+        index_html << "  <td> " << b1 << "</td>";
+      }else
+        index_html << "  <td> ----------- </td>";
 /*      std::string color = get_statistics_color(levels[2]+levels[3],N-n_invalid);
       index_html << "  <td bgcolor=" << color << "> " << b0 << "</td>";
       color = get_statistics_color(levels[1]+levels[3],N-n_invalid);

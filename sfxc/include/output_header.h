@@ -136,7 +136,7 @@ struct Output_header_bitstatistics{
   uint8_t frequency_nr; // The number of the channel in the vex-file
   uint8_t sideband;     // (LSB: 0, USB: 1)
   uint8_t polarisation; // (RCP: 0, LCP: 1)
-  // order : -0 -1 +0 +1 ; for 1 bit data levels[2]=level[3]=0 ; here - means sign bit = 0
+  // order : -0 -1 +0 +1 ; for 1 bit data levels[0]=level[3]=0 ; here - means sign bit = 0
   int32_t levels[4];
   int32_t n_invalid;    // The number of invalid samples
 };

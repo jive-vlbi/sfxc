@@ -49,10 +49,10 @@ public:
   bool read_new_block(Data_frame &data);
 
   /// Get track information from a mark5a header
-  std::vector< std::vector<int> >
-  get_tracks(const Input_node_parameters &input_node_param, 
-             Data_frame &data);
-
+  std::vector< std::vector<int> > get_tracks(const Input_node_parameters &input_node_param,
+                                             Data_frame &data);
+  std::vector< std::vector<int> > get_standard_track_mapping(const Input_node_parameters &input_node_param,
+                                                             Data_frame &data);
 
   int time_between_headers() {
     SFXC_ASSERT(data_rate() % (N*SIZE_MK5A_FRAME) == 0);

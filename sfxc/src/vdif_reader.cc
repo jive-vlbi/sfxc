@@ -113,7 +113,7 @@ bool VDIF_reader::read_new_block(Data_frame &data) {
     char *header = (char *)&current_header;
     Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&header[16]);
   }
-
+  print_header();
   int data_size = current_header.data_size();
   if (buffer.size() != data_size) {
     buffer.resize(data_size);

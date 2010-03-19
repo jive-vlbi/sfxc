@@ -21,8 +21,8 @@ public:
   void inc_counter(unsigned char word);
   void inc_invalid(int n);
   int *get_statistics();
-private:
   int bits_per_sample;
+private:
   int nInvalid;
   std::vector<int> data_counts;
   std::vector<int> statistics;

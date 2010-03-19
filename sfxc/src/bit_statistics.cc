@@ -44,7 +44,7 @@ bit_statistics::get_statistics(){
     int bps = bits_per_sample;
     int max_val = statistics.size()-2;
     for(int i=0;i<256;i++){
-      for(int j=0;j<statistics.size()-1;j++)
+      for(int j=0;j<8/bps;j++)
         statistics[(i>>j*bps)&max_val] += data_counts[i];
     }
   }

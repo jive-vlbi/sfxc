@@ -344,7 +344,7 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples) {
                &lookup_table_1bit[(int)input_data[index]][0],
                8*sizeof(FLOAT));
         stats->inc_counter(input_data[index]);
-        iout++;
+        iout+=8;
       }
       nbytes -= towrite;
       nsamples -= towrite*8;
