@@ -306,27 +306,21 @@ Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &station
   Vex::Node root_node = vex.get_root_node();
   for(int station=0; station < stations.size(); station++){
     std::string freq = vex.get_frequency(mode, stations[station]);
+    std::string bbc = vex.get_BBC(mode, stations[station]);
     std::vector<int> bbc_list;
     if(freq != std::string()){
-      // First get an ordered list of all BBC's in the FREQ block
-      std::set<std::string> all_bbcs;
-      for(Vex::Node::iterator freq_it = root_node["FREQ"][freq]->begin("chan_def");
-        freq_it != root_node["FREQ"][freq]->end("chan_def"); freq_it++){
-        all_bbcs.insert((*freq_it)[5]->to_string());
-      }
-      // Now find the index of the BBC for each frequency
       for(Vex::Node::iterator freq_it = root_node["FREQ"][freq]->begin("chan_def");
           freq_it != root_node["FREQ"][freq]->end("chan_def"); freq_it++){
-        std::string cur_bbc = (*freq_it)[5]->to_string();
-        int bbc_index = 0;
-        bool found=false;
-        for(std::set<std::string>::iterator bbc_it = all_bbcs.begin(); 
-            (bbc_it != all_bbcs.end())&&(found == false); bbc_it++){
-          if(*bbc_it == cur_bbc){
-             found = true;
-             bbc_list.push_back(bbc_index);
+        std::string bbc_name=(*freq_it)[5]->to_string();
+
+        // Find the physical BBC number
+        for(Vex::Node::iterator bbc_it = root_node["BBC"][bbc]->begin("BBC_assign");
+            bbc_it != root_node["BBC"][bbc]->end("BBC_assign"); bbc_it++){
+          std::string cur_bbc = (*bbc_it)[0]->to_string();
+          if(cur_bbc == bbc_name){
+            int bbc_index = (*bbc_it)[1]->to_int();
+            bbc_list.push_back(bbc_index);
           }
-          bbc_index++ ;
         }
       }
     }
@@ -797,7 +791,7 @@ print_auto(std::ostream &index_html, const Fringe_info &fringe_info, int bbc) {
                    Fringe_info::FREQUENCY, Fringe_info::ABS);
   index_html << "<A href = '" << filename_large << "' "
   << "OnMouseOver=\"show('" << filename << "');\">"
-  << bbc+1 << "</a>";
+  << bbc << "</a>";
 
   index_html << "</td>";
 }
