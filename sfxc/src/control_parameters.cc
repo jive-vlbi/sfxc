@@ -648,7 +648,6 @@ get_mark5b_tracks(const std::string &mode,
     const std::string &freq_name = get_vex().get_frequency(mode, station);
     Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
     Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
-
     for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
       const std::string &channel_name = frequency_channel(ch_nr);
 
@@ -660,15 +659,12 @@ get_mark5b_tracks(const std::string &mode,
           Vex::Node::const_iterator it = bitstream_it->begin();
           ++it;
           ++it;
+          ++it;
           if (bitstream_it[1]->to_string() == "sign") {
-            for (; it != bitstream_it->end(); ++it) {
-              channel_param.sign_tracks.push_back(it->to_int());
-            }
+            channel_param.sign_tracks.push_back(it->to_int());
           } else {
             SFXC_ASSERT(bitstream_it[1]->to_string() == "mag");
-            for (; it != bitstream_it->end(); ++it) {
-              channel_param.magn_tracks.push_back(it->to_int());
-            }
+            channel_param.magn_tracks.push_back(it->to_int());
           }
         }
       }
