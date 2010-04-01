@@ -334,7 +334,8 @@ get_vlba_reader(boost::shared_ptr<Data_reader> reader,
   VLBA_header test_header(n_tracks_8);
   test_header.set_header(&header.buffer->data[0],&aux_header.buffer->data[0]);
 
-  sfxc_abort("Invalid crc-code in the vlba data file");
+  if(!test_header.checkCRC())
+    sfxc_abort("Invalid crc-code in the vlba data file");
 
   return new VLBA_reader(reader, n_tracks_8, data, header, aux_header, ref_year, ref_day);
 }
