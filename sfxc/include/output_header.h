@@ -105,6 +105,7 @@ struct Output_header_timeslice {
 struct Output_uvw_coordinates {
   Output_uvw_coordinates() : station_nr(0), u(0), v(0), w(0) {}
   int32_t station_nr; // The station number in the vex-file
+  char dummy[4];      // Added for 64bit alignment
   double u, v, w;     // The u, v and w coordinates
 };
 

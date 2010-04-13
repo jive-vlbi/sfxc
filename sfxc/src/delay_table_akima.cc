@@ -66,6 +66,11 @@ bool Delay_table_akima::operator==(const Delay_table_akima &other) const {
 //read the delay table, do some checks and
 //calculate coefficients for parabolic interpolation
 void Delay_table_akima::open(const char *delayTableName) {
+  int64_t start = 0, stop = std::numeric_limits<int64_t>::max();
+  open(delayTableName, start, stop);
+}
+
+void Delay_table_akima::open(const char *delayTableName, double tstart, double tstop) {
   std::ifstream in(delayTableName);
   if(!in.is_open())
     sfxc_abort((std::string("Could not open delay table ")+std::string(delayTableName)).c_str());
@@ -79,13 +84,27 @@ void Delay_table_akima::open(const char *delayTableName) {
   in.read(reinterpret_cast < char * > (header), header_size*sizeof(char));
   if (in.eof()) return;
 
-  // Read the data
+  // Read up to tstart
   double line[5];
+  double time;
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
     SFXC_ASSERT(line[4] <= 0);
     // The time read from file is in seconds, whereas the software correlator
     // works with times in microseconds
-    times.push_back(line[0]*1000000);
+    time = line[0]*1000000;
+    if(time>=tstart){
+      times.push_back(time);
+      delays.push_back(line[4]);
+      break;
+    }
+  }
+  // Read the rest of the data
+  while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
+    SFXC_ASSERT(line[4] <= 0);
+    time=line[0]*1000000;
+    if(time>tstop)
+      break;
+    times.push_back(time);
     delays.push_back(line[4]);
   }
 

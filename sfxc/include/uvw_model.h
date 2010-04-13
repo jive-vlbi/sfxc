@@ -40,6 +40,7 @@ public:
   //read the delay table, do some checks and
   //calculate coefficients for parabolic interpolation
   int open(const char *delayTableName);
+  int open(const char *delayTableName, double tstart, double tstop);
 
   std::ofstream& uvw_values(std::ofstream &, int64_t starttime, int64_t stoptime,
                             double inttime);

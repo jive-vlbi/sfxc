@@ -408,6 +408,20 @@ Manager_node::initialise() {
     std::string filename = control_parameters.data_sources(station_name)[0];
     set_data_reader(input_rank(station_name), 0, filename);
   }
+  // Get start of first scan and end of last scan in correlation
+  int64_t t_begin, t_end;
+  {
+  const Vex vex = control_parameters.get_vex();
+  Vex::Date start_time_experiment(vex.get_start_time_of_experiment());
+  Vex::Date start_time(control_parameters.get_start_time());
+  Vex::Date stop_time(control_parameters.get_stop_time());
+  Vex::Date start_first_scan(vex.start_of_scan(vex.get_scan_name(start_time)));
+  Vex::Date end_last_scan(vex.stop_of_scan(vex.get_scan_name(stop_time)));
+
+  int experiment_day = start_time_experiment.day, experiment_year = start_time_experiment.year;
+  t_begin = start_first_scan.to_miliseconds(experiment_day, experiment_year)*1000;
+  t_end = end_last_scan.to_miliseconds(experiment_day, experiment_year)*1000;
+  }
 
   // Send the delay tables:
   get_log_writer() << "Set delay_table" << std::endl;
@@ -417,11 +431,11 @@ Manager_node::initialise() {
     const std::string &station_name = control_parameters.station(station);
     const std::string &delay_file =
       control_parameters.get_delay_table_name(station_name); // also generates delay file if it doesn't exist
-    delay_table.open(delay_file.c_str());
+    delay_table.open(delay_file.c_str(), t_begin, t_end);
     if (!delay_table.initialised()) {
       DEBUG_MSG("Delay table could not be read");
       control_parameters.generate_delay_table(station_name, delay_file);
-      delay_table.open(delay_file.c_str());
+      delay_table.open(delay_file.c_str(), t_begin, t_end);
       if(!delay_table.initialised()){
         std::string msg = std::string("Couldn't generate delay table, please remove '") +
                           delay_file + std::string("' and restart the correlator");
@@ -441,7 +455,7 @@ Manager_node::initialise() {
     const std::string &station_name = control_parameters.station(station);
     const std::string &delay_file =
       control_parameters.get_delay_table_name(station_name);
-    uvw_table.open(delay_file.c_str());
+    uvw_table.open(delay_file.c_str(), t_begin, t_end);
 
     correlator_node_set_all(uvw_table, station_name);
   }
