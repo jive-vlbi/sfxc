@@ -28,6 +28,7 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
+#include <limits>
 
 //*****************************************************************************
 //function definitions
