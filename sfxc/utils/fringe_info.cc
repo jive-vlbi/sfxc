@@ -412,7 +412,7 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
 
   index_html << "<a href='" << vex_filename << "'>Vex file</a> -- "
   << std::endl;
-  double integration_time = pow(2, global_header.integration_time);
+  double integration_time = global_header.integration_time/1000000.;
   double sec = (global_header.start_time +
                 integration_time * first_timeslice_header.integration_slice);
 

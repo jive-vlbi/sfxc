@@ -568,22 +568,13 @@ void Manager_node::send_global_header(){
     // midnight
     output_header.number_channels = control_parameters.number_channels();  // Number of frequency channels
     // 3 bytes left:
-    int int_time_tmp=0;
-    int int_time_count=0;
-    int_time_tmp = control_parameters.integration_time();// Integration time: 2^integration_time seconds
-    while (int_time_tmp > 1000) {
-      int_time_tmp /= 2;
-      int_time_count++;
-    }
-    while (int_time_tmp < 1000) {
-      int_time_tmp *= 2;
-      int_time_count--;
-    }
-    output_header.integration_time = (int8_t)(int_time_count);
+    int int_time = control_parameters.integration_time()*1000;// Integration time: microseconds
+    output_header.integration_time = int_time;
     output_header.polarisation_type =
       control_parameters.polarisation_type_for_global_output_header();
     output_header.empty[0] = 0;
     output_header.empty[1] = 0;
+    output_header.empty[2] = 0;
 
     output_node_set_global_header((char *)&output_header,
                                   sizeof(Output_header_global));

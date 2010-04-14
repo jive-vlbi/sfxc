@@ -176,27 +176,10 @@ Control_parameters::check(std::ostream &writer) const {
   }
 
   { // Check integration time
-    double integr_time = ctrl["integr_time"].asDouble();
-    double integr_time_ = integr_time;
-    int exp = 0;
-    while (integr_time_ > 1) {
-      exp++;
-      integr_time_ /= 2;
-    }
-    while (integr_time_ < 1) {
-      exp--;
-      integr_time_ *= 2;
-    }
-    if (integr_time != pow(2, exp)) {
+    int32_t integr_time = round(ctrl["integr_time"].asDouble()*1000);
+    if (integr_time < 0) {
       ok = false;
-      writer << integr_time << " != " << pow(2, exp) << std::endl;
-      writer << "Ctrl-file: Integration time not a power of 2 "
-      << std::endl;
-    }
-    if (exp < -3) {
-      ok = false;
-      writer << "Ctrl-file: Integration time at least 0.125"
-      << std::endl;
+      writer << "Ctrl-file: Integration time is negative" << std::endl;
     }
   }
 

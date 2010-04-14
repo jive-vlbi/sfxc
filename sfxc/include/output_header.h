@@ -22,11 +22,11 @@
   ( # global header
     header_size (in bytes): int32_t
     char experiment[32];
-    start_year : int32_t
-    start_day  (day of year): int32_t
+    start_year : int16_t
+    start_day  (day of year): int16_t
     start_time (in seconds since midnight on the startday): int32_t
     number_channels (number of visibilities): int32_t
-    integration_time (in 2^integration_time seconds): int8_t (signed)
+    integration_time (in micro seconds): int32_t (signed)
   )
   (
     ( # one timeslice
@@ -75,12 +75,12 @@ struct Output_header_global {
 
   int32_t header_size;      // Size of the global header in bytes
   char experiment[32];      // Name of the experiment
-  int32_t start_year;       // Start year of the experiment
-  int32_t start_day;        // Start day of the experiment (day of year)
+  int16_t start_year;       // Start year of the experiment
+  int16_t start_day;        // Start day of the experiment (day of year)
   int32_t start_time;       // Start time of the correlation in seconds since
   // midnight
   int32_t number_channels;  // Number of frequency channels
-  int8_t  integration_time; // Integration time: 2^integration_time seconds
+  int32_t integration_time; // Integration time in micro seconds
 
   static const int LEFT_POLARISATION=0;
   static const int RIGHT_POLARISATION=1;
@@ -89,7 +89,7 @@ struct Output_header_global {
 
   int8_t polarisation_type; // L | R | L+R | L+R with crosses
   // 3 bytes left:
-  int8_t empty[2];
+  int8_t empty[3];
 };
 
 struct Output_header_timeslice {
