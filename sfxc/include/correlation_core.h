@@ -6,7 +6,7 @@
 #include "control_parameters.h"
 #include "data_writer.h"
 #include "uvw_model.h"
-
+#include "bit_statistics.h"
 #include "timer.h"
 #include <fstream>
 
@@ -67,7 +67,7 @@ public:
   bool finished();
   bool almost_finished();
 
-  void connect_to(size_t stream, Input_buffer_ptr buffer);
+  void connect_to(size_t stream, bit_statistics_ptr statistics_, Input_buffer_ptr buffer);
 
   virtual void set_parameters(const Correlation_parameters &parameters,
                       int node_nr);
@@ -110,7 +110,8 @@ protected:
   std::vector< simple_it< Input_data, std::complex<FLOAT> > >  input_elements;
   // the complex conjugate of input_elements
   std::vector< Input_data >                                    input_conj_buffers; 
-  
+  std::vector<bit_statistics_ptr> statistics;  
+
   Correlation_parameters                               correlation_parameters;
   int                                                  oversamp; // Oversample factor
 

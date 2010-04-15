@@ -10,6 +10,20 @@ import tempfile
 import os,sys, types
 import re
 
+def which (filename):
+  if not os.environ.has_key('PATH') or os.environ['PATH'] == '':
+    p = os.defpath
+  else:
+    p = os.environ['PATH']
+
+  pathlist = p.split (os.pathsep)
+
+  for path in pathlist:
+    f = os.path.join(path, filename)
+    if os.access(f, os.X_OK):
+      return f
+  return None
+
 #
 # The C++ code that will be used to generate the Chanel_extractor final class
 #
@@ -18,8 +32,8 @@ cfile = """
 #include <iostream>
 #include <string.h>
 #include <stdint.h>
-#include "../include/channel_extractor_interface.h"
-#include "../include/channel_extractor_utils.h"
+#include "sfxc/channel_extractor_interface.h"
+#include "sfxc/channel_extractor_utils.h"
 @dynamic_header@
 
 class Channel_extractor_dynamic_impl : public Channel_extractor_interface
@@ -31,7 +45,8 @@ class Channel_extractor_dynamic_impl : public Channel_extractor_interface
 
       void initialise(const std::vector< std::vector<int> > &track_positions,
                       int IGNORED_size_of_one_input_word,
-                      int input_sample_size) {
+                      int input_sample_size, 
+                      int bits_per_sample_) {
         initialise( track_positions );
         input_sample_size_ = input_sample_size;
       }
@@ -138,9 +153,9 @@ class Channel_extractor_dynamic_impl : public Channel_extractor_interface
         unsigned int outindex=0;
         unsigned char* currbuffer = (unsigned char*)in_data;
         unsigned char* endbuffer = currbuffer+(n_input_samples)*Tsize_input_word;
-				//std::cout << "Number input data :"<< (int)endbuffer - (int)currbuffer;
-			  @dynamic_mainloop@
-				//std::cout << "Computation done :"<< (int)endbuffer - (int)currbuffer;
+	//std::cout << "Number input data :"<< (int)endbuffer - (int)currbuffer;
+	@dynamic_mainloop@
+	//std::cout << "Computation done :"<< (int)endbuffer - (int)currbuffer;
       }
     private:
 
@@ -280,8 +295,8 @@ header+="\n"
 mainloop = ""
 init_dest="unsigned char* output_data["+`n_subbands`+"]={\n"
 for i in range(0, n_subbands-1):
-	init_dest+="\toutput_dataIN["+`i`+"],\n"
-init_dest+="\toutput_dataIN["+`n_subbands-1`+"]\n};\n\n"
+	init_dest+="\t\toutput_dataIN["+`i`+"],\n"
+init_dest+="\t\toutput_dataIN["+`n_subbands-1`+"]\n\t};\n\n"
 #print init_dest
 #fpt.write(init_dest);
 mainloop += init_dest
@@ -320,15 +335,17 @@ else:
 
   for i in range(0, n_subbands):
     pcroll.append(0)
-    lines.append("output_data["+`i`+"][outindex] =")
+    lines.append("\t output_data["+`i`+"][outindex] =")
   seqd = 0
   while pcroll[0] < 7:
     idx = 0
     for ch in track_positions:
-       for j in ch:
+      for j in ch:
         if not (pcroll[idx] == 0):
           lines[idx] += " | "
-        endpos=7-pcroll[idx]
+          if(ch.index(j)%3==0):
+            lines[idx] += "\n\t\t\t\t "
+        endpos=(pcroll[idx]/bits_per_sample+1)*bits_per_sample-pcroll[idx]%bits_per_sample-1
         curpos=j%8
         diff = curpos-endpos
         roll = " none "
@@ -343,7 +360,7 @@ else:
         #else:
         lines[idx]+= " (((currbuffer["+`seqd*size_input_word+j/8`+"]) & "+`(1<<(j%8))`+") "+roll+") "
         pcroll[idx]+=1
-       idx = idx+1
+      idx = idx+1
 
     seqd += 1
   mainloop += "\n while (currbuffer < endbuffer) {\n"
@@ -363,13 +380,25 @@ totalfile = reg2.sub(mainloop, tmp1)
 fpt = open(tmpfile, "w")
 fpt.write(totalfile)
 fpt.close()
-
 if do_compile:
-	cmd = "g++ -fPIC -O3 -DNDEBUG "+tmpfile+" -I./ -I../../include/ -shared -Wl,-soname,"+outputname+" -o "+outputname
-	print "Performing precalculation....: "+cmd
-	os.system(cmd);
-	#os.unlink(tmpfile)
-	print "[OK]"
+  # First find include directory
+  position=sys.argv[0].rfind('/')
+  if(position>=0):
+    filename=sys.argv[0][position+1:]
+  else:
+    filename = sys.argv[0]
+  path_filename = which(filename)
+  position=path_filename[0:path_filename.rfind('/')].rfind('/')
+  if(position>=0):
+    include_dir = ' -I'+path_filename[0:position+1]+'include/'
+  else:
+    include_dir = ""
+  # Perform actual compilation
+  cmd = "g++ -fPIC -O3 -DNDEBUG "+tmpfile+include_dir+" -I./ -shared -Wl,-soname,"+outputname+" -o "+outputname
+  print "Performing precalculation....: "+cmd
+  os.system(cmd);
+  #os.unlink(tmpfile)
+  print "[OK]"
 
 sys.exit(0);
 

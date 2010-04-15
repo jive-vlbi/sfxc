@@ -87,7 +87,7 @@ int main(int argc, char** argv)
               channelizer.initialise(m_reader->get_tracks(input_node_param, 
                                                           data) ,
                                      m_reader->N,
-                                     samples_per_block);
+                                     samples_per_block, bits_per_sample);
 
               std::cout << "The channelizer that is in use is so: " << channelizer.name() << std::endl;
             }

@@ -91,12 +91,13 @@ int64_t Mark5b_reader::get_current_time() {
 }
 
 bool Mark5b_reader::read_new_block(Data_frame &data) {
-  if (data.buffer.size() != size_data_block()) {
-    data.buffer.resize(size_data_block());
+  std::vector<value_type> &buffer = data.buffer->data;
+  if (buffer.size() != size_data_block()) {
+    buffer.resize(size_data_block());
   }
   data.invalid_bytes_begin = 0;
   data.nr_invalid_bytes = 0;
-  char * mark5b_block = (char *)&data.buffer[0];
+  char * mark5b_block = (char *)&buffer[0];
   for (int i=0; i<N_MK5B_BLOCKS_TO_READ; i++) {
     if (i==0) {
 			int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),

@@ -8,7 +8,6 @@ endif
 TESTS = test_sfxc.py
 
 OBJ=\
-  channel_extractor_fast.cc \
   abstract_manager_node.cc \
   control_parameters.cc \
   sfxc_mpi.cc \
@@ -16,6 +15,7 @@ OBJ=\
   delay_table_akima.cc \
   input_data_format_reader.cc \
   input_data_format_reader_tasklet.cc \
+  vdif_reader.cc \
   mark5a_reader.cc \
   mark5a_header.cc \
   vlba_reader.cc \
@@ -38,7 +38,7 @@ OBJ=\
   delay_correction_swapped.cc \
   uvw_model.cc \
   channel_extractor_tasklet.cc \
-  channel_extractor_brute_force.cc \
+  channel_extractor_tasklet_vdif.cc \
   channel_extractor_5.cc \
   channel_extractor_utils.cc \
   channel_extractor_dynamic.cc \
@@ -56,6 +56,7 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   correlator_node_data_reader_tasklet.cc \
   correlator_node_bit2float_tasklet.cc \
   bit2float_worker.cc \
+  bit_statistics.cc\
   mpi_transfer.cc \
   log_writer_mpi.cc data_reader_tcp.cc  data_writer_tcp.cc \
   multiple_data_readers_controller.cc \

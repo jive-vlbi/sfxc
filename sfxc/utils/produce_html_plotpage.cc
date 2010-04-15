@@ -111,11 +111,7 @@ int main(int argc, char *argv[]) {
     vex_file = new char[strlen(vex_file_temp)+1];
     strcpy(vex_file, vex_file_temp);
     sprintf(to, "%s/%s", output_dir, vex_file);
-    if (!file_exists(to)) {
-      copy_file(from, to);
-    } else {
-      std::cout << "Vex-file already exists, not copying" << std::endl;
-    }
+    copy_file(from, to);
   }
 
   if (argc== 4) {

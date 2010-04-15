@@ -5,7 +5,7 @@
  *            Nico Kruithof   <Kruithof@JIVE.nl>, 2007
  *            Huseyin Ozdemir <Ozdemir@JIVE.nl>, 2007
  *
- * $Id: Uvw_model.cc 304 2007-09-05 08:09:10Z ozdemir $
+ * $Id$
  *
  * Class function definitions for station specific data
  */
@@ -29,7 +29,7 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
-
+#include <limits>
 
 //*****************************************************************************
 //function definitions
@@ -61,6 +61,11 @@ bool Uvw_model::operator==(const Uvw_model &other) const {
 //read the delay table, do some checks and
 //calculate coefficients for parabolic interpolation
 int Uvw_model::open(const char *delayTableName) {
+  int64_t start = 0, stop = std::numeric_limits<int64_t>::max();
+  return open(delayTableName, start, stop);
+}
+
+int Uvw_model::open(const char *delayTableName, double tstart, double tstop) {
   std::ifstream in(delayTableName);
   double line[5];
   int32_t hsize;
@@ -69,10 +74,24 @@ int Uvw_model::open(const char *delayTableName) {
   char station[hsize];
   in.read(reinterpret_cast < char * > (station), hsize*sizeof(char));
 
+  // Read up to tstart
+  double time;
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
-    // The time read from file is in seconds, whereas the software correlator
-    // works with times in microseconds
-    times.push_back(line[0]*1000000);
+    time = line[0]*1000000;
+    if(time>=tstart){
+      times.push_back(time);
+      u.push_back(line[1]);
+      v.push_back(line[2]);
+      w.push_back(line[3]);
+      break;
+    }
+  }
+  // Read the rest of the data
+  while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
+    time=line[0]*1000000;
+    if(time>tstop)
+      break;
+    times.push_back(time);
     u.push_back(line[1]);
     v.push_back(line[2]);
     w.push_back(line[3]);
@@ -81,6 +100,8 @@ int Uvw_model::open(const char *delayTableName) {
 
   return 0;
 }
+
+
 
 void Uvw_model::initialise_spline_for_next_scan() {
 

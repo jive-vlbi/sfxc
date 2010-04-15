@@ -72,6 +72,9 @@ AC_ARG_ENABLE(calc10,
               [  --enable-calc10     Compile with the cacl10 (require Fortan) [default=yes]],
               WITH_CALC="$enableval", WITH_CALC="yes")
 
+AC_ARG_WITH(ipp-path, [  --with-ipp-path=PATH   Location of the ipp libraries []], 
+            IPP_PATH="$withval", IPP_PATH="")
+
 dnl ---------------------------------------------------------------------------
 dnl Checking external libraries and dependency
 dnl ---------------------------------------------------------------------------
@@ -111,6 +114,14 @@ AC_CHECK_LIB(fftw3f, fftwf_execute, [], [
 FFTW_CXXFLAGS=
 FFTW_LDADD=" -lfftw3 -lfftw3f"
 fi
+
+if test "$IPP_PATH" != ""; then
+     SFXC_LDADD="$SFXC_LDADD -L$IPP_PATH/sharedlib"
+     SFXC_CXXFLAGS="$SFXC_CXXFLAGS -I$IPP_PATH/include"
+     CFLAGS="$CFLAGS -I$IPP_PATH/include"
+     LDFLAGS="$LDFLAGS -L$IPP_PATH/sharedlib"
+fi
+
 AC_CHECK_LIB(ippsem64t, ippsGetLibVersion, [], [
         echo "Could not find Intel IPP library."
         exit -1
@@ -237,6 +248,7 @@ AC_SUBST(WITH_CALC)
 AC_SUBST(WITH_GENDELAY)
 AC_SUBST(WITH_SFXC)
 AC_SUBST(WITH_SFXC_UTILS)
+AC_SUBST(IPP_PATH)
 
 dnl echo "SFXC_CFLAGS: $SFXC_CFLAGS"
 dnl echo "SFXC_CXXFLAGS: $SFXC_CXXFLAGS"

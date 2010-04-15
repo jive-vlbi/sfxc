@@ -125,7 +125,9 @@ int Mark5a_header::find_track(int headstack_, int track_) {
       return i;
     }
   }
-  sfxc_abort("Couldn't find (headstack, track) in the mark5a header.");
+  //sfxc_abort("Couldn't find (headstack, track) in the mark5a header.");
+  std::cout << RANK_OF_NODE << " : Warning - couldn't find headstack="<<headstack_
+            << ", track="<< track_ << " in mark5a header\n";
   return -1;
 }
 

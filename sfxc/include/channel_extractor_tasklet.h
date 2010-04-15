@@ -36,7 +36,7 @@ public:
   typedef Input_node_types                     Types;
 
   /// Data type of the input buffer
-  typedef Types::Mark5_buffer                  Input_buffer;
+  typedef Types::Input_buffer                  Input_buffer;
   /// Data type of a data element in the input buffer
   typedef Input_buffer::value_type             Input_buffer_element;
   /// Pointer to an Input_buffer
@@ -44,7 +44,7 @@ public:
 
 
   /// Output memory pool for the dechannelized data
-  typedef Types::Channel_memory_pool           Output_memory_pool;
+  typedef Types::Data_memory_pool              Output_memory_pool;
   /// Queue for sending out the dechannalized data
   typedef Types::Channel_buffer                Output_buffer;
   /// A data element of the Output_buffer
@@ -67,7 +67,7 @@ public:
   void stop();
 
   /// Process one piece of data
-  void do_task();
+  virtual void do_task();
   /// Check if we can process data
   bool has_work();
   const char *name() {
@@ -101,8 +101,7 @@ public:
   *****************************************************************************/
  	inline double get_sec(){ return timer_.measured_time(); }
 
-
-private:
+protected:
   /// Queue containing input data
   Input_buffer_ptr                input_buffer_;
   /// Memory pool containing data chunks of dechannelized data

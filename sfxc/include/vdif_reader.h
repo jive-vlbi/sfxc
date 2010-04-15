@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef MARK5B_READER_H
-#define MARK5B_READER_H
+#ifndef VDIF_READER_H
+#define VDIF_READER_H
 
 #include "input_data_format_reader.h"
 
@@ -20,7 +20,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 
-class Mark5b_reader : public Input_data_format_reader {
+class VDIF_reader : public Input_data_format_reader {
   enum Debug_level {
     NO_CHECKS = 0,
     CHECK_PERIODIC_HEADERS,
@@ -31,32 +31,35 @@ public:
   typedef Input_data_format_reader::Data_frame Data_frame;
 
   struct Header {
-    uint32_t      syncword;
-    uint32_t      frame_nr:15;
-    uint8_t       tvg:1;
-    uint16_t      user_specified;
-    
-    uint8_t sec5:4, sec4:4, sec3:4, sec2:4, sec1:4;
-    uint8_t day3:4, day2:4, day1:4;
-    uint16_t crc;
-    uint8_t subsec4:4, subsec3:4, subsec2:4, subsec1:4;
+    // Word 0
+    uint32_t      sec_from_epoch:30;
+    uint8_t       legacy_mode:1, invalid:1;
+    // Word 1
+    uint32_t      dataframe_in_second:24;
+    uint8_t       ref_epoch:6, unassiged:2;
+    // Word 2
+    uint32_t      dataframe_length:24;
+    uint8_t       log2_nchan:5, version:3;
+    // Word 3
+    uint16_t      station_id:16, thread_id:10;
+    uint8_t       bits_per_sample:5, data_type:1;
+    // Word 4
+    uint32_t      user_data1:24;
+    uint8_t       edv:8;
+    // Word 5-7
+    uint32_t      user_data2,user_data3,user_data4;
 
-    bool check() const;
-
-    // Time in microseconds since midnight (approx)
-    int64_t microseconds() const;
-
-    // Time in secons since midnight (truncated time)
-    int64_t seconds() const;
-
-    // Julian day % 1000
-    int julian_day() const;
-
+    // Start of epoch in jday
+    int32_t jday_epoch() const;
+    // Header size in bytes (words 4-7 are not present in legacy mode)
+    int32_t header_size() const;
+    // Size of data inside data_frame in bytes
+    int32_t data_size() const;
   };
 
-  Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
+  VDIF_reader(boost::shared_ptr<Data_reader> data_reader,
                 Data_frame &data, int ref_year, int ref_day);
-  virtual ~Mark5b_reader();
+  virtual ~VDIF_reader();
 
   /// Time in microseconds
   /// Changed the order of the arguments when I changed from miliseconds to microseconds
@@ -65,18 +68,16 @@ public:
   /// Get the current time in microseconds
   int64_t get_current_time();
 
-  /// Read another mark5b-frame
+  /// Read another VDIF-frame
   bool read_new_block(Data_frame &data);
 
   bool eof();
 
   int time_between_headers();
 
-  size_t bytes_per_input_word() const {
-    return SIZE_MK5B_WORD;
-  }
+  void print_header();
   size_t size_data_block() const {
-    return bytes_per_input_word()*SIZE_MK5B_FRAME*N_MK5B_BLOCKS_TO_READ;
+    return current_header.data_size();
   }
 
   std::vector< std::vector<int> >
@@ -85,19 +86,22 @@ public:
 
   void set_parameters(const Input_node_parameters &param);
 
+  size_t bytes_per_input_word() const {
+    return SIZE_VDIF_WORD;
+  }
+
   TRANSPORT_TYPE get_transport_type() const{
-    return MARK5B;
+    return VDIF;
   }
 
 private:
   // Time information
-  int start_day_; // start date of data(mod Julian day)
   int ref_jday; //date relative to which times are calculated(mod Julian day)
+  int epoch_jday; // Time origin of the timestamps in the data headers
   int64_t us_per_day;
-  // start time and current time in miliseconds
-  // start time is used to check the data rate
-  int64_t start_time_, current_time_;
-
+  // current time in microseconds
+  int64_t current_time_;
+  int64_t sample_rate;
   // For testing
   Debug_level debug_level_;
 
@@ -106,13 +110,21 @@ private:
   // so that the header points to the time of the first sample
   Header current_header, tmp_header;
 
-  int time_between_headers_;
-
   // Convert time read from input stream to time relative to midnight on the reference day
   int64_t correct_raw_time(int64_t raw_time);
 };
 
-std::ostream &operator<<(std::ostream &out,
-                         const Mark5b_reader::Header &header);
+inline int32_t 
+VDIF_reader::Header::header_size() const{
+  return 16+16*(1-legacy_mode);
+}
 
-#endif // MARK5B_READER_H
+inline int32_t 
+VDIF_reader::Header::data_size() const{
+  return 8*dataframe_length-header_size();
+}
+
+std::ostream &operator<<(std::ostream &out,
+                         const VDIF_reader::Header &header);
+
+#endif // VDIF_READER_H

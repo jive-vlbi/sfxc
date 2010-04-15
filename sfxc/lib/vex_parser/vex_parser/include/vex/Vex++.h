@@ -33,16 +33,28 @@ public:
   /// Returns the name of the track section given a mode and a station
   std::string
   get_track(const std::string &mode, const std::string &station) const;
-
+  /// Returns the name of the track section given a mode and a station
+  std::string
+  get_bitstreams(const std::string &mode, const std::string &station) const;
   /// Returns the name of the frequency section given a mode and a station
   std::string
   get_frequency(const std::string &mode, const std::string &station) const;
+  /// Returns the name of the IF section given a mode and a station
+  std::string
+  get_IF(const std::string &mode, const std::string &station) const;
+  /// Returns the name of the BBC section given a mode and a station
+  std::string
+  get_BBC(const std::string &mode, const std::string &station) const;
+  /// Returns the name of a section given the mode and station
+  std::string
+  get_section(const std::string &section, const std::string &mode, 
+              const std::string &station) const;
 
   /// Returns the mode for a scan
   std::string get_mode(const std::string &scan) const;
 
-  /// Returns the mode for a scan
-  void get_frequencies(std::vector<double> &frequencies) const;
+  /// Returns the frequencies for a given mode
+  void get_frequencies(const std::string &mode, std::vector<double> &frequencies) const;
 
   /// Returns the time at which the first scan starts
   std::string get_start_time_of_experiment() const;

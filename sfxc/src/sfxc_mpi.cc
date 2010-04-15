@@ -93,6 +93,28 @@ void start_node(int swap) {
       input_node.start();
       break;
     }
+  case MPI_TAG_SET_INPUT_NODE_VDIF: {
+      // The integer is the number of the input_reader:
+      int32_t msg;
+      MPI_Recv(&msg, 1, MPI_INT32,
+               RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+      if (PRINT_PID) {
+        DEBUG_MSG("Input node, pid = " << getpid());
+      }
+      if (PRINT_HOST) {
+        char hostname[255];
+        gethostname(hostname, 255);
+        DEBUG_MSG("Input node, hostname = " << hostname);
+      }
+      int32_t ref_year, ref_day;
+      MPI_Recv(&ref_year, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      MPI_Recv(&ref_day, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+      Input_node input_node(rank, msg, VDIF, ref_year, ref_day);
+      input_node.start();
+      break;
+    }
   case MPI_TAG_SET_INPUT_NODE_MARK5B: {
       // The integer is the number of the input_reader:
       int32_t msg;

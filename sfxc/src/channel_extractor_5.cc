@@ -25,21 +25,14 @@ public:
 
   void initialise(const std::vector< std::vector<int> > &track_positions,
                   int IGNORED_size_of_one_input_word,
-                  int input_sample_size) {
-
-
-    // bit shift right with padding
-    for (int shift=0; shift<n_subbands_; shift++) {
-      for (int value=0; value<256; value++) {
-        bit_shift_right_table[shift][value] =
-          (uint8_t)((value >> (8-shift)) & ((1<<shift)-1));
-      }
-    }
+                  int input_sample_size, 
+                  int bits_per_sample_) {
 
     input_sample_size_ = input_sample_size;
     //n_subbands = track_positions.size();
     fan_out = track_positions[0].size();
     samples_per_byte = 8/fan_out;
+    bits_per_sample = bits_per_sample_;
     SFXC_ASSERT(fan_out <= 8);
     SFXC_ASSERT(8%fan_out == 0);
     SFXC_ASSERT(fan_out*samples_per_byte == 8);
@@ -47,17 +40,20 @@ public:
     memset(lookup_table, 0, size_of_one_input_word_*256*n_subbands_);
     // Lookup table for the tracks
     for (int subband=0; subband < n_subbands_; subband++) {
+      int low_bit = 1<<(8-fan_out);
       for (int track_nr=0; track_nr < fan_out; track_nr++) {
         int track = track_positions[subband][track_nr];
         int n = track/8;
         SFXC_ASSERT(n < size_of_one_input_word_);
         int bit = track % 8;
-
         for (int sample=0; sample<256; sample++) {
           if (((sample >> bit)& 1) != 0) {
-            lookup_table[subband][n][sample] |= (1<<(fan_out-1-track_nr));
+            lookup_table[subband][n][sample] |= low_bit<<((track_nr+1)%bits_per_sample);
+	    //lookup_table[subband][n][sample] |= (1<<(fan_out-1-track_nr));
           }
         }
+        if((track_nr+1)%bits_per_sample==0)
+          low_bit=low_bit << bits_per_sample;
       }
     }
     output_data_tmp = (unsigned char **)malloc( sizeof(unsigned char*) * n_subbands_ );
@@ -89,7 +85,7 @@ public:
         // samples_per_byte-1 times:
         for (int i=1; i<samples_per_byte; i++) {
           process_sample(in_pos, out_pos, table);
-          *out_pos = (*out_pos << fan_out);
+          *out_pos = (*out_pos >> fan_out);
         }
 
         process_sample(in_pos, out_pos, table);
@@ -113,11 +109,8 @@ private:
   // lookup_table[index in Type word][value of the byte][output sample per channel]
   uint8_t lookup_table[n_subbands_][size_of_one_input_word_][256];
 
-  // Lookup table for a right bitshift with 0 inserted
-  uint8_t bit_shift_right_table[n_subbands_][256];
-
   // Fan out
-  int fan_out, samples_per_byte;
+  int fan_out, samples_per_byte, bits_per_sample;
 
   int input_sample_size_;
 
@@ -180,7 +173,7 @@ Channel_extractor_interface* create_number5_(int size_of_one_input_word, int n_s
 
 void Channel_extractor_5::initialise(const std::vector< std::vector<int> > &track_positions_,
                                      int size_of_one_input_word_,
-                                     int input_sample_size_) {
+                                     int input_sample_size_, int bits_per_sample_) {
   track_positions = track_positions_;
   size_of_one_input_word = size_of_one_input_word_;
   input_sample_size = input_sample_size_;
@@ -192,7 +185,7 @@ void Channel_extractor_5::initialise(const std::vector< std::vector<int> > &trac
     std::cout << "UNABLE TO CREATE EXTRACTOR5 " << std::endl;
     exit(0);
   }
-  hidden_implementation_->initialise(track_positions, size_of_one_input_word_, input_sample_size);
+  hidden_implementation_->initialise(track_positions, size_of_one_input_word_, input_sample_size, bits_per_sample_);
 }
 
 void Channel_extractor_5::extract(unsigned char *in_data1,

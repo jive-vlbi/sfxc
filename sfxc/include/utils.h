@@ -57,6 +57,8 @@
 #define SIZE_MK5B_HEADER             4
 #define SIZE_MK5B_WORD            sizeof(int32_t)
 
+#define SIZE_VDIF_WORD            sizeof(int32_t)
+
 // Number of mark5b frames to read at once
 // To make sure that the first sample lies exactly on an integer microsecond
 // duration of one block: SIZE_MK5B_FRAME/MAX_SAMPLE_RATE = 2500/64 = 625/16

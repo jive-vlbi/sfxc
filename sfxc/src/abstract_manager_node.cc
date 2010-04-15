@@ -41,7 +41,9 @@ start_input_node(int rank, const std::string &station) {
     else
       MPI_Send(&rank, 1, MPI_INT32,
                rank, MPI_TAG_SET_INPUT_NODE_MARK5A, MPI_COMM_WORLD); // mark 4 data
-  } else {
+  }else if(control_parameters.transport_type(station) == "VDIF"){
+    MPI_Send(&rank, 1, MPI_INT32, rank, MPI_TAG_SET_INPUT_NODE_VDIF, MPI_COMM_WORLD);
+  }else {
     SFXC_ASSERT(control_parameters.transport_type(station) == "Mark5B");
     // starting an input reader
     MPI_Send(&rank, 1, MPI_INT32,
@@ -538,6 +540,7 @@ void
 Abstract_manager_node::
 terminate_nodes_after_assertion(int calling_node) {
   int numtasks;
+  std::cout << "terminate nodes after assertion\n";
   // get the number of tasks set at commandline (= number of processors)
   MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
   for (int i=0; i<numtasks; i++) {

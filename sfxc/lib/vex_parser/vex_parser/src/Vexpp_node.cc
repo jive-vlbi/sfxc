@@ -135,13 +135,13 @@ Vexpp_node::const_iterator
 Vexpp_node::operator[](const std::string &key) const {
   assert(m_type == DICT);
   const_dict_iterator it = dict.lower_bound(key);
-  if (it->first == key) {
-    return const_iterator(this, it);
-  } else {
+  if((it == dict.end())||(it->first != key)) {
     std::cout << __FILE__ << ", l" << __LINE__ << " "
     << "Key: \"" << key << "\" not found." << std::endl;
     assert(false);
     return const_iterator(this, dict.end());
+  }else{
+    return const_iterator(this, it);
   }
 }
 
@@ -275,18 +275,20 @@ Vexpp_node::begin(const std::string &key) {
   assert(m_type == DICT);
   dict_iterator it = dict.lower_bound(key);
   if (it == dict.end()) { // Key not found
-    assert(false);
+//    assert(false);
     return iterator();
   } else if (it->first == key) {
     return iterator(this, it);
   } else { // Key not found
-    assert(false);
+//    assert(false);
     return iterator(this, dict.end());
   }
 }
 Vexpp_node::iterator
 Vexpp_node::end(const std::string &key) {
   assert(m_type == DICT);
+  if(dict.find(key)==dict.end())
+    return iterator(this, dict.end()); // key not present in dictionary
   return iterator(this, dict.upper_bound(key));
 }
 
@@ -305,17 +307,19 @@ Vexpp_node::const_iterator Vexpp_node::begin(const std::string &key) const {
   assert(m_type == DICT);
   const_dict_iterator it = dict.lower_bound(key);
   if (it == dict.end()) { // Key not found
-    assert(false);
+//    assert(false);
     return const_iterator();
   } else if (it->first == key) {
     return const_iterator(this, it);
   } else { // Key not found
-    assert(false);
+//    assert(false);
     return const_iterator(this, dict.end());
   }
 }
 Vexpp_node::const_iterator Vexpp_node::end(const std::string &key) const {
   assert(m_type == DICT);
+  if(dict.find(key)==dict.end())
+    return const_iterator(this, dict.end()); // key not present in dictionary
   return const_iterator(this, dict.upper_bound(key));
 }
 

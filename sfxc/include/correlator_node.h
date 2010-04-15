@@ -197,7 +197,6 @@ class Reader_thread : public Thread {
                     Bit_sample_reader_ptr());
         if (i < jb.station_streams_size ) {
           DEBUG_MSG("CONFIGURING THE READER ! :" << jb.number_ffts_in_integration);
-
           bit_sample_readers_[i]->set_parameters(
             jb.number_ffts_in_integration,
             jb.bits_per_sample[i],
@@ -218,8 +217,15 @@ class Reader_thread : public Thread {
         (parameters.integration_time,
          parameters.sample_rate,
          parameters.number_channels);
-      for(int i = 0; i < parameters.station_streams.size(); i++)
-	jb.bits_per_sample.push_back(parameters.station_streams[i].bits_per_sample);
+      // First create a list of input streams
+      std::vector<int> stream_list(parameters.station_streams.size());
+      for(int i = 0; i < stream_list.size(); i++)
+        stream_list[parameters.station_streams[i].station_stream] = i;
+      // For each input stream save the number of bits per sample
+      for(int i = 0; i < stream_list.size(); i++){
+        int index = stream_list[i];
+        jb.bits_per_sample.push_back(parameters.station_streams[index].bits_per_sample);
+      }
       jb.number_channels = parameters.number_channels;
       jb.station_streams_size = parameters.station_streams.size();
 

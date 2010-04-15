@@ -13,6 +13,7 @@
 #include "utils.h"
 #include "delay_table_akima.h"
 #include "control_parameters.h"
+#include "bit_statistics.h"
 
 class Bit2float_worker;
 typedef boost::shared_ptr<Bit2float_worker> Bit2float_worker_sptr;
@@ -32,7 +33,7 @@ public:
   typedef Types::Channel_queue                      Output_queue;
   typedef Types::Channel_queue_ptr                  Output_queue_ptr;
 
-  Bit2float_worker(int stream_nr);
+  Bit2float_worker(int stream_nr, bit_statistics_ptr statistics_);
   ~Bit2float_worker() {
     // We need to make sure that output_element is released
     Output_pool_element dummy;
@@ -64,7 +65,7 @@ public:
   // This is necessary because of pre-extracting data
   void empty_input_queue();
 
-  static Bit2float_worker_sptr new_sptr(int stream_nr_);
+  static Bit2float_worker_sptr new_sptr(int stream_nr_, bit_statistics_ptr statistics_);
 private:
   // get the position index of the next delay change / invalid block
   int get_next_delay();
@@ -81,6 +82,7 @@ private:
   /// The lookup tables for the bit2float conversion
   FLOAT lookup_table[256][4];
   FLOAT lookup_table_1bit[256][8];
+  bit_statistics_ptr statistics;
 
   int state;
   enum {IDLE, SEND_INVALID, SEND_DATA, PURGE_STREAM};

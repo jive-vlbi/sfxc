@@ -34,11 +34,6 @@ public:
   void stop();
 
   /*****************************************************************************
-  * @desc Add a new input stream.
-  *****************************************************************************/
-  void add_stream();
-
-  /*****************************************************************************
   * @desc Channel count
   *****************************************************************************/
   size_t number_channel();
@@ -48,7 +43,7 @@ public:
   * @param int nr_stream The identifier of the stream.
   * assert( nr_stream < number_channels() )
   *****************************************************************************/
-  void connect_to(int nr_stream, Channel_circular_input_buffer_ptr);
+  void connect_to(int nr_stream, bit_statistics_ptr statistics, Channel_circular_input_buffer_ptr);
 
 	/*****************************************************************************
   * @desc Retreive the output queue for the specified channel.

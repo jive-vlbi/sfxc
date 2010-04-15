@@ -117,35 +117,44 @@ Vex::get_scan_name(Vex::Date &start_time) const{
 
 std::string
 Vex::get_track(const std::string &mode, const std::string &station) const {
-  Vex::Node::const_iterator mode_it = root["MODE"][mode];
-  for (Vex::Node::const_iterator track_it = mode_it->begin("TRACKS");
-       track_it != mode_it->end("TRACKS"); ++track_it) {
-    Vex::Node::const_iterator station_it = track_it->begin();
-    ++station_it;
-    for (;station_it != track_it->end(); ++station_it) {
-      if (station_it->to_string() == station) {
-        return track_it[0]->to_string();
-      }
-    }
-  }
-  assert(false);
-  return std::string();
+  return get_section("TRACKS", mode, station);
+}
+
+std::string
+Vex::get_bitstreams(const std::string &mode, const std::string &station) const {
+  return get_section("BITSTREAMS", mode, station);
 }
 
 std::string
 Vex::get_frequency(const std::string &mode, const std::string &station) const {
+  return get_section("FREQ", mode, station);
+}
+
+std::string
+Vex::get_IF(const std::string &mode, const std::string &station) const {
+  return get_section("IF", mode, station);
+}
+
+std::string
+Vex::get_BBC(const std::string &mode, const std::string &station) const {
+  return get_section("BBC", mode, station);
+}
+
+std::string
+Vex::get_section(const std::string &section, const std::string &mode,
+                 const std::string &station) const {
+  // Given a mode and a station find the start node (section is e.g. IF, BBC, FREQ, ...)
   Vex::Node::const_iterator mode_it = root["MODE"][mode];
-  for (Vex::Node::const_iterator frequency_it = mode_it->begin("FREQ");
-       frequency_it != mode_it->end("FREQ"); ++frequency_it) {
-    Vex::Node::const_iterator station_it = frequency_it->begin();
+  for (Vex::Node::const_iterator section_it = mode_it->begin(section);
+       section_it != mode_it->end(section); ++section_it) {
+    Vex::Node::const_iterator station_it = section_it->begin();
     ++station_it;
-    for (;station_it != frequency_it->end(); ++station_it) {
+    for (;station_it != section_it->end(); ++station_it) {
       if (station_it->to_string() == station) {
-        return frequency_it[0]->to_string();
+        return section_it[0]->to_string();
       }
     }
   }
-  assert(false);
   return std::string();
 }
 
@@ -202,18 +211,19 @@ Vex::Node parse_vex(char *filename) {
   return parse_result;
 }
 
-void Vex::get_frequencies(std::vector<double> &frequencies) const {
-  std::set<double> freqs_;
-  for (Vex::Node::const_iterator freq_it = get_root_node()["FREQ"]->begin();
-       freq_it != get_root_node()["FREQ"]->end(); ++freq_it) {
-    for (Vex::Node::const_iterator chan_it =
-           freq_it->begin("chan_def");
-         chan_it != freq_it->end("chan_def"); ++chan_it) {
-      freqs_.insert((*chan_it)[1]->to_double_amount("MHz")*1000000);
-    }
+void Vex::get_frequencies(const std::string &mode, std::vector<double> &frequencies) const {
+  Node root_node = get_root_node();
+  Node::iterator mode_it = root_node["MODE"][mode];
+  std::string freq_node = mode_it->begin("FREQ")[0]->to_string();
+  std::set<double> freq_set;
+  for (Node::iterator chan_it = root_node["FREQ"][freq_node]->begin("chan_def");
+       chan_it != root_node["FREQ"][freq_node]->end("chan_def"); ++chan_it) {
+    freq_set.insert((*chan_it)[1]->to_double_amount("MHz")*1000000);
   }
-  for (std::set<double>::iterator freq_it = freqs_.begin();
-         freq_it != freqs_.end(); freq_it++) {
-      frequencies.push_back(*freq_it);
-    }
+
+  frequencies.resize(0);
+  for (std::set<double>::iterator freq_it = freq_set.begin();
+       freq_it != freq_set.end(); freq_it++) {
+    frequencies.push_back(*freq_it);
+  }
 }

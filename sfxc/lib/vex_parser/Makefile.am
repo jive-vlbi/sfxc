@@ -20,6 +20,3 @@ installed.txt:
 	$(MAKE) -C vex_parser install
 	rm -f install/lib/*.so* install/lib/*.la*
 	touch installed.txt
-
-pkginclude_HEADERS=\
-  vex_parser/*
