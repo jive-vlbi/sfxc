@@ -103,11 +103,14 @@ void Delay_table_akima::open(const char *delayTableName, double tstart, double t
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
     SFXC_ASSERT(line[4] <= 0);
     time=line[0]*1000000;
-    if(time>tstop)
-      break;
     times.push_back(time);
     delays.push_back(line[4]);
+    if(time>=tstop)
+      break;
   }
+  // End with zeros to mark the end of the scan
+  times.push_back(0);
+  delays.push_back(0);
 
   // Initialise
   begin_scan = 0;
