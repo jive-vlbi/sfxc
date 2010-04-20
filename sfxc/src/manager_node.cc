@@ -416,8 +416,17 @@ Manager_node::initialise() {
   Vex::Date start_time(control_parameters.get_start_time());
   Vex::Date stop_time(control_parameters.get_stop_time());
   Vex::Date start_first_scan(vex.start_of_scan(vex.get_scan_name(start_time)));
-  Vex::Date end_last_scan(vex.stop_of_scan(vex.get_scan_name(stop_time)));
+  // Find the end time of the last scan
+  std::string last_scan_name = vex.get_scan_name(start_time);
+  Vex::Node::const_iterator it = vex.get_root_node()["SCHED"][last_scan_name];
+  while (++it != vex.get_root_node()["SCHED"]->end()){
+    Vex::Date start_scan = vex.start_of_scan(it.key());
+    if(start_scan >= stop_time)
+      break;
 
+    last_scan_name = vex.get_scan_name(start_scan);
+  }  
+  Vex::Date end_last_scan(vex.stop_of_scan(last_scan_name));
   int experiment_day = start_time_experiment.day, experiment_year = start_time_experiment.year;
   t_begin = start_first_scan.to_miliseconds(experiment_day, experiment_year)*1000;
   t_end = end_last_scan.to_miliseconds(experiment_day, experiment_year)*1000;
