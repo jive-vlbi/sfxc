@@ -12,7 +12,13 @@
 #include "input_node_data_writer_tasklet.h"
 
 Input_node_data_writer_tasklet::Input_node_data_writer_tasklet(){}
-Input_node_data_writer_tasklet::~Input_node_data_writer_tasklet(){}
+Input_node_data_writer_tasklet::~Input_node_data_writer_tasklet(){
+  empty_input_queue();
+  if(data_writer_thread_pool.still_running())
+    data_writer_thread_pool.stop_all();
+
+  data_writer_thread_pool.wait_for_all_termination();
+}
 
 
 /*****************************************************************************
@@ -28,42 +34,12 @@ void Input_node_data_writer_tasklet::empty_input_queue()
 
 
 /*****************************************************************************
-* @desc Stop the thread.
+* @desc Stop all writer threads.
 *****************************************************************************/
-void Input_node_data_writer_tasklet::stop()
+void Input_node_data_writer_tasklet::stop_threads()
 {
-  isrunning_=false;
-}
-
-
-/*****************************************************************************
-* @desc The main computation loop that is executed in the data_writing thread
-*****************************************************************************/
-void Input_node_data_writer_tasklet::do_execute()
-{
-  bool did_work=false;
-
-  data_processed_ = 0;
-
-	timer_.start();
-  while( isrunning_ ){
-    did_work = false;
-    for (size_t i=0; i<data_writers_.size(); i++)
-    {
-        if (data_writers_[i]->has_work())
-        {
-            data_processed_+=data_writers_[i]->do_task();
-            did_work=true;
-        }
-    }
-    if( !did_work )
-    {
-    	//sched_yield();
-      usleep(1000);
-    }
-  }
-	timer_.stop();
   empty_input_queue();
+  data_writer_thread_pool.stop_all();
 }
 
 /*****************************************************************************
@@ -93,6 +69,7 @@ void Input_node_data_writer_tasklet::connect_to(int nr_stream,
 {
   SFXC_ASSERT( nr_stream < data_writers_.size() );
   data_writers_[nr_stream]->connect_to(buffer);
+  data_writer_thread_pool.register_thread(data_writers_[nr_stream]->start());
 }
 
 /*****************************************************************************

@@ -40,6 +40,23 @@ Input_node_data_writer::~Input_node_data_writer() {
   DEBUG_MSG( "data_writer byte sent:" << toMB(total_data_written_) << "MB" );
 }
 
+void Input_node_data_writer::do_execute()
+{
+  bool did_work = false;
+
+  total_data_written_ = 0;
+
+  while( isrunning_ ){
+    did_work = false;
+    if (has_work()){
+      total_data_written_ += do_task();
+      did_work=true;
+    }
+    if( !did_work )
+      usleep(1000);
+  }
+}
+
 void
 Input_node_data_writer::
 connect_to(Input_buffer_ptr new_input_buffer) {
@@ -73,9 +90,11 @@ has_work() {
   if(input_buffer_->empty())
     return false;
 
+#if 0
   // Check whether we can send data to the active writer
   if (!data_writers_.front().writer->can_write())
     return false;
+#endif
 
   return true;
 }
@@ -181,7 +200,6 @@ do_task() {
       index += data_to_write;
     }
   }
-  total_data_written_ += total_to_write;
   data_writer.slice_size-=total_to_write*samples_per_byte;
   samples_written_ += total_to_write*samples_per_byte;
 

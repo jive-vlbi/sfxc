@@ -123,7 +123,7 @@ add_time_interval(int32_t start_time, int32_t stop_time) {
   //SFXC_ASSERT(!integer_delay_.empty());
   //SFXC_ASSERT(integer_delay_[0] != NULL);
 
-  SFXC_ASSERT(!delay_pool.empty());
+  //  SFXC_ASSERT(!delay_pool.empty());
   /// Add a list of delays to the data writers
   Delay_memory_pool_element delay_list=delay_pool.allocate();
   delay_list.data().resize(0);
@@ -163,7 +163,6 @@ Input_node_tasklet::wait_termination() {
 void
 Input_node_tasklet::start_tasklets() {
 	rttimer_processing_.start();
-  pool_.register_thread( data_writer_.start() );
   pool_.register_thread( channel_extractor_->start() );
   pool_.register_thread( reader_.start() );
 }
@@ -172,7 +171,7 @@ void
 Input_node_tasklet::stop_tasklets() {
   reader_.stop();
   channel_extractor_->stop();
-  data_writer_.stop();
+  data_writer_.stop_threads();
   rttimer_processing_.stop();
 }
 
@@ -250,30 +249,6 @@ Input_node_tasklet::get_delays(uint64_t start_time, uint64_t stop_time,
     }
   }
 }
-
-/*void
-Input_node_tasklet::get_delays(uint64_t start_time, uint64_t stop_time,
-                               std::vector<Delay> &delay_list)
-{
-  // TODO: this can be implemented much more efficiently
-  int nffts=(stop_time-start_time)/delta_time;
-  uint64_t cur_time=start_time+delta_time/2;
-  Delay old_delay, new_delay;
-  old_delay=get_delay(cur_time);
-
-  delay_list.resize(0);
-  delay_list.push_back(old_delay);
-
-  for(int i=1;i<nffts;i++){
-    cur_time+=delta_time;
-    new_delay=get_delay(cur_time);
-    if((new_delay.bytes!=old_delay.bytes)||
-       (new_delay.remaining_samples!=old_delay.remaining_samples)){
-      delay_list.push_back(new_delay);
-      old_delay=new_delay;
-    }
-  }
-}*/
 
 Delay
 Input_node_tasklet::get_delay(int64_t time) {

@@ -57,13 +57,18 @@ void ThreadPool::start_all() {
 
 void ThreadPool::stop_all() {
   for (unsigned int i=0;i<m_vectorthread.size();i++) {
-    std::cout << "Stopping thread:" << i << std::endl;
+    //std::cout << "Stopping thread:" << i << std::endl;
     m_vectorthread[i]->stop();
   }
 }
 
 bool ThreadPool::still_running() {
-  return m_vectorthread.empty();
+  bool is_still_running = false;
+  for (unsigned int i=0;i<m_vectorthread.size();i++) {
+    if(m_vectorthread[i]->isrunning_ == true)
+      is_still_running = true;
+  }
+  return is_still_running;
 }
 
 ThreadPool& operator||( Thread& a, Thread& b) {

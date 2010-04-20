@@ -13,7 +13,6 @@
 
 #include "utils.h"
 #include "timer.h"
-#include "thread.h"
 #include "input_node_types.h"
 #include "control_parameters.h"
 #include "input_node_data_writer.h"
@@ -28,7 +27,7 @@
  * maintain a dependency tracker and use multiple thread to stream to different
  * location in parallel.
  ******************************************************************************/
-class Input_node_data_writer_tasklet : public Thread {
+class Input_node_data_writer_tasklet {
 public:
   /** Ctor **/
   Input_node_data_writer_tasklet();
@@ -37,15 +36,9 @@ public:
   virtual ~Input_node_data_writer_tasklet();
 
   /*****************************************************************************
-  * @desc Main function called in the thread. This function is inherited from
-  * the Thread class.
+  * @desc Stop all data writer threads
   *****************************************************************************/
-  void do_execute();
-
-  /*****************************************************************************
-  * @desc Request to stop the current thread.
-  *****************************************************************************/
-  void stop();
+  void stop_threads();
 
   /*****************************************************************************
   * @desc Add a new channel.
@@ -118,6 +111,7 @@ public:
 private:
   /// Writers that will stream the data.
   std::vector<Input_node_data_writer_sptr>    data_writers_;
+  ThreadPool data_writer_thread_pool;
 
   /// Amount of processing time.
   Timer timer_;
