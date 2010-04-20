@@ -86,16 +86,23 @@ int Uvw_model::open(const char *delayTableName, double tstart, double tstop) {
       break;
     }
   }
+
   // Read the rest of the data
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
     time=line[0]*1000000;
-    if(time>tstop)
-      break;
     times.push_back(time);
     u.push_back(line[1]);
     v.push_back(line[2]);
     w.push_back(line[3]);
+    if(time>=tstop)
+      break;
   }
+  // End with zeros to mark the end of the scan
+  times.push_back(0);
+  u.push_back(0);
+  v.push_back(0);
+  w.push_back(0);
+
   initialise_spline_for_next_scan();
 
   return 0;
