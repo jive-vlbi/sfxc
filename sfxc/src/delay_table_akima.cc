@@ -92,8 +92,8 @@ void Delay_table_akima::open(const char *delayTableName, double tstart, double t
     SFXC_ASSERT(line[4] <= 0);
     // The time read from file is in seconds, whereas the software correlator
     // works with times in microseconds
-    time = line[0]*1000000;
-    if(time>=tstart){
+    time = line[0] * 1000000;
+    if (time >= tstart) {
       times.push_back(time);
       delays.push_back(line[4]);
       break;
@@ -102,49 +102,45 @@ void Delay_table_akima::open(const char *delayTableName, double tstart, double t
   // Read the rest of the data
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
     SFXC_ASSERT(line[4] <= 0);
-    time=line[0]*1000000;
-    times.push_back(time);
-    delays.push_back(line[4]);
-    if(time>=tstop)
+    time = line[0] * 1000000;
+    if (time == 0 && times.size() == 1) {
+      // Instead of the first point of the desired scan, we got the
+      // last point of the previous scan.  Get rid of it.
+      times.resize(0);
+      delays.resize(0);
+    } else {
+      times.push_back(time);
+      delays.push_back(line[4]);
+    }
+    if (time >= tstop)
       break;
   }
-  // End with zeros to mark the end of the scan
-  times.push_back(0);
-  delays.push_back(0);
 
   // Initialise
-  begin_scan = 0;
-  end_scan   = 0;
-  bool result = initialise_next_scan();
-  if (!result) {
-    sfxc_abort((std::string("Could not read delay table ")+std::string(delayTableName)).c_str());
-  }
+  end_scan = begin_scan = 0;
+  initialise_next_scan();
 }
 
 bool Delay_table_akima::initialise_next_scan() {
-  if (times.empty()) return false;
-  // make end_scan point to the start of the next scan
-  if (end_scan != 0) end_scan++;
-  begin_scan = end_scan;
-  if (end_scan >= times.size()) return false;
+  SFXC_ASSERT(end_scan < times.size());
+  if (times[end_scan] == 0)
+    end_scan++;
 
-  // next_end_scan is the past-the-end iterator of the next scan
-  while ((end_scan < times.size()) && ((times[end_scan] != 0) || (delays[end_scan] != 0))) {
-    SFXC_ASSERT(delays[end_scan] <= 0);
-    end_scan ++;
-  }
-  if (end_scan >= times.size()) return false;
+  if (end_scan >= times.size())
+    return false;
+
+  begin_scan = end_scan;
+  while (end_scan < times.size() && times[end_scan] != 0)
+    end_scan++;
 
   if (splineakima != NULL) {
-    SFXC_ASSERT(acc != NULL);
     gsl_spline_free(splineakima);
     gsl_interp_accel_free(acc);
-    splineakima = NULL;
   }
 
   // Initialise the Akima spline
   acc = gsl_interp_accel_alloc();
-  int n_pts = end_scan - begin_scan - 1;
+  int n_pts = end_scan - begin_scan;
   // at least 4 sample points for a spline
   SFXC_ASSERT(n_pts > 4);
 
@@ -152,8 +148,6 @@ bool Delay_table_akima::initialise_next_scan() {
   // the next scan has n_pts data points
   splineakima = gsl_spline_alloc(gsl_interp_akima, n_pts);
 
-  SFXC_ASSERT(delays[begin_scan] != 0);
-  SFXC_ASSERT(delays[begin_scan+n_pts] != 0);
   gsl_spline_init(splineakima,
                   &times[begin_scan],
                   &delays[begin_scan],
@@ -166,15 +160,11 @@ bool Delay_table_akima::initialise_next_scan() {
 //calculates the delay for the delayType at time in microseconds
 //get the next line from the delay table file
 double Delay_table_akima::delay(int64_t time) {
-  if (times.empty()) {
-    DEBUG_MSG("times.empty()");
-    SFXC_ASSERT(!times.empty());
-  }
-  while (times[end_scan-1] < time) {
-    bool result = initialise_next_scan();
-    if(!result)
-      sfxc_abort("Couldn't initialize next scan in delay table.");
-  }
+  SFXC_ASSERT(!times.empty());
+
+  while (times[end_scan-1] < time)
+    initialise_next_scan();
+
   SFXC_ASSERT(splineakima != NULL);
   double result = gsl_spline_eval (splineakima, time, acc);
   SFXC_ASSERT(result < 0);
@@ -182,14 +172,11 @@ double Delay_table_akima::delay(int64_t time) {
 }
 
 double Delay_table_akima::rate(int64_t time) {
-  if (times.empty()) {
-    DEBUG_MSG("times.empty()");
-    SFXC_ASSERT(!times.empty());
-  }
-  while (times[end_scan-1] < time) {
-    bool result = initialise_next_scan();
-    SFXC_ASSERT(result);
-  }
+  SFXC_ASSERT(!times.empty());
+
+  while (times[end_scan-1] < time)
+    initialise_next_scan();
+
   SFXC_ASSERT(splineakima != NULL);
   double result = gsl_spline_eval_deriv (splineakima, time, acc);
   return result;
