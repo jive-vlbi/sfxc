@@ -13,10 +13,12 @@
 #include "mpi_transfer.h"
 #include "log_writer_cout.h"
 #include "uvw_model.h"
+#include "svn_version.h"
 
 #include <iostream>
 #include <iomanip>
 #include <fftw3.h>
+#include <stdlib.h>
 #include <cstring>
 
 Manager_node::
@@ -576,11 +578,14 @@ void Manager_node::send_global_header(){
     // Start time of the correlation in seconds since
     // midnight
     output_header.number_channels = control_parameters.number_channels();  // Number of frequency channels
-    // 3 bytes left:
     int int_time = control_parameters.integration_time()*1000;// Integration time: microseconds
     output_header.integration_time = int_time;
+    output_header.output_format_version = OUTPUT_FORMAT_VERSION;
+    output_header.correlator_version = atoi(SVN_VERSION);
+
     output_header.polarisation_type =
       control_parameters.polarisation_type_for_global_output_header();
+    // 3 bytes left:
     output_header.empty[0] = 0;
     output_header.empty[1] = 0;
     output_header.empty[2] = 0;
