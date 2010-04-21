@@ -123,15 +123,17 @@ void Delay_table_akima::open(const char *delayTableName, double tstart, double t
 
 bool Delay_table_akima::initialise_next_scan() {
   SFXC_ASSERT(end_scan < times.size());
-  if (times[end_scan] == 0)
+  // When times[0] == 0 then the data starts at midnight and we shouldn't discard that point
+  if ((times[end_scan] == 0)&&(end_scan != 0))
     end_scan++;
 
   if (end_scan >= times.size())
     return false;
 
   begin_scan = end_scan;
-  while (end_scan < times.size() && times[end_scan] != 0)
+  do{
     end_scan++;
+  }while ((end_scan < times.size()) && (times[end_scan] != 0));
 
   if (splineakima != NULL) {
     gsl_spline_free(splineakima);
