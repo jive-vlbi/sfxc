@@ -111,21 +111,19 @@ int Uvw_model::open(const char *delayTableName, double tstart, double tstop) {
   return 0;
 }
 
-
-
 void Uvw_model::initialise_spline_for_next_scan() {
+  // Skip the "empty" row that separates scans (if it is there).
   SFXC_ASSERT(end_scan < times.size());
-  // When times[0] == 0 then the data starts at midnight and we shouldn't discard that point
-  if ((times[end_scan] == 0)&&(end_scan != 0))
+  if (times[end_scan] == 0 && w[end_scan] == 0)
     end_scan++;
 
   if (end_scan >= times.size())
     return;
 
   size_t begin_scan = end_scan;
-  do{
+  while (end_scan < times.size() &&
+	 !(times[end_scan] == 0 && w[end_scan] == 0))
     end_scan++;
-  }while ((end_scan < times.size()) && (times[end_scan] != 0));
 
   if (splineakima_u != NULL) {
     gsl_spline_free(splineakima_u);
