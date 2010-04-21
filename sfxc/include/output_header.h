@@ -65,6 +65,8 @@
   )+
 */
 
+#define OUTPUT_FORMAT_VERSION  1
+
 struct Output_header_global {
   Output_header_global()
       : header_size(0),
@@ -86,6 +88,9 @@ struct Output_header_global {
   static const int RIGHT_POLARISATION=1;
   static const int LEFT_RIGHT_POLARISATION=2;
   static const int LEFT_RIGHT_POLARISATION_WITH_CROSSES=3;
+
+  int32_t output_format_version;  // Version number of the output format
+  int32_t correlator_version;     // Svn revision of the correlator producing the output file
 
   int8_t polarisation_type; // L | R | L+R | L+R with crosses
   // 3 bytes left:
