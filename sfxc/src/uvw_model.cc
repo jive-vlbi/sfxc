@@ -77,8 +77,8 @@ int Uvw_model::open(const char *delayTableName, double tstart, double tstop) {
   // Read up to tstart
   double time;
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
-    time = line[0]*1000000;
-    if(time>=tstart){
+    time = line[0] * 1000000;
+    if (time >= tstart) {
       times.push_back(time);
       u.push_back(line[1]);
       v.push_back(line[2]);
@@ -89,36 +89,38 @@ int Uvw_model::open(const char *delayTableName, double tstart, double tstop) {
 
   // Read the rest of the data
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
-    time=line[0]*1000000;
-    times.push_back(time);
-    u.push_back(line[1]);
-    v.push_back(line[2]);
-    w.push_back(line[3]);
-    if(time>=tstop)
+    time = line[0] * 1000000;
+    if (time == 0 && times.size() == 1) {
+      // Instead of the first point of the desired scan, we got the
+      // last point of the previous scan.  Get rid of it.
+      times.resize(0);
+      u.resize(0);
+      v.resize(0);
+      w.resize(0);
+    } else {
+      times.push_back(time);
+      u.push_back(line[1]);
+      v.push_back(line[2]);
+      w.push_back(line[3]);
+    }
+    if (time >= tstop)
       break;
   }
-  // End with zeros to mark the end of the scan
-  times.push_back(0);
-  u.push_back(0);
-  v.push_back(0);
-  w.push_back(0);
 
   initialise_spline_for_next_scan();
-
   return 0;
 }
 
 
 
 void Uvw_model::initialise_spline_for_next_scan() {
+  SFXC_ASSERT(end_scan < times.size());
+  if (times[end_scan] == 0)
+    end_scan++;
 
-  SFXC_ASSERT(end_scan < times.size()-1);
-  size_t next_end_scan = end_scan+2;
-
-  while ((next_end_scan < times.size()) &&
-         (times[next_end_scan] != 0)) {
-    next_end_scan ++;
-  }
+  size_t begin_scan = end_scan;
+  while (end_scan < times.size() && times[end_scan] != 0)
+    end_scan++;
 
   if (splineakima_u != NULL) {
     gsl_spline_free(splineakima_u);
@@ -137,8 +139,9 @@ void Uvw_model::initialise_spline_for_next_scan() {
   acc_u = gsl_interp_accel_alloc();
   acc_v = gsl_interp_accel_alloc();
   acc_w = gsl_interp_accel_alloc();
-  if (end_scan != 0) end_scan++;
-  int n_pts = next_end_scan-end_scan;
+  int n_pts = end_scan - begin_scan;
+  // at least 4 sample points for a spline
+  SFXC_ASSERT(n_pts > 4);
 
   // End scan now points to the beginning of the next scan and
   // the next scan has n_pts data points
@@ -147,18 +150,17 @@ void Uvw_model::initialise_spline_for_next_scan() {
   splineakima_w = gsl_spline_alloc(gsl_interp_akima, n_pts);
 
   gsl_spline_init(splineakima_u,
-                  &times[end_scan],
-                  &u[end_scan],
+                  &times[begin_scan],
+                  &u[begin_scan],
                   n_pts);
   gsl_spline_init(splineakima_v,
-                  &times[end_scan],
-                  &v[end_scan],
+                  &times[begin_scan],
+                  &v[begin_scan],
                   n_pts);
   gsl_spline_init(splineakima_w,
-                  &times[end_scan],
-                  &w[end_scan],
+                  &times[begin_scan],
+                  &w[begin_scan],
                   n_pts);
-  end_scan = next_end_scan;
 }
 
 //calculates u,v, and w at time(microseconds)
