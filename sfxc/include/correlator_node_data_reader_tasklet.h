@@ -56,7 +56,7 @@ private:
   int state;
   enum {IDLE, PROCESSING_STREAM, RECEIVE_DATA};
   /// Indicatates how many bytes still have to be read from the input stream
-  int bytes_left;
+  size_t bytes_left;
 };
 
 #endif // OUTPUT_NODE_DATA_READER_TASKLET_H
