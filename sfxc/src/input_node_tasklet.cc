@@ -251,30 +251,6 @@ Input_node_tasklet::get_delays(uint64_t start_time, uint64_t stop_time,
   }
 }
 
-/*void
-Input_node_tasklet::get_delays(uint64_t start_time, uint64_t stop_time,
-                               std::vector<Delay> &delay_list)
-{
-  // TODO: this can be implemented much more efficiently
-  int nffts=(stop_time-start_time)/delta_time;
-  uint64_t cur_time=start_time+delta_time/2;
-  Delay old_delay, new_delay;
-  old_delay=get_delay(cur_time);
-
-  delay_list.resize(0);
-  delay_list.push_back(old_delay);
-
-  for(int i=1;i<nffts;i++){
-    cur_time+=delta_time;
-    new_delay=get_delay(cur_time);
-    if((new_delay.bytes!=old_delay.bytes)||
-       (new_delay.remaining_samples!=old_delay.remaining_samples)){
-      delay_list.push_back(new_delay);
-      old_delay=new_delay;
-    }
-  }
-}*/
-
 Delay
 Input_node_tasklet::get_delay(int64_t time) {
   SFXC_ASSERT(delay_table.initialised());
