@@ -59,7 +59,7 @@ public:
   void set_new_parameters(const Correlation_parameters &parameters);
 
   // Convert input bitstream to floating point
-  int bit2float(FLOAT *output, int start, int nbits);
+  int bit2float(FLOAT *output, int start, int nbits, uint64_t *read);
 
   // Empty the input queue, called from the destructor of Input_node
   // This is necessary because of pre-extracting data
@@ -86,10 +86,10 @@ private:
 
   int state;
   enum {IDLE, SEND_INVALID, SEND_DATA, PURGE_STREAM};
-  int16_t bytes_left;
-  int16_t invalid_left;
+  size_t bytes_left;
+  size_t invalid_left;
   /// indicates starting which sample in the current input byte we should start writing
-  int sample_in_byte;
+  size_t sample_in_byte;
   /// The total number of FFT's in current time slice
   int n_ffts_per_integration;
   /// The current fft being processed

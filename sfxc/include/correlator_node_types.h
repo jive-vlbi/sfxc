@@ -27,19 +27,19 @@ public:
   };
 
   struct Channel_circular_input_buffer { 
-    Channel_circular_input_buffer(int size_)
+    Channel_circular_input_buffer(size_t size_)
       : read(0), write(0), data(size_), size(size_){}
     // NB: We can correlate 36years worth of data @16gb/s per channel before we get
     // integer overflow, therefore we can be sure that read<=write 
-    inline int bytes_free(){
+    inline size_t bytes_free() {
       return size + read - write;
     }
-    inline int bytes_read(){
+    inline size_t bytes_read() {
       return write - read;
     }
     typedef unsigned char      value_type;
     std::vector<value_type> data; // The channel extracted from a mark5 frame
-    int size; // The size of the data buffer
+    size_t size; // The size of the data buffer
     uint64_t read;  // The index where the next data byte will be read from
     uint64_t write; // The index where the next data byte will be written to
   };
