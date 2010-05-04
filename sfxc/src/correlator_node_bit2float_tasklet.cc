@@ -4,11 +4,9 @@
 
 #define MINIMUM_PROCESSED_SAMPLES 1024
 
-Correlator_node_bit2float_tasklet::Correlator_node_bit2float_tasklet(){
-  nchannels=0;
-}
+Correlator_node_bit2float_tasklet::Correlator_node_bit2float_tasklet() {}
 
-Correlator_node_bit2float_tasklet::~Correlator_node_bit2float_tasklet(){}
+Correlator_node_bit2float_tasklet::~Correlator_node_bit2float_tasklet() {}
 
 void Correlator_node_bit2float_tasklet::empty_input_queue(){
   for (size_t i = 0; i < bit2float_workers_.size(); i++){
@@ -57,7 +55,6 @@ Correlator_node_bit2float_tasklet::connect_to(int nr_stream, bit_statistics_ptr 
 
 void 
 Correlator_node_bit2float_tasklet::set_parameters(const Correlation_parameters &param){
-  nchannels = param.number_channels;
   for(int i=0; i<bit2float_workers_.size(); i++)
     bit2float_workers_[i]->set_new_parameters(param);
 }
