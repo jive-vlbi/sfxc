@@ -75,7 +75,7 @@ public:
 
 private:
   std::vector<Bit2float_worker_sptr>    bit2float_workers_;
-  int nchannels;
+
   /// Amount of processing time.
   Timer timer_;
 
