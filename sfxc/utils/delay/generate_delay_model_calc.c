@@ -606,8 +606,10 @@ start(void)
 }
 
 void
-finis(void)
+finis(short *status)
 {
+  if (*status != 0)
+    exit(*status);
 }
 
 //below this line developed by Nico Kruithof
