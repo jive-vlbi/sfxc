@@ -145,6 +145,7 @@ void Manager_node::start() {
   PROGRESS_MSG("start correlating");
 
   initialise();
+  current_correlator_node = 0;
   status = START_NEW_SCAN;
   while (status != END_NODE) {
 		process_all_waiting_messages();
@@ -184,7 +185,6 @@ void Manager_node::start() {
       }
       case START_CORRELATION_TIME_SLICE: {
         current_channel = 0;
-        current_correlator_node = 0;
         status = START_CORRELATOR_NODES_FOR_TIME_SLICE;
         break;
       }
@@ -382,7 +382,6 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   }
 
   current_channel ++;
-  current_correlator_node ++;
   if (control_parameters.cross_polarize()) {
     // Go to the next channel.
     cross_channel =
@@ -397,6 +396,9 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
                                          control_parameters.get_mode(start_time));
     }
   }
+#ifdef SFXC_DETERMINISTIC
+  current_correlator_node = (current_correlator_node+1)%correlator_node_ready.size();
+#endif
   output_slice_nr++;
 }
 
