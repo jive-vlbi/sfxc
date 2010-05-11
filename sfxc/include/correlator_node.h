@@ -105,7 +105,6 @@ class Reader_thread : public Thread {
     struct job {
       int number_ffts_in_integration;
       std::vector<int> bits_per_sample;
-      int number_channels;
       int station_streams_size;
     };
 
@@ -199,9 +198,7 @@ class Reader_thread : public Thread {
           DEBUG_MSG("CONFIGURING THE READER ! :" << jb.number_ffts_in_integration);
           bit_sample_readers_[i]->set_parameters(
             jb.number_ffts_in_integration,
-            jb.bits_per_sample[i],
-            jb.number_channels
-          );
+            jb.bits_per_sample[i]);
           readers_active_=true;
         }
       }
@@ -216,7 +213,7 @@ class Reader_thread : public Thread {
         Control_parameters::nr_ffts_per_integration_slice
         (parameters.integration_time,
          parameters.sample_rate,
-         parameters.number_channels);
+         parameters.fft_size);
       // First create a list of input streams
       std::vector<int> stream_list(parameters.station_streams.size());
       for(int i = 0; i < stream_list.size(); i++)
@@ -226,7 +223,6 @@ class Reader_thread : public Thread {
         int index = stream_list[i];
         jb.bits_per_sample.push_back(parameters.station_streams[index].bits_per_sample);
       }
-      jb.number_channels = parameters.number_channels;
       jb.station_streams_size = parameters.station_streams.size();
 
       //DEBUG_MSG("Add A Time slice:" << jb.station_streams_size );

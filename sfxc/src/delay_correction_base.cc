@@ -2,12 +2,12 @@
 
 #include "config.h"
 
-  Delay_correction_base::Delay_correction_base(int stream_nr)
-      : output_buffer(Output_buffer_ptr(new Output_buffer())),
-        output_memory_pool(32),current_time(-1), delay_table_set(false),
-        stream_nr(stream_nr)
-  {
-  }
+Delay_correction_base::Delay_correction_base(int stream_nr)
+    : output_buffer(Output_buffer_ptr(new Output_buffer())),
+      output_memory_pool(32),current_time(-1), delay_table_set(false),
+      stream_nr(stream_nr)
+{
+}
 
 Delay_correction_base::~Delay_correction_base() {
 #if PRINT_TIMER
@@ -51,7 +51,7 @@ Delay_correction_base::get_output_buffer() {
 }
 
 int Delay_correction_base::length_of_one_fft() {
-  return (((int64_t)number_channels())*1000000)/sample_rate();
+  return ((int64_t)fft_size() * 1000000) / sample_rate();
 }
 
 int Delay_correction_base::sideband() {

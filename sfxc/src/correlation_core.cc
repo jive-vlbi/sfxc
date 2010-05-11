@@ -9,7 +9,7 @@ Correlation_core::Correlation_core()
 
 Correlation_core::~Correlation_core() {
 #if PRINT_TIMER
-  int N = size_of_fft();
+  int N = 2 * fft_size();
   int numiterations = total_ffts;
   double time = fft_timer.measured_time()*1000000;
   PROGRESS_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
@@ -65,16 +65,15 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   current_integration = 0;
   current_fft = 0;
 
-  size_t prev_size_of_fft = size_of_fft();
   correlation_parameters = parameters;
   oversamp = round(parameters.sample_rate/(2*parameters.bandwidth));
 
   create_baselines(parameters);
 
 #ifdef SFXC_WRITE_STATS
-  backward_buffer.resize(size_of_fft()/2+1);
+  backward_buffer.resize(fft_size() + 1);
   backward_plan_ =
-  FFTW_PLAN_DFT_1D(size_of_fft()/2+1,
+    FFTW_PLAN_DFT_1D(fft_size() + 1,
                    reinterpret_cast<FFTW_COMPLEX*>(plan_output_buffer.buffer()),
                    reinterpret_cast<FFTW_COMPLEX*>(&backward_buffer[0]),
                    FFTW_BACKWARD,
@@ -87,16 +86,17 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   if (input_conj_buffers.size() != number_input_streams_in_use()) {
     input_conj_buffers.resize(number_input_streams_in_use());
     for(int i=0;i<number_input_streams_in_use();i++)
-        input_conj_buffers[i].resize(size_of_fft()/2+1);
+      input_conj_buffers[i].resize(fft_size() + 1);
   }
 }
+
 void
 Correlation_core::create_baselines(const Correlation_parameters &parameters){
   number_ffts_in_integration =
     Control_parameters::nr_ffts_per_integration_slice(
       parameters.integration_time,
       parameters.sample_rate,
-      parameters.number_channels);
+      parameters.fft_size);
 
   baselines.clear();
   // Autos
@@ -172,15 +172,14 @@ bool Correlation_core::has_work() {
 void Correlation_core::integration_initialise() {
   if (accumulation_buffers.size() != baselines.size()) {
     accumulation_buffers.resize(baselines.size());
-    size_t size = (size_of_fft()/2+1);
     for (size_t i=0; i<accumulation_buffers.size(); i++) {
-      accumulation_buffers[i].resize(size);
+      accumulation_buffers[i].resize(fft_size() + 1);
     }
   }
 
   SFXC_ASSERT(accumulation_buffers.size() == baselines.size());
   for (size_t i=0; i<accumulation_buffers.size(); i++) {
-    SFXC_ASSERT(accumulation_buffers[i].size() == size_of_fft()/2+1);
+    SFXC_ASSERT(accumulation_buffers[i].size() == fft_size() + 1);
     for (size_t j=0; j<accumulation_buffers[i].size(); j++) {
       accumulation_buffers[i][j] = 0;
     }
@@ -192,13 +191,13 @@ void Correlation_core::integration_step(std::vector<Complex_buffer> &integration
     for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++) {
       if(!input_elements[i].valid()) 
         input_elements[i].set(&input_buffers[i]->front().data()[0],
-                               input_buffers[i]->front().data().size());
+                              input_buffers[i]->front().data().size());
     }
     check_input_elements=false;
   }
   // get the complex conjugates of the input
   for (int i=0; i<number_input_streams_in_use(); i++) 
-    IPPS_CONJ_FC((IPP_CPLX_FLOAT*)&input_elements[i][0], (IPP_CPLX_FLOAT*)&(input_conj_buffers[i])[0], size_of_fft()/2+1);
+    IPPS_CONJ_FC((IPP_CPLX_FLOAT*)&input_elements[i][0], (IPP_CPLX_FLOAT*)&(input_conj_buffers[i])[0], fft_size() + 1);
 
 
 #ifndef DUMMY_CORRELATION
@@ -224,7 +223,7 @@ void Correlation_core::integration_step(std::vector<Complex_buffer> &integration
 #ifdef SFXC_WRITE_STATS
   {
 #ifndef SFXC_DETERMINISTIC
-  sfxc_abort("SFXC_WRITE_STATS only works with SFXC_DETERMINISTIC\n");
+    sfxc_abort("SFXC_WRITE_STATS only works with SFXC_DETERMINISTIC\n");
 #endif
 
     if (! stats_out.is_open()) {
@@ -235,7 +234,7 @@ void Correlation_core::integration_step(std::vector<Complex_buffer> &integration
     SFXC_ASSERT(stats_out.is_open());
 
     // Reset buffer:
-    for (size_t i=0; i<size_of_fft()/2+1; i++)
+    for (size_t i = 0; i < fft_size() + 1; i++)
       backward_buffer[i] = 0;
 
     int baseline = number_input_streams_in_use();
@@ -261,7 +260,7 @@ void Correlation_core::integration_step(std::vector<Complex_buffer> &integration
     FLOAT integr_abs   = std::abs(backward_buffer[fringe_pos]);
     FLOAT integr_phase = std::arg(backward_buffer[fringe_pos]);
     int max_pos = 0;
-    for (size_t i=1; i<size_of_fft()/2+1; i++) {
+    for (size_t i = 1; i < fft_size() + 1; i++) {
       if (std::abs(backward_buffer[i]) > std::abs(backward_buffer[max_pos]))
         max_pos = i;
     }
@@ -290,12 +289,12 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
 
   // Average the auto correlations
   for (size_t station=0; station < n_stations(); station++) {
-    for (size_t i = 0; i < size_of_fft()/2+1; i++) {
+    for (size_t i = 0; i < fft_size() + 1; i++) {
       norms[station] += integration_buffer[station][i].real();
     }
-    norms[station] /= (size_of_fft()/(2*oversamp));
+    norms[station] /= (fft_size() / oversamp);
 
-    for (size_t i = 0; i < size_of_fft()/2+1; i++) {
+    for (size_t i = 0; i < fft_size() + 1; i++) {
       // imaginary part should be zero!
       integration_buffer[station][i] =
         integration_buffer[station][i].real() / norms[station];
@@ -306,7 +305,7 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
   for (size_t station=n_stations(); station < baselines.size(); station++) {
     std::pair<size_t,size_t> &stations = baselines[station];
     FLOAT norm = sqrt(norms[stations.first]*norms[stations.second]);
-    for (size_t i = 0 ; i < size_of_fft()/2+1; i++) {
+    for (size_t i = 0 ; i < fft_size() + 1; i++) {
       integration_buffer[station][i] /= norm;
     }
   }
@@ -406,14 +405,18 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     writer->put_bytes(nWrite, (char *)&stats[0]);
   }
 
-  integration_buffer_float.resize(size_of_fft()/2+1);
+  integration_buffer_float.resize(number_channels() + 1);
+  size_t n = fft_size() / number_channels();
 
   Output_header_baseline hbaseline;
-  for (size_t i=0; i<baselines.size(); i++) {
+  for (size_t i = 0; i < baselines.size(); i++) {
     std::pair<size_t,size_t> &stations = baselines[i];
 
-    for (size_t ii=0; ii<(size_of_fft()/2+1); ii++ ) {
-      integration_buffer_float[ii] = integration_buffer[i][ii];
+    for (size_t j = 0; j < number_channels() + 1; j++) {
+      integration_buffer_float[j] = integration_buffer[i][j * n];
+      for (size_t k = 1; k < n && j < number_channels(); k++)
+	integration_buffer_float[j] += integration_buffer[i][j * n + k];
+      integration_buffer_float[j] /= n;
     }
 
     hbaseline.weight = 0;       // The number of good samples
@@ -450,7 +453,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
 
     int nWrite = sizeof(hbaseline);
     writer->put_bytes(nWrite, (char *)&hbaseline);
-    writer->put_bytes((size_of_fft()/2+1)*sizeof(std::complex<float>),
+    writer->put_bytes((number_channels() + 1) * sizeof(std::complex<float>),
                       ((char*)&integration_buffer_float[0]));
   }
 }
@@ -459,12 +462,8 @@ void
 Correlation_core::
 auto_correlate_baseline(std::complex<FLOAT> in[],
                         std::complex<FLOAT> out[]) {
-  // FOR IPP VERSION USE correlate_baseline INSTEAD OF THIS FUNCTION
-  int size = size_of_fft()/2+1;
-  for (int i=0; i<size; i++) {
-    out[i] += (in[i].real()*in[i].real() +
-               in[i].imag()*in[i].imag());
-  }
+  // For IPP use correlate_baseline() instead of this function.
+  SFXC_ASSERT("Not implemented");
 }
 
 void
@@ -472,8 +471,7 @@ Correlation_core::
 correlate_baseline(std::complex<FLOAT> in1[],
                    std::complex<FLOAT> in2[],
                    std::complex<FLOAT> out[]) {
-  int size = size_of_fft()/2+1;
-  ippsAddProduct_32fc((IPP_CPLX_FLOAT*)in1,(IPP_CPLX_FLOAT*)in2,(IPP_CPLX_FLOAT*)out,size);
+  ippsAddProduct_32fc((IPP_CPLX_FLOAT*)in1, (IPP_CPLX_FLOAT*)in2, (IPP_CPLX_FLOAT*)out, fft_size() + 1);
 }
 
 void Correlation_core::add_uvw_table(int sn, Uvw_model &table) {

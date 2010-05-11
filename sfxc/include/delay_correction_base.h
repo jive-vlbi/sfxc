@@ -63,8 +63,7 @@ public:
 
 private:
   // access functions to the correlation parameters
-  size_t number_channels();
-  size_t size_of_fft();
+  size_t fft_size();
   int buffer_size;
   int sample_rate();
   int bandwidth();
@@ -98,12 +97,8 @@ private:
 
 };
 
-inline size_t Delay_correction_base::number_channels() {
-  return correlation_parameters.number_channels;
-}
-
-inline size_t Delay_correction_base::size_of_fft() {
-  return 2*correlation_parameters.number_channels;
+inline size_t Delay_correction_base::fft_size() {
+  return correlation_parameters.fft_size;
 }
 
 inline int Delay_correction_base::bandwidth() {
