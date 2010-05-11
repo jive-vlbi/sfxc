@@ -225,9 +225,6 @@ Input_node_data_writer::
 set_parameters(const Input_node_parameters &input_param) {
   sample_rate = input_param.sample_rate();
   bits_per_sample = input_param.bits_per_sample();
-  fftsize = input_param.number_channels*bits_per_sample/8; // size of one fft window in bytes
-  time_fft = (((int64_t)input_param.number_channels)*1000000)/sample_rate;
-  time_per_byte=((8/bits_per_sample)*1000000.)/sample_rate;
   integration_time = input_param.integr_time*1000;
 }
 

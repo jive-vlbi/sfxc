@@ -437,7 +437,7 @@ MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
 
   MPI_Pack(&input_node_param.track_bit_rate, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&input_node_param.number_channels, 1, MPI_INT32,
+  MPI_Pack(&input_node_param.fft_size, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&input_node_param.integr_time, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
@@ -493,7 +493,7 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
              &input_node_param.track_bit_rate, 1, MPI_INT32,
              MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
-             &input_node_param.number_channels, 1, MPI_INT32,
+             &input_node_param.fft_size, 1, MPI_INT32,
              MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
              &input_node_param.integr_time, 1, MPI_INT32,
@@ -548,7 +548,7 @@ void
 MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   int size = 0;
   size =
-    12*sizeof(int32_t) + sizeof(int64_t) + 3*sizeof(char) +
+    13*sizeof(int32_t) + sizeof(int64_t) + 3*sizeof(char) +
     corr_param.station_streams.size()*5*sizeof(int32_t) + 
     sizeof(int32_t) + 11*sizeof(char);
   int position = 0;
@@ -563,6 +563,8 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   MPI_Pack(&corr_param.integration_time, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.number_channels, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&corr_param.fft_size, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.integration_nr, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
@@ -648,6 +650,9 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
              MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
              &corr_param.number_channels, 1, MPI_INT32,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.fft_size, 1, MPI_INT32,
              MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
              &corr_param.integration_nr, 1, MPI_INT32,

@@ -19,7 +19,6 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
   current_integration = 0;
   current_fft = 0;
 
-  size_t prev_size_of_fft = size_of_fft();
   correlation_parameters = parameters;
   oversamp = round(parameters.sample_rate/(2*parameters.bandwidth));
 
@@ -27,11 +26,11 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 
   double ms_per_day = 1000*24*60*60;
   double start_mjd = parameters.start_time/ms_per_day + parameters.mjd;
-  fft_duration = (((double)n_channels())*1000000)/parameters.sample_rate;
-  if(offsets.size()!=size_of_fft()/2+1)
-    offsets.resize(size_of_fft()/2+1);
-  if(bins.size() != size_of_fft()/2+1)
-    bins.resize(size_of_fft()/2+1);
+  fft_duration = ((double)fft_size() * 1000000) / parameters.sample_rate;
+  if (offsets.size() != fft_size() + 1)
+    offsets.resize(fft_size() + 1);
+  if (bins.size() != fft_size() + 1)
+    bins.resize(fft_size() + 1);
 
   pulsar_params = parameters.pulsar_parameters;
   std::map<std::string, Pulsar_parameters::Pulsar>::iterator cur_pulsar_it =
@@ -70,15 +69,15 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
     // Find the time offsets between frequency components
     int sb = parameters.sideband == 'L' ? -1 : 1;
     double base_freq = parameters.channel_freq*1e-6; // [MHZ]
-    double dfreq = sb*parameters.sample_rate*1e-6/(2*n_channels());
+    double dfreq = sb * parameters.sample_rate * 1e-6/ ( 2 * fft_size());
     // TODO check accuracy
     double inv_freq_obs2 = 1/(polyco->obs_freq*polyco->obs_freq);
     double freq = polyco->ref_freq;
     for(int i=1;i<polyco->n_coef;i++)
       freq += i*pow(DT,i-1)*polyco->coef[i]/60;
 
-    SFXC_ASSERT(offsets.size()==size_of_fft()/2+1);
-    for(int i=0;i<size_of_fft()/2+1;i++){
+    SFXC_ASSERT(offsets.size() == fft_size() + 1);
+    for(int i = 0; i < fft_size() + 1 ;i++) {
       offsets[i] = 4149.*polyco->DM*(1/pow(base_freq+i*dfreq,2)-inv_freq_obs2)*freq;
     }
     gate.begin = cur_pulsar.interval.start;
@@ -118,7 +117,7 @@ void Correlation_core_pulsar::do_task() {
 }
 
 void Correlation_core_pulsar::integration_initialise() {
-  int size = (size_of_fft()/2+1);
+  int size = fft_size() + 1;
   for(int bin=0;bin<nbins;bin++){
     if (accumulation_buffers[bin].size() != baselines.size()) {
       accumulation_buffers[bin].resize(baselines.size());
@@ -152,8 +151,8 @@ void Correlation_core_pulsar::dedisperse_buffer() {
   double obs_freq_phase = get_phase();
   double len=gate.end-gate.begin;
   // first compute the phase bins
-  SFXC_ASSERT(bins.size()==size_of_fft()/2+1);
-  for(int j=0;j<size_of_fft()/2+1;j++){
+  SFXC_ASSERT(bins.size() == fft_size() + 1);
+  for (int j=0; j < fft_size() + 1; j++) {
     double phase = obs_freq_phase+offsets[j];
     double dph = (phase-floor(phase))-gate.begin;
     if((dph>=0)&&(dph<=len)){
@@ -164,8 +163,8 @@ void Correlation_core_pulsar::dedisperse_buffer() {
 
   // TODO check performance agains loop interchange
   for (int i=0; i < baselines.size(); i++) {
-    SFXC_ASSERT(dedispersion_buffer[i].size()==size_of_fft()/2+1);
-    for(int j=0;j<size_of_fft()/2+1;j++){
+    SFXC_ASSERT(dedispersion_buffer[i].size() == fft_size() + 1);
+    for(int j= 0 ; j < fft_size() + 1; j++) {
       int bin = bins[j];
       if(bin >= 0){
         accumulation_buffers[bin][i][j] += dedispersion_buffer[i][j];

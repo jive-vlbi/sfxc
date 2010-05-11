@@ -16,7 +16,7 @@
 class Input_node_parameters {
 public:
   Input_node_parameters()
-      : track_bit_rate(0), number_channels(-1), integr_time(-1), data_modulation(0) {}
+      : track_bit_rate(0), fft_size(-1), integr_time(-1), data_modulation(0) {}
 
   class Channel_parameters {
   public:
@@ -46,8 +46,8 @@ public:
   Channel_list                                 channels;
   // data rate of one subband
   int32_t                                     track_bit_rate; // in Ms/s
-  /// number of frequency channels (\#samples per output data chunk)
-  int32_t number_channels;
+  // Number of samples per FFT.
+  int32_t fft_size;
   /// The integration time
   int32_t integr_time;
   /// Indicates if data modulation is used (p.6 of Mark4 memo 230A, Whitney 2005)
@@ -100,7 +100,7 @@ class Correlation_parameters {
 public:
   Correlation_parameters()
       : start_time(0), stop_time(0), integration_time(0),
-      number_channels(0), integration_nr(-1), slice_nr(-1), slice_offset(-1),
+      number_channels(0), fft_size(0), integration_nr(-1), slice_nr(-1), slice_offset(-1),
       sample_rate(0), channel_freq(0), bandwidth(0),
       sideband('n'), channel_nr(0), polarisation('n'), pulsar_binning(false) {}
 
@@ -130,6 +130,7 @@ public:
   int32_t mjd;              // mjd at start of slice
   int32_t integration_time; // In milliseconds
   int32_t number_channels;  // number of frequency channels
+  int32_t fft_size;         // Number of samples per FFT
   int32_t integration_nr;   // number of the integration
   int32_t slice_nr;         // Number of the output slice
   int32_t slice_offset;     // Number of output slices in the output file
@@ -184,6 +185,7 @@ public:
 
   int integration_time() const; // Integration time in miliseconds
   int number_channels() const;
+  int fft_size() const;
 
   std::string sideband(int i) const;
   std::string reference_station() const;
@@ -253,8 +255,8 @@ public:
   static int nr_ffts_per_integration_slice
   (int integration_time,
    int data_rate,
-   int number_channels) {
-    return ceil((integration_time * (data_rate / 1000) * 1.0 / number_channels));
+   int fft_size) {
+    return ceil((integration_time * (data_rate / 1000) * 1.0 / fft_size));
   }
 
   /**
@@ -265,14 +267,14 @@ public:
   (int integration_time,
    int data_rate,
    int bits_per_sample,
-   int number_channels) {
+   int fft_size) {
     int nr_ffts = nr_ffts_per_integration_slice(integration_time,
                   data_rate,
-                  number_channels);
+                  fft_size);
     // One byte for the offset
     // One extra byte at the end for the offset
     // two int32_t for the invalid sequence
-    return nr_ffts*(number_channels*bits_per_sample/8 + 2 + 2*sizeof(int32_t));
+    return nr_ffts * ((fft_size * bits_per_sample / 8) + 2 + 2 * sizeof(int32_t));
   }
 
   int polarisation_type_for_global_output_header() const;

@@ -313,8 +313,8 @@ Correlator_node::set_parameters() {
     (parameters.stop_time-parameters.start_time) / parameters.integration_time;
   // set the output stream
   int nBaselines = correlation_core->number_of_baselines();
-  int size_of_one_baseline = sizeof(fftwf_complex)*
-                             (parameters.number_channels*PADDING/2+1);
+  int size_of_one_baseline = sizeof(fftwf_complex) *
+                             (parameters.number_channels + 1);
   int size_uvw = correlation_core->uvw_tables.size()*sizeof(Output_uvw_coordinates);
   // when the cross_polarize flag is set then the correlator node receives 2 polarizations
   int size_stats = delay_modules.size()*sizeof(Output_header_bitstatistics);

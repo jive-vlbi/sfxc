@@ -139,8 +139,7 @@ bool Correlator_node_data_reader_tasklet::active() {
 void
 Correlator_node_data_reader_tasklet::
 set_parameters(const int n_ffts_to_read_,
-               const int bits_per_sample_,
-               const int number_channels_) {
+               const int bits_per_sample_) {
   bits_per_sample = bits_per_sample_;
   samples_per_byte = 8 / bits_per_sample;
   new_stream_available = true;

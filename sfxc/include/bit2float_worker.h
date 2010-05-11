@@ -96,14 +96,12 @@ private:
   int current_fft;
   /// The number of ffts per buffer
   int nfft_max;
-  /// The size of a single fft in bytes
+  /// The number of samples per FFT
   int fft_size;
   /// Number of bits per sample
   int bits_per_sample;
   /// Data rate [samples/sec]
   int sample_rate;
-  /// The number of channels
-  int n_channels;
   /// index of the current stream in the station list
   int stream_nr;
   int16_t invalid_samples;
@@ -114,7 +112,7 @@ private:
     int n_ffts_per_integration;
     int bits_per_sample;
     int sample_rate;
-    int n_channels;
+    int fft_size;
   } new_parameters;
 };
 #endif // INTEGER_DELAY_CORRECTION_PER_CHANNEL_H

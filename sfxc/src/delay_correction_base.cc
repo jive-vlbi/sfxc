@@ -51,7 +51,7 @@ Delay_correction_base::get_output_buffer() {
 }
 
 int Delay_correction_base::length_of_one_fft() {
-  return (((int64_t)number_channels())*1000000)/sample_rate();
+  return ((int64_t)fft_size() * 1000000) / sample_rate();
 }
 
 int Delay_correction_base::sideband() {

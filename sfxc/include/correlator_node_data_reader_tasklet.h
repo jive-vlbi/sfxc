@@ -41,8 +41,8 @@ public:
   }
 
   void set_parameters(const int n_ffts_to_read,
-                      const int bits_per_sample,
-                      const int number_channels);
+                      const int bits_per_sample);
+
 private:
   Data_reader_ptr           reader;
   Data_reader_blocking_ptr  breader_;

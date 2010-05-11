@@ -237,13 +237,13 @@ set_new_parameters(const Correlation_parameters &parameters) {
 
   SFXC_ASSERT((parameters.number_channels*bits_per_sample)%8 == 0);
   new_parameters.sample_rate = parameters.sample_rate;
-  new_parameters.n_channels = parameters.number_channels;
+  new_parameters.fft_size = parameters.fft_size;
 
   new_parameters.n_ffts_per_integration =
     Control_parameters::nr_ffts_per_integration_slice(
       parameters.integration_time,
       parameters.sample_rate,
-      parameters.number_channels);
+      parameters.fft_size);
 
   have_new_parameters=true;
 }
@@ -254,10 +254,9 @@ set_parameters() {
   bits_per_sample = new_parameters.bits_per_sample;
   sample_rate = new_parameters.sample_rate;
 
-  n_channels = new_parameters.n_channels;
-  fft_size = n_channels*bits_per_sample/8;
-  SFXC_ASSERT(((fft_size*(8/bits_per_sample))*1000000LL) % sample_rate== 0);
-  nfft_max = std::max(CORRELATOR_BUFFER_SIZE/n_channels,1);
+  fft_size = new_parameters.fft_size;
+  SFXC_ASSERT(((int64_t)fft_size * 1000000) % sample_rate == 0);
+  nfft_max = std::max(CORRELATOR_BUFFER_SIZE / fft_size, 1);
   n_ffts_per_integration = new_parameters.n_ffts_per_integration;
   statistics->reset_statistics(bits_per_sample);
 
@@ -374,7 +373,7 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples, uint64_t *re
 void
 Bit2float_worker::allocate_element(){
   int nfft = std::min(nfft_max, n_ffts_per_integration - current_fft);
-  int nsamples = nfft*n_channels;
+  int nsamples = nfft * fft_size;
   out_element = memory_pool_.allocate();
   if(out_element.data().data.size() != nsamples)
     out_element.data().data.resize(nsamples);

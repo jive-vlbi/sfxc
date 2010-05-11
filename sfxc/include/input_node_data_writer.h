@@ -89,9 +89,6 @@ private:
   int                 delay_index;
   int sample_rate;
   int bits_per_sample;
-  int fftsize;
-  int time_fft;
-  double time_per_byte;
   int integration_time;
   bool sync_stream;
 

@@ -98,8 +98,8 @@ protected:
                           std::complex<FLOAT> out[]);
 
 
-  size_t size_of_fft();
-  size_t n_channels();
+  size_t number_channels();
+  size_t fft_size();
   size_t n_stations();
 
   size_t number_input_streams_in_use();
@@ -137,12 +137,12 @@ protected:
 
 };
 
-inline size_t Correlation_core::n_channels() {
+inline size_t Correlation_core::number_channels() {
   return correlation_parameters.number_channels;
 }
 
-inline size_t Correlation_core::size_of_fft() {
-  return n_channels()*2;
+inline size_t Correlation_core::fft_size() {
+  return correlation_parameters.fft_size;
 }
 
 inline size_t Correlation_core::n_stations() {
