@@ -84,8 +84,8 @@ void Delay_correction_swapped::fractional_bit_shift(std::complex<FLOAT> output[]
   const double dfr = (double)sample_rate() / (2 * fft_size()); // delta frequency
   const double tmp1 = -2.0*M_PI*fractional_delay/sample_rate(); 
   const double tmp2 = M_PI*(integer_shift&3)/(2*oversamp);
-  const double constant_term = tmp2 - sideband()*tmp1*0.5*bandwidth();
-  const double linear_term = tmp1*sideband()*dfr; 
+  const double constant_term = tmp2 - tmp1*0.5*bandwidth();
+  const double linear_term = tmp1*dfr; 
 
   // 5b)apply phase correction in frequency range
   const int size = fft_size() + 1;
