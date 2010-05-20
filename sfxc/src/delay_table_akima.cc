@@ -181,7 +181,7 @@ double Delay_table_akima::rate(int64_t time) {
 
   SFXC_ASSERT(splineakima != NULL);
   double result = gsl_spline_eval_deriv (splineakima, time, acc);
-  return result;
+  return (result * 1e6);
 }
 
 int64_t Delay_table_akima::start_time_scan() {
