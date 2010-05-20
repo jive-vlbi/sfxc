@@ -52,8 +52,8 @@ public:
 
 
   int time_between_headers() {
-    SFXC_ASSERT(data_rate() % (N*SIZE_VLBA_FRAME) == 0);
-    return data_rate() / (N*SIZE_VLBA_FRAME);
+    SFXC_ASSERT(data_rate() % (N*SIZE_MK5A_FRAME*8) == 0);
+    return N * 8 * SIZE_MK5A_FRAME * 1000000LL / data_rate();
   }
 
   bool eof();
