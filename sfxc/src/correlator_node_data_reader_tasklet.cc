@@ -88,7 +88,7 @@ Correlator_node_data_reader_tasklet::do_task() {
       size_t to_read = std::min(bytes_left, bytes_left_in_buffer - 1);
       size_t data_read = 0;
       while (data_read < to_read) {
-        size_t data_to_read = std::min(to_read - data_read, (data.size() - (write % dsize)));
+        size_t data_to_read = std::min(to_read - data_read, (size_t)(data.size() - (write % dsize)));
 	SFXC_ASSERT(data_to_read > 0);
         size_t nbytes = breader_->get_bytes(data_to_read, (char *)&data[write % dsize]);
 	SFXC_ASSERT(nbytes > 0);

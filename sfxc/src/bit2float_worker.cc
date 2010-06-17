@@ -127,7 +127,7 @@ Bit2float_worker::do_task() {
 
 	int samples_per_byte = (8 / bits_per_sample);
 	size_t output_buffer_free = output_buffer_size - out_index;
-	size_t bytes_in_input_buffer = std::min((write - read), bytes_left);
+	size_t bytes_in_input_buffer = std::min((size_t)(write - read), bytes_left);
 	size_t samp_to_write = std::min(bytes_in_input_buffer * samples_per_byte - sample_in_byte,
 					output_buffer_free);
 	SFXC_ASSERT(bytes_left > 0);
@@ -145,7 +145,7 @@ Bit2float_worker::do_task() {
 	break;
       }
     case PURGE_STREAM:
-      size_t bytes_to_advance = std::min((write - read), bytes_left);
+      size_t bytes_to_advance = std::min((size_t)(write - read), bytes_left);
       read += bytes_to_advance;
       bytes_left -= bytes_to_advance;
       if (bytes_left == 0) {
