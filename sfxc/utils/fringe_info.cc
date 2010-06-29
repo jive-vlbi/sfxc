@@ -953,11 +953,11 @@ print_diff_html(const Vex &vex,
   }
 
   // Get the mode of the current scan
-  double integration_time = pow(2, global_header.integration_time);
+  double integration_time = global_header.integration_time/1000000.;
   double sec = (global_header.start_time + integration_time * first_timeslice_header.integration_slice);
   Date start_time(global_header.start_year, global_header.start_day, (int) sec);
   std::string mode = vex.get_mode(vex.get_scan_name(start_time));
-
+ 
   // Array with the station names
   std::vector<std::string> stations;
 
@@ -969,7 +969,6 @@ print_diff_html(const Vex &vex,
        it != root_node["STATION"]->end(); it++) {
     stations.push_back(it.key());
   }
-
   vex.get_frequencies(mode, frequencies);
 
   std::ofstream index_html("index2.html");
