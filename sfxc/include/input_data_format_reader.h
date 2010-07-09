@@ -34,7 +34,7 @@ public:
 
   /// Get track information from a mark5a header
   virtual std::vector< std::vector<int> >
-  get_tracks(const Input_node_parameters &input_node_param, 
+  get_tracks(const Input_node_parameters &input_node_param,
              Data_frame &data)= 0;
 
   virtual size_t bytes_per_input_word() const = 0;
@@ -43,6 +43,7 @@ public:
   virtual int time_between_headers() = 0;
 
   bool eof();
+  void find_fill_pattern(Data_frame &data);
 
   virtual void set_parameters(const Input_node_parameters &param) = 0;
 

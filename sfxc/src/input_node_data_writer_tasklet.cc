@@ -134,6 +134,8 @@ Input_node_data_writer_tasklet::get_current_time(){
    do{
      i++;
      time = data_writers_[i]->get_current_time();
+     if(time==INVALID_TIME)
+       std::cout << RANK_OF_NODE << " : writer " << i << " has INVALID_TIME\n";
    }while((i < size-1)&&(time==INVALID_TIME));
 
    for (int j = i+1; j < size; j++){

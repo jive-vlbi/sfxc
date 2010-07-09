@@ -68,6 +68,8 @@ public:
   /// Read another mark5b-frame
   bool read_new_block(Data_frame &data);
 
+  bool resync_header(Data_frame &data);
+
   bool eof();
 
   int time_between_headers();
@@ -75,6 +77,7 @@ public:
   size_t bytes_per_input_word() const {
     return SIZE_MK5B_WORD;
   }
+
   size_t size_data_block() const {
     return bytes_per_input_word()*SIZE_MK5B_FRAME*N_MK5B_BLOCKS_TO_READ;
   }
@@ -98,6 +101,9 @@ private:
   // start time is used to check the data rate
   int64_t start_time_, current_time_;
 
+  int sample_rate;
+  int nr_of_bitstreams;
+
   // For testing
   Debug_level debug_level_;
 
@@ -107,6 +113,13 @@ private:
   Header current_header, tmp_header;
 
   int time_between_headers_;
+
+  // The lookup table for the CRC-16 checks
+  std::vector<uint16_t> crc_table;
+  // generate the crc16 lookup table
+  void gen_crc16();
+  // Check the integrity of the current header
+  bool check_header(Header &header);
 
   // Convert time read from input stream to time relative to midnight on the reference day
   int64_t correct_raw_time(int64_t raw_time);

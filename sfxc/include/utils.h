@@ -41,6 +41,11 @@
 #define HEADER_DELAY      2
 #define HEADER_ENDSTREAM  3
 
+// The Fillpattern inserted by the streamstore card
+#define MARK5_FILLPATTERN (0x11223344)
+// The minimum number of words of "fillpattern" inserted by the streamstore card
+#define MARK5_FILLPATTERN_NWORDS   (65528/4)
+
 // The (maximum) amount of samples processed per iteration, this is automatically set to a multiple of nchannels
 #define CORRELATOR_BUFFER_SIZE    8192
 
@@ -61,13 +66,11 @@
 
 // Number of mark5b frames to read at once
 // To make sure that the first sample lies exactly on an integer microsecond
-// duration of one block: SIZE_MK5B_FRAME/MAX_SAMPLE_RATE = 2500/64 = 625/16
+// duration of one block = SIZE_MK5B_WORD * SIZE_MK5B_FRAME * 8 / (MAX_SAMPLE_RATE * MAX_N_BITSTREAMS)
+//                       = 4 * 2500 * 8 / (64 * 32) = 625 / 16
 // MAX_SAMPLE_RATE = 64 MHz
 // Hence, this should be a multiple of 16
-#define N_MK5B_BLOCKS_TO_READ       16
-
-// The amount of padding in the correlator (could be 1, not tested though)
-#define PADDING                  2
+#define N_MK5B_BLOCKS_TO_READ      16
 
 #define SFXC_PORT                1233
 #define MAX_TCP_CONNECTIONS      16

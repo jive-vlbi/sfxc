@@ -166,15 +166,11 @@ do_task() {
       return 0;
   }
 
-  int index;
-  int block_inv_samples=std::max((int64_t)0, input_element.nr_invalid_samples-byte_offset*samples_per_byte);
-  if(block_inv_samples>0){
-    write_invalid(writer, block_inv_samples);
-    index = input_element.nr_invalid_samples/samples_per_byte; // We don't actually write the invalid bytes
-  }else
-    index=byte_offset;
-
-  int next_delay_pos=get_next_delay_pos(cur_delay, _current_time)+byte_offset;
+  int index=byte_offset;
+  int invalid_index = 0;
+  int next_invalid_pos = input_element.invalid.size() > 0 ? input_element.invalid[0].invalid_begin :
+                                                            block_size + 1;
+  int next_delay_pos = get_next_delay_pos(cur_delay, _current_time)+byte_offset;
   int total_to_write = std::min(block_size-byte_offset,
                        (int64_t)(data_writer.slice_size+samples_per_byte-1)/samples_per_byte);
   int end_index = total_to_write+byte_offset;
@@ -193,6 +189,19 @@ do_task() {
       total_to_write = std::min(block_size-byte_offset,
                        (int64_t)(data_writer.slice_size+samples_per_byte-1)/samples_per_byte);
       end_index = total_to_write+byte_offset;
+    }else if(index>=next_invalid_pos){
+      int n = input_element.invalid[invalid_index].nr_invalid;
+      int nr_invalid = std::max(0, next_invalid_pos + n - index);
+      nr_invalid = std::min(nr_invalid, end_index - index);
+      if(nr_invalid > 0){
+        write_invalid(writer, nr_invalid * samples_per_byte);
+        index += nr_invalid; 
+      }
+      invalid_index++;
+      if(input_element.invalid.size() > invalid_index)
+        next_invalid_pos = input_element.invalid[invalid_index].invalid_begin;
+      else
+        next_invalid_pos = block_size + 1;
     }else{
       int data_to_write = std::min(next_delay_pos-index, end_index-index);
 
@@ -269,14 +278,14 @@ Input_node_data_writer::fetch_next_time_interval() {
 void
 Input_node_data_writer::write_invalid(Data_writer_sptr writer, int nInvalid){
   int8_t header = HEADER_INVALID;
-  int bytes_written=0;
+  int invalid_written=0;
 
-  while(bytes_written < nInvalid){
+  while(invalid_written < nInvalid){
     // first write a header containing the number of bytes to be send
-    int16_t data_to_write = (int16_t) std::min(nInvalid-bytes_written, SHRT_MAX);
+    int16_t invalid_to_write = (int16_t) std::min(nInvalid-invalid_written, SHRT_MAX);
     writer->put_bytes(sizeof(header), (char *)&header);
-    writer->put_bytes(sizeof(data_to_write), (char *)&data_to_write);
-    bytes_written += data_to_write;
+    writer->put_bytes(sizeof(invalid_to_write), (char *)&invalid_to_write);
+    invalid_written += invalid_to_write;
   }
 }
 

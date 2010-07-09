@@ -49,101 +49,101 @@ Bit2float_worker::do_task() {
     SFXC_ASSERT(read <= write);
     switch(state) {
     case IDLE:
-      {
-	if ((write - read) < 3)
-	  return samples_written;
+    {
+      if ((write - read) < 3)
+        return samples_written;
 
-	uint8_t header = inp_data[read++ % inp_size];
-	switch(header) {
-	case HEADER_DATA:
-	  bytes_left = inp_data[read++ % inp_size];
-	  bytes_left |= (inp_data[read++ % inp_size] << 8);
-	  SFXC_ASSERT(bytes_left > 0);
-	  state = SEND_DATA;
-	  break;
-	case HEADER_DELAY:
-	  {
-	    int8_t new_delay = inp_data[read++ % inp_size];
-	    if (cur_delay < 0) {
-	      // the initial delay at the beginning of the integration
-	      sample_in_byte = new_delay;
-	    } else {
-	      int diff = new_delay - cur_delay;
-	      if ((diff == -1) || (diff > 1)) {
-		// insert a sample into the stream
-		memset(&out_frame.data[out_index], 0, sizeof(FLOAT));
-		out_index++;
-	      } else {
-		// remove a sample from the stream
-		SFXC_ASSERT(sample_in_byte == 0);
-		sample_in_byte = 1;
-	      }
-	    }
-	    cur_delay = new_delay;
-	    break;
-	  }
-	case HEADER_INVALID:
-	  invalid_left = inp_data[read++ % inp_size];
-	  invalid_left |= (inp_data[read++ % inp_size] << 8);
-	  statistics->inc_invalid(invalid_left);
-	  state = SEND_INVALID;
-	  break;
-	default:
-	  SFXC_ASSERT_MSG(false, "Read invalid header from input buffer");
-	}
-	break;
+      uint8_t header = inp_data[read++ % inp_size];
+      switch(header) {
+      case HEADER_DATA:
+        bytes_left = inp_data[read++ % inp_size];
+        bytes_left |= (inp_data[read++ % inp_size] << 8);
+        SFXC_ASSERT(bytes_left > 0);
+        state = SEND_DATA;
+        break;
+      case HEADER_DELAY:
+      {
+        int8_t new_delay = inp_data[read++ % inp_size];
+        if (cur_delay < 0) {
+          // the initial delay at the beginning of the integration
+          sample_in_byte = new_delay;
+        } else {
+          int diff = new_delay - cur_delay;
+          if ((diff == -1) || (diff > 1)) {
+            // insert a sample into the stream
+            memset(&out_frame.data[out_index], 0, sizeof(FLOAT));
+            out_index++;
+	        } else {
+            // remove a sample from the stream
+            SFXC_ASSERT(sample_in_byte == 0);
+            sample_in_byte = 1;
+          }
+        }
+        cur_delay = new_delay;
+        break;
       }
+      case HEADER_INVALID:
+        invalid_left = inp_data[read++ % inp_size];
+        invalid_left |= (inp_data[read++ % inp_size] << 8);
+        statistics->inc_invalid(invalid_left);
+        state = SEND_INVALID;
+        break;
+      default:
+        SFXC_ASSERT_MSG(false, "Read invalid header from input buffer");
+      }
+      break;
+    }
     case SEND_INVALID:
-      {
-	size_t output_buffer_free = output_buffer_size - out_index;
-	size_t invalid_to_write = std::min(output_buffer_free, invalid_left);
-	// check if there was a delay change and we should remove samples from the stream
-	if (sample_in_byte > 0) {
-	  // NB after receiving the first delay we can have sample_in_byte > 1
-	  size_t samples_to_drop = std::min(sample_in_byte, invalid_to_write);
-	  sample_in_byte -= samples_to_drop;
-	  invalid_to_write -= samples_to_drop;
-	  invalid_left -= samples_to_drop;
-	}
-
-	if (invalid_to_write > 0) {
-	  memset(&out_frame.data[out_index], 0, invalid_to_write * sizeof(FLOAT));
-	  invalid_left -= invalid_to_write;
-	  out_index += invalid_to_write;
-	  samples_written += invalid_to_write;
-	}
-	if (invalid_left == 0)
-	  state = IDLE;
-	break;
+    {
+      size_t output_buffer_free = output_buffer_size - out_index;
+      size_t invalid_to_write = std::min(output_buffer_free, invalid_left);
+      // check if there was a delay change and we should remove samples from the stream
+      if (sample_in_byte > 0) {
+        // NB after receiving the first delay we can have sample_in_byte > 1
+        size_t samples_to_drop = std::min(sample_in_byte, invalid_to_write);
+        sample_in_byte -= samples_to_drop;
+        invalid_to_write -= samples_to_drop;
+        invalid_left -= samples_to_drop;
       }
+
+      if (invalid_to_write > 0) {
+        memset(&out_frame.data[out_index], 0, invalid_to_write * sizeof(FLOAT));
+        invalid_left -= invalid_to_write;
+        out_index += invalid_to_write;
+        samples_written += invalid_to_write;
+      }
+      if (invalid_left == 0)
+        state = IDLE;
+        break;
+    }
     case SEND_DATA:
-      {
-	if (read == write) {
-	  input_buffer_->read = read;
-	  return samples_written;
-	}
-
-	SFXC_ASSERT((write - read) > 0);
-
-	int samples_per_byte = (8 / bits_per_sample);
-	size_t output_buffer_free = output_buffer_size - out_index;
-	size_t bytes_in_input_buffer = std::min((size_t)(write - read), bytes_left);
-	size_t samp_to_write = std::min(bytes_in_input_buffer * samples_per_byte - sample_in_byte,
-					output_buffer_free);
-	SFXC_ASSERT(bytes_left > 0);
-	SFXC_ASSERT(bytes_in_input_buffer > 0);
-	SFXC_ASSERT(output_buffer_free > 0);
-
-	bytes_left -= (samp_to_write + sample_in_byte) / samples_per_byte;
-	sample_in_byte = bit2float(&out_frame.data[out_index], sample_in_byte, samp_to_write, &read);
-	out_index += samp_to_write;
-	if (bytes_left == 0) {
-	  SFXC_ASSERT(sample_in_byte == 0);
-	  state = IDLE;
-	}
-	samples_written += samp_to_write;
-	break;
+    {
+      if (read == write) {
+        input_buffer_->read = read;
+        return samples_written;
       }
+
+      SFXC_ASSERT((write - read) > 0);
+
+      int samples_per_byte = (8 / bits_per_sample);
+      size_t output_buffer_free = output_buffer_size - out_index;
+      size_t bytes_in_input_buffer = std::min((size_t)(write - read), bytes_left);
+      size_t samp_to_write = std::min(bytes_in_input_buffer * samples_per_byte - sample_in_byte,
+                                      output_buffer_free);
+      SFXC_ASSERT(bytes_left > 0);
+      SFXC_ASSERT(bytes_in_input_buffer > 0);
+      SFXC_ASSERT(output_buffer_free > 0);
+
+      bytes_left -= (samp_to_write + sample_in_byte) / samples_per_byte;
+      sample_in_byte = bit2float(&out_frame.data[out_index], sample_in_byte, samp_to_write, &read);
+      out_index += samp_to_write;
+      if (bytes_left == 0) {
+        SFXC_ASSERT(sample_in_byte == 0);
+        state = IDLE;
+      }
+      samples_written += samp_to_write;
+      break;
+    }
     case PURGE_STREAM:
       size_t bytes_to_advance = std::min((size_t)(write - read), bytes_left);
       read += bytes_to_advance;

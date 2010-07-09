@@ -24,21 +24,21 @@ enum TRANSPORT_TYPE {
 };
 
 class Time_interval {
-	public:
-		Time_interval(){
-				start_time_ = 0;
-				stop_time_ = 0;
-		}
+  public:
+    Time_interval(){
+        start_time_ = 0;
+        stop_time_ = 0;
+    }
 
-		Time_interval(uint64_t start_time, uint64_t stop_time){
-				start_time_ = start_time;
-				stop_time_ = stop_time;
-		}
+    Time_interval(uint64_t start_time, uint64_t stop_time){
+        start_time_ = start_time;
+        stop_time_ = stop_time;
+    }
 
-		bool empty(){ return stop_time_ <= start_time_; }
+    bool empty(){ return stop_time_ <= start_time_; }
 
-		uint64_t start_time_;
-		uint64_t stop_time_;
+    uint64_t start_time_;
+    uint64_t stop_time_;
 };
 
   struct Delay{
@@ -62,17 +62,22 @@ public:
   typedef Data_memory_pool::Element       Data_memory_pool_element;
 
 
+  // Used to mark a block of data as invalid
+  struct Invalid_block{
+    // Index of the first byte to be marked invalid
+    int invalid_begin;
+    // Number of invalid bytes
+    int nr_invalid;
+  };
+
   // Memory pool for Mark5 frames
   struct Input_data_frame {
     Input_data_frame()
-      : invalid_bytes_begin(-1), nr_invalid_bytes(-1), start_time(-1), channel(-1) {}
+      : start_time(-1), channel(-1) {}
      Data_memory_pool_element  buffer;
 
-    // The following two members are for the randomization of the mark5-header
-    // The number of the first invalid byte
-    int invalid_bytes_begin;
-    // Number of invalid bytes in this mark5 block
-    int nr_invalid_bytes;
+    // List of blocks to be flagged as invalid
+    std::vector<Invalid_block> invalid;
     // The channel which the data_frame belongs to (currently VDIF only), -1 is broadcast
     int channel;
     // Start time of the mark5-block in microseconds from midnight
@@ -85,13 +90,11 @@ public:
   /// Buffer for fft buffers
   struct Channel_buffer_element_ {
     Channel_buffer_element_()
-      : invalid_samples_begin(-1), nr_invalid_samples(-1), start_time(-1) {}
+      : start_time(-1) {}
 
     Data_memory_pool_element channel_data;
-    // The number of the first invalid sample
-    int invalid_samples_begin;
-    // Number of invalid samples in this fft
-    int nr_invalid_samples;
+    // List of blocks to be flagged as invalid
+    std::vector<Invalid_block> invalid;
     // Time in microseconds
     int64_t  start_time;
   };
@@ -99,35 +102,6 @@ public:
   typedef Threadsafe_queue<Channel_buffer_element> Channel_buffer;
   typedef boost::shared_ptr<Channel_buffer>        Channel_buffer_ptr;
 
-  /// Buffer for fft buffers
-  struct Fft_buffer_element_ {
-    Fft_buffer_element_()
-      : delay(-1),
-        invalid_samples_begin(-1), nr_invalid_samples(-1),
-        first_byte(-1), nr_bytes(-1) {}
-    // The data
-    Data_memory_pool_element channel_data;
-
-    // If delay >= 0, then we print the header of the fft
-    // (otherwise the fft is split over two mark5-fft frames and we are
-    //  processing the second mark5-block);
-
-    // Integer delay of samples within one byte
-    char delay;
-    // The number of the first invalid sample
-    int32_t invalid_samples_begin;
-    // Number of invalid samples in this fft
-    int32_t nr_invalid_samples;
-
-    // Pointer to the first byte that has to be written, and the number of bytes
-    int first_byte, nr_bytes;
-  };
-  typedef Fft_buffer_element_                      Fft_buffer_element;
-  typedef Threadsafe_queue<Fft_buffer_element>     Fft_buffer;
-  typedef boost::shared_ptr<Fft_buffer>            Fft_buffer_ptr;
-
   Input_node_types() {}
-}
-;
-
+};
 #endif /*INPUT_NODE_TYPES_H*/

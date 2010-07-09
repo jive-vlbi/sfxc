@@ -48,33 +48,33 @@ Correlator_node_data_reader_tasklet::do_task() {
     data[write++ % dsize] = header;
     switch (header) {
     case HEADER_DATA:
-      {
-	uint16_t nbytes;
-	breader_->get_bytes(sizeof(nbytes), (char *)&nbytes);
-	char *nbytes_buffer = (char *)&nbytes;
-	data[write++ % dsize] = nbytes & 0xff;
-	data[write++ % dsize] = nbytes >> 8;
-	bytes_left = nbytes;
-	SFXC_ASSERT(nbytes > 0);
-	state = RECEIVE_DATA;
-	break;
-      }
+    {
+      uint16_t nbytes;
+      breader_->get_bytes(sizeof(nbytes), (char *)&nbytes);
+      char *nbytes_buffer = (char *)&nbytes;
+      data[write++ % dsize] = nbytes & 0xff;
+      data[write++ % dsize] = nbytes >> 8;
+      bytes_left = nbytes;
+      SFXC_ASSERT(nbytes > 0);
+      state = RECEIVE_DATA;
+      break;
+    }
     case HEADER_DELAY:
-      {
-	int8_t new_delay;
-	breader_->get_bytes(sizeof(new_delay), (char *)&new_delay);
-	SFXC_ASSERT((new_delay >= 0) && (new_delay < samples_per_byte));
-	data[write++ % dsize] = new_delay;
-	break;
-      }
+    {
+      int8_t new_delay;
+      breader_->get_bytes(sizeof(new_delay), (char *)&new_delay);
+      SFXC_ASSERT((new_delay >= 0) && (new_delay < samples_per_byte));
+      data[write++ % dsize] = new_delay;
+      break;
+    }
     case HEADER_INVALID:
-      {
-	uint16_t n_invalid;
-	breader_->get_bytes(sizeof(n_invalid), (char *)&n_invalid);
-	data[write++ % dsize] = n_invalid & 0xff;
-	data[write++ % dsize] = n_invalid >> 8;
-	break;
-      }
+    {
+      uint16_t n_invalid;
+      breader_->get_bytes(sizeof(n_invalid), (char *)&n_invalid);
+      data[write++ % dsize] = n_invalid & 0xff;
+      data[write++ % dsize] = n_invalid >> 8;
+      break;
+    }
     case HEADER_ENDSTREAM:
       state = IDLE;
       break;
@@ -89,9 +89,9 @@ Correlator_node_data_reader_tasklet::do_task() {
       size_t data_read = 0;
       while (data_read < to_read) {
         size_t data_to_read = std::min(to_read - data_read, (size_t)(data.size() - (write % dsize)));
-	SFXC_ASSERT(data_to_read > 0);
+        SFXC_ASSERT(data_to_read > 0);
         size_t nbytes = breader_->get_bytes(data_to_read, (char *)&data[write % dsize]);
-	SFXC_ASSERT(nbytes > 0);
+        SFXC_ASSERT(nbytes > 0);
         data_read += nbytes;
         write += nbytes;
       }

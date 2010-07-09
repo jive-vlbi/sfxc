@@ -133,14 +133,17 @@ Channel_extractor_tasklet::do_task() {
       output_positions[subband] =
         (unsigned char *)&(output_elements[subband].channel_data.data().data[0]);
 
-      // Copy the invalid-data members
-      // Mark5a-files have headers, which should be invalidated
-      SFXC_ASSERT(input_element.invalid_bytes_begin >= 0);
-      output_elements[subband].invalid_samples_begin =
-        input_element.invalid_bytes_begin*fan_out/bits_per_sample;
-      output_elements[subband].nr_invalid_samples =
-        input_element.nr_invalid_bytes*fan_out/(bits_per_sample*N);
-      SFXC_ASSERT(output_elements[subband].nr_invalid_samples >= 0);
+      // Copy the invalid-data members,
+      int n_invalid_blocks = input_element.invalid.size();
+      output_elements[subband].invalid.resize(n_invalid_blocks);
+      for(int i = 0 ; i < n_invalid_blocks ; i++){
+        SFXC_ASSERT(input_element.invalid[i].invalid_begin >= 0);
+        output_elements[subband].invalid[i].invalid_begin =
+                input_element.invalid[i].invalid_begin * fan_out / 8;
+        output_elements[subband].invalid[i].nr_invalid =
+                input_element.invalid[i].nr_invalid * fan_out / (8 * N);
+        SFXC_ASSERT(output_elements[subband].invalid[i].nr_invalid >= 0);
+      }
     }
     //timer_waiting_output_.stop();
   }

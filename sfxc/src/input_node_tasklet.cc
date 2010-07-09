@@ -219,6 +219,8 @@ get_current_time() {
   int writer_time = data_writer_.get_current_time()/1000;
   if (writer_time != INVALID_TIME)
     time = std::min(time, writer_time);
+  else
+    std::cout << RANK_OF_NODE << " : writer_time == INVALID_TIME\n";
   return time;
 }
 
