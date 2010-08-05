@@ -428,7 +428,7 @@
 ! --- sites and sources catalog (.FALSE. means no update).
 !
       CHARACTER   DFSTAT*1, DFLETR*1, DFHIST*34
-      INTEGER*2   DFBAND
+!     INTEGER*2   DFBAND
       REAL*8      DFOWNB,   DFOWNE
       LOGICAL*1   DFSSCT
       PARAMETER ( DFSTAT = 'G',
@@ -436,7 +436,7 @@
      .            DFHIST = 'Generic database created by dbedit.',
      .            DFOWNB = -1.D99,
      .            DFOWNE =  1.D99,
-     .            DFBAND = 'A ',  
+!    .            DFBAND = 'A ',   ! (ak) DFBAND is unused in our CALC
      .            DFSSCT = .FALSE.  )
 !
 !     ******************************************************

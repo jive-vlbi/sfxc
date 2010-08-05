@@ -49,9 +49,9 @@
 !  Terminate if out of unit numbers.
 !
       if(iutot.gt.iumax) then
-        write(if7,"(' *** ERROR *** Getunit: All available unit' &
-     &  ,' numbers have been opened.'/ &
-     &              '               Execution terminating.'/)")
+        write(if7,"(' *** ERROR *** Getunit: All available unit'
+     .  ,' numbers have been opened.'/ 
+     .              '               Execution terminating.'/)")
         stop
       endif
 !
