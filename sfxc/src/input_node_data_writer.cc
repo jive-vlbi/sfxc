@@ -159,7 +159,7 @@ do_task() {
   if (data_writer.slice_size <= 0) {
       write_end_of_stream(data_writer.writer);
       // resync clock to a multiple of the integration time
-      _current_time=((_current_time+integration_time/2)/integration_time)*integration_time;
+      _current_time = _slice_start + integration_time;
       data_writer.writer->deactivate();
       data_writers_.pop();
       DEBUG_MSG("POPPING FOR A NEW WRITER......");
