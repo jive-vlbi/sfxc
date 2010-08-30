@@ -40,6 +40,8 @@ parser.add_option("-s", "--stations", dest="stations", type="string",
 parser.add_option("-n", "--max-scans", dest="max_scans",
                   default=sys.maxint, type="int",
                   help="Maximem number of scans per job", metavar="N")
+parser.add_option("-t", "--template", dest="template", type="string",
+                  help="Control file template", metavar="FILE")
 
 (options, args) = parser.parse_args()
 if options.stations:
@@ -71,13 +73,22 @@ for station in vex['STATION']:
         continue
     continue
 
+# Create control file template.
+json_template = {}
+if options.template:
+    fp = open(options.template, 'r')
+    json_template = json.load(fp)
+    fp.close()
+    pass
+
 mode = None
 stop_time = -1
 num_scans = 0
 vsn = {}
+mk5_scan = {}
 
 # Start with a clean slate.
-json_output = {}
+json_output = json_template.copy()
 json_output["stations"] = []
 json_output["channels"] = []
 
@@ -101,41 +112,48 @@ for scan in vex['SCHED']:
         new_job = True
         pass
 
-    # A gap signals the start of a new Mark5 scan.  A new Mark5 scan
-    # means we have to start a new job.
-    if stop_time != vex2time(vex['SCHED'][scan]['start']):
-        mk5_scan = scan
-        new_job = True
-        pass
-
-    # Loop over all the "station" parameters in the scan, creating a
-    # list of input data files.
+    # Create a list of stations participating in this scan.
     stations = []
-    start_time = sys.maxint
-    stop_time = 0
-    data_sources = {}
     for transfer in vex['SCHED'][scan].getall('station'):
         station = transfer[0]
-        start_time = min(start_time, int(transfer[1].split()[0]))
-        stop_time = max(stop_time, int(transfer[2].split()[0]))
-        data_source = options.data_dir + "/" + exper.lower() + '_' \
-            + station.lower() + '_' + mk5_scan.lower()
-        data_sources[station] = ["file://" + data_source]
         if not options.stations or station in options.stations:
             stations.append(station)
             pass
         continue
     stations.sort()
 
-    # Figure out the real start and stop time.
-    start_time += vex2time(vex['SCHED'][scan]['start'])
-    stop_time += vex2time(vex['SCHED'][scan]['start'])
+    # A gap signals the start of a new Mark5 scan.  A new Mark5 scan
+    # means we have to start a new job.
+    if stop_time != vex2time(vex['SCHED'][scan]['start']):
+        for station in stations:
+            mk5_scan[station] = scan
+            continue
+        new_job = True
+        pass
 
     # Start a new job whenever a station joins or leaves the
     # observation.
     if json_output["stations"] != stations:
+        for station in stations:
+            if not station in json_output["stations"]:
+                mk5_scan[station] = scan
+                continue
         new_job = True
         pass
+
+    # Loop over all the "station" parameters in the scan, figuring out
+    # the real length of the scan.
+    start_time = sys.maxint
+    stop_time = 0
+    for transfer in vex['SCHED'][scan].getall('station'):
+        station = transfer[0]
+        start_time = min(start_time, int(transfer[1].split()[0]))
+        stop_time = max(stop_time, int(transfer[2].split()[0]))
+        continue
+
+    # Figure out the real start and stop time.
+    start_time += vex2time(vex['SCHED'][scan]['start'])
+    stop_time += vex2time(vex['SCHED'][scan]['start'])
 
     # Start a new job whenever there is a media change.
     for station in stations:
@@ -143,15 +161,24 @@ for scan in vex['SCHED']:
             if start_time > medium['start'] and start_time < medium['stop']:
                 if station in vsn and medium['vsn'] != vsn[station]:
                     vsn[station] = medium['vsn']
+                    mk5_scan[station] = scan
                     new_job = True
                     break
                 pass
             continue
         continue
 
+    # Loop over all stations, creating a list of input data files.
+    data_sources = {}
+    for station in stations:
+        data_source = options.data_dir + "/" + exper.lower() + '_' \
+            + station.lower() + '_' + mk5_scan[station].lower()
+        data_sources[station] = ["file://" + data_source]
+        continue
+
     if new_job:
         # Clean the slate again.
-        json_output = {}
+        json_output = json_template.copy()
         json_output["data_sources"] = data_sources
         json_output["start"] = time2vex(start_time)
         json_output["stop"] = time2vex(stop_time)
