@@ -125,6 +125,7 @@ for scan in vex['SCHED']:
             stations.append(station)
             pass
         continue
+    stations.sort()
 
     # Figure out the real start and stop time.
     start_time += vex2time(vex['SCHED'][scan]['start'])
