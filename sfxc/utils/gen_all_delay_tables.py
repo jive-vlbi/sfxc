@@ -42,7 +42,7 @@ def gen_table(vex_file, ctrl_file):
   experiment_name = ctrl["exper_name"]
   
   for s in ctrl["stations"]:
-    delay_file = delay_directory + "/" + experiment_name.upper() + "_" + s + ".del"
+    delay_file = delay_directory + "/" + experiment_name + "_" + s + ".del"
     cmd = "generate_delay_model " + vex_file + " " + s + " " + delay_file
     print "Generating delay model for station " + s
     if(os.system(cmd)!=0):
