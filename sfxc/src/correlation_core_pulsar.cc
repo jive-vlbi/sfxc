@@ -60,7 +60,7 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
     polyco = &cur_pulsar.polyco_params[closest];
 
     // Compute the phase at the start of the period
-    double DT=(start_mjd+fft_duration/(2*us_per_day) - polyco->tmid)*1440;
+    double DT=((start_mjd - polyco->tmid) + fft_duration/(2*us_per_day))*1440;
     start_phase = (polyco->ref_phase-floor(polyco->ref_phase))+DT*60*polyco->ref_freq + polyco->coef[0];
     for (int i=1; i<polyco->coef.size(); i++){
       start_phase += polyco->coef[i]*pow(DT,i);
@@ -78,7 +78,7 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 
     SFXC_ASSERT(offsets.size() == fft_size() + 1);
     for(int i = 0; i < fft_size() + 1 ;i++) {
-      offsets[i] = 4149.*polyco->DM*(1/pow(base_freq+i*dfreq,2)-inv_freq_obs2)*freq;
+      offsets[i] = 4148.808 * polyco->DM * (1 / pow(base_freq + i * dfreq, 2) - inv_freq_obs2) * freq;
     }
     gate.begin = cur_pulsar.interval.start;
     gate.end = cur_pulsar.interval.stop;
