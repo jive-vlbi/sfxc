@@ -213,15 +213,6 @@ Control_parameters::check(std::ostream &writer) const {
               << "Ctrl-file: invalid data source '" << filename << "'"
               << std::endl;
             }
-            if (filename.find("file://") == 0) {
-              // Check whether the file exists
-              std::ifstream in(create_path(filename).c_str()+7);
-              if (!in.is_open()) {
-                ok = false;
-                writer << "Ctrl-file: Could not open data source: "
-                << filename << std::endl;
-              }
-            }
           }
         }
       }
@@ -253,14 +244,6 @@ Control_parameters::check(std::ostream &writer) const {
         writer
         << "Ctrl-file: Correlation output should start with 'file://'"
         << std::endl;
-      } else {
-        std::ofstream out(output_file.c_str()+7);
-        if (!out.is_open()) {
-          ok = false;
-          writer
-          << "Ctrl-file: Could not open output file: "
-          << output_file << std::endl;
-        }
       }
     } else {
       ok = false;
@@ -1480,7 +1463,7 @@ Pulsar_parameters::Pulsar_parameters(std::ostream& log_writer_):log_writer(log_w
 
 bool 
 Pulsar_parameters::parse_polyco(std::vector<Polyco_params> &param, std::string filename){
-  bool ok=false;
+  bool polyco_completed = false, read_error = false;
   std::ifstream inp(filename.c_str());
   std::string line, temp;
 
@@ -1510,22 +1493,26 @@ Pulsar_parameters::parse_polyco(std::vector<Polyco_params> &param, std::string f
       inpline >> param[block_index].DM;
       inpline >> param[block_index].doppler;
       inpline >> param[block_index].residual;
-      ok=false;
+
+      polyco_completed = false;
+      read_error = inpline.fail();
     }else if(line_nr-end_of_prev_block == 1){
       inpline >> param[block_index].ref_phase;
       inpline >> param[block_index].ref_freq;
       inpline >> temp;
-      strncpy(param[block_index].site,temp.c_str(),6);
+      strncpy(param[block_index].site, temp.c_str(), 6);
       param[block_index].site[5]=0; // make sure sting is null terminated
       inpline >> param[block_index].data_span;
       inpline >> param[block_index].n_coef;
       n_coef = param[block_index].n_coef;
       param[block_index].coef.resize(n_coef);
       inpline >> param[block_index].obs_freq;
-      if(!inpline.eof()){
-        // The binary phase parameters are optional
-        inpline >> param[block_index].bin_phase[0];
+      read_error = inpline.fail();
+      // The binary phase parameters are optional
+      inpline >> param[block_index].bin_phase[0];
+      if(!inpline.fail()){
         inpline >> param[block_index].bin_phase[1];
+        read_error = inpline.fail();
       }else{
         param[block_index].bin_phase[0]=0;
         param[block_index].bin_phase[1]=0;
@@ -1536,19 +1523,22 @@ Pulsar_parameters::parse_polyco(std::vector<Polyco_params> &param, std::string f
         coef_idx++;
       }
       if((!inpline.fail())&&(coef_idx == n_coef)){
-        ok=true;
+        polyco_completed = true;
         block_index++;
         coef_idx=0;
         end_of_prev_block=line_nr+1;
       }
+      read_error = inpline.fail();
     }
-    if(inpline.fail()){
-      log_writer << " Error parsing line " << line_nr << " of polyco file [" << filename << "]\n";
+    if(read_error){
+      log_writer << " Error parsing line " << line_nr + 1 << " of polyco file [" << filename << "]\n";
       return false;
     }
     line_nr++;
     std::getline(inp, line);
   }
-  if(!ok) log_writer << " Eof reached prematurely while parsing polyco file [" << filename << "]\n";
-  return ok;
+  if(!polyco_completed)
+    log_writer << " Eof reached prematurely while parsing polyco file [" << filename << "]\n";
+
+  return polyco_completed;
 }
