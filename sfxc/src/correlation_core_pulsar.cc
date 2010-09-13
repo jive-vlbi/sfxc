@@ -84,6 +84,15 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
     gate.end = cur_pulsar.interval.stop;
   }
 
+  if (input_elements.size() != number_input_streams_in_use())
+    input_elements.resize(number_input_streams_in_use());
+
+  if (input_conj_buffers.size() != number_input_streams_in_use()) {
+    input_conj_buffers.resize(number_input_streams_in_use());
+    for(int i=0;i<number_input_streams_in_use();i++)
+      input_conj_buffers[i].resize(fft_size() + 1);
+  }
+
   if(accumulation_buffers.size()!=nbins)
     accumulation_buffers.resize(nbins);
 }
