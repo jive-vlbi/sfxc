@@ -120,9 +120,7 @@ do_task() {
     data_writer.writer->set_size_dataslice(-1);
     data_writer.writer->activate();
     data_writer.active = true;
-    // Save the start time of the current slice, _current_time is calculated relative to this
     _slice_start = _current_time;
-    samples_written_ = 0;
 
     DEBUG_MSG("FETCHING FOR A NEW WRITER......");
     sync_stream = true;
@@ -130,16 +128,15 @@ do_task() {
 
   if(sync_stream){
     block_size=input_element.channel_data.data().data.size();
-    int64_t dtime = (int64_t)(_current_time-input_element.start_time);
-    byte_offset = dtime*sample_rate*bits_per_sample/8/1000000 + cur_delay[delay_index].bytes;
+    int64_t dsamples = _current_time.diff_samples(input_element.start_time);
+    byte_offset = dsamples*bits_per_sample/8 + cur_delay[delay_index].bytes;
     if(byte_offset < 0){
       // The requested output lies (partly) before the input data, send invalid data
       int initial_delay = cur_delay[delay_index].remaining_samples;
       int64_t invalid_samples = write_initial_invalid_data(data_writer, byte_offset);
       data_writer.slice_size -= invalid_samples;
-      samples_written_ += (invalid_samples-initial_delay);
+      _current_time.inc_samples(invalid_samples-initial_delay);
 
-      _current_time = _slice_start+(1000000LL*samples_written_+sample_rate/2)/sample_rate;
       sync_stream = false;
       return 0;
     }else if (byte_offset >= block_size){
@@ -149,7 +146,8 @@ do_task() {
     }else{
       data_writer.slice_size += cur_delay[delay_index].remaining_samples;
       write_delay(data_writer.writer, cur_delay[delay_index].remaining_samples);
-      samples_written_ -= cur_delay[delay_index].remaining_samples;
+      // decrease the sample count because we always send entire bytes
+      _current_time.inc_samples(-cur_delay[delay_index].remaining_samples);
       sync_stream = false;
     }
   }
@@ -157,22 +155,22 @@ do_task() {
 
   // Check whether we have written all data to the data_writer
   if (data_writer.slice_size <= 0) {
-      write_end_of_stream(data_writer.writer);
-      // resync clock to a multiple of the integration time
-      _current_time = _slice_start + integration_time;
-      data_writer.writer->deactivate();
-      data_writers_.pop();
-      DEBUG_MSG("POPPING FOR A NEW WRITER......");
-      return 0;
+    write_end_of_stream(data_writer.writer);
+    // resync clock to a multiple of the integration time
+    _current_time = _slice_start + integration_time;
+    data_writer.writer->deactivate();
+    data_writers_.pop();
+    DEBUG_MSG("POPPING FOR A NEW WRITER......");
+    return 0;
   }
 
   int index=byte_offset;
   int invalid_index = 0;
   int next_invalid_pos = input_element.invalid.size() > 0 ? input_element.invalid[0].invalid_begin :
                                                             block_size + 1;
-  int next_delay_pos = get_next_delay_pos(cur_delay, _current_time)+byte_offset;
+  int next_delay_pos = get_next_delay_pos(cur_delay, _current_time) + byte_offset;
   int total_to_write = std::min(block_size-byte_offset,
-                       (int64_t)(data_writer.slice_size+samples_per_byte-1)/samples_per_byte);
+                       (int64_t)(data_writer.slice_size + samples_per_byte-1) / samples_per_byte);
   int end_index = total_to_write+byte_offset;
   while(index<end_index){
     if(index>=next_delay_pos){
@@ -185,7 +183,7 @@ do_task() {
         data_writer.slice_size -= 1;
       else 
         data_writer.slice_size += 1;
-      next_delay_pos=get_next_delay_pos(cur_delay, _current_time)+byte_offset;
+      next_delay_pos=get_next_delay_pos(cur_delay, _current_time) + byte_offset;
       total_to_write = std::min(block_size-byte_offset,
                        (int64_t)(data_writer.slice_size+samples_per_byte-1)/samples_per_byte);
       end_index = total_to_write+byte_offset;
@@ -195,7 +193,7 @@ do_task() {
       nr_invalid = std::min(nr_invalid, end_index - index);
       if(nr_invalid > 0){
         write_invalid(writer, nr_invalid * samples_per_byte);
-        index += nr_invalid; 
+        index += nr_invalid;
       }
       invalid_index++;
       if(input_element.invalid.size() > invalid_index)
@@ -210,9 +208,7 @@ do_task() {
     }
   }
   data_writer.slice_size-=total_to_write*samples_per_byte;
-  samples_written_ += total_to_write*samples_per_byte;
-
-  _current_time = _slice_start+(1000000LL*samples_written_+sample_rate/2)/sample_rate;
+  _current_time.inc_samples(total_to_write*samples_per_byte);
 
   return total_to_write;
 }
@@ -233,8 +229,10 @@ void
 Input_node_data_writer::
 set_parameters(const Input_node_parameters &input_param) {
   sample_rate = input_param.sample_rate();
+  _current_time.set_sample_rate(sample_rate);
   bits_per_sample = input_param.bits_per_sample();
-  integration_time = input_param.integr_time*1000;
+  integration_time = input_param.integr_time;
+  byte_length = Time( 8 * 1000000. / (sample_rate * bits_per_sample));
 }
 
 // Empty the input queue, called from the destructor of Input_node
@@ -259,7 +257,7 @@ Input_node_data_writer::add_delay(Delay_memory_pool_element delay)
 }
 
 void
-Input_node_data_writer::add_time_interval(uint64_t start, uint64_t stop) {
+Input_node_data_writer::add_time_interval(Time &start, Time &stop) {
   SFXC_ASSERT( start < stop );
   intervals_.push( Time_interval(start, stop) );
 }
@@ -273,6 +271,7 @@ Input_node_data_writer::fetch_next_time_interval() {
   delay_list = delays_.front_and_pop();
 
   _current_time = current_interval_.start_time_;
+  _current_time.set_sample_rate(sample_rate);
 }
 
 void
@@ -310,17 +309,17 @@ Input_node_data_writer::write_delay(Data_writer_sptr writer, int8_t delay){
 
 
 int 
-Input_node_data_writer::get_next_delay_pos(std::vector<Delay> &cur_delay, uint64_t start_time){
+Input_node_data_writer::get_next_delay_pos(std::vector<Delay> &cur_delay, Time start_time){
   int delay_pos;
   int delay_size=cur_delay.size();
   if(delay_index < delay_size-1){
-    uint64_t dtime = cur_delay[delay_index+1].time-start_time;
-    delay_pos = dtime * sample_rate*bits_per_sample/8/1000000;
+    Time dtime = cur_delay[delay_index+1].time - start_time;
+    delay_pos = (int) (dtime / byte_length);
   }
   else
-    delay_pos=INT_MAX/2; 
+    delay_pos = INT_MAX/2; 
 
-  return std::max(delay_pos,0);
+  return std::max(delay_pos, 0);
 }
 
 void
@@ -367,15 +366,15 @@ Input_node_data_writer::write_initial_invalid_data(Writer_struct &data_writer, i
   write_delay(data_writer.writer, cur_delay[delay_index].remaining_samples);
   data_writer.slice_size += cur_delay[delay_index].remaining_samples;
 
-  int64_t invalid_samples=std::min((int64_t)-byte_offset*samples_per_byte, data_writer.slice_size);
+  int64_t invalid_samples=std::min((int64_t)-byte_offset * samples_per_byte, data_writer.slice_size);
   int64_t written=0;
   while(written<invalid_samples){
     int64_t next_delay_pos;
     if(delay_index<delay_size-1){
-      int64_t dt=(cur_delay[delay_index+1].time-_current_time);
-      next_delay_pos=dt*sample_rate/1000000LL;
+      Time dt = cur_delay[delay_index+1].time - _current_time;
+      next_delay_pos = (int64_t) (dt / byte_length) * 8 / bits_per_sample;
     }else{
-      next_delay_pos=data_writer.slice_size*2;
+      next_delay_pos = data_writer.slice_size * 2;
     }
     if(written==next_delay_pos){
       delay_index++;
@@ -394,9 +393,4 @@ Input_node_data_writer::write_initial_invalid_data(Writer_struct &data_writer, i
     }
   }
   return invalid_samples;
-}
-
-int64_t 
-Input_node_data_writer::get_current_time(){
-  return _current_time;
 }

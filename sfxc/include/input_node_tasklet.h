@@ -17,6 +17,7 @@
 #include "channel_extractor_tasklet_vdif.h"
 
 #include "input_node_data_writer_tasklet.h"
+#include "correlator_time.h"
 
 #include "rttimer.h"
 
@@ -51,7 +52,7 @@ public:
   /// It is not possible to go back in time, as the data might be
   /// streamed in to the input node and not be buffered anymore.
   /// Time is in milliseconds
-  void add_time_interval(int32_t start_time, int32_t stop_time);
+  void add_time_interval(Time &start_time, Time &stop_time);
 
   // Inherited from Input_node_tasklet
   void set_delay_table(Delay_table_akima &delay);
@@ -60,17 +61,16 @@ public:
 
 
   /// Returns the current time in microseconds
-  int get_current_time();
+  Time get_current_time();
 
   /// Sets the output writer for channel i
   void add_data_writer(size_t i, Data_writer_sptr data_writer);
 
   /// Compute a list of delays, note we only store the times(+delay) 
   /// where the integer delay changes
-  void get_delays(uint64_t start_time, uint64_t stop_time, 
-                               std::vector<Delay> &delay_list);
+  void get_delays(Time start_time, int64_t nsamples, std::vector<Delay> &delay_list);
   /// Calculates the delay at time
-  Delay get_delay(int64_t time);
+  Delay get_delay(Time time);
 private:
   /// All the thread created in this class are stored in the thread pool
   ThreadPool pool_;
@@ -94,7 +94,6 @@ private:
 
   const size_t n_bytes_per_input_word;
 
-  int delta_time; // the time between two ffts
   int sample_rate;
   int bits_per_sample;
   int64_t size_slice; // Number of samples for one integration slice
@@ -106,6 +105,6 @@ private:
  **/
 Input_node_tasklet *
 get_input_node_tasklet(boost::shared_ptr<Data_reader> reader,
-                       TRANSPORT_TYPE type, int ref_year, int ref_day);
+                       TRANSPORT_TYPE type, Time ref_date);
 
 #endif // INPUT_NODE_TASKLET_H

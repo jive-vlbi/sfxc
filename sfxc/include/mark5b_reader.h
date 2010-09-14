@@ -35,7 +35,7 @@ public:
     uint32_t      frame_nr:15;
     uint8_t       tvg:1;
     uint16_t      user_specified;
-    
+
     uint8_t sec5:4, sec4:4, sec3:4, sec2:4, sec1:4;
     uint8_t day3:4, day2:4, day1:4;
     uint16_t crc;
@@ -55,15 +55,15 @@ public:
   };
 
   Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
-                Data_frame &data, int ref_year, int ref_day);
+                Data_frame &data, Time ref_date);
   virtual ~Mark5b_reader();
 
   /// Time in microseconds
   /// Changed the order of the arguments when I changed from miliseconds to microseconds
-  int64_t goto_time(Data_frame &data, int64_t us_time);
+  Time goto_time(Data_frame &data, Time time);
 
   /// Get the current time in microseconds
-  int64_t get_current_time();
+  Time get_current_time();
 
   /// Read another mark5b-frame
   bool read_new_block(Data_frame &data);
@@ -72,7 +72,7 @@ public:
 
   bool eof();
 
-  int time_between_headers();
+  Time time_between_headers();
 
   size_t bytes_per_input_word() const {
     return SIZE_MK5B_WORD;
@@ -94,12 +94,12 @@ public:
 
 private:
   // Time information
-  int start_day_; // start date of data(mod Julian day)
-  int ref_jday; //date relative to which times are calculated(mod Julian day)
-  int64_t us_per_day;
+  int start_day_; // start date of data(mod Julian day%1000)
+  int current_jday; // current modified julian day (to full precision)
+//  int64_t us_per_day;
   // start time and current time in miliseconds
   // start time is used to check the data rate
-  int64_t start_time_, current_time_;
+  Time start_time_, current_time_;
 
   int sample_rate;
   int nr_of_bitstreams;
@@ -112,7 +112,7 @@ private:
   // so that the header points to the time of the first sample
   Header current_header, tmp_header;
 
-  int time_between_headers_;
+  Time time_between_headers_;
 
   // The lookup table for the CRC-16 checks
   std::vector<uint16_t> crc_table;
@@ -120,9 +120,6 @@ private:
   void gen_crc16();
   // Check the integrity of the current header
   bool check_header(Header &header);
-
-  // Convert time read from input stream to time relative to midnight on the reference day
-  int64_t correct_raw_time(int64_t raw_time);
 };
 
 std::ostream &operator<<(std::ostream &out,

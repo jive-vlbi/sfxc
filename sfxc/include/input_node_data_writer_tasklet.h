@@ -101,12 +101,12 @@ public:
   * @param start Start time of interval
   * @param sop Stop time of interval
   *****************************************************************************/
-  void add_time_interval(uint64_t start, uint64_t stop);
+  void add_time_interval(Time start, Time stop);
 
   /*****************************************************************************
   * @desc Return the earliest current_time from the data writers
   *****************************************************************************/
-  int64_t get_current_time();
+  Time get_current_time();
 
 private:
   /// Writers that will stream the data.

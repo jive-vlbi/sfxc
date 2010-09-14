@@ -128,7 +128,7 @@ initialise(const char *ctrl_file, const char *vex_file,
   }
 
   // Get start date
-  start_date = boost::shared_ptr<Vex::Date>(new Date(vex.get_start_time_of_experiment()));
+  start_time =Time(vex.get_start_time_of_experiment());
   initialised = true;
 
   return true;
@@ -166,8 +166,8 @@ Control_parameters::check(std::ostream &writer) const {
       ok = false;
       writer << "Ctrl-file: stop time not defined" << std::endl;
     } else {
-      Date start(ctrl["start"].asString());
-      Date stop(ctrl["stop"].asString());
+      Time start(ctrl["start"].asString());
+      Time stop(ctrl["stop"].asString());
       if (stop <= start) {
         ok = false;
         writer << "Ctrl-file: stop time before start time" << std::endl;
@@ -176,8 +176,8 @@ Control_parameters::check(std::ostream &writer) const {
   }
 
   { // Check integration time
-    int32_t integr_time = round(ctrl["integr_time"].asDouble()*1000);
-    if (integr_time < 0) {
+    Time integr_time(ctrl["integr_time"].asDouble()*1000000);
+    if (integr_time < Time(0)) {
       ok = false;
       writer << "Ctrl-file: Integration time is negative" << std::endl;
     }
@@ -313,18 +313,17 @@ Control_parameters::check(std::ostream &writer) const {
       }
     }
   }
-
   return ok;
 }
 
-Control_parameters::Date
+Time
 Control_parameters::get_start_time() const {
-  return Date(ctrl["start"].asString());
+  return Time(ctrl["start"].asString());
 }
 
-Control_parameters::Date
+Time
 Control_parameters::get_stop_time() const {
-  return Date(ctrl["stop"].asString());
+  return Time(ctrl["stop"].asString());
 }
 
 std::vector<std::string>
@@ -354,9 +353,9 @@ Control_parameters::number_stations() const {
   return ctrl["stations"].size();
 }
 
-int
+Time
 Control_parameters::integration_time() const {
-  return (int)(1000*ctrl["integr_time"].asDouble());
+  return Time(ctrl["integr_time"].asDouble()*1000000);
 }
 
 int
@@ -475,7 +474,9 @@ Control_parameters::scan_source(const std::string &scan) const {
   return vex.get_root_node()["SCHED"][scan]["source"]->to_string();
 }
 
-int Control_parameters::scan(const Date &date) const {
+int Control_parameters::scan(const Time &time) const {
+  Vex::Date date(time.date_string());
+
   int scannr = 0;
   Vex::Node::const_iterator it = vex.get_root_node()["SCHED"]->begin();
   while (it != vex.get_root_node()["SCHED"]->end()) {
@@ -816,13 +817,13 @@ Control_parameters::cross_polarize() const {
 
 std::string
 Control_parameters::
-get_mode(int32_t &start_time) const {
+get_mode(const Time &start_time) const {
   for (Vex::Node::const_iterator sched_block =
          vex.get_root_node()["SCHED"]->begin();
        sched_block != vex.get_root_node()["SCHED"]->end();
        ++sched_block) {
     if (start_time >
-        Date(sched_block["start"]->to_string()).to_miliseconds()/1000) {
+        Time(sched_block["start"]->to_string())) {
       return sched_block["mode"]->to_string();
     }
   }
@@ -1086,8 +1087,8 @@ get_correlation_parameters(const std::string &scan_name,
     vex.get_root_node()["MODE"][mode_name];
 
   Correlation_parameters corr_param;
-  corr_param.start_time = vex.start_of_scan(scan_name).to_miliseconds();
-  corr_param.stop_time = vex.stop_of_scan(scan_name).to_miliseconds();
+  corr_param.start_time = vex.start_of_scan(scan_name).to_miliseconds() * 1000;
+  corr_param.stop_time = vex.stop_of_scan(scan_name).to_miliseconds() * 1000;
   corr_param.integration_time = integration_time();
   corr_param.number_channels = number_channels();
   corr_param.fft_size = fft_size();

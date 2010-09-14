@@ -67,6 +67,7 @@ sfxc_SOURCES = $(OBJ) sfxc.cc \
   input_node_data_writer.cc \
   input_node_data_writer_tasklet.cc \
   output_header.cc \
+  correlator_time.cc \
   svn_version.cc 
 
 sfxc_DEPENDENCIES = update_svn_version svn_version.$(OBJEXT)

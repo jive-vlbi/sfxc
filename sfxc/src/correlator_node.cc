@@ -162,7 +162,6 @@ void Correlator_node::main_loop() {
         }
         if (correlation_core->finished()) {
           ///DEBUG_MSG("CORRELATION CORE FINISHED !" << n_integration_slice_in_time_slice);
-
           n_integration_slice_in_time_slice--;
           if (n_integration_slice_in_time_slice==0) {
             // Notify manager node:

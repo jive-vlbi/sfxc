@@ -39,7 +39,7 @@ private:
   void fringe_stopping(FLOAT input[]);
 
 private:
-
+  Time fft_length;
   FFTW_PLAN       plan_t2f;
 
 };

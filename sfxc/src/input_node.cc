@@ -21,22 +21,22 @@
 Input_node::Input_node(int rank,
                        int station_number,
                        Log_writer *log_writer,
-                       TRANSPORT_TYPE transport_type, int ref_year_, int ref_day_):
+                       TRANSPORT_TYPE transport_type, Time ref_date_):
     Node(rank, log_writer),
     input_node_ctrl(*this),
     data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
     input_node_tasklet(NULL), status(WAITING),
-    transport_type(transport_type), ref_year(ref_year_), ref_day(ref_day_){
+    transport_type(transport_type), ref_date(ref_date_) {
   initialise();
 }
 
 Input_node::Input_node(int rank, int station_number,
-                       TRANSPORT_TYPE transport_type, int ref_year_, int ref_day_) :
+                       TRANSPORT_TYPE transport_type, Time ref_date_) :
     Node(rank), input_node_ctrl(*this), data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
     input_node_tasklet(NULL), status(WAITING),
-    transport_type(transport_type), ref_year(ref_year_), ref_day(ref_day_) {
+    transport_type(transport_type), ref_date(ref_date_) {
   initialise();
 }
 void Input_node::initialise() {
@@ -73,10 +73,10 @@ Input_node::~Input_node() {
     delete input_node_tasklet;
 }
 
-int32_t Input_node::get_time_stamp() {
+Time Input_node::get_time_stamp() {
   SFXC_ASSERT(input_node_tasklet != NULL);
   // the time in the tasklet is in micro seconds
-  return input_node_tasklet->get_current_time()/1000;
+  return input_node_tasklet->get_current_time();
 }
 
 
@@ -113,20 +113,19 @@ void Input_node::hook_added_data_reader(size_t stream_nr) {
 
   input_node_tasklet =
     get_input_node_tasklet(data_reader_ctrl.get_data_reader(stream_nr),
-                           transport_type, ref_year, ref_day);
+                           transport_type, ref_date);
   SFXC_ASSERT(input_node_tasklet != NULL);
 }
 
 void Input_node::hook_added_data_writer(size_t writer) {}
 
-// Start time and stop time in seconds
-void Input_node::add_time_interval(int32_t start_time, int32_t stop_time) {
+void Input_node::add_time_interval(Time start_time, Time stop_time) {
   SFXC_ASSERT(input_node_tasklet != NULL);
   input_node_tasklet->add_time_interval(start_time, stop_time);
 }
 
-void Input_node::add_time_slice_to_stream(int channel, int stream, int starttime_slice,
-                                int stoptime_slice) {
+void Input_node::add_time_slice_to_stream(int channel, int stream, Time starttime_slice,
+                                          Time stoptime_slice) {
   SFXC_ASSERT(data_writers_ctrl.get_data_writer(stream) !=
               Multiple_data_writers_controller::Data_writer_ptr());
 

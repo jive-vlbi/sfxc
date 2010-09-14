@@ -241,7 +241,7 @@ set_new_parameters(const Correlation_parameters &parameters) {
 
   new_parameters.n_ffts_per_integration =
     Control_parameters::nr_ffts_per_integration_slice(
-      parameters.integration_time,
+      (int)parameters.integration_time.get_time_usec(),
       parameters.sample_rate,
       parameters.fft_size);
 

@@ -58,22 +58,22 @@ public:
   };
 
   VDIF_reader(boost::shared_ptr<Data_reader> data_reader,
-                Data_frame &data, int ref_year, int ref_day);
+                Data_frame &data, Time ref_time);
   virtual ~VDIF_reader();
 
   /// Time in microseconds
   /// Changed the order of the arguments when I changed from miliseconds to microseconds
-  int64_t goto_time(Data_frame &data, int64_t us_time);
+  Time goto_time(Data_frame &data, Time us_time);
 
   /// Get the current time in microseconds
-  int64_t get_current_time();
+  Time get_current_time();
 
   /// Read another VDIF-frame
   bool read_new_block(Data_frame &data);
 
   bool eof();
 
-  int time_between_headers();
+  Time time_between_headers();
 
   void print_header();
   size_t size_data_block() const {
@@ -98,10 +98,9 @@ private:
   // Time information
   int ref_jday; //date relative to which times are calculated(mod Julian day)
   int epoch_jday; // Time origin of the timestamps in the data headers
-  int64_t us_per_day;
   // current time in microseconds
-  int64_t current_time_;
-  int64_t sample_rate;
+  Time current_time_;
+  double sample_rate;
   // For testing
   Debug_level debug_level_;
 

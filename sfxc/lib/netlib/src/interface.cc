@@ -180,8 +180,8 @@ Connexion* InterfaceIP::connect_to(const std::string& ipaddress, unsigned short 
     return NULL;
   }
 
-  std::cout << "connected to port " << port << " on "
-	    << inet_ntoa(serverAddress.sin_addr) << std::endl;
+//  std::cout << "connected to port " << port << " on "
+//           << inet_ntoa(serverAddress.sin_addr) << std::endl;
   return new Connexion(socketDescriptor);
 }
 
@@ -292,7 +292,7 @@ Connexion* InterfaceIP::connect_to(uint64_t ipaddress, unsigned short port, int 
     return NULL;
   }
 
-  std::cout << "connected to port " << port << " on "
-	    << inet_ntoa(serverAddress.sin_addr) << std::endl;
+//  std::cout << "connected to port " << port << " on "
+//            << inet_ntoa(serverAddress.sin_addr) << std::endl;
   return new Connexion(socketDescriptor);
 }

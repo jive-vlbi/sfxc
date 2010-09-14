@@ -85,14 +85,14 @@ public:
   void input_node_set(const std::string &station,
                       Input_node_parameters &input_node_params);
   /// Returns the time in milliseconds since midnight on the start-day
-  int32_t input_node_get_current_time(const std::string &station);
+  Time input_node_get_current_time(const std::string &station);
   void input_node_set_time(const std::string &station,
-                           int32_t start_time, int32_t stop_time);
+                           Time start_time, Time stop_time);
 
   // Send a new time slice, start and stop time are in milliseconds
   void input_node_set_time_slice(const std::string &station, int32_t channel,
                                  int32_t stream_nr,
-                                 int32_t start_time, int32_t stop_time);
+                                 Time start_time, Time stop_time);
 
 
   void output_node_set_global_header(char* header_msg, int size);
@@ -123,8 +123,8 @@ public:
 
   const std::map<std::string, int> &get_input_node_map() const;
 
-  int integration_time() const {
-    return control_parameters.integration_time();
+  Time integration_time() const {
+    return integration_time_;
   }
 
   // Override functions from node to be able to catch the assertion message
@@ -154,6 +154,8 @@ protected:
 
   // Map from the correlator node number to the MPI_rank
   std::vector<int> correlator_node_rank;
+
+  Time integration_time_;
 
 #ifdef SFXC_DETERMINISTIC
   /// Status of the correlation node

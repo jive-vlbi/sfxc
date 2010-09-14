@@ -23,7 +23,6 @@ Channel_extractor_tasklet(int samples_per_block, int N_)
     fan_out(0),
     N(N_), samples_per_block(samples_per_block) {
   SFXC_ASSERT(N_ > 0);
-
   init_stats();
 
   last_duration_=0;
@@ -201,7 +200,6 @@ set_parameters(const Input_node_parameters &input_node_param,
   bits_per_sample = input_node_param.bits_per_sample();
   fan_out    = bits_per_sample *
                input_node_param.subsamples_per_sample();
-
   ch_extractor->initialise(track_positions, N, samples_per_block, bits_per_sample);
   DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
 }

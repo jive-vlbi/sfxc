@@ -12,10 +12,10 @@
 #ifndef Uvw_model_H
 #define Uvw_model_H
 
-#include "utils.h"
-
 #include <types.h>
 #include <vector>
+#include "utils.h"
+#include "correlator_time.h"
 
 // GSL includes
 #include <gsl/gsl_spline.h>
@@ -26,6 +26,7 @@ class MPI_Transfer;
 
 class Uvw_model {
   friend class MPI_Transfer;
+  typedef struct {Time begin, end;} Interval;
 
 public:
   //constructor, set default values
@@ -40,13 +41,13 @@ public:
   //read the delay table, do some checks and
   //calculate coefficients for parabolic interpolation
   int open(const char *delayTableName);
-  int open(const char *delayTableName, double tstart, double tstop);
+  int open(const char *delayTableName, Time tstart, Time tstop);
 
-  std::ofstream& uvw_values(std::ofstream &, int64_t starttime, int64_t stoptime,
-                            double inttime);
+  std::ofstream& uvw_values(std::ofstream &, Time starttime, Time stoptime,
+                            Time inttime);
 
   //calculates u,v, and w at time(microseconds)
-  void get_uvw(int64_t time, double *u, double *v, double *w);
+  void get_uvw(Time time, double *u, double *v, double *w);
 
   /// A spline only interpolates one scan.
   /// This functions preprocesses the spline for the next scan.
@@ -57,9 +58,10 @@ public:
   }
 
 private:
-  // Last entry of the previous scan
-  size_t end_scan;
+  // First entry of the next scan
+  int   begin_scan, scan_nr;
   std::vector<double> times, u, v, w;
+  std::vector<Interval> scans;
   gsl_interp_accel *acc_u,*acc_v,*acc_w;
   gsl_spline *splineakima_u;
   gsl_spline *splineakima_v;

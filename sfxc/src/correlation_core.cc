@@ -65,7 +65,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   current_fft = 0;
 
   correlation_parameters = parameters;
-  oversamp = round(parameters.sample_rate/(2*parameters.bandwidth));
+  oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
 
   create_baselines(parameters);
 
@@ -84,7 +84,7 @@ void
 Correlation_core::create_baselines(const Correlation_parameters &parameters){
   number_ffts_in_integration =
     Control_parameters::nr_ffts_per_integration_slice(
-      parameters.integration_time,
+      (int) parameters.integration_time.get_time_usec(),
       parameters.sample_rate,
       parameters.fft_size);
 
@@ -343,9 +343,8 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
 
    // write the uvw coordinates
     Output_uvw_coordinates uvw[htimeslice.number_uvw_coordinates];
-    // We evaluate in the middle of time slice (nb: the factor 1000 is for the conversion to microseconds)
-    int64_t time;
-    time=(int64_t)correlation_parameters.start_time*1000+(int64_t)correlation_parameters.integration_time*500;
+    // We evaluate in the middle of time slice
+    Time time = correlation_parameters.start_time + correlation_parameters.integration_time / 2;
     for (size_t station=0; station < uvw_tables.size(); station++){
      double u,v,w;
      uvw_tables[station].get_uvw(time, &u, &v, &w);
@@ -403,7 +402,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     for (size_t j = 0; j < number_channels() + 1; j++) {
       integration_buffer_float[j] = integration_buffer[i][j * n];
       for (size_t k = 1; k < n && j < number_channels(); k++)
-	integration_buffer_float[j] += integration_buffer[i][j * n + k];
+        integration_buffer_float[j] += integration_buffer[i][j * n + k];
       integration_buffer_float[j] /= n;
     }
 

@@ -79,9 +79,9 @@ public:
   /// positions where the integer delay changes
   void add_delay(Delay_memory_pool_element delay);
 
-  void add_time_interval(uint64_t start, uint64_t stop);
+  void add_time_interval(Time &start, Time &stop);
   void fetch_next_time_interval();
-  int64_t get_current_time();
+  Time get_current_time();
 
 private:
   Input_buffer_ptr    input_buffer_;
@@ -89,7 +89,7 @@ private:
   int                 delay_index;
   int sample_rate;
   int bits_per_sample;
-  int integration_time;
+  Time integration_time;
   bool sync_stream;
 
   /// The queue storing all the delays
@@ -98,7 +98,7 @@ private:
   std::vector<int> invalid_samples_begin;
   std::vector<int> nr_invalid_samples;
 
-  int get_next_delay_pos(std::vector<Delay> &cur_delay, uint64_t start_time);
+  int get_next_delay_pos(std::vector<Delay> &cur_delay, Time start_time);
 
   void write_invalid(Data_writer_sptr writer, int nInvalid);
   void write_delay(Data_writer_sptr writer, int8_t delay);
@@ -108,7 +108,6 @@ private:
   void write_end_of_stream(Data_writer_sptr writer);
 
   int64_t write_initial_invalid_data(Writer_struct &data_writer, int byte_offset);
-  int64_t samples_written_;
   uint64_t total_data_written_;
   int block_size;
 
@@ -118,8 +117,9 @@ private:
   /// The currently processed interval
   Time_interval current_interval_;
 
-  int64_t _current_time;
-  int64_t _slice_start;
+  Time _current_time;
+  Time _slice_start;
+  Time byte_length;
 
   double last_duration_;
   RTTimer timer_waiting_;
@@ -128,5 +128,8 @@ private:
   int interval;
 };
 
-
+inline Time
+Input_node_data_writer::get_current_time(){
+  return _current_time;
+}
 #endif // INPUT_NODE_DATA_WRITER_H_INCLUDED

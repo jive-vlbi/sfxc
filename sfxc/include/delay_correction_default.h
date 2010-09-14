@@ -39,10 +39,10 @@ private:
   void fringe_stopping(FLOAT output[]);
 
 private:
+  Time fft_length;
   FFTW_PLAN       plan_t2f, plan_f2t, plan_t2f_cor;
   Memory_pool_vector_element<FLOAT >                 plan_input_buffer;
   Memory_pool_vector_element< std::complex<FLOAT> >  plan_output_buffer;
-
 };
 
 #endif /*DELAY_CORRECTION_DEFAULT_H*/

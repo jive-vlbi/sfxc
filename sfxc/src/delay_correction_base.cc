@@ -28,7 +28,7 @@ void Delay_correction_base::set_delay_table(const Delay_table_akima &delay_table
   delay_table = delay_table_;
 }
 
-double Delay_correction_base::get_delay(int64_t time) {
+double Delay_correction_base::get_delay(Time time) {
   SFXC_ASSERT(delay_table_set);
   return delay_table.delay(time);
 }
@@ -48,10 +48,6 @@ Delay_correction_base::Output_buffer_ptr
 Delay_correction_base::get_output_buffer() {
   SFXC_ASSERT(output_buffer != Output_buffer_ptr());
   return output_buffer;
-}
-
-int Delay_correction_base::length_of_one_fft() {
-  return ((int64_t)fft_size() * 1000000) / sample_rate();
 }
 
 int Delay_correction_base::sideband() {

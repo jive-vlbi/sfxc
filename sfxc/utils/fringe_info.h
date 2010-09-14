@@ -48,7 +48,7 @@ public:
 
 // Container for all plots
 class Fringe_info_container {
-  typedef Control_parameters::Date Date;
+  typedef Vex::Date Date;
   typedef std::set<Fringe_info> Container;
   typedef Container::iterator   iterator;
   struct Channel{

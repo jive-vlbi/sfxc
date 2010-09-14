@@ -18,12 +18,15 @@
 // GSL includes
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_errno.h>
+#include "correlator_time.h"
 #include "utils.h"
+
 
 class MPI_Transfer;
 
 class Delay_table_akima {
   friend class MPI_Transfer;
+  typedef struct {Time begin, end;} Interval;
 
 public:
   // Constructor
@@ -48,27 +51,27 @@ public:
   //read the delay table, do some checks and
   //calculate coefficients for parabolic interpolation
   void open(const char *delayTableName);
-  void open(const char *delayTableName, double tstart, double tstop);
+  void open(const char *delayTableName, const Time tstart, const Time tstop);
 
   //calculate the delay for the delayType at time in microseconds
   // delay is in seconds
-  double delay(int64_t time);
-  double rate(int64_t time);
+  double delay(Time time);
+  double rate(Time time);
 
   /// A spline only interpolates one scan.
   /// This functions preprocesses the spline for the next scan.
   bool initialise_next_scan();
 
-  int64_t start_time_scan();
-  int64_t stop_time_scan();
+  Time start_time_scan();
+  Time stop_time_scan();
 
   bool initialised() const {
     return !times.empty();
   }
 private:
-  // Beginning of the scan and past the end pointer
-  size_t begin_scan, end_scan;
+  int begin_scan, scan_nr;
   std::vector<double> times, delays;
+  std::vector<Interval> scans;
   gsl_interp_accel *acc;
   gsl_spline *splineakima;
 };

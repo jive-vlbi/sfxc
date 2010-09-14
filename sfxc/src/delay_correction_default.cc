@@ -32,7 +32,12 @@ void Delay_correction_default::do_task() {
     if (time_buffer.size() != 2 * fft_size())
       time_buffer.resize(2 * fft_size());
 
-    double delay = get_delay(current_time+length_of_one_fft()/2);
+    double delay = get_delay(current_time + fft_length/2);
+//    if(RANK_OF_NODE == 14) {
+//      std::cout.precision(16);
+//      std::cout << "getting delay at t = " << (current_time + (int)fft_size()/2)
+//                << ", current_time = " << current_time << "\n";
+//    }
     double delay_in_samples = delay*sample_rate();
     int integer_delay = (int)std::floor(delay_in_samples+.5);
 
@@ -44,8 +49,6 @@ void Delay_correction_default::do_task() {
     // Input is from frequency_buffer
     fringe_stopping(&time_buffer[0]);
 
-    current_time += length_of_one_fft();
-
     // Do the final fft from time to frequency:
     // zero out the data for padding
     for (size_t j = fft_size(); j < 2 * fft_size(); j++)
@@ -55,9 +58,13 @@ void Delay_correction_default::do_task() {
                          (FLOAT *)&time_buffer[0],
                          (FFTW_COMPLEX *)output.buffer());
 
-    total_ffts++;
+   current_time.inc_samples(fft_size());
+   total_ffts++;
 #endif // DUMMY_CORRELATION
   }
+//  if(RANK_OF_NODE == 14) 
+//    std::cout << RANK_OF_NODE << " : correlator start_time = " << current_time 
+//              << ", nbuffer = " << nbuffer << "\n";
   output_buffer->push(cur_output);
 }
 
@@ -132,15 +139,14 @@ void Delay_correction_default::fringe_stopping(FLOAT output[]) {
  //  int n_recompute_delay = sample_rate()/1000000;
 
   double phi, delta_phi, sin_phi, cos_phi;
-  int64_t time = current_time;
-  phi = center_freq * get_delay(time);
+  phi = center_freq * get_delay(current_time);
   int floor_phi = (int)std::floor(phi);
   phi = mult_factor_phi*(phi-floor_phi);
 
   { // compute delta_phi
     SFXC_ASSERT(((int64_t)fft_size() * 1000000) % sample_rate() == 0);
     double phi_end = center_freq *
-      get_delay(time + ((int64_t)fft_size() * 1000000) / sample_rate());
+      get_delay(current_time + fft_length);
     phi_end = mult_factor_phi*(phi_end-floor_phi);
 
     delta_phi = (phi_end - phi) / fft_size();
@@ -182,9 +188,11 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
   bits_per_sample = parameters.station_streams[i].bits_per_sample;
 
   nfft_max = std::max(CORRELATOR_BUFFER_SIZE / parameters.fft_size, 1);
-  oversamp = round(parameters.sample_rate / (2 * parameters.bandwidth));
+  oversamp = (int)round(parameters.sample_rate / (2 * parameters.bandwidth));
 
-  current_time = parameters.start_time*(int64_t)1000;
+  current_time = parameters.start_time;
+  current_time.set_sample_rate(sample_rate());
+  fft_length = Time((double)fft_size() / (sample_rate() / 1000000));
 
   SFXC_ASSERT(((int64_t)fft_size() * 1000000000) % sample_rate() == 0);
 
@@ -214,7 +222,7 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
 
   n_ffts_per_integration =
     Control_parameters::nr_ffts_per_integration_slice(
-      parameters.integration_time,
+      (int) parameters.integration_time.get_time_usec(),
       parameters.sample_rate,
       parameters.fft_size);
   current_fft = 0;

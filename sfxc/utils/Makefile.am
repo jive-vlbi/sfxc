@@ -46,7 +46,8 @@ extract_channelizer_SOURCES = \
   ../src/channel_extractor_utils.cc \
   ../src/channel_extractor_dynamic.cc \
   ../src/channel_extractor_5.cc \
-  ../src/utils.cc
+  ../src/utils.cc \
+  ../src/correlator_time.cc
 
 dnfp_fileserver_SOURCES = \
   dnfp_fileserver.cc \
@@ -85,7 +86,9 @@ mark5a_print_headers_SOURCES = \
   ../src/mark5a_header.cc \
   ../src/channel_extractor_5.cc \
   ../src/utils.cc \
-  ../src/control_parameters.cc
+  ../src/control_parameters.cc \
+  ../src/correlator_time.cc
+
 
 produce_html_plotpage_SOURCES = \
   produce_html_plotpage.cc \
@@ -95,6 +98,7 @@ produce_html_plotpage_SOURCES = \
   ../src/log_writer_cout.cc \
   ../src/utils.cc \
   ../src/output_header.cc \
+  ../src/correlator_time.cc\
   gnuplot_i.cc
 
 produce_html_diffpage_SOURCES = \
@@ -105,6 +109,7 @@ produce_html_diffpage_SOURCES = \
   ../src/log_writer_cout.cc \
   ../src/utils.cc \
   ../src/output_header.cc \
+  ../src/correlator_time.cc\
   gnuplot_i.cc
 
 baseline_info_SOURCES = \
@@ -115,6 +120,7 @@ baseline_info_SOURCES = \
   ../src/log_writer_cout.cc \
   ../src/utils.cc \
   ../src/output_header.cc \
+  ../src/correlator_time.cc\
   gnuplot_i.cc
 
 vex2ccf_SOURCES = \
@@ -124,12 +130,14 @@ vex2ccf_SOURCES = \
 generate_uvw_coordinates_SOURCES = \
   generate_uvw_coordinates.cc \
   ../src/uvw_model.cc \
-  ../src/utils.cc
+  ../src/utils.cc \
+  ../src/correlator_time.cc
 
 plot_delay_table_SOURCES = \
   plot_delay_table.cc \
   ../src/delay_table_akima.cc \
-  ../src/utils.cc
+  ../src/utils.cc \
+  ../src/correlator_time.cc
 
 print_new_output_format_SOURCES = \
   print_new_output_format.cc \
