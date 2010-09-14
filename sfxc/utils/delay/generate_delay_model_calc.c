@@ -3,10 +3,10 @@
   the parameters set in a delmo_control_file, which was generated 
   with the utility vex2ccf
 
-  last change: 29-05-2007
-  authors    : RHJ Oerlemans, M Kettenis
+  last change: 06-08-2010
+  authors    : RHJ Oerlemans, M Kettenis, K. Keimpema
 
-  dependencies: files ocean.dat tilt.dat and DE405_le.jpl should be in $HOME/bin.
+  dependencies: files ocean.dat tilt.dat and DE405_le.jpl should be in $CALC_DIR
 */
 
 #include <generate_delay_model.h>
@@ -21,6 +21,7 @@
 // Calc-10 constants
 #include "calc10/include/constants.h"
 
+#define SEC_PER_DAY 24*60*60
 
 // Output file
 FILE *output_file;
@@ -35,7 +36,15 @@ int interval = 0;   // Interval number in the current scan
 double delay[2] = { NAN }; //sec
 double uvw[3];
 
-
+int mjd(int day, int month, int year)
+// Calculate the modified julian day, formula taken from the all knowing wikipedia
+{
+  int a = (14-month)/12;
+  int y = year + 4800 - a;
+  int m = month + 12*a - 3;
+  int jdn = day + ((153*m+2)/5) + 365*y + (y/4) - (y/100) + (y/400) - 32045;
+  return jdn - 2400000.5;
+}
 
 /** Fortran interface **/
 
@@ -431,11 +440,15 @@ mvrec(short *ntoc, short *kmode, short *knum, short *err)
 				 + interval * delta_time
 				 - station_data.clock_epoch);
     total_delay = delay[0] + offset;
-    // We ouput the number of seconds since midnight on the day of the FIRST scan
-    if(scan_data[0].day != scan_data[scan_nr].day)
-      sec_of_day=scan_data[scan_nr].sec_of_day + (double)24*60*60;
-    else
-      sec_of_day=scan_data[scan_nr].sec_of_day;
+    // The number of seconds since midnight on the day the scan starts
+    sec_of_day=scan_data[scan_nr].sec_of_day;
+    printf("%d : sec_of_day = %f, start_of_scan = %f\n", interval, sec_of_day, scan_data[scan_nr].scan_start);
+    // At the start of each scan output the mjd at witch the scan starts
+    if(interval == 0){
+      int32_t scan_mjd = mjd(scan_data[scan_nr].day, scan_data[scan_nr].month, scan_data[scan_nr].year);
+      printf("scan_mjd = %d\n", scan_mjd);
+      fwrite(&scan_mjd, 1, sizeof(int32_t), output_file);
+    }
 
     fwrite(&sec_of_day, 1, sizeof(double), output_file);
     fwrite(uvw, 3, sizeof(double), output_file);

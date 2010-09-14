@@ -18,6 +18,7 @@
 #include "data_reader_file.h"
 #include "data_reader_factory.h"
 #include "channel_extractor_dynamic.h"
+#include "correlator_time.h"
 
 std::string dstdir="./";
 
@@ -41,8 +42,8 @@ int main(int argc, char** argv)
       Log_writer_cout log_writer(10);
       control_parameters.initialise(ctrl_file, vex_file, log_writer);
 
-      Control_parameters::Date start = control_parameters.get_start_time();
-      Control_parameters::Date stop = control_parameters.get_stop_time();
+      Time start = control_parameters.get_start_time();
+      Time stop = control_parameters.get_stop_time();
 
       // Get a list of all scan names
       int begin_scan = control_parameters.scan(start);
@@ -75,7 +76,7 @@ int main(int argc, char** argv)
               std::string urlsrc = control_parameters.data_sources(station_name)[current_scan-begin_scan];
               boost::shared_ptr<Data_reader> reader= boost::shared_ptr<Data_reader>( Data_reader_factory::get_reader(urlsrc) );
               boost::shared_ptr<Mark5a_reader> m_reader =
-                boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, data, -1, -1) );
+                boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, data, Time(0)) );
 
               int n_subbands = input_node_param.channels.size();
               int bits_per_sample = input_node_param.bits_per_sample();

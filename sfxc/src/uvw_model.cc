@@ -29,7 +29,6 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
-#include <limits>
 
 //*****************************************************************************
 //function definitions
@@ -37,8 +36,8 @@
 
 //default constructor, set default values
 Uvw_model::Uvw_model()
-    : end_scan(0), acc_u(NULL), acc_v(NULL), acc_w(NULL), splineakima_u(NULL), splineakima_v(NULL),
-    splineakima_w(NULL) {}
+    : begin_scan(0), scan_nr(-1), acc_u(NULL), acc_v(NULL), acc_w(NULL), 
+      splineakima_u(NULL), splineakima_v(NULL), splineakima_w(NULL) {}
 
 //destructor
 Uvw_model::~Uvw_model() {}
@@ -50,6 +49,7 @@ void Uvw_model::operator=(const Uvw_model &other) {
   u = other.u;
   v = other.v;
   w = other.w;
+  scans = other.scans;
   initialise_spline_for_next_scan();
 }
 
@@ -61,11 +61,11 @@ bool Uvw_model::operator==(const Uvw_model &other) const {
 //read the delay table, do some checks and
 //calculate coefficients for parabolic interpolation
 int Uvw_model::open(const char *delayTableName) {
-  int64_t start = 0, stop = std::numeric_limits<int64_t>::max();
+  const Time start, stop = Time::max_time();
   return open(delayTableName, start, stop);
 }
 
-int Uvw_model::open(const char *delayTableName, double tstart, double tstop) {
+int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
   std::ifstream in(delayTableName);
   double line[5];
   int32_t hsize;
@@ -75,55 +75,75 @@ int Uvw_model::open(const char *delayTableName, double tstart, double tstop) {
   in.read(reinterpret_cast < char * > (station), hsize*sizeof(char));
 
   // Read up to tstart
-  double time;
+  Time time;
+  int32_t current_mjd;
+  double scan_start, scan_end;
+  // The first line of each scan is the mjd of the scan
+  in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
-    time = line[0] * 1000000;
-    if (time >= tstart) {
-      times.push_back(time);
+    time.set_time(current_mjd, line[0]);
+    if (line[4] == 0)
+      in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
+    else if (time >= tstart) {
+      scan_start = line[0];
+      times.push_back(0.);
       u.push_back(line[1]);
       v.push_back(line[2]);
       w.push_back(line[3]);
+      scans.resize(1);
+      scans[0].begin = time;
       break;
     }
   }
 
   // Read the rest of the data
   while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
-    time = line[0] * 1000000;
-    if (time == 0 && times.size() == 1) {
-      // Instead of the first point of the desired scan, we got the
-      // last point of the previous scan.  Get rid of it.
-      times.resize(0);
-      u.resize(0);
-      v.resize(0);
-      w.resize(0);
+    SFXC_ASSERT(line[4] <= 0);
+    time.set_time(current_mjd, line[0]);
+    if (line[4] == 0) {
+      if(times.size() == 1){
+        // Instead of the first point of the desired scan, we got the
+        // last point of the previous scan.  Get rid of it.
+        times.resize(0);
+        u.resize(0);
+        v.resize(0);
+        w.resize(0);
+        scans.resize(0);
+      }else{
+       Interval &scan = scans.back();
+       scan.end.set_time(current_mjd, scan_end);
+       scan_start = -1;
+      }
+      in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
     } else {
-      times.push_back(time);
+      if(scan_start < 0){
+        scan_start = line[0];
+        scans.push_back((Interval){time, Time()});
+      }
+      times.push_back(line[0] - scan_start);
       u.push_back(line[1]);
       v.push_back(line[2]);
       w.push_back(line[3]);
+      scan_end = line[0];
     }
-    if (time >= tstop)
+    if (time >= tstop){
+      Interval &scan = scans.back();
+      scan.end.set_time(current_mjd, scan_end);
       break;
+    }
   }
 
+  begin_scan = 0;
+  scan_nr = -1;
   initialise_spline_for_next_scan();
   return 0;
 }
 
 void Uvw_model::initialise_spline_for_next_scan() {
-  // Skip the "empty" row that separates scans (if it is there).
-  SFXC_ASSERT(end_scan < times.size());
-  if (times[end_scan] == 0 && w[end_scan] == 0)
-    end_scan++;
-
-  if (end_scan >= times.size())
+  if (begin_scan >= times.size())
     return;
 
-  size_t begin_scan = end_scan;
-  while (end_scan < times.size() &&
-	 !(times[end_scan] == 0 && w[end_scan] == 0))
-    end_scan++;
+  scan_nr++;
 
   if (splineakima_u != NULL) {
     gsl_spline_free(splineakima_u);
@@ -142,7 +162,7 @@ void Uvw_model::initialise_spline_for_next_scan() {
   acc_u = gsl_interp_accel_alloc();
   acc_v = gsl_interp_accel_alloc();
   acc_w = gsl_interp_accel_alloc();
-  int n_pts = end_scan - begin_scan;
+  int n_pts = (int)(scans[scan_nr].end - scans[scan_nr].begin).get_time() + 1;
   // at least 4 sample points for a spline
   SFXC_ASSERT(n_pts > 4);
 
@@ -164,44 +184,50 @@ void Uvw_model::initialise_spline_for_next_scan() {
                   &times[begin_scan],
                   &w[begin_scan],
                   n_pts);
+  begin_scan += n_pts;
 }
 
 //calculates u,v, and w at time(microseconds)
-void Uvw_model::get_uvw(int64_t time, double *u, double *v, double *w) {
+void Uvw_model::get_uvw(Time time, double *u, double *v, double *w) {
   if (times.empty()) {
     DEBUG_MSG("times.empty()");
     SFXC_ASSERT(!times.empty());
   }
-  while (times[end_scan-1] < time) {
+
+  while (scans[scan_nr].end < time) {
     initialise_spline_for_next_scan();
   }
+
   SFXC_ASSERT(splineakima_u != NULL);
   SFXC_ASSERT(splineakima_v != NULL);
   SFXC_ASSERT(splineakima_w != NULL);
-  *u = gsl_spline_eval (splineakima_u, time, acc_u);
-  *v = gsl_spline_eval (splineakima_v, time, acc_v);
-  *w = gsl_spline_eval (splineakima_w, time, acc_w);
+  double sec = (time - scans[scan_nr].begin).get_time();
+
+  *u = gsl_spline_eval (splineakima_u, sec, acc_u);
+  *v = gsl_spline_eval (splineakima_v, sec, acc_v);
+  *w = gsl_spline_eval (splineakima_w, sec, acc_w);
 }
 
 //calculates the delay for the delayType at time in microseconds
 //get the next line from the delay table file
-std::ofstream& Uvw_model::uvw_values(std::ofstream &output, int64_t starttime,
-                                     int64_t stoptime, double inttime) {
-  int64_t time=(int64_t)(starttime + inttime*1000/2);
+std::ofstream& Uvw_model::uvw_values(std::ofstream &output, Time starttime,
+                                     Time stoptime, Time inttime) {
+  Time time = starttime + inttime/2;
   double gsl_u, gsl_v, gsl_w;
   output.precision(14);
   while (time < stoptime) {
-    while (times[end_scan] < time) initialise_spline_for_next_scan();
-    gsl_u = gsl_spline_eval (splineakima_u, time, acc_u);
-    gsl_v = gsl_spline_eval (splineakima_v, time, acc_v);
-    gsl_w = gsl_spline_eval (splineakima_w, time, acc_w);
-    double ttime  = time/1000;
+    while (scans[scan_nr].end < time) initialise_spline_for_next_scan();
+    double sec = (time - scans[scan_nr].begin).get_time();
+    gsl_u = gsl_spline_eval (splineakima_u, sec, acc_u);
+    gsl_v = gsl_spline_eval (splineakima_v, sec, acc_v);
+    gsl_w = gsl_spline_eval (splineakima_w, sec, acc_w);
+    double ttime  = time.get_time();
 
     output.write(reinterpret_cast < char * > (&ttime), sizeof(double));
     output.write(reinterpret_cast < char * > (&gsl_u), sizeof(double));
     output.write(reinterpret_cast < char * > (&gsl_v), sizeof(double));
     output.write(reinterpret_cast < char * > (&gsl_w), sizeof(double));
-    time += (int64_t)inttime*1000;
+    time += inttime;
   }
   return output;
 }

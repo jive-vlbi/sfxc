@@ -159,7 +159,8 @@ void
 MPI_Transfer::
 send(Delay_table_akima &table, int sn, int rank) {
   uint32_t n_datapoints = table.times.size();
-  int size = 2*sizeof(int32_t) + 2*n_datapoints*sizeof(double);
+  uint32_t n_scans = table.scans.size();
+  int size = 3*sizeof(int32_t) + 2*n_datapoints*sizeof(double) + 2 * n_scans * sizeof(int64_t);
   int position=0;
   char buffer[size];
 
@@ -170,10 +171,19 @@ send(Delay_table_akima &table, int sn, int rank) {
   // Send the length for convenience
   MPI_Pack(&n_datapoints, 1, MPI_UINT32, buffer, size,
            &position, MPI_COMM_WORLD);
+  MPI_Pack(&n_scans, 1, MPI_UINT32, buffer, size,
+           &position, MPI_COMM_WORLD);
+  for(int i = 0 ; i < n_scans; i++){
+    int64_t ticks = table.scans[i].begin.get_clock_ticks();
+    MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+    ticks = table.scans[i].end.get_clock_ticks();
+    MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+  }
   MPI_Pack(&table.times[0], n_datapoints, MPI_DOUBLE,
            buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&table.delays[0], n_datapoints, MPI_DOUBLE,
            buffer, size, &position, MPI_COMM_WORLD);
+
   SFXC_ASSERT(position == size);
 
   MPI_Send(buffer, position, MPI_PACKED, rank,
@@ -205,6 +215,16 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
              1, MPI_UINT32, MPI_COMM_WORLD);
   table.times.resize(n_datapoints);
   table.delays.resize(n_datapoints);
+  uint32_t n_scans;
+  MPI_Unpack(buffer, size, &position, &n_scans, 1, MPI_UINT32, MPI_COMM_WORLD);
+  table.scans.resize(n_scans);
+  for(int i = 0; i < n_scans; i++){
+    int64_t ticks;
+    MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+    table.scans[i].begin.set_clock_ticks(ticks);
+    MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+    table.scans[i].end.set_clock_ticks(ticks);
+  }
   MPI_Unpack(buffer, size, &position, &table.times[0],
              n_datapoints, MPI_DOUBLE, MPI_COMM_WORLD);
   SFXC_ASSERT(table.times.size() == n_datapoints);
@@ -215,7 +235,7 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
   SFXC_ASSERT(position == size);
 
   table.begin_scan  = 0;
-  table.end_scan    = 0;
+  table.scan_nr     = -1;
   table.acc         = NULL;
   table.splineakima = NULL;
 }
@@ -224,7 +244,8 @@ void
 MPI_Transfer::
 send(Uvw_model &table, int sn, int rank) {
   uint32_t n_datapoints = table.times.size();
-  int size = 2*sizeof(int32_t) + 4*n_datapoints*sizeof(double);
+  uint32_t n_scans = table.scans.size();
+  int size = 3*sizeof(int32_t) + 4*n_datapoints*sizeof(double) + 2*n_scans*sizeof(int64_t);
   int position=0;
   char buffer[size];
 
@@ -235,6 +256,14 @@ send(Uvw_model &table, int sn, int rank) {
   // Send the length for convenience
   MPI_Pack(&n_datapoints, 1, MPI_UINT32, buffer, size,
            &position, MPI_COMM_WORLD);
+  MPI_Pack(&n_scans, 1, MPI_UINT32, buffer, size,
+           &position, MPI_COMM_WORLD);
+  for(int i = 0 ; i < n_scans; i++){
+    int64_t ticks = table.scans[i].begin.get_clock_ticks();
+    MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+    ticks = table.scans[i].end.get_clock_ticks();
+    MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+  }
   MPI_Pack(&table.times[0], n_datapoints, MPI_DOUBLE,
            buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&table.u[0], n_datapoints, MPI_DOUBLE,
@@ -277,6 +306,18 @@ receive(MPI_Status &status, Uvw_model &table, int &sn) {
   table.v.resize(n_datapoints);
   table.w.resize(n_datapoints);
 
+  // Receive the list of scans
+  uint32_t n_scans;
+  MPI_Unpack(buffer, size, &position, &n_scans, 1, MPI_UINT32, MPI_COMM_WORLD);
+  table.scans.resize(n_scans);
+  for(int i = 0; i < n_scans; i++){
+    int64_t ticks;
+    MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+    table.scans[i].begin.set_clock_ticks(ticks);
+    MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+    table.scans[i].end.set_clock_ticks(ticks);
+  }
+
   MPI_Unpack(buffer, size, &position, &table.times[0],
              n_datapoints, MPI_DOUBLE, MPI_COMM_WORLD);
   SFXC_ASSERT(table.times.size() == n_datapoints);
@@ -292,13 +333,15 @@ receive(MPI_Status &status, Uvw_model &table, int &sn) {
 
   SFXC_ASSERT(position == size);
 
-  table.end_scan      = 0;
+  table.begin_scan    = 0;
+  table.scan_nr       = -1;
   table.acc_u         = NULL;
   table.acc_v         = NULL;
   table.acc_w         = NULL;
   table.splineakima_u = NULL;
   table.splineakima_v = NULL;
-  table.splineakima_w = NULL;}
+  table.splineakima_w = NULL;
+}
 
 void
 MPI_Transfer::send(Pulsar_parameters &pulsar_param, int rank) {
@@ -420,7 +463,7 @@ MPI_Transfer::receive(MPI_Status &status, Pulsar_parameters &pulsar_param) {
 void
 MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
   int size = 0;
-  size = 5*sizeof(int32_t);
+  size = 4*sizeof(int32_t) + sizeof(int64_t);
   for (Input_node_parameters::Channel_iterator channel =
          input_node_param.channels.begin();
        channel != input_node_param.channels.end(); channel++) {
@@ -439,7 +482,8 @@ MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&input_node_param.fft_size, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&input_node_param.integr_time, 1, MPI_INT32,
+  int64_t ticks = input_node_param.integr_time.get_clock_ticks();
+  MPI_Pack(&ticks, 1, MPI_INT64,
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&input_node_param.data_modulation, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
@@ -495,9 +539,11 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
   MPI_Unpack(buffer, size, &position,
              &input_node_param.fft_size, 1, MPI_INT32,
              MPI_COMM_WORLD);
+  int64_t ticks;
   MPI_Unpack(buffer, size, &position,
-             &input_node_param.integr_time, 1, MPI_INT32,
+             &ticks, 1, MPI_INT64,
              MPI_COMM_WORLD);
+  input_node_param.integr_time.set_clock_ticks(ticks);
   MPI_Unpack(buffer, size, &position,
              &input_node_param.data_modulation, 1, MPI_INT32,
              MPI_COMM_WORLD);
@@ -548,19 +594,20 @@ void
 MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   int size = 0;
   size =
-    13*sizeof(int32_t) + sizeof(int64_t) + 3*sizeof(char) +
-    corr_param.station_streams.size()*5*sizeof(int32_t) + 
-    sizeof(int32_t) + 11*sizeof(char);
+    3*sizeof(int64_t) + 10*sizeof(int32_t) + sizeof(int64_t) +
+    3*sizeof(char) + corr_param.station_streams.size() * (3 * sizeof(int32_t) + 2 * sizeof(int64_t)) +
+    11*sizeof(char);
   int position = 0;
   char message_buffer[size];
 
-  MPI_Pack(&corr_param.start_time, 1, MPI_INT32,
+  int64_t ticks = corr_param.start_time.get_clock_ticks();
+  MPI_Pack(&ticks, 1, MPI_INT64,
            message_buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&corr_param.stop_time, 1, MPI_INT32,
+  ticks = corr_param.stop_time.get_clock_ticks();
+  MPI_Pack(&ticks, 1, MPI_INT64,
            message_buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&corr_param.mjd, 1, MPI_INT32,
-           message_buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&corr_param.integration_time, 1, MPI_INT32,
+  ticks = corr_param.integration_time.get_clock_ticks();
+  MPI_Pack(&ticks, 1, MPI_INT64,
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.number_channels, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
@@ -610,12 +657,14 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
              message_buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&station->station_stream, 1, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&station->start_time, 1, MPI_INT32,
+    ticks = station->start_time.get_clock_ticks();
+    MPI_Pack(&ticks, 1, MPI_INT64,
              message_buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&station->stop_time, 1, MPI_INT32,
+    ticks = station->stop_time.get_clock_ticks();
+    MPI_Pack(&ticks, 1, MPI_INT64,
              message_buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&station->bits_per_sample, 1, MPI_INT32,
-	     message_buffer, size, &position, MPI_COMM_WORLD);
+             message_buffer, size, &position, MPI_COMM_WORLD);
   }
 
   SFXC_ASSERT(position == size);
@@ -636,18 +685,19 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
   MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE,
            status.MPI_TAG, MPI_COMM_WORLD, &status2);
   int position = 0;
+  int64_t ticks;
   MPI_Unpack(buffer, size, &position,
-             &corr_param.start_time, 1, MPI_INT32,
+             &ticks, 1, MPI_INT64,
              MPI_COMM_WORLD);
+  corr_param.start_time.set_clock_ticks(ticks);
   MPI_Unpack(buffer, size, &position,
-             &corr_param.stop_time, 1, MPI_INT32,
+             &ticks, 1, MPI_INT64,
              MPI_COMM_WORLD);
+  corr_param.stop_time.set_clock_ticks(ticks);
   MPI_Unpack(buffer, size, &position,
-             &corr_param.mjd, 1, MPI_INT32,
+             &ticks, 1, MPI_INT64,
              MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position,
-             &corr_param.integration_time, 1, MPI_INT32,
-             MPI_COMM_WORLD);
+  corr_param.integration_time.set_clock_ticks(ticks);
   MPI_Unpack(buffer, size, &position,
              &corr_param.number_channels, 1, MPI_INT32,
              MPI_COMM_WORLD);
@@ -711,15 +761,18 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
     MPI_Unpack(buffer, size, &position,
                &station_param.station_stream, 1, MPI_INT32,
                MPI_COMM_WORLD);
+    int64_t ticks;
     MPI_Unpack(buffer, size, &position,
-               &station_param.start_time, 1, MPI_INT32,
+               &ticks, 1, MPI_INT64,
                MPI_COMM_WORLD);
+    station_param.start_time.set_clock_ticks(ticks);
     MPI_Unpack(buffer, size, &position,
-               &station_param.stop_time, 1, MPI_INT32,
+               &ticks, 1, MPI_INT64,
                MPI_COMM_WORLD);
+    station_param.stop_time.set_clock_ticks(ticks);
     MPI_Unpack(buffer, size, &position,
-	       &station_param.bits_per_sample, 1, MPI_INT32,
-	       MPI_COMM_WORLD);
+               &station_param.bits_per_sample, 1, MPI_INT32,
+               MPI_COMM_WORLD);
     corr_param.station_streams.push_back(station_param);
   }
 

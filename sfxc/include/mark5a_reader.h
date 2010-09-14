@@ -19,7 +19,7 @@
 #include "data_reader.h"
 #include "mark5a_header.h"
 #include "control_parameters.h"
-
+#include "correlator_time.h"
 
 class Mark5a_reader : public Input_data_format_reader {
   enum Debug_level {
@@ -34,16 +34,13 @@ public:
   Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
                 int N,
                 Data_frame &data,
-                int ref_year_,
-                int ref_day_);
+                Time ref_time_);
   virtual ~Mark5a_reader();
 
-  /// Time in microseconds
-  /// Changed the order of the arguments when I changed from miliseconds to microseconds
-  int64_t goto_time(Data_frame &data, int64_t us_time);
+  Time goto_time(Data_frame &data, Time us_time);
 
-  /// Get the current time in microseconds
-  int64_t get_current_time();
+  /// Get the current time
+  Time get_current_time();
 
   /// Read another mark5a-frame
   bool read_new_block(Data_frame &data);
@@ -54,9 +51,9 @@ public:
   std::vector< std::vector<int> > get_standard_track_mapping(const Input_node_parameters &input_node_param,
                                                              Data_frame &data);
 
-  int time_between_headers() {
-    SFXC_ASSERT(data_rate() % (N*SIZE_MK5A_FRAME*8) == 0);
-    return N * 8 * SIZE_MK5A_FRAME * 1000000LL / data_rate();
+  Time time_between_headers() {
+    SFXC_ASSERT(data_rate() % (N*SIZE_MK5A_FRAME) == 0);
+    return time_between_headers_;
   }
 
   bool eof();
@@ -85,40 +82,42 @@ private:
   // Resync header if there is mising data in the input stream
   bool resync_header(Data_frame &data);
 
-  // Convert time read from input stream to time relative to midnight on the reference day
-  int64_t correct_raw_time(int64_t raw_time);
-
   void set_data_frame_info(Data_frame &data);
 private:
   // Time information
-  int start_day_, current_day_;
-  int ref_day, ref_year;
-  int64_t us_per_day;
+  int start_day_, current_day_, current_mjd_;
+  //int64_t us_per_day;
   // start time and current time in microseconds
   // start time is used to check the data rate
-  int64_t start_time_, current_time_;
+  Time start_time_, current_time_;
 
   // For testing
   Debug_level debug_level_;
   int block_count_;
 
   int data_rate() const;
+  Time time_between_headers_;
 
 public:
   int DATA_RATE_;
   const int N;
 };
 
-
-
 /** Returns a mark5a reader based on the headers in the data stream
  **/
 Mark5a_reader *
 get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
-                  Mark5a_reader::Data_frame &data, int ref_year, int ref_day);
+                  Mark5a_reader::Data_frame &data, Time ref_date);
 
 int find_start_of_header(boost::shared_ptr<Data_reader> reader,
                          Mark5a_reader::Data_frame &data);
 
+inline Time Mark5a_reader::get_current_time() {
+  return current_time_;
+}
+
+inline bool Mark5a_reader::eof() {
+  return data_reader_->eof();
+}
 
 #endif // MARK5A_READER_H

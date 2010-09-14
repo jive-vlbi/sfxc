@@ -9,14 +9,14 @@
 #include <map>
 #include <math.h>
 #include "utils.h"
-
+#include "correlator_time.h"
 
 
 /** Information about the mark5 tracks needed by the input node. **/
 class Input_node_parameters {
 public:
   Input_node_parameters()
-      : track_bit_rate(0), fft_size(-1), integr_time(-1), data_modulation(0) {}
+      : track_bit_rate(0), fft_size(-1), data_modulation(0) {}
 
   class Channel_parameters {
   public:
@@ -49,7 +49,7 @@ public:
   // Number of samples per FFT.
   int32_t fft_size;
   /// The integration time
-  int32_t integr_time;
+  Time integr_time;
   /// Indicates if data modulation is used (p.6 of Mark4 memo 230A, Whitney 2005)
   int32_t data_modulation;
 };
@@ -99,8 +99,7 @@ private:
 class Correlation_parameters {
 public:
   Correlation_parameters()
-      : start_time(0), stop_time(0), integration_time(0),
-      number_channels(0), fft_size(0), integration_nr(-1), slice_nr(-1), slice_offset(-1),
+      : number_channels(0), fft_size(0), integration_nr(-1), slice_nr(-1), slice_offset(-1),
       sample_rate(0), channel_freq(0), bandwidth(0),
       sideband('n'), channel_nr(0), polarisation('n'), pulsar_binning(false) {}
 
@@ -116,8 +115,8 @@ public:
     // according to the vex file
     // sorted alphabathically
     int32_t station_stream; // input stream (from multiple_data_readers)
-    int32_t start_time;     // Start and stop time for the station
-    int32_t stop_time;
+    Time start_time;         // Start and stop time for the station
+    Time stop_time;
     int32_t bits_per_sample;
   };
 
@@ -125,10 +124,9 @@ public:
   typedef Station_list::iterator          Station_iterator;
 
   // Data members
-  int32_t start_time;       // Start of the slice in milliseconds
-  int32_t stop_time;        // End of the slice in milliseconds
-  int32_t mjd;              // mjd at start of slice
-  int32_t integration_time; // In milliseconds
+  Time start_time;          // Start of the slice in microseconds
+  Time stop_time;           // End of the slice in microseconds
+  Time integration_time;    // In milliseconds
   int32_t number_channels;  // number of frequency channels
   int32_t fft_size;         // Number of samples per FFT
   int32_t integration_nr;   // number of the integration
@@ -158,8 +156,6 @@ std::ostream &operator<<(std::ostream &out, const Correlation_parameters &param)
 /** Class containing all control variables needed for the experiment **/
 class Control_parameters {
 public:
-  typedef Vex::Date                Date;
-
 
   Control_parameters();
   Control_parameters(const char *ctrl_file, const char *vex_file,
@@ -175,15 +171,15 @@ public:
   /****************************************************/
   /* Get functions from the correlation control file: */
   /****************************************************/
-  Date get_start_time() const;
-  Date get_stop_time() const;
+  Time get_start_time() const;
+  Time get_stop_time() const;
   std::vector<std::string> data_sources(const std::string &station) const;
   std::string get_output_file() const;
 
   std::string station(int i) const;
   size_t number_stations() const;
 
-  int integration_time() const; // Integration time in miliseconds
+  Time integration_time() const; // Integration time in microseconds
   int number_channels() const;
   int fft_size() const;
 
@@ -210,7 +206,7 @@ public:
   int bits_per_sample(const std::string& mode, const std::string& station) const;
 
   std::string scan(int i) const;
-  int scan(const Date &date) const;
+  int scan(const Time &time) const;
   std::string scan_source(const std::string &scan) const;
 
   size_t number_scans() const;
@@ -234,7 +230,7 @@ public:
   int cross_channel(const std::string &channel_nr,
                     const std::string &mode) const;
 
-  std::string get_mode(int32_t &time) const;
+  std::string get_mode(const Time &time) const;
 
   char polarisation(const std::string &channel_name,
                     const std::string &station_name,
@@ -253,10 +249,11 @@ public:
    * from the input node to the correlator node.
    **/
   static int nr_ffts_per_integration_slice
-  (int integration_time,
+  (const Time &integration_time,
    int data_rate,
    int fft_size) {
-    return ceil((integration_time * (data_rate / 1000) * 1.0 / fft_size));
+    Time time_one_fft(fft_size / (data_rate / 1000000.));
+    return ceil(integration_time / time_one_fft);
   }
 
   /**
@@ -264,7 +261,7 @@ public:
    * correlator node for one integration slice.
    **/
   static int nr_bytes_per_integration_slice_input_node_to_correlator_node
-  (int integration_time,
+  (const Time &integration_time,
    int data_rate,
    int bits_per_sample,
    int fft_size) {
@@ -299,8 +296,8 @@ public:
 
   const Vex &get_vex() const;
 
-  /// The start date of the first scan in the vex file
-  boost::shared_ptr<Vex::Date> start_date;
+  /// The start time of the first scan in the vex file
+  Time start_time;
 
 private:
   std::string create_path(const std::string &path) const;

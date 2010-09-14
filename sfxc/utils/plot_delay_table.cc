@@ -5,8 +5,6 @@
 #include "delay_table_akima.h"
 #include "control_parameters.h"
 
-typedef Control_parameters::Date Date;
-
 //converts a binary delay table to an interpolated ascii table
 //Usage: plot_delay_table <delay-table> <plot-file>
 //
@@ -24,27 +22,25 @@ int main(int argc, char *argv[]) {
   }
 
   Delay_table_akima delay_table;
+  std::cout << "about to open " << argv[1] << "\n";
   delay_table.open(argv[1]);
-
+  std::cout << "about to open " << argv[2] << "\n";
   std::ofstream out(argv[2]);
   out.precision(20);
 
   int scan = 1;
   do {
-    // In microseconds
-    int64_t start_time_scan = delay_table.start_time_scan();
-    int64_t stop_time_scan = delay_table.stop_time_scan();
+    std::cout << "read scan " << scan << "\n";
+    Time start_time_scan = delay_table.start_time_scan();
+    Time stop_time_scan = delay_table.stop_time_scan();
 
-    // year and day are set to zero
-    int64_t us_per_day = (int64_t)24*60*60*1000000;
-    int64_t print_start_time = start_time_scan < us_per_day ?  start_time_scan : start_time_scan - us_per_day;
-    int64_t print_stop_time  = stop_time_scan < us_per_day ?  stop_time_scan : stop_time_scan - us_per_day;
     std::cout << scan 
-              << " \t" << Date(0,0,print_start_time/1000000).to_string()
-              << " \t" << Date(0,0,print_stop_time/1000000).to_string()
+              << " \t" << start_time_scan
+              << " \t" << stop_time_scan
               << std::endl;
-    for (int64_t time = start_time_scan; time<stop_time_scan; time += 10000) {
-      out << time << " \t" << delay_table.delay(time) << std::endl;
+    Time step = Time(10000.);
+    for (Time time = start_time_scan; time < stop_time_scan; time += step) {
+      out << (int64_t)time.get_time_usec() << " \t" << delay_table.delay(time) << std::endl;
     }
     out << std::endl;
     scan ++;

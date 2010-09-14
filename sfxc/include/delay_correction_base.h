@@ -67,14 +67,13 @@ private:
   int buffer_size;
   int sample_rate();
   int bandwidth();
-  int length_of_one_fft(); // Length of one fft in microseconds
   int sideband();
   int64_t channel_freq();
-  double get_delay(int64_t time);
+  double get_delay(Time time);
 private:
   Input_buffer_ptr    input_buffer;
 
-  int64_t             current_time; // In microseconds
+  Time             current_time;
   Correlation_parameters correlation_parameters;
   int   stream_nr;
   int   bits_per_sample;

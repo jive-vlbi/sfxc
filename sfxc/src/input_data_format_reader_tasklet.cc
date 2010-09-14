@@ -17,7 +17,6 @@ Input_data_format_reader_tasklet(
   assert(data.buffer->data.size() > 0);
 
   input_element_ = data;
-
   current_time = reader_->get_current_time();
   push_element();
 
@@ -30,7 +29,9 @@ Input_data_format_reader_tasklet::~Input_data_format_reader_tasklet(){
 void Input_data_format_reader_tasklet::stop() {
   isRunning = false;
   /// We add an empty interval to unblock the thread
-  add_time_interval(0,0);
+  Time dummy;
+  //dummy = (int64_t)0;
+  add_time_interval(dummy, dummy);
 }
 
 void Input_data_format_reader_tasklet::do_execute() {
@@ -41,13 +42,12 @@ void Input_data_format_reader_tasklet::do_execute() {
   /// then let's work
   while ( isRunning ) {
     /// if there is still some data to process we do it
-    if ( current_time < current_interval_.stop_time_ ) do_task();
-
-    /// otherwise we fetch a new interval.
+    if ( current_time < current_interval_.stop_time_ ){ 
+      do_task();
+    }/// otherwise we fetch a new interval.
     else fetch_next_time_interval();
   }
   DEBUG_MSG(" INPUT READER WILL EXIT ITS LOOP ");
-
   /// We close the queue in which we output our data.
   output_buffer_->close();
 }
@@ -56,7 +56,7 @@ void
 Input_data_format_reader_tasklet::
 do_task() {
   // Compute the expected start time of the next frame
-  int64_t start_next_frame = input_element_.start_time + reader_->time_between_headers();
+  Time start_next_frame = input_element_.start_time + reader_->time_between_headers();
   allocate_element();
 
   if (reader_->eof()) {
@@ -78,7 +78,6 @@ do_task() {
         input_element_.start_time = current_time;
         data_read_ += input_element_.buffer->data.size();
         push_element();
-        std::cout << RANK_OF_NODE << " : " << current_time << " ; pushed random block\n";
       }
       input_element_ = old_input_element;
     }
@@ -98,14 +97,13 @@ void
 Input_data_format_reader_tasklet::fetch_next_time_interval() {
   /// Blocking function until a new interval is available
   current_interval_ = intervals_.front_and_pop();
-
   if ( !current_interval_.empty() ) {
     /// Otherwise the new interval is loaded.
     ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: SET TIME");
     ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: val:"<< current_interval_.start_time_ << " cur: "<< current_time);
-    if(current_interval_.start_time_<=reader_->get_current_time())
+    if(current_interval_.start_time_<=reader_->get_current_time()){
       current_time = reader_->get_current_time();
-    else{
+    }else{
       current_time = goto_time( current_interval_.start_time_);
       if (current_time > current_interval_.stop_time_) {
         current_time = current_interval_.stop_time_;
@@ -121,9 +119,9 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
 
 void
 Input_data_format_reader_tasklet::
-add_time_interval(uint64_t us_start_time, uint64_t us_stop_time) {
+add_time_interval(Time &start_time, Time &stop_time) {
   ///DEBUG_MSG("Time interval added: " << us_start_time << ":"<< us_stop_time );
-  intervals_.push( Time_interval(us_start_time, us_stop_time ) );
+  intervals_.push( Time_interval(start_time, stop_time ) );
 }
 
 
@@ -155,14 +153,14 @@ allocate_element() {
   input_element_.buffer = memory_pool_->allocate();
   input_element_.invalid.resize(0);
   input_element_.channel=0;
-  input_element_.start_time=0;
+  input_element_.start_time=Time();
 }
 
-uint64_t
+Time
 Input_data_format_reader_tasklet::
-goto_time(uint64_t us_time) {
+goto_time(Time time) {
 
-  int64_t new_time = reader_->goto_time(input_element_, us_time);
+  Time new_time = reader_->goto_time(input_element_, time);
   SFXC_ASSERT(new_time == reader_->get_current_time());
 
   // Set the current time to the actual time in the data stream.
@@ -171,8 +169,8 @@ goto_time(uint64_t us_time) {
 
   input_element_.start_time = current_time;
 
-  if (us_time != new_time) {
-    DEBUG_MSG("Warning: Couldn't go to time " << us_time << "us.");
+  if (time != new_time) {
+    DEBUG_MSG("Warning: Couldn't go to time " << time << "us.");
     DEBUG_MSG("Current time is              " << current_time << "us.");
     DEBUG_MSG("Time found is                " << new_time << "us.");
   }
@@ -180,7 +178,7 @@ goto_time(uint64_t us_time) {
   return current_time;
 }
 
-uint64_t
+Time
 Input_data_format_reader_tasklet::
 get_current_time() {
   return current_time;

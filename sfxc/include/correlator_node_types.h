@@ -5,26 +5,10 @@
 #include <threadsafe_queue.h>
 #include <vector>
 #include "memory_pool_elements.h"
+#include "correlator_time.h"
 
 class Correlator_node_types {
 public:
-  class Time_interval {
-  public:
-    Time_interval(){
-        start_time_ = 0;
-        stop_time_ = 0;
-    }
-
-    Time_interval(uint64_t start_time, uint64_t stop_time){
-        start_time_ = start_time;
-        stop_time_ = stop_time;
-    }
-
-    bool empty(){ return stop_time_ <= start_time_; }
-
-    uint64_t start_time_;
-    uint64_t stop_time_;
-  };
 
   struct Channel_circular_input_buffer { 
     Channel_circular_input_buffer(size_t size_)

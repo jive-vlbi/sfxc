@@ -117,7 +117,7 @@ Input_node_data_writer_tasklet::add_delay(Delay_memory_pool_element delay)
  * @param stop Stop time of interval
  *****************************************************************************/
 void
-Input_node_data_writer_tasklet::add_time_interval(uint64_t start, uint64_t stop) {
+Input_node_data_writer_tasklet::add_time_interval(Time start, Time stop) {
   for (size_t i=0; i<data_writers_.size(); i++)
     data_writers_[i]->add_time_interval(start, stop);
 }
@@ -125,23 +125,21 @@ Input_node_data_writer_tasklet::add_time_interval(uint64_t start, uint64_t stop)
 /*****************************************************************************
  * @desc Return the earliest current_time from the data writers
  *****************************************************************************/
-int64_t
+Time
 Input_node_data_writer_tasklet::get_current_time(){
   int i=-1;
   int size=data_writers_.size();
-  int64_t time=INVALID_TIME;
+  Time time;
   // First find a valid time
    do{
      i++;
      time = data_writers_[i]->get_current_time();
-     if(time==INVALID_TIME)
-       std::cout << RANK_OF_NODE << " : writer " << i << " has INVALID_TIME\n";
-   }while((i < size-1)&&(time==INVALID_TIME));
+   }while((i < size-1) && (time == Time()));
 
-   for (int j = i+1; j < size; j++){
-     int64_t ntime = data_writers_[j]->get_current_time();
-     if(ntime != INVALID_TIME)
-       time = std::min(time, ntime);
+   for (int j = 1; j < size; j++){
+    Time new_time = data_writers_[j]->get_current_time();
+    if(new_time < time)
+     time = new_time;
    }
 
   return time;

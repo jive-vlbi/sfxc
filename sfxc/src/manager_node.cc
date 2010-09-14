@@ -143,12 +143,11 @@ void Manager_node::start() {
   get_log_writer()(1) << "Manager_node::start()" << std::endl;
 
   PROGRESS_MSG("start correlating");
-
   initialise();
   current_correlator_node = 0;
   status = START_NEW_SCAN;
   while (status != END_NODE) {
-		process_all_waiting_messages();
+    process_all_waiting_messages();
 
     switch (status) {
       case START_NEW_SCAN: {
@@ -158,12 +157,11 @@ void Manager_node::start() {
         // Set the input nodes to the proper start time
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
-          int station_time =
+          Time station_time =
             input_node_get_current_time(control_parameters.station(station));
           if (station_time >
-              start_time + integration_slice_nr*integration_time()) {
-            integration_slice_nr =
-              (station_time-start_time)/integration_time();
+              start_time + integration_time() * integration_slice_nr) {
+            integration_slice_nr = (int) ((station_time - start_time) / integration_time());
           }
         }
 
@@ -176,8 +174,7 @@ void Manager_node::start() {
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
           input_node_set_time(control_parameters.station(station),
-                              start_time +
-                              integration_slice_nr*integration_time(),
+                              start_time + integration_time()*integration_slice_nr,
                               stop_time_scan);
         }
         status = START_CORRELATION_TIME_SLICE;
@@ -219,15 +216,14 @@ void Manager_node::start() {
       }
       case GOTO_NEXT_TIMESLICE: {
         integration_slice_nr += 1;
-        PROGRESS_MSG("starting timeslice " << start_time+integration_slice_nr*integration_time());
-
+        PROGRESS_MSG("starting timeslice " << start_time+integration_time()*integration_slice_nr);
         // Check whether the integration slice continues past the stop time
-        if (start_time+(integration_slice_nr+1)*integration_time() >
+        if (start_time + integration_time() * (integration_slice_nr + 1) >
             stop_time) {
           status = STOP_CORRELATING;
 
           // Check whether the integration slice continues past the scan
-        } else if (start_time+(integration_slice_nr+1)*integration_time() >
+        } else if (start_time + integration_time() * (integration_slice_nr + 1) >
                    stop_time_scan) {
           // We can stop if we finished the last scan
           if (current_scan == control_parameters.number_scans()) {
@@ -281,33 +277,27 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   }
 
   // Initialise the correlator node
-  int32_t ms_per_day=1000*24*60*60;
   if (cross_channel == -1) {
-    int32_t time = (start_time + integration_time()*integration_slice_nr)%ms_per_day;
+    Time time = start_time + integration_time() * integration_slice_nr;
     get_log_writer()(1)
     << "start "
-    << Vex::Date(start_year, start_day, time/1000).to_string()
-    << (time%1000) << "ms"
     << ", channel " << current_channel << " to correlation node "
     << corr_node_nr << std::endl;
     PROGRESS_MSG("start "
-                 << Vex::Date(start_year, start_day, time/1000).to_string()
-                 << (time%1000) << "ms"
+                 << time.date_string()
                  << ", channel " << current_channel << " to correlation node "
                  << corr_node_nr);
   } else {
-    int32_t time = (start_time + integration_time()*integration_slice_nr)%ms_per_day;
+    Time time = start_time + integration_time()*integration_slice_nr;
     get_log_writer()(1)
     << "start "
-    << Vex::Date(start_year, start_day, time/1000).to_string()
-    << (time%1000) << "ms"
+    << time.date_string()
     << ", channel "
     << current_channel << ","
     << cross_channel << " to correlation node "
     << corr_node_nr << std::endl;
     PROGRESS_MSG("start "
-                 << Vex::Date(start_year, start_day, time/1000).to_string()
-                 << (time%1000) << "ms"
+                 << time.date_string()
                  << ", channel "
                  << current_channel << ","
                  << cross_channel << " to correlation node "
@@ -330,10 +320,9 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
                                station_name,
                                get_input_node_map());
   correlation_parameters.start_time =
-    start_time + integration_slice_nr*integration_time();
+    start_time + integration_time() * integration_slice_nr;
   correlation_parameters.stop_time  =
-    start_time + (integration_slice_nr+1)*integration_time();
-  correlation_parameters.mjd  = mjd(1,1,start_year)+start_day-1;
+    start_time + integration_time() * (integration_slice_nr+1);
   correlation_parameters.integration_nr = integration_slice_nr;
   correlation_parameters.slice_nr = output_slice_nr;
   strncpy(correlation_parameters.source, control_parameters.scan_source(scan_name).c_str(), 11);
@@ -413,27 +402,13 @@ Manager_node::initialise() {
     set_data_reader(input_rank(station_name), 0, filename);
   }
   // Get start of first scan and end of last scan in correlation
-  int64_t t_begin, t_end;
+  Time t_begin, t_end;
   {
   const Vex vex = control_parameters.get_vex();
-  Vex::Date start_time_experiment(vex.get_start_time_of_experiment());
-  Vex::Date start_time(control_parameters.get_start_time());
-  Vex::Date stop_time(control_parameters.get_stop_time());
-  Vex::Date start_first_scan(vex.start_of_scan(vex.get_scan_name(start_time)));
-  // Find the end time of the last scan
-  std::string last_scan_name = vex.get_scan_name(start_time);
-  Vex::Node::const_iterator it = vex.get_root_node()["SCHED"][last_scan_name];
-  while (++it != vex.get_root_node()["SCHED"]->end()){
-    Vex::Date start_scan = vex.start_of_scan(it.key());
-    if(start_scan >= stop_time)
-      break;
-
-    last_scan_name = vex.get_scan_name(start_scan);
-  }  
-  Vex::Date end_last_scan(vex.stop_of_scan(last_scan_name));
-  int experiment_day = start_time_experiment.day, experiment_year = start_time_experiment.year;
-  t_begin = start_first_scan.to_miliseconds(experiment_day, experiment_year)*1000;
-  t_end = end_last_scan.to_miliseconds(experiment_day, experiment_year)*1000;
+  Vex::Date start_time(control_parameters.get_start_time().date_string());
+  Vex::Date stop_time(control_parameters.get_stop_time().date_string());
+  t_begin = Time(vex.get_start_time_of_scan(vex.get_scan_name(start_time)));
+  t_end = Time(vex.get_stop_time_of_scan(vex.get_scan_name(stop_time)));
   }
 
   // Send the delay tables:
@@ -497,22 +472,17 @@ Manager_node::initialise() {
   // Write the global header in the outpul file
   send_global_header();
 
-  Control_parameters::Date start = control_parameters.get_start_time();
-  Control_parameters::Date stop = control_parameters.get_stop_time();
-  start_year = start.year;
-  start_day  = start.day;
-  // ms since midnight on the day of the first scan in the vex file
-  start_time = start.to_miliseconds(control_parameters.start_date->day);
-  stop_time  = stop.to_miliseconds(control_parameters.start_date->day);
+  start_time = control_parameters.get_start_time();
+  stop_time = control_parameters.get_stop_time();
   // Get a list of all scan names
-  current_scan = control_parameters.scan(start);
+  current_scan = control_parameters.scan(start_time.date_string());
   SFXC_ASSERT(current_scan >= 0);
   SFXC_ASSERT((size_t)current_scan < control_parameters.number_scans());
 
   output_slice_nr = 0;
 
-  PROGRESS_MSG("start_time: " << start.to_string());
-  PROGRESS_MSG("stop_time: " << stop.to_string());
+  PROGRESS_MSG("start_time: " << start_time.date_string());
+  PROGRESS_MSG("stop_time: " << stop_time.date_string());
 
   get_log_writer()(1) << "Starting correlation" << std::endl;
 }
@@ -520,26 +490,30 @@ Manager_node::initialise() {
 void Manager_node::initialise_scan(const std::string &scan) {
   Vex::Date start_of_scan =
     control_parameters.get_vex().start_of_scan(scan);
+  Vex::Date stop_of_scan =
+    control_parameters.get_vex().stop_of_scan(scan);
+
+  int start_mjd = mjd(1, 1, start_of_scan.year) + start_of_scan.day - 1;
+  Time scan_start(start_mjd, start_of_scan.to_miliseconds() / 1000.);
 
   // set the start time to the beginning of the scan
-  if (start_time + integration_slice_nr*integration_time() <
-      start_of_scan.to_miliseconds(start_day)) {
-    int64_t start_interval =
-      start_of_scan.to_miliseconds(start_day)-start_time;
-    integration_slice_nr = start_interval/integration_time();
-    if ((start_interval%integration_time()) != 0) {
+  if (start_time + integration_time() * integration_slice_nr < scan_start) {
+    Time start_interval = scan_start - start_time;
+    integration_slice_nr = (int) (start_interval / integration_time());
+    if ((start_interval % integration_time()) != Time()) {
       integration_slice_nr ++;
     }
   }
 
-  stop_time_scan =
-    control_parameters.get_vex().stop_of_scan(scan).to_miliseconds(control_parameters.start_date->day);
+  int stop_mjd = mjd(1, 1, stop_of_scan.year) + stop_of_scan.day - 1;
+  stop_time_scan = Time(stop_mjd, stop_of_scan.to_miliseconds() / 1000.);
+
   if (stop_time < stop_time_scan)
     stop_time_scan = stop_time;
   // Align the stop time with the time slices
-  SFXC_ASSERT(((stop_time_scan-start_time)%integration_time()) >= 0);
+  SFXC_ASSERT(((stop_time_scan-start_time)%integration_time()) >= Time());
   stop_time_scan -= (stop_time_scan-start_time)%integration_time();
-  SFXC_ASSERT(((stop_time_scan-start_time)%integration_time()) == 0);
+  SFXC_ASSERT(((stop_time_scan-start_time)%integration_time()) == Time());
 
 
   // Send the track parameters to the input nodes
@@ -573,15 +547,18 @@ void Manager_node::send_global_header(){
     output_header.header_size = sizeof(Output_header_global);
 
     strcpy(output_header.experiment,control_parameters.experiment().c_str());      // Name of the experiment
-    Control_parameters::Date start = control_parameters.get_start_time();
-    output_header.start_year = start.year;       // Start year of the experiment
-    output_header.start_day = start.day;        // Start day of the experiment (day of year)
-    output_header.start_time = start.to_miliseconds()/1000;
+    Time start = control_parameters.get_start_time();
+    int start_year, start_day;
+    // Start year and day (day of year) of the experiment
+    start.get_date(start_year, start_day);
+    output_header.start_year = start_year;      // Start year of the experiment
+    output_header.start_day = start_day;        // Start day of the experiment (day of year)
+    output_header.start_time = (int)start.get_time();
     // Start time of the correlation in seconds since
     // midnight
     output_header.number_channels = control_parameters.number_channels();  // Number of frequency channels
-    int int_time = control_parameters.integration_time()*1000;// Integration time: microseconds
-    output_header.integration_time = int_time;
+    Time int_time = control_parameters.integration_time();// Integration time: microseconds
+    output_header.integration_time = (int)int_time.get_time_usec();
     output_header.output_format_version = OUTPUT_FORMAT_VERSION;
     output_header.correlator_version = atoi(SVN_VERSION);
 

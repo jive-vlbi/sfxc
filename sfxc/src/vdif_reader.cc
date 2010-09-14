@@ -3,14 +3,13 @@
 
 VDIF_reader::
 VDIF_reader(boost::shared_ptr<Data_reader> data_reader,
-              Data_frame &data, int ref_year, int ref_day)
+              Data_frame &data, Time ref_time)
   : Input_data_format_reader(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
     sample_rate(0)
 {
-  us_per_day=(int64_t)24*60*60*1000000;
   // Reference date : All times are relative to midnight on ref_jday
-  ref_jday = mjd(1,1,ref_year) + ref_day -1;
+  ref_jday = (int)ref_time.get_mjd();
   DEBUG_MSG("Ref_jday=" << ref_jday);
 
   if(!read_new_block(data)){
@@ -45,14 +44,14 @@ VDIF_reader::print_header(){
   std::cout << RANK_OF_NODE << "-------------------------------------\n";
 }
 
-int64_t
-VDIF_reader::goto_time(Data_frame &data, int64_t us_time) {
-  SFXC_ASSERT(time_between_headers() > 0);
+Time
+VDIF_reader::goto_time(Data_frame &data, Time us_time) {
+  SFXC_ASSERT(time_between_headers().get_time_usec() > 0);
   // Ensure that we are at the first thread
   while(current_header.thread_id!=0)
     read_new_block(data);
 
-  int64_t current_time_ = get_current_time();
+  current_time_ = get_current_time();
   if (us_time <= current_time_) return current_time_;
 
   int nchan=0;
@@ -63,14 +62,13 @@ VDIF_reader::goto_time(Data_frame &data, int64_t us_time) {
   }
 
   // first skip through the file in 1 second steps; NB we assume one thread per channel
-  int64_t one_sec=1000000;
-  int data_size = current_header.data_size();
-  int bits_per_sample = current_header.bits_per_sample+1;
-  int sample_rate_us = sample_rate/1000000; // Samples per micro second
-  int64_t delta_time = us_time-get_current_time();
+  const int data_size = current_header.data_size();
+  const int bits_per_sample = current_header.bits_per_sample+1;
+  const Time one_sec(1000000.);
+  const Time t_block((8 * data_size)/(bits_per_sample * sample_rate / 1000000));
+  Time delta_time = us_time - get_current_time();
   while (delta_time >= one_sec){
-    SFXC_ASSERT(delta_time % time_between_headers() == 0);
-    int n_blocks = one_sec*sample_rate_us*bits_per_sample/(8*data_size);
+    int n_blocks = (int)(one_sec / t_block);
 
     // Don't read the last header, to be able to check whether we are at the
     // right time
@@ -80,10 +78,10 @@ VDIF_reader::goto_time(Data_frame &data, int64_t us_time) {
 
     // Read last block:
     read_new_block(data);
-    delta_time = us_time-get_current_time();
+    delta_time = us_time - get_current_time();
   }
   // Now read the last bit of data up to the requested time
-  int n_blocks = delta_time*sample_rate_us*bits_per_sample/(8*data_size);
+  int n_blocks = (int)(delta_time / t_block);
   if(n_blocks>0){
     // Don't read the last header, to be able to check whether we are at the right time
     size_t bytes_to_read = (n_blocks*nchan-1)*8*current_header.dataframe_length;
@@ -95,15 +93,14 @@ VDIF_reader::goto_time(Data_frame &data, int64_t us_time) {
   return current_time_;
 }
 
-int64_t VDIF_reader::get_current_time(){
-  uint seconds_since_reference = current_header.sec_from_epoch-(ref_jday-epoch_jday)*24*60*60;
-  int usec = 0;
+Time VDIF_reader::get_current_time(){
+  double seconds_since_reference = (double)current_header.sec_from_epoch-(ref_jday-epoch_jday)*24*60*60;
+  double subsec = 0;
   if(sample_rate>0){
-    int sample_rate_usec = sample_rate/1000000;
     int samples_per_frame = 8*current_header.data_size()/(current_header.bits_per_sample+1);
-    usec = current_header.dataframe_in_second*samples_per_frame/sample_rate_usec;
+    subsec = (double)current_header.dataframe_in_second*samples_per_frame/sample_rate;
   }
-  return seconds_since_reference*1000000LL+usec;
+  return Time(seconds_since_reference + subsec);
 }
 
 bool VDIF_reader::read_new_block(Data_frame &data) {
@@ -145,9 +142,10 @@ int32_t VDIF_reader::Header::jday_epoch() const {
   return mjd(1,month,year);
 }
 
-int VDIF_reader::time_between_headers() {
+Time VDIF_reader::time_between_headers() {
   int samples_per_byte = 8/(current_header.bits_per_sample+1);
-  return current_header.data_size()*samples_per_byte/(sample_rate/1000000);
+  Time time_between_headers_(current_header.data_size() * samples_per_byte / sample_rate);
+  return time_between_headers_;
 }
 
 std::vector< std::vector<int> >
@@ -174,5 +172,5 @@ VDIF_reader::get_tracks(const Input_node_parameters &input_node_param,
 
 void VDIF_reader::set_parameters(const Input_node_parameters &param) {
   sample_rate = param.sample_rate();
-  SFXC_ASSERT((sample_rate % 1000000) == 0);
+  SFXC_ASSERT(((int)sample_rate % 1000000) == 0);
 }

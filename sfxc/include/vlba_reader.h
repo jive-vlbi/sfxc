@@ -33,14 +33,13 @@ public:
   typedef Input_data_format_reader::Data_frame            Data_frame;
 
   VLBA_reader(boost::shared_ptr<Data_reader> data_reader, int N, Data_frame &data, 
-              Data_frame &header_, Data_frame &aux_header_, int ref_year_, int ref_day_);
+              Data_frame &header_, Data_frame &aux_header_, Time ref_date_);
   virtual ~VLBA_reader();
 
-  /// Time in microseconds
-  int64_t goto_time(Data_frame &data, int64_t us_time);
+  Time goto_time(Data_frame &data, Time time);
 
-  /// Get the current time in microseconds
-  int64_t get_current_time();
+  /// Get the current time
+  Time get_current_time();
 
   /// Read another vlba-frame
   bool read_new_block(Data_frame &data);
@@ -50,10 +49,9 @@ public:
   get_tracks(const Input_node_parameters &input_node_param, 
              Data_frame &data);
 
-
-  int time_between_headers() {
-    SFXC_ASSERT(data_rate() % (N*SIZE_MK5A_FRAME*8) == 0);
-    return N * 8 * SIZE_MK5A_FRAME * 1000000LL / data_rate();
+  Time time_between_headers() {
+    SFXC_ASSERT(data_rate() % (N*SIZE_MK5A_FRAME) == 0);
+    return time_between_headers_;
   }
 
   bool eof();
@@ -77,8 +75,6 @@ private:
 
   // Resync header if there is mising data in the input stream
   bool resync_header(Data_frame &data);
-  // Convert time read from input stream to time relative to midnight on the reference day
-  int64_t correct_raw_time(int64_t raw_time);
 
   void set_data_frame_info(Data_frame &data);
 
@@ -88,16 +84,17 @@ private:
 private:
   // Time information
   int start_day_; // start date of data(mod Julian day%1000)
-  int ref_jday; //date relative to which times are calculated(mod. Julian day%1000)
-  int64_t us_per_day;
+  int current_jday; // current modified julian day (to full precision)
+//  int64_t us_per_day;
   // start time and current time in micro seconds
   // start time is used to check the data rate
-  int64_t start_time_, current_time_;
+  Time start_time_, current_time_;
   // For testing
   Debug_level debug_level_;
   int block_count_;
 
   int data_rate() const;
+  Time time_between_headers_;
 
   VLBA_header header;
   std::vector<unsigned char>  buf_header;
@@ -114,11 +111,15 @@ public:
  **/
 VLBA_reader *
 get_vlba_reader(boost::shared_ptr<Data_reader> reader,
-                  VLBA_reader::Data_frame &data, int ref_year, int ref_day);
+                  VLBA_reader::Data_frame &data, Time ref_date);
 
 int find_start_of_vlba_header(boost::shared_ptr<Data_reader> reader,
                               VLBA_reader::Data_frame &data, 
                               VLBA_reader::Data_frame &header,
                               VLBA_reader::Data_frame &aux_header);
 
+inline Time VLBA_reader::get_current_time() {
+
+  return current_time_;
+}
 #endif // VLBA_READER_H

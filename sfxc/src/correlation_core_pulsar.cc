@@ -20,12 +20,11 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
   current_fft = 0;
 
   correlation_parameters = parameters;
-  oversamp = round(parameters.sample_rate/(2*parameters.bandwidth));
+  oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
 
   create_baselines(parameters);
 
-  double ms_per_day = 1000*24*60*60;
-  double start_mjd = parameters.start_time/ms_per_day + parameters.mjd;
+  double start_mjd = parameters.start_time.get_mjd();
   fft_duration = ((double)fft_size() * 1000000) / parameters.sample_rate;
   if (offsets.size() != fft_size() + 1)
     offsets.resize(fft_size() + 1);

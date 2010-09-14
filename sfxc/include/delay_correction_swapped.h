@@ -41,7 +41,7 @@ private:
   void fringe_stopping(FLOAT input[]);
 
 private:
-
+  Time fft_length;
   IPPS_FFTSPEC_C_FC   *plan_t2f;
   std::vector<Ipp8u> buffer_t2f;
   std::vector< std::complex<FLOAT> > exp_array;

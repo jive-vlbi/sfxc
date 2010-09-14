@@ -4,24 +4,23 @@
 
 Mark5b_reader::
 Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
-              Data_frame &data, int ref_year, int ref_day)
+              Data_frame &data, Time ref_date)
   : Input_data_format_reader(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
-    time_between_headers_(0), sample_rate(0)
+    time_between_headers_(0.), sample_rate(0)
 {
-  us_per_day=(int64_t)24*60*60*1000000;
-  // Reference date : All times are relative to midnight on ref_jday
-  ref_jday = (mjd(1,1,ref_year) + ref_day -1 )%1000;
-  DEBUG_MSG("Ref_jday=" << ref_jday);
+  //us_per_day=(int64_t)24*60*60*1000000;
   // Initialize the crc16 lookup table
   gen_crc16();
 
+  current_jday = ref_date.get_mjd();
   if(!read_new_block(data)){
-    sfxc_abort("Couldn't find valid mark5b header");
+    if(!resync_header(data))
+      sfxc_abort("Couldn't find valid mark5b header");
   }
 
   start_day_ = current_header.julian_day();
-  start_time_ = current_header.microseconds();
+  start_time_ = current_time_;
   std::cout << RANK_OF_NODE << "Start of Mark5b data at jday=" << start_day_
             << ", time = " << start_time_ << "\n";
 }
@@ -29,11 +28,11 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
 
 Mark5b_reader::~Mark5b_reader() {}
 
-int64_t
-Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
+Time
+Mark5b_reader::goto_time(Data_frame &data, Time us_time) {
   SFXC_ASSERT(current_header.check());
-  SFXC_ASSERT(time_between_headers_ > 0);
-  int64_t current_time_ = get_current_time();
+  SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
+  current_time_ = get_current_time();
 
   if (us_time <= current_time_) return current_time_;
 
@@ -41,12 +40,11 @@ Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
     (SIZE_MK5B_HEADER+SIZE_MK5B_FRAME)*SIZE_MK5B_WORD;
 
   // first skip through the file in 1 second steps.
-  int64_t one_sec=1000000LL;
-  int64_t delta_time = us_time-correct_raw_time((int64_t)current_header.seconds()*1000000);
+  const Time one_sec(1000000.);
+  Time delta_time = us_time - current_time_;
   while (delta_time >= one_sec){
-    SFXC_ASSERT(delta_time % time_between_headers_ == 0);
     SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
-    int n_blocks = one_sec/time_between_headers_ - current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
+    int n_blocks = (int)(one_sec/time_between_headers_) - current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
 
     // Don't read the last header, to be able to check whether we are at the right time
     size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
@@ -56,10 +54,11 @@ Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
 
     // Read last block:
     read_new_block(data);
-    delta_time = us_time-correct_raw_time((int64_t)current_header.seconds()*1000000);
+    delta_time = us_time - current_time_;
   }
   // Now read the last bit of data up to the requested time
-  int n_blocks = delta_time/time_between_headers_ - current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
+  int n_blocks = (int)round(delta_time/time_between_headers_) -
+                  current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
   if(n_blocks>0){
     // Don't read the last header, to be able to check whether we are at the right time
     size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
@@ -75,28 +74,16 @@ Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
   return current_time_;
 }
 
-int64_t Mark5b_reader::correct_raw_time(int64_t raw_time){
-  // Convert time read from input stream to time relative to midnight on the reference day
-  int cur_jday = current_header.julian_day();
-  int64_t ret_val;
-  if(cur_jday >= ref_jday)
-    ret_val = raw_time + (cur_jday-ref_jday)*us_per_day;
-  else
-    ret_val = raw_time + (1000+cur_jday-ref_jday)*us_per_day;
-
-  return ret_val;
-}
-
-int64_t Mark5b_reader::get_current_time() {
-  int64_t time;
+Time Mark5b_reader::get_current_time() {
+  Time time;
   if(sample_rate > 0){
     int samples_per_word = 32 / nr_of_bitstreams;
-    int64_t subsec = current_header.frame_nr *  SIZE_MK5B_FRAME * samples_per_word / (sample_rate / 1000000);
-    time = current_header.seconds() * 1000000 + subsec;
+    double subsec = (double)(current_header.frame_nr *  SIZE_MK5B_FRAME * samples_per_word) / sample_rate;
+    time.set_time(current_jday, current_header.seconds() + subsec);
   } else {
-    time = current_header.microseconds();
+    time.set_time_usec(current_jday, current_header.microseconds());
   }
-  return correct_raw_time(time);
+  return time;
 }
 
 bool Mark5b_reader::read_new_block(Data_frame &data) {
@@ -129,6 +116,8 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
 
   if (data_reader_->eof()) return false;
   SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
+  if(current_header.julian_day() != current_jday % 1000)
+    current_jday++;
   data.start_time = get_current_time();
   // Check if there is a fill pattern in the data and if so, mark the data invalid
   find_fill_pattern(data);
@@ -161,8 +150,8 @@ int Mark5b_reader::Header::julian_day() const {
   return ((((int32_t)day1)*10+day2)*10+day3);
 }
 
-int Mark5b_reader::time_between_headers() {
-  SFXC_ASSERT(time_between_headers_ > 0);
+Time Mark5b_reader::time_between_headers() {
+  SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
   return time_between_headers_;
 }
 
@@ -227,9 +216,12 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
   int tbr = param.track_bit_rate;
   SFXC_ASSERT((tbr % 1000000) == 0);
   SFXC_ASSERT((N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME)%(tbr/1000000) == 0);
-  time_between_headers_ =
-    (N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME)/(tbr/1000000);
-  SFXC_ASSERT(time_between_headers_ > 0);
+  time_between_headers_ = Time((double)N_MK5B_BLOCKS_TO_READ * SIZE_MK5B_FRAME / (tbr / 1000000));
+  SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
+
+  sample_rate = param.sample_rate();
+  // Find the number of bitstreams used
+  nr_of_bitstreams = 32 / param.channels[0].sign_tracks.size();
   sample_rate = param.sample_rate();
   // Find the number of bitstreams used
   nr_of_bitstreams = 32 / param.channels[0].sign_tracks.size();
@@ -311,6 +303,9 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
     std::cout << "Couldn't find new sync word before EOF\n";
     return false;
   }
+
+  if(current_header.julian_day() != current_jday % 1000)
+    current_jday++;
 
   data.start_time = get_current_time();
   find_fill_pattern(data);

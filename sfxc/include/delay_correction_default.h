@@ -41,6 +41,7 @@ private:
   void fringe_stopping(FLOAT output[]);
 
 private:
+  Time fft_length;
   IPPS_FFTSPEC_R_F  *plan_t2f, *plan_t2f_cor;
   IPPS_FFTSPEC_C_FC *plan_f2t;
   std::vector<Ipp8u> buffer_t2f, buffer_t2f_cor, buffer_f2t;

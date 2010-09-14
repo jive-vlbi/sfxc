@@ -244,4 +244,4 @@ int mjd(int day, int month, int year)
   int m = month + 12*a - 3;
   int jdn = day + ((153*m+2)/5) + 365*y + (y/4) - (y/100) + (y/400) - 32045;
   return jdn - 2400000.5;
-} 
+}

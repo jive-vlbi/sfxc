@@ -19,7 +19,7 @@
 #include "input_node_types.h"
 
 #include "timer.h"
-
+#include "correlator_time.h"
 #ifdef RUNTIME_STATISTIC
 #include "monitor.h"
 #endif // RUNTIME_STATISTIC
@@ -49,7 +49,7 @@ public:
 
   /// set a time interval to process (after which the tasklet is blocking)
   /// The start and stop time are given in micro-seconds.
-  void add_time_interval(uint64_t us_start_time, uint64_t us_stop_time);
+  void add_time_interval(Time &us_start_time, Time &us_stop_time);
 
   /// For Tasklet
   void do_task();
@@ -66,10 +66,10 @@ public:
 
   /// Goto a time in the future.
   /// Given in micro-second
-  uint64_t goto_time(uint64_t time);
+  Time goto_time(Time time);
 
   /// get the current time in miliseconds
-  uint64_t get_current_time();
+  Time get_current_time();
 
   std::vector< std::vector<int> > get_tracks(const Input_node_parameters &input_node_param);
 
@@ -115,8 +115,8 @@ private:
 
 
 
-  /// Current time in microseconds
-  int64_t current_time;
+  /// Current time
+  Time current_time;
 
 	/// Amount of data that was received by this component
   uint64_t data_read_;

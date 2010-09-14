@@ -13,6 +13,7 @@
 #include "data_reader.h"
 #include "control_parameters.h"
 #include "input_node_types.h"
+#include "correlator_time.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -23,11 +24,10 @@ public:
   Input_data_format_reader(boost::shared_ptr<Data_reader> data_reader);
   virtual ~Input_data_format_reader();
 
-  /// Time in microseconds
-  virtual int64_t goto_time(Data_frame &data, int64_t us_time) = 0;
+  virtual Time goto_time(Data_frame &data, Time time) = 0;
 
-  /// Get the current time in microseconds
-  virtual int64_t get_current_time() = 0;
+  /// Get the current time
+  virtual Time get_current_time() = 0;
 
   /// Read another mark5a-frame
   virtual bool read_new_block(Data_frame &data) = 0;
@@ -40,7 +40,7 @@ public:
   virtual size_t bytes_per_input_word() const = 0;
   virtual size_t size_data_block() const = 0;
 
-  virtual int time_between_headers() = 0;
+  virtual Time time_between_headers() = 0;
 
   bool eof();
   void find_fill_pattern(Data_frame &data);

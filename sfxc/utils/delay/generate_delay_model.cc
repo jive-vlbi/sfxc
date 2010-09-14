@@ -77,7 +77,10 @@ main(int argc, char *argv[]) {
   char *dir = getenv("CALC_DIR");
   if (dir != NULL) {
     int err = chdir(dir);
-    assert(err == 0);
+    if(err != 0){
+      printf("Error : Invalid CALC_DIR = %s\n", dir);
+      exit(1);
+    }
   }
 
   // call the c-function that calls the FORTRAN calc code

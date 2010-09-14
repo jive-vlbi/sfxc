@@ -51,9 +51,9 @@ class Input_node : public Node {
 
 public:
   Input_node(int rank, int station_number, Log_writer *log_writer,
-             TRANSPORT_TYPE transport_type, int ref_year_, int ref_day_);
+             TRANSPORT_TYPE transport_type, Time ref_date_);
   Input_node(int rank, int station_number,
-             TRANSPORT_TYPE transport_type, int ref_year_, int ref_day_);
+             TRANSPORT_TYPE transport_type, Time ref_date_);
   ~Input_node();
 
   /** Generic constructor function, that is called in the body of
@@ -78,12 +78,12 @@ public:
   };
 
   /// Get the current time stamp
-  int32_t get_time_stamp();
+  Time get_time_stamp();
 
   // Times in seconds
-  void add_time_interval(int32_t start_time, int32_t stop_time);
+  void add_time_interval(Time start_time, Time stop_time);
 
-  void add_time_slice_to_stream(int channel, int stream, int starttime, int stoptime);
+  void add_time_slice_to_stream(int channel, int stream, Time starttime, Time stoptime);
 
   int get_status();
 
@@ -105,11 +105,10 @@ private:
   Input_node_tasklet *input_node_tasklet;
 
   Status status;
-  int32_t start_time;
-
-  int64_t stop_time;
+  Time start_time;
+  Time stop_time;
   // Reference date relative to which all dates are calculated
-  int ref_year,ref_day;
+  Time ref_date;
 
   TRANSPORT_TYPE transport_type;
 };

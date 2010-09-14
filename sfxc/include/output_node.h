@@ -157,7 +157,7 @@ private:
   // Controllers:
   Output_node_controller              output_node_ctrl;
   Multiple_data_readers_controller    data_readers_ctrl;
-  Multiple_data_writers_controller     data_writer_ctrl;
+  Multiple_data_writers_controller    data_writer_ctrl;
 
   STATUS                              status;
   // Priority map of the input streams, based on the weight (sequence

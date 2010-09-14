@@ -14,6 +14,7 @@
 #include <boost/shared_ptr.hpp>
 #include <threadsafe_queue.h>
 #include "memory_pool.h"
+#include "correlator_time.h"
 
 enum TRANSPORT_TYPE {
   UNINITIALISED = 0,
@@ -26,23 +27,21 @@ enum TRANSPORT_TYPE {
 class Time_interval {
   public:
     Time_interval(){
-        start_time_ = 0;
-        stop_time_ = 0;
     }
 
-    Time_interval(uint64_t start_time, uint64_t stop_time){
-        start_time_ = start_time;
-        stop_time_ = stop_time;
+    Time_interval(Time &start_time, Time &stop_time){
+      start_time_ = start_time;
+      stop_time_ = stop_time;
     }
 
     bool empty(){ return stop_time_ <= start_time_; }
 
-    uint64_t start_time_;
-    uint64_t stop_time_;
+    Time start_time_;
+    Time stop_time_;
 };
 
   struct Delay{
-    uint64_t time; 
+    Time time; 
     int32_t  bytes; // the delay in bytes
     int32_t  remaining_samples; // the number of samples to delay after the byte delay
   };
@@ -73,15 +72,15 @@ public:
   // Memory pool for Mark5 frames
   struct Input_data_frame {
     Input_data_frame()
-      : start_time(-1), channel(-1) {}
+      : channel(-1) {}
      Data_memory_pool_element  buffer;
 
     // List of blocks to be flagged as invalid
     std::vector<Invalid_block> invalid;
     // The channel which the data_frame belongs to (currently VDIF only), -1 is broadcast
     int channel;
-    // Start time of the mark5-block in microseconds from midnight
-    int64_t start_time;
+    // Start time of the mark5-block relative to midnigh
+    Time start_time;
   };
   /// Buffer for mark5 data frames
   typedef Threadsafe_queue<Input_data_frame>        Input_buffer;
@@ -89,14 +88,13 @@ public:
 
   /// Buffer for fft buffers
   struct Channel_buffer_element_ {
-    Channel_buffer_element_()
-      : start_time(-1) {}
+    Channel_buffer_element_() {}
 
     Data_memory_pool_element channel_data;
     // List of blocks to be flagged as invalid
     std::vector<Invalid_block> invalid;
     // Time in microseconds
-    int64_t  start_time;
+    Time  start_time;
   };
   typedef Channel_buffer_element_                  Channel_buffer_element;
   typedef Threadsafe_queue<Channel_buffer_element> Channel_buffer;

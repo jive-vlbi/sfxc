@@ -34,12 +34,12 @@ int main(int argc, char *argv[]) {
   Mark5a_reader::Data_frame data;
 
   Mark5a_reader *mark5a_reader =
-    get_mark5a_reader(reader, data,-1,-1);
+    get_mark5a_reader(reader, data, Time(0));
 
-  int64_t prev_time = mark5a_reader->get_current_time(), current_time;
+  int64_t prev_time = (int64_t)mark5a_reader->get_current_time().get_time_usec(), current_time;
 
   do {
-    current_time = mark5a_reader->get_current_time();
+    current_time = (int64_t)mark5a_reader->get_current_time().get_time_usec();
     std::cout
     << current_time
     << " \t" << current_time - prev_time

@@ -22,9 +22,10 @@ Abstract_manager_node(int rank, int numtasks,
                       Log_writer *writer,
                       const Control_parameters &param)
     : Node(rank, writer), control_parameters(param), numtasks(numtasks), pulsar_parameters(*writer) {
+  integration_time_ = Time(param.integration_time());
   }
-Abstract_manager_node::~Abstract_manager_node() {}
 
+Abstract_manager_node::~Abstract_manager_node() {}
 
 // Start nodes:
 void
@@ -49,11 +50,8 @@ start_input_node(int rank, const std::string &station) {
     MPI_Send(&rank, 1, MPI_INT32,
              rank, MPI_TAG_SET_INPUT_NODE_MARK5B, MPI_COMM_WORLD);
   }
-  Control_parameters::Date ref_date(control_parameters.get_vex().get_start_time_of_experiment());
-  int32_t ref_year=ref_date.year;
-  int32_t ref_day=ref_date.day;
-  MPI_Send(&ref_year, 1, MPI_INT32, rank, MPI_TAG_SET_INPUT_NODE_REF_YEAR, MPI_COMM_WORLD);
-  MPI_Send(&ref_day,  1, MPI_INT32, rank, MPI_TAG_SET_INPUT_NODE_REF_DAY,  MPI_COMM_WORLD);
+  Time ref_time(control_parameters.get_vex().get_start_time_of_experiment());
+  MPI_Send(&ref_time,  1, MPI_INT64, rank, MPI_TAG_SET_INPUT_NODE_REF_DATE,  MPI_COMM_WORLD);
   ///DEBUG_MSG("WAITING FOR NODE PARAMTERS !");
   /// add a new set of parameters
   Connexion_params* params= new Connexion_params();
@@ -292,28 +290,30 @@ input_node_set(const std::string &station, Input_node_parameters &input_node_par
   MPI_Transfer::send(input_node_params, input_rank(station));
 }
 
-int32_t
+Time
 Abstract_manager_node::
 input_node_get_current_time(const std::string &station) {
   int rank = input_rank(station);
-  int32_t result;
-  MPI_Send(&result, 1, MPI_INT32,
+  int64_t nticks;
+  MPI_Send(&nticks, 1, MPI_INT64,
            rank, MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP, MPI_COMM_WORLD);
   MPI_Status status;
-  MPI_Recv(&result, 1, MPI_INT32, rank,
+  MPI_Recv(&nticks, 1, MPI_INT64, rank,
            MPI_TAG_INPUT_NODE_GET_CURRENT_TIMESTAMP, MPI_COMM_WORLD, &status);
+  Time result;
+  result.set_clock_ticks(nticks);
   return result;
 }
 
 void
 Abstract_manager_node::
 input_node_set_time(const std::string &station,
-                    int32_t start_time, int32_t stop_time) {
+                    Time start_time, Time stop_time) {
   SFXC_ASSERT(start_time < stop_time);
-  int32_t time[2];
-  time[0] = start_time;
-  time[1] = stop_time;
-  MPI_Send(&time[0], 2, MPI_INT32,
+  int64_t time[2];
+  time[0] = start_time.get_clock_ticks();
+  time[1] = stop_time.get_clock_ticks();
+  MPI_Send(&time[0], 2, MPI_INT64,
            input_rank(station), MPI_TAG_INPUT_NODE_SET_TIME, MPI_COMM_WORLD);
 }
 
@@ -321,9 +321,12 @@ void
 Abstract_manager_node::
 input_node_set_time_slice(const std::string &station,
                           int32_t channel, int32_t stream_nr,
-                          int32_t start_time, int32_t stop_time) {
-  int32_t message[] = {channel, stream_nr, start_time, stop_time};
-  MPI_Send(&message, 4, MPI_INT32,
+                          Time start_time, Time stop_time) {
+  int64_t message[] = {channel,
+                       stream_nr,
+                       start_time.get_clock_ticks(),
+                       stop_time.get_clock_ticks()};
+  MPI_Send(&message, 4, MPI_INT64,
            input_rank(station),
            MPI_TAG_INPUT_NODE_ADD_TIME_SLICE, MPI_COMM_WORLD);
 }

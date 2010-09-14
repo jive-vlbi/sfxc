@@ -86,12 +86,12 @@ private:
   /// Start day and year of the experiment
   int32_t start_day, start_year;
 
-  /// Start time of the experiment in miliseconds from midnight on the startday
-  int32_t start_time;
-  /// Stop time of the experiment in miliseconds from midnight on the startday
-  int32_t stop_time;
-  /// Stop time of the scan in miliseconds from midnight on the startday
-  int32_t stop_time_scan;
+  /// Start time of the experiment
+  Time start_time;
+  /// Stop time of the experiment
+  Time stop_time;
+  /// Stop time of the scan
+  Time stop_time_scan;
 
   /// The number of the integration slice
   int32_t integration_slice_nr;

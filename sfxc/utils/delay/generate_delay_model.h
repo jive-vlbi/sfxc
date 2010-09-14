@@ -51,5 +51,4 @@ extern struct Station_data station_data;
 extern int n_scans;
 // Data per scan
 extern struct Scan_data *scan_data;
-
 #endif // GENERATE_DELAY_MODEL_H
