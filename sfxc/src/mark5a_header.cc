@@ -214,9 +214,9 @@ void Mark5a_header::crc12(Type *crcBlock,
                          int datawords) {
   SFXC_ASSERT(sizeof(Type) == N);
   SFXC_ASSERT(Type(-1)^Type(0) == Type(-1));
-  for (size_t i=64; i<96; i++) {
-    SFXC_ASSERT(data[i] == Type(-1));
-  }
+//  for (size_t i=64; i<96; i++) {
+//    SFXC_ASSERT(data[i] == Type(-1));
+//  }
   /* 'cr' CRC register is assumed to be initialized */
   /* with 12 data words. */
   /* (Init to all zero; or use old regs to continue. */

@@ -55,6 +55,8 @@ void Input_data_format_reader_tasklet::do_execute() {
 void
 Input_data_format_reader_tasklet::
 do_task() {
+  // Compute the expected start time of the next frame
+  int64_t start_next_frame = input_element_.start_time + reader_->time_between_headers();
   allocate_element();
 
   if (reader_->eof()) {
@@ -66,7 +68,20 @@ do_task() {
   } else {
     if (!reader_->read_new_block(input_element_))
       randomize_block();
+    else if(reader_->get_current_time() != start_next_frame){
+      int nframes_missing = (reader_->get_current_time() - start_next_frame) / reader_->time_between_headers();
 
+      Input_element old_input_element = input_element_;
+      for(int i=0; i < nframes_missing; i++){
+        randomize_block();
+        current_time += reader_->time_between_headers();
+        input_element_.start_time = current_time;
+        data_read_ += input_element_.buffer->data.size();
+        push_element();
+        std::cout << RANK_OF_NODE << " : " << current_time << " ; pushed random block\n";
+      }
+      input_element_ = old_input_element;
+    }
     if(data_modulation)
       demodulate(input_element_);
 
@@ -138,8 +153,7 @@ void
 Input_data_format_reader_tasklet::
 allocate_element() {
   input_element_.buffer = memory_pool_->allocate();
-  input_element_.invalid_bytes_begin=0;
-  input_element_.nr_invalid_bytes=0;
+  input_element_.invalid.resize(0);
   input_element_.channel=0;
   input_element_.start_time=0;
 }
@@ -175,10 +189,11 @@ get_current_time() {
 void
 Input_data_format_reader_tasklet::
 push_element() {
-  SFXC_ASSERT(input_element_.invalid_bytes_begin >= 0);
-  SFXC_ASSERT(input_element_.nr_invalid_bytes >= 0);
-  SFXC_ASSERT(input_element_.buffer->data.size() ==
-              reader_->size_data_block());
+  for(int i=0; i < input_element_.invalid.size(); i++){
+    SFXC_ASSERT(input_element_.invalid[i].invalid_begin >= 0);
+    SFXC_ASSERT(input_element_.invalid[i].nr_invalid >= 0);
+  }
+  SFXC_ASSERT(input_element_.buffer->data.size() == reader_->size_data_block());
 
   output_buffer_->push(input_element_);
 }
@@ -206,8 +221,9 @@ randomize_block() {
   }
   input_element_.channel = -1; // broadcast invalid data to all channels (VDIF ONLY)
 #ifdef SFXC_INVALIDATE_SAMPLES
-  input_element_.invalid_bytes_begin = 0;
-  input_element_.nr_invalid_bytes = size;
+  input_element_.invalid.resize(1);
+  input_element_.invalid[0].invalid_begin = 0;
+  input_element_.invalid[0].nr_invalid = size;
 #ifdef SFXC_CHECK_INVALID_SAMPLES
   value_type *buffer = input_element_.buffer->data[0];
   for (size_t i=0; i<size; i++) {

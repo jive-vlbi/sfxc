@@ -10,7 +10,7 @@ Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
               int ref_year_,
               int ref_day_)
     : Input_data_format_reader(data_reader),
-      debug_level_(CHECK_PERIODIC_HEADERS),
+      debug_level_(NO_CHECKS),
       block_count_(0), DATA_RATE_(0), N(N_),
       ref_year(ref_year_), ref_day(ref_day_) {
   Mark5a_header header(N);
@@ -27,7 +27,9 @@ Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
     ref_day = start_day_;
   current_day_ = header.day(0);
   current_time_ = correct_raw_time(header.get_time_in_us(0));
+
   set_data_frame_info(data);
+  find_fill_pattern(data);
 }
 
 Mark5a_reader::~Mark5a_reader() {}
@@ -54,7 +56,7 @@ Mark5a_reader::goto_time(Data_frame &data, int64_t us_time) {
     // is eof or the requested amount of data is retreived.
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
     if (byte_read != read_n_bytes)
-	return current_time_;
+      return current_time_;
 
     // Need to read the data to check the header
     if (!read_new_block(data)) {
@@ -69,7 +71,7 @@ Mark5a_reader::goto_time(Data_frame &data, int64_t us_time) {
     SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
     if (byte_read != read_n_bytes)
-	return current_time_;
+      return current_time_;
 
     // Need to read the data to check the header
     if (!read_new_block(data)) {
@@ -124,11 +126,6 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
       current_time_ += time_between_headers();
       return false;
     }
-
-    // I'm not sure why we are increasing the time between header in case of
-    // failed reading. Maybe a kind of packet-missing detection.
-    // Todo check that.0
-    //int result = data_reader_->get_bytes(to_read, (char *)buffer);
     int result = Data_reader_blocking::get_bytes_s( data_reader_.get(), to_read, (char*)buffer );
 
     if (result < 0) {
@@ -143,7 +140,7 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
   // at least we read the complete header. Check it
   Mark5a_header header(N);
   header.set_header(&databuffer[0]);
-  if((!header.is_valid())&&(!resync_header(data))){
+  if((!header.check_header())&&(!resync_header(data))){
     current_time_ += time_between_headers(); // Could't find valid header before EOF
     return false;
   }
@@ -169,6 +166,7 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
   }
 
   set_data_frame_info(data);
+  find_fill_pattern(data);
 
   return true;
 }
@@ -335,8 +333,9 @@ void Mark5a_reader::set_data_frame_info(Data_frame &data) {
   header.set_header(&data.buffer->data[0]);
   data.start_time = correct_raw_time(header.get_time_in_us(0));
 #ifdef SFXC_INVALIDATE_SAMPLES
-  data.invalid_bytes_begin = 0;
-  data.nr_invalid_bytes = SIZE_MK5A_HEADER*N;
+  data.invalid.resize(1);
+  data.invalid[0].invalid_begin = 0;
+  data.invalid[0].nr_invalid = SIZE_MK5A_HEADER*N;
 
 #ifdef SFXC_CHECK_INVALID_SAMPLES
   for(int i=0;i<SIZE_MK5A_HEADER*N;i++)
@@ -344,8 +343,6 @@ void Mark5a_reader::set_data_frame_info(Data_frame &data) {
 #endif
 
 #else
-  data.invalid_bytes_begin = 0;
-  data.nr_invalid_bytes = 0;
 
   // Randomize data
   // park_miller_random generates 31 random bits

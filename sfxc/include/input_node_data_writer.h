@@ -16,6 +16,7 @@
 #include <boost/shared_ptr.hpp>
 #include "data_writer.h"
 #include "utils.h"
+#include "thread.h"
 #include "timer.h"
 #include "rttimer.h"
 #include "input_node_types.h"
@@ -27,7 +28,7 @@ class Input_node_data_writer;
 /// A smart pointer to this object
 typedef boost::shared_ptr<Input_node_data_writer> Input_node_data_writer_sptr;
 
-class Input_node_data_writer
+class Input_node_data_writer : public Thread 
 {
 public:
   typedef Input_node_types::Channel_buffer          Input_buffer;
@@ -46,6 +47,8 @@ public:
   typedef Threadsafe_queue< Writer_struct >      Data_writer_queue;
   Input_node_data_writer();
   virtual ~Input_node_data_writer();
+
+  void do_execute();
 
   /// Set the input
   void connect_to(Input_buffer_ptr new_input_buffer);

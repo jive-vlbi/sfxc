@@ -119,9 +119,12 @@ bool VDIF_reader::read_new_block(Data_frame &data) {
     buffer.resize(data_size);
   }
 
-  data.invalid_bytes_begin = 0;
-  if(current_header.invalid != 0) std::cout << RANK_OF_NODE << " : invalid frame!!!\n";
-  data.nr_invalid_bytes = current_header.data_size()*current_header.invalid;
+  if(current_header.invalid > 0){
+    std::cout << RANK_OF_NODE << " : invalid frame!!!\n";
+    data.invalid.resize(1);
+    data.invalid[0].invalid_begin = 0;
+    data.invalid[0].nr_invalid = current_header.data_size()*current_header.invalid;
+  }
   data.channel = current_header.thread_id; // NB: we assume one-to-one mapping of thread id to channel
 
   byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), data_size, (char *)&buffer[0]);

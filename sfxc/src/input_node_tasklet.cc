@@ -123,7 +123,7 @@ add_time_interval(int32_t start_time, int32_t stop_time) {
   //SFXC_ASSERT(!integer_delay_.empty());
   //SFXC_ASSERT(integer_delay_[0] != NULL);
 
-  SFXC_ASSERT(!delay_pool.empty());
+  //  SFXC_ASSERT(!delay_pool.empty());
   /// Add a list of delays to the data writers
   Delay_memory_pool_element delay_list=delay_pool.allocate();
   delay_list.data().resize(0);
@@ -163,7 +163,6 @@ Input_node_tasklet::wait_termination() {
 void
 Input_node_tasklet::start_tasklets() {
 	rttimer_processing_.start();
-  pool_.register_thread( data_writer_.start() );
   pool_.register_thread( channel_extractor_->start() );
   pool_.register_thread( reader_.start() );
 }
@@ -172,7 +171,7 @@ void
 Input_node_tasklet::stop_tasklets() {
   reader_.stop();
   channel_extractor_->stop();
-  data_writer_.stop();
+  data_writer_.stop_threads();
   rttimer_processing_.stop();
 }
 
@@ -220,6 +219,8 @@ get_current_time() {
   int writer_time = data_writer_.get_current_time()/1000;
   if (writer_time != INVALID_TIME)
     time = std::min(time, writer_time);
+  else
+    std::cout << RANK_OF_NODE << " : writer_time == INVALID_TIME\n";
   return time;
 }
 

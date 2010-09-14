@@ -7,7 +7,7 @@ VLBA_reader::
 VLBA_reader(boost::shared_ptr<Data_reader> data_reader, int N_, Data_frame &data, 
             Data_frame &header_, Data_frame &aux_header_, int ref_year_, int ref_day_)
     : Input_data_format_reader(data_reader),
-      debug_level_(CHECK_PERIODIC_HEADERS),
+      debug_level_(NO_CHECKS),
       block_count_(0), DATA_RATE_(0), N(N_), header(N_)
 {
   // Reference date : All times are relative to midnight on ref_jday
@@ -28,6 +28,7 @@ VLBA_reader(boost::shared_ptr<Data_reader> data_reader, int N_, Data_frame &data
   current_time_ = correct_raw_time(header.microseconds(0));
 
   set_data_frame_info(data);
+  find_fill_pattern(data);
 }
 
 VLBA_reader::~VLBA_reader() {}
@@ -161,7 +162,7 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
 
   // at least we read the complete header. Check it
   header.set_header(&buf_header[0],&buf_aux_header[0]);
-  if((!header.is_valid())&&(!resync_header(data))){
+  if((!header.check_header())&&(!resync_header(data))){
     current_time_ += time_between_headers(); // Could't find valid header before EOF
     return false;
   }
@@ -180,6 +181,7 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
     }
   }
   set_data_frame_info(data);
+  find_fill_pattern(data);
 
   return true;
 }
@@ -318,9 +320,6 @@ VLBA_reader::set_parameters(const Input_node_parameters &input_node_param) {
 
 void VLBA_reader::set_data_frame_info(Data_frame &data) {
   data.start_time = correct_raw_time(header.microseconds(0));
-
-  data.invalid_bytes_begin = 0;
-  data.nr_invalid_bytes = 0;
 }
 
 VLBA_reader *

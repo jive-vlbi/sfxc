@@ -1,17 +1,20 @@
 #include "data_reader_blocking.h"
 #include "mark5b_reader.h"
+#include <stdio.h>
 
 Mark5b_reader::
 Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
               Data_frame &data, int ref_year, int ref_day)
   : Input_data_format_reader(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
-    time_between_headers_(0)
+    time_between_headers_(0), sample_rate(0)
 {
   us_per_day=(int64_t)24*60*60*1000000;
   // Reference date : All times are relative to midnight on ref_jday
   ref_jday = (mjd(1,1,ref_year) + ref_day -1 )%1000;
   DEBUG_MSG("Ref_jday=" << ref_jday);
+  // Initialize the crc16 lookup table
+  gen_crc16();
 
   if(!read_new_block(data)){
     sfxc_abort("Couldn't find valid mark5b header");
@@ -30,7 +33,7 @@ int64_t
 Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
   SFXC_ASSERT(current_header.check());
   SFXC_ASSERT(time_between_headers_ > 0);
-  int64_t current_time_ = correct_raw_time(current_header.microseconds());
+  int64_t current_time_ = get_current_time();
 
   if (us_time <= current_time_) return current_time_;
 
@@ -45,12 +48,11 @@ Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
     SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
     int n_blocks = one_sec/time_between_headers_ - current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
 
-    // Don't read the last header, to be able to check whether we are at the
-    // right time
+    // Don't read the last header, to be able to check whether we are at the right time
     size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
     if (bytes_to_read != byte_read)
-	return current_time_;
+      return current_time_;
 
     // Read last block:
     read_new_block(data);
@@ -63,12 +65,12 @@ Mark5b_reader::goto_time(Data_frame &data, int64_t us_time) {
     size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
     if (bytes_to_read != byte_read)
-	return current_time_;
+      return current_time_;
 
     read_new_block(data);
     SFXC_ASSERT((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) == 0);
   }
-  current_time_ = correct_raw_time(current_header.microseconds());
+  current_time_ = get_current_time();
 
   return current_time_;
 }
@@ -86,8 +88,15 @@ int64_t Mark5b_reader::correct_raw_time(int64_t raw_time){
 }
 
 int64_t Mark5b_reader::get_current_time() {
-
-  return correct_raw_time(current_header.microseconds());
+  int64_t time;
+  if(sample_rate > 0){
+    int samples_per_word = 32 / nr_of_bitstreams;
+    int64_t subsec = current_header.frame_nr *  SIZE_MK5B_FRAME * samples_per_word / (sample_rate / 1000000);
+    time = current_header.seconds() * 1000000 + subsec;
+  } else {
+    time = current_header.microseconds();
+  }
+  return correct_raw_time(time);
 }
 
 bool Mark5b_reader::read_new_block(Data_frame &data) {
@@ -95,34 +104,36 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
   if (buffer.size() != size_data_block()) {
     buffer.resize(size_data_block());
   }
-  data.invalid_bytes_begin = 0;
-  data.nr_invalid_bytes = 0;
-  char * mark5b_block = (char *)&buffer[0];
-  for (int i=0; i<N_MK5B_BLOCKS_TO_READ; i++) {
-    if (i==0) {
-			int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
-																												sizeof(current_header),
-																												(char *)&current_header );
+  char *mark5b_block = (char *)&buffer[0];
+  for (int i = 0 ; i < N_MK5B_BLOCKS_TO_READ ; i++) {
+    if (i == 0) {
+      int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
+                                                         sizeof(current_header),
+                                                         (char *)&current_header );
+      if(!check_header(current_header))
+        return resync_header(data); // Find next valid header in data file
 
       SFXC_ASSERT(current_header.check());
     } else {
-   		int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
-   																											sizeof(current_header),
-																												(char *)&tmp_header);
-      SFXC_ASSERT(tmp_header.check());
+      int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
+                                                         sizeof(current_header),
+                                                         (char *)&tmp_header);
     }
 
     int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
-   																											SIZE_MK5B_FRAME*SIZE_MK5B_WORD,
-																												mark5b_block);
+                                                       SIZE_MK5B_FRAME*SIZE_MK5B_WORD,
+                                                       mark5b_block);
 
     mark5b_block += SIZE_MK5B_FRAME*SIZE_MK5B_WORD;
   }
 
   if (data_reader_->eof()) return false;
   SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
-  data.start_time = correct_raw_time(current_header.microseconds());
-  return current_header.check();
+  data.start_time = get_current_time();
+  // Check if there is a fill pattern in the data and if so, mark the data invalid
+  find_fill_pattern(data);
+
+  return true;
 }
 
 bool Mark5b_reader::eof() {
@@ -130,10 +141,8 @@ bool Mark5b_reader::eof() {
 }
 
 bool Mark5b_reader::Header::check() const {
-  if (syncword != 0xABADDEED)
-    return false;
 
-  return true;
+  return (syncword == 0xABADDEED);
 }
 
 int64_t Mark5b_reader::Header::microseconds() const {
@@ -155,6 +164,41 @@ int Mark5b_reader::Header::julian_day() const {
 int Mark5b_reader::time_between_headers() {
   SFXC_ASSERT(time_between_headers_ > 0);
   return time_between_headers_;
+}
+
+void Mark5b_reader::gen_crc16(){
+  // Compute CRC 16 lookup table
+  uint16_t crc, devisor = 0x8005; // 0xA001
+  crc_table.resize(256);
+
+  for(int i = 0 ; i < 256 ; i++){
+    crc = (i << 8);
+    for(int j = 8 ; j > 0 ; j--){
+      if (crc & 0x8000){
+        crc = (crc << 1) ^ devisor;
+      }else{
+        crc = (crc << 1);
+      }
+    }
+    crc_table[i] = crc;
+  }
+}
+
+bool Mark5b_reader::check_header(Header &header){
+  // first check syncword
+  if(header.syncword != 0xABADDEED)
+    return false;
+
+  // Check the CRC of the mark5b header
+  unsigned int crc = 0;
+  uint8_t *data = (uint8_t *) &header;
+  for(int word = 2 ; word <= 3 ; word++){
+    for(int i = 3 ; i >= 0 ; i--){
+      crc ^= (data[word * 4 + i] << 8);
+      crc = (crc << 8) ^ crc_table[(crc >> 8) & 0xff];
+    }
+  }
+  return crc == 0;
 }
 
 std::vector< std::vector<int> >
@@ -186,4 +230,90 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
   time_between_headers_ =
     (N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME)/(tbr/1000000);
   SFXC_ASSERT(time_between_headers_ > 0);
+  sample_rate = param.sample_rate();
+  // Find the number of bitstreams used
+  nr_of_bitstreams = 32 / param.channels[0].sign_tracks.size();
+
+}
+
+bool Mark5b_reader::resync_header(Data_frame &data) {
+  // Find the next header in the input stream
+  char *buffer=(char *)&data.buffer->data[0];
+  int buffer_size = data.buffer->data.size();
+  int bytes_read, header_pos = 0, write_pos = 0;
+  bool syncword_found = false;
+
+  // We first find the location of the next syncword
+  bytes_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), 
+                                                  SIZE_MK5B_FRAME * SIZE_MK5B_WORD,
+                                                  buffer);
+  while (!syncword_found){
+    if(bytes_read == 0){
+      std::cout << "Couldn't find new sync word before EOF\n";
+      return false;
+    }
+    for(header_pos = 0 ; header_pos < SIZE_MK5B_FRAME * SIZE_MK5B_WORD - 3 ; header_pos++){
+      uint32_t *word = (uint32_t *)&buffer[header_pos];
+      if(*word == 0xABADDEED){
+        syncword_found = true;
+        break;
+      }
+    }
+    if(!syncword_found){
+      memcpy(&buffer[0], &buffer[SIZE_MK5B_FRAME * SIZE_MK5B_WORD -3], 3); 
+      bytes_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), 
+                                                      SIZE_MK5B_FRAME * SIZE_MK5B_WORD - 3,
+                                                      &buffer[3]);
+    }
+  }
+
+  // because we assume that we always read N_MK5B_BLOCKS_TO_READ frames, we need to
+  // find the first block for which frame_nr % N_MK5B_BLOCKS_TO_READ == 0
+  memcpy((char *)&current_header, &buffer[header_pos], sizeof(current_header));
+  if (current_header.frame_nr % N_MK5B_BLOCKS_TO_READ != 0){
+    int nframes = N_MK5B_BLOCKS_TO_READ - (current_header.frame_nr % N_MK5B_BLOCKS_TO_READ);
+    bytes_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
+                                                    header_pos + sizeof(current_header),
+                                                    buffer);
+    for(int j = 0; j < nframes - 1 ; j++){
+      bytes_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
+                                                      sizeof(current_header),
+                                                      (char *)&tmp_header);
+      bytes_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
+                                                      SIZE_MK5B_FRAME * SIZE_MK5B_WORD,
+                                                      buffer);
+    }
+    bytes_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
+                                                    sizeof(current_header),
+                                                    (char *)&current_header);
+  }else{
+    int nbytes = SIZE_MK5B_FRAME * SIZE_MK5B_WORD - header_pos - sizeof(current_header);
+    memcpy(&buffer[0], &buffer[header_pos + sizeof(current_header)], nbytes);
+    write_pos = nbytes;
+  }
+  if (!check_header(current_header))
+    return resync_header(data);
+
+  // Not that the first header is read, we read the rest of the data
+  bytes_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
+                                                  SIZE_MK5B_FRAME * SIZE_MK5B_WORD - write_pos,
+                                                  &buffer[write_pos]);
+  for (int j = 1; j < N_MK5B_BLOCKS_TO_READ; j++) {
+    bytes_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
+                                                    sizeof(current_header),
+                                                    (char *)&tmp_header);
+    bytes_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
+                                                    SIZE_MK5B_FRAME * SIZE_MK5B_WORD,
+                                                    &buffer[j * SIZE_MK5B_FRAME * SIZE_MK5B_WORD]);
+  }
+
+  if(bytes_read == 0){ 
+    std::cout << "Couldn't find new sync word before EOF\n";
+    return false;
+  }
+
+  data.start_time = get_current_time();
+  find_fill_pattern(data);
+
+  return true;
 }

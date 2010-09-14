@@ -41,6 +41,11 @@
 #define HEADER_DELAY      2
 #define HEADER_ENDSTREAM  3
 
+// The Fillpattern inserted by the streamstore card
+#define MARK5_FILLPATTERN (0x11223344)
+// The minimum number of words of "fillpattern" inserted by the streamstore card
+#define MARK5_FILLPATTERN_NWORDS   (65528/4)
+
 // The (maximum) amount of samples processed per iteration, this is automatically set to a multiple of nchannels
 #define CORRELATOR_BUFFER_SIZE    8192
 

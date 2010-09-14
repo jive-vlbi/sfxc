@@ -42,11 +42,13 @@ Channel_extractor_tasklet_VDIF::do_task() {
   Output_buffer_element  output_element;
   output_element.channel_data = input_element.buffer;
   output_element.start_time = input_element.start_time;
-  output_element.invalid_samples_begin =
-        input_element.invalid_bytes_begin*8/bits_per_sample;
-  output_element.nr_invalid_samples =
-        input_element.nr_invalid_bytes*8/bits_per_sample;
-  SFXC_ASSERT(output_element.nr_invalid_samples >= 0);
+  int n_invalid_blocks = input_element.invalid.size();
+  output_element.invalid.resize(n_invalid_blocks);
+  for(int i = 0 ; i < n_invalid_blocks ; i++){
+    output_element.invalid[i].invalid_begin = input_element.invalid[i].invalid_begin;
+    output_element.invalid[i].nr_invalid = input_element.invalid[i].nr_invalid;
+    SFXC_ASSERT(output_element.invalid[i].nr_invalid >= 0);
+  }
   data_processed_ +=  input_element.buffer->data.size();
 
   int chan = input_element.channel;
