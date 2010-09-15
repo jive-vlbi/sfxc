@@ -407,8 +407,19 @@ Manager_node::initialise() {
   const Vex vex = control_parameters.get_vex();
   Vex::Date start_time(control_parameters.get_start_time().date_string());
   Vex::Date stop_time(control_parameters.get_stop_time().date_string());
+  // Find the name of the last scan
+  std::string last_scan_name = vex.get_scan_name(start_time);
+  Vex::Node::const_iterator it = vex.get_root_node()["SCHED"][last_scan_name];
+  while (++it != vex.get_root_node()["SCHED"]->end()){
+    Vex::Date start_scan = vex.start_of_scan(it.key());
+    if(start_scan >= stop_time)
+      break;
+
+    last_scan_name = vex.get_scan_name(start_scan);
+  }
+
   t_begin = Time(vex.get_start_time_of_scan(vex.get_scan_name(start_time)));
-  t_end = Time(vex.get_stop_time_of_scan(vex.get_scan_name(stop_time)));
+  t_end = Time(vex.get_stop_time_of_scan(last_scan_name));
   }
 
   // Send the delay tables:
