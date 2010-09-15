@@ -70,7 +70,7 @@ void Time::get_date(int &year, int &day) const{
 
 void Time::get_time(int &h, int &m, int &s, int &ms) const{
   double julian_time = (nticks % ((int64_t)clock_rate * 24*60*60)) / (clock_rate * 24*60*60);
-  int time = (int) (24 * 60 * 60 * 1000 * julian_time);
+  int time = (int) round(24 * 60 * 60 * 1000 * julian_time);
   h =  time / (60 * 60 * 1000);
   time -= h * (60 * 60 * 1000);
   m = time / (60 * 1000);
