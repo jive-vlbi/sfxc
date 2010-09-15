@@ -442,11 +442,9 @@ mvrec(short *ntoc, short *kmode, short *knum, short *err)
     total_delay = delay[0] + offset;
     // The number of seconds since midnight on the day the scan starts
     sec_of_day=scan_data[scan_nr].sec_of_day;
-    printf("%d : sec_of_day = %f, start_of_scan = %f\n", interval, sec_of_day, scan_data[scan_nr].scan_start);
     // At the start of each scan output the mjd at witch the scan starts
     if(interval == 0){
       int32_t scan_mjd = mjd(scan_data[scan_nr].day, scan_data[scan_nr].month, scan_data[scan_nr].year);
-      printf("scan_mjd = %d\n", scan_mjd);
       fwrite(&scan_mjd, 1, sizeof(int32_t), output_file);
     }
 
