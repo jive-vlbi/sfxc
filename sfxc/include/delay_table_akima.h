@@ -55,8 +55,8 @@ public:
 
   //calculate the delay for the delayType at time in microseconds
   // delay is in seconds
-  double delay(Time time);
-  double rate(Time time);
+  double delay(const Time &time);
+  double rate(const Time &time);
 
   /// A spline only interpolates one scan.
   /// This functions preprocesses the spline for the next scan.

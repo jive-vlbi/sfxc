@@ -39,20 +39,20 @@ Delay_table_akima::Delay_table_akima()
 
 // Copy constructor
 Delay_table_akima::Delay_table_akima(const Delay_table_akima &other)
-    : acc(NULL), splineakima(NULL) {
-  Delay_table_akima();
+    : acc(NULL), splineakima(NULL), begin_scan(0), scan_nr(-1) {
   SFXC_ASSERT(splineakima == NULL);
   times = other.times;
   delays = other.delays;
   scans = other.scans;
+  initialise_next_scan();
 }
 
 // Destructor
 Delay_table_akima::~Delay_table_akima() {}
 
 void Delay_table_akima::operator=(const Delay_table_akima &other) {
-  Delay_table_akima();
-  SFXC_ASSERT(splineakima == NULL);
+  begin_scan = 0;
+  scan_nr = -1;
   times = other.times;
   delays = other.delays;
   scans = other.scans;
@@ -179,7 +179,7 @@ bool Delay_table_akima::initialise_next_scan() {
 
 //calculates the delay for the delayType at time
 //get the next line from the delay table file
-double Delay_table_akima::delay(Time time) {
+double Delay_table_akima::delay(const Time &time) {
   SFXC_ASSERT(!times.empty());
 
   while (scans[scan_nr].end < time)
@@ -192,7 +192,7 @@ double Delay_table_akima::delay(Time time) {
   return result;
 }
 
-double Delay_table_akima::rate(Time time) {
+double Delay_table_akima::rate(const Time &time) {
   SFXC_ASSERT(!times.empty());
 
   while (scans[scan_nr].end < time)
@@ -201,7 +201,7 @@ double Delay_table_akima::rate(Time time) {
   SFXC_ASSERT(splineakima != NULL);
   double sec = (time - scans[scan_nr].begin).get_time();
   double result = gsl_spline_eval_deriv (splineakima, sec, acc);
-  return (result * 1e6);
+  return result;
 }
 
 Time Delay_table_akima::start_time_scan() {
