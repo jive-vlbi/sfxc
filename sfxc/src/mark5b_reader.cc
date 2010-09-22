@@ -122,6 +122,7 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
   // Check if there is a fill pattern in the data and if so, mark the data invalid
   find_fill_pattern(data);
 
+  current_time_ = get_current_time();
   return true;
 }
 
