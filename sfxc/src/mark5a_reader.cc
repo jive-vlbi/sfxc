@@ -58,10 +58,9 @@ Mark5a_reader::goto_time(Data_frame &data, Time time) {
     if (!read_new_block(data)) {
       DEBUG_MSG("Couldn't read data");
     }
-    delta_time = (int64_t)(time.get_time_usec() - get_current_time().get_time_usec());
+    delta_time = time - get_current_time();
   }
   // Now read the last bit of data up to the requested time
-//  if(delta_time >= (SIZE_MK5A_FRAME*N)*8*1000000LL/data_rate()){
   ssize_t read_n_bytes = delta_time / t_one_byte - SIZE_MK5A_FRAME*N;
   if(read_n_bytes > 0){
     SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
