@@ -20,7 +20,6 @@ Time::Time(const std::string &time) : clock_rate(MAX_SAMPLE_RATE), sample_rate(1
   sscanf(time.c_str(), "%dy%dd%dh%dm%ds", &year, &day, &hour, &minute, &second);
   int time_mjd = mjd(1, 1, year) + day -1;
   set_time(time_mjd, 60 * (60 * hour + minute) + second);
-  std::cout.precision(12);
 }
 
 void Time::set_sample_rate(double sample_rate_){
@@ -91,7 +90,6 @@ std::string Time::date_string() const{
 }
 
 std::ostream& operator<<(std::ostream &o, const Time t){
-  o.precision(12);
-  o << t.get_mjd();
+  o << t.date_string();
   return o;
 }
