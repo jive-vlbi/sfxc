@@ -117,6 +117,7 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
         times.resize(0);
         delays.resize(0);
         scans.resize(0);
+        scan_start = -1;
       }else{
        Interval &scan = scans.back();
        scan.end.set_time(current_mjd, scan_end);

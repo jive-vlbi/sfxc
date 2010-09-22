@@ -109,6 +109,7 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
         v.resize(0);
         w.resize(0);
         scans.resize(0);
+        scan_start = -1;
       }else{
        Interval &scan = scans.back();
        scan.end.set_time(current_mjd, scan_end);
