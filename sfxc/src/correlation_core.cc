@@ -281,6 +281,8 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
       norms[station] += integration_buffer[station][i].real();
     }
     norms[station] /= (fft_size() / oversamp);
+    if(norms[station] < 1)
+      norms[station] = 1;
 
     for (size_t i = 0; i < fft_size() + 1; i++) {
       // imaginary part should be zero!

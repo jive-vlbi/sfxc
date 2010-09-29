@@ -1,3 +1,4 @@
+#include <limits>
 #include "data_reader_blocking.h"
 #include "mark5a_reader.h"
 #include "utils.h"
@@ -41,12 +42,13 @@ Mark5a_reader::goto_time(Data_frame &data, Time time) {
 
   // first skip through the file in 1 second steps.
   const Time one_sec(1000000.);
-  const Time t_one_byte((8 * 1000000.) / data_rate());
+  const Time t_one_frame(8*N*SIZE_MK5A_FRAME / (data_rate() / 1000000.));
+  const size_t max_blocks_to_read = std::numeric_limits<size_t>::max() / (SIZE_MK5A_FRAME*N);
   Time delta_time = time - get_current_time();
   while(delta_time>=one_sec){
     // Read an integer number of frames
-    size_t read_n_bytes =  one_sec / t_one_byte - SIZE_MK5A_FRAME*N;
-    SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
+    size_t n_blocks = std::min((size_t)(delta_time / t_one_frame)/2, max_blocks_to_read);
+    size_t read_n_bytes =  (n_blocks - 1) * SIZE_MK5A_FRAME*N;
 
     // A blocking read operation. The operation is looping until the file
     // is eof or the requested amount of data is retreived.
@@ -61,9 +63,10 @@ Mark5a_reader::goto_time(Data_frame &data, Time time) {
     delta_time = time - get_current_time();
   }
   // Now read the last bit of data up to the requested time
-  ssize_t read_n_bytes = delta_time / t_one_byte - SIZE_MK5A_FRAME*N;
-  if(read_n_bytes > 0){
-    SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
+  int n_blocks = (int)(delta_time / t_one_frame);
+  if(n_blocks > 0){
+    size_t read_n_bytes =  (n_blocks - 1) * SIZE_MK5A_FRAME*N;
+    //SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
     if (byte_read != read_n_bytes)
       return current_time_;
@@ -78,6 +81,7 @@ Mark5a_reader::goto_time(Data_frame &data, Time time) {
     // at us_time, because the station might have started recording late.
     DEBUG_MSG("Attempted to jump to time " << time << ", but found timestamp" << get_current_time());
   }
+
   return get_current_time();
 }
 

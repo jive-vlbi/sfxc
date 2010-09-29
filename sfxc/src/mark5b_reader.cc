@@ -1,6 +1,7 @@
+#include <limits>
+#include <stdio.h>
 #include "data_reader_blocking.h"
 #include "mark5b_reader.h"
-#include <stdio.h>
 
 Mark5b_reader::
 Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
@@ -36,18 +37,20 @@ Mark5b_reader::goto_time(Data_frame &data, Time us_time) {
 
   if (us_time <= current_time_) return current_time_;
 
-  const size_t size_mk5b_block_header =
+  const size_t size_mk5b_block =
     (SIZE_MK5B_HEADER+SIZE_MK5B_FRAME)*SIZE_MK5B_WORD;
+  const size_t max_blocks_to_read = std::numeric_limits<size_t>::max() /
+                                    (size_mk5b_block * N_MK5B_BLOCKS_TO_READ);
 
   // first skip through the file in 1 second steps.
   const Time one_sec(1000000.);
   Time delta_time = us_time - current_time_;
   while (delta_time >= one_sec){
     SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
-    int n_blocks = (int)(one_sec/time_between_headers_) - current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
+    size_t n_blocks = std::min((size_t)(delta_time/time_between_headers_)/2, max_blocks_to_read);
 
     // Don't read the last header, to be able to check whether we are at the right time
-    size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
+    size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block;
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
     if (bytes_to_read != byte_read)
       return current_time_;
@@ -57,11 +60,10 @@ Mark5b_reader::goto_time(Data_frame &data, Time us_time) {
     delta_time = us_time - current_time_;
   }
   // Now read the last bit of data up to the requested time
-  int n_blocks = (int)round(delta_time/time_between_headers_) -
-                  current_header.frame_nr/N_MK5B_BLOCKS_TO_READ;
+  int n_blocks = (int)round(delta_time / time_between_headers_);
   if(n_blocks>0){
     // Don't read the last header, to be able to check whether we are at the right time
-    size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block_header;
+    size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block;
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
     if (bytes_to_read != byte_read)
       return current_time_;
@@ -310,6 +312,7 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
 
   data.start_time = get_current_time();
   find_fill_pattern(data);
+  current_time_ = get_current_time();
 
   return true;
 }
