@@ -281,6 +281,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     Time time = start_time + integration_time() * integration_slice_nr;
     get_log_writer()(1)
     << "start "
+    << time.date_string()
     << ", channel " << current_channel << " to correlation node "
     << corr_node_nr << std::endl;
     PROGRESS_MSG("start "
