@@ -101,6 +101,8 @@ private:
   Input_memory_pool_ptr               memory_pool_;
   /// Current mark5a data block
   Input_element                       input_element_;
+  /// Start of previous mark5 block
+  Time start_previous_frame;
   /// Output buffer of mark5a data blocks
   Output_buffer_ptr                   output_buffer_;
   /// Flag that indicates if the reader is active
@@ -109,16 +111,13 @@ private:
   /// The current interval to process
   Time_interval current_interval_;
 
-
   /// Storing all the pending interval to process
   Threadsafe_queue<Time_interval>     intervals_;
-
-
 
   /// Current time
   Time current_time;
 
-	/// Amount of data that was received by this component
+  // Amount of data that was received by this component
   uint64_t data_read_;
 
   /// Determines if data modulation is turned on(p.6 of Mark4 memo 230A, Whitney 2005)

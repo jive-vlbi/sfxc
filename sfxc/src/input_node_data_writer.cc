@@ -200,6 +200,8 @@ do_task() {
         next_invalid_pos = input_element.invalid[invalid_index].invalid_begin;
       else
         next_invalid_pos = block_size + 1;
+      if(index >= block_size)
+        input_buffer_->pop();
     }else{
       int data_to_write = std::min(next_delay_pos-index, end_index-index);
 

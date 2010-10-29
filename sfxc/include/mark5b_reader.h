@@ -103,7 +103,7 @@ private:
 
   int sample_rate;
   int nr_of_bitstreams;
-
+  bool frame_nr_valid;
   // For testing
   Debug_level debug_level_;
 

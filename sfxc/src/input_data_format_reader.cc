@@ -40,11 +40,12 @@ void Input_data_format_reader::find_fill_pattern(Data_frame &data){
     data.invalid.resize(old_size + 1);
     data.invalid[old_size].invalid_begin = start;
     data.invalid[old_size].nr_invalid = (end - start) * 4; // nr_invalid is in bytes
+    std::cout << RANK_OF_NODE << " : " << (end - start) << " words of fill pattern found\n";
     start = end + 1;
   }
 
   // find the start of the first block of fill pattern
-  step = std::min(MARK5_FILLPATTERN_NWORDS, buffer_size) / 2;
+  step = std::min(MARK5_FILLPATTERN_NWORDS, buffer_size - start) / 2;
   while(step > 0){
     if(buffer[start + step] != MARK5_FILLPATTERN){
       start += step;
@@ -71,6 +72,7 @@ void Input_data_format_reader::find_fill_pattern(Data_frame &data){
     data.invalid.resize(old_size + 1);
     data.invalid[old_size].invalid_begin = start;
     data.invalid[old_size].nr_invalid = (end - start) * 4; // nr_invalid is in bytes
+    std::cout << RANK_OF_NODE << " : " << (end - start) << " words of fill pattern found\n";
 
     // Find the start of the next invalid block
     start = end + 1;

@@ -8,7 +8,7 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
               Data_frame &data, Time ref_date)
   : Input_data_format_reader(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
-    time_between_headers_(0.), sample_rate(0)
+    time_between_headers_(0.), sample_rate(0), frame_nr_valid(true)
 {
   //us_per_day=(int64_t)24*60*60*1000000;
   // Initialize the crc16 lookup table
@@ -69,7 +69,8 @@ Mark5b_reader::goto_time(Data_frame &data, Time us_time) {
       return current_time_;
 
     read_new_block(data);
-    SFXC_ASSERT((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) == 0);
+    if((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) != 0)
+      return resync_header(data);
   }
   current_time_ = get_current_time();
 
@@ -81,7 +82,12 @@ Time Mark5b_reader::get_current_time() {
   if(sample_rate > 0){
     int samples_per_word = 32 / nr_of_bitstreams;
     double subsec = (double)(current_header.frame_nr *  SIZE_MK5B_FRAME * samples_per_word) / sample_rate;
-    time.set_time(current_jday, current_header.seconds() + subsec);
+    if(subsec > 1)
+      frame_nr_valid = false;
+    if(frame_nr_valid)
+      time.set_time(current_jday, current_header.seconds() + subsec);
+    else
+      time.set_time_usec(current_jday, current_header.microseconds());
   } else {
     time.set_time_usec(current_jday, current_header.microseconds());
   }
@@ -117,7 +123,8 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
   }
 
   if (data_reader_->eof()) return false;
-  SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
+  if (((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) != 0) && frame_nr_valid)
+    return resync_header(data);
   if(current_header.julian_day() != current_jday % 1000)
     current_jday++;
   data.start_time = get_current_time();

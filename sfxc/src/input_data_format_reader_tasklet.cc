@@ -56,7 +56,7 @@ void
 Input_data_format_reader_tasklet::
 do_task() {
   // Compute the expected start time of the next frame
-  Time start_next_frame = input_element_.start_time + reader_->time_between_headers();
+  Time start_next_frame = start_previous_frame + reader_->time_between_headers();
   allocate_element();
 
   if (reader_->eof()) {
@@ -70,16 +70,23 @@ do_task() {
       randomize_block();
     else if(reader_->get_current_time() != start_next_frame){
       int nframes_missing = (reader_->get_current_time() - start_next_frame) / reader_->time_between_headers();
-
-      Input_element old_input_element = input_element_;
-      for(int i=0; i < nframes_missing; i++){
-        randomize_block();
-        current_time += reader_->time_between_headers();
-        input_element_.start_time = current_time;
-        data_read_ += input_element_.buffer->data.size();
-        push_element();
+      // std::cout << RANK_OF_NODE << " : nframes_missing = " << nframes_missing << "; t= " << reader_->get_current_time() <<", expected="<<start_next_frame<<"\n";
+      if(nframes_missing > 0){
+        Input_element old_input_element = input_element_;
+        for(int i=0; i < nframes_missing; i++){
+          randomize_block();
+          current_time += reader_->time_between_headers();
+          input_element_.start_time = current_time;
+          data_read_ += input_element_.buffer->data.size();
+          push_element();
+        }
+        input_element_ = old_input_element;
+      } else if(nframes_missing == 0){
+        current_time = start_next_frame;
+      } else {
+        do_task();
+        return;
       }
-      input_element_ = old_input_element;
     }
     if(data_modulation)
       demodulate(input_element_);
@@ -87,6 +94,7 @@ do_task() {
     current_time = reader_->get_current_time();
   }
   input_element_.start_time = current_time;
+  start_previous_frame = current_time;
 
   data_read_ += input_element_.buffer->data.size();
 
@@ -113,6 +121,7 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
       data_read_ += input_element_.buffer->data.size();
       push_element();
     }
+    start_previous_frame = current_time;
   }
 }
 
