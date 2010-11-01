@@ -161,7 +161,6 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
 
   set_data_frame_info(data);
   find_fill_pattern(data);
-
   return true;
 }
 
@@ -170,6 +169,9 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
 
   char *buffer=(char *)&data.buffer->data[0];
   int bytes_read=0, header_start=0, nOnes=0;
+  // start by reading half a header, otherwise if the resync was triggered by a crc error we'll find the previous header
+  memcpy(&buffer[0], &buffer[N*SIZE_MK5A_FRAME/2], N*SIZE_MK5A_FRAME/2);
+  Data_reader_blocking::get_bytes_s(data_reader_.get(), N*SIZE_MK5A_FRAME/2, &buffer[N*SIZE_MK5A_FRAME/2]);
 
   do{
     for(int i=0;i<N*SIZE_MK5A_FRAME;i++){
@@ -179,17 +181,24 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
         if (nOnes >= N*32){
           // Check if we found a header
           header_start = i - 64*N-nOnes; // There are 64bits before the sync word
-          if(header_start >0){
+          if(header_start >= 0){
             memmove(&buffer[0], &buffer[header_start],N*SIZE_MK5A_FRAME-header_start);
             bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start,
                                                            &buffer[N*SIZE_MK5A_FRAME-header_start]);
-            return true;
+	    Mark5a_header header(N);
+            header.set_header((unsigned char *)&buffer[0]);
+
+            if(header.check_header())
+	      return true;
+            else
+              return resync_header(data);
           }
         } 
         nOnes=0;
       }
     }
     header_start = N*SIZE_MK5A_FRAME-nOnes - 64*N; // There are 64bits before the sync word
+ 
     memcpy(&buffer[0], &buffer[header_start],N*SIZE_MK5A_FRAME-header_start);
     bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start,
                                                    &buffer[N*SIZE_MK5A_FRAME-header_start]);
