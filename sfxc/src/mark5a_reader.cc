@@ -185,20 +185,19 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
             memmove(&buffer[0], &buffer[header_start],N*SIZE_MK5A_FRAME-header_start);
             bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start,
                                                            &buffer[N*SIZE_MK5A_FRAME-header_start]);
-	    Mark5a_header header(N);
+            Mark5a_header header(N);
             header.set_header((unsigned char *)&buffer[0]);
-
             if(header.check_header())
-	      return true;
+              return true;
             else
               return resync_header(data);
           }
-        } 
+        }
         nOnes=0;
       }
     }
     header_start = N*SIZE_MK5A_FRAME-nOnes - 64*N; // There are 64bits before the sync word
- 
+
     memcpy(&buffer[0], &buffer[header_start],N*SIZE_MK5A_FRAME-header_start);
     bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start,
                                                    &buffer[N*SIZE_MK5A_FRAME-header_start]);

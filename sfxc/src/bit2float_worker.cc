@@ -150,23 +150,25 @@ Bit2float_worker::do_task() {
       bytes_left -= bytes_to_advance;
       if (bytes_left == 0) {
         if ((write - read) > 0) {
-          switch(inp_data[read++ % inp_size]) {
+          switch(inp_data[read % inp_size]) {
           case HEADER_ENDSTREAM:
+            read += 1;
             state = IDLE;
             break;
           case HEADER_DELAY:
-            if ((write - read) >= 1)
-              read += 1;
-            break;
-          case HEADER_INVALID:
             if ((write - read) >= 2)
               read += 2;
             break;
+          case HEADER_INVALID:
+            if ((write - read) >= 3)
+              read += 3;
+            break;
           case HEADER_DATA:
-            if ((write - read) >= 2) {
+            if ((write - read) >= 3) {
+              read += 1;
               bytes_left = inp_data[read++ % inp_size];
               bytes_left |= (inp_data[read++ % inp_size] << 8);
-	      SFXC_ASSERT(bytes_left > 0);
+              SFXC_ASSERT(bytes_left > 0);
             }
             break;
           }

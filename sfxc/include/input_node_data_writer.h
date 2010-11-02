@@ -95,8 +95,6 @@ private:
   /// The queue storing all the delays
   Threadsafe_queue<Delay_memory_pool_element> delays_;
   Delay_memory_pool_element delay_list;
-  std::vector<int> invalid_samples_begin;
-  std::vector<int> nr_invalid_samples;
 
   int get_next_delay_pos(std::vector<Delay> &cur_delay, Time start_time);
 
