@@ -196,7 +196,7 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
         nOnes=0;
       }
     }
-    header_start = N*SIZE_MK5A_FRAME-nOnes - 64*N; // There are 64bits before the sync word
+    header_start = std::max(0, N*SIZE_MK5A_FRAME-nOnes - 64*N); // There are 64bits before the sync word
 
     memcpy(&buffer[0], &buffer[header_start],N*SIZE_MK5A_FRAME-header_start);
     bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start,
