@@ -56,15 +56,13 @@ void
 Input_data_format_reader_tasklet::
 do_task() {
   // Compute the expected start time of the next frame
-  Time start_next_frame = start_previous_frame + reader_->time_between_headers();
+  Time start_next_frame = current_time + reader_->time_between_headers();
   allocate_element();
 
   if (reader_->eof()) {
     randomize_block();
-    current_time += reader_->time_between_headers();
-  } else if (current_time < reader_->get_current_time()) {
+  } else if (reader_->get_current_time() - current_time >= reader_->time_between_headers()) {
     randomize_block();
-    current_time += reader_->time_between_headers();
   } else {
     if (!reader_->read_new_block(input_element_))
       randomize_block();
@@ -81,20 +79,16 @@ do_task() {
           push_element();
         }
         input_element_ = old_input_element;
-      } else if(nframes_missing == 0){
-        current_time = start_next_frame;
-      } else {
+      } else if(nframes_missing < 0){
         do_task();
         return;
       }
     }
     if(data_modulation)
       demodulate(input_element_);
-
-    current_time = reader_->get_current_time();
   }
+  current_time += reader_->time_between_headers();
   input_element_.start_time = current_time;
-  start_previous_frame = current_time;
 
   data_read_ += input_element_.buffer->data.size();
 
@@ -121,7 +115,6 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
       data_read_ += input_element_.buffer->data.size();
       push_element();
     }
-    start_previous_frame = current_time;
   }
 }
 

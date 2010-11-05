@@ -204,6 +204,7 @@ do_task() {
         input_buffer_->pop();
     }else{
       int data_to_write = std::min(next_delay_pos-index, end_index-index);
+      data_to_write = std::min(next_invalid_pos-index, data_to_write);
 
       write_data(writer, data_to_write, index);
       index += data_to_write;
