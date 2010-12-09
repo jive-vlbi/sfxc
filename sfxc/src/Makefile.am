@@ -24,6 +24,7 @@ OBJ=\
   data_writer.cc data_reader.cc \
   data_reader_factory.cc \
   data_reader_dnfp.cc \
+  data_reader_mk5.cc \
   data_reader_blocking.cc \
   data_reader_socket.cc \
   data_reader_udp.cc \
