@@ -48,7 +48,6 @@ Mark5b_reader::goto_time(Data_frame &data, Time us_time) {
   while (delta_time >= one_sec){
     SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
     size_t n_blocks = std::min((size_t)(delta_time/time_between_headers_)/2, max_blocks_to_read);
-
     // Don't read the last header, to be able to check whether we are at the right time
     size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block;
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
@@ -202,7 +201,7 @@ bool Mark5b_reader::check_header(Header &header){
 
 std::vector< std::vector<int> >
 Mark5b_reader::get_tracks(const Input_node_parameters &input_node_param,
-                          Data_frame & /* data */) {
+                          Data_frame &data) {
   std::vector< std::vector<int> > result;
   result.resize(input_node_param.channels.size());
   for (size_t i=0; i<input_node_param.channels.size(); i++) {
@@ -232,13 +231,11 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
   sample_rate = param.sample_rate();
   // Find the number of bitstreams used
   nr_of_bitstreams = 32 / param.channels[0].sign_tracks.size();
-  sample_rate = param.sample_rate();
-  // Find the number of bitstreams used
-  nr_of_bitstreams = 32 / param.channels[0].sign_tracks.size();
-
+  std::cout << "nbitstream = " << nr_of_bitstreams << ", tbr = " << tbr << "\n";
 }
 
 bool Mark5b_reader::resync_header(Data_frame &data) {
+  std::cout << RANK_OF_NODE << " : Resync header, t = " << current_time_ << "\n";
   // Find the next header in the input stream
   char *buffer=(char *)&data.buffer->data[0];
   int buffer_size = data.buffer->data.size();

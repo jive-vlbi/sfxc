@@ -612,20 +612,18 @@ get_mark5b_tracks(const std::string &mode,
                   const std::string &station,
                   Input_node_parameters &input_parameters) const {
   // First determine if there is a bitstreams section for the current station in the vex file.
-
   const Vex::Node &root=get_vex().get_root_node();
   const std::string bitstreams_name = get_vex().get_bitstreams(mode, station);
   if(bitstreams_name == std::string()){
     get_mark5b_standard_mapping(mode, station, input_parameters);
   }else{
     // Parse the bitstream section
-    const std::string &freq_name = get_vex().get_frequency(mode, station);
-    Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
     Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
     for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
       const std::string &channel_name = frequency_channel(ch_nr);
 
       // Iterate over the bitstreams
+      int n_bitstream = 0;
       Input_node_parameters::Channel_parameters channel_param;
       for (Vex::Node::const_iterator bitstream_it = bitstream->begin("stream_def");
           bitstream_it != bitstream->end("stream_def"); ++bitstream_it) {
@@ -640,6 +638,18 @@ get_mark5b_tracks(const std::string &mode,
             SFXC_ASSERT(bitstream_it[1]->to_string() == "mag");
             channel_param.magn_tracks.push_back(it->to_int());
           }
+        }
+        n_bitstream++;
+      }
+      std::cout << "n_bitstream = " << n_bitstream << "\n";
+      for(int i = n_bitstream; i < 32; i += n_bitstream){
+        int sign = channel_param.sign_tracks[0] + i;
+        if(sign < 32)
+          channel_param.sign_tracks.push_back(sign);
+        if(channel_param.magn_tracks.size() > 0){
+          int magn = channel_param.magn_tracks[0] + 1;
+          if(magn < 32)
+            channel_param.magn_tracks.push_back(magn);
         }
       }
       input_parameters.channels.push_back(channel_param);

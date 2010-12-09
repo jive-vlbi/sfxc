@@ -166,6 +166,7 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
 
 bool Mark5a_reader::resync_header(Data_frame &data) {
   // Find the next header in the input stream, NB: data already contains one mark5a block worth of input data
+  std::cout << RANK_OF_NODE << " : Resync header, t = " << current_time_ << "\n";
 
   char *buffer=(char *)&data.buffer->data[0];
   int bytes_read=0, header_start=0, nOnes=0;

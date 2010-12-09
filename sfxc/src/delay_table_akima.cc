@@ -182,9 +182,10 @@ bool Delay_table_akima::initialise_next_scan() {
 //get the next line from the delay table file
 double Delay_table_akima::delay(const Time &time) {
   SFXC_ASSERT(!times.empty());
-
-  while (scans[scan_nr].end < time)
-    initialise_next_scan();
+  while (scans[scan_nr].end < time){
+    if(!initialise_next_scan())
+       break;
+  }
 
   SFXC_ASSERT(splineakima != NULL);
   double sec = (time - scans[scan_nr].begin).get_time();
@@ -195,9 +196,10 @@ double Delay_table_akima::delay(const Time &time) {
 
 double Delay_table_akima::rate(const Time &time) {
   SFXC_ASSERT(!times.empty());
-
-  while (scans[scan_nr].end < time)
-    initialise_next_scan();
+  while (scans[scan_nr].end < time){
+    if(!initialise_next_scan())
+       break;
+  }
 
   SFXC_ASSERT(splineakima != NULL);
   double sec = (time - scans[scan_nr].begin).get_time();

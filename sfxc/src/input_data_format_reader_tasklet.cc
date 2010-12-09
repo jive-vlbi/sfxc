@@ -64,11 +64,11 @@ do_task() {
   } else if (reader_->get_current_time() - current_time >= reader_->time_between_headers()) {
     randomize_block();
   } else {
-    if (!reader_->read_new_block(input_element_))
+    if (!reader_->read_new_block(input_element_)){
       randomize_block();
-    else if(reader_->get_current_time() != start_next_frame){
+    }else if(reader_->get_current_time() != start_next_frame){
       int nframes_missing = (reader_->get_current_time() - start_next_frame) / reader_->time_between_headers();
-      // std::cout << RANK_OF_NODE << " : nframes_missing = " << nframes_missing << "; t= " << reader_->get_current_time() <<", expected="<<start_next_frame<<"\n";
+      std::cout << RANK_OF_NODE << " : nframes_missing = " << nframes_missing << "; t= " << reader_->get_current_time() <<", expected="<<start_next_frame<<"\n";
       if(nframes_missing > 0){
         Input_element old_input_element = input_element_;
         for(int i=0; i < nframes_missing; i++){

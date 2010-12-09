@@ -407,7 +407,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
         integration_buffer_float[j] += integration_buffer[i][j * n + k];
       integration_buffer_float[j] /= n;
     }
-
+    integration_buffer_float[number_channels()] *= n; // Only one point contributes to the last point
     hbaseline.weight = 0;       // The number of good samples
 
     // Station number in the vex-file
