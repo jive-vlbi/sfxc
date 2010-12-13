@@ -42,6 +42,8 @@ parser.add_option("-n", "--max-scans", dest="max_scans",
                   help="Maximem number of scans per job", metavar="N")
 parser.add_option("-t", "--template", dest="template", type="string",
                   help="Control file template", metavar="FILE")
+parser.add_option("-f", "--fuse", dest="fuse", default=False,
+                  action="store_true", help="FUSE based correlation")
 
 (options, args) = parser.parse_args()
 if options.stations:
@@ -124,7 +126,7 @@ for scan in vex['SCHED']:
 
     # A gap signals the start of a new Mark5 scan.  A new Mark5 scan
     # means we have to start a new job.
-    if stop_time != vex2time(vex['SCHED'][scan]['start']):
+    if options.fuse and stop_time != vex2time(vex['SCHED'][scan]['start']):
         for station in stations:
             mk5_scan[station] = scan
             continue
@@ -158,8 +160,8 @@ for scan in vex['SCHED']:
     # Start a new job whenever there is a media change.
     for station in stations:
         for medium in media[station]:
-            if start_time > medium['start'] and start_time < medium['stop']:
-                if station in vsn and medium['vsn'] != vsn[station]:
+            if start_time >= medium['start'] and start_time < medium['stop']:
+                if not station in vsn or medium['vsn'] != vsn[station]:
                     vsn[station] = medium['vsn']
                     mk5_scan[station] = scan
                     new_job = True
@@ -168,12 +170,27 @@ for scan in vex['SCHED']:
             continue
         continue
 
+    # Loop over all the "station" parameters in the scan, figuring out
+    # the start offset of the scan on the media.
+    offsets = {}
+    for transfer in vex['SCHED'][scan].getall('station'):
+        station = transfer[0]
+        if transfer[3].split()[1].upper() != 'GB':
+            raise AssertionError, "Unknown unit " + transfer[3].split()[1]
+        offset = int(float(transfer[3].split()[0]) * 1e9)
+        offsets[station] = offset
+        continue
+
     # Loop over all stations, creating a list of input data files.
     data_sources = {}
     for station in stations:
-        data_source = options.data_dir + "/" + exper.lower() + '_' \
-            + station.lower() + '_' + mk5_scan[station].lower()
-        data_sources[station] = ["file://" + data_source]
+        if options.fuse:
+            data_source = options.data_dir + "/" + exper.lower() + '_' \
+                + station.lower() + '_' + mk5_scan[station].lower()
+            data_sources[station] = ["file://" + data_source]
+        else:
+            data_source = vsn[station] + ":" + str(offsets[station])
+            data_sources[station] = ["mk5://" + data_source]
         continue
 
     if new_job:
