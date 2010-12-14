@@ -4,3 +4,5 @@ LDFLAGS=-L${SS}/linux/lib/gcc_v4 -L${SS}/linux/driver/lib
 LDLIBS=-lssapi -lwdapi921 -lrt
 CC=g++
 CFLAGS=-Wall
+
+all: mk5read vsnread
