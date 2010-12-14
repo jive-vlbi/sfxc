@@ -130,46 +130,82 @@ for ctrl_file in args[1:]:
     data_dir = None
     for station in stations:
         data_source = json_input['data_sources'][station][0]
-        path = urlparse.urlparse(data_source).path
-        if not data_dir:
-            data_dir = os.path.dirname(path)
+        if urlparse.urlparse(data_source).scheme == 'file':
+            path = urlparse.urlparse(data_source).path
+            if not data_dir:
+                data_dir = os.path.dirname(path)
+                pass
+            assert data_dir == os.path.dirname(path)
             pass
-        assert data_dir == os.path.dirname(path)
         continue
 
     # Check if the input data files are there.  Do this in a loop that
     # gets repeated until all files have been found.
     missing = True
     while missing:
-        # For every Mark5, generate a list of files present.  This is
-        # faster than checking each file individually.
-        data_dir_list = {}
-        for mk5 in mk5s:
-            args = ['/usr/bin/ssh', mk5, '/bin/ls ' + data_dir]
-            p = subprocess.Popen(args, stdout=subprocess.PIPE)
-            output = p.communicate()[0]
-            p.wait()
-            if p.returncode == 0:
-                data_dir_list[mk5] = output.split()
-            else:
-                data_dir_list[mk5] = []
-                pass
-            continue
-
-        # For each station, figure out on which Mark5 the input data
-        # is located.
-        input_nodes = {}
-        for station in stations:
-            data_source = json_input['data_sources'][station][0]
-            path = urlparse.urlparse(data_source).path
-            file = os.path.basename(path)
-    
+        if data_dir:
+            # For every Mark5, generate a list of files present.  This is
+            # faster than checking each file individually.
+            data_dir_list = {}
             for mk5 in mk5s:
-                if file in data_dir_list[mk5]:
-                    input_nodes[station] = mk5
-                    break
+                args = ['/usr/bin/ssh', mk5, '/bin/ls ' + data_dir]
+                p = subprocess.Popen(args, stdout=subprocess.PIPE)
+                output = p.communicate()[0]
+                p.wait()
+                if p.returncode == 0:
+                    data_dir_list[mk5] = output.split()
+                else:
+                    data_dir_list[mk5] = []
+                    pass
                 continue
-            continue
+
+            # For each station, figure out on which Mark5 the input data
+            # is located.
+            input_nodes = {}
+            for station in stations:
+                data_source = json_input['data_sources'][station][0]
+                path = urlparse.urlparse(data_source).path
+                file = os.path.basename(path)
+    
+                for mk5 in mk5s:
+                    if file in data_dir_list[mk5]:
+                        input_nodes[station] = mk5
+                        break
+                    continue
+                continue
+            pass
+        else:
+            # For every Mark5, generate a list of VSNs present.  This is
+            # faster than checking each VSN individually.
+            vsn_list = {}
+            for mk5 in mk5s:
+                args = ['/usr/bin/ssh', mk5, 'bin/vsnread']
+                p = subprocess.Popen(args, stdout=subprocess.PIPE)
+                output = p.communicate()[0]
+                p.wait()
+                if p.returncode == 0:
+                    vsn_list[mk5] = output.split()
+                else:
+                    vsn_list[mk5] = []
+                    pass
+                continue
+
+            # For each station, figure out on which Mark5 the input data
+            # is located.
+            input_nodes = {}
+            for station in stations:
+                data_source = json_input['data_sources'][station][0]
+                path = urlparse.urlparse(data_source).path
+                path = path.lstrip('/')
+                vsn = path.split(':')[0]
+    
+                for mk5 in mk5s:
+                    if vsn in vsn_list[mk5]:
+                        input_nodes[station] = mk5
+                        break
+                    continue
+                continue
+            pass
 
         # Check if we found them all.  If not, give the operator a
         # chance to mount the missing media.
@@ -210,7 +246,7 @@ for ctrl_file in args[1:]:
 
     # Start the job.
     number_nodes = 3 + len(stations) + options.number_nodes
-    sfxc = "sfxc"
+    sfxc = "`which sfxc`"
     cmd = "mpirun.mpich -np " + str(number_nodes) + " " \
         + "-machinefile " + machine_file + " " \
         + sfxc + " " + ctrl_file + " " + vex_file \
