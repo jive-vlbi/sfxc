@@ -39,7 +39,6 @@
 
 #define min(a,b) ((a) < (b) ? (a) : (b))
 
-volatile sig_atomic_t die;
 int debug;
 
 void	logit(int, const char *, ...);
@@ -113,7 +112,7 @@ stream_data(SSHANDLE xlrHandle, uint64_t off, int fd)
 	if (buf == NULL)
 		return -1;
 
-	while (!die) {
+	for (;;) {
 		if (off >= recordingLength)
 			break;
 		size = min(recordingLength - off, MK5READ_SIZE);
@@ -233,7 +232,8 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 void
 handler(int sig)
 {
-	die = 1;
+	unlink(MK5READ_SOCKET);
+	_exit(EXIT_FAILURE);
 }
 
 void
@@ -298,7 +298,7 @@ main(int argc, char *argv[])
 	if (listen(s, 1) == -1)
 		fatal("listen");
 
-	while (!die) {
+	for (;;) {
 		len = sizeof(sun);
 		fd = accept(s, (struct sockaddr *)&sun, &len);
 		if (fd == -1)
