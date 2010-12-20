@@ -206,7 +206,7 @@ Control_parameters::check(std::ostream &writer) const {
             std::string filename = create_path((*source_it).asString());
 
             if (filename.find("file://")  != 0 &&
-                filename.find("mark5://") != 0 &&
+                filename.find("mk5://") != 0 &&
                 filename.find("dnfp://")  !=0) {
               ok = false;
               writer
