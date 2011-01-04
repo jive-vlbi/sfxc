@@ -254,6 +254,13 @@ Input_node_tasklet::get_delays(Time start_time, int64_t nsamples, std::vector<De
       start_time.inc_samples(nsamples / 2);
       get_delays(start_time, nsamples - (nsamples / 2), delay_list);
     }
+  }else{
+    bool rate_different = (delay_table.rate(start_time) * delay_table.rate(stop_time)) < 0;
+    if((rate_different) && (nsamples >= 3)){
+      get_delays(start_time, nsamples / 2, delay_list);
+      start_time.inc_samples(nsamples / 2);
+      get_delays(start_time, nsamples - (nsamples / 2), delay_list);
+    }
   }
 }
 
