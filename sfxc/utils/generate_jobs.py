@@ -177,7 +177,7 @@ for scan in vex['SCHED']:
         station = transfer[0]
         if transfer[3].split()[1].upper() != 'GB':
             raise AssertionError, "Unknown unit " + transfer[3].split()[1]
-        offset = int(float(transfer[3].split()[0]) * 1e9)
+        offset = int(round(float(transfer[3].split()[0]) * 1e9))
         offsets[station] = offset
         continue
 
@@ -213,7 +213,7 @@ for scan in vex['SCHED']:
         json_output["delay_directory"] = delay_uri
 
         # Boring stuff.
-        json_output["cross_polarize"] = "true"
+        json_output["cross_polarize"] = False
         json_output["message_level"] = 1
 
         # Write the output to a new control file.
