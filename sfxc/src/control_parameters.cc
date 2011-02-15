@@ -647,7 +647,7 @@ get_mark5b_tracks(const std::string &mode,
         if(sign < 32)
           channel_param.sign_tracks.push_back(sign);
         if(channel_param.magn_tracks.size() > 0){
-          int magn = channel_param.magn_tracks[0] + 1;
+          int magn = channel_param.magn_tracks[0] + i;
           if(magn < 32)
             channel_param.magn_tracks.push_back(magn);
         }
