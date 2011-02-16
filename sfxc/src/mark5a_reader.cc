@@ -130,7 +130,7 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
   // at least we read the complete header. Check it
   Mark5a_header header(N);
   header.set_header(&databuffer[0]);
-  if((!header.check_header())&&(!resync_header(data))){
+  if((!header.check_header())&&(!resync_header(data, 0))){
     current_time_ += time_between_headers(); // Could't find valid header before EOF
     return false;
   }
@@ -164,7 +164,11 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
   return true;
 }
 
-bool Mark5a_reader::resync_header(Data_frame &data) {
+bool Mark5a_reader::resync_header(Data_frame &data, int try_) {
+  if(try_ == MAXIMUM_RESYNC_TRIES){
+    std::cout << "Couldn't find new sync word before EOF\n";
+    return false;
+  }
   // Find the next header in the input stream, NB: data already contains one mark5a block worth of input data
   std::cout << RANK_OF_NODE << " : Resync header, t = " << current_time_ << "\n";
 
@@ -172,7 +176,11 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
   int bytes_read=0, header_start=0, nOnes=0;
   // start by reading half a header, otherwise if the resync was triggered by a crc error we'll find the previous header
   memcpy(&buffer[0], &buffer[N*SIZE_MK5A_FRAME/2], N*SIZE_MK5A_FRAME/2);
-  Data_reader_blocking::get_bytes_s(data_reader_.get(), N*SIZE_MK5A_FRAME/2, &buffer[N*SIZE_MK5A_FRAME/2]);
+  bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), N*SIZE_MK5A_FRAME/2, &buffer[N*SIZE_MK5A_FRAME/2]);
+  if(bytes_read < N*SIZE_MK5A_FRAME/2){
+    std::cout << "Couldn't find new sync word because of EOF\n";
+    return false;
+  }  
 
   do{
     for(int i=0;i<N*SIZE_MK5A_FRAME;i++){
@@ -181,17 +189,30 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
       else{
         if (nOnes >= N*32){
           // Check if we found a header
-          header_start = i - 64*N-nOnes; // There are 64bits before the sync word
+          int N_new = nOnes / 32; // We might have found a frame from a different experiment
+          header_start = i - 64*N_new-nOnes; // There are 64bits before the sync word
           if(header_start >= 0){
             memmove(&buffer[0], &buffer[header_start],N*SIZE_MK5A_FRAME-header_start);
             bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start,
                                                            &buffer[N*SIZE_MK5A_FRAME-header_start]);
-            Mark5a_header header(N);
+            if(bytes_read < header_start){
+              std::cout << "Couldn't find new sync word because of EOF\n";
+              return false;
+            }  
+            Mark5a_header header(N_new);
             header.set_header((unsigned char *)&buffer[0]);
+            if(RANK_OF_NODE == -1){
+              for(int i = 0; i < N*SIZE_MK5A_FRAME ; i+=32){
+                for(int j = 0; (j < 32) && (i+j < N*SIZE_MK5A_FRAME); j++){
+                  std::cout << (((int)buffer[i+j]) & 255) << " ";
+                }
+                std::cout << "\n";
+              }
+            }
             if(header.check_header())
               return true;
             else
-              return resync_header(data);
+              return resync_header(data, try_+1);
           }
         }
         nOnes=0;

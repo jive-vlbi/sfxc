@@ -147,7 +147,7 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
 
   // at least we read the complete header. Check it
   header.set_header(&buf_header[0],&buf_aux_header[0]);
-  if((!header.check_header())&&(!resync_header(data))){
+  if((!header.check_header())&&(!resync_header(data, 0))){
     current_time_ += time_between_headers(); // Could't find valid header before EOF
     return false;
   }
@@ -173,7 +173,7 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
   return true;
 }
 
-bool VLBA_reader::resync_header(Data_frame &data) {
+bool VLBA_reader::resync_header(Data_frame &data, int try_) {
   // Find the next header in the input stream, NB: data already contains one VLBA block worth of input data
 
   char *buffer=(char *)&data.buffer->data[0];

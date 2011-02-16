@@ -17,6 +17,8 @@
 
 #include <boost/shared_ptr.hpp>
 
+#define MAXIMUM_RESYNC_TRIES 20
+
 class Input_data_format_reader {
 public:
   typedef Input_node_types::Input_data_frame            Data_frame;

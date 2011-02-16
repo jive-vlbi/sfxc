@@ -67,7 +67,9 @@ do_task() {
     if (!reader_->read_new_block(input_element_)){
       randomize_block();
     }else if(reader_->get_current_time() != start_next_frame){
-      int nframes_missing = (reader_->get_current_time() - start_next_frame) / reader_->time_between_headers();
+      int64_t nframes_missing = (reader_->get_current_time() - start_next_frame) / reader_->time_between_headers();
+      int64_t nframes_left = (current_interval_.stop_time_ - start_next_frame) / reader_->time_between_headers();
+      nframes_missing = std::min(nframes_missing, nframes_left);
       std::cout << RANK_OF_NODE << " : nframes_missing = " << nframes_missing << "; t= " << reader_->get_current_time() <<", expected="<<start_next_frame<<"\n";
       if(nframes_missing > 0){
         Input_element old_input_element = input_element_;
@@ -78,6 +80,8 @@ do_task() {
           data_read_ += input_element_.buffer->data.size();
           push_element();
         }
+        if(nframes_missing == nframes_left) // we are done, so don't insert last frame
+          return;  
         input_element_ = old_input_element;
       } else if(nframes_missing < 0){
         do_task();

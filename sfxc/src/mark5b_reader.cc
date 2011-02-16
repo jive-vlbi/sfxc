@@ -16,7 +16,7 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
 
   current_jday = ref_date.get_mjd();
   if(!read_new_block(data)){
-    if(!resync_header(data))
+    if(!resync_header(data, 0))
       sfxc_abort("Couldn't find valid mark5b header");
   }
 
@@ -69,7 +69,7 @@ Mark5b_reader::goto_time(Data_frame &data, Time us_time) {
 
     read_new_block(data);
     if((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) != 0)
-      return resync_header(data);
+      return resync_header(data, 0);
   }
   current_time_ = get_current_time();
 
@@ -105,7 +105,7 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
                                                          sizeof(current_header),
                                                          (char *)&current_header );
       if(!check_header(current_header))
-        return resync_header(data); // Find next valid header in data file
+        return resync_header(data, 0); // Find next valid header in data file
 
       SFXC_ASSERT(current_header.check());
     } else {
@@ -123,7 +123,7 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
 
   if (data_reader_->eof()) return false;
   if (((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) != 0) && frame_nr_valid)
-    return resync_header(data);
+    return resync_header(data, 0);
   if(current_header.julian_day() != current_jday % 1000)
     current_jday++;
   data.start_time = get_current_time();
@@ -234,7 +234,11 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
   std::cout << "nbitstream = " << nr_of_bitstreams << ", tbr = " << tbr << "\n";
 }
 
-bool Mark5b_reader::resync_header(Data_frame &data) {
+bool Mark5b_reader::resync_header(Data_frame &data, int try_) {
+  if(try_ == MAXIMUM_RESYNC_TRIES){
+    std::cout << "Couldn't find new sync word before EOF\n";
+    return false;
+  }
   std::cout << RANK_OF_NODE << " : Resync header, t = " << current_time_ << "\n";
   // Find the next header in the input stream
   char *buffer=(char *)&data.buffer->data[0];
@@ -291,7 +295,7 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
     write_pos = nbytes;
   }
   if (!check_header(current_header))
-    return resync_header(data);
+    return resync_header(data, try_ + 1);
 
   // Not that the first header is read, we read the rest of the data
   bytes_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),

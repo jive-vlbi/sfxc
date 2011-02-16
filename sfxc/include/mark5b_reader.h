@@ -68,7 +68,7 @@ public:
   /// Read another mark5b-frame
   bool read_new_block(Data_frame &data);
 
-  bool resync_header(Data_frame &data);
+  bool resync_header(Data_frame &data, int try_);
 
   bool eof();
 

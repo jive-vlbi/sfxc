@@ -80,7 +80,7 @@ private:
   bool check_track_bit_statistics(Data_frame &data);
 
   // Resync header if there is mising data in the input stream
-  bool resync_header(Data_frame &data);
+  bool resync_header(Data_frame &data, int try_);
 
   void set_data_frame_info(Data_frame &data);
 private:
