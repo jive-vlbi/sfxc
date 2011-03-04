@@ -17,13 +17,13 @@ Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
   Mark5a_header header(N);
   header.set_header(&data.buffer->data[0]);
   header.check_header();
-  std::cout << RANK_OF_NODE << " : Mark5a reader found start of data at : y=" << header.year(0)
-            << ", day = " << header.day(0) << ", time =" << header.get_time_in_us(0) << "\n";
   start_day_ = header.day(0);
   current_mjd_ = mjd(1, 1, ref_year) + start_day_ - 1;
   start_time_.set_time_usec(current_mjd_, header.get_time_in_us(0)); 
   current_day_ = header.day(0);
   current_time_.set_time_usec(current_mjd_, header.get_time_in_us(0));
+  std::cout << RANK_OF_NODE << " : Mark5a reader found start of data at : y=" << header.year(0)
+            << ", day = " << header.day(0) << ", time =" << current_time_ << ", time_usec = " << header.get_time_in_us(0) << "\n";
 
   set_data_frame_info(data);
   find_fill_pattern(data);
