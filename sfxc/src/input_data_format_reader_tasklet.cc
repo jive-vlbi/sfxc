@@ -108,9 +108,13 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
     ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: SET TIME");
     ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: val:"<< current_interval_.start_time_ << " cur: "<< current_time);
     if(current_interval_.start_time_<=reader_->get_current_time()){
-      current_time = reader_->get_current_time();
+      // Ensure that the current_time is exactly at header_start, in mark5b sometimes the VLBA timestamp is used
+      int64_t nframes = (int64_t) round((reader_->get_current_time() - current_interval_.start_time_) / reader_->time_between_headers());
+      current_time = current_interval_.start_time_ + reader_->time_between_headers() * nframes;
     }else{
       current_time = goto_time( current_interval_.start_time_);
+      int64_t nframes = (int64_t) round((current_time - current_interval_.start_time_)/ reader_->time_between_headers());
+      current_time = current_interval_.start_time_ + reader_->time_between_headers() * nframes;
       if (current_time > current_interval_.stop_time_) {
         current_time = current_interval_.stop_time_;
         randomize_block();
