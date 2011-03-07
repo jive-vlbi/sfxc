@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2003, 2004 Henning Brauer <henning@openbsd.org>
- * Copyright (c) 2010 Joint Institute for VLBI in Europe
+ * Copyright (c) 2010, 2011 Joint Institute for VLBI in Europe
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "xlrapi.h"
 
@@ -30,6 +31,15 @@ void
 fatal(const char *emsg)
 {
 	fprintf(stderr, "fatal: %s: %s\n", emsg, strerror(errno));
+	exit(EXIT_FAILURE);
+}
+
+void
+usage(void)
+{
+	extern char *__progname;
+
+	fprintf(stderr, "usage: %s [-f]\n", __progname);
 	exit(EXIT_FAILURE);
 }
 
@@ -113,29 +123,49 @@ print_labels(void)
 }
 
 int
-main(void)
+main(int argc, char **argv)
 {
 	struct sockaddr_in sin;
+	int ch, force = 0;
 	int s;
 
-	/*
-	 * Check if Mark5A is running by connecting to localhost:2620.
-	 * If that fails with ECONNREFUSED, we can be fairly certain
-	 * no Mark5A-variant is running.
-	 */
-	s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (s == -1)
-		fatal("socket");
+	while ((ch = getopt(argc, argv, "f")) != -1) {
+		switch (ch) {
+		case 'f':
+			force = 1;
+			break;
+		default:
+			usage();
+			/* NOTREACHED */
+		}
+	}
 
-	memset(&sin, 0, sizeof(sin));
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = inet_addr("127.0.0.1");
-	sin.sin_port = htons(2620);
+	argc -= optind;
+	argv += optind;
+	if (argc > 0)
+		usage();
 
-	if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) != -1)
-		return (EXIT_FAILURE);
-	if (errno != ECONNREFUSED)
-		return (EXIT_FAILURE);
+	if (!force) {
+		/*
+		 * Check if Mark5A is running by connecting to
+		 * localhost:2620.  If that fails with ECONNREFUSED,
+		 * we can be fairly certain no Mark5A-variant is
+		 * running.
+		 */
+		s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (s == -1)
+			fatal("socket");
+
+		memset(&sin, 0, sizeof(sin));
+		sin.sin_family = AF_INET;
+		sin.sin_addr.s_addr = inet_addr("127.0.0.1");
+		sin.sin_port = htons(2620);
+
+		if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) != -1)
+			return (EXIT_FAILURE);
+		if (errno != ECONNREFUSED)
+			return (EXIT_FAILURE);
+	}
 
 	print_labels();
 	return (EXIT_SUCCESS);
