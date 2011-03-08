@@ -107,6 +107,7 @@ Bit2float_worker::do_task() {
       }
 
       if (invalid_to_write > 0) {
+        out_frame.invalid.push_back((Correlator_node_types::Invalid){out_index, invalid_to_write});
         memset(&out_frame.data[out_index], 0, invalid_to_write * sizeof(FLOAT));
         invalid_left -= invalid_to_write;
         out_index += invalid_to_write;
@@ -114,7 +115,7 @@ Bit2float_worker::do_task() {
       }
       if (invalid_left == 0)
         state = IDLE;
-        break;
+      break;
     }
     case SEND_DATA:
     {
@@ -379,6 +380,7 @@ Bit2float_worker::allocate_element(){
   out_element = memory_pool_.allocate();
   if(out_element.data().data.size() != nsamples)
     out_element.data().data.resize(nsamples);
+  out_element.data().invalid.resize(0);
   out_element.data().nfft = nfft;
   out_index=0;
 }

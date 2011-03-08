@@ -16,28 +16,19 @@ void Delay_correction_default::do_task() {
 
   // Allocate output buffer
   cur_output=output_memory_pool.allocate();
-  if(cur_output.data().size() != nbuffer){
-    // Avoid resizes later on
-    if(cur_output.data().capacity() < nfft_max)
-      cur_output.data().reserve(nfft_max);
+  int output_stride = fft_size() + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
+  cur_output->stride = output_stride;
 
-    cur_output.data().resize(nbuffer);
-  }
-  for(int buf=0;buf<nbuffer;buf++){
-    Output_data &output = cur_output.data()[buf];
+  //int output_fft_size = fft_size() + 1;
+  if(cur_output->data.size() != nbuffer * output_stride)
+    cur_output->data.resize(nbuffer * output_stride);
 #ifndef DUMMY_CORRELATION
-    // A factor of 2 for padding
-    if (output.size() != 2 * fft_size())
-      output.resize(2 * fft_size());
-    if (time_buffer.size() != 2 * fft_size())
-      time_buffer.resize(2 * fft_size());
+  // A factor of 2 for padding
+  if (time_buffer.size() != 2 * fft_size())
+    time_buffer.resize(2 * fft_size());
 
+  for(int buf=0;buf<nbuffer;buf++){
     double delay = get_delay(current_time + fft_length/2);
-//    if(RANK_OF_NODE == 14) {
-//      std::cout.precision(16);
-//      std::cout << "getting delay at t = " << (current_time + (int)fft_size()/2)
-//                << ", current_time = " << current_time << "\n";
-//    }
     double delay_in_samples = delay*sample_rate();
     int integer_delay = (int)std::floor(delay_in_samples+.5);
 
@@ -52,19 +43,17 @@ void Delay_correction_default::do_task() {
     // Do the final fft from time to frequency:
     // zero out the data for padding
     for (size_t j = fft_size(); j < 2 * fft_size(); j++)
-         time_buffer[j] = 0;
+      time_buffer[j] = 0;
 
     FFTW_EXECUTE_DFT_R2C(plan_t2f_cor,
                          (FLOAT *)&time_buffer[0],
-                         (FFTW_COMPLEX *)output.buffer());
+                         (FFTW_COMPLEX *)&cur_output->data[buf * output_stride]);
 
    current_time.inc_samples(fft_size());
    total_ffts++;
-#endif // DUMMY_CORRELATION
   }
-//  if(RANK_OF_NODE == 14) 
-//    std::cout << RANK_OF_NODE << " : correlator start_time = " << current_time 
-//              << ", nbuffer = " << nbuffer << "\n";
+#endif // DUMMY_CORRELATION
+  cur_output->invalid = input->invalid;
   output_buffer->push(cur_output);
 }
 
@@ -114,10 +103,8 @@ void Delay_correction_default::fractional_bit_shift(FLOAT *input,
   sin_phi = sin(phi);
   cos_phi = cos(phi);
 #endif
-
   for (int i = 0; i < size; i++) {
     // the following should be double
-
     frequency_buffer[i] *= std::complex<FLOAT>(cos_phi,-sin_phi);
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     temp=sin_phi-(a*sin_phi-b*cos_phi);
@@ -134,9 +121,8 @@ void Delay_correction_default::fractional_bit_shift(FLOAT *input,
 void Delay_correction_default::fringe_stopping(FLOAT output[]) {
   const double mult_factor_phi = -sideband()*2.0*M_PI;
   const double center_freq = channel_freq() + sideband()*bandwidth()*0.5;
-
   // Only compute the delay at integer microseconds
- //  int n_recompute_delay = sample_rate()/1000000;
+  //  int n_recompute_delay = sample_rate()/1000000;
 
   double phi, delta_phi, sin_phi, cos_phi;
   phi = center_freq * get_delay(current_time);
@@ -225,5 +211,6 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
       (int) parameters.integration_time.get_time_usec(),
       parameters.sample_rate,
       parameters.fft_size);
+
   current_fft = 0;
 }

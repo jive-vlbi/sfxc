@@ -472,15 +472,15 @@ inline const char * const print_MPI_TAG(MPI_TAG &tag) {
 
 
 //undef have to be before include <mpi.h>
-#ifdef SEEK_SET
-#undef SEEK_SET
-#endif
-#ifdef SEEK_END
-#undef SEEK_END
-#endif
-#ifdef SEEK_CUR
-#undef SEEK_CUR
-#endif
+//#ifdef SEEK_SET
+//#undef SEEK_SET
+//#endif
+//#ifdef SEEK_END
+//#undef SEEK_END
+//#endif
+//#ifdef SEEK_CUR
+//#undef SEEK_CUR
+//#endif
 
 // disable mpi warnings:
 #pragma GCC system_header

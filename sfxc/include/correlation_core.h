@@ -13,44 +13,11 @@
 class Correlation_core : public Tasklet {
 friend class Correlation_core_pulsar;
 public:
-  // Simple iterator class TODO 
-  template<class T, typename U>
-  class simple_it{
-  public:
-    simple_it(T *data_, int size_):data(data_),index(0) {}
-    simple_it():data(NULL), index(0), size(-1) {}
-    void set(T *data_, int size_){
-      data=data_;
-      size=size_;
-      index=0;
-    }
-    inline T *operator->(){
-      return &data[index];
-    }
-    inline T &operator*(){
-      return data[index];
-    }
-    inline U &operator[](int i){
-      return data[index][i];
-    }
-    inline void operator++(int){
-      index++;
-    }
-    inline bool valid(){
-      return index<size;
-    }
-    // TODO make private again
-    int size;
-    int index;
-  private:
-    T *data;
-  };
   typedef Delay_correction_base::Output_buffer_element       Input_buffer_element;
   typedef Delay_correction_base::Output_buffer               Input_buffer;
   typedef Delay_correction_base::Output_buffer_ptr           Input_buffer_ptr;
-  typedef Delay_correction_base::Output_data                 Input_data;
+  typedef Correlator_node_types::Invalid                     Invalid;
 
-  typedef Memory_pool_vector_element<FLOAT>                Float_buffer;
   typedef Memory_pool_vector_element<std::complex<FLOAT> > Complex_buffer;
   typedef Memory_pool_vector_element<std::complex<float> > Complex_buffer_float;
 
@@ -86,7 +53,7 @@ public:
 
 protected:
   virtual void integration_initialise();
-  void integration_step(std::vector<Complex_buffer> &integration_buffer);
+  void integration_step(std::vector<Complex_buffer> &integration_buffer, int buf_idx);
   void integration_normalize(std::vector<Complex_buffer> &integration_buffer);
   void integration_write(std::vector<Complex_buffer> &integration_buffer);
 
@@ -96,7 +63,7 @@ protected:
   void correlate_baseline(std::complex<FLOAT> in1[],
                           std::complex<FLOAT> in2[],
                           std::complex<FLOAT> out[]);
-
+  void find_invalid();
 
   size_t number_channels();
   size_t fft_size();
@@ -106,9 +73,11 @@ protected:
 
 protected:
   std::vector<Input_buffer_ptr>  input_buffers;
-  // Used in integration_step(), avoids contruction and destroying the vectors
-  std::vector< simple_it< Input_data, std::complex<FLOAT> > >    input_elements;
+  std::vector< std::complex<FLOAT> * >    input_elements;
+  std::vector< std::vector<Invalid> * >   invalid_elements;
   std::vector<bit_statistics_ptr> statistics;
+  // Tracks the number of correlator points where one (but not both) stations on a baseline had invalid data
+  std::vector< std::pair<int64_t,int64_t> > n_flagged;
 
   Correlation_parameters                               correlation_parameters;
   int                                                  oversamp; // Oversample factor
@@ -125,8 +94,6 @@ protected:
   // Needed for writing the progress messages
   int node_nr_;
   int current_integration;
-
-  bool check_input_elements;
 
 #ifdef SFXC_WRITE_STATS
   // For plotting statistics on the height of the fringe and the phase

@@ -262,7 +262,7 @@ private:
   int nr_corr_node;
 
   std::vector< Delay_correction_ptr >         delay_modules;
-  Correlation_core                            *correlation_core;
+  Correlation_core                            *correlation_core, *correlation_core_normal, *correlation_core_pulsar;
 
   int n_integration_slice_in_time_slice;
 

@@ -23,6 +23,10 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
   oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
 
   create_baselines(parameters);
+  if (input_elements.size() != number_input_streams_in_use()) {
+    input_elements.resize(number_input_streams_in_use());
+  }
+  n_flagged.resize(baselines.size());
 
   double start_mjd = parameters.start_time.get_mjd();
   fft_duration = ((double)fft_size() * 1000000) / parameters.sample_rate;
@@ -36,7 +40,7 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
                            pulsar_params->pulsars.find(std::string(&parameters.source[0]));
 
   if (cur_pulsar_it==pulsar_params->pulsars.end()){
-    // When correlating a non-pulsar (calibrator) source we set then nbins=1 and set the
+    // When correlating a non-pulsar (calibrator) source we set nbins=1 and set the
     // pulsar gate equal to the pulsar period 
     if(!polyco)
       polyco = &pulsar_params->pulsars.begin()->second.polyco_params[0];
@@ -60,7 +64,7 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 
     // Compute the phase at the start of the period
     double DT=((start_mjd - polyco->tmid) + fft_duration/(2*us_per_day))*1440;
-    start_phase = (polyco->ref_phase-floor(polyco->ref_phase))+DT*60*polyco->ref_freq + polyco->coef[0];
+    start_phase = (polyco->ref_phase-floor(polyco->ref_phase))+DT*60*polyco->ref_freq + polyco->coef[0]; 
     for (int i=1; i<polyco->coef.size(); i++){
       start_phase += polyco->coef[i]*pow(DT,i);
     }
@@ -98,10 +102,22 @@ void Correlation_core_pulsar::do_task() {
     integration_initialise();
   }
 
-  // Process the data of the current fft
-  integration_step(dedispersion_buffer);
-  dedisperse_buffer();
-  current_fft ++;
+  SFXC_ASSERT(input_buffers.size()==number_input_streams_in_use());
+  for (size_t i=0; i < number_input_streams_in_use(); i++) {
+    input_elements[i] = &input_buffers[i]->front()->data[0];
+  }
+  find_invalid();
+  const int stride = input_buffers[0]->front()->stride;
+  const int nbuffer = input_buffers[0]->front()->data.size() / stride;
+  for (int buf = 0; buf < nbuffer * stride ; buf += stride){
+    // Process the data of the current fft
+    integration_step(dedispersion_buffer, buf);
+    dedisperse_buffer();
+    current_fft ++;
+  }
+
+  for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++)
+    input_buffers[i]->pop();
 
   if (current_fft == number_ffts_in_integration) {
     PROGRESS_MSG("node " << node_nr_ << ", "
@@ -116,7 +132,7 @@ void Correlation_core_pulsar::do_task() {
 }
 
 void Correlation_core_pulsar::integration_initialise() {
-  int size = fft_size() + 1;
+  const int size = fft_size() + 1;
   for(int bin=0;bin<nbins;bin++){
     if (accumulation_buffers[bin].size() != baselines.size()) {
       accumulation_buffers[bin].resize(baselines.size());
@@ -143,6 +159,7 @@ void Correlation_core_pulsar::integration_initialise() {
     SFXC_ASSERT(dedispersion_buffer[j].size() == size);
     memset(&dedispersion_buffer[j][0], 0, size*sizeof(std::complex<FLOAT>));
   }
+  memset(&n_flagged[0], 0, sizeof(std::pair<int64_t,int64_t>)*n_flagged.size());
 }
 
 

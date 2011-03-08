@@ -28,16 +28,15 @@ class Delay_correction_base : public Tasklet {
 friend class Delay_correction_default;
 friend class Delay_correction_swapped;
 public:
-
   typedef Correlator_node_types::Channel_queue      Input_buffer;
   typedef Correlator_node_types::Channel_queue_ptr  Input_buffer_ptr;
   typedef Input_buffer::value_type                  Input_buffer_element;
 
-  typedef Correlator_node_types::ComplexFloat_memory_pool  Output_memory_pool;
-  typedef Correlator_node_types::ComplexFloat_element      Output_data;
-  typedef Correlator_node_types::ComplexFloat_queue        Output_buffer;
-  typedef Correlator_node_types::ComplexFloat_queue_ptr    Output_buffer_ptr;
-  typedef Output_buffer::value_type                        Output_buffer_element;
+  typedef Correlator_node_types::Delay_memory_pool          Output_memory_pool;
+  //  typedef Correlator_node_types::Delay_memory_pool_element  Output_data;
+  typedef Correlator_node_types::Delay_queue                Output_buffer;
+  typedef Correlator_node_types::Delay_queue_ptr            Output_buffer_ptr;
+  typedef Output_buffer::value_type                         Output_buffer_element;
 
   Delay_correction_base(int stream_nr);
   virtual ~Delay_correction_base();

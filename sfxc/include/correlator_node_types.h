@@ -29,30 +29,31 @@ public:
   };
   typedef Channel_circular_input_buffer  *Channel_circular_input_buffer_ptr;
 
-
+  struct Invalid{
+    int start; 
+    int n_invalid;
+  };
   struct Channel_memory_pool_data {
     Channel_memory_pool_data(): nfft(0) {}
     int nfft;
     Memory_pool_vector_element<FLOAT> data;
+    std::vector<Invalid> invalid;
   };
-
   typedef Memory_pool< Channel_memory_pool_data >         Channel_memory_pool;
   typedef Channel_memory_pool::Element                    Channel_memory_pool_element;
-
   typedef Threadsafe_queue<Channel_memory_pool_element>   Channel_queue;
   typedef boost::shared_ptr<Channel_queue>                Channel_queue_ptr;
 
-  typedef Memory_pool_vector_element<FLOAT>                Float_element;
-  typedef Memory_pool<Float_element>                       Float_memory_pool;
-  typedef Threadsafe_queue<Float_memory_pool::Element>     Float_queue;
-  typedef boost::shared_ptr<Float_queue>                   Float_queue_ptr;
-
-  typedef Memory_pool_vector_element< std::complex<FLOAT> >   ComplexFloat_element;
-  typedef std::vector<ComplexFloat_element>                   ComplexFloat_buffer;
-  typedef Memory_pool<ComplexFloat_buffer>                    ComplexFloat_memory_pool;
-  typedef Threadsafe_queue<ComplexFloat_memory_pool::Element> ComplexFloat_queue;
-  typedef boost::shared_ptr<ComplexFloat_queue>               ComplexFloat_queue_ptr;
+  struct Delay_memory_pool_data {
+    Delay_memory_pool_data(): stride(0) {}
+    // The number of elements reserved for each fft, the start of each fft should be propely (16 bytes) alligned
+    size_t stride; 
+    Memory_pool_vector_element< std::complex<FLOAT> > data;
+    std::vector<Invalid> invalid;
+  };
+  typedef Memory_pool< Delay_memory_pool_data >         Delay_memory_pool;
+  typedef Delay_memory_pool::Element                    Delay_memory_pool_element;
+  typedef Threadsafe_queue<Delay_memory_pool_element>   Delay_queue;
+  typedef boost::shared_ptr<Delay_queue>                Delay_queue_ptr;
 };
-
 #endif // CORRELATOR_NODE_TYPES_H
-

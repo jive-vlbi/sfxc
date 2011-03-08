@@ -213,21 +213,26 @@ void Uvw_model::get_uvw(Time time, double *u, double *v, double *w) {
 //get the next line from the delay table file
 std::ofstream& Uvw_model::uvw_values(std::ofstream &output, Time starttime,
                                      Time stoptime, Time inttime) {
+  starttime = scans.front().begin;
+  stoptime = scans.back().end;
+
   Time time = starttime + inttime/2;
   double gsl_u, gsl_v, gsl_w;
   output.precision(14);
+  std::cout.precision(16);
   while (time < stoptime) {
     while (scans[scan_nr].end < time) initialise_spline_for_next_scan();
     double sec = (time - scans[scan_nr].begin).get_time();
     gsl_u = gsl_spline_eval (splineakima_u, sec, acc_u);
     gsl_v = gsl_spline_eval (splineakima_v, sec, acc_v);
     gsl_w = gsl_spline_eval (splineakima_w, sec, acc_w);
-    double ttime  = time.get_time();
+    double ttime  = time.get_time_usec();
 
-    output.write(reinterpret_cast < char * > (&ttime), sizeof(double));
-    output.write(reinterpret_cast < char * > (&gsl_u), sizeof(double));
-    output.write(reinterpret_cast < char * > (&gsl_v), sizeof(double));
-    output.write(reinterpret_cast < char * > (&gsl_w), sizeof(double));
+//    output.write(reinterpret_cast < char * > (&ttime), sizeof(double));
+//    output.write(reinterpret_cast < char * > (&gsl_u), sizeof(double));
+//    output.write(reinterpret_cast < char * > (&gsl_v), sizeof(double));
+//    output.write(reinterpret_cast < char * > (&gsl_w), sizeof(double));
+    std::cout << (int64_t)ttime << " " <<  gsl_u << " " <<  gsl_v << " " <<  gsl_w << "\n";
     time += inttime;
   }
   return output;

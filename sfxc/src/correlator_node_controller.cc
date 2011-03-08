@@ -47,7 +47,9 @@ Correlator_node_controller::process_event(MPI_Status &status) {
       Uvw_model table;
       int sn;
       mpi_transfer.receive(status, table, sn);
-      node.correlation_core->add_uvw_table(sn, table);
+      node.correlation_core_normal->add_uvw_table(sn, table);
+      if(node.pulsar_binning)
+        node.correlation_core_pulsar->add_uvw_table(sn, table);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_CORR_PARAMETERS: {

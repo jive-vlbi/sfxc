@@ -17,24 +17,18 @@ void Delay_correction_swapped::do_task() {
 
   // Allocate output buffer
   cur_output=output_memory_pool.allocate();
-  if(cur_output.data().size() != nbuffer){
-    // Avoid resizes later on
-    if(cur_output.data().capacity() < nfft_max)
-      cur_output.data().reserve(nfft_max);
+  int output_stride = fft_size() + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
+  cur_output->stride = output_stride;
 
-    cur_output.data().resize(nbuffer);
-  }
+  if(cur_output->data.size() != nbuffer * output_stride)
+    cur_output->data.resize(nbuffer * output_stride);
+#ifndef DUMMY_CORRELATION
+  // A factor of 2 for padding
+  if (time_buffer.size() != 2 * fft_size())
+    time_buffer.resize(2 * fft_size());
 
   for(int buf=0;buf<nbuffer;buf++)
   {
-    Output_data &output = cur_output.data()[buf];
-#ifndef DUMMY_CORRELATION
-    // A factor of 2 for padding
-    if (output.size() != 2 * fft_size())
-      output.resize(2 * fft_size());
-    if (time_buffer.size() != 2 * fft_size())
-      time_buffer.resize(2 * fft_size());
-
     double delay = get_delay(current_time + fft_length/2);
     double delay_in_samples = delay*sample_rate();
     int integer_delay = (int)std::floor(delay_in_samples+.5);
@@ -47,15 +41,16 @@ void Delay_correction_swapped::do_task() {
       frequency_buffer[i] = 0;
 
     // Input is from frequency_buffer
-    fractional_bit_shift(output.buffer(),
+    fractional_bit_shift(&cur_output->data[buf * output_stride],
                          integer_delay,
                          delay_in_samples - integer_delay);
 
     current_time.inc_samples(fft_size());
     total_ffts++;
 
-#endif // DUMMY_CORRELATION
   }
+#endif // DUMMY_CORRELATION
+  cur_output->invalid = input->invalid;
   output_buffer->push(cur_output);
 }
 
