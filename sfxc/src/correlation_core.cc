@@ -354,6 +354,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
      double u,v,w;
      uvw_tables[station].get_uvw(time, &u, &v, &w);
      uvw[station].station_nr=stream2station[station];
+     uvw[station].reserved=0;
      uvw[station].u=u;
      uvw[station].v=v;
      uvw[station].w=w;
