@@ -64,6 +64,10 @@ AC_ARG_ENABLE(gsl,
               [  --enable-gsl          Compile with dependency to GSL [default=yes]],
               USE_GSL="$enableval", USE_GSL="yes")
 
+AC_ARG_ENABLE(double,
+              [  --enable-double          Use double precision [default=no]],
+              USE_DOUBLE="$enableval", USE_DOUBLE="no")
+
 AC_ARG_ENABLE(gendelay,
               [  --enable-gendelay     Compile with the generate_delay_model (require Fortan) [default=yes]],
               WITH_GENDELAY="$enableval", WITH_GENDELAY="yes")
@@ -100,16 +104,22 @@ if test $USE_MPI = "yes"; then
 fi
 
 if test $USE_FFTW3 = "yes"; then
-AC_CHECK_LIB(fftw3, fftw_execute, [], [
-        echo "Couldn't find fftw3 library."
+  AC_CHECK_LIB(fftw3f, fftwf_execute, [], [
+        echo "Couldn't find fftw3f library."
         exit -1
         ])
-AC_CHECK_LIB(fftw3f, fftwf_execute, [], [
-        echo "Couldn't find fftw3 library."
+  if test $USE_DOUBLE = "yes"; then
+    AC_CHECK_LIB(fftw3, fftw_execute, [], [
+        echo "Couldn't find fftw3 library (double precision). "
         exit -1
         ])
-FFTW_CXXFLAGS=
-FFTW_LDADD=" -lfftw3 -lfftw3f"
+    FFTW_LDADD=" -lfftw3"
+    AC_DEFINE([USE_DOUBLE], [1], [Use double precision])
+  else
+    FFTW_LDADD="-lfftw3f"
+  fi
+  FFTW_UTILS_LDADD="-lfftw3f"
+  FFTW_CXXFLAGS=
 fi
 SFXC_CXXFLAGS="$SFXC_CXXFLAGS $FFTW_CXXFLAGS"
 SFXC_LDADD="$SFXC_LDADD $FFTW_LDADD"
@@ -192,7 +202,7 @@ BASE_CXXFLAGS='-I${top_srcdir}/include '
 BASE_LDADD=' '
 
 UTILS_CXXFLAGS="$UTILS_CXXFLAGS $BASE_CXXFLAGS $VEX_PARSER_CXXFLAGS $JSONCPP_CXXFLAGS $DAMIEN_CXXFLAGS $FFTW_CXXFLAGS $GSL_CXXFLAGS $OPTIMIZE_CXXFLAGS"
-UTILS_LDADD="$BASE_LDADD $VEX_PARSER_LDADD $JSONCPP_LDADD $DAMIEN_LDADD $FFTW_LDADD $GSL_LDADD $OPTIMIZE_LDADD"
+UTILS_LDADD="$BASE_LDADD $VEX_PARSER_LDADD $JSONCPP_LDADD $DAMIEN_LDADD $FFTW_UTILS_LDADD $GSL_LDADD $OPTIMIZE_LDADD"
 
 dnl resetting generic flags
 CXXFLAGS=$CXXFLAGS_IN

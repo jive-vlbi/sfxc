@@ -143,8 +143,6 @@ void sfxc_abort(const char *msg="");
   { if (!(c)) abort_sfxc_assertion(__FILE__, __LINE__, msg ); }
 #endif // NDEBUG
 
-//#define USE_DOUBLE
-
 #ifdef USE_DOUBLE
 # define FLOAT                   double
 # define FFTW_COMPLEX            fftw_complex
