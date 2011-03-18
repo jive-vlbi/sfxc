@@ -828,17 +828,15 @@ Control_parameters::cross_polarize() const {
 std::string
 Control_parameters::
 get_mode(const Time &start_time) const {
-  for (Vex::Node::const_iterator sched_block =
-         vex.get_root_node()["SCHED"]->begin();
-       sched_block != vex.get_root_node()["SCHED"]->end();
-       ++sched_block) {
-    if (start_time >
-        Time(sched_block["start"]->to_string())) {
-      return sched_block["mode"]->to_string();
-    }
+  std::string scan_name = vex.get_scan_name(Vex::Date(start_time.date_string()));
+  if(scan_name == std::string()){
+    std::string error_msg = std::string("get_mode called with invalid time : ");
+    error_msg += start_time.date_string();
+    sfxc_abort(error_msg.c_str());
+    return std::string();
   }
-  sfxc_abort("Mode not found in the vex-file.");
-  return std::string("");
+  std::cout << "Get mode at t= " << start_time << ", finds mode " << vex.get_mode(scan_name) << "\n";
+  return vex.get_mode(scan_name);
 }
 
 int

@@ -105,7 +105,7 @@ Vex::stop_of_scan(const std::string &scan_name) const {
 }
 
 std::string
-Vex::get_scan_name(Vex::Date &start_time) const{
+Vex::get_scan_name(const Vex::Date &start_time) const{
   std::string mode;
   for(Vex::Node::const_iterator it = root["SCHED"]->begin();it!=root["SCHED"]->end();it++){
     if((start_time>=start_of_scan(it.key()))&&(start_time<stop_of_scan(it.key()))){
