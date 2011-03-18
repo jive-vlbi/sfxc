@@ -16,7 +16,7 @@ Fringe_info(const Output_header_baseline &header,
             const std::vector< std::complex<float> > &data_freq_,
             const std::vector< std::complex<float> > &data_lag_)
     : header(header), data_freq(data_freq_), data_lag(data_lag_),
-initialised(true) {
+      initialised(true) {
   assert(data_freq_.size() == data_lag_.size());
 }
 
@@ -33,7 +33,7 @@ bool Fringe_info::operator<(const Fringe_info &other) const {
 }
 
 void Fringe_info::plot(char *filename, char *filename_large, char *title,
-                       SPACE space, VALUE value) const {
+                       SPACE space, VALUE value, double frequency, double bandwidth) const {
   std::vector<float> data;
   if (space == FREQUENCY) {
     data.resize(data_freq.size());
@@ -88,28 +88,36 @@ void Fringe_info::plot(char *filename, char *filename_large, char *title,
   }
 
   char cmd[80];
-  gnuplot_ctrl * g = gnuplot_init();
-
+  gnuplot_ctrl *g = gnuplot_init();
   // This works on huygens
   gnuplot_cmd(g, (char*)"set terminal png small size 300,200");
   // This works on das3
-  gnuplot_cmd(g, (char*)"set terminal png small picsize 300 200");
+  //gnuplot_cmd(g, (char*)"set terminal png small picsize 300 200");
 
   snprintf(cmd, 80, "set output \"%s\"", filename);
   gnuplot_cmd(g, cmd);
   gnuplot_setstyle(g, (char*)"lines");
   gnuplot_plot_x(g, &data[0], data.size(), title) ;
+  gnuplot_close(g);
 
+  g = gnuplot_init();
   // This works on huygens
   gnuplot_cmd(g, (char*)"set terminal png large size 1024,768");
   // This works on das3
-  gnuplot_cmd(g, (char*)"set terminal png large picsize 1024 768");
-
+  // gnuplot_cmd(g, (char*)"set terminal png large picsize 1024 768");
   snprintf(cmd, 80, "set output \"%s\"", filename_large);
   gnuplot_cmd(g, cmd);
   gnuplot_setstyle(g, (char*)"lines");
-  gnuplot_plot_x(g, &data[0], data.size(), title) ;
-
+  gnuplot_set_xlabel (g, (char*)"[mhz]");
+  if (space == FREQUENCY) {
+    std::vector<float> freqs;
+    freqs.resize(data.size());
+    for(int i = 0; i < freqs.size(); i++)
+      freqs[i] = frequency + i * bandwidth / freqs.size();
+    gnuplot_plot_xy(g, &freqs[0], &data[0], data.size(), title) ;
+  }else
+    gnuplot_plot_x(g, &data[0], data.size(), title) ;
+  
   gnuplot_close(g);
 }
 
@@ -249,8 +257,14 @@ Fringe_info_container::read_plots(bool stop_at_eof) {
       read_data_from_file(data_freq.size()*sizeof(std::complex<float>),
                           (char *)&data_freq[0],
                           stop_at_eof && (!first));
-
-
+      // Reverse the lowerside bands, so that channels are in increasing frequency order
+      if(baseline_header.sideband == 0){
+        for(int j = 0, N = data_freq.size() - 1 ; j <= N / 2; j++){
+          std::complex<float> temp = data_freq[j];
+          data_freq[j] = data_freq[N-j];
+          data_freq[N-j] = temp;
+        }
+      }
       fftwf_execute(fftwf_plan_);
 
       { // Move the fringe to the center of the plot
@@ -301,7 +315,7 @@ Fringe_info_container::process_new_bit_statistics(){
 
 void
 Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &stations, std::string &mode,
-                               std::vector< std::vector<int> > &bbcs)
+                               std::vector< std::vector<int> > &bbcs, std::vector<double> &bandwith)
 {
   Vex::Node root_node = vex.get_root_node();
   for(int station=0; station < stations.size(); station++){
@@ -312,7 +326,9 @@ Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &station
       for(Vex::Node::iterator freq_it = root_node["FREQ"][freq]->begin("chan_def");
           freq_it != root_node["FREQ"][freq]->end("chan_def"); freq_it++){
         std::string bbc_name=(*freq_it)[5]->to_string();
-
+        if(station == 0){
+           bandwith.push_back((*freq_it)[3]->to_double_amount("MHz"));
+        } 
         // Find the physical BBC number
         for(Vex::Node::iterator bbc_it = root_node["BBC"][bbc]->begin("BBC_assign");
             bbc_it != root_node["BBC"][bbc]->end("BBC_assign"); bbc_it++){
@@ -374,9 +390,9 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
   std::vector<std::string> stations;
 
   // Array with frequencies for a channel nr
-  std::vector<double>      frequencies;
-  std::vector< std::vector<int> >      bbcs;
-
+  std::vector<double>              frequencies;
+  std::vector<double>              bandwidths;
+  std::vector< std::vector<int> >  bbcs;
 
   const Vex::Node root_node = vex.get_root_node();
 
@@ -419,7 +435,7 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
   Date start_time(global_header.start_year, global_header.start_day, (int) sec);
   std::string mode = vex.get_mode(vex.get_scan_name(start_time));
   vex.get_frequencies(mode,frequencies);
-  get_bbc(vex, stations, mode, bbcs);
+  get_bbc(vex, stations, mode, bbcs, bandwidths);
 
   index_html << " Integration time: "
              << integration_time << "s"
@@ -519,7 +535,10 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
         size_t column = 0;
         int freq_index=0;
         for (iterator it = plots.begin(); it != plots.end(); it++) {
-          if (!((it->header.frequency_nr == curr_freq) &&
+            double bandwidth = bandwidths[it->header.frequency_nr];
+            double frequency = frequencies[it->header.frequency_nr] / 1000000 - 
+                               (1 - curr_sideband) * bandwidth;
+            if (!((it->header.frequency_nr == curr_freq) &&
                 (it->header.sideband == curr_sideband) &&
                 (it->header.polarisation1 == curr_pol1) &&
                 (it->header.polarisation2 == curr_pol2))) {
@@ -538,13 +557,13 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
           // Print one plot
           if (it->header.station_nr1 == it->header.station_nr2) {
             int bbc = bbcs[(int)it->header.station_nr1][freq_index];
-            print_auto(index_html, *it, bbc);
+            print_auto(index_html, *it, bbc, frequency, bandwidth);
           } else {
             if (column < autos.size()) {
               index_html << "<td colspan='" << autos.size()-column << "'>Cross hands</td>";
               column=autos.size();
             }
-            print_cross(index_html, *it);
+            print_cross(index_html, *it, frequency, bandwidth);
           }
           column ++;
           index_html << "\n  ";
@@ -779,7 +798,8 @@ generate_filename(char *filename,
 
 void
 Fringe_info_container::
-print_auto(std::ostream &index_html, const Fringe_info &fringe_info, int bbc) {
+print_auto(std::ostream &index_html, const Fringe_info &fringe_info, int bbc, 
+           double frequency, double bandwidth) {
   assert(fringe_info.initialised);
 
   index_html << "<td>";
@@ -787,40 +807,41 @@ print_auto(std::ostream &index_html, const Fringe_info &fringe_info, int bbc) {
   char filename[80], filename_large[80], title[80];
   generate_filename(filename, filename_large, title, 80, fringe_info,
                     Fringe_info::FREQUENCY, Fringe_info::ABS);
-  fringe_info.plot(filename, filename_large, title,
-                   Fringe_info::FREQUENCY, Fringe_info::ABS);
+  fringe_info.plot(filename, filename_large, title, Fringe_info::FREQUENCY, 
+                   Fringe_info::ABS, frequency, bandwidth);
   index_html << "<A href = '" << filename_large << "' "
   << "OnMouseOver=\"show('" << filename << "');\">"
   << bbc << "</a>";
 
   index_html << "</td>";
 }
+
 void
 Fringe_info_container::
-print_cross(std::ostream &index_html,
-            const Fringe_info &fringe_info) {
+print_cross(std::ostream &index_html, const Fringe_info &fringe_info, 
+            double frequency, double bandwidth) {
 
   if (fringe_info.initialised) {
     char filename_abs[80], filename_large_abs[80], title[80];
     generate_filename(filename_abs, filename_large_abs,
                       title, 80, fringe_info,
                       Fringe_info::FREQUENCY, Fringe_info::ABS);
-    fringe_info.plot(filename_abs, filename_large_abs, title,
-                     Fringe_info::FREQUENCY, Fringe_info::ABS);
+    fringe_info.plot(filename_abs, filename_large_abs, title, Fringe_info::FREQUENCY, 
+                     Fringe_info::ABS, frequency, bandwidth);
 
     char filename_phase[80], filename_large_phase[80];
     generate_filename(filename_phase, filename_large_phase,
                       title, 80, fringe_info,
                       Fringe_info::FREQUENCY, Fringe_info::PHASE);
-    fringe_info.plot(filename_phase, filename_large_phase, title,
-                     Fringe_info::FREQUENCY, Fringe_info::PHASE);
+    fringe_info.plot(filename_phase, filename_large_phase, title, Fringe_info::FREQUENCY, 
+                     Fringe_info::PHASE, frequency, bandwidth);
 
     char filename[80], filename_large[80];
     generate_filename(filename, filename_large,
                       title, 80, fringe_info,
                       Fringe_info::LAG, Fringe_info::ABS);
-    fringe_info.plot(filename, filename_large, title,
-                     Fringe_info::LAG, Fringe_info::ABS);
+    fringe_info.plot(filename, filename_large, title, Fringe_info::LAG, 
+                     Fringe_info::ABS, frequency, bandwidth);
 
     double snr = fringe_info.signal_to_noise_ratio();
     int color_val =
@@ -867,7 +888,8 @@ print_diff(std::ostream &index_html,
            Fringe_info fringe_info1,
            const Fringe_info &fringe_info2,
            bool relative_error,
-           Fringe_info::SPACE space) {
+           Fringe_info::SPACE space,
+           double frequency, double bandwidth) {
 
   assert(fringe_info1.initialised);
   assert(fringe_info2.initialised);
@@ -907,7 +929,8 @@ print_diff(std::ostream &index_html,
   char filename[80], filename_large[80], title[80];
   generate_filename(filename, filename_large, title, 80, fringe_info1,
                     space, Fringe_info::ABS);
-  fringe_info1.plot(filename, filename_large, title, space, Fringe_info::ABS);
+  fringe_info1.plot(filename, filename_large, title, space, Fringe_info::ABS,
+                    frequency, bandwidth);
   index_html << "<A href = '" << filename_large << "' "
   << "OnMouseOver=\"show('" << filename << "');\">"
   << max_diff << "</a>";
@@ -962,7 +985,9 @@ print_diff_html(const Vex &vex,
   std::vector<std::string> stations;
 
   // Array with frequencies for a channel nr
-  std::vector<double>      frequencies;
+  std::vector<double>              frequencies;
+  std::vector<double>              bandwidths;
+  std::vector< std::vector<int> >  bbcs;
 
   const Vex::Node root_node = vex.get_root_node();
   for (Vex::Node::const_iterator it = root_node["STATION"]->begin();
@@ -970,6 +995,7 @@ print_diff_html(const Vex &vex,
     stations.push_back(it.key());
   }
   vex.get_frequencies(mode, frequencies);
+  get_bbc(vex, stations, mode, bbcs, bandwidths);
 
   std::ofstream index_html("index2.html");
   assert(index_html.is_open());
@@ -993,8 +1019,6 @@ print_diff_html(const Vex &vex,
   { // Print the table
     index_html << "<table border=1 bgcolor='#dddddd' cellspacing=0>"
     << std::endl;
-
-
 
     // Print header
     std::vector<int>                  autos;
@@ -1088,6 +1112,8 @@ print_diff_html(const Vex &vex,
         iterator it2 = other_info.plots.begin();
 
         for (iterator it = plots.begin(); it != plots.end(); it++, it2++) {
+          double frequency = frequencies[it->header.frequency_nr];
+          double bandwidth = bandwidths[it->header.frequency_nr];
           assert(it->header == it2->header);
 
           if (!((it->header.frequency_nr == curr_freq) &&
@@ -1108,15 +1134,15 @@ print_diff_html(const Vex &vex,
 
           // Print one plot
           if (it->header.station_nr1 == it->header.station_nr2) {
-            print_diff(index_html, *it, *it2,
-                       relative_error, Fringe_info::FREQUENCY);
+            print_diff(index_html, *it, *it2, relative_error, 
+                       Fringe_info::FREQUENCY, frequency, bandwidth);
           } else {
             while (column < autos.size()) {
               index_html << "<td></td>";
               column ++;
             }
-            print_diff(index_html, *it, *it2,
-                       relative_error, Fringe_info::LAG);
+            print_diff(index_html, *it, *it2, relative_error, 
+                       Fringe_info::LAG, frequency, bandwidth);
           }
           column ++;
           index_html << "\n  ";

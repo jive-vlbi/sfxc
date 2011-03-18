@@ -29,7 +29,7 @@ public:
               const std::vector< std::complex<float> > &data_lag_);
 
   void plot(char *filename, char *filename_large,
-            char *title, SPACE space, VALUE value) const;
+            char *title, SPACE space, VALUE value, double frequency, double bandwith) const;
 
   float signal_to_noise_ratio() const;
 
@@ -79,7 +79,7 @@ private:
 
   bool get_channels(const Vex &vex, const std::string &mode, std::vector<Channel> &channels);
   void get_bbc(const Vex &vex, std::vector<std::string> &stations, std::string &mode,
-               std::vector< std::vector<int> > &bbcs);
+               std::vector< std::vector<int> > &bbcs, std::vector<double> &bandwiths);
 
   void set_plot(const Fringe_info &fringe_info);
   void process_new_bit_statistics();
@@ -92,17 +92,18 @@ private:
                          const Fringe_info::SPACE space,
                          const Fringe_info::VALUE value);
 
-  void print_auto(std::ostream &index_html,
-                  const Fringe_info &fringe_info, int bbc);
+  void print_auto(std::ostream &index_html, const Fringe_info &fringe_info, int bbc, 
+                  double frequency, double bandwidth);
 
-  void print_cross(std::ostream &index_html,
-                   const Fringe_info &fringe_info);
+  void print_cross(std::ostream &index_html, const Fringe_info &fringe_info, 
+                   double frequency, double bandwidth);
 
   void print_diff(std::ostream &index_html,
                   Fringe_info fringe_info1,
                   const Fringe_info &fringe_info2,
                   bool relative_error,
-                  Fringe_info::SPACE space);
+                  Fringe_info::SPACE space, 
+                  double frequency, double bandwidth);
 
   // Begin and end one row of the html table
   void begin_data_row(std::ostream &index_html,
