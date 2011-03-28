@@ -835,7 +835,6 @@ get_mode(const Time &start_time) const {
     sfxc_abort(error_msg.c_str());
     return std::string();
   }
-  std::cout << "Get mode at t= " << start_time << ", finds mode " << vex.get_mode(scan_name) << "\n";
   return vex.get_mode(scan_name);
 }
 

@@ -9,6 +9,11 @@
 
 #ifndef SFXC_MPI_H
 #define SFXC_MPI_H
+// disable mpi warnings:
+#pragma GCC system_header
+#include <mpi.h>
+
+#include "types.h"
 
 // Check if the application is multi-threaded
 #ifdef MT_SFXC_ENABLE
@@ -26,8 +31,6 @@ extern Mutex g_mpi_thebig_mutex;
 #else
 #define IF_MT_MPI_ENABLED(x)
 #endif // MT_SFXC_ENABLE
-
-#include "types.h"
 
 #define RANK_MANAGER_NODE 0
 #define RANK_LOG_NODE     1
@@ -469,21 +472,5 @@ inline const char * const print_MPI_TAG(int tag) {
 inline const char * const print_MPI_TAG(MPI_TAG &tag) {
   return do_print_MPI_TAG(tag);
 }
-
-
-//undef have to be before include <mpi.h>
-//#ifdef SEEK_SET
-//#undef SEEK_SET
-//#endif
-//#ifdef SEEK_END
-//#undef SEEK_END
-//#endif
-//#ifdef SEEK_CUR
-//#undef SEEK_CUR
-//#endif
-
-// disable mpi warnings:
-#pragma GCC system_header
-#include <mpi.h>
 
 #endif /*SFXC_MPI_H*/

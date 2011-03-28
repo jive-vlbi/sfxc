@@ -184,12 +184,7 @@ Fringe_info_container(FILE *input, bool stop_at_eof) : input(input) {
 
   data_freq.resize(global_header.number_channels+1);
   data_lag.resize(global_header.number_channels+1);
-  fftwf_plan_ =
-    fftwf_plan_dft_1d(global_header.number_channels+1,
-                      reinterpret_cast<fftwf_complex*>(&data_freq[0]),
-                      reinterpret_cast<fftwf_complex*>(&data_lag[0]),
-                      FFTW_BACKWARD,
-                      FFTW_ESTIMATE);
+  fft.resize(global_header.number_channels+1); // FIXME : THIS SHOULD BE 2*NCHAN
 
   // Read the first timeslice header:
   read_data_from_file(sizeof(Output_header_timeslice),
@@ -265,7 +260,7 @@ Fringe_info_container::read_plots(bool stop_at_eof) {
           data_freq[N-j] = temp;
         }
       }
-      fftwf_execute(fftwf_plan_);
+      fft.ifft(&data_freq[0], &data_lag[0]);
 
       { // Move the fringe to the center of the plot
         std::vector< std::complex<float> > tmp = data_lag;

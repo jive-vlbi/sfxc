@@ -19,9 +19,11 @@
 #include "delay_table_akima.h"
 #include "correlator_node_types.h"
 #include "control_parameters.h"
-
-#include "timer.h"
-
+#ifdef USE_DOUBLE
+#include "sfxc_fft.h"
+#else
+#include "sfxc_fft_float.h"
+#endif
 class Delay_correction_default : public Delay_correction_base {
 public:
   Delay_correction_default(int stream_nr);
@@ -40,9 +42,8 @@ private:
 
 private:
   Time fft_length;
-  FFTW_PLAN       plan_t2f, plan_f2t, plan_t2f_cor;
-  Memory_pool_vector_element<FLOAT >                 plan_input_buffer;
-  Memory_pool_vector_element< std::complex<FLOAT> >  plan_output_buffer;
+  SFXC_FFT        fft_t2f, fft_f2t, fft_t2f_cor;
+  Memory_pool_vector_element< std::complex<FLOAT> >  exp_array;
 };
 
 #endif /*DELAY_CORRECTION_DEFAULT_H*/

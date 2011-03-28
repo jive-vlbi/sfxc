@@ -1,6 +1,7 @@
 #ifndef CORRELATION_CORE_H_
 #define CORRELATION_CORE_H_
 
+#include "sfxc_math.h"
 #include "tasklet/tasklet.h"
 #include "delay_correction_base.h"
 #include "control_parameters.h"
@@ -57,12 +58,6 @@ protected:
   void integration_normalize(std::vector<Complex_buffer> &integration_buffer);
   void integration_write(std::vector<Complex_buffer> &integration_buffer);
 
-  void auto_correlate_baseline(std::complex<FLOAT> in[],
-                               std::complex<FLOAT> out[]);
-
-  void correlate_baseline(std::complex<FLOAT> in1[],
-                          std::complex<FLOAT> in2[],
-                          std::complex<FLOAT> out[]);
   void find_invalid();
 
   size_t number_channels();
@@ -75,7 +70,9 @@ protected:
   std::vector<Input_buffer_ptr>  input_buffers;
   std::vector< std::complex<FLOAT> * >    input_elements;
   std::vector< std::vector<Invalid> * >   invalid_elements;
-  std::vector<bit_statistics_ptr> statistics;
+  // the complex conjugate of input_elements
+  std::vector< Complex_buffer >           input_conj_buffers; 
+  std::vector<bit_statistics_ptr>         statistics;
   // Tracks the number of correlator points where one (but not both) stations on a baseline had invalid data
   std::vector< std::pair<int64_t,int64_t> > n_flagged;
 

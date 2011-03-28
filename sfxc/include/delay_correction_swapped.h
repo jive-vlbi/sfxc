@@ -11,14 +11,17 @@
 #ifndef DELAY_CORRECTION_SWAPPED_H
 #define DELAY_CORRECTION_SWAPPED_H
 #include <boost/shared_ptr.hpp>
-#include <complex>
-#include <fftw3.h>
 
 #include "delay_correction_base.h"
 #include "tasklet/tasklet.h"
 #include "delay_table_akima.h"
 #include "correlator_node_types.h"
 #include "control_parameters.h"
+#ifdef USE_DOUBLE
+#include "sfxc_fft.h"
+#else
+#include "sfxc_fft_float.h"
+#endif
 
 #include "timer.h"
 
@@ -40,8 +43,8 @@ private:
 
 private:
   Time fft_length;
-  FFTW_PLAN       plan_t2f;
-
+  SFXC_FFT       fft_t2f;
+  Memory_pool_vector_element< std::complex<FLOAT> > exp_array;
 };
 
 #endif /*DELAY_CORRECTION_SWAPPED_H*/

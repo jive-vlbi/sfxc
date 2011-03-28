@@ -82,6 +82,11 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   if (input_elements.size() != number_input_streams_in_use()) {
     input_elements.resize(number_input_streams_in_use());
   }
+  if (input_conj_buffers.size() != number_input_streams_in_use()) {
+    input_conj_buffers.resize(number_input_streams_in_use());
+    for(int i=0;i<number_input_streams_in_use();i++)
+      input_conj_buffers[i].resize(fft_size() + 1);
+  }
   n_flagged.resize(baselines.size());
 
 #ifdef SFXC_WRITE_STATS
@@ -194,20 +199,23 @@ void Correlation_core::integration_step(std::vector<Complex_buffer> &integration
 #ifndef DUMMY_CORRELATION
   // do the correlation
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
-    // Auto correlations
+    // get the complex conjugates of the input
+    SFXC_CONJ_FC(&input_elements[i][buf_idx], &(input_conj_buffers[i])[0], fft_size() + 1);
+    // Auto correlation
     std::pair<size_t,size_t> &stations = baselines[i];
     SFXC_ASSERT(stations.first == stations.second);
-    auto_correlate_baseline(/* in1 */ &input_elements[stations.first][buf_idx],
-                            /* out */ &integration_buffer[i][0]);
+    SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
+                        /* in2 */ &input_conj_buffers[stations.first][0],
+                        /* out */ &integration_buffer[i][0], fft_size() + 1);
   }
 
   for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
     // Cross correlations
     std::pair<size_t,size_t> &stations = baselines[i];
     SFXC_ASSERT(stations.first != stations.second);
-    correlate_baseline(/* in1 */  &input_elements[stations.first][buf_idx],
-                       /* in2 */  &input_elements[stations.second][buf_idx],
-                       /* out */ &integration_buffer[i][0]);
+    SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
+                        /* in2 */ &input_conj_buffers[stations.second][0],
+                        /* out */ &integration_buffer[i][0], fft_size() + 1);
   }
 
 #ifdef SFXC_WRITE_STATS
@@ -230,23 +238,19 @@ void Correlation_core::integration_step(std::vector<Complex_buffer> &integration
     int baseline = number_input_streams_in_use();
     std::pair<size_t,size_t> &stations = baselines[baseline];
 
-    correlate_baseline
+    SFXC_ADD_PRODUCT_FC
       (/* in1 */ &input_elements[stations.first][buf_idx],
        /* in2 */ &input_elements[stations.second][buf_idx],
-       /* out */ &backward_buffer[0]);
+       /* out */ &backward_buffer[0], fft_size() + 1);
       
     // Hardcode the position of the fringe here
     const int fringe_pos = 12;
 
-    FFTW_EXECUTE_DFT(backward_plan_,
-                     (FFTW_COMPLEX *)&backward_buffer[0],
-                     (FFTW_COMPLEX *)&backward_buffer[0]);
+    backward_fft.ifft(&backward_buffer[0], &backward_buffer[0]);
     FLOAT fft_abs   = std::abs(backward_buffer[fringe_pos]);
     FLOAT fft_phase = std::arg(backward_buffer[fringe_pos]);
       
-    FFTW_EXECUTE_DFT(backward_plan_,
-                     (FFTW_COMPLEX *)&integration_buffer[baseline][0],
-                     (FFTW_COMPLEX *)&backward_buffer[0]);
+    backward_fft.ifft(&integration_buffer[baseline][0], &backward_buffer[0]);
     FLOAT integr_abs   = std::abs(backward_buffer[fringe_pos]);
     FLOAT integr_phase = std::arg(backward_buffer[fringe_pos]);
     int max_pos = 0;
@@ -415,9 +419,9 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     const int64_t total_samples = number_ffts_in_integration * fft_size();
     int32_t *levels = statistics[stations.first]->get_statistics(); // We get the number of invalid samples from the bitstatistics
     if (stations.first == stations.second){
-      hbaseline.weight = std::max(total_samples - levels[4], 0LL);       // The number of good samples
+      hbaseline.weight = std::max(total_samples - levels[4], (int64_t) 0);       // The number of good samples
     }else{
-      hbaseline.weight = std::max(total_samples - levels[4] - n_flagged[i].first, 0LL);       // The number of good samples
+      hbaseline.weight = std::max(total_samples - levels[4] - n_flagged[i].first, (int64_t)0);       // The number of good samples
     }
     // Station number in the vex-file
     SFXC_ASSERT(stations.first < n_stations);
@@ -454,24 +458,6 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     writer->put_bytes((number_channels() + 1) * sizeof(std::complex<float>),
                       ((char*)&integration_buffer_float[0]));
   }
-}
-
-void
-Correlation_core::
-auto_correlate_baseline(std::complex<FLOAT> in[],
-                        std::complex<FLOAT> out[]) {
-  for (int i = 0; i < fft_size() + 1; i++)
-    out[i] += (in[i].real()*in[i].real() +
-               in[i].imag()*in[i].imag());
-}
-
-void
-Correlation_core::
-correlate_baseline(std::complex<FLOAT> in1[],
-                   std::complex<FLOAT> in2[],
-                   std::complex<FLOAT> out[]) {
-  for (int i = 0; i < fft_size() + 1; i++)
-    out[i] += in1[i]*std::conj(in2[i]);
 }
 
 void Correlation_core::add_uvw_table(int sn, Uvw_model &table) {

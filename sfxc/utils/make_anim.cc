@@ -3,8 +3,8 @@
 #include <fstream>
 #include <sstream>
 #include <json/json.h>
-#include <fftw3.h>
-
+#include "sfxc_fft_float.h"
+#include "utils.h"
 #include "output_header.h"
 #include "gnuplot_i.h"
 
@@ -56,13 +56,8 @@ void read_data() {
 
   int number_channels = global_header.number_channels+1;
   std::complex<float> tmp_baseline[number_channels];
-  fftwf_plan fftwf_plan_ =
-    fftwf_plan_dft_1d(number_channels,
-                      reinterpret_cast<fftwf_complex*>(&tmp_baseline[0]),
-                      reinterpret_cast<fftwf_complex*>(&tmp_baseline[0]),
-                      FFTW_BACKWARD,
-                      FFTW_ESTIMATE);
-
+  SFXC_FFT_FLOAT fft;
+  fft.resize(number_channels);
 
   for (int i=0; i<MAX_PLOT-1; i++) {
     get_filename(filename);
@@ -103,7 +98,7 @@ void read_data() {
       }
       if (baseline_header == baseline_header_cmp) {
         // do the fft
-        fftwf_execute(fftwf_plan_);
+        fft.ifft(&tmp_baseline[0], &tmp_baseline[0]);
         // Store the baseline
         get_filename(filename);
         std::ofstream out(filename);

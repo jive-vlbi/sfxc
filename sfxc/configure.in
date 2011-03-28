@@ -41,27 +41,27 @@ dnl Checking for ./configure options
 dnl ---------------------------------------------------------------------------
 dnl debug
 AC_ARG_ENABLE(debug,
-              [  --enable-debug          Enable debugging information [default=no]],
+              [  --enable-debug           Enable debugging information [default=no]],
               USE_DEBUG="$enableval", USE_DEBUG="no")
 
 AC_ARG_ENABLE(optimization,
-              [  --disable-optimization          Disable optimization [default=yes]],
+              [  --disable-optimization   Disable optimization [default=yes]],
               USE_OPTIMIZE="$enableval", USE_OPTIMIZE="yes")
 
 AC_ARG_ENABLE(mpi,
-              [  --enable-mpi          Compile with dependency to MPI [default=yes]],
+              [  --enable-mpi             Compile with dependency to MPI [default=yes]],
               USE_MPI="$enableval", USE_MPI="yes")
 
 AC_ARG_ENABLE(progress,
               [  --enable-progress        Enable progress messages [default=no]],
               PRINT_PROGRESS="$enableval", PRINT_PROGRESS="no")
 
-AC_ARG_ENABLE(fftw3,
-              [  --enable-fftw3          Compile with dependency to FFTW3 [default=yes]],
-              USE_FFTW3="$enableval", USE_FFTW3="yes")
+AC_ARG_ENABLE(ipp,
+              [  --enable-ipp             Use the Intel Performance Primitives [default=no]],
+              USE_IPP="$enableval", USE_IPP="no")
 
 AC_ARG_ENABLE(gsl,
-              [  --enable-gsl          Compile with dependency to GSL [default=yes]],
+              [  --enable-gsl             Compile with dependency to GSL [default=yes]],
               USE_GSL="$enableval", USE_GSL="yes")
 
 AC_ARG_ENABLE(double,
@@ -69,12 +69,17 @@ AC_ARG_ENABLE(double,
               USE_DOUBLE="$enableval", USE_DOUBLE="no")
 
 AC_ARG_ENABLE(gendelay,
-              [  --enable-gendelay     Compile with the generate_delay_model (require Fortan) [default=yes]],
+              [  --enable-gendelay        Compile with the generate_delay_model (require Fortan) [default=yes]],
               WITH_GENDELAY="$enableval", WITH_GENDELAY="yes")
 
 AC_ARG_ENABLE(calc10,
-              [  --enable-calc10     Compile with the cacl10 (require Fortan) [default=yes]],
+              [  --enable-calc10          Compile with the cacl10 (require Fortan) [default=yes]],
               WITH_CALC="$enableval", WITH_CALC="yes")
+
+AC_ARG_WITH(ipp-path, 
+              [  --with-ipp-path=PATH    Location of the ipp libraries [default=$IPPROOT]], 
+              IPP_PATH="$withval", IPP_PATH=$IPPROOT)
+
 
 dnl ---------------------------------------------------------------------------
 dnl Checking external libraries and dependency
@@ -103,26 +108,42 @@ if test $USE_MPI = "yes"; then
   SFXC_CXXFLAGS="$SFXC_CXXFLAGS -DUSE_MPI"
 fi
 
-if test $USE_FFTW3 = "yes"; then
+if test $USE_DOUBLE = "yes" ; then
+  AC_DEFINE([USE_DOUBLE], [1], [Use double precision])
+fi
+
+if test $USE_IPP = "yes"; then
+  AC_DEFINE([USE_IPP], [1], [Use the Intel Performance Primitives])
+  if test "$IPP_PATH" != ""; then
+     FFT_LDADD="-L$IPP_PATH/sharedlib"
+     FFT_CPPFLAGS="-I$IPP_PATH/include"
+     LDFLAGS="$LDFLAGS -L$IPP_PATH/sharedlib"
+     CPPFLAGS="$CPPFLAGS -I$IPP_PATH/include"
+  fi
+  AC_CHECK_LIB(ippsem64t, ippsGetLibVersion, [], [
+        echo "Could not find Intel IPP library."
+        exit -1
+        ])
+  FFT_LDADD="$FFT_LDADD -lippsem64t -lippvmem64t"
+  FFT_LDADD_FLOAT="$FFT_LDADD"
+else
   AC_CHECK_LIB(fftw3f, fftwf_execute, [], [
         echo "Couldn't find fftw3f library."
         exit -1
         ])
+  FFT_LDADD_FLOAT="-lfftw3f"
   if test $USE_DOUBLE = "yes"; then
     AC_CHECK_LIB(fftw3, fftw_execute, [], [
         echo "Couldn't find fftw3 library (double precision). "
         exit -1
         ])
-    FFTW_LDADD=" -lfftw3"
-    AC_DEFINE([USE_DOUBLE], [1], [Use double precision])
+    FFT_LDADD=" -lfftw3"
   else
-    FFTW_LDADD="-lfftw3f"
+    FFT_LDADD="-lfftw3f"
   fi
-  FFTW_UTILS_LDADD="-lfftw3f"
-  FFTW_CXXFLAGS=
 fi
-SFXC_CXXFLAGS="$SFXC_CXXFLAGS $FFTW_CXXFLAGS"
-SFXC_LDADD="$SFXC_LDADD $FFTW_LDADD"
+SFXC_CPPFLAGS="$SFXC_CPPGLAGS $FFT_CPPFLAGS"
+SFXC_LDADD="$SFXC_LDADD $FFT_LDADD"
 
 dnl ---------------------------------------------------------------------------
 dnl setting shipped libraries
@@ -148,8 +169,6 @@ dnl                exit -1
 dnl               ])
 dnl fi
 
-
-
 dnl setting gsl
 dnl first check gslcblas
 if test $USE_GSL = "yes"; then
@@ -170,17 +189,12 @@ fi
 WITH_SFXC="no"
 WITH_SFXC_UTILS="no"
 if test $USE_GSL = "yes"; then
-  if test $USE_FFTW3 = "yes"; then
-      WITH_SFXC_UTILS="yes"
-      if test $USE_MPI = "yes"; then
-        WITH_SFXC="yes"
-      fi
+  WITH_SFXC_UTILS="yes"
+  if test $USE_MPI = "yes"; then
+    WITH_SFXC="yes"
   fi
 fi
 
-if test $USE_FFTW3 = "no"; then
-      WITH_GENDELAY="no"
-fi
 if test $USE_GSL = "no"; then
       WITH_GENDELAY="no"
 fi
@@ -201,8 +215,9 @@ SFXC_LDADD="$SFXC_LDADD $VEX_PARSER_LDADD $OPTIMIZE_LDADD"
 BASE_CXXFLAGS='-I${top_srcdir}/include '
 BASE_LDADD=' '
 
-UTILS_CXXFLAGS="$UTILS_CXXFLAGS $BASE_CXXFLAGS $VEX_PARSER_CXXFLAGS $JSONCPP_CXXFLAGS $DAMIEN_CXXFLAGS $FFTW_CXXFLAGS $GSL_CXXFLAGS $OPTIMIZE_CXXFLAGS"
-UTILS_LDADD="$BASE_LDADD $VEX_PARSER_LDADD $JSONCPP_LDADD $DAMIEN_LDADD $FFTW_UTILS_LDADD $GSL_LDADD $OPTIMIZE_LDADD"
+UTILS_CPPFLAGS="$UTILS_CPPFLAGS $FFT_CPPFLAGS"
+UTILS_CXXFLAGS="$UTILS_CXXFLAGS $BASE_CXXFLAGS $VEX_PARSER_CXXFLAGS $JSONCPP_CXXFLAGS $DAMIEN_CXXFLAGS $GSL_CXXFLAGS $OPTIMIZE_CXXFLAGS"
+UTILS_LDADD="$BASE_LDADD $VEX_PARSER_LDADD $JSONCPP_LDADD $DAMIEN_LDADD $FFT_LDADD_FLOAT $GSL_LDADD $OPTIMIZE_LDADD"
 
 dnl resetting generic flags
 CXXFLAGS=$CXXFLAGS_IN
@@ -211,14 +226,20 @@ LDFLAGS=$LDFLAGS_IN
 LIBS=$LIBS_IN
 
 dnl export these variable (so Makefile substitutions
-dnl can be made.
-AC_SUBST(FFTW_CXXFLAGS)
-AC_SUBST(FFTW_LDADD)
+dnl can be made).
+dnl AC_SUBST(FFT_CPPFLAGS)
+dnl AC_SUBST(FFT_LDADD)
+dnl AC_SUBST(FFT_LDADD_FLOAT)
+dnl AC_SUBST(SFXCFFT_CPPFLAGS)
+dnl AC_SUBST(SFXCFFT_LDADD)
+dnl AC_SUBST(SFXCFFT_CPPFLAGS_FLOAT)
+dnl AC_SUBST(SFXCFFT_LDADD_FLOAT)
 AC_SUBST(DAMIEN_CXXFLAGS)
 AC_SUBST(DAMIEN_LDADD)
 AC_SUBST(JSONCPP_CXXFLAGS)
 AC_SUBST(JSONCPP_LDADD)
 
+AC_SUBST(UTILS_CPPFLAGS)
 AC_SUBST(UTILS_CXXFLAGS)
 AC_SUBST(UTILS_LDADD)
 AC_SUBST(BASE_CXXFLAGS)
@@ -229,12 +250,14 @@ AC_SUBST(HAS_GSL)
 
 AC_SUBST(CFLAGS)
 AC_SUBST(CXXFLAGS)
+AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 AC_SUBST(LDADD)
 
 AC_SUBST(SFXC_CFLAGS)
-AC_SUBST(SFXC_CXXFLAGS)
 AC_SUBST(SFXC_LDFLAGS)
+AC_SUBST(SFXC_CPPFLAGS)
+AC_SUBST(SFXC_CXXFLAGS)
 AC_SUBST(SFXC_LDADD)
 
 AC_SUBST(WITH_CALC)
@@ -248,6 +271,7 @@ dnl echo "SFXC_LDFLAGS: $SFXC_LDFLAGS"
 dnl echo "SFXC_LDADD: $SFXC_LDADD"
 
 
+AM_CONDITIONAL(DOUBLE_PRECISION, [test "$USE_DOUBLE" = "yes"])
 AM_CONDITIONAL(GENDELAY, [test "$WITH_GENDELAY" = "yes"])
 AM_CONDITIONAL(CALCTEN, [test "$WITH_CALC" = "yes"])
 AM_CONDITIONAL(SFXC_UTILS, [test "$WITH_SFXC_UTILS" = "yes"])

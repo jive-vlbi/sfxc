@@ -26,7 +26,7 @@ def time2vex(secs):
 usage = "usage: %prog [options] vexfile"
 parser = optparse.OptionParser(usage=usage)
 parser.add_option("-i", "--integration-time", dest="integr_time",
-                  default=1, type="int", help="Integration time",
+                  default=1, type="float", help="Integration time",
                   metavar="SECONDS")
 parser.add_option("-c", "--channels", dest="number_channels",
                   default=1024, type="int",
@@ -209,7 +209,7 @@ for scan in vex['SCHED']:
         output_file = basename + '_' + scan.lower() + ".cor"
         output_uri = "file://" + os.getcwd() + "/" + output_file
         json_output["output_file"] =  output_uri
-        delay_uri = "file://" + os.getcwd()
+        delay_uri = "file://" + os.getcwd() + "/delays"
         json_output["delay_directory"] = delay_uri
 
         # Boring stuff.

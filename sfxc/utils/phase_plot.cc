@@ -3,8 +3,9 @@
 #include <complex>
 #include <assert.h>
 #include <cstdlib>
-#include <fftw3.h>
-#include <output_header.h>
+#include "sfxc_fft_float.h"
+#include "utils.h"
+#include "output_header.h"
 
 
 //Writes out the phase of the fringe for every timeslice
@@ -36,12 +37,8 @@ int main(int argc, char *argv[]) {
   assert(out_index.is_open());
 
   std::complex<float> input_buffer[N+1], output_buffer[N+1];
-  fftwf_plan p;
-  p = fftwf_plan_dft_1d(N+1,
-                        reinterpret_cast<fftwf_complex*>(&input_buffer[0]),
-                        reinterpret_cast<fftwf_complex*>(&output_buffer[0]),
-                        FFTW_BACKWARD,
-                        FFTW_ESTIMATE);
+  SFXC_FFT_FLOAT fft;
+  fft.resize(N+1);
 
   int current_integration = 0;
 
@@ -73,7 +70,7 @@ int main(int argc, char *argv[]) {
       infile.read((char *)&input_buffer[0], sizeof(input_buffer));
 
       { // Compute the phase
-        fftwf_execute(p);
+        fft.ifft(&input_buffer[0], &output_buffer[0]);
 
         int max_index = 0;
         for (int i=0; i<N+1; i++) {
@@ -89,8 +86,6 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-
-  fftwf_destroy_plan(p);
 
   return 0;
 }

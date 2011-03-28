@@ -59,17 +59,11 @@ void Delay_correction_swapped::fractional_bit_shift(std::complex<FLOAT> output[]
     FLOAT fractional_delay) {
   // 3) execute the complex to complex FFT, from Time to Frequency domain
   //    input: sls. output sls_freq
-  {
-    FFTW_COMPLEX *frequency_buffer_fftw = (FFTW_COMPLEX *)&frequency_buffer[0];
-    FFTW_EXECUTE_DFT(plan_t2f,
-                     (FFTW_COMPLEX *) &frequency_buffer[0],
-                     (FFTW_COMPLEX *) &frequency_buffer[0]);
+  fft_t2f.fft(&frequency_buffer[0], &frequency_buffer[0]); 
 
-    // Element 0 and fft_size() should be real numbers
-    frequency_buffer[0] = frequency_buffer[0].real() / 2;
-    frequency_buffer[fft_size()] = frequency_buffer[fft_size()].real() / 2;
-    total_ffts++;
-  }
+  frequency_buffer[0] /= 2;
+  frequency_buffer[fft_size()] /= 2;
+  total_ffts++;
 
   // 4c) zero the unused subband 
   for (size_t i = fft_size() + 1; i < 2 * fft_size(); i++)
@@ -176,11 +170,7 @@ Delay_correction_swapped::set_parameters(const Correlation_parameters &parameter
 
   if (prev_fft_size != fft_size()) {
     frequency_buffer.resize(2 * fft_size());
-
-    plan_t2f = FFTW_PLAN_DFT_1D(2 * fft_size(),
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
-                                FFTW_BACKWARD, FFTW_MEASURE); //
+    fft_t2f.resize(2 * fft_size());
   }
   SFXC_ASSERT(frequency_buffer.size() == 2 * fft_size());
 

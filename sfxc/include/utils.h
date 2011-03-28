@@ -93,11 +93,6 @@
 extern int RANK_OF_NODE;
 // Rank of the current node
 
-#ifdef USE_MPI
-#include "sfxc_mpi.h"
-#endif //USE_MPI
-
-
 #ifdef SFXC_PRINT_DEBUG
 #define FORMAT_MSG(msg) \
     "#" << RANK_OF_NODE << " " \
@@ -143,28 +138,48 @@ void sfxc_abort(const char *msg="");
   { if (!(c)) abort_sfxc_assertion(__FILE__, __LINE__, msg ); }
 #endif // NDEBUG
 
-#ifdef USE_DOUBLE
-# define FLOAT                   double
-# define FFTW_COMPLEX            fftw_complex
-# define FFTW_PLAN               fftw_plan
-# define FFTW_PLAN_DFT_1D        fftw_plan_dft_1d
-# define FFTW_PLAN_DFT_R2C_1D    fftw_plan_dft_r2c_1d
-# define FFTW_EXECUTE            fftw_execute
-# define FFTW_EXECUTE_DFT        fftw_execute_dft
-# define FFTW_EXECUTE_DFT_R2C    fftw_execute_dft_r2c
-# define FFTW_DESTROY_PLAN       fftw_destroy_plan
-#else // !USE_DOUBLE
-# define FLOAT                   float
-# define FFTW_COMPLEX            fftwf_complex
-# define FFTW_PLAN               fftwf_plan
-# define FFTW_PLAN_DFT_1D        fftwf_plan_dft_1d
-# define FFTW_PLAN_DFT_R2C_1D    fftwf_plan_dft_r2c_1d
-# define FFTW_EXECUTE            fftwf_execute
-# define FFTW_EXECUTE_DFT        fftwf_execute_dft
-# define FFTW_EXECUTE_DFT_R2C    fftwf_execute_dft_r2c
-# define FFTW_DESTROY_PLAN       fftwf_destroy_plan
-#endif // USE_FLOAT
-
+#ifdef USE_IPP
+  #ifdef USE_DOUBLE
+    #define FLOAT                   double
+    #define SFXC_ZERO_F             sfxc_zero
+    #define SFXC_ZERO_FC            sfxc_zero_c
+    #define SFXC_FFT                sfxc_fft_ipp
+    #define SFXC_MUL_FC_I           sfxc_mul_c_I
+    #define SFXC_CONJ_FC            sfxc_conj_c
+    #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_c 
+  #else // !USE_DOUBLE
+    #define FLOAT                   float
+    #define SFXC_ZERO_F             sfxc_zero_f
+    #define SFXC_ZERO_FC            sfxc_zero_fc
+    #define SFXC_FFT                sfxc_fft_ipp_float
+    #define SFXC_MUL_FC_I           sfxc_mul_fc_I
+    #define SFXC_CONJ_FC            sfxc_conj_fc
+    #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_fc 
+  #endif
+  #define SFXC_FFT_FLOAT          sfxc_fft_ipp_float
+#else
+  #include <fftw3.h>
+  #ifdef USE_DOUBLE
+    #define FLOAT                   double
+    #define FFTW_COMPLEX            fftw_complex
+    #define SFXC_ZERO_F             sfxc_zero
+    #define SFXC_ZERO_FC            sfxc_zero_c
+    #define SFXC_FFT                sfxc_fft_fftw
+    #define SFXC_MUL_FC_I           sfxc_mul_c_I
+    #define SFXC_CONJ_FC            sfxc_conj_c
+    #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_c 
+  #else // !USE_DOUBLE
+    #define FLOAT                   float
+    #define FFTW_COMPLEX            fftwf_complex
+    #define SFXC_ZERO_F             sfxc_zero_f
+    #define SFXC_ZERO_FC            sfxc_zero_fc
+    #define SFXC_FFT                sfxc_fft_fftw_float
+    #define SFXC_MUL_FC_I           sfxc_mul_fc_I
+    #define SFXC_CONJ_FC            sfxc_conj_fc
+    #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_fc 
+  #endif
+  #define SFXC_FFT_FLOAT          sfxc_fft_fftw_float
+#endif
 
 #ifdef PRINT_PROGRESS
 inline void getusec(unsigned long long &utime) {

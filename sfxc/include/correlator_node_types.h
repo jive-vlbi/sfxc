@@ -4,6 +4,7 @@
 #include <memory_pool.h>
 #include <threadsafe_queue.h>
 #include <vector>
+#include "sfxc_math.h"
 #include "memory_pool_elements.h"
 #include "correlator_time.h"
 

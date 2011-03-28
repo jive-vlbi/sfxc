@@ -44,7 +44,8 @@
 
 int main(int argc, char *argv[]) {
   //initialisation
-  int stat = MPI_Init(&argc,&argv);
+  int provided;
+  int stat = MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
   if (stat != MPI_SUCCESS) {
     std::cerr << "Error starting MPI program. Terminating.\n";
     MPI_Abort(MPI_COMM_WORLD, stat);
@@ -56,6 +57,10 @@ int main(int argc, char *argv[]) {
   MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE);
+
+  if(provided != MPI_THREAD_MULTIPLE){
+    std::cout << RANK_OF_NODE << " : MPI_THREAD_MULTIPLE is not available, got level=" << provided << " instead\n";
+  }
 
   DEBUG_MSG_RANK(0, "svn_version: " << SVN_VERSION);
 

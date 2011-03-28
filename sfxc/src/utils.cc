@@ -5,11 +5,6 @@
  *
  * $Id$
  */
-
-#include "data_reader_file.h"
-#include "utils.h"
-#include "exception_common.h"
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -19,12 +14,19 @@
 #include <ifaddrs.h>
 #include <iostream>
 
+#include "data_reader_file.h"
+#include "exception_common.h"
+#include "utils.h"
 #ifdef USE_MPI
+#ifdef FLOAT
+#undef FLOAT
+#endif
 #include "sfxc_mpi.h"
 int RANK_OF_NODE = -1; // Rank of the current node
 #else
 int RANK_OF_NODE = getpid(); // Rank of the current node
 #endif
+
 
 void abort_sfxc_assertion(const char *file, int line, const char* message) 
 {

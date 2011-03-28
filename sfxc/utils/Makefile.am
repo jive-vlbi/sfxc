@@ -1,4 +1,5 @@
 AM_CXXFLAGS = $(UTILS_CXXFLAGS)
+AM_CPPFLAGS = $(UTILS_CPPLAGS)
 LDADD = $(UTILS_LDADD)
 
 if GENDELAY
@@ -100,6 +101,7 @@ produce_html_plotpage_SOURCES = \
   ../src/utils.cc \
   ../src/output_header.cc \
   ../src/correlator_time.cc\
+  ../src/sfxc_fft_float.cc \
   gnuplot_i.cc
 
 produce_html_diffpage_SOURCES = \
@@ -111,6 +113,7 @@ produce_html_diffpage_SOURCES = \
   ../src/utils.cc \
   ../src/output_header.cc \
   ../src/correlator_time.cc\
+  ../src/sfxc_fft_float.cc \
   gnuplot_i.cc
 
 baseline_info_SOURCES = \
@@ -122,6 +125,7 @@ baseline_info_SOURCES = \
   ../src/utils.cc \
   ../src/output_header.cc \
   ../src/correlator_time.cc\
+  ../src/sfxc_fft_float.cc \
   gnuplot_i.cc
 
 vex2ccf_SOURCES = \
@@ -148,8 +152,12 @@ print_new_output_format_SOURCES = \
 phase_plot_SOURCES = \
   phase_plot.cc \
   ../src/output_header.cc \
-   ../src/utils.cc
+   ../src/utils.cc \
+   ../src/sfxc_fft_float.cc
 
 make_anim_SOURCES = \
   make_anim.cc \
-  gnuplot_i.cc
+  gnuplot_i.cc \
+  ../src/utils.cc \
+  ../src/sfxc_fft_float.cc
+

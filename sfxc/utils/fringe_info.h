@@ -2,7 +2,8 @@
 #include <complex>
 #include <set>
 
-#include <fftw3.h>
+#include "sfxc_fft_float.h"
+#include "utils.h"
 #include <vex/Vex++.h>
 
 #include "gnuplot_i.h"
@@ -147,7 +148,7 @@ private:
   statistics_set statistics;
 
   // Arrays containing one fft
-  fftwf_plan fftwf_plan_;
+  SFXC_FFT_FLOAT fft;
   std::vector< std::complex<float> > data_freq, data_lag;
 
   // To be able to return a dummy reference

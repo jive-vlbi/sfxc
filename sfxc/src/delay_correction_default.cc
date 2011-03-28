@@ -1,4 +1,5 @@
 #include "delay_correction_default.h"
+#include "sfxc_math.h"
 #include "config.h"
 
 Delay_correction_default::Delay_correction_default(int stream_nr)
@@ -42,12 +43,8 @@ void Delay_correction_default::do_task() {
 
     // Do the final fft from time to frequency:
     // zero out the data for padding
-    for (size_t j = fft_size(); j < 2 * fft_size(); j++)
-      time_buffer[j] = 0;
-
-    FFTW_EXECUTE_DFT_R2C(plan_t2f_cor,
-                         (FLOAT *)&time_buffer[0],
-                         (FFTW_COMPLEX *)&cur_output->data[buf * output_stride]);
+    SFXC_ZERO_F(&time_buffer[fft_size()], fft_size());
+    fft_t2f_cor.rfft(&time_buffer[0], &cur_output->data[buf * output_stride]);
 
    current_time.inc_samples(fft_size());
    total_ffts++;
@@ -62,21 +59,15 @@ void Delay_correction_default::fractional_bit_shift(FLOAT *input,
     FLOAT fractional_delay) {
   // 3) execute the complex to complex FFT, from Time to Frequency domain
   //    input: sls. output sls_freq
-  {
-    FFTW_COMPLEX *frequency_buffer_fftw = (FFTW_COMPLEX *)&frequency_buffer[0];
-    FFTW_EXECUTE_DFT_R2C(plan_t2f,
-                         &input[0],
-                         frequency_buffer_fftw);
-    total_ffts++;
-  }
+  fft_t2f.rfft(&input[0], &frequency_buffer[0]);
+  total_ffts++;
 
   // Element 0 and (fft_size() / 2) are real numbers
   frequency_buffer[0] *= 0.5;
   frequency_buffer[fft_size() / 2] *= 0.5; // Nyquist frequency
 
   // 4c) zero the unused subband (?)
-  for (size_t i = (fft_size() / 2) + 1; i < fft_size(); i++)
-    frequency_buffer[i] = 0.0;
+  SFXC_ZERO_FC(&frequency_buffer[(fft_size() / 2) + 1], (fft_size() / 2) - 1);
 
   // 5a)calculate the fract bit shift (=phase corrections in freq domain)
   // the following should be double
@@ -105,15 +96,17 @@ void Delay_correction_default::fractional_bit_shift(FLOAT *input,
 #endif
   for (int i = 0; i < size; i++) {
     // the following should be double
-    frequency_buffer[i] *= std::complex<FLOAT>(cos_phi,-sin_phi);
+    exp_array[i] = std::complex<FLOAT>(cos_phi,-sin_phi);
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     temp=sin_phi-(a*sin_phi-b*cos_phi);
     cos_phi=cos_phi-(a*cos_phi+b*sin_phi);
     sin_phi=temp;
   }
+  SFXC_MUL_FC_I(&exp_array[0], &frequency_buffer[0], size);
+
   // 6a)execute the complex to complex FFT, from Frequency to Time domain
   //    input: sls_freq. output sls
-  FFTW_EXECUTE(plan_f2t);
+  fft_f2t.ifft(&frequency_buffer[0], &frequency_buffer[0]);
 
   total_ffts++;
 }
@@ -183,26 +176,12 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
   SFXC_ASSERT(((int64_t)fft_size() * 1000000000) % sample_rate() == 0);
 
   if (prev_fft_size != fft_size()) {
+    exp_array.resize(fft_size());
     frequency_buffer.resize(fft_size());
 
-    Memory_pool_vector_element<FLOAT> input_buffer;
-    input_buffer.resize(fft_size());
-
-    plan_t2f = FFTW_PLAN_DFT_R2C_1D(fft_size(),
-                                    &input_buffer[0],
-                                    (FFTW_COMPLEX *)&frequency_buffer[0],
-                                    FFTW_MEASURE);
-    plan_f2t = FFTW_PLAN_DFT_1D(fft_size(),
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
-                                (FFTW_COMPLEX *)&frequency_buffer[0],
-                                FFTW_BACKWARD,  FFTW_MEASURE);
-
-    plan_input_buffer.resize(2 * fft_size());
-    plan_output_buffer.resize(fft_size() + 1);
-    plan_t2f_cor = FFTW_PLAN_DFT_R2C_1D(2 * fft_size(),
-                                  (FLOAT *)plan_input_buffer.buffer(),
-                                  (FFTW_COMPLEX *)plan_output_buffer.buffer(),
-                                  FFTW_MEASURE);
+    fft_t2f.resize(fft_size());
+    fft_f2t.resize(fft_size());
+    fft_t2f_cor.resize(2 * fft_size());
   }
   SFXC_ASSERT(frequency_buffer.size() == fft_size());
 

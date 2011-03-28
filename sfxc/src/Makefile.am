@@ -1,4 +1,5 @@
 AM_CXXFLAGS = $(SFXC_CXXFLAGS)
+AM_CPPFLAGS = $(SFXC_CPPFLAGS)
 LDADD = $(SFXC_LDADD)
 
 if SFXC
@@ -6,6 +7,12 @@ bin_PROGRAMS = sfxc
 endif
 
 TESTS = test_sfxc.py
+
+if DOUBLE_PRECISION
+  FFT_SOURCES = sfxc_fft.cc
+else
+  FFT_SOURCES = sfxc_fft_float.cc
+endif
 
 OBJ=\
   abstract_manager_node.cc \
@@ -48,7 +55,7 @@ OBJ=\
   tasklet/tasklet_pool.cc \
   tasklet/tasklet_worker.cc
 
-sfxc_SOURCES = $(OBJ) sfxc.cc \
+sfxc_SOURCES = $(OBJ) $(FFT_SOURCES) sfxc.cc \
   node.cc manager_node.cc log_node.cc \
   correlator_node.cc input_node.cc output_node.cc \
   controller.cc input_node_controller.cc output_node_controller.cc \
@@ -77,4 +84,3 @@ svn_version.cc: update_svn_version
 
 update_svn_version:
 	echo "char *SVN_VERSION=\"`svnversion -n ..`\";" > svn_version.cc
-
