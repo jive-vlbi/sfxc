@@ -108,12 +108,12 @@ void Fringe_info::plot(char *filename, char *filename_large, char *title,
   snprintf(cmd, 80, "set output \"%s\"", filename_large);
   gnuplot_cmd(g, cmd);
   gnuplot_setstyle(g, (char*)"lines");
-  gnuplot_set_xlabel (g, (char*)"[mhz]");
   if (space == FREQUENCY) {
     std::vector<float> freqs;
     freqs.resize(data.size());
     for(int i = 0; i < freqs.size(); i++)
       freqs[i] = frequency + i * bandwidth / freqs.size();
+    gnuplot_set_xlabel (g, (char*)"[mhz]");
     gnuplot_plot_xy(g, &freqs[0], &data[0], data.size(), title) ;
   }else
     gnuplot_plot_x(g, &data[0], data.size(), title) ;
