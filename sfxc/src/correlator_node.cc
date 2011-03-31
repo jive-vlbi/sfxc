@@ -187,6 +187,7 @@ void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
   SFXC_ASSERT(delay_modules[sn] != Delay_correction_ptr());
   //  integer_delay_modules[sn]->set_delay_table(table);
   delay_modules[sn]->set_delay_table(table);
+  correlation_core->add_delay_table(sn, table);
 }
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
@@ -316,6 +317,8 @@ Correlator_node::set_parameters() {
       nBins = pulsar.nbins;
       correlation_core = correlation_core_pulsar;
     }
+  }else{
+    nBins = parameters.n_phase_centers;
   }
 
   correlation_core->set_parameters(parameters, get_correlate_node_number());
@@ -339,8 +342,9 @@ Correlator_node::set_parameters() {
   // when the cross_polarize flag is set then the correlator node receives 2 polarizations
   int size_stats = delay_modules.size()*sizeof(Output_header_bitstatistics);
 
-  int slice_size = nBins * ( sizeof(Output_header_timeslice) + size_uvw + size_stats +
-                   nBaselines * ( size_of_one_baseline + sizeof(Output_header_baseline)));
+  int slice_size;
+  slice_size = nBins * ( sizeof(int32_t) + sizeof(Output_header_timeslice) + size_uvw + size_stats +
+               nBaselines * ( size_of_one_baseline + sizeof(Output_header_baseline)));
   SFXC_ASSERT(nBins >= 1);
   output_node_set_timeslice(parameters.slice_nr,
                             parameters.slice_offset,

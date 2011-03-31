@@ -30,29 +30,37 @@
 #include <fstream>
 #include <string>
 
+#define READ_SCAN_HEADER  0
+#define FIND_TSTART  1
+#define READ_NEW_SCAN 2
+
 //*****************************************************************************
 //function definitions
 //*****************************************************************************
 
 //default constructor, set default values
 Uvw_model::Uvw_model()
-    : begin_scan(0), scan_nr(-1), acc_u(NULL), acc_v(NULL), acc_w(NULL), 
-      splineakima_u(NULL), splineakima_v(NULL), splineakima_w(NULL) {}
+    : scan_nr(0) {}
 
 //destructor
 Uvw_model::~Uvw_model() {}
 
 void Uvw_model::operator=(const Uvw_model &other) {
-  Uvw_model();
-
+  scan_nr = 0;
+  sources = other.sources;
+  scans = other.scans;
   times = other.times;
   u = other.u;
   v = other.v;
   w = other.w;
-  scans = other.scans;
-  initialise_spline_for_next_scan();
+  splineakima_u.resize(0);
+  splineakima_v.resize(0);
+  splineakima_w.resize(0);
+  acc_u.resize(0);
+  acc_v.resize(0);
+  acc_w.resize(0);
+ initialise_spline_for_next_scan();
 }
-
 
 bool Uvw_model::operator==(const Uvw_model &other) const {
   return true;
@@ -67,146 +75,186 @@ int Uvw_model::open(const char *delayTableName) {
 
 int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
   std::ifstream in(delayTableName);
-  double line[5];
-  int32_t hsize;
+  if(!in.is_open())
+    sfxc_abort((std::string("Could not open delay table ")+std::string(delayTableName)).c_str());
+  int32_t header_size;
 
-  in.read(reinterpret_cast < char * > (&hsize), sizeof(int32_t));
-  char station[hsize];
-  in.read(reinterpret_cast < char * > (station), hsize*sizeof(char));
+  // Read the header
+  in.read(reinterpret_cast < char * > (&header_size), sizeof(int32_t));
+  if (in.eof()) return 0;
 
-  // Read up to tstart
-  Time time;
+  char header[header_size];
+  in.read(reinterpret_cast < char * > (header), header_size*sizeof(char));
+  if (in.eof()) return 0;
+
+  double line[5], scan_start, scan_end;
   int32_t current_mjd;
-  double scan_start, scan_end;
-  // The first line of each scan is the mjd of the scan
-  in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
-  while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
-    time.set_time(current_mjd, line[0]);
-    if (line[4] == 0)
-      in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
-    else if (time >= tstart) {
+  char current_source[81];
+  int state = READ_SCAN_HEADER;
+  bool done_reading = false;
+  while((!done_reading) && (in.good())){
+    switch(state){
+    case READ_SCAN_HEADER:{
+      if(in.read(current_source, sizeof(char) * 81)){
+        in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
+        in.read(reinterpret_cast < char * > (line), 5*sizeof(double));
+        Time start_time_scan(current_mjd, line[0]);
+        // strip whitespace from end of source string
+        for(int i = 79; i >=0 ; i--){
+          if(current_source[i] != ' '){
+            current_source[i + 1] = 0;
+            break;
+          }
+        }
+        if(start_time_scan < tstart){
+          state = FIND_TSTART;
+        } else if (start_time_scan >= tstop){
+          done_reading = true;
+        }else {
+          state = READ_NEW_SCAN;
+        }
+      }
+      break;
+    }
+    case FIND_TSTART:{
+      while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
+        SFXC_ASSERT(line[4] <= 0);
+        Time time(current_mjd, line[0]);
+
+        if(line[4] == 0){
+          state = READ_SCAN_HEADER;
+          break;
+        }else if(time >= tstart){
+          state = READ_NEW_SCAN;
+          break;
+        }
+      }
+      break;
+    }
+    case READ_NEW_SCAN:
       scan_start = line[0];
-      times.push_back(0.);
-      u.push_back(line[1]);
-      v.push_back(line[2]);
-      w.push_back(line[3]);
-      scans.resize(1);
-      scans[0].begin = time;
-      break;
-    }
-  }
+      Time start_time_scan(current_mjd, scan_start);
+      // look up the current source in the list of sources and append it to the list if needed
+      int source_index;
+      for(source_index = 0; source_index < sources.size() ; source_index++){
+        if(sources[source_index] == current_source)
+          break;
+      }
+      if(source_index == sources.size())
+        sources.push_back(current_source);
 
-  // Read the rest of the data
-  while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
-    SFXC_ASSERT(line[4] <= 0);
-    time.set_time(current_mjd, line[0]);
-    if (line[4] == 0) {
-      if(times.size() == 1){
-        // Instead of the first point of the desired scan, we got the
-        // last point of the previous scan.  Get rid of it.
-        times.resize(0);
-        u.resize(0);
-        v.resize(0);
-        w.resize(0);
-        scans.resize(0);
-        scan_start = -1;
+      // Create the new scan
+      scans.resize(scans.size() + 1);
+      Scan &scan = scans.back();
+      scan.begin = start_time_scan;
+      scan.source = source_index;
+      scan.model_index = u.size();
+      // Check if we are correlating an additional phase center to the current scan
+      int n_scans = scans.size();
+      if((n_scans > 1) && (scans[n_scans - 2].begin == start_time_scan)){
+        // We found an additional phace center to the current scan
+        scan.times = scans[n_scans - 2].times;
+        times.resize(scan.times);
       }else{
-       Interval &scan = scans.back();
-       scan.end.set_time(current_mjd, scan_end);
-       scan_start = -1;
+        // We are staring a new scan
+        scan.times = times.size();
       }
-      in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
-    } else {
-      if(scan_start < 0){
-        scan_start = line[0];
-        scans.push_back((Interval){time, Time()});
-      }
-      times.push_back(line[0] - scan_start);
-      u.push_back(line[1]);
-      v.push_back(line[2]);
-      w.push_back(line[3]);
-      scan_end = line[0];
-    }
-    if (time >= tstop){
-      Interval &scan = scans.back();
-      scan.end.set_time(current_mjd, scan_end);
-      break;
+      // Read the data
+      do {
+        if (line[4] == 0) {
+          if(times.size() == 1){
+            // Instead of the first point of the desired scan, we got the
+            // last point of the previous scan.  Get rid of it.
+            scans.resize(0);
+          }else{
+            SFXC_ASSERT(scan_end > scan_start);
+            scan.end.set_time(current_mjd, scan_end);
+          }
+          state = READ_SCAN_HEADER;
+          break;
+        } else {
+          times.push_back(line[0] - scan_start);
+          u.push_back(line[1]);
+          v.push_back(line[2]);
+          w.push_back(line[3]);
+          scan_end = line[0];
+        }
+      } while(in.read(reinterpret_cast < char * > (line), 5*sizeof(double)));
+      if((scans[n_scans - 2].begin == scan.begin) && (scans[n_scans - 2].end != scan.end))
+        sfxc_abort("Premature ending of phase center\n");
     }
   }
 
-  begin_scan = 0;
-  scan_nr = -1;
+  // Initialise
+  scan_nr = 0;
   initialise_spline_for_next_scan();
   return 0;
 }
 
 void Uvw_model::initialise_spline_for_next_scan() {
-  if (begin_scan >= times.size())
+  int n_sources_in_previous_scan = splineakima_u.size();
+  if (scan_nr >= (scans.size() - n_sources_in_previous_scan))
     return;
 
-  scan_nr++;
+  scan_nr += n_sources_in_previous_scan;
 
-  if (splineakima_u != NULL) {
-    gsl_spline_free(splineakima_u);
-    gsl_interp_accel_free(acc_u);
-  }
-  if (splineakima_v != NULL) {
-    gsl_spline_free(splineakima_v);
-    gsl_interp_accel_free(acc_v);
-  }
-  if (splineakima_w != NULL) {
-    gsl_spline_free(splineakima_w);
-    gsl_interp_accel_free(acc_w);
+  for(int i = 0 ; i < splineakima_u.size() ; i++){
+    gsl_spline_free(splineakima_u[i]);
+    gsl_spline_free(splineakima_v[i]);
+    gsl_spline_free(splineakima_w[i]);
+    gsl_interp_accel_free(acc_u[i]);
+    gsl_interp_accel_free(acc_v[i]);
+    gsl_interp_accel_free(acc_w[i]);
   }
 
-  // Initialise the Akima spline
-  acc_u = gsl_interp_accel_alloc();
-  acc_v = gsl_interp_accel_alloc();
-  acc_w = gsl_interp_accel_alloc();
-  int n_pts = (int)(scans[scan_nr].end - scans[scan_nr].begin).get_time() + 1;
-  // at least 4 sample points for a spline
-  SFXC_ASSERT(n_pts > 4);
+  // Determine the number of sources in current scan
+  int n_sources = 1;
+  while((scan_nr + n_sources < scans.size()) && 
+        (scans[scan_nr + n_sources - 1].begin == scans[scan_nr + n_sources].begin))
+    n_sources++;
 
-  // End scan now points to the beginning of the next scan and
-  // the next scan has n_pts data points
-  splineakima_u = gsl_spline_alloc(gsl_interp_akima, n_pts);
-  splineakima_v = gsl_spline_alloc(gsl_interp_akima, n_pts);
-  splineakima_w = gsl_spline_alloc(gsl_interp_akima, n_pts);
+  splineakima_u.resize(n_sources);
+  splineakima_v.resize(n_sources);
+  splineakima_w.resize(n_sources);
+  acc_u.resize(n_sources);
+  acc_v.resize(n_sources);
+  acc_w.resize(n_sources);
+  for(int i = 0; i < n_sources ; i++){
+    Scan &scan = scans[scan_nr + i];
+    // at least 4 sample points for a spline
+    const Time one_sec(1000000);
+    int n_pts = (int)((scan.end - scan.begin) / one_sec) + 1;
+    SFXC_ASSERT(n_pts > 4);
 
-  gsl_spline_init(splineakima_u,
-                  &times[begin_scan],
-                  &u[begin_scan],
-                  n_pts);
-  gsl_spline_init(splineakima_v,
-                  &times[begin_scan],
-                  &v[begin_scan],
-                  n_pts);
-  gsl_spline_init(splineakima_w,
-                  &times[begin_scan],
-                  &w[begin_scan],
-                  n_pts);
-  begin_scan += n_pts;
+    // Initialise the Akima spline
+    acc_u[i] = gsl_interp_accel_alloc();
+    acc_v[i] = gsl_interp_accel_alloc();
+    acc_w[i] = gsl_interp_accel_alloc();
+    splineakima_u[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
+    splineakima_v[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
+    splineakima_w[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
+
+    gsl_spline_init(splineakima_u[i], &times[scan.times], &u[scan.model_index], n_pts);
+    gsl_spline_init(splineakima_v[i], &times[scan.times], &v[scan.model_index], n_pts);
+    gsl_spline_init(splineakima_w[i], &times[scan.times], &w[scan.model_index], n_pts);
+  }
 }
 
 //calculates u,v, and w at time(microseconds)
-void Uvw_model::get_uvw(Time time, double *u, double *v, double *w) {
-  if (times.empty()) {
-    DEBUG_MSG("times.empty()");
-    SFXC_ASSERT(!times.empty());
-  }
-
-  while (scans[scan_nr].end < time) {
+void Uvw_model::get_uvw(int phase_center, Time time, double *u, double *v, double *w) {
+  while (scans[scan_nr].end < time)
     initialise_spline_for_next_scan();
-  }
 
-  SFXC_ASSERT(splineakima_u != NULL);
-  SFXC_ASSERT(splineakima_v != NULL);
-  SFXC_ASSERT(splineakima_w != NULL);
+  SFXC_ASSERT(splineakima_u.size() > 0);
+  SFXC_ASSERT((phase_center >= 0) && (phase_center < splineakima_u.size())) ;
+
   double sec = (time - scans[scan_nr].begin).get_time();
-
-  *u = gsl_spline_eval (splineakima_u, sec, acc_u);
-  *v = gsl_spline_eval (splineakima_v, sec, acc_v);
-  *w = gsl_spline_eval (splineakima_w, sec, acc_w);
+  *u = gsl_spline_eval(splineakima_u[phase_center], sec, acc_u[phase_center]);
+  *v = gsl_spline_eval(splineakima_v[phase_center], sec, acc_v[phase_center]);
+  *w = gsl_spline_eval(splineakima_w[phase_center], sec, acc_w[phase_center]);
+//  std::cout << RANK_OF_NODE<< " : u=" << *u << ", v=" << *v << ", w=" << *w << " ; center = " << phase_center
+//            << ", time = " << time << "\n";
+  SFXC_ASSERT(*w < 0);
 }
 
 //calculates the delay for the delayType at time in microseconds
@@ -223,9 +271,9 @@ std::ofstream& Uvw_model::uvw_values(std::ofstream &output, Time starttime,
   while (time < stoptime) {
     while (scans[scan_nr].end < time) initialise_spline_for_next_scan();
     double sec = (time - scans[scan_nr].begin).get_time();
-    gsl_u = gsl_spline_eval (splineakima_u, sec, acc_u);
-    gsl_v = gsl_spline_eval (splineakima_v, sec, acc_v);
-    gsl_w = gsl_spline_eval (splineakima_w, sec, acc_w);
+    gsl_u = gsl_spline_eval (splineakima_u[0], sec, acc_u[0]);
+    gsl_v = gsl_spline_eval (splineakima_v[0], sec, acc_v[0]);
+    gsl_w = gsl_spline_eval (splineakima_w[0], sec, acc_w[0]);
     double ttime  = time.get_time_usec();
 
 //    output.write(reinterpret_cast < char * > (&ttime), sizeof(double));

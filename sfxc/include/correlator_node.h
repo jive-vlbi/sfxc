@@ -10,6 +10,7 @@
 #ifndef CORRELATOR_NODE_H
 #define CORRELATOR_NODE_H
 #include <queue>
+#include <set>
 #include "node.h"
 #include "multiple_data_readers_controller.h"
 #include "single_data_writer_controller.h"

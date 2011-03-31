@@ -168,6 +168,10 @@ private:
 
   int32_t curr_slice, number_of_time_slices, curr_stream, curr_slice_size;
   int32_t total_bytes_written, number_of_bins;
+  int32_t current_output_file;
+  // In one read operation we might only partially receive the output file nr, 
+  // this tracks the number of received bytes.
+  int output_file_index;
 };
 
 #endif // OUTPUT_NODE_H

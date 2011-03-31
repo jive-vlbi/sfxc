@@ -51,14 +51,20 @@ public:
 
   void add_uvw_table(int sn, Uvw_model &table);
   std::vector< Uvw_model>  uvw_tables; // Should be private
+  void add_delay_table(int sn, Delay_table_akima &table);
+  std::vector<Delay_table_akima> delay_tables;
+  void add_source_list(const std::map<std::string, int> &sources_);
 
 protected:
   virtual void integration_initialise();
   void integration_step(std::vector<Complex_buffer> &integration_buffer, int buf_idx);
   void integration_normalize(std::vector<Complex_buffer> &integration_buffer);
-  void integration_write(std::vector<Complex_buffer> &integration_buffer);
-
+  void integration_write(std::vector<Complex_buffer> &integration_buffer, int phase_center, int bin);
+  void sub_integration();
   void find_invalid();
+
+  void uvshift(const Complex_buffer &input_buffer, Complex_buffer &output_buffer, double ddelay1,
+               double ddelay2, double rate1, double rate2);
 
   size_t number_channels();
   size_t fft_size();
@@ -67,7 +73,8 @@ protected:
   size_t number_input_streams_in_use();
 
 protected:
-  std::vector<Input_buffer_ptr>  input_buffers;
+  int previous_fft;
+  std::vector<Input_buffer_ptr>           input_buffers;
   std::vector< std::complex<FLOAT> * >    input_elements;
   std::vector< std::vector<Invalid> * >   invalid_elements;
   // the complex conjugate of input_elements
@@ -78,11 +85,15 @@ protected:
 
   Correlation_parameters                               correlation_parameters;
   int                                                  oversamp; // Oversample factor
+  // A list of all sources in the current job
+  std::map<std::string, int> sources;
+  bool split_output;
 
   std::vector<Complex_buffer>                          accumulation_buffers;
+  std::vector< std::vector<Complex_buffer> >           phase_centers;
   Complex_buffer_float                                 integration_buffer_float;
   std::vector< std::pair<size_t, size_t> >             baselines;
-  int number_ffts_in_integration, current_fft, total_ffts;
+  int number_ffts_in_integration, number_ffts_in_sub_integration, current_fft, total_ffts;
 
   boost::shared_ptr<Data_writer>                       writer;
 
@@ -91,7 +102,7 @@ protected:
   // Needed for writing the progress messages
   int node_nr_;
   int current_integration;
-
+  int next_sub_integration;
 #ifdef SFXC_WRITE_STATS
   // For plotting statistics on the height of the fringe and the phase
   std::ofstream                                        stats_out;

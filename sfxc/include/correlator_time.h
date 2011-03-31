@@ -43,8 +43,8 @@ public:
   Time operator-(const Time &other) const;
 
   double operator/(const Time &other) const;
-  Time operator/(const int &val) const;
-  Time operator*(const int &val) const;
+  Time operator/(const double &val) const;
+  Time operator*(const double &val) const;
   Time operator%(const Time &val) const;
 
   bool operator==(const Time &other) const;
@@ -121,15 +121,15 @@ inline double Time::operator/(const Time &other) const{
   return (double)nticks/other.nticks;
 }
 
-inline Time Time::operator/(const int &val) const{
+inline Time Time::operator/(const double &val) const{
   Time ret(*this);
-  ret.nticks /= val;
+  ret.nticks = (int64_t)round(ret.nticks / val);
   return ret;
 }
 
-inline Time Time::operator*(const int &val) const{
+inline Time Time::operator*(const double &val) const{
   Time ret(*this);
-  ret.nticks *= val;
+  ret.nticks = (int64_t)round(ret.nticks * val);
   return ret;
 }
 

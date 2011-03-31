@@ -3,7 +3,7 @@
 #include <utils.h>
 
 Correlation_core::Correlation_core()
-    : current_fft(0), total_ffts(0){
+    : current_fft(0), total_ffts(0), split_output(false){
 }
 
 Correlation_core::~Correlation_core() {
@@ -45,9 +45,22 @@ void Correlation_core::do_task() {
     PROGRESS_MSG("node " << node_nr_ << ", "
                  << current_fft << " of " << number_ffts_in_integration);
 
-    integration_normalize(accumulation_buffers);
-    integration_write(accumulation_buffers);
+    sub_integration();
+    for(int i = 0 ; i < phase_centers.size(); i++){
+      integration_normalize(phase_centers[i]);
+      int source_nr;
+      if(split_output){
+        delay_tables[0].goto_scan(correlation_parameters.start_time);
+        source_nr = sources[delay_tables[0].get_source(i)];
+      }
+      else
+        source_nr = 0;
+      integration_write(phase_centers[i], i, source_nr);
+    }
     current_integration++;
+  } else if(current_fft >= next_sub_integration * number_ffts_in_sub_integration){
+    sub_integration();
+    next_sub_integration++;
   }
 }
 
@@ -108,6 +121,11 @@ Correlation_core::create_baselines(const Correlation_parameters &parameters){
       parameters.sample_rate,
       parameters.fft_size);
 
+  number_ffts_in_sub_integration =
+    Control_parameters::nr_ffts_per_integration_slice(
+      (int) parameters.sub_integration_time.get_time_usec(),
+      parameters.sample_rate,
+      parameters.fft_size);
   baselines.clear();
   // Autos
   for (size_t sn = 0 ; sn < n_stations(); sn++) {
@@ -178,6 +196,27 @@ bool Correlation_core::has_work() {
 }
 
 void Correlation_core::integration_initialise() {
+  previous_fft = 0;
+  int start = accumulation_buffers.size() == baselines.size() ? phase_centers.size() : 0;
+
+  if(phase_centers.size() != correlation_parameters.n_phase_centers)
+    phase_centers.resize(correlation_parameters.n_phase_centers);
+
+  for(int i = start ; i < phase_centers.size() ; i++){
+    phase_centers[i].resize(baselines.size());
+    for(int j = 0 ; j < phase_centers[i].size() ; j++){
+      phase_centers[i][j].resize(fft_size() + 1);
+    }
+  }
+
+  for(int i = 0 ; i < phase_centers.size() ; i++){
+    for (int j = 0; j < phase_centers[i].size(); j++) {
+      SFXC_ASSERT(phase_centers[i][j].size() == fft_size() + 1);
+      size_t size = phase_centers[i][j].size() * sizeof(std::complex<FLOAT>);
+      memset(&phase_centers[i][j][0], 0, size);
+    }
+  }
+
   if (accumulation_buffers.size() != baselines.size()) {
     accumulation_buffers.resize(baselines.size());
     for (size_t i=0; i<accumulation_buffers.size(); i++) {
@@ -188,11 +227,11 @@ void Correlation_core::integration_initialise() {
   SFXC_ASSERT(accumulation_buffers.size() == baselines.size());
   for (size_t i=0; i<accumulation_buffers.size(); i++) {
     SFXC_ASSERT(accumulation_buffers[i].size() == fft_size() + 1);
-    for (size_t j=0; j<accumulation_buffers[i].size(); j++) {
-      accumulation_buffers[i][j] = 0;
-    }
+    size_t size = accumulation_buffers[i].size() * sizeof(std::complex<FLOAT>);
+    memset(&accumulation_buffers[i][0], 0, size);
   }
   memset(&n_flagged[0], 0, sizeof(std::pair<int64_t,int64_t>)*n_flagged.size());
+  next_sub_integration = 1;
 }
 
 void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer, int buf_idx) {
@@ -271,7 +310,6 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
   std::vector<FLOAT> norms;
   norms.resize(n_stations());
   memset(&norms[0], 0, norms.size()*sizeof(FLOAT));
-
   // Average the auto correlations
   for (size_t station=0; station < n_stations(); station++) {
     for (size_t i = 0; i < fft_size() + 1; i++) {
@@ -308,13 +346,19 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
   }
 }
 
-void Correlation_core::integration_write(std::vector<Complex_buffer> &integration_buffer) {
+void Correlation_core::integration_write(std::vector<Complex_buffer> &integration_buffer, int phase_center, int sourcenr) {
 
   // Make sure that the input buffers are released
   // This is done by reference counting
 
   SFXC_ASSERT(writer != boost::shared_ptr<Data_writer>());
   SFXC_ASSERT(integration_buffer.size() == baselines.size());
+
+  // Write the output file index
+  {
+    size_t nWrite = sizeof(sourcenr);
+    writer->put_bytes(nWrite, (char *)&sourcenr);
+  }
 
   int polarisation = 1;
   if (correlation_parameters.polarisation == 'R') {
@@ -355,13 +399,13 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     // We evaluate in the middle of time slice
     Time time = correlation_parameters.start_time + correlation_parameters.integration_time / 2;
     for (size_t station=0; station < uvw_tables.size(); station++){
-     double u,v,w;
-     uvw_tables[station].get_uvw(time, &u, &v, &w);
-     uvw[station].station_nr=stream2station[station];
-     uvw[station].reserved=0;
-     uvw[station].u=u;
-     uvw[station].v=v;
-     uvw[station].w=w;
+      double u,v,w;
+      uvw_tables[station].get_uvw(phase_center, time, &u, &v, &w);
+      uvw[station].station_nr=stream2station[station];
+      uvw[station].reserved=0;
+      uvw[station].u=u;
+      uvw[station].v=v;
+      uvw[station].w=w;
     }
 
     // Write the bit statistics
@@ -460,11 +504,100 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
   }
 }
 
+void 
+Correlation_core::sub_integration(){
+  const int current_sub_int = (int) round((double)current_fft / number_ffts_in_sub_integration);
+//  const Time tmid = correlation_parameters.start_time +
+//                    correlation_parameters.sub_integration_time * current_sub_int -
+//                    correlation_parameters.sub_integration_time / 2 ;
+  Time tfft(0., correlation_parameters.sample_rate); 
+  tfft.inc_samples(fft_size());
+  const Time tmid = correlation_parameters.start_time + tfft*(previous_fft+(current_fft-previous_fft)/2.); 
+
+  // Start with the auto correlations
+  const int n_fft = fft_size() + 1;
+  const int n_phase_centers = phase_centers.size();
+  const int n_station = number_input_streams_in_use();
+  for (int i = 0; i < n_station; i++) {
+    for(int j = 0; j < n_phase_centers; j++){
+      for(int k = 0; k < n_fft; k++){
+        phase_centers[j][i][k] += accumulation_buffers[i][k];
+      }
+    }
+  }
+
+  const int n_baseline = accumulation_buffers.size();
+  for(int i = n_station ; i < n_baseline ; i++){
+    std::pair<size_t,size_t> &stations = baselines[i];
+
+    // The pointing center
+    for(int j = 0; j < n_fft; j++)
+      phase_centers[0][i][j] += accumulation_buffers[i][j];
+    // UV shift the additional phase centers
+    for(int j = 1; j < n_phase_centers; j++){
+      double delay1 = delay_tables[stations.first].delay(tmid);
+      double delay2 = delay_tables[stations.second].delay(tmid);
+      double ddelay1 = delay_tables[stations.first].delay(j, tmid)-delay1;
+      double ddelay2 = delay_tables[stations.second].delay(j, tmid)-delay2;
+      double rate1 = delay_tables[stations.first].rate(tmid);
+      double rate2 = delay_tables[stations.second].rate(tmid);
+      uvshift(accumulation_buffers[i], phase_centers[j][i], ddelay1, ddelay2, rate1, rate2);
+    }
+  }
+  // Clear the accumulation buffers
+  for (size_t i=0; i<accumulation_buffers.size(); i++) {
+    SFXC_ASSERT(accumulation_buffers[i].size() == n_fft);
+    size_t size = accumulation_buffers[i].size() * sizeof(std::complex<FLOAT>);
+    memset(&accumulation_buffers[i][0], 0, size);
+  }
+  previous_fft = current_fft;
+}
+
+void
+Correlation_core::uvshift(const Complex_buffer &input_buffer, Complex_buffer &output_buffer, double ddelay1, double ddelay2, double rate1, double rate2){
+  const int sb = correlation_parameters.sideband == 'L' ? -1 : 1;
+  const double base_freq = correlation_parameters.channel_freq;
+  const double dfreq = sb * correlation_parameters.sample_rate/ ( 2. * fft_size()); 
+
+  double phi = base_freq * (ddelay1 * (1 - rate1) - ddelay2 * (1 - rate2));
+  phi = 2 * M_PI * (phi - floor(phi));
+  double delta = 2 * M_PI * dfreq * (ddelay1 * (1 - rate1) - ddelay2 * (1 - rate2));
+  double temp=sin(delta/2);
+  const double a=2*temp*temp,b=sin(delta);
+  double cos_phi, sin_phi;
+#ifdef HAVE_SINCOS
+  sincos(phi, &sin_phi, &cos_phi);
+#else
+  sin_phi = sin(phi);
+  cos_phi = cos(phi);
+#endif 
+  const int size = input_buffer.size();
+  for (int i = 0; i < size; i++) {
+    output_buffer[i] += input_buffer[i] * std::complex<FLOAT>(cos_phi, sin_phi);
+    // Compute sin_phi=sin(phi); cos_phi = cos(phi);
+    temp=sin_phi-(a*sin_phi-b*cos_phi);
+    cos_phi=cos_phi-(a*cos_phi+b*sin_phi);
+    sin_phi=temp;
+  }
+}
+
 void Correlation_core::add_uvw_table(int sn, Uvw_model &table) {
   if (sn>=uvw_tables.size())
     uvw_tables.resize(sn+1);
 
   uvw_tables[sn]=table;
+}
+
+void Correlation_core::add_delay_table(int sn, Delay_table_akima &table) {
+  if (sn>=delay_tables.size())
+    delay_tables.resize(sn+1);
+
+  delay_tables[sn]=table;
+}
+
+void Correlation_core::add_source_list(const std::map<std::string, int> &sources_){
+  sources = sources_;
+  split_output = true;
 }
 
 void Correlation_core::find_invalid() {

@@ -20,6 +20,7 @@
 #include <fftw3.h>
 #include <stdlib.h>
 #include <cstring>
+#include <set>
 
 Manager_node::
 Manager_node(int rank, int numtasks,
@@ -327,11 +328,8 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   correlation_parameters.integration_nr = integration_slice_nr;
   correlation_parameters.slice_nr = output_slice_nr;
   strncpy(correlation_parameters.source, control_parameters.scan_source(scan_name).c_str(), 11);
-  if(control_parameters.pulsar_binning())
-    correlation_parameters.pulsar_binning = true;
-  else
-    correlation_parameters.pulsar_binning = false;
-
+  correlation_parameters.pulsar_binning = control_parameters.pulsar_binning();
+  correlation_parameters.n_phase_centers = n_sources_in_current_scan;
   correlation_parameters.cross_polarize = (cross_channel != -1);
 
   // Check the cross polarisation
@@ -460,8 +458,15 @@ Manager_node::initialise() {
     correlator_node_set_all(uvw_table, station_name);
   }
 
-  // If pulsar binning is enabled : get all pulsar parameters (polyco files, etc.)
+  start_time = control_parameters.get_start_time();
+  stop_time = control_parameters.get_stop_time();
+  // Get a list of all scan names
+  current_scan = control_parameters.scan(start_time.date_string());
+  SFXC_ASSERT(current_scan >= 0);
+  SFXC_ASSERT((size_t)current_scan < control_parameters.number_scans());
+
   if(control_parameters.pulsar_binning()){
+    // If pulsar binning is enabled : get all pulsar parameters (polyco files, etc.)
     if (!control_parameters.get_pulsar_parameters(pulsar_parameters))
       sfxc_abort("Error parsing pulsar information from control file\n");
     correlator_node_set_all(pulsar_parameters);
@@ -478,18 +483,45 @@ Manager_node::initialise() {
       outfile << base_filename << ".bin" << bin;
       set_data_writer(RANK_OUTPUT_NODE, bin, outfile.str());
     }
+  }else if(control_parameters.multi_phase_center()){
+    SFXC_ASSERT(!control_parameters.pulsar_binning());
+    // build a list of all source in the current job
+    const Vex vex = control_parameters.get_vex();
+
+    Vex::Date start_time(control_parameters.get_start_time().date_string());
+    Vex::Date stop_time(control_parameters.get_stop_time().date_string());
+    std::string first_scan_name = vex.get_scan_name(start_time);
+    Vex::Node::const_iterator it = vex.get_root_node()["SCHED"][first_scan_name];
+    std::set<std::string> sources;
+    std::cout << "Getting sources starting scan " << first_scan_name << " ; " << it.key()
+              << ", stop_time = " << stop_time.to_string()
+              << ", tstart = " << vex.start_of_scan(it.key()).to_string() << "\n";
+    while(it != vex.get_root_node()["SCHED"]->end() && vex.start_of_scan(it.key()) < stop_time){
+      Vex::Node::const_iterator sources_it = it->begin("source");
+      std::cout << "scan " << it.key() << "\n";
+      while(sources_it != it->end("source")){
+        sources.insert(sources_it->to_string());
+        std::cout << "found source " << sources_it->to_string() << " in scan " << it.key() << "\n";
+        sources_it++;
+      }
+      it++;
+    }
+    correlator_node_set_all(sources);
+
+    // open one output file per source
+    std::string base_filename = control_parameters.get_output_file();
+    std::set<std::string>::iterator sources_it = sources.begin();
+    int source_nr=0;
+    while(sources_it != sources.end()){
+      set_data_writer(RANK_OUTPUT_NODE, source_nr, base_filename + "_" + *sources_it);
+      sources_it++;
+      source_nr++;
+    }
   }else
     set_data_writer(RANK_OUTPUT_NODE, 0, control_parameters.get_output_file());
 
   // Write the global header in the outpul file
   send_global_header();
-
-  start_time = control_parameters.get_start_time();
-  stop_time = control_parameters.get_stop_time();
-  // Get a list of all scan names
-  current_scan = control_parameters.scan(start_time.date_string());
-  SFXC_ASSERT(current_scan >= 0);
-  SFXC_ASSERT((size_t)current_scan < control_parameters.number_scans());
 
   output_slice_nr = 0;
 
@@ -540,6 +572,7 @@ void Manager_node::initialise_scan(const std::string &scan) {
       control_parameters.get_input_node_parameters(mode_name, station_name);
     input_node_set(station_name, input_node_param);
   }
+  n_sources_in_current_scan = control_parameters.get_vex().n_sources(scan);
 }
 
 void Manager_node::end_correlation() {

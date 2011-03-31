@@ -10,12 +10,13 @@
 #ifndef ABSTRACT_MANAGER_NODE_H
 #define ABSTRACT_MANAGER_NODE_H
 
+#include <queue>
+#include <set>
+
 #include "node.h"
 #include "control_parameters.h"
 #include "delay_table_akima.h"
 #include "uvw_model.h"
-
-#include <queue>
 
 class Connexion_params
 {
@@ -114,6 +115,7 @@ public:
   void correlator_node_set_all(Uvw_model &uvw_table,
                                const std::string &station_name);
   void correlator_node_set_all(Pulsar_parameters &pulsar);
+  void correlator_node_set_all(std::set<std::string> &sources);
 
   void set_correlator_node_ready(size_t correlator_rank, bool ready=true);
 
@@ -148,15 +150,15 @@ protected:
   // Map from the input node number to the MPI_rank
   std::vector<int> input_node_rank;
 
-	// stores the connexion parameters to the input nodes
+  // stores the connexion parameters to the input nodes
   std::vector<Connexion_params*> input_node_cnx_params_;
-	std::vector<Connexion_params*> output_node_cnx_params_;
+  std::vector<Connexion_params*> output_node_cnx_params_;
 
   // Map from the correlator node number to the MPI_rank
   std::vector<int> correlator_node_rank;
 
   Time integration_time_;
-
+  int n_sources_in_current_scan;
 #ifdef SFXC_DETERMINISTIC
   /// Status of the correlation node
   std::vector<bool> correlator_node_ready;

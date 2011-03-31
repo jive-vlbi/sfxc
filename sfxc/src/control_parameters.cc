@@ -127,6 +127,41 @@ initialise(const char *ctrl_file, const char *vex_file,
     }
   }
 
+  if (ctrl["multi_phase_center"] == Json::Value()){
+    ctrl["multi_phase_center"] = false;
+    if(!ctrl["pulsar_binning"].asBool()){
+      Vex::Node::const_iterator it = vex.get_root_node()["SCHED"]->begin();
+      while(it != vex.get_root_node()["SCHED"]->end()){
+        int n_sources = 0;
+        Vex::Node::const_iterator sources = it->begin("source");
+        while(sources != it->end("source")){
+          n_sources++;
+          sources++;
+        }
+
+        if(n_sources > 1){
+          ctrl["multi_phase_center"] = true;
+          break;
+        }
+        it++;
+      }
+    }
+  } else if ((ctrl["multi_phase_center"].asBool() == true) && 
+             (ctrl["pulsar_binning"].asBool() == true)){
+    std::cout << "Pulsar binning cannot be used together with multiple phase centers\n";
+    return false;
+  }
+  // Set the sub integartion time
+  if(ctrl["sub_integr_time"] == Json::Value()){
+    if (ctrl["multi_phase_center"].asBool()){
+      // Default to 1/64 s sub integrations
+      ctrl["sub_integr_time"] = std::min(integration_time().get_time(), 1 / 64.);
+    }else{
+      // Default to 125 ms sub integrations
+      ctrl["sub_integr_time"] = std::min(integration_time().get_time(), 1 / 8.);
+    }
+  }
+
   // Get start date
   start_time =Time(vex.get_start_time_of_experiment());
   initialised = true;
@@ -355,7 +390,12 @@ Control_parameters::number_stations() const {
 
 Time
 Control_parameters::integration_time() const {
-  return Time(ctrl["integr_time"].asDouble()*1000000);
+  return Time(round(ctrl["integr_time"].asDouble()*1000000));
+}
+
+Time
+Control_parameters::sub_integration_time() const {
+    return Time(round(ctrl["sub_integr_time"].asDouble()*1000000));
 }
 
 int
@@ -401,6 +441,10 @@ int Control_parameters::message_level() const {
 
 bool Control_parameters::pulsar_binning() const{
   return ctrl["pulsar_binning"].asBool();
+}
+
+bool Control_parameters::multi_phase_center() const{
+  return ctrl["multi_phase_center"].asBool();
 }
 
 bool
@@ -641,7 +685,6 @@ get_mark5b_tracks(const std::string &mode,
         }
         n_bitstream++;
       }
-      std::cout << "n_bitstream = " << n_bitstream << "\n";
       for(int i = n_bitstream; i < 32; i += n_bitstream){
         int sign = channel_param.sign_tracks[0] + i;
         if(sign < 32)
@@ -1097,6 +1140,7 @@ get_correlation_parameters(const std::string &scan_name,
   corr_param.start_time = vex.start_of_scan(scan_name).to_miliseconds() * 1000;
   corr_param.stop_time = vex.stop_of_scan(scan_name).to_miliseconds() * 1000;
   corr_param.integration_time = integration_time();
+  corr_param.sub_integration_time = sub_integration_time(); 
   corr_param.number_channels = number_channels();
   corr_param.fft_size = fft_size();
   corr_param.slice_offset =
@@ -1123,7 +1167,7 @@ get_correlation_parameters(const std::string &scan_name,
        ch_it != freq->end("chan_def");
        ++ch_it) {
     if (ch_it[4]->to_string() == channel_name) {
-      corr_param.channel_freq = (int64_t)(ch_it[1]->to_double_amount("MHz")*1000000);
+      corr_param.channel_freq = (int64_t)round(ch_it[1]->to_double_amount("MHz")*1000000);
       corr_param.bandwidth = (int)(ch_it[3]->to_double_amount("MHz")*1000000);
       corr_param.sideband = ch_it[2]->to_char();
       freq_temp = ch_it[1]->to_string();

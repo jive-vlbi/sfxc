@@ -68,6 +68,14 @@ Correlator_node_controller::process_event(MPI_Status &status) {
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
+  case MPI_TAG_SOURCE_LIST:{
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      std::map<std::string, int> sources;
+      MPI_Transfer::receive(status, sources);
+      node.correlation_core_normal->add_source_list(sources);
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
   }
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }

@@ -126,7 +126,8 @@ public:
   // Data members
   Time start_time;          // Start of the slice in microseconds
   Time stop_time;           // End of the slice in microseconds
-  Time integration_time;    // In milliseconds
+  Time integration_time;
+  Time sub_integration_time;// The length of one sub integration
   int32_t number_channels;  // number of frequency channels
   int32_t fft_size;         // Number of samples per FFT
   int32_t integration_nr;   // number of the integration
@@ -146,6 +147,7 @@ public:
 
   Station_list station_streams; // input streams used
   char source[11];              // name of the source under observation
+  int32_t n_phase_centers;   // The number of phase centers in the current scan
   int32_t pulsar_binning;
   Pulsar_parameters *pulsar_parameters;
 };
@@ -180,6 +182,7 @@ public:
   size_t number_stations() const;
 
   Time integration_time() const; // Integration time in microseconds
+  Time sub_integration_time() const;
   int number_channels() const;
   int fft_size() const;
 
@@ -189,6 +192,7 @@ public:
   std::string experiment() const;
 
   bool pulsar_binning() const;
+  bool multi_phase_center() const;
 
   std::string get_delay_directory() const;
   std::string get_delay_table_name(const std::string &station_name) const;
@@ -210,7 +214,6 @@ public:
   std::string scan_source(const std::string &scan) const;
 
   size_t number_scans() const;
-
 
   std::string station_in_scan(const std::string& scan, int i) const;
   size_t number_stations_in_scan(const std::string& scan) const;
@@ -323,6 +326,5 @@ private:
   Json::Value ctrl;        // Correlator control file
   Vex         vex;         // Vex file
   bool        initialised; // The control parameters are initialised
-
 };
 #endif /*CONTROL_PARAMETERS_H_*/

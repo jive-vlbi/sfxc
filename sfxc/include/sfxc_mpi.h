@@ -236,11 +236,15 @@ enum MPI_TAG {
    * - ?
    **/
   MPI_TAG_CORR_PARAMETERS,
+
   /** Send the Pulsar parameters defined in Control_parameters.h
    * - ?
    **/
-
   MPI_TAG_PULSAR_PARAMETERS,
+  /** Send a list of all sources in the job
+   * - ?
+   **/
+  MPI_TAG_SOURCE_LIST,
   /** Send a delay table
    * - ?
    **/
@@ -412,6 +416,9 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
     }
   case   MPI_TAG_PULSAR_PARAMETERS: {
       return "MPI_TAG_PULSAR_PARAMETERS";
+    }
+  case   MPI_TAG_SOURCE_LIST: {
+      return "MPI_TAG_SOURCE_LIST";
     }
   case MPI_TAG_DELAY_TABLE: {
       return "MPI_TAG_DELAY_TABLE";

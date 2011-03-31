@@ -29,21 +29,27 @@
 #include <fstream>
 #include <string>
 
+#define READ_SCAN_HEADER  0
+#define FIND_TSTART  1
+#define START_NEW_SCAN 2
+#define READ_PHASE_CENTER 3
+
+
 //*****************************************************************************
 //function definitions
 //*****************************************************************************
 
 // Default constructor
 Delay_table_akima::Delay_table_akima()
-    : acc(NULL), splineakima(NULL), begin_scan(0), scan_nr(-1) {}
+    : scan_nr(0) {}
 
 // Copy constructor
 Delay_table_akima::Delay_table_akima(const Delay_table_akima &other)
-    : acc(NULL), splineakima(NULL), begin_scan(0), scan_nr(-1) {
-  SFXC_ASSERT(splineakima == NULL);
+    : scan_nr(0) {
+  sources = other.sources;
+  scans = other.scans;
   times = other.times;
   delays = other.delays;
-  scans = other.scans;
   initialise_next_scan();
 }
 
@@ -51,17 +57,25 @@ Delay_table_akima::Delay_table_akima(const Delay_table_akima &other)
 Delay_table_akima::~Delay_table_akima() {}
 
 void Delay_table_akima::operator=(const Delay_table_akima &other) {
-  begin_scan = 0;
-  scan_nr = -1;
+  scan_nr = 0;
+  sources = other.sources;
+  scans = other.scans;
   times = other.times;
   delays = other.delays;
-  scans = other.scans;
+  for(int i = 0 ; i < splineakima.size() ; i++){
+    gsl_spline_free(splineakima[i]);
+    gsl_interp_accel_free(acc[i]);
+  }
+  splineakima.resize(0);
+  acc.resize(0);
   initialise_next_scan();
 }
 
 bool Delay_table_akima::operator==(const Delay_table_akima &other) const {
-  if (times != other.times) return false;
-  if (delays != other.delays) return false;
+  if(scans.size() != other.scans.size()) return false;
+  for(int i = 0 ; i < delays.size() ; i++){
+    if (delays[i] != other.delays[i]) return false;
+  }
   return true;
 }
 
@@ -86,124 +100,196 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
   in.read(reinterpret_cast < char * > (header), header_size*sizeof(char));
   if (in.eof()) return;
 
-  // Read up to tstart
-  Time time;
   double line[5], scan_start, scan_end;
   int32_t current_mjd;
-  // The first line of each scan is the mjd of the scan
-  in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
-  while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
-    SFXC_ASSERT(line[4] <= 0);
-    time.set_time(current_mjd, line[0]);
-    if (line[4] == 0)
-      in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
-    else if (time >= tstart) {
+  char current_source[81];
+
+  int correlation_scan = 0;
+  int state = READ_SCAN_HEADER;
+  bool done_reading = false;
+  while((!done_reading) && (in.good())){
+    switch(state){
+    case READ_SCAN_HEADER:{
+      if(in.read(current_source, sizeof(char) * 81)){
+        in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
+        in.read(reinterpret_cast < char * > (line), 5*sizeof(double));
+        Time start_time_scan(current_mjd, line[0]);
+        // strip whitespace from end of source string
+        for(int i = 79; i >=0 ; i--){
+          if(current_source[i] != ' '){
+            current_source[i + 1] = 0;
+            break;
+          }
+        }
+        if(start_time_scan < tstart){
+          state = FIND_TSTART;
+        } else if (start_time_scan >= tstop){
+          done_reading = true;
+        }else {
+          state = START_NEW_SCAN;
+        }
+      }
+      break;
+    }
+    case FIND_TSTART:{
+      while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
+        SFXC_ASSERT(line[4] <= 0);
+        Time time(current_mjd, line[0]);
+
+        if(line[4] == 0){
+          state = READ_SCAN_HEADER;
+          break;
+        }else if(time >= tstart){
+          state = START_NEW_SCAN;
+          break;
+        }
+      }
+      break;
+    }
+    case START_NEW_SCAN:{
       scan_start = line[0];
-      times.push_back(0.);
-      delays.push_back(line[4]);
-      scans.resize(1);
-      scans[0].begin = time;
+      Time start_time_scan(current_mjd, scan_start);
+      // look up the current source in the list of sources and append it to the list if needed
+      int source_index;
+      for(source_index = 0; source_index < sources.size() ; source_index++){
+        if(sources[source_index] == current_source)
+          break;
+      }
+      if(source_index == sources.size())
+        sources.push_back(current_source);
+
+      // Create the new scan
+      scans.resize(scans.size() + 1);
+      Scan &scan = scans.back();
+      scan.begin = start_time_scan;
+      scan.source = source_index;
+      scan.delays = delays.size();
+      // Check if we are correlating an additional phase center to the current scan
+      int n_scans = scans.size();
+      if((n_scans > 1) && (scans[n_scans - 2].begin == start_time_scan)){
+        // We found an additional phace center to the current scan, overwrite previous times
+        times.resize(scans[n_scans - 2].times);
+      }
+      scan.times = times.size();
+      state = READ_PHASE_CENTER;
+
       break;
     }
-  }
-  // Read the rest of the data
-  while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
-    SFXC_ASSERT(line[4] <= 0);
-    time.set_time(current_mjd, line[0]);
-    if (line[4] == 0) {
-      if(times.size() == 1){
-        // Instead of the first point of the desired scan, we got the
-        // last point of the previous scan.  Get rid of it.
-        times.resize(0);
-        delays.resize(0);
-        scans.resize(0);
-        scan_start = -1;
-      }else{
-       Interval &scan = scans.back();
-       scan.end.set_time(current_mjd, scan_end);
-       scan_start = -1;
-      }
-      in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
-    } else {
-      if(scan_start < 0){
-        scan_start = line[0];
-        scans.push_back((Interval){time, Time()});
-      }
-      times.push_back(line[0] - scan_start);
-      delays.push_back(line[4]);
-      scan_end = line[0];
-    }
-    if (time >= tstop){
-      Interval &scan = scans.back();
-      scan.end.set_time(current_mjd, scan_end);
+    case READ_PHASE_CENTER:{
+      Scan &scan = scans.back();
+      // Read the data
+      do {
+        if (line[4] == 0) {
+          if(times.size() == 1){
+            // Instead of the first point of the desired scan, we got the
+            // last point of the previous scan.  Get rid of it.
+            scans.resize(0);
+          }else{
+            SFXC_ASSERT(scan_end > scan_start);
+            scan.end.set_time(current_mjd, scan_end);
+          }
+          state = READ_SCAN_HEADER;
+          break;
+        } else {
+          times.push_back(line[0] - scan_start);
+          delays.push_back(line[4]);
+          scan_end = line[0];
+        }
+      } while(in.read(reinterpret_cast < char * > (line), 5*sizeof(double)));
+      correlation_scan = scans.size() - 1;
       break;
-    }
+    }}
   }
 
   // Initialise
-  begin_scan = 0;
-  scan_nr = -1;
+  scan_nr = 0;
   initialise_next_scan();
 }
 
 bool Delay_table_akima::initialise_next_scan() {
-  if (begin_scan >= times.size())
+  int n_sources_in_previous_scan = splineakima.size();
+  if (scan_nr >= (scans.size() - n_sources_in_previous_scan))
     return false;
 
-  scan_nr++;
+  scan_nr += n_sources_in_previous_scan;
 
-  if (splineakima != NULL) {
-    gsl_spline_free(splineakima);
-    gsl_interp_accel_free(acc);
+  for(int i = 0 ; i < splineakima.size() ; i++){
+    gsl_spline_free(splineakima[i]);
+    gsl_interp_accel_free(acc[i]);
   }
 
-  // Initialise the Akima spline
-  acc = gsl_interp_accel_alloc();
-  int n_pts = (int)(scans[scan_nr].end - scans[scan_nr].begin).get_time() + 1;
+  // Determine the number of sources in current scan
+  int n_sources = 1;
+  while((scan_nr + n_sources < scans.size()) && 
+        (scans[scan_nr + n_sources - 1].begin == scans[scan_nr + n_sources].begin))
+    n_sources++;
 
-  // at least 4 sample points for a spline
-  SFXC_ASSERT(n_pts > 4);
+  splineakima.resize(n_sources);
+  acc.resize(n_sources);
+  for(int i = 0; i < n_sources ; i++){
+    Scan &scan = scans[scan_nr + i];
+    // at least 4 sample points for a spline
+    const Time one_sec(1000000);
+    int n_pts = (scan.end - scan.begin) / one_sec + 1;
+    SFXC_ASSERT(n_pts > 4);
 
-  // End scan now points to the beginning of the next scan and
-  // the next scan has n_pts data points
-  splineakima = gsl_spline_alloc(gsl_interp_akima, n_pts);
+    // Initialise the Akima spline
+    acc[i] = gsl_interp_accel_alloc();
+    splineakima[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
 
-  gsl_spline_init(splineakima,
-                  &times[begin_scan],
-                  &delays[begin_scan],
-                  n_pts);
+    gsl_spline_init(splineakima[i],
+                    &times[scan.times],
+                    &delays[scan.delays],
+                    n_pts);
+  }
 
-  begin_scan += n_pts;
   return true;
 }
-
 
 //calculates the delay for the delayType at time
 //get the next line from the delay table file
 double Delay_table_akima::delay(const Time &time) {
-  SFXC_ASSERT(!times.empty());
   while (scans[scan_nr].end < time){
-    if(!initialise_next_scan())
-       break;
+    if (!initialise_next_scan()) break;
   }
-
-  SFXC_ASSERT(splineakima != NULL);
+  SFXC_ASSERT(splineakima.size() > 0);
   double sec = (time - scans[scan_nr].begin).get_time();
-  double result = gsl_spline_eval (splineakima, sec, acc);
+  double result = gsl_spline_eval(splineakima[0], sec, acc[0]);
   SFXC_ASSERT(result < 0);
   return result;
 }
 
 double Delay_table_akima::rate(const Time &time) {
-  SFXC_ASSERT(!times.empty());
   while (scans[scan_nr].end < time){
-    if(!initialise_next_scan())
-       break;
+    if (!initialise_next_scan()) break;
   }
 
-  SFXC_ASSERT(splineakima != NULL);
+  SFXC_ASSERT(splineakima.size() > 0);
   double sec = (time - scans[scan_nr].begin).get_time();
-  double result = gsl_spline_eval_deriv (splineakima, sec, acc);
+  double result = gsl_spline_eval_deriv(splineakima[0], sec, acc[0]);
+  return result;
+}
+
+// Calculate the difference in delay between the requested phase center and the 
+// primary phase center
+double Delay_table_akima::delay(int phase_center, const Time &time){
+  while (scans[scan_nr].end < time){
+    if (!initialise_next_scan()) break;
+  }
+  SFXC_ASSERT(splineakima.size() > phase_center);
+  double sec = (time - scans[scan_nr].begin).get_time();
+  double result = gsl_spline_eval(splineakima[phase_center], sec, acc[phase_center]);
+  return result;
+}
+
+double Delay_table_akima::rate(int phase_center, const Time &time){
+  while (scans[scan_nr].end < time){
+    if (!initialise_next_scan()) break;
+  }
+
+  SFXC_ASSERT(splineakima.size() > phase_center);
+  double sec = (time - scans[scan_nr].begin).get_time();
+  double result = gsl_spline_eval_deriv(splineakima[phase_center], sec, acc[phase_center]);
   return result;
 }
 
@@ -216,11 +302,44 @@ Time Delay_table_akima::stop_time_scan() {
   return scans[scan_nr].end;
 }
 
+bool Delay_table_akima::goto_scan(const Time &time){
+  if((time >= start_time_scan()) && (time < stop_time_scan()))
+    return true;
+
+  if(time < start_time_scan())
+    scan_nr = 0;
+  for(int i = 0 ; i < splineakima.size() ; i++){
+    gsl_spline_free(splineakima[i]);
+    gsl_interp_accel_free(acc[i]);
+  }
+  splineakima.resize(0);
+  acc.resize(0);
+  while ((scan_nr < scans.size()) && (time > scans[scan_nr].end)) 
+    scan_nr++;
+  if(scan_nr < scans.size()){
+    initialise_next_scan();
+    return true;
+  }
+  return false;
+}
+
+
+
 std::ostream &
 operator<<(std::ostream &out, const Delay_table_akima &delay_table) {
-  SFXC_ASSERT(delay_table.times.size() == delay_table.delays.size());
-  for (size_t i=0; i<delay_table.times.size(); i++) {
-    out << delay_table.times[i] << " \t" << delay_table.delays[i] << "\n";
+  const std::vector<double> &times = delay_table.times;
+  const std::vector<double> &delays = delay_table.delays;
+  const std::vector<std::string> &sources = delay_table.sources;
+
+  for(int i = 0; i < delay_table.scans.size() ; i++){
+    const Delay_table_akima::Scan &scan = delay_table.scans[i];
+    out << "scan " << i << " : start = " << scan.begin << ", stop = " << scan.end 
+        << ", source = " << sources[scan.source] << "\n";
+    const Time one_sec(1000000);
+    int n = (scan.end - scan.begin) / one_sec;
+    for(int k = 0 ; k < n ; k++){
+      out << " t = " << times[scan.times + k] << " \t delay =" << delays[scan.delays + k] << "\n";
+    }
   }
   return out;
 }

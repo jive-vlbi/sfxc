@@ -26,9 +26,15 @@ class MPI_Transfer;
 
 class Uvw_model {
   friend class MPI_Transfer;
-  typedef struct {Time begin, end;} Interval;
 
 public:
+  struct Scan{
+    Time begin, end;
+    int32_t source;
+    int32_t times;
+    int32_t model_index;
+  };
+
   //constructor, set default values
   Uvw_model();
 
@@ -47,7 +53,7 @@ public:
                             Time inttime);
 
   //calculates u,v, and w at time(microseconds)
-  void get_uvw(Time time, double *u, double *v, double *w);
+  void get_uvw(int phase_center, Time time, double *u, double *v, double *w);
 
   /// A spline only interpolates one scan.
   /// This functions preprocesses the spline for the next scan.
@@ -59,14 +65,12 @@ public:
 
 private:
   // First entry of the next scan
-  int   begin_scan, scan_nr;
+  int scan_nr;
+  std::vector<Scan> scans;
+  std::vector<std::string> sources;
   std::vector<double> times, u, v, w;
-  std::vector<Interval> scans;
-  gsl_interp_accel *acc_u,*acc_v,*acc_w;
-  gsl_spline *splineakima_u;
-  gsl_spline *splineakima_v;
-  gsl_spline *splineakima_w;
-
+  std::vector<gsl_interp_accel *> acc_u, acc_v, acc_w;
+  std::vector<gsl_spline *> splineakima_u, splineakima_v, splineakima_w;
 };
 
 

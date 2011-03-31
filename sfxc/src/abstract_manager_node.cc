@@ -490,6 +490,16 @@ correlator_node_set_all(Pulsar_parameters &pulsar) {
     MPI_Transfer::send(pulsar, correlator_node_rank[i]);
   }
 }
+
+void
+Abstract_manager_node::
+correlator_node_set_all(std::set<std::string> &sources) {
+  for (size_t i=0; i<correlator_node_rank.size(); i++) {
+    MPI_Transfer::send(sources, correlator_node_rank[i]);
+  }
+}
+
+
 void
 Abstract_manager_node::
 set_correlator_node_ready(size_t correlator_nr, bool ready) {

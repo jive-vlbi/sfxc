@@ -30,17 +30,22 @@ struct Station_data {
 
 };
 
+struct Source_data{
+  // Source information.
+  char   source_name[81];
+  double ra; // rad
+  double dec; // rad
+};
+
 struct Scan_data {
   // Observation time.
   int    year, month, day, hour, min;
   double sec, sec_of_day;
   double scan_start, scan_stop;
   int nr_of_intervals;
-
-  // Source information.
-  char   source_name[81];
-  double ra; // rad
-  double dec; // rad
+  // All sources in the current scan
+  int n_sources;
+  struct Source_data **sources;
 };
 
 extern const double delta_time; //unit: seconds
@@ -49,6 +54,10 @@ extern const double delta_time; //unit: seconds
 extern struct Station_data station_data;
 // Number of scans
 extern int n_scans;
+// Number of sources
+extern int n_sources;
+// All sources in experiment
+extern struct Source_data *source_data;
 // Data per scan
 extern struct Scan_data *scan_data;
 #endif // GENERATE_DELAY_MODEL_H

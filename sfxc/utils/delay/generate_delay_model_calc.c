@@ -3,7 +3,7 @@
   the parameters set in a delmo_control_file, which was generated 
   with the utility vex2ccf
 
-  last change: 06-08-2010
+  last change: 04-10-2010
   authors    : RHJ Oerlemans, M Kettenis, K. Keimpema
 
   dependencies: files ocean.dat tilt.dat and DE405_le.jpl should be in $CALC_DIR
@@ -31,6 +31,7 @@ void calc();
 
 int scan_nr = 0;    // Number of the scan being processed
 int interval = 0;   // Interval number in the current scan
+int source_nr = 0;   // Source number in the current scan (in case of multiple phase centers)
 
 // Calculated delay.
 double delay[2] = { NAN }; //sec
@@ -166,8 +167,9 @@ get4(const char *name, double *value, short *n1, short *n2, short *n3,
   if (strncmp(name, "STAR2000", 8) == 0) {
     assert(*n1 == 2);
     assert(*n2 == 1);
-    value[0] = scan_data[scan_nr].ra;
-    value[1] = scan_data[scan_nr].dec;
+    value[0] = scan_data[scan_nr].sources[source_nr]->ra;
+    value[1] = scan_data[scan_nr].sources[source_nr]->dec;
+    printf("ra = %f, dec = %f\n", value[0], value[1]);
     *err = 0;
     return;
   }
@@ -276,7 +278,7 @@ geta(const char *name, char value[][8], short *n1, short *n2, short *n3,
   if (strncmp(name, "STRNAMES", 8) == 0) {
     assert(*n1 == 4);
     assert(*n2 == 1);
-    strncpy(value[0], scan_data[scan_nr].source_name, sizeof(value[0]));
+    strncpy(value[0], scan_data[scan_nr].sources[source_nr]->source_name, sizeof(value[0]));
     *err = 0;
     return;
   }
@@ -301,7 +303,7 @@ geta(const char *name, char value[][8], short *n1, short *n2, short *n3,
   if (strncmp(name, "STAR ID", 7) == 0) {
     assert(*n1 == 4);
     assert(*n2 == 1);
-    strncpy(value[0], scan_data[scan_nr].source_name, sizeof(value[0]));
+    strncpy(value[0], scan_data[scan_nr].sources[source_nr]->source_name, sizeof(value[0]));
     *err = 0;
     return;
   }
@@ -442,16 +444,19 @@ mvrec(short *ntoc, short *kmode, short *knum, short *err)
     total_delay = delay[0] + offset;
     // The number of seconds since midnight on the day the scan starts
     sec_of_day=scan_data[scan_nr].sec_of_day;
-    // At the start of each scan output the mjd at witch the scan starts
+    // At the start of each scan output the mjd at witch the scan starts and the name of the source
     if(interval == 0){
+      fwrite(scan_data[scan_nr].sources[source_nr]->source_name, 81, sizeof(char), output_file);
       int32_t scan_mjd = mjd(scan_data[scan_nr].day, scan_data[scan_nr].month, scan_data[scan_nr].year);
       fwrite(&scan_mjd, 1, sizeof(int32_t), output_file);
+      printf("source = %s\n", scan_data[scan_nr].sources[source_nr]->source_name);
     }
 
     fwrite(&sec_of_day, 1, sizeof(double), output_file);
     fwrite(uvw, 3, sizeof(double), output_file);
     fwrite(&total_delay, 1, sizeof(double), output_file);
-
+    printf("%d : t=%f, u=%e, v=%e, w=%e, delay=%e ; delay[0] = %e, offset = %e\n", 
+           interval, sec_of_day, uvw[0], uvw[1], uvw[2], total_delay, delay[0], offset);
     interval++;
     scan_data[scan_nr].sec = 
       scan_data[scan_nr].sec + delta_time ;
@@ -636,8 +641,13 @@ void generate_delay_tables(FILE *output, char *stationname) {
 
   // scan_nr is a global variable
   for (scan_nr=0; scan_nr<n_scans; scan_nr++) {
-    interval = 0;
-    calc();
+    struct Scan_data *scan = &scan_data[scan_nr];
+    for(source_nr = 0; source_nr < scan->n_sources ; source_nr++){
+      scan->sec = round(fmod(scan->scan_start, 60));
+      scan->sec_of_day = round(fmod(scan->scan_start, 24*60*60));
+      interval = 0;
+      calc();
+    }
   }
 }
 

@@ -41,6 +41,8 @@ const double delta_time = 1; // in seconds
 struct Station_data station_data;
 int                 n_scans;
 struct Scan_data    *scan_data;
+int n_sources;
+struct Source_data *source_data;
 
 // Reads the data from the vex-file
 int initialise_data(const char *vex_file,
@@ -251,8 +253,37 @@ int initialise_data(const char *vex_filename,
     }
   }
 
-  // Scan related data
+  // Source related data
+  n_sources = 0;
+  for (Vex::Node::const_iterator source = vex.get_root_node()["SOURCE"]->begin();
+       source != vex.get_root_node()["SOURCE"]->end(); ++source) {
+    n_sources ++;
+  }
+  source_data = new struct Source_data[n_sources];
+  int source_idx = 0;
+  for (Vex::Node::const_iterator source_block = vex.get_root_node()["SOURCE"]->begin();
+        source_block != vex.get_root_node()["SOURCE"]->end(); ++source_block) {
+    struct Source_data &source = source_data[source_idx];
+    strncpy(source.source_name, source_block["source_name"]->to_string().c_str(), 80);
+    for (int i=strlen(source_block["source_name"]->to_string().c_str()); i<80; i++) {
+      source.source_name[i] = ' ';
+    }
+    source.source_name[80]='\0';
 
+    int   hours, minutes, degs;
+    double seconds;
+    sscanf( source_block["ra"]->to_string().c_str(), "%dh%dm%lfs", &hours, &minutes, &seconds );
+    source.ra = ((hours*3600 + 60*minutes + seconds ) * 2 * PI)/SECS_PER_DAY;
+    sscanf( source_block["dec"]->to_string().c_str(), "%dd%d\'%lf\"", &degs, &minutes, &seconds );
+    if (strchr(source_block["dec"]->to_string().c_str(), '-'))
+      source.dec = -1*(PI/180)*(abs(degs)+minutes/60.0+seconds/3600);
+    else
+      source.dec = (PI/180)*(abs(degs)+minutes/60.0+seconds/3600);
+
+    source_idx++;
+  }
+
+  // Scan related data
   n_scans = 0;
   for (Vex::Node::const_iterator scan = vex.get_root_node()["SCHED"]->begin();
        scan != vex.get_root_node()["SCHED"]->end(); ++scan) {
@@ -290,28 +321,31 @@ int initialise_data(const char *vex_filename,
         double duration = scan_it[2]->to_double_amount("sec");
         scan.scan_stop = scan.scan_start + duration;
         scan.nr_of_intervals = (int)(duration/delta_time);
-        for (Vex::Node::const_iterator source_block =
-               vex.get_root_node()["SOURCE"]->begin(scan_block["source"]->to_string());
-             source_block != vex.get_root_node()["SOURCE"]->end(scan_block["source"]->to_string());
-             ++source_block) {
+        int n_sources_in_scan = vex.n_sources(scan_block.key());
+        typedef struct Source_data *Source_data_ptr;
+        scan.sources = new Source_data_ptr[n_sources_in_scan];
+        scan.n_sources = n_sources_in_scan;
 
-          strncpy(scan.source_name,
-                  scan_block["source"]->to_string().c_str(),
-                  80);
-          for (int i=strlen(scan_block["source"]->to_string().c_str()); i<80; i++) {
-            scan.source_name[i] = ' ';
+        int source_idx = 0;
+        for (Vex::Node::const_iterator source_it = scan_block->begin("source");
+             source_it != scan_block->end("source"); ++source_it) {
+          int i;
+          const char *source = source_it->to_string().c_str();
+          const int source_len = strlen(source);
+          for(int i = 0; i < n_sources ; i++){
+            int pos;
+            for(pos = 79; (pos > 0) && (source_data[i].source_name[pos] == ' '); pos--)
+              ;
+            std::cout << "len(" << source_data[i].source_name << ")=" << pos+1<<"\n";
+            if((pos + 1 == source_len) && 
+               (strncmp(source_data[i].source_name, source, pos + 1) == 0)){
+              assert(source_idx < n_sources_in_scan);
+              std::cout << "added " << source_data[i].source_name << "\n";
+              scan.sources[source_idx] = &source_data[i];
+              source_idx++;
+            }
           }
-          scan.source_name[80]='\0';
-
-          int   hours, minutes, degs;
-          double seconds;
-          sscanf( source_block["ra"]->to_string().c_str(), "%dh%dm%lfs", &hours, &minutes, &seconds );
-          scan.ra = ((hours*3600 + 60*minutes + seconds ) * 2 * PI)/SECS_PER_DAY;
-          sscanf( source_block["dec"]->to_string().c_str(), "%dd%d\'%lf\"", &degs, &minutes, &seconds );
-          if (strchr(source_block["dec"]->to_string().c_str(), '-'))
-            scan.dec = -1*(PI/180)*(abs(degs)+minutes/60.0+seconds/3600);
-          else
-            scan.dec = (PI/180)*(abs(degs)+minutes/60.0+seconds/3600);
+          assert(i != n_sources);
         }
         scan_nr +=1;
       }

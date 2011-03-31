@@ -21,14 +21,19 @@
 #include "correlator_time.h"
 #include "utils.h"
 
-
 class MPI_Transfer;
 
 class Delay_table_akima {
   friend class MPI_Transfer;
-  typedef struct {Time begin, end;} Interval;
 
 public:
+  struct Scan{
+    Time begin, end;
+    int32_t source;
+    int32_t times;
+    int32_t delays;
+  };
+
   // Constructor
   Delay_table_akima();
 
@@ -56,8 +61,28 @@ public:
   //calculate the delay for the delayType at time in microseconds
   // delay is in seconds
   double delay(const Time &time);
+  double delay(int phase_center, const Time &time);
   double rate(const Time &time);
+  double rate(int phase_center, const Time &time);
 
+  // Moves the delay table to the requested scan
+  bool goto_scan(const Time &time);
+  // The number of phase centers in the current scan
+  int n_phase_centers(){
+    return splineakima.size();
+  }
+  // Get the array of sources
+  const std::vector<std::string> &get_source_list(){
+    return sources;
+  }
+  // Get source at phase_center for current scan
+  const std::string &get_source(int phase_center){
+    return sources[scans[scan_nr + phase_center].source];
+  }
+  // Get index of source at phase_center for current scan
+  int get_source_index(int phase_center){
+    return scans[scan_nr + phase_center].source;
+  }
   /// A spline only interpolates one scan.
   /// This functions preprocesses the spline for the next scan.
   bool initialise_next_scan();
@@ -66,14 +91,16 @@ public:
   Time stop_time_scan();
 
   bool initialised() const {
-    return !times.empty();
+    return !scans.empty();
   }
 private:
-  int begin_scan, scan_nr;
-  std::vector<double> times, delays;
-  std::vector<Interval> scans;
-  gsl_interp_accel *acc;
-  gsl_spline *splineakima;
+  int scan_nr;
+  std::vector<Scan> scans;
+  std::vector<std::string> sources;
+  std::vector<double> times;
+  std::vector<double> delays;
+  std::vector<gsl_interp_accel *> acc;
+  std::vector<gsl_spline *> splineakima;
 };
 
 

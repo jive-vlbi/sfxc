@@ -211,6 +211,18 @@ Vex::Node parse_vex(char *filename) {
   return parse_result;
 }
 
+int Vex::n_sources(const std::string &scan_name) const{
+  int n = 0;
+  Vex::Node::const_iterator scan = root["SCHED"][scan_name];
+  for (Vex::Node::const_iterator source_it = scan->begin("source");
+       source_it != scan->end("source"); ++source_it){
+    std::cout << "scan " << scan.key() << ", source = " << source_it->to_string() << "\n";
+    n++;
+  }
+
+  return n;
+}
+
 void Vex::get_frequencies(const std::string &mode, std::vector<double> &frequencies) const {
   Node root_node = get_root_node();
   Node::iterator mode_it = root_node["MODE"][mode];

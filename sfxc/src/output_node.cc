@@ -17,8 +17,8 @@ Output_node::Output_node(int rank, int size)
     output_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
-    status(STOPPED), n_data_writers(0),
-    curr_slice(0), number_of_time_slices(-1), curr_stream(-1) {
+    status(STOPPED), n_data_writers(0), output_file_index(0),
+    curr_slice(0), number_of_time_slices(-1), curr_stream(-1), current_output_file(-1) {
   initialise();
 }
 
@@ -27,8 +27,8 @@ Output_node::Output_node(int rank, Log_writer *writer, int size)
     output_node_ctrl(*this),
     data_readers_ctrl(*this),
     data_writer_ctrl(*this),
-    status(STOPPED), n_data_writers(0),
-    curr_slice(0), number_of_time_slices(-1), curr_stream(-1) {
+    status(STOPPED), n_data_writers(0), output_file_index(0),
+    curr_slice(0), number_of_time_slices(-1), curr_stream(-1), current_output_file(-1) {
   initialise();
 }
 
@@ -185,15 +185,29 @@ bool Output_node::write_output(int nBytes) {
   SFXC_ASSERT(curr_stream >= 0);
   SFXC_ASSERT(input_streams[curr_stream] != NULL);
 
-  int nbytes_per_bin = curr_slice_size/number_of_bins;
-  int start_bin = total_bytes_written/nbytes_per_bin;
+  int nbytes_per_file = curr_slice_size/number_of_bins; 
   int bytes_written=0;
-  int index_in_bin = total_bytes_written - start_bin*nbytes_per_bin;
-  for(int bin=start_bin;(bin<number_of_bins)&&(bytes_written<nBytes);bin++){
-    int to_write = std::min(nbytes_per_bin-index_in_bin, nBytes-bytes_written);
-    data_writer_ctrl.get_data_writer(bin)->put_bytes(to_write, &input_buffer[bytes_written]);
-    index_in_bin=0;
+  int index_in_file = total_bytes_written%nbytes_per_file;
+  while(bytes_written<nBytes){
+    // Get index of next output file
+    if(output_file_index < 4){
+      char *current_output_file_ptr = (char *)&current_output_file;
+      int to_read = std::min(4 - output_file_index, nBytes - bytes_written);
+      memcpy(&current_output_file_ptr[output_file_index], &input_buffer[bytes_written], to_read);
+      output_file_index += to_read;
+      bytes_written += to_read;
+      index_in_file += to_read;
+    }
+    // Write the data
+    int to_write = std::min(nbytes_per_file-index_in_file, nBytes-bytes_written);
+//    std::cout << "current_output_file = " << current_output_file <<"\n";
+    data_writer_ctrl.get_data_writer(current_output_file)->put_bytes(to_write, &input_buffer[bytes_written]);
     bytes_written += to_write;
+    index_in_file += to_write;
+    if(index_in_file >= nbytes_per_file){
+      output_file_index = 0;
+      index_in_file=0;
+    }
   }
   SFXC_ASSERT(bytes_written==nBytes);
   return true;

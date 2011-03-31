@@ -10,6 +10,8 @@
 #ifndef MPI_TRANSFER_H_
 #define MPI_TRANSFER_H_
 
+#include <set>
+
 #include "types.h"
 #include "sfxc_mpi.h"
 #include "delay_table_akima.h"
@@ -37,6 +39,9 @@ public:
 
   static void send(Correlation_parameters &corr_param, int rank);
   static void receive(MPI_Status &status, Correlation_parameters &corr_param);
+
+  static void send(std::set<std::string> &sources, int rank);
+  static void receive(MPI_Status &status, std::map<std::string, int> &sources);
 
   static void send_ip_address(std::vector<uint64_t>& params, const int rank);
   static void receive_ip_address(std::vector<uint64_t>& params, const int rank);

@@ -125,7 +125,7 @@ void Correlation_core_pulsar::do_task() {
 
     for(int bin=0;bin<nbins;bin++){
       integration_normalize(accumulation_buffers[bin]);
-      integration_write(accumulation_buffers[bin]);
+      integration_write(accumulation_buffers[bin], 0, bin);
     }
     current_integration++;
   }
