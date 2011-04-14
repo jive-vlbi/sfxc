@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <set>
 
 #include <unistd.h>
 
@@ -41,7 +42,7 @@ print_interval(std::string& station1, std::string& station2, Time& start, Time& 
 void
 usage()
 {
-	std::cout << "usage: polyflag [-i N] [-w N] VEXFILE CTRLFILE ..."  << std::endl;
+	std::cout << "usage: polyflag [-i N] [-w N] [-x STATION] VEXFILE CTRLFILE ..."  << std::endl;
 	exit(1);
 }
 
@@ -51,9 +52,10 @@ main(int argc, char *argv[])
 	double min_wrap = 4.0;
 	Time t_int = Time(1e6);
 	bool t_int_set = false;
+	std::set<std::string> excluded_stations;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "i:w:")) != -1) {
+	while ((ch = getopt(argc, argv, "i:w:x:")) != -1) {
 		switch (ch) {
 		case 'i':
 			t_int = Time(atof(optarg) * 1e6);
@@ -61,6 +63,9 @@ main(int argc, char *argv[])
 			break;
 		case 'w':
 			min_wrap = atof(optarg);
+			break;
+		case 'x':
+			excluded_stations.insert(optarg);
 			break;
 		default:
 			usage();
@@ -99,6 +104,8 @@ main(int argc, char *argv[])
 		std::vector<Delay_table_akima> delay_tables;
 		for (Json::Value::iterator station = ctrl["stations"].begin();
 		     station != ctrl["stations"].end(); station++) {
+			if (excluded_stations.count((*station).asString()) > 0)
+				continue;
 			station_names.push_back((*station).asString());
 
 			std::string delay_table_name;
