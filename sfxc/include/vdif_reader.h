@@ -61,6 +61,7 @@ public:
                 Data_frame &data, Time ref_time);
   virtual ~VDIF_reader();
 
+  bool open_input_stream(Data_frame &data);
   /// Time in microseconds
   /// Changed the order of the arguments when I changed from miliseconds to microseconds
   Time goto_time(Data_frame &data, Time us_time);

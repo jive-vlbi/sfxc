@@ -37,8 +37,7 @@ public:
   typedef Input_node_types::Input_buffer_ptr            Output_buffer_ptr;
 
   Input_data_format_reader_tasklet(Data_format_reader_ptr reader,
-                                   Input_memory_pool_ptr memory_pool, 
-                                   Data_frame &data);
+                                   Input_memory_pool_ptr memory_pool);
 
   ~Input_data_format_reader_tasklet();
 
@@ -77,6 +76,10 @@ public:
     return reader_->bytes_per_input_word();
   }
 
+  Data_format_reader_ptr get_data_reader(){
+    return reader_;
+  }
+
   void set_parameters(const Input_node_parameters &input_node_param);
 
   inline uint64_t get_num_processed_bytes(){ return data_read_; }
@@ -92,7 +95,8 @@ private:
   void demodulate(Input_element &data);
   void gen_demodulation_sequence(int sequence_length);
   std::vector<unsigned char> demodulation_sequence; // contains the pseudo-random sequence
-
+  void open_input_stream();
+  void push_random_blocks(int nblocks);
 
 private:
   /// Data stream to read from

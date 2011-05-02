@@ -32,11 +32,10 @@ public:
   typedef Input_data_format_reader::Data_frame            Data_frame;
 
   Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
-                int N,
-                Data_frame &data,
                 Time ref_time_);
   virtual ~Mark5a_reader();
 
+  bool open_input_stream(Data_frame &data);
   Time goto_time(Data_frame &data, Time us_time);
 
   /// Get the current time
@@ -48,8 +47,6 @@ public:
   /// Get track information from a mark5a header
   std::vector< std::vector<int> > get_tracks(const Input_node_parameters &input_node_param,
                                              Data_frame &data);
-  std::vector< std::vector<int> > get_standard_track_mapping(const Input_node_parameters &input_node_param,
-                                                             Data_frame &data);
 
   Time time_between_headers() {
     SFXC_ASSERT(data_rate() % (N*SIZE_MK5A_FRAME) == 0);
@@ -72,6 +69,8 @@ public:
   }
 
 private:
+  int find_start_of_header(boost::shared_ptr<Data_reader> reader, Data_frame &data);
+
   // format a time in miliseconds
   std::string time_to_string(int64_t time);
 
@@ -80,17 +79,17 @@ private:
   bool check_track_bit_statistics(Data_frame &data);
 
   // Resync header if there is mising data in the input stream
-  bool resync_header(Data_frame &data, int try_);
+  bool resync_header(Data_frame &data);
 
   void set_data_frame_info(Data_frame &data);
 private:
   // Time information
   int start_day_, current_day_, current_mjd_;
+  int ref_year, ref_day;
   //int64_t us_per_day;
   // start time and current time in microseconds
   // start time is used to check the data rate
   Time start_time_, current_time_;
-
   // For testing
   Debug_level debug_level_;
   int block_count_;
@@ -100,17 +99,8 @@ private:
 
 public:
   int DATA_RATE_;
-  const int N;
+  int N;
 };
-
-/** Returns a mark5a reader based on the headers in the data stream
- **/
-Mark5a_reader *
-get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
-                  Mark5a_reader::Data_frame &data, Time ref_date);
-
-int find_start_of_header(boost::shared_ptr<Data_reader> reader,
-                         Mark5a_reader::Data_frame &data);
 
 inline Time Mark5a_reader::get_current_time() {
   return current_time_;

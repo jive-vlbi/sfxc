@@ -30,12 +30,11 @@ int main(int argc, char *argv[]) {
 
 
   boost::shared_ptr<Data_reader> reader(new Data_reader_file(argv[1]));
+  Mark5a_reader *mark5a_reader = new Mark5a_reader(reader, Time(0));
 
   Mark5a_reader::Data_frame data;
-
-  Mark5a_reader *mark5a_reader =
-    get_mark5a_reader(reader, data, Time(0));
-
+  while ((!mark5a_reader->open_input_stream(data)) && (!mark5a_reader->eof()))
+    ;
   int64_t prev_time = (int64_t)mark5a_reader->get_current_time().get_time_usec(), current_time;
 
   do {

@@ -58,6 +58,7 @@ public:
                 Data_frame &data, Time ref_date);
   virtual ~Mark5b_reader();
 
+  bool open_input_stream(Data_frame &data);
   /// Time in microseconds
   /// Changed the order of the arguments when I changed from miliseconds to microseconds
   Time goto_time(Data_frame &data, Time time);

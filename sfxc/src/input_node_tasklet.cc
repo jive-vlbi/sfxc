@@ -23,14 +23,10 @@ typedef boost::shared_ptr<Data_reader>      Data_reader_ptr;
 Input_node_tasklet *
 get_input_node_tasklet_mark5a(Data_reader_ptr reader, Data_memory_pool_ptr memory_pool_,
                               Time ref_date) {
-  // Maximal buffer size
-  Input_data_format_reader::Data_frame data;
-  data.buffer = memory_pool_->allocate();
-
   boost::shared_ptr<Mark5a_reader> mark5a_reader_ptr =
-    boost::shared_ptr<Mark5a_reader>( get_mark5a_reader(reader, data, ref_date));
+    boost::shared_ptr<Mark5a_reader>( new Mark5a_reader(reader, ref_date) );
 
-  return new Input_node_tasklet(mark5a_reader_ptr, memory_pool_, data);
+  return new Input_node_tasklet(mark5a_reader_ptr, memory_pool_);
 }
 
 Input_node_tasklet *
@@ -43,7 +39,7 @@ get_input_node_tasklet_vlba(Data_reader_ptr reader, Data_memory_pool_ptr memory_
   boost::shared_ptr<VLBA_reader> vlba_reader_ptr =
     boost::shared_ptr<VLBA_reader>( get_vlba_reader(reader, data, ref_date));
 
-  return new Input_node_tasklet(vlba_reader_ptr, memory_pool_, data);
+  return new Input_node_tasklet(vlba_reader_ptr, memory_pool_);
 }
 
 Input_node_tasklet *
@@ -55,7 +51,7 @@ get_input_node_tasklet_mark5b(Data_reader_ptr reader, Data_memory_pool_ptr memor
 
   Input_reader_ptr   mark5b_reader_ptr(new Mark5b_reader(reader, data, ref_date));
 
-  return new Input_node_tasklet(mark5b_reader_ptr, memory_pool_, data);
+  return new Input_node_tasklet(mark5b_reader_ptr, memory_pool_);
 }
 
 Input_node_tasklet *
@@ -66,7 +62,7 @@ get_input_node_tasklet_vdif(Data_reader_ptr reader, Data_memory_pool_ptr memory_
   data.buffer = memory_pool_->allocate();
 
   Input_reader_ptr  vdif_reader_ptr(new VDIF_reader(reader, data, ref_date));
-  return new Input_node_tasklet(vdif_reader_ptr, memory_pool_, data);
+  return new Input_node_tasklet(vdif_reader_ptr, memory_pool_);
 }
 
 
@@ -94,26 +90,11 @@ get_input_node_tasklet(boost::shared_ptr<Data_reader> reader,
 
 
 Input_node_tasklet::
-Input_node_tasklet(Input_reader_ptr_ reader_ptr, Data_memory_pool_ptr memory_pool_,
-                   Input_reader_::Data_frame &data)
-    : reader_(reader_ptr, memory_pool_, data),
-    n_bytes_per_input_word(reader_ptr->bytes_per_input_word()),
-    delay_pool(10) {
-  if(reader_ptr->get_transport_type()==VDIF)
-    channel_extractor_= Channel_extractor_tasklet_ptr( 
-        new Channel_extractor_tasklet_VDIF(reader_ptr->size_data_block() /
-                                           reader_ptr->bytes_per_input_word(),
-                                           reader_ptr->bytes_per_input_word()));
-  else
-    channel_extractor_= Channel_extractor_tasklet_ptr( 
-        new Channel_extractor_tasklet(reader_ptr->size_data_block() /
-                                      reader_ptr->bytes_per_input_word(),
-                                      reader_ptr->bytes_per_input_word()));
-
-  channel_extractor_->connect_to(reader_.get_output_buffer());
-
+Input_node_tasklet(Input_reader_ptr_ reader_ptr, Data_memory_pool_ptr memory_pool_)
+    : reader_(reader_ptr, memory_pool_), delay_pool(10) 
+{
   last_duration_ = 0;
-  initialise();
+  initialized = false;
 }
 
 
@@ -143,6 +124,19 @@ add_time_interval(Time &start_time, Time &stop_time) {
 
 void Input_node_tasklet::initialise()
 {
+  if(reader_.get_data_reader()->get_transport_type()==VDIF)
+    channel_extractor_= Channel_extractor_tasklet_ptr( 
+        new Channel_extractor_tasklet_VDIF(reader_.get_data_reader()->size_data_block() /
+                                           reader_.size_input_word(),
+                                           reader_.size_input_word()));
+  else
+    channel_extractor_= Channel_extractor_tasklet_ptr( 
+        new Channel_extractor_tasklet(reader_.get_data_reader()->size_data_block() /
+                                      reader_.size_input_word(),
+                                      reader_.size_input_word()));
+
+  channel_extractor_->connect_to(reader_.get_output_buffer());
+  initialized = true;
 }
 
 Input_node_tasklet::~Input_node_tasklet() {
@@ -188,6 +182,9 @@ Input_node_tasklet::
 set_parameters(const Input_node_parameters &input_node_param,
                int node_nr) {
   reader_.set_parameters(input_node_param);
+  if(!initialized)
+    initialise();
+
   channel_extractor_->set_parameters(input_node_param,
                                      reader_.get_tracks(input_node_param));
 

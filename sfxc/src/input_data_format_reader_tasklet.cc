@@ -1,26 +1,21 @@
 #include "input_data_format_reader_tasklet.h"
+#define NSKIP  16  // Number of frames to skip if we can't find a new header
 
 Input_data_format_reader_tasklet::
 Input_data_format_reader_tasklet(
   Data_format_reader_ptr reader,
-  Input_memory_pool_ptr memory_pool,
-  Data_frame &data)
+  Input_memory_pool_ptr memory_pool)
     : memory_pool_(memory_pool),
       n_bytes_per_input_word(reader->bytes_per_input_word()),
       data_modulation(false) {
 
   SFXC_ASSERT(sizeof(value_type) == 1);
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
-  allocate_element();
   reader_ = reader;
 
-  assert(data.buffer->data.size() > 0);
-
-  input_element_ = data;
   current_time = reader_->get_current_time();
-  push_element();
-
   data_read_=0;
+  allocate_element();
 }
 
 Input_data_format_reader_tasklet::~Input_data_format_reader_tasklet(){  
@@ -61,30 +56,29 @@ do_task() {
 
   if (reader_->eof()) {
     randomize_block();
+  } else if(!reader_->is_open()) {
+    open_input_stream();
+    return;
   } else if (reader_->get_current_time() - current_time >= reader_->time_between_headers()) {
     randomize_block();
   } else {
+    int64_t nframes_left = (current_interval_.stop_time_ - start_next_frame) / reader_->time_between_headers();
     if (!reader_->read_new_block(input_element_)){
+      // Insert invalid blocks to prevent bad data stream to stall correlation
+      push_random_blocks(std::min((int64_t)NSKIP, nframes_left-1));
       randomize_block();
     }else if(reader_->get_current_time() != start_next_frame){
       int64_t nframes_missing = (reader_->get_current_time() - start_next_frame) / reader_->time_between_headers();
-      int64_t nframes_left = (current_interval_.stop_time_ - start_next_frame) / reader_->time_between_headers();
       nframes_missing = std::min(nframes_missing, nframes_left);
-      std::cout << RANK_OF_NODE << " : nframes_missing = " << nframes_missing << "; t= " << reader_->get_current_time() <<", expected="<<start_next_frame<<"\n";
+      std::cout << RANK_OF_NODE << " : nframes_missing = " << nframes_missing << "; t= " << reader_->get_current_time() 
+                                << ", expected=" << start_next_frame << "\n";
       if(nframes_missing > 0){
         Input_element old_input_element = input_element_;
-        for(int i=0; i < nframes_missing; i++){
-          randomize_block();
-          current_time += reader_->time_between_headers();
-          input_element_.start_time = current_time;
-          data_read_ += input_element_.buffer->data.size();
-          push_element();
-        }
+        push_random_blocks(nframes_missing);
         if(nframes_missing == nframes_left) // we are done, so don't insert last frame
           return;  
         input_element_ = old_input_element;
       } else if(nframes_missing < 0){
-        do_task();
         return;
       }
     }
@@ -95,7 +89,6 @@ do_task() {
   input_element_.start_time = current_time;
 
   data_read_ += input_element_.buffer->data.size();
-
   push_element();
 }
 
@@ -104,9 +97,10 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
   /// Blocking function until a new interval is available
   current_interval_ = intervals_.front_and_pop();
   if ( !current_interval_.empty() ) {
-    /// Otherwise the new interval is loaded.
-    ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: SET TIME");
-    ///DEBUG_MSG(__PRETTY_FUNCTION__ << ":: val:"<< current_interval_.start_time_ << " cur: "<< current_time);
+    if((!reader_->is_open()) && (!reader_->open_input_stream(input_element_))){
+      current_time = current_interval_.start_time_;
+      return;
+    } 
     if(current_interval_.start_time_<=reader_->get_current_time()){
       // Ensure that the current_time is exactly at header_start, in mark5b sometimes the VLBA timestamp is used
       int64_t nframes = (int64_t) round((reader_->get_current_time() - current_interval_.start_time_) / reader_->time_between_headers());
@@ -120,12 +114,53 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
         randomize_block();
         input_element_.start_time = current_time;
       }
+    }
+    data_read_ += input_element_.buffer->data.size();
+    push_element();
+  }
+}
+
+void
+Input_data_format_reader_tasklet::open_input_stream(){
+  if(!reader_->open_input_stream(input_element_)){
+    // Prevent stream from stalling correlation if no header is found
+    push_random_blocks(NSKIP);
+  }else{
+    if(current_time <= reader_->get_current_time()){
+      int64_t nframes = (int64_t) round((reader_->get_current_time() - current_time) / reader_->time_between_headers());
+      push_random_blocks(nframes);
+    }else{
+      Time reader_time = goto_time(current_time);
+      int64_t nframes = (int64_t) round((reader_time - current_time)/ reader_->time_between_headers());
+      reader_time = current_time + reader_->time_between_headers() * nframes; // round to integer number of frames
+      if (reader_time > current_interval_.stop_time_) {
+        current_time = current_interval_.stop_time_;
+        randomize_block();
+      }else{
+        if(reader_time > current_time){
+          Input_element old_input_element = input_element_;
+          push_random_blocks(nframes);
+          input_element_ = old_input_element;
+          current_time = current_interval_.start_time_ + reader_->time_between_headers() * nframes;
+        }
+      }
       data_read_ += input_element_.buffer->data.size();
+      input_element_.start_time = current_time;
       push_element();
     }
   }
 }
 
+void
+Input_data_format_reader_tasklet::push_random_blocks(int nblocks){
+  for(int i=0; i < nblocks; i++){
+    randomize_block();
+    current_time += reader_->time_between_headers();
+    input_element_.start_time = current_time;
+    data_read_ += input_element_.buffer->data.size();
+    push_element();
+  }
+}
 
 void
 Input_data_format_reader_tasklet::

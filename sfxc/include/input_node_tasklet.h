@@ -34,9 +34,7 @@ public:
   typedef boost::shared_ptr<Channel_extractor_tasklet> Channel_extractor_tasklet_ptr;
 
   // The mark5a-reader and the first data block
-  Input_node_tasklet(Input_reader_ptr_ input_reader_ptr, Data_memory_pool_ptr memory_pool_,
-                     Input_reader_::Data_frame &data);
-
+  Input_node_tasklet(Input_reader_ptr_ input_reader_ptr, Data_memory_pool_ptr memory_pool_);
 
   ~Input_node_tasklet();
 
@@ -92,8 +90,7 @@ private:
 
   Delay_table_akima delay_table;
 
-  const size_t n_bytes_per_input_word;
-
+  bool initialized;
   int sample_rate;
   int bits_per_sample;
   int64_t size_slice; // Number of samples for one integration slice

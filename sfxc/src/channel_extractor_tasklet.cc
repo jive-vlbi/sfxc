@@ -120,7 +120,6 @@ Channel_extractor_tasklet::do_task() {
       output_elements[subband].channel_data = output_memory_pool_.allocate();
 
       output_elements[subband].start_time = input_element.start_time;
-
       // allocate the right amount of memory for each output block
       if (output_elements[subband].channel_data.data().data.size() !=
           (size_t)n_output_bytes) {

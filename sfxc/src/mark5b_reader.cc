@@ -29,6 +29,12 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
 
 Mark5b_reader::~Mark5b_reader() {}
 
+bool 
+Mark5b_reader::open_input_stream(Data_frame &data){
+  is_open_ = true;
+  return true;
+}
+
 Time
 Mark5b_reader::goto_time(Data_frame &data, Time us_time) {
   SFXC_ASSERT(current_header.check());
@@ -235,6 +241,7 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
 }
 
 bool Mark5b_reader::resync_header(Data_frame &data, int try_) {
+  int MAXIMUM_RESYNC_TRIES  = 16; // TODO This is going away anyway
   if(try_ == MAXIMUM_RESYNC_TRIES){
     std::cout << "Couldn't find new sync word before EOF\n";
     return false;

@@ -28,6 +28,12 @@ VDIF_reader(boost::shared_ptr<Data_reader> data_reader,
 
 VDIF_reader::~VDIF_reader() {}
 
+bool 
+VDIF_reader::open_input_stream(Data_frame &data){
+  is_open_ = true;
+  return true;
+}
+
 void 
 VDIF_reader::print_header(){
   std::cout << RANK_OF_NODE << "------------ full header ------------\n";

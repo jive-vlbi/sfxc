@@ -36,6 +36,7 @@ public:
               Data_frame &header_, Data_frame &aux_header_, Time ref_date_);
   virtual ~VLBA_reader();
 
+  bool open_input_stream(Data_frame &data);
   Time goto_time(Data_frame &data, Time time);
 
   /// Get the current time

@@ -35,6 +35,12 @@ VLBA_reader(boost::shared_ptr<Data_reader> data_reader, int N_, Data_frame &data
 
 VLBA_reader::~VLBA_reader() {}
 
+bool 
+VLBA_reader::open_input_stream(Data_frame &data){
+  is_open_ = true;
+  return true;
+}
+
 Time
 VLBA_reader::goto_time(Data_frame &data, Time time) {
   // Compute with times in microseconds to find the exact time of the data

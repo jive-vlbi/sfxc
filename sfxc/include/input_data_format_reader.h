@@ -17,7 +17,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#define MAXIMUM_RESYNC_TRIES 20
+#define RESYNC_MAX_DATA_FRAMES  16
 
 class Input_data_format_reader {
 public:
@@ -26,6 +26,7 @@ public:
   Input_data_format_reader(boost::shared_ptr<Data_reader> data_reader);
   virtual ~Input_data_format_reader();
 
+  virtual bool open_input_stream(Data_frame &data) = 0;
   virtual Time goto_time(Data_frame &data, Time time) = 0;
 
   /// Get the current time
@@ -46,6 +47,9 @@ public:
 
   bool eof();
   void find_fill_pattern(Data_frame &data);
+  bool is_open(){
+    return is_open_;
+  }
 
   virtual void set_parameters(const Input_node_parameters &param) = 0;
 
@@ -54,8 +58,8 @@ public:
 protected:
   // Data reader: input stream
   boost::shared_ptr<Data_reader> data_reader_;
-
-//   int data_rate() const;
+  // Set to true if there is a valid header found in the data stream
+  bool is_open_;
 };
 
 #endif // INPUT_DATA_FORMAT_READER_H

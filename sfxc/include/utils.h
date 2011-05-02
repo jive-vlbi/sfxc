@@ -100,6 +100,7 @@ extern int RANK_OF_NODE;
     << msg
 
 #ifdef USE_MPI
+#include <mpi.h>
 #define DEBUG_MSG(msg) \
     { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
       std::cout << FORMAT_MSG(msg) << std::endl << std::flush; }
