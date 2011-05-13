@@ -16,6 +16,9 @@ from PyQt4 import Qt, QtCore, QtGui
 import PyQt4.Qwt5 as Qwt
 from PyQt4.Qwt5.anynumpy import *
 
+# MySQL
+import MySQLdb as db
+
 # UI
 from progress import *
 
@@ -190,10 +193,25 @@ class progressDialog(QtGui.QDialog):
 
     def abort(self):
         if self.proc:
+            self.status = 'ABORT'
             self.proc.terminate()
         else:
             self.reject()
             pass
+        pass
+
+    def update_status(self):
+        conn = db.connect(host="ccs", port=3307,
+                          db="correlator_control",
+                          read_default_file="~/.my.cnf")
+
+        cursor = conn.cursor()
+        cursor.execute("UPDATE data_logbook" \
+                           + " SET correlator_status='%s'" % self.status \
+                           + " WHERE subjob_id=%d" % self.subjob)
+        cursor.close()
+        conn.commit()
+        conn.close()
         pass
 
     def run(self, vex_file, ctrl_file, machine_file, rank_file):
@@ -209,10 +227,12 @@ class progressDialog(QtGui.QDialog):
 
         self.start = vex2time(self.json_input['start'])
         self.stop = vex2time(self.json_input['stop'])
+        self.subjob = self.json_input['subjob']
         self.ui.progressBar.setRange(self.start, self.stop)
         self.secs = self.start
         self.scan = None
         self.plot = None
+        self.status = 'CRASH'
 
         # Parse the rankfile to calculate the number of MPI processes
         # to start.  We simply count the number of lines that start
@@ -228,10 +248,11 @@ class progressDialog(QtGui.QDialog):
             continue
         fp.close()
 
+        sfxc = '/home/sfxc/bin/sfxc'
         sfxc = '/home/kettenis/opt/sfxc-ipp.mpich/bin/sfxc'
-#        args = ['mpirun', '--mca', 'btl_tcp_if_include', 'bond0,ib0,eth0',
-#                '--machinefile', machine_file, '--rankfile', rank_file,
-#                '--np', str(ranks), sfxc, ctrl_file, vex_file]
+        args = ['mpirun', '--mca', 'btl_tcp_if_include', 'bond0,ib0,eth0',
+                '--machinefile', machine_file, '--rankfile', rank_file,
+                '--np', str(ranks), sfxc, ctrl_file, vex_file]
         args = ['mpirun.mpich',
                 '-machinefile', machine_file,
                 '-np', str(ranks), sfxc, ctrl_file, vex_file]
@@ -290,12 +311,15 @@ class progressDialog(QtGui.QDialog):
             self.t.stop()
             self.log_fp.close()
             if self.proc.returncode == 0:
+                self.status = 'DONE'
+                self.update_status()
                 del self.plot
                 self.accept()
                 pass
             else:
                 QtGui.QMessageBox.warning(self, "Aborted",
                                           "Correlation job finished unsucessfully.")
+                self.update_status()
                 del self.plot
                 self.reject()
                 pass
