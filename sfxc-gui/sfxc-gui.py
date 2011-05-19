@@ -249,13 +249,13 @@ class progressDialog(QtGui.QDialog):
         fp.close()
 
         sfxc = '/home/sfxc/bin/sfxc'
-        sfxc = '/home/kettenis/opt/sfxc-ipp.mpich/bin/sfxc'
+        #sfxc = '/home/kettenis/opt/sfxc-ipp.mpich/bin/sfxc'
         args = ['mpirun', '--mca', 'btl_tcp_if_include', 'bond0,ib0,eth0',
                 '--machinefile', machine_file, '--rankfile', rank_file,
                 '--np', str(ranks), sfxc, ctrl_file, vex_file]
-        args = ['mpirun.mpich',
-                '-machinefile', machine_file,
-                '-np', str(ranks), sfxc, ctrl_file, vex_file]
+        #args = ['mpirun.mpich',
+        #        '-machinefile', machine_file,
+        #        '-np', str(ranks), sfxc, ctrl_file, vex_file]
 
         self.proc = subprocess.Popen(args, stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
