@@ -322,6 +322,7 @@ class progressDialog(QtGui.QDialog):
                 self.update_status()
                 del self.plot
                 self.reject()
+                sys.exit(1)
                 pass
             pass
 
