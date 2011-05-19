@@ -206,7 +206,7 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
           Mark5a_header header(N_new);
           header.set_header((unsigned char *)buffer);
           if(header.check_header()){
-            int to_read = header_start + (N_new-1) * SIZE_MK5A_FRAME;
+            int to_read = header_start + (N_new - N) * SIZE_MK5A_FRAME;
             data.buffer->data.resize(N_new * SIZE_MK5A_FRAME);
             buffer = (char *)&data.buffer->data[0];
             Data_reader_blocking::get_bytes_s(data_reader_.get(), to_read, buffer+N*SIZE_MK5A_FRAME-header_start);
