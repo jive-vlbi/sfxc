@@ -18,53 +18,9 @@ Mark5a_reader::~Mark5a_reader() {}
 
 Time
 Mark5a_reader::goto_time(Data_frame &data, Time time) {
-  // Compute with times in microseconds to find the exact time of the data
-  if (time < get_current_time()) {
-    return get_current_time();
-  } else if (time == get_current_time()) {
-    return time;
-  }
-
-  // first skip through the file in 1 second steps.
-  const Time one_sec(1000000.);
-  const Time t_one_frame(8*N*SIZE_MK5A_FRAME / (data_rate() / 1000000.));
-  const size_t max_blocks_to_read = std::numeric_limits<size_t>::max() / (SIZE_MK5A_FRAME*N);
-  Time delta_time = time - get_current_time();
-  while(delta_time>=one_sec){
-    // Read an integer number of frames
-    size_t n_blocks = std::min((size_t)(delta_time / t_one_frame)/2, max_blocks_to_read);
-    size_t read_n_bytes =  (n_blocks - 1) * SIZE_MK5A_FRAME*N;
-
-    // A blocking read operation. The operation is looping until the file
-    // is eof or the requested amount of data is retreived.
-    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
-    if (byte_read != read_n_bytes)
-      return current_time_;
-
-    // Need to read the data to check the header
-    if (!read_new_block(data)) {
-      DEBUG_MSG("Couldn't read data");
-    }
-    delta_time = time - get_current_time();
-  }
-  // Now read the last bit of data up to the requested time
-  int n_blocks = (int)(delta_time / t_one_frame);
-  if(n_blocks > 0){
-    size_t read_n_bytes =  (n_blocks - 1) * SIZE_MK5A_FRAME*N;
-    //SFXC_ASSERT(read_n_bytes %(SIZE_MK5A_FRAME*N)==0);
-    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
-    if (byte_read != read_n_bytes)
-      return current_time_;
-
-    // Need to read the data to check the header
-    if (!read_new_block(data)) {
-      DEBUG_MSG("Couldn't read data");
-    }
-  }
-  if (get_current_time() != time) {
-    // When jumping to the start of the scan, it can happen that we don't end up exactly
-    // at us_time, because the station might have started recording late.
-    DEBUG_MSG("Attempted to jump to time " << time << ", but found timestamp" << get_current_time());
+  while (time > get_current_time()) {
+    if (!read_new_block(data))
+      break;
   }
 
   return get_current_time();
