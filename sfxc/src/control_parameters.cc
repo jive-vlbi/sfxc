@@ -162,6 +162,17 @@ initialise(const char *ctrl_file, const char *vex_file,
     }
   }
 
+  if (ctrl["start"].asString().compare("now") == 0) {
+    char *now;
+    time_t t;
+    struct tm tm;
+    ::time(&t);
+    ::gmtime_r(&t, &tm);
+    ::asprintf(&now, "%dy%dd%dh%dm%ds", tm.tm_year + 1900, tm.tm_yday + 1,
+	       tm.tm_hour, tm.tm_min, tm.tm_sec);
+    ctrl["start"] = now;
+  }
+
   // Get start date
   start_time =Time(vex.get_start_time_of_experiment());
   initialised = true;
