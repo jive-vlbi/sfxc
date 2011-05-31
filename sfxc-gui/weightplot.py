@@ -197,7 +197,7 @@ class WeightPlotWindow(Qt.QWidget):
         self.stations.sort()
 
         self.plot = {}
-        self.layout = Qt.QGridLayout(self)
+        self.layout = Qt.QGridLayout()
         for station in stations:
             self.plot[station] = WeightPlot(station, start, stop, gaps)
             self.layout.addWidget(self.plot[station])
@@ -207,10 +207,12 @@ class WeightPlotWindow(Qt.QWidget):
             self.last_station = station
             continue
         lastplot.enableAxis(Qwt.QwtPlot.xBottom, True)
-        lastplot.insertLegend(Qwt.QwtLegend(), Qwt.QwtPlot.BottomLegend)
-        lastplot.legend().clear()
+        lastplot.insertLegend(Qwt.QwtLegend(), Qwt.QwtPlot.ExternalLegend)
+        self.layout.setRowStretch(self.layout.rowCount() - 1, 135)
 
-        self.layout.setRowStretch(self.layout.rowCount() - 1, 200)
+        self.box = Qt.QVBoxLayout(self)
+        self.box.addLayout(self.layout)
+        self.box.addWidget(lastplot.legend())
 
         self.startTimer(500)
         self.resize(500, len(stations) * 100 + 50)
