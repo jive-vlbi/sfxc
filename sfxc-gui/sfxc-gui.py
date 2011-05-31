@@ -59,7 +59,7 @@ class WeightPlot(Qwt.QwtPlot):
         self.y = {}
         self.station = station
 
-        self.setTitle(station)
+        self.setAxisTitle(Qwt.QwtPlot.yLeft, station)
         self.setAxisScale(Qwt.QwtPlot.yLeft, 0, 1.0)
         self.setAxisMaxMajor(Qwt.QwtPlot.yLeft, 2)
         self.setAxisScale(Qwt.QwtPlot.xBottom, 0, integrations)
