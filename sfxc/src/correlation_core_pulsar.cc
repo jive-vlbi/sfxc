@@ -26,6 +26,12 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
   if (input_elements.size() != number_input_streams_in_use()) {
     input_elements.resize(number_input_streams_in_use());
   }
+
+  if (input_conj_buffers.size() != number_input_streams_in_use()) {
+    input_conj_buffers.resize(number_input_streams_in_use());
+    for(int i=0;i<number_input_streams_in_use();i++)
+      input_conj_buffers[i].resize(fft_size() + 1);
+  }
   n_flagged.resize(baselines.size());
 
   double start_mjd = parameters.start_time.get_mjd();
@@ -171,15 +177,13 @@ void Correlation_core_pulsar::dedisperse_buffer() {
   for (int j=0; j < fft_size() + 1; j++) {
     double phase = obs_freq_phase+offsets[j];
     double dph = (phase-floor(phase))-gate.begin;
-    if((dph>=0)&&(dph<=len)){
+    if((dph>=0)&&(dph<len)){
       bins[j] = (int)(dph*nbins/len);
     }else
       bins[j]=-1;
   }
-
   // TODO check performance agains loop interchange
   for (int i=0; i < baselines.size(); i++) {
-    SFXC_ASSERT(dedispersion_buffer[i].size() == fft_size() + 1);
     for(int j= 0 ; j < fft_size() + 1; j++) {
       int bin = bins[j];
       if(bin >= 0){
