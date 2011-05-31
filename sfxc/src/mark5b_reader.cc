@@ -24,6 +24,7 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
   start_time_ = current_time_;
   std::cout << RANK_OF_NODE << "Start of Mark5b data at jday=" << start_day_
             << ", time = " << start_time_ << "\n";
+is_open_ = true;
 }
 
 
@@ -205,28 +206,6 @@ bool Mark5b_reader::check_header(Header &header){
   return crc == 0;
 }
 
-std::vector< std::vector<int> >
-Mark5b_reader::get_tracks(const Input_node_parameters &input_node_param,
-                          Data_frame &data) {
-  std::vector< std::vector<int> > result;
-  result.resize(input_node_param.channels.size());
-  for (size_t i=0; i<input_node_param.channels.size(); i++) {
-    int bps = input_node_param.channels[i].bits_per_sample();
-    int fo  = input_node_param.channels[i].sign_tracks.size();
-    result[i].resize(bps * fo);
-    for (size_t j=0; j<input_node_param.channels[i].sign_tracks.size(); j++) {
-      if (bps == 1) {
-        result[i][j] = input_node_param.channels[i].sign_tracks[j];
-      } else {
-        SFXC_ASSERT(bps == 2);
-        result[i][2*j] = input_node_param.channels[i].sign_tracks[j];
-        result[i][2*j+1] = input_node_param.channels[i].magn_tracks[j];
-      }
-    }
-  }
-  return result;
-}
-
 void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
   int tbr = param.track_bit_rate;
   SFXC_ASSERT((tbr % 1000000) == 0);
@@ -236,7 +215,7 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
 
   sample_rate = param.sample_rate();
   // Find the number of bitstreams used
-  nr_of_bitstreams = 32 / param.channels[0].sign_tracks.size();
+  nr_of_bitstreams = 32 / (param.channels[0].tracks.size() / param.channels[0].bits_per_sample);
   std::cout << "nbitstream = " << nr_of_bitstreams << ", tbr = " << tbr << "\n";
 }
 

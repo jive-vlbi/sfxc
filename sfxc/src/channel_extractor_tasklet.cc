@@ -26,7 +26,6 @@ Channel_extractor_tasklet(int samples_per_block, int N_)
   init_stats();
 
   last_duration_=0;
-
 #ifdef USE_EXTRACTOR_5
   ch_extractor = new Channel_extractor_5();
 #else
@@ -193,12 +192,15 @@ Channel_extractor_tasklet::has_work() {
 
 void
 Channel_extractor_tasklet::
-set_parameters(const Input_node_parameters &input_node_param,
-               const std::vector< std::vector<int> > &track_positions) {
+set_parameters(const Input_node_parameters &input_node_param){
   n_subbands = input_node_param.channels.size();
   bits_per_sample = input_node_param.bits_per_sample();
   fan_out    = bits_per_sample *
                input_node_param.subsamples_per_sample();
+  std::vector< std::vector<int> > track_positions;
+  for(int i = 0; i < input_node_param.channels.size(); i++){
+    track_positions.push_back(input_node_param.channels[i].tracks);
+  }
   ch_extractor->initialise(track_positions, N, samples_per_block, bits_per_sample);
   DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
 }

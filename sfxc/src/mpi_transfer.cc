@@ -572,11 +572,7 @@ MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
   for (Input_node_parameters::Channel_iterator channel =
          input_node_param.channels.begin();
        channel != input_node_param.channels.end(); channel++) {
-    size +=
-      sizeof(int32_t) *
-      (4 +
-       channel->sign_tracks.size() +
-       channel->magn_tracks.size());
+    size +=  sizeof(int32_t) * (2 +channel->tracks.size());
   }
 
   int position = 0;
@@ -599,24 +595,15 @@ MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
   for (Input_node_parameters::Channel_iterator channel =
          input_node_param.channels.begin();
        channel != input_node_param.channels.end(); channel++) {
-    // Sign
-    MPI_Pack(&channel->sign_headstack, 1, MPI_INT32,
+    MPI_Pack(&channel->bits_per_sample, 1, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD);
-    length = (int32_t)channel->sign_tracks.size();
+    // Tracks 
+    length = (int32_t)channel->tracks.size();
     MPI_Pack(&length, 1, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&channel->sign_tracks[0], length, MPI_INT32,
+    MPI_Pack(&channel->tracks[0], length, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD);
-
-    // Magn
-    MPI_Pack(&channel->magn_headstack, 1, MPI_INT32,
-             message_buffer, size, &position, MPI_COMM_WORLD);
-    length = (int32_t)channel->magn_tracks.size();
-    MPI_Pack(&length, 1, MPI_INT32,
-             message_buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&channel->magn_tracks[0], length, MPI_INT32,
-             message_buffer, size, &position, MPI_COMM_WORLD);
-  }
+ }
   SFXC_ASSERT(position == size);
   MPI_Send(message_buffer, position, MPI_PACKED, rank,
            MPI_TAG_TRACK_PARAMETERS, MPI_COMM_WORLD);
@@ -658,10 +645,10 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
              MPI_COMM_WORLD);
   while (n_channels > 0) {
     Input_node_parameters::Channel_parameters channel_param;
-    // Sign
-    MPI_Unpack(buffer, size, &position,
-               &channel_param.sign_headstack, 1, MPI_INT32,
+    MPI_Unpack(buffer, size, &position, 
+               &channel_param.bits_per_sample, 1, MPI_INT32,
                MPI_COMM_WORLD);
+    // Tracks 
     MPI_Unpack(buffer, size, &position,
                &length, 1, MPI_INT32,
                MPI_COMM_WORLD);
@@ -670,22 +657,7 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
                &tracks, length, MPI_INT32,
                MPI_COMM_WORLD);
     for (int i=0; i<length; i++) {
-      channel_param.sign_tracks.push_back(tracks[i]);
-    }
-
-
-    // Magn
-    MPI_Unpack(buffer, size, &position,
-               &channel_param.magn_headstack, 1, MPI_INT32,
-               MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position,
-               &length, 1, MPI_INT32,
-               MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position,
-               &tracks, length, MPI_INT32,
-               MPI_COMM_WORLD);
-    for (int i=0; i<length; i++) {
-      channel_param.magn_tracks.push_back(tracks[i]);
+      channel_param.tracks.push_back(tracks[i]);
     }
 
     input_node_param.channels.push_back(channel_param);

@@ -86,8 +86,11 @@ int main(int argc, char** argv)
               m_reader->get_current_time();
               std::cout << "Channelizer !" << std::endl;
               Channel_extractor_dynamic channelizer(dstdir, true);
-              channelizer.initialise(m_reader->get_tracks(input_node_param, 
-                                                          data) ,
+              std::vector< std::vector<int> > track_positions;
+              for(int i = 0; i < input_node_param.channels.size(); i++){
+                track_positions.push_back(input_node_param.channels[i].tracks);
+              }
+              channelizer.initialise(track_positions,
                                      m_reader->N,
                                      samples_per_block, bits_per_sample);
 

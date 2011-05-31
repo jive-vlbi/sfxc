@@ -262,44 +262,6 @@ VLBA_reader::check_track_bit_statistics(Data_frame &data) {
 }
 
 
-std::vector< std::vector<int> >
-VLBA_reader::get_tracks(const Input_node_parameters &input_node_param,
-                          Data_frame &data) {
-  std::vector< std::vector<int> > result;
-
-  result.resize(input_node_param.channels.size());
-  int curr_channel =0;
-  // Store a list of tracks: first magnitude (optional), then sign
-  for (Input_node_parameters::Channel_const_iterator channel =
-         input_node_param.channels.begin();
-       channel != input_node_param.channels.end(); channel++, curr_channel++) {
-    result[curr_channel].resize(channel->bits_per_sample() *
-                                channel->sign_tracks.size());
-
-    int track =0;
-    for (size_t i=0; i<channel->sign_tracks.size(); i++) {
-      result[curr_channel][track] =
-        header.find_track(channel->sign_headstack-1,
-                          channel->sign_tracks[i]);
-
-      SFXC_ASSERT(header.track(result[curr_channel][track]) ==
-                  channel->sign_tracks[i]);
-      track++;
-      if (channel->bits_per_sample() == 2) {
-        result[curr_channel][track] =
-          header.find_track(channel->magn_headstack-1,
-                            channel->magn_tracks[i]);
-
-        SFXC_ASSERT(header.track(result[curr_channel][track]) ==
-                    channel->magn_tracks[i]);
-        track++;
-      }
-    }
-  }
-
-  return result;
-}
-
 bool VLBA_reader::eof() {
   return data_reader_->eof();
 }

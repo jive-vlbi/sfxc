@@ -45,11 +45,6 @@ public:
   /// Read another vlba-frame
   bool read_new_block(Data_frame &data);
 
-  /// Get track information from a vlba header
-  std::vector< std::vector<int> >
-  get_tracks(const Input_node_parameters &input_node_param, 
-             Data_frame &data);
-
   Time time_between_headers() {
     SFXC_ASSERT(data_rate() % (N*SIZE_MK5A_FRAME) == 0);
     return time_between_headers_;

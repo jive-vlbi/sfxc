@@ -154,28 +154,6 @@ Time VDIF_reader::time_between_headers() {
   return time_between_headers_;
 }
 
-std::vector< std::vector<int> >
-VDIF_reader::get_tracks(const Input_node_parameters &input_node_param,
-                          Data_frame & /* data */) {
-  std::vector< std::vector<int> > result;
-  result.resize(input_node_param.channels.size());
-  for (size_t i=0; i<input_node_param.channels.size(); i++) {
-    int bps = input_node_param.channels[i].bits_per_sample();
-    int fo  = input_node_param.channels[i].sign_tracks.size();
-    result[i].resize(bps * fo);
-    for (size_t j=0; j<input_node_param.channels[i].sign_tracks.size(); j++) {
-      if (bps == 1) {
-        result[i][j] = input_node_param.channels[i].sign_tracks[j];
-      } else {
-        SFXC_ASSERT(bps == 2);
-        result[i][2*j] = input_node_param.channels[i].sign_tracks[j];
-        result[i][2*j+1] = input_node_param.channels[i].magn_tracks[j];
-      }
-    }
-  }
-  return result;
-}
-
 void VDIF_reader::set_parameters(const Input_node_parameters &param) {
   sample_rate = param.sample_rate();
   SFXC_ASSERT(((int)sample_rate % 1000000) == 0);

@@ -87,8 +87,7 @@ public:
    * of the channels on the tracks. For channel i you need tracks
    * track_positions[i].
    **/
-  void set_parameters(const Input_node_parameters &input_node_param,
-                      const std::vector< std::vector<int> > &track_positions);
+  void set_parameters(const Input_node_parameters &input_node_param);
 
 
   // Empty the input queue, called from the destructor of Input_node

@@ -20,17 +20,13 @@ public:
 
   class Channel_parameters {
   public:
-    Channel_parameters() : sign_headstack(-1), magn_headstack(-1) {}
+    Channel_parameters() : bits_per_sample(-1) {}
 
 
     bool operator==(const Channel_parameters &other) const;
 
-    // Bits_per_sample is 1 if magn_tracks.size() == 0, otherwise 2
-    int bits_per_sample() const;           ///< Number of bits to encode one sample
-    int32_t              sign_headstack;   ///< The headstack for the sign bits
-    std::vector<int32_t> sign_tracks;      ///< A list of the track numbers for sign
-    int32_t              magn_headstack;   ///< The headstack for the magn bits
-    std::vector<int32_t> magn_tracks;      ///< A list of the track numbers for magn
+    int bits_per_sample;                   ///< Number of bits to encode one sample
+    std::vector<int32_t> tracks;           ///< A list of bit positions for all tracks
   };
 
   typedef std::vector<Channel_parameters>           Channel_list;
@@ -311,6 +307,8 @@ private:
   void get_mark5a_tracks(const std::string &mode,
                          const std::string &station,
                          Input_node_parameters &input_parameters) const;
+  // Get the bit positions for all tracks in the vex file
+  std::vector<int> get_track_bit_position(const std::string &mode, const std::string &station) const;
 
   // Gets the track parameters for mark5b data
   // Output is in input_parameters

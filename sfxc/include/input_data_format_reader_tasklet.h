@@ -70,8 +70,6 @@ public:
   /// get the current time in miliseconds
   Time get_current_time();
 
-  std::vector< std::vector<int> > get_tracks(const Input_node_parameters &input_node_param);
-
   int size_input_word() const {
     return reader_->bytes_per_input_word();
   }

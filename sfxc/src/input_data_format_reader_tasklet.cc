@@ -97,6 +97,12 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
   /// Blocking function until a new interval is available
   current_interval_ = intervals_.front_and_pop();
   if ( !current_interval_.empty() ) {
+    if((reader_->is_open())&&(current_interval_.start_time_<=reader_->get_current_time())){
+      // Ensure that the current_time is exactly at header_start, in mark5b sometimes the VLBA timestamp is used
+      int64_t nframes = (int64_t) round((reader_->get_current_time() - current_interval_.start_time_) / reader_->time_between_headers());
+      current_time = current_interval_.start_time_ + reader_->time_between_headers() * nframes;
+      return;    
+    }
     if((!reader_->is_open()) && (!reader_->open_input_stream(input_element_))){
       current_time = current_interval_.start_time_;
       return;
@@ -245,12 +251,6 @@ Input_data_format_reader_tasklet::Output_buffer_ptr
 Input_data_format_reader_tasklet::
 get_output_buffer() {
   return output_buffer_;
-}
-
-std::vector< std::vector<int> >
-Input_data_format_reader_tasklet::
-get_tracks(const Input_node_parameters &input_node_param) {
-  return reader_->get_tracks(input_node_param, input_element_);
 }
 
 void

@@ -251,37 +251,11 @@ Mark5a_reader::check_track_bit_statistics(Data_frame &data) {
   return true;
 }
 
-std::vector< std::vector<int> >
-Mark5a_reader::get_tracks(const Input_node_parameters &input_node_param, Data_frame &data) {
-  std::vector< std::vector<int> > result;
-
-  result.resize(input_node_param.channels.size());
-  int curr_channel =0;
-  // Store a list of tracks: first magnitude (optional), then sign
-  for (Input_node_parameters::Channel_const_iterator channel =
-         input_node_param.channels.begin();
-       channel != input_node_param.channels.end(); channel++, curr_channel++) {
-    result[curr_channel].resize(channel->bits_per_sample() *
-                                channel->sign_tracks.size());
-
-    int track =0;
-    for (size_t i=0; i<channel->sign_tracks.size(); i++) {
-      result[curr_channel][track] = 32*(channel->sign_headstack-1)+(channel->sign_tracks[i]-2);
-      track++;
-      if (channel->bits_per_sample() == 2) {
-        result[curr_channel][track] = 32*(channel->magn_headstack-1)+(channel->magn_tracks[i]-2);
-        track++;
-      }
-    }
-  }
-  return result;
-}
-
 void
 Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
   int ntracks = 0;
   for(int i = 0; i <  input_node_param.channels.size(); i++)
-    ntracks += input_node_param.channels[i].sign_tracks.size() + input_node_param.channels[i].magn_tracks.size() ;
+    ntracks += input_node_param.channels[i].tracks.size();
   N = ntracks / 8;
   int tbr = input_node_param.track_bit_rate;
   DATA_RATE_ = (tbr * N * 8);

@@ -83,10 +83,6 @@ public:
     return bytes_per_input_word()*SIZE_MK5B_FRAME*N_MK5B_BLOCKS_TO_READ;
   }
 
-  std::vector< std::vector<int> >
-  get_tracks(const Input_node_parameters &input_node_param,
-             Data_frame &data);
-
   void set_parameters(const Input_node_parameters &param);
 
   TRANSPORT_TYPE get_transport_type() const{

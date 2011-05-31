@@ -608,12 +608,38 @@ Control_parameters::get_vex() const {
   return vex;
 }
 
+std::vector<int>
+Control_parameters::
+get_track_bit_position(const std::string &mode, const std::string &station) const {
+  std::vector<int> tracks; // bit positions of all tracks in the vex file
+  tracks.resize(64); // tracks from headstack 2 are in position 32-63
+  int bit = 0; // the current bit
+  const std::string &track_name = get_vex().get_track(mode, station);
+  Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
+  for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
+         fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
+    Vex::Node::const_iterator it = fanout_def_it->begin();
+    ++it;
+    ++it;
+    ++it;
+    int headstack = it->to_int();
+    ++it;
+    for (; it != fanout_def_it->end(); ++it) {
+      tracks[32 * (headstack-1) + it->to_int() - 2] = bit;
+      bit++;
+    }
+  }
+  return tracks;
+}
 
 void
 Control_parameters::
 get_mark5a_tracks(const std::string &mode,
                   const std::string &station,
                   Input_node_parameters &input_parameters) const {
+  // Bit positions for all tracks in the vex file
+  std::vector<int> track_pos = get_track_bit_position(mode, station);
+
   const std::string &track_name =
     get_vex().get_track(mode, station);
   const std::string &freq_name =
@@ -628,11 +654,15 @@ get_mark5a_tracks(const std::string &mode,
   else
     input_parameters.data_modulation=0;
 
+  std::vector<int> sign_tracks, mag_tracks;
   for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
     const std::string &channel_name = frequency_channel(ch_nr);
 
     // tracks
     Input_node_parameters::Channel_parameters channel_param;
+    channel_param.bits_per_sample = 1;
+    sign_tracks.resize(0);
+    mag_tracks.resize(0);
 
     for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
          fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
@@ -641,21 +671,28 @@ get_mark5a_tracks(const std::string &mode,
         ++it;
         ++it;
         ++it;
-        if (fanout_def_it[2]->to_string() == "sign") {
-          channel_param.sign_headstack = it->to_int();
-          ++it;
+        int headstack = it->to_int();
+        ++it;
+        if(fanout_def_it[2]->to_string() == "sign"){
           for (; it != fanout_def_it->end(); ++it) {
-            channel_param.sign_tracks.push_back(it->to_int());
+            int track = (headstack - 1)*32 + it->to_int() - 2;
+            sign_tracks.push_back(track_pos[track]);
           }
-        } else {
-          SFXC_ASSERT(fanout_def_it[2]->to_string() == "mag");
-          channel_param.magn_headstack = it->to_int();
-          ++it;
+        } else{
+          channel_param.bits_per_sample = 2;
           for (; it != fanout_def_it->end(); ++it) {
-            channel_param.magn_tracks.push_back(it->to_int());
+            int track = (headstack - 1)*32 + it->to_int() - 2;
+            mag_tracks.push_back(track_pos[track]);
           }
         }
       }
+    }
+    if((channel_param.bits_per_sample == 2) && (mag_tracks.size() != sign_tracks.size()))
+      sfxc_abort("Number of magnitude tracks do not match the number of sign tracks");
+    for(int i=0; i<sign_tracks.size();i++){
+      channel_param.tracks.push_back(sign_tracks[i]);
+      if(channel_param.bits_per_sample == 2)
+        channel_param.tracks.push_back(mag_tracks[i]);
     }
     input_parameters.channels.push_back(channel_param);
   }
@@ -680,6 +717,8 @@ get_mark5b_tracks(const std::string &mode,
       // Iterate over the bitstreams
       int n_bitstream = 0;
       Input_node_parameters::Channel_parameters channel_param;
+      channel_param.bits_per_sample = 1;
+      int sign_track, mag_track;
       for (Vex::Node::const_iterator bitstream_it = bitstream->begin("stream_def");
           bitstream_it != bitstream->end("stream_def"); ++bitstream_it) {
         if (channel_name == bitstream_it[0]->to_string()) {
@@ -687,23 +726,25 @@ get_mark5b_tracks(const std::string &mode,
           ++it;
           ++it;
           ++it;
-          if (bitstream_it[1]->to_string() == "sign") {
-            channel_param.sign_tracks.push_back(it->to_int());
-          } else {
-            SFXC_ASSERT(bitstream_it[1]->to_string() == "mag");
-            channel_param.magn_tracks.push_back(it->to_int());
+          if (bitstream_it[1]->to_string() == "sign"){
+            sign_track = it->to_int();
+          }else{
+            channel_param.bits_per_sample = 2;
+            mag_track = it->to_int();
           }
         }
         n_bitstream++;
       }
-      for(int i = n_bitstream; i < 32; i += n_bitstream){
-        int sign = channel_param.sign_tracks[0] + i;
-        if(sign < 32)
-          channel_param.sign_tracks.push_back(sign);
-        if(channel_param.magn_tracks.size() > 0){
-          int magn = channel_param.magn_tracks[0] + i;
-          if(magn < 32)
-            channel_param.magn_tracks.push_back(magn);
+      for(int i = 0; i < 32; i += n_bitstream){
+        int sign = sign_track + i;
+        if(sign < 32){
+          channel_param.tracks.push_back(sign);
+        }
+        if(channel_param.bits_per_sample == 2){
+          int magn = mag_track + i;
+          if(magn < 32){
+            channel_param.tracks.push_back(magn);
+          }
         }
       }
       input_parameters.channels.push_back(channel_param);
@@ -794,14 +835,15 @@ get_mark5b_standard_mapping(const std::string &mode,
       int bit_stream_nr = subband_to_track[channel_name]*bits_per_sample_;
 
       Input_node_parameters::Channel_parameters channel_param;
+      channel_param.bits_per_sample = bits_per_sample_;
       if (bits_per_sample_ == 2) {
         for (; bit_stream_nr < 32; bit_stream_nr += nr_bit_streams) {
-          channel_param.sign_tracks.push_back(bit_stream_nr);
-          channel_param.magn_tracks.push_back(bit_stream_nr+1);
+          channel_param.tracks.push_back(bit_stream_nr);
+          channel_param.tracks.push_back(bit_stream_nr+1);
         }
       } else {
         for (; bit_stream_nr < 32; bit_stream_nr += nr_bit_streams) {
-          channel_param.sign_tracks.push_back(bit_stream_nr);
+          channel_param.tracks.push_back(bit_stream_nr);
         }
       }
       input_parameters.channels.push_back(channel_param);
@@ -840,8 +882,8 @@ get_input_node_parameters(const std::string &mode_name,
     get_mark5b_tracks(mode_name, station_name, result);
   }
 
-  SFXC_ASSERT(!result.channels[0].sign_tracks.empty());
-  result.track_bit_rate /= result.channels[0].sign_tracks.size();
+  SFXC_ASSERT(!result.channels[0].tracks.empty());
+  result.track_bit_rate /= result.channels[0].tracks.size() / result.channels[0].bits_per_sample;
   return result;
 }
 
@@ -1373,18 +1415,19 @@ operator<<(std::ostream &out,
     if (i > 0)
       out << ",";
     out << std::endl;
-    out << "  { \"sign\" : [" << param.channels[i].sign_headstack << ", [";
-    for (size_t track = 0; track < param.channels[i].sign_tracks.size(); track++) {
+    int bps = param.channels[i].bits_per_sample;
+    for (size_t track = 0; track < param.channels[i].tracks.size(); track+=bps) {
       if (track > 0)
         out << ", ";
-      out << param.channels[i].sign_tracks[track];
+      out << param.channels[i].tracks[track];
     }
     out << "] ], ";
-    out << "\"magn\" : [" << param.channels[i].magn_headstack << ", [";
-    for (size_t track = 0; track < param.channels[i].magn_tracks.size(); track++) {
-      if (track > 0)
-        out << ", ";
-      out << param.channels[i].magn_tracks[track];
+    if(bps == 2){
+      for (size_t track = 1; track < param.channels[i].tracks.size(); track+=bps) {
+        if (track > 0)
+          out << ", ";
+        out << param.channels[i].tracks[track];
+      }
     }
     out << "] ] }";
   }
@@ -1398,10 +1441,10 @@ Input_node_parameters::bits_per_sample() const {
   SFXC_ASSERT(!channels.empty());
   for (Channel_const_iterator it=channels.begin();
        it!=channels.end(); it++) {
-    SFXC_ASSERT(channels.begin()->bits_per_sample() ==
-                it->bits_per_sample());
+    SFXC_ASSERT(channels.begin()->bits_per_sample ==
+                it->bits_per_sample);
   }
-  return channels.begin()->bits_per_sample();
+  return channels.begin()->bits_per_sample;
 }
 
 int
@@ -1409,10 +1452,10 @@ Input_node_parameters::subsamples_per_sample() const {
   SFXC_ASSERT(!channels.empty());
   for (Channel_const_iterator it=channels.begin();
        it!=channels.end(); it++) {
-    SFXC_ASSERT(channels.begin()->sign_tracks.size() ==
-                it->sign_tracks.size());
+    SFXC_ASSERT(channels.begin()->tracks.size() ==
+                it->tracks.size());
   }
-  return channels.begin()->sign_tracks.size();
+  return channels.begin()->tracks.size() / channels.begin()->bits_per_sample;
 }
 
 int
@@ -1420,22 +1463,12 @@ Input_node_parameters::sample_rate() const {
   return track_bit_rate * subsamples_per_sample();
 }
 
-int
-Input_node_parameters::Channel_parameters::bits_per_sample() const {
-  return (magn_tracks.size() == 0 ? 1 : 2);
-}
-
-
 bool
 Input_node_parameters::Channel_parameters::
 operator==(const Input_node_parameters::Channel_parameters &other) const {
-  if (sign_headstack != other.sign_headstack)
+  if (tracks != other.tracks)
     return false;
-  if (magn_headstack != other.magn_headstack)
-    return false;
-  if (sign_tracks != other.sign_tracks)
-    return false;
-  if (magn_tracks != other.magn_tracks)
+  if (bits_per_sample != other.bits_per_sample)
     return false;
 
   return true;

@@ -81,10 +81,6 @@ public:
     return current_header.data_size();
   }
 
-  std::vector< std::vector<int> >
-  get_tracks(const Input_node_parameters &input_node_param,
-             Data_frame &data);
-
   void set_parameters(const Input_node_parameters &param);
 
   size_t bytes_per_input_word() const {

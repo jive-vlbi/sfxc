@@ -185,8 +185,7 @@ set_parameters(const Input_node_parameters &input_node_param,
   if(!initialized)
     initialise();
 
-  channel_extractor_->set_parameters(input_node_param,
-                                     reader_.get_tracks(input_node_param));
+  channel_extractor_->set_parameters(input_node_param);
 
   size_t number_frequency_channels = input_node_param.channels.size();
 
