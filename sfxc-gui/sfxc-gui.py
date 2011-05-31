@@ -123,10 +123,33 @@ class WeightPlotWindow(Qt.QWidget):
         for station in json_input['stations']:
             self.plot[station] = WeightPlot(station, start, stop)
             self.layout.addWidget(self.plot[station])
+            lastplot = self.plot[station]
+            lastplot.enableAxis(Qwt.QwtPlot.xBottom, False)
+            self.layout.setRowStretch(self.layout.rowCount() - 1, 100)
+            self.last_station = station
             continue
+        lastplot.enableAxis(Qwt.QwtPlot.xBottom, True)
+        lastplot.insertLegend(Qwt.QwtLegend(), Qwt.QwtPlot.BottomLegend)
+        lastplot.legend().clear()
+
+        self.layout.setRowStretch(self.layout.rowCount() - 1, 200)
 
         self.startTimer(500)
         self.resize(500, len(json_input['stations'] * 150))
+        pass
+
+    def resizeEvent(self, e):
+        height = self.plot[self.last_station].height()
+        canvasHeight = self.plot[self.last_station].plotLayout().canvasRect().height()
+        fixedHeight = height - canvasHeight
+        if fixedHeight > 0:
+            height = self.layout.contentsRect().height()
+            height -= (len(self.plot) - 1) * self.layout.verticalSpacing()
+            height /= len(self.plot)
+            stretch = (height + fixedHeight) * 110 / height
+            self.layout.setRowStretch(self.layout.rowCount() - 1, stretch)
+            
+        Qt.QWidget.resizeEvent(self, e)
         pass
 
     def timerEvent(self, e):
