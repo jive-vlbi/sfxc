@@ -93,6 +93,12 @@ class WeightPlot(Qwt.QwtPlot):
         self.setAxisMaxMajor(Qwt.QwtPlot.yLeft, 2)
         self.curve = {}
 
+        # Dummy curvo to make sure the legend shows up.
+        curve = Qwt.QwtPlotCurve()
+        x = []
+        y = []
+        curve.setData(x, y)
+        curve.attach(self)
         return
 
     pass
@@ -121,7 +127,7 @@ class WeightPlotWindow(Qt.QWidget):
         self.stations.sort()
 
         self.plot = {}
-        self.layout = Qt.QGridLayout(self)
+        self.layout = Qt.QGridLayout()
         for station in json_input['stations']:
             self.plot[station] = WeightPlot(station, start, stop)
             self.layout.addWidget(self.plot[station])
@@ -131,10 +137,12 @@ class WeightPlotWindow(Qt.QWidget):
             self.last_station = station
             continue
         lastplot.enableAxis(Qwt.QwtPlot.xBottom, True)
-        lastplot.insertLegend(Qwt.QwtLegend(), Qwt.QwtPlot.BottomLegend)
-        lastplot.legend().clear()
+        lastplot.insertLegend(Qwt.QwtLegend(), Qwt.QwtPlot.ExternalLegend)
+        self.layout.setRowStretch(self.layout.rowCount() - 1, 135)
 
-        self.layout.setRowStretch(self.layout.rowCount() - 1, 200)
+        self.box = Qt.QVBoxLayout(self)
+        self.box.addLayout(self.layout)
+        self.box.addWidget(lastplot.legend())
 
         self.startTimer(500)
         self.resize(500, len(json_input['stations'] * 150))
@@ -192,6 +200,7 @@ class WeightPlotWindow(Qt.QWidget):
                     for station in self.plot:
                         plot = self.plot[station]
                         for idx in plot.curve:
+                            plot.curve[idx].attach(plot)
                             plot.curve[idx].setData(plot.x, plot.y[idx])
                             continue
                         plot.replot()
@@ -219,7 +228,6 @@ class WeightPlotWindow(Qt.QWidget):
 
                         plot.curve[idx] = Qwt.QwtPlotCurve(title)
                         plot.curve[idx].setData(plot.x, plot.y[idx])
-                        plot.curve[idx].attach(plot)
                         plot.curve[idx].setPen(Qt.QPen(Qt.QColor(plot.color[idx % 16])))
                         plot.curve[idx].setStyle(Qwt.QwtPlotCurve.Dots)
                         pass
