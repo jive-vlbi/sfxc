@@ -1,6 +1,7 @@
 #! /usr/bin/python
 
 # Standard Python modules
+from datetime import datetime, timedelta
 import json
 import os
 import optparse
@@ -39,19 +40,33 @@ uvw_hdr = 'II3d'
 stat_hdr = 'BBBB4II'
 baseline_hdr = 'IBBBx'
 
+class ScaleDraw(Qwt.QwtScaleDraw):
+    def __init__(self, start, *args):
+        self.start = start
+        Qwt.QwtScaleDraw.__init__(self, *args)
+        pass
+
+    def label(self, val):
+        tupletime = time.gmtime(self.start + val)
+        return Qwt.QwtText(time.strftime("%Hh%Mm", tupletime))
+    
+    def drawLabel(self, p, val):
+        Qwt.QwtScaleDraw.drawLabel(self, p, val)
+        pass
+    pass
+
 class WeightPlot(Qwt.QwtPlot):
     color = [ "#ffbf7f", "#ff7f00", "#ffff9d", "#ffff32",
               "#b2ff8c", "#32ff00", "#a5edff", "#19b2ff",
               "#ccbfff", "#654cff", "#ff99bf", "#e51932",
               "#cccccc", "#999999", "#666666", "#000000" ]
 
-    def __init__(self, json_input, station, *args):
+    def __init__(self, station, start, stop, *args):
         Qwt.QwtPlot.__init__(self, *args)
 
-        start = vex2time(json_input['start'])
-        stop = vex2time(json_input['stop'])
-        integr_time = json_input['integr_time']
-        integrations = int((stop - start) / integr_time)
+        seconds = round(stop - start)
+        mins = round(float(stop - start) / (5 * 60))
+        mins = max(mins, 1)
 
         self.setCanvasBackground(Qt.Qt.white)
 
@@ -59,10 +74,23 @@ class WeightPlot(Qwt.QwtPlot):
         self.y = {}
         self.station = station
 
+        scaleDraw = ScaleDraw(start);
+        self.setAxisScaleDraw(Qwt.QwtPlot.xBottom, scaleDraw)
+        start = datetime.utcfromtimestamp(start)
+        stop = datetime.utcfromtimestamp(stop)
+        rounded_time = start.replace(second=0)
+        ticks = []
+        while rounded_time <= stop - (timedelta(minutes=mins) / 4):
+            if rounded_time >= start:
+                ticks.append((rounded_time - start).seconds)
+                pass
+            rounded_time += timedelta(minutes=mins)
+            continue
+        scaleDiv = Qwt.QwtScaleDiv(0, seconds, [],[], ticks);
+        self.setAxisScaleDiv(Qwt.QwtPlot.xBottom, scaleDiv)
         self.setAxisTitle(Qwt.QwtPlot.yLeft, station)
         self.setAxisScale(Qwt.QwtPlot.yLeft, 0, 1.0)
         self.setAxisMaxMajor(Qwt.QwtPlot.yLeft, 2)
-        self.setAxisScale(Qwt.QwtPlot.xBottom, 0, integrations)
         self.curve = {}
 
         return
@@ -82,6 +110,8 @@ class WeightPlotWindow(Qt.QWidget):
         self.output_file = urlparse.urlparse(json_input['output_file']).path
         self.file_size = 0
 
+        start = vex2time(json_input['start'])
+        stop = vex2time(json_input['stop'])
         self.stations = []
         for station in vex['STATION']:
             self.stations.append(station)
@@ -89,10 +119,10 @@ class WeightPlotWindow(Qt.QWidget):
         self.stations.sort()
 
         self.plot = {}
-        layout = Qt.QGridLayout(self)
+        self.layout = Qt.QGridLayout(self)
         for station in json_input['stations']:
-            self.plot[station] = WeightPlot(json_input, station)
-            layout.addWidget(self.plot[station])
+            self.plot[station] = WeightPlot(station, start, stop)
+            self.layout.addWidget(self.plot[station])
             continue
 
         self.startTimer(500)
@@ -119,6 +149,7 @@ class WeightPlotWindow(Qt.QWidget):
             sec = h[4] % 60
             secs = vex2time("%dy%dd%02dh%02dm%02ds" % (h[2], h[3], hour, min, sec))
             self.number_channels = h[5]
+            self.integration_time = h[6] * 1e-6
             pass
 
         pos = self.fp.tell()
@@ -154,15 +185,23 @@ class WeightPlotWindow(Qt.QWidget):
                     idx = h[1] * 4 + h[2] * 2 + h[3]
                     if not idx in plot.y:
                         plot.y[idx] = []
-                        plot.curve[idx] = Qwt.QwtPlotCurve()
+                        title = "SB%d" % (h[1] * 2 + h[2])
+                        if h[3] == 0:
+                            title += " R"
+                        else:
+                            title += " L"
+                            pass
+
+                        plot.curve[idx] = Qwt.QwtPlotCurve(title)
                         plot.curve[idx].setData(plot.x, plot.y[idx])
                         plot.curve[idx].attach(plot)
                         plot.curve[idx].setPen(Qt.QPen(Qt.QColor(plot.color[idx % 16])))
                         plot.curve[idx].setStyle(Qwt.QwtPlotCurve.Dots)
                         pass
 
-                    if not integration_slice in plot.x:
-                        plot.x.append(integration_slice)
+                    secs = integration_slice * self.integration_time
+                    if not secs in plot.x:
+                        plot.x.append(secs)
                         pass
                     plot.y[idx].append(weight)
                     continue
@@ -337,6 +376,9 @@ parser = optparse.OptionParser(usage=usage)
 if len(args) != 4:
     parser.error("incorrect number of arguments")
     pass
+
+os.environ['TZ'] = 'UTC'
+time.tzset()
 
 app = QtGui.QApplication(sys.argv)
 d = progressDialog()
