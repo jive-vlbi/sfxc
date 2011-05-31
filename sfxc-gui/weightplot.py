@@ -84,16 +84,13 @@ class WeightPlot(Qwt.QwtPlot):
               "#b2ff8c", "#32ff00", "#a5edff", "#19b2ff",
               "#ccbfff", "#654cff", "#ff99bf", "#e51932",
               "#cccccc", "#999999", "#666666", "#000000" ]
-    #color = [ "#000000", "#000000", "#000000", "#000000",
-    #          "#000000", "#000000", "#000000", "#000000",
-    #          "#000000", "#000000", "#000000", "#000000",
-    #          "#000000", "#000000", "#000000", "#000000" ]
 
     def __init__(self, station, start, stop, gaps, *args):
         Qwt.QwtPlot.__init__(self, *args)
 
         seconds = round(stop - start)
         mins = round(float(stop - start) / (5 * 60))
+        mins = max(mins, 1)
 
         self.setCanvasBackground(Qt.Qt.white)
 
@@ -266,14 +263,6 @@ class WeightPlotWindow(Qt.QWidget):
 
                 if integration_slice != self.integration_slice:
                     self.integration_slice = integration_slice
-                    #for station in self.plot:
-                    #    plot = self.plot[station]
-                    #    for idx in plot.curve:
-                    #        plot.curve[idx].attach(plot)
-                    #        plot.curve[idx].setData(plot.x, plot.y[idx])
-                    #        continue
-                    #    plot.replot()
-                    #    continue
                     pass
 
                 for i in xrange(number_uvw_coordinates):
