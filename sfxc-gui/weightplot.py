@@ -137,7 +137,9 @@ class WeightPlotWindow(Qt.QWidget):
     def __init__(self, vex, ctrl_files, *args):
         Qt.QWidget.__init__(self, *args)
 
-        self.setWindowTitle("Weights")
+        exper = vex['GLOBAL']['EXPER']
+        exper = vex['EXPER'][exper]['exper_name']
+        self.setWindowTitle(exper + " Weights")
 
         self.integration_slice = 0
 
