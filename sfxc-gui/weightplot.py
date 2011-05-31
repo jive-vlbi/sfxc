@@ -335,6 +335,9 @@ if len(args) < 2:
     parser.error("incorrect number of arguments")
     pass
 
+os.environ['TZ'] = 'UTC'
+time.tzset()
+
 vex_file = args[0]
 ctrl_files = args[1:]
 
