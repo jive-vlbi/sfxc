@@ -177,7 +177,7 @@ void Correlation_core_pulsar::dedisperse_buffer() {
   for (int j=0; j < fft_size() + 1; j++) {
     double phase = obs_freq_phase+offsets[j];
     double dph = (phase-floor(phase))-gate.begin;
-    if((dph>=0)&&(dph<=len)){
+    if((dph>=0)&&(dph<len)){
       bins[j] = (int)(dph*nbins/len);
     }else
       bins[j]=-1;
