@@ -206,9 +206,7 @@ class WeightPlotWindow(Qt.QWidget):
             self.layout.setRowStretch(self.layout.rowCount() - 1, 100)
             self.last_station = station
             continue
-        lastplot.enableAxis(Qwt.QwtPlot.xBottom, True)
         lastplot.insertLegend(Qwt.QwtLegend(), Qwt.QwtPlot.ExternalLegend)
-        self.layout.setRowStretch(self.layout.rowCount() - 1, 135)
 
         self.box = Qt.QVBoxLayout(self)
         self.box.addLayout(self.layout)
@@ -218,7 +216,8 @@ class WeightPlotWindow(Qt.QWidget):
         self.resize(500, len(stations) * 100 + 50)
         pass
 
-    def resizeEvent(self, e):
+    def stretch(self):
+        self.plot[self.last_station].enableAxis(Qwt.QwtPlot.xBottom, True)
         height = self.plot[self.last_station].height()
         canvasHeight = self.plot[self.last_station].plotLayout().canvasRect().height()
         fixedHeight = height - canvasHeight
@@ -226,9 +225,15 @@ class WeightPlotWindow(Qt.QWidget):
             height = self.layout.contentsRect().height()
             height -= (len(self.plot) - 1) * self.layout.verticalSpacing()
             height /= len(self.plot)
-            stretch = (height + fixedHeight) * 110 / height
-            self.layout.setRowStretch(self.layout.rowCount() - 1, stretch)
-            
+            if height > 0:
+                stretch = (height + fixedHeight) * 110 / height
+                self.layout.setRowStretch(self.layout.rowCount() - 1, stretch)
+                pass
+            pass
+        return
+
+    def resizeEvent(self, e):
+        self.stretch()
         Qt.QWidget.resizeEvent(self, e)
         pass
 
@@ -277,7 +282,7 @@ class WeightPlotWindow(Qt.QWidget):
                     h = struct.unpack(stat_hdr, self.fp.read(struct.calcsize(stat_hdr)))
                     weight = 1.0 - (float(h[8]) / (h[4] + h[5] + h[6] + h[7] + h[8]))
                     station = self.stations[h[0]]
-                    plot = self.plot[self.stations[h[0]]]
+                    plot = self.plot[station]
                     idx = h[1] * 4 + h[2] * 2 + h[3]
                     if not idx in plot.y:
                         plot.y[idx] = []
@@ -292,6 +297,10 @@ class WeightPlotWindow(Qt.QWidget):
                         plot.curve[idx].setData(plot.x, plot.y[idx])
                         plot.curve[idx].setPen(Qt.QPen(Qt.QColor(plot.color[idx % 16])))
                         plot.curve[idx].setStyle(Qwt.QwtPlotCurve.Dots)
+                        plot.curve[idx].attach(plot)
+                        if station == self.last_station:
+                            self.stretch()
+                            pass
                         pass
 
                     secs = self.offsets[self.output_file] + integration_slice * self.integration_time
@@ -321,7 +330,6 @@ class WeightPlotWindow(Qt.QWidget):
         for station in self.plot:
             plot = self.plot[station]
             for idx in plot.curve:
-                plot.curve[idx].attach(plot)
                 plot.curve[idx].setData(plot.x, plot.y[idx])
                 continue
             plot.replot()
