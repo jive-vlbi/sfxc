@@ -230,9 +230,13 @@ class WeightPlotWindow(Qt.QWidget):
                             title += " L"
                             pass
 
+                        pen = Qt.QPen()
+                        pen.setColor(Qt.QColor(plot.color[idx % 16]))
+                        pen.setWidth(2)
+
                         plot.curve[idx] = Qwt.QwtPlotCurve(title)
                         plot.curve[idx].setData(plot.x, plot.y[idx])
-                        plot.curve[idx].setPen(Qt.QPen(Qt.QColor(plot.color[idx % 16])))
+                        plot.curve[idx].setPen(pen)
                         plot.curve[idx].setStyle(Qwt.QwtPlotCurve.Dots)
                         plot.curve[idx].attach(plot)
                         if station == self.last_station:
