@@ -613,7 +613,7 @@ Control_parameters::
 get_track_bit_position(const std::string &mode, const std::string &station) const {
   std::vector<int> tracks; // bit positions of all tracks in the vex file
   tracks.resize(64); // tracks from headstack 2 are in position 32-63
-  int bit = 0; // the current bit
+  memset(&tracks[0], 0, tracks.size()*sizeof(int));
   const std::string &track_name = get_vex().get_track(mode, station);
   Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
   for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
@@ -624,10 +624,13 @@ get_track_bit_position(const std::string &mode, const std::string &station) cons
     ++it;
     int headstack = it->to_int();
     ++it;
-    for (; it != fanout_def_it->end(); ++it) {
-      tracks[32 * (headstack-1) + it->to_int() - 2] = bit;
-      bit++;
-    }
+    for (; it != fanout_def_it->end(); ++it) 
+      tracks[32 * (headstack-1) + it->to_int() - 2] = 1;
+  }
+  int bit = -1; // the current bit
+  for(int i = 0; i < tracks.size(); i++){
+    bit +=tracks[i];
+    tracks[i] *= bit;
   }
   return tracks;
 }
