@@ -340,6 +340,12 @@ class WeightPlotWindow(Qt.QWidget):
                         plot.curve[idx].attach(plot)
                         if station == self.last_station:
                             self.stretch()
+                            # Sort curves by detaching them all and
+                            # reattach them in the right order.
+                            for idx in plot.curve:
+                                plot.curve[idx].detach()
+                                plot.curve[idx].attach(plot)
+                                continue
                             pass
                         pass
 
