@@ -153,7 +153,7 @@ class WeightPlot(Qwt.QwtPlot):
 
 
 class WeightPlotWindow(Qt.QWidget):
-    def __init__(self, vex, ctrl_files, *args):
+    def __init__(self, vex, ctrl_files, realtime, *args):
         Qt.QWidget.__init__(self, *args)
 
         exper = vex['GLOBAL']['EXPER']
@@ -161,6 +161,7 @@ class WeightPlotWindow(Qt.QWidget):
         self.setWindowTitle(exper + " Weights")
 
         self.integration_slice = 0
+        self.realtime = realtime
 
         self.output_file = 0
         self.output_files = []
@@ -259,6 +260,16 @@ class WeightPlotWindow(Qt.QWidget):
         Qt.QWidget.resizeEvent(self, e)
         pass
 
+    def replot(self):
+        for station in self.plot:
+            plot = self.plot[station]
+            for idx in plot.curve:
+                plot.curve[idx].setData(plot.x, plot.y[idx])
+                continue
+            plot.replot()
+            continue
+        return
+
     def timerEvent(self, e):
         if self.fp == None:
             try:
@@ -294,6 +305,9 @@ class WeightPlotWindow(Qt.QWidget):
 
                 if integration_slice != self.integration_slice:
                     self.integration_slice = integration_slice
+                    if self.realtime:
+                        self.replot()
+                        pass
                     pass
 
                 for i in xrange(number_uvw_coordinates):
@@ -345,7 +359,7 @@ class WeightPlotWindow(Qt.QWidget):
                 pos = self.fp.tell()
             except:
                 self.fp.seek(pos)
-                if self.output_file < len(self.output_files):
+                if not self.realtime and self.output_file < len(self.output_files):
                     self.fp = None
                     self.output_file += 1
                     pass
@@ -353,37 +367,35 @@ class WeightPlotWindow(Qt.QWidget):
 
             continue
 
-        for station in self.plot:
-            plot = self.plot[station]
-            for idx in plot.curve:
-                plot.curve[idx].setData(plot.x, plot.y[idx])
-                continue
-            plot.replot()
-            continue
+        if not self.realtime:
+            self.replot()
+            pass
+
+        return
+
+    pass
+
+
+if __name__ == '__main__':
+    usage = "usage: %prog [options] vexfile ctrlfile"
+    parser = optparse.OptionParser(usage=usage)
+
+    (options, args) = parser.parse_args()
+    if len(args) < 2:
+        parser.error("incorrect number of arguments")
         pass
 
-    pass
+    os.environ['TZ'] = 'UTC'
+    time.tzset()
 
+    vex_file = args[0]
+    ctrl_files = args[1:]
 
-usage = "usage: %prog [options] vexfile ctrlfile"
-parser = optparse.OptionParser(usage=usage)
+    app = QtGui.QApplication(sys.argv)
 
-(options, args) = parser.parse_args()
-if len(args) < 2:
-    parser.error("incorrect number of arguments")
-    pass
+    vex = Vex(vex_file)
 
-os.environ['TZ'] = 'UTC'
-time.tzset()
+    plot = WeightPlotWindow(vex, ctrl_files, False)
+    plot.show()
 
-vex_file = args[0]
-ctrl_files = args[1:]
-
-app = QtGui.QApplication(sys.argv)
-
-vex = Vex(vex_file)
-
-plot = WeightPlotWindow(vex, ctrl_files)
-plot.show()
-
-sys.exit(app.exec_())
+    sys.exit(app.exec_())
