@@ -80,9 +80,9 @@ class GapCurve(Qwt.QwtPlotCurve):
     pass
 
 class WeightPlot(Qwt.QwtPlot):
-    color = [ "#ffbf7f", "#ff7f00", "#ffff9d", "#ffff32",
-              "#b2ff8c", "#32ff00", "#a5edff", "#19b2ff",
-              "#ccbfff", "#654cff", "#ff99bf", "#e51932",
+    color = [ "#bae4b3", "#74c476", "#31a354", "#006d2c",
+              "#bdd7e7", "#6baed6", "#3182bd", "#08519c",
+              "#fcae91", "#fb6a4a", "#de2d26", "#a50f15",
               "#cccccc", "#999999", "#666666", "#000000" ]
 
     def __init__(self, station, start, stop, gaps, *args):
