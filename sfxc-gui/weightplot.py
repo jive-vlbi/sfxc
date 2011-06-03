@@ -85,7 +85,7 @@ class WeightPlot(Qwt.QwtPlot):
               "#fcae91", "#fb6a4a", "#de2d26", "#a50f15",
               "#cccccc", "#999999", "#666666", "#000000" ]
 
-    def __init__(self, station, start, stop, gaps, *args):
+    def __init__(self, parent, station, start, stop, gaps, *args):
         Qwt.QwtPlot.__init__(self, *args)
 
         seconds = round(stop - start)
@@ -117,7 +117,7 @@ class WeightPlot(Qwt.QwtPlot):
         self.setAxisMaxMajor(Qwt.QwtPlot.yLeft, 2)
         self.curve = {}
 
-        curve = GapCurve()
+        self.gapcurve = GapCurve()
         x = []
         y = []
         for gap in gaps:
@@ -126,8 +126,27 @@ class WeightPlot(Qwt.QwtPlot):
             y.append(-1)
             y.append(2)
             continue
-        curve.setData(x, y)
-        curve.attach(self)
+        self.gapcurve.setData(x, y)
+        self.gapcurve.attach(self)
+
+        self.connect(self, Qt.SIGNAL("legendChecked(QwtPlotItem*,bool)"),
+                     self.toggleCurve)
+        self.parent = parent
+        return
+
+    def toggleCurve(self, curve, state):
+        for idx in self.curve:
+            if self.curve[idx] == curve:
+                break
+            continue
+            
+        for station in self.parent.plot:
+            try:
+                self.parent.plot[station].curve[idx].setVisible(not state)
+                self.parent.plot[station].replot()
+            except:
+                pass
+            continue
         return
 
     pass
@@ -199,14 +218,16 @@ class WeightPlotWindow(Qt.QWidget):
         self.plot = {}
         self.layout = Qt.QGridLayout()
         for station in stations:
-            self.plot[station] = WeightPlot(station, start, stop, gaps)
+            self.plot[station] = WeightPlot(self, station, start, stop, gaps)
             self.layout.addWidget(self.plot[station])
             lastplot = self.plot[station]
             lastplot.enableAxis(Qwt.QwtPlot.xBottom, False)
             self.layout.setRowStretch(self.layout.rowCount() - 1, 100)
             self.last_station = station
             continue
-        lastplot.insertLegend(Qwt.QwtLegend(), Qwt.QwtPlot.ExternalLegend)
+        legend = Qwt.QwtLegend()
+        legend.setItemMode(Qwt.QwtLegend.CheckableItem)
+        lastplot.insertLegend(legend, Qwt.QwtPlot.ExternalLegend)
 
         self.box = Qt.QVBoxLayout(self)
         self.box.addLayout(self.layout)
@@ -218,6 +239,7 @@ class WeightPlotWindow(Qt.QWidget):
 
     def stretch(self):
         self.plot[self.last_station].enableAxis(Qwt.QwtPlot.xBottom, True)
+        self.plot[self.last_station].gapcurve.setItemAttribute(Qwt.QwtPlotItem.Legend, False)
         height = self.plot[self.last_station].height()
         canvasHeight = self.plot[self.last_station].plotLayout().canvasRect().height()
         fixedHeight = height - canvasHeight
@@ -295,7 +317,7 @@ class WeightPlotWindow(Qt.QWidget):
                             
                         pen = Qt.QPen()
                         pen.setColor(Qt.QColor(plot.color[idx % 16]))
-                        pen.setWidth(2)
+                        pen.setWidth(3)
 
                         plot.curve[idx] = Qwt.QwtPlotCurve(title)
                         plot.curve[idx].setData(plot.x, plot.y[idx])
