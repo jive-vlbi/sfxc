@@ -68,6 +68,8 @@ class progressDialog(QtGui.QDialog):
         self.vex = Vex(vex_file)
         self.ctrl_file = ctrl_file
 
+        exper = self.vex['GLOBAL']['EXPER']
+
         basename = os.path.splitext(ctrl_file)[0]
         log_file = basename + ".log"
         self.log_fp = open(log_file, 'w', 1)
@@ -84,6 +86,34 @@ class progressDialog(QtGui.QDialog):
         self.scan = None
         self.plot = None
         self.status = 'CRASH'
+
+        # Make sure the delay files are up to date, and generate new ones
+        # if they're not.
+        procs = {}
+        success = True
+        for station in self.json_input['stations']:
+            path = urlparse.urlparse(self.json_input['delay_directory']).path
+            delay_file = path + '/' +  exper + '_' + station + '.del'
+            if not os.access(delay_file, os.R_OK) or \
+                    os.stat(delay_file).st_mtime < os.stat(vex_file).st_mtime:
+                args = ['generate_delay_model', vex_file, station, delay_file]
+                procs[station] = subprocess.Popen(args)
+                pass
+            continue
+        for station in procs:
+            procs[station].wait()
+            if procs[station].returncode != 0:
+                msg = "Delay model couldn't be generated for " + station + "."
+                QtGui.QMessageBox.warning(self, "Aborted", msg)
+                path = urlparse.urlparse(self.json_input['delay_directory']).path
+                delay_file = path + '/' +  exper + '_' + station + '.del'
+                os.remove(delay_file)
+                success = False
+                pass
+            continue
+        if not success:
+            sys.exit(1)
+            pass
 
         # Parse the rankfile to calculate the number of MPI processes
         # to start.  We simply count the number of lines that start
