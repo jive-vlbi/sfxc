@@ -172,11 +172,15 @@ class progressDialog(QtGui.QDialog):
                                           "Correlation job finished unsucessfully.")
                 self.update_status()
                 self.reject()
-                sys.exit(1)
+                if self.status == 'ABORT':
+                    sys.exit(1)
+                else:
+                    sys.exit(0)
+                    pass
                 pass
             pass
 
-        pass
+        return
 
     pass
 
