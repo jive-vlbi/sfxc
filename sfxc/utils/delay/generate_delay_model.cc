@@ -32,7 +32,8 @@
 #define SECS_PER_DAY (86400)
 #define IPS_FEET (12)
 
-extern "C" void generate_delay_tables(FILE *output, char *stationname);
+extern "C" void generate_delay_tables(FILE *output, char *stationname,
+		    int start_scan, int stop_scan);
 
 // Time between sample points
 const double delta_time = 1; // in seconds
@@ -48,29 +49,61 @@ struct Source_data *source_data;
 int initialise_data(const char *vex_file,
                     const std::string &station_name);
 
+void
+usage(void)
+{
+  extern char *__progname;
+
+  fprintf(stderr, "usage: %s: [-a] [-s n] vexfile station outfile\n", __progname);
+  exit(EXIT_FAILURE);
+}
+
 int
-main(int argc, char *argv[]) {
-  if (argc!=4) {
-    printf("\n");
-    printf("Usage: generate_delay_model <vexfile> <stationname> <outputfile>\n");
-    printf("dependencies       : CALC_DIR contains ocean.dat, tilt.dat ");
-    printf(                     "and DE405_le.jpl.\n\n");
-    return 0;
+main(int argc, char *argv[])
+{
+  int ch, append = 0;
+  int start_scan = 0, stop_scan = -1;
+
+  while ((ch = getopt(argc, argv, "as:")) != -1) {
+    switch(ch) {
+    case 'a':
+      append = 1;
+      break;
+    case 's':
+      start_scan = stop_scan = atoi(optarg);
+      break;
+    default:
+      usage();
+      break;
+    }
   }
+
+  argc -= optind;
+  argv += optind;
+
+  if (argc != 3)
+    usage();
 
   //Read the vex-file
   int err;
-  err = initialise_data(argv[1], argv[2]);
+  err = initialise_data(argv[0], argv[1]);
   if (err != 0) {
     std::cout << "Could not initialise the delay model" << std::endl;
     exit(1);
   }
 
+  if (start_scan < 0 || start_scan >= n_scans) {
+    std::cout << "Invalid scan number " << start_scan << std::endl;
+    exit(1);
+  }
+
+  if (stop_scan == -1)
+    stop_scan = n_scans - 1;
 
   // Open the output file
-  FILE *output_file = fopen(argv[3], "w");
-  if(output_file == NULL){
-    std::cout << "Error: Could not open delay file \"" << argv[3] << "\" for writing\n";
+  FILE *output_file = fopen(argv[2], append ? "a" : "w");
+  if (output_file == NULL) {
+    std::cout << "Error: Could not open delay file \"" << argv[2] << "\" for writing\n";
     exit(1);
   }
 
@@ -79,14 +112,14 @@ main(int argc, char *argv[]) {
   char *dir = getenv("CALC_DIR");
   if (dir != NULL) {
     int err = chdir(dir);
-    if(err != 0){
+    if (err != 0) {
       printf("Error : Invalid CALC_DIR = %s\n", dir);
       exit(1);
     }
   }
 
   // call the c-function that calls the FORTRAN calc code
-  generate_delay_tables(output_file, argv[2]);
+  generate_delay_tables(output_file, argv[1], start_scan, stop_scan);
 
   return EXIT_SUCCESS;
 }

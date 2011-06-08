@@ -628,23 +628,25 @@ finis(short *status)
     exit(*status);
 }
 
-//below this line developed by Nico Kruithof
-
-void generate_delay_tables(FILE *output, char *stationname) {
+void
+generate_delay_tables(FILE *output, char *stationname, int start_scan,
+		      int stop_scan)
+{
   output_file = output;
 
-  assert(stationname[2]=='\0');
+  assert(stationname[2] == '\0');
 
-  int32_t header_size = 3;
-  fwrite(&header_size, 1, sizeof(int32_t), output_file);
-  fwrite(stationname, 3, sizeof(char), output_file);
+  if (ftell(output) == 0) {
+    int32_t header_size = 3;
+    fwrite(&header_size, 1, sizeof(int32_t), output_file);
+    fwrite(stationname, 3, sizeof(char), output_file);
+  }
 
-  // scan_nr is a global variable
-  for (scan_nr=0; scan_nr<n_scans; scan_nr++) {
+  for (scan_nr = start_scan; scan_nr <= stop_scan; scan_nr++) {
     struct Scan_data *scan = &scan_data[scan_nr];
-    for(source_nr = 0; source_nr < scan->n_sources ; source_nr++){
+    for (source_nr = 0; source_nr < scan->n_sources; source_nr++) {
       scan->sec = round(fmod(scan->scan_start, 60));
-      scan->sec_of_day = round(fmod(scan->scan_start, 24*60*60));
+      scan->sec_of_day = round(fmod(scan->scan_start, 24 * 60 * 60));
       interval = 0;
       calc();
     }
