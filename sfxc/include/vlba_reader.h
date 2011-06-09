@@ -33,7 +33,7 @@ public:
   typedef Input_data_format_reader::Data_frame            Data_frame;
 
   VLBA_reader(boost::shared_ptr<Data_reader> data_reader, int N, Data_frame &data, 
-              Data_frame &header_, Data_frame &aux_header_, Time ref_date_);
+              std::vector<unsigned char> &header_, std::vector<unsigned char> &aux_header_, Time ref_date_);
   virtual ~VLBA_reader();
 
   bool open_input_stream(Data_frame &data);
@@ -111,8 +111,8 @@ get_vlba_reader(boost::shared_ptr<Data_reader> reader,
 
 int find_start_of_vlba_header(boost::shared_ptr<Data_reader> reader,
                               VLBA_reader::Data_frame &data, 
-                              VLBA_reader::Data_frame &header,
-                              VLBA_reader::Data_frame &aux_header);
+                              std::vector<unsigned char> &header,
+                              std::vector<unsigned char> &aux_header);
 
 inline Time VLBA_reader::get_current_time() {
 
