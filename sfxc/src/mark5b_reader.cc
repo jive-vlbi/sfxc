@@ -24,15 +24,16 @@ Mark5b_reader::~Mark5b_reader() {}
 bool 
 Mark5b_reader::open_input_stream(Data_frame &data){
   if(!read_new_block(data)){
-    if(!resync_header(data, 0))
-       return false;
+    return false;
   }
 
+  is_open_ = true;
+  current_time_ = get_current_time();
   start_day_ = current_header.julian_day();
   start_time_ = current_time_;
+  data.start_time = current_time_;
   std::cout << RANK_OF_NODE << "Start of Mark5b data at jday=" << start_day_
             << ", time = " << start_time_ << "\n";
-  is_open_ = true;
   return true;
 }
 
@@ -76,7 +77,7 @@ Mark5b_reader::goto_time(Data_frame &data, Time us_time) {
 
     read_new_block(data);
     if((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) != 0)
-      return resync_header(data, 0);
+      return resync_header(data);
   }
   current_time_ = get_current_time();
 
@@ -110,7 +111,7 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
                                                          sizeof(current_header),
                                                          (char *)&current_header );
       if(!check_header(current_header))
-        return resync_header(data, 0); // Find next valid header in data file
+        return resync_header(data); // Find next valid header in data file
 
       SFXC_ASSERT(current_header.check());
     } else {
@@ -128,7 +129,7 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
 
   if (data_reader_->eof()) return false;
   if (((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) != 0) && frame_nr_valid)
-    return resync_header(data, 0);
+    return resync_header(data);
   if(current_header.julian_day() != current_jday % 1000)
     current_jday++;
   data.start_time = get_current_time();
@@ -217,7 +218,7 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
   std::cout << "nbitstream = " << nr_of_bitstreams << ", tbr = " << tbr << "\n";
 }
 
-bool Mark5b_reader::resync_header(Data_frame &data, int try_) {
+bool Mark5b_reader::resync_header(Data_frame &data) {
   const int max_read = RESYNC_MAX_DATA_FRAMES * size_data_block();
   const int frame_size = SIZE_MK5B_FRAME * SIZE_MK5B_WORD;
   int total_bytes_read = 0;
@@ -251,7 +252,6 @@ bool Mark5b_reader::resync_header(Data_frame &data, int try_) {
       memcpy((char *)&current_header, &buffer[header_pos], bytes_in_buffer);
       if(bytes_in_buffer < sizeof(current_header)){
         Data_reader_blocking::get_bytes_s(data_reader_.get(), sizeof(current_header) - bytes_in_buffer, &header_buf[bytes_in_buffer]);
-        start = 0;
       }else{
         int frame_start = header_pos + sizeof(current_header);
         memmove(&buffer[0], &buffer[frame_start], frame_size - frame_start);
@@ -264,10 +264,16 @@ bool Mark5b_reader::resync_header(Data_frame &data, int try_) {
       if (current_header.frame_nr % N_MK5B_BLOCKS_TO_READ != 0){
         int nframes = N_MK5B_BLOCKS_TO_READ - (current_header.frame_nr % N_MK5B_BLOCKS_TO_READ);
         for(int j = 0; j < nframes ; j++){
-          total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), sizeof(current_header), (char *)&tmp_header);
+          total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), sizeof(current_header), (char *)&current_header);
           total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), frame_size, buffer);
         }
       }
+      // Now that we have found the first frame read the rest of the data
+      for(int i = 0; i < N_MK5B_BLOCKS_TO_READ - 1; i++){
+        total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), sizeof(current_header), (char *)&tmp_header);
+        total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), frame_size, &buffer[i * frame_size]);
+      }
+
       // if headers are correct we are done
       if (check_header(current_header)){
         if(current_header.julian_day() != current_jday % 1000)
