@@ -124,6 +124,23 @@ stream_data(SSHANDLE xlrHandle, uint64_t off, int fd)
 			xlrError = XLRGetLastError();
 			XLRGetErrorMessage(errString, xlrError);
 			logit(LOG_CRIT, "%s", errString);
+
+			/*
+			 * Close the filedescriptor early, such that
+			 * the correlator doesn't wait for us.
+			 */
+			close(fd);
+
+			/*
+			 * Whack the StreamStor hardware over the
+			 * head.  We do the XLRClose()/XLROpen() dance
+			 * to force reloading of the firmware and
+			 * reinitializion of the hardware, such that
+			 * it is ready for the next request.
+			 */
+			XLRReset(xlrHandle);
+			XLRClose(xlrHandle);
+			XLROpen(1, &xlrHandle);
 			break;
 		}
 
