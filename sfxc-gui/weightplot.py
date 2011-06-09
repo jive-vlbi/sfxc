@@ -85,7 +85,7 @@ class WeightPlot(Qwt.QwtPlot):
               "#fcae91", "#fb6a4a", "#de2d26", "#a50f15",
               "#cccccc", "#999999", "#666666", "#000000" ]
 
-    def __init__(self, parent, station, start, stop, gaps, *args):
+    def __init__(self, parent, station, start, stop, gaps, scans, *args):
         Qwt.QwtPlot.__init__(self, *args)
 
         seconds = round(stop - start)
@@ -116,6 +116,17 @@ class WeightPlot(Qwt.QwtPlot):
         self.setAxisScale(Qwt.QwtPlot.yLeft, 0, 1.0)
         self.setAxisMaxMajor(Qwt.QwtPlot.yLeft, 2)
         self.curve = {}
+
+        for scan in scans:
+            label = Qwt.QwtPlotMarker()
+            label.setValue(scan[0], 0.66)
+            text = Qwt.QwtText(scan[1])
+            text.setColor(Qt.QColor("gray"))
+            text.setPaintAttribute(Qwt.QwtText.PaintUsingTextColor)
+            label.setLabel(text)
+            label.setLabelAlignment(Qt.Qt.AlignRight)
+            label.attach(self)
+            continue
 
         self.gapcurve = GapCurve()
         x = []
@@ -199,6 +210,15 @@ class WeightPlotWindow(Qt.QWidget):
         fp.close()
         start = vex2time(json_input['start'])
 
+        scans = []
+        for scan in vex['SCHED']:
+            time = vex2time(vex['SCHED'][scan]['start'])
+            if time >= start and time < stop:
+                scans.append((time - start, scan))
+                pass
+            continue
+        print scans
+
         for i in xrange(len(self.offsets)):
             self.offsets[i] -= start
             continue
@@ -219,12 +239,13 @@ class WeightPlotWindow(Qt.QWidget):
         self.plot = {}
         self.layout = Qt.QGridLayout()
         for station in stations:
-            self.plot[station] = WeightPlot(self, station, start, stop, gaps)
+            self.plot[station] = WeightPlot(self, station, start, stop, gaps, scans)
             self.layout.addWidget(self.plot[station])
             lastplot = self.plot[station]
             lastplot.enableAxis(Qwt.QwtPlot.xBottom, False)
             self.layout.setRowStretch(self.layout.rowCount() - 1, 100)
             self.last_station = station
+            scans = []
             continue
         legend = Qwt.QwtLegend()
         legend.setItemMode(Qwt.QwtLegend.CheckableItem)
