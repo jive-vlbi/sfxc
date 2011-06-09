@@ -89,8 +89,10 @@ Time Mark5b_reader::get_current_time() {
   if(is_open_){
     int samples_per_word = 32 / nr_of_bitstreams;
     double subsec = (double)(current_header.frame_nr *  SIZE_MK5B_FRAME * samples_per_word) / sample_rate;
-    if(subsec > 1)
+    if(subsec > 1){
+      std::cout << RANK_OF_NODE << " : Warning Mark5b header contains invalid frame_nr, switching to VLBA timestamp\n";
       frame_nr_valid = false;
+    }
     if(frame_nr_valid)
       time.set_time(current_jday, current_header.seconds() + subsec);
     else
