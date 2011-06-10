@@ -204,9 +204,7 @@ class WeightPlotWindow(Qt.QWidget):
         self.output_file = 0
         self.output_files = []
         self.offsets = []
-        gaps = []
         stations = []
-        prev_stop = None
         for ctrl_file in ctrl_files:
             fp = open(ctrl_file, 'r')
             json_input = json.load(fp)
@@ -227,24 +225,37 @@ class WeightPlotWindow(Qt.QWidget):
                 pass
             self.output_files.append(output_file)
             self.offsets.append(start)
-            if prev_stop:
-                gaps.append((prev_stop, start))
-            prev_stop = stop
             continue
-        gaps.append((stop, stop))
 
         fp = open(ctrl_files[0], 'r')
         json_input = json.load(fp)
         fp.close()
         start = vex2time(json_input['start'])
 
+        gaps = []
         scans = []
+        prev_stop_time = None
         for scan in vex['SCHED']:
-            time = vex2time(vex['SCHED'][scan]['start'])
-            if time >= start and time < stop:
-                scans.append((time - start, scan))
+            # Loop over all the "station" parameters in the scan, figuring out
+            # the real length of the scan.
+            start_time = stop_time = 0
+            for transfer in vex['SCHED'][scan].getall('station'):
+                station = transfer[0]
+                stop_time = max(stop_time, int(transfer[2].split()[0]))
+                continue
+
+            # Figure out the real start and stop time.
+            start_time += vex2time(vex['SCHED'][scan]['start'])
+            stop_time += vex2time(vex['SCHED'][scan]['start'])
+            if start_time >= start and start_time < stop:
+                scans.append((start_time, scan))
+                if prev_stop_time:
+                    gaps.append((prev_stop_time, start_time))
+                    pass
+                prev_stop_time = stop_time
                 pass
             continue
+        gaps.append((stop, stop))
 
         for i in xrange(len(self.offsets)):
             self.offsets[i] -= start
@@ -252,6 +263,10 @@ class WeightPlotWindow(Qt.QWidget):
 
         for i in xrange(len(gaps)):
             gaps[i] = (gaps[i][0] - start, gaps[i][1] - start)
+            continue
+
+        for i in xrange(len(scans)):
+            scans[i] = (scans[i][0] - start, scans[i][1])
             continue
 
         self.fp = None
