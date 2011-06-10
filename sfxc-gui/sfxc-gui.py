@@ -198,8 +198,6 @@ class progressDialog(QtGui.QDialog):
                 sys.exit(0)
                 pass
             else:
-                QtGui.QMessageBox.warning(self, "Aborted",
-                                          "Correlation job finished unsucessfully.")
                 self.update_status()
                 self.reject()
                 if self.status == 'ABORT':
