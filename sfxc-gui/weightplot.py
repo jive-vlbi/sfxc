@@ -402,7 +402,9 @@ class WeightPlotWindow(Qt.QWidget):
                     if not secs in plot.x:
                         plot.x.append(secs)
                         pass
-                    plot.y[idx].append(weight)
+                    if len(plot.y[idx]) < len(plot.x):
+                        plot.y[idx].append(weight)
+                        pass
                     continue
 
                 for i in xrange(number_baselines):
