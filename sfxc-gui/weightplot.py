@@ -117,6 +117,8 @@ class WeightPlot(Qwt.QwtPlot):
         self.setAxisMaxMajor(Qwt.QwtPlot.yLeft, 2)
         self.curve = {}
 
+        self.scans = scans
+        self.labels = []
         for scan in scans:
             label = Qwt.QwtPlotMarker()
             label.setValue(scan[0], 0.66)
@@ -126,8 +128,10 @@ class WeightPlot(Qwt.QwtPlot):
             label.setLabel(text)
             label.setLabelAlignment(Qt.Qt.AlignRight)
             label.attach(self)
+            self.labels.append(label)
             continue
 
+        self.gaps = gaps
         self.gapcurve = GapCurve()
         x = []
         y = []
@@ -143,6 +147,29 @@ class WeightPlot(Qwt.QwtPlot):
         self.connect(self, Qt.SIGNAL("legendChecked(QwtPlotItem*,bool)"),
                      self.toggleCurve)
         self.parent = parent
+        return
+
+    def resizeEvent(self, e):
+        Qwt.QwtPlot.resizeEvent(self, e)
+
+        if self.labels:
+            map = self.canvasMap(Qwt.QwtPlot.xBottom)
+
+            x1 = map.transform(0)
+            scan = 0
+            for gap in self.gaps:
+                x2 = map.transform(gap[0])
+                width = x2 - x1
+                if self.labels[scan].label().textSize().width() >= width - 4:
+                    self.labels[scan].hide()
+                else:
+                    self.labels[scan].show()
+                    pass
+                x1 = map.transform(gap[1])
+                scan += 1
+                continue
+            pass
+            
         return
 
     def toggleCurve(self, curve, state):
@@ -204,6 +231,7 @@ class WeightPlotWindow(Qt.QWidget):
                 gaps.append((prev_stop, start))
             prev_stop = stop
             continue
+        gaps.append((stop, stop))
 
         fp = open(ctrl_files[0], 'r')
         json_input = json.load(fp)
@@ -217,7 +245,6 @@ class WeightPlotWindow(Qt.QWidget):
                 scans.append((time - start, scan))
                 pass
             continue
-        print scans
 
         for i in xrange(len(self.offsets)):
             self.offsets[i] -= start
@@ -256,7 +283,7 @@ class WeightPlotWindow(Qt.QWidget):
         self.box.addWidget(lastplot.legend())
 
         self.startTimer(500)
-        self.resize(500, len(stations) * 100 + 50)
+        self.resize(1000, len(stations) * 100 + 50)
         pass
 
     def stretch(self):
