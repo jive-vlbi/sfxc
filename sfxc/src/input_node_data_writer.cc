@@ -46,7 +46,7 @@ void Input_node_data_writer::do_execute()
 
   total_data_written_ = 0;
 
-  while( isrunning_ ){
+  while( true ){
     did_work = false;
     if (has_work()){
       total_data_written_ += do_task();

@@ -13,7 +13,10 @@
 #include "data_reader_file.h"
 
 #include "utils.h"
+#include "input_node_types.h"
 #include "mark5a_reader.h"
+
+typedef Input_node_types::Data_memory_pool Data_memory_pool;
 
 // Prints the timestamps in the headers of a mark5a file
 int main(int argc, char *argv[]) {
@@ -32,6 +35,8 @@ int main(int argc, char *argv[]) {
   boost::shared_ptr<Data_reader> reader(new Data_reader_file(argv[1]));
 
   Mark5a_reader::Data_frame data;
+  boost::shared_ptr< Data_memory_pool > memory_pool_(new Data_memory_pool(10));
+  data.buffer = memory_pool_->allocate();
 
   Mark5a_reader *mark5a_reader =
     get_mark5a_reader(reader, data, Time(0));
