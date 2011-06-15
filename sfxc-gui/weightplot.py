@@ -270,7 +270,6 @@ class WeightPlotWindow(Qt.QWidget):
             continue
 
         self.fp = None
-        self.file_size = 0
 
         self.stations = []
         for station in vex['STATION']:
