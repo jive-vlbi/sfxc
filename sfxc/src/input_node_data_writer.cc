@@ -81,7 +81,6 @@ has_work() {
     }
     // The data writer in the front of the queue is still being used
     // to send data from another channel
-    //TODO check if it is possible that the same data_writer is used multiple times
     if (data_writers_.front().writer->is_active())
       return false;
   }
@@ -125,7 +124,6 @@ do_task() {
     DEBUG_MSG("FETCHING FOR A NEW WRITER......");
     sync_stream = true;
   }
-
   if(sync_stream){
     block_size=input_element.channel_data.data().data.size();
     int64_t dsamples = _current_time.diff_samples(input_element.start_time);
@@ -189,17 +187,23 @@ do_task() {
       end_index = total_to_write+byte_offset;
     }else if(index>=next_invalid_pos){
       int n = input_element.invalid[invalid_index].nr_invalid;
-      int nr_invalid = std::max(0, next_invalid_pos + n - index);
+      int end_pos = std::min(next_invalid_pos + n, next_delay_pos);
+      int nr_invalid = std::max(0, end_pos - index);
       nr_invalid = std::min(nr_invalid, end_index - index);
       if(nr_invalid > 0){
         write_invalid(writer, nr_invalid * samples_per_byte);
         index += nr_invalid;
       }
-      invalid_index++;
-      if(input_element.invalid.size() > invalid_index)
-        next_invalid_pos = input_element.invalid[invalid_index].invalid_begin;
-      else
-        next_invalid_pos = block_size + 1;
+      if(end_pos == (next_invalid_pos + n)){
+        invalid_index++;
+        if(input_element.invalid.size() > invalid_index)
+          next_invalid_pos = input_element.invalid[invalid_index].invalid_begin;
+        else
+          next_invalid_pos = block_size + 1;
+      }else{
+        input_element.invalid[invalid_index].nr_invalid -= nr_invalid;
+        next_invalid_pos = end_pos;
+      }
       if(index >= block_size)
         input_buffer_->pop();
     }else{
@@ -281,7 +285,6 @@ void
 Input_node_data_writer::write_invalid(Data_writer_sptr writer, int nInvalid){
   int8_t header = HEADER_INVALID;
   int invalid_written=0;
-
   while(invalid_written < nInvalid){
     // first write a header containing the number of bytes to be send
     int16_t invalid_to_write = (int16_t) std::min(nInvalid-invalid_written, SHRT_MAX);
@@ -341,15 +344,14 @@ Input_node_data_writer::write_data(Data_writer_sptr writer, int ndata, int byte_
     int16_t data_to_write = (int16_t) std::min(ndata-bytes_written, SHRT_MAX);
     writer->put_bytes(sizeof(header), (char *)&header);
     writer->put_bytes(sizeof(data_to_write), (char *)&data_to_write);
-
     Input_buffer_element &input_element = input_buffer_->front();
     char *data =(char*)&input_element.channel_data.data().data[start];
     int written = 0;
 
     while(written < data_to_write){
-      written += writer->put_bytes((int)data_to_write, data);
-      bytes_written+=written;
-      data+=written;
+      int result = writer->put_bytes((int)data_to_write - written, &data[written]);
+      written += result;
+      bytes_written+=result;
     }
     start += data_to_write;
   }
@@ -368,7 +370,6 @@ Input_node_data_writer::write_initial_invalid_data(Writer_struct &data_writer, i
   // The initial delay
   write_delay(data_writer.writer, cur_delay[delay_index].remaining_samples);
   data_writer.slice_size += cur_delay[delay_index].remaining_samples;
-
   int64_t invalid_samples=std::min((int64_t)-byte_offset * samples_per_byte, data_writer.slice_size);
   int64_t written=0;
   while(written<invalid_samples){
