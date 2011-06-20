@@ -105,7 +105,7 @@ private:
                             int invalid_samples_per_block, int block_size);
   void write_end_of_stream(Data_writer_sptr writer);
 
-  int64_t write_initial_invalid_data(Writer_struct &data_writer, int byte_offset);
+  int64_t write_initial_invalid_data(Writer_struct &data_writer, int64_t byte_offset);
   uint64_t total_data_written_;
   int block_size;
 
