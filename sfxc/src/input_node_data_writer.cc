@@ -362,7 +362,7 @@ Input_node_data_writer::write_data(Data_writer_sptr writer, int ndata, int byte_
 }
 
 int64_t 
-Input_node_data_writer::write_initial_invalid_data(Writer_struct &data_writer, int byte_offset){
+Input_node_data_writer::write_initial_invalid_data(Writer_struct &data_writer, int64_t byte_offset){
   int samples_per_byte = 8/bits_per_sample;
   std::vector<Delay> &cur_delay = delay_list.data();
   int delay_size = cur_delay.size();
