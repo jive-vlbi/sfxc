@@ -629,8 +629,8 @@ finis(short *status)
 }
 
 void
-generate_delay_tables(FILE *output, char *stationname, int start_scan,
-		      int stop_scan)
+generate_delay_tables(FILE *output, char *stationname, double start,
+		      double stop)
 {
   output_file = output;
 
@@ -642,8 +642,12 @@ generate_delay_tables(FILE *output, char *stationname, int start_scan,
     fwrite(stationname, 3, sizeof(char), output_file);
   }
 
-  for (scan_nr = start_scan; scan_nr <= stop_scan; scan_nr++) {
+  for (scan_nr = 0; scan_nr < n_scans; scan_nr++) {
     struct Scan_data *scan = &scan_data[scan_nr];
+    if (scan->scan_stop <= start)
+      continue;
+    if (scan->scan_start >= stop)
+      break;
     for (source_nr = 0; source_nr < scan->n_sources; source_nr++) {
       scan->sec = round(fmod(scan->scan_start, 60));
       scan->sec_of_day = round(fmod(scan->scan_start, 24 * 60 * 60));
