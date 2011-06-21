@@ -33,7 +33,7 @@
 #define IPS_FEET (12)
 
 extern "C" void generate_delay_tables(FILE *output, char *stationname,
-		    int start_scan, int stop_scan);
+				      double start, double stop);
 
 // Time between sample points
 const double delta_time = 1; // in seconds
@@ -47,12 +47,14 @@ struct Scan_data    *scan_data;
 int initialise_data(const char *vex_file,
                     const std::string &station_name);
 
+double vex2time(std::string str);
+
 void
 usage(void)
 {
   extern char *__progname;
 
-  fprintf(stderr, "usage: %s: [-a] [-s n] vexfile station outfile\n", __progname);
+  fprintf(stderr, "usage: %s: [-a] vexfile station outfile [start stop]\n", __progname);
   exit(EXIT_FAILURE);
 }
 
@@ -60,15 +62,12 @@ int
 main(int argc, char *argv[])
 {
   int ch, append = 0;
-  int start_scan = 0, stop_scan = -1;
+  double start, stop;
 
-  while ((ch = getopt(argc, argv, "as:")) != -1) {
+  while ((ch = getopt(argc, argv, "a")) != -1) {
     switch(ch) {
     case 'a':
       append = 1;
-      break;
-    case 's':
-      start_scan = stop_scan = atoi(optarg);
       break;
     default:
       usage();
@@ -79,7 +78,7 @@ main(int argc, char *argv[])
   argc -= optind;
   argv += optind;
 
-  if (argc != 3)
+  if (argc != 3 && argc != 5)
     usage();
 
   //Read the vex-file
@@ -90,13 +89,13 @@ main(int argc, char *argv[])
     exit(1);
   }
 
-  if (start_scan < 0 || start_scan >= n_scans) {
-    std::cout << "Invalid scan number " << start_scan << std::endl;
-    exit(1);
+  if (argc == 5) {
+    start = vex2time(argv[3]);
+    stop = vex2time(argv[4]);
+  } else {
+    start = scan_data[0].scan_start;
+    stop = scan_data[n_scans - 1].scan_stop;
   }
-
-  if (stop_scan == -1)
-    stop_scan = n_scans - 1;
 
   // Open the output file
   FILE *output_file = fopen(argv[2], append ? "a" : "w");
@@ -117,7 +116,7 @@ main(int argc, char *argv[])
   }
 
   // call the c-function that calls the FORTRAN calc code
-  generate_delay_tables(output_file, argv[1], start_scan, stop_scan);
+  generate_delay_tables(output_file, argv[1], start, stop);
 
   return EXIT_SUCCESS;
 }
@@ -140,6 +139,17 @@ long str_to_long (std::string inString, int pos, int length) {
   } else {
     return sval;
   }
+}
+
+double
+vex2time(std::string str)
+{
+  int doy = str_to_long(str, 5, 3);
+  int hour = str_to_long(str, 9, 2);
+  int min = str_to_long(str, 12, 2);
+  int sec = str_to_long(str, 15, 2);
+
+  return sec + 60 * (min + 60 * (hour + 24 * (double)doy));
 }
 
 bool leap_year(int year) {
