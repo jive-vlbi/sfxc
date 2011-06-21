@@ -44,7 +44,13 @@ class progressDialog(QtGui.QDialog):
     def abort(self):
         if self.proc:
             self.status = 'ABORT'
-            self.proc.terminate()
+            try:
+                self.proc.terminate()
+            except:
+                self.update_status()
+                self.reject()
+                sys.exit(1)
+                pass
         else:
             self.reject()
             pass
