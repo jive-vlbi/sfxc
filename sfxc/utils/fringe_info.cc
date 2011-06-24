@@ -298,11 +298,6 @@ Fringe_info_container::read_plots(bool stop_at_eof) {
 void
 Fringe_info_container::process_new_bit_statistics(){
   for(int i=0;i<new_statistics.size();i++){
-    Output_header_bitstatistics stats;
-    stats.station_nr=new_statistics[i].station_nr; 
-    stats.frequency_nr=new_statistics[i].frequency_nr;
-    stats.sideband=new_statistics[i].sideband;
-    stats.polarisation=new_statistics[i].polarisation;
     statistics.insert(new_statistics[i]);
   }
 }
@@ -349,16 +344,28 @@ Fringe_info_container::get_channels(const Vex &vex, const std::string &mode, std
   std::string if_node = vex.get_IF(mode,station);
   std::string bbc_node = vex.get_BBC(mode,station);
 
+  // Get sorted list of frequencies
+  std::set<double> freq_set;
+  for (Vex::Node::iterator chan_it = root_node["FREQ"][freq_node]->begin("chan_def");
+       chan_it != root_node["FREQ"][freq_node]->end("chan_def"); ++chan_it) {
+    freq_set.insert((*chan_it)[1]->to_double_amount("MHz")*1000000);
+  }
+
   channels.resize(0);
-  int freq_nr=-1;
-  double old_freq=-1;
+  int freq_nr;
+  double freq=-1;
   for (Vex::Node::iterator chan_it = root_node["FREQ"][freq_node]->begin("chan_def");
        chan_it != root_node["FREQ"][freq_node]->end("chan_def"); ++chan_it) {
     Channel new_chan;
     double new_freq = (*chan_it)[1]->to_double_amount("MHz")*1000000;
-    if(new_freq!=old_freq){
-      old_freq=new_freq;
-      freq_nr++;
+    if(new_freq!=freq){
+      freq=new_freq;
+      freq_nr=0;
+      for(std::set<double>::iterator f_it = freq_set.begin(); f_it != freq_set.end(); f_it++){
+        if((*f_it) == freq)
+          break;
+        freq_nr++ ;
+      }
     }
     new_chan.frequency_nr = freq_nr;
     new_chan.frequency = new_freq;
@@ -605,27 +612,32 @@ print_html_bitstatistics(const Vex &vex, const std::string &mode, std::ofstream 
   std::vector<Channel> channels;
   get_channels(vex, mode, channels);
 
-  // Get an alphabetically sorted list of stations
   const Vex::Node root_node = vex.get_root_node();
-  std::set<std::string> station_names;
-  for (Vex::Node::const_iterator it = root_node["STATION"]->begin();
-       it != root_node["STATION"]->end(); it++) {
-    station_names.insert(it.key());
-  }
+  // Get an alphabetically sorted list of stations
   std::vector<std::string> stations;
-  for (std::set<std::string>::iterator it = station_names.begin();
-       it != station_names.end(); it++) {
-    stations.push_back(*it);
+  std::set<int> stations_in_experiment;
+  {
+    std::set<std::string> station_set;
+    for (Vex::Node::const_iterator it = root_node["STATION"]->begin();
+         it != root_node["STATION"]->end(); it++) {
+      station_set.insert(it.key());
+    }
+    for (std::set<std::string>::iterator it = station_set.begin();
+         it != station_set.end(); it++) {
+      stations.push_back(*it);
+    } 
+    for(statistics_set::iterator it=statistics.begin(); it != statistics.end() ; it++){
+      stations_in_experiment.insert(it->station_nr);
+    }
   }
-
   index_html << "<h1> Sampler statistics </h1><br>" << std::endl;
   // Iterate over all stations
-  statistics_set::iterator it=statistics.begin();
-  while(it!=statistics.end()){
+  for(std::set<int>::iterator stat_it = stations_in_experiment.begin(); 
+                              stat_it != stations_in_experiment.end() ; stat_it++){
     // Write table header
     index_html << "<table border=1 bgcolor='#dddddd' cellspacing=0>" << std::endl;
     index_html << "<tr>" << "\n";
-    index_html << "  <th>" << stations[(int)(*it).station_nr] << "</th>" << std::endl;
+    index_html << "  <th>" << stations[(*stat_it)] << "</th>" << std::endl;
     index_html << "  <th> - - </th>" << std::endl;
     index_html << "  <th> - + </th>"<< std::endl;
     index_html << "  <th> + - </th>" << std::endl;
@@ -639,7 +651,7 @@ print_html_bitstatistics(const Vex &vex, const std::string &mode, std::ofstream 
     for(int i=0;i<channels.size();i++){
       // Find the current channel in the statistics set
       Output_header_bitstatistics chan;
-      chan.station_nr=(*it).station_nr;
+      chan.station_nr=(*stat_it);
       chan.frequency_nr=channels[i].frequency_nr;
       chan.sideband=channels[i].sideband;
       chan.polarisation=channels[i].polarization;
@@ -672,10 +684,6 @@ print_html_bitstatistics(const Vex &vex, const std::string &mode, std::ofstream 
       index_html << "\n  ";
     }
     index_html << "</table><br>" << std::endl;
-    // Find the next station within the set
-    int cur_station=(*it).station_nr;
-    while((it!=statistics.end())&&(cur_station==(*it).station_nr))
-      it++;
   }
 }
 
