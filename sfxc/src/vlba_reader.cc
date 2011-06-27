@@ -28,9 +28,10 @@ VLBA_reader(boost::shared_ptr<Data_reader> data_reader, int N_, Data_frame &data
 
   start_time_.set_time_usec(current_jday, header.microseconds(0));
   current_time_.set_time_usec(current_jday, header.microseconds(0));
-
+  std::cout << RANK_OF_NODE << " : Start of VLBA stream found t = " << current_time_ << "\n";
   set_data_frame_info(data);
   find_fill_pattern(data);
+  is_open_ = true;
 }
 
 VLBA_reader::~VLBA_reader() {}
