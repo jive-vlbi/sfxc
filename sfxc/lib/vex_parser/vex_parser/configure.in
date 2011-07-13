@@ -20,10 +20,10 @@ AM_CONDITIONAL(BUILD_PYTHONLIB, test "x$enable_pythonlib" = "xyes")
 if test "x$enable_pythonlib" = "xyes"; then
   echo ================ ENABLE PYTHONLIB
   dnl Check for python
-  AM_PATH_PYTHON(2.4)
+  AM_PATH_PYTHON(2.6)
   dnl Check for boost.python
-  AC_CHECK_LIB(python2.4, main)
-  AC_CHECK_LIB(boost_python, main)
+  AC_CHECK_LIB(python2.6, main)
+  AC_CHECK_LIB(boost_python-mt, main)
   echo ================ /ENABLE PYTHONLIB
 fi
 

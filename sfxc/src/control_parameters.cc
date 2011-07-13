@@ -415,10 +415,17 @@ Control_parameters::number_channels() const {
 }
 
 int
-Control_parameters::fft_size() const {
-  if (ctrl["fft_size"] == Json::Value())
+Control_parameters::fft_size_delaycor() const {
+  if (ctrl["fft_size_delaycor"] == Json::Value())
+    return 256;
+  return ctrl["fft_size_delaycor"].asInt();
+}
+
+int
+Control_parameters::fft_size_correlation() const {
+  if (ctrl["fft_size_correlation"] == Json::Value())
     return std::max(256, number_channels());
-  return ctrl["fft_size"].asInt();
+  return ctrl["fft_size_correlation"].asInt();
 }
 
 std::string
@@ -860,7 +867,7 @@ get_input_node_parameters(const std::string &mode_name,
                           const std::string &station_name) const {
   Input_node_parameters result;
   result.track_bit_rate = -1;
-  result.fft_size = fft_size();
+  result.fft_size = std::max(fft_size_delaycor(), fft_size_correlation());
   result.integr_time = integration_time();
   const std::string &freq_name =
     get_vex().get_frequency(mode_name, station_name);
@@ -1198,7 +1205,8 @@ get_correlation_parameters(const std::string &scan_name,
   corr_param.integration_time = integration_time();
   corr_param.sub_integration_time = sub_integration_time(); 
   corr_param.number_channels = number_channels();
-  corr_param.fft_size = fft_size();
+  corr_param.fft_size_delaycor = fft_size_delaycor();
+  corr_param.fft_size_correlation = fft_size_correlation();
   corr_param.slice_offset =
     number_correlation_cores_per_timeslice(mode_name);
 
@@ -1398,8 +1406,6 @@ Input_node_parameters::operator==(const Input_node_parameters &other) const {
     return false;
   if (track_bit_rate != other.track_bit_rate)
     return false;
-  if (fft_size != other.fft_size)
-    return false;
   if (integr_time != other.integr_time)
     return false;
 
@@ -1410,7 +1416,6 @@ std::ostream &
 operator<<(std::ostream &out,
            const Input_node_parameters &param) {
   out << "{ \"tbr\" : " << param.track_bit_rate << ", "
-  << "\"fft_size\" : " << param.fft_size << ", "
   << "\"integr_time\" : " << param.integr_time << ", " << std::endl;
 
   out << " channels: [";
@@ -1487,7 +1492,9 @@ Correlation_parameters::operator==(const Correlation_parameters& other) const {
     return false;
   if (number_channels != other.number_channels)
     return false;
-  if (fft_size != other.fft_size)
+  if (fft_size_delaycor != other.fft_size_delaycor)
+    return false;
+  if (fft_size_correlation != other.fft_size_correlation)
     return false;
   if (integration_nr != other.integration_nr)
     return false;
@@ -1518,7 +1525,8 @@ std::ostream &operator<<(std::ostream &out,
   out << "  \"stop_time\": " << param.stop_time << ", " << std::endl;
   out << "  \"integr_time\": " << param.integration_time << ", " << std::endl;
   out << "  \"number_channels\": " << param.number_channels << ", " << std::endl;
-  out << "  \"fft_size\": " << param.fft_size << ", " << std::endl;
+  out << "  \"fft_size_delaycor\": " << param.fft_size_delaycor << ", " << std::endl;
+  out << "  \"fft_size_correlation\": " << param.fft_size_correlation << ", " << std::endl;
   out << "  \"slice_nr\": " << param.slice_nr << ", " << std::endl;
   out << "  \"slice_offset\": " << param.slice_offset << ", " << std::endl;
   out << "  \"sample_rate\": " << param.sample_rate << ", " << std::endl;

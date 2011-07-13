@@ -112,7 +112,8 @@ private:
     int n_ffts_per_integration;
     int bits_per_sample;
     int sample_rate;
-    int fft_size;
+    int fft_size_delaycor;
+    int fft_size_correlation;
   } new_parameters;
 };
 #endif // INTEGER_DELAY_CORRECTION_PER_CHANNEL_H

@@ -671,7 +671,7 @@ void
 MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   int size = 0;
   size =
-    4*sizeof(int64_t) + 11*sizeof(int32_t) + sizeof(int64_t) +
+    4*sizeof(int64_t) + 12*sizeof(int32_t) + sizeof(int64_t) +
     3*sizeof(char) + corr_param.station_streams.size() * (3 * sizeof(int32_t) + 2 * sizeof(int64_t)) +
     11*sizeof(char);
   int position = 0;
@@ -691,7 +691,9 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.number_channels, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&corr_param.fft_size, 1, MPI_INT32,
+  MPI_Pack(&corr_param.fft_size_delaycor, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&corr_param.fft_size_correlation, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.integration_nr, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
@@ -788,7 +790,10 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
              &corr_param.number_channels, 1, MPI_INT32,
              MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
-             &corr_param.fft_size, 1, MPI_INT32,
+             &corr_param.fft_size_delaycor, 1, MPI_INT32,
+             MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.fft_size_correlation, 1, MPI_INT32,
              MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
              &corr_param.integration_nr, 1, MPI_INT32,

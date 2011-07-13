@@ -41,9 +41,7 @@ OBJ=\
   log_writer_file.cc \
   correlation_core.cc \
   correlation_core_pulsar.cc \
-  delay_correction_base.cc \
-  delay_correction_default.cc \
-  delay_correction_swapped.cc \
+  delay_correction.cc \
   uvw_model.cc \
   channel_extractor_tasklet.cc \
   channel_extractor_tasklet_vdif.cc \

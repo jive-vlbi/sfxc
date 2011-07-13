@@ -1,13 +1,24 @@
-#include "delay_correction_default.h"
+#include "delay_correction.h"
 #include "sfxc_math.h"
 #include "config.h"
 
-Delay_correction_default::Delay_correction_default(int stream_nr)
-  : Delay_correction_base(stream_nr) 
+Delay_correction::Delay_correction(int stream_nr)
+    : output_buffer(Output_buffer_ptr(new Output_buffer())),
+      output_memory_pool(32),current_time(-1), delay_table_set(false),
+      stream_nr(stream_nr)
 {
 }
 
-void Delay_correction_default::do_task() {
+Delay_correction::~Delay_correction() {
+#if PRINT_TIMER
+  int N = number_channels();
+  int numiterations = total_ffts;
+  double time = delay_timer.measured_time()*1000000;
+  PROGRESS_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
+#endif
+}
+
+void Delay_correction::do_task() {
   SFXC_ASSERT(has_work());
   SFXC_ASSERT(current_time >= 0);
 
@@ -16,17 +27,16 @@ void Delay_correction_default::do_task() {
   current_fft+=nbuffer;
 
   // Allocate output buffer
-  cur_output=output_memory_pool.allocate();
-  int output_stride = fft_size() + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
+  int fft_size_correlation = correlation_parameters.fft_size_correlation;
+  int output_stride =  fft_size_correlation + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
+  cur_output = output_memory_pool.allocate();
   cur_output->stride = output_stride;
-
-  //int output_fft_size = fft_size() + 1;
-  if(cur_output->data.size() != nbuffer * output_stride)
-    cur_output->data.resize(nbuffer * output_stride);
+  int nfft_cor = (nbuffer * fft_size()) / fft_size_correlation;
+  if(cur_output->data.size() != nfft_cor * output_stride)
+    cur_output->data.resize(nfft_cor * output_stride);
 #ifndef DUMMY_CORRELATION
-  // A factor of 2 for padding
-  if (time_buffer.size() != 2 * fft_size())
-    time_buffer.resize(2 * fft_size());
+  if (time_buffer.size() != nbuffer * fft_size())
+    time_buffer.resize(nbuffer * fft_size());
 
   for(int buf=0;buf<nbuffer;buf++){
     double delay = get_delay(current_time + fft_length/2);
@@ -39,24 +49,27 @@ void Delay_correction_default::do_task() {
                          delay_in_samples - integer_delay);
 
     // Input is from frequency_buffer
-    fringe_stopping(&time_buffer[0]);
+    fringe_stopping(&time_buffer[buf * fft_size()]);
 
-    // Do the final fft from time to frequency:
-    // zero out the data for padding
-    SFXC_ZERO_F(&time_buffer[fft_size()], fft_size());
-    fft_t2f_cor.rfft(&time_buffer[0], &cur_output->data[buf * output_stride]);
+    current_time.inc_samples(fft_size());
+    total_ffts++;
+  }
 
-   current_time.inc_samples(fft_size());
-   total_ffts++;
+  // Pad the data for the final fft
+  SFXC_ZERO_F(&temp_buffer[fft_size_correlation], fft_size_correlation);
+  for(int buf=0;buf<nfft_cor;buf++){
+    // Do the final fft from time to frequency
+    memcpy(&temp_buffer[0], &time_buffer[buf*fft_size_correlation], fft_size_correlation*sizeof(FLOAT));
+    fft_t2f_cor.rfft(&temp_buffer[0], &cur_output->data[buf * output_stride]);
   }
 #endif // DUMMY_CORRELATION
   cur_output->invalid = input->invalid;
   output_buffer->push(cur_output);
 }
 
-void Delay_correction_default::fractional_bit_shift(FLOAT *input,
+void Delay_correction::fractional_bit_shift(FLOAT *input,
     int integer_shift,
-    FLOAT fractional_delay) {
+    double fractional_delay) {
   // 3) execute the complex to complex FFT, from Time to Frequency domain
   //    input: sls. output sls_freq
   fft_t2f.rfft(&input[0], &frequency_buffer[0]);
@@ -111,7 +124,7 @@ void Delay_correction_default::fractional_bit_shift(FLOAT *input,
   total_ffts++;
 }
 
-void Delay_correction_default::fringe_stopping(FLOAT output[]) {
+void Delay_correction::fringe_stopping(FLOAT output[]) {
   const double mult_factor_phi = -sideband()*2.0*M_PI;
   const double center_freq = channel_freq() + sideband()*bandwidth()*0.5;
   // Only compute the delay at integer microseconds
@@ -155,7 +168,7 @@ void Delay_correction_default::fringe_stopping(FLOAT output[]) {
 }
 
 void
-Delay_correction_default::set_parameters(const Correlation_parameters &parameters) {
+Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   size_t prev_fft_size = fft_size();
   correlation_parameters = parameters;
 
@@ -165,8 +178,6 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
     i++;
   SFXC_ASSERT(i < parameters.station_streams.size());
   bits_per_sample = parameters.station_streams[i].bits_per_sample;
-
-  nfft_max = std::max(CORRELATOR_BUFFER_SIZE / parameters.fft_size, 1);
   oversamp = (int)round(parameters.sample_rate / (2 * parameters.bandwidth));
 
   current_time = parameters.start_time;
@@ -178,10 +189,11 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
   if (prev_fft_size != fft_size()) {
     exp_array.resize(fft_size());
     frequency_buffer.resize(fft_size());
+    temp_buffer.resize(2*parameters.fft_size_correlation);
 
     fft_t2f.resize(fft_size());
     fft_f2t.resize(fft_size());
-    fft_t2f_cor.resize(2 * fft_size());
+    fft_t2f_cor.resize(2 * parameters.fft_size_correlation);
   }
   SFXC_ASSERT(frequency_buffer.size() == fft_size());
 
@@ -189,7 +201,45 @@ Delay_correction_default::set_parameters(const Correlation_parameters &parameter
     Control_parameters::nr_ffts_per_integration_slice(
       (int) parameters.integration_time.get_time_usec(),
       parameters.sample_rate,
-      parameters.fft_size);
+      parameters.fft_size_delaycor);
 
   current_fft = 0;
 }
+
+void Delay_correction::connect_to(Input_buffer_ptr new_input_buffer) {
+  SFXC_ASSERT(input_buffer == Input_buffer_ptr());
+  input_buffer = new_input_buffer;
+}
+
+void Delay_correction::set_delay_table(const Delay_table_akima &delay_table_) {
+  delay_table_set = true;
+  delay_table = delay_table_;
+}
+
+double Delay_correction::get_delay(Time time) {
+  SFXC_ASSERT(delay_table_set);
+  return delay_table.delay(time);
+}
+
+bool Delay_correction::has_work() {
+  if (input_buffer->empty())
+    return false;
+  if (output_memory_pool.empty())
+    return false;
+  if (n_ffts_per_integration == current_fft)
+    return false;
+  SFXC_ASSERT((current_fft<=n_ffts_per_integration)&&(current_fft>=0))
+  return true;
+}
+
+Delay_correction::Output_buffer_ptr
+Delay_correction::get_output_buffer() {
+  SFXC_ASSERT(output_buffer != Output_buffer_ptr());
+  return output_buffer;
+}
+
+int Delay_correction::sideband() {
+  return (correlation_parameters.sideband == 'L' ? -1 : 1);
+}
+
+

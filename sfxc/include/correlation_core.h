@@ -3,7 +3,7 @@
 
 #include "sfxc_math.h"
 #include "tasklet/tasklet.h"
-#include "delay_correction_base.h"
+#include "delay_correction.h"
 #include "control_parameters.h"
 #include "data_writer.h"
 #include "uvw_model.h"
@@ -14,10 +14,10 @@
 class Correlation_core : public Tasklet {
 friend class Correlation_core_pulsar;
 public:
-  typedef Delay_correction_base::Output_buffer_element       Input_buffer_element;
-  typedef Delay_correction_base::Output_buffer               Input_buffer;
-  typedef Delay_correction_base::Output_buffer_ptr           Input_buffer_ptr;
-  typedef Correlator_node_types::Invalid                     Invalid;
+  typedef Delay_correction::Output_buffer_element       Input_buffer_element;
+  typedef Delay_correction::Output_buffer               Input_buffer;
+  typedef Delay_correction::Output_buffer_ptr           Input_buffer_ptr;
+  typedef Correlator_node_types::Invalid                Invalid;
 
   typedef Memory_pool_vector_element<std::complex<FLOAT> > Complex_buffer;
   typedef Memory_pool_vector_element<std::complex<float> > Complex_buffer_float;
@@ -117,7 +117,7 @@ inline size_t Correlation_core::number_channels() {
 }
 
 inline size_t Correlation_core::fft_size() {
-  return correlation_parameters.fft_size;
+  return correlation_parameters.fft_size_correlation;
 }
 
 inline size_t Correlation_core::n_stations() {

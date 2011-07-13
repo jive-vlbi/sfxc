@@ -95,9 +95,9 @@ private:
 class Correlation_parameters {
 public:
   Correlation_parameters()
-      : number_channels(0), fft_size(0), integration_nr(-1), slice_nr(-1), slice_offset(-1),
-      sample_rate(0), channel_freq(0), bandwidth(0),
-      sideband('n'), channel_nr(0), polarisation('n'), pulsar_binning(false) {}
+      : number_channels(0), fft_size_delaycor(0), fft_size_correlation(0), integration_nr(-1), slice_nr(-1), 
+        slice_offset(-1), sample_rate(0), channel_freq(0), bandwidth(0),
+        sideband('n'), channel_nr(0), polarisation('n'), pulsar_binning(false) {}
 
 
   bool operator==(const Correlation_parameters& other) const;
@@ -125,7 +125,8 @@ public:
   Time integration_time;
   Time sub_integration_time;// The length of one sub integration
   int32_t number_channels;  // number of frequency channels
-  int32_t fft_size;         // Number of samples per FFT
+  int32_t fft_size_delaycor;    // Number of samples per FFT in the delay correction
+  int32_t fft_size_correlation; // Number of samples per FFT in the (cross-)correlation
   int32_t integration_nr;   // number of the integration
   int32_t slice_nr;         // Number of the output slice
   int32_t slice_offset;     // Number of output slices in the output file
@@ -180,7 +181,8 @@ public:
   Time integration_time() const; // Integration time in microseconds
   Time sub_integration_time() const;
   int number_channels() const;
-  int fft_size() const;
+  int fft_size_delaycor() const;
+  int fft_size_correlation() const;
 
   std::string sideband(int i) const;
   std::string reference_station() const;

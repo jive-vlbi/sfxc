@@ -19,7 +19,7 @@
 #include "correlator_node_bit2float_tasklet.h"
 #include "log_writer_mpi.h"
 #include "correlation_core.h"
-#include "delay_correction_base.h"
+#include "delay_correction.h"
 #include <tasklet/tasklet_manager.h>
 #include "timer.h"
 
@@ -60,7 +60,7 @@ public:
   typedef boost::shared_ptr<Correlator_node_data_reader_tasklet>
   Bit_sample_reader_ptr;
 
-  typedef boost::shared_ptr<Delay_correction_base>     Delay_correction_ptr;
+  typedef boost::shared_ptr<Delay_correction>     Delay_correction_ptr;
 
   bool has_requested;
 
@@ -73,7 +73,7 @@ public:
     END_CORRELATING
   };
 
-  Correlator_node(int rank, int nr_corr_node, int swap_, bool psr_binning);
+  Correlator_node(int rank, int nr_corr_node, bool psr_binning);
   ~Correlator_node();
 
   /// The the main_loop of the correlator node.
@@ -214,7 +214,7 @@ class Reader_thread : public Thread {
         Control_parameters::nr_ffts_per_integration_slice
         (parameters.integration_time,
          parameters.sample_rate,
-         parameters.fft_size);
+         parameters.fft_size_delaycor);
       // First create a list of input streams
       std::vector<int> stream_list(parameters.station_streams.size());
       for(int i = 0; i < stream_list.size(); i++)
@@ -244,10 +244,6 @@ private:
   void correlate();
   void main_loop();
 
-  // Indicates if the order of the fractional bitshift and the fringe rotation is to be reversed.
-  // This reduces the amount of data that has to be Fourier transformed by 25%, but at the cost
-  // of some accuracy.
-  int swap;
   bool pulsar_binning; // Set to true if pulsar binning is enabled
   Correlator_node_controller       correlator_node_ctrl;
 

@@ -14,10 +14,9 @@
 #include "data_writer.h"
 #include "utils.h"
 #include "output_header.h"
-#include "delay_correction_swapped.h"
-#include "delay_correction_default.h"
+#include "delay_correction.h"
 
-Correlator_node::Correlator_node(int rank, int nr_corr_node, int swap_, bool pulsar_binning_)
+Correlator_node::Correlator_node(int rank, int nr_corr_node, bool pulsar_binning_)
     : Node(rank),
     correlator_node_ctrl(*this),
     data_readers_ctrl(*this),
@@ -25,7 +24,7 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, int swap_, bool pul
     status(STOPPED),
     isinitialized_(false),
     nr_corr_node(nr_corr_node), 
-    swap(swap_), pulsar_parameters(get_log_writer()),
+    pulsar_parameters(get_log_writer()),
     pulsar_binning(pulsar_binning_) {
   get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;
   correlation_core_normal = new Correlation_core();
@@ -208,12 +207,9 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   { // create the delay modules
     if (delay_modules.size() <= stream_nr) {
       delay_modules.resize(stream_nr+1,
-                           boost::shared_ptr<Delay_correction_base>());
+                           boost::shared_ptr<Delay_correction>());
     }
-    if(swap==0)
-      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_default(stream_nr));
-    else
-      delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction_swapped(stream_nr));
+    delay_modules[stream_nr] = Delay_correction_ptr(new Delay_correction(stream_nr));
     // Connect the delay_correction to the bits2float_converter
     delay_modules[stream_nr]->connect_to(bit2float_thread_.get_output_buffer(stream_nr));
   }
@@ -336,7 +332,7 @@ Correlator_node::set_parameters() {
     (parameters.stop_time-parameters.start_time) / parameters.integration_time;
   // set the output stream
   int nBaselines = correlation_core->number_of_baselines();
-  int size_of_one_baseline = sizeof(fftwf_complex) *
+  int size_of_one_baseline = sizeof(std::complex<FLOAT>) *
                              (parameters.number_channels + 1);
   int size_uvw = correlation_core->uvw_tables.size()*sizeof(Output_uvw_coordinates);
   // when the cross_polarize flag is set then the correlator node receives 2 polarizations

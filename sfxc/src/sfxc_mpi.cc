@@ -17,7 +17,7 @@
 
 IF_MT_MPI_ENABLED( Mutex g_mpi_thebig_mutex );
 
-void start_node(int swap) {
+void start_node() {
   int rank;
   // get the ID (rank) of the task, fist rank=0, second rank=1 etc.
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -173,7 +173,7 @@ void start_node(int swap) {
         DEBUG_MSG("Correlator node, hostname = " << hostname);
       }
       bool binning = status.MPI_TAG == MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING;
-      Correlator_node node(rank, msg, swap, binning);
+      Correlator_node node(rank, msg, binning);
       node.start();
       break;
     }

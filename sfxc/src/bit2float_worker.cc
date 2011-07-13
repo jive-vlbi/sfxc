@@ -240,13 +240,22 @@ set_new_parameters(const Correlation_parameters &parameters) {
 
   SFXC_ASSERT((parameters.number_channels*bits_per_sample)%8 == 0);
   new_parameters.sample_rate = parameters.sample_rate;
-  new_parameters.fft_size = parameters.fft_size;
+  new_parameters.fft_size_delaycor = parameters.fft_size_delaycor;
+  new_parameters.fft_size_correlation = parameters.fft_size_correlation;
 
-  new_parameters.n_ffts_per_integration =
-    Control_parameters::nr_ffts_per_integration_slice(
-      (int)parameters.integration_time.get_time_usec(),
-      parameters.sample_rate,
-      parameters.fft_size);
+  if(parameters.fft_size_correlation > parameters.fft_size_delaycor) 
+    new_parameters.n_ffts_per_integration = 
+      (parameters.fft_size_correlation / parameters.fft_size_delaycor)*
+        Control_parameters::nr_ffts_per_integration_slice(
+          (int)parameters.integration_time.get_time_usec(),
+          parameters.sample_rate,
+          parameters.fft_size_correlation);
+  else
+    new_parameters.n_ffts_per_integration = 
+        Control_parameters::nr_ffts_per_integration_slice(
+          (int)parameters.integration_time.get_time_usec(),
+          parameters.sample_rate,
+          parameters.fft_size_delaycor);
 
   have_new_parameters=true;
 }
@@ -257,9 +266,11 @@ set_parameters() {
   bits_per_sample = new_parameters.bits_per_sample;
   sample_rate = new_parameters.sample_rate;
 
-  fft_size = new_parameters.fft_size;
+  fft_size = new_parameters.fft_size_delaycor;
+  int fft_size_correlation = new_parameters.fft_size_correlation;
   SFXC_ASSERT(((int64_t)fft_size * 1000000) % sample_rate == 0);
-  nfft_max = std::max(CORRELATOR_BUFFER_SIZE / fft_size, 1);
+  int nfft_min = std::max(fft_size_correlation/fft_size, 1);
+  nfft_max = std::max(CORRELATOR_BUFFER_SIZE / fft_size, nfft_min);
   n_ffts_per_integration = new_parameters.n_ffts_per_integration;
   statistics->reset_statistics(bits_per_sample);
 

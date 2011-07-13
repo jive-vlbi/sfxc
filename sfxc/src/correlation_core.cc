@@ -119,13 +119,13 @@ Correlation_core::create_baselines(const Correlation_parameters &parameters){
     Control_parameters::nr_ffts_per_integration_slice(
       (int) parameters.integration_time.get_time_usec(),
       parameters.sample_rate,
-      parameters.fft_size);
+      parameters.fft_size_correlation);
 
   number_ffts_in_sub_integration =
     Control_parameters::nr_ffts_per_integration_slice(
       (int) parameters.sub_integration_time.get_time_usec(),
       parameters.sample_rate,
-      parameters.fft_size);
+      parameters.fft_size_correlation);
   baselines.clear();
   // Autos
   for (size_t sn = 0 ; sn < n_stations(); sn++) {

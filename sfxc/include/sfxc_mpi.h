@@ -44,7 +44,7 @@ extern Mutex g_mpi_thebig_mutex;
 #define MPI_UINT32 MPI_UNSIGNED
 #define MPI_INT64  MPI_LONG_LONG
 
-void start_node(int swap);
+void start_node();
 void end_node(int32_t rank);
 
 enum MPI_TAG {
