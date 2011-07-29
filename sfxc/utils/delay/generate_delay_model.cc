@@ -344,6 +344,14 @@ int initialise_data(const char *vex_filename,
   int scan_nr=0;
   for (Vex::Node::const_iterator scan_block = vex.get_root_node()["SCHED"]->begin();
        scan_block != vex.get_root_node()["SCHED"]->end(); ++scan_block) {
+    // First get the duration of the scan
+    double duration = 0;
+    for (Vex::Node::const_iterator scan_it = scan_block->begin("station");
+             scan_it != scan_block->end("station"); ++scan_it) {
+      double station_duration = scan_it[2]->to_double_amount("sec");      
+      if (station_duration > duration)
+        duration = station_duration;
+    }
     for (Vex::Node::const_iterator scan_it = scan_block->begin("station");
          scan_it != scan_block->end("station"); ++scan_it) {
       if (scan_it[0]->to_string() == station_name) {
@@ -362,7 +370,6 @@ int initialise_data(const char *vex_filename,
         scan.sec_of_day = scan.hour*3600. + scan.min*60. + scan.sec;
         scan.scan_start =
           scan.sec + 60*(scan.min + 60*(scan.hour + 24*(double)doy));
-        double duration = scan_it[2]->to_double_amount("sec");
         scan.scan_stop = scan.scan_start + duration;
         scan.nr_of_intervals = (int)(duration/delta_time);
         int n_sources_in_scan = vex.n_sources(scan_block.key());
