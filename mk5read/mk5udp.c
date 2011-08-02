@@ -142,7 +142,7 @@ update_mk4_frame(time_t clock)
 	case 8:
 		for (i = 3; i < 5; i++) {
 			for (j = 0; j < 32; j++) {
-				if (header[i] & (1 << j))
+				if (header[i] & (1 << (31 - j)))
 					frame8[(i * 32) + j] = ~0;
 				else
 					frame8[(i * 32) + j] = 0;
@@ -152,7 +152,7 @@ update_mk4_frame(time_t clock)
 	case 16:
 		for (i = 3; i < 5; i++) {
 			for (j = 0; j < 32; j++) {
-				if (header[i] & (1 << j))
+				if (header[i] & (1 << (31 - j)))
 					frame16[(i * 32) + j] = ~0;
 				else
 					frame16[(i * 32) + j] = 0;
@@ -172,7 +172,7 @@ update_mk4_frame(time_t clock)
 	case 64:
 		for (i = 3; i < 5; i++) {
 			for (j = 0; j < 32; j++) {
-				if (header[i] & (1 << j))
+				if (header[i] & (1 << (31 - j)))
 					frame64[(i * 32) + j] = ~0;
 				else
 					frame64[(i * 32) + j] = 0;
