@@ -56,13 +56,6 @@ public:
           low_bit=low_bit << bits_per_sample;
       }
     }
-    output_data_tmp = (unsigned char **)malloc( sizeof(unsigned char*) * n_subbands_ );
-    if ( output_data_tmp == NULL ) {
-      exit(0);
-    }
-    for (size_t i=0; i<track_positions.size(); i++) {
-      output_data_tmp[i] = new unsigned char();
-    }
   }
 
   void extract(unsigned char *in_data1,
@@ -113,8 +106,6 @@ private:
   int fan_out, samples_per_byte, bits_per_sample;
 
   int input_sample_size_;
-
-  unsigned char** output_data_tmp;
 };
 
 Channel_extractor_5::Channel_extractor_5() {
