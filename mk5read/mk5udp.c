@@ -35,7 +35,8 @@
 /* Ulrich Drepper is a twat! */
 #define strlcpy strncpy
 
-int debug = 1;
+int debug = 0;
+int port = 2630;
 
 void
 fatal(const char *emsg)
@@ -87,7 +88,7 @@ void (*update_frame)(time_t);
 #define MK4_TRACK_FRAME_WORDS	(MK4_TRACK_FRAME_SIZE / sizeof(uint32_t))
 
 uint32_t header[5];
-int ntracks = 32;
+int ntracks;
 
 void
 init_mk4_frame(void)
@@ -227,12 +228,23 @@ update_mk5b_frame(time_t clock)
 	frame[2] = word;
 }
 
-int
-main(void)
+void
+usage(void)
 {
+	extern char *__progname;
+
+	fprintf(stderr, "usage: %s [-d] [-f format] [-p port]\n", __progname);
+	exit(EXIT_FAILURE);
+}
+
+int
+main(int argc, char **argv)
+{
+	extern char *__progname;
 	struct sockaddr_un sun;
 	struct sockaddr_in sin;
 	struct mk5read_msg msg;
+	char *format = NULL;
 	char *buf;
 	size_t len;
 	socklen_t slen;
@@ -243,10 +255,50 @@ main(void)
 	int nfds;
 	int ntimeouts = 0;
 	time_t clock;
+	int ch;
 
 	signal(SIGPIPE, SIG_IGN);
 
-	init_mk4_frame();
+	while ((ch = getopt(argc, argv, "df:p:")) != -1) {
+		switch (ch) {
+		case 'd':
+			debug = 1;
+			break;
+		case 'f':
+			format = strdup(optarg);
+			break;
+		case 'p':
+			port = atoi(optarg);
+			break;
+		default:
+			usage();
+			/* NOTREACHED */
+		}
+	}
+
+	argc -= optind;
+	argv += optind;
+	if (argc != 0)
+		usage();
+
+	if (format) {
+		if (strncmp(format, "mark4", 5) == 0 && format[5] == ':') {
+			ntracks = atoi(&format[6]);
+			format[5] = 0;
+		} else if (strcmp(format, "mark5b") == 0) {
+			ntracks = 32;
+		} else {
+			fprintf(stderr, "%s: invalid format '%s'\n",
+			    __progname, format);
+			exit(EXIT_FAILURE);
+		}
+		if (ntracks != 8 && ntracks != 16 &&
+		    ntracks != 32 && ntracks != 64) {
+			fprintf(stderr, "%s: invalid number of tracks\n",
+			    __progname);
+			exit(EXIT_FAILURE);
+		}
+	}
 
 	s = socket(PF_INET, SOCK_DGRAM, 0);
 	if (s == -1)
@@ -259,7 +311,7 @@ main(void)
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = htonl(INADDR_ANY);
-	sin.sin_port = htons(2630);
+	sin.sin_port = htons(port);
 
 	if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) == -1)
 		fatal("bind");
@@ -294,6 +346,23 @@ main(void)
 		if (debug)
 			printf("%s:%llu\n", msg.vsn,
 			    (unsigned long long)msg.off);
+
+		if (format == NULL) {
+			format = msg.vsn;
+			ntracks = msg.off;
+		}
+
+		if (strcmp(format, "mark4") == 0 &&
+		    (ntracks == 8 || ntracks == 16 ||
+		     ntracks == 32 || ntracks == 64))
+			init_mk4_frame();
+		else if (strcmp(format, "mark5b") == 0)
+			init_mk5b_frame();
+		else {
+			fprintf(stderr, "invalid format %s:%d\n", format, ntracks);
+			close(fd);
+			continue;
+		}
 
 		pfd[0].fd = s;
 		pfd[0].events = POLLIN;
