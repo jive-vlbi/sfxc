@@ -381,9 +381,9 @@ int initialise_data(const char *vex_filename,
         for (Vex::Node::const_iterator source_it = scan_block->begin("source");
              source_it != scan_block->end("source"); ++source_it) {
           int i;
-          const char *source = source_it->to_string().c_str();
+          const char *source = source_it->to_c_string();
           const int source_len = strlen(source);
-          for(int i = 0; i < n_sources ; i++){
+          for(i = 0; i < n_sources ; i++){
             int pos;
             for(pos = 79; (pos > 0) && (source_data[i].source_name[pos] == ' '); pos--)
               ;
@@ -394,6 +394,7 @@ int initialise_data(const char *vex_filename,
               std::cout << "added " << source_data[i].source_name << "\n";
               scan.sources[source_idx] = &source_data[i];
               source_idx++;
+              break;
             }
           }
           assert(i != n_sources);
