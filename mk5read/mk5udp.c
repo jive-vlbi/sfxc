@@ -183,26 +183,28 @@ update_mk4_frame(time_t clock)
 	}
 }
 
-#define MK5B_FRAME_WORDS	2500
+#define MK5B_FRAME_WORDS	2504
 #define MK5B_FRAME_SIZE		(MK5B_FRAME_WORDS * sizeof(uint32_t))
 
 void
 init_mk5b_frame(void)
 {
-	int i;
+	int i, j;
 
-	framelen = MK5B_FRAME_SIZE;
+	framelen = 16 * MK5B_FRAME_SIZE;
 	frame = malloc(framelen);
 	if (frame == NULL)
 		fatal("malloc");
 
-	frame[0] = 0xabaddeed;
-	frame[1] = 0x00000000;
-	frame[2] = 0x00000000;
-	frame[3] = 0x00000000;
+	for (i = 0; i < 16; i++) {
+		frame[i * MK5B_FRAME_WORDS + 0] = 0xabaddeed;
+		frame[i * MK5B_FRAME_WORDS + 1] = i;
+		frame[i * MK5B_FRAME_WORDS + 2] = 0x00000000;
+		frame[i * MK5B_FRAME_WORDS + 3] = 0x00000000;
 
-	for (i = 4; i < MK5B_FRAME_WORDS; i++)
-		frame[i] = 0x11223344;
+		for (j = 4; j < MK5B_FRAME_WORDS; j++)
+			frame[i * MK5B_FRAME_WORDS + j] = 0x11223344;
+	}
 
 	update_frame = update_mk5b_frame;
 }
@@ -210,7 +212,7 @@ init_mk5b_frame(void)
 void
 update_mk5b_frame(time_t clock)
 {
-	int mjd, sec;
+	int mjd, sec, i;
 	uint32_t word;
 
 	mjd = 40587 + (clock / 86400);
@@ -225,7 +227,9 @@ update_mk5b_frame(time_t clock)
 	word |= ((mjd / 1) % 10) << 20;
 	word |= ((mjd / 10) % 10) << 24;
 	word |= ((mjd / 100) % 10) << 28;
-	frame[2] = word;
+
+	for (i = 0; i < 16; i++)
+		frame[i * MK5B_FRAME_WORDS + 2] = word;
 }
 
 void
