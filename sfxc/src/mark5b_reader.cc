@@ -195,6 +195,9 @@ bool Mark5b_reader::check_header(Header &header){
   if(header.syncword != 0xABADDEED)
     return false;
 
+  if (header.crc == 0)
+    return true;
+
   // Check the CRC of the mark5b header
   unsigned int crc = 0;
   uint8_t *data = (uint8_t *) &header;
