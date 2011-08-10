@@ -38,50 +38,13 @@ Mark5b_reader::open_input_stream(Data_frame &data){
 }
 
 Time
-Mark5b_reader::goto_time(Data_frame &data, Time us_time) {
-  SFXC_ASSERT(current_header.check());
-  SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
-  current_time_ = get_current_time();
-
-  if (us_time <= current_time_) return current_time_;
-
-  const size_t size_mk5b_block =
-    (SIZE_MK5B_HEADER+SIZE_MK5B_FRAME)*SIZE_MK5B_WORD;
-  const size_t max_blocks_to_read = std::numeric_limits<size_t>::max() /
-                                    (size_mk5b_block * N_MK5B_BLOCKS_TO_READ);
-
-  // first skip through the file in 1 second steps.
-  const Time one_sec(1000000.);
-  Time delta_time = us_time - current_time_;
-  while (delta_time >= one_sec){
-    SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
-    size_t n_blocks = std::min((size_t)(delta_time/time_between_headers_)/2, max_blocks_to_read);
-    // Don't read the last header, to be able to check whether we are at the right time
-    size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block;
-    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
-    if (bytes_to_read != byte_read)
-      return current_time_;
-
-    // Read last block:
-    read_new_block(data);
-    delta_time = us_time - current_time_;
+Mark5b_reader::goto_time(Data_frame &data, Time time) {
+  while (time > get_current_time()) {
+    if (!read_new_block(data))
+      break;
   }
-  // Now read the last bit of data up to the requested time
-  int n_blocks = (int)round(delta_time / time_between_headers_);
-  if(n_blocks>0){
-    // Don't read the last header, to be able to check whether we are at the right time
-    size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block;
-    size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
-    if (bytes_to_read != byte_read)
-      return current_time_;
 
-    read_new_block(data);
-    if((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) != 0)
-      return resync_header(data);
-  }
-  current_time_ = get_current_time();
-
-  return current_time_;
+  return get_current_time();
 }
 
 Time Mark5b_reader::get_current_time() {
