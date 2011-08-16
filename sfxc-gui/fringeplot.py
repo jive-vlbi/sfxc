@@ -1,0 +1,299 @@
+#! /usr/bin/python
+
+# Standard Python modules
+from datetime import datetime, timedelta
+import json
+import os
+import optparse
+import re
+import subprocess
+import struct
+import sys
+import time
+import urlparse
+
+# Qt and Qwt
+from PyQt4 import Qt, QtCore, QtGui
+import PyQt4.Qwt5 as Qwt
+from PyQt4.Qwt5.anynumpy import *
+
+# JIVE Python modules
+from vex_parser import Vex
+from cordata import CorrelatedData
+
+# NumPy
+import numpy as np
+
+def vex2time(str):
+    tupletime = time.strptime(str, "%Yy%jd%Hh%Mm%Ss");
+    return time.mktime(tupletime)
+
+def time2vex(secs):
+    tupletime = time.gmtime(secs)
+    return time.strftime("%Yy%jd%Hh%Mm%Ss", tupletime)
+
+class FringePlotCurve(Qwt.QwtPlotCurve):
+    def updateLegend(self, legend):
+        Qwt.QwtPlotCurve.updateLegend(self, legend)
+        item = legend.find(self)
+        if item:
+            pen = Qt.QPen(self.pen())
+            pen.setWidth(3)
+            item.setCurvePen(pen)
+            pass
+        return
+
+    pass
+
+class FringePlot(Qwt.QwtPlot):
+    color = [ "#bae4b3", "#74c476", "#31a354", "#006d2c",
+              "#bdd7e7", "#6baed6", "#3182bd", "#08519c",
+              "#fcae91", "#fb6a4a", "#de2d26", "#a50f15",
+              "#cccccc", "#999999", "#666666", "#000000" ]
+
+    def __init__(self, parent, station1, station2, number_channels, *args):
+        Qwt.QwtPlot.__init__(self, *args)
+
+        self.setCanvasBackground(Qt.Qt.white)
+
+        self.x = []
+        self.y = {}
+        self.station = station2
+
+        self.setAxisTitle(Qwt.QwtPlot.yLeft, station1 + '-' + station2)
+        self.setAxisMaxMajor(Qwt.QwtPlot.yLeft, 2)
+        self.setAxisScale(Qwt.QwtPlot.xBottom, 0, number_channels,
+                          number_channels / 2)
+        self.curve = {}
+
+        self.xxxcurve = Qwt.QwtPlotCurve("XXX")
+        self.xxxcurve.attach(self)
+
+        self.connect(self, Qt.SIGNAL("legendChecked(QwtPlotItem*,bool)"),
+                     self.toggleCurve)
+        self.parent = parent
+        return
+
+    def toggleCurve(self, curve, state):
+        for idx in self.curve:
+            if self.curve[idx] == curve:
+                break
+            continue
+            
+        for station in self.parent.plot:
+            try:
+                self.parent.plot[station].curve[idx].setVisible(not state)
+                self.parent.plot[station].replot()
+            except:
+                pass
+            continue
+        return
+
+    pass
+
+
+class FringePlotWindow(Qt.QWidget):
+    def __init__(self, vex, ctrl_files, reference, *args):
+        Qt.QWidget.__init__(self, *args)
+
+        exper = vex['GLOBAL']['EXPER']
+        exper = vex['EXPER'][exper]['exper_name']
+        self.setWindowTitle(exper + " Fringes")
+
+        self.integration_slice = 0
+        self.reference = reference
+
+        self.output_file = 0
+        self.output_files = []
+        self.offsets = []
+        stations = []
+        for ctrl_file in ctrl_files:
+            fp = open(ctrl_file, 'r')
+            json_input = json.load(fp)
+            fp.close()
+            start = vex2time(json_input['start'])
+            stop = vex2time(json_input['stop'])
+            for station in json_input['stations']:
+                if station not in stations:
+                    stations.append(station)
+                    pass
+                continue
+            output_file = urlparse.urlparse(json_input['output_file']).path
+            try:
+                if json_input['pulsar_binning']:
+                    output_file = output_file + '.bin0'
+                    pass
+            except:
+                pass
+            self.output_files.append(output_file)
+            self.offsets.append(start)
+            continue
+
+        fp = open(ctrl_files[0], 'r')
+        json_input = json.load(fp)
+        fp.close()
+        start = vex2time(json_input['start'])
+        number_channels = json_input['number_channels']
+
+        if not self.reference:
+            self.reference = stations[0]
+
+        self.fp = None
+
+        self.stations = []
+        for station in vex['STATION']:
+            self.stations.append(station)
+            continue
+        self.stations.sort()
+
+        self.plot = {}
+        self.layout = Qt.QGridLayout()
+        for station in stations:
+            if station == self.reference:
+                continue
+            self.plot[station] = FringePlot(self, self.reference, station, number_channels)
+            self.layout.addWidget(self.plot[station])
+            lastplot = self.plot[station]
+            lastplot.enableAxis(Qwt.QwtPlot.xBottom, False)
+            self.layout.setRowStretch(self.layout.rowCount() - 1, 100)
+            self.last_station = station
+            continue
+        legend = Qwt.QwtLegend()
+        legend.setItemMode(Qwt.QwtLegend.CheckableItem)
+        lastplot.insertLegend(legend, Qwt.QwtPlot.ExternalLegend)
+
+        self.box = Qt.QVBoxLayout(self)
+        self.box.addLayout(self.layout)
+        self.box.addWidget(lastplot.legend())
+
+        self.cordata = CorrelatedData(vex, self.output_files[self.output_file])
+        self.output_file += 1
+
+        self.startTimer(500)
+        self.resize(600, len(stations) * 100 + 50)
+        pass
+
+    def stretch(self):
+        self.plot[self.last_station].enableAxis(Qwt.QwtPlot.xBottom, True)
+        self.plot[self.last_station].xxxcurve.setItemAttribute(Qwt.QwtPlotItem.Legend, False)
+        height = self.plot[self.last_station].height()
+        canvasHeight = self.plot[self.last_station].plotLayout().canvasRect().height()
+        fixedHeight = height - canvasHeight
+        if fixedHeight > 0:
+            height = self.layout.contentsRect().height()
+            height -= (len(self.plot) - 1) * self.layout.verticalSpacing()
+            height /= len(self.plot)
+            if height > 0:
+                stretch = (height + fixedHeight) * 110 / height
+                self.layout.setRowStretch(self.layout.rowCount() - 1, stretch)
+                pass
+            pass
+        return
+
+    def resizeEvent(self, e):
+        self.stretch()
+        Qt.QWidget.resizeEvent(self, e)
+        pass
+
+    def replot(self):
+        time = self.cordata.time
+        correlations = self.cordata.correlations
+        for baseline in correlations:
+            if not self.reference in baseline:
+                continue
+            station = baseline[0]
+            if station == self.reference:
+                station = baseline[1]
+                pass
+            if station == self.reference:
+                continue
+            plot = self.plot[station]
+            for idx in correlations[baseline]:
+                pol1 = (idx >> 0) & 1
+                pol2 = (idx >> 1) & 1
+                usb = (idx >> 2) & 1
+                band = (idx >> 3) & 0x1f
+                if not pol1 == pol2:
+                    continue
+
+                if not idx in plot.curve:
+                    title = "SB%d" % ((idx >> 1) / 2)
+                    if (idx >> 1) % 2 == 0:
+                        title += " RR"
+                    else:
+                        title += " LL"
+                        pass
+
+                    pen = Qt.QPen()
+                    pen.setColor(Qt.QColor(plot.color[(idx >> 1) % 16]))
+                    pen.setWidth(1)
+
+                    plot.curve[idx] = FringePlotCurve(title)
+                    plot.curve[idx].setData(range(self.cordata.number_channels),
+                                            range(self.cordata.number_channels))
+                    plot.curve[idx].setPen(pen)
+                    plot.curve[idx].attach(plot)
+                    if station == self.last_station:
+                        self.stretch()
+                        pass
+
+                    # Sort curves by detaching them all and
+                    # reattach them in the right order.
+                    for i in plot.curve:
+                        plot.curve[i].detach()
+                        plot.curve[i].attach(plot)
+                        continue
+                    pass
+
+                buf = correlations[baseline][idx]
+                a = np.frombuffer(buf, dtype=np.complex64)
+                b = np.fft.fft(a, self.cordata.number_channels)
+                c = b[(self.cordata.number_channels / 2):]
+                d = b[0:(self.cordata.number_channels / 2)]
+                e = np.concatenate((c, d))
+                f = np.absolute(e)
+                g = f / np.sum(f)
+
+                plot.curve[idx].setData(range(self.cordata.number_channels), g)
+                continue
+            plot.replot()
+            continue
+        return
+
+    def timerEvent(self, e):
+        self.cordata.read()
+        if self.cordata.integration_slice > self.integration_slice:
+            self.integration_slice = self.cordata.integration_slice
+            self.replot()
+        return
+
+    pass
+
+
+if __name__ == '__main__':
+    usage = "usage: %prog [options] vexfile ctrlfile"
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option("-r", "--reference", dest="reference",
+                      default="", type="string",
+                      help="Reference station",
+                      metavar="STATION")
+
+    (options, args) = parser.parse_args()
+    if len(args) < 2:
+        parser.error("incorrect number of arguments")
+        pass
+
+    os.environ['TZ'] = 'UTC'
+    time.tzset()
+
+    vex_file = args[0]
+    ctrl_files = args[1:]
+
+    app = QtGui.QApplication(sys.argv)
+
+    vex = Vex(vex_file)
+
+    plot = FringePlotWindow(vex, ctrl_files, options.reference)
+    plot.show()
+
+    sys.exit(app.exec_())
