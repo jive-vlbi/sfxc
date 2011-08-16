@@ -19,6 +19,7 @@ from PyQt4.Qwt5.anynumpy import *
 
 # JIVE Python modules
 from vex_parser import Vex
+from cordata import CorrelatedData
 
 def vex2time(str):
     tupletime = time.strptime(str, "%Yy%jd%Hh%Mm%Ss");
@@ -296,6 +297,9 @@ class WeightPlotWindow(Qt.QWidget):
         self.box.addLayout(self.layout)
         self.box.addWidget(lastplot.legend())
 
+        self.cordata = CorrelatedData(vex, self.output_files[self.output_file])
+        self.output_file += 1
+
         self.startTimer(500)
         self.resize(1000, len(stations) * 100 + 50)
         pass
@@ -323,125 +327,58 @@ class WeightPlotWindow(Qt.QWidget):
         pass
 
     def replot(self):
-        for station in self.plot:
+        time = self.cordata.time
+        weights = self.cordata.weights
+        for station in weights:
             plot = self.plot[station]
-            for idx in plot.curve:
-                plot.curve[idx].setData(plot.x, plot.y[idx])
+            for idx in weights[station]:
+                if not idx in plot.curve:
+                    title = "SB%d" % (idx / 2)
+                    if idx % 2 == 0:
+                        title += " R"
+                    else:
+                        title += " L"
+                        pass
+
+                    pen = Qt.QPen()
+                    pen.setColor(Qt.QColor(plot.color[idx % 16]))
+                    pen.setWidth(3)
+
+                    plot.curve[idx] = Qwt.QwtPlotCurve(title)
+                    plot.curve[idx].setData(time, weights[station][idx])
+                    plot.curve[idx].setPen(pen)
+                    plot.curve[idx].setStyle(Qwt.QwtPlotCurve.Dots)
+                    plot.curve[idx].attach(plot)
+                    if station == self.last_station:
+                        self.stretch()
+                        pass
+
+                    # Sort curves by detaching them all and
+                    # reattach them in the right order.
+                    for i in plot.curve:
+                        plot.curve[i].detach()
+                        plot.curve[i].attach(plot)
+                        continue
+                    pass
+
+                plot.curve[idx].setData(time, weights[station][idx])
                 continue
             plot.replot()
             continue
         return
 
     def timerEvent(self, e):
-        if self.fp == None:
-            try:
-                self.fp = open(self.output_files[self.output_file], 'r')
-            except:
-                return
-
-            try:
-                h = struct.unpack(global_hdr, self.fp.read(struct.calcsize(global_hdr)))
-            except:
-                self.fp.close()
-                self.fp = None
-                return
-
-            exper = h[1].strip('\x00')
-            hour = h[4] / 3600
-            min = (h[4] % 3600) / 60
-            sec = h[4] % 60
-            secs = vex2time("%dy%dd%02dh%02dm%02ds" % (h[2], h[3], hour, min, sec))
-            self.number_channels = h[5]
-            self.integration_time = h[6] * 1e-6
-            pass
-
-        pos = self.fp.tell()
-        while self.fp:
-            try:
-                h = struct.unpack(timeslice_hdr, self.fp.read(struct.calcsize(timeslice_hdr)))
-
-                integration_slice = h[0]
-                number_baselines = h[1]
-                number_uvw_coordinates = h[2]
-                number_statistics = h[3]
-
-                if integration_slice != self.integration_slice:
-                    self.integration_slice = integration_slice
-                    if self.realtime:
-                        self.replot()
-                        pass
-                    pass
-
-                for i in xrange(number_uvw_coordinates):
-                    h = struct.unpack(uvw_hdr, self.fp.read(struct.calcsize(uvw_hdr)))
-                    continue
-
-                for i in xrange(number_statistics):
-                    h = struct.unpack(stat_hdr, self.fp.read(struct.calcsize(stat_hdr)))
-                    weight = 1.0 - (float(h[8]) / (h[4] + h[5] + h[6] + h[7] + h[8]))
-                    station = self.stations[h[0]]
-                    plot = self.plot[station]
-                    idx = h[1] * 4 + h[2] * 2 + h[3]
-                    if not idx in plot.y:
-                        plot.y[idx] = []
-                        title = "SB%d" % (h[1] * 2 + h[2])
-                        if h[3] == 0:
-                            title += " R"
-                        else:
-                            title += " L"
-                            pass
-                            
-                        pen = Qt.QPen()
-                        pen.setColor(Qt.QColor(plot.color[idx % 16]))
-                        pen.setWidth(3)
-
-                        plot.curve[idx] = Qwt.QwtPlotCurve(title)
-                        plot.curve[idx].setData(plot.x, plot.y[idx])
-                        plot.curve[idx].setPen(pen)
-                        plot.curve[idx].setStyle(Qwt.QwtPlotCurve.Dots)
-                        plot.curve[idx].attach(plot)
-                        if station == self.last_station:
-                            self.stretch()
-                            pass
-
-                        # Sort curves by detaching them all and
-                        # reattach them in the right order.
-                        for i in plot.curve:
-                            plot.curve[i].detach()
-                            plot.curve[i].attach(plot)
-                            continue
-                        pass
-
-                    secs = self.offsets[self.output_file] + integration_slice * self.integration_time
-                    if not secs in plot.x:
-                        plot.x.append(secs)
-                        pass
-                    if len(plot.y[idx]) < len(plot.x):
-                        plot.y[idx].append(weight)
-                        pass
-                    continue
-
-                for i in xrange(number_baselines):
-                    h = struct.unpack(baseline_hdr, self.fp.read(struct.calcsize(baseline_hdr)))
-                    buf = self.fp.read((self.number_channels + 1) * 8)
-                    if not len(buf) == (self.number_channels + 1) * 8:
-                        raise Hell
-                    continue
-                pos = self.fp.tell()
-            except:
-                self.fp.seek(pos)
-                if not self.realtime and self.output_file < len(self.output_files):
-                    self.fp = None
-                    self.output_file += 1
-                    pass
-                break
-
-            continue
-
-        if not self.realtime:
+        self.cordata.read()
+        if self.cordata.integration_slice > self.integration_slice:
+            self.integration_slice = self.cordata.integration_slice
             self.replot()
+        elif not self.realtime:
+            if self.output_file < len(self.output_files):
+                self.cordata.append(self.output_files[self.output_file], self.offsets[self.output_file])
+                self.output_file += 1
+                self.integration_slice = 0
+                pass
             pass
-
         return
 
     pass
