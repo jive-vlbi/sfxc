@@ -43,6 +43,7 @@ class CorrelatedData:
         self.integration_slice = 0
         self.integration_time = 0
         self.weights = {}
+        self.correlations = {}
         self.time = []
 
         self.stations = []
@@ -126,6 +127,12 @@ class CorrelatedData:
                     buf = self.fp.read((self.number_channels + 1) * 8)
                     if not len(buf) == (self.number_channels + 1) * 8:
                         raise Hell
+                    idx = h[3]
+                    baseline = (self.stations[h[1]], self.stations[h[2]])
+                    if not baseline in self.correlations:
+                        self.correlations[baseline] = {}
+                        pass
+                    self.correlations[baseline][idx] = buf
                     continue
                 pos = self.fp.tell()
             except:
