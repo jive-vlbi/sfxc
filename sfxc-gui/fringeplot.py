@@ -80,17 +80,16 @@ class FringePlot(Qwt.QwtPlot):
                 break
             continue
             
-        for station in self.parent.plot:
+        for plot in self.parent.plots:
             try:
-                self.parent.plot[station].curve[idx].setVisible(not state)
-                self.parent.plot[station].replot()
+                plot.curve[idx].setVisible(not state)
+                plot.replot()
             except:
                 pass
             continue
         return
 
     pass
-
 
 class FringePlotWindow(Qt.QWidget):
     def __init__(self, vex, ctrl_files, reference, *args):
@@ -137,8 +136,21 @@ class FringePlotWindow(Qt.QWidget):
 
         if not self.reference:
             self.reference = stations[0]
+            pass
 
-        self.fp = None
+        menubar = Qt.QMenuBar(self)
+        menu = menubar.addMenu("&Reference")
+        self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
+                     self.setReference)
+        grp = Qt.QActionGroup(menu)
+        for station in stations:
+            act = Qt.QAction(station, menu)
+            act.setCheckable(True)
+            if act.text() == self.reference:
+                act.setChecked(True)
+            grp.addAction(act)
+            menu.addAction(act)
+            continue
 
         self.stations = []
         for station in vex['STATION']:
@@ -146,25 +158,25 @@ class FringePlotWindow(Qt.QWidget):
             continue
         self.stations.sort()
 
-        self.plot = {}
+        self.plots = []
         self.layout = Qt.QGridLayout()
         for station in stations:
             if station == self.reference:
                 continue
-            self.plot[station] = FringePlot(self, self.reference, station, number_channels)
-            self.layout.addWidget(self.plot[station])
-            lastplot = self.plot[station]
-            lastplot.enableAxis(Qwt.QwtPlot.xBottom, False)
+            plot = FringePlot(self, self.reference, station, number_channels)
+            plot.enableAxis(Qwt.QwtPlot.xBottom, False)
+            self.layout.addWidget(plot)
             self.layout.setRowStretch(self.layout.rowCount() - 1, 100)
-            self.last_station = station
+            self.plots.append(plot)
             continue
         legend = Qwt.QwtLegend()
         legend.setItemMode(Qwt.QwtLegend.CheckableItem)
-        lastplot.insertLegend(legend, Qwt.QwtPlot.ExternalLegend)
+        self.plots[-1].insertLegend(legend, Qwt.QwtPlot.ExternalLegend)
 
         self.box = Qt.QVBoxLayout(self)
+        self.box.setMenuBar(menubar)
         self.box.addLayout(self.layout)
-        self.box.addWidget(lastplot.legend())
+        self.box.addWidget(self.plots[-1].legend())
 
         self.cordata = CorrelatedData(vex, self.output_files[self.output_file])
         self.output_file += 1
@@ -173,16 +185,31 @@ class FringePlotWindow(Qt.QWidget):
         self.resize(600, len(stations) * 100 + 50)
         pass
 
+    def setReference(self, act):
+        reference = str(act.text())
+        for plot in self.plots:
+            if plot.station == reference:
+                plot.station = self.reference
+                break
+            continue
+        self.reference = reference
+        for plot in self.plots:
+            plot.setAxisTitle(Qwt.QwtPlot.yLeft,
+                              self.reference + '-' + plot.station)
+            continue
+        self.replot()
+        return
+
     def stretch(self):
-        self.plot[self.last_station].enableAxis(Qwt.QwtPlot.xBottom, True)
-        self.plot[self.last_station].xxxcurve.setItemAttribute(Qwt.QwtPlotItem.Legend, False)
-        height = self.plot[self.last_station].height()
-        canvasHeight = self.plot[self.last_station].plotLayout().canvasRect().height()
+        self.plots[-1].enableAxis(Qwt.QwtPlot.xBottom, True)
+        self.plots[-1].xxxcurve.setItemAttribute(Qwt.QwtPlotItem.Legend, False)
+        height = self.plots[-1].height()
+        canvasHeight = self.plots[-1].plotLayout().canvasRect().height()
         fixedHeight = height - canvasHeight
         if fixedHeight > 0:
             height = self.layout.contentsRect().height()
-            height -= (len(self.plot) - 1) * self.layout.verticalSpacing()
-            height /= len(self.plot)
+            height -= (len(self.plots) - 1) * self.layout.verticalSpacing()
+            height /= len(self.plots)
             if height > 0:
                 stretch = (height + fixedHeight) * 110 / height
                 self.layout.setRowStretch(self.layout.rowCount() - 1, stretch)
@@ -207,7 +234,9 @@ class FringePlotWindow(Qt.QWidget):
                 pass
             if station == self.reference:
                 continue
-            plot = self.plot[station]
+            for plot in self.plots:
+                if plot.station == station:
+                    break
             for idx in correlations[baseline]:
                 pol1 = (idx >> 0) & 1
                 pol2 = (idx >> 1) & 1
@@ -233,7 +262,7 @@ class FringePlotWindow(Qt.QWidget):
                                             range(self.cordata.number_channels))
                     plot.curve[idx].setPen(pen)
                     plot.curve[idx].attach(plot)
-                    if station == self.last_station:
+                    if plot == self.plots[-1]:
                         self.stretch()
                         pass
 
