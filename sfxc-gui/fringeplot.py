@@ -45,6 +45,16 @@ class FringePlotCurve(Qwt.QwtPlotCurve):
 
     pass
 
+class FringePlotLegend(Qwt.QwtLegend):
+    def sizeHint(self):
+        size = Qwt.QwtLegend.sizeHint(self)
+        numrows = min(self.contentsWidget().layout().numRows(), 4)
+        if numrows > 0:
+            return Qt.QSize(size.width(), numrows * size.height())
+        return size;
+
+    pass
+
 class FringePlot(Qwt.QwtPlot):
     color = [ "#bae4b3", "#74c476", "#31a354", "#006d2c",
               "#bdd7e7", "#6baed6", "#3182bd", "#08519c",
@@ -169,7 +179,7 @@ class FringePlotWindow(Qt.QWidget):
             self.layout.setRowStretch(self.layout.rowCount() - 1, 100)
             self.plots.append(plot)
             continue
-        legend = Qwt.QwtLegend()
+        legend = FringePlotLegend()
         legend.setItemMode(Qwt.QwtLegend.CheckableItem)
         self.plots[-1].insertLegend(legend, Qwt.QwtPlot.ExternalLegend)
 
@@ -215,6 +225,7 @@ class FringePlotWindow(Qt.QWidget):
                 self.layout.setRowStretch(self.layout.rowCount() - 1, stretch)
                 pass
             pass
+        self.plots[-1].legend().updateGeometry()
         return
 
     def resizeEvent(self, e):
