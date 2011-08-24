@@ -210,13 +210,7 @@ class WeightPlotWindow(Qt.QWidget):
             fp = open(ctrl_file, 'r')
             json_input = json.load(fp)
             fp.close()
-            start = vex2time(json_input['start'])
-            stop = vex2time(json_input['stop'])
-            for station in json_input['stations']:
-                if station not in stations:
-                    stations.append(station)
-                    pass
-                continue
+
             output_file = urlparse.urlparse(json_input['output_file']).path
             try:
                 if json_input['pulsar_binning']:
@@ -225,13 +219,41 @@ class WeightPlotWindow(Qt.QWidget):
             except:
                 pass
             self.output_files.append(output_file)
+
+            # If the start time is specified as "now" we'll need to
+            # look in the correlator output to fine the real start
+            # time of the job.  If the correlator ourput file doesn't
+            # exist yet, wait until one shows up.
+            while json_input['start'] == "now":
+                try:
+                    fp = open(output_file, 'r')
+                except:
+                    pass
+                try:
+                    h = struct.unpack(global_hdr,
+                                      fp.read(struct.calcsize(global_hdr)))
+                    hour = h[4] / 3600
+                    min = (h[4] % 3600) / 60
+                    sec = h[4] % 60
+                    json_input['start'] = "%dy%dd%02dh%02dm%02ds" \
+                        % (h[2], h[3], hour, min, sec)
+                except:
+                    time.sleep(1)
+                    fp.close()
+                    pass
+                continue
+
+            start = vex2time(json_input['start'])
+            stop = vex2time(json_input['stop'])
+            for station in json_input['stations']:
+                if station not in stations:
+                    stations.append(station)
+                    pass
+                continue
             self.offsets.append(start)
             continue
 
-        fp = open(ctrl_files[0], 'r')
-        json_input = json.load(fp)
-        fp.close()
-        start = vex2time(json_input['start'])
+        start = self.offsets[0]
 
         gaps = []
         scans = []
@@ -248,6 +270,10 @@ class WeightPlotWindow(Qt.QWidget):
             # Figure out the real start and stop time.
             start_time += vex2time(vex['SCHED'][scan]['start'])
             stop_time += vex2time(vex['SCHED'][scan]['start'])
+            if start_time < start and stop_time >= start:
+                scans.append((start, scan))
+                prev_stop_time = stop_time
+                pass
             if start_time >= start and start_time < stop:
                 scans.append((start_time, scan))
                 if prev_stop_time:
