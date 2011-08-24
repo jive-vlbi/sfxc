@@ -114,14 +114,11 @@ class FringePlotWindow(Qt.QWidget):
 
         self.output_file = 0
         self.output_files = []
-        self.offsets = []
         stations = []
         for ctrl_file in ctrl_files:
             fp = open(ctrl_file, 'r')
             json_input = json.load(fp)
             fp.close()
-            start = vex2time(json_input['start'])
-            stop = vex2time(json_input['stop'])
             for station in json_input['stations']:
                 if station not in stations:
                     stations.append(station)
@@ -135,13 +132,11 @@ class FringePlotWindow(Qt.QWidget):
             except:
                 pass
             self.output_files.append(output_file)
-            self.offsets.append(start)
             continue
 
         fp = open(ctrl_files[0], 'r')
         json_input = json.load(fp)
         fp.close()
-        start = vex2time(json_input['start'])
         number_channels = json_input['number_channels']
 
         if not self.reference:
