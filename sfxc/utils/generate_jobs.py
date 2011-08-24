@@ -44,6 +44,8 @@ parser.add_option("-t", "--template", dest="template", type="string",
                   help="Control file template", metavar="FILE")
 parser.add_option("-f", "--fuse", dest="fuse", default=False,
                   action="store_true", help="FUSE based correlation")
+parser.add_option("-e", "--evlbi", dest="evlbi", default=False,
+                  action="store_true", help="e-VLBI correlation")
 
 (options, args) = parser.parse_args()
 if options.stations:
@@ -221,6 +223,10 @@ for scan in vex['SCHED']:
     else:
         # Just update the stop time.
         json_output["stop"] = time2vex(stop_time)
+        pass
+
+    if options.evlbi:
+        json_output["start"] = "now"
         pass
 
     # Write out the correlator control file.
