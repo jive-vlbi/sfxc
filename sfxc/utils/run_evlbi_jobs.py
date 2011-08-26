@@ -19,7 +19,7 @@ import jsonrpclib
 from vex_parser import Vex
 from evlbi import DataFlow
 
-input_nodes = {'On': 'mk5-2', 'Wb': 'mk5-15'}
+input_nodes = {}
 
 def vex2time(str):
     tupletime = time.strptime(str, "%Yy%jd%Hh%Mm%Ss");
@@ -176,6 +176,8 @@ try:
 
     time.sleep(1)
 
+    flow.stop(stations)
+    flow.finalize(stations)
     flow.setup(stations)
 
     # Make sure the delay files are up to date, and generate new ones
@@ -238,6 +240,7 @@ try:
 
 finally:
     flow.stop(stations)
+    flow.finalize(stations)
 
     if options.simulate:
         stop_simulators()
