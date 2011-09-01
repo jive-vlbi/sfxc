@@ -102,7 +102,7 @@ class FringePlot(Qwt.QwtPlot):
     pass
 
 class FringePlotWindow(Qt.QWidget):
-    def __init__(self, vex, ctrl_files, reference, *args):
+    def __init__(self, vex, ctrl_files, reference=None, *args):
         Qt.QWidget.__init__(self, *args)
 
         exper = vex['GLOBAL']['EXPER']

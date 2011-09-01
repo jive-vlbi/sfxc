@@ -23,6 +23,7 @@ import MySQLdb as db
 # UI
 from progress import *
 from weightplot import WeightPlotWindow
+from fringeplot import FringePlotWindow
 
 # JIVE Python modules
 from vex_parser import Vex
@@ -90,7 +91,8 @@ class progressDialog(QtGui.QDialog):
         self.ui.progressBar.setRange(self.start, self.stop)
         self.secs = self.start
         self.scan = None
-        self.plot = None
+        self.wplot = None
+        self.fplot = None
         self.status = 'CRASH'
 
         # Generate delays for this subjob.
@@ -162,9 +164,13 @@ class progressDialog(QtGui.QDialog):
             for line in output.splitlines():
                 m = r1.search(line)
                 if m:
-                    if not self.plot:
-                        self.plot = WeightPlotWindow(self.vex, [self.ctrl_file], True)
-                        self.plot.show()
+                    if not self.wplot:
+                        self.wplot = WeightPlotWindow(self.vex, [self.ctrl_file], True)
+                        self.wplot.show()
+                        pass
+                    if not self.fplot:
+                        self.fplot = FringePlotWindow(self.vex, [self.ctrl_file])
+                        self.fplot.show()
                         pass
                     secs = vex2time(m.group())
                     if secs > self.secs:
