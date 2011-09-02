@@ -32,6 +32,37 @@ def time2vex(secs):
     tupletime = time.gmtime(secs)
     return time.strftime("%Yy%jd%Hh%Mm%Ss", tupletime)
 
+class BottomScaleDraw(Qwt.QwtScaleDraw):
+    def __init__(self, number_channels, *args):
+        self.number_channels = number_channels
+        Qwt.QwtScaleDraw.__init__(self, *args)
+        self.setLabelAlignment(Qt.Qt.AlignLeft | Qt.Qt.AlignBottom)
+        return
+
+    def drawLabel(self, p, val):
+        align = self.labelAlignment()
+        if val == self.number_channels:
+            self.setLabelAlignment(Qt.Qt.AlignLeft | Qt.Qt.AlignBottom)
+        else:
+            self.setLabelAlignment(Qt.Qt.AlignHCenter | Qt.Qt.AlignBottom)
+            pass
+        Qwt.QwtScaleDraw.drawLabel(self, p, val)
+        self.setLabelAlignment(align)
+        pass
+    pass
+
+class LeftScaleDraw(Qwt.QwtScaleDraw):
+    def __init__(self, *args):
+        Qwt.QwtScaleDraw.__init__(self, *args)
+        return
+
+    def label(self, val):
+        if val == 0:
+            return Qwt.QwtText("    0.0")
+        return Qwt.QwtScaleDraw.label(self, val)
+
+    pass
+
 class FringePlotCurve(Qwt.QwtPlotCurve):
     def updateLegend(self, legend):
         Qwt.QwtPlotCurve.updateLegend(self, legend)
@@ -70,10 +101,16 @@ class FringePlot(Qwt.QwtPlot):
         self.y = {}
         self.station = station2
 
+        scaleDraw = LeftScaleDraw()
+        self.setAxisScaleDraw(Qwt.QwtPlot.yLeft, scaleDraw)
+        scaleDraw = BottomScaleDraw(number_channels)
+        self.setAxisScaleDraw(Qwt.QwtPlot.xBottom, scaleDraw)
+        scaleDiv = Qwt.QwtScaleDiv(0, number_channels, [],
+                                   [number_channels / 4, 3 * number_channels / 4],
+                                   [0, number_channels / 2, number_channels])
+        self.setAxisScaleDiv(Qwt.QwtPlot.xBottom, scaleDiv)
         self.setAxisTitle(Qwt.QwtPlot.yLeft, station1 + '-' + station2)
         self.setAxisMaxMajor(Qwt.QwtPlot.yLeft, 2)
-        self.setAxisScale(Qwt.QwtPlot.xBottom, 0, number_channels,
-                          number_channels / 2)
         self.curve = {}
 
         self.xxxcurve = Qwt.QwtPlotCurve("XXX")
