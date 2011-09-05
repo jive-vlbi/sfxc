@@ -45,6 +45,8 @@ class CorrelatedData:
         self.weights = {}
         self.correlations = {}
         self.time = []
+        self.start_time = 0
+        self.current_time = 0
 
         self.stations = []
         for station in vex['STATION']:
@@ -78,6 +80,9 @@ class CorrelatedData:
             hour = h[4] / 3600
             min = (h[4] % 3600) / 60
             sec = h[4] % 60
+            strtime = "%dy%dd%02dh%02dm%02ds" % (h[2], h[3], hour, min, sec)
+            self.start_time = vex2time(strtime)
+
             self.number_channels = h[5]
             self.integration_time = h[6] * 1e-6
             pass
@@ -116,6 +121,7 @@ class CorrelatedData:
                     secs = self.offset + integration_slice * self.integration_time
                     if not secs in self.time:
                         self.time.append(secs)
+                        self.current_time = self.start_time + integration_slice * self.integration_time
                         pass
                     if len(self.weights[station][idx]) < len(self.time):
                         self.weights[station][idx].append(weight)

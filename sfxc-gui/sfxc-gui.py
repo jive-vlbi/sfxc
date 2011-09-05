@@ -27,6 +27,7 @@ from fringeplot import FringePlotWindow
 
 # JIVE Python modules
 from vex_parser import Vex
+from cordata import CorrelatedData
 
 def vex2time(str):
     tupletime = time.strptime(str, "%Yy%jd%Hh%Mm%Ss");
@@ -89,7 +90,8 @@ class progressDialog(QtGui.QDialog):
         self.stop = vex2time(self.json_input['stop'])
         self.subjob = self.json_input['subjob']
         self.ui.progressBar.setRange(self.start, self.stop)
-        self.secs = self.start
+        self.time = self.start
+        self.cordata = None
         self.scan = None
         self.wplot = None
         self.fplot = None
@@ -158,6 +160,25 @@ class progressDialog(QtGui.QDialog):
         pass
 
     def timeout(self):
+        if self.cordata:
+            self.cordata.read()
+            if self.time < self.cordata.current_time:
+                self.time = self.cordata.current_time
+                tupletime = time.gmtime(self.time)
+                strtime = time.strftime("%H:%M:%S", tupletime)
+                self.ui.timeEdit.setText(strtime)
+                self.ui.progressBar.setValue(self.time)
+                for scan in self.vex['SCHED']:
+                    if self.time < vex2time(self.vex['SCHED'][scan]['start']):
+                        break
+                    current_scan = scan
+                    continue
+                if current_scan != self.scan:
+                    self.scan = current_scan
+                    self.ui.scanEdit.setText(self.scan)
+                    pass
+                pass
+            pass
         output = self.proc.asyncread()
         if output:
             r1 = re.compile(r'(\d+y\d+d\d+h\d+m\d+s)')
@@ -165,30 +186,24 @@ class progressDialog(QtGui.QDialog):
             for line in output.splitlines():
                 m = r1.search(line)
                 if m:
+                    if not self.cordata:
+                        output_file = urlparse.urlparse(self.json_input['output_file']).path
+                        try:
+                            if self.json_input['pulsar_binning']:
+                                output_file = output_file + '.bin0'
+                                pass
+                        except:
+                            pass
+                        self.cordata = CorrelatedData(self.vex, output_file)
+                        pass
                     if not self.wplot:
                         self.wplot = WeightPlotWindow(self.vex, [self.ctrl_file], True)
                         self.wplot.show()
                         pass
+
                     if not self.fplot:
                         self.fplot = FringePlotWindow(self.vex, [self.ctrl_file])
                         self.fplot.show()
-                        pass
-                    secs = vex2time(m.group())
-                    if secs > self.secs:
-                        self.secs = secs
-                        tupletime = time.gmtime(self.secs)
-                        strtime = time.strftime("%H:%M:%S", tupletime)
-                        self.ui.timeEdit.setText(strtime)
-                        self.ui.progressBar.setValue(self.secs)
-                        for scan in self.vex['SCHED']:
-                            if secs < vex2time(self.vex['SCHED'][scan]['start']):
-                                break
-                            current_scan = scan
-                            continue
-                        if current_scan != self.scan:
-                            self.scan = current_scan
-                            self.ui.scanEdit.setText(self.scan)
-                            pass
                         pass
                     pass
                 m = r2.search(line)
