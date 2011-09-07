@@ -313,10 +313,11 @@ Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &station
     std::string bbc = vex.get_BBC(mode, stations[station]);
     std::vector<int> bbc_list;
     if(freq != std::string()){
+      bool get_bandwidths = (bandwith.size() == 0)? true : false;
       for(Vex::Node::iterator freq_it = root_node["FREQ"][freq]->begin("chan_def");
           freq_it != root_node["FREQ"][freq]->end("chan_def"); freq_it++){
         std::string bbc_name=(*freq_it)[5]->to_string();
-        if(station == 0){
+        if(get_bandwidths){
            bandwith.push_back((*freq_it)[3]->to_double_amount("MHz"));
         } 
         // Find the physical BBC number
@@ -521,7 +522,6 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
         << filename << "\" name=\"plot_image\"></td>" << std::endl;
         index_html << "</tr>" << std::endl;
       }
-
       { // Print content of the table
         assert(first_plot.header.station_nr1 == first_plot.header.station_nr2);
 
