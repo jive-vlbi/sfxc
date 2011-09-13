@@ -103,8 +103,13 @@ class parameters:
   def get_channels(self, mode):
     vex = self.vex
     ch_mode = vex['MODE'][mode]['FREQ'][0]
-    bbc_mode = vex['MODE'][mode]['BBC'][0]
-    if_mode = vex['MODE'][mode]['IF'][0]
+    station = vex['MODE'][mode]['FREQ'][1]
+    for bmode in  vex['MODE'][mode].getall('BBC'):
+      if station in bmode:
+        bbc_mode = bmode[0]
+    for imode in vex['MODE'][mode].getall('IF'):
+      if station in imode:
+        if_mode = imode[0]
     chandefs = vex['FREQ'][ch_mode].getall('chan_def')
     bbcs = vex['BBC'][bbc_mode].getall('BBC_assign')
     ifs = vex['IF'][if_mode].getall('if_def')
