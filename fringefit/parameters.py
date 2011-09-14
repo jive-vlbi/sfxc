@@ -14,7 +14,7 @@ class parameters:
     try:
       inputfile = open(corfilename, 'rb')
     except:
-      print "Error : Could not open " + corfilename
+      print >> sys.stderr, "Error : Could not open " + corfilename
       sys.exit(1)
     
     gheader_buf = inputfile.read(self.global_header_size)
