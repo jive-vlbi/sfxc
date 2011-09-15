@@ -115,7 +115,7 @@ def lag_offsets(data, n_station, offsets, rates, snr):
         coef_rate = polynomial.polyfit(arange(phase_rate.size), phase_rate, 1, w=w)
         rates[chan,station1, station2-1] = -coef_rate[1] + y * 2 * pi / T
         #rates[chan,nr,nr+bline] = idy + y - 1 if idy < fringe.shape[0]/2 else (idy + y - 1)-fringe.shape[0]
-        if (chan == 0) and (station1==-4):
+        if (chan == 0) and (station1==-1):
           pdb.set_trace()
         snr[chan, station1, station2-1] = phase_snr(fx, phase[N/10:N+1-N/10])
       # Fill in values for the lower triangle of the matrices
@@ -178,34 +178,29 @@ def p_good(V, n, max_int, dx):
   Z = arange(0,max_int,dx)
   return trapz(Z*exp(-(Z**2+V**2)/2)*i0(Z*V)*(1-exp(-(Z**2)/2))**(n-1),dx=dx)
 
-#def apply_model(nr, data, delays, rates, channels, vex_freqs, sample_rate, tint):
 def apply_model(data, station1, station2, delays, rates, param):
   channels = param.channels
   vex_freqs = param.freqs
-  sample_rate = param.sample_rate
-  tint = param.integration_time
   n_station = len(param.stations)
   n_baseline = n_station * (n_station-1) / 2
   
   N = data.shape[2]-1
   T = data.shape[1]
-  f=arange(0, N+1) * sample_rate/(2*N)
-  t=arange(0,T)
+  f=arange(0, N+1) /(2.*N)
+  t=arange(0,T) - T/2
   bldata = zeros(data.shape, dtype='c8')
   for ch in range(len(channels)):
     base_freq = vex_freqs[channels[ch][0]]
-    sb =  -1 if channels[ch][1] == 0 else 1
     rate1 = rates[ch,station1]
     rate2 = rates[ch,station2]
     delay1 = delays[ch,station1] 
     delay2 = delays[ch,station2]
-    #delay2 = delays[ch,station2] + rate2*(i-T/2)*tint*sample_rate*(1e+6)
     delay = (delay1 - delay2)
     rate = (rate1 - rate2)
-    if((station1 == -2) and (ch == 0)):
+    if((station1 == 0) and (ch == -1)):
       pdb.set_trace()
-    bldata[ch] = data[ch] * exp(2j*pi*(base_freq+f*sb)*(delay/sample_rate))
-    bldata[ch] = (bldata[ch].T * exp(1j*(t-T/2)*rate)).T
+    bldata[ch] = data[ch] * exp(2j*pi*f*delay)
+    bldata[ch] = (bldata[ch].T * exp(1j*t*rate)).T
   return bldata
 
 def phase_offsets(data, station1, station2, offsets, rates, snr):
@@ -231,7 +226,7 @@ def phase_offsets(data, station1, station2, offsets, rates, snr):
     coef_rate = polynomial.polyfit(arange(phase_rate.size), phase_rate, 1, w=w)
     rates[chan,station1, station2-1] = -coef_rate[1]
     #rates[chan,nr,nr+bline] = idy + y - 1 if idy < fringe.shape[0]/2 else (idy + y - 1)-fringe.shape[0]
-    if (chan == 0) and (station1==4) and (station2==-5):
+    if (chan == 0) and (station1==0) and (station2==-1):
       pdb.set_trace()
     snr[chan, station1, station2-1] = phase_snr(x, phase[N/10:N+1-N/10])
   #print 'chan = ' + `chan` + ' ; offsets = ' + `offsets[chan,nr,:]`
@@ -277,8 +272,6 @@ def get_options():
 
 def write_clocks(vex, param, delays, rates, snr):
   vex_stations = [s for s in vex['STATION']]
-  base_freq = param.freqs[param.channels[0][0]]
-  sb =  -1 if param.channels[0][1] == 0 else 1
   # First compute channel weights
   W = zeros(snr.shape)
   snrmax = snr.max()
@@ -310,8 +303,10 @@ def write_clocks(vex, param, delays, rates, snr):
   for s in range(n_stations):
     print '    \"' + stations[s] +'\" : {'
     for c in range(n_channels):
+      base_freq = param.freqs[param.channels[0][0]]
+      sb =  -1 if param.channels[c][1] == 0 else 1
       delay = delays[c,s] / (param.sample_rate)
-      rate = rates[c,s]/(2*pi*param.integration_time*(base_freq+param.sample_rate/4))
+      rate = sb * rates[c,s]/(2*pi*param.integration_time*(base_freq + sb * param.sample_rate/4))
       snr_tot = station_snr[c,s]
       weight = weights[c,s]
       if (c < n_channels - 1):
