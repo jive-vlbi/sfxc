@@ -39,9 +39,11 @@ public:
   bool operator==(const Input_node_parameters &other) const;
 
   /// List of the tracks that are combined to frequency channels
-  Channel_list                                 channels;
+  Channel_list channels;
+  /// Number of tracks / bitstreams in data file
+  int32_t n_tracks;
   // data rate of one subband
-  int32_t                                     track_bit_rate; // in Ms/s
+  int32_t track_bit_rate; // in Ms/s
   // Number of samples per FFT.
   int32_t fft_size;
   /// The integration time
@@ -311,12 +313,14 @@ private:
                          Input_node_parameters &input_parameters) const;
   // Get the bit positions for all tracks in the vex file
   std::vector<int> get_track_bit_position(const std::string &mode, const std::string &station) const;
+  int n_mark5a_tracks(const std::string &mode, const std::string &station) const;
 
   // Gets the track parameters for mark5b data
   // Output is in input_parameters
   void get_mark5b_tracks(const std::string &mode,
                          const std::string &station,
                          Input_node_parameters &input_parameters) const;
+  int n_mark5b_bitstreams(const std::string &mode, const std::string &station) const;
   void get_mark5b_standard_mapping(const std::string &mode,
                                    const std::string &station,
                                    Input_node_parameters &input_parameters) const;

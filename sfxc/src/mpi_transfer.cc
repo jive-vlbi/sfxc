@@ -568,7 +568,7 @@ MPI_Transfer::receive(MPI_Status &status, std::map<std::string, int> &sources){
 void
 MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
   int size = 0;
-  size = 4*sizeof(int32_t) + sizeof(int64_t);
+  size = 5*sizeof(int32_t) + sizeof(int64_t);
   for (Input_node_parameters::Channel_iterator channel =
          input_node_param.channels.begin();
        channel != input_node_param.channels.end(); channel++) {
@@ -579,6 +579,8 @@ MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
   int32_t length;
   char message_buffer[size];
 
+  MPI_Pack(&input_node_param.n_tracks, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&input_node_param.track_bit_rate, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&input_node_param.fft_size, 1, MPI_INT32,
@@ -625,6 +627,9 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
   int32_t length;
   int position = 0;
 
+  MPI_Unpack(buffer, size, &position,
+             &input_node_param.n_tracks, 1, MPI_INT32,
+             MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
              &input_node_param.track_bit_rate, 1, MPI_INT32,
              MPI_COMM_WORLD);

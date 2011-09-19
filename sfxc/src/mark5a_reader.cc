@@ -253,10 +253,7 @@ Mark5a_reader::check_track_bit_statistics(Data_frame &data) {
 
 void
 Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
-  int ntracks = 0;
-  for(int i = 0; i <  input_node_param.channels.size(); i++)
-    ntracks += input_node_param.channels[i].tracks.size();
-  N = ntracks / 8;
+  N = input_node_param.n_tracks / 8;
   int tbr = input_node_param.track_bit_rate;
   DATA_RATE_ = (tbr * N * 8);
   SFXC_ASSERT(DATA_RATE_ > 0);
@@ -293,7 +290,7 @@ int Mark5a_reader::data_rate() const {
 
 int Mark5a_reader::find_start_of_header(boost::shared_ptr<Data_reader> reader,
                                         Mark5a_reader::Data_frame &data) {
-  const int max_read = 16 * SIZE_MK5A_FRAME;
+  const int max_read = 16 * SIZE_MK5A_FRAME;  // Amount of data to read before giving up
   int data_read = SIZE_MK5A_FRAME/2; // We start by reading half a block
 
   data.buffer->data.resize(SIZE_MK5A_FRAME);
@@ -301,14 +298,14 @@ int Mark5a_reader::find_start_of_header(boost::shared_ptr<Data_reader> reader,
   
   { // Read half a block
     size_t bytes_to_read = SIZE_MK5A_FRAME/2;
-    char *data = (char *)buffer_start+SIZE_MK5A_FRAME/2;
+    char *data = &buffer_start[SIZE_MK5A_FRAME/2];
 
     int byte_read = Data_reader_blocking::get_bytes_s( reader.get(), bytes_to_read, data);
 
     if( byte_read != bytes_to_read ){
-      sfxc_abort("Unable to read enough bytes of data, cannot find a mark5a header before the end-of-file");
+      std::cout << "Unable to read enough bytes of data, cannot find a mark5a header before the end-of-file\n";
+      return -1;
     }
-
   }
 
   int nOnes=0, header_start=-1, nTracks8 = -1;

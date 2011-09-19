@@ -650,10 +650,10 @@ void Correlation_core::find_invalid() {
             invalid_start[j] =  (*invalid[j])[index[j]].start;
             invalid_end[j] = invalid_start[j] + (*invalid[j])[index[j]].n_invalid; 
             index[j]++;
-         }else {
-            invalid_start[j] = INT_MAX;
-            invalid_end[j] = INT_MAX;
-          }
+           }else {
+              invalid_start[j] = INT_MAX;
+              invalid_end[j] = INT_MAX;
+           }
         } 
      }
       i = invalid_start[0] < invalid_start[1] ? 0 : 1;

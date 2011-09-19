@@ -642,6 +642,25 @@ get_track_bit_position(const std::string &mode, const std::string &station) cons
   return tracks;
 }
 
+int
+Control_parameters::
+n_mark5a_tracks(const std::string &mode, const std::string &station) const {
+  const std::string &track_name = get_vex().get_track(mode, station);
+  int n_tracks = 0;
+  Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
+  for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
+         fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
+    Vex::Node::const_iterator it = fanout_def_it->begin();
+    ++it;
+    ++it;
+    ++it;
+    ++it;
+    for (; it != fanout_def_it->end(); ++it)
+      n_tracks++;
+  }
+  return n_tracks;
+}
+
 void
 Control_parameters::
 get_mark5a_tracks(const std::string &mode,
@@ -649,6 +668,7 @@ get_mark5a_tracks(const std::string &mode,
                   Input_node_parameters &input_parameters) const {
   // Bit positions for all tracks in the vex file
   std::vector<int> track_pos = get_track_bit_position(mode, station);
+  input_parameters.n_tracks = n_mark5a_tracks(mode, station);
 
   const std::string &track_name =
     get_vex().get_track(mode, station);
@@ -708,6 +728,23 @@ get_mark5a_tracks(const std::string &mode,
   }
 }
 
+int
+Control_parameters::
+n_mark5b_bitstreams(const std::string &mode,
+                    const std::string &station) const {
+  // First determine if there is a bitstreams section for the current station in the vex file.
+  const Vex::Node &root=get_vex().get_root_node();
+  const std::string bitstreams_name = get_vex().get_bitstreams(mode, station);
+  Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
+  int n_bitstream = 0;
+  // Iterate over the bitstreams
+  for (Vex::Node::const_iterator bitstream_it = bitstream->begin("stream_def");
+      bitstream_it != bitstream->end("stream_def"); ++bitstream_it) {
+    n_bitstream++;
+  }
+  return n_bitstream;
+}
+
 void
 Control_parameters::
 get_mark5b_tracks(const std::string &mode,
@@ -719,6 +756,7 @@ get_mark5b_tracks(const std::string &mode,
   if(bitstreams_name == std::string()){
     get_mark5b_standard_mapping(mode, station, input_parameters);
   }else{
+    input_parameters.n_tracks = n_mark5b_bitstreams(mode, station);
     // Parse the bitstream section
     Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
     for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
@@ -761,6 +799,7 @@ get_mark5b_tracks(const std::string &mode,
     }
   }
 }
+
 
 void
 Control_parameters::
@@ -837,6 +876,8 @@ get_mark5b_standard_mapping(const std::string &mode,
       }
     }
   }
+  // Total number of bitstreams according to vex file
+  input_parameters.n_tracks = subband_to_track.size() * bits_per_sample_;
 
   { // Fill the sign and magnitude bits:
     int nr_bit_streams = subband_to_track.size()*bits_per_sample_;

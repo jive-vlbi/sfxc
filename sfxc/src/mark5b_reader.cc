@@ -182,8 +182,7 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
 
   sample_rate = param.sample_rate();
   // Find the number of bitstreams used
-  nr_of_bitstreams = 32 / (param.channels[0].tracks.size() / param.channels[0].bits_per_sample);
-  std::cout << "nbitstream = " << nr_of_bitstreams << ", tbr = " << tbr << "\n";
+  nr_of_bitstreams = param.n_tracks;
 }
 
 bool Mark5b_reader::resync_header(Data_frame &data) {
