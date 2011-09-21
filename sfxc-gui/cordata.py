@@ -44,7 +44,7 @@ class CorrelatedData:
         self.integration_time = 0
         self.weights = {}
         self.correlations = {}
-        self.time = []
+        self.time = {}
         self.start_time = 0
         self.current_time = 0
 
@@ -110,6 +110,9 @@ class CorrelatedData:
                     h = struct.unpack(stat_hdr, self.fp.read(struct.calcsize(stat_hdr)))
                     weight = 1.0 - (float(h[8]) / (h[4] + h[5] + h[6] + h[7] + h[8]))
                     station = self.stations[h[0]]
+                    if not station in self.time:
+                        self.time[station] = []
+                        pass
                     if not station in self.weights:
                         self.weights[station] = {}
                         pass
@@ -119,11 +122,11 @@ class CorrelatedData:
                         pass
 
                     secs = self.offset + integration_slice * self.integration_time
-                    if not secs in self.time:
-                        self.time.append(secs)
+                    if not secs in self.time[station]:
+                        self.time[station].append(secs)
                         self.current_time = self.start_time + integration_slice * self.integration_time
                         pass
-                    if len(self.weights[station][idx]) < len(self.time):
+                    if len(self.weights[station][idx]) < len(self.time[station]):
                         self.weights[station][idx].append(weight)
                         pass
                     continue

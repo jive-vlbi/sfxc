@@ -371,7 +371,7 @@ class WeightPlotWindow(Qt.QWidget):
                     pen.setWidth(3)
 
                     plot.curve[idx] = Qwt.QwtPlotCurve(title)
-                    plot.curve[idx].setData(time, weights[station][idx])
+                    plot.curve[idx].setData(time[station], weights[station][idx])
                     plot.curve[idx].setPen(pen)
                     plot.curve[idx].setStyle(Qwt.QwtPlotCurve.Dots)
                     plot.curve[idx].attach(plot)
@@ -387,7 +387,7 @@ class WeightPlotWindow(Qt.QWidget):
                         continue
                     pass
 
-                plot.curve[idx].setData(time, weights[station][idx])
+                plot.curve[idx].setData(time[station], weights[station][idx])
                 continue
             plot.replot()
             continue
