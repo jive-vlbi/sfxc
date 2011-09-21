@@ -217,6 +217,14 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 		return -1;
 	}
 
+	if (XLRSetFillData(*xlrHandle, 0x11223344) != XLR_SUCCESS) {
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(errString, xlrError);
+		logit(LOG_CRIT, "%s", errString);
+		XLRClose(*xlrHandle);
+		return -1;
+	}
+
 	/*
 	 * 
 	 */
