@@ -293,7 +293,7 @@ for ctrl_file in args[1:]:
     #    + "-n " + str(number_nodes) + " " \
     #    + sfxc + " " + ctrl_file + " " + vex_file \
     #    + " 2>&1 | tee " + log_file
-    cmd = "mpirun --mca btl_tcp_if_include bond0,ib0,eth0  -machinefile " + machine_file + " " \
+    cmd = "mpirun --mca btl_tcp_if_include bond0,ib0,eth2.4,eth0  -machinefile " + machine_file + " " \
         "--rankfile " + rank_file + " " \
         + "-n " + str(number_nodes) + " " \
         + sfxc + " " + ctrl_file + " " + vex_file \
