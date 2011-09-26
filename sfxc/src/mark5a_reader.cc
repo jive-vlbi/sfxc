@@ -9,7 +9,7 @@ Mark5a_reader(boost::shared_ptr<Data_reader> data_reader,
               Time ref_time_)
     : Input_data_format_reader(data_reader),
       debug_level_(NO_CHECKS),
-      block_count_(0), DATA_RATE_(0), N(0) {
+      block_count_(0), DATA_RATE_(0), N(0), track(-1), mask(0) {
   ref_time_.get_date(ref_year, ref_day);
   current_time_ = 0;
 }
@@ -27,22 +27,18 @@ Mark5a_reader::goto_time(Data_frame &data, Time time) {
 }
 
 bool Mark5a_reader::open_input_stream(Data_frame &data){
-  int N_new = find_start_of_header(data_reader_, data);
-  if(N_new < 0) 
+  if (!find_start_of_header(data_reader_, data))
     return false;
-  if(N_new != N){
-    std::cout << RANK_OF_NODE << " : Warning (Mark5a reader) : mismatch between N computed from input data and value from vexfile.\n";
-    N = N_new;
-  }
+  
   Mark5a_header header(N);
   header.set_header(&data.buffer->data[0]);
-  start_day_ = header.day(0);
+  start_day_ = header.day(track);
   current_mjd_ = mjd(1, 1, ref_year) + start_day_ - 1;
-  start_time_.set_time_usec(current_mjd_, header.get_time_in_us(0)); 
-  current_day_ = header.day(0);
-  current_time_.set_time_usec(current_mjd_, header.get_time_in_us(0));
-  SFXC_ASSERT(header.check_header());
-  std::cout << RANK_OF_NODE << " : Mark5a reader found start of data at : y=" << header.year(0)
+  start_time_.set_time_usec(current_mjd_, header.get_time_in_us(track)); 
+  current_day_ = header.day(track);
+  current_time_.set_time_usec(current_mjd_, header.get_time_in_us(track));
+  SFXC_ASSERT(header.check_header(mask));
+  std::cout << RANK_OF_NODE << " : Mark5a reader found start of data at : y=" << header.year(track)
             << ", day = " << start_day_ << ", time =" << current_time_ << "\n";
 
   set_data_frame_info(data);
@@ -97,28 +93,28 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
   // at least we read the complete header. Check it
   Mark5a_header header(N);
   header.set_header(&databuffer[0]);
-  if((!header.check_header())&&(!resync_header(data))){
+  if((!header.check_header(mask))&&(!resync_header(data))){
     current_time_ += time_between_headers(); // Could't find valid header before EOF
     std::cout << "invalid header \n";
     return false;
   }
-  if (header.day(0) == 0 && header.get_time_in_us(0) == 0) {
+  if (header.day(track) == 0 && header.get_time_in_us(track) == 0) {
       current_time_ += time_between_headers(); // Could't find valid header before EOF
-    std::cout << "invalid timestamp \n";
+      std::cout << "invalid timestamp \n";
       return false;
   }
 
   // check if we are crossing a day boundary
-  if(header.day(0) != current_day_){
+  if(header.day(track) != current_day_){
     current_mjd_++;
-    current_day_ = header.day(0);
+    current_day_ = header.day(track);
   }
-  current_time_.set_time_usec(current_mjd_, header.get_time_in_us(0));
+  current_time_.set_time_usec(current_mjd_, header.get_time_in_us(track));
 
   if (debug_level_ >= CHECK_PERIODIC_HEADERS) {
     if ((debug_level_ >= CHECK_ALL_HEADERS) ||
         ((++block_count_ % 100) == 0)) {
-      header.check_header();
+      header.check_header(mask);
       check_time_stamp(header);
       if (debug_level_ >= CHECK_BIT_STATISTICS) {
         if (!check_track_bit_statistics(data)) {
@@ -136,58 +132,54 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
 bool Mark5a_reader::resync_header(Data_frame &data) {
   const int max_read = RESYNC_MAX_DATA_FRAMES * size_data_block();
   int data_read = 0;
+  generate_track_mask();
   // Find the next header in the input stream, NB: data already contains one mark5a block worth of input data
   std::cout << RANK_OF_NODE << " : Resync header, t = " << current_time_ << "\n";
 
-  char *buffer=(char *)&data.buffer->data[0];
+  unsigned char *buffer= &data.buffer->data[0];
   int bytes_read=0, header_start=0, nOnes=0;
   bool continue_searching = true;
   do{
-    // the header contains 64 bits before the syncword and
-    //                     64 bits after the syncword.
-    // We skip those bytes since we want to find an entire syncword
+    // the header contains 64 bits before the syncword and 64 bits after the syncword.
+    // Search for syncword (32 bits) using the Horspool algorithm
     int byte = 0;
     while(byte < N*SIZE_MK5A_FRAME - 64*8) {
-      if ((char)buffer[byte] == (char)(~0)) {
-        nOnes++;
-      } else if (nOnes>=32) {
-        // make sure the begin of the header is in the first_block
-        // syncword is 32 samples, auxiliary data field 64 samples
-        header_start = byte - nOnes - 64*(nOnes/32);
+      int shift = N * 32 - 1;
+      while ((shift >= 0) && (buffer[byte + shift] & mask == mask))
+        shift--;
+      if (shift < 0) {
+        // Found syncword, make sure the all bits before the syncword are in the buffer
+        header_start = byte - 96*N;
         if (header_start >= 0) {
           // Read a complete header
-          int N_new = nOnes / 32;
           memmove(buffer, buffer+header_start, N*SIZE_MK5A_FRAME - header_start);
           // There is garanteed to be enough data in the buffer for a complete header 
-          Mark5a_header header(N_new);
-          header.set_header((unsigned char *)buffer);
-          if(header.check_header()){
-            int to_read = header_start + (N_new - N) * SIZE_MK5A_FRAME;
-            data.buffer->data.resize(N_new * SIZE_MK5A_FRAME);
-            buffer = (char *)&data.buffer->data[0];
-            Data_reader_blocking::get_bytes_s(data_reader_.get(), to_read, buffer+N*SIZE_MK5A_FRAME-header_start);
-            if(N != N_new){
-              std::cout << RANK_OF_NODE << " : Warning (Mark5a reader) : mismatch between N computed from input"
-                                        << " data and value from vexfile.\n";
-              N = N_new;
-            }
+          Mark5a_header header(N);
+          header.set_header(buffer);
+          if(header.check_header(mask)){
+            int to_read = header_start;
+            Data_reader_blocking::get_bytes_s(data_reader_.get(), to_read, (char *) &buffer[N*SIZE_MK5A_FRAME-header_start]);
             return true;
           }else if(data_read < max_read){
             // No valid header found, fill frame and continue
-            Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start, buffer + N*SIZE_MK5A_FRAME - header_start);
+            Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start, (char *) &buffer[N*SIZE_MK5A_FRAME - header_start]);
             data_read += header_start;
-            byte = N_new*96; // Start after previous syncword
+            byte = N*96; // Start after previous syncword
           }else{
-            // Mamimum data already read
+            // Mamimum amount of data read
             std::cout << RANK_OF_NODE << " : Mark5a resync attempt failed \n";
-            return -1;
+            return false;
           }
+        }else{
+          // Syncword found, but beginning of header is missing : continue searching after syncword
+          byte = N * 96;
         }
-        nOnes=0;
       }else{
-        nOnes=0;
+        // Syncword not found, adjust index for partial match
+        byte += 32 * N - 1;
+        int jump = (buffer[byte] & mask == mask)? 32*N-2 : -1;
+        byte -= jump;
       }
-      byte++;
     }    
     
     if(data_read < max_read){
@@ -198,6 +190,7 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
 
       int bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), bytes_to_read, data);
       data_read += bytes_to_read;
+      generate_track_mask(); // Try new track mask
     }else
       continue_searching = false;
 
@@ -258,12 +251,15 @@ Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
   DATA_RATE_ = (tbr * N * 8);
   SFXC_ASSERT(DATA_RATE_ > 0);
   time_between_headers_ = Time(N * 8 * SIZE_MK5A_FRAME / (data_rate() / 1000000.));
+  // Generate mask to select which tracks are used in the header search
+  generate_track_mask();
 }
 
 void Mark5a_reader::set_data_frame_info(Data_frame &data) {
   Mark5a_header header(N);
   header.set_header(&data.buffer->data[0]);
   data.start_time = current_time_;
+  data.mask = header.get_track_mask();
 #ifdef SFXC_INVALIDATE_SAMPLES
   data.invalid.resize(1);
   data.invalid[0].invalid_begin = 0;
@@ -288,81 +284,108 @@ int Mark5a_reader::data_rate() const {
   return DATA_RATE_;
 }
 
-int Mark5a_reader::find_start_of_header(boost::shared_ptr<Data_reader> reader,
+void Mark5a_reader::generate_track_mask(){
+  // Mask that selects atleast one track in each byte
+  track = (track + 1)%8;
+  mask = 1 << track;
+  // if N=1 we match 2 tracks 
+  if(N==1){
+    int track2;
+    do{
+      track2 = rand()%8;
+    }while (track == track2);
+    mask |= 1 << track2;
+  }
+}
+
+bool Mark5a_reader::find_start_of_header(boost::shared_ptr<Data_reader> reader,
                                         Mark5a_reader::Data_frame &data) {
   const int max_read = 16 * SIZE_MK5A_FRAME;  // Amount of data to read before giving up
   int data_read = SIZE_MK5A_FRAME/2; // We start by reading half a block
 
   data.buffer->data.resize(SIZE_MK5A_FRAME);
-  char *buffer_start = (char *)&data.buffer->data[0];
+  unsigned char *buffer_start = &data.buffer->data[0];
   
   { // Read half a block
     size_t bytes_to_read = SIZE_MK5A_FRAME/2;
-    char *data = &buffer_start[SIZE_MK5A_FRAME/2];
+    unsigned char *data = &buffer_start[SIZE_MK5A_FRAME/2];
 
-    int byte_read = Data_reader_blocking::get_bytes_s( reader.get(), bytes_to_read, data);
+    int byte_read = Data_reader_blocking::get_bytes_s( reader.get(), bytes_to_read, (char *) data);
 
     if( byte_read != bytes_to_read ){
       std::cout << "Unable to read enough bytes of data, cannot find a mark5a header before the end-of-file\n";
-      return -1;
+      return false;
     }
   }
 
-  int nOnes=0, header_start=-1, nTracks8 = -1;
+  int header_start=-1;
   while(data_read < max_read){
     // Move the last half to the first half and read frameMk5a/2 bytes:
     memcpy(buffer_start, buffer_start+SIZE_MK5A_FRAME/2, SIZE_MK5A_FRAME/2);
 
     { // Read half a block
       size_t bytes_to_read = SIZE_MK5A_FRAME/2;
-      char *data = (char*)buffer_start+SIZE_MK5A_FRAME/2;
+      unsigned char *data = &buffer_start[SIZE_MK5A_FRAME/2];
 
-      int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(), bytes_to_read, data);
+      int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(), bytes_to_read, (char *)data);
       data_read += bytes_to_read;
     }
 
-    // the header contains 64 bits before the syncword and
-    //                     64 bits after the syncword.
-    // We skip those bytes since we want to find an entire syncword
+    // the header contains 64 bits before the syncword and 64 bits after the syncword.
+    // Search for syncword (32 bits) using the Horspool algorithm
     int byte = 0;
     while(byte<SIZE_MK5A_FRAME-64*8) {
-      if ((char)buffer_start[byte] == (char)(~0)) {
-        nOnes++;
-      } else if (nOnes>=32) {
-        // make sure the begin of the header is in the first_block
-        // syncword is 32 samples, auxiliary data field 64 samples
-        header_start = byte - nOnes - 64*(nOnes/32);
+      int shift = N * 32 - 1;
+     // std::cout << "byte = " << byte << ", shift = " << shift 
+      //          << " ; buf = " << (unsigned int) buffer_start[byte + shift]
+       //         << " mask = " << (unsigned int) mask << "\n";
+      while ((shift >= 0) && (buffer_start[byte + shift] & mask == mask)){
+        shift--;
+//        if(shift >=0)
+  //        std::cout << "byte = " << byte << ", shift = " << shift 
+    //                << " ; buf = " << (unsigned int) buffer_start[byte + shift]
+      //              << " mask = " << (unsigned int) mask << "\n";
+      }
+      if (shift < 0) {
+        // Found syncword, make sure the all bits before the syncword are in the buffer
+        header_start = byte - 64*N;
         if (header_start >= 0) {
           // Read a complete header
-          nTracks8 = nOnes/32;
           memmove(buffer_start, buffer_start+header_start, SIZE_MK5A_FRAME-header_start);
           // There is garanteed to be enough data in the buffer for a complete header 
-          Mark5a_header header(nTracks8);
+          Mark5a_header header(N);
           header.set_header((unsigned char *)buffer_start);
-          if(header.check_header()){
-            int to_read = header_start + (nTracks8-1)*SIZE_MK5A_FRAME;
-            data.buffer->data.resize(nTracks8*SIZE_MK5A_FRAME);
-            buffer_start = (char *)&data.buffer->data[0];
-            Data_reader_blocking::get_bytes_s(reader.get(), to_read, buffer_start+SIZE_MK5A_FRAME-header_start);
-            return nTracks8;
+          if(header.check_header(mask)){
+            int to_read = header_start + (N-1)*SIZE_MK5A_FRAME;
+            data.buffer->data.resize(N*SIZE_MK5A_FRAME);
+            buffer_start = &data.buffer->data[0];
+            Data_reader_blocking::get_bytes_s(reader.get(), to_read, (char *) &buffer_start[SIZE_MK5A_FRAME-header_start]);
+            return true;
           }else if(data_read < max_read){
             // No valid header found, fill frame and continue
-            Data_reader_blocking::get_bytes_s(reader.get(), header_start, buffer_start+SIZE_MK5A_FRAME-header_start);
+            Data_reader_blocking::get_bytes_s(reader.get(), header_start, (char *) &buffer_start[SIZE_MK5A_FRAME-header_start]);
             data_read += header_start;
-            byte = nTracks8*96; // Start after previous syncword
+            byte = N * 96; // Start after previous syncword
           }else{
-            // Mamimum data already read
+            // Mamimum amount of data read
             std::cout << RANK_OF_NODE << " : Could not find mark5a header before EOF\n";
-            return -1;
+            return false;
           }
+        }else{
+          // Syncword found, but beginning of header is missing : continue searching after syncword
+          byte = N * 96;
         }
-        nOnes=0;
       }else{
-        nOnes=0;
+        // Syncword not found, adjust index for partial match
+        byte += 32 * N - 1;
+        int jump = (buffer_start[byte] & mask == mask)? 32*N-2 : -1;
+//        std::cout << "new byte = " << byte << ", jump = " << jump << ", buf = " << (unsigned int)buffer_start[byte]
+  //                << "\n"; 
+        byte -= jump;
       }
-      byte++;
     }
   }
   std::cout << RANK_OF_NODE << " : Could not find mark5a header before EOF\n";
-  return -1;
+  return false;
 }
+

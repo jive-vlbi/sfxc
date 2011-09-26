@@ -19,7 +19,7 @@ public:
   Mark5a_header(int N);
 
   void set_header(unsigned char *header);
-  bool check_header();
+  bool check_header(uint8_t mask);
 
   int nTracks();
 
@@ -43,18 +43,18 @@ public:
   int64_t get_time_in_us(int track);
   std::string get_time_str(int track);
 
-  bool checkCRC();
-  void recomputeCRC();
+  bool checkCRC(uint8_t mask);
+  void recomputeCRC(uint8_t mask);
 
-  bool is_valid();
+  bool is_valid(uint8_t mask);
+  uint64_t get_track_mask();
 
   static const int microsecond_offset[];
 
   Log_writer &print_binary_header(Log_writer &writer);
 private:
   template <class Type>
-  void crc12(Type *crcBlock, Type *data, int datawords);
-
+  void crc12(Type *crcBlock, Type *data, int datawords, Type mask);
   // Binary coded decimal:
   int BCD(int word, unsigned int track);
 

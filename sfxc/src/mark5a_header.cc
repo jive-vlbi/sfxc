@@ -22,22 +22,21 @@ void Mark5a_header::set_header(unsigned char* hdr) {
 }
 
 
-bool Mark5a_header::check_header() {
+bool Mark5a_header::check_header(uint8_t mask) {
   // Check for a valid header
   SFXC_ASSERT(header_ != NULL);
-  if (!is_valid())
+  if (!is_valid(mask))
     return false;
-  if (!checkCRC())
+  if (!checkCRC(mask))
     return false;
   return true;
 }
 
 
 
-bool Mark5a_header::is_valid() {
+bool Mark5a_header::is_valid(uint8_t mask) {
   for (size_t i=64*N; i<96*N; i++) {
-    SFXC_ASSERT((unsigned char)(-1)^(unsigned char)(0) == (unsigned char)(-1));
-    if (header_[i] != (unsigned char)(-1)) {
+    if ((header_[i] & mask) != (((unsigned char)(-1)) & mask)) {
 //      char word[8*N];
 //      for (int j=64*N; j<96*(int)N; j++) {
 //       itoa(header_[j], word, 2);
@@ -48,6 +47,33 @@ bool Mark5a_header::is_valid() {
     }
   }
   return true;
+}
+
+uint64_t
+Mark5a_header::get_track_mask() {
+  uint64_t mask;
+  switch(N){
+    case 1:{
+      uint8_t *syncword = (uint8_t *)&header_[64*N];
+      mask = syncword[0] & syncword[15] & syncword[31]; 
+      break;
+    }
+    case 2:{
+      uint16_t *syncword = (uint16_t *)&header_[64*N];
+      mask = syncword[0] & syncword[15] & syncword[31]; 
+    }
+    case 4:{
+      uint32_t *syncword = (uint32_t *)&header_[64*N];
+      mask = syncword[0] & syncword[15] & syncword[31]; 
+      break;
+    }
+    case 8:{
+      uint64_t *syncword = (uint64_t *)&header_[64*N];
+      mask = syncword[0] & syncword[15] & syncword[31]; 
+      break;
+    }
+  }
+  return mask;
 }
 
 
@@ -133,7 +159,7 @@ int Mark5a_header::find_track(int headstack_, int track_) {
 
 
 
-bool Mark5a_header::checkCRC() {
+bool Mark5a_header::checkCRC(uint8_t mask) {
   unsigned char crcBlock[12*N];
 
   /* Init CRC generator to all zeroes. */
@@ -142,19 +168,26 @@ bool Mark5a_header::checkCRC() {
   /* Re-calc CRC12. Buffer is 148 bits in size, CRC is 12 */
   switch (N) {
   case 1: {
-      crc12((int8_t *)crcBlock, (int8_t *)header_, 160);
+      crc12((int8_t *)crcBlock, (int8_t *)header_, 160, (int8_t)mask);
       break;
     }
   case 2: {
-      crc12((int16_t*)crcBlock, (int16_t*)header_, 160);
+      int16_t mask_ = (mask << 8) | mask;
+      crc12((int16_t*)crcBlock, (int16_t*)header_, 160, mask_);
       break;
     }
   case 4: {
-      crc12((int32_t*)crcBlock, (int32_t*)header_, 160);
+      int32_t mask_ = mask;
+      for(int i = 1; i<4; i++)
+        mask_|= (mask << i*8);
+      crc12((int32_t*)crcBlock, (int32_t*)header_, 160, mask_);
       break;
     }
   case 8: {
-      crc12((int64_t*)crcBlock, (int64_t*)header_, 160);
+      int64_t mask_ = mask;
+      for(int i = 1; i<8; i++)
+        mask_|= (mask << i*8);
+      crc12((int64_t*)crcBlock, (int64_t*)header_, 160, mask_);
       break;
     }
   }
@@ -172,7 +205,7 @@ bool Mark5a_header::checkCRC() {
 }
 
 
-void Mark5a_header::recomputeCRC() {
+void Mark5a_header::recomputeCRC(uint8_t mask) {
   unsigned char crcBlock[12];
 
   /* Init CRC generator to all zeroes. */
@@ -181,19 +214,26 @@ void Mark5a_header::recomputeCRC() {
   /* Re-calc CRC12. Buffer is 148 bits in size, CRC is 12 */
   switch (N) {
   case 1: {
-      crc12((int8_t*)crcBlock, (int8_t*)header_, 160);
+      crc12((int8_t*)crcBlock, (int8_t*)header_, 160, (int8_t)mask);
       break;
     }
   case 2: {
-      crc12((int16_t*)crcBlock, (int16_t*)header_, 160);
+      int16_t mask_ = (mask << 8) | mask;
+      crc12((int16_t*)crcBlock, (int16_t*)header_, 160, mask_);
       break;
     }
   case 4: {
-      crc12((int32_t*)crcBlock, (int32_t*)header_, 160);
+      int32_t mask_ = mask;
+      for(int i = 1; i<4; i++)
+        mask_|= (mask << i*8);
+      crc12((int32_t*)crcBlock, (int32_t*)header_, 160, mask_);
       break;
     }
   case 8: {
-      crc12((int64_t*)crcBlock, (int64_t*)header_, 160);
+      int64_t mask_ = mask;
+      for(int i = 1; i<8; i++)
+        mask_|= (mask << i*8);
+      crc12((int64_t*)crcBlock, (int64_t*)header_, 160, mask_);
       break;
     }
   }
@@ -204,14 +244,14 @@ void Mark5a_header::recomputeCRC() {
     }
   }
 
-  checkCRC();
+  checkCRC(mask);
 }
 
 
 template <class Type>
 void Mark5a_header::crc12(Type *crcBlock,
                          Type *data,
-                         int datawords) {
+                         int datawords, Type mask) {
   SFXC_ASSERT(sizeof(Type) == N);
   SFXC_ASSERT(Type(-1)^Type(0) == Type(-1));
 //  for (size_t i=64; i<96; i++) {
@@ -221,7 +261,7 @@ void Mark5a_header::crc12(Type *crcBlock,
   /* with 12 data words. */
   /* (Init to all zero; or use old regs to continue. */
   for (int i=0; i<datawords; i++) {
-    Type n0  = (*data++) ^ crcBlock[11];  /* x^12 + */
+    Type n0  = ((*data++) & mask) ^ crcBlock[11];  /* x^12 + */
     Type n11 = n0 ^ crcBlock[10];  /* x^11 + */
     Type n3  = n0 ^ crcBlock[2];   /* x^3 + */
     Type n2  = n0 ^ crcBlock[1];   /* x^2 + */

@@ -72,15 +72,17 @@ public:
   // Memory pool for Mark5 frames
   struct Input_data_frame {
     Input_data_frame()
-      : channel(-1) {}
+      : channel(-1), mask(-1) {}
      Data_memory_pool_element  buffer;
 
     // List of blocks to be flagged as invalid
     std::vector<Invalid_block> invalid;
     // The channel which the data_frame belongs to (currently VDIF only), -1 is broadcast
     int channel;
-    // Start time of the mark5-block relative to midnigh
+    // Start time of the mark5 block
     Time start_time;
+    // Track mask (flags dead tracks)
+    uint64_t mask;
   };
   /// Buffer for mark5 data frames
   typedef Threadsafe_queue<Input_data_frame>        Input_buffer;

@@ -65,7 +65,7 @@ public:
   }
 
 private:
-  int find_start_of_header(boost::shared_ptr<Data_reader> reader, Data_frame &data);
+  bool find_start_of_header(boost::shared_ptr<Data_reader> reader, Data_frame &data);
 
   // format a time in miliseconds
   std::string time_to_string(int64_t time);
@@ -78,6 +78,7 @@ private:
   bool resync_header(Data_frame &data);
 
   void set_data_frame_info(Data_frame &data);
+  void generate_track_mask();
 private:
   // Time information
   int start_day_, current_day_, current_mjd_;
@@ -90,6 +91,8 @@ private:
   Debug_level debug_level_;
   int block_count_;
 
+  int track;    // track that is used to retrieve time stamp
+  uint8_t mask; // used to mask out tracks using syncword search
   int data_rate() const;
   Time time_between_headers_;
 

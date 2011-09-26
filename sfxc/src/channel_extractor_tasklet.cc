@@ -130,16 +130,24 @@ Channel_extractor_tasklet::do_task() {
       output_positions[subband] =
         (unsigned char *)&(output_elements[subband].channel_data.data().data[0]);
 
-      // Copy the invalid-data members,
-      int n_invalid_blocks = input_element.invalid.size();
-      output_elements[subband].invalid.resize(n_invalid_blocks);
-      for(int i = 0 ; i < n_invalid_blocks ; i++){
-        SFXC_ASSERT(input_element.invalid[i].invalid_begin >= 0);
-        output_elements[subband].invalid[i].invalid_begin =
-                input_element.invalid[i].invalid_begin * fan_out / 8;
-        output_elements[subband].invalid[i].nr_invalid =
-                input_element.invalid[i].nr_invalid * fan_out / (8 * N);
-        SFXC_ASSERT(output_elements[subband].invalid[i].nr_invalid >= 0);
+      if ((subband2track[subband] & input_element.mask) != subband2track[subband]){
+        // channel is masked out
+        output_elements[subband].invalid.resize(1);
+        output_elements[subband].invalid[0].invalid_begin = 0;
+        int nbytes = input_element.buffer->data.size();
+        output_elements[subband].invalid[0].nr_invalid = nbytes * fan_out / (8 * N);
+      }else{
+        // Copy the invalid-data members,
+        int n_invalid_blocks = input_element.invalid.size();
+        output_elements[subband].invalid.resize(n_invalid_blocks);
+        for(int i = 0 ; i < n_invalid_blocks ; i++){
+          SFXC_ASSERT(input_element.invalid[i].invalid_begin >= 0);
+          output_elements[subband].invalid[i].invalid_begin =
+                  input_element.invalid[i].invalid_begin * fan_out / 8;
+          output_elements[subband].invalid[i].nr_invalid =
+                  input_element.invalid[i].nr_invalid * fan_out / (8 * N);
+          SFXC_ASSERT(output_elements[subband].invalid[i].nr_invalid >= 0);
+        }
       }
     }
     //timer_waiting_output_.stop();
@@ -198,10 +206,19 @@ set_parameters(const Input_node_parameters &input_node_param){
   fan_out    = bits_per_sample *
                input_node_param.subsamples_per_sample();
   std::vector< std::vector<int> > track_positions;
+  subband2track.resize(input_node_param.channels.size());
+  memset(&subband2track[0], 0, input_node_param.channels.size() * sizeof(uint64_t));
+   
   for(int i = 0; i < input_node_param.channels.size(); i++){
     track_positions.push_back(input_node_param.channels[i].tracks);
+    int ntracks_channel = input_node_param.channels[i].tracks.size();
+    for(int j = 0; j < ntracks_channel; j++){
+      int track = input_node_param.channels[i].tracks[j];
+      subband2track[i] |= (uint64_t)1 << track;
+    }
   }
   ch_extractor->initialise(track_positions, N, samples_per_block, bits_per_sample);
+
   DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
 }
 

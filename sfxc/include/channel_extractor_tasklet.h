@@ -93,12 +93,13 @@ public:
   // Empty the input queue, called from the destructor of Input_node
   void empty_input_queue();
 
-	inline uint64_t get_num_processed_bytes(){ return data_processed_; }
+  inline uint64_t get_num_processed_bytes(){ return data_processed_; }
 
-	/*****************************************************************************
+  /*****************************************************************************
   * @desc Return the number of seconds since the start() is called.
   *****************************************************************************/
- 	inline double get_sec(){ return timer_.measured_time(); }
+  inline double get_sec(){ return timer_.measured_time(); }
+
 
 protected:
   /// Queue containing input data
@@ -110,6 +111,9 @@ protected:
 
   /// Actual channel extractor
   Channel_extractor_interface     *ch_extractor;
+
+  /// Contains channel number for each track
+  std::vector<uint64_t> subband2track;
 
   // Cached values
   size_t n_subbands;      //< Number of subbands
