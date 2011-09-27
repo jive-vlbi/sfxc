@@ -401,9 +401,9 @@ Manager_node::initialise() {
     set_data_reader(input_rank(station_name), 0, filename);
   }
   // Get start of first scan and end of last scan in correlation
+  const Vex vex = control_parameters.get_vex();
   Time t_begin, t_end;
   {
-  const Vex vex = control_parameters.get_vex();
   Vex::Date start_time(control_parameters.get_start_time().date_string());
   Vex::Date stop_time(control_parameters.get_stop_time().date_string());
   // Find the name of the last scan
@@ -440,7 +440,14 @@ Manager_node::initialise() {
         sfxc_abort(msg.c_str());
       }
     }
-
+    // Get clock offset
+    Vex::Node root = vex.get_root_node();
+    std::string site_clock = root["STATION"][station_name]["CLOCK"]->to_string();
+    double offset = root["CLOCK"][site_clock]["clock_early"][1]->to_double() / 1e6;
+    double rate = root["CLOCK"][site_clock]["clock_early"][3]->to_double() / 1e6;
+    std::string str_epoch = root["CLOCK"][site_clock]["clock_early"][2]->to_string();
+    Time epoch(str_epoch);
+    delay_table.set_clock_offset(offset, rate, epoch);
     send(delay_table, /* station_nr */ 0, input_rank(station));
     correlator_node_set_all(delay_table, station_name);
   }

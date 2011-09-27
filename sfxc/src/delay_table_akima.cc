@@ -41,11 +41,14 @@
 
 // Default constructor
 Delay_table_akima::Delay_table_akima()
-    : scan_nr(0) {}
+    : scan_nr(0), clock_offset(0), clock_rate(0), clock_epoch(0){}
 
 // Copy constructor
 Delay_table_akima::Delay_table_akima(const Delay_table_akima &other)
     : scan_nr(0) {
+  clock_offset = other.clock_offset;
+  clock_rate = other.clock_rate;
+  clock_epoch = other.clock_epoch;
   sources = other.sources;
   scans = other.scans;
   times = other.times;
@@ -58,6 +61,9 @@ Delay_table_akima::~Delay_table_akima() {}
 
 void Delay_table_akima::operator=(const Delay_table_akima &other) {
   scan_nr = 0;
+  clock_offset = other.clock_offset;
+  clock_rate = other.clock_rate;
+  clock_epoch = other.clock_epoch;
   sources = other.sources;
   scans = other.scans;
   times = other.times;
@@ -79,6 +85,13 @@ bool Delay_table_akima::operator==(const Delay_table_akima &other) const {
   return true;
 }
 
+// Set clock offset and rate
+void Delay_table_akima::set_clock_offset(const double offset, const double rate, const Time epoch){
+  clock_offset = offset;
+  clock_rate = rate;
+  clock_epoch = epoch;
+}
+
 //read the delay table, do some checks and
 //calculate coefficients for parabolic interpolation
 void Delay_table_akima::open(const char *delayTableName) {
@@ -86,12 +99,12 @@ void Delay_table_akima::open(const char *delayTableName) {
   open(delayTableName, start, stop);
 }
 
-void Delay_table_akima::open(const char *delayTableName, const Time tstart, const Time tstop) {
+void Delay_table_akima::open(const char *delayTableName, const Time tstart, const Time tstop){
   std::ifstream in(delayTableName);
   if(!in.is_open())
     sfxc_abort((std::string("Could not open delay table ")+std::string(delayTableName)).c_str());
-  int32_t header_size;
 
+  int32_t header_size;
   // Read the header
   in.read(reinterpret_cast < char * > (&header_size), sizeof(int32_t));
   if (in.eof()) return;
@@ -255,8 +268,10 @@ double Delay_table_akima::delay(const Time &time) {
   SFXC_ASSERT(splineakima.size() > 0);
   double sec = (time - scans[scan_nr].begin).get_time();
   double result = gsl_spline_eval(splineakima[0], sec, acc[0]);
+  sec = (time - clock_epoch).get_time();
+  double clock_drift = clock_offset + sec * clock_rate;
   SFXC_ASSERT(result < 0);
-  return result;
+  return result + clock_drift;
 }
 
 double Delay_table_akima::rate(const Time &time) {
@@ -267,12 +282,14 @@ double Delay_table_akima::rate(const Time &time) {
   SFXC_ASSERT(splineakima.size() > 0);
   double sec = (time - scans[scan_nr].begin).get_time();
   double result = gsl_spline_eval_deriv(splineakima[0], sec, acc[0]);
-  return result;
+  return result + clock_rate;
 }
 
 // Calculate the difference in delay between the requested phase center and the 
 // primary phase center
 double Delay_table_akima::delay(int phase_center, const Time &time){
+  if(phase_center == 0)
+    return delay(time);
   while (scans[scan_nr].end < time){
     if (!initialise_next_scan()) break;
   }
@@ -283,6 +300,8 @@ double Delay_table_akima::delay(int phase_center, const Time &time){
 }
 
 double Delay_table_akima::rate(int phase_center, const Time &time){
+  if(phase_center == 0)
+    return rate(time);
   while (scans[scan_nr].end < time){
     if (!initialise_next_scan()) break;
   }

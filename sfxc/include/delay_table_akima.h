@@ -57,6 +57,8 @@ public:
   //calculate coefficients for parabolic interpolation
   void open(const char *delayTableName);
   void open(const char *delayTableName, const Time tstart, const Time tstop);
+  //Set clock offset and rate
+  void set_clock_offset(const double offset, const double rate, const Time epoch);
 
   //calculate the delay for the delayType at time in microseconds
   // delay is in seconds
@@ -95,6 +97,8 @@ public:
   }
 private:
   int scan_nr;
+  Time clock_epoch;
+  double clock_offset, clock_rate;
   std::vector<Scan> scans;
   std::vector<std::string> sources;
   std::vector<double> times;

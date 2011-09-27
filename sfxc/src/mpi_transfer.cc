@@ -164,13 +164,20 @@ send(Delay_table_akima &table, int sn, int rank) {
   int32_t n_delays = table.delays.size();
   int32_t size = 5 * sizeof(int32_t) + n_sources * 81 * sizeof(char) + 
                  n_scans * (2 * sizeof(int64_t) + 3 * sizeof(int32_t)) +
-                 (n_times + n_delays) * sizeof(double);
+                 (n_times + n_delays) * sizeof(double) + 2 * sizeof(double)+
+                 sizeof(int64_t);
 
   char buffer[size];
   int position=0;
 
   // First integer is the station number
   MPI_Pack(&sn, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  // clock offset, rate, and epoch
+  MPI_Pack(&table.clock_offset, 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.clock_rate, 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
+  int64_t ticks = table.clock_epoch.get_clock_ticks();
+  MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+
   // all sources
   MPI_Pack(&n_sources, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   for(int i = 0; i < n_sources; i++){
@@ -220,6 +227,12 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
 
   // First, get the station number
   MPI_Unpack(buffer, size, &position, &sn, 1, MPI_INT32, MPI_COMM_WORLD);
+  // clock offset, rate, and epoch
+  MPI_Unpack(buffer, size, &position, &table.clock_offset, 1, MPI_DOUBLE, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &table.clock_rate, 1, MPI_DOUBLE, MPI_COMM_WORLD);
+  int64_t ticks;
+  MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+  table.clock_epoch.set_clock_ticks(ticks);
 
   // Get all sources
   int32_t n_sources;

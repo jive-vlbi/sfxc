@@ -434,14 +434,9 @@ stai(void)
 void
 mvrec(short *ntoc, short *kmode, short *knum, short *err)
 {
-  double offset, total_delay, sec_of_day;
+  double sec_of_day;
 
   if (!isnan(delay[0])) {
-    offset = station_data.clock_early +
-      station_data.clock_rate * (scan_data[scan_nr].scan_start
-				 + interval * delta_time
-				 - station_data.clock_epoch);
-    total_delay = delay[0] + offset;
     // The number of seconds since midnight on the day the scan starts
     sec_of_day=scan_data[scan_nr].sec_of_day;
     // At the start of each scan output the mjd at witch the scan starts and the name of the source
@@ -454,9 +449,9 @@ mvrec(short *ntoc, short *kmode, short *knum, short *err)
 
     fwrite(&sec_of_day, 1, sizeof(double), output_file);
     fwrite(uvw, 3, sizeof(double), output_file);
-    fwrite(&total_delay, 1, sizeof(double), output_file);
-    printf("%d : t=%f, u=%e, v=%e, w=%e, delay=%e ; delay[0] = %e, offset = %e\n", 
-           interval, sec_of_day, uvw[0], uvw[1], uvw[2], total_delay, delay[0], offset);
+    fwrite(&delay[0], 1, sizeof(double), output_file);
+    printf("%d : t=%f, u=%e, v=%e, w=%e, delay=%e\n", 
+           interval, sec_of_day, uvw[0], uvw[1], uvw[2], delay[0]);
     interval++;
     scan_data[scan_nr].sec = 
       scan_data[scan_nr].sec + delta_time ;

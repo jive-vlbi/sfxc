@@ -16,9 +16,6 @@ struct Station_data {
   double site_position[3]; // m
   int    axis_type; // az : el
   double axis_offset; // m
-  double clock_early; //sec
-  double clock_rate; //sec/sec
-  double clock_epoch; //sec
 
   // EOP information.
   double tai_utc; // s

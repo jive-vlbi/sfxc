@@ -261,20 +261,6 @@ int initialise_data(const char *vex_filename,
   station_data.axis_offset =
     vex.get_root_node()["ANTENNA"][site_name]["axis_offset"]->to_double_amount("m");
 
-  const std::string site_clock =
-    vex.get_root_node()["STATION"][station_name]["CLOCK"]->to_string();
-
-  station_data.clock_early =
-    vex.get_root_node()["CLOCK"][site_clock]["clock_early"][1]->to_double()/1000000.;
-  station_data.clock_rate =
-    vex.get_root_node()["CLOCK"][site_clock]["clock_early"][3]->to_double()/1000000.;
-
-  {
-    std::string clock_epoch = vex.get_root_node()["CLOCK"][site_clock]["clock_early"][2]->to_string();
-    std::string startTime = vex.get_root_node()["SCHED"]->begin()["start"]->to_string();
-    int year_start = str_to_long(startTime,0,4);  //pos=0, length=4;
-    station_data.clock_epoch = ceps(clock_epoch,year_start);
-  }
 
   { // EOP information
     for (Vex::Node::const_iterator eop = vex.get_root_node()["EOP"]->begin();
