@@ -375,19 +375,19 @@ Mark5a_reader *
 get_mark5a_reader(boost::shared_ptr<Data_reader> reader,
                   Mark5a_reader::Data_frame &data, Time ref_date) {
   int n_tracks_8;
-  bool header_correct;
+  bool header_correct=false;
   bool first_msg=true;
   do{
     n_tracks_8 = find_start_of_header(reader, data);
-    if(n_tracks_8 <= 0)
-      sfxc_abort("Couldn't find a mark5a header in the data file");
-    Mark5a_header header(n_tracks_8);
-    header.set_header(&data.buffer->data[0]);
-    header_correct = header.checkCRC();
-    if((first_msg)&&(!header_correct)){
-      std::cout << RANK_OF_NODE 
-                << " Warning : Invalid crc-code in the mark5a data file, further warnings are supressed.\n";
-      first_msg=false;
+    if(n_tracks_8 > 0){
+	    Mark5a_header header(n_tracks_8);
+	    header.set_header(&data.buffer->data[0]);
+	    header_correct = header.checkCRC();
+	    if((first_msg)&&(!header_correct)){
+	      std::cout << RANK_OF_NODE 
+			<< " Warning : Invalid crc-code in the mark5a data file, further warnings are supressed.\n";
+	      first_msg=false;
+	    }
     }
   }while(!header_correct);
   return new Mark5a_reader(reader, n_tracks_8, data, ref_date);

@@ -254,7 +254,7 @@ bool Mark5b_reader::resync_header(Data_frame &data, int try_) {
                                                   buffer);
   while (!syncword_found){
     if(bytes_read == 0){
-      std::cout << "Couldn't find new sync word before EOF\n";
+      std::cout << "Couldn't find new sync word before EOF, because of EOF\n";
       return false;
     }
     for(header_pos = 0 ; header_pos < SIZE_MK5B_FRAME * SIZE_MK5B_WORD - 3 ; header_pos++){
