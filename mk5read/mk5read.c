@@ -107,6 +107,12 @@ stream_data(SSHANDLE xlrHandle, uint64_t off, int fd)
 	ssize_t nbytes;
 
 	recordingLength = XLRGetLength(xlrHandle);
+	if (recordingLength == 0) {
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(errString, xlrError);
+		logit(LOG_CRIT, "%s", errString);
+		return -1;
+	}
 
 	buf = (ULONG *)malloc(MK5READ_SIZE);
 	if (buf == NULL)
@@ -211,6 +217,14 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 		return -1;
 	}
 
+	if (XLRSetFillData(*xlrHandle, 0x11223344) != XLR_SUCCESS) {
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(errString, xlrError);
+		logit(LOG_CRIT, "%s", errString);
+		XLRClose(*xlrHandle);
+		return -1;
+	}
+
 	/*
 	 * 
 	 */
@@ -234,6 +248,16 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 
 	if (bankID == BANK_INVALID)
 		return -1;
+
+	if (bankStatus.MediaStatus == MEDIASTATUS_FAULTED) {
+		if (XLRSetOption(*xlrHandle, SS_OPT_SKIPCHECKDIR) != XLR_SUCCESS) {
+			xlrError = XLRGetLastError();
+			XLRGetErrorMessage(errString, xlrError);
+			logit(LOG_CRIT, "%s", errString);
+			XLRClose(*xlrHandle);
+			return -1;
+		}
+	}
 
 	if (XLRSelectBank(*xlrHandle, bankID) != XLR_SUCCESS) {
 		xlrError = XLRGetLastError();
