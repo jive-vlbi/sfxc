@@ -187,7 +187,7 @@ bool VLBA_reader::resync_header(Data_frame &data, int try_) {
         if (nOnes >= N*32){
           // Check if we found a header
           header_start = i - nOnes; 
-          if(header_start >0){
+          if(header_start >= 0){
             memmove(&buffer[0], &buffer[header_start],N*SIZE_VLBA_FRAME-header_start);
             bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start,
                                                            &buffer[N*SIZE_VLBA_FRAME-header_start]);
@@ -349,8 +349,7 @@ int find_start_of_vlba_header(boost::shared_ptr<Data_reader> reader,
     int byte_read = Data_reader_blocking::get_bytes_s( reader.get(), bytes_to_read, data);
 
     if( byte_read != bytes_to_read ){
-      DEBUG_MSG("Unable to read enough bytes of data, cannot find a vlba header before the end-of-file");
-      sfxc_abort();
+      sfxc_abort("Unable to read enough bytes of data, cannot find a vlba header before the end-of-file");
     }
   }
 
@@ -366,7 +365,7 @@ int find_start_of_vlba_header(boost::shared_ptr<Data_reader> reader,
       int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(), bytes_to_read, data);
     }
 
-    for (int byte=0; (byte<SIZE_VLBA_FRAME) && (header_start<0); byte++) {
+    for (int byte=0; (byte<SIZE_VLBA_FRAME - SIZE_VLBA_HEADER*8 ) && (header_start<0); byte++) {
       if ((char)buffer_start[byte] == (char)(~0)) {
         nOnes ++;
       } else {
@@ -374,7 +373,7 @@ int find_start_of_vlba_header(boost::shared_ptr<Data_reader> reader,
         if (nOnes>=32) {
           // make sure that really found the start of the header
           int header_start=byte-nOnes;
-          if(header_start>1){
+          if(header_start>=0){
             // We found a complete header
             nTracks8 = nOnes/32;
 
