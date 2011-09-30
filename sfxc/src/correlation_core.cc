@@ -307,9 +307,9 @@ void Correlation_core::integration_step(std::vector<Complex_buffer> &integration
 }
 
 void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integration_buffer) {
-  std::vector<FLOAT> norms;
+  std::vector<double> norms;
   norms.resize(n_stations());
-  memset(&norms[0], 0, norms.size()*sizeof(FLOAT));
+  memset(&norms[0], 0, norms.size()*sizeof(double));
   // Average the auto correlations
   for (size_t station=0; station < n_stations(); station++) {
     for (size_t i = 0; i < fft_size() + 1; i++) {
@@ -335,9 +335,9 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
     int32_t *levels2 = statistics[baseline.second]->get_statistics();
     int64_t n_valid1 =  total_samples - levels1[4]; // levels[4] contain the number of invalid samples
     int64_t n_valid2 =  total_samples - levels2[4];
-    FLOAT N1 = n_valid1 > 0? 1 - n_flagged[b].first  * 1. / n_valid1 : 1;
-    FLOAT N2 = n_valid2 > 0? 1 - n_flagged[b].second * 1. / n_valid2 : 1;
-    FLOAT N = N1 * N2;
+    double N1 = n_valid1 > 0? 1 - n_flagged[b].first  * 1. / n_valid1 : 1;
+    double N2 = n_valid2 > 0? 1 - n_flagged[b].second * 1. / n_valid2 : 1;
+    double N = N1 * N2;
     if(N < 0.01) N = 1;
     FLOAT norm = sqrt(N * norms[baseline.first]*norms[baseline.second]);
     for (size_t i = 0 ; i < fft_size() + 1; i++) {
