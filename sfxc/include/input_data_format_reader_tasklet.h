@@ -125,7 +125,7 @@ private:
   /// Determines if data modulation is turned on(p.6 of Mark4 memo 230A, Whitney 2005)
   bool data_modulation;
 
-  const size_t n_bytes_per_input_word;
+  size_t n_bytes_per_input_word;
 };
 
 #endif // INPUT_DATA_FORMAT_READER_TASKLET_H

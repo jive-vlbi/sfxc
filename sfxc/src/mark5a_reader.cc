@@ -328,7 +328,7 @@ bool Mark5a_reader::find_start_of_header(boost::shared_ptr<Data_reader> reader,
       unsigned char *data = &buffer_start[SIZE_MK5A_FRAME/2];
 
       int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(), bytes_to_read, (char *)data);
-      data_read += bytes_to_read;
+      data_read += bytes_read;
     }
 
     // the header contains 64 bits before the syncword and 64 bits after the syncword.
@@ -336,15 +336,8 @@ bool Mark5a_reader::find_start_of_header(boost::shared_ptr<Data_reader> reader,
     int byte = 0;
     while(byte<SIZE_MK5A_FRAME-64*8) {
       int shift = N * 32 - 1;
-     // std::cout << "byte = " << byte << ", shift = " << shift 
-      //          << " ; buf = " << (unsigned int) buffer_start[byte + shift]
-       //         << " mask = " << (unsigned int) mask << "\n";
       while ((shift >= 0) && (buffer_start[byte + shift] & mask == mask)){
         shift--;
-//        if(shift >=0)
-  //        std::cout << "byte = " << byte << ", shift = " << shift 
-    //                << " ; buf = " << (unsigned int) buffer_start[byte + shift]
-      //              << " mask = " << (unsigned int) mask << "\n";
       }
       if (shift < 0) {
         // Found syncword, make sure the all bits before the syncword are in the buffer
@@ -379,8 +372,6 @@ bool Mark5a_reader::find_start_of_header(boost::shared_ptr<Data_reader> reader,
         // Syncword not found, adjust index for partial match
         byte += 32 * N - 1;
         int jump = (buffer_start[byte] & mask == mask)? 32*N-2 : -1;
-//        std::cout << "new byte = " << byte << ", jump = " << jump << ", buf = " << (unsigned int)buffer_start[byte]
-  //                << "\n"; 
         byte -= jump;
       }
     }

@@ -32,8 +32,7 @@ class VLBA_reader : public Input_data_format_reader {
 public:
   typedef Input_data_format_reader::Data_frame            Data_frame;
 
-  VLBA_reader(boost::shared_ptr<Data_reader> data_reader, int N, Data_frame &data, 
-              std::vector<unsigned char> &header_, std::vector<unsigned char> &aux_header_, Time ref_date_);
+  VLBA_reader(boost::shared_ptr<Data_reader> data_reader, Time ref_date_);
   virtual ~VLBA_reader();
 
   bool open_input_stream(Data_frame &data);
@@ -68,7 +67,8 @@ private:
   // checking the header:
   bool check_time_stamp(VLBA_header &header);
   bool check_track_bit_statistics(Data_frame &data);
-
+  // Find initial VLBA header
+  bool find_start_of_header(Data_frame &data);
   // Resync header if there is mising data in the input stream
   bool resync_header(Data_frame &data, int try_);
 
@@ -81,6 +81,7 @@ private:
   // Time information
   int start_day_; // start date of data(mod Julian day%1000)
   int current_jday; // current modified julian day (to full precision)
+  int ref_jday;
 //  int64_t us_per_day;
   // start time and current time in micro seconds
   // start time is used to check the data rate
@@ -94,28 +95,13 @@ private:
 
   VLBA_header header;
   std::vector<unsigned char>  buf_header;
-  std::vector<unsigned char>  buf_aux_header;
 
 public:
   int DATA_RATE_;
-  const int N;
+  int N;
 };
-
-
-
-/** Returns a vlba reader based on the headers in the data stream
- **/
-VLBA_reader *
-get_vlba_reader(boost::shared_ptr<Data_reader> reader,
-                  VLBA_reader::Data_frame &data, Time ref_date);
-
-int find_start_of_vlba_header(boost::shared_ptr<Data_reader> reader,
-                              VLBA_reader::Data_frame &data, 
-                              std::vector<unsigned char> &header,
-                              std::vector<unsigned char> &aux_header);
-
 inline Time VLBA_reader::get_current_time() {
 
-  return current_time_;
+    return current_time_;
 }
 #endif // VLBA_READER_H

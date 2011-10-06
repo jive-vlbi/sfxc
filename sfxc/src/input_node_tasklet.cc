@@ -37,7 +37,7 @@ get_input_node_tasklet_vlba(Data_reader_ptr reader, Data_memory_pool_ptr memory_
   data.buffer = memory_pool_->allocate();
 
   boost::shared_ptr<VLBA_reader> vlba_reader_ptr =
-    boost::shared_ptr<VLBA_reader>( get_vlba_reader(reader, data, ref_date));
+    boost::shared_ptr<VLBA_reader>( new VLBA_reader(reader, ref_date));
 
   return new Input_node_tasklet(vlba_reader_ptr, memory_pool_);
 }

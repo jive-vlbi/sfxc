@@ -2,16 +2,18 @@
 #include "vlba_header.h"
 #include "backtrace.h"
 
-VLBA_header::VLBA_header(int N_) : header(NULL), header_aux(NULL), N(N_) {
-  SFXC_ASSERT(N_ > 0);
+VLBA_header::VLBA_header() : header(NULL), header_aux(NULL), buffer(NULL), N(-1) {
 }
 
-void VLBA_header::set_header(unsigned char* hdr, unsigned char* aux) {
-  if ((hdr == NULL) ||(aux==NULL))
+void VLBA_header::set_header(int N_, unsigned char* buffer_) {
+  N = N_;
+  SFXC_ASSERT(N > 0);
+  if (buffer_ == NULL)
     std::cout << "Backtrace: " << Backtrace() << std::endl;
-  SFXC_ASSERT((hdr != NULL)&&(aux != NULL));
-  header = hdr;
-  header_aux = aux;
+  SFXC_ASSERT(buffer_ != NULL);
+  buffer = buffer_;
+  header = &buffer[N * SIZE_VLBA_AUX_HEADER];
+  header_aux = &buffer[0];
 }
 
 bool VLBA_header::check_header() {

@@ -289,6 +289,8 @@ void
 Input_data_format_reader_tasklet::demodulate(Input_element &data)
 // See page 6 of Mark4 memo 230A, Whitney 2005
 {
+  n_bytes_per_input_word = reader_->bytes_per_input_word();
+          
   std::vector<value_type> &buffer=data.buffer->data;
   int frame_size=buffer.size()/n_bytes_per_input_word;
   // The factor frame_size/8 is there because the sequence also advances at parity bits

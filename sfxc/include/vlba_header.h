@@ -17,9 +17,9 @@
 class VLBA_header  {
 public:
   // N is the size of one input word in bytes
-  VLBA_header(int N);
+  VLBA_header();
 
-  void set_header(unsigned char *header, unsigned char* aux);
+  void set_header(int N, unsigned char *buffer_);
   bool check_header();
 
   int nTracks();
@@ -58,9 +58,10 @@ private:
 private:
   unsigned char* header;
   unsigned char* header_aux;
+  unsigned char* buffer;
 
   // Number of bytes per data word (#tracks/8)
-  const unsigned int N;
+  int N;
 };
 
 #endif // VLBA_HEADER_H
