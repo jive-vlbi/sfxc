@@ -25,19 +25,15 @@ void Delay_correction::do_task() {
   Input_buffer_element input = input_buffer->front_and_pop();
   int nbuffer=input->nfft;
   current_fft+=nbuffer;
-
   // Allocate output buffer
-  int fft_size_correlation = correlation_parameters.fft_size_correlation;
-  int output_stride =  fft_size_correlation + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
+  int output_stride =  fft_cor_size()/2 + 16; // there are fft_size+1 points and each fft should be 16 bytes alligned
   cur_output = output_memory_pool.allocate();
   cur_output->stride = output_stride;
-  int nfft_cor = (nbuffer * fft_size()) / fft_size_correlation;
-  if(cur_output->data.size() != nfft_cor * output_stride)
-    cur_output->data.resize(nfft_cor * output_stride);
+  int nfft_cor = (nbuffer * fft_size() + tbuf_end - tbuf_start) / (fft_cor_size() / 2);
+  if(cur_output->data.size() != (nfft_cor - 1) * output_stride)
+    cur_output->data.resize((nfft_cor - 1) * output_stride);
 #ifndef DUMMY_CORRELATION
-  if (time_buffer.size() != nbuffer * fft_size())
-    time_buffer.resize(nbuffer * fft_size());
-
+  size_t tbuf_size = time_buffer.size();
   for(int buf=0;buf<nbuffer;buf++){
     double delay = get_delay(current_time + fft_length/2);
     double delay_in_samples = delay*sample_rate();
@@ -49,18 +45,24 @@ void Delay_correction::do_task() {
                          delay_in_samples - integer_delay);
 
     // Input is from frequency_buffer
-    fringe_stopping(&time_buffer[buf * fft_size()]);
+    fringe_stopping(&time_buffer[tbuf_end%tbuf_size]);
+    tbuf_end += fft_size();
 
     current_time.inc_samples(fft_size());
     total_ffts++;
   }
 
-  // Pad the data for the final fft
-  SFXC_ZERO_F(&temp_buffer[fft_size_correlation], fft_size_correlation);
-  for(int buf=0;buf<nfft_cor;buf++){
+  for(int i=0; i<nfft_cor-1; i++){
+    // apply window function
+    size_t eob = tbuf_size - tbuf_start%tbuf_size; // how many samples to end of buffer
+    size_t nsamp = std::min(eob, fft_cor_size());
+    SFXC_MUL_F(&time_buffer[tbuf_start%tbuf_size], &window[0], &temp_buffer[0], nsamp);
+    if(nsamp < fft_cor_size())
+      SFXC_MUL_F(&time_buffer[0], &window[nsamp], &temp_buffer[nsamp], fft_cor_size() - nsamp);
+    tbuf_start += fft_cor_size()/2;
+    SFXC_ASSERT(tbuf_start < tbuf_end);
     // Do the final fft from time to frequency
-    memcpy(&temp_buffer[0], &time_buffer[buf*fft_size_correlation], fft_size_correlation*sizeof(FLOAT));
-    fft_t2f_cor.rfft(&temp_buffer[0], &cur_output->data[buf * output_stride]);
+    fft_t2f_cor.rfft(&temp_buffer[0], &cur_output->data[i * output_stride]);
   }
 #endif // DUMMY_CORRELATION
   cur_output->invalid = input->invalid;
@@ -170,6 +172,8 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
 void
 Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   size_t prev_fft_size = fft_size();
+  size_t prev_fft_cor_size = fft_cor_size();
+  int old_window = correlation_parameters.window;
   correlation_parameters = parameters;
 
   int i = 0;
@@ -186,7 +190,11 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 
   SFXC_ASSERT(((int64_t)fft_size() * 1000000000) % sample_rate() == 0);
 
-  if (prev_fft_size != fft_size()) {
+  if ((prev_fft_size != fft_size()) || (prev_fft_cor_size != fft_cor_size())) {
+    size_t nfft_min = std::max(2*fft_cor_size()/fft_size(), (size_t)1);
+    size_t nfft_max = std::max(CORRELATOR_BUFFER_SIZE / fft_size(), nfft_min) + nfft_min;
+    time_buffer.resize(nfft_max * fft_size());
+
     exp_array.resize(fft_size());
     frequency_buffer.resize(fft_size());
     temp_buffer.resize(2*parameters.fft_size_correlation);
@@ -194,6 +202,9 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
     fft_t2f.resize(fft_size());
     fft_f2t.resize(fft_size());
     fft_t2f_cor.resize(2 * parameters.fft_size_correlation);
+    create_window();
+  }else if (parameters.window != old_window){
+    create_window();
   }
   SFXC_ASSERT(frequency_buffer.size() == fft_size());
 
@@ -204,6 +215,8 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
       parameters.fft_size_delaycor);
 
   current_fft = 0;
+  tbuf_start = 0;
+  tbuf_end = 0;
 }
 
 void Delay_correction::connect_to(Input_buffer_ptr new_input_buffer) {
@@ -242,4 +255,37 @@ int Delay_correction::sideband() {
   return (correlation_parameters.sideband == 'L' ? -1 : 1);
 }
 
-
+void 
+Delay_correction::create_window(){
+  int n = fft_cor_size();
+  window.resize(n);
+  switch(correlation_parameters.window){
+  case SFXC_WINDOW_RECT:
+    // rectangular window (including zero padding)
+    for (int i=0; i<n/4; i++)
+      window[i] = 0;
+    for (int i=n/2; i<3*n/4; i++)
+      window[i] = 1;
+    for (int i=3*n/4; i<n; i++)
+      window[i] = 0;
+    break;
+  case SFXC_WINDOW_COS:
+    // Cosine window
+    for (int i=0; i<n; i++){
+      window[i] = sin(M_PI * i /(n-1));
+    }
+    break;
+  case SFXC_WINDOW_HAMMING:
+    // Hamming window
+    for (int i=0; i<n; i++){
+      window[i] = 0.54 - 0.46 * cos(2*M_PI*i/(n-1));
+    }
+    break;
+  case SFXC_WINDOW_HANN:
+    // Hann window
+    for (int i=0; i<n; i++){
+      window[i] = 0.5 * (1 - cos(2*M_PI*i/(n-1)));
+    }
+    break;
+  }
+}

@@ -296,6 +296,17 @@ Control_parameters::check(std::ostream &writer) const {
       writer << "ctrl-file: output file not defined" << std::endl;
     }
   }
+  // Check window function
+  if (ctrl["window_function"] != Json::Value()){
+    std::string window = ctrl["window_function"].asString();
+    for(int i = 0; i < window.size(); i++)
+      window[i] = toupper(window[i]);
+    if ((window != "RECTANGULAR") and (window != "COSINE") and (window != "HAMMING") and (window != "HANN")){
+      writer << "Invalid window function " << window << std::endl;
+      ok = false;
+    }
+  }
+  
   // Check pulsar binning
   if (ctrl["pulsar_binning"].asBool()){
     // use pulsar binning
@@ -426,6 +437,25 @@ Control_parameters::fft_size_correlation() const {
   if (ctrl["fft_size_correlation"] == Json::Value())
     return std::max(256, number_channels());
   return ctrl["fft_size_correlation"].asInt();
+}
+
+int
+Control_parameters::window_function() const{
+  int windowval = SFXC_WINDOW_RECT;
+  if (ctrl["window_function"] != Json::Value()){
+    std::string window = ctrl["window_function"].asString();
+    for(int i = 0; i < window.size(); i++)
+      window[i] = toupper(window[i]);
+    if(window == "RECTANGULAR")
+      windowval = SFXC_WINDOW_RECT;
+    else if(window == "COSINE")
+      windowval = SFXC_WINDOW_COS;
+    else if(window == "HAMMING")
+      windowval = SFXC_WINDOW_HAMMING;
+    else if(window == "HANN")
+      windowval = SFXC_WINDOW_HANN;
+  }
+  return windowval;
 }
 
 std::string
@@ -1248,6 +1278,7 @@ get_correlation_parameters(const std::string &scan_name,
   corr_param.number_channels = number_channels();
   corr_param.fft_size_delaycor = fft_size_delaycor();
   corr_param.fft_size_correlation = fft_size_correlation();
+  corr_param.window = window_function();  
   corr_param.slice_offset =
     number_correlation_cores_per_timeslice(mode_name);
 
@@ -1537,6 +1568,8 @@ Correlation_parameters::operator==(const Correlation_parameters& other) const {
     return false;
   if (fft_size_correlation != other.fft_size_correlation)
     return false;
+  if (window != other.window)
+    return false;
   if (integration_nr != other.integration_nr)
     return false;
   if (slice_nr != other.slice_nr)
@@ -1568,6 +1601,7 @@ std::ostream &operator<<(std::ostream &out,
   out << "  \"number_channels\": " << param.number_channels << ", " << std::endl;
   out << "  \"fft_size_delaycor\": " << param.fft_size_delaycor << ", " << std::endl;
   out << "  \"fft_size_correlation\": " << param.fft_size_correlation << ", " << std::endl;
+  out << "  \"window\": " << param.window << ", " << std::endl;
   out << "  \"slice_nr\": " << param.slice_nr << ", " << std::endl;
   out << "  \"slice_offset\": " << param.slice_offset << ", " << std::endl;
   out << "  \"sample_rate\": " << param.sample_rate << ", " << std::endl;

@@ -22,7 +22,15 @@
     ippsZero_32fc((Ipp32fc *)p, len);
   }
 
-  extern inline void sfxc_mul_c(const std::complex<double> *s1, const std::complex<double> *s2, std::complex<double>  *dest, int len){
+  extern inline void sfxc_mul(const double *s1, const double *s2, double  *dest, int len){
+    ippsMul_64f((const Ipp64f*)s1, (const Ipp64f*) s2, (Ipp64f *) dest, len);
+  }
+
+  extern inline void sfxc_mul_f(const float *s1, const float *s2, float *dest, int len){
+    ippsMul_32f((const Ipp32f*)s1, (const Ipp32f*) s2, (Ipp32f *) dest, len);
+  }
+
+   extern inline void sfxc_mul_c(const std::complex<double> *s1, const std::complex<double> *s2, std::complex<double>  *dest, int len){
     ippsMul_64fc((const Ipp64fc*)s1, (const Ipp64fc*) s2, (Ipp64fc *) dest, len);
   }
 
@@ -72,6 +80,18 @@
   }
 
   extern inline void sfxc_mul_fc(const std::complex<float> *s1, const std::complex<float> *s2, std::complex<float> *dest, int len){
+    for(int i = 0; i < len; i++){
+      dest[i] = s1[i] * s2[i];
+    }
+  }
+
+  extern inline void sfxc_mul(const double *s1, const double *s2, double *dest, int len){
+    for(int i = 0; i < len; i++){
+      dest[i] = s1[i] * s2[i];
+    }
+  }
+
+   extern inline void sfxc_mul_f(const float *s1, const float *s2, float *dest, int len){
     for(int i = 0; i < len; i++){
       dest[i] = s1[i] * s2[i];
     }

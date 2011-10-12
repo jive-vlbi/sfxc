@@ -63,6 +63,7 @@ private:
   void fringe_stopping(FLOAT output[]);
   // access functions to the correlation parameters
   size_t fft_size();
+  size_t fft_cor_size();
   int buffer_size;
   int sample_rate();
   int bandwidth();
@@ -70,6 +71,7 @@ private:
   int64_t channel_freq();
   double get_delay(Time time);
   double get_phase(Time time);
+  void create_window();
 
 private:
   Input_buffer_ptr    input_buffer;
@@ -81,13 +83,15 @@ private:
   int oversamp; // The amount of oversampling
 
   int n_ffts_per_integration, current_fft, total_ffts;
+  size_t tbuf_start, tbuf_end;
   bool delay_table_set;
   Delay_table_akima   delay_table;
 
   Memory_pool_vector_element< std::complex<FLOAT> > frequency_buffer;
   Memory_pool_vector_element<FLOAT> time_buffer;
   Memory_pool_vector_element<FLOAT> temp_buffer;
-
+  Memory_pool_vector_element<FLOAT> window;
+  
   Timer delay_timer;
 
   Output_buffer_ptr   output_buffer;
@@ -101,6 +105,10 @@ private:
 
 inline size_t Delay_correction::fft_size() {
   return correlation_parameters.fft_size_delaycor;
+}
+
+inline size_t Delay_correction::fft_cor_size() {
+  return 2*correlation_parameters.fft_size_correlation;
 }
 
 inline int Delay_correction::bandwidth() {

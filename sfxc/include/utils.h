@@ -148,6 +148,7 @@ void sfxc_abort(const char *msg="");
     #define SFXC_MUL_FC_I           sfxc_mul_c_I
     #define SFXC_CONJ_FC            sfxc_conj_c
     #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_c 
+    #define SFXC_MUL_F              sfxc_mul
   #else // !USE_DOUBLE
     #define FLOAT                   float
     #define SFXC_ZERO_F             sfxc_zero_f
@@ -156,6 +157,7 @@ void sfxc_abort(const char *msg="");
     #define SFXC_MUL_FC_I           sfxc_mul_fc_I
     #define SFXC_CONJ_FC            sfxc_conj_fc
     #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_fc 
+    #define SFXC_MUL_F              sfxc_mul_f
   #endif
   #define SFXC_FFT_FLOAT          sfxc_fft_ipp_float
 #else
@@ -169,6 +171,7 @@ void sfxc_abort(const char *msg="");
     #define SFXC_MUL_FC_I           sfxc_mul_c_I
     #define SFXC_CONJ_FC            sfxc_conj_c
     #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_c 
+    #define SFXC_MUL_F              sfxc_mul
   #else // !USE_DOUBLE
     #define FLOAT                   float
     #define FFTW_COMPLEX            fftwf_complex
@@ -178,9 +181,16 @@ void sfxc_abort(const char *msg="");
     #define SFXC_MUL_FC_I           sfxc_mul_fc_I
     #define SFXC_CONJ_FC            sfxc_conj_fc
     #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_fc 
+    #define SFXC_MUL_F              sfxc_mul_f
   #endif
   #define SFXC_FFT_FLOAT          sfxc_fft_fftw_float
 #endif
+
+// Supported window functions
+#define SFXC_WINDOW_RECT       0   // rectangular window
+#define SFXC_WINDOW_COS        1   // Cosine window
+#define SFXC_WINDOW_HAMMING    2   // Hamming window
+#define SFXC_WINDOW_HANN       3   // Hann window
 
 #ifdef PRINT_PROGRESS
 inline void getusec(unsigned long long &utime) {
