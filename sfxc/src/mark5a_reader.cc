@@ -149,7 +149,7 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
         shift--;
       if (shift < 0) {
         // Found syncword, make sure the all bits before the syncword are in the buffer
-        header_start = byte - 96*N;
+        header_start = byte - 64*N;
         if (header_start >= 0) {
           // Read a complete header
           memmove(buffer, buffer+header_start, N*SIZE_MK5A_FRAME - header_start);
