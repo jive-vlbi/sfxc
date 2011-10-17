@@ -481,7 +481,7 @@ Manager_node::initialise() {
     int max_nbins=2;
     std::map<std::string, Pulsar_parameters::Pulsar>::iterator it;
     for ( it=pulsar_parameters.pulsars.begin() ; it != pulsar_parameters.pulsars.end(); it++ ){
-      max_nbins = std::max(it->second.nbins, max_nbins);
+      max_nbins = std::max(it->second.nbins + 1, max_nbins);
     }
     std::string base_filename = control_parameters.get_output_file();
     // Open one output file per pulsar bin
