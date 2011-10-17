@@ -310,7 +310,7 @@ Correlator_node::set_parameters() {
       correlation_core = correlation_core_normal;
     }else{
       Pulsar_parameters::Pulsar &pulsar = cur_pulsar_it->second;
-      nBins = pulsar.nbins;
+      nBins = pulsar.nbins + 1; // One extra for off-pulse data 
       correlation_core = correlation_core_pulsar;
     }
   }else{

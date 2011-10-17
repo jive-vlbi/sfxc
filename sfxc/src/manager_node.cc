@@ -477,8 +477,8 @@ Manager_node::initialise() {
     if (!control_parameters.get_pulsar_parameters(pulsar_parameters))
       sfxc_abort("Error parsing pulsar information from control file\n");
     correlator_node_set_all(pulsar_parameters);
-    // Set the output files
-    int max_nbins=1;
+    // Set the output files (minimum of two bins for off-pulse data)
+    int max_nbins=2;
     std::map<std::string, Pulsar_parameters::Pulsar>::iterator it;
     for ( it=pulsar_parameters.pulsars.begin() ; it != pulsar_parameters.pulsars.end(); it++ ){
       max_nbins = std::max(it->second.nbins, max_nbins);

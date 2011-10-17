@@ -54,8 +54,11 @@ void Correlation_core::do_task() {
         delay_tables[0].goto_scan(correlation_parameters.start_time);
         source_nr = sources[delay_tables[0].get_source(i)];
       }
-      else
+      else if(correlation_parameters.pulsar_binning){
+        source_nr = 1; // Source 0 is reserved for of-pulse data
+      }else{
         source_nr = 0;
+      }
       integration_write(phase_centers[i], i, source_nr);
     }
     current_integration++;
