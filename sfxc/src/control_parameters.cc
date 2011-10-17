@@ -327,8 +327,9 @@ Control_parameters::check(std::ostream &writer) const {
             Json::Value interval = (*it)["interval"];
             unsigned int zero=0,one=1; // needed to prevent compilation error
             if ((interval[zero].asDouble()<0.)||(interval[zero].asDouble()>1)||
-                (interval[one].asDouble()<0.)||(interval[one].asDouble()>1)||
-                (interval[one].asDouble()<interval[zero].asDouble())){
+                (interval[one].asDouble()<0.)||(interval[one].asDouble()>=2)||
+                (interval[one].asDouble() - interval[zero].asDouble() <= 0) ||
+                (interval[one].asDouble() - interval[zero].asDouble() > 1)){
               ok = false;
               writer << "ctrl-file : Invalid range in interval field.\n";
             }
