@@ -78,6 +78,9 @@ private:
 
   void set_data_frame_info(Data_frame &data);
 
+  std::vector< std::vector<int> > get_standard_track_mapping(const Input_node_parameters &input_node_param,
+                                       Data_frame &data);
+
   TRANSPORT_TYPE get_transport_type() const{
     return VLBA;
   }

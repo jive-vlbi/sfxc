@@ -303,21 +303,49 @@ VLBA_reader::get_tracks(const Input_node_parameters &input_node_param,
         header.find_track(channel->sign_headstack-1,
                           channel->sign_tracks[i]);
 
-      SFXC_ASSERT(header.track(result[curr_channel][track]) ==
-                  channel->sign_tracks[i]);
+      if(result[curr_channel][track] < 0)
+        return get_standard_track_mapping(input_node_param, data);
       track++;
       if (channel->bits_per_sample() == 2) {
         result[curr_channel][track] =
           header.find_track(channel->magn_headstack-1,
                             channel->magn_tracks[i]);
 
-        SFXC_ASSERT(header.track(result[curr_channel][track]) ==
-                    channel->magn_tracks[i]);
+        if(result[curr_channel][track] < 0)
+	  return get_standard_track_mapping(input_node_param, data);
         track++;
       }
     }
   }
 
+  return result;
+}
+
+std::vector< std::vector<int> >
+VLBA_reader::get_standard_track_mapping(const Input_node_parameters &input_node_param,
+                                       Data_frame &data) {
+  std::cout << RANK_OF_NODE << " : WARNING - Warning using standard vlba track mapping\n";
+  std::vector< std::vector<int> > result;
+
+  result.resize(input_node_param.channels.size());
+  int curr_channel =0;
+  // Store a list of tracks: first magnitude (optional), then sign
+  for (Input_node_parameters::Channel_const_iterator channel =
+         input_node_param.channels.begin();
+       channel != input_node_param.channels.end(); channel++, curr_channel++) {
+    result[curr_channel].resize(channel->bits_per_sample() *
+                                channel->sign_tracks.size());
+
+    int track =0;
+    for (size_t i=0; i<channel->sign_tracks.size(); i++) {
+      result[curr_channel][track] = 32*(channel->sign_headstack-1)+(channel->sign_tracks[i]-2);
+      track++;
+      if (channel->bits_per_sample() == 2) {
+        result[curr_channel][track] = 32*(channel->magn_headstack-1)+(channel->magn_tracks[i]-2);
+        track++;
+      }
+    }
+  }
   return result;
 }
 

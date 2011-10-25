@@ -137,7 +137,7 @@ int VLBA_header::find_track(int headstack_, int track_) {
       return i;
     }
   }
-  sfxc_abort("Couldn't find (headstack, track) in the vlba header.");
+  std::cout << "Couldn't find (" << headstack_ << ", " << track_ << ") in the vlba header." << "\n";
   return -1;
 }
 
