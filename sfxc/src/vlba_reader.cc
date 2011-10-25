@@ -28,7 +28,7 @@ VLBA_reader(boost::shared_ptr<Data_reader> data_reader, int N_, Data_frame &data
 
   start_time_.set_time_usec(current_jday, header.microseconds(0));
   current_time_.set_time_usec(current_jday, header.microseconds(0));
-
+  std::cout << RANK_OF_NODE << " : start of VLBA data at t = " << current_time_ <<"\n";
   set_data_frame_info(data);
   find_fill_pattern(data);
 }
@@ -174,10 +174,23 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
 }
 
 bool VLBA_reader::resync_header(Data_frame &data, int try_) {
+  if(try_ == MAXIMUM_RESYNC_TRIES){
+    std::cout << "Couldn't find new sync word before EOF\n";
+    return false;
+  }
+
   // Find the next header in the input stream, NB: data already contains one VLBA block worth of input data
+  std::cout << RANK_OF_NODE << " : Resync header, t = " << current_time_ << "\n";
 
   char *buffer=(char *)&data.buffer->data[0];
   int bytes_read=0, header_start=0, nOnes=0;
+  // start by reading half a header, otherwise if the resync was triggered by a crc error we'll find the previous header
+  memcpy(&buffer[0], &buffer[N*SIZE_MK5A_FRAME/2], N*SIZE_VLBA_FRAME/2);
+  bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), N*SIZE_VLBA_FRAME/2, &buffer[N*SIZE_VLBA_FRAME/2]);
+  if(bytes_read < N*SIZE_MK5A_FRAME/2){
+    std::cout << "Couldn't find new sync word because of EOF\n";
+    return false;
+  }
 
   do{
     for(int i=0;i<N*SIZE_VLBA_FRAME;i++){
@@ -187,12 +200,26 @@ bool VLBA_reader::resync_header(Data_frame &data, int try_) {
         if (nOnes >= N*32){
           // Check if we found a header
           header_start = i - nOnes; 
-          if(header_start >= 0){
-            memmove(&buffer[0], &buffer[header_start],N*SIZE_VLBA_FRAME-header_start);
-            bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), header_start,
-                                                           &buffer[N*SIZE_VLBA_FRAME-header_start]);
+          size_t in_buffer = std::min(N * SIZE_VLBA_FRAME - header_start, N*SIZE_VLBA_HEADER);
+          memcpy(&buf_header[0], &buffer[header_start], in_buffer);
+	  if(in_buffer < N*SIZE_VLBA_HEADER)
+	    Data_reader_blocking::get_bytes_s( data_reader_.get(), N*SIZE_VLBA_HEADER - in_buffer, (char *)&buf_header[in_buffer] );
+
+          in_buffer = std::max(N * SIZE_VLBA_FRAME - (header_start + N * SIZE_VLBA_HEADER), 0);
+          if (in_buffer > 0)
+            memmove(&buffer[0], &buffer[N*SIZE_VLBA_FRAME - in_buffer], in_buffer);
+          Data_reader_blocking::get_bytes_s(data_reader_.get(), N * SIZE_VLBA_FRAME - in_buffer, (char *)&buffer[in_buffer]);
+          // Get the aux header
+          bytes_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), N * SIZE_VLBA_AUX_HEADER, (char *)&buf_aux_header[0] );
+          if(bytes_read < SIZE_VLBA_AUX_HEADER*N){
+            std::cout << "Couldn't find new sync word because of EOF\n";
+            return false;
+	  }
+          header.set_header(&buf_header[0],&buf_aux_header[0]);
+          if(header.check_header())
             return true;
-          }
+          else
+            return resync_header(data, try_+1);
         } 
         nOnes=0;
       }
