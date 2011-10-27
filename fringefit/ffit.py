@@ -39,7 +39,6 @@ def read_data(corfile, param):
   n_baseline = n_stations*(n_stations-1)/2
   data = zeros([n_channels, n_baseline, n_integrations, nchan + 1], dtype='c8')
   #print stations_in_job
-  
   for i in range(n_integrations):
     # print `i`+'/'+`n_integrations`
     for j in range(nsubint):
@@ -63,10 +62,14 @@ def read_data(corfile, param):
         station1 = stations_in_job.index(bheader[1])
         station2 = stations_in_job.index(bheader[2])
         #print 's1='+`bheader[1]`+', s2='+`bheader[2]`
-        if (station1 != station2):
+        pol1 = bheader[3]&1
+        pol2 = (bheader[3]&2) >> 1
+        #print 'pol1 = ' + `pol1` + ', pol2= ' + `pol2`
+        if (station1 != station2) and (pol1 == pol2):
           pol = bheader[3]&1
           sb = (bheader[3]&4)>>2
           freq = bheader[3] >> 3
+          #print 'pol = ' + `pol` + ', sb = ' + `sb` + ', freq = ' + `freq`
           chan = channels.index([freq, sb, pol])
           size_str = `2*nchan+2`+'f'
           #pdb.set_trace()
@@ -102,7 +105,11 @@ def lag_offsets(data, n_station, offsets, rates, snr):
         phase = unwrap(arctan2(imag(vis), real(vis)))
         fx = arange(N/10,N+1-N/10)*pi/N # Only use the inner 80% of the band
         w = abs(vis[N/10:N+1-N/10])
-        w /= w.max()
+        wmax = w.max()
+        if wmax > 1e-7:
+          w /= wmax
+        else:
+          w[:] = 1
         coef_phase = polynomial.polyfit(fx, phase[N/10:N+1-N/10], 1, w=w)
         offsets[chan,station1, station2-1] = -coef_phase[1] + x
         # Use delay estimate to determine rate
@@ -115,7 +122,7 @@ def lag_offsets(data, n_station, offsets, rates, snr):
         coef_rate = polynomial.polyfit(arange(phase_rate.size), phase_rate, 1, w=w)
         rates[chan,station1, station2-1] = -coef_rate[1] + y * 2 * pi / T
         #rates[chan,nr,nr+bline] = idy + y - 1 if idy < fringe.shape[0]/2 else (idy + y - 1)-fringe.shape[0]
-        if (chan == 0) and (station1==-1):
+        if (chan == -3) and (station1==1) and (station2==5):
           pdb.set_trace()
         snr[chan, station1, station2-1] = phase_snr(fx, phase[N/10:N+1-N/10])
       # Fill in values for the lower triangle of the matrices
@@ -216,7 +223,11 @@ def phase_offsets(data, station1, station2, offsets, rates, snr):
     N = phase.size - 1
     x = arange(N/10,N+1-N/10)*pi/N # Only use the inner 80% of the band
     w = abs(vis[N/10:N+1-N/10])
-    w /= w.max()
+    wmax = w.max()
+    if wmax > 1e-7:
+      w /= wmax
+    else:
+      w[:] = 1
     coef_phase = polynomial.polyfit(x, phase[N/10:N+1-N/10], 1, w=w)
     offsets[chan,station1, station2-1] = -coef_phase[1]
     vis_rate = sum(data[chan, :, :]*exp(-2j*pi*(arange(0, N+1) * coef_phase[1]/(2.*N))),axis=1)
@@ -234,7 +245,7 @@ def phase_offsets(data, station1, station2, offsets, rates, snr):
 def phase_snr(x, phase):
   cfit = polynomial.chebyshev.chebfit(x, phase, 6)
   err = phase - polynomial.chebyshev.chebval(x, cfit)
-  return 1. / err.std()
+  return 2*pi / err.std()
 
 def get_options():
   parser = OptionParser('%prog [options] <vex file> <reference station>')
@@ -264,10 +275,14 @@ def get_options():
       corfile = ctrl["output_file"][7:]
     except StandardError, err:
       print >> sys.stderr, "Error loading control file : " + str(err)
-      sys.exit(1);
+      sys.exit(1)
   else:
     corfile = options.corfile
-  vex = vex_parser.Vex(vex_name)
+  try:
+    vex = vex_parser.Vex(vex_name)
+  except StandardError, err:
+    print >> sys.stderr, "Error loading vex file : " + str(err)
+    sys.exit(1)
   return (vex, corfile, ref_station, options.maxiter, options.precision, ctrl)
 
 def write_clocks(vex, param, delays, rates, snr):
@@ -351,14 +366,9 @@ data = read_data(corfile, param)
 #Get initial estimate
 lag_offsets(data, n_stations, delay_matrix, rate_matrix, snr)
 delays, rates = ffit(delay_matrix, rate_matrix, snr, param.nchan, ref_station_index)
-#print delays[0,:]
-#print rates[0,:]
-#delays = zeros([n_channels, n_stations])
-#rates = zeros([n_channels, n_stations])
 it = 1
 search_done = True if it == maxiter else False
 while not search_done:
-  #print '-----------------------------'
   bline = 0
   snr = zeros([n_channels, n_stations, n_stations-1])
   for station1 in range(n_stations):
@@ -367,25 +377,20 @@ while not search_done:
       phase_offsets(bldata, station1, station2, delay_matrix, rate_matrix, snr)
       bline += 1
   #fill in lower triangle
-  #pdb.set_trace()
   for s1 in range(n_stations):
     for s2 in range(0,s1):
       delay_matrix[:,s1,s2] = -delay_matrix[:,s2,s1-1]
       rate_matrix[:,s1,s2] = -rate_matrix[:,s2,s1-1]
       snr[:,s1,s2] = snr[:,s2,s1-1]
-  #pdb.set_trace()
   tdelays, trates = ffit(delay_matrix, rate_matrix, snr, param.nchan, ref_station_index)
   delays += tdelays
   rates += trates
-  #print delays[0,:]
-  #print rates[0,:]
   it += 1
   station_snr = sqrt(sum(snr**2,axis=2))
   # 
   filtered_delta = tdelays*((station_snr>10).astype('int'))
   err = abs(filtered_delta).max()
   search_done = True if (err <= precision) or (it >= maxiter) else False
-  #print 'iter = ' + `it` + ' / ' + `maxiter` + ' ; err = ' + `err`
 
 ############ Print output in JSON format ################
 write_clocks(vex, param, delays, rates, snr)
