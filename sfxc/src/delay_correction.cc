@@ -134,7 +134,7 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
 
   double phi, delta_phi, sin_phi, cos_phi;
   phi = center_freq * get_delay(current_time);
-  int floor_phi = (int)std::floor(phi);
+  double floor_phi = std::floor(phi);
   phi = mult_factor_phi*(phi-floor_phi);
 
   { // compute delta_phi
@@ -264,7 +264,7 @@ Delay_correction::create_window(){
     // rectangular window (including zero padding)
     for (int i=0; i<n/4; i++)
       window[i] = 0;
-    for (int i=n/2; i<3*n/4; i++)
+    for (int i=n/4; i<3*n/4; i++)
       window[i] = 1;
     for (int i=3*n/4; i<n; i++)
       window[i] = 0;
