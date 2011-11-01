@@ -119,7 +119,7 @@ void Delay_correction_default::fringe_stopping(FLOAT output[]) {
 
   double phi, delta_phi, sin_phi, cos_phi;
   phi = center_freq * get_delay(current_time);
-  int floor_phi = (int)std::floor(phi);
+  double floor_phi = std::floor(phi);
   phi = mult_factor_phi*(phi-floor_phi);
 
   { // compute delta_phi
