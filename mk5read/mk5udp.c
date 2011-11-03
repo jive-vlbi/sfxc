@@ -82,6 +82,7 @@ size_t framelen;
 
 void update_mk4_frame(time_t);
 void update_mk5b_frame(time_t);
+void update_vdif_frame(time_t);
 void (*update_frame)(time_t);
 
 #define MK4_TRACK_FRAME_SIZE	2500
@@ -232,6 +233,42 @@ update_mk5b_frame(time_t clock)
 		frame[i * MK5B_FRAME_WORDS + 2] = word;
 }
 
+#define VDIF_FRAME_SIZE	5032
+
+void
+init_vdif_frame(void)
+{
+	int i;
+
+	ntracks = 1; /* XXX */
+
+	framelen = ntracks * VDIF_FRAME_SIZE;
+	frame = malloc(framelen);
+	if (frame == NULL)
+		fatal("malloc");
+
+	for (i = 0; i < ntracks; i++) {
+		frame[i * VDIF_FRAME_SIZE + 0] = 0x80000000;
+		frame[i * VDIF_FRAME_SIZE + 1] = (22 << 24);
+		frame[i * VDIF_FRAME_SIZE + 2] = VDIF_FRAME_SIZE / 8;
+		frame[i * VDIF_FRAME_SIZE + 3] = (1 << 26) | (i << 16);
+		frame[i * VDIF_FRAME_SIZE + 4] = 0;
+	}
+
+	update_frame = update_vdif_frame;
+}
+
+void
+update_vdif_frame(time_t clock)
+{
+	struct tm tm;
+
+	gmtime_r(&clock, &tm);
+
+	frame[0] = (((tm.tm_yday * 24 + tm.tm_hour) * 60 + tm.tm_min) * 60
+	    + tm.tm_sec) | (1 << 31);
+}
+
 void
 usage(void)
 {
@@ -290,6 +327,8 @@ main(int argc, char **argv)
 			ntracks = atoi(&format[6]);
 			format[5] = 0;
 		} else if (strcmp(format, "mark5b") == 0) {
+			ntracks = 32;
+		} else if (strcmp(format, "vdif") == 0) {
 			ntracks = 32;
 		} else {
 			fprintf(stderr, "%s: invalid format '%s'\n",
@@ -362,6 +401,8 @@ main(int argc, char **argv)
 			init_mk4_frame();
 		else if (strcmp(format, "mark5b") == 0)
 			init_mk5b_frame();
+		else if (strcmp(format, "vdif") == 0)
+			init_vdif_frame();
 		else {
 			fprintf(stderr, "invalid format %s:%d\n", format, ntracks);
 			close(fd);
