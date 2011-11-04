@@ -317,8 +317,7 @@ class FringePlotWindow(Qt.QWidget):
                         continue
                     pass
 
-                buf = correlations[baseline][idx]
-                a = np.frombuffer(buf, dtype=np.complex64)
+                a = correlations[baseline][idx].sum(axis=0)
                 b = np.fft.fft(a, self.cordata.number_channels)
                 c = b[(self.cordata.number_channels / 2):]
                 d = b[0:(self.cordata.number_channels / 2)]

@@ -17,6 +17,9 @@ from PyQt4 import Qt, QtCore, QtGui
 import PyQt4.Qwt5 as Qwt
 from PyQt4.Qwt5.anynumpy import *
 
+# NumPy
+import numpy as np
+
 # JIVE Python modules
 from vex_parser import Vex
 
@@ -43,6 +46,7 @@ class CorrelatedData:
         self.integration_slice = 0
         self.integration_time = 0
         self.weights = {}
+        self.history = 32
         self.correlations = {}
         self.time = {}
         self.start_time = 0
@@ -60,6 +64,11 @@ class CorrelatedData:
         self.offset = offset
 
         self.fp = None
+        return
+
+    def history(self, history):
+        self.history = history
+        self.correlations = {}
         return
 
     def read(self):
@@ -98,6 +107,7 @@ class CorrelatedData:
                 number_uvw_coordinates = h[2]
                 number_statistics = h[3]
 
+                slot = integration_slice % self.history
                 if integration_slice != self.integration_slice:
                     self.integration_slice = integration_slice
                     pass
@@ -141,7 +151,13 @@ class CorrelatedData:
                     if not baseline in self.correlations:
                         self.correlations[baseline] = {}
                         pass
-                    self.correlations[baseline][idx] = buf
+                    if not idx in self.correlations[baseline]:
+                        self.correlations[baseline][idx] = \
+                            np.zeros((self.history, self.number_channels + 1),
+                                     dtype=np.complex64)
+                        pass
+                    self.correlations[baseline][idx][slot] = \
+                        np.frombuffer(buf, dtype=np.complex64)
                     continue
                 pos = self.fp.tell()
             except:
