@@ -18,7 +18,6 @@ uvw_header_size = 32
 stat_header_size = 24
 baseline_header_size = 8
 
-#def read_data(nr, stations_in_job, channels, n_integrations, nsubint):
 def read_data(corfile, param):
   stations_in_job = param.stations
   n_stations = len(stations_in_job)  
@@ -100,31 +99,18 @@ def lag_offsets(data, n_station, offsets, rates, snr):
         x = idx if idx < rl.shape[1]/2 else idx - rl.shape[1]
         y = idy if idy < rl.shape[0]/2 else idy - rl.shape[0]
         N = rl.shape[1]/2
-        # Use initial estimation to determine delay in fourier space
+        # Estimate SNR from phase noise
+        factor = max(1, N/32)
         vis = rfft(lag[idy])*exp(2j*pi*(arange(0, N+1) * idx/(2.*N)))
-        phase = unwrap(arctan2(imag(vis), real(vis)))
-        fx = arange(N/10,N+1-N/10)*pi/N # Only use the inner 80% of the band
-        w = abs(vis[N/10:N+1-N/10])
-        wmax = w.max()
-        if wmax > 1e-7:
-          w /= wmax
-        else:
-          w[:] = 1
-        coef_phase = polynomial.polyfit(fx, phase[N/10:N+1-N/10], 1, w=w)
-        offsets[chan,station1, station2-1] = -coef_phase[1] + x
-        # Use delay estimate to determine rate
-        vis_rate = sum(data[chan, bline, :, :]*exp(-2j*pi*(arange(0, N+1) * (coef_phase[1]-idx)/(2.*N))),axis=1)
-        T = vis_rate.shape[0]
-        vis_rate = (vis_rate.T * exp(2j*pi*arange(-T/2,T/2) * idy * 1. / T)).T
-        phase_rate = unwrap(arctan2(imag(vis_rate), real(vis_rate)))
-        w = abs(vis_rate)
-        w /= w.max()
-        coef_rate = polynomial.polyfit(arange(phase_rate.size), phase_rate, 1, w=w)
-        rates[chan,station1, station2-1] = -coef_rate[1] + y * 2 * pi / T
-        #rates[chan,nr,nr+bline] = idy + y - 1 if idy < fringe.shape[0]/2 else (idy + y - 1)-fringe.shape[0]
-        if (chan == -3) and (station1==1) and (station2==5):
+        vis2 = array([sum(vis[i:i+factor]) for i in range(0,N-factor,factor)])
+        phase = unwrap(arctan2(imag(vis2), real(vis2)))
+        M = N / factor
+        fx = arange(M/10,M+1-M/10)*pi/M # Only use the inner 80% of the band
+        offsets[chan,station1, station2-1] = x
+        rates[chan,station1, station2-1] = y * 2 * pi / data.shape[3]
+        snr[chan, station1, station2-1] = phase_snr(fx, phase[M/10:M+1-M/10])
+        if (chan == 3) and (station1==2) and (station2==-3):
           pdb.set_trace()
-        snr[chan, station1, station2-1] = phase_snr(fx, phase[N/10:N+1-N/10])
       # Fill in values for the lower triangle of the matrices
       for i in range(0,station1):
         offsets[chan,station1,i] = -offsets[chan,i,station1-1]
@@ -139,25 +125,25 @@ def ffit(offsets, rates, snr, nchan, ref):
   sol_rate = zeros([offsets.shape[0], offsets.shape[1]])
   #print '**********'
   for chan in range(offsets.shape[0]):
-    snrmax = snr[chan,:].max()
     # Weight functie : (snr/snr_max) * [(1./16)*x**4/((1./16)*x**4+(1-x)**4)]
     #W[:]=1[chan, bline, :, :]
     for j in range(offsets.shape[1]):
+      snrmax = snr[chan,j,:].max()
       P = [p_good(s, nchan, 20,0.01) for s in snr[chan,j,:]]
       W[j, :] = [(snr[chan,j,i]/snrmax) * (1./16)*P[i]**4/((1./16)*P[i]**4+(1-P[i])**4) for i in arange(len(P))]
       if(j < ref):
-        X[j,0:j] = -W[j, 0:j]
-        X[j,j] = sum(W[j,:])
-        X[j,j+1:ref] = -W[j, j:ref-1]
-        X[j,ref:] = -W[j, ref:]
+        X[j,0:j] = W[j, 0:j]
+        X[j,j] = -sum(W[j,:])
+        X[j,j+1:ref] = W[j, j:ref-1]
+        X[j,ref:] = W[j, ref:]
       elif(j == ref):
-        X[j,:] = -W[j, :]
+        X[j,:] = W[j, :]
       else:
-        X[j,0:ref] = -W[j, 0:ref]
-        X[j,ref:j-1] = -W[j, ref+1:j]
-        X[j,j-1] = sum(W[j,:])
-        X[j,j:] = -W[j, j:]
-      if chan == -1:
+        X[j,0:ref] = W[j, 0:ref]
+        X[j,ref:j-1] = W[j, ref+1:j]
+        X[j,j-1] = -sum(W[j,:])
+        X[j,j:] = W[j, j:]
+      if (chan == -3):
         print `W[j, :]`
     #X[:] = -1
     # Solve for the delays
@@ -185,7 +171,7 @@ def p_good(V, n, max_int, dx):
   Z = arange(0,max_int,dx)
   return trapz(Z*exp(-(Z**2+V**2)/2)*i0(Z*V)*(1-exp(-(Z**2)/2))**(n-1),dx=dx)
 
-def apply_model(data, station1, station2, delays, rates, param):
+def apply_model(data, station1, station2, delays, rates, param,):
   channels = param.channels
   vex_freqs = param.freqs
   n_station = len(param.stations)
@@ -204,14 +190,16 @@ def apply_model(data, station1, station2, delays, rates, param):
     delay2 = delays[ch,station2]
     delay = (delay1 - delay2)
     rate = (rate1 - rate2)
-    if((station1 == 0) and (ch == -1)):
+    if (ch == 0) and (station1==0) and (station2==-1):
       pdb.set_trace()
-    bldata[ch] = data[ch] * exp(2j*pi*f*delay)
-    bldata[ch] = (bldata[ch].T * exp(1j*t*rate)).T
+    bldata[ch] = data[ch] * exp(-2j*pi*f*delay)
+    bldata[ch] = (bldata[ch].T * exp(-1j*t*rate)).T
   return bldata
 
 def phase_offsets(data, station1, station2, offsets, rates, snr):
   nchan = data.shape[0]
+  nfreq = data.shape[2]
+  avfreq = 32
   #pdb.set_trace()
   for chan in range(nchan):
     fringe = irfft2(data[chan, :, :])
@@ -219,24 +207,27 @@ def phase_offsets(data, station1, station2, offsets, rates, snr):
     idx = max_idx % fringe.shape[1]
     idy = max_idx / fringe.shape[1]
     vis = rfft(fringe[idy,:])
-    phase = unwrap(arctan2(imag(vis), real(vis)))
-    N = phase.size - 1
+    # We already did coarse correction, average down in frequency
+    factor = max(1, nfreq / avfreq)
+    vis2 = array([sum(vis[i:i+factor]) for i in range(0, nfreq-factor, factor)])
+    phase = unwrap(arctan2(imag(vis2), real(vis2)))
+    N = (phase.size/2) * 2
     x = arange(N/10,N+1-N/10)*pi/N # Only use the inner 80% of the band
-    w = abs(vis[N/10:N+1-N/10])
+    w = abs(vis2[N/10:N+1-N/10])
     wmax = w.max()
     if wmax > 1e-7:
       w /= wmax
     else:
       w[:] = 1
     coef_phase = polynomial.polyfit(x, phase[N/10:N+1-N/10], 1, w=w)
-    offsets[chan,station1, station2-1] = -coef_phase[1]
-    vis_rate = sum(data[chan, :, :]*exp(-2j*pi*(arange(0, N+1) * coef_phase[1]/(2.*N))),axis=1)
+    M = nfreq^1
+    vis_rate = sum(data[chan, :, :]*exp(-2j*pi*(arange(0, M+1) * coef_phase[1]/(2.*M))),axis=1)
     phase_rate = unwrap(arctan2(imag(vis_rate), real(vis_rate)))
     w = abs(vis_rate)
     w /= w.max()
     coef_rate = polynomial.polyfit(arange(phase_rate.size), phase_rate, 1, w=w)
+    offsets[chan,station1, station2-1] = -coef_phase[1]
     rates[chan,station1, station2-1] = -coef_rate[1]
-    #rates[chan,nr,nr+bline] = idy + y - 1 if idy < fringe.shape[0]/2 else (idy + y - 1)-fringe.shape[0]
     if (chan == 0) and (station1==0) and (station2==-1):
       pdb.set_trace()
     snr[chan, station1, station2-1] = phase_snr(x, phase[N/10:N+1-N/10])
@@ -245,7 +236,21 @@ def phase_offsets(data, station1, station2, offsets, rates, snr):
 def phase_snr(x, phase):
   cfit = polynomial.chebyshev.chebfit(x, phase, 6)
   err = phase - polynomial.chebyshev.chebval(x, cfit)
-  return 2*pi / err.std()
+  std = err.std()
+  if(std >= 1): 
+    #weak signal
+    snr = max(0., (1-(sqrt(3)/pi)*std) * sqrt(2*pi**3)/3)
+  elif(std >=0.4):
+    #intermediate signal strength is done through interpolation
+    p1=(0.6-std)*(0.8-std)*(1.0-std)*2.777311908595/(0.2*0.4*0.6)
+    p2=(0.4-std)*(0.8-std)*(1.0-std)*2.018309748913/(-0.2*0.2*0.4)
+    p3=(0.4-std)*(0.6-std)*(1.0-std)*1.55159280933/(0.4*0.2*0.2)
+    p4=(0.4-std)*(0.6-std)*(0.8-std)*1.188669302/(-0.2*0.4*0.6)
+    snr = p1 + p2 + p3 + p4
+  else:
+    #strong signal
+    snr = 1 / std
+  return 2*snr
 
 def get_options():
   parser = OptionParser('%prog [options] <vex file> <reference station>')
@@ -254,10 +259,12 @@ def get_options():
   parser.add_option('-f', '--file',
                     dest='corfile',
                     help='Correlator output file')
-  parser.add_option('-n', '--max-iter', dest='maxiter', type='int', default='10',
+  parser.add_option('-n', '--max-iter', dest='maxiter', type='int', default='5',
                     help='Maximum number of iterations in fringe search')
   parser.add_option('-p', '--precision', dest='precision', type='float', default='1e-2',
                     help = 'Precision up to which the clock offsets is computed in units of samples')
+  parser.add_option('-N', '--no-global', dest='global_fit', action='store_false', default=True,
+                    help = 'Do not perform a global fringefit but only use reference station')
   (options, args) = parser.parse_args()
   if len(args) != 2:
     parser.error('invalid number of arguments')
@@ -283,22 +290,34 @@ def get_options():
   except StandardError, err:
     print >> sys.stderr, "Error loading vex file : " + str(err)
     sys.exit(1)
-  return (vex, corfile, ref_station, options.maxiter, options.precision, ctrl)
+  return (vex, corfile, ref_station, options.maxiter, options.precision, options.global_fit, ctrl)
 
-def write_clocks(vex, param, delays, rates, snr):
+def write_clocks(vex, param, delays, rates, snr, global_fit, ref_station):
   vex_stations = [s for s in vex['STATION']]
   # First compute channel weights
   W = zeros(snr.shape)
-  snrmax = snr.max()
   for c in range(n_channels):
     for b in range(n_stations):
+      snrmax = snr[c,b,:].max()
       P = [p_good(s, param.nchan, 20,0.01) for s in snr[c,b,:]]
-      W[c, b, :] = [(snr[c,b,i]/snrmax) * (1./16)*P[i]**4/((1./16)*P[i]**4+(1-P[i])**4) for i in arange(len(P))]
-  weights = sum(W, axis=2)
+      W[c, b, :] = [(snr[c,b,i]/snrmax) * (1./16)*P[i]**4/((1./16)*P[i]**4+(1-P[i])**4) for i in range(len(P))]
+  if global_fit:
+    station_snr = sqrt(sum(snr**2,axis=2))
+    weights = sum(W, axis=2)
+    weights[:,ref_station] = 0
+  else:
+    N = snr.shape[1]
+    station_snr = zeros(snr.shape[0:2])
+    station_snr[:,0:ref_station] = snr[:, ref_station, 0:ref_station]
+    station_snr[:,ref_station] = sqrt(sum(snr[:,ref_station,:]**2, axis=1))
+    station_snr[:,ref_station+1:N] = snr[:, ref_station, ref_station:N]
+    weights = zeros(snr.shape[0:2])
+    weights[:,0:ref_station] = W[:, ref_station, 0:ref_station]
+    weights[:,ref_station+1:N] = W[:, ref_station, ref_station:N]
   tot_weights = sum(weights,axis=0)
+  tot_weights[ref_station] = 1
   weights /= tot_weights
-  station_snr = sqrt(sum(snr**2,axis=2))
-   
+  weights[:,ref_station] = 1
   stations = [vex_stations[i] for i in param.stations]
   channels = [param.channel_names[param.vex_channels.index(c)] for c in param.channels]
   print '{'
@@ -336,7 +355,7 @@ def write_clocks(vex, param, delays, rates, snr):
   print '}'
   
 ######################## MAIN ##############################3
-(vex, corfile, ref_station, maxiter, precision, ctrl) = get_options() 
+(vex, corfile, ref_station, maxiter, precision, global_fit, ctrl) = get_options() 
 
 vex_stations = [s for s in vex['STATION']]
 param = parameters(vex, corfile) 
@@ -346,7 +365,7 @@ except:
   print >> sys.stderr, 'Error : reference station ' + ref_station + ' is not found in vex file'
   sys.exit(1)
 try:
-  ref_station_index = param.stations.index(ref_station_nr)
+  ref_index = param.stations.index(ref_station_nr)
 except:
   print >> sys.stderr, 'Error : reference station ' + ref_station + ' is not found in the correlator output file'
   sys.exit(1)
@@ -365,9 +384,16 @@ data = read_data(corfile, param)
 
 #Get initial estimate
 lag_offsets(data, n_stations, delay_matrix, rate_matrix, snr)
-delays, rates = ffit(delay_matrix, rate_matrix, snr, param.nchan, ref_station_index)
+if global_fit:
+  delays, rates = ffit(delay_matrix, rate_matrix, snr, param.nchan, ref_index)
+else:
+  N = n_stations
+  delays[:,0:ref_index]   = delay_matrix[:,ref_index,0:ref_index]
+  delays[:,ref_index+1:N] = delay_matrix[:,ref_index,ref_index:N]
+  rates[:,0:ref_index]   = rate_matrix[:,ref_index,0:ref_index]
+  rates[:,ref_index+1:N] = rate_matrix[:,ref_index,ref_index:N]
 it = 1
-search_done = True if it == maxiter else False
+search_done = True if it >= maxiter else False
 while not search_done:
   bline = 0
   snr = zeros([n_channels, n_stations, n_stations-1])
@@ -382,15 +408,23 @@ while not search_done:
       delay_matrix[:,s1,s2] = -delay_matrix[:,s2,s1-1]
       rate_matrix[:,s1,s2] = -rate_matrix[:,s2,s1-1]
       snr[:,s1,s2] = snr[:,s2,s1-1]
-  tdelays, trates = ffit(delay_matrix, rate_matrix, snr, param.nchan, ref_station_index)
-  delays += tdelays
-  rates += trates
+  if global_fit:
+    ddelays, drates = ffit(delay_matrix, rate_matrix, snr, param.nchan, ref_index)
+  else:
+    N = n_stations
+    ddelays = zeros(delays.shape)
+    drates = zeros(rates.shape)
+    ddelays[:,0:ref_index]   = delay_matrix[:,ref_index,0:ref_index]
+    ddelays[:,ref_index+1:N] = delay_matrix[:,ref_index,ref_index:N]
+    drates[:,0:ref_index]   = rate_matrix[:,ref_index,0:ref_index]
+    drates[:,ref_index+1:N] = rate_matrix[:,ref_index,ref_index:N]
+  delays += ddelays
+  rates += drates
   it += 1
   station_snr = sqrt(sum(snr**2,axis=2))
   # 
-  filtered_delta = tdelays*((station_snr>10).astype('int'))
+  filtered_delta = ddelays*((station_snr>10).astype('int'))
   err = abs(filtered_delta).max()
   search_done = True if (err <= precision) or (it >= maxiter) else False
-
 ############ Print output in JSON format ################
-write_clocks(vex, param, delays, rates, snr)
+write_clocks(vex, param, delays, rates, snr, global_fit, ref_index)

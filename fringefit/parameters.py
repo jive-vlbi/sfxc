@@ -86,7 +86,7 @@ class parameters:
     # number of integrations in file
     inputfile.seek(0,2)  
     filesize = inputfile.tell()
-    self.n_integrations = int(round(filesize * 1. / size_of_slice))
+    self.n_integrations = int((filesize - self.global_header_size) / size_of_slice)
     inputfile.close()
     self.nsubint = nsubint
   
