@@ -193,6 +193,18 @@ class FringePlotWindow(Qt.QWidget):
             grp.addAction(act)
             menu.addAction(act)
             continue
+        menu = menubar.addMenu("&Integrations")
+        self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
+                     self.setIntegrations)
+        grp = Qt.QActionGroup(menu)
+        for history in [1, 2, 4, 8, 16, 32]:
+            act = Qt.QAction(str(history), menu)
+            act.setCheckable(True)
+            if history == 32:
+                act.setChecked(True)
+            grp.addAction(act)
+            menu.addAction(act)
+            continue
 
         self.stations = []
         for station in vex['STATION']:
@@ -240,6 +252,11 @@ class FringePlotWindow(Qt.QWidget):
                               self.reference + '-' + plot.station)
             continue
         self.replot()
+        return
+
+    def setIntegrations(self, act):
+        self.cordata.history = int(str(act.text()))
+        self.cordata.correlations = {}
         return
 
     def stretch(self):

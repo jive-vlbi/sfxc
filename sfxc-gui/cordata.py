@@ -66,11 +66,6 @@ class CorrelatedData:
         self.fp = None
         return
 
-    def history(self, history):
-        self.history = history
-        self.correlations = {}
-        return
-
     def read(self):
         if self.fp == None:
             try:
