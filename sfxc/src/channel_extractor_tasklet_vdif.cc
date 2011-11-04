@@ -31,12 +31,14 @@ Channel_extractor_tasklet_VDIF::do_task() {
   // The struct containing the data for processing
   Input_buffer_element &input_element = input_buffer_->front();
 
+#if 0
   int n_input_samples = input_element.buffer->data.size();
   if (n_input_samples != samples_per_block *N) {
     DEBUG_MSG(n_input_samples <<" != " << samples_per_block << " * " <<N);
     std::cout << RANK_OF_NODE << " : " << n_input_samples <<" != " << samples_per_block << " * " <<N<<"\n";
   }
   SFXC_ASSERT(n_input_samples == samples_per_block*N);
+#endif
 
   // dechannelized output buffer
   Output_buffer_element  output_element;
