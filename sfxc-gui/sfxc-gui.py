@@ -72,9 +72,10 @@ class progressDialog(QtGui.QDialog):
         conn.close()
         pass
 
-    def run(self, vex_file, ctrl_file, machine_file, rank_file):
+    def run(self, vex_file, ctrl_file, machine_file, rank_file, reference):
         self.vex = Vex(vex_file)
         self.ctrl_file = ctrl_file
+        self.reference = reference
 
         exper = self.vex['GLOBAL']['EXPER']
 
@@ -202,7 +203,7 @@ class progressDialog(QtGui.QDialog):
                         pass
 
                     if not self.fplot:
-                        self.fplot = FringePlotWindow(self.vex, [self.ctrl_file])
+                        self.fplot = FringePlotWindow(self.vex, [self.ctrl_file], self.reference)
                         self.fplot.show()
                         pass
                     pass
@@ -242,6 +243,10 @@ class progressDialog(QtGui.QDialog):
 
 usage = "usage: %prog [options] vexfile ctrlfile"
 parser = optparse.OptionParser(usage=usage)
+parser.add_option("-r", "--reference", dest="reference",
+                  default="", type="string",
+                  help="Reference station",
+                  metavar="STATION")
 
 (options, args) = parser.parse_args()
 if len(args) != 4:
@@ -253,6 +258,6 @@ time.tzset()
 
 app = QtGui.QApplication(sys.argv)
 d = progressDialog()
-d.run(args[0], args[1], args[2], args[3])
+d.run(args[0], args[1], args[2], args[3], options.reference)
 d.show()
 sys.exit(app.exec_())
