@@ -116,6 +116,12 @@ class FringePlot(Qwt.QwtPlot):
         self.xxxcurve = Qwt.QwtPlotCurve("XXX")
         self.xxxcurve.attach(self)
 
+        self.grid = Qwt.QwtPlotGrid()
+        self.grid.setPen(Qt.QPen(Qt.Qt.lightGray))
+        self.grid.enableY(False)
+        self.grid.setXDiv(scaleDiv)
+        self.grid.attach(self)
+
         self.connect(self, Qt.SIGNAL("legendChecked(QwtPlotItem*,bool)"),
                      self.toggleCurve)
         self.parent = parent
@@ -341,6 +347,9 @@ class FringePlotWindow(Qt.QWidget):
                 e = np.concatenate((c, d))
                 f = np.absolute(e)
                 g = f / np.sum(f)
+                if station == baseline[0]:
+                    g = g[::-1]
+                    pass
 
                 plot.curve[idx].setData(range(self.cordata.number_channels), g)
                 continue
