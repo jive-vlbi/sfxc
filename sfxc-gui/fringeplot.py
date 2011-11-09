@@ -113,14 +113,13 @@ class FringePlot(Qwt.QwtPlot):
         self.setAxisMaxMajor(Qwt.QwtPlot.yLeft, 2)
         self.curve = {}
 
-        self.xxxcurve = Qwt.QwtPlotCurve("XXX")
-        self.xxxcurve.attach(self)
-
-        self.grid = Qwt.QwtPlotGrid()
-        self.grid.setPen(Qt.QPen(Qt.Qt.lightGray))
-        self.grid.enableY(False)
-        self.grid.setXDiv(scaleDiv)
-        self.grid.attach(self)
+        self.centercurve = Qwt.QwtPlotCurve("XXX")
+        x = [ number_channels / 2 - 0.5, number_channels / 2 - 0.5 ]
+        y = [ -1, 2 ]
+        self.centercurve.setData(x, y)
+        self.centercurve.setPen(Qt.Qt.lightGray)
+        self.centercurve.setItemAttribute(Qwt.QwtPlotItem.AutoScale, False)
+        self.centercurve.attach(self)
 
         self.connect(self, Qt.SIGNAL("legendChecked(QwtPlotItem*,bool)"),
                      self.toggleCurve)
@@ -267,7 +266,7 @@ class FringePlotWindow(Qt.QWidget):
 
     def stretch(self):
         self.plots[-1].enableAxis(Qwt.QwtPlot.xBottom, True)
-        self.plots[-1].xxxcurve.setItemAttribute(Qwt.QwtPlotItem.Legend, False)
+        self.plots[-1].centercurve.setItemAttribute(Qwt.QwtPlotItem.Legend, False)
         height = self.plots[-1].height()
         canvasHeight = self.plots[-1].plotLayout().canvasRect().height()
         fixedHeight = height - canvasHeight
