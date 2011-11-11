@@ -114,7 +114,7 @@ class FringePlot(Qwt.QwtPlot):
         self.curve = {}
 
         self.centercurve = Qwt.QwtPlotCurve("XXX")
-        x = [ number_channels / 2 - 0.5, number_channels / 2 - 0.5 ]
+        x = [ number_channels / 2, number_channels / 2 ]
         y = [ -1, 2 ]
         self.centercurve.setData(x, y)
         self.centercurve.setPen(Qt.Qt.lightGray)
@@ -340,15 +340,15 @@ class FringePlotWindow(Qt.QWidget):
                     pass
 
                 a = correlations[baseline][idx].sum(axis=0)
+                if station == baseline[0]:
+                    a = np.conj(a)
+                    pass
                 b = np.fft.fft(a, self.cordata.number_channels)
                 c = b[(self.cordata.number_channels / 2):]
                 d = b[0:(self.cordata.number_channels / 2)]
                 e = np.concatenate((c, d))
                 f = np.absolute(e)
                 g = f / np.sum(f)
-                if station == baseline[0]:
-                    g = g[::-1]
-                    pass
 
                 plot.curve[idx].setData(range(self.cordata.number_channels), g)
                 continue
