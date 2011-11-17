@@ -157,7 +157,10 @@ bool Mark5a_header::checkCRC() {
       crc12((int64_t*)crcBlock, (int64_t*)header_, 160);
       break;
     }
-  }
+  default:
+    std::cout << "Error in CRC check : Invalid N = " << N << "\n";
+    return false;
+}
 
   for (size_t i=0; i<12*N; i++) {
     if (crcBlock[i] != 0) {
