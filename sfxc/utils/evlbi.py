@@ -189,6 +189,7 @@ class DataFlow:
 
     def send_commands_direct(self, station, commands):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(5)
         s.connect((self.control_host[station], 2620))
         for command in commands:
             print command
