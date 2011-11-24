@@ -1,6 +1,7 @@
 #ifndef VEXPP_NODE_H
 #define VEXPP_NODE_H
 
+#include <cstddef>
 #include <string>
 #include <vector>
 #include <map>

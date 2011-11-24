@@ -3,6 +3,7 @@
 #ifndef VEXPP_H
 #define VEXPP_H
 
+#include <cstddef>
 #include <string>
 #include <vector>
 #include <map>
