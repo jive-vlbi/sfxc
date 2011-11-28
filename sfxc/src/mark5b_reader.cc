@@ -187,6 +187,7 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
 
 bool Mark5b_reader::resync_header(Data_frame &data) {
   const int max_read = RESYNC_MAX_DATA_FRAMES * size_data_block();
+  const int header_size = SIZE_MK5B_HEADER * SIZE_MK5B_WORD;
   const int frame_size = SIZE_MK5B_FRAME * SIZE_MK5B_WORD;
   int total_bytes_read = 0;
   std::cout << RANK_OF_NODE << " : Resync header, t = " << current_time_ << "\n";
@@ -197,21 +198,24 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
   bool syncword_found = false;
 
   // We first find the location of the next syncword
+  Data_reader_blocking::get_bytes_s(data_reader_.get(), header_size, buffer);
   while(total_bytes_read < max_read){
-    bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), frame_size, buffer);
+    bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), frame_size - header_size, &buffer[header_size]);
     total_bytes_read += bytes_read;
     if(bytes_read == 0){
       std::cout << "Couldn't find new sync word before EOF\n";
       return false;
     }
-    for(header_pos = 0 ; header_pos < frame_size - 3 ; header_pos++){
+    for(header_pos = 0 ; header_pos < frame_size - header_size ; header_pos += SIZE_MK5B_WORD){
       uint32_t *word = (uint32_t *)&buffer[header_pos];
       if(*word == 0xABADDEED){
         syncword_found = true;
         break;
       }
     }
-    if(syncword_found){
+    if(!syncword_found){
+      memcpy(buffer, &buffer[frame_size - header_size], header_size);
+    }else{
       // Complete current frame
       char *header_buf = (char *)&current_header;
       int bytes_in_buffer = std::min((int)sizeof(current_header), frame_size - header_pos);
