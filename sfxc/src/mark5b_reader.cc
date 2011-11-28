@@ -257,7 +257,7 @@ bool Mark5b_reader::resync_header(Data_frame &data, int try_) {
       std::cout << "Couldn't find new sync word before EOF, because of EOF\n";
       return false;
     }
-    for(header_pos = 0 ; header_pos < SIZE_MK5B_FRAME * SIZE_MK5B_WORD - 3 ; header_pos++){
+    for(header_pos = 0 ; header_pos < SIZE_MK5B_FRAME * SIZE_MK5B_WORD - sizeof(current_header); header_pos += SIZE_MK5B_WORD){
       uint32_t *word = (uint32_t *)&buffer[header_pos];
       if(*word == 0xABADDEED){
         syncword_found = true;
@@ -265,10 +265,10 @@ bool Mark5b_reader::resync_header(Data_frame &data, int try_) {
       }
     }
     if(!syncword_found){
-      memcpy(&buffer[0], &buffer[SIZE_MK5B_FRAME * SIZE_MK5B_WORD -3], 3); 
+      memcpy(&buffer[0], &buffer[SIZE_MK5B_FRAME * SIZE_MK5B_WORD - sizeof(current_header)], sizeof(current_header)); 
       bytes_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), 
-                                                      SIZE_MK5B_FRAME * SIZE_MK5B_WORD - 3,
-                                                      &buffer[3]);
+                                                      SIZE_MK5B_FRAME * SIZE_MK5B_WORD - sizeof(current_header),
+                                                      &buffer[sizeof(current_header)]);
     }
   }
 
