@@ -61,6 +61,7 @@ Mark5a_header::get_track_mask() {
     case 2:{
       uint16_t *syncword = (uint16_t *)&header_[64*N];
       mask = syncword[0] & syncword[15] & syncword[31]; 
+      break;
     }
     case 4:{
       uint32_t *syncword = (uint32_t *)&header_[64*N];
