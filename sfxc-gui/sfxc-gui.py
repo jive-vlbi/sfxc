@@ -113,15 +113,21 @@ class progressDialog(QtGui.QDialog):
         return
 
     def start_reader(self, station):
-        args = ["ssh", self.flow.input_host[station], "bin/mk5udp", "-d", "-f"]
-        if self.is_mark5b(station):
-            args.append("mark5b")
-        elif self.is_vdif(station):
-            args.append("vdif")
+        if self.evlbi:
+            args = ["ssh", self.flow.input_host[station], "bin/mk5udp",
+                    "-d", "-f"]
+            if self.is_mark5b(station):
+                args.append("mark5b")
+            elif self.is_vdif(station):
+                args.append("vdif")
+            else:
+                args.append("%s:%s" % (self.flow.mk5_mode[station][0],
+                                       self.flow.mk5_mode[station][1]))
+                pass
         else:
-            args.append("%s:%s" % (self.flow.mk5_mode[station][0],
-                                   self.flow.mk5_mode[station][1]))
+            args = ["ssh", self.input_host[station], "bin/mk5read"]
             pass
+
         log = open(station + "-reader.log", 'w')
         p = subprocess.Popen(args, stdout=log, stderr=log)
         return p
@@ -129,7 +135,9 @@ class progressDialog(QtGui.QDialog):
     def start_readers(self):
         self.readers = {}
         for station in self.json_input['stations']:
-            self.readers[station] = self.start_reader(station)
+            if self.json_input["data_sources"][station][0].startswith("mk5"):
+                self.readers[station] = self.start_reader(station)
+                pass
             continue
         return
 
@@ -200,24 +208,26 @@ class progressDialog(QtGui.QDialog):
             sys.exit(1)
             pass
 
+        # Parse the rankfile to figure out wher the input node for
+        # each station runs.
+        stations = self.json_input['stations']
+        stations.sort()
+        self.input_host = {}
+        fp = open(rank_file, 'r')
+        r1 = re.compile(r'rank (\d*)=(.*) slot=')
+        for line in fp:
+            m = r1.match(line)
+            if not m:
+                continue
+            rank = int(m.group(1))
+            if rank > 2 and rank < 3 + len(stations):
+                self.input_host[stations[rank - 3]] = m.group(2)
+                continue
+            continue
+        fp.close()
+
         if self.evlbi:
             if self.simulate:
-                stations = self.json_input['stations']
-                stations.sort()
-                input_host = {}
-                fp = open(rank_file, 'r')
-                r1 = re.compile(r'rank (\d*)=(.*) slot=')
-                for line in fp:
-                    m = r1.match(line)
-                    if not m:
-                        continue
-                    rank = int(m.group(1))
-                    if rank > 2 and rank < 3 + len(stations):
-                        input_host[stations[rank - 3]] = m.group(2)
-                        continue
-                    continue
-                fp.close()
-
                 control_host = {}
                 machines = []
                 for machine in ['e', 'f', 'g', 'h']:
@@ -230,22 +240,24 @@ class progressDialog(QtGui.QDialog):
                     del machines[0]
                     continue
 
-                self.flow = DataFlow(self.vex, control_host, input_host);
+                self.flow = DataFlow(self.vex, control_host, self.input_host);
             else:
                 self.flow = DataFlow(self.vex)
                 pass
+            pass
 
+        self.start_readers()
+
+        if self.evlbi:
             if self.simulate:
                 self.start_simulators()
                 pass
-            self.start_readers()
 
             time.sleep(1)
 
             self.flow.stop(self.json_input['stations'])
             self.flow.finalize(self.json_input['stations'])
             self.flow.setup(self.json_input['stations'])
-
             pass
 
         # Parse the rankfile to calculate the number of MPI processes
@@ -351,11 +363,13 @@ class progressDialog(QtGui.QDialog):
             if self.evlbi:
                 self.flow.stop(self.json_input['stations'])
                 self.flow.finalize(self.json_input['stations'])
-                self.stop_readers()
                 if self.simulate:
                     self.stop_simulators()
                     pass
                 pass
+
+            self.stop_readers()
+
             if self.proc.returncode == 0:
                 self.status = 'DONE'
                 self.update_status()
