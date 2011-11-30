@@ -253,7 +253,7 @@ class progressDialog(QtGui.QDialog):
                 self.start_simulators()
                 pass
 
-            time.sleep(1)
+            time.sleep(2)
 
             self.flow.stop(self.json_input['stations'])
             self.flow.finalize(self.json_input['stations'])
