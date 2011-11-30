@@ -154,34 +154,30 @@ class DataFlow:
             self.direct = False
             pass
 
-        self.commands = {}
+        self.generic_commands = {}
         for station in vex['STATION']:
             # Initialization
-            self.commands[station] = []
+            self.generic_commands[station] = []
             command = "mode=%s" % self.mk5_mode[station][0]
             for arg in self.mk5_mode[station][1:]:
                 command += ":%s" % arg
                 continue
             command += ";"
-            self.commands[station].append(command)
+            self.generic_commands[station].append(command)
             if not self.mk5_mode[station][0] == "ext":
                 data_rate = sample_rate[station] / (fanout[station] * 1e6)
                 command = "play_rate=data:%f;" % data_rate
-                self.commands[station].append(command)
+                self.generic_commands[station].append(command)
                 pass
             command = "net_protocol=udp;"
-            self.commands[station].append(command)
+            self.generic_commands[station].append(command)
             if station in self.mtu:
                 command = "mtu=%d;" % self.mtu[station]
-                self.commands[station].append(command)
+                self.generic_commands[station].append(command)
                 pass
             if station in self.ipd:
                 command = "ipd=%d;" % self.ipd[station]
-                self.commands[station].append(command)
-                pass
-            if station in self.connect_host:
-                command = "in2net=connect:%s;" % self.connect_host[station]
-                self.commands[station].append(command)
+                self.generic_commands[station].append(command)
                 pass
 
             continue
@@ -189,16 +185,19 @@ class DataFlow:
         return
 
     def send_commands_direct(self, station, commands):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(5)
-        s.connect((self.control_host[station], 2620))
-        for command in commands:
-            print command
-            s.send(command)
-            data = s.recv(1024)
-            print repr(data)
-            continue
-        s.close()
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(5)
+            s.connect((self.control_host[station], 2620))
+            for command in commands:
+                print command
+                s.send(command)
+                data = s.recv(1024)
+                print repr(data)
+                continue
+            s.close()
+        except:
+            pass
         return
 
     def send_commands_proxy(self, station, commands):
@@ -210,7 +209,7 @@ class DataFlow:
             continue
         return
 
-    def send_commands(self, station, commands):
+    def send_remote_commands(self, station, commands):
         if self.direct:
             self.send_commands_direct(station, commands)
         else:
@@ -218,29 +217,52 @@ class DataFlow:
             pass
         return
 
+    def send_local_commands(self, station, commands):
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(5)
+            s.connect((self.connect_host[station], 2620))
+            for command in commands:
+                print command
+                s.send(command)
+                data = s.recv(1024)
+                print repr(data)
+                continue
+            s.close()
+        except:
+            pass
+        return
+
     def setup(self, stations):
         for station in stations:
-            self.send_commands(station, self.commands[station])
+            self.send_local_commands(station, self.generic_commands[station])
+            self.send_local_commands(station, ["net2sfxc=open:/tmp/mk5read;"])
+            self.send_remote_commands(station, self.generic_commands[station])
+            if station in self.connect_host:
+                command = "in2net=connect:%s;" % self.connect_host[station]
+                self.send_remote_commands(station, [command])
+                pass
             continue
         return
 
     def start(self, stations):
         for station in stations:
-            self.send_commands(station, ["in2net=on;"])
+            self.send_remote_commands(station, ["in2net=on;"])
             continue
         self.started = True
         return
 
     def stop(self, stations):
         for station in stations:
-            self.send_commands(station, ["in2net=off;"])
+            self.send_remote_commands(station, ["in2net=off;"])
             continue
         self.started = False
         return
 
     def finalize(self, stations):
         for station in stations:
-            self.send_commands(station, ["in2net=disconnect;"])
+            self.send_remote_commands(station, ["in2net=disconnect;"])
+            self.send_local_commands(station, ["netsfxc=close;"])
             continue
         return
 
