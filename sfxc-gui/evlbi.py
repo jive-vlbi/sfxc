@@ -262,7 +262,7 @@ class DataFlow:
     def finalize(self, stations):
         for station in stations:
             self.send_remote_commands(station, ["in2net=disconnect;"])
-            self.send_local_commands(station, ["netsfxc=close;"])
+            self.send_local_commands(station, ["net2sfxc=close;"])
             continue
         return
 
