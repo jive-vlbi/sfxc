@@ -145,7 +145,9 @@ class progressDialog(QtGui.QDialog):
     def run(self, vex_file, ctrl_file, machine_file, rank_file, options):
         self.vex = Vex(vex_file)
         self.ctrl_file = ctrl_file
+        self.evlbi = options.evlbi
         self.reference = options.reference
+        self.simulate = options.simulate
 
         exper = self.vex['GLOBAL']['EXPER']
 
@@ -157,8 +159,35 @@ class progressDialog(QtGui.QDialog):
         self.json_input = json.load(fp)
         fp.close()
 
-        if self.json_input['start'] == 'now':
-            self.json_input['start'] = time2vex(time.time())
+        # When doing e-VLBI we want to start correlating a few seconds
+        # from "now", but we have to make sure we're not in a gap
+        # between scans.
+        if self.evlbi:
+            start = time.time() + 15
+            for scan in self.vex['SCHED']:
+                # Loop over all the "station" parameters in the scan,
+                # figuring out the real length of the scan.
+                start_time = stop_time = 0
+                for transfer in self.vex['SCHED'][scan].getall('station'):
+                    station = transfer[0]
+                    stop_time = max(stop_time, int(transfer[2].split()[0]))
+                    continue
+
+                # Figure out the real start and stop time.
+                start_time += vex2time(self.vex['SCHED'][scan]['start'])
+                stop_time += vex2time(self.vex['SCHED'][scan]['start'])
+
+                start = max(start, start_time)
+                if start < stop_time:
+                    break
+                continue
+
+            # Write out the control file with a modified start time.
+            self.json_input['start'] = time2vex(start)
+            fp = open(ctrl_file, 'w')
+            json.dump(self.json_input, fp, indent=4)
+            fp.close()
+            pass
 
         self.start = vex2time(self.json_input['start'])
         self.stop = vex2time(self.json_input['stop'])
@@ -170,8 +199,6 @@ class progressDialog(QtGui.QDialog):
         self.wplot = None
         self.fplot = None
         self.status = 'CRASH'
-        self.evlbi = options.evlbi
-        self.simulate = options.simulate
 
         # Parse the rankfile to figure out wher the input node for
         # each station runs.
