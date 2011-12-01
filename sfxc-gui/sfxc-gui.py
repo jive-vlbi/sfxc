@@ -114,16 +114,7 @@ class progressDialog(QtGui.QDialog):
 
     def start_reader(self, station):
         if self.evlbi:
-            args = ["ssh", self.flow.input_host[station], "bin/mk5udp",
-                    "-d", "-f"]
-            if self.is_mark5b(station):
-                args.append("mark5b")
-            elif self.is_vdif(station):
-                args.append("vdif")
-            else:
-                args.append("%s:%s" % (self.flow.mk5_mode[station][0],
-                                       self.flow.mk5_mode[station][1]))
-                pass
+            args = ["ssh", self.flow.input_host[station], "bin/jive5ab", "-m1"]
         else:
             args = ["ssh", self.input_host[station], "bin/mk5read"]
             pass
@@ -143,7 +134,7 @@ class progressDialog(QtGui.QDialog):
 
     def stop_readers(self):
         for station in self.readers:
-            args = ["ssh", self.flow.input_host[station], "pkill", "mk5udp"]
+            args = ["ssh", self.flow.input_host[station], "pkill", "jive5ab"]
             subprocess.call(args)
             continue
         for station in self.readers:
@@ -181,32 +172,6 @@ class progressDialog(QtGui.QDialog):
         self.status = 'CRASH'
         self.evlbi = options.evlbi
         self.simulate = options.simulate
-
-        # Generate delays for this subjob.
-        procs = {}
-        success = True
-        delay_directory = self.json_input['delay_directory']
-        for station in self.json_input['stations']:
-            path = urlparse.urlparse(delay_directory).path
-            delay_file = path + '/' +  exper + '_' + station + '.del'
-            args = ['generate_delay_model', '-a', vex_file, station,
-                    delay_file, time2vex(self.start), time2vex(self.stop)]
-            procs[station] = subprocess.Popen(args)
-            continue
-        for station in procs:
-            procs[station].wait()
-            if procs[station].returncode != 0:
-                msg = "Delay model couldn't be generated for " + station + "."
-                QtGui.QMessageBox.warning(self, "Aborted", msg)
-                path = urlparse.urlparse(self.json_input['delay_directory']).path
-                delay_file = path + '/' +  exper + '_' + station + '.del'
-                os.remove(delay_file)
-                success = False
-                pass
-            continue
-        if not success:
-            sys.exit(1)
-            pass
 
         # Parse the rankfile to figure out wher the input node for
         # each station runs.
@@ -247,14 +212,38 @@ class progressDialog(QtGui.QDialog):
             pass
 
         self.start_readers()
+        if self.simulate:
+            self.start_simulators()
+            pass
 
-        if self.evlbi:
-            if self.simulate:
-                self.start_simulators()
+        # Generate delays for this subjob.
+        procs = {}
+        success = True
+        delay_directory = self.json_input['delay_directory']
+        for station in self.json_input['stations']:
+            path = urlparse.urlparse(delay_directory).path
+            delay_file = path + '/' +  exper + '_' + station + '.del'
+            args = ['generate_delay_model', '-a', vex_file, station,
+                    delay_file, time2vex(self.start), time2vex(self.stop)]
+            procs[station] = subprocess.Popen(args)
+            continue
+        for station in procs:
+            procs[station].wait()
+            if procs[station].returncode != 0:
+                msg = "Delay model couldn't be generated for " + station + "."
+                QtGui.QMessageBox.warning(self, "Aborted", msg)
+                path = urlparse.urlparse(self.json_input['delay_directory']).path
+                delay_file = path + '/' +  exper + '_' + station + '.del'
+                os.remove(delay_file)
+                success = False
                 pass
+            continue
+        if not success:
+            sys.exit(1)
+            pass
 
-            time.sleep(2)
-
+        # Setup the data flow.
+        if self.evlbi:
             self.flow.stop(self.json_input['stations'])
             self.flow.finalize(self.json_input['stations'])
             self.flow.setup(self.json_input['stations'])
