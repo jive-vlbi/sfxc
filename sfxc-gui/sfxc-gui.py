@@ -159,34 +159,9 @@ class progressDialog(QtGui.QDialog):
         self.json_input = json.load(fp)
         fp.close()
 
-        # When doing e-VLBI we want to start correlating a few seconds
-        # from "now", but we have to make sure we're not in a gap
-        # between scans.
+        # When doing e-VLBI we don't need to generate delays for the past.
         if self.evlbi:
-            start = time.time() + 15
-            for scan in self.vex['SCHED']:
-                # Loop over all the "station" parameters in the scan,
-                # figuring out the real length of the scan.
-                start_time = stop_time = 0
-                for transfer in self.vex['SCHED'][scan].getall('station'):
-                    station = transfer[0]
-                    stop_time = max(stop_time, int(transfer[2].split()[0]))
-                    continue
-
-                # Figure out the real start and stop time.
-                start_time += vex2time(self.vex['SCHED'][scan]['start'])
-                stop_time += vex2time(self.vex['SCHED'][scan]['start'])
-
-                start = max(start, start_time)
-                if start < stop_time:
-                    break
-                continue
-
-            # Write out the control file with a modified start time.
-            self.json_input['start'] = time2vex(start)
-            fp = open(ctrl_file, 'w')
-            json.dump(self.json_input, fp, indent=4)
-            fp.close()
+            self.json_input['start'] = time2vex(time.time())
             pass
 
         self.start = vex2time(self.json_input['start'])
@@ -274,6 +249,36 @@ class progressDialog(QtGui.QDialog):
             self.flow.stop(self.json_input['stations'])
             self.flow.finalize(self.json_input['stations'])
             self.flow.setup(self.json_input['stations'])
+            pass
+
+        # When doing e-VLBI we want to start correlating a few seconds
+        # from "now", but we have to make sure we're not in a gap
+        # between scans.
+        if self.evlbi:
+            start = time.time() + 15
+            for scan in self.vex['SCHED']:
+                # Loop over all the "station" parameters in the scan,
+                # figuring out the real length of the scan.
+                start_time = stop_time = 0
+                for transfer in self.vex['SCHED'][scan].getall('station'):
+                    station = transfer[0]
+                    stop_time = max(stop_time, int(transfer[2].split()[0]))
+                    continue
+
+                # Figure out the real start and stop time.
+                start_time += vex2time(self.vex['SCHED'][scan]['start'])
+                stop_time += vex2time(self.vex['SCHED'][scan]['start'])
+
+                start = max(start, start_time)
+                if start < stop_time:
+                    break
+                continue
+
+            # Write out the control file with a modified start time.
+            self.json_input['start'] = time2vex(start)
+            fp = open(ctrl_file, 'w')
+            json.dump(self.json_input, fp, indent=4)
+            fp.close()
             pass
 
         # Parse the rankfile to calculate the number of MPI processes
