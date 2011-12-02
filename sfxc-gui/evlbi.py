@@ -245,6 +245,19 @@ class DataFlow:
             continue
         return
 
+    def reset(self, stations):
+        for station in stations:
+            self.send_remote_commands(station, ["in2net=off;"])
+            self.send_remote_commands(station, ["in2net=disconnect;"])
+            self.send_remote_commands(station, self.generic_commands[station])
+            if station in self.connect_host:
+                command = "in2net=connect:%s;" % self.connect_host[station]
+                self.send_remote_commands(station, [command])
+                pass
+            self.send_remote_commands(station, ["in2net=on;"])
+            continue
+        return
+    
     def start(self, stations):
         for station in stations:
             self.send_remote_commands(station, ["in2net=on;"])

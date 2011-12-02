@@ -59,6 +59,11 @@ class progressDialog(QtGui.QDialog):
             pass
         pass
 
+    def reset(self, act):
+        station = str(act.text())
+        self.flow.reset([station])
+        pass
+
     def update_status(self):
         if self.subjob == -1:
             return
@@ -249,6 +254,21 @@ class progressDialog(QtGui.QDialog):
             self.flow.stop(self.json_input['stations'])
             self.flow.finalize(self.json_input['stations'])
             self.flow.setup(self.json_input['stations'])
+            pass
+
+        # Enable the Reset button.
+        if self.evlbi:
+            menu = Qt.QMenu(self)
+            self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
+                         self.reset)
+            stations = self.json_input['stations']
+            stations.sort()
+            for station in stations:
+                act = Qt.QAction(station, menu)
+                menu.addAction(act)
+                continue
+            self.ui.buttonReset.setMenu(menu)
+            self.ui.buttonReset.setEnabled(True)
             pass
 
         # When doing e-VLBI we want to start correlating a few seconds

@@ -132,6 +132,22 @@
      <number>0</number>
     </property>
     <item>
+     <widget class="QPushButton" name="buttonReset">
+      <property name="text">
+       <string>&amp;Reset</string>
+      </property>
+      <property name="shortcut">
+       <string>Alt+R</string>
+      </property>
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="autoDefault">
+       <bool>false</bool>
+      </property>
+     </widget>
+    </item>
+    <item>
      <spacer name="Spacer1">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
