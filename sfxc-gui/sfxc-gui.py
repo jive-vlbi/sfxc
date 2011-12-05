@@ -40,7 +40,7 @@ def time2vex(secs):
 
 class progressDialog(QtGui.QDialog):
     def __init__(self, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtGui.QDialog.__init__(self, parent, QtCore.Qt.WindowStaysOnTopHint)
         self.ui = Ui_Dialog1()
         self.ui.setupUi(self)
 
