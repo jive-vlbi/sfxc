@@ -81,6 +81,22 @@ class progressDialog(QtGui.QDialog):
         conn.close()
         pass
 
+    def get_job(self):
+        if self.subjob == -1:
+            return -1
+
+        conn = db.connect(host="ccs", port=3307,
+                          db="correlator_control",
+                          read_default_file="~/.my.cnf")
+
+        cursor = conn.cursor()
+        cursor.execute("SELECT job_id FROM cj_subjob " \
+                           + " WHERE subjob_id=%d" % self.subjob)
+        result = cursor.fetchone()
+        if result:
+            return result[0]
+        return -1
+
     def is_mark5b(self, station):
         return (self.flow.mk5_mode[station][0] == "ext")
 
@@ -318,6 +334,11 @@ class progressDialog(QtGui.QDialog):
                 pass
             continue
         fp.close()
+
+        if self.subjob != -1:
+            self.ui.jobEdit.setText(str(self.get_job()))
+            self.ui.subjobEdit.setText(str(self.subjob))
+            pass
 
         sfxc = '/home/sfxc/bin/sfxc'
         args = ['mpirun',
