@@ -139,7 +139,11 @@ class progressDialog(QtGui.QDialog):
 
     def stop_readers(self):
         for station in self.readers:
-            args = ["ssh", self.flow.input_host[station], "pkill", "jive5ab"]
+            if self.evlbi:
+                args = ["ssh", self.flow.input_host[station], "pkill", "jive5ab"]
+            else:
+                args = ["ssh", self.input_host[station], "pkill", "mk5read"]
+                pass
             subprocess.call(args)
             continue
         for station in self.readers:
