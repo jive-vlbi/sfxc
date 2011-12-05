@@ -27,6 +27,7 @@ class DataFlow:
 
         self.mtu = {}
         self.ipd = {}
+        self.trackmask = {}
         self.control_host = {}
         self.connect_host = {}
         self.input_host = {}
@@ -47,6 +48,13 @@ class DataFlow:
             result = cursor.fetchone()
             if result:
                 self.ipd[station] = result[0]
+                pass
+
+            cursor.execute("SELECT trackmask FROM eVLBI_Params" \
+                               + " WHERE e_station_name='%s'" % station)
+            result = cursor.fetchone()
+            if result:
+                self.trackmask[station] = result[0]
                 pass
 
             cursor.execute("SELECT e_station_control_ip FROM eVLBI_Params" \
@@ -179,7 +187,10 @@ class DataFlow:
                 command = "ipd=%d;" % self.ipd[station]
                 self.generic_commands[station].append(command)
                 pass
-
+            if station in self.trackmask:
+                command = "trackmask=0x%08x;" % self.trackmask[station]
+                self.generic_commands[station].append(command)
+                pass
             continue
 
         return
