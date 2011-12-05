@@ -82,7 +82,9 @@ void sfxc_abort(const char *msg){
   exit(-1);
 }
 
-
+bool isPower2(int val){
+  return ((val > 0) && ((val & (~val + 1)) == val));
+}
 
 int64_t get_us_time(int time[]) {
   int64_t result = 0;

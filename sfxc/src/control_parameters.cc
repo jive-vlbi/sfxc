@@ -229,6 +229,30 @@ Control_parameters::check(std::ostream &writer) const {
     }
   }
 
+  { // Check FFT
+    int fft = 0;
+    if (ctrl["fft_size_delaycor"] != Json::Value()){
+      if(!isPower2(ctrl["fft_size_delaycor"].asInt())){
+        ok = false;
+        writer << "Ctrl-file: fft_size_delaycor is not a power of two" << std::endl;
+      }
+      fft += 1;
+    }
+    if (ctrl["fft_size_correlation"] != Json::Value()){
+      if(!isPower2(ctrl["fft_size_correlation"].asInt())){
+        ok = false;
+        writer << "Ctrl-file: fft_size_correlation is not a power of two" << std::endl;
+      }
+      fft += 1;
+    }
+    if(fft == 2){
+      if(ctrl["fft_size_correlation"].asInt() < ctrl["fft_size_delaycor"].asInt()){
+        ok = false;
+        writer << "Ctrl-file: fft_size_correlation should not be smaller than fft_size_delaycor." << std::endl;
+      }
+    }
+  }
+
   { // Check stations and reference station
     if (ctrl["stations"] != Json::Value()) {
       for (size_t station_nr = 0;

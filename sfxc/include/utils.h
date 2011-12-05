@@ -223,6 +223,11 @@ void get_ip_address(std::list<Interface_pair> &addresses,
                     bool IPv4_only = true);
 
 /**
+ * Report is integer is a power of two
+ **/
+bool isPower2(int val);
+
+/**
  * get the time in micro seconds from an array (year, day, hour, minute, second).
  * @returns a list of Interface_pair.
  **/
