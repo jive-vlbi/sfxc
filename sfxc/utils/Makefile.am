@@ -9,6 +9,7 @@ endif
 pkginclude_HEADERS = *.h *.py
 
 bin_PROGRAMS = mark5a_print_headers \
+               mark5b_print_headers \
                print_new_output_format \
                dnfp_fileserver \
                dnfp_fileclient \
@@ -75,6 +76,9 @@ dnfp_fileclient_SOURCES = \
    ../src/data_reader_blocking.cc  \
    ../src/data_reader_dnfp.cc \
    ../src/utils.cc
+
+mark5b_print_headers_SOURCES = \
+  mark5b_print_headers.cc
 
 mark5a_print_headers_SOURCES = \
   mark5a_print_headers.cc \
