@@ -326,7 +326,8 @@ Control_parameters::check(std::ostream &writer) const {
     for(int i = 0; i < window.size(); i++)
       window[i] = toupper(window[i]);
     if ((window != "RECTANGULAR") and (window != "COSINE") and (window != "HAMMING") and (window != "HANN")){
-      writer << "Invalid window function " << window << std::endl;
+      writer << "Invalid window function " << window 
+             << ", valid choises are : RECTANGULAR, COSINE, HAMMING, and HANN" << std::endl;
       ok = false;
     }
   }

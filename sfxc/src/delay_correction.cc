@@ -20,18 +20,18 @@ Delay_correction::~Delay_correction() {
 
 void Delay_correction::do_task() {
   SFXC_ASSERT(has_work());
-  SFXC_ASSERT(current_time >= 0);
 
   Input_buffer_element input = input_buffer->front_and_pop();
   int nbuffer=input->nfft;
   current_fft+=nbuffer;
+
   // Allocate output buffer
-  int output_stride =  fft_cor_size()/2 + 16; // there are fft_size+1 points and each fft should be 16 bytes alligned
+  int output_stride =  fft_cor_size()/2 + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
   cur_output = output_memory_pool.allocate();
   cur_output->stride = output_stride;
-  int nfft_cor = (nbuffer * fft_size() + tbuf_end - tbuf_start) / (fft_cor_size() / 2);
-  if(cur_output->data.size() != (nfft_cor - 1) * output_stride)
-    cur_output->data.resize((nfft_cor - 1) * output_stride);
+  int nfft_cor = (nbuffer * fft_size() + tbuf_end - tbuf_start) / (fft_cor_size() / 2) - 1;
+  if(cur_output->data.size() != nfft_cor  * output_stride)
+    cur_output->data.resize(nfft_cor * output_stride);
 #ifndef DUMMY_CORRELATION
   size_t tbuf_size = time_buffer.size();
   for(int buf=0;buf<nbuffer;buf++){
@@ -51,8 +51,8 @@ void Delay_correction::do_task() {
     current_time.inc_samples(fft_size());
     total_ffts++;
   }
-
-  for(int i=0; i<nfft_cor-1; i++){
+ 
+  for(int i=0; i<nfft_cor; i++){
     // apply window function
     size_t eob = tbuf_size - tbuf_start%tbuf_size; // how many samples to end of buffer
     size_t nsamp = std::min(eob, fft_cor_size());
@@ -65,8 +65,10 @@ void Delay_correction::do_task() {
     fft_t2f_cor.rfft(&temp_buffer[0], &cur_output->data[i * output_stride]);
   }
 #endif // DUMMY_CORRELATION
-  cur_output->invalid = input->invalid;
-  output_buffer->push(cur_output);
+ if(nfft_cor > 0){
+   cur_output->invalid = input->invalid;
+   output_buffer->push(cur_output);
+  }
 }
 
 void Delay_correction::fractional_bit_shift(FLOAT *input,
@@ -257,16 +259,16 @@ int Delay_correction::sideband() {
 
 void 
 Delay_correction::create_window(){
-  int n = fft_cor_size();
+  const int n = fft_cor_size();
   window.resize(n);
   switch(correlation_parameters.window){
   case SFXC_WINDOW_RECT:
     // rectangular window (including zero padding)
     for (int i=0; i<n/4; i++)
       window[i] = 0;
-    for (int i=n/4; i<3*n/4; i++)
+    for (int i = n/4; i < 3*n/4; i++)
       window[i] = 1;
-    for (int i=3*n/4; i<n; i++)
+    for (int i = 3*n/4 ; i < n ; i++)
       window[i] = 0;
     break;
   case SFXC_WINDOW_COS:

@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
         sec += ((header[2]&mask) >> b) * mul;
         mask = mask << 4;
       }
-      mask = 0x0000000F;
-      for(int b = 0, mul = 1; b < 16; b+=4, mul *=10){
+      mask = 0x000F0000;
+      for(int b = 16, mul = 1; b < 32; b+=4, mul *=10){
         subsec += ((header[3]&mask) >> b) * mul;
         mask = mask << 4;
       }
