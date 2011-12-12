@@ -64,3 +64,14 @@ Channel_extractor_tasklet_VDIF::do_task() {
   }
   input_buffer_->pop();
 }
+
+void
+Channel_extractor_tasklet_VDIF::
+set_parameters(const Input_node_parameters &input_node_param){
+  n_subbands = input_node_param.channels.size();
+  bits_per_sample = input_node_param.bits_per_sample();
+  fan_out    = bits_per_sample *
+               input_node_param.subsamples_per_sample();
+  std::cout << "n_subbands = " << n_subbands << ", bits_per_sample = " << bits_per_sample << ", fan_out = " << fan_out <<"\n";
+}
+

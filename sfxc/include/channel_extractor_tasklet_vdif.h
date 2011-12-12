@@ -44,6 +44,7 @@ public:
   virtual ~Channel_extractor_tasklet_VDIF();
   /// Process one piece of data
   virtual void do_task();
+  virtual void set_parameters(const Input_node_parameters &input_node_param);
 };
 
 #endif /*CHANNEL_EXTRACTOR_TASKLET_VDIF_H_*/
