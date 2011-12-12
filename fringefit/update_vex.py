@@ -20,7 +20,9 @@ def parse_clock_early(clock_early):
   return valid, offset, epoch, rate
 
 ######################### Main #########################################
-parser = OptionParser('%prog <input vexfile> <output vexfile> <clock offsets file>')
+parser = OptionParser('%prog [options] <input vexfile> <output vexfile> <clock offsets file>')
+parser.add_option('-o', '--offset-only', dest='offset_only', action='store_true', default=False)
+parser.add_option('-r', '--rate-only', dest='rate_only', action='store_true', default=False)
 (options, args) = parser.parse_args()
 if len(args) != 3:
   parser.error('invalid number of arguments')
@@ -31,7 +33,7 @@ ctrl_name = args[2]
 try:
   ctrl = json.load(open(ctrl_name, "r"))
 except StandardError, err:
-  print "Error loading control file : " + str(err)
+  print "Error loading clock offsets from : " + str(err)
   sys.exit(1);
 
 try:
@@ -94,8 +96,15 @@ while not done_parsing:
         dt = (vex_time.get_time(old_epoch) - vex_time.get_time(ctrl['epoch'])).seconds
       else:
         dt = -(vex_time.get_time(ctrl['epoch']) - vex_time.get_time(old_epoch)).seconds
-      new_clock = old_clock + offsets[idx] + rates[idx]*dt
-      new_rate = old_rate + rates[idx]
+      if options.rate_only:
+        new_clock = old_clock
+        new_rate = old_rate - rates[idx]
+      elif options.offset_only:
+        new_clock = old_clock - offsets[idx]
+        new_rate = old_rate
+      else:
+        new_clock = old_clock - offsets[idx] - rates[idx]*dt
+        new_rate = old_rate - rates[idx]
       vex_out.write('    clock_early =  %s :  %.4f usec :  %s  :  %.3e; '%(valid, new_clock, old_epoch, new_rate))
       vex_out.write('* Modified on ' +  str(datetime.datetime.now()).partition('.')[0]+'\n')
       vex_out.write('* ' + line) # comment out old clock offsets
