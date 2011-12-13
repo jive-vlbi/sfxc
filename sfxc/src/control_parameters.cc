@@ -408,6 +408,10 @@ Time
 Control_parameters::get_stop_time() const {
   return Time(ctrl["stop"].asString());
 }
+void 
+Control_parameters::set_reader_offset(const std::string &station, const Time t){
+  reader_offsets[station] = t;
+}
 
 std::vector<std::string>
 Control_parameters::data_sources(const std::string &station) const {
@@ -966,6 +970,7 @@ get_input_node_parameters(const std::string &mode_name,
   result.track_bit_rate = -1;
   result.fft_size = std::max(fft_size_delaycor(), fft_size_correlation());
   result.integr_time = integration_time();
+  result.offset = reader_offset(station_name);
   const std::string &freq_name =
     get_vex().get_frequency(mode_name, station_name);
   Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];

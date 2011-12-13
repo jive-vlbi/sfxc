@@ -102,7 +102,7 @@ public:
 };
 
 inline Time Mark5a_reader::get_current_time() {
-  return current_time_;
+  return current_time_ - offset;
 }
 
 inline bool Mark5a_reader::eof() {

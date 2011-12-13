@@ -49,7 +49,7 @@ const Time Time::max_time(){
   return new_time;
 }
 
-int64_t Time::get_clock_ticks(){
+int64_t Time::get_clock_ticks() const{
   return nticks;
 }
 

@@ -48,6 +48,8 @@ public:
   int32_t fft_size;
   /// The integration time
   Time integr_time;
+  /// Time offset for the data reader, used e.g. to compensate for formatter errors
+  Time offset;
   /// Indicates if data modulation is used (p.6 of Mark4 memo 230A, Whitney 2005)
   int32_t data_modulation;
 };
@@ -195,6 +197,12 @@ public:
 
   bool pulsar_binning() const;
   bool multi_phase_center() const;
+  
+  Time reader_offset(const std::string &s) const{
+    return reader_offsets.find(s)->second;
+  };
+  
+  void set_reader_offset(const std::string &s, const Time t);
 
   std::string get_delay_directory() const;
   std::string get_delay_table_name(const std::string &station_name) const;
@@ -328,6 +336,7 @@ private:
                                    Input_node_parameters &input_parameters) const;
   std::string ctrl_filename;
   std::string vex_filename;
+  std::map<std::string, Time> reader_offsets; // Contains the formatter clock offsets for all input nodes
 
   Json::Value ctrl;        // Correlator control file
   Vex         vex;         // Vex file

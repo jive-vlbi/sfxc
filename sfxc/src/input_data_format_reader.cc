@@ -2,7 +2,7 @@
 
 Input_data_format_reader::
 Input_data_format_reader(boost::shared_ptr<Data_reader> data_reader)
-  : data_reader_(data_reader), is_open_(false) {
+  : data_reader_(data_reader), is_open_(false), offset(0.) {
 }
 
 Input_data_format_reader::~Input_data_format_reader() {

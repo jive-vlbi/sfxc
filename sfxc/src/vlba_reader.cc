@@ -28,7 +28,7 @@ VLBA_reader::open_input_stream(Data_frame &data){
 
   start_time_.set_time_usec(current_jday, header.microseconds(0));
   current_time_.set_time_usec(current_jday, header.microseconds(0));
-  std::cout << RANK_OF_NODE << " : Start of VLBA stream found t = " << current_time_ << "\n";
+  std::cout << RANK_OF_NODE << " : Start of VLBA stream found t = " << get_current_time() << "\n";
   set_data_frame_info(data);
   find_fill_pattern(data);
   is_open_ = true;
@@ -118,7 +118,7 @@ bool VLBA_reader::resync_header(Data_frame &data, int try_) {
   const int max_read = RESYNC_MAX_DATA_FRAMES * size_data_block();
   int data_read = 0;
   // Find the next header in the input stream, NB: data already contains one VLBA block worth of input data
-  std::cout << RANK_OF_NODE << " : Resync header, t = " << current_time_ << "\n";
+  std::cout << RANK_OF_NODE << " : Resync header, t = " << get_current_time() << "\n";
 
   unsigned char *buffer = &data.buffer->data[0];
   int bytes_read=0, header_start=0, nOnes=0;
@@ -240,10 +240,11 @@ VLBA_reader::set_parameters(const Input_node_parameters &input_node_param) {
   DATA_RATE_ = (tbr * N * 8);
   SFXC_ASSERT(DATA_RATE_ > 0);
   time_between_headers_ = Time(N * 8 * SIZE_MK5A_FRAME / (data_rate() / 1000000.));
+  offset = input_node_param.offset;
 }
 
 void VLBA_reader::set_data_frame_info(Data_frame &data) {
-  data.start_time = current_time_;
+  data.start_time = get_current_time();
 }
 
 int VLBA_reader::data_rate() const {

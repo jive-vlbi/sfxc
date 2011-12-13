@@ -17,7 +17,7 @@ public:
   Time(const std::string &time);
 
   void set_sample_rate(double sample_rate_);
-  int64_t get_clock_ticks();
+  int64_t get_clock_ticks() const;
   void set_clock_ticks(int64_t ticks);
 
   void set_time(int mjd, double sec);

@@ -55,6 +55,8 @@ protected:
   boost::shared_ptr<Data_reader> data_reader_;
   // Set to true if there is a valid header found in the data stream
   bool is_open_;
+  // Time offset that is applied to all time stamps
+  Time offset;
 };
 
 #endif // INPUT_DATA_FORMAT_READER_H

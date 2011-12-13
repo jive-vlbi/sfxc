@@ -443,12 +443,19 @@ Manager_node::initialise() {
     // Get clock offset
     Vex::Node root = vex.get_root_node();
     std::string site_clock = root["STATION"][station_name]["CLOCK"]->to_string();
-    double offset = root["CLOCK"][site_clock]["clock_early"][1]->to_double() / 1e6;
+    double offset = root["CLOCK"][site_clock]["clock_early"][1]->to_double();
     double rate = root["CLOCK"][site_clock]["clock_early"][3]->to_double() / 1e6;
+    // To allow large clock offsets, the reader time is adjusted
+    const double max_offset = 1000000.;
+    double reader_offset = round(offset / max_offset) * max_offset;
+    offset = (offset - reader_offset) * 1e-6; // convert to microseconds 
+    std::cout.precision(19);
+    std::cout << "offset = " << offset << ", reader_offset = " << reader_offset <<"\n";
     std::string str_epoch = root["CLOCK"][site_clock]["clock_early"][2]->to_string();
     Time epoch(str_epoch);
     delay_table.set_clock_offset(offset, rate, epoch);
     send(delay_table, /* station_nr */ 0, input_rank(station));
+    control_parameters.set_reader_offset(station_name, Time(reader_offset));
     correlator_node_set_all(delay_table, station_name);
   }
 

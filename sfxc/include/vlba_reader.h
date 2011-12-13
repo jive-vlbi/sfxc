@@ -100,8 +100,8 @@ public:
   int DATA_RATE_;
   int N;
 };
-inline Time VLBA_reader::get_current_time() {
 
-    return current_time_;
+inline Time VLBA_reader::get_current_time() {
+    return current_time_ - offset;
 }
 #endif // VLBA_READER_H

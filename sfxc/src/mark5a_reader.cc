@@ -39,7 +39,7 @@ bool Mark5a_reader::open_input_stream(Data_frame &data){
   current_time_.set_time_usec(current_mjd_, header.get_time_in_us(track));
   SFXC_ASSERT(header.check_header(mask));
   std::cout << RANK_OF_NODE << " : Mark5a reader found start of data at : y=" << header.year(track)
-            << ", day = " << start_day_ << ", time =" << current_time_ << "\n";
+            << ", day = " << start_day_ << ", time =" << get_current_time() << "\n";
 
   set_data_frame_info(data);
   find_fill_pattern(data);
@@ -134,7 +134,7 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
   int data_read = 0;
   generate_track_mask();
   // Find the next header in the input stream, NB: data already contains one mark5a block worth of input data
-  std::cout << RANK_OF_NODE << " : Resync header, t = " << current_time_ << "\n";
+  std::cout << RANK_OF_NODE << " : Resync header, t = " << get_current_time() << "\n";
 
   unsigned char *buffer= &data.buffer->data[0];
   int bytes_read=0, header_start=0, nOnes=0;
@@ -251,6 +251,8 @@ Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
   DATA_RATE_ = (tbr * N * 8);
   SFXC_ASSERT(DATA_RATE_ > 0);
   time_between_headers_ = Time(N * 8 * SIZE_MK5A_FRAME / (data_rate() / 1000000.));
+  offset = input_node_param.offset;
+  std::cout << RANK_OF_NODE << " : offset = " << offset.get_time_usec() << "\n";
   // Generate mask to select which tracks are used in the header search
   generate_track_mask();
 }
@@ -258,7 +260,7 @@ Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
 void Mark5a_reader::set_data_frame_info(Data_frame &data) {
   Mark5a_header header(N);
   header.set_header(&data.buffer->data[0]);
-  data.start_time = current_time_;
+  data.start_time = get_current_time();
   data.mask = header.get_track_mask();
 #ifdef SFXC_INVALIDATE_SAMPLES
   data.invalid.resize(1);

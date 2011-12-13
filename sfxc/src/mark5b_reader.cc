@@ -61,7 +61,7 @@ Time Mark5b_reader::get_current_time() {
     else
       time.set_time_usec(current_jday, current_header.microseconds());
   }
-  return time;
+  return time - offset;
 }
 
 bool Mark5b_reader::read_new_block(Data_frame &data) {
@@ -183,6 +183,7 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
   sample_rate = param.sample_rate();
   // Find the number of bitstreams used
   nr_of_bitstreams = param.n_tracks;
+  offset = param.offset;
 }
 
 bool Mark5b_reader::resync_header(Data_frame &data) {

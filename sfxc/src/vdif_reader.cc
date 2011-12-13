@@ -70,7 +70,7 @@ Time VDIF_reader::get_current_time(){
     time.set_time(ref_jday, seconds_since_reference + subsec);
   }
 
-  return time;
+  return time - offset;
 }
 
 bool VDIF_reader::read_new_block(Data_frame &data) {
@@ -121,4 +121,5 @@ Time VDIF_reader::time_between_headers() {
 void VDIF_reader::set_parameters(const Input_node_parameters &param) {
   sample_rate = param.sample_rate();
   SFXC_ASSERT(((int)sample_rate % 1000000) == 0);
+  offset = param.offset;
 }
