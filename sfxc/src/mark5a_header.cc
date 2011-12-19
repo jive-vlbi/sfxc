@@ -85,7 +85,7 @@ int Mark5a_header::nTracks() {
 
 int Mark5a_header::year(int track) {
   SFXC_ASSERT((track >= 0) && (track < (int)N*8));
-  return 2000 + BCD(96+ 0, track);
+  return 2010 + BCD(96+ 0, track);
 }
 
 
