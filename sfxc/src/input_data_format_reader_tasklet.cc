@@ -7,7 +7,7 @@ Input_data_format_reader_tasklet(
   Input_memory_pool_ptr memory_pool)
     : memory_pool_(memory_pool),
       n_bytes_per_input_word(reader->bytes_per_input_word()),
-      data_modulation(false) {
+      data_modulation(false), seqno(0) {
 
   SFXC_ASSERT(sizeof(value_type) == 1);
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
@@ -244,6 +244,7 @@ push_element() {
   }
   SFXC_ASSERT(input_element_.buffer->data.size() == reader_->size_data_block());
 
+  input_element_.seqno = seqno++;
   output_buffer_->push(input_element_);
 }
 

@@ -126,6 +126,8 @@ private:
   bool data_modulation;
 
   size_t n_bytes_per_input_word;
+
+  int seqno;
 };
 
 #endif // INPUT_DATA_FORMAT_READER_TASKLET_H

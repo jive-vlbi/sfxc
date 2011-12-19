@@ -20,7 +20,7 @@ Channel_extractor_tasklet::
 Channel_extractor_tasklet(int samples_per_block, int N_)
     : output_memory_pool_(400*MAX_SUBBANDS),
     n_subbands(0),
-    fan_out(0),
+    fan_out(0), seqno(0),
     N(N_), samples_per_block(samples_per_block) {
   SFXC_ASSERT(N_ > 0);
   init_stats();
@@ -44,10 +44,42 @@ Channel_extractor_tasklet::~Channel_extractor_tasklet()
 {
 }
 
+// Number of threads for paralle processing in the channel extraction phase.
+#ifndef NUM_CHANNEL_EXTRACTOR_THREADS
+#define NUM_CHANNEL_EXTRACTOR_THREADS 1
+#endif
+
+void *
+Channel_extractor_tasklet::process(void *self_)
+{
+  Channel_extractor_tasklet *self =
+    static_cast<Channel_extractor_tasklet *>(self_);
+
+  try {
+    while (self->isrunning())
+      self->do_task();
+    return NULL;
+  }
+  catch (QueueClosedException&e ) {
+    ;
+  }
+}
+
 void Channel_extractor_tasklet::do_execute() {
+#if NUM_CHANNEL_EXTRACTOR_THREADS > 0
+  pthread_t process_thread[NUM_CHANNEL_EXTRACTOR_THREADS];
+#endif
+
   /// The thread is in a running state
   isrunning_ = true;
 	timer_.start();
+
+#if NUM_CHANNEL_EXTRACTOR_THREADS > 0
+  pthread_mutex_init(&seqno_lock, NULL);
+  pthread_cond_init(&seqno_cond, NULL);
+  for (int i = 0; i < NUM_CHANNEL_EXTRACTOR_THREADS; i++)
+    pthread_create(&process_thread[i], NULL, process, static_cast<void*>(this));
+#endif
 
   /// Exception handler to insure to catch the QueueClosedException event
   /// This Exception is thrown when the current thread is blocked on a
@@ -58,6 +90,11 @@ void Channel_extractor_tasklet::do_execute() {
     while ( isrunning_ && !input_buffer_->isclose() ) {
       do_task();
     }
+
+#if NUM_CHANNEL_EXTRACTOR_THREADS > 0
+    for (int j = 0; j < NUM_CHANNEL_EXTRACTOR_THREADS; j++)
+      pthread_join(process_thread[j], NULL);
+#endif
 
     /// The queue has been closed and is empty.
   } catch (QueueClosedException&e ) {
@@ -90,7 +127,7 @@ Channel_extractor_tasklet::do_task() {
   // The struct containing the data for processing
   // This is the not-yet-channelized data.
   //timer_waiting_input_.resume();
-  Input_buffer_element &input_element = input_buffer_->front();
+  const Input_buffer_element &input_element = input_buffer_->front_and_pop();
   //timer_waiting_input_.stop();
 
   // The number of input samples to process
@@ -160,15 +197,30 @@ Channel_extractor_tasklet::do_task() {
                         output_positions);
 
   //timer_processing_.stop();
-  data_processed_ +=  input_element.buffer->data.size();
+
+#if NUM_CHANNEL_EXTRACTOR_THREADS > 0
+  pthread_mutex_lock(&seqno_lock);
+  data_processed_ += input_element.buffer->data.size();
+  while (input_element.seqno != seqno)
+    pthread_cond_wait(&seqno_cond, &seqno_lock);
+  pthread_mutex_unlock(&seqno_lock);
+#else
+  data_processed_ += input_element.buffer->data.size();
+#endif
 
   { // release the input buffer and put the output buffer
     for (size_t i=0; i<n_subbands; i++) {
       SFXC_ASSERT(output_buffers_[i] != Output_buffer_ptr());
       output_buffers_[i]->push(output_elements[i]);
     }
-    input_buffer_->pop();
   }
+
+#if NUM_CHANNEL_EXTRACTOR_THREADS > 0
+  pthread_mutex_lock(&seqno_lock);
+  seqno++;
+  pthread_cond_broadcast(&seqno_cond);
+  pthread_mutex_unlock(&seqno_lock);
+#endif
 }
 
 

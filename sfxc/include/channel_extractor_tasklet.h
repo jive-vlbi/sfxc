@@ -100,6 +100,12 @@ public:
   *****************************************************************************/
   inline double get_sec(){ return timer_.measured_time(); }
 
+private:
+  static void *process(void *);
+
+  pthread_mutex_t seqno_lock;
+  pthread_cond_t seqno_cond;
+  int seqno;
 
 protected:
   /// Queue containing input data

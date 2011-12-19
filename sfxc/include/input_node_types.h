@@ -83,6 +83,7 @@ public:
     Time start_time;
     // Track mask (flags dead tracks)
     uint64_t mask;
+    int seqno;
   };
   /// Buffer for mark5 data frames
   typedef Threadsafe_queue<Input_data_frame>        Input_buffer;
