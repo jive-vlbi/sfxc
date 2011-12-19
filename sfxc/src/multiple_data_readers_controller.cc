@@ -36,16 +36,8 @@ Multiple_data_readers_controller::get_listening_ip(
   std::vector<uint64_t>& ip_port) {
   std::vector<uint64_t> addrs;
 
-  Vector_string if_names;
   std::vector<InterfaceIP*> interfaces;
-  if_names.push_back(String("myri0"));
-  if_names.push_back(String("ib0"));
-  if_names.push_back(String("bond0"));
-  if_names.push_back(String("eth0"));
-  if_names.push_back(String("eth1"));
-  if_names.push_back(String("eth2"));
-  if_names.push_back(String("eth3"));
-  Network::get_interfaces_ordered_by_name(if_names, interfaces);
+  Network::get_interfaces(interfaces);
 
   for (unsigned int i=0;i<interfaces.size();i++) {
     ip_port.push_back( interfaces[i]->get_ip64() );
@@ -75,11 +67,9 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
       pConnexion cnx= NULL;
       unsigned int i=0;
       for (i=0;i<ip_ports.size() && cnx == NULL;i+=2) {
+	if (!Network::match_interface(ip_ports[i]))
+	  continue;
         try {
-          in_addr tmp;
-          tmp.s_addr = ip_ports[i];
-
-          ///DEBUG_MSG("TRYING: " << inet_ntoa( tmp ) << " port: " << ip_ports[i+1] );
           cnx = Network::connect_to( ip_ports[i], ip_ports[i+1] );
         } catch (Exception& e) {}
       }

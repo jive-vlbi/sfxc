@@ -21,6 +21,7 @@
 class Network {
 public:
   static void get_interfaces(std::vector<InterfaceIP*>& intf);
+  static bool match_interface(in_addr_t dest);
 
   /// Return a list of interfaces, ordered by the given list of name
   static void get_interfaces_ordered_by_name(const Vector_string& prefferedif,
@@ -31,8 +32,6 @@ public:
   static pInterfaceIP get_first_interface();
 
   static pInterfaceIP get_any_interface();
-
-  static pInterfaceIP scan_interfaces_for_dest(const std::string& ip);
 
   static pInterfaceIP scan_interfaces();
 

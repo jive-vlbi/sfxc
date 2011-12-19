@@ -1,16 +1,14 @@
-#include <arpa/inet.h>
-
-#include <netdb.h>
-
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <net/if.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netdb.h>
 
 #include <unistd.h>
 
 #include <iostream>
-
-#include <ifaddrs.h>
-
-
 
 #include "network.h"
 
@@ -129,6 +127,9 @@ void Network::get_interfaces(std::vector<InterfaceIP*>& vectorinterfaces) {
     socklen_t salen;
 
 
+    if (ifa->ifa_flags & IFF_LOOPBACK)
+      continue;
+
 
     //std::cout << "scanning network interface:" << ifa->ifa_name << std::endl;
 
@@ -165,25 +166,27 @@ void Network::get_interfaces(std::vector<InterfaceIP*>& vectorinterfaces) {
 }
 
 
+bool Network::match_interface(in_addr_t ip) {
+  struct ifaddrs *ifa, *ifaddr;
+  in_addr_t addr, mask;
 
-InterfaceIP* Network::scan_interfaces_for_dest(const std::string& ip) {
+  if (getifaddrs(&ifaddr) == -1)
+    return false;
 
-  std::vector<InterfaceIP*> interface;
+  for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+    if (ifa->ifa_addr->sa_family != AF_INET)
+      continue;
+    if (ifa->ifa_flags & IFF_LOOPBACK)
+      continue;
 
-
-
-  Network::get_interfaces(interface);
-
-  for (unsigned int i=0;i<interface.size();i++) {
-
-    if ( interface[i]->ip().find( ip.substr(0, ip.find('.') ) ) != String::npos ) return interface[i];
-
+    addr = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
+    mask = ((struct sockaddr_in *)ifa->ifa_netmask)->sin_addr.s_addr;
+    if ((ip & mask) == (addr & mask))
+      return true;
   }
 
-  return NULL;
-
+  return false;
 }
-
 
 
 InterfaceIP* Network::scan_interfaces() {
