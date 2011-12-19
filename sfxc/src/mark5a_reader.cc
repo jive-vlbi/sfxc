@@ -137,7 +137,7 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
   std::cout << RANK_OF_NODE << " : Resync header, t = " << get_current_time() << "\n";
 
   unsigned char *buffer= &data.buffer->data[0];
-  int bytes_read=0, header_start=0, nOnes=0;
+  int bytes_read=0, header_start=0;
   bool continue_searching = true;
   do{
     // the header contains 64 bits before the syncword and 64 bits after the syncword.
