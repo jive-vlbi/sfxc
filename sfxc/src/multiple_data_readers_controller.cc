@@ -34,14 +34,16 @@ Multiple_data_readers_controller::
 void
 Multiple_data_readers_controller::get_listening_ip(
   std::vector<uint64_t>& ip_port) {
-  std::vector<uint64_t> addrs;
 
+  std::vector<std::string> names;
   std::vector<InterfaceIP*> interfaces;
-  Network::get_interfaces(interfaces);
+  names.push_back(String("myri0"));
+  names.push_back(String("ib0"));
+  Network::get_interfaces_ordered_by_name(names, interfaces);
 
-  for (unsigned int i=0;i<interfaces.size();i++) {
-    ip_port.push_back( interfaces[i]->get_ip64() );
-    ip_port.push_back( tcp_connection.get_port() );
+  for (size_t i = 0; i < interfaces.size(); i++) {
+    ip_port.push_back(interfaces[i]->get_ip64());
+    ip_port.push_back(tcp_connection.get_port());
   }
 }
 
@@ -78,6 +80,7 @@ Multiple_data_readers_controller::process_event(MPI_Status &status) {
         in_addr tmp;
         tmp.s_addr = ip_ports[i-2];
         ///DEBUG_MSG("Connected using: " << inet_ntoa( tmp ) << ":" << ip_ports[i+1] );
+	std::cout << "Connected using: " << inet_ntoa( tmp ) << ":" << ip_ports[i+1] << std::endl;
         boost::shared_ptr<Data_reader> reader( new Data_reader_socket( cnx ) );
         add_data_reader(info[3], reader);
       } else {

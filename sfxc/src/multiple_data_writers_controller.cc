@@ -7,6 +7,8 @@
  *
  */
 
+#include <arpa/inet.h>
+
 #include "multiple_data_writers_controller.h"
 #include "sfxc_mpi.h"
 #include "mpi_transfer.h"
@@ -33,32 +35,20 @@ Multiple_data_writers_controller(Node &node, int max_connections)
 Multiple_data_writers_controller::
 ~Multiple_data_writers_controller() {}
 
-#include <arpa/inet.h>
 void
 Multiple_data_writers_controller::get_listening_ip(
   std::vector<uint64_t>& ip_port) {
-  std::vector<uint64_t> addrs;
 
-  //tcp_connection.get_ip_addresses( addrs );
-
+  std::vector<std::string> names;
   std::vector<InterfaceIP*> interfaces;
-  Network::get_interfaces(interfaces);
+  names.push_back(String("myri0"));
+  names.push_back(String("ib0"));
+  Network::get_interfaces_ordered_by_name(names, interfaces);
 
-  for (unsigned int i=0;i<interfaces.size();i++) {
-    //in_addr tmp;
-    //tmp.s_addr = addrs[i];
-    //DEBUG_MSG("CHECKING: " << interfaces[i]->name() << " port: " << tcp_connection.get_port() );
-    ip_port.push_back( interfaces[i]->get_ip64() );
-    ip_port.push_back( tcp_connection.get_port() );
+  for (size_t i = 0; i < interfaces.size(); i++) {
+    ip_port.push_back(interfaces[i]->get_ip64());
+    ip_port.push_back(tcp_connection.get_port());
   }
-
-  //for(unsigned int i=0;i<addrs.size();i++) {
-  //in_addr tmp;
-  //tmp.s_addr = addrs[i];
-  //DEBUG_MSG("ADDRESS: " << inet_ntoa( tmp ) << " port: " << tcp_connection.get_port() );
-  //ip_port.push_back(addrs[i]);
-  //ip_port.push_back( tcp_connection.get_port() );
-  //}
 }
 
 boost::shared_ptr<Data_writer>
