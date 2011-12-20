@@ -22,7 +22,7 @@ Network::get_interfaces_ordered_by_name(const Vector_string& names,
 
   Network::get_interfaces(unsorted_interfaces);
 
-  for (size_t i = 0; i < interfaces.size(); i++)
+  for (size_t i = 0; i < unsorted_interfaces.size(); i++)
     selected.push_back(false);
 
   // Order the interfaces given by NAMES.
@@ -98,7 +98,7 @@ Network::get_interfaces(std::vector<InterfaceIP*>& interfaces)
     interfaces.push_back(new InterfaceIP(name, address));
   }
 
-  freeifaddrs (ifa);
+  freeifaddrs(ifaddr);
 }
 
 bool
@@ -118,10 +118,13 @@ Network::match_interface(in_addr_t ip)
 
     addr = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
     mask = ((struct sockaddr_in *)ifa->ifa_netmask)->sin_addr.s_addr;
-    if ((ip & mask) == (addr & mask))
+    if ((ip & mask) == (addr & mask)) {
+      freeifaddrs(ifaddr);
       return true;
+    }
   }
 
+  freeifaddrs(ifaddr);
   return false;
 }
 
