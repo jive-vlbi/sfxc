@@ -166,6 +166,7 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
             // Instead of the first point of the desired scan, we got the
             // last point of the previous scan.  Get rid of it.
             scans.resize(0);
+            times.resize(0);
           }else{
             SFXC_ASSERT(scan_end > scan_start);
             scan.end.set_time(current_mjd, scan_end);
