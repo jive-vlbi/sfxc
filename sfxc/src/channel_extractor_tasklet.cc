@@ -124,6 +124,15 @@ Channel_extractor_tasklet::do_task() {
   SFXC_ASSERT(n_subbands == output_buffers_.size());
   SFXC_ASSERT(n_subbands > 0);
 
+  // Acquire output buffers for dechannelized data first.  This may
+  // block, so if we do this after grabbing an input buffer we might
+  // deadlock.
+  Output_buffer_element output_elements[n_subbands];
+  //timer_waiting_output_.resume();
+  for (size_t subband = 0; subband < n_subbands; subband++)
+    output_elements[subband].channel_data = output_memory_pool_.allocate();
+  //timer_waiting_output_.stop();
+
   // The struct containing the data for processing
   // This is the not-yet-channelized data.
   //timer_waiting_input_.resume();
@@ -146,15 +155,10 @@ Channel_extractor_tasklet::do_task() {
   int n_output_bytes = (samples_per_block*fan_out)/8;
   SFXC_ASSERT(n_output_bytes > 0);
 
-  // Array of dechannelized output buffers
-  Output_buffer_element  output_elements[n_subbands];
   // Array of pointers to the actual output data arrays
   unsigned char *output_positions[n_subbands];
   { // Acquire output buffers
-    //timer_waiting_output_.resume();
     for (size_t subband=0; subband<n_subbands; subband++) {
-      output_elements[subband].channel_data = output_memory_pool_.allocate();
-
       output_elements[subband].start_time = input_element.start_time;
       // allocate the right amount of memory for each output block
       if (output_elements[subband].channel_data.data().data.size() !=
@@ -187,7 +191,6 @@ Channel_extractor_tasklet::do_task() {
         }
       }
     }
-    //timer_waiting_output_.stop();
   }
 
   // Channel extract
