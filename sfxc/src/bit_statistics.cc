@@ -20,9 +20,14 @@ bit_statistics::~bit_statistics(){
 
 void 
 bit_statistics::reset_statistics(int bits_per_sample_){
+  SFXC_ASSERT(bits_per_sample_ == 1 || bits_per_sample_ == 2);
   if(bits_per_sample != bits_per_sample_){
     bits_per_sample = bits_per_sample_;
+#if 0
     statistics.resize((int)pow(2,bits_per_sample)+1); // +1 for the #invalid samples
+#else
+    statistics.resize(5);
+#endif
   }
   memset(&data_counts[0],0,data_counts.size()*sizeof(int));
   nInvalid = 0;
@@ -42,7 +47,11 @@ bit_statistics::get_statistics(){
     }
   }else{
     int bps = bits_per_sample;
+#if 0
     int max_val = statistics.size()-2;
+#else
+    int max_val = 1;
+#endif
     for(int i=0;i<256;i++){
       for(int j=0;j<8/bps;j++)
         statistics[(i>>j*bps)&max_val] += data_counts[i];
