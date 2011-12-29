@@ -438,7 +438,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
         stats[stream].levels[1]=levels[0];
         stats[stream].levels[2]=levels[1];
         stats[stream].levels[3]=0;
-        stats[stream].n_invalid=levels[2];
+        stats[stream].n_invalid=levels[4];
       }
     }
 
@@ -469,6 +469,8 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     if (stations.first == stations.second){
       hbaseline.weight = std::max(total_samples - levels[4], (int64_t) 0);       // The number of good samples
     }else{
+      SFXC_ASSERT(levels[4] >= 0);
+      SFXC_ASSERT(n_flagged[i].first >= 0);
       hbaseline.weight = std::max(total_samples - levels[4] - n_flagged[i].first, (int64_t)0);       // The number of good samples
     }
     // Station number in the vex-file
@@ -662,6 +664,8 @@ void Correlation_core::find_invalid() {
      }
       i = invalid_start[0] < invalid_start[1] ? 0 : 1;
     }
+    SFXC_ASSERT(nflagged[0] >= 0);
+    SFXC_ASSERT(nflagged[1] >= 0);
     n_flagged[b].first += nflagged[0];
     n_flagged[b].second += nflagged[1];
   }
