@@ -80,6 +80,7 @@ class CorrelatedData:
                 self.fp = None
                 return
 
+            self.fp.read(h[0] - struct.calcsize(global_hdr))
             exper = h[1].strip('\x00')
             hour = h[4] / 3600
             min = (h[4] % 3600) / 60
