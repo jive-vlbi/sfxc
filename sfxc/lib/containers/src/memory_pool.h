@@ -564,7 +564,7 @@ void Memory_pool<T>::release(Element& element) {
   MASSERT( m_freequeue.size() <= m_vectorelements.size() );
   MASSERT( m_freerefqueue.size() <= m_vectorreferences.size() );
   if ( m_freequeue.size() == 1  ) {
-    m_freequeuecond.signal();
+    m_freequeuecond.broadcast();
   }
 }
 
