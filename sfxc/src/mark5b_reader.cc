@@ -66,7 +66,7 @@ Mark5b_reader::goto_time(Data_frame &data, Time us_time) {
     size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );
     if (bytes_to_read != byte_read)
       return current_time_;
-
+    
     read_new_block(data);
     if((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) != 0)
       return resync_header(data, 0);
@@ -96,6 +96,7 @@ Time Mark5b_reader::get_current_time() {
 }
 
 bool Mark5b_reader::read_new_block(Data_frame &data) {
+  data.invalid.resize(0);
   std::vector<value_type> &buffer = data.buffer->data;
   if (buffer.size() != size_data_block()) {
     buffer.resize(size_data_block());
@@ -237,6 +238,7 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
 }
 
 bool Mark5b_reader::resync_header(Data_frame &data, int try_) {
+  data.invalid.resize(0);
   if(try_ == MAXIMUM_RESYNC_TRIES){
     std::cout << "Couldn't find new sync word before EOF\n";
     return false;
