@@ -29,6 +29,7 @@ void Delay_correction::do_task() {
   int output_stride =  fft_cor_size()/2 + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
   cur_output = output_memory_pool.allocate();
   cur_output->stride = output_stride;
+  // The windowing touches each block twice, so the last block needs to be preserved
   int nfft_cor = (nbuffer * fft_size() + tbuf_end - tbuf_start) / (fft_cor_size() / 2) - 1;
   if(cur_output->data.size() != nfft_cor  * output_stride)
     cur_output->data.resize(nfft_cor * output_stride);
@@ -65,9 +66,8 @@ void Delay_correction::do_task() {
     fft_t2f_cor.rfft(&temp_buffer[0], &cur_output->data[i * output_stride]);
   }
 #endif // DUMMY_CORRELATION
- if(nfft_cor > 0){
-   cur_output->invalid = input->invalid;
-   output_buffer->push(cur_output);
+  if(nfft_cor > 0){
+    output_buffer->push(cur_output);
   }
 }
 
@@ -289,5 +289,7 @@ Delay_correction::create_window(){
       window[i] = 0.5 * (1 - cos(2*M_PI*i/(n-1)));
     }
     break;
+  default:
+    sfxc_abort("Invalid windowing function");
   }
 }

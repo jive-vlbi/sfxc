@@ -38,7 +38,6 @@ public:
     Channel_memory_pool_data(): nfft(0) {}
     int nfft;
     Memory_pool_vector_element<FLOAT> data;
-    std::vector<Invalid> invalid;
   };
   typedef Memory_pool< Channel_memory_pool_data >         Channel_memory_pool;
   typedef Channel_memory_pool::Element                    Channel_memory_pool_element;
@@ -50,7 +49,6 @@ public:
     // The number of elements reserved for each fft, the start of each fft should be propely (16 bytes) alligned
     size_t stride; 
     Memory_pool_vector_element< std::complex<FLOAT> > data;
-    std::vector<Invalid> invalid;
   };
   typedef Memory_pool< Delay_memory_pool_data >         Delay_memory_pool;
   typedef Delay_memory_pool::Element                    Delay_memory_pool_element;

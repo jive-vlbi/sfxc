@@ -82,12 +82,15 @@ Bit2float_worker::do_task() {
         cur_delay = new_delay;
         break;
       }
-      case HEADER_INVALID:
+      case HEADER_INVALID:{
         invalid_left = inp_data[read++ % inp_size];
         invalid_left |= (inp_data[read++ % inp_size] << 8);
         statistics->inc_invalid(invalid_left);
+        int start = current_fft * fft_size;
+        invalid.push_back((Invalid){start + out_index, invalid_left});
         state = SEND_INVALID;
         break;
+      }
       default:
         SFXC_ASSERT_MSG(false, "Read invalid header from input buffer");
       }
@@ -107,7 +110,6 @@ Bit2float_worker::do_task() {
       }
 
       if (invalid_to_write > 0) {
-        out_frame.invalid.push_back((Correlator_node_types::Invalid){out_index, invalid_to_write});
         memset(&out_frame.data[out_index], 0, invalid_to_write * sizeof(FLOAT));
         invalid_left -= invalid_to_write;
         out_index += invalid_to_write;
@@ -279,6 +281,7 @@ set_parameters() {
   sample_in_byte = 0;
   cur_delay = -1;
   allocate_element();
+  invalid.resize(0);
 }
 
 // Empty the input queue, called from the destructor of Input_node
@@ -391,7 +394,11 @@ Bit2float_worker::allocate_element(){
   out_element = memory_pool_.allocate();
   if(out_element.data().data.size() != nsamples)
     out_element.data().data.resize(nsamples);
-  out_element.data().invalid.resize(0);
   out_element.data().nfft = nfft;
   out_index=0;
+}
+
+std::vector<Bit2float_worker::Invalid> *
+Bit2float_worker::get_invalid(){
+  return &invalid;
 }

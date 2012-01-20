@@ -218,9 +218,12 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   // Connect the correlation_core to delay_correction
   correlation_core_normal->connect_to(stream_nr, statistics,
                                       delay_modules[stream_nr]->get_output_buffer());
-  if(pulsar_binning)
+  correlation_core_normal->connect_to(stream_nr, bit2float_thread_.get_invalid(stream_nr));
+  if(pulsar_binning){
     correlation_core_pulsar->connect_to(stream_nr, statistics,
                                         delay_modules[stream_nr]->get_output_buffer());
+    correlation_core_pulsar->connect_to(stream_nr, bit2float_thread_.get_invalid(stream_nr));
+  }
 }
 
 void Correlator_node::hook_added_data_writer(size_t i) {

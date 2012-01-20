@@ -65,7 +65,13 @@ Correlator_node_bit2float_tasklet::get_output_buffer(int nr_stream){
   return bit2float_workers_[nr_stream]->get_output_buffer();
 }
 
+std::vector<Bit2float_worker::Invalid> *
+Correlator_node_bit2float_tasklet::get_invalid(int nr_stream){
+  SFXC_ASSERT( nr_stream < bit2float_workers_.size() );
+  return bit2float_workers_[nr_stream]->get_invalid();
+}
+ 
 std::vector< Bit2float_worker_sptr >& 
 Correlator_node_bit2float_tasklet::bit2float_workers() {
-      return bit2float_workers_;
+  return bit2float_workers_;
 }

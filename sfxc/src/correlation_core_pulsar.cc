@@ -103,7 +103,6 @@ void Correlation_core_pulsar::do_task() {
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
     input_elements[i] = &input_buffers[i]->front()->data[0];
   }
-  find_invalid();
   const int stride = input_buffers[0]->front()->stride;
   const int nbuffer = input_buffers[0]->front()->data.size() / stride;
   for (int buf = 0; buf < nbuffer * stride ; buf += stride){
@@ -120,6 +119,7 @@ void Correlation_core_pulsar::do_task() {
     PROGRESS_MSG("node " << node_nr_ << ", "
                  << current_fft << " of " << number_ffts_in_integration);
 
+    find_invalid();
     for(int bin=0;bin<nbins;bin++){
       integration_normalize(accumulation_buffers[bin]);
       integration_write(accumulation_buffers[bin], 0, bin);

@@ -19,6 +19,7 @@ class Correlator_node_bit2float_tasklet : public Thread {
 public:
   typedef Correlator_node_types::Channel_circular_input_buffer      Channel_circular_input_buffer;
   typedef Correlator_node_types::Channel_circular_input_buffer_ptr  Channel_circular_input_buffer_ptr;
+  typedef Correlator_node_types::Invalid                            Invalid;
 
   Correlator_node_bit2float_tasklet();
   virtual ~Correlator_node_bit2float_tasklet();
@@ -45,12 +46,20 @@ public:
   *****************************************************************************/
   void connect_to(int nr_stream, bit_statistics_ptr statistics, Channel_circular_input_buffer_ptr);
 
-	/*****************************************************************************
-  * @desc Retreive the output queue for the specified channel.
+  /*****************************************************************************
+  * @desc Retreive the output queue for the specified station.
   * @param int nr_stream The identifier of the stream.
-  * assert( nr_stream < number_channels() )
+  * assert( nr_stream < number_stations() )
   *****************************************************************************/
   Bit2float_worker::Output_queue_ptr get_output_buffer(int nr_stream);
+
+  /*****************************************************************************
+  * @desc Retreive the list of invalid samples for the specified station.
+  * @param int nr_stream The identifier of the stream.
+  * assert( nr_stream < number_stations() )
+  *****************************************************************************/
+  std::vector<Invalid> *get_invalid(int nr_stream);
+
 
   /*****************************************************************************
   * @desc Initialize the stream with the given parameters.

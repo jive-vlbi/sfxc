@@ -36,6 +36,7 @@ public:
   bool almost_finished();
 
   void connect_to(size_t stream, bit_statistics_ptr statistics_, Input_buffer_ptr buffer);
+  void connect_to(size_t stream, std::vector<Invalid> *invalid_);
 
   virtual void set_parameters(const Correlation_parameters &parameters,
                       int node_nr);

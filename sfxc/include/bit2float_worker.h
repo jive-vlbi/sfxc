@@ -33,6 +33,9 @@ public:
   typedef Types::Channel_queue                      Output_queue;
   typedef Types::Channel_queue_ptr                  Output_queue_ptr;
 
+  // Invalid data
+  typedef Correlator_node_types::Invalid            Invalid;
+
   Bit2float_worker(int stream_nr, bit_statistics_ptr statistics_);
   ~Bit2float_worker() {
     // We need to make sure that output_element is released
@@ -64,6 +67,9 @@ public:
   // Empty the input queue, called from the destructor of Input_node
   // This is necessary because of pre-extracting data
   void empty_input_queue();
+  
+  // Obtain the list of invalid samples
+  std::vector<Invalid> *get_invalid();
 
   static Bit2float_worker_sptr new_sptr(int stream_nr_, bit_statistics_ptr statistics_);
 private:
@@ -115,5 +121,7 @@ private:
     int fft_size_delaycor;
     int fft_size_correlation;
   } new_parameters;
+  /// List of all invalid samples in the time slice
+  std::vector<Invalid> invalid;
 };
 #endif // INTEGER_DELAY_CORRECTION_PER_CHANNEL_H

@@ -76,6 +76,13 @@ bool Correlation_core::finished() {
   return current_fft == number_ffts_in_integration;
 }
 
+void Correlation_core::connect_to(size_t stream, std::vector<Invalid> *invalid_) {
+  if (stream >= invalid_elements.size()) {
+    invalid_elements.resize(stream+1);
+  }
+  invalid_elements[stream] = invalid_;
+}
+
 void Correlation_core::connect_to(size_t stream, bit_statistics_ptr statistics_, Input_buffer_ptr buffer) {
   if (stream >= input_buffers.size()) {
     input_buffers.resize(stream+1);
@@ -314,7 +321,7 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
   std::vector<double> norms;
   norms.resize(n_stations());
   memset(&norms[0], 0, norms.size()*sizeof(double));
-  // Average the auto correlations
+  // Normalize the auto correlations
   for (size_t station=0; station < n_stations(); station++) {
     for (size_t i = 0; i < fft_size() + 1; i++) {
       norms[station] += integration_buffer[station][i].real();
@@ -607,14 +614,7 @@ void Correlation_core::add_source_list(const std::map<std::string, int> &sources
 }
 
 void Correlation_core::find_invalid() {
-  // First get the number of invalid samples per station
-  invalid_elements.resize(0);
-  for(int i = 0; i < n_stations(); i++){
-    invalid_elements.push_back(&input_buffers[i]->front()->invalid);
-  }
-
-  // Now find all the flagged blocks
-  for (int b = n_stations(); b < baselines.size(); b++) {
+ for (int b = n_stations(); b < baselines.size(); b++) {
     int s1 = baselines[b].first, s2 = baselines[b].second;
     std::vector<Invalid> *invalid[2] = {invalid_elements[s1], invalid_elements[s2]};
     int index[2] = {0, 0};
