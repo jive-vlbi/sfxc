@@ -14,7 +14,6 @@ bool Input_data_format_reader::eof() {
 
 void Input_data_format_reader::find_fill_pattern(Data_frame &data){
   int buffer_size = data.buffer->data.size() / 4; // number of 32 bit words in buffer
-  int step_size = std::min(MARK5_FILLPATTERN_NWORDS, buffer_size) / 2;
   uint32_t *buffer=(uint32_t *)&data.buffer->data[0];
 
   // See if there is already a bit of invalid data (assumed to start at byte 0)
@@ -24,9 +23,26 @@ void Input_data_format_reader::find_fill_pattern(Data_frame &data){
 
   // If the first word contains fill pattern search for the end
   int start = end_previous_invalid;
-  int end = start;
-  int step = std::min(MARK5_FILLPATTERN_NWORDS, buffer_size) / 2;
-  if(buffer[start] == MARK5_FILLPATTERN){
+  int end = start; 
+  while(start < buffer_size -1){
+    // find the start of the fill pattern
+    if(buffer[start] != MARK5_FILLPATTERN){
+      int step = std::min(MARK5_FILLPATTERN_NWORDS, buffer_size - start - 1);
+      while(step > 0){
+        if(buffer[start + step] != MARK5_FILLPATTERN){
+          start += step;
+          if(start + step >= buffer_size)
+            step = buffer_size - start - 1;
+        }else{
+          step /= 2;
+        }
+      }
+      if (start < buffer_size -1)
+        start += 1;
+    }
+    // Find the end of the fill pattern
+    end = start;
+    int step = std::min(MARK5_FILLPATTERN_NWORDS, buffer_size - start - 1);
     while(step > 0){
       if(buffer[end + step] == MARK5_FILLPATTERN){
         end += step;
@@ -38,47 +54,11 @@ void Input_data_format_reader::find_fill_pattern(Data_frame &data){
     }
     int old_size = data.invalid.size();
     data.invalid.resize(old_size + 1);
-    data.invalid[old_size].invalid_begin = start;
+    data.invalid[old_size].invalid_begin = start* 4;
     data.invalid[old_size].nr_invalid = (end - start + 1) * 4; // nr_invalid is in bytes
-    std::cout << RANK_OF_NODE << " : " << (end - start + 1) << " words of fill pattern found1\n";
-    start = end + 1;
-  }
-
-  // find the start of the first block of fill pattern
-  step = std::min(MARK5_FILLPATTERN_NWORDS, buffer_size - start) / 2;
-  while(step > 0){
-    if(buffer[start + step] != MARK5_FILLPATTERN){
-      start += step;
-      if(start + step >= buffer_size)
-        step = buffer_size - start - 1;
-    }else{
-      step /= 2;
+    if (RANK_OF_NODE == -1){
+      std::cout << RANK_OF_NODE << " : " << (end - start + 1) << " words of fill pattern found1\n";
     }
-  }
-
-  // Now find all other blocks of invalid data which are garanteed to be 
-  // spaced in multples of MARK5_FILLPATTERN_NWORDS
-  while(start < buffer_size -1){
-    // Find the end of the invalid block
-    int end = start;
-    step = std::min(MARK5_FILLPATTERN_NWORDS, buffer_size - end -1);
-    while((buffer[end + step] == MARK5_FILLPATTERN) && (step > 0)){
-      end += step;
-      step = std::min(MARK5_FILLPATTERN_NWORDS, buffer_size - end -1);
-    }
-
-    // insert the invalid block into the list of invalid data
-    int old_size = data.invalid.size();
-    data.invalid.resize(old_size + 1);
-    data.invalid[old_size].invalid_begin = start;
-    data.invalid[old_size].nr_invalid = (end - start + 1) * 4; // nr_invalid is in bytes
-    std::cout << RANK_OF_NODE << " : " << (end - start + 1 ) << " words of fill pattern found2\n";
-
-    // Find the start of the next invalid block
     start = end + 1;
-    do{
-      step = std::min(MARK5_FILLPATTERN_NWORDS, buffer_size - start -1);
-      start += step;
-    }while((step > 0) && (buffer[start] != MARK5_FILLPATTERN));
   }
 }

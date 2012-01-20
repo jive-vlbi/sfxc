@@ -42,7 +42,7 @@ bool Mark5a_header::is_valid(uint8_t mask) {
 //       itoa(header_[j], word, 2);
 //        printf(" Word: %03d %16s\n", j, word);
 //      }
-      std::cout << "Invalid Mark5a frame : No syncword found " << i << std::endl;
+//      std::cout << "Invalid Mark5a frame : No syncword found " << i << std::endl;
       return false;
     }
   }

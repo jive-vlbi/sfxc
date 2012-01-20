@@ -24,7 +24,6 @@ Channel_extractor_tasklet(int samples_per_block, int N_)
     N(N_), samples_per_block(samples_per_block) {
   SFXC_ASSERT(N_ > 0);
   init_stats();
-
   last_duration_=0;
 #ifdef USE_EXTRACTOR_5
   ch_extractor = new Channel_extractor_5();
@@ -72,7 +71,7 @@ void Channel_extractor_tasklet::do_execute() {
 
   /// The thread is in a running state
   isrunning_ = true;
-	timer_.start();
+  timer_.start();
 
 #if NUM_CHANNEL_EXTRACTOR_THREADS > 0
   pthread_mutex_init(&seqno_lock, NULL);
@@ -145,7 +144,7 @@ Channel_extractor_tasklet::do_task() {
   //   a time in microseconds and not all mark5b blocks start on an integer number
   //   of microseconds
   int n_input_samples = input_element.buffer->data.size();
-  if (n_input_samples != samples_per_block *N) {
+  if (n_input_samples != samples_per_block * N) {
     DEBUG_MSG(n_input_samples <<" != " << samples_per_block << " * " <<N);
   }
   SFXC_ASSERT(n_input_samples == samples_per_block*N);
@@ -183,8 +182,11 @@ Channel_extractor_tasklet::do_task() {
         output_elements[subband].invalid.resize(n_invalid_blocks);
         for(int i = 0 ; i < n_invalid_blocks ; i++){
           SFXC_ASSERT(input_element.invalid[i].invalid_begin >= 0);
+          // Simpliying assumption : invalid data starts at the beginning of the input word
+          // Only for an irrelivantly small subset of input words does this not always hold
+          // (for the first and last word of a 65KB invalid block if N > 4)
           output_elements[subband].invalid[i].invalid_begin =
-                  input_element.invalid[i].invalid_begin * fan_out / 8;
+                  input_element.invalid[i].invalid_begin * fan_out / (8*N);
           output_elements[subband].invalid[i].nr_invalid =
                   input_element.invalid[i].nr_invalid * fan_out / (8 * N);
           SFXC_ASSERT(output_elements[subband].invalid[i].nr_invalid >= 0);
@@ -275,6 +277,7 @@ set_parameters(const Input_node_parameters &input_node_param){
   ch_extractor->initialise(track_positions, N, samples_per_block, bits_per_sample);
 
   DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
+  std::cout << RANK_OF_NODE << " : N = " << N << ", fan_out = " << fan_out << "\n";
 }
 
 

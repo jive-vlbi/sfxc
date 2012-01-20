@@ -70,8 +70,8 @@ do_task() {
     }else if(reader_->get_current_time() != start_next_frame){
       int64_t nframes_missing = (reader_->get_current_time() - start_next_frame) / reader_->time_between_headers();
       nframes_missing = std::min(nframes_missing, nframes_left);
-      std::cout << RANK_OF_NODE << " : nframes_missing = " << nframes_missing << "; t= " << reader_->get_current_time() 
-                                << ", expected=" << start_next_frame << "\n";
+      //std::cout << RANK_OF_NODE << " : nframes_missing = " << nframes_missing << "; t= " << reader_->get_current_time() 
+      //                          << ", expected=" << start_next_frame << "\n";
       if(nframes_missing > 0){
         Input_element old_input_element = input_element_;
         push_random_blocks(nframes_missing);
@@ -79,6 +79,7 @@ do_task() {
           return;  
         input_element_ = old_input_element;
       } else if(nframes_missing < 0){
+        // Data was in the past, we simply drop the frame
         return;
       }
     }

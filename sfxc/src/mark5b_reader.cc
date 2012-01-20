@@ -65,6 +65,7 @@ Time Mark5b_reader::get_current_time() {
 }
 
 bool Mark5b_reader::read_new_block(Data_frame &data) {
+  data.invalid.resize(0);
   std::vector<value_type> &buffer = data.buffer->data;
   if (buffer.size() != size_data_block()) {
     buffer.resize(size_data_block());
@@ -197,6 +198,7 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
   int buffer_size = data.buffer->data.size();
   int bytes_read, header_pos, write_pos = 0;
   bool syncword_found = false;
+  data.invalid.resize(0);
 
   // We first find the location of the next syncword
   Data_reader_blocking::get_bytes_s(data_reader_.get(), header_size, buffer);
