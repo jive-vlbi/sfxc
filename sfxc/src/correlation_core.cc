@@ -30,7 +30,6 @@ void Correlation_core::do_task() {
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
     input_elements[i] = &input_buffers[i]->front()->data[0];
   }
-  find_invalid();
   const int stride = input_buffers[0]->front()->stride;
   const int nbuffer = input_buffers[0]->front()->data.size() / stride;
   for (int buf = 0; buf < nbuffer * stride ; buf += stride){
@@ -47,6 +46,7 @@ void Correlation_core::do_task() {
                  << current_fft << " of " << number_ffts_in_integration);
 
     sub_integration();
+    find_invalid();
     for(int i = 0 ; i < phase_centers.size(); i++){
       integration_normalize(phase_centers[i]);
       int source_nr;
@@ -337,7 +337,7 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
     }
   }
 
-  // Average the cross correlations
+  // Normalize the cross correlations
   const int64_t total_samples = number_ffts_in_integration * fft_size();
   for (size_t b = n_stations(); b < baselines.size(); b++) {
     SFXC_ASSERT(b < baselines.size());
