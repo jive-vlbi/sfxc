@@ -65,7 +65,6 @@ Time Mark5b_reader::get_current_time() {
 }
 
 bool Mark5b_reader::read_new_block(Data_frame &data) {
-  data.invalid.resize(0);
   std::vector<value_type> &buffer = data.buffer->data;
   if (buffer.size() != size_data_block()) {
     buffer.resize(size_data_block());
@@ -100,6 +99,7 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
     current_jday++;
   data.start_time = get_current_time();
   // Check if there is a fill pattern in the data and if so, mark the data invalid
+  data.invalid.resize(0);
   find_fill_pattern(data);
 
   current_time_ = get_current_time();
@@ -198,7 +198,6 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
   int buffer_size = data.buffer->data.size();
   int bytes_read, header_pos, write_pos = 0;
   bool syncword_found = false;
-  data.invalid.resize(0);
 
   // We first find the location of the next syncword
   Data_reader_blocking::get_bytes_s(data_reader_.get(), header_size, buffer);
@@ -243,7 +242,7 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
         }
       }
       // Now that we have found the first frame read the rest of the data
-      for(int i = 0; i < N_MK5B_BLOCKS_TO_READ - 1; i++){
+      for(int i = 1; i < N_MK5B_BLOCKS_TO_READ ; i++){
         total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), sizeof(current_header), (char *)&tmp_header);
         total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), frame_size, &buffer[i * frame_size]);
       }
@@ -253,6 +252,7 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
         if(current_header.julian_day() != current_jday % 1000)
           current_jday++;
         data.start_time = get_current_time();
+        data.invalid.resize(0);
         find_fill_pattern(data);
         current_time_ = get_current_time();
         return true;
