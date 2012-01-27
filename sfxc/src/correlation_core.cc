@@ -40,7 +40,6 @@ void Correlation_core::do_task() {
   for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++)
     input_buffers[i]->pop();
  
-  //if(RANK_OF_NODE==10) std::cout << "current_fft = " << current_fft << " / " << number_ffts_in_integration << "\n";
   if (current_fft == number_ffts_in_integration) {
     PROGRESS_MSG("node " << node_nr_ << ", "
                  << current_fft << " of " << number_ffts_in_integration);
@@ -130,7 +129,10 @@ Correlation_core::create_baselines(const Correlation_parameters &parameters){
     Control_parameters::nr_ffts_per_integration_slice(
       (int) parameters.integration_time.get_time_usec(),
       parameters.sample_rate,
-      parameters.fft_size_correlation) - 1; // One less because of the overlapping windows
+      parameters.fft_size_correlation); 
+  // One less because of the overlapping windows
+  if(parameters.window != SFXC_WINDOW_NONE)
+    number_ffts_in_integration -= 1;
 
   number_ffts_in_sub_integration =
     Control_parameters::nr_ffts_per_integration_slice(

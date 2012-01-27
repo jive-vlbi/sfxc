@@ -151,11 +151,19 @@ initialise(const char *ctrl_file, const char *vex_file,
     std::cout << "Pulsar binning cannot be used together with multiple phase centers\n";
     return false;
   }
+  // Set default windowing function, if necessary
+  if (ctrl["window_function"] == Json::Value()){
+    if (ctrl["multi_phase_center"].asBool())
+      ctrl["window_function"] = "NONE";
+    else
+      ctrl["window_function"] = "HANN";
+  }
+
   // Set the sub integartion time
   if(ctrl["sub_integr_time"] == Json::Value()){
     if (ctrl["multi_phase_center"].asBool()){
-      // Default to 1/64 s sub integrations
-      ctrl["sub_integr_time"] = std::min(integration_time().get_time(), 1 / 64.);
+      // Default to 20 ms sub integrations
+      ctrl["sub_integr_time"] = std::min(integration_time().get_time(), 1 / 50.);
     }else{
       // Default to 125 ms sub integrations
       ctrl["sub_integr_time"] = std::min(integration_time().get_time(), 1 / 8.);
@@ -325,9 +333,10 @@ Control_parameters::check(std::ostream &writer) const {
     std::string window = ctrl["window_function"].asString();
     for(int i = 0; i < window.size(); i++)
       window[i] = toupper(window[i]);
-    if ((window != "RECTANGULAR") and (window != "COSINE") and (window != "HAMMING") and (window != "HANN")){
+    if ((window != "RECTANGULAR") and (window != "COSINE") and (window != "HAMMING") and 
+      (window != "HANN") and (window != "NONE")){
       writer << "Invalid window function " << window 
-             << ", valid choises are : RECTANGULAR, COSINE, HAMMING, and HANN" << std::endl;
+             << ", valid choises are : RECTANGULAR, COSINE, HAMMING, HANN, and NONE" << std::endl;
       ok = false;
     }
   }
@@ -471,7 +480,7 @@ Control_parameters::fft_size_correlation() const {
 
 int
 Control_parameters::window_function() const{
-  int windowval = SFXC_WINDOW_RECT;
+  int windowval = SFXC_WINDOW_NONE;
   if (ctrl["window_function"] != Json::Value()){
     std::string window = ctrl["window_function"].asString();
     for(int i = 0; i < window.size(); i++)
@@ -484,6 +493,8 @@ Control_parameters::window_function() const{
       windowval = SFXC_WINDOW_HAMMING;
     else if(window == "HANN")
       windowval = SFXC_WINDOW_HANN;
+    else if (window == "NONE")
+      windowval = SFXC_WINDOW_NONE;
   }
   return windowval;
 }

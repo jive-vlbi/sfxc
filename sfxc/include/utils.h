@@ -187,10 +187,11 @@ void sfxc_abort(const char *msg="");
 #endif
 
 // Supported window functions
-#define SFXC_WINDOW_RECT       0   // rectangular window
-#define SFXC_WINDOW_COS        1   // Cosine window
-#define SFXC_WINDOW_HAMMING    2   // Hamming window
-#define SFXC_WINDOW_HANN       3   // Hann window
+#define SFXC_WINDOW_NONE       0   // disable windowing
+#define SFXC_WINDOW_RECT       1   // rectangular window
+#define SFXC_WINDOW_COS        2   // Cosine window
+#define SFXC_WINDOW_HAMMING    3   // Hamming window
+#define SFXC_WINDOW_HANN       4   // Hann window
 
 #ifdef PRINT_PROGRESS
 inline void getusec(unsigned long long &utime) {

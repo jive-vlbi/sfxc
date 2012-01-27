@@ -65,6 +65,20 @@ void Delay_correction::do_task() {
     // Do the final fft from time to frequency
     fft_t2f_cor.rfft(&temp_buffer[0], &cur_output->data[i * output_stride]);
   }
+  if ((current_fft == n_ffts_per_integration) && (correlation_parameters.window == SFXC_WINDOW_NONE)){
+    // Also get the last fft
+    size_t eob = tbuf_size - tbuf_start%tbuf_size; // how many samples to end of buffer
+    size_t nsamp = std::min(eob, fft_cor_size()/2);
+    memcpy(&temp_buffer[0], &time_buffer[tbuf_start%tbuf_size], nsamp * sizeof(FLOAT));
+    if(nsamp < fft_cor_size())
+      memcpy(&temp_buffer[nsamp], &time_buffer[0], (fft_cor_size()/2 - nsamp) * sizeof(FLOAT));
+    memset(&temp_buffer[fft_cor_size()/2], 0, sizeof(FLOAT) * fft_cor_size()/2);
+    // Do the final fft from time to frequency
+    cur_output->data.resize((nfft_cor+1) * output_stride);
+    fft_t2f_cor.rfft(&temp_buffer[0], &cur_output->data[nfft_cor * output_stride]);
+  }
+  if(current_fft >= n_ffts_per_integration)
+    std::cout << "current_fft = " << current_fft << ", n_ffts_per_integration = " << n_ffts_per_integration << "\n";
 #endif // DUMMY_CORRELATION
   if(nfft_cor > 0){
     output_buffer->push(cur_output);
@@ -210,11 +224,13 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   }
   SFXC_ASSERT(frequency_buffer.size() == fft_size());
 
+  SFXC_ASSERT(parameters.fft_size_correlation >= parameters.fft_size_delaycor);
   n_ffts_per_integration =
     Control_parameters::nr_ffts_per_integration_slice(
       (int) parameters.integration_time.get_time_usec(),
       parameters.sample_rate,
-      parameters.fft_size_delaycor);
+      parameters.fft_size_correlation) * 
+      (parameters.fft_size_correlation / parameters.fft_size_delaycor);
 
   current_fft = 0;
   tbuf_start = 0;
@@ -262,6 +278,13 @@ Delay_correction::create_window(){
   const int n = fft_cor_size();
   window.resize(n);
   switch(correlation_parameters.window){
+  case SFXC_WINDOW_NONE:
+    //  Identical to the case without windowing
+    for (int i=0; i<n/2; i++)
+      window[i] = 1;
+    for (int i = n/2; i < n; i++)
+      window[i] = 0;
+    break;
   case SFXC_WINDOW_RECT:
     // rectangular window (including zero padding)
     for (int i=0; i<n/4; i++)

@@ -43,7 +43,6 @@ Mark5b_reader::goto_time(Data_frame &data, Time time) {
     if (!read_new_block(data))
       break;
   }
-
   return get_current_time();
 }
 
@@ -60,8 +59,9 @@ Time Mark5b_reader::get_current_time() {
       time.set_time(current_jday, current_header.seconds() + subsec);
     else
       time.set_time_usec(current_jday, current_header.microseconds());
+    time -= offset;
   }
-  return time - offset;
+  return time;
 }
 
 bool Mark5b_reader::read_new_block(Data_frame &data) {
@@ -97,12 +97,12 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
     return resync_header(data);
   if(current_header.julian_day() != current_jday % 1000)
     current_jday++;
-  data.start_time = get_current_time();
+  current_time_ = get_current_time();
+  data.start_time = current_time_;
   // Check if there is a fill pattern in the data and if so, mark the data invalid
   data.invalid.resize(0);
   find_fill_pattern(data);
 
-  current_time_ = get_current_time();
   return true;
 }
 
@@ -251,10 +251,10 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
       if (check_header(current_header)){
         if(current_header.julian_day() != current_jday % 1000)
           current_jday++;
-        data.start_time = get_current_time();
+        current_time_ = get_current_time();
+        data.start_time = current_time_;
         data.invalid.resize(0);
         find_fill_pattern(data);
-        current_time_ = get_current_time();
         return true;
       }
     }
