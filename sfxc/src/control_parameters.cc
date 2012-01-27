@@ -158,15 +158,26 @@ initialise(const char *ctrl_file, const char *vex_file,
     else
       ctrl["window_function"] = "HANN";
   }
+  // Set the fft sizes
+  if (ctrl["fft_size_delaycor"] == Json::Value())
+    ctrl["fft_size_delaycor"] = 256;
+
+  if (ctrl["fft_size_correlation"] == Json::Value()){
+    if (ctrl["multi_phase_center"].asBool())
+      ctrl["fft_size_correlation"] = 4096;
+    else
+      ctrl["fft_size_correlation"] = number_channels();
+  }
 
   // Set the sub integartion time
   if(ctrl["sub_integr_time"] == Json::Value()){
+    double integr_time_usec = round(integration_time().get_time_usec());
     if (ctrl["multi_phase_center"].asBool()){
-      // Default to 20 ms sub integrations
-      ctrl["sub_integr_time"] = std::min(integration_time().get_time(), 1 / 50.);
+      // Default to +/- 20 ms sub integrations
+      ctrl["sub_integr_time"] = std::min(integr_time_usec, 20480.);
     }else{
       // Default to 125 ms sub integrations
-      ctrl["sub_integr_time"] = std::min(integration_time().get_time(), 1 / 8.);
+      ctrl["sub_integr_time"] = std::min(integr_time_usec, 125000.);
     }
   }
 
@@ -230,10 +241,27 @@ Control_parameters::check(std::ostream &writer) const {
   }
 
   { // Check integration time
-    Time integr_time(ctrl["integr_time"].asDouble()*1000000);
-    if (integr_time < Time(0)) {
+    if (ctrl["integr_time"] == Json::Value()){
       ok = false;
-      writer << "Ctrl-file: Integration time is negative" << std::endl;
+      writer << "Ctrl-file: Integration time not set" << std::endl;
+    } else {
+      Time integr_time(ctrl["integr_time"].asDouble()*1000000);
+      if (integr_time < Time(0)) {
+        ok = false;
+        writer << "Ctrl-file: Integration time is negative" << std::endl;
+      }
+
+      // Check sub integration time
+      if (ctrl["sub_integr_time"] != Json::Value()){
+        Time sub_integr_time(ctrl["sub_integr_time"].asDouble());
+        if (sub_integr_time < Time(0)) {
+          ok = false;
+          writer << "Ctrl-file: Sub integration time is negative" << std::endl;
+        } else if (integr_time < sub_integr_time){
+          ok = false;
+          writer << "Ctrl-file: Sub integration time is larger than the integration time" << std::endl;
+        }
+      }
     }
   }
 
@@ -250,6 +278,10 @@ Control_parameters::check(std::ostream &writer) const {
       if(!isPower2(ctrl["fft_size_correlation"].asInt())){
         ok = false;
         writer << "Ctrl-file: fft_size_correlation is not a power of two" << std::endl;
+      }
+      if (ctrl["fft_size_correlation"].asInt() < ctrl["number_channels"].asInt()){
+        ok = false;
+        writer << "Ctrl-file: fft_size_correlation cannot be smaller than the number of channels\n";
       }
       fft += 1;
     }
@@ -456,7 +488,7 @@ Control_parameters::integration_time() const {
 
 Time
 Control_parameters::sub_integration_time() const {
-    return Time(round(ctrl["sub_integr_time"].asDouble()*1000000));
+    return Time(ctrl["sub_integr_time"].asDouble());
 }
 
 int
@@ -466,15 +498,11 @@ Control_parameters::number_channels() const {
 
 int
 Control_parameters::fft_size_delaycor() const {
-  if (ctrl["fft_size_delaycor"] == Json::Value())
-    return 256;
   return ctrl["fft_size_delaycor"].asInt();
 }
 
 int
 Control_parameters::fft_size_correlation() const {
-  if (ctrl["fft_size_correlation"] == Json::Value())
-    return std::max(256, number_channels());
   return ctrl["fft_size_correlation"].asInt();
 }
 
