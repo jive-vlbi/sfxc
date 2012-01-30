@@ -189,6 +189,8 @@ public:
   int fft_size_delaycor() const;
   int fft_size_correlation() const;
   int window_function() const;
+  int job_nr() const;
+  int subjob_nr() const;
 
   std::string sideband(int i) const;
   std::string reference_station() const;

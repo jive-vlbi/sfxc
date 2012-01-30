@@ -604,7 +604,6 @@ void Manager_node::send_global_header(){
     Output_header_global output_header;
     memset(&output_header, 0, sizeof(Output_header_global));
     output_header.header_size = sizeof(Output_header_global);
-
     strcpy(output_header.experiment,control_parameters.experiment().c_str());      // Name of the experiment
     Time start = control_parameters.get_start_time();
     int start_year, start_day;
@@ -623,10 +622,10 @@ void Manager_node::send_global_header(){
 
     output_header.polarisation_type =
       control_parameters.polarisation_type_for_global_output_header();
-    // 3 bytes left:
-    output_header.empty[0] = 0;
-    output_header.empty[1] = 0;
-    output_header.empty[2] = 0;
+    strncpy(output_header.correlator_branch, SVN_BRANCH, 15);
+    output_header.correlator_branch[14] = 0;
+    output_header.job_nr = control_parameters.job_nr();
+    output_header.subjob_nr = control_parameters.subjob_nr();
 
     output_node_set_global_header((char *)&output_header,
                                   sizeof(Output_header_global));

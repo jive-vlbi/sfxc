@@ -527,6 +527,22 @@ Control_parameters::window_function() const{
   return windowval;
 }
 
+int
+Control_parameters::job_nr() const {
+  if (ctrl["job"] == Json::Value())
+    return 0;
+  else
+    return ctrl["job"].asInt();
+}
+
+int
+Control_parameters::subjob_nr() const {
+  if (ctrl["subjob"] == Json::Value())
+    return 0;
+  else
+    return ctrl["subjob"].asInt();
+}
+
 std::string
 Control_parameters::sideband(int i) const {
   return ctrl["subbands"][i]["sideband"].asString();

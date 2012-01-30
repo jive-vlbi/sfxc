@@ -93,8 +93,9 @@ struct Output_header_global {
   int32_t correlator_version;     // Svn revision of the correlator producing the output file
 
   int8_t polarisation_type; // L | R | L+R | L+R with crosses
-  // 3 bytes left:
-  int8_t empty[3];
+  char correlator_branch[15];
+  int32_t job_nr;
+  int32_t subjob_nr;
 };
 
 struct Output_header_timeslice {
