@@ -77,8 +77,6 @@ void Delay_correction::do_task() {
     cur_output->data.resize((nfft_cor+1) * output_stride);
     fft_t2f_cor.rfft(&temp_buffer[0], &cur_output->data[nfft_cor * output_stride]);
   }
-  if(current_fft >= n_ffts_per_integration)
-    std::cout << "current_fft = " << current_fft << ", n_ffts_per_integration = " << n_ffts_per_integration << "\n";
 #endif // DUMMY_CORRELATION
   if(nfft_cor > 0){
     output_buffer->push(cur_output);

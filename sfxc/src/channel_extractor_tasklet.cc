@@ -90,16 +90,16 @@ void Channel_extractor_tasklet::do_execute() {
       do_task();
     }
 
-#if NUM_CHANNEL_EXTRACTOR_THREADS > 0
-    for (int j = 0; j < NUM_CHANNEL_EXTRACTOR_THREADS; j++)
-      pthread_join(process_thread[j], NULL);
-#endif
-
-    /// The queue has been closed and is empty.
+   /// The queue has been closed and is empty.
   } catch (QueueClosedException&e ) {
     DEBUG_MSG("My input queue has been closed ! I should probably stop then");
   }
 
+#if NUM_CHANNEL_EXTRACTOR_THREADS > 0
+  for (int j = 0; j < NUM_CHANNEL_EXTRACTOR_THREADS; j++)
+    pthread_join(process_thread[j], NULL);
+#endif
+ 
   // Empty input buffer
   while(!input_buffer_->empty()){
     input_buffer_->pop();
