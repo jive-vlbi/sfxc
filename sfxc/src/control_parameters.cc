@@ -166,7 +166,7 @@ initialise(const char *ctrl_file, const char *vex_file,
     if (ctrl["multi_phase_center"].asBool())
       ctrl["fft_size_correlation"] = 4096;
     else
-      ctrl["fft_size_correlation"] = number_channels();
+      ctrl["fft_size_correlation"] = ctrl["fft_size_delaycor"];
   }
 
   // Set the sub integartion time
