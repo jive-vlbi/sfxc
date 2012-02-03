@@ -9,6 +9,7 @@ import re
 import subprocess
 import struct
 import sys
+import signal
 import time
 import urlparse
 
@@ -173,6 +174,7 @@ class progressDialog(QtGui.QDialog):
         self.evlbi = options.evlbi
         self.reference = options.reference
         self.simulate = options.simulate
+        self.timeout_interval = options.timeout_interval;
 
         exper = self.vex['GLOBAL']['EXPER']
 
@@ -351,12 +353,19 @@ class progressDialog(QtGui.QDialog):
                     '-machinefile', machine_file,
                     '-np', str(ranks), sfxc, ctrl_file, vex_file]
             pass
-
+        elif os.environ['LOGNAME'] == 'keimpema':
+            sfxc = '/home/keimpema/sfxc/bin/sfxc'
+            args = ['mpirun',
+                    '--mca', 'btl_tcp_if_include', 'bond0,ib0,eth0,eth2.4',
+                    '--machinefile', machine_file, '--rankfile', rank_file,
+                    '--np', str(ranks), sfxc, ctrl_file, vex_file]
         self.proc = subprocess.Popen(args, stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
         if not self.proc:
             return
 
+        self.monitor_time = time.time()
+        self.monitor_pos = 0
         self.t = QtCore.QTimer()
         QtCore.QObject.connect(self.t, QtCore.SIGNAL("timeout()"), self.timeout)
         self.t.start(500)
@@ -422,6 +431,26 @@ class progressDialog(QtGui.QDialog):
             self.log_fp.write(output)
             pass
 
+        # Check if SFXC process is frozen
+        curtime = time.time()
+        if (self.timeout_interval > 0) and (curtime - self.monitor_time > self.timeout_interval):
+            self.monitor_time = curtime
+            terminate = False
+            if (self.cordata == None) or (self.cordata.fp == None):
+                terminate = True
+            else:
+                newpos = self.cordata.fp.tell()
+                if newpos == self.monitor_pos: 
+                    terminate = True
+                self.monitor_pos = newpos
+            if terminate:
+                os.kill(self.proc.pid, signal.SIGTERM)
+                i = 0
+                while (i < 15) and (self.proc.poll() == None):
+                    time.sleep(1)
+                    i += 1
+                if self.proc.poll() == None:
+                    os.kill(self.proc.pid, signal.SIGKILL)
         self.proc.poll()
         if self.proc.returncode != None:
             self.t.stop()
@@ -469,6 +498,9 @@ parser.add_option("-e", "--evlbi", dest="evlbi",
 parser.add_option("-s", "--simulate", dest="simulate",
                   action="store_true", default=False,
                   help="Simulate")
+parser.add_option("-i", "--timeout-interval", dest="timeout_interval",
+                  type='int', default='300',
+                  help="After how many seconds of inactivity the job is terminated, setting to zero disables. Default = 300")
 
 (options, args) = parser.parse_args()
 if len(args) != 4:
