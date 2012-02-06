@@ -262,55 +262,28 @@ bool Delay_table_akima::initialise_next_scan() {
 
 //calculates the delay for the delayType at time
 //get the next line from the delay table file
-double Delay_table_akima::delay(const Time &time) {
+double Delay_table_akima::delay(const Time &time, int phase_center) {
   while (scans[scan_nr].end < time){
     if (!initialise_next_scan()) break;
   }
   SFXC_ASSERT(splineakima.size() > 0);
   double sec = (time - scans[scan_nr].begin).get_time();
-  double result = gsl_spline_eval(splineakima[0], sec, acc[0]);
+  double result = gsl_spline_eval(splineakima[phase_center], sec, acc[phase_center]);
   sec = (time - clock_epoch).get_time();
   double clock_drift = clock_offset + sec * clock_rate;
   SFXC_ASSERT(result < 0);
   return result + clock_drift;
 }
 
-double Delay_table_akima::rate(const Time &time) {
+double Delay_table_akima::rate(const Time &time, int phase_center) {
   while (scans[scan_nr].end < time){
     if (!initialise_next_scan()) break;
   }
 
   SFXC_ASSERT(splineakima.size() > 0);
   double sec = (time - scans[scan_nr].begin).get_time();
-  double result = gsl_spline_eval_deriv(splineakima[0], sec, acc[0]);
-  return result + clock_rate;
-}
-
-// Calculate the difference in delay between the requested phase center and the 
-// primary phase center
-double Delay_table_akima::delay(int phase_center, const Time &time){
-  if(phase_center == 0)
-    return delay(time);
-  while (scans[scan_nr].end < time){
-    if (!initialise_next_scan()) break;
-  }
-  SFXC_ASSERT(splineakima.size() > phase_center);
-  double sec = (time - scans[scan_nr].begin).get_time();
-  double result = gsl_spline_eval(splineakima[phase_center], sec, acc[phase_center]);
-  return result;
-}
-
-double Delay_table_akima::rate(int phase_center, const Time &time){
-  if(phase_center == 0)
-    return rate(time);
-  while (scans[scan_nr].end < time){
-    if (!initialise_next_scan()) break;
-  }
-
-  SFXC_ASSERT(splineakima.size() > phase_center);
-  double sec = (time - scans[scan_nr].begin).get_time();
   double result = gsl_spline_eval_deriv(splineakima[phase_center], sec, acc[phase_center]);
-  return result;
+  return result + clock_rate;
 }
 
 Time Delay_table_akima::start_time_scan() {

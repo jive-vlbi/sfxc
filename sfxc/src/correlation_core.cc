@@ -552,8 +552,8 @@ Correlation_core::sub_integration(){
     for(int j = 1; j < n_phase_centers; j++){
       double delay1 = delay_tables[stations.first].delay(tmid);
       double delay2 = delay_tables[stations.second].delay(tmid);
-      double ddelay1 = delay_tables[stations.first].delay(j, tmid)-delay1;
-      double ddelay2 = delay_tables[stations.second].delay(j, tmid)-delay2;
+      double ddelay1 = delay_tables[stations.first].delay(tmid, j)-delay1;
+      double ddelay2 = delay_tables[stations.second].delay(tmid, j)-delay2;
       double rate1 = delay_tables[stations.first].rate(tmid);
       double rate2 = delay_tables[stations.second].rate(tmid);
       uvshift(accumulation_buffers[i], phase_centers[j][i], ddelay1, ddelay2, rate1, rate2);

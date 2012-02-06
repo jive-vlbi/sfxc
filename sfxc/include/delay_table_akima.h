@@ -62,10 +62,8 @@ public:
 
   //calculate the delay for the delayType at time in microseconds
   // delay is in seconds
-  double delay(const Time &time);
-  double delay(int phase_center, const Time &time);
-  double rate(const Time &time);
-  double rate(int phase_center, const Time &time);
+  double delay(const Time &time, int phase_center=0);
+  double rate(const Time &time, int phase_center=0);
 
   // Moves the delay table to the requested scan
   bool goto_scan(const Time &time);
