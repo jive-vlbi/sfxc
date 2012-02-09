@@ -18,9 +18,12 @@ VLBA_reader::~VLBA_reader() {}
 bool 
 VLBA_reader::open_input_stream(Data_frame &data){
   SFXC_ASSERT(N > 0);
-  if (!find_start_of_header(data))
+  if (!find_start_of_header(data)){
+    if (eof())
+      sfxc_abort("Could not find header before eof()");
     return false;
-          
+  }
+
   start_day_ = header.julian_day(0);
   int dif_jday = (start_day_ -  ref_jday % 1000); // the header containts jday % 1000
   current_jday = dif_jday >= 0 ? ref_jday + dif_jday : ref_jday + 1000 + dif_jday;
