@@ -3,7 +3,6 @@ import sys, struct, datetime, pdb
 import vex_parser, vex_time
 
 class parameters:	    
-  global_header_size = 64
   timeslice_header_size = 16
   uvw_header_size = 32
   stat_header_size = 24
@@ -17,8 +16,11 @@ class parameters:
       print >> sys.stderr, "Error : Could not open " + corfilename
       sys.exit(1)
     
+    gheader_size_buf = inputfile.read(4)
+    self.global_header_size = struct.unpack('i', gheader_size_buf)[0]
+    inputfile.seek(0)
     gheader_buf = inputfile.read(self.global_header_size)
-    global_header = struct.unpack('i32s2h5i4c',gheader_buf)
+    global_header = struct.unpack('i32s2h5i4c',gheader_buf[:64])
     self.nchan = global_header[5]
     self.integration_time = global_header[6]*1e-6
     # get timeslice header
