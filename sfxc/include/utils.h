@@ -65,12 +65,7 @@
 #define SIZE_VDIF_WORD            sizeof(int32_t)
 
 // Number of mark5b frames to read at once
-// To make sure that the first sample lies exactly on an integer microsecond
-// duration of one block = SIZE_MK5B_WORD * SIZE_MK5B_FRAME * 8 / (MAX_SAMPLE_RATE * MAX_N_BITSTREAMS)
-//                       = 4 * 2500 * 8 / (64 * 32) = 625 / 16
-// MAX_SAMPLE_RATE = 64 MHz
-// Hence, this should be a multiple of 16
-#define N_MK5B_BLOCKS_TO_READ      16
+#define N_MK5B_BLOCKS_TO_READ     4 
 
 #define SFXC_PORT                1233
 #define MAX_TCP_CONNECTIONS      16
