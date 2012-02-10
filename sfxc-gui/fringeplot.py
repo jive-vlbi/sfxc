@@ -144,7 +144,7 @@ class FringePlot(Qwt.QwtPlot):
     pass
 
 class FringePlotWindow(Qt.QWidget):
-    def __init__(self, vex, ctrl_files, reference=None, *args):
+    def __init__(self, vex, ctrl_files, reference=None, integrations=32, *args):
         Qt.QWidget.__init__(self, *args)
 
         exper = vex['GLOBAL']['EXPER']
@@ -153,6 +153,7 @@ class FringePlotWindow(Qt.QWidget):
 
         self.integration_slice = 0
         self.reference = reference
+        self.integrations = integrations
 
         self.output_file = 0
         self.output_files = []
@@ -185,6 +186,10 @@ class FringePlotWindow(Qt.QWidget):
             self.reference = stations[0]
             pass
 
+        if not self.integrations in [1, 2, 4, 8, 16, 32]:
+            self.integrations = 32
+            pass
+
         menubar = Qt.QMenuBar(self)
         menu = menubar.addMenu("&Reference")
         self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
@@ -205,7 +210,7 @@ class FringePlotWindow(Qt.QWidget):
         for history in [1, 2, 4, 8, 16, 32]:
             act = Qt.QAction(str(history), menu)
             act.setCheckable(True)
-            if history == 32:
+            if history == self.integrations:
                 act.setChecked(True)
             grp.addAction(act)
             menu.addAction(act)
@@ -238,6 +243,7 @@ class FringePlotWindow(Qt.QWidget):
         self.box.addWidget(self.plots[-1].legend())
 
         self.cordata = CorrelatedData(vex, self.output_files[self.output_file])
+        self.cordata.history = self.integrations
         self.output_file += 1
 
         self.startTimer(500)
@@ -373,6 +379,10 @@ if __name__ == '__main__':
                       default="", type="string",
                       help="Reference station",
                       metavar="STATION")
+    parser.add_option("-i", "--integrations", dest="integrations",
+                      default=32, type="int",
+                      help="Number of integrations",
+                      metavar="N")
 
     (options, args) = parser.parse_args()
     if len(args) < 2:
@@ -389,7 +399,7 @@ if __name__ == '__main__':
 
     vex = Vex(vex_file)
 
-    plot = FringePlotWindow(vex, ctrl_files, options.reference)
+    plot = FringePlotWindow(vex, ctrl_files, options.reference, options.integrations)
     plot.show()
 
     sys.exit(app.exec_())
