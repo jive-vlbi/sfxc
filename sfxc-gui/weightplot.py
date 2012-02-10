@@ -213,6 +213,21 @@ class WeightPlotWindow(Qt.QWidget):
 
             output_file = urlparse.urlparse(json_input['output_file']).path
             try:
+                if json_input['multi_phase_center']:
+                    source = None
+                    start = vex2time(json_input['start'])
+                    for scan in vex['SCHED']:
+                        if start >= vex2time(vex['SCHED'][scan]['start']):
+                            source = vex['SCHED'][scan]['source']
+                            pass
+                        continue
+                    if source:
+                        output_file = output_file + '_' + source
+                        pass
+                    pass
+            except:
+                pass
+            try:
                 if json_input['pulsar_binning']:
                     output_file = output_file + '.bin0'
                     pass

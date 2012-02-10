@@ -402,6 +402,20 @@ class progressDialog(QtGui.QDialog):
                     if not self.cordata:
                         output_file = urlparse.urlparse(self.json_input['output_file']).path
                         try:
+                            if self.json_input['multi_phase_center']:
+                                source = None
+                                for scan in self.vex['SCHED']:
+                                    if self.start >= vex2time(self.vex['SCHED'][scan]['start']):
+                                        source = self.vex['SCHED'][scan]['source']
+                                        pass
+                                    continue
+                                if source:
+                                    output_file = output_file + '_' + source
+                                    pass
+                                pass
+                        except:
+                            pass
+                        try:
                             if self.json_input['pulsar_binning']:
                                 output_file = output_file + '.bin0'
                                 pass
