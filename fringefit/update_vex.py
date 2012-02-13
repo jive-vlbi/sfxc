@@ -98,13 +98,13 @@ while not done_parsing:
         dt = -(vex_time.get_time(ctrl['epoch']) - vex_time.get_time(old_epoch)).seconds
       if options.rate_only:
         new_clock = old_clock
-        new_rate = old_rate - rates[idx]
+        new_rate = old_rate + rates[idx]
       elif options.offset_only:
-        new_clock = old_clock - offsets[idx]
+        new_clock = old_clock + offsets[idx]
         new_rate = old_rate
       else:
-        new_clock = old_clock - offsets[idx] - rates[idx]*dt
-        new_rate = old_rate - rates[idx]
+        new_clock = old_clock + offsets[idx] + rates[idx]*dt
+        new_rate = old_rate + rates[idx]
       vex_out.write('    clock_early =  %s :  %.4f usec :  %s  :  %.3e; '%(valid, new_clock, old_epoch, new_rate))
       vex_out.write('* Modified on ' +  str(datetime.datetime.now()).partition('.')[0]+'\n')
       vex_out.write('* ' + line) # comment out old clock offsets
