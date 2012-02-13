@@ -277,7 +277,6 @@ set_parameters(const Input_node_parameters &input_node_param){
   ch_extractor->initialise(track_positions, N, samples_per_block, bits_per_sample);
 
   DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );
-  std::cout << RANK_OF_NODE << " : N = " << N << ", fan_out = " << fan_out << "\n";
 }
 
 

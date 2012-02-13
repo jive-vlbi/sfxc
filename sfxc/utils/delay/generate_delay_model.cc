@@ -373,11 +373,9 @@ int initialise_data(const char *vex_filename,
             int pos;
             for(pos = 79; (pos > 0) && (source_data[i].source_name[pos] == ' '); pos--)
               ;
-            std::cout << "len(" << source_data[i].source_name << ")=" << pos+1<<"\n";
             if((pos + 1 == source_len) && 
                (strncmp(source_data[i].source_name, source, pos + 1) == 0)){
               assert(source_idx < n_sources_in_scan);
-              std::cout << "added " << source_data[i].source_name << "\n";
               scan.sources[source_idx] = &source_data[i];
               source_idx++;
               break;

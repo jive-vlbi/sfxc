@@ -216,7 +216,6 @@ int Vex::n_sources(const std::string &scan_name) const{
   Vex::Node::const_iterator scan = root["SCHED"][scan_name];
   for (Vex::Node::const_iterator source_it = scan->begin("source");
        source_it != scan->end("source"); ++source_it){
-    std::cout << "scan " << scan.key() << ", source = " << source_it->to_string() << "\n";
     n++;
   }
 
