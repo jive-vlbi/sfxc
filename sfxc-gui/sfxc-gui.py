@@ -345,6 +345,7 @@ class progressDialog(QtGui.QDialog):
         sfxc = '/home/sfxc/bin/sfxc'
         args = ['mpirun',
                 '--mca', 'btl_tcp_if_include', 'bond0,ib0,eth0,eth2.4',
+                '--mca', 'oob_tcp_if_include', 'bond0,ib0,eth0,eth2.4',
                 '--machinefile', machine_file, '--rankfile', rank_file,
                 '--np', str(ranks), sfxc, ctrl_file, vex_file]
         if os.environ['LOGNAME'] == 'kettenis':
@@ -400,6 +401,20 @@ class progressDialog(QtGui.QDialog):
                 if m:
                     if not self.cordata:
                         output_file = urlparse.urlparse(self.json_input['output_file']).path
+                        try:
+                            if self.json_input['multi_phase_center']:
+                                source = None
+                                for scan in self.vex['SCHED']:
+                                    if self.start >= vex2time(self.vex['SCHED'][scan]['start']):
+                                        source = self.vex['SCHED'][scan]['source']
+                                        pass
+                                    continue
+                                if source:
+                                    output_file = output_file + '_' + source
+                                    pass
+                                pass
+                        except:
+                            pass
                         try:
                             if self.json_input['pulsar_binning']:
                                 output_file = output_file + '.bin0'

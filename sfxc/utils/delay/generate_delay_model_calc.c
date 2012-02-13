@@ -169,7 +169,6 @@ get4(const char *name, double *value, short *n1, short *n2, short *n3,
     assert(*n2 == 1);
     value[0] = scan_data[scan_nr].sources[source_nr]->ra;
     value[1] = scan_data[scan_nr].sources[source_nr]->dec;
-    printf("ra = %f, dec = %f\n", value[0], value[1]);
     *err = 0;
     return;
   }
@@ -444,14 +443,11 @@ mvrec(short *ntoc, short *kmode, short *knum, short *err)
       fwrite(scan_data[scan_nr].sources[source_nr]->source_name, 81, sizeof(char), output_file);
       int32_t scan_mjd = mjd(scan_data[scan_nr].day, scan_data[scan_nr].month, scan_data[scan_nr].year);
       fwrite(&scan_mjd, 1, sizeof(int32_t), output_file);
-      printf("source = %s\n", scan_data[scan_nr].sources[source_nr]->source_name);
     }
 
     fwrite(&sec_of_day, 1, sizeof(double), output_file);
     fwrite(uvw, 3, sizeof(double), output_file);
     fwrite(&delay[0], 1, sizeof(double), output_file);
-    printf("%d : t=%f, u=%e, v=%e, w=%e, delay=%e\n", 
-           interval, sec_of_day, uvw[0], uvw[1], uvw[2], delay[0]);
     interval++;
     scan_data[scan_nr].sec = 
       scan_data[scan_nr].sec + delta_time ;

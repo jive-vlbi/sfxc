@@ -12,13 +12,13 @@ if sys.version_info > (2, 5):
 else:
   import simplejson as json
 
-global_header_size = 64
-timeslice_header_size = 16
-uvw_header_size = 32
-stat_header_size = 24
-baseline_header_size = 8
-
 def read_data(corfile, param):
+  global_header_size = param.global_header_size
+  timeslice_header_size = param.timeslice_header_size
+  uvw_header_size = param.uvw_header_size
+  stat_header_size = param.stat_header_size
+  baseline_header_size = param.baseline_header_size
+   
   stations_in_job = param.stations
   n_stations = len(stations_in_job)  
   channels = param.channels
@@ -32,7 +32,7 @@ def read_data(corfile, param):
     sys.exit(1)
 
   gheader_buf = inputfile.read(global_header_size)
-  global_header = struct.unpack('i32s2h5i4c', gheader_buf)
+  global_header = struct.unpack('i32s2h5i4c', gheader_buf[:64])
   nchan = global_header[5]
   integration_time = global_header[6]
   n_baseline = n_stations*(n_stations-1)/2
@@ -339,8 +339,8 @@ def write_clocks(vex, param, delays, rates, snr, global_fit, ref_station):
     for c in range(n_channels):
       base_freq = param.freqs[param.channels[0][0]]
       sb =  -1 if param.channels[c][1] == 0 else 1
-      delay = delays[c,s] / (param.sample_rate)
-      rate = sb * rates[c,s]/(2*pi*param.integration_time*(base_freq + sb * param.sample_rate/4))
+      delay = -delays[c,s] / (param.sample_rate)
+      rate = -sb * rates[c,s]/(2*pi*param.integration_time*(base_freq + sb * param.sample_rate/4))
       snr_tot = station_snr[c,s]
       weight = weights[c,s]
       if (c < n_channels - 1):
