@@ -380,7 +380,7 @@ put4(const char *name, double *value, short *n1, short *n2, short *n3)
 
   if (strncmp(name, "CONSNRAT", 8) == 0) {
     assert (*n1 == 1);
-    delay[1] = value[0] * 1e-6;
+    delay[1] = value[0];
     return;
   }
 
