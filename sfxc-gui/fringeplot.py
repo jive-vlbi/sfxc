@@ -144,7 +144,7 @@ class FringePlot(Qwt.QwtPlot):
     pass
 
 class FringePlotWindow(Qt.QWidget):
-    def __init__(self, vex, ctrl_files, reference=None, integrations=32, *args):
+    def __init__(self, vex, ctrl_files, cordata, reference=None, integrations=32, *args):
         Qt.QWidget.__init__(self, *args)
 
         exper = vex['GLOBAL']['EXPER']
@@ -257,7 +257,11 @@ class FringePlotWindow(Qt.QWidget):
         self.box.addLayout(self.layout)
         self.box.addWidget(self.plots[-1].legend())
 
-        self.cordata = CorrelatedData(vex, self.output_files[self.output_file])
+        if cordata:
+            self.cordata = cordata
+        else:
+            self.cordata = CorrelatedData(vex, self.output_files[self.output_file])
+            pass
         self.cordata.history = self.integrations
         self.output_file += 1
 
@@ -414,7 +418,7 @@ if __name__ == '__main__':
 
     vex = Vex(vex_file)
 
-    plot = FringePlotWindow(vex, ctrl_files, options.reference, options.integrations)
+    plot = FringePlotWindow(vex, ctrl_files, None, options.reference, options.integrations)
     plot.show()
 
     sys.exit(app.exec_())

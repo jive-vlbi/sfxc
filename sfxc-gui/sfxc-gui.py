@@ -422,15 +422,14 @@ class progressDialog(QtGui.QDialog):
                         except:
                             pass
                         self.cordata = CorrelatedData(self.vex, output_file)
-                        pass
-                    if not self.wplot:
-                        self.wplot = WeightPlotWindow(self.vex, [self.ctrl_file], True)
-                        self.wplot.show()
-                        pass
-
-                    if not self.fplot:
-                        self.fplot = FringePlotWindow(self.vex, [self.ctrl_file], self.reference)
-                        self.fplot.show()
+                        if not self.wplot:
+                            self.wplot = WeightPlotWindow(self.vex, [self.ctrl_file], self.cordata, True)
+                            self.wplot.show()
+                            pass
+                        if not self.fplot and self.cordata:
+                            self.fplot = FringePlotWindow(self.vex, [self.ctrl_file], self.cordata, self.reference)
+                            self.fplot.show()
+                            pass
                         pass
 
                     if self.evlbi and not self.flow.started:

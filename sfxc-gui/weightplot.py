@@ -192,7 +192,7 @@ class WeightPlot(Qwt.QwtPlot):
 
 
 class WeightPlotWindow(Qt.QWidget):
-    def __init__(self, vex, ctrl_files, realtime, *args):
+    def __init__(self, vex, ctrl_files, cordata, realtime, *args):
         Qt.QWidget.__init__(self, *args)
 
         exper = vex['GLOBAL']['EXPER']
@@ -338,7 +338,11 @@ class WeightPlotWindow(Qt.QWidget):
         self.box.addLayout(self.layout)
         self.box.addWidget(lastplot.legend())
 
-        self.cordata = CorrelatedData(vex, self.output_files[self.output_file])
+        if cordata:
+            self.cordata = cordata
+        else:
+            self.cordata = CorrelatedData(vex, self.output_files[self.output_file])
+            pass
         self.output_file += 1
 
         self.startTimer(500)
@@ -444,7 +448,7 @@ if __name__ == '__main__':
 
     vex = Vex(vex_file)
 
-    plot = WeightPlotWindow(vex, ctrl_files, False)
+    plot = WeightPlotWindow(vex, ctrl_files, None, False)
     plot.show()
 
     sys.exit(app.exec_())
