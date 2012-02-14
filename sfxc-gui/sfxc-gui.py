@@ -345,7 +345,7 @@ class progressDialog(QtGui.QDialog):
         sfxc = '/home/sfxc/bin/sfxc'
         args = ['mpirun',
                 '--mca', 'btl_tcp_if_include', 'bond0,ib0,eth0,eth2.4',
-                '--mca', 'oob_tcp_if_include', 'bond0,ib0,eth0,eth2.4',
+                '--mca', 'oob_tcp_if_exclude', 'eth3',
                 '--machinefile', machine_file, '--rankfile', rank_file,
                 '--np', str(ranks), sfxc, ctrl_file, vex_file]
         if os.environ['LOGNAME'] == 'kettenis':
