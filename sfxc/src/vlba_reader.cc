@@ -91,7 +91,7 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
 
   // at last we read the complete header. Check it
   header.set_header(N, &buf_header[0]);
-  if((!header.check_header())&&(!resync_header(data, 0))){
+  if((!header.check_header())&&(!resync_header(data))){
     current_time_ += time_between_headers(); // Could't find valid header before EOF
     return false;
   }
@@ -117,7 +117,7 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
   return true;
 }
 
-bool VLBA_reader::resync_header(Data_frame &data, int try_) {
+bool VLBA_reader::resync_header(Data_frame &data) {
   const int max_read = RESYNC_MAX_DATA_FRAMES * size_data_block();
   int data_read = 0;
   // Find the next header in the input stream, NB: data already contains one VLBA block worth of input data
@@ -131,7 +131,7 @@ bool VLBA_reader::resync_header(Data_frame &data, int try_) {
     int byte = 0;
     while(byte < N*SIZE_VLBA_FRAME - 8*SIZE_VLBA_HEADER) {
       int shift = N * 32 - 1;
-      while ((shift >= 0) && (buffer[byte] == (unsigned char)(-1)))
+      while ((shift >= 0) && (buffer[byte+shift] == (unsigned char)(-1)))
         shift--;
       if (shift < 0) {
         // There is garanteed to be enough data in the buffer for a complete header (ignoring aux header)
@@ -142,16 +142,16 @@ bool VLBA_reader::resync_header(Data_frame &data, int try_) {
         int ndata_read = N * SIZE_VLBA_FRAME - header_start - N*SIZE_VLBA_HEADER;
         memmove(buffer, buffer + header_start + N*SIZE_VLBA_HEADER, ndata_read);
         if (header.check_header()) {
-          data.buffer->data.resize(N * SIZE_VLBA_FRAME);
-          buffer = &data.buffer->data[0];
-          int to_read =  SIZE_VLBA_FRAME - ndata_read + (N-1)*SIZE_VLBA_FRAME;
+          int to_read =  N*SIZE_VLBA_FRAME - ndata_read;
           int bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), to_read,
                                                              (char*)&data.buffer->data[ndata_read]);
           return true;
         }else if(data_read < max_read){
           // No valid header found, fill frame and continue
-          Data_reader_blocking::get_bytes_s(data_reader_.get(), SIZE_VLBA_FRAME - ndata_read, (char *) &buffer[ndata_read]);
-          data_read += ndata_read;
+          int to_read =  N*SIZE_VLBA_FRAME - ndata_read;
+          int bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), to_read,
+                                                             (char *) &buffer[ndata_read]);
+          data_read += bytes_read;
           byte = 0;
         }else{
           // Mamimum amount of data read
