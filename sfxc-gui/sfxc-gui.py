@@ -6,6 +6,7 @@ import json
 import os
 import optparse
 import re
+import socket
 import subprocess
 import struct
 import sys
@@ -364,6 +365,18 @@ class progressDialog(QtGui.QDialog):
                                      stderr=subprocess.STDOUT)
         if not self.proc:
             return
+
+        # Update the map-on-the-wall.
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(1)
+            s.connect(("wwpad", 4004))
+            command = ",".join(self.json_input['stations']) + "\n"
+            s.send(command)
+            s.recv(1024)
+            s.close()
+        except:
+            pass
 
         self.monitor_time = time.time()
         self.monitor_pos = 0
