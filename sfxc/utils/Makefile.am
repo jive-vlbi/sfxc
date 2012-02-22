@@ -10,6 +10,7 @@ pkginclude_HEADERS = *.h *.py
 
 bin_PROGRAMS = mark5a_print_headers \
                mark5b_print_headers \
+               vdif_print_headers \
                print_new_output_format \
                dnfp_fileserver \
                dnfp_fileclient \
@@ -79,6 +80,11 @@ dnfp_fileclient_SOURCES = \
 
 mark5b_print_headers_SOURCES = \
   mark5b_print_headers.cc
+
+vdif_print_headers_SOURCES = \
+  vdif_print_headers.cc \
+  ../src/utils.cc \
+  ../src/correlator_time.cc
 
 mark5a_print_headers_SOURCES = \
   mark5a_print_headers.cc \
