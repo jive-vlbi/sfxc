@@ -572,10 +572,10 @@ void
 Correlation_core::uvshift(const Complex_buffer &input_buffer, Complex_buffer &output_buffer, double ddelay1, double ddelay2, double rate1, double rate2){
   const int sb = correlation_parameters.sideband == 'L' ? -1 : 1;
   const double base_freq = correlation_parameters.channel_freq;
-  const double dfreq = sb * correlation_parameters.sample_rate/ ( 2. * fft_size()); 
+  const double dfreq = correlation_parameters.sample_rate/ ( 2. * fft_size()); 
 
   double phi = base_freq * (ddelay1 * (1 - rate1) - ddelay2 * (1 - rate2));
-  phi = 2 * M_PI * (phi - floor(phi));
+  phi = 2 * M_PI * sb * (phi - floor(phi));
   double delta = 2 * M_PI * dfreq * (ddelay1 * (1 - rate1) - ddelay2 * (1 - rate2));
   double temp=sin(delta/2);
   const double a=2*temp*temp,b=sin(delta);
