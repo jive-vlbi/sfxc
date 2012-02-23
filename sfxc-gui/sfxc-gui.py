@@ -93,7 +93,7 @@ class progressDialog(QtGui.QDialog):
         except:
             pass
         try:
-            if self.json_input['mult_phase_center']:
+            if self.json_input['multi_phase_center']:
                 return
         except:
             pass
