@@ -83,6 +83,34 @@ class progressDialog(QtGui.QDialog):
         conn.close()
         pass
 
+    def update_output(self):
+        if self.subjob == -1:
+            return
+
+        try:
+            if self.json_input['pulsar_binning']:
+                return
+        except:
+            pass
+        try:
+            if self.json_input['multiple_phase_center']:
+                return
+        except:
+            pass
+
+        conn = db.connect(host="ccs", port=3307,
+                          db="correlator_control",
+                          read_default_file="~/.my.cnf")
+
+        cursor = conn.cursor()
+        output_file = self.json_input['output_file']
+        cursor.execute("INSERT INTO data_output (subjob_id, output_uri)" \
+                           + " VALUES (%d, '%s')" % (self.subjob, output_file))
+        cursor.close()
+        conn.commit()
+        conn.close()
+        pass
+
     def get_job(self):
         if self.subjob == -1:
             return -1
@@ -443,6 +471,7 @@ class progressDialog(QtGui.QDialog):
                             self.fplot = FringePlotWindow(self.vex, [self.ctrl_file], self.cordata, self.reference)
                             self.fplot.show()
                             pass
+                        self.update_output()
                         pass
 
                     if self.evlbi and not self.flow.started:
