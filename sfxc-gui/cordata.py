@@ -12,11 +12,6 @@ import sys
 import time
 import urlparse
 
-# Qt and Qwt
-from PyQt4 import Qt, QtCore, QtGui
-import PyQt4.Qwt5 as Qwt
-from PyQt4.Qwt5.anynumpy import *
-
 # NumPy
 import numpy as np
 
