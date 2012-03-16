@@ -70,7 +70,7 @@ Input_node_tasklet *
 get_input_node_tasklet(boost::shared_ptr<Data_reader> reader,
                        TRANSPORT_TYPE type, Time ref_date) {
   SFXC_ASSERT(type != UNINITIALISED);
-  boost::shared_ptr<Data_memory_pool> memory_pool_(new Data_memory_pool(10));
+  boost::shared_ptr<Data_memory_pool> memory_pool_(new Data_memory_pool(4096));
 
   if (type == MARK5A) {
     return get_input_node_tasklet_mark5a(reader, memory_pool_, ref_date);
