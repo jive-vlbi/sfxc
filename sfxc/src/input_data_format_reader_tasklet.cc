@@ -191,12 +191,6 @@ void
 Input_data_format_reader_tasklet::set_parameters(const Input_node_parameters &input_node_param){
   data_modulation = input_node_param.data_modulation;
   reader_->set_parameters(input_node_param);
-  int nchannel = input_node_param.channels.size();
-  // For VDIF we assume that we have one thread per channel. We need a larger memory pool to ensure
-  // that we can keep all the data writers busy.
-  if(reader_->get_transport_type()==VDIF){
-    memory_pool_->resize(20*nchannel);
-  }
 }
 
 void
