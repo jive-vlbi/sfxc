@@ -232,7 +232,7 @@ class DataFlow:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(5)
-            s.connect((self.connect_host[station], 2620))
+            s.connect((self.input_host[station], 2620))
             for command in commands:
                 print command
                 s.send(command)
