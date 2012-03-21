@@ -189,6 +189,9 @@ class DataFlow:
                 pass
             if station in self.trackmask:
                 command = "trackmask=0x%08x;" % self.trackmask[station]
+                # XXX SFXC can't deal with data that went through the
+                # compression/decompression process yet.
+                command = "trackmask=0x%08x;" % 0
                 self.generic_commands[station].append(command)
                 pass
             continue
