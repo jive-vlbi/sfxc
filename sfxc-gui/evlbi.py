@@ -28,6 +28,7 @@ class DataFlow:
         self.mtu = {}
         self.ipd = {}
         self.trackmask = {}
+        self.connectivity = {}
         self.control_host = {}
         self.connect_host = {}
         self.input_host = {}
@@ -55,6 +56,13 @@ class DataFlow:
             result = cursor.fetchone()
             if result:
                 self.trackmask[station] = result[0]
+                pass
+
+            cursor.execute("SELECT connectivity FROM eVLBI_Params" \
+                               + " WHERE e_station_name='%s'" % station)
+            result = cursor.fetchone()
+            if result:
+                self.connectivity[station] = result[0]
                 pass
 
             cursor.execute("SELECT e_station_control_ip FROM eVLBI_Params" \
@@ -95,6 +103,7 @@ class DataFlow:
 
         fanout = {}
         sample_rate = {}
+        data_rate = {}
         self.mk5_mode = {}
         for station in self.stations:
             das = vex['STATION'][station]['DAS']
@@ -130,6 +139,8 @@ class DataFlow:
                                 sum += (len(fanout_def) - 4)
                                 fanout[station] = (len(fanout_def) - 4)
                                 continue
+                            data_rate[station] = sum * sample_rate[station]
+                            data_rate[station] /= fanout[station]
                             self.mk5_mode[station] = ("mark4", "%d" % sum)
                             break
                         continue
@@ -140,16 +151,30 @@ class DataFlow:
                 for bitstreams in vex['MODE'][mode].getall('BITSTREAMS'):
                     if station in bitstreams[1:]:
                         bitstreams = vex['BITSTREAMS'][bitstreams[0]]
-                        mask = 0
+                        mask = sum = 0
                         for stream_def in bitstreams.getall('stream_def'):
                             mask |= (1 << int(stream_def[2]))
+                            sum += 1
                             continue
+                        data_rate[station] = sum * sample_rate[station]
                         decimation = int(32e6 / sample_rate[station])
                         self.mk5_mode[station] = \
                             ("ext", "0x%08x" % mask, "%d" % decimation)
                         break
                     continue
 
+                continue
+            continue
+
+        for station in vex['STATION']:
+            if not station in self.connectivity:
+                self.trackmask[station] = 0
+                continue
+            if self.connectivity[station] == 0:
+                self.trackmask[station] = 0
+                continue
+            if data_rate[station] < self.connectivity[station]:
+                self.trackmask[station] = 0
                 continue
             continue
 
@@ -189,9 +214,6 @@ class DataFlow:
                 pass
             if station in self.trackmask:
                 command = "trackmask=0x%08x;" % self.trackmask[station]
-                # XXX SFXC can't deal with data that went through the
-                # compression/decompression process yet.
-                command = "trackmask=0x%08x;" % 0
                 self.generic_commands[station].append(command)
                 pass
             continue
