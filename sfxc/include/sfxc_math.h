@@ -54,6 +54,14 @@
     ippsConj_64fc((const Ipp64fc*) s1, (Ipp64fc*) dest, len);
   }
 
+  extern inline void sfxc_add_fc(const std::complex<float> *src, std::complex<float> *dest, int len){
+    ippsAdd_32fc_I((const Ipp32fc*) src, (Ipp32fc*) dest, len);
+  }
+
+  extern inline void sfxc_add_c(const std::complex<double> *src, std::complex<double> *dest, int len){
+    ippsAdd_64fc_I((const Ipp64fc*) src, (Ipp64fc*) dest, len);
+  }
+
   extern inline void sfxc_add_product_fc(const std::complex<float> *s1, const std::complex<float> *s2, std::complex<float> *dest, int len){
     ippsAddProduct_32fc((const Ipp32fc*) s1, (const Ipp32fc*) s2, (Ipp32fc*) dest, len);
   }
@@ -118,6 +126,19 @@
       dest[i] = conj(s1[i]);
     }
   }
+
+  extern inline void sfxc_add_fc(const std::complex<float> *src, std::complex<float> *dest, int len){
+    for(int i = 0; i < len; i++){
+      dest[i] += src[i];
+    }
+  }
+
+  extern inline void sfxc_add_c(const std::complex<double> *src, std::complex<double> *dest, int len){
+    for(int i = 0; i < len; i++){
+      dest[i] += src[i];
+    }
+  }
+
   extern inline void sfxc_add_product_fc(const std::complex<float> *s1, const std::complex<float> *s2, std::complex<float> *dest, int len){
     for(int i = 0; i < len; i++){
       dest[i] += s1[i] * s2[i];
