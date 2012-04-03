@@ -7,7 +7,7 @@ import os
 import optparse
 import re
 import socket
-import subprocess
+import asyncsubprocess as subprocess
 import struct
 import sys
 import signal
