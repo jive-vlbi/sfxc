@@ -167,6 +167,10 @@ class progressDialog(QtGui.QDialog):
         if self.evlbi:
             args = ["ssh", self.flow.input_host[station], "bin/jive5ab", "-m1"]
         else:
+            # Check if mk5read is already running and bail out if it is.
+            args = ["ssh", self.input_host[station], "pgrep", "mk5read"]
+            if subprocess.call(args) == 0:
+                return None
             args = ["ssh", self.input_host[station], "bin/mk5read"]
             pass
 
@@ -178,12 +182,16 @@ class progressDialog(QtGui.QDialog):
         self.readers = {}
         for station in self.json_input['stations']:
             if self.json_input["data_sources"][station][0].startswith("mk5"):
-                self.readers[station] = self.start_reader(station)
+                reader = self.start_reader(station)
+                if reader:
+                    self.readers[station] = reader
+                    pass
                 pass
             continue
         return
 
     def stop_readers(self):
+        # Stop the readers, but only if we started them
         for station in self.readers:
             if self.evlbi:
                 args = ["ssh", self.flow.input_host[station], "pkill", "jive5ab"]
