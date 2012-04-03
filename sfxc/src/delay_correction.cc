@@ -147,14 +147,14 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
   //  int n_recompute_delay = sample_rate()/1000000;
 
   double phi, delta_phi, sin_phi, cos_phi;
-  phi = center_freq * get_delay(current_time);
+  phi = center_freq * get_delay(current_time) + get_phase(current_time) / mult_factor_phi;
   double floor_phi = std::floor(phi);
   phi = mult_factor_phi*(phi-floor_phi);
 
   { // compute delta_phi
     SFXC_ASSERT(((int64_t)fft_size() * 1000000) % sample_rate() == 0);
-    double phi_end = center_freq *
-      get_delay(current_time + fft_length);
+    double phi_end = center_freq * get_delay(current_time + fft_length) + 
+                     get_phase(current_time + fft_length) / mult_factor_phi;
     phi_end = mult_factor_phi*(phi_end-floor_phi);
 
     delta_phi = (phi_end - phi) / fft_size();
@@ -248,6 +248,11 @@ void Delay_correction::set_delay_table(const Delay_table_akima &delay_table_) {
 double Delay_correction::get_delay(Time time) {
   SFXC_ASSERT(delay_table_set);
   return delay_table.delay(time);
+}
+
+double Delay_correction::get_phase(Time time) {
+  SFXC_ASSERT(delay_table_set);
+  return delay_table.phase(time);
 }
 
 bool Delay_correction::has_work() {

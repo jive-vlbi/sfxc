@@ -32,6 +32,7 @@ public:
     int32_t source;
     int32_t times;
     int32_t delays;
+    int32_t phases;
   };
 
   // Constructor
@@ -64,6 +65,7 @@ public:
   // delay is in seconds
   double delay(const Time &time, int phase_center=0);
   double rate(const Time &time, int phase_center=0);
+  double phase(const Time &time, int phase_center=0);
 
   // Moves the delay table to the requested scan
   bool goto_scan(const Time &time);
@@ -101,8 +103,11 @@ private:
   std::vector<std::string> sources;
   std::vector<double> times;
   std::vector<double> delays;
+  std::vector<double> phases;
   std::vector<gsl_interp_accel *> acc;
   std::vector<gsl_spline *> splineakima;
+  std::vector<gsl_interp_accel *> acc_ph;
+  std::vector<gsl_spline *> splineakima_ph;
 };
 
 

@@ -433,7 +433,7 @@ stai(void)
 void
 mvrec(short *ntoc, short *kmode, short *knum, short *err)
 {
-  double sec_of_day;
+  double sec_of_day, phase = 0;
 
   if (!isnan(delay[0])) {
     // The number of seconds since midnight on the day the scan starts
@@ -448,6 +448,7 @@ mvrec(short *ntoc, short *kmode, short *knum, short *err)
     fwrite(&sec_of_day, 1, sizeof(double), output_file);
     fwrite(uvw, 3, sizeof(double), output_file);
     fwrite(&delay[0], 1, sizeof(double), output_file);
+    fwrite(&phase, 1, sizeof(double), output_file);
     interval++;
     scan_data[scan_nr].sec = 
       scan_data[scan_nr].sec + delta_time ;
@@ -461,8 +462,8 @@ mvrec(short *ntoc, short *kmode, short *knum, short *err)
     return;
   }
 
-  double empty[] = { 0, 0, 0, 0, 0 };
-  fwrite(empty, 5, sizeof(double), output_file);
+  double empty[] = { 0, 0, 0, 0, 0, 0};
+  fwrite(empty, 6, sizeof(double), output_file);
   delay[0] = NAN;
 
   *err = 1;

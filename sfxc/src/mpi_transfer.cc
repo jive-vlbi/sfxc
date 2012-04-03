@@ -163,8 +163,8 @@ send(Delay_table_akima &table, int sn, int rank) {
   int32_t n_times = table.times.size();
   int32_t n_delays = table.delays.size();
   int32_t size = 5 * sizeof(int32_t) + n_sources * 81 * sizeof(char) + 
-                 n_scans * (2 * sizeof(int64_t) + 3 * sizeof(int32_t)) +
-                 (n_times + n_delays) * sizeof(double) + 2 * sizeof(double)+
+                 n_scans * (2 * sizeof(int64_t) + 4 * sizeof(int32_t)) +
+                 (n_times + 2*n_delays) * sizeof(double) + 2 * sizeof(double)+
                  sizeof(int64_t);
 
   char buffer[size];
@@ -197,6 +197,7 @@ send(Delay_table_akima &table, int sn, int rank) {
     MPI_Pack(&scan.source, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&scan.times, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&scan.delays, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&scan.phases, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   }
   // all times
   MPI_Pack(&n_times, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
@@ -204,6 +205,7 @@ send(Delay_table_akima &table, int sn, int rank) {
   // all delays
   MPI_Pack(&n_delays, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&table.delays[0], n_delays, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.phases[0], n_delays, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
 
   SFXC_ASSERT(position == size);
 //  std::cout << "sending " << size << " bytes of data " << "\n";
@@ -260,6 +262,7 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
     MPI_Unpack(buffer, size, &position, &scan.source, 1, MPI_INT32, MPI_COMM_WORLD);
     MPI_Unpack(buffer, size, &position, &scan.times, 1, MPI_INT32, MPI_COMM_WORLD);
     MPI_Unpack(buffer, size, &position, &scan.delays, 1, MPI_INT32, MPI_COMM_WORLD);
+    MPI_Unpack(buffer, size, &position, &scan.phases, 1, MPI_INT32, MPI_COMM_WORLD);
   }
   // Get all times
   int32_t n_times;
@@ -271,12 +274,16 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
   MPI_Unpack(buffer, size, &position, &n_delays, 1, MPI_INT32, MPI_COMM_WORLD);
   table.delays.resize(n_delays);
   MPI_Unpack(buffer, size, &position, &table.delays[0], n_delays, MPI_DOUBLE, MPI_COMM_WORLD);
+  table.phases.resize(n_delays);
+  MPI_Unpack(buffer, size, &position, &table.phases[0], n_delays, MPI_DOUBLE, MPI_COMM_WORLD);
 
   SFXC_ASSERT(position == size);
 
   table.scan_nr = 0;
   table.acc.resize(0);
+  table.acc_ph.resize(0);
   table.splineakima.resize(0);
+  table.splineakima_ph.resize(0);
   table.initialise_next_scan();
   //std::cout << RANK_OF_NODE << " : receives all data (" << size << " bytes) " << "\n";
 }

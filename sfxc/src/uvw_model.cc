@@ -87,7 +87,7 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
   in.read(reinterpret_cast < char * > (header), header_size*sizeof(char));
   if (in.eof()) return 0;
 
-  double line[5], scan_start, scan_end;
+  double line[6], scan_start, scan_end;
   int32_t current_mjd;
   char current_source[81];
   int state = READ_SCAN_HEADER;
@@ -97,7 +97,7 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
     case READ_SCAN_HEADER:{
       if(in.read(current_source, sizeof(char) * 81)){
         in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
-        in.read(reinterpret_cast < char * > (line), 5*sizeof(double));
+        in.read(reinterpret_cast < char * > (line), 6*sizeof(double));
         Time start_time_scan(current_mjd, line[0]);
         // strip whitespace from end of source string
         for(int i = 79; i >=0 ; i--){
@@ -117,7 +117,7 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
       break;
     }
     case FIND_TSTART:{
-      while (in.read(reinterpret_cast < char * > (line), 5*sizeof(double))) {
+      while (in.read(reinterpret_cast < char * > (line), 6*sizeof(double))) {
         SFXC_ASSERT(line[4] <= 0);
         Time time(current_mjd, line[0]);
 
@@ -180,7 +180,7 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
           w.push_back(line[3]);
           scan_end = line[0];
         }
-      } while(in.read(reinterpret_cast < char * > (line), 5*sizeof(double)));
+      } while(in.read(reinterpret_cast < char * > (line), 6*sizeof(double)));
       if((scans[n_scans - 2].begin == scan.begin) && (scans[n_scans - 2].end != scan.end))
         sfxc_abort("Premature ending of phase center\n");
     }
