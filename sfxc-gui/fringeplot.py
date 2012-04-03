@@ -337,10 +337,15 @@ class FringePlotWindow(Qt.QWidget):
 
                 if not idx in plot.curve:
                     title = "SB%d" % ((idx >> 1) / 2)
-                    if (idx >> 1) % 2 == 0:
-                        title += " RR"
+                    if pol1 == 0:
+                        title += " R"
                     else:
-                        title += " LL"
+                        title += " L"
+                        pass
+                    if pol2 == 0:
+                        title += "R"
+                    else:
+                        title += "L"
                         pass
 
                     pen = Qt.QPen()
