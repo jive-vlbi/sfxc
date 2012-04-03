@@ -205,6 +205,8 @@ class FringePlotWindow(Qt.QWidget):
             self.integrations = 32
             pass
 
+        self.cross = False
+
         menubar = Qt.QMenuBar(self)
         menu = menubar.addMenu("&Reference")
         self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
@@ -230,6 +232,21 @@ class FringePlotWindow(Qt.QWidget):
             grp.addAction(act)
             menu.addAction(act)
             continue
+        menu = menubar.addMenu("&Polarisations")
+        self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
+                     self.setPolarizations)
+        grp = Qt.QActionGroup(menu)
+        act = Qt.QAction("&Parallel Hands", menu)
+        act.setCheckable(True)
+        act.setChecked(True)
+        grp.addAction(act)
+        menu.addAction(act)
+        if json_input["cross_polarize"]:
+            act = Qt.QAction("&Cross Hands", menu)
+            act.setCheckable(True)
+            grp.addAction(act)
+            menu.addAction(act)
+            pass
 
         self.stations = []
         for station in vex['STATION']:
@@ -289,6 +306,21 @@ class FringePlotWindow(Qt.QWidget):
         self.cordata.correlations = {}
         return
 
+    def setPolarizations(self, act):
+        if str(act.text()) == "&Parallel Hands":
+            self.cross = False
+        else:
+            self.cross = True
+            pass
+        for plot in self.plots:
+            for idx in plot.curve:
+                plot.curve[idx].detach()
+                continue
+            plot.curve = {}
+            continue
+        self.replot()
+        return
+
     def stretch(self):
         self.plots[-1].enableAxis(Qwt.QwtPlot.xBottom, True)
         self.plots[-1].centercurve.setItemAttribute(Qwt.QwtPlotItem.Legend, False)
@@ -328,15 +360,23 @@ class FringePlotWindow(Qt.QWidget):
                 if plot.station == station:
                     break
             for idx in correlations[baseline]:
-                pol1 = (idx >> 0) & 1
-                pol2 = (idx >> 1) & 1
+                if station == baseline[0]:
+                    pol1 = (idx >> 1) & 1
+                    pol2 = (idx >> 0) & 1
+                else:
+                    pol1 = (idx >> 0) & 1
+                    pol2 = (idx >> 1) & 1
+                    pass
                 usb = (idx >> 2) & 1
                 band = (idx >> 3) & 0x1f
-                if not pol1 == pol2:
+                if self.cross and pol1 == pol2:
+                    continue
+                if not self.cross and not pol1 == pol2:
                     continue
 
-                if not idx in plot.curve:
-                    title = "SB%d" % ((idx >> 1) / 2)
+                plot_idx = (band << 3) | (usb << 2) | (pol2 << 1) | (pol1 << 0)
+                if not plot_idx in plot.curve:
+                    title = "SB%d" % ((plot_idx >> 1) / 2)
                     if pol1 == 0:
                         title += " R"
                     else:
@@ -349,14 +389,14 @@ class FringePlotWindow(Qt.QWidget):
                         pass
 
                     pen = Qt.QPen()
-                    pen.setColor(Qt.QColor(plot.color[(idx >> 1) % 16]))
+                    pen.setColor(Qt.QColor(plot.color[(plot_idx >> 1) % 16]))
                     pen.setWidth(1)
 
-                    plot.curve[idx] = FringePlotCurve(title)
-                    plot.curve[idx].setData(range(self.cordata.number_channels),
+                    plot.curve[plot_idx] = FringePlotCurve(title)
+                    plot.curve[plot_idx].setData(range(self.cordata.number_channels),
                                             range(self.cordata.number_channels))
-                    plot.curve[idx].setPen(pen)
-                    plot.curve[idx].attach(plot)
+                    plot.curve[plot_idx].setPen(pen)
+                    plot.curve[plot_idx].attach(plot)
                     if plot == self.plots[-1]:
                         self.stretch()
                         pass
@@ -380,7 +420,7 @@ class FringePlotWindow(Qt.QWidget):
                 f = np.absolute(e)
                 g = f / np.sum(f)
 
-                plot.curve[idx].setData(range(self.cordata.number_channels), g)
+                plot.curve[plot_idx].setData(range(self.cordata.number_channels), g)
                 continue
             plot.replot()
             continue
