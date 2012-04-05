@@ -71,6 +71,7 @@ private:
   int64_t channel_freq();
   double get_delay(Time time);
   double get_phase(Time time);
+  double get_amplitude(Time time);
   void create_window();
 
 private:

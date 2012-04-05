@@ -160,14 +160,18 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
     delta_phi = (phi_end - phi) / fft_size();
   }
 
+  // We use a constant amplitude factor over the fft
+  double amplitude = get_amplitude(current_time + fft_length/2);
   // We perform a recursion for the (co)sines similar to what is done in the fractional bitshift
   double temp=sin(delta_phi/2);
   double a=2*temp*temp,b=sin(delta_phi);
 #ifdef HAVE_SINCOS
   sincos(phi, &sin_phi, &cos_phi);
+  sin_phi *= amplitude;
+  cos_phi *= amplitude;
 #else
-  sin_phi = sin(phi);
-  cos_phi = cos(phi);
+  sin_phi = amplitude * sin(phi);
+  cos_phi = amplitude * cos(phi);
 #endif
 
   for (size_t i = 0; i < fft_size(); i++) {
@@ -253,6 +257,11 @@ double Delay_correction::get_delay(Time time) {
 double Delay_correction::get_phase(Time time) {
   SFXC_ASSERT(delay_table_set);
   return delay_table.phase(time);
+}
+
+double Delay_correction::get_amplitude(Time time) {
+  SFXC_ASSERT(delay_table_set);
+  return delay_table.amplitude(time);
 }
 
 bool Delay_correction::has_work() {

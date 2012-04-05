@@ -54,6 +54,7 @@ Delay_table_akima::Delay_table_akima(const Delay_table_akima &other)
   times = other.times;
   delays = other.delays;
   phases = other.phases;
+  amplitudes = other.amplitudes;
   initialise_next_scan();
 }
 
@@ -70,11 +71,14 @@ void Delay_table_akima::operator=(const Delay_table_akima &other) {
   times = other.times;
   delays = other.delays;
   phases = other.phases;
+  amplitudes = other.amplitudes;
   for(int i = 0 ; i < splineakima.size() ; i++){
     gsl_spline_free(splineakima[i]);
     gsl_spline_free(splineakima_ph[i]);
+    gsl_spline_free(splineakima_amp[i]);
     gsl_interp_accel_free(acc[i]);
     gsl_interp_accel_free(acc_ph[i]);
+    gsl_interp_accel_free(acc_amp[i]);
   }
   splineakima.resize(0);
   acc.resize(0);
@@ -117,7 +121,7 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
   in.read(reinterpret_cast < char * > (header), header_size*sizeof(char));
   if (in.eof()) return;
 
-  double line[6], scan_start, scan_end;
+  double line[7], scan_start, scan_end;
   int32_t current_mjd;
   char current_source[81];
 
@@ -129,7 +133,7 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
     case READ_SCAN_HEADER:{
       if(in.read(current_source, sizeof(char) * 81)){
         in.read(reinterpret_cast < char * > (&current_mjd), sizeof(int32_t));
-        in.read(reinterpret_cast < char * > (line), 6*sizeof(double));
+        in.read(reinterpret_cast < char * > (line), 7*sizeof(double));
         Time start_time_scan(current_mjd, line[0]);
         // strip whitespace from end of source string
         for(int i = 79; i >=0 ; i--){
@@ -149,7 +153,7 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
       break;
     }
     case FIND_TSTART:{
-      while (in.read(reinterpret_cast < char * > (line), 6*sizeof(double))) {
+      while (in.read(reinterpret_cast < char * > (line), 7*sizeof(double))) {
 
         SFXC_ASSERT(line[4] <= 0);
         Time time(current_mjd, line[0]);
@@ -183,6 +187,7 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
       scan.source = source_index;
       scan.delays = delays.size();
       scan.phases = phases.size();
+      scan.amplitudes = amplitudes.size();
       // Check if we are correlating an additional phase center to the current scan
       int n_scans = scans.size();
       if((n_scans > 1) && (scans[n_scans - 2].begin == start_time_scan)){
@@ -191,7 +196,6 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
       }
       scan.times = times.size();
       state = READ_PHASE_CENTER;
-
       break;
     }
     case READ_PHASE_CENTER:{
@@ -214,14 +218,14 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
           times.push_back(line[0] - scan_start);
           delays.push_back(line[4]);
           phases.push_back(line[5]);
+          amplitudes.push_back(line[6]);
           scan_end = line[0];
         }
-      } while(in.read(reinterpret_cast < char * > (line), 6*sizeof(double)));
+      } while(in.read(reinterpret_cast < char * > (line), 7*sizeof(double)));
       correlation_scan = scans.size() - 1;
       break;
     }}
   }
-
   // Initialise
   scan_nr = 0;
   initialise_next_scan();
@@ -237,8 +241,10 @@ bool Delay_table_akima::initialise_next_scan() {
   for(int i = 0 ; i < splineakima.size() ; i++){
     gsl_spline_free(splineakima[i]);
     gsl_spline_free(splineakima_ph[i]);
+    gsl_spline_free(splineakima_amp[i]);
     gsl_interp_accel_free(acc[i]);
     gsl_interp_accel_free(acc_ph[i]);
+    gsl_interp_accel_free(acc_amp[i]);
   }
 
   // Determine the number of sources in current scan
@@ -249,8 +255,10 @@ bool Delay_table_akima::initialise_next_scan() {
 
   splineakima.resize(n_sources);
   splineakima_ph.resize(n_sources);
+  splineakima_amp.resize(n_sources);
   acc.resize(n_sources);
   acc_ph.resize(n_sources);
+  acc_amp.resize(n_sources);
   for(int i = 0; i < n_sources ; i++){
     Scan &scan = scans[scan_nr + i];
     // at least 4 sample points for a spline
@@ -261,10 +269,13 @@ bool Delay_table_akima::initialise_next_scan() {
     // Initialise the Akima spline
     acc[i] = gsl_interp_accel_alloc();
     acc_ph[i] = gsl_interp_accel_alloc();
+    acc_amp[i] = gsl_interp_accel_alloc();
     splineakima[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
     splineakima_ph[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
+    splineakima_amp[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
     gsl_spline_init(splineakima[i], &times[scan.times], &delays[scan.delays], n_pts);
     gsl_spline_init(splineakima_ph[i], &times[scan.times], &phases[scan.phases], n_pts);
+    gsl_spline_init(splineakima_amp[i], &times[scan.times], &amplitudes[scan.amplitudes], n_pts);
   }
 
   return true;
@@ -303,6 +314,16 @@ double Delay_table_akima::phase(const Time &time, int phase_center){
   SFXC_ASSERT(splineakima.size() > phase_center);
   double sec = (time - scans[scan_nr].begin).get_time();
   double result = gsl_spline_eval(splineakima_ph[phase_center], sec, acc_ph[phase_center]);
+  return result;
+}
+
+double Delay_table_akima::amplitude(const Time &time, int phase_center){
+  while (scans[scan_nr].end < time){
+    if (!initialise_next_scan()) break;
+  }
+  SFXC_ASSERT(splineakima.size() > phase_center);
+  double sec = (time - scans[scan_nr].begin).get_time();
+  double result = gsl_spline_eval(splineakima_amp[phase_center], sec, acc_amp[phase_center]);
   return result;
 }
 

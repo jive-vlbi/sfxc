@@ -42,7 +42,9 @@ int main(int argc, char *argv[]) {
     for (Time time = start_time_scan; time < stop_time_scan; time += step) {
       out << (int64_t)time.get_time_usec();
       for(int j = 0 ; j < delay_table.n_phase_centers(); j++)
-        out << " \t" << delay_table.delay(time, j);
+        out << " \t(" << delay_table.delay(time, j) 
+            << ", " << delay_table.phase(time, j)
+            << ", " << delay_table.amplitude(time, j) << ")";
       out << std::endl;
     }
     out << std::endl;
