@@ -47,104 +47,13 @@ class Channel_extractor_dynamic_impl : public Channel_extractor_interface
                       int IGNORED_size_of_one_input_word,
                       int input_sample_size, 
                       int bits_per_sample_) {
-        initialise( track_positions );
         input_sample_size_ = input_sample_size;
       }
 
-
-      void initialise(const std::vector< std::vector<int> > &track_positions) {
-        assert( Tn_subbands == track_positions.size() );
-        assert( Tfan_out == track_positions[0].size() );
-        assert(Tfan_out <= 8);
-        assert(8%Tfan_out == 0);
-        assert(Tfan_out*Tsamples_per_byte == 8);
-        verbose = false;
-        if (verbose){
-
-            std::cout << "REAL Table builder: " << std::endl;
-            std::cout << "     Subbands: " << Tn_subbands << std::endl;
-            std::cout << "      fan out: " << Tfan_out  << std::endl;
-            std::cout << " samples/byte: " << Tsamples_per_byte << std::endl;
-            std::cout << "sequence size: " << Tseqsize  << std::endl;
-            std::cout << "     span_out: " << Tspan_out << std::endl;
-            std::cout << "size of input word:" << Tsize_input_word << std::endl;
-            std::cout << "Table builder: " << std::endl;
-
-            for (unsigned int i=0;i<track_positions.size();i++) {
-                std::cout << "Channel "<<i<<": ";
-                for (unsigned int j=0;j<track_positions[i].size();j++) {
-                    std::cout << track_positions[i][j] << ", ";
-                  }
-                std::cout << std::endl;
-              }
-          }
-        table = new std::vector<Action>**[Tseqsize];
-        //ftable = new uint8_t**[seqsize];
-        for (unsigned int i=0;i<Tseqsize;i++) {
-            table[i] = new std::vector<Action>*[256];
-            for (unsigned int j=0;j<256;j++) {
-                table[i][j] = new std::vector<Action>(0,0);
-              }
-          }
-
-        int seqpref = 0;
-        int cshift[256][Tn_subbands];
-        for (unsigned int i=0;i<256;i++)
-          for (int j=0;j<Tn_subbands;j++)
-            cshift[i][j] = 7;
-
-        for (unsigned int r=0;r<Tseqsize;r+=Tsize_input_word) {
-            for (unsigned int i=0;i<Tn_subbands;i++) {
-                for (unsigned int j=0;j<track_positions[i].size();j++) {
-                    uint8_t idx = track_positions[i][j];
-                    uint8_t seqidx = r + (idx/8);
-                    uint8_t cidx = (idx) % 8;
-                    for (unsigned int k=0;k<256;k++) {
-                        find_add( table[seqidx][k], i, ((k>>cidx)&1)<<cshift[k][i], (cshift[k][i]) );
-                        //find_add( table[seqidx][k], i, ((k>>cidx)&1)<<cshift[k][i], (cshift[k][i]) );
-                        (cshift[k][i])--;
-                      }
-                  }
-              }
-          }
-        int tidx=0;
-        for (unsigned int i=0;i<256;i++) {
-            for (unsigned int j=0;j<Tseqsize;j++) {
-                std::vector<Action>::iterator bg = (*table[j][i]).begin();
-                std::vector<Action>::iterator en = (*table[j][i]).end();
-                //std::cout << "VALUE-SEQUENCE: " << i << "," << j << "  :";
-                int idefix=0;
-                while ( bg != en ) {
-                    assert( idefix < Tspan_out);
-                    newtab[i][j][idefix] = ((unsigned char)(*bg).value);
-                    //std::cout << (*bg).channel << ":("<< (*bg).value << ") ";
-                    //std::cout << "toto:"<< j<< " :" << (int)newtab[i][j][idefix] << std::endl;
-                    idefix+=1;
-                    if (i == 255 ) {
-                        assert( tidx < Tseqsize*Tspan_out);
-                        order[tidx] = (*bg).channel;
-                        //std::cout << "Adding: " << (*table[j][i]).size() << " " << tidx << " " << (*bg).channel <<" " << std::endl;
-                        tidx++;
-                      }
-                    bg++;
-                  }
-                //std::cout << std::endl;
-              }
-          }
-        //std::cout << "Info: " << std::endl;
-        for (unsigned int i=0; i<Tseqsize*Tspan_out;i++) {
-            //std::cout << (int) order[i] << ", ";
-            fasttmp[i] = (unsigned char*)&(tmpout[ order[i] ] );
-          }
-        //std::cout << "Endl" << std::endl;
-        memset(tmpout, 0, Tn_subbands+1);
-      }
-
-			virtual void extract(unsigned char *in_data1,
+      virtual void extract(unsigned char *in_data1,
                            unsigned char **output_data) {
         do_task_no_offset( input_sample_size_, in_data1, output_data );
       }
-
 
       void do_task_no_offset(int n_input_samples,
                              const unsigned char * in_data,
@@ -157,16 +66,8 @@ class Channel_extractor_dynamic_impl : public Channel_extractor_interface
 	@dynamic_mainloop@
 	//std::cout << "Computation done :"<< (int)endbuffer - (int)currbuffer;
       }
-    private:
 
     private:
-      std::vector<Action> ***table;
-
-      uint8_t  order[Tseqsize*Tspan_out];
-      unsigned char* fasttmp[Tseqsize*Tspan_out];
-      uint8_t  newtab[256][Tseqsize][Tspan_out];
-
-      char tmpout[Tn_subbands+1];
       uint32_t input_sample_size_;
   };
 
@@ -284,11 +185,7 @@ for i in order:
 
 header="/// automatically genereated Channel_extractor_compiler v0.1\n"
 header+="\n#define Tsize_input_word "+`size_input_word`
-header+="\n#define Tn_subbands "+`n_subbands`
-header+="\n#define Tfan_out "+`fan_out`
-header+="\n#define Tsamples_per_byte "+`samples_per_byte`
 header+="\n#define Tseqsize "+`sequence_size`
-header+="\n#define Tspan_out "+`span_out`
 header+="\n"
 
 #fpt = open('autogen_mainloop.cc', 'wt')
