@@ -360,6 +360,7 @@ command_loop(void *arg)
 	char reply[1024];
 	struct sockaddr_in sin;
 	socklen_t len;
+	struct timeval tv;
 	ssize_t nbytes;
 	int s, fd;
 
@@ -394,6 +395,15 @@ command_loop(void *arg)
 		fd = accept(s, (struct sockaddr *)&sin, &len);
 		if (fd == -1) {
 			logit(LOG_CRIT, "accept: %s", strerror(errno));
+			close(s);
+			return NULL;
+		}
+
+		tv.tv_sec = 5;
+		tv.tv_usec = 0;
+		if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) == -1) {
+			logit(LOG_CRIT, "setsockopt: %s", strerror(errno));
+			close(fd);
 			close(s);
 			return NULL;
 		}
