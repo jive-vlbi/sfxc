@@ -393,7 +393,6 @@ command_loop(void *arg)
 		len = sizeof(sin);
 		fd = accept(s, (struct sockaddr *)&sin, &len);
 		if (fd == -1) {
-			fprintf(stderr, "xxx\n");
 			logit(LOG_CRIT, "accept: %s", strerror(errno));
 			close(s);
 			return NULL;
@@ -405,7 +404,12 @@ command_loop(void *arg)
 				break;
 
 			request[sizeof(request) - 1] = 0;
-			if (strncmp(request, "bank_set?", strlen("bank_set?")) == 0) {
+			if (strncmp(request, "version?",
+			    strlen("version?")) == 0) {
+				snprintf(reply, sizeof(reply),
+				    "!version? 0 : mk5read : 0.9 ; \n");
+			} else if (strncmp(request, "bank_set?",
+			    strlen("bank_set?")) == 0) {
 				if (pthread_mutex_trylock(&ss_lock) == 0) {
 					read_labels();
 					pthread_mutex_unlock(&ss_lock);
