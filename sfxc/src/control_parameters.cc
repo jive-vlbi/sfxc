@@ -5,6 +5,7 @@
 #include <fstream>
 #include <set>
 #include <cstring>
+#include <cctype>
 #include <math.h>
 
 #include <libgen.h>
@@ -1212,12 +1213,10 @@ polarisation_type_for_global_output_header() const {
     for (size_t ch_nr=0; ch_nr<number_frequency_channels(); ch_nr++) {
       std::string channel_name = frequency_channel(ch_nr);
       char pol = polarisation(channel_name, station_name, mode);
-      if ((pol == 'L') || (pol == 'l')) {
+      if (std::toupper(pol) == 'L')
         left = true;
-      } else {
-        SFXC_ASSERT((pol == 'R') || (pol == 'r'));
+      else if (std::toupper(pol) == 'R')
         right = true;
-      }
     }
   }
   if (left && right)
