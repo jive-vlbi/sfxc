@@ -7,7 +7,14 @@
 # 
 
 import sys, os, time, filecmp
-import simplejson
+
+# The json module is new in Python 2.6; fall back on simplejson if it
+# isn't available.
+try:
+    import json
+except:
+    import simplejson as json
+    pass
 
 def gen_table(vex_file, ctrl_file):
   if not os.path.exists(vex_file):
@@ -20,7 +27,7 @@ def gen_table(vex_file, ctrl_file):
 
   # compute the number of processes needed from the control file
   try:
-    ctrl = simplejson.load(open(ctrl_file, "r"))
+    ctrl = json.load(open(ctrl_file, "r"))
   except StandardError, err:
     print "Error loading control file : " + str(err)
     sys.exit(1);
