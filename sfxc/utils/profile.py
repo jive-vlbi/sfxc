@@ -7,7 +7,6 @@ from time import sleep
 from optparse import OptionParser
 import pdb
 
-global_header_size = 64
 timeslice_header_size = 16
 uvw_header_size = 32
 stat_header_size = 24
@@ -141,8 +140,11 @@ def initialize(base_file_name, nbins, station_list):
     except:
       print "Error : Could not open " + filename
       sys.exit(1)
+    gheader_size_buf = read_data(inputfile, 4)
+    global_header_size = struct.unpack('i', gheader_size_buf)[0]
+    inputfile.seek(0)
     gheader_buf = read_data(inputfile, global_header_size)
-    global_header = struct.unpack('i32s2h5i4c',gheader_buf)
+    global_header = struct.unpack('i32s2h5i4c',gheader_buf[:64])
     nchan = global_header[5]
     inputfiles.append(inputfile)
   # determine parameters from first bin
@@ -188,7 +190,7 @@ def initialize(base_file_name, nbins, station_list):
     integration_slice = timeslice_header[0]
     nsubint += 1
   
-  inputfile.seek(64)
+  inputfile.seek(global_header_size)
   stations_in_job = []
   for i in range(stations_found.size):
     if stations_found[i] == 1:
