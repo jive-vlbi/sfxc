@@ -158,6 +158,7 @@ void start_node() {
       node.start();
       break;
     }
+  case MPI_TAG_SET_CORRELATOR_NODE_PHASED:
   case MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING:
   case MPI_TAG_SET_CORRELATOR_NODE: {
       int32_t msg;
@@ -173,7 +174,8 @@ void start_node() {
         DEBUG_MSG("Correlator node, hostname = " << hostname);
       }
       bool binning = status.MPI_TAG == MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING;
-      Correlator_node node(rank, msg, binning);
+      bool phased = status.MPI_TAG == MPI_TAG_SET_CORRELATOR_NODE_PHASED;
+      Correlator_node node(rank, msg, binning, phased);
       node.start();
       break;
     }

@@ -9,14 +9,14 @@
  */
 
 #include "correlator_node.h"
-#include "correlation_core_pulsar.h"
+#include "correlation_core_phased.h"
 #include "data_reader_buffer.h"
 #include "data_writer.h"
 #include "utils.h"
 #include "output_header.h"
 #include "delay_correction.h"
 
-Correlator_node::Correlator_node(int rank, int nr_corr_node, bool pulsar_binning_)
+Correlator_node::Correlator_node(int rank, int nr_corr_node, bool pulsar_binning_, bool phased_array_)
     : Node(rank),
     correlator_node_ctrl(*this),
     data_readers_ctrl(*this),
@@ -25,14 +25,21 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, bool pulsar_binning
     isinitialized_(false),
     nr_corr_node(nr_corr_node), 
     pulsar_parameters(get_log_writer()),
-    pulsar_binning(pulsar_binning_) {
+    pulsar_binning(pulsar_binning_),
+    phased_array(phased_array_) {
+  std::cout << "start : psr = " << pulsar_binning << ", phased_array = " << phased_array << "\n";
   get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;
-  correlation_core_normal = new Correlation_core();
-  if(pulsar_binning){
-    correlation_core_pulsar = new Correlation_core_pulsar();
-    correlation_core = correlation_core_pulsar;
-  }else
+  if (phased_array){
+    correlation_core_normal = new Correlation_core_phased();
     correlation_core = correlation_core_normal;
+  }else{
+    correlation_core_normal = new Correlation_core();
+    if(pulsar_binning){
+      correlation_core_pulsar = new Correlation_core_pulsar();
+      correlation_core = correlation_core_pulsar;
+    }else
+      correlation_core = correlation_core_normal;
+  }
   add_controller(&correlator_node_ctrl);
   add_controller(&data_readers_ctrl);
   add_controller(&data_writer_ctrl);
@@ -304,23 +311,25 @@ Correlator_node::set_parameters() {
   SFXC_ASSERT(((parameters.stop_time-parameters.start_time) /
                parameters.integration_time) == 1);
   int nBins=1;
-  if(parameters.pulsar_binning){
+  if(pulsar_binning){
     std::map<std::string, Pulsar_parameters::Pulsar>::iterator cur_pulsar_it =
                            pulsar_parameters.pulsars.find(std::string(&parameters.source[0]));
     if(cur_pulsar_it == pulsar_parameters.pulsars.end()){
       // Current source is not a pulsar
       nBins = 1;
       correlation_core = correlation_core_normal;
+      correlation_core->set_parameters(parameters, get_correlate_node_number());
     }else{
       Pulsar_parameters::Pulsar &pulsar = cur_pulsar_it->second;
       nBins = pulsar.nbins + 1; // One extra for off-pulse data 
       correlation_core = correlation_core_pulsar;
+      correlation_core_pulsar->set_parameters(parameters, pulsar, get_correlate_node_number());
     }
   }else{
     nBins = parameters.n_phase_centers;
+    correlation_core->set_parameters(parameters, get_correlate_node_number());
   }
 
-  correlation_core->set_parameters(parameters, get_correlate_node_number());
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
       delay_modules[i]->set_parameters(parameters);

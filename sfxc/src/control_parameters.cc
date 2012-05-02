@@ -127,6 +127,8 @@ initialise(const char *ctrl_file, const char *vex_file,
       it++;
     }
   }
+  if (ctrl["phased_array"] == Json::Value())
+    ctrl["phased_array"] = false;
 
   if (ctrl["multi_phase_center"] == Json::Value()){
     ctrl["multi_phase_center"] = false;
@@ -150,6 +152,12 @@ initialise(const char *ctrl_file, const char *vex_file,
   } else if ((ctrl["multi_phase_center"].asBool() == true) && 
              (ctrl["pulsar_binning"].asBool() == true)){
     std::cout << "Pulsar binning cannot be used together with multiple phase centers\n";
+    return false;
+  }
+  // No phased array in pulsar binning mode
+  if ((ctrl["phased_array"].asBool() == true) &&
+      (ctrl["pulsar_binning"].asBool() == true)){
+    std::cout << "Pulsar binning cannot be used in phase array mode\n";
     return false;
   }
   // Set default windowing function, if necessary
@@ -571,6 +579,10 @@ Control_parameters::channels_size() const {
 
 int Control_parameters::message_level() const {
   return ctrl["message_level"].asInt();
+}
+
+bool Control_parameters::phased_array() const{
+  return ctrl["phased_array"].asBool();
 }
 
 bool Control_parameters::pulsar_binning() const{

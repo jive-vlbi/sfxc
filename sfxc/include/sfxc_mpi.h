@@ -85,6 +85,12 @@ enum MPI_TAG {
    * - MPI_INT32: no content
    **/
   MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING,
+
+  /** Add a "correlator" node in phased array mode
+   * - MPI_INT32: no content
+   **/
+  MPI_TAG_SET_CORRELATOR_NODE_PHASED,
+
   /** Add an output node
    * - MPI_INT32: no content
    **/
@@ -371,6 +377,9 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
     }
   case MPI_TAG_SET_CORRELATOR_NODE: {
       return "MPI_TAG_SET_CORRELATOR_NODE";
+    }
+  case MPI_TAG_SET_CORRELATOR_NODE_PHASED: {
+      return "MPI_TAG_SET_CORRELATOR_NODE_PHASED";
     }
   case MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING: {
       return "MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING";

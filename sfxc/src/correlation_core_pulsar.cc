@@ -14,7 +14,7 @@ Correlation_core_pulsar::~Correlation_core_pulsar() {
 
 void
 Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters,
-                                 int node_nr) {
+                                        Pulsar &pulsar, int node_nr) {
   node_nr_ = node_nr;
   current_integration = 0;
   current_fft = 0;
@@ -41,24 +41,18 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
   if (bins.size() != fft_size() + 1)
     bins.resize(fft_size() + 1);
 
-  pulsar_params = parameters.pulsar_parameters;
-  std::map<std::string, Pulsar_parameters::Pulsar>::iterator cur_pulsar_it =
-                           pulsar_params->pulsars.find(std::string(&parameters.source[0]));
-
-  SFXC_ASSERT(cur_pulsar_it!=pulsar_params->pulsars.end());
   // Find the appropiate polyco
-  Pulsar_parameters::Pulsar &cur_pulsar = cur_pulsar_it->second;
-  nbins = cur_pulsar.nbins + 1; // Extra bin for off-pulse data
-  double diff = std::abs(cur_pulsar.polyco_params[0].tmid-start_mjd);
+  nbins = pulsar.nbins + 1; // Extra bin for off-pulse data
+  double diff = std::abs(pulsar.polyco_params[0].tmid-start_mjd);
   int closest=0;
-  for(int i=1; i<cur_pulsar.polyco_params.size(); i++){
-    double new_diff=std::abs(cur_pulsar.polyco_params[i].tmid-start_mjd);
+  for(int i=1; i<pulsar.polyco_params.size(); i++){
+    double new_diff=std::abs(pulsar.polyco_params[i].tmid-start_mjd);
     if(new_diff<diff){
       diff=new_diff;
       closest = i;
     }
   }
-  polyco = &cur_pulsar.polyco_params[closest];
+  polyco = &pulsar.polyco_params[closest];
 
   // Compute the phase at the start of the period
   double DT=((start_mjd - polyco->tmid) + fft_duration/(2*us_per_day))*1440;
@@ -84,8 +78,8 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
   for(int i = 0; i < fft_size() + 1 ;i++) {
     offsets[i] = 4148.808 * polyco->DM * (1 / pow(base_freq + i * dfreq, 2) - inv_freq_obs2) * freq;
   }
-  gate.begin = cur_pulsar.interval.start;
-  gate.end = cur_pulsar.interval.stop;
+  gate.begin = pulsar.interval.start;
+  gate.end = pulsar.interval.stop;
 
   if(accumulation_buffers.size()!=nbins)
     accumulation_buffers.resize(nbins);

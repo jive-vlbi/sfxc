@@ -19,6 +19,7 @@
 #include "correlator_node_bit2float_tasklet.h"
 #include "log_writer_mpi.h"
 #include "correlation_core.h"
+#include "correlation_core_pulsar.h"
 #include "delay_correction.h"
 #include <tasklet/tasklet_manager.h>
 #include "timer.h"
@@ -73,7 +74,7 @@ public:
     END_CORRELATING
   };
 
-  Correlator_node(int rank, int nr_corr_node, bool psr_binning);
+  Correlator_node(int rank, int nr_corr_node, bool psr_binning, bool phased_array);
   ~Correlator_node();
 
   /// The the main_loop of the correlator node.
@@ -245,6 +246,7 @@ private:
   void main_loop();
 
   bool pulsar_binning; // Set to true if pulsar binning is enabled
+  bool phased_array; // Set to true if in phased array mode
   Correlator_node_controller       correlator_node_ctrl;
 
   /// The correlator node is connected to each of the input nodes.
@@ -259,7 +261,8 @@ private:
   int nr_corr_node;
 
   std::vector< Delay_correction_ptr >         delay_modules;
-  Correlation_core                            *correlation_core, *correlation_core_normal, *correlation_core_pulsar;
+  Correlation_core                            *correlation_core, *correlation_core_normal;
+  Correlation_core_pulsar                     *correlation_core_pulsar;
 
   int n_integration_slice_in_time_slice;
 

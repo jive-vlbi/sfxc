@@ -197,6 +197,7 @@ public:
   int reference_station_number() const;
   std::string experiment() const;
 
+  bool phased_array() const;
   bool pulsar_binning() const;
   bool multi_phase_center() const;
   

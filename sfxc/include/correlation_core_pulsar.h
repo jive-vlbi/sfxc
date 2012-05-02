@@ -5,11 +5,12 @@
 #include "correlation_core.h"
 
 class Correlation_core_pulsar : public Correlation_core{
+  typedef Pulsar_parameters::Pulsar Pulsar;
 public:
   Correlation_core_pulsar();
   virtual ~Correlation_core_pulsar();
   virtual void do_task();
-  virtual void set_parameters(const Correlation_parameters &parameters,
+  void set_parameters(const Correlation_parameters &parameters, Pulsar &pulsar,
                               int node_nr);
 protected:
   virtual void integration_initialise();
@@ -17,7 +18,6 @@ protected:
 
   double get_phase();
 
-  Pulsar_parameters                             *pulsar_params;
   Pulsar_parameters::Polyco_params              *polyco;
   /// Temporary buffer to store un-dispersed data
   std::vector<Complex_buffer>                   dedispersion_buffer;

@@ -12,7 +12,7 @@
 #include <fstream>
 
 class Correlation_core : public Tasklet {
-friend class Correlation_core_pulsar;
+//friend class Correlation_core_pulsar;
 public:
   typedef Delay_correction::Output_buffer_element       Input_buffer_element;
   typedef Delay_correction::Output_buffer               Input_buffer;
@@ -39,7 +39,7 @@ public:
   void connect_to(size_t stream, std::vector<Invalid> *invalid_);
 
   virtual void set_parameters(const Correlation_parameters &parameters,
-                      int node_nr);
+                              int node_nr);
   void create_baselines(const Correlation_parameters &parameters);
   void set_data_writer(boost::shared_ptr<Data_writer> writer);
 

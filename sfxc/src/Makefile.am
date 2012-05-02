@@ -40,6 +40,7 @@ OBJ=\
   log_writer.cc log_writer_cout.cc \
   log_writer_file.cc \
   correlation_core.cc \
+  correlation_core_phased.cc \
   correlation_core_pulsar.cc \
   delay_correction.cc \
   uvw_model.cc \
