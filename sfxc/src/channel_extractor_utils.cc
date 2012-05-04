@@ -40,24 +40,3 @@ int compute_span_out(const std::vector< std::vector<int> > &track_positions) {
   //std::cout << "TOTO "<< toto;
   return toto;
 }
-
-
-void find_add( std::vector<Action> *v, int channel, int value, int shift) {
-  for (unsigned int i=0;i<v->size();i++) {
-    if ( (*v)[i].channel == channel ) {
-      //std::cout << "Replacing Channel: " << channel << " old val:"<<  (*v)[i].value;
-      (*v)[i].value = ((*v)[i].value) | (value);
-      //std::cout << "    and => " << (*v)[i].value << std::endl;
-      (*v)[i].shift = shift;
-      return;
-    }
-  }
-  //std::cout << "SETTING CHANNEL :"<< channel << "with value: "<< value << std::endl;
-  Action a(channel,value);
-  v->push_back(a);
-  return;
-}
-
-
-
-
