@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include "exception_common.h"
 #include "channel_extractor_dynamic.h"
-#include "channel_extractor_utils.h"
 #include "channel_extractor_5.h"
 #include "utils.h"
 
@@ -105,8 +104,6 @@ Channel_extractor_interface* Channel_extractor_dynamic::compile_load_construct(
   fan_out = track_positions[0].size();
   n_subbands = track_positions.size();
 
-  int span_out = compute_span_out( track_positions_ );
-
   char* filename = (char*)"ch_ex_params.txt";
   FILE* fpt = fopen(filename,"wt");
   if(!fpt){
@@ -117,10 +114,9 @@ Channel_extractor_interface* Channel_extractor_dynamic::compile_load_construct(
   fprintf(fpt, "n_subbands = %d;\n", n_subbands);
   fprintf(fpt, "bits_per_sample= %d;\n", bits_per_sample);
   fprintf(fpt, "fan_out= %d;\n", fan_out);
-  fprintf(fpt, "span_out= %d;\n", span_out);
-	fprintf(fpt, "input_sample_size= %d;\n", input_sample_size);
-	fprintf(fpt, "size_of_one_input_word= %d;\n", size_of_one_input_word);
-	fprintf(fpt, "outputname= \"%s\";\n", ch_filename.c_str());
+  fprintf(fpt, "input_sample_size= %d;\n", input_sample_size);
+  fprintf(fpt, "size_of_one_input_word= %d;\n", size_of_one_input_word);
+  fprintf(fpt, "outputname= \"%s\";\n", ch_filename.c_str());
   fprintf(fpt, "track_positions = [\n");
 
   for (unsigned int i=0;i<track_positions.size();i++) {

@@ -94,7 +94,6 @@ sequence_size = size_of_one_input_word*8/fan_out
 #print "Channel_extractor_compiler v0.1";
 #print "N_SUBBANDS: "+`n_subbands`
 #print "FANOUT: "+`fan_out`
-#print "SPANOUT: "+`span_out`
 #print "SEQUENCE_SIZE: "+`sequence_size`
 #print "INPUT_SAMPLE_SIZE="+`input_sample_size`
 #print "N(size_of_one_input_word: "+`size_input_word`
@@ -106,15 +105,6 @@ sequence_size = size_of_one_input_word*8/fan_out
   #  print `j`+", ",
   #print ']'
   #idx = idx+1
-
-table=[]
-for i in range(0, 256):
-  table.append([])
-  for j in range(0, sequence_size):
-    table[i].append([])
-    for k in range(0, span_out):
-      table[i][j].append( "V("+`i`+","+`j`+","+`k`+")" )
-
 
 def get_channel_idx(idx):
   global track_positions
@@ -198,73 +188,52 @@ init_dest+="\t\toutput_dataIN["+`n_subbands-1`+"]\n\t};\n\n"
 #fpt.write(init_dest);
 mainloop += init_dest
 
-if False:
-  mainloop += "\nwhile (currbuffer < endbuffer) {\n"
-  for i in range(0, sequence_size):
-    for j in range(0, span_out):
-      dst = order[span_out*i+j]
-      if tag[span_out*i+j] == 'i':
-        oper[dst].append( " newtab[ currbuffer["+`i`+"] ] ["+`i`+"]["+`j`+"] " );
-      elif tag[span_out*i+j] == 'f':
-        #print "output_data["+`dst`+"][outindex] = ",
-        #for str in oper[dst]:
-        #  print ""+str+" | ",
-        #print "newtab[ currbuffer["+`i`+"] ] ["+`i`+"]["+`j`+"];";
-        #main_loop+=" std::cout << \"Value:\" << outindex << std::endl;";
-        mainloop+="\toutput_data["+`dst`+"][outindex] = "
-        for str in oper[dst]:
-          mainloop+=""+str+" | "
-        mainloop+="newtab[ currbuffer["+`i`+"] ] ["+`i`+"]["+`j`+"];\n";
-  mainloop+="\n\t currbuffer+=Tseqsize; \n\t ++outindex;\n}\n"
-  #fpt.write(main_loop);
+idx = 0
+for ch in track_positions:
+  print 'Channel: '+`idx`+" [",
+  for j in ch:
+    print `j`+", ",
+  print ']'
+  idx = idx+1
 
-else:
+pcroll=[]
+lines=[]
+
+for i in range(0, n_subbands):
+  pcroll.append(0)
+  lines.append("\t output_data["+`i`+"][outindex] =")
+seqd = 0
+while pcroll[0] < 7:
   idx = 0
   for ch in track_positions:
-    print 'Channel: '+`idx`+" [",
     for j in ch:
-      print `j`+", ",
-    print ']'
+      if not (pcroll[idx] == 0):
+        lines[idx] += " | "
+        if(ch.index(j)%3==0):
+          lines[idx] += "\n\t\t\t\t "
+      endpos=(pcroll[idx]/bits_per_sample+1)*bits_per_sample-pcroll[idx]%bits_per_sample-1
+      curpos=j%8
+      diff = curpos-endpos
+      roll = " none "
+      #if diff == 0:
+      #  roll = ""
+      if diff <= 0:
+        roll = "<<"+`-diff`
+      if diff > 0:
+        roll = ">>"+`diff`
+      #if diff == -7 or diff == 7:
+      #  lines[idx]+= " ((currbuffer["+`seqd*size_input_word+j/8`+"]) "+roll+") "
+      #else:
+      lines[idx]+= " (((currbuffer["+`seqd*size_input_word+j/8`+"]) & "+`(1<<(j%8))`+") "+roll+") "
+      pcroll[idx]+=1
     idx = idx+1
 
-  pcroll=[]
-  lines=[]
+  seqd += 1
+mainloop += "\n while (currbuffer < endbuffer) {\n"
 
-  for i in range(0, n_subbands):
-    pcroll.append(0)
-    lines.append("\t output_data["+`i`+"][outindex] =")
-  seqd = 0
-  while pcroll[0] < 7:
-    idx = 0
-    for ch in track_positions:
-      for j in ch:
-        if not (pcroll[idx] == 0):
-          lines[idx] += " | "
-          if(ch.index(j)%3==0):
-            lines[idx] += "\n\t\t\t\t "
-        endpos=(pcroll[idx]/bits_per_sample+1)*bits_per_sample-pcroll[idx]%bits_per_sample-1
-        curpos=j%8
-        diff = curpos-endpos
-        roll = " none "
-        #if diff == 0:
-        #  roll = ""
-        if diff <= 0:
-          roll = "<<"+`-diff`
-        if diff > 0:
-          roll = ">>"+`diff`
-        #if diff == -7 or diff == 7:
-        #  lines[idx]+= " ((currbuffer["+`seqd*size_input_word+j/8`+"]) "+roll+") "
-        #else:
-        lines[idx]+= " (((currbuffer["+`seqd*size_input_word+j/8`+"]) & "+`(1<<(j%8))`+") "+roll+") "
-        pcroll[idx]+=1
-      idx = idx+1
-
-    seqd += 1
-  mainloop += "\n while (currbuffer < endbuffer) {\n"
-
-  for line in lines:
-    mainloop += line+";\n"
-  mainloop +="\n\t currbuffer+=Tseqsize; \n\t ++outindex;\n}\n"
+for line in lines:
+  mainloop += line+";\n"
+mainloop +="\n\t currbuffer+=Tseqsize; \n\t ++outindex;\n}\n"
 
 #fpt.write(main_loop2)
 #fpt.close()

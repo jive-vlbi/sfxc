@@ -47,7 +47,6 @@ OBJ=\
   channel_extractor_tasklet.cc \
   channel_extractor_tasklet_vdif.cc \
   channel_extractor_5.cc \
-  channel_extractor_utils.cc \
   channel_extractor_dynamic.cc \
   tasklet/tasklet.cc \
   tasklet/tasklet_manager.cc \

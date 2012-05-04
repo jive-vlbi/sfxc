@@ -47,7 +47,6 @@ extract_channelizer_SOURCES = \
   ../src/data_reader_udp.cc \
   ../src/data_writer_socket.cc \
   ../src/data_reader_blocking.cc \
-  ../src/channel_extractor_utils.cc \
   ../src/channel_extractor_dynamic.cc \
   ../src/channel_extractor_5.cc \
   ../src/utils.cc \
