@@ -108,7 +108,10 @@ def lag_offsets(data, n_station, offsets, rates, snr):
         fx = arange(M/10,M+1-M/10)*pi/M # Only use the inner 80% of the band
         offsets[chan,station1, station2-1] = x
         rates[chan,station1, station2-1] = y * 2 * pi / data.shape[3]
-        snr[chan, station1, station2-1] = phase_snr(fx, phase[M/10:M+1-M/10])
+        if rl.sum() > 1e-6:
+          snr[chan, station1, station2-1] = phase_snr(fx, phase[M/10:M+1-M/10])
+        else:
+          snr[chan, station1, station2-1] = 0
         if (chan == 3) and (station1==2) and (station2==-3):
           pdb.set_trace()
       # Fill in values for the lower triangle of the matrices
@@ -129,6 +132,8 @@ def ffit(offsets, rates, snr, nchan, ref):
     #W[:]=1[chan, bline, :, :]
     for j in range(offsets.shape[1]):
       snrmax = snr[chan,j,:].max()
+      if snrmax < 1e-6:
+        snrmax = 1
       P = [p_good(s, nchan, 20,0.01) for s in snr[chan,j,:]]
       W[j, :] = [(snr[chan,j,i]/snrmax) * (1./16)*P[i]**4/((1./16)*P[i]**4+(1-P[i])**4) for i in arange(len(P))]
       if(j < ref):
@@ -224,13 +229,20 @@ def phase_offsets(data, station1, station2, offsets, rates, snr):
     vis_rate = sum(data[chan, :, :]*exp(-2j*pi*(arange(0, M+1) * coef_phase[1]/(2.*M))),axis=1)
     phase_rate = unwrap(arctan2(imag(vis_rate), real(vis_rate)))
     w = abs(vis_rate)
-    w /= w.max()
+    rate_wmax = w.max()
+    if rate_wmax > 1e-6:
+      w /= rate_wmax
+    else:
+      w[:] = 1
     coef_rate = polynomial.polyfit(arange(phase_rate.size), phase_rate, 1, w=w)
     offsets[chan,station1, station2-1] = -coef_phase[1]
     rates[chan,station1, station2-1] = -coef_rate[1]
     if (chan == 0) and (station1==0) and (station2==-1):
       pdb.set_trace()
-    snr[chan, station1, station2-1] = phase_snr(x, phase[N/10:N+1-N/10])
+    if wmax > 1e-6:
+      snr[chan, station1, station2-1] = phase_snr(x, phase[N/10:N+1-N/10])
+    else:
+      snr[chan, station1, station2-1] = 0
   #print 'chan = ' + `chan` + ' ; offsets = ' + `offsets[chan,nr,:]`
 
 def phase_snr(x, phase):
@@ -299,6 +311,8 @@ def write_clocks(vex, param, delays, rates, snr, global_fit, ref_station):
   for c in range(n_channels):
     for b in range(n_stations):
       snrmax = snr[c,b,:].max()
+      if snrmax < 1e-6:
+        snrmax = 1
       P = [p_good(s, param.nchan, 20,0.01) for s in snr[c,b,:]]
       W[c, b, :] = [(snr[c,b,i]/snrmax) * (1./16)*P[i]**4/((1./16)*P[i]**4+(1-P[i])**4) for i in range(len(P))]
   if global_fit:
@@ -316,7 +330,7 @@ def write_clocks(vex, param, delays, rates, snr, global_fit, ref_station):
     weights[:,ref_station+1:N] = W[:, ref_station, ref_station:N]
   tot_weights = sum(weights,axis=0)
   tot_weights[ref_station] = 1
-  weights /= tot_weights
+  weights /= (tot_weights + 1e-6)
   weights[:,ref_station] = 1
   stations = [vex_stations[i] for i in param.stations]
   channels = [param.channel_names[param.vex_channels.index(c)] for c in param.channels]
