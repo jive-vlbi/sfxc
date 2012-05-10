@@ -619,34 +619,49 @@ int
 Control_parameters::bits_per_sample(const std::string &mode,
                                     const std::string &station) const
 {
-  int bits = 1;
-  const std::string &track_name = get_vex().get_track(mode, station);
-  if(track_name != std::string()){
-    // Mark5a data
+  const std::string &record_transport_type = transport_type(station);
+
+  if (record_transport_type == "VDIF") {
+    const std::string threads_name = get_vex().get_section("THREADS", mode, station);
+    Vex::Node::const_iterator thread = vex.get_root_node()["THREADS"][threads_name];
+    for (Vex::Node::const_iterator thread_it = thread->begin("thread");
+	 thread_it != thread->end("thread"); thread_it++) {
+      return thread_it[5]->to_int();
+    }
+  }
+
+  if (record_transport_type == "Mark5B") {
+    const std::string &bitstreams_name = get_vex().get_bitstreams(mode, station);
+    if (bitstreams_name != std::string()) {
+      Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
+      int bits = 1;
+      for (Vex::Node::const_iterator fanout_def_it = bitstream->begin("stream_def");
+	   fanout_def_it != bitstream->end("stream_def"); ++fanout_def_it) {
+	if (fanout_def_it[1]->to_string() == "mag") {
+	  return 2;
+	}
+      }
+
+      return 1;
+    }
+  }
+
+  // Fall back on the $TRACKS block for Mark5B recordings if there is
+  // no $BITSTREAMS block.
+  if (record_transport_type == "Mark5A" || record_transport_type == "Mark5B") {
+    const std::string &track_name = get_vex().get_track(mode, station);
     Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
     for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
          fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
       if (fanout_def_it[2]->to_string() == "mag") {
-        bits = 2;
+        return 2;
       }
     }
-  }else{
-    // Mark5b data
-    const std::string &bitstreams_name = get_vex().get_bitstreams(mode, station);
-    if(bitstreams_name == std::string()){
-      char buffer[67];
-      snprintf(buffer, 67, "Error : couldn't find a tracks/bitstreams section for station %s.", station.c_str());
-      sfxc_abort(buffer);
-    }
-    Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
-    for (Vex::Node::const_iterator fanout_def_it = bitstream->begin("stream_def");
-         fanout_def_it != bitstream->end("stream_def"); ++fanout_def_it) {
-      if (fanout_def_it[1]->to_string() == "mag") {
-        bits = 2;
-      }
-    }
+
+    return 1;
   }
-  return bits;
+
+  sfxc_abort("Unable to determine bits/sample");
 }
 
 std::string
@@ -928,6 +943,54 @@ get_mark5b_tracks(const std::string &mode,
   }
 }
 
+void
+Control_parameters::
+get_vdif_tracks(const std::string &mode,
+		const std::string &station,
+		Input_node_parameters &input_parameters) const {
+
+  const Vex::Node &root = get_vex().get_root_node();
+  const std::string threads_name = get_vex().get_section("THREADS", mode, station);
+
+  Vex::Node::const_iterator thread = vex.get_root_node()["THREADS"][threads_name];
+  int num_threads = 0;
+  input_parameters.frame_size = 0;
+  for (Vex::Node::const_iterator thread_it = thread->begin("thread");
+       thread_it != thread->end("thread"); thread_it++) {
+    if (input_parameters.frame_size == 0)
+      input_parameters.frame_size = thread_it[8]->to_int();
+    num_threads++;
+  }
+
+  if (num_threads != 1) {
+    sfxc_abort("VDIF with more than one thread is currently unsupported");
+  }
+
+  int num_tracks = 0;
+  for (Vex::Node::const_iterator channel_it = thread->begin("channel");
+       channel_it != thread->end("channel"); channel_it++) {
+    num_tracks += bits_per_sample(mode, station);
+  }
+
+  input_parameters.n_tracks = num_tracks;
+  for (size_t ch_nr = 0; ch_nr < number_frequency_channels(); ch_nr++) {
+    const std::string &channel_name = frequency_channel(ch_nr);
+
+    Input_node_parameters::Channel_parameters channel_param;
+    channel_param.bits_per_sample = bits_per_sample(mode, station);
+
+    for (int i = 0; i < 32; i += num_tracks) {
+      for (Vex::Node::const_iterator channel_it = thread->begin("channel");
+	   channel_it != thread->end("channel"); channel_it++) {
+	if (channel_name == channel_it[0]->to_string()) {
+	  for (int track = 0; track < bits_per_sample(mode, station); track++)
+	    channel_param.tracks.push_back(channel_it[2]->to_int() * bits_per_sample(mode, station) + track + i);
+	}
+      }
+    }
+    input_parameters.channels.push_back(channel_param);
+  }
+}
 
 void
 Control_parameters::
@@ -1036,6 +1099,7 @@ get_input_node_parameters(const std::string &mode_name,
                           const std::string &station_name) const {
   Input_node_parameters result;
   result.track_bit_rate = -1;
+  result.frame_size = -1;
   result.fft_size = std::max(fft_size_delaycor(), fft_size_correlation());
   result.integr_time = integration_time();
   result.offset = reader_offset(station_name);
@@ -1053,10 +1117,8 @@ get_input_node_parameters(const std::string &mode_name,
   std::string record_transport_type = transport_type(station_name);
   if (record_transport_type == "Mark5A") {
     get_mark5a_tracks(mode_name, station_name, result);
-  }else if (record_transport_type == "VDIF") {
-    // In VDIF the track section is not used, but seeing that the length of the channel_parameter 
-    // arrays is used in various places we generate a track layout anyway.
-    get_mark5b_tracks(mode_name, station_name, result);
+  } else if (record_transport_type == "VDIF") {
+    get_vdif_tracks(mode_name, station_name, result);
   } else {
     SFXC_ASSERT(record_transport_type == "Mark5B");
     get_mark5b_tracks(mode_name, station_name, result);

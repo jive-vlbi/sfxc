@@ -128,7 +128,7 @@ protected:
 
   // Size of one input word in bytes (#tracks/8)
   const int N;                 ///< Number of bytes per input word
-  const int samples_per_block; ///< Number input words per input chunk of data.
+  int samples_per_block; ///< Number input words per input chunk of data.
 
 
   /// Call this function to reinit the statistics information.

@@ -274,6 +274,8 @@ set_parameters(const Input_node_parameters &input_node_param){
       subband2track[i] |= (uint64_t)1 << track;
     }
   }
+  if (input_node_param.frame_size != -1)
+    samples_per_block = input_node_param.frame_size / N;
   ch_extractor->initialise(track_positions, N, samples_per_block, bits_per_sample);
 
   DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );

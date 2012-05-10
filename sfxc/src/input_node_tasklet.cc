@@ -124,12 +124,14 @@ add_time_interval(Time &start_time, Time &stop_time) {
 
 void Input_node_tasklet::initialise()
 {
+#if 0
   if(reader_.get_data_reader()->get_transport_type()==VDIF)
     channel_extractor_= Channel_extractor_tasklet_ptr( 
         new Channel_extractor_tasklet_VDIF(reader_.get_data_reader()->size_data_block() /
                                            reader_.size_input_word(),
                                            reader_.size_input_word()));
   else
+#endif
     channel_extractor_= Channel_extractor_tasklet_ptr( 
         new Channel_extractor_tasklet(reader_.get_data_reader()->size_data_block() /
                                       reader_.size_input_word(),

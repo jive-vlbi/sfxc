@@ -44,6 +44,8 @@ public:
   int32_t n_tracks;
   // data rate of one subband
   int32_t track_bit_rate; // in Ms/s
+  // Frame size
+  int32_t frame_size;
   // Number of samples per FFT.
   int32_t fft_size;
   /// The integration time
@@ -337,6 +339,13 @@ private:
   void get_mark5b_standard_mapping(const std::string &mode,
                                    const std::string &station,
                                    Input_node_parameters &input_parameters) const;
+
+  // Gets the track parameters for VDIF data
+  // Output is in input_parameters
+  void get_vdif_tracks(const std::string &mode,
+		       const std::string &station,
+		       Input_node_parameters &input_parameters) const;
+
   std::string ctrl_filename;
   std::string vex_filename;
   std::map<std::string, Time> reader_offsets; // Contains the formatter clock offsets for all input nodes
