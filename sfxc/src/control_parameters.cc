@@ -983,7 +983,7 @@ get_vdif_tracks(const std::string &mode,
       for (Vex::Node::const_iterator channel_it = thread->begin("channel");
 	   channel_it != thread->end("channel"); channel_it++) {
 	if (channel_name == channel_it[0]->to_string()) {
-	  for (int track = 0; track < bits_per_sample(mode, station); track++)
+	  for (int track = bits_per_sample(mode, station) - 1; track >= 0; track--)
 	    channel_param.tracks.push_back(channel_it[2]->to_int() * bits_per_sample(mode, station) + track + i);
 	}
       }
