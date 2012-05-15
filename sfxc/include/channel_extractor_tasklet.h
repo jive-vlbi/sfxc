@@ -118,6 +118,9 @@ protected:
   /// Actual channel extractor
   Channel_extractor_interface     *ch_extractor;
 
+  /// Number of additional channel extractor threads
+  size_t num_channel_extractor_threads;
+
   /// Contains channel number for each track
   std::vector<uint64_t> subband2track;
 

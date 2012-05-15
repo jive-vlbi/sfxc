@@ -12,6 +12,11 @@
 
 #include "mark5a_header.h"
 
+// Number of threads for paralle processing in the channel extraction phase.
+#ifndef NUM_CHANNEL_EXTRACTOR_THREADS
+#define NUM_CHANNEL_EXTRACTOR_THREADS 1
+#endif
+
 //#define USE_EXTRACTOR_5
 
 // Increase the size of the output_memory_pool_ to allow more buffering
@@ -21,7 +26,8 @@ Channel_extractor_tasklet(int samples_per_block, int N_)
     : output_memory_pool_(400*MAX_SUBBANDS),
     n_subbands(0),
     fan_out(0), seqno(0),
-    N(N_), samples_per_block(samples_per_block) {
+    N(N_), samples_per_block(samples_per_block),
+    num_channel_extractor_threads(NUM_CHANNEL_EXTRACTOR_THREADS) {
   SFXC_ASSERT(N_ > 0);
   init_stats();
   last_duration_=0;
@@ -43,11 +49,6 @@ Channel_extractor_tasklet::~Channel_extractor_tasklet()
 {
 }
 
-// Number of threads for paralle processing in the channel extraction phase.
-#ifndef NUM_CHANNEL_EXTRACTOR_THREADS
-#define NUM_CHANNEL_EXTRACTOR_THREADS 1
-#endif
-
 void *
 Channel_extractor_tasklet::process(void *self_)
 {
@@ -65,20 +66,18 @@ Channel_extractor_tasklet::process(void *self_)
 }
 
 void Channel_extractor_tasklet::do_execute() {
-#if NUM_CHANNEL_EXTRACTOR_THREADS > 0
-  pthread_t process_thread[NUM_CHANNEL_EXTRACTOR_THREADS];
-#endif
+  pthread_t process_thread[num_channel_extractor_threads];
 
   /// The thread is in a running state
   isrunning_ = true;
   timer_.start();
 
-#if NUM_CHANNEL_EXTRACTOR_THREADS > 0
-  pthread_mutex_init(&seqno_lock, NULL);
-  pthread_cond_init(&seqno_cond, NULL);
-  for (int i = 0; i < NUM_CHANNEL_EXTRACTOR_THREADS; i++)
-    pthread_create(&process_thread[i], NULL, process, static_cast<void*>(this));
-#endif
+  if (num_channel_extractor_threads > 0) {
+    pthread_mutex_init(&seqno_lock, NULL);
+    pthread_cond_init(&seqno_cond, NULL);
+    for (int i = 0; i < num_channel_extractor_threads; i++)
+      pthread_create(&process_thread[i], NULL, process, static_cast<void*>(this));
+  }
 
   /// Exception handler to insure to catch the QueueClosedException event
   /// This Exception is thrown when the current thread is blocked on a
@@ -95,10 +94,10 @@ void Channel_extractor_tasklet::do_execute() {
     DEBUG_MSG("My input queue has been closed ! I should probably stop then");
   }
 
-#if NUM_CHANNEL_EXTRACTOR_THREADS > 0
-  for (int j = 0; j < NUM_CHANNEL_EXTRACTOR_THREADS; j++)
-    pthread_join(process_thread[j], NULL);
-#endif
+  if (num_channel_extractor_threads > 0) {
+    for (int j = 0; j < num_channel_extractor_threads; j++)
+      pthread_join(process_thread[j], NULL);
+  }
  
   // Empty input buffer
   while(!input_buffer_->empty()){
@@ -203,15 +202,15 @@ Channel_extractor_tasklet::do_task() {
 
   //timer_processing_.stop();
 
-#if NUM_CHANNEL_EXTRACTOR_THREADS > 0
-  pthread_mutex_lock(&seqno_lock);
-  data_processed_ += input_element.buffer->data.size();
-  while (input_element.seqno != seqno)
-    pthread_cond_wait(&seqno_cond, &seqno_lock);
-  pthread_mutex_unlock(&seqno_lock);
-#else
-  data_processed_ += input_element.buffer->data.size();
-#endif
+  if (num_channel_extractor_threads > 0) {
+    pthread_mutex_lock(&seqno_lock);
+    data_processed_ += input_element.buffer->data.size();
+    while (input_element.seqno != seqno)
+      pthread_cond_wait(&seqno_cond, &seqno_lock);
+    pthread_mutex_unlock(&seqno_lock);
+  } else {
+    data_processed_ += input_element.buffer->data.size();
+  }
 
   { // release the input buffer and put the output buffer
     for (size_t i=0; i<n_subbands; i++) {
@@ -220,12 +219,12 @@ Channel_extractor_tasklet::do_task() {
     }
   }
 
-#if NUM_CHANNEL_EXTRACTOR_THREADS > 0
-  pthread_mutex_lock(&seqno_lock);
-  seqno++;
-  pthread_cond_broadcast(&seqno_cond);
-  pthread_mutex_unlock(&seqno_lock);
-#endif
+  if (num_channel_extractor_threads > 0) {
+    pthread_mutex_lock(&seqno_lock);
+    seqno++;
+    pthread_cond_broadcast(&seqno_cond);
+    pthread_mutex_unlock(&seqno_lock);
+  }
 }
 
 
