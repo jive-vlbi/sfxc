@@ -16,6 +16,7 @@ Channel_extractor_tasklet_VDIF(int samples_per_block, int N_):Channel_extractor_
   SFXC_ASSERT(N_ > 0);
   init_stats();
   last_duration_=0;
+  num_channel_extractor_threads = 0;
 }
 
 Channel_extractor_tasklet_VDIF::~Channel_extractor_tasklet_VDIF()
