@@ -1,0 +1,120 @@
+Installation
+------------
+
+This software uses the web.py and jsonrpclib Python modules.  The
+versions I used are:
+
+* web.py 0.36,  downloaded from http://webpy.org/static/web.py-0.36.tar.gz
+
+* jsonrpclib, downloaded from https://github.com/joshmarshall/jsonrpclib
+
+If you can't install these packages globally (or don't want to) you
+can easily install them in your own home directory by using:
+
+  python setup.py install --user
+
+I'm using Python 2.6 (2.6.4 to be exact).  Older versions might work
+as well.
+
+
+Running the server
+------------------
+
+The server can be started by with:
+
+  data-service.py CONFIG [PORT]
+
+where CONFIG is the name of a configuration file and (optionally) PORT
+is the port to run the service on.  By default this is 8080.
+
+The configuration file uses the JSON syntax to encode an pbject with
+the following name/value pairs:
+
+  station:	Two letter code for the telescope (string)
+  		i.e. "Wb"
+  experiment:	Name of the experiment (string)
+  		i.e. "N08C1"
+  format:	Data format (string)
+  		can be either "mark4:N" where N is the number of
+  		tracks in the recording or "mark5b"
+  rate:		Data rate in b/s (integer)
+  		i.e. 512000000
+  data:		An object where the name/value pairs indicate the
+  		pathname of a data file and the start time in VEX
+  		format of the data in that file.
+
+Here is an example of such a configuration file:
+
+{
+    "station": "Wb", 
+    "experiment": "N08C1", 
+    "format": "mark4:32",
+    "rate": 512000000,
+    "data": {
+        "/scratch/kettenis/n08c1/n08c1_wb_no0033": "2008y070d18h30m00s", 
+        "/scratch/kettenis/n08c1/n08c1_wb_no0021": "2008y070d17h27m00s", 
+        "/scratch/kettenis/n08c1/n08c1_wb_no0017": "2008y070d17h06m00s"
+    }
+}
+
+
+Implementation
+--------------
+
+The RPC interface implemented by the server looks like:
+
+   transfer_data(station, start, stop, size, dest, notify)
+
+with the following parameters:
+
+   station: Two letter code for the telescope (string)
+            i.e. "Wb"
+   start:   Start time in VEX format (string)
+            i.e. "2008y070d18h30m"
+   stop:    Stop time in VEX format (string)
+            i.e. "2008y070d18h40m"
+   size:    Chunk size in bytes (integer)
+   	    i.e. 1920000000
+   dest:    Destination URL for the chunks (string)
+            i.e. "scp://nexpres@datastore.example.com/data/"
+            this should be a directory
+   notify:  Endpoint to send notification messages to (string)
+            i.e. "http://broker.example.com/broker"
+            an empty string here results in no notifications being sent
+
+The SOAP interface used in FABRIC/EXPReS had the experiment name in
+the request; it's trivial to add that back if needed.
+
+For notifications the following RPC interface is used:
+
+   transfer_data_completed(station, chunk, num_chunks, start, stop, dest)
+
+with the following parameters:
+   station:     Two letter code for the telescope (string)
+                i.e. "Wb"
+   chunk:       Chunk number (int)
+                i.e.  42
+   num_chunks:  Numbers of chunks expected (int)
+   	        i.e. 56
+   start:       Start time in VEX format (string)
+                i.e. "2008y070d18h32m"
+   stop:        Stop time in VEX format (string)
+                i.e. "2008y070d18h33m"
+   dest:        Destination URL for the chunks (string)
+                i.e. "scp://nexpres@datastore.example.com/data/n08c11_wb_No0033.42"
+                this now refers to the actual file for the chunk
+
+again it is trivial to make changes here.  The server should support
+both JSON-RPC 1.0 and JSON-RPC 2.0.
+
+
+Tools
+-----
+
+Some additional tools are included in this distribution;
+broker-service.py implements a dummy server that implements the
+transfer_data_completed() RPC interfaces used for notifications,
+data-service-client.py is a simple test tools that makes a
+transfer_data() RPC call and echo-client.py is an even simpler test
+tool that makes an echo() RPC call that simply returns the string you
+pass it as an argument.

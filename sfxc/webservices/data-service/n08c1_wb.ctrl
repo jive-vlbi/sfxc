@@ -1,0 +1,11 @@
+{
+    "station": "Wb", 
+    "experiment": "N08C1", 
+    "format": "mark4:32",
+    "rate": 512000000,
+    "data": {
+        "/scratch/kettenis/n08c1/n08c1_wb_no0033": "2008y070d18h30m00s", 
+        "/scratch/kettenis/n08c1/n08c1_wb_no0021": "2008y070d17h27m00s", 
+        "/scratch/kettenis/n08c1/n08c1_wb_no0017": "2008y070d17h06m00s"
+    }
+}
