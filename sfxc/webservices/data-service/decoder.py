@@ -75,7 +75,10 @@ class Mark4:
             if len(buf) < self.header_size:
                 break
 
-            secs = self.decode_header(buf)
+            try:
+                secs = self.decode_header(buf)
+            except:
+                continue
             if secs >= stop:
                 break
 
