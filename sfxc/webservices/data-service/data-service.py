@@ -82,9 +82,11 @@ def transfer_data_async(station, start, stop, size, dest, notify):
         last_src = src
         continue
 
+    current_chunk = -1
     for src in sorted(data, key=data.get):
-        decoder.chunk_data(src, start, stop, secs_per_chunk,
-                           dest, transfer_data_callback, notify)
+        current_chunk = decoder.chunk_data(src, start, stop, secs_per_chunk,
+                                           current_chunk, dest,
+                                           transfer_data_callback, notify)
         continue
     print "transfer_data_async finished"
     return
