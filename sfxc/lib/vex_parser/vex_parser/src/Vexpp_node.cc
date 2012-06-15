@@ -116,6 +116,7 @@ Vexpp_node::operator[](const std::string &key) {
   if (it->first == key) {
     return iterator(this, it);
   } else {
+    std::cerr << "could not find key : " << key << "\n";
     assert(false);
     return iterator(this, dict.end());
   }
