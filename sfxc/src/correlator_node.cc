@@ -15,6 +15,9 @@
 #include "utils.h"
 #include "output_header.h"
 #include "delay_correction.h"
+#ifdef USE_IPP
+#include <ippcore.h>
+#endif
 
 Correlator_node::Correlator_node(int rank, int nr_corr_node, bool pulsar_binning_, bool phased_array_)
     : Node(rank),
@@ -27,7 +30,9 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, bool pulsar_binning
     pulsar_parameters(get_log_writer()),
     pulsar_binning(pulsar_binning_),
     phased_array(phased_array_) {
-  std::cout << "start : psr = " << pulsar_binning << ", phased_array = " << phased_array << "\n";
+  #ifdef USE_IPP
+  ippSetNumThreads(1);
+  #endif
   get_log_writer()(1) << "Correlator_node(" << nr_corr_node << ")" << std::endl;
   if (phased_array){
     correlation_core_normal = new Correlation_core_phased();
