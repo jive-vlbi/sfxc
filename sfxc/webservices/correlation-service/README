@@ -1,0 +1,24 @@
+Installation
+------------
+
+This software depends on the vex_parser Python module that is part of
+the SFXC (in lib/vex_parser/vex_parser).  Note that as part of a
+regular SFXC build only the C version of the praser gets built.  To
+enable the Python module you'll need to pass the --enable-pythonlib
+option to the configure script.
+
+Usage
+-----
+
+vex_update.py VEXFILE
+
+This will add $CLOCK and $EOP blocks to a VEX file, or replace the
+existing $CLOCK and $EOP sections with updated information.  The EOPs
+are calculated based on finals.daily and finals.data as provided by
+USNO.  The scripts downloads these files automatically unless there is
+a recent cached copy in the current directory.  The clock offsets are
+calculated based on GPS/formatter offsets archived on the vlbeer
+server.  Again, the files are automatically downloaded.  The script
+applies a (bandwidth-dependent) per-station offset provided in the
+gps_correction table at the start of the gps.py script.  That table
+only contains a limited set of EVN stations.
