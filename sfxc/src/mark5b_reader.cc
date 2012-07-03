@@ -3,11 +3,13 @@
 #include "data_reader_blocking.h"
 #include "mark5b_reader.h"
 
+#define MAX_MARK5B_FRAME_NR 32768
+
 Mark5b_reader::
 Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
               Data_frame &data, Time ref_date)
   : Input_data_format_reader(data_reader),
-    debug_level_(CHECK_PERIODIC_HEADERS),
+    debug_level_(CHECK_PERIODIC_HEADERS), N(SIZE_MK5B_WORD), frame_nr(-1),
     time_between_headers_(0.), sample_rate(0), frame_nr_valid(true)
 {
   // Initialize the crc16 lookup table
@@ -51,8 +53,8 @@ Mark5b_reader::goto_time(Data_frame &data, Time time) {
 Time Mark5b_reader::get_current_time() {
   Time time;
   if(is_open_){
-    int samples_per_word = 32 / nr_of_bitstreams;
-    double subsec = (double)(current_header.frame_nr *  SIZE_MK5B_FRAME * samples_per_word) / sample_rate;
+    const double rate = (double)sample_rate * nr_of_bitstreams;
+    const double subsec = (double)(frame_nr * 8 * SIZE_MK5B_FRAME * SIZE_MK5B_WORD) / rate;
     if((subsec > 1) && (frame_nr_valid)){
       std::cout << RANK_OF_NODE << " : Warning Mark5b header contains invalid frame_nr, switching to VLBA timestamp\n";
       frame_nr_valid = false;
@@ -75,18 +77,25 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
   for (int i = 0 ; i < N_MK5B_BLOCKS_TO_READ ; i++) {
     if (i == 0) {
       int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
-                                                         sizeof(current_header),
-                                                         (char *)&current_header );
-      if(!check_header(current_header))
+                                                         sizeof(tmp_header),
+                                                         (char *)&tmp_header );
+      // Resync if frame is invalid or we didn't get the expected frame number
+      if((!check_header(tmp_header)) || 
+         (((tmp_header.frame_nr % N_MK5B_BLOCKS_TO_READ) != 0) && frame_nr_valid))
         return resync_header(data); // Find next valid header in data file
-
-      SFXC_ASSERT(current_header.check());
+      previous_header = current_header;
+      current_header = tmp_header;
+      // in case of 4Gb/s data frame_nr wraps
+      if ((nr_of_bitstreams == 64) && (current_header.seconds() == previous_header.seconds()) 
+          && (frame_nr > current_header.frame_nr))
+        frame_nr = current_header.frame_nr + MAX_MARK5B_FRAME_NR;
+      else
+        frame_nr = current_header.frame_nr;
     } else {
       int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
-                                                         sizeof(current_header),
+                                                         sizeof(tmp_header),
                                                          (char *)&tmp_header);
     }
-
     int byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(),
                                                        SIZE_MK5B_FRAME*SIZE_MK5B_WORD,
                                                        mark5b_block);
@@ -95,8 +104,6 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
   }
 
   if (data_reader_->eof()) return false;
-  if (((current_header.frame_nr % N_MK5B_BLOCKS_TO_READ) != 0) && frame_nr_valid)
-    return resync_header(data);
   if(current_header.julian_day() != current_jday % 1000)
     current_jday++;
   current_time_ = get_current_time();
@@ -177,15 +184,17 @@ bool Mark5b_reader::check_header(Header &header){
 }
 
 void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
+  nr_of_bitstreams = param.n_tracks;
+  N = nr_of_bitstreams/8;
+  SFXC_ASSERT(N*8 == nr_of_bitstreams);
+  sample_rate = param.sample_rate();
   int tbr = param.track_bit_rate;
   SFXC_ASSERT((tbr % 1000000) == 0);
   SFXC_ASSERT((N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME)%(tbr/1000000) == 0);
-  time_between_headers_ = Time((double)N_MK5B_BLOCKS_TO_READ * SIZE_MK5B_FRAME / (tbr / 1000000));
+  time_between_headers_ = Time((double)N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME*SIZE_MK5B_WORD*8 / 
+                          (nr_of_bitstreams*(sample_rate/1000000.)));
   SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
 
-  sample_rate = param.sample_rate();
-  // Find the number of bitstreams used
-  nr_of_bitstreams = param.n_tracks;
   offset = param.offset;
 }
 
@@ -221,14 +230,14 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
       memcpy(buffer, &buffer[frame_size - header_size], header_size);
     }else{
       // Complete current frame
-      char *header_buf = (char *)&current_header;
-      int bytes_in_buffer = std::min((int)sizeof(current_header), frame_size - header_pos);
+      char *header_buf = (char *)&tmp_header;
+      int bytes_in_buffer = std::min((int)sizeof(tmp_header), frame_size - header_pos);
       int start = 0;
-      memcpy((char *)&current_header, &buffer[header_pos], bytes_in_buffer);
-      if(bytes_in_buffer < sizeof(current_header)){
-        Data_reader_blocking::get_bytes_s(data_reader_.get(), sizeof(current_header) - bytes_in_buffer, &header_buf[bytes_in_buffer]);
+      memcpy((char *)&tmp_header, &buffer[header_pos], bytes_in_buffer);
+      if(bytes_in_buffer < sizeof(tmp_header)){
+        Data_reader_blocking::get_bytes_s(data_reader_.get(), sizeof(tmp_header) - bytes_in_buffer, &header_buf[bytes_in_buffer]);
       }else{
-        int frame_start = header_pos + sizeof(current_header);
+        int frame_start = header_pos + sizeof(tmp_header);
         memmove(&buffer[0], &buffer[frame_start], frame_size - frame_start);
         start = frame_size - frame_start;
       }
@@ -236,23 +245,30 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
       total_bytes_read += bytes_read;
       // because we assume that we always read N_MK5B_BLOCKS_TO_READ frames, we need to
       // find the first block for which frame_nr % N_MK5B_BLOCKS_TO_READ == 0
-      if (current_header.frame_nr % N_MK5B_BLOCKS_TO_READ != 0){
-        int nframes = N_MK5B_BLOCKS_TO_READ - (current_header.frame_nr % N_MK5B_BLOCKS_TO_READ);
+      if (tmp_header.frame_nr % N_MK5B_BLOCKS_TO_READ != 0){
+        int nframes = N_MK5B_BLOCKS_TO_READ - (tmp_header.frame_nr % N_MK5B_BLOCKS_TO_READ);
         for(int j = 0; j < nframes ; j++){
-          total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), sizeof(current_header), (char *)&current_header);
+          total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), sizeof(tmp_header), (char *)&tmp_header);
           total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), frame_size, buffer);
         }
       }
-      // Now that we have found the first frame read the rest of the data
-      for(int i = 1; i < N_MK5B_BLOCKS_TO_READ ; i++){
-        total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), sizeof(current_header), (char *)&tmp_header);
-        total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), frame_size, &buffer[i * frame_size]);
-      }
+      if (check_header(tmp_header)){
+        previous_header = current_header;
+        current_header = tmp_header;
+        // Now that we have found the first frame read the rest of the data
+        for(int i = 1; i < N_MK5B_BLOCKS_TO_READ ; i++){
+          total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), sizeof(tmp_header), (char *)&tmp_header);
+          total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), frame_size, &buffer[i * frame_size]);
+        }
 
-      // if headers are correct we are done
-      if (check_header(current_header)){
         if(current_header.julian_day() != current_jday % 1000)
           current_jday++;
+        // in case of 4Gb/s data frame_nr wraps
+        if ((nr_of_bitstreams == 64) && (current_header.seconds() == previous_header.seconds()) 
+            && (frame_nr > current_header.frame_nr))
+          frame_nr = current_header.frame_nr + MAX_MARK5B_FRAME_NR;
+        else
+          frame_nr = current_header.frame_nr;
         current_time_ = get_current_time();
         data.start_time = current_time_;
         data.invalid.resize(0);

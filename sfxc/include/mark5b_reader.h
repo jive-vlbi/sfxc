@@ -76,11 +76,11 @@ public:
   Time time_between_headers();
 
   size_t bytes_per_input_word() const {
-    return SIZE_MK5B_WORD;
+    return N;
   }
 
   size_t size_data_block() const {
-    return bytes_per_input_word()*SIZE_MK5B_FRAME*N_MK5B_BLOCKS_TO_READ;
+    return SIZE_MK5B_WORD*SIZE_MK5B_FRAME*N_MK5B_BLOCKS_TO_READ;
   }
 
   void set_parameters(const Input_node_parameters &param);
@@ -98,8 +98,10 @@ private:
   // start time is used to check the data rate
   Time start_time_, current_time_;
 
+  int N;
   int sample_rate;
   int nr_of_bitstreams;
+  int frame_nr;
   bool frame_nr_valid;
   // For testing
   Debug_level debug_level_;
@@ -107,7 +109,7 @@ private:
   // Current header is the first header read in read_new_block
   // tmp_header is used for the other blocks
   // so that the header points to the time of the first sample
-  Header current_header, tmp_header;
+  Header current_header, tmp_header, previous_header;
 
   Time time_between_headers_;
 
