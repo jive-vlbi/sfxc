@@ -60,7 +60,8 @@ int main(int argc, char *argv[]) {
       nwords = fread(&header_buf[16],4,4,infile);
     if (nwords == 4){
       Time t = get_time(header.ref_epoch, header.sec_from_epoch);
-      size_t data_size = 8*header.dataframe_length - (16+16*(1-header.legacy_mode));
+      size_t data_size = 8*header.dataframe_length;
+      size_t header_size = (16+16*(1-header.legacy_mode));
       uint16_t s_id = header.station_id;
       char *s = (char *)&s_id;
       char station[3];
@@ -68,11 +69,12 @@ int main(int argc, char *argv[]) {
       station[1] = s[0];
       station[2] = 0;
       std::cout << t << " ,frame_nr = " << header.dataframe_in_second 
-                << ", thread = " << header.thread_id << " / " << (1 << header.log2_nchan)-1
-                << ", invalid = " << (int)header.invalid << ", station = " << station
-                << ", bps = " << header.bits_per_sample+1 
+                << ", thread_id = " << header.thread_id << ", nchan = " << (1 << header.log2_nchan)
+                << ", invalid = " << (int)header.invalid << ", legacy = " << (int)header.legacy_mode
+                << ", station = " << station
+                << ", bps-1 = " << (int) header.bits_per_sample
                 << ", data_size = " << data_size << "\n";
-      fseek(infile, data_size, SEEK_CUR);
+      fseek(infile, data_size-header_size, SEEK_CUR);
     } else {
       eof = true;
     }
