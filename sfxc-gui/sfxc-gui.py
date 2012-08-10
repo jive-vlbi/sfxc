@@ -241,8 +241,8 @@ class progressDialog(QtGui.QDialog):
 
         # Parse the rankfile to figure out wher the input node for
         # each station runs.
-        stations = self.json_input['stations']
-        stations.sort()
+        self.stations = self.json_input['stations']
+        self.stations.sort()
         self.input_host = {}
         fp = open(rank_file, 'r')
         r1 = re.compile(r'rank (\d*)=(.*) slot=')
@@ -251,8 +251,8 @@ class progressDialog(QtGui.QDialog):
             if not m:
                 continue
             rank = int(m.group(1))
-            if rank > 2 and rank < 3 + len(stations):
-                self.input_host[stations[rank - 3]] = m.group(2)
+            if rank > 2 and rank < 3 + len(self.stations):
+                self.input_host[self.stations[rank - 3]] = m.group(2)
                 continue
             continue
         fp.close()
@@ -320,9 +320,7 @@ class progressDialog(QtGui.QDialog):
             menu = Qt.QMenu(self)
             self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
                          self.reset)
-            stations = self.json_input['stations']
-            stations.sort()
-            for station in stations:
+            for station in self.stations:
                 act = Qt.QAction(station, menu)
                 menu.addAction(act)
                 continue
@@ -445,6 +443,8 @@ class progressDialog(QtGui.QDialog):
         if output:
             r1 = re.compile(r'(\d+y\d+d\d+h\d+m\d+s)')
             r2 = re.compile(r'Terminating nodes')
+            r3 = re.compile(r'^Node #(\d+) fatal error.*Could not find header')
+
             for line in output.splitlines():
                 m = r1.search(line)
                 if m:
@@ -489,6 +489,21 @@ class progressDialog(QtGui.QDialog):
                 m = r2.search(line)
                 if m:
                     self.ui.progressBar.setValue(self.stop)
+                    pass
+                m = r3.match(line)
+                if m:
+                    station = self.stations[int(m.group(1)) - 3]
+                    unit = None
+                    r = re.compile(r'10\.88\.1\.(\d+)')
+                    m = r.match(self.input_host[station])
+                    if m:
+                        unit = int(m.group(1)) - 200
+                        pass
+                    if unit != None:
+                        print >>sys.stderr, "Disk problem with %s in unit %d" % (station, unit)
+                    else:
+                        print >>sys.stderr, "Disk Problem with %s" % (station)
+                        pass
                     pass
                 continue
             self.ui.logEdit.append(output.rstrip())
