@@ -214,7 +214,7 @@ class progressDialog(QtGui.QDialog):
         self.timeout_interval = options.timeout_interval;
 
         exper = self.vex['GLOBAL']['EXPER']
-        exper = vex['EXPER'][exper]['exper_name']
+        exper = self.vex['EXPER'][exper]['exper_name']
 
         basename = os.path.splitext(ctrl_file)[0]
         log_file = basename + ".log"
