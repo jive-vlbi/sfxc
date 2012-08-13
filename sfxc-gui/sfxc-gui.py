@@ -501,9 +501,9 @@ class progressDialog(QtGui.QDialog):
                         unit = int(m.group(1)) - 200
                         pass
                     if unit != None:
-                        print >>sys.stderr, "Disk problem with %s in unit %d" % (station, unit)
+                        print >>sys.stderr, "Error: Disk problem with %s in unit %d" % (station, unit)
                     else:
-                        print >>sys.stderr, "Disk Problem with %s" % (station)
+                        print >>sys.stderr, "Error: Disk Problem with %s" % (station)
                         pass
                     pass
                 continue
