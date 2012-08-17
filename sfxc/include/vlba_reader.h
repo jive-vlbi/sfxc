@@ -73,6 +73,7 @@ private:
   bool resync_header(Data_frame &data);
 
   void set_data_frame_info(Data_frame &data);
+  void generate_track_mask();
 
   TRANSPORT_TYPE get_transport_type() const{
     return VLBA;
@@ -90,6 +91,8 @@ private:
   Debug_level debug_level_;
   int block_count_;
 
+  int track;    // track that is used to retrieve time stamp
+  uint8_t mask; // used to mask out tracks using syncword search
   int data_rate() const;
   Time time_between_headers_;
 

@@ -16,21 +16,20 @@ void VLBA_header::set_header(int N_, unsigned char* buffer_) {
   header_aux = &buffer[0];
 }
 
-bool VLBA_header::check_header() {
+bool VLBA_header::check_header(uint8_t mask) {
   // Check for a valid header
   SFXC_ASSERT(header != NULL);
-  if (!is_valid())
+  if (!is_valid(mask))
     return false;
-  if (!checkCRC())
+  if (!checkCRC(mask))
     return false;
   return true;
 }
 
 
-bool VLBA_header::is_valid() {
+bool VLBA_header::is_valid(uint8_t mask) {
   for (size_t i=0*N; i<32*N; i++) {
-    SFXC_ASSERT((unsigned char)(-1)^(unsigned char)(0) == (unsigned char)(-1));
-    if (header[i] != (unsigned char)(-1)) {
+    if ((header[i] & mask) != (((unsigned char)(-1)) & mask)) {
 //      char word[8*N];
 //      for (int j=0*N; j<32*(int)N; j++) {
 //        itoa(header[j], word, 2);
@@ -42,6 +41,37 @@ bool VLBA_header::is_valid() {
   }
   return true;
 }
+
+#if 0
+uint64_t
+VLBA_header::get_track_mask() {
+  uint64_t mask;
+  switch(N){
+    case 1:{
+      uint8_t *syncword = (uint8_t *)&header_[64*N];
+      mask = syncword[0] & syncword[15] & syncword[31]; 
+      break;
+    }
+    case 2:{
+      uint16_t *syncword = (uint16_t *)&header_[64*N];
+      mask = syncword[0] & syncword[15] & syncword[31]; 
+      break;
+    }
+    case 4:{
+      uint32_t *syncword = (uint32_t *)&header_[64*N];
+      mask = syncword[0] & syncword[15] & syncword[31]; 
+      break;
+    }
+    case 8:{
+      uint64_t *syncword = (uint64_t *)&header_[64*N];
+      mask = syncword[0] & syncword[15] & syncword[31]; 
+      break;
+    }
+  }
+  return mask;
+}
+#endif
+
 
 int VLBA_header::nTracks() {
   return 8*N;
@@ -144,7 +174,7 @@ int VLBA_header::find_track(int headstack_, int track_) {
 }
 
 
-bool VLBA_header::checkCRC() {
+bool VLBA_header::checkCRC(uint8_t mask) {
   unsigned char crcBlock[16*N];
 
   /* Init CRC generator to all zeroes. */
@@ -154,22 +184,29 @@ bool VLBA_header::checkCRC() {
   switch (N) {
   case 1: {
       int8_t *header_i8= (int8_t *)header;
-      crc16((int8_t *)crcBlock, &header_i8[32], 64);
+      crc16((int8_t *)crcBlock, &header_i8[32], 64, (int8_t)mask);
       break;
     }
   case 2: {
+      int16_t mask_ = (mask << 8) | mask;
       int16_t *header_i16= (int16_t *)header;
-      crc16((int16_t*)crcBlock, &header_i16[32], 64);
+      crc16((int16_t*)crcBlock, &header_i16[32], 64, mask_);
       break;
     }
   case 4: {
+      int32_t mask_ = mask;
+      for(int i = 1; i<4; i++)
+        mask_|= (mask << i*8);
       int32_t *header_i32= (int32_t *)header;
-      crc16((int32_t*)crcBlock, &header_i32[32], 64);
+      crc16((int32_t*)crcBlock, &header_i32[32], 64, mask_);
       break;
     }
   case 8: {
+      int64_t mask_ = mask;
+      for(int i = 1; i<8; i++)
+        mask_|= (mask << i*8);
       int64_t *header_i64= (int64_t *)header;
-      crc16((int64_t*)crcBlock,&header_i64[32], 64);
+      crc16((int64_t*)crcBlock,&header_i64[32], 64, mask_);
       break;
     }
   }
@@ -187,7 +224,7 @@ bool VLBA_header::checkCRC() {
 }
 
 
-void VLBA_header::recomputeCRC() {
+void VLBA_header::recomputeCRC(uint8_t mask) {
   unsigned char crcBlock[16];
 
   /* Init CRC generator to all zeroes. */
@@ -197,22 +234,29 @@ void VLBA_header::recomputeCRC() {
   switch (N) {
   case 1: {
       int8_t *header_i8= (int8_t *)header;
-      crc16((int8_t *)crcBlock, &header_i8[32], 64);
+      crc16((int8_t *)crcBlock, &header_i8[32], 64, (int8_t)mask);
       break;
     }
   case 2: {
+      int16_t mask_ = (mask << 8) | mask;
       int16_t *header_i16= (int16_t *)header;
-      crc16((int16_t*)crcBlock, &header_i16[32], 64);
+      crc16((int16_t*)crcBlock, &header_i16[32], 64, mask_);
       break;
     }
   case 4: {
+      int32_t mask_ = mask;
+      for(int i = 1; i<4; i++)
+        mask_|= (mask << i*8);
       int32_t *header_i32= (int32_t *)header;
-      crc16((int32_t*)crcBlock, &header_i32[32], 64);
+      crc16((int32_t*)crcBlock, &header_i32[32], 64, mask_);
       break;
     }
   case 8: {
+      int64_t mask_ = mask;
+      for(int i = 1; i<8; i++)
+        mask_|= (mask << i*8);
       int64_t *header_i64= (int64_t *)header;
-      crc16((int64_t*)crcBlock,&header_i64[32], 64);
+      crc16((int64_t*)crcBlock,&header_i64[32], 64, mask_);
       break;
     }
   }
@@ -223,14 +267,14 @@ void VLBA_header::recomputeCRC() {
     }
   }
 
-  checkCRC();
+  checkCRC(mask);
 }
 
 
 template <class Type>
 void VLBA_header::crc16(Type *crcBlock,
                          Type *data,
-                         int datawords) {
+			int datawords, Type mask) {
   SFXC_ASSERT(sizeof(Type) == N);
   SFXC_ASSERT(Type(-1)^Type(0) == Type(-1));
 
@@ -238,7 +282,7 @@ void VLBA_header::crc16(Type *crcBlock,
   /* with 16 data words. */
   /* (Init to all zero; or use old regs to continue. */
   for (int i=0; i<datawords; i++) {
-    Type n0  = (*data++) ^ crcBlock[15];  /* x^16 + */
+    Type n0  = ((*data++) & mask) ^ crcBlock[15];  /* x^16 + */
     Type n15 = n0 ^ crcBlock[14];  /* x^15 + */
     Type n2  = n0 ^ crcBlock[1];   /* x^2 + */
 
