@@ -229,7 +229,7 @@ class WeightPlotWindow(Qt.QWidget):
                 pass
             try:
                 if json_input['pulsar_binning']:
-                    output_file = output_file + '.bin0'
+                    output_file = output_file + '.bin1'
                     pass
             except:
                 pass

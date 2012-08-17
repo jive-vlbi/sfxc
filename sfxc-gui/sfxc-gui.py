@@ -467,7 +467,7 @@ class progressDialog(QtGui.QDialog):
                             pass
                         try:
                             if self.json_input['pulsar_binning']:
-                                output_file = output_file + '.bin0'
+                                output_file = output_file + '.bin1'
                                 pass
                         except:
                             pass
