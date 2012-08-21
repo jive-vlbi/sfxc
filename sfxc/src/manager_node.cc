@@ -329,7 +329,10 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   correlation_parameters.slice_nr = output_slice_nr;
   strncpy(correlation_parameters.source, control_parameters.scan_source(scan_name).c_str(), 11);
   correlation_parameters.pulsar_binning = control_parameters.pulsar_binning();
-  correlation_parameters.n_phase_centers = n_sources_in_current_scan;
+  if (control_parameters.multi_phase_center())
+    correlation_parameters.n_phase_centers = n_sources_in_current_scan;
+  else
+    correlation_parameters.n_phase_centers = 1;
   correlation_parameters.cross_polarize = (cross_channel != -1);
 
   // Check the cross polarisation
