@@ -20,7 +20,7 @@ public:
   VLBA_header();
 
   void set_header(int N, unsigned char *buffer_);
-  bool check_header();
+  bool check_header(uint8_t mask);
 
   int nTracks();
 
@@ -39,13 +39,13 @@ public:
 
   int find_track(int headstack, int track);
 
-  bool checkCRC();
-  void recomputeCRC();
+  bool checkCRC(uint8_t mask);
+  void recomputeCRC(uint8_t mask);
 
-  bool is_valid();
+  bool is_valid(uint8_t mask);
 private:
   template <class Type>
-  void crc16(Type *crcBlock, Type *data, int datawords);
+    void crc16(Type *crcBlock, Type *data, int datawords, Type mask);
 
   // Binary coded decimal:
   int BCD(int word, unsigned int track, unsigned char *header_);

@@ -7,7 +7,7 @@ VLBA_reader::
 VLBA_reader(boost::shared_ptr<Data_reader> data_reader, Time ref_date_)
     : Input_data_format_reader(data_reader),
       debug_level_(NO_CHECKS),
-      block_count_(0), DATA_RATE_(0), N(0)
+      block_count_(0), DATA_RATE_(0), N(0), track(-1), mask(0)
 {
   ref_jday = ref_date_.get_mjd();
   current_time_ = 0;
@@ -91,7 +91,7 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
 
   // at last we read the complete header. Check it
   header.set_header(N, &buf_header[0]);
-  if((!header.check_header())&&(!resync_header(data))){
+  if((!header.check_header(mask))&&(!resync_header(data))){
     current_time_ += time_between_headers(); // Could't find valid header before EOF
     return false;
   }
@@ -102,7 +102,7 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
   if (debug_level_ >= CHECK_PERIODIC_HEADERS) {
     if ((debug_level_ >= CHECK_ALL_HEADERS) ||
         ((++block_count_ % 100) == 0)) {
-      header.check_header();
+      header.check_header(mask);
       check_time_stamp(header);
       if (debug_level_ >= CHECK_BIT_STATISTICS) {
         if (!check_track_bit_statistics(data)) {
@@ -120,6 +120,7 @@ bool VLBA_reader::read_new_block(Data_frame &data) {
 bool VLBA_reader::resync_header(Data_frame &data) {
   const int max_read = RESYNC_MAX_DATA_FRAMES * size_data_block();
   int data_read = 0;
+  generate_track_mask();
   // Find the next header in the input stream, NB: data already contains one VLBA block worth of input data
   std::cout << RANK_OF_NODE << " : Resync header, t = " << get_current_time() << "\n";
 
@@ -131,7 +132,7 @@ bool VLBA_reader::resync_header(Data_frame &data) {
     int byte = 0;
     while(byte < N*SIZE_VLBA_FRAME - 8*SIZE_VLBA_HEADER) {
       int shift = N * 32 - 1;
-      while ((shift >= 0) && (buffer[byte+shift] == (unsigned char)(-1)))
+      while ((shift >= 0) && (buffer[byte+shift] & mask == mask))
         shift--;
       if (shift < 0) {
         // There is garanteed to be enough data in the buffer for a complete header (ignoring aux header)
@@ -141,7 +142,7 @@ bool VLBA_reader::resync_header(Data_frame &data) {
         header.set_header(N, &buf_header[0]);
         int ndata_read = N * SIZE_VLBA_FRAME - header_start - N*SIZE_VLBA_HEADER;
         memmove(buffer, buffer + header_start + N*SIZE_VLBA_HEADER, ndata_read);
-        if (header.check_header()) {
+        if (header.check_header(mask)) {
           int to_read =  N*SIZE_VLBA_FRAME - ndata_read;
           int bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), to_read,
                                                              (char*)&data.buffer->data[ndata_read]);
@@ -161,7 +162,7 @@ bool VLBA_reader::resync_header(Data_frame &data) {
       }else{
         // Syncword not found, adjust index for partial match
         byte += 32 * N - 1;
-        int jump = (buffer[byte] == (unsigned char) (-1))? 32*N-2 : -1;
+        int jump = (buffer[byte] & mask == mask)? 32*N-2 : -1;
         byte -= jump;
       }
     }
@@ -174,6 +175,7 @@ bool VLBA_reader::resync_header(Data_frame &data) {
 
       int bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), bytes_to_read, data);
       data_read += bytes_read;
+      generate_track_mask(); // Try new track mask
     }else
       continue_searching = false;
 
@@ -244,6 +246,7 @@ VLBA_reader::set_parameters(const Input_node_parameters &input_node_param) {
   SFXC_ASSERT(DATA_RATE_ > 0);
   time_between_headers_ = Time(N * 8 * SIZE_MK5A_FRAME / (data_rate() / 1000000.));
   offset = input_node_param.offset;
+  generate_track_mask();
 }
 
 void VLBA_reader::set_data_frame_info(Data_frame &data) {
@@ -253,6 +256,20 @@ void VLBA_reader::set_data_frame_info(Data_frame &data) {
 int VLBA_reader::data_rate() const {
   SFXC_ASSERT(DATA_RATE_ > 0);
   return DATA_RATE_;
+}
+
+void VLBA_reader::generate_track_mask(){
+  // Mask that selects atleast one track in each byte
+  track = (track + 1)%8;
+  mask = 1 << track;
+  // if N=1 we match 2 tracks 
+  if(N==1){
+    int track2;
+    do{
+      track2 = rand()%8;
+    }while (track == track2);
+    mask |= 1 << track2;
+  }
 }
 
 bool VLBA_reader::find_start_of_header(Data_frame &data){
@@ -290,7 +307,7 @@ bool VLBA_reader::find_start_of_header(Data_frame &data){
     int byte = 0;
     while(byte<SIZE_MK5A_FRAME - 8*SIZE_VLBA_HEADER) {
       int shift = N * 32 - 1;
-      while ((shift >= 0) && (buffer_start[byte + shift] == (unsigned char)(-1))){
+      while ((shift >= 0) && (buffer_start[byte + shift] & mask == mask)){
         shift--;
       }
       if (shift < 0) {
@@ -302,7 +319,7 @@ bool VLBA_reader::find_start_of_header(Data_frame &data){
         header.set_header(N, &buf_header[0]);
         int ndata_read = SIZE_VLBA_FRAME - header_start - N*SIZE_VLBA_HEADER;
         memmove(buffer_start, buffer_start + header_start + N*SIZE_VLBA_HEADER, ndata_read);
-        if (header.check_header()) {
+        if (header.check_header(mask)) {
           data.buffer->data.resize(N * SIZE_VLBA_FRAME);
           buffer_start = &data.buffer->data[0];
           int to_read =  SIZE_VLBA_FRAME - ndata_read + (N-1)*SIZE_VLBA_FRAME;
@@ -322,7 +339,7 @@ bool VLBA_reader::find_start_of_header(Data_frame &data){
       }else{
         // Syncword not found, adjust index for partial match
         byte += 32 * N - 1;
-        int jump = (buffer_start[byte] == (unsigned char) (-1))? 32*N-2 : -1;
+        int jump = (buffer_start[byte] & mask == mask)? 32*N-2 : -1;
         byte -= jump;
       }
     }
