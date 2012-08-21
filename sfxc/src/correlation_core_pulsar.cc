@@ -163,7 +163,7 @@ void Correlation_core_pulsar::dedisperse_buffer() {
   // first compute the phase bins
   SFXC_ASSERT(bins.size() == fft_size() + 1);
   for (int j=0; j < fft_size() + 1; j++) {
-    double phase = obs_freq_phase+offsets[j];
+    double phase = obs_freq_phase - offsets[j];
     phase = phase - floor(phase);
     if (phase >= gate.begin){
       if(phase < gate.end)
