@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <assert.h>
+#include <libgen.h>
 #include <complex>
 #include "log_writer_cout.h"
 #include "gnuplot_i.h"
