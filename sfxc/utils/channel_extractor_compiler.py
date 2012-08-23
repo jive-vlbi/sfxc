@@ -33,7 +33,6 @@ cfile = """
 #include <string.h>
 #include <stdint.h>
 #include "sfxc/channel_extractor_interface.h"
-#include "sfxc/channel_extractor_utils.h"
 @dynamic_header@
 
 class Channel_extractor_dynamic_impl : public Channel_extractor_interface
