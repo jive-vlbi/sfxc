@@ -27,7 +27,8 @@ Input_node::Input_node(int rank,
     data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
     input_node_tasklet(NULL), status(WAITING),
-    transport_type(transport_type), ref_date(ref_date_) {
+    transport_type(transport_type), ref_date(ref_date_),
+    station_number(station_number) {
   initialise();
 }
 
@@ -36,9 +37,11 @@ Input_node::Input_node(int rank, int station_number,
     Node(rank), input_node_ctrl(*this), data_reader_ctrl(*this),
     data_writers_ctrl(*this, MAX_TCP_CONNECTIONS),
     input_node_tasklet(NULL), status(WAITING),
-    transport_type(transport_type), ref_date(ref_date_) {
+    transport_type(transport_type), ref_date(ref_date_),
+    station_number(station_number) {
   initialise();
 }
+
 void Input_node::initialise() {
   get_log_writer()(1) << "Input_node()" << std::endl;
   add_controller(&input_node_ctrl);
@@ -55,7 +58,6 @@ void Input_node::initialise() {
   int32_t msg;
   MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED,
            MPI_COMM_WORLD);
-
 }
 
 void Input_node::set_input_node_parameters(const Input_node_parameters &input_node_param) {

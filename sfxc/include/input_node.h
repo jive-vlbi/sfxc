@@ -111,6 +111,8 @@ private:
   Time ref_date;
 
   TRANSPORT_TYPE transport_type;
+
+  int station_number;
 };
 
 #endif // INPUT_NODE_H
