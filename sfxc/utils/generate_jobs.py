@@ -69,12 +69,18 @@ os.environ['TZ'] = "UTC"
 # Generate a list of all media used for this experiment.
 media = {}
 for station in vex['STATION']:
-    tapelog_obs = vex['STATION'][station]['TAPELOG_OBS']
+    try:
+        tapelog_obs = vex['STATION'][station]['TAPELOG_OBS']
+    except:
+        tapelog_obs = None
+        pass
     media[station] = []
-    for vsn in vex['TAPELOG_OBS'][tapelog_obs].getall('VSN'):
-        media[station].append({'vsn': vsn[1], 'start': vex2time(vsn[2]),
-                               'stop': vex2time(vsn[3])})
-        continue
+    if tapelog_obs:
+        for vsn in vex['TAPELOG_OBS'][tapelog_obs].getall('VSN'):
+            media[station].append({'vsn': vsn[1], 'start': vex2time(vsn[2]),
+                                   'stop': vex2time(vsn[3])})
+            continue
+        pass
     continue
 
 # Create control file template.
@@ -190,6 +196,9 @@ for scan in vex['SCHED']:
             data_source = options.data_dir + "/" + exper.lower() + '_' \
                 + station.lower() + '_' + mk5_scan[station].lower()
             data_sources[station] = ["file://" + data_source]
+        elif options.evlbi:
+            data_source = "/tmp/mk5-" + station + "/" + station + "-eVLBI:0"
+            data_sources[station] = ["mk5://" + data_source]
         else:
             data_source = vsn[station] + ":" + str(offsets[station])
             data_sources[station] = ["mk5://" + data_source]
@@ -215,7 +224,7 @@ for scan in vex['SCHED']:
         json_output["delay_directory"] = delay_uri
 
         # Boring stuff.
-        json_output["cross_polarize"] = False
+        json_output["cross_polarize"] = True
         json_output["message_level"] = 1
 
         # Write the output to a new control file.
