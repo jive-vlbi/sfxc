@@ -91,13 +91,15 @@ public:
 
   /// Buffer for fft buffers
   struct Channel_buffer_element_ {
-    Channel_buffer_element_() {}
+  Channel_buffer_element_() : processed(false) {}
 
     Data_memory_pool_element channel_data;
     // List of blocks to be flagged as invalid
     std::vector<Invalid_block> invalid;
     // Time in microseconds
     Time  start_time;
+    // Flag for phasecal processing
+    bool processed;
   };
   typedef Channel_buffer_element_                  Channel_buffer_element;
   typedef Threadsafe_queue<Channel_buffer_element> Channel_buffer;

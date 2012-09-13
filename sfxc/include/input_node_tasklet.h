@@ -55,7 +55,7 @@ public:
   // Inherited from Input_node_tasklet
   void set_delay_table(Delay_table_akima &delay);
   void set_parameters(const Input_node_parameters &input_node_param,
-                      int node_nr);
+                      int station_number);
 
 
   /// Returns the current time in microseconds

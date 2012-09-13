@@ -67,7 +67,7 @@ public:
     return __PRETTY_FUNCTION__;
   }
 
-  void set_parameters(const Input_node_parameters &input_param);
+  void set_parameters(const Input_node_parameters &input_param, int station_number, int channel_number);
 
   /// Empty the input queue, called from the destructor of Input_node
   void empty_input_queue();
@@ -91,6 +91,8 @@ private:
   int bits_per_sample;
   Time integration_time;
   bool sync_stream;
+  int station_number;
+  int channel_number;
 
   /// The queue storing all the delays
   Threadsafe_queue<Delay_memory_pool_element> delays_;
@@ -124,6 +126,12 @@ private:
   RTTimer timer_other_;
   RTTimer timer_writing_;
   int interval;
+
+  void do_phasecal(void);
+  std::vector<int32_t> phasecal;
+  Time phasecal_time;
+  size_t phasecal_count;
+  Time phasecal_integration_time;
 };
 
 inline Time

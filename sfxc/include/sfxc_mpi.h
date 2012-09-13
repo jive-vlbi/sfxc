@@ -294,6 +294,10 @@ enum MPI_TAG {
    **/
   MPI_TAG_OUTPUT_NODE_GLOBAL_HEADER,
 
+  MPI_TAG_OUTPUT_NODE_SET_PHASECAL_FILE,
+
+  MPI_TAG_OUTPUT_NODE_WRITE_PHASECAL,
+
   // General messages
   //-------------------------------------------------------------------------//
 

@@ -79,8 +79,7 @@ struct Output_header_global {
   char experiment[32];      // Name of the experiment
   int16_t start_year;       // Start year of the experiment
   int16_t start_day;        // Start day of the experiment (day of year)
-  int32_t start_time;       // Start time of the correlation in seconds since
-  // midnight
+  int32_t start_time;       // Start time of the correlation in seconds since midnight
   int32_t number_channels;  // Number of frequency channels
   int32_t integration_time; // Integration time in micro seconds
 
@@ -161,6 +160,18 @@ struct Output_header_polyco {
   double ref_F0;            // Zero'th order pulsar frequency[Hz]
   double logfiterr;         // Log_10 of polynomial fit error [periods]
   double coef[15];          // The polynomial coefficients
+};
+
+struct Output_header_phasecal {
+  uint32_t header_size;		// Size of phasecal header in bytes
+  char experiment[32];		// Name of the experiment
+
+  uint32_t output_format_version;	// Version number of the output format
+  uint32_t correlator_version;		// SVN revision of the correlator
+
+  char correlator_branch[15];
+  int32_t job_nr;
+  int32_t subjob_nr;
 };
 
 std::ostream &

@@ -1,13 +1,19 @@
 #include <math.h>
+#include <cstdio>
 #include <limits.h>
+
+#include "sfxc_mpi.h"
 #include "input_node_data_writer.h"
-Input_node_data_writer::
-Input_node_data_writer(){
+
+Input_node_data_writer::Input_node_data_writer()
+  : station_number(-1), channel_number(-1)
+{
   last_duration_ = 0;
   total_data_written_ = 0;
   delay_index=0;
   _current_time=0;
   interval=0;
+  phasecal_count=0;
   sync_stream=false;
 }
 
@@ -104,6 +110,8 @@ do_task() {
   // Acquire the input data
   Input_buffer_element &input_element = input_buffer_->front();
   struct Writer_struct& data_writer = data_writers_.front();
+
+  do_phasecal();
 
   int64_t byte_offset=0;
   int samples_per_byte = 8/bits_per_sample;
@@ -220,6 +228,91 @@ do_task() {
   return total_to_write;
 }
 
+const int8_t sample_value_2[] = { -7, -2, 2, 7 };
+const int8_t sample_value_1[] = { -5, 5 };
+
+void
+Input_node_data_writer::do_phasecal() {
+  Input_buffer_element &input_element = input_buffer_->front();
+  int samples_per_byte = 8 / bits_per_sample;
+  size_t size = input_element.channel_data.data().data.size();
+  uint8_t *data = (uint8_t *)&input_element.channel_data.data().data[0];
+
+  if (phasecal_integration_time.get_clock_ticks() == 0)
+    return;
+
+  if (input_element.processed)
+    return;
+
+  if ((input_element.start_time.get_clock_ticks() % phasecal_integration_time.get_clock_ticks()) == 0) {
+    if (phasecal.size() == 0) {
+      phasecal.resize((size_t)(sample_rate / 10e3));
+    } else {
+      size_t len = 3 * sizeof(int32_t) + 2 * sizeof(int64_t) + phasecal.size() * sizeof(int32_t);
+      char msg[len];
+      int pos = 0;
+
+      SFXC_ASSERT(station_number != -1);
+      SFXC_ASSERT(channel_number != -1);
+
+      MPI_Pack(&station_number, 1, MPI_INT32, msg, len, &pos, MPI_COMM_WORLD);
+      MPI_Pack(&channel_number, 1, MPI_INT32, msg, len, &pos, MPI_COMM_WORLD);
+      uint64_t ticks = phasecal_time.get_clock_ticks();
+      MPI_Pack(&ticks, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
+      ticks = input_element.start_time.get_clock_ticks() - phasecal_time.get_clock_ticks();
+      MPI_Pack(&ticks, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
+      uint32_t num_samples = phasecal.size();
+      MPI_Pack(&num_samples, 1, MPI_INT32, msg, len, &pos, MPI_COMM_WORLD);
+      MPI_Pack(&phasecal[0], num_samples, MPI_INT32, msg, len, &pos, MPI_COMM_WORLD);
+      
+      MPI_Send(msg, pos, MPI_PACKED, RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_WRITE_PHASECAL, MPI_COMM_WORLD);
+
+      // Clear accumulation buffer.
+      memset(&phasecal[0], 0, phasecal.size() * sizeof(phasecal[0]));
+    }
+    phasecal_count = 0;
+    phasecal_time = input_element.start_time;
+    SFXC_ASSERT((phasecal.size() % samples_per_byte) == 0);
+  }
+
+  if (phasecal.size() == 0)
+    return;
+
+  size_t invalid_index = 0;
+  for (size_t i = 0; i < size; i++) {
+    if (invalid_index < input_element.invalid.size()) {
+      if (i == input_element.invalid[invalid_index].invalid_begin) {
+	i += input_element.invalid[invalid_index].nr_invalid;
+	phasecal_count += input_element.invalid[invalid_index].nr_invalid * samples_per_byte;
+	invalid_index++;
+	if (i >= size)
+	  break;
+      }
+    }
+    phasecal_count %= phasecal.size();
+    switch (bits_per_sample) {
+    case 1:
+      phasecal[phasecal_count++] += sample_value_1[(data[i] >> 0) & 1];
+      phasecal[phasecal_count++] += sample_value_1[(data[i] >> 1) & 1];
+      phasecal[phasecal_count++] += sample_value_1[(data[i] >> 2) & 1];
+      phasecal[phasecal_count++] += sample_value_1[(data[i] >> 3) & 1];
+      phasecal[phasecal_count++] += sample_value_1[(data[i] >> 4) & 1];
+      phasecal[phasecal_count++] += sample_value_1[(data[i] >> 5) & 1];
+      phasecal[phasecal_count++] += sample_value_1[(data[i] >> 6) & 1];
+      phasecal[phasecal_count++] += sample_value_1[(data[i] >> 7) & 1];
+      break;
+    case 2:
+      phasecal[phasecal_count++] += sample_value_2[(data[i] >> 0) & 3];
+      phasecal[phasecal_count++] += sample_value_2[(data[i] >> 2) & 3];
+      phasecal[phasecal_count++] += sample_value_2[(data[i] >> 4) & 3];
+      phasecal[phasecal_count++] += sample_value_2[(data[i] >> 6) & 3];
+      break;
+    }
+  }
+
+  input_element.processed = true;
+}
+
 void
 Input_node_data_writer::
 add_timeslice(Data_writer_sptr data_writer, int64_t nr_samples) {
@@ -234,12 +327,16 @@ add_timeslice(Data_writer_sptr data_writer, int64_t nr_samples) {
 
 void
 Input_node_data_writer::
-set_parameters(const Input_node_parameters &input_param) {
+set_parameters(const Input_node_parameters &input_param, int station_number_, int channel_number_) {
   sample_rate = input_param.sample_rate();
   _current_time.set_sample_rate(sample_rate);
   bits_per_sample = input_param.bits_per_sample();
   integration_time = input_param.integr_time;
   byte_length = Time( 8 * 1000000. / (sample_rate * bits_per_sample));
+
+  station_number = station_number_;
+  channel_number = channel_number_;
+  phasecal_integration_time = input_param.phasecal_integr_time;
 }
 
 // Empty the input queue, called from the destructor of Input_node
@@ -254,7 +351,7 @@ void Input_node_data_writer::empty_input_queue() {
 
 Input_node_data_writer_sptr Input_node_data_writer::new_sptr()
 {
-    return Input_node_data_writer_sptr(new Input_node_data_writer());
+  return Input_node_data_writer_sptr(new Input_node_data_writer());
 }
 
 void

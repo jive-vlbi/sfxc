@@ -17,6 +17,7 @@
 
 #include <memory_pool.h>
 
+#include <fstream>
 #include <map>
 #include <queue>
 
@@ -34,6 +35,8 @@ public:
 
 private:
   Output_node &node;
+
+  std::ofstream phasecal_file;
 };
 
 /**

@@ -182,7 +182,7 @@ void Input_node_tasklet::set_delay_table(Delay_table_akima &table) {
 void
 Input_node_tasklet::
 set_parameters(const Input_node_parameters &input_node_param,
-               int node_nr) {
+               int station_number) {
   reader_.set_parameters(input_node_param);
   if(!initialized)
     initialise();
@@ -202,7 +202,7 @@ set_parameters(const Input_node_parameters &input_node_param,
 
   for (size_t i=0; i < number_frequency_channels; i++) {
     data_writer_.connect_to(i, channel_extractor_->get_output_buffer(i) );
-    data_writer_.set_parameters(i, input_node_param);
+    data_writer_.set_parameters(i, input_node_param, station_number);
   }
   // Number of samples for one integration slice
   int nr_ffts = Control_parameters::

@@ -64,7 +64,7 @@ public:
   * @param const Input_node_parameters &params
    * assert( nr_stream < number_channels() )
   *****************************************************************************/
-  void set_parameters(int nr_stream, const Input_node_parameters &params);
+  void set_parameters(int nr_stream, const Input_node_parameters &params, int station_number);
 
   /*****************************************************************************
   * @desc Add a pair of (data_writer, size_slice) to a given channel-queue.

@@ -190,6 +190,14 @@ initialise(const char *ctrl_file, const char *vex_file,
     }
   }
 
+  // Set PhaseCal integration time
+  if(ctrl["phasecal_integr_time"] == Json::Value()) {
+    if (ctrl["phasecal_file"].asBool())
+      ctrl["phasecal_integr_time"] = 10;
+    else
+      ctrl["phasecal_integr_time"] = 0;
+  }
+
   if (ctrl["start"].asString().compare("now") == 0) {
     char *now;
     time_t t;
@@ -270,6 +278,20 @@ Control_parameters::check(std::ostream &writer) const {
           ok = false;
           writer << "Ctrl-file: Sub integration time is larger than the integration time" << std::endl;
         }
+      }
+    }
+  }
+
+  { // Check PhaseCal
+    if (ctrl["phasecal_integr_time"].asInt() != 0 &&
+	ctrl["phasecal_file"] == Json::Value()) {
+      ok = false;
+      writer << "Ctrl-file: PhaseCal output file not defined" << std::endl;
+    } else {
+      Time phasecal_integr_time(ctrl["phasecal_integr_time"].asInt() * 1000000);
+      if (phasecal_integr_time < Time(0)) {
+	ok = false;
+	writer << "Ctrl-file: Phasecal integration time is negative" << std::endl;
       }
     }
   }
@@ -355,7 +377,7 @@ Control_parameters::check(std::ostream &writer) const {
     }
   }
 
-  { // chenking the output file
+  { // Check output file
     if (ctrl["output_file"] != Json::Value()) {
       std::string output_file = create_path(ctrl["output_file"].asString());
       if (strncmp(output_file.c_str(), "file://", 7) != 0) {
@@ -369,6 +391,19 @@ Control_parameters::check(std::ostream &writer) const {
       writer << "ctrl-file: output file not defined" << std::endl;
     }
   }
+
+  { // Check phasecal file
+    if (ctrl["phasecal_file"] != Json::Value()) {
+      std::string output_file = create_path(ctrl["phasecal_file"].asString());
+      if (strncmp(output_file.c_str(), "file://", 7) != 0) {
+        ok = false;
+        writer
+        << "Ctrl-file: Phasecal output should start with 'file://'"
+        << std::endl;
+      }
+    }
+  }
+
   // Check window function
   if (ctrl["window_function"] != Json::Value()){
     std::string window = ctrl["window_function"].asString();
@@ -481,6 +516,11 @@ Control_parameters::get_output_file() const {
 }
 
 std::string
+Control_parameters::get_phasecal_file() const {
+  return create_path(ctrl["phasecal_file"].asString());
+}
+
+std::string
 Control_parameters::station(int i) const {
   return ctrl["stations"][i].asString();
 }
@@ -498,6 +538,11 @@ Control_parameters::integration_time() const {
 Time
 Control_parameters::sub_integration_time() const {
     return Time(ctrl["sub_integr_time"].asDouble());
+}
+
+Time
+Control_parameters::phasecal_integration_time() const {
+  return Time(ctrl["phasecal_integr_time"].asInt() * 1000000);
 }
 
 int
@@ -1093,6 +1138,7 @@ get_input_node_parameters(const std::string &mode_name,
   result.fft_size = std::max(fft_size_delaycor(), fft_size_correlation());
   result.integr_time = integration_time();
   result.offset = reader_offset(station_name);
+  result.phasecal_integr_time = phasecal_integration_time();
   const std::string &freq_name =
     get_vex().get_frequency(mode_name, station_name);
   Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
@@ -1399,6 +1445,27 @@ sideband(const std::string &channel_name,
   return sband;
 }
 
+int
+Control_parameters::station_number(const std::string &station_name) const
+{
+  if (station_map.empty()) {
+    for (Vex::Node::const_iterator station_it =
+	   vex.get_root_node()["STATION"]->begin();
+	 station_it != vex.get_root_node()["STATION"]->end(); ++station_it) {
+      station_map[station_it.key()] = -1;
+    }
+
+    int station_number = 0;
+    for (std::map<std::string, int>::iterator it = station_map.begin();
+	 it != station_map.end(); it++) {
+      it->second = station_number;
+      station_number++;
+    }
+  }
+
+  return station_map[station_name];
+}
+
 Correlation_parameters
 Control_parameters::
 get_correlation_parameters(const std::string &scan_name,
@@ -1520,21 +1587,6 @@ get_correlation_parameters(const std::string &scan_name,
     SFXC_ASSERT(corr_param.reference_station != -1);
   }
 
-  // now get the station streams
-  std::map<std::string, int> station_names;
-  { // sorted alphabetically
-    for (Vex::Node::const_iterator station_it =
-           vex.get_root_node()["STATION"]->begin();
-         station_it != vex.get_root_node()["STATION"]->end(); ++station_it) {
-      station_names[station_it.key()] = -1;
-    }
-    int nr = 0;
-    for (std::map<std::string, int>::iterator it = station_names.begin();
-         it != station_names.end(); it++) {
-      it->second = nr;
-      nr++;
-    }
-  }
   for (Vex::Node::const_iterator station = scan->begin("station");
        station != scan->end("station"); ++station) {
     std::map<std::string, int>::const_iterator station_nr_it =
@@ -1542,7 +1594,7 @@ get_correlation_parameters(const std::string &scan_name,
     if (station_nr_it != correlator_node_station_to_input.end()) {
       if (station_nr_it->second >= 0) {
         Correlation_parameters::Station_parameters station_param;
-        station_param.station_number = station_names[station[0]->to_string()];
+        station_param.station_number = station_number(station[0]->to_string());
         station_param.station_stream = station_nr_it->second;
         station_param.start_time = station[1]->to_int_amount("sec");
         station_param.stop_time = station[2]->to_int_amount("sec");

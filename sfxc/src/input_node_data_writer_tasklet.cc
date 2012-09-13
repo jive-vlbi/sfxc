@@ -11,8 +11,12 @@
 #include <sched.h>
 #include "input_node_data_writer_tasklet.h"
 
-Input_node_data_writer_tasklet::Input_node_data_writer_tasklet(){}
-Input_node_data_writer_tasklet::~Input_node_data_writer_tasklet(){
+Input_node_data_writer_tasklet::Input_node_data_writer_tasklet()
+{
+}
+
+Input_node_data_writer_tasklet::~Input_node_data_writer_tasklet()
+{
   empty_input_queue();
   if(data_writer_thread_pool.still_running())
     data_writer_thread_pool.stop_all();
@@ -47,7 +51,7 @@ void Input_node_data_writer_tasklet::stop_threads()
 *****************************************************************************/
 void Input_node_data_writer_tasklet::add_channel()
 {
-    data_writers_.push_back( Input_node_data_writer::new_sptr() );
+  data_writers_.push_back(Input_node_data_writer::new_sptr());
 }
 
 /*****************************************************************************
@@ -78,10 +82,11 @@ void Input_node_data_writer_tasklet::connect_to(int nr_stream,
 * @param const Input_node_parameters &params
 *****************************************************************************/
 void Input_node_data_writer_tasklet::set_parameters(int nr_stream,
-                                            const Input_node_parameters &params)
+					   const Input_node_parameters &params,
+					   int station_number)
 {
   SFXC_ASSERT( nr_stream < data_writers_.size() );
-  data_writers_[nr_stream]->set_parameters(params);
+  data_writers_[nr_stream]->set_parameters(params, station_number, nr_stream);
 }
 
 

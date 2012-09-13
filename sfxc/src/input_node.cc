@@ -48,12 +48,12 @@ void Input_node::initialise() {
   add_controller(&data_reader_ctrl);
   add_controller(&data_writers_ctrl);
 
-	/// initialize and retreive the listening addresses/port
+  /// initialize and retreive the listening addresses/port
   std::vector<uint64_t> addrs;
-	data_writers_ctrl.get_listening_ip( addrs );
+  data_writers_ctrl.get_listening_ip( addrs );
 
-	/// send this to the manager NODE
-	MPI_Transfer::send_ip_address(addrs, RANK_MANAGER_NODE);
+  /// send this to the manager NODE
+  MPI_Transfer::send_ip_address(addrs, RANK_MANAGER_NODE);
 
   int32_t msg;
   MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_TAG_NODE_INITIALISED,
@@ -63,7 +63,7 @@ void Input_node::initialise() {
 void Input_node::set_input_node_parameters(const Input_node_parameters &input_node_param) {
   if(status==WAITING){
     SFXC_ASSERT(input_node_tasklet != NULL);
-    input_node_tasklet->set_parameters(input_node_param, get_rank()-3);
+    input_node_tasklet->set_parameters(input_node_param, station_number);
 
     input_node_tasklet->start_tasklets();
   }

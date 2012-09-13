@@ -54,6 +54,8 @@ public:
   Time offset;
   /// Indicates if data modulation is used (p.6 of Mark4 memo 230A, Whitney 2005)
   int32_t data_modulation;
+  // Phasecal integration time
+  Time phasecal_integr_time;
 };
 
 std::ostream &operator<<(std::ostream &out, const Input_node_parameters &param);
@@ -181,12 +183,15 @@ public:
   Time get_stop_time() const;
   std::vector<std::string> data_sources(const std::string &station) const;
   std::string get_output_file() const;
+  std::string get_phasecal_file() const;
 
   std::string station(int i) const;
   size_t number_stations() const;
+  int station_number(const std::string &station_name) const;
 
   Time integration_time() const; // Integration time in microseconds
   Time sub_integration_time() const;
+  Time phasecal_integration_time() const;
   int number_channels() const;
   int fft_size_delaycor() const;
   int fft_size_correlation() const;
@@ -353,5 +358,7 @@ private:
   Json::Value ctrl;        // Correlator control file
   Vex         vex;         // Vex file
   bool        initialised; // The control parameters are initialised
+
+  mutable std::map<std::string, int> station_map;
 };
 #endif /*CONTROL_PARAMETERS_H_*/

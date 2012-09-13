@@ -34,20 +34,21 @@ start_input_node(int rank, const std::string &station) {
   input_node_map[station] = input_node_rank.size();
   input_node_rank.push_back(rank);
 
+  // Start the appropriate input reader.
+  int station_number = control_parameters.station_number(station);
   if (control_parameters.transport_type(station) == "Mark5A") {
-    // starting an input reader
-    if(control_parameters.rack_type(station) == "VLBA")
-      MPI_Send(&rank, 1, MPI_INT32,
-               rank, MPI_TAG_SET_INPUT_NODE_VLBA, MPI_COMM_WORLD); // vlba data
+    if (control_parameters.rack_type(station) == "VLBA")
+      MPI_Send(&station_number, 1, MPI_INT32,
+               rank, MPI_TAG_SET_INPUT_NODE_VLBA, MPI_COMM_WORLD);
     else
-      MPI_Send(&rank, 1, MPI_INT32,
-               rank, MPI_TAG_SET_INPUT_NODE_MARK5A, MPI_COMM_WORLD); // mark 4 data
-  }else if(control_parameters.transport_type(station) == "VDIF"){
-    MPI_Send(&rank, 1, MPI_INT32, rank, MPI_TAG_SET_INPUT_NODE_VDIF, MPI_COMM_WORLD);
-  }else {
+      MPI_Send(&station_number, 1, MPI_INT32,
+               rank, MPI_TAG_SET_INPUT_NODE_MARK5A, MPI_COMM_WORLD);
+  } else if (control_parameters.transport_type(station) == "VDIF") {
+    MPI_Send(&station_number, 1, MPI_INT32,
+	     rank, MPI_TAG_SET_INPUT_NODE_VDIF, MPI_COMM_WORLD);
+  } else {
     SFXC_ASSERT(control_parameters.transport_type(station) == "Mark5B");
-    // starting an input reader
-    MPI_Send(&rank, 1, MPI_INT32,
+    MPI_Send(&station_number, 1, MPI_INT32,
              rank, MPI_TAG_SET_INPUT_NODE_MARK5B, MPI_COMM_WORLD);
   }
   Time ref_time(control_parameters.get_vex().get_start_time_of_experiment());
