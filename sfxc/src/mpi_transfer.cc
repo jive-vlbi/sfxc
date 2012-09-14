@@ -599,7 +599,7 @@ MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
   for (Input_node_parameters::Channel_iterator channel =
          input_node_param.channels.begin();
        channel != input_node_param.channels.end(); channel++) {
-    size +=  sizeof(int32_t) * (2 +channel->tracks.size());
+    size += 2 * sizeof(char) + sizeof(int32_t) * (3 + channel->tracks.size());
   }
 
   int position = 0;
@@ -640,6 +640,13 @@ MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
              message_buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&channel->tracks[0], length, MPI_INT32,
              message_buffer, size, &position, MPI_COMM_WORLD);
+
+    MPI_Pack(&channel->sideband, 1, MPI_CHAR,
+	     message_buffer, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&channel->polarisation, 1, MPI_CHAR,
+	     message_buffer, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&channel->frequency_number, 1, MPI_INT32,
+	     message_buffer, size, &position, MPI_COMM_WORLD);
  }
   SFXC_ASSERT(position == size);
   MPI_Send(message_buffer, position, MPI_PACKED, rank,
@@ -695,9 +702,9 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
              &n_channels, 1, MPI_INT32,
              MPI_COMM_WORLD);
   while (n_channels > 0) {
-    Input_node_parameters::Channel_parameters channel_param;
+    Input_node_parameters::Channel_parameters channel;
     MPI_Unpack(buffer, size, &position, 
-               &channel_param.bits_per_sample, 1, MPI_INT32,
+               &channel.bits_per_sample, 1, MPI_INT32,
                MPI_COMM_WORLD);
     // Tracks 
     MPI_Unpack(buffer, size, &position,
@@ -708,10 +715,20 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
                &tracks, length, MPI_INT32,
                MPI_COMM_WORLD);
     for (int i=0; i<length; i++) {
-      channel_param.tracks.push_back(tracks[i]);
+      channel.tracks.push_back(tracks[i]);
     }
 
-    input_node_param.channels.push_back(channel_param);
+    MPI_Unpack(buffer, size, &position,
+	       &channel.sideband, 1, MPI_CHAR,
+	       MPI_COMM_WORLD);
+    MPI_Unpack(buffer, size, &position,
+	       &channel.polarisation, 1, MPI_CHAR,
+	       MPI_COMM_WORLD);
+    MPI_Unpack(buffer, size, &position,
+	       &channel.frequency_number, 1, MPI_INT32,
+	       MPI_COMM_WORLD);
+
+    input_node_param.channels.push_back(channel);
 
     n_channels--;
   }

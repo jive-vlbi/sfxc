@@ -5,9 +5,7 @@
 #include "sfxc_mpi.h"
 #include "input_node_data_writer.h"
 
-Input_node_data_writer::Input_node_data_writer()
-  : station_number(-1), channel_number(-1)
-{
+Input_node_data_writer::Input_node_data_writer() {
   last_duration_ = 0;
   total_data_written_ = 0;
   delay_index=0;
@@ -248,15 +246,14 @@ Input_node_data_writer::do_phasecal() {
     if (phasecal.size() == 0) {
       phasecal.resize((size_t)(sample_rate / 10e3));
     } else {
-      size_t len = 3 * sizeof(int32_t) + 2 * sizeof(int64_t) + phasecal.size() * sizeof(int32_t);
+      size_t len = 4 * sizeof(uint8_t) + sizeof(int32_t) + 2 * sizeof(int64_t) + phasecal.size() * sizeof(int32_t);
       char msg[len];
       int pos = 0;
 
-      SFXC_ASSERT(station_number != -1);
-      SFXC_ASSERT(channel_number != -1);
-
-      MPI_Pack(&station_number, 1, MPI_INT32, msg, len, &pos, MPI_COMM_WORLD);
-      MPI_Pack(&channel_number, 1, MPI_INT32, msg, len, &pos, MPI_COMM_WORLD);
+      MPI_Pack(&station_number, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
+      MPI_Pack(&frequency_number, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
+      MPI_Pack(&sideband, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
+      MPI_Pack(&polarisation, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
       uint64_t ticks = phasecal_time.get_clock_ticks();
       MPI_Pack(&ticks, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
       ticks = input_element.start_time.get_clock_ticks() - phasecal_time.get_clock_ticks();
@@ -327,7 +324,7 @@ add_timeslice(Data_writer_sptr data_writer, int64_t nr_samples) {
 
 void
 Input_node_data_writer::
-set_parameters(const Input_node_parameters &input_param, int station_number_, int channel_number_) {
+set_parameters(int nr_stream, const Input_node_parameters &input_param, int station_number_) {
   sample_rate = input_param.sample_rate();
   _current_time.set_sample_rate(sample_rate);
   bits_per_sample = input_param.bits_per_sample();
@@ -335,7 +332,15 @@ set_parameters(const Input_node_parameters &input_param, int station_number_, in
   byte_length = Time( 8 * 1000000. / (sample_rate * bits_per_sample));
 
   station_number = station_number_;
-  channel_number = channel_number_;
+  frequency_number = input_param.channels[nr_stream].frequency_number;
+  if (input_param.channels[nr_stream].polarisation == 'L')
+    polarisation = 1;
+  else
+    polarisation = 0;
+  if (input_param.channels[nr_stream].sideband == 'U')
+    sideband = 1;
+  else
+    sideband = 0;
   phasecal_integration_time = input_param.phasecal_integr_time;
 }
 

@@ -86,7 +86,7 @@ void Input_node_data_writer_tasklet::set_parameters(int nr_stream,
 					   int station_number)
 {
   SFXC_ASSERT( nr_stream < data_writers_.size() );
-  data_writers_[nr_stream]->set_parameters(params, station_number, nr_stream);
+  data_writers_[nr_stream]->set_parameters(nr_stream, params, station_number);
 }
 
 

@@ -879,6 +879,9 @@ get_mark5a_tracks(const std::string &mode,
     // tracks
     Input_node_parameters::Channel_parameters channel_param;
     channel_param.bits_per_sample = 1;
+    channel_param.sideband = sideband(channel_name, station, mode);
+    channel_param.polarisation = polarisation(channel_name, station, mode);
+    channel_param.frequency_number = frequency_number(channel_name, station, mode);
     sign_tracks.resize(0);
     mag_tracks.resize(0);
 
@@ -954,6 +957,9 @@ get_mark5b_tracks(const std::string &mode,
       int n_bitstream = 0;
       Input_node_parameters::Channel_parameters channel_param;
       channel_param.bits_per_sample = 1;
+      channel_param.sideband = sideband(channel_name, station, mode);
+      channel_param.polarisation = polarisation(channel_name, station, mode);
+      channel_param.frequency_number = frequency_number(channel_name, station, mode);
       int sign_track, mag_track;
       for (Vex::Node::const_iterator bitstream_it = bitstream->begin("stream_def");
           bitstream_it != bitstream->end("stream_def"); ++bitstream_it) {
@@ -1013,6 +1019,9 @@ get_vdif_tracks(const std::string &mode,
 
     Input_node_parameters::Channel_parameters channel_param;
     channel_param.bits_per_sample = bits_per_sample(mode, station);
+    channel_param.sideband = sideband(channel_name, station, mode);
+    channel_param.polarisation = polarisation(channel_name, station, mode);
+    channel_param.frequency_number = frequency_number(channel_name, station, mode);
 
     for (int i = 0; i < 32; i += num_tracks) {
       for (Vex::Node::const_iterator channel_it = thread->begin("channel");
@@ -1113,6 +1122,9 @@ get_mark5b_standard_mapping(const std::string &mode,
 
       Input_node_parameters::Channel_parameters channel_param;
       channel_param.bits_per_sample = bits_per_sample_;
+      channel_param.sideband = sideband(channel_name, station, mode);
+      channel_param.polarisation = polarisation(channel_name, station, mode);
+      channel_param.frequency_number = frequency_number(channel_name, station, mode);
       if (bits_per_sample_ == 2) {
         for (; bit_stream_nr < 32; bit_stream_nr += nr_bit_streams) {
           channel_param.tracks.push_back(bit_stream_nr);
@@ -1337,57 +1349,73 @@ polarisation_type_for_global_output_header() const {
   SFXC_ASSERT(right);
   return Output_header_global::RIGHT_POLARISATION;
 }
+
 std::string
 Control_parameters::
 frequency(const std::string &channel_name,
           const std::string &station_name,
-          const std::string &mode) const {
+          const std::string &mode_name) const {
+  std::string freq_name;
 
-  std::string if_mode_freq;
-  std::string if_node_Node;
-  std::string if_ref_BBC;
-  std::string if_ref_BBCnr;
-  std::string if_ref_Ref;
-  std::string frequen;
-
-  Vex::Node::const_iterator mode_block = vex.get_root_node()["MODE"][mode];
-
-  for (Vex::Node::const_iterator if_it = mode_block->begin("FREQ");
-       if_it != mode_block->end("FREQ"); ++if_it) {
-    for (Vex::Node::const_iterator elem_it = if_it->begin();
-         elem_it != if_it->end(); ++elem_it) {
+  Vex::Node::const_iterator mode = vex.get_root_node()["MODE"][mode_name];
+  for (Vex::Node::const_iterator freq_it = mode->begin("FREQ");
+       freq_it != mode->end("FREQ"); freq_it++) {
+    for (Vex::Node::const_iterator elem_it = freq_it->begin();
+         elem_it != freq_it->end(); elem_it++) {
       if (elem_it->to_string() == station_name) {
-        if_mode_freq = if_it[0]->to_string();
+        freq_name = freq_it[0]->to_string();
       }
     }
   }
-  for (Vex::Node::const_iterator if_it = mode_block->begin("IF");
-       if_it != mode_block->end("IF"); ++if_it) {
-    for (Vex::Node::const_iterator elem_it = if_it->begin();
-         elem_it != if_it->end(); ++elem_it) {
+
+  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
+  for (Vex::Node::const_iterator ch_it = freq->begin("chan_def");
+       ch_it != freq->end("chan_def"); ch_it++) {
+    if (ch_it[4]->to_string() == channel_name) {
+      return ch_it[1]->to_string();
+    }
+  }
+
+  return std::string();
+}
+
+int
+Control_parameters::
+frequency_number(const std::string &channel_name,
+		 const std::string &station_name,
+		 const std::string &mode_name) const {
+  std::string freq_name;
+
+  Vex::Node::const_iterator mode = vex.get_root_node()["MODE"][mode_name];
+  for (Vex::Node::const_iterator freq_it = mode->begin("FREQ");
+       freq_it != mode->end("FREQ"); freq_it++) {
+    for (Vex::Node::const_iterator elem_it = freq_it->begin();
+         elem_it != freq_it->end(); elem_it++) {
       if (elem_it->to_string() == station_name) {
-        if_node_Node = if_it[0]->to_string();
+        freq_name = freq_it[0]->to_string();
       }
     }
   }
-  for (Vex::Node::const_iterator bbc_it = mode_block->begin("BBC");
-       bbc_it != mode_block->end("BBC"); ++bbc_it) {
-    for (size_t i=1; i<bbc_it->size(); i++) {
-      if (bbc_it[i]->to_string() == station_name) {
-        if_ref_BBC = bbc_it[0]->to_string();
-      }
-    }
+
+  std::set<std::string> freq_set;
+  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
+  for (Vex::Node::const_iterator ch_it = freq->begin("chan_def");
+       ch_it != freq->end("chan_def"); ch_it++) {
+    freq_set.insert(ch_it[1]->to_string());
   }
-  for (Vex::Node::const_iterator frq_block = vex.get_root_node()["FREQ"][if_mode_freq]->begin("chan_def");
-       frq_block != vex.get_root_node()["FREQ"][if_mode_freq]->end("chan_def"); ++frq_block) {
-    for (Vex::Node::const_iterator elem_it = frq_block->begin();
-         elem_it != frq_block->end(); ++elem_it) {
-      if (elem_it->to_string() == channel_name) {
-        frequen = frq_block[1]->to_string();
-      }
+
+  int frequency_number = -1;
+  int count = 0;
+  for (std::set<std::string>::const_iterator freq_set_it = freq_set.begin();
+       freq_set_it != freq_set.end(); freq_set_it++) {
+    if (*freq_set_it == frequency(channel_name, station_name, mode_name)) {
+      frequency_number = count;
     }
+    count++;
   }
-  return frequen;
+
+  SFXC_ASSERT(frequency_number != -1);
+  return frequency_number;
 }
 
 char

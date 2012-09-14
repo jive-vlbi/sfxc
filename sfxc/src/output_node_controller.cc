@@ -100,9 +100,11 @@ Output_node_controller::process_event(MPI_Status &status) {
 	       status.MPI_TAG, MPI_COMM_WORLD, &status2);
 
       int pos = 0;
-      int32_t station_number, channel_number;
-      MPI_Unpack(msg, len, &pos, &station_number, 1, MPI_INT32, MPI_COMM_WORLD);
-      MPI_Unpack(msg, len, &pos, &channel_number, 1, MPI_INT32, MPI_COMM_WORLD);
+      uint8_t station_number, frequency_number, sideband, polarisation;
+      MPI_Unpack(msg, len, &pos, &station_number, 1, MPI_UINT8, MPI_COMM_WORLD);
+      MPI_Unpack(msg, len, &pos, &frequency_number, 1, MPI_UINT8, MPI_COMM_WORLD);
+      MPI_Unpack(msg, len, &pos, &sideband, 1, MPI_UINT8, MPI_COMM_WORLD);
+      MPI_Unpack(msg, len, &pos, &polarisation, 1, MPI_UINT8, MPI_COMM_WORLD);
 
       Time start_time;
       uint64_t start_time_ticks;
@@ -124,7 +126,9 @@ Output_node_controller::process_event(MPI_Status &status) {
 
       SFXC_ASSERT(phasecal_file.is_open());
       phasecal_file.write((char *)&station_number, sizeof(station_number));
-      phasecal_file.write((char *)&channel_number, sizeof(channel_number));
+      phasecal_file.write((char *)&frequency_number, sizeof(frequency_number));
+      phasecal_file.write((char *)&sideband, sizeof(sideband));
+      phasecal_file.write((char *)&polarisation, sizeof(polarisation));
       phasecal_file.write((char *)&start_secs, sizeof(start_secs));
       phasecal_file.write((char *)&integration_time_secs, sizeof(integration_time_secs));
       phasecal_file.write((char *)&num_samples, sizeof(num_samples));

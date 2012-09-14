@@ -67,7 +67,7 @@ public:
     return __PRETTY_FUNCTION__;
   }
 
-  void set_parameters(const Input_node_parameters &input_param, int station_number, int channel_number);
+  void set_parameters(int nr_stream, const Input_node_parameters &input_param, int station_number);
 
   /// Empty the input queue, called from the destructor of Input_node
   void empty_input_queue();
@@ -91,8 +91,10 @@ private:
   int bits_per_sample;
   Time integration_time;
   bool sync_stream;
-  int station_number;
-  int channel_number;
+  uint8_t station_number;
+  uint8_t frequency_number;
+  uint8_t sideband;
+  uint8_t polarisation;
 
   /// The queue storing all the delays
   Threadsafe_queue<Delay_memory_pool_element> delays_;

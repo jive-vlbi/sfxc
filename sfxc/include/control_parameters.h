@@ -27,6 +27,10 @@ public:
 
     int bits_per_sample;                   ///< Number of bits to encode one sample
     std::vector<int32_t> tracks;           ///< A list of bit positions for all tracks
+
+    char sideband;
+    char polarisation;
+    int32_t frequency_number;
   };
 
   typedef std::vector<Channel_parameters>           Channel_list;
@@ -262,6 +266,10 @@ public:
   std::string frequency(const std::string &channel_name,
                         const std::string &station_name,
                         const std::string &mode) const;
+
+  int frequency_number(const std::string &channel_name,
+		       const std::string &station_name,
+		       const std::string &mode) const;
 
   char sideband(const std::string &channel_name,
                 const std::string &station_name,
