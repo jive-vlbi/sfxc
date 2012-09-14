@@ -1568,7 +1568,6 @@ get_correlation_parameters(const std::string &scan_name,
 
   corr_param.polarisation = vex.polarisation(if_mode, if_nr);
 
-  SFXC_ASSERT(corr_param.sideband != ' ');
   SFXC_ASSERT(corr_param.sideband == 'L' || corr_param.sideband == 'U');
 
   corr_param.cross_polarize = cross_polarize();
