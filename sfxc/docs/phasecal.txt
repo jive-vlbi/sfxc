@@ -1,0 +1,45 @@
+Phasecal output is stored in a binary file.  The file starts with a
+header that stores some information about the experiment and the
+correlator version that produced the data.  The header has the
+following structure:
+
+struct header {
+  uint32_t header_size;		// Size of header in bytes
+  char experiment[32];		// Name of the experiment
+
+  uint32_t output_format_version;	// Version number of the output format
+  uint32_t correlator_version;		// SVN revision of the correlator
+
+  char correlator_branch[15];
+  int32_t job_nr;
+  int32_t subjob_nr;
+};
+
+The size of the header is 68 bytes, int32_t designates a signed 32-bit
+integer, uint32_t an unsigned 32-bit integer.  Everything is in
+little-endian byte order.
+
+After the header there will be data bocks for each
+station/channel/integration.  Each data block has the following
+structure:
+
+struct data {
+  uint8_t station_number;	// Station number
+  uint8_t frequency_number;	// Frequency number (based on ascending order)
+  uint8_t sideband;		// Sideband LSB=0/USB=1
+  uint8_t polarisation;		// Polarisation RCP=0/LCP=1
+  uint32_t start_day;		// Start time (integral MJD portion)
+  uint32_t start_sec;		// Start time (second within day)
+  uint32_t integration_time;	// Integration time in seconds
+  uint32_t num_samples;		// Number of samples in vector
+  int32_t samples[num_samples]; // Vector of integrated samples
+};
+
+Data blocks don't necessarily appear in order.  As long as the
+integration time is large enough they will probably appear in time
+order, but they will certainly not appear in station/channel order.
+
+Station numbers are assigned by taking all stations from the $STATION
+block in the VEX file and sorting the alphabetically.  The numbers
+start from zero.  The channels are numbered in the order they appear
+in the $FREQ block in the VEX file, again starting from zero.
