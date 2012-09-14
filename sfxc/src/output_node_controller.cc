@@ -110,7 +110,8 @@ Output_node_controller::process_event(MPI_Status &status) {
       uint64_t start_time_ticks;
       MPI_Unpack(msg, len, &pos, &start_time_ticks, 1, MPI_INT64, MPI_COMM_WORLD);
       start_time.set_clock_ticks(start_time_ticks);
-      uint32_t start_secs = (start_time.get_mjd() - 40587) * 86400;
+      uint32_t mjd = start_time.get_mjd();
+      uint32_t secs = start_time.get_time();
 
       Time integration_time;
       uint64_t integration_time_ticks;
@@ -129,7 +130,8 @@ Output_node_controller::process_event(MPI_Status &status) {
       phasecal_file.write((char *)&frequency_number, sizeof(frequency_number));
       phasecal_file.write((char *)&sideband, sizeof(sideband));
       phasecal_file.write((char *)&polarisation, sizeof(polarisation));
-      phasecal_file.write((char *)&start_secs, sizeof(start_secs));
+      phasecal_file.write((char *)&mjd, sizeof(mjd));
+      phasecal_file.write((char *)&secs, sizeof(secs));
       phasecal_file.write((char *)&integration_time_secs, sizeof(integration_time_secs));
       phasecal_file.write((char *)&num_samples, sizeof(num_samples));
       phasecal_file.write((char *)&samples[0], num_samples * sizeof(samples[0]));
