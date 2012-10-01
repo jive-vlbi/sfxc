@@ -1,3 +1,6 @@
+#! /usr/bin/python
+
+# Standard Python modules
 import os
 import re
 import sys
