@@ -4,9 +4,6 @@
 
 Correlation_core_pulsar::Correlation_core_pulsar(): nbins(0), polyco(NULL){
  us_per_day=(int64_t)24*60*60*1000000;
-#ifdef SFXC_WRITE_STATS
-    sfxc_abort("SFXC_WRITE_STATS currently doesn't work with pulsar binning.\n");
-#endif // SFXC_WRITE_STATS
 }
 
 Correlation_core_pulsar::~Correlation_core_pulsar() {

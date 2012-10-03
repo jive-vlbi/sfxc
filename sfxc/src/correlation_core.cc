@@ -111,16 +111,6 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
       input_conj_buffers[i].resize(fft_size() + 1);
   }
   n_flagged.resize(baselines.size());
-
-#ifdef SFXC_WRITE_STATS
-  backward_buffer.resize(fft_size() + 1);
-  backward_plan_ =
-    FFTW_PLAN_DFT_1D(fft_size() + 1,
-                   reinterpret_cast<FFTW_COMPLEX*>(plan_output_buffer.buffer()),
-                   reinterpret_cast<FFTW_COMPLEX*>(&backward_buffer[0]),
-                   FFTW_BACKWARD,
-                   FFTW_ESTIMATE);
-#endif // SFXC_WRITE_STATS
 }
 
 void
@@ -269,53 +259,6 @@ void Correlation_core::integration_step(std::vector<Complex_buffer> &integration
                         /* in2 */ &input_conj_buffers[stations.second][0],
                         /* out */ &integration_buffer[i][0], fft_size() + 1);
   }
-
-#ifdef SFXC_WRITE_STATS
-  {
-#ifndef SFXC_DETERMINISTIC
-    sfxc_abort("SFXC_WRITE_STATS only works with SFXC_DETERMINISTIC\n");
-#endif
-
-    if (! stats_out.is_open()) {
-      char filename[80];
-      snprintf(filename, 80, "stats_%d.txt", RANK_OF_NODE);
-      stats_out.open(filename);
-    }
-    SFXC_ASSERT(stats_out.is_open());
-
-    // Reset buffer:
-    for (size_t i = 0; i < fft_size() + 1; i++)
-      backward_buffer[i] = 0;
-
-    int baseline = number_input_streams_in_use();
-    std::pair<size_t,size_t> &stations = baselines[baseline];
-
-    SFXC_ADD_PRODUCT_FC
-      (/* in1 */ &input_elements[stations.first][buf_idx],
-       /* in2 */ &input_elements[stations.second][buf_idx],
-       /* out */ &backward_buffer[0], fft_size() + 1);
-      
-    // Hardcode the position of the fringe here
-    const int fringe_pos = 12;
-
-    backward_fft.ifft(&backward_buffer[0], &backward_buffer[0]);
-    FLOAT fft_abs   = std::abs(backward_buffer[fringe_pos]);
-    FLOAT fft_phase = std::arg(backward_buffer[fringe_pos]);
-      
-    backward_fft.ifft(&integration_buffer[baseline][0], &backward_buffer[0]);
-    FLOAT integr_abs   = std::abs(backward_buffer[fringe_pos]);
-    FLOAT integr_phase = std::arg(backward_buffer[fringe_pos]);
-    int max_pos = 0;
-    for (size_t i = 1; i < fft_size() + 1; i++) {
-      if (std::abs(backward_buffer[i]) > std::abs(backward_buffer[max_pos]))
-        max_pos = i;
-    }
-      
-    stats_out << fft_abs << " \t" << fft_phase << " \t"
-              << integr_abs << " \t" << integr_phase << " \t"
-              << max_pos << std::endl;
-  }
-#endif // SFXC_WRITE_STATS
 #endif // DUMMY_CORRELATION
 }
 

@@ -104,13 +104,6 @@ protected:
   int node_nr_;
   int current_integration;
   int next_sub_integration;
-#ifdef SFXC_WRITE_STATS
-  // For plotting statistics on the height of the fringe and the phase
-  std::ofstream                                        stats_out;
-  Complex_buffer                                       backward_buffer;
-  FFTW_PLAN                                            backward_plan_;
-#endif // SFXC_WRITE_STATS
-
 };
 
 inline size_t Correlation_core::number_channels() {

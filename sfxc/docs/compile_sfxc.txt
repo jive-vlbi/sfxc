@@ -35,11 +35,6 @@ Setting up autoconf/automake
      Makes sure that the correlator is deterministic. It assigns time
      slices to predetermined nodes
 
-   -DSFXC_WRITE_STATS      
-     Writes the cumulative phase and amplitude of the fringe in the
-     first correlator node, for the first channel. This only makes
-     sense with SFXC_DETERMINISTIC enabled. 
-
    (also in utils.h):
 
    -DPRINT_PID=true
