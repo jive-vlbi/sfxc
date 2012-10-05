@@ -66,6 +66,7 @@ def update(src, dest):
             pass
         if ref_tapelog_obs.match(line):
             has_tapelog_obs = True
+            pass
         continue
     src.seek(0)
     suppress_block = False
