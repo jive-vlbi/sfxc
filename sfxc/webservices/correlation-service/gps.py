@@ -158,12 +158,12 @@ def create_clock_block(vex, fp):
         elif site_name in gps_correction:
             offset += gps_correction[site_name]
             pass
+        fp.write("*\n")
         fp.write("def %s;\n" % station.upper())
-        fp.write("   clock_early = %s : %7.3f usec : %s : %10.2e usec/sec;\n" \
+        fp.write("     clock_early = %s : %7.3f usec : %s : %10.2e usec/sec;\n" \
                  % (time2vex(start), offset, time2vex(mid), numpy.polyder(p)[0]))
         fp.write("enddef;\n")
         continue
-    fp.write("\n");
     return
 
 if __name__ == "__main__":

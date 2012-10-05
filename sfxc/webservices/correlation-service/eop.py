@@ -97,21 +97,21 @@ def create_eop_block(vex, fp):
     t = time.mktime(tm) - 86400
 
     fp.write("$EOP;\n")
+    fp.write("*\n")
     fp.write("def EOP%d;\n" % time.gmtime(t).tm_yday)
-    fp.write("   TAI-UTC = %d sec;\n" % tai_utc(t))
-    fp.write("   eop_ref_epoch = %s;\n" % time2vex(t))
-    fp.write("   eop_interval = 24 hr;\n")
-    fp.write("   num_eop_points = %d;\n" % len(eop_points))
-    fp.write("   num_nut_points = %d;\n" % len(eop_points))
+    fp.write("     TAI-UTC = %d sec;\n" % tai_utc(t))
+    fp.write("     eop_ref_epoch = %s;\n" % time2vex(t))
+    fp.write("     eop_interval = 24 hr;\n")
+    fp.write("     num_eop_points = %d;\n" % len(eop_points))
+    fp.write("     num_nut_points = %d;\n" % len(eop_points))
     for name in ['delta_psi', 'delta_eps', 'x_wobble', 'y_wobble', 'ut1-utc']:
-        fp.write("   %s = %s" % (name, eop_points[0][name]))
+        fp.write("     %s = %s" % (name, eop_points[0][name]))
         for eop_point in eop_points[1:]:
             fp.write(" : %s" % eop_point[name])
             continue
         fp.write(";\n")
         continue
     fp.write("enddef;\n")
-    fp.write("\n")
     return
 
 

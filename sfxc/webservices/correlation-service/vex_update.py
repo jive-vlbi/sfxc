@@ -28,6 +28,14 @@ def get_start(vex):
         return sched[scan]['start']
     return ""
 
+def get_stop(vex):
+    sched = vex['SCHED']
+    for scan in sched:
+        start = vex2time(sched[scan]['start'])
+        duration = int(sched[scan]['station'][2].split()[0])
+        continue
+    return time2vex(start + duration)
+
 def update(src, dest):
     vex = Vex(src.name)
     exper = vex['GLOBAL']['EXPER']
@@ -38,14 +46,17 @@ def update(src, dest):
     ref_eop = re.compile(r'\s*ref \$EOP')
     ref_das = re.compile(r'\s*ref \$DAS')
     ref_clock = re.compile(r'\s*ref \$CLOCK')
+    ref_tapelog_obs = re.compile(r'\s*ref \$TAPELOG_OBS')
     def_station = re.compile(r'\s*def ([a-zA-Z]+);')
     enddef = re.compile(r'\*enddef;')
     block = re.compile(r'\$[A-Z]+;')
     block_eop = re.compile(r'\$EOP;')
     block_clock = re.compile(r'\$CLOCK;')
     block_station = re.compile(r'\$STATION;')
+    block_tapelog_obs = re.compile(r'\$TAPELOG_OBS;')
     has_eop = False
     has_clock = False
+    has_tapelog_obs = False
     for line in src:
         if ref_eop.match(line):
             has_eop = True
@@ -53,6 +64,8 @@ def update(src, dest):
         if ref_clock.match(line):
             has_clock = True
             pass
+        if ref_tapelog_obs.match(line):
+            has_tapelog_obs = True
         continue
     src.seek(0)
     suppress_block = False
@@ -61,17 +74,21 @@ def update(src, dest):
     for line in src:
         if not has_eop and ref_exper.match(line):
             dest.write(line)
-            dest.write("   ref $EOP = EOP%d;\n" % tm.tm_yday)
+            dest.write("     ref $EOP = EOP%d;\n" % tm.tm_yday)
             continue
         if ref_eop.match(line):
-            dest.write("   ref $EOP = EOP%d;\n" % tm.tm_yday)
+            dest.write("     ref $EOP = EOP%d;\n" % tm.tm_yday)
             continue
         if not has_clock and ref_das.match(line):
-            dest.write("   ref $CLOCK = %s;\n" % station.upper())
+            dest.write("     ref $CLOCK = %s;\n" % station.upper())
             dest.write(line)
             continue
         if ref_clock.match(line):
-            dest.write("   ref $CLOCK = %s;\n" % station.upper())
+            dest.write("     ref $CLOCK = %s;\n" % station.upper())
+            continue
+        if not has_tapelog_obs and ref_das.match(line):
+            dest.write("     ref $TAPELOG_OBS = %s;\n" % station.upper())
+            dest.write(line)
             continue
         if block.match(line):
             suppress_block = False
@@ -95,8 +112,21 @@ def update(src, dest):
 
         continue
 
+    dest.write("*" + 77 * "-" + "\n")
     gps.create_clock_block(vex, dest)
+    dest.write("*" + 77 * "-" + "\n")
     eop.create_eop_block(vex, dest)
+    dest.write("*" + 77 * "-" + "\n")
+    if not has_tapelog_obs:
+        dest.write("$TAPELOG_OBS;\n")
+        for station in vex['STATION']:
+            dest.write("*\n")
+            dest.write("def %s;\n" % station.upper())
+            dest.write("     VSN = 1 : %s-eVLBI : %s : %s;\n"  \
+                           % (station, get_start(vex), get_stop(vex)))
+            dest.write("enddef;\n")
+            continue
+        pass
     return
 
 if __name__ == "__main__":
