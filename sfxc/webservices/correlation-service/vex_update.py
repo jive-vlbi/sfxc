@@ -53,7 +53,6 @@ def update(src, dest):
     block_eop = re.compile(r'\$EOP;')
     block_clock = re.compile(r'\$CLOCK;')
     block_station = re.compile(r'\$STATION;')
-    block_tapelog_obs = re.compile(r'\$TAPELOG_OBS;')
     has_eop = False
     has_clock = False
     has_tapelog_obs = False
@@ -80,15 +79,16 @@ def update(src, dest):
         if ref_eop.match(line):
             dest.write("     ref $EOP = EOP%d;\n" % tm.tm_yday)
             continue
-        if not has_clock and ref_das.match(line):
-            dest.write("     ref $CLOCK = %s;\n" % station.upper())
-            dest.write(line)
-            continue
         if ref_clock.match(line):
             dest.write("     ref $CLOCK = %s;\n" % station.upper())
             continue
-        if not has_tapelog_obs and ref_das.match(line):
-            dest.write("     ref $TAPELOG_OBS = %s;\n" % station.upper())
+        if ref_das.match(line):
+            if not has_clock:
+                dest.write("     ref $CLOCK = %s;\n" % station.upper())
+                pass
+            if not has_tapelog_obs and ref_das.match(line):
+                dest.write("     ref $TAPELOG_OBS = %s;\n" % station.upper())
+                pass
             dest.write(line)
             continue
         if block.match(line):
