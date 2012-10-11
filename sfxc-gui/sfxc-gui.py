@@ -30,7 +30,6 @@ from fringeplot import FringePlotWindow
 # JIVE Python modules
 from vex_parser import Vex
 from cordata import CorrelatedData
-from evlbi import DataFlow
 
 def vex2time(str):
     tupletime = time.strptime(str, "%Yy%jd%Hh%Mm%Ss");
@@ -59,11 +58,6 @@ class progressDialog(QtGui.QDialog):
         else:
             self.reject()
             pass
-        pass
-
-    def reset(self, act):
-        station = str(act.text())
-        self.flow.reset([station])
         pass
 
     def update_status(self):
@@ -127,53 +121,13 @@ class progressDialog(QtGui.QDialog):
             return result[0]
         return -1
 
-    def is_mark5b(self, station):
-        return (self.flow.mk5_mode[station][0] == "ext")
-
-    def is_vdif(self, station):
-        return (self.flow.mk5_mode[station][0] == "vdif")
-
-    def start_simulator(self, station):
-        args = ["ssh", self.flow.control_host[station], "bin/mark5_simul"]
-        if self.is_mark5b(station):
-            args.append('-B')
-            pass
-        if self.is_vdif(station):
-            args.append('-V')
-            pass
-        log = open(station + "-simulator.log", 'w')
-        p = subprocess.Popen(args, stdout=log, stderr=log)
-        return p
-
-    def start_simulators(self):
-        self.simulators = {}
-        for station in self.json_input['stations']:
-            self.simulators[station] = self.start_simulator(station)
-            continue
-        return
-
-    def stop_simulators(self):
-        for station in self.simulators:
-            args = ["ssh", self.flow.control_host[station], "pkill",
-                    "mark5_simul"]
-            subprocess.call(args)
-            continue
-        for station in self.simulators:
-            self.simulators[station].wait()
-            continue
-        return
-
     def start_reader(self, station):
-        if self.evlbi:
-            args = ["ssh", self.flow.input_host[station], "bin/jive5ab", "-m1"]
-        else:
-            # Check if mk5read is already running and bail out if it is.
-            args = ["ssh", self.input_host[station], "pgrep", "mk5read"]
-            if subprocess.call(args) == 0:
-                return None
-            args = ["ssh", self.input_host[station], "bin/mk5read"]
-            pass
+        # Check if mk5read is already running and bail out if it is.
+        args = ["ssh", self.input_host[station], "pgrep", "mk5read"]
+        if subprocess.call(args) == 0:
+            return None
 
+        args = ["ssh", self.input_host[station], "bin/mk5read"]
         log = open(station + "-reader.log", 'w')
         p = subprocess.Popen(args, stdout=log, stderr=log)
         return p
@@ -193,11 +147,7 @@ class progressDialog(QtGui.QDialog):
     def stop_readers(self):
         # Stop the readers, but only if we started them
         for station in self.readers:
-            if self.evlbi:
-                args = ["ssh", self.flow.input_host[station], "pkill", "jive5ab"]
-            else:
-                args = ["ssh", self.input_host[station], "pkill", "mk5read"]
-                pass
+            args = ["ssh", self.input_host[station], "pkill", "mk5read"]
             subprocess.call(args)
             continue
         for station in self.readers:
@@ -210,7 +160,6 @@ class progressDialog(QtGui.QDialog):
         self.ctrl_file = ctrl_file
         self.evlbi = options.evlbi
         self.reference = options.reference
-        self.simulate = options.simulate
         self.timeout_interval = options.timeout_interval;
 
         exper = self.vex['GLOBAL']['EXPER']
@@ -258,29 +207,8 @@ class progressDialog(QtGui.QDialog):
             continue
         fp.close()
 
-        if self.evlbi:
-            if self.simulate:
-                control_host = {}
-                machines = []
-                for machine in ['e', 'f', 'g', 'h']:
-                    for unit in [0, 1, 2, 3]:
-                        machines.append("sfxc-" + machine + str(unit))
-                        continue
-                    continue
-                for station in self.json_input['stations']:
-                    control_host[station] = machines[0]
-                    del machines[0]
-                    continue
-
-                self.flow = DataFlow(self.vex, control_host, self.input_host);
-            else:
-                self.flow = DataFlow(self.vex)
-                pass
-            pass
-
-        self.start_readers()
-        if self.simulate:
-            self.start_simulators()
+        if not self.evlbi:
+            self.start_readers()
             pass
 
         # Generate delays for this subjob.
@@ -307,26 +235,6 @@ class progressDialog(QtGui.QDialog):
             continue
         if not success:
             sys.exit(1)
-            pass
-
-        # Setup the data flow.
-        if self.evlbi:
-            self.flow.stop(self.json_input['stations'])
-            self.flow.finalize(self.json_input['stations'])
-            self.flow.setup(self.json_input['stations'])
-            pass
-
-        # Enable the Reset button.
-        if self.evlbi:
-            menu = Qt.QMenu(self)
-            self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
-                         self.reset)
-            for station in self.stations:
-                act = Qt.QAction(station, menu)
-                menu.addAction(act)
-                continue
-            self.ui.buttonReset.setMenu(menu)
-            self.ui.buttonReset.setEnabled(True)
             pass
 
         # When doing e-VLBI we want to start correlating a few seconds
@@ -482,10 +390,6 @@ class progressDialog(QtGui.QDialog):
                             pass
                         self.update_output()
                         pass
-
-                    if self.evlbi and not self.flow.started:
-                        self.flow.start(self.json_input['stations'])
-                        pass
                     pass
                 m = r2.search(line)
                 if m:
@@ -535,15 +439,10 @@ class progressDialog(QtGui.QDialog):
         if self.proc.returncode != None:
             self.t.stop()
             self.log_fp.close()
-            if self.evlbi:
-                self.flow.stop(self.json_input['stations'])
-                self.flow.finalize(self.json_input['stations'])
-                if self.simulate:
-                    self.stop_simulators()
-                    pass
-                pass
 
-            self.stop_readers()
+            if not self.evlbi:
+                self.stop_readers()
+                pass
 
             if self.proc.returncode == 0:
                 self.status = 'DONE'
@@ -566,7 +465,7 @@ class progressDialog(QtGui.QDialog):
 
     pass
 
-usage = "usage: %prog [options] vexfile ctrlfile"
+usage = "usage: %prog [options] vexfile ctrlfile machinefile rankfile"
 parser = optparse.OptionParser(usage=usage)
 parser.add_option("-r", "--reference", dest="reference",
                   default="", type="string",
@@ -575,9 +474,6 @@ parser.add_option("-r", "--reference", dest="reference",
 parser.add_option("-e", "--evlbi", dest="evlbi",
                   action="store_true", default=False,
                   help="e-VLBI")
-parser.add_option("-s", "--simulate", dest="simulate",
-                  action="store_true", default=False,
-                  help="Simulate")
 parser.add_option("-i", "--timeout-interval", dest="timeout_interval",
                   type='int', default='300',
                   help="After how many seconds of inactivity the job is terminated, setting to zero disables. Default = 300")
@@ -585,11 +481,6 @@ parser.add_option("-i", "--timeout-interval", dest="timeout_interval",
 (options, args) = parser.parse_args()
 if len(args) != 4:
     parser.error("incorrect number of arguments")
-    pass
-
-# Simulation implies e-VLBI.
-if options.simulate:
-    options.evlbi = True
     pass
 
 os.environ['TZ'] = 'UTC'
