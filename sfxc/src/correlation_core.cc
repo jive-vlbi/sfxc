@@ -29,14 +29,14 @@ void Correlation_core::do_task() {
   SFXC_ASSERT(input_buffers.size()==number_input_streams_in_use());
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
     input_elements[i] = &input_buffers[i]->front()->data[0];
+    if (input_buffers[i]->front()->data.size() > input_conj_buffers[i].size())
+      input_conj_buffers[i].resize(input_buffers[i]->front()->data.size());
   }
   const int stride = input_buffers[0]->front()->stride;
   const int nbuffer = input_buffers[0]->front()->data.size() / stride;
-  for (int buf = 0; buf < nbuffer * stride ; buf += stride){
-    // Process the data of the current fft
-    integration_step(accumulation_buffers, buf);
-    current_fft++;
-  }
+  // Process the data of the current fft buffer
+  integration_step(accumulation_buffers, nbuffer, stride);
+  current_fft += nbuffer;
   for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++)
     input_buffers[i]->pop();
  
@@ -107,8 +107,6 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   }
   if (input_conj_buffers.size() != number_input_streams_in_use()) {
     input_conj_buffers.resize(number_input_streams_in_use());
-    for(int i=0;i<number_input_streams_in_use();i++)
-      input_conj_buffers[i].resize(fft_size() + 1);
   }
   n_flagged.resize(baselines.size());
 }
@@ -237,27 +235,32 @@ void Correlation_core::integration_initialise() {
   next_sub_integration = 1;
 }
 
-void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer, int buf_idx) {
+void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride) {
 #ifndef DUMMY_CORRELATION
   // do the correlation
-  for (size_t i=0; i < number_input_streams_in_use(); i++) {
-    // get the complex conjugates of the input
-    SFXC_CONJ_FC(&input_elements[i][buf_idx], &(input_conj_buffers[i])[0], fft_size() + 1);
-    // Auto correlation
-    std::pair<size_t,size_t> &stations = baselines[i];
-    SFXC_ASSERT(stations.first == stations.second);
-    SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
-                        /* in2 */ &input_conj_buffers[stations.first][0],
-                        /* out */ &integration_buffer[i][0], fft_size() + 1);
+  SFXC_ASSERT(nbuffer * stride <= input_conj_buffers[0].size());
+  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
+    for (size_t buf_idx = 0; buf_idx < nbuffer * stride; buf_idx += stride) {
+      // get the complex conjugates of the input
+      SFXC_CONJ_FC(&input_elements[i][buf_idx], &(input_conj_buffers[i])[buf_idx], fft_size() + 1);
+      // Auto correlation
+      std::pair<size_t,size_t> &stations = baselines[i];
+      SFXC_ASSERT(stations.first == stations.second);
+      SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
+			  /* in2 */ &input_conj_buffers[stations.first][buf_idx],
+			  /* out */ &integration_buffer[i][0], fft_size() + 1);
+    }
   }
 
-  for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
-    // Cross correlations
-    std::pair<size_t,size_t> &stations = baselines[i];
-    SFXC_ASSERT(stations.first != stations.second);
-    SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
-                        /* in2 */ &input_conj_buffers[stations.second][0],
-                        /* out */ &integration_buffer[i][0], fft_size() + 1);
+  for (size_t i = number_input_streams_in_use(); i < baselines.size(); i++) {
+    for (size_t buf_idx = 0; buf_idx < nbuffer * stride; buf_idx += stride) {
+      // Cross correlations
+      std::pair<size_t,size_t> &stations = baselines[i];
+      SFXC_ASSERT(stations.first != stations.second);
+      SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
+			  /* in2 */ &input_conj_buffers[stations.second][buf_idx],
+			  /* out */ &integration_buffer[i][0], fft_size() + 1);
+    }
   }
 #endif // DUMMY_CORRELATION
 }

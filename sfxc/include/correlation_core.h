@@ -58,7 +58,7 @@ public:
 
 protected:
   virtual void integration_initialise();
-  void integration_step(std::vector<Complex_buffer> &integration_buffer, int buf_idx);
+  void integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride);
   void integration_normalize(std::vector<Complex_buffer> &integration_buffer);
   void integration_write(std::vector<Complex_buffer> &integration_buffer, int phase_center, int bin);
   void sub_integration();

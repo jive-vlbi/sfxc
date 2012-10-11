@@ -14,6 +14,7 @@ public:
                               int node_nr);
 protected:
   virtual void integration_initialise();
+  void integration_step(std::vector<Complex_buffer> &integration_buffer, int buf_idx);
   void dedisperse_buffer();
 
   double get_phase();

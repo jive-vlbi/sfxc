@@ -153,6 +153,30 @@ void Correlation_core_pulsar::integration_initialise() {
   memset(&n_flagged[0], 0, sizeof(std::pair<int64_t,int64_t>)*n_flagged.size());
 }
 
+void Correlation_core_pulsar::integration_step(std::vector<Complex_buffer> &integration_buffer, int buf_idx) {
+#ifndef DUMMY_CORRELATION
+  // do the correlation
+  for (size_t i=0; i < number_input_streams_in_use(); i++) {
+    // get the complex conjugates of the input
+    SFXC_CONJ_FC(&input_elements[i][buf_idx], &(input_conj_buffers[i])[0], fft_size() + 1);
+    // Auto correlation
+    std::pair<size_t,size_t> &stations = baselines[i];
+    SFXC_ASSERT(stations.first == stations.second);
+    SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
+                        /* in2 */ &input_conj_buffers[stations.first][0],
+                        /* out */ &integration_buffer[i][0], fft_size() + 1);
+  }
+
+  for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
+    // Cross correlations
+    std::pair<size_t,size_t> &stations = baselines[i];
+    SFXC_ASSERT(stations.first != stations.second);
+    SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
+                        /* in2 */ &input_conj_buffers[stations.second][0],
+                        /* out */ &integration_buffer[i][0], fft_size() + 1);
+  }
+#endif // DUMMY_CORRELATION
+}
 
 void Correlation_core_pulsar::dedisperse_buffer() {
   double obs_freq_phase = get_phase();
