@@ -93,7 +93,7 @@ bool VDIF_reader::eof() {
 
 int32_t VDIF_reader::Header::jday_epoch() const {
   int year = 2000 + ref_epoch / 2;
-  int month = 1 + 6 * (ref_epoch % 1);
+  int month = 1 + 6 * (ref_epoch % 2);
   return mjd(1, month, year);
 }
 
