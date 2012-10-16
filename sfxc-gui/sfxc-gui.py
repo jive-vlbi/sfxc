@@ -64,7 +64,7 @@ class progressDialog(QtGui.QDialog):
         if self.subjob == -1:
             return
 
-        conn = db.connect(host="ccs", port=3307,
+        conn = db.connect(host="ccs", port=3306,
                           db="correlator_control",
                           read_default_file="~/.my.cnf")
 
@@ -92,7 +92,7 @@ class progressDialog(QtGui.QDialog):
         except:
             pass
 
-        conn = db.connect(host="ccs", port=3307,
+        conn = db.connect(host="ccs", port=3306,
                           db="correlator_control",
                           read_default_file="~/.my.cnf")
 
@@ -109,7 +109,7 @@ class progressDialog(QtGui.QDialog):
         if self.subjob == -1:
             return -1
 
-        conn = db.connect(host="ccs", port=3307,
+        conn = db.connect(host="ccs", port=3306,
                           db="correlator_control",
                           read_default_file="~/.my.cnf")
 
