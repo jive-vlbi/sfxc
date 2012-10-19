@@ -138,6 +138,7 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
       time = current_interval_.stop_time_ - reader_->time_between_headers();
       randomize_block();
       input_element_.start_time = time;
+      input_element_.channel = 0;
     }
   }
 
@@ -256,7 +257,6 @@ randomize_block() {
   if (input_element_.buffer->data.size() != size) {
     input_element_.buffer->data.resize(size);
   }
-  input_element_.channel = -1; // broadcast invalid data to all channels (VDIF ONLY)
 #ifdef SFXC_INVALIDATE_SAMPLES
   input_element_.invalid.resize(1);
   input_element_.invalid[0].invalid_begin = 0;
