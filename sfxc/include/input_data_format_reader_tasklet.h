@@ -93,8 +93,7 @@ private:
   void demodulate(Input_element &data);
   void gen_demodulation_sequence(int sequence_length);
   std::vector<unsigned char> demodulation_sequence; // contains the pseudo-random sequence
-  void open_input_stream();
-  void push_random_blocks(int nblocks);
+  void push_random_blocks(int nblocks, int channel);
 
 private:
   /// Data stream to read from
@@ -117,7 +116,8 @@ private:
   Threadsafe_queue<Time_interval>     intervals_;
 
   /// Current time
-  Time current_time;
+  std::vector<Time> current_time;
+  Time max_time;
 
   // Amount of data that was received by this component
   uint64_t data_read_;

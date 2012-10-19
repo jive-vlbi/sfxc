@@ -13,7 +13,6 @@ Input_data_format_reader_tasklet(
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
   reader_ = reader;
 
-  current_time = reader_->get_current_time();
   data_read_=0;
   allocate_element();
 }
@@ -37,10 +36,11 @@ void Input_data_format_reader_tasklet::do_execute() {
   /// then let's work
   while ( isRunning ) {
     /// if there is still some data to process we do it
-    if ( current_time < current_interval_.stop_time_ ){ 
+    if (*(std::min_element(current_time.begin(), current_time.end())) < current_interval_.stop_time_) {
       do_task();
-    }/// otherwise we fetch a new interval.
-    else fetch_next_time_interval();
+    } else {
+      fetch_next_time_interval();
+    }
   }
   DEBUG_MSG(" INPUT READER WILL EXIT ITS LOOP ");
   /// We close the queue in which we output our data.
@@ -50,44 +50,61 @@ void Input_data_format_reader_tasklet::do_execute() {
 void
 Input_data_format_reader_tasklet::
 do_task() {
-  // Compute the expected start time of the next frame
-  Time start_next_frame = current_time + reader_->time_between_headers();
+  SFXC_ASSERT(reader_->is_open());
+
   allocate_element();
 
-  if (reader_->eof()) {
-    randomize_block();
-  } else if(!reader_->is_open()) {
-    open_input_stream();
-    return;
-  } else if (reader_->get_current_time() - current_time >= reader_->time_between_headers()) {
-    randomize_block();
-  } else {
-    int64_t nframes_left = (current_interval_.stop_time_ - start_next_frame) / reader_->time_between_headers();
-    if (!reader_->read_new_block(input_element_)){
-      // Insert invalid blocks to prevent bad data stream to stall correlation
-      push_random_blocks(std::min((int64_t)NSKIP, nframes_left-1));
-      randomize_block();
-    }else if(reader_->get_current_time() != start_next_frame){
-      int64_t nframes_missing = (reader_->get_current_time() - start_next_frame) / reader_->time_between_headers();
-      nframes_missing = std::min(nframes_missing, nframes_left);
-      //std::cout << RANK_OF_NODE << " : nframes_missing = " << nframes_missing << "; t= " << reader_->get_current_time() 
-      //                          << ", expected=" << start_next_frame << "\n";
-      if(nframes_missing > 0){
-        Input_element old_input_element = input_element_;
-        push_random_blocks(nframes_missing);
-        if(nframes_missing == nframes_left) // we are done, so don't insert last frame
-          return;  
-        input_element_ = old_input_element;
-      } else if(nframes_missing < 0){
-        // Data was in the past, we simply drop the frame
-        return;
-      }
+  for (size_t i = 0; i < current_time.size(); i++) {
+    int nframes_left = (current_interval_.stop_time_ - current_time[i]) / reader_->time_between_headers();
+    int skew = std::max(0, std::min(NSKIP, nframes_left - 1));
+    if (reader_->eof())
+      skew = 0;
+
+    if (current_time[i] < max_time - reader_->time_between_headers() * skew) {
+      int nframes = (max_time - current_time[i]) / reader_->time_between_headers() - skew;
+      // Insert invalid blocks to prevent bad data streams to stall the correlation
+      push_random_blocks(nframes, i);
+      return;
     }
-    if(data_modulation)
-      demodulate(input_element_);
   }
-  current_time += reader_->time_between_headers();
-  input_element_.start_time = current_time;
+
+  if (!reader_->read_new_block(input_element_)) {
+    int nframes_left = (current_interval_.stop_time_ - current_time[0]) / reader_->time_between_headers();
+    // Insert invalid blocks to prevent bad data streams to stall the correlation
+    push_random_blocks(std::min(NSKIP, nframes_left), 0);
+    return;
+  }
+
+  int channel = input_element_.channel;
+  SFXC_ASSERT(channel >= 0 && channel < current_time.size());
+
+  Time start_next_frame = current_time[channel];
+  int nframes_left = (current_interval_.stop_time_ - start_next_frame) / reader_->time_between_headers();
+  if (input_element_.start_time != start_next_frame) {
+    int nframes_missing = (input_element_.start_time - start_next_frame) / reader_->time_between_headers();
+    nframes_missing = std::min(nframes_missing, nframes_left);
+#if 0
+    std::cerr << RANK_OF_NODE << " : nframes_missing = " << nframes_missing << "; t= " << input_element_.start_time
+	      << ", expected=" << start_next_frame << "\n";
+#endif
+    if (nframes_missing > 0) {
+      Input_element old_input_element = input_element_;
+      push_random_blocks(nframes_missing, channel);
+      input_element_ = old_input_element;
+    } else if (nframes_missing < 0) {
+      // Data was in the past; simply drop the frame
+      return;
+    }
+
+    // We are done; don't insert the last frame
+    if (nframes_missing == nframes_left)
+      return;
+  }
+
+  SFXC_ASSERT(input_element_.start_time == current_time[channel]);
+
+  if(data_modulation)
+    demodulate(input_element_);
 
   data_read_ += input_element_.buffer->data.size();
   push_element();
@@ -95,75 +112,49 @@ do_task() {
 
 void
 Input_data_format_reader_tasklet::fetch_next_time_interval() {
-  /// Blocking function until a new interval is available
+  // Blocking function until a new interval is available
   current_interval_ = intervals_.front_and_pop();
-  if ( !current_interval_.empty() ) {
-    if((reader_->is_open())&&(current_interval_.start_time_<=reader_->get_current_time())){
-      // Ensure that the current_time is exactly at header_start, in mark5b sometimes the VLBA timestamp is used
-      int64_t nframes = (int64_t) round((reader_->get_current_time() - current_interval_.start_time_) / reader_->time_between_headers());
-      current_time = current_interval_.start_time_ + reader_->time_between_headers() * nframes;
-      return;    
-    }
-    if((!reader_->is_open()) && (!reader_->open_input_stream(input_element_))){
-      current_time = current_interval_.start_time_;
-      return;
-    } 
-    if(current_interval_.start_time_<=reader_->get_current_time()){
-      // Ensure that the current_time is exactly at header_start, in mark5b sometimes the VLBA timestamp is used
-      int64_t nframes = (int64_t) round((reader_->get_current_time() - current_interval_.start_time_) / reader_->time_between_headers());
-      current_time = current_interval_.start_time_ + reader_->time_between_headers() * nframes;
-    }else{
-      current_time = goto_time( current_interval_.start_time_);
-      int64_t nframes = (int64_t) round((current_time - current_interval_.start_time_)/ reader_->time_between_headers());
-      current_time = current_interval_.start_time_ + reader_->time_between_headers() * nframes;
-      if (current_time > current_interval_.stop_time_) {
-        current_time = current_interval_.stop_time_;
-        randomize_block();
-        input_element_.start_time = current_time;
-      }
-    }
-    data_read_ += input_element_.buffer->data.size();
-    push_element();
+  if (current_interval_.empty())
+    return;
+
+  if (!reader_->is_open() && !reader_->open_input_stream(input_element_)) {
+    for (size_t i = 0; i < current_time.size(); i++)
+      current_time[i] = current_interval_.start_time_;
+    return;
   }
+
+  SFXC_ASSERT(reader_->is_open());
+
+  Time time;
+  if (current_interval_.start_time_ <= input_element_.start_time) {
+    // Ensure that the current_time is exactly at header_start, in mark5b sometimes the VLBA timestamp is used
+    int64_t nframes = (int64_t)round((input_element_.start_time - current_interval_.start_time_) / reader_->time_between_headers());
+    time = current_interval_.start_time_ + reader_->time_between_headers() * nframes;
+  } else {
+    time = goto_time(current_interval_.start_time_);
+    int64_t nframes = (int64_t)round((time - current_interval_.start_time_)/ reader_->time_between_headers());
+    time = current_interval_.start_time_ + reader_->time_between_headers() * nframes;
+    if (time > current_interval_.stop_time_) {
+      time = current_interval_.stop_time_ - reader_->time_between_headers();
+      randomize_block();
+      input_element_.start_time = time;
+    }
+  }
+
+  for (size_t i = 0; i < current_time.size(); i++)
+    current_time[i] = time;
+
+  data_read_ += input_element_.buffer->data.size();
+  push_element();
 }
 
 void
-Input_data_format_reader_tasklet::open_input_stream(){
-  if(!reader_->open_input_stream(input_element_)){
-    // Prevent stream from stalling correlation if no header is found
-    push_random_blocks(NSKIP);
-  }else{
-    if(current_time <= reader_->get_current_time()){
-      int64_t nframes = (int64_t) round((reader_->get_current_time() - current_time) / reader_->time_between_headers());
-      push_random_blocks(nframes);
-    }else{
-      Time reader_time = goto_time(current_time);
-      int64_t nframes = (int64_t) round((reader_time - current_time)/ reader_->time_between_headers());
-      reader_time = current_time + reader_->time_between_headers() * nframes; // round to integer number of frames
-      if (reader_time > current_interval_.stop_time_) {
-        current_time = current_interval_.stop_time_;
-        randomize_block();
-      }else{
-        if(reader_time > current_time){
-          Input_element old_input_element = input_element_;
-          push_random_blocks(nframes);
-          input_element_ = old_input_element;
-          current_time = current_interval_.start_time_ + reader_->time_between_headers() * nframes;
-        }
-      }
-      data_read_ += input_element_.buffer->data.size();
-      input_element_.start_time = current_time;
-      push_element();
-    }
-  }
-}
-
-void
-Input_data_format_reader_tasklet::push_random_blocks(int nblocks){
-  for(int i=0; i < nblocks; i++){
+Input_data_format_reader_tasklet::push_random_blocks(int nblocks, int channel)
+{
+  for (int i = 0; i < nblocks; i++) {
     randomize_block();
-    current_time += reader_->time_between_headers();
-    input_element_.start_time = current_time;
+    input_element_.start_time = current_time[channel];
+    input_element_.channel = channel;
     data_read_ += input_element_.buffer->data.size();
     push_element();
   }
@@ -188,9 +179,16 @@ has_work() {
 }
 
 void 
-Input_data_format_reader_tasklet::set_parameters(const Input_node_parameters &input_node_param){
-  data_modulation = input_node_param.data_modulation;
-  reader_->set_parameters(input_node_param);
+Input_data_format_reader_tasklet::set_parameters(const Input_node_parameters &params){
+  data_modulation = params.data_modulation;
+  reader_->set_parameters(params);
+
+  if (reader_->get_transport_type() == VDIF)
+    current_time.resize(params.channels.size());
+  else
+    current_time.resize(1);
+  for (size_t i = 0; i < current_time.size(); i++)
+    current_time[i] = reader_->get_current_time();
 }
 
 void
@@ -211,9 +209,7 @@ goto_time(Time time) {
 
   // Set the current time to the actual time in the data stream.
   // Might not be the requested time, if no data is available
-  current_time = new_time;
-
-  input_element_.start_time = current_time;
+  input_element_.start_time = new_time;
 
   if (time != new_time) {
     DEBUG_MSG("Warning: Couldn't go to time " << time << "us.");
@@ -221,13 +217,13 @@ goto_time(Time time) {
     DEBUG_MSG("Time found is                " << new_time << "us.");
   }
 
-  return current_time;
+  return input_element_.start_time;
 }
 
 Time
 Input_data_format_reader_tasklet::
 get_current_time() {
-  return current_time;
+  return current_time[0];
 }
 
 void
@@ -238,8 +234,10 @@ push_element() {
     SFXC_ASSERT(input_element_.invalid[i].nr_invalid >= 0);
   }
   SFXC_ASSERT(input_element_.buffer->data.size() == reader_->size_data_block());
-
   input_element_.seqno = seqno++;
+  current_time[input_element_.channel] += reader_->time_between_headers();
+  if (current_time[input_element_.channel] > max_time)
+    max_time = current_time[input_element_.channel];
   output_buffer_->push(input_element_);
 }
 
