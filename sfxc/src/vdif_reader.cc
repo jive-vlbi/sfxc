@@ -32,6 +32,22 @@ VDIF_reader::open_input_stream(Data_frame &data) {
   return true;
 }
 
+void 
+VDIF_reader::print_header() {
+  std::cerr << RANK_OF_NODE << "------------ full header ------------\n";
+  std::cerr << current_header.sec_from_epoch<<" ; " << (int)current_header.legacy_mode << " ; "
+            << (int)current_header.invalid<<"\n";
+  std::cerr << current_header.dataframe_in_second << " ; " << (int)current_header.ref_epoch
+            << " ; " << (int) current_header.unassiged<<"\n";
+  std::cerr << current_header.dataframe_length << " ; " << (int) current_header.log2_nchan << " ; "
+            << (int)current_header.version<<"\n";
+  std::cerr << (int) current_header.station_id << " ; " << (int)current_header.thread_id << " ; "
+            << (int) current_header.bits_per_sample << " ;" << (int) current_header.data_type<<"\n";
+  std::cerr << current_header.user_data1<<" ; "<<(int)current_header.edv<<"\n";
+  std::cerr << current_header.user_data2<<" ; "<<current_header.user_data3<<" ; "<< current_header.user_data4<<"\n";
+  std::cerr << RANK_OF_NODE << "-------------------------------------\n";
+}
+
 Time
 VDIF_reader::goto_time(Data_frame &data, Time time) {
   while (time > get_current_time()) {
