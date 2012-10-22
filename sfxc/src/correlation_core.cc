@@ -382,6 +382,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
       stats[stream].sideband = (correlation_parameters.sideband=='L') ? 0 : 1;
 
       stats[stream].frequency_nr=(unsigned char)correlation_parameters.channel_nr;
+#ifndef SFXC_ZERO_STATS
       if(statistics[stream]->bits_per_sample==2){
         stats[stream].levels[0]=levels[0];
         stats[stream].levels[1]=levels[1];
@@ -395,6 +396,13 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
         stats[stream].levels[3]=0;
         stats[stream].n_invalid=levels[4];
       }
+#else
+      stats[stream].levels[0]=0;
+      stats[stream].levels[1]=0;
+      stats[stream].levels[2]=0;
+      stats[stream].levels[3]=0;
+      stats[stream].n_invalid=0;
+#endif
     }
 
     size_t nWrite = sizeof(htimeslice);
