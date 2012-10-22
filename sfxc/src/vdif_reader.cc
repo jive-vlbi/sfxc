@@ -140,6 +140,11 @@ void VDIF_reader::set_parameters(const Input_node_parameters &param) {
   offset = param.offset;
 
   // Create a mapping from thread ID to channel number.
-  for (size_t i = 0; i < param.channels.size(); i++)
-    thread_map[param.channels[i].tracks[0]] = i;
+  thread_map.clear();
+  if (param.n_tracks == 0) {
+    for (size_t i = 0; i < param.channels.size(); i++)
+      thread_map[param.channels[i].tracks[0]] = i;
+  } else {
+    thread_map[0] = 0;
+  }
 }

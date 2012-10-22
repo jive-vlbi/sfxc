@@ -184,7 +184,7 @@ Input_data_format_reader_tasklet::set_parameters(const Input_node_parameters &pa
   data_modulation = params.data_modulation;
   reader_->set_parameters(params);
 
-  if (reader_->get_transport_type() == VDIF)
+  if (reader_->get_transport_type() == VDIF && params.n_tracks == 0)
     current_time.resize(params.channels.size());
   else
     current_time.resize(1);
