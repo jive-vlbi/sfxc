@@ -108,6 +108,9 @@ private:
 
   // Convert time read from input stream to time relative to midnight on the reference day
   int64_t correct_raw_time(int64_t raw_time);
+
+  // Mapping between thread IDs and channel numbers.
+  std::map<int, int> thread_map;
 };
 
 inline int32_t 
