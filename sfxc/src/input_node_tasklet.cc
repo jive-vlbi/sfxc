@@ -122,16 +122,14 @@ add_time_interval(Time &start_time, Time &stop_time) {
   reader_.add_time_interval(start_time, stop_time);
 }
 
-void Input_node_tasklet::initialise()
+void Input_node_tasklet::initialise(int num_tracks)
 {
-#if 1
-  if(reader_.get_data_reader()->get_transport_type()==VDIF)
+  if (reader_.get_data_reader()->get_transport_type() == VDIF && num_tracks == 0)
     channel_extractor_= Channel_extractor_tasklet_ptr( 
         new Channel_extractor_tasklet_VDIF(reader_.get_data_reader()->size_data_block() /
                                            reader_.size_input_word(),
                                            reader_.size_input_word()));
   else
-#endif
     channel_extractor_= Channel_extractor_tasklet_ptr( 
         new Channel_extractor_tasklet(reader_.get_data_reader()->size_data_block() /
                                       reader_.size_input_word(),
@@ -185,7 +183,7 @@ set_parameters(const Input_node_parameters &input_node_param,
                int station_number) {
   reader_.set_parameters(input_node_param);
   if(!initialized)
-    initialise();
+    initialise(input_node_param.n_tracks);
 
   channel_extractor_->set_parameters(input_node_param);
 

@@ -38,7 +38,7 @@ public:
 
   ~Input_node_tasklet();
 
-  void initialise();
+  void initialise(int num_tracks);
   void start_tasklets();
   void stop_tasklets();
   void wait_termination();

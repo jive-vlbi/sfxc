@@ -1004,6 +1004,7 @@ get_vdif_tracks(const std::string &mode,
   }
 
   if (num_threads != 1) {
+      input_parameters.n_tracks = 0;
       for (size_t i = 0; i < number_frequency_channels(); i++) {
 	const std::string &channel_name = frequency_channel(i);
 
