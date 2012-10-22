@@ -77,27 +77,41 @@ VDIF_reader::get_current_time() {
 bool
 VDIF_reader::read_new_block(Data_frame &data) {
   std::vector<value_type> &buffer = data.buffer->data;
-  int byte_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&current_header);
-  if (current_header.legacy_mode == 0) {
-    char *header = (char *)&current_header;
-    Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&header[16]);
-  }
-  //  print_header();
+
+ restart:
+  Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&current_header);
+  if (data_reader_->eof())
+    return false;
+
   int data_size = current_header.data_size();
   if (buffer.size() != data_size) {
     buffer.resize(data_size);
   }
 
+  if (current_header.legacy_mode == 0) {
+    char *header = (char *)&current_header;
+    Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&header[16]);
+    if (data_reader_->eof())
+      return false;
+  }
+
+  Data_reader_blocking::get_bytes_s( data_reader_.get(), data_size, (char *)&buffer[0]);
+  if (data_reader_->eof())
+    return false;
+
   if (current_header.invalid > 0) {
     data.invalid.resize(1);
     data.invalid[0].invalid_begin = 0;
-    data.invalid[0].nr_invalid = current_header.data_size() * current_header.invalid;
+    data.invalid[0].nr_invalid = current_header.data_size();
+    if (thread_map.count(current_header.thread_id) > 0)
+      data.channel = thread_map[current_header.thread_id];
+    else
+      data.channel = 0;
+  } else {
+    if (thread_map.count(current_header.thread_id) == 0)
+      goto restart;
+    data.channel = thread_map[current_header.thread_id];
   }
-  data.channel = current_header.thread_id; // NB: we assume one-to-one mapping of thread id to channel
-
-  byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), data_size, (char *)&buffer[0]);
-
-  if (data_reader_->eof()) return false;
 
   data.start_time = get_current_time();
   return true;
@@ -124,4 +138,8 @@ void VDIF_reader::set_parameters(const Input_node_parameters &param) {
   sample_rate = param.sample_rate();
   SFXC_ASSERT(((int)sample_rate % 1000000) == 0);
   offset = param.offset;
+
+  // Create a mapping from thread ID to channel number.
+  for (size_t i = 0; i < param.channels.size(); i++)
+    thread_map[param.channels[i].tracks[0]] = i;
 }

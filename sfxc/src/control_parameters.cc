@@ -1004,7 +1004,25 @@ get_vdif_tracks(const std::string &mode,
   }
 
   if (num_threads != 1) {
-    sfxc_abort("VDIF with more than one thread is currently unsupported");
+      for (size_t i = 0; i < number_frequency_channels(); i++) {
+	const std::string &channel_name = frequency_channel(i);
+
+	Input_node_parameters::Channel_parameters channel_param;
+
+	int thread_id = -1;
+	for (Vex::Node::const_iterator channel_it = thread->begin("channel");
+	     channel_it != thread->end("channel"); channel_it++) {
+	  if (channel_name == channel_it[0]->to_string())
+	    thread_id = channel_it[1]->to_int();
+	}
+
+	channel_param.bits_per_sample = bits_per_sample(mode, station);
+	channel_param.tracks.push_back(thread_id);
+	channel_param.tracks.push_back(-1); // XXX
+	input_parameters.channels.push_back(channel_param);
+      }
+
+      return;
   }
 
   int num_tracks = 0;
