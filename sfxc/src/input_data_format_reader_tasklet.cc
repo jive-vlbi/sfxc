@@ -269,7 +269,7 @@ randomize_block() {
 #endif // SFXC_CHECK_INVALID_SAMPLES
 
 #else // !SFXC_INVALIDATE_SAMPLES
-  value_type *buffer = input_element_.buffer->data[0];
+  value_type *buffer = &input_element_.buffer->data[0];
   for (size_t i=0; i<size; i++) {
     // Randomize data
     // park_miller_random generates 31 random bits

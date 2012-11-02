@@ -280,7 +280,7 @@ void Mark5a_reader::set_data_frame_info(Data_frame &data) {
   // Randomize data
   // park_miller_random generates 31 random bits
   for(int i=0;i<SIZE_MK5A_HEADER*N;i++)
-    data.buffer[i] = park_miller_random();
+    data.buffer->data[i] = park_miller_random();
 #endif
 }
 
