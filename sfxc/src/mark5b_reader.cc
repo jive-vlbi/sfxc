@@ -215,7 +215,7 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
   while(total_bytes_read < max_read){
     bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), frame_size - header_size, &buffer[header_size]);
     total_bytes_read += bytes_read;
-    if(bytes_read == 0){
+    if(bytes_read <= 0){
       std::cout << "Couldn't find new sync word before EOF\n";
       return false;
     }
