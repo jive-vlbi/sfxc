@@ -101,10 +101,8 @@ private:
   // For testing
   Debug_level debug_level_;
 
-  // Current header is the first header read in read_new_block
-  // tmp_header is used for the other blocks
-  // so that the header points to the time of the first sample
-  Header current_header, tmp_header;
+  // We keep a copy of the first header to validate subsequent headers.
+  Header first_header, current_header;
 
   // Convert time read from input stream to time relative to midnight on the reference day
   int64_t correct_raw_time(int64_t raw_time);

@@ -84,9 +84,17 @@ VDIF_reader::read_new_block(Data_frame &data) {
     return false;
 
   int data_size = current_header.data_size();
-  if (buffer.size() != data_size) {
+  if (buffer.size() == 0) {
+    memcpy(&first_header, &current_header, 16);
     buffer.resize(data_size);
   }
+
+  if (current_header.dataframe_length != first_header.dataframe_length) {
+    Data_reader_blocking::get_bytes_s(data_reader_.get(), first_header.dataframe_length * 8 - 16, NULL);
+    goto restart;
+  }
+
+  SFXC_ASSERT(data_size == buffer.size());
 
   if (current_header.legacy_mode == 0) {
     char *header = (char *)&current_header;
