@@ -64,8 +64,10 @@ Data_reader_mk5::Data_reader_mk5(const std::string& url) {
     struct sockaddr_un sun;
     sun.sun_family = AF_LOCAL;
     std::strncpy(sun.sun_path, sock.c_str(), sizeof(sun.sun_path));
-    if (::connect(fd, (struct sockaddr *)&sun, sizeof(sun)) == -1)
+    if (::connect(fd, (struct sockaddr *)&sun, sizeof(sun)) == -1) {
+      ::close(fd);
       return;
+    }
   } else {
     size_t host_end = host.find(":");
     std::string port = "8888";
@@ -75,7 +77,7 @@ Data_reader_mk5::Data_reader_mk5(const std::string& url) {
 
     struct addrinfo hints, *res0;
     std::memset(&hints, 0, sizeof(hints));
-    hints.ai_family = PF_UNSPEC;
+    hints.ai_family = PF_INET;
     hints.ai_socktype = SOCK_STREAM;
     if (::getaddrinfo(host.c_str(), port.c_str(), &hints, &res0))
       return;
@@ -83,8 +85,17 @@ Data_reader_mk5::Data_reader_mk5(const std::string& url) {
     if (res0 == NULL)
       return;
 
-    if (::connect(fd, res0->ai_addr, res0->ai_addrlen) == -1)
+    fd = ::socket(res0->ai_family, res0->ai_socktype, 0);
+    if (fd == -1) {
+      ::freeaddrinfo(res0);
       return;
+    }
+
+    if (::connect(fd, res0->ai_addr, res0->ai_addrlen) == -1) {
+      ::close(fd);
+      ::freeaddrinfo(res0);
+      return;
+    }
   }
 
   struct mk5read_msg msg;
