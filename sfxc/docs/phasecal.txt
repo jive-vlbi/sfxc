@@ -43,3 +43,19 @@ Station numbers are assigned by taking all stations from the $STATION
 block in the VEX file and sorting the alphabetically.  The numbers
 start from zero.  The channels are numbered in the order they appear
 in the $FREQ block in the VEX file, again starting from zero.
+
+The format of the processed phasecal data is very similar.  The header
+of the file is exactly the same, but the samples in the data blocks
+are now complex.  So the format becomes:
+
+struct data {
+  uint8_t station_number;       // Station number
+  uint8_t frequency_number;     // Frequency number (based on ascending order)
+  uint8_t sideband;             // Sideband LSB=0/USB=1
+  uint8_t polarisation;         // Polarisation RCP=0/LCP=1
+  uint32_t start_day;           // Start time (integral MJD portion)
+  uint32_t start_sec;           // Start time (second within day)
+  uint32_t integration_time;    // Integration time in seconds
+  uint32_t num_samples;         // Number of samples in vector
+  int32_t samples[2 * num_samples]; // Complex vector of integrated, folded samples
+};
