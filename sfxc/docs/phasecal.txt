@@ -11,6 +11,7 @@ struct header {
   uint32_t correlator_version;		// SVN revision of the correlator
 
   char correlator_branch[15];
+  char __pad;			// Unused
   int32_t job_nr;
   int32_t subjob_nr;
 };
