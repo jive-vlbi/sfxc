@@ -56,7 +56,7 @@ do_task() {
 
   for (size_t i = 0; i < current_time.size(); i++) {
     int nframes_left = (current_interval_.stop_time_ - current_time[i]) / reader_->time_between_headers();
-    int skew = std::max(0, std::min(NSKIP, nframes_left - 1));
+    int skew = std::max(0, std::min(2 * NSKIP, nframes_left - 1));
     if (reader_->eof())
       skew = 0;
 
