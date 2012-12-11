@@ -17,7 +17,7 @@ Fringe_info(const Output_header_baseline &header,
             const std::vector< std::complex<float> > &data_lag_)
     : header(header), data_freq(data_freq_), data_lag(data_lag_),
       initialised(true) {
-  assert(data_freq_.size() == data_lag_.size());
+  assert(data_freq_.size() == data_lag_.size() + 1);
 }
 
 bool Fringe_info::operator==(const Fringe_info &other) const {
@@ -183,8 +183,8 @@ Fringe_info_container(FILE *input, bool stop_at_eof) : input(input) {
   if (eof()) return;
 
   data_freq.resize(global_header.number_channels+1);
-  data_lag.resize(global_header.number_channels+1);
-  fft.resize(global_header.number_channels+1); // FIXME : THIS SHOULD BE 2*NCHAN
+  data_lag.resize(global_header.number_channels);
+  fft.resize(global_header.number_channels); // FIXME : THIS SHOULD BE 2*NCHAN
 
   // Read the first timeslice header:
   read_data_from_file(sizeof(Output_header_timeslice),
@@ -877,7 +877,7 @@ print_cross(std::ostream &index_html, const Fringe_info &fringe_info,
     << "<br>"
     << "<font size=-2>offset: "
     << (fringe_info.max_value_offset() -
-        global_header.number_channels/2 - 1)
+        global_header.number_channels/2)
     << "</font>";
     index_html << "</td>";
   } else {
