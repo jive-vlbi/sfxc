@@ -385,7 +385,7 @@ class progressDialog(QtGui.QDialog):
                             self.wplot.show()
                             pass
                         if not self.fplot and self.cordata:
-                            self.fplot = FringePlotWindow(self.vex, [self.ctrl_file], self.cordata, self.reference)
+                            self.fplot = FringePlotWindow(self.vex, [self.ctrl_file], self.cordata, self.reference, self.evlbi)
                             self.fplot.show()
                             pass
                         self.update_output()

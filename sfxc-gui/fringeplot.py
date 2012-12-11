@@ -144,7 +144,7 @@ class FringePlot(Qwt.QwtPlot):
     pass
 
 class FringePlotWindow(Qt.QWidget):
-    def __init__(self, vex, ctrl_files, cordata, reference=None, integrations=32, *args):
+    def __init__(self, vex, ctrl_files, cordata, reference=None, evlbi=False, integrations=32, *args):
         Qt.QWidget.__init__(self, *args)
 
         exper = vex['GLOBAL']['EXPER']
@@ -153,6 +153,7 @@ class FringePlotWindow(Qt.QWidget):
 
         self.integration_slice = 0
         self.reference = reference
+        self.evlbi = evlbi
         self.integrations = integrations
 
         self.output_file = 0
@@ -273,6 +274,7 @@ class FringePlotWindow(Qt.QWidget):
         self.box.setMenuBar(menubar)
         self.box.addLayout(self.layout)
         self.box.addWidget(self.plots[-1].legend())
+        self.menubar = menubar
 
         if cordata:
             self.cordata = cordata
@@ -282,8 +284,10 @@ class FringePlotWindow(Qt.QWidget):
         self.cordata.history = self.integrations
         self.output_file += 1
 
+        self.scp_proc = None
+
         self.startTimer(500)
-        self.resize(600, len(stations) * 100 + 50)
+        self.resize(620, len(stations) * 100 + 50)
         pass
 
     def setReference(self, act):
@@ -424,6 +428,7 @@ class FringePlotWindow(Qt.QWidget):
                 continue
             plot.replot()
             continue
+        self.refresh = True
         return
 
     def timerEvent(self, e):
@@ -431,6 +436,21 @@ class FringePlotWindow(Qt.QWidget):
         if self.cordata.integration_slice > self.integration_slice:
             self.integration_slice = self.cordata.integration_slice
             self.replot()
+            if self.evlbi:
+                if not self.scp_proc:
+                    pixmap = Qt.QPixmap().grabWidget(self, 0, self.menubar.height())
+                    pixmap.save("fringe.png")
+                    log = open("scp.log", 'a')
+                    args = ["scp", "fringe.png", "services.jive.nl:/var/www/sfxc/"]
+                    self.scp_proc = subprocess.Popen(args, stdout=log, stderr=log)
+                else:
+                    self.scp_proc.poll()
+                    if self.scp_proc.returncode != None:
+                        self.scp_proc = None
+                        pass
+                    pass
+                pass
+            pass
         return
 
     pass
@@ -443,6 +463,9 @@ if __name__ == '__main__':
                       default="", type="string",
                       help="Reference station",
                       metavar="STATION")
+    parser.add_option("-e", "--evlbi", dest="evlbi",
+                      action="store_true", default=False,
+                      help="e-VLBI")
     parser.add_option("-i", "--integrations", dest="integrations",
                       default=32, type="int",
                       help="Number of integrations",
@@ -463,7 +486,7 @@ if __name__ == '__main__':
 
     vex = Vex(vex_file)
 
-    plot = FringePlotWindow(vex, ctrl_files, None, options.reference, options.integrations)
+    plot = FringePlotWindow(vex, ctrl_files, None, options.reference, options.evlbi, options.integrations)
     plot.show()
 
     sys.exit(app.exec_())
