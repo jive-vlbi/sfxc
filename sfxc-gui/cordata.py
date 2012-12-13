@@ -33,9 +33,11 @@ stat_hdr = 'BBBB4II'
 baseline_hdr = 'IBBBx'
 
 class CorrelatedData:
-    def __init__(self, vex, output_file):
+    def __init__(self, vex, output_file, realtime=False):
         self.output_file = output_file
         self.offset = 0
+
+        self.realtime = realtime
 
         self.fp = None
         self.integration_slice = 0
@@ -126,6 +128,13 @@ class CorrelatedData:
                     if not secs in self.time[station]:
                         self.time[station].append(secs)
                         self.current_time = self.start_time + integration_slice * self.integration_time
+                        pass
+                    if self.realtime and len(self.time[station]) > (4500 / self.integration_time):
+                        slice = int(900 / self.integration_time)
+                        self.time[station] = self.time[station][slice:]
+                        for idx in self.weights[station]:
+                            self.weights[station][idx] = self.weights[station][idx][slice:]
+                            continue
                         pass
                     if len(self.weights[station][idx]) < len(self.time[station]):
                         self.weights[station][idx].append(weight)
