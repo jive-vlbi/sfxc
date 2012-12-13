@@ -214,7 +214,7 @@ class WeightPlot(Qwt.QwtPlot):
 
 
 class WeightPlotWindow(Qt.QWidget):
-    def __init__(self, vex, ctrl_files, cordata, realtime, history=900, *args):
+    def __init__(self, vex, ctrl_files, cordata, realtime, history=3600, *args):
         Qt.QWidget.__init__(self, *args)
 
         exper = vex['GLOBAL']['EXPER']
