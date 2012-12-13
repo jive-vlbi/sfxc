@@ -381,7 +381,7 @@ class progressDialog(QtGui.QDialog):
                                 pass
                         except:
                             pass
-                        self.cordata = CorrelatedData(self.vex, output_file)
+                        self.cordata = CorrelatedData(self.vex, output_file, True)
                         if not self.wplot:
                             self.wplot = WeightPlotWindow(self.vex, [self.ctrl_file], self.cordata, True)
                             self.wplot.show()
