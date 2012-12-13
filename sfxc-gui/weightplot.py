@@ -414,8 +414,9 @@ class WeightPlotWindow(Qt.QWidget):
     def replot(self):
         time = self.cordata.time
         weights = self.cordata.weights
-        val = (100 * (self.cordata.current_time - self.start)) / (self.stop - self.start)
-        self.scroll.setValue(val)
+        now = max(self.cordata.current_time - self.start - 0.7 * self.history, 0)
+        seconds = max(self.stop - self.start - 0.7 * self.history, 1)
+        self.scroll.setValue(100 * now / seconds)
         for station in weights:
             plot = self.plot[station]
             for idx in weights[station]:
