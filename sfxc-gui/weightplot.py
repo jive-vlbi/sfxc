@@ -86,12 +86,12 @@ class WeightPlot(Qwt.QwtPlot):
               "#fcae91", "#fb6a4a", "#de2d26", "#a50f15",
               "#cccccc", "#999999", "#666666", "#000000" ]
 
-    def __init__(self, parent, station, start, stop, gaps, scans, *args):
+    def __init__(self, parent, station, start, stop, gaps, scans, history, *args):
         Qwt.QwtPlot.__init__(self, *args)
 
-        seconds = round(stop - start)
-        mins = round(float(stop - start) / (5 * 60))
-        mins = max(mins, 1)
+        self.start = start
+        self.stop = stop
+        self.history = history
 
         self.setCanvasBackground(Qt.Qt.white)
 
@@ -101,18 +101,8 @@ class WeightPlot(Qwt.QwtPlot):
 
         scaleDraw = ScaleDraw(start);
         self.setAxisScaleDraw(Qwt.QwtPlot.xBottom, scaleDraw)
-        start = datetime.utcfromtimestamp(start)
-        stop = datetime.utcfromtimestamp(stop)
-        rounded_time = start.replace(second=0)
-        ticks = []
-        while rounded_time <= stop - (timedelta(minutes=mins) / 4):
-            if rounded_time >= start:
-                ticks.append((rounded_time - start).seconds)
-                pass
-            rounded_time += timedelta(minutes=mins)
-            continue
-        scaleDiv = Qwt.QwtScaleDiv(0, seconds, [],[], ticks);
-        self.setAxisScaleDiv(Qwt.QwtPlot.xBottom, scaleDiv)
+        self.scroll(0)
+
         self.setAxisTitle(Qwt.QwtPlot.yLeft, station)
         self.setAxisScale(Qwt.QwtPlot.yLeft, 0, 1.0)
         self.setAxisMaxMajor(Qwt.QwtPlot.yLeft, 2)
@@ -148,6 +138,38 @@ class WeightPlot(Qwt.QwtPlot):
         self.connect(self, Qt.SIGNAL("legendChecked(QwtPlotItem*,bool)"),
                      self.toggleCurve)
         self.parent = parent
+        return
+
+    def scroll(self, val):
+        start = self.start
+        stop = self.stop
+
+        seconds = stop - start
+        if seconds > self.history:
+            start = self.start + (val * (seconds - self.history)) / 100
+            stop = start + self.history
+            if stop > self.stop:
+                stop = self.stop
+                pass
+            pass
+
+        seconds = round(stop - start)
+        offset = start - self.start
+        mins = round(float(stop - start) / (5 * 60))
+        mins = max(mins, 1)
+
+        start = datetime.utcfromtimestamp(self.start)
+        stop = datetime.utcfromtimestamp(self.stop)
+        rounded_time = start.replace(second=0)
+        ticks = []
+        while rounded_time <= stop - (timedelta(minutes=mins) / 4):
+            if rounded_time >= start:
+                ticks.append((rounded_time - start).seconds)
+                pass
+            rounded_time += timedelta(minutes=mins)
+            continue
+        scaleDiv = Qwt.QwtScaleDiv(offset, offset + seconds, [],[], ticks);
+        self.setAxisScaleDiv(Qwt.QwtPlot.xBottom, scaleDiv)
         return
 
     def resizeEvent(self, e):
@@ -192,7 +214,7 @@ class WeightPlot(Qwt.QwtPlot):
 
 
 class WeightPlotWindow(Qt.QWidget):
-    def __init__(self, vex, ctrl_files, cordata, realtime, *args):
+    def __init__(self, vex, ctrl_files, cordata, realtime, history=900, *args):
         Qt.QWidget.__init__(self, *args)
 
         exper = vex['GLOBAL']['EXPER']
@@ -201,6 +223,7 @@ class WeightPlotWindow(Qt.QWidget):
 
         self.integration_slice = 0
         self.realtime = realtime
+        self.history = history
 
         self.output_file = 0
         self.output_files = []
@@ -311,6 +334,9 @@ class WeightPlotWindow(Qt.QWidget):
             scans[i] = (scans[i][0] - start, scans[i][1])
             continue
 
+        self.start = start
+        self.stop = stop
+
         self.fp = None
 
         self.stations = []
@@ -322,7 +348,7 @@ class WeightPlotWindow(Qt.QWidget):
         self.plot = {}
         self.layout = Qt.QGridLayout()
         for station in stations:
-            self.plot[station] = WeightPlot(self, station, start, stop, gaps, scans)
+            self.plot[station] = WeightPlot(self, station, start, stop, gaps, scans, history)
             self.layout.addWidget(self.plot[station])
             lastplot = self.plot[station]
             lastplot.enableAxis(Qwt.QwtPlot.xBottom, False)
@@ -334,19 +360,33 @@ class WeightPlotWindow(Qt.QWidget):
         legend.setItemMode(Qwt.QwtLegend.CheckableItem)
         lastplot.insertLegend(legend, Qwt.QwtPlot.ExternalLegend)
 
+        self.scroll = Qt.QScrollBar(Qt.Qt.Horizontal)
+        self.scroll.valueChanged.connect(self.scrollPlots)
+
         self.box = Qt.QVBoxLayout(self)
         self.box.addLayout(self.layout)
         self.box.addWidget(lastplot.legend())
+        if not self.realtime and (stop - start) > self.history:
+            self.box.addWidget(self.scroll)
 
         if cordata:
             self.cordata = cordata
         else:
-            self.cordata = CorrelatedData(vex, self.output_files[self.output_file])
+            self.cordata = CorrelatedData(vex, self.output_files[self.output_file], self.realtime)
             pass
         self.output_file += 1
 
         self.startTimer(500)
         self.resize(1000, len(stations) * 100 + 50)
+        pass
+
+    def scrollPlots(self, val):
+        for station in self.plot:
+            self.plot[station].scroll(val)
+            continue
+        for station in self.plot:
+            self.plot[station].replot()
+            continue
         pass
 
     def stretch(self):
@@ -374,6 +414,8 @@ class WeightPlotWindow(Qt.QWidget):
     def replot(self):
         time = self.cordata.time
         weights = self.cordata.weights
+        val = (100 * (self.cordata.current_time - self.start)) / (self.stop - self.start)
+        self.scroll.setValue(val)
         for station in weights:
             plot = self.plot[station]
             for idx in weights[station]:
@@ -432,6 +474,9 @@ class WeightPlotWindow(Qt.QWidget):
 if __name__ == '__main__':
     usage = "usage: %prog [options] vexfile ctrlfile"
     parser = optparse.OptionParser(usage=usage)
+    parser.add_option("-H", "--history", dest="history",
+                      default=86400, type="int",
+                      help="History", metavar="SECONDS")
 
     (options, args) = parser.parse_args()
     if len(args) < 2:
@@ -448,7 +493,7 @@ if __name__ == '__main__':
 
     vex = Vex(vex_file)
 
-    plot = WeightPlotWindow(vex, ctrl_files, None, False)
+    plot = WeightPlotWindow(vex, ctrl_files, None, False, options.history)
     plot.show()
 
     sys.exit(app.exec_())
