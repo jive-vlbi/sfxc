@@ -22,7 +22,7 @@ class parameters:
     gheader_buf = inputfile.read(self.global_header_size)
     global_header = struct.unpack('i32s2h5i4c',gheader_buf[:64])
     self.nchan = global_header[5]
-    self.integration_time = global_header[6]*1e-6
+    self.integration_time = global_header[6]/1000000.
     # get timeslice header
     tsheader_buf = inputfile.read(self.timeslice_header_size)
     timeslice_header = struct.unpack('4i', tsheader_buf)
