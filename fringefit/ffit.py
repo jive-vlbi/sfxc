@@ -4,20 +4,20 @@ from pylab import *
 import numpy.polynomial as polynomial
 import sys, struct, datetime, pdb
 import vex_parser, vex_time
-from parameters import *
+import parameters
 from optparse import OptionParser
 
-if sys.version_info > (2, 5):
+try:
   import json
-else:
+except ImportError:
   import simplejson as json
 
 def read_data(corfile, param):
   global_header_size = param.global_header_size
-  timeslice_header_size = param.timeslice_header_size
-  uvw_header_size = param.uvw_header_size
-  stat_header_size = param.stat_header_size
-  baseline_header_size = param.baseline_header_size
+  timeslice_header_size = parameters.timeslice_header_size
+  uvw_header_size = parameters.uvw_header_size
+  stat_header_size = parameters.stat_header_size
+  baseline_header_size = parameters.baseline_header_size
    
   stations_in_job = param.stations
   n_stations = len(stations_in_job)  
@@ -372,7 +372,7 @@ def write_clocks(vex, param, delays, rates, snr, global_fit, ref_station):
 (vex, corfile, ref_station, maxiter, precision, global_fit, ctrl) = get_options() 
 
 vex_stations = [s for s in vex['STATION']]
-param = parameters(vex, corfile) 
+param = parameters.parameters(vex, corfile) 
 try:
   ref_station_nr = vex_stations.index(ref_station)
 except:

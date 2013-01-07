@@ -1,30 +1,27 @@
 #!/usr/bin/env python
 import sys, struct, datetime, pdb
 import vex_parser, vex_time
+from sfxcdata_utils import *
 
-class parameters:	    
-  timeslice_header_size = 16
-  uvw_header_size = 32
-  stat_header_size = 24
-  baseline_header_size = 8
-  
-  def __init__(self, vex, corfilename):
+class parameters:
+  def __init__(self, vex, corfilename, timeout = 0):
     self.vex = vex
+    self.timeout = timeout
     try:
       inputfile = open(corfilename, 'rb')
     except:
       print >> sys.stderr, "Error : Could not open " + corfilename
       sys.exit(1)
     
-    gheader_size_buf = inputfile.read(4)
+    gheader_size_buf = read_data(inputfile, 4, timeout)
     self.global_header_size = struct.unpack('i', gheader_size_buf)[0]
     inputfile.seek(0)
-    gheader_buf = inputfile.read(self.global_header_size)
+    gheader_buf = read_data(inputfile, self.global_header_size, timeout)
     global_header = struct.unpack('i32s2h5i4c',gheader_buf[:64])
     self.nchan = global_header[5]
     self.integration_time = global_header[6]/1000000.
     # get timeslice header
-    tsheader_buf = inputfile.read(self.timeslice_header_size)
+    tsheader_buf = read_data(inputfile, timeslice_header_size, timeout)
     timeslice_header = struct.unpack('4i', tsheader_buf)
     integration_slice = timeslice_header[0]
     nsubint = 0
@@ -38,21 +35,20 @@ class parameters:
     while(integration_slice == 0):
       # get the uvw buffer
       nuvw = timeslice_header[2]
-      inputfile.seek(self.uvw_header_size * nuvw, 1)
-      size_of_slice += self.uvw_header_size * nuvw
+      read_data(inputfile, uvw_header_size * nuvw, timeout)
+      size_of_slice += uvw_header_size * nuvw
       # Read the bit statistics
       nstatistics = timeslice_header[3]
-      inputfile.seek(self.stat_header_size * nstatistics, 1)
-      size_of_slice += self.stat_header_size * nstatistics
+      read_data(inputfile, stat_header_size * nstatistics, timeout)
+      size_of_slice += stat_header_size * nstatistics
       
       nbaseline = timeslice_header[1]
       baseline_data_size = (self.nchan + 1) * 8 # data is complex floats
-      baseline_buffer = inputfile.read(nbaseline * (self.baseline_header_size + baseline_data_size)) 
-      size_of_slice += nbaseline * (self.baseline_header_size + baseline_data_size)
+      baseline_buffer = read_data(inputfile, nbaseline * (baseline_header_size + baseline_data_size), timeout) 
+      size_of_slice += nbaseline * (baseline_header_size + baseline_data_size)
       
       index = 0
       baselines = []
-      baseline_header_size = self.baseline_header_size
       for b in range(nbaseline):
         bheader = struct.unpack('i4b', baseline_buffer[index:index + baseline_header_size])
         index += baseline_header_size
@@ -68,8 +64,8 @@ class parameters:
         freq = bheader[3] >> 3
         channels_found[self.vex_channels.index([freq,sb,pol])] = True
         index += baseline_data_size
-      tsheader_buf = inputfile.read(self.timeslice_header_size)
-      size_of_slice += self.timeslice_header_size
+      tsheader_buf = read_data(inputfile, timeslice_header_size, timeout)
+      size_of_slice += timeslice_header_size
       timeslice_header = struct.unpack('4i', tsheader_buf)
       integration_slice = timeslice_header[0]
       nsubint += 1
@@ -91,7 +87,7 @@ class parameters:
     self.n_integrations = int((filesize - self.global_header_size) / size_of_slice)
     inputfile.close()
     self.nsubint = nsubint
-  
+
   def get_scan(self, t):
     vex = self.vex
     time = vex_time.get_time(t)

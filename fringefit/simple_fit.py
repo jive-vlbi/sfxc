@@ -4,12 +4,14 @@ from pylab import *
 import numpy.polynomial as polynomial
 import sys, struct, datetime, pdb
 import vex_parser, vex_time
-from parameters import *
+import parameters
+import signal
+from sfxcdata_utils import *
 from optparse import OptionParser
 
-if sys.version_info > (2, 5):
+try:
   import json
-else:
+except ImportError:
   import simplejson as json
 
 def p_good(V, n, max_int, dx):
@@ -18,22 +20,22 @@ def p_good(V, n, max_int, dx):
   Z = arange(0,max_int,dx)
   return trapz(Z*exp(-(Z**2+V**2)/2)*i0(Z*V)*(1-exp(-(Z**2)/2))**(n-1),dx=dx)
 
-def goto_integration(corfile, param, start_integration):
+def goto_integration(corfile, param, start_integration, timeout):
   global_header_size = param.global_header_size
-  timeslice_header_size = param.timeslice_header_size
-  uvw_header_size = param.uvw_header_size
-  stat_header_size = param.stat_header_size
-  baseline_header_size = param.baseline_header_size
+  timeslice_header_size = parameters.timeslice_header_size
+  uvw_header_size = parameters.uvw_header_size
+  stat_header_size = parameters.stat_header_size
+  baseline_header_size = parameters.baseline_header_size
   # Get global header
   corfile.seek(0)
-  gheader_buf = corfile.read(global_header_size)
+  gheader_buf = read_data(corfile, global_header_size, timeout)
   global_header = struct.unpack('i32s2h5i4c', gheader_buf[:64])
   nchan = global_header[5]
   integration_time = global_header[6]
-  #Skip to start integration
+  # Skip to start integration
   for i in xrange(start_integration):
     for j in range(param.nsubint):
-      tsheader_buf = corfile.read(timeslice_header_size)
+      tsheader_buf = read_data(corfile, timeslice_header_size, timeout)
       timeslice_header = struct.unpack('4i', tsheader_buf)
       # skip over headers
       nbaseline = timeslice_header[1]
@@ -42,41 +44,29 @@ def goto_integration(corfile, param, start_integration):
       baseline_data_size = (nchan + 1) * 8 # data is complex floats
       slice_size = uvw_header_size * nuvw + stat_header_size * nstatistics + \
                    nbaseline * (baseline_header_size + baseline_data_size)
-      corfile.seek(slice_size, 1)
+      skip_data(corfile, slice_size, timeout)
 
-def read_data(corfile, param, start_integration, n_integrations, ref_station):
+def read_integrations(inputfile, data, int_read, param, n_integrations, ref_station, timeout):
   global_header_size = param.global_header_size
-  timeslice_header_size = param.timeslice_header_size
-  uvw_header_size = param.uvw_header_size
-  stat_header_size = param.stat_header_size
-  baseline_header_size = param.baseline_header_size
+  timeslice_header_size = parameters.timeslice_header_size
+  uvw_header_size = parameters.uvw_header_size
+  stat_header_size = parameters.stat_header_size
+  baseline_header_size = parameters.baseline_header_size
    
   stations_in_job = param.stations
   n_stations = len(stations_in_job)  
   channels = param.channels
   n_channels = len(channels)
-  n_integrations = min(param.n_integrations - start_integration, n_integrations)
   nsubint = param.nsubint 
-  try:
-    inputfile = open(corfile, 'rb')
-  except:
-    print >> sys.stderr, "Error : Could not open " + corfile
-    sys.exit(1)
+  nchan = param.nchan
 
-  gheader_buf = inputfile.read(global_header_size)
-  global_header = struct.unpack('i32s2h5i4c', gheader_buf[:64])
-  nchan = global_header[5]
-  integration_time = global_header[6]
   n_baseline = n_stations*(n_stations-1)/2
-  data = zeros([n_channels, n_stations, n_integrations, nchan + 1], dtype='c8')
-  #Skip to start integrations
-  goto_integration(inputfile, param, start_integration)
   #print stations_in_job
   for i in range(n_integrations):
-    # print `i`+'/'+`n_integrations`
+    print `i`+'/'+`n_integrations`
     for j in range(nsubint):
       #print `j`+'/'+`nsubint`
-      tsheader_buf = inputfile.read(timeslice_header_size)
+      tsheader_buf = read_data(inputfile, timeslice_header_size, timeout)
       timeslice_header = struct.unpack('4i', tsheader_buf)
       # skip over headers
       nbaseline = timeslice_header[1]
@@ -85,7 +75,7 @@ def read_data(corfile, param, start_integration, n_integrations, ref_station):
       inputfile.seek(uvw_header_size * nuvw + stat_header_size * nstatistics, 1)
       
       baseline_data_size = (nchan + 1) * 8 # data is complex floats
-      baseline_buffer = inputfile.read(nbaseline * (baseline_header_size + baseline_data_size)) 
+      baseline_buffer = read_data(inputfile, nbaseline * (baseline_header_size + baseline_data_size), timeout) 
       index = 0
       baselines = []
       for b in range(nbaseline):
@@ -114,7 +104,7 @@ def read_data(corfile, param, start_integration, n_integrations, ref_station):
           else: 
             data[chan, station, i, :] =  values[0:2*nchan+2:2] + complex64(1j) * values[1:2*nchan+2:2]
         index += baseline_data_size
-  return data
+    int_read[0] += 1
 
 def lag_offsets(data, n_station, offsets, rates, snr):
   #pdb.set_trace()
@@ -163,7 +153,7 @@ def apply_model(data, station1, station2, delays, rates, param,):
     delay2 = delays[ch,station2]
     delay = (delay1 - delay2)
     rate = (rate1 - rate2)
-    if (ch == 0) and (station==-1):
+    if (ch == 0) and (station1==-1):
       pdb.set_trace()
     bldata[ch] = data[ch] * exp(-2j*pi*f*delay)
     bldata[ch] = (bldata[ch].T * exp(-1j*t*rate)).T
@@ -239,10 +229,12 @@ def get_options():
   parser.add_option('-f', '--file',
                     dest='corfile',
                     help='Correlator output file')
-  parser.add_option('-e', '--end-time', dest='end_time',
-                    help='End time of clock search [Default : last integration]')
   parser.add_option('-b', '--begin-time', dest='begin_time',
                     help='Start time of clock search [Default : first integration]')
+  parser.add_option('-e', '--end-time', dest='end_time',
+                    help='End time of clock search [Default : last integration]')
+  parser.add_option('-t', '--timeout', dest='timeout', type='int', default = '0',
+                    help='Determines after how many seconds of inactivity we assume that the correlator job ended. [Default : 0 seconds]')
   (options, args) = parser.parse_args()
   if len(args) != 2:
     parser.error('invalid number of arguments')
@@ -268,7 +260,12 @@ def get_options():
   except StandardError, err:
     print >> sys.stderr, "Error loading vex file : " + str(err)
     sys.exit(1)
-  param = parameters(vex, corfile)
+  try:
+    inputfile = open(corfile, 'rb')
+  except:
+    print >> sys.stderr, "Error : Could not open " + corfile
+    sys.exit(1)
+  param = parameters.parameters(vex, corfile, options.timeout)
   # Determine which integrations to include in the clock search
   start_of_correlation = vex_time.get_time(param.starttime)
   if options.begin_time != None:
@@ -277,15 +274,20 @@ def get_options():
     begin_time = start_of_correlation
   diff_time = (begin_time - start_of_correlation)
   start_integration = int((diff_time.days*86400+diff_time.seconds) / param.integration_time)
-  n_integrations_from_start = int(param.n_integrations - start_integration)
-  if options.end_time != None:
-    end_time = vex_time.get_time(options.end_time)
+  if options.timeout > 0: 
+    # We are running concurrently with a correlator job
+    if (options.end_time == None):
+      if options.controlfile == None:
+        parser.error("When running concurrently with a correlator job either the end_time option should\
+         be set or the control file should be used to drive this program.")
+      end_time = vex_time.get_time(ctrl["stop"])
+    else:
+      end_time = vex_time.get_time(options.end_time)
     diff_time = end_time - begin_time
-    n_integrations = (diff_time.days*86400+diff_time.seconds) / param.integration_time 
-    n_integrations = min(n_integrations_from_start, int(n_integrations))
+    n_integrations = int((diff_time.days*86400+diff_time.seconds) / param.integration_time)
   else:
-    n_integrations = n_integrations_from_start
-  return (vex, corfile, ref_station, start_integration, n_integrations, param, ctrl)
+    n_integrations = param.n_integrations
+  return (vex, inputfile, ref_station, start_integration, n_integrations, options.timeout, param)
 
 def write_clocks(vex, param, delays, rates, snr, ref_station):
   vex_stations = [s for s in vex['STATION']]
@@ -335,9 +337,34 @@ def write_clocks(vex, param, delays, rates, snr, ref_station):
       print '    }'
       print '}'
   print '}'
+
+def fringe_fit(data, delays, rates, snr, param):
+  n_stations = len(param.stations)
+  #Get initial estimate
+  lag_offsets(data, n_stations, delays, rates, snr)
+  #pdb.set_trace()
+  ddelays = zeros(delays.shape)
+  drates = zeros(rates.shape)
+  for it in range(2):
+    for station in range(n_stations):
+      bldata = apply_model(data[:,station,:], ref_index, station, delays, rates, param)
+      phase_offsets(bldata, station, ddelays, drates, snr)
+    delays += ddelays
+    rates += drates
   
-######################## MAIN ##############################3
-(vex, corfile, ref_station, start_integration, n_integrations, param, ctrl) = get_options() 
+ 
+def sighandler(signum, frame):
+  # Data reading was interupted, compute delays and rates.
+  # All variables are from global scope
+  data_read = data[:,:,0:int_read[0],:]
+  if int_read[0] > 0:
+    fringe_fit(data_read, delays, rates, snr, param)
+    write_clocks(vex, param, delays, rates, snr, ref_index)
+  sys.exit(0)
+
+######################## MAIN ##############################
+(vex, corfile, ref_station, start_integration, n_integrations, timeout, param) = get_options()
+# initialize variables
 vex_stations = [s for s in vex['STATION']]
 try:
   ref_station_nr = vex_stations.index(ref_station)
@@ -356,21 +383,31 @@ rates = zeros([n_channels, n_stations])
 snr = zeros([n_channels, n_stations])
 #print [vex_stations[i] for i in param.stations]
 
-# Read the baseline data
-data = read_data(corfile, param, start_integration, n_integrations, ref_index)
+# Skip to first integration
+try:
+  goto_integration(corfile, param, start_integration, timeout)
+except EndOfData:
+  print >> sys.stderr, 'Error : Data ended prematurely'
+  sys.exit(1)
 
-#Get initial estimate
-lag_offsets(data, n_stations, delays, rates, snr)
-#pdb.set_trace()
-N = n_stations
-ddelays = zeros(delays.shape)
-drates = zeros(rates.shape)
-for it in range(2):
-  for station in range(n_stations):
-    bldata = apply_model(data[:,station,:], ref_index, station, delays, rates, param)
-    phase_offsets(bldata, station, ddelays, drates, snr)
-  delays += ddelays
-  rates += drates
-  station_snr = sqrt(sum(snr**2,axis=1))
+# Register signal handler, in case the run is aborted
+data = zeros([n_channels, n_stations, n_integrations, param.nchan + 1], dtype='c8')
+int_read = [0]
+signal.signal(signal.SIGINT, sighandler)
+# Read the baseline data
+try:
+  read_integrations(corfile, data, int_read, param, n_integrations, ref_index, timeout)
+except EndOfData:
+  # data file ended prematurely
+  if  int_read[0] < 2:
+    print >> sys.stderr, 'Error : Data ended prematurely'
+    sys.exit(1)
+  else:
+    print "Warning : data ended before the requested time. Proceeding with ", int_read[0], " datapoints."
+
+# compute delays and rates
+data = data[:,:,0:int_read[0],:]
+fringe_fit(data, delays, rates, snr, param)
+
 ############ Print output in JSON format ################
 write_clocks(vex, param, delays, rates, snr, ref_index)
