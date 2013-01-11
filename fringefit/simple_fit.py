@@ -63,7 +63,7 @@ def read_integrations(inputfile, data, int_read, param, n_integrations, ref_stat
   n_baseline = n_stations*(n_stations-1)/2
   #print stations_in_job
   for i in range(n_integrations):
-    print `i`+'/'+`n_integrations`
+    #print `i`+'/'+`n_integrations`
     for j in range(nsubint):
       #print `j`+'/'+`nsubint`
       tsheader_buf = read_data(inputfile, timeslice_header_size, timeout)
@@ -84,7 +84,7 @@ def read_integrations(inputfile, data, int_read, param, n_integrations, ref_stat
         index += baseline_header_size
         station1 = stations_in_job.index(bheader[1])
         station2 = stations_in_job.index(bheader[2])
-        #print 's1='+`bheader[1]`+', s2='+`bheader[2]`, 'ref_station = ', ref_station
+        #print 's1='+`bheader[1]`+', s2='+`bheader[2]`, 'station1',station1,', station2',station2, ', ref_station = ', ref_station
         pol1 = bheader[3]&1
         pol2 = (bheader[3]&2) >> 1
         #print 'pol1 = ' + `pol1` + ', pol2= ' + `pol2`
@@ -99,10 +99,10 @@ def read_integrations(inputfile, data, int_read, param, n_integrations, ref_stat
           values = array(struct.unpack(size_str, baseline_buffer[index:index + baseline_data_size]), dtype='f8')
           station = station1 if station2 == ref_station else station2
           # Flip phase if needed
-          if station1 > ref_station:
-            data[chan, station, i, :] =  values[0:2*nchan+2:2] - complex64(1j) * values[1:2*nchan+2:2]
-          else: 
+          if station1 == ref_station:
             data[chan, station, i, :] =  values[0:2*nchan+2:2] + complex64(1j) * values[1:2*nchan+2:2]
+          else: 
+            data[chan, station, i, :] =  values[0:2*nchan+2:2] - complex64(1j) * values[1:2*nchan+2:2]
         index += baseline_data_size
     int_read[0] += 1
 
@@ -403,7 +403,7 @@ except EndOfData:
     print >> sys.stderr, 'Error : Data ended prematurely'
     sys.exit(1)
   else:
-    print "Warning : data ended before the requested time. Proceeding with ", int_read[0], " datapoints."
+    print >> sys.stderr, "Warning : data ended before the requested time. Proceeding with ", int_read[0], " datapoints."
 
 # compute delays and rates
 data = data[:,:,0:int_read[0],:]
