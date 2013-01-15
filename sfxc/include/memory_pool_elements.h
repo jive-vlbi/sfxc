@@ -38,6 +38,11 @@ public:
     }
   }
 
+  Memory_pool_vector_element(const Memory_pool_vector_element<T> &other):buffer_(NULL), size_(0){
+    resize(other.size_);
+    memcpy(buffer_, other.buffer_, sizeof(T)*size_);
+  }
+
   void resize(size_t size) {
     if ( size != size_ ) {
       if ( buffer_ == NULL ) {
