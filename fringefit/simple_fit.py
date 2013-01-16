@@ -286,7 +286,7 @@ def get_options():
     diff_time = end_time - begin_time
     n_integrations = int((diff_time.days*86400+diff_time.seconds) / param.integration_time)
   else:
-    n_integrations = param.n_integrations
+    n_integrations = param.n_integrations - start_integration
   return (vex, inputfile, ref_station, start_integration, n_integrations, options.timeout, param)
 
 def write_clocks(vex, param, delays, rates, snr, ref_station):
