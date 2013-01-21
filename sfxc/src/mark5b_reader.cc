@@ -185,15 +185,14 @@ bool Mark5b_reader::check_header(Header &header){
 
 void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
   nr_of_bitstreams = param.n_tracks;
-  N = nr_of_bitstreams/8;
-  SFXC_ASSERT(N*8 == nr_of_bitstreams);
-  sample_rate = param.sample_rate();
+  // If there are 64 bitstreams then an input word is 8 bytes long, otherewise is is 4 bytes
+  N = (nr_of_bitstreams <= 32)? 4: 8;
   int tbr = param.track_bit_rate;
   SFXC_ASSERT((tbr % 1000000) == 0);
   SFXC_ASSERT((N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME)%(tbr/1000000) == 0);
-  time_between_headers_ = Time((double)N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME*SIZE_MK5B_WORD*8 / 
-                          (nr_of_bitstreams*(sample_rate/1000000.)));
+  time_between_headers_ = Time((double)N_MK5B_BLOCKS_TO_READ * SIZE_MK5B_FRAME * SIZE_MK5B_WORD / (N * tbr / 1000000));
   SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
+  sample_rate = param.sample_rate();
 
   offset = param.offset;
 }

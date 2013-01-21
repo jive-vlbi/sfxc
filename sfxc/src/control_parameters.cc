@@ -970,14 +970,22 @@ get_mark5b_tracks(const std::string &mode,
           ++it;
           if (bitstream_it[1]->to_string() == "sign"){
             sign_track = it->to_int();
-            channel_param.tracks.push_back(sign_track);
           }else{
             channel_param.bits_per_sample = 2;
             mag_track = it->to_int();
-            channel_param.tracks.push_back(mag_track);
           }
         }
         n_bitstream++;
+      }
+      // If there are 64 bitstreams then an input word is 8 bytes long, otherewise is is 4 bytes
+      int word_size = (n_bitstream <= 32) ? 32 : 64;
+      for(int i = 0; i < word_size / n_bitstream;  i++){
+        int sign = sign_track + i * n_bitstream;
+        channel_param.tracks.push_back(sign);
+        if(channel_param.bits_per_sample == 2){
+          int magn = mag_track + i * n_bitstream;
+          channel_param.tracks.push_back(magn);
+        }
       }
       input_parameters.channels.push_back(channel_param);
     }
