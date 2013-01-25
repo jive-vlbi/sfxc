@@ -259,7 +259,7 @@ if do_compile:
   else:
     include_dir = ""
   # Perform actual compilation
-  cmd = "g++ -fPIC -O3 -DNDEBUG "+tmpfile+include_dir+" -I./ -shared -Wl,-soname,"+outputname+" -o "+outputname
+  cmd = "g++ -fPIC -O3 -DNDEBUG "+tmpfile+include_dir+" -shared -Wl,-soname,"+outputname+" -o "+outputname
   print "Performing precalculation....: "+cmd
   os.system(cmd);
   #os.unlink(tmpfile)
