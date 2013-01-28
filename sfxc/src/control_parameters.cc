@@ -709,6 +709,26 @@ Control_parameters::bits_per_sample(const std::string &mode,
   sfxc_abort("Unable to determine bits/sample");
 }
 
+int
+Control_parameters::sample_rate(const std::string &mode,
+				const std::string &station) const
+{
+  const std::string &freq_name = get_vex().get_frequency(mode, station);
+  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
+
+  return (int)(freq["sample_rate"]->to_double_amount("Ms/sec") * 1e6);
+}
+
+int
+Control_parameters::bandwidth(const std::string &mode,
+			      const std::string &station) const
+{
+  const std::string &freq_name = get_vex().get_frequency(mode, station);
+  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
+
+  return (int)(freq["chan_def"][3]->to_double_amount("MHz") * 1e6);
+}
+
 std::string
 Control_parameters::scan(int scan_nr) const {
   Vex::Node::const_iterator it = vex.get_root_node()["SCHED"]->begin();
@@ -1653,6 +1673,8 @@ get_correlation_parameters(const std::string &scan_name,
         station_param.start_time = station[1]->to_int_amount("sec");
         station_param.stop_time = station[2]->to_int_amount("sec");
         station_param.bits_per_sample = bits_per_sample(mode_name, station[0]->to_string());
+        station_param.bandwidth = bandwidth(mode_name, station[0]->to_string());
+        station_param.sample_rate = sample_rate(mode_name, station[0]->to_string());
         corr_param.station_streams.push_back(station_param);
       }
     }
@@ -1874,6 +1896,8 @@ std::ostream &operator<<(std::ostream &out,
     << ", \"start\" : " <<param.station_streams[i].start_time
     << ", \"stop\" : " <<param.station_streams[i].stop_time
     << ",  \"bits_per_sample\": " << param.station_streams[i].bits_per_sample
+    << ", \"sample_rate\": " << param.station_streams[i].sample_rate
+    << ", \"bandwidth\": " << param.station_streams[i].bandwidth
     << " }";
   }
   out << "] }" << std::endl;

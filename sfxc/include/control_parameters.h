@@ -126,6 +126,8 @@ public:
     Time start_time;         // Start and stop time for the station
     Time stop_time;
     int32_t bits_per_sample;
+    int32_t bandwidth;
+    int32_t sample_rate;
   };
 
   typedef std::vector<Station_parameters> Station_list;
@@ -232,6 +234,8 @@ public:
   /* Get functions from the vex file:                 */
   /****************************************************/
   int bits_per_sample(const std::string& mode, const std::string& station) const;
+  int sample_rate(const std::string& mode, const std::string& station) const;
+  int bandwidth(const std::string& mode, const std::string& station) const;
 
   std::string scan(int i) const;
   int scan(const Time &time) const;
