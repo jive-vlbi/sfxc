@@ -125,9 +125,11 @@ public:
     int32_t station_stream; // input stream (from multiple_data_readers)
     Time start_time;         // Start and stop time for the station
     Time stop_time;
-    int32_t bits_per_sample;
-    int32_t bandwidth;
     int32_t sample_rate;
+    int64_t channel_freq;
+    int32_t bandwidth;
+    char sideband;
+    int32_t bits_per_sample;
   };
 
   typedef std::vector<Station_parameters> Station_list;
@@ -236,6 +238,7 @@ public:
   int bits_per_sample(const std::string& mode, const std::string& station) const;
   int sample_rate(const std::string& mode, const std::string& station) const;
   int bandwidth(const std::string& mode, const std::string& station) const;
+  int64_t channel_freq(const std::string& mode, const std::string& station, const std::string& channel) const;
 
   std::string scan(int i) const;
   int scan(const Time &time) const;
