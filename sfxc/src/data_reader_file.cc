@@ -60,7 +60,7 @@ Data_reader_file::do_get_bytes(size_t nBytes, char*out) {
 }
 
 bool Data_reader_file::eof() {
-  return file.eof();
+  return file.eof() || !file.good();
 }
 
 bool Data_reader_file::can_read() {
