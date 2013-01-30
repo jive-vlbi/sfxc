@@ -54,11 +54,16 @@ do_task() {
 
   allocate_element();
 
+  if (reader_->eof()){
+    for (size_t i = 0; i < current_time.size(); i++){
+      if (current_time[i] < current_interval_.stop_time_)
+        push_random_blocks(1, i);
+    }
+    return;
+  }
   for (size_t i = 0; i < current_time.size(); i++) {
     int nframes_left = (current_interval_.stop_time_ - current_time[i]) / reader_->time_between_headers();
     int skew = std::max(0, std::min(2 * NSKIP, nframes_left - 1));
-    if (reader_->eof())
-      skew = 0;
 
     if (current_time[i] < max_time - reader_->time_between_headers() * skew) {
       int nframes = (max_time - current_time[i]) / reader_->time_between_headers() - skew;
