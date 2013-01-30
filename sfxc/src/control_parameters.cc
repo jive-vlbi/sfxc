@@ -679,7 +679,6 @@ Control_parameters::bits_per_sample(const std::string &mode,
     const std::string &bitstreams_name = get_vex().get_bitstreams(mode, station);
     if (bitstreams_name != std::string()) {
       Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
-      int bits = 1;
       for (Vex::Node::const_iterator fanout_def_it = bitstream->begin("stream_def");
 	   fanout_def_it != bitstream->end("stream_def"); ++fanout_def_it) {
 	if (fanout_def_it[1]->to_string() == "mag") {
