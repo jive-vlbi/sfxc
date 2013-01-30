@@ -73,6 +73,7 @@ private:
   double get_phase(Time time);
   double get_amplitude(Time time);
   void create_window();
+  void create_flip();
 
 private:
   Input_buffer_ptr    input_buffer;
@@ -80,6 +81,7 @@ private:
   Time             current_time;
   Correlation_parameters correlation_parameters;
   int   stream_nr;
+  int   stream_idx;
   int   bits_per_sample;
   int oversamp; // The amount of oversampling
 
@@ -92,6 +94,7 @@ private:
   Memory_pool_vector_element<FLOAT> time_buffer;
   Memory_pool_vector_element<FLOAT> temp_buffer;
   Memory_pool_vector_element<FLOAT> window;
+  Memory_pool_vector_element<FLOAT> flip;
   
   Timer delay_timer;
 
@@ -120,7 +123,7 @@ inline int Delay_correction::sample_rate() {
 }
 
 inline int64_t Delay_correction::channel_freq() {
-  return correlation_parameters.channel_freq;
+  return correlation_parameters.station_streams[stream_idx].channel_freq;
 }
 
 

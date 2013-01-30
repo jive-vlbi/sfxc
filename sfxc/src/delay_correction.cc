@@ -5,7 +5,7 @@
 Delay_correction::Delay_correction(int stream_nr)
     : output_buffer(Output_buffer_ptr(new Output_buffer())),
       output_memory_pool(32),current_time(-1), delay_table_set(false),
-      stream_nr(stream_nr)
+      stream_nr(stream_nr), stream_idx(-1)
 {
 }
 
@@ -63,6 +63,8 @@ void Delay_correction::do_task() {
     tbuf_start += fft_cor_size()/2;
     SFXC_ASSERT(tbuf_start < tbuf_end);
     // Do the final fft from time to frequency
+    if (correlation_parameters.sideband != correlation_parameters.station_streams[stream_idx].sideband)
+      SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_cor_size());
     fft_t2f_cor.rfft(&temp_buffer[0], &cur_output->data[i * output_stride]);
   }
   if ((current_fft == n_ffts_per_integration) && (correlation_parameters.window == SFXC_WINDOW_NONE)){
@@ -74,6 +76,8 @@ void Delay_correction::do_task() {
       memcpy(&temp_buffer[nsamp], &time_buffer[0], (fft_cor_size()/2 - nsamp) * sizeof(FLOAT));
     memset(&temp_buffer[fft_cor_size()/2], 0, sizeof(FLOAT) * fft_cor_size()/2);
     // Do the final fft from time to frequency
+    if (correlation_parameters.sideband != correlation_parameters.station_streams[stream_idx].sideband)
+      SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_cor_size());
     cur_output->data.resize((nfft_cor+1) * output_stride);
     fft_t2f_cor.rfft(&temp_buffer[0], &cur_output->data[nfft_cor * output_stride]);
   }
@@ -194,13 +198,13 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   int old_window = correlation_parameters.window;
   correlation_parameters = parameters;
 
-  int i = 0;
-  while ((i < parameters.station_streams.size()) &&
-         (parameters.station_streams[i].station_stream != stream_nr))
-    i++;
-  SFXC_ASSERT(i < parameters.station_streams.size());
-  bits_per_sample = parameters.station_streams[i].bits_per_sample;
-  oversamp = (int)round(parameters.sample_rate / (2 * parameters.bandwidth));
+  stream_idx = 0;
+  while ((stream_idx < parameters.station_streams.size()) &&
+         (parameters.station_streams[stream_idx].station_stream != stream_nr))
+    stream_idx++;
+  SFXC_ASSERT(stream_idx < parameters.station_streams.size());
+  bits_per_sample = parameters.station_streams[stream_idx].bits_per_sample;
+  oversamp = (int)round(sample_rate() / (2 * bandwidth()));
 
   current_time = parameters.start_time;
   current_time.set_sample_rate(sample_rate());
@@ -220,10 +224,9 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
     fft_t2f.resize(fft_size());
     fft_f2t.resize(fft_size());
     fft_t2f_cor.resize(2 * parameters.fft_size_correlation);
-    create_window();
-  }else if (parameters.window != old_window){
-    create_window();
   }
+  create_window();
+  create_flip();
   SFXC_ASSERT(frequency_buffer.size() == fft_size());
 
   SFXC_ASSERT(parameters.fft_size_correlation >= parameters.fft_size_delaycor);
@@ -282,7 +285,7 @@ Delay_correction::get_output_buffer() {
 }
 
 int Delay_correction::sideband() {
-  return (correlation_parameters.sideband == 'L' ? -1 : 1);
+  return (correlation_parameters.station_streams[stream_idx].sideband == 'L' ? -1 : 1);
 }
 
 void 
@@ -327,4 +330,16 @@ Delay_correction::create_window(){
   default:
     sfxc_abort("Invalid windowing function");
   }
+}
+
+// It is possible to flip the sidebandedness of a subband by flipping
+// the sign of every other sample in the time domain.  This function
+// constructs a vector to do this.
+
+void
+Delay_correction::create_flip() {
+  const int n = fft_cor_size();
+  flip.resize(n);
+  for (int i = 0; i < n; i++)
+    flip[i] = ((i % 2) == 0) ? 1 : -1;
 }
