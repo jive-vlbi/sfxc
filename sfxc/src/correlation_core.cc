@@ -1,6 +1,7 @@
 #include "correlation_core.h"
 #include "output_header.h"
 #include <utils.h>
+#include <set>
 
 Correlation_core::Correlation_core()
     : current_fft(0), total_ffts(0), split_output(false){
@@ -25,20 +26,22 @@ void Correlation_core::do_task() {
   if (current_fft%number_ffts_in_integration == 0) {
     integration_initialise();
   }
-
-  SFXC_ASSERT(input_buffers.size()==number_input_streams_in_use());
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
-    input_elements[i] = &input_buffers[i]->front()->data[0];
-    if (input_buffers[i]->front()->data.size() > input_conj_buffers[i].size())
-      input_conj_buffers[i].resize(input_buffers[i]->front()->data.size());
+    int j = streams_in_scan[i];
+    input_elements[i] = &input_buffers[j]->front()->data[0];
+    if (input_buffers[j]->front()->data.size() > input_conj_buffers[i].size())
+      input_conj_buffers[i].resize(input_buffers[j]->front()->data.size());
   }
-  const int stride = input_buffers[0]->front()->stride;
-  const int nbuffer = input_buffers[0]->front()->data.size() / stride;
+  const int first_stream = streams_in_scan[0];
+  const int stride = input_buffers[first_stream]->front()->stride;
+  const int nbuffer = input_buffers[first_stream]->front()->data.size() / stride;
   // Process the data of the current fft buffer
   integration_step(accumulation_buffers, nbuffer, stride);
   current_fft += nbuffer;
-  for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++)
-    input_buffers[i]->pop();
+  for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++){
+    int stream = streams_in_scan[i];
+    input_buffers[stream]->pop();
+  }
  
   if (current_fft == number_ffts_in_integration) {
     PROGRESS_MSG("node " << node_nr_ << ", "
@@ -109,6 +112,21 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
     input_conj_buffers.resize(number_input_streams_in_use());
   }
   n_flagged.resize(baselines.size());
+  get_input_streams();
+}
+
+void
+Correlation_core::get_input_streams(){
+  // Get a sorted list of input streams
+  std::set<int> streams_set;
+  for(int i=0; i < correlation_parameters.station_streams.size(); i++){
+    int stream = correlation_parameters.station_streams[i].station_stream;
+    streams_set.insert(stream);
+  }
+  streams_in_scan.resize(0);
+  for(std::set<int>::iterator it = streams_set.begin(); it != streams_set.end(); it++){
+    streams_in_scan.push_back(*it);
+  }
 }
 
 void
@@ -129,14 +147,14 @@ Correlation_core::create_baselines(const Correlation_parameters &parameters){
       parameters.fft_size_correlation);
   baselines.clear();
   // Autos
-  for (size_t sn = 0 ; sn < n_stations(); sn++) {
+  for (size_t sn = 0 ; sn < number_input_streams_in_use(); sn++) {
     baselines.push_back(std::pair<int,int>(sn,sn));
   }
   // Crosses
   int ref_station = parameters.reference_station;
   if (parameters.cross_polarize) {
-    SFXC_ASSERT(n_stations() % 2 == 0);
-    size_t n_st_2 = n_stations()/2;
+    SFXC_ASSERT(number_input_streams_in_use() % 2 == 0);
+    size_t n_st_2 = number_input_streams_in_use()/2;
     if (ref_station >= 0) {
       // cross polarize with a reference station
       for (int sn = 0 ; sn < ref_station; sn++) {
@@ -165,7 +183,7 @@ Correlation_core::create_baselines(const Correlation_parameters &parameters){
   } else { // No cross_polarisation
     if (parameters.reference_station >= 0) {
       // no cross polarisation with a reference station
-      for (int sn = 0 ; sn < (int)n_stations(); sn++) {
+      for (int sn = 0 ; sn < (int)number_input_streams_in_use(); sn++) {
         if (sn != ref_station) {
           baselines.push_back(std::pair<int,int>(sn,ref_station));
         }
@@ -173,8 +191,8 @@ Correlation_core::create_baselines(const Correlation_parameters &parameters){
     } else { // No reference station
       // no cross polarisation without a reference station
 
-      for (size_t sn = 0 ; sn < n_stations() - 1; sn++) {
-        for (size_t sno = sn + 1; sno < n_stations() ; sno ++) {
+      for (size_t sn = 0 ; sn < number_input_streams_in_use() - 1; sn++) {
+        for (size_t sno = sn + 1; sno < number_input_streams_in_use() ; sno ++) {
           baselines.push_back(std::pair<int,int>(sn,sno));
         }
       }
@@ -190,7 +208,8 @@ set_data_writer(boost::shared_ptr<Data_writer> writer_) {
 
 bool Correlation_core::has_work() {
   for (size_t i=0, nstreams=number_input_streams_in_use(); i < nstreams; i++) {
-    if (input_buffers[i]->empty())
+    int stream = streams_in_scan[i];
+    if (input_buffers[stream]->empty())
       return false;
   }
   return true;
@@ -198,15 +217,16 @@ bool Correlation_core::has_work() {
 
 void Correlation_core::integration_initialise() {
   previous_fft = 0;
-  int start = accumulation_buffers.size() == baselines.size() ? phase_centers.size() : 0;
 
   if(phase_centers.size() != correlation_parameters.n_phase_centers)
     phase_centers.resize(correlation_parameters.n_phase_centers);
 
-  for(int i = start ; i < phase_centers.size() ; i++){
-    phase_centers[i].resize(baselines.size());
-    for(int j = 0 ; j < phase_centers[i].size() ; j++){
-      phase_centers[i][j].resize(fft_size() + 1);
+  for(int i = 0 ; i < phase_centers.size() ; i++){
+    if (phase_centers[i].size() != baselines.size()){
+      phase_centers[i].resize(baselines.size());
+      for(int j = 0 ; j < phase_centers[i].size() ; j++){
+        phase_centers[i][j].resize(fft_size() + 1);
+      }
     }
   }
 
@@ -266,11 +286,10 @@ void Correlation_core::integration_step(std::vector<Complex_buffer> &integration
 }
 
 void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integration_buffer) {
-  std::vector<double> norms;
-  norms.resize(n_stations());
+  std::vector<double> norms(number_input_streams_in_use());
   memset(&norms[0], 0, norms.size()*sizeof(double));
   // Normalize the auto correlations
-  for (size_t station=0; station < n_stations(); station++) {
+  for (size_t station=0; station < number_input_streams_in_use(); station++) {
     for (size_t i = 0; i < fft_size() + 1; i++) {
       norms[station] += integration_buffer[station][i].real();
     }
@@ -287,11 +306,13 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
 
   // Normalize the cross correlations
   const int64_t total_samples = number_ffts_in_integration * fft_size();
-  for (size_t b = n_stations(); b < baselines.size(); b++) {
+  for (size_t b = number_input_streams_in_use(); b < baselines.size(); b++) {
     SFXC_ASSERT(b < baselines.size());
     std::pair<size_t,size_t> &baseline = baselines[b];
-    int32_t *levels1 = statistics[baseline.first]->get_statistics(); 
-    int32_t *levels2 = statistics[baseline.second]->get_statistics();
+    int station1 = streams_in_scan[baseline.first];
+    int station2 = streams_in_scan[baseline.second];
+    int32_t *levels1 = statistics[station1]->get_statistics(); 
+    int32_t *levels2 = statistics[station2]->get_statistics();
     int64_t n_valid1 =  total_samples - levels1[4]; // levels[4] contain the number of invalid samples
     int64_t n_valid2 =  total_samples - levels2[4];
     double N1 = n_valid1 > 0? 1 - n_flagged[b].first  * 1. / n_valid1 : 1;
@@ -326,19 +347,19 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     SFXC_ASSERT(correlation_parameters.polarisation == 'L');
   }
 
-  size_t n_stations = correlation_parameters.station_streams.size();
+  int nstreams = correlation_parameters.station_streams.size();
+  int nstations = nstreams;
+  if (correlation_parameters.cross_polarize) 
+    nstations /= 2;
   std::vector<int> stream2station;
 
   {
     // initialise with -1
     stream2station.resize(input_buffers.size(), -1);
 
-    for (size_t i=0;
-         i < correlation_parameters.station_streams.size();
-         i++) {
+    for (size_t i=0; i < nstreams; i++) {
       size_t station_stream =
         correlation_parameters.station_streams[i].station_stream;
-      SFXC_ASSERT(station_stream < stream2station.size());
       stream2station[station_stream] =
         correlation_parameters.station_streams[i].station_number;
     }
@@ -350,58 +371,60 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     htimeslice.number_baselines = baselines.size();
     htimeslice.integration_slice =
       correlation_parameters.integration_nr + current_integration;
-    htimeslice.number_uvw_coordinates = uvw_tables.size();
-    htimeslice.number_statistics = input_buffers.size();
+    htimeslice.number_uvw_coordinates = nstations;
+    htimeslice.number_statistics = nstreams;
 
    // write the uvw coordinates
     Output_uvw_coordinates uvw[htimeslice.number_uvw_coordinates];
     // We evaluate in the middle of time slice
     Time time = correlation_parameters.start_time + correlation_parameters.integration_time / 2;
-    for (size_t station=0; station < uvw_tables.size(); station++){
+    for (size_t i=0; i < nstations; i++){
       double u,v,w;
-      uvw_tables[station].get_uvw(phase_center, time, &u, &v, &w);
-      uvw[station].station_nr=stream2station[station];
-      uvw[station].reserved=0;
-      uvw[station].u=u;
-      uvw[station].v=v;
-      uvw[station].w=w;
+      int stream = streams_in_scan[i];
+      uvw_tables[stream].get_uvw(phase_center, time, &u, &v, &w);
+      uvw[i].station_nr=stream2station[stream];
+      uvw[i].reserved=0;
+      uvw[i].u=u;
+      uvw[i].v=v;
+      uvw[i].w=w;
     }
 
     // Write the bit statistics
-    Output_header_bitstatistics stats[input_buffers.size()];
-    for (size_t stream=0; stream < input_buffers.size(); stream++){
+    Output_header_bitstatistics stats[nstreams];
+    for (size_t i=0; i < nstreams; i++){
+      int stream = streams_in_scan[i];
       int station = stream2station[stream]-1;
       int32_t *levels=statistics[stream]->get_statistics();
       if(correlation_parameters.cross_polarize){
-        int nstreams=correlation_parameters.station_streams.size();
-        stats[stream].polarisation=(stream>=nstreams/2)?1-polarisation:polarisation;
+        int nstreams_max = input_buffers.size();
+        stats[i].polarisation=(stream>=nstreams_max/2)?1-polarisation:polarisation;
       }else{
-        stats[stream].polarisation=polarisation;
+        stats[i].polarisation=polarisation;
       }
-      stats[stream].station_nr=station+1;
-      stats[stream].sideband = (correlation_parameters.sideband=='L') ? 0 : 1;
+      stats[i].station_nr=station+1;
+      stats[i].sideband = (correlation_parameters.sideband=='L') ? 0 : 1;
 
-      stats[stream].frequency_nr=(unsigned char)correlation_parameters.channel_nr;
+      stats[i].frequency_nr=(unsigned char)correlation_parameters.channel_nr;
 #ifndef SFXC_ZERO_STATS
       if(statistics[stream]->bits_per_sample==2){
-        stats[stream].levels[0]=levels[0];
-        stats[stream].levels[1]=levels[1];
-        stats[stream].levels[2]=levels[2];
-        stats[stream].levels[3]=levels[3];
-        stats[stream].n_invalid=levels[4];
+        stats[i].levels[0]=levels[0];
+        stats[i].levels[1]=levels[1];
+        stats[i].levels[2]=levels[2];
+        stats[i].levels[3]=levels[3];
+        stats[i].n_invalid=levels[4];
       }else{
-        stats[stream].levels[0]=0;
-        stats[stream].levels[1]=levels[0];
-        stats[stream].levels[2]=levels[1];
-        stats[stream].levels[3]=0;
-        stats[stream].n_invalid=levels[4];
+        stats[i].levels[0]=0;
+        stats[i].levels[1]=levels[0];
+        stats[i].levels[2]=levels[1];
+        stats[i].levels[3]=0;
+        stats[i].n_invalid=levels[4];
       }
 #else
-      stats[stream].levels[0]=0;
-      stats[stream].levels[1]=0;
-      stats[stream].levels[2]=0;
-      stats[stream].levels[3]=0;
-      stats[stream].n_invalid=0;
+      stats[i].levels[0]=0;
+      stats[i].levels[1]=0;
+      stats[i].levels[2]=0;
+      stats[i].levels[3]=0;
+      stats[i].n_invalid=0;
 #endif
     }
 
@@ -418,7 +441,9 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
 
   Output_header_baseline hbaseline;
   for (size_t i = 0; i < baselines.size(); i++) {
-    std::pair<size_t,size_t> &stations = baselines[i];
+    std::pair<size_t,size_t> &inputs = baselines[i];
+    int station1 = streams_in_scan[inputs.first];
+    int station2 = streams_in_scan[inputs.second];
 
     for (size_t j = 0; j < number_channels() + 1; j++) {
       integration_buffer_float[j] = integration_buffer[i][j * n];
@@ -428,8 +453,8 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     }
     integration_buffer_float[number_channels()] *= n; // Only one point contributes to the last point
     const int64_t total_samples = number_ffts_in_integration * fft_size();
-    int32_t *levels = statistics[stations.first]->get_statistics(); // We get the number of invalid samples from the bitstatistics
-    if (stations.first == stations.second){
+    int32_t *levels = statistics[station1]->get_statistics(); // We get the number of invalid samples from the bitstatistics
+    if (station1 == station2){
       hbaseline.weight = std::max(total_samples - levels[4], (int64_t) 0);       // The number of good samples
     }else{
       SFXC_ASSERT(levels[4] >= 0);
@@ -437,20 +462,18 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
       hbaseline.weight = std::max(total_samples - levels[4] - n_flagged[i].first, (int64_t)0);       // The number of good samples
     }
     // Station number in the vex-file
-    SFXC_ASSERT(stations.first < n_stations);
-    SFXC_ASSERT(stations.second < n_stations);
-    hbaseline.station_nr1 = stream2station[stations.first];
+    hbaseline.station_nr1 = stream2station[station1];
     // Station number in the vex-file
-    hbaseline.station_nr2 = stream2station[stations.second];
+    hbaseline.station_nr2 = stream2station[station2];
 
     // Polarisation for the first station
     SFXC_ASSERT((polarisation == 0) || (polarisation == 1)); // (RCP: 0, LCP: 1)
     hbaseline.polarisation1 = polarisation;
     hbaseline.polarisation2 = polarisation;
     if (correlation_parameters.cross_polarize) {
-      if (stations.first >= n_stations/2)
+      if (inputs.first >= nstations)
         hbaseline.polarisation1 = 1-polarisation;
-      if (stations.second >= n_stations/2)
+      if (inputs.second >= nstations)
         hbaseline.polarisation2 = 1-polarisation;
     }
     // Upper or lower sideband (LSB: 0, USB: 1)
@@ -497,19 +520,21 @@ Correlation_core::sub_integration(){
 
   const int n_baseline = accumulation_buffers.size();
   for(int i = n_station ; i < n_baseline ; i++){
-    std::pair<size_t,size_t> &stations = baselines[i];
+    std::pair<size_t,size_t> &inputs = baselines[i];
+    int station1 = streams_in_scan[inputs.first];
+    int station2 = streams_in_scan[inputs.second];
 
     // The pointing center
     for(int j = 0; j < n_fft; j++)
       phase_centers[0][i][j] += accumulation_buffers[i][j];
     // UV shift the additional phase centers
     for(int j = 1; j < n_phase_centers; j++){
-      double delay1 = delay_tables[stations.first].delay(tmid);
-      double delay2 = delay_tables[stations.second].delay(tmid);
-      double ddelay1 = delay_tables[stations.first].delay(tmid, j)-delay1;
-      double ddelay2 = delay_tables[stations.second].delay(tmid, j)-delay2;
-      double rate1 = delay_tables[stations.first].rate(tmid);
-      double rate2 = delay_tables[stations.second].rate(tmid);
+      double delay1 = delay_tables[station1].delay(tmid);
+      double delay2 = delay_tables[station2].delay(tmid);
+      double ddelay1 = delay_tables[station1].delay(tmid, j)-delay1;
+      double ddelay2 = delay_tables[station2].delay(tmid, j)-delay2;
+      double rate1 = delay_tables[station1].rate(tmid);
+      double rate2 = delay_tables[station2].rate(tmid);
       uvshift(accumulation_buffers[i], phase_centers[j][i], ddelay1, ddelay2, rate1, rate2);
     }
   }
@@ -570,8 +595,9 @@ void Correlation_core::add_source_list(const std::map<std::string, int> &sources
 }
 
 void Correlation_core::find_invalid() {
- for (int b = n_stations(); b < baselines.size(); b++) {
-    int s1 = baselines[b].first, s2 = baselines[b].second;
+ for (int b = number_input_streams_in_use(); b < baselines.size(); b++) {
+    int s1 = streams_in_scan[baselines[b].first];
+    int s2 = streams_in_scan[baselines[b].second];
     std::vector<Invalid> *invalid[2] = {invalid_elements[s1], invalid_elements[s2]};
     int index[2] = {0, 0};
     int nflagged[2] = {0, 0};

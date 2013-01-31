@@ -27,7 +27,7 @@ public:
   ~Correlator_node_data_reader_tasklet();
 
   /// Set the input
-  void connect_to(Data_reader_ptr reader);
+  void connect_to(int stream_nr_, Data_reader_ptr reader);
   Input_buffer_ptr get_output_buffer();
 
   void do_task();
@@ -52,6 +52,7 @@ private:
   bool new_stream_available;
   int bits_per_sample;
   int samples_per_byte;
+  int stream_nr;
 
   int state;
   enum {IDLE, PROCESSING_STREAM, RECEIVE_DATA};

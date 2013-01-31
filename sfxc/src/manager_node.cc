@@ -128,7 +128,7 @@ Manager_node(int rank, int numtasks,
   pending_status.resize( currreq );
 
   MPI_Waitall( currreq, &pending_requests[0], &pending_status[0]);
-	std::cout << "All the connexion are established ! " << std::endl;
+  std::cout << "All the connexion are established ! " << std::endl;
 }
 
 Manager_node::~Manager_node() {
@@ -308,18 +308,23 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
 
   std::string channel_name =
     control_parameters.frequency_channel(current_channel);
-  std::vector<std::string> station_name;
+  std::string station_name;
   Correlation_parameters correlation_parameters;
   int nr_stations = control_parameters.number_stations();
   for (int i=0; i<nr_stations; i++) {
-    station_name.push_back(get_control_parameters().station(i));
+    if (ch_number_in_scan[current_channel][i] >= 0){
+      station_name = get_control_parameters().station(i);
+      break;
+    }
   }
+  SFXC_ASSERT(station_name != std::string());
   std::string scan_name = control_parameters.scan(current_scan);
   correlation_parameters =
     control_parameters.
     get_correlation_parameters(scan_name,
                                channel_name,
                                station_name,
+                               ch_number_in_scan[current_channel],
                                get_input_node_map());
   correlation_parameters.start_time =
     start_time + integration_time() * integration_slice_nr;
@@ -339,9 +344,8 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   if (cross_channel != -1) {
     int n_stations = control_parameters.number_stations();
     int n_streams = correlation_parameters.station_streams.size();
-    SFXC_ASSERT(n_stations == n_streams);
     // Add the cross polarisations
-    for (int i=0; i<n_stations; i++) {
+    for (int i=0; i<n_streams; i++) {
       Correlation_parameters::Station_parameters stream =
         correlation_parameters.station_streams[i];
       stream.station_stream += n_stations;
@@ -356,19 +360,21 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   for (size_t station_nr=0;
        station_nr< nStations;
        station_nr++) {
-    input_node_set_time_slice(control_parameters.station(station_nr),
-                              current_channel,
-                              /*stream*/corr_node_nr,
-                              correlation_parameters.start_time,
-                              correlation_parameters.stop_time);
-
-    if (cross_channel != -1) {
-      // Add the cross polarisation channel
+    if(ch_number_in_scan[current_channel][station_nr] >= 0){
       input_node_set_time_slice(control_parameters.station(station_nr),
-                                cross_channel,
-                                /*stream*/corr_node_nr+n_corr_nodes,
+                                ch_number_in_scan[current_channel][station_nr],
+                                /*stream*/corr_node_nr,
                                 correlation_parameters.start_time,
                                 correlation_parameters.stop_time);
+
+      if (cross_channel != -1) {
+        // Add the cross polarisation channel
+        input_node_set_time_slice(control_parameters.station(station_nr),
+                                  ch_number_in_scan[cross_channel][station_nr],
+                                  /*stream*/corr_node_nr+n_corr_nodes,
+                                  correlation_parameters.start_time,
+                                  correlation_parameters.stop_time);
+      }
     }
   }
 
@@ -515,7 +521,6 @@ Manager_node::initialise() {
               << ", tstart = " << vex.start_of_scan(it.key()).to_string() << "\n";
     while(it != vex.get_root_node()["SCHED"]->end() && vex.start_of_scan(it.key()) < stop_time){
       Vex::Node::const_iterator sources_it = it->begin("source");
-      std::cout << "scan " << it.key() << "\n";
       while(sources_it != it->end("source")){
         sources.insert(sources_it->to_string());
         std::cout << "found source " << sources_it->to_string() << " in scan " << it.key() << "\n";
@@ -560,10 +565,9 @@ Manager_node::initialise() {
 }
 
 void Manager_node::initialise_scan(const std::string &scan) {
-  Vex::Date start_of_scan =
-    control_parameters.get_vex().start_of_scan(scan);
-  Vex::Date stop_of_scan =
-    control_parameters.get_vex().stop_of_scan(scan);
+  const Vex &vex = control_parameters.get_vex();
+  Vex::Date start_of_scan = vex.start_of_scan(scan);
+  Vex::Date stop_of_scan = vex.stop_of_scan(scan);
 
   int start_mjd = mjd(1, 1, start_of_scan.year) + start_of_scan.day - 1;
   Time scan_start(start_mjd, start_of_scan.to_miliseconds() / 1000.);
@@ -589,8 +593,7 @@ void Manager_node::initialise_scan(const std::string &scan) {
 
 
   // Send the track parameters to the input nodes
-  const std::string &mode_name =
-    control_parameters.get_vex().get_mode(scan);
+  const std::string &mode_name = vex.get_mode(scan);
   for (size_t station=0;
        station<control_parameters.number_stations(); station++) {
     const std::string &station_name =
@@ -601,6 +604,30 @@ void Manager_node::initialise_scan(const std::string &scan) {
     input_node_set(station_name, input_node_param);
   }
   n_sources_in_current_scan = control_parameters.get_vex().n_sources(scan);
+
+  // Determine for each station which channels are to be correlated
+  const Vex::Node &root=vex.get_root_node();
+  std::vector<int> last_channel(control_parameters.number_stations(), -1);
+  for (int i=0; i< last_channel.size();i++)
+    SFXC_ASSERT(last_channel[i] == -1);
+  ch_number_in_scan.resize(control_parameters.number_frequency_channels());
+  for(int i = 0; i < ch_number_in_scan.size(); i++){
+    std::string f = control_parameters.frequency_channel(i);
+    ch_number_in_scan[i].resize(control_parameters.number_stations());
+    for(int s = 0; s < ch_number_in_scan[i].size(); s++){
+      std::string station = control_parameters.station(s);
+      std::string freq = vex.get_frequency(mode_name, station);
+      ch_number_in_scan[i][s] = -1;
+      for (Vex::Node::const_iterator freq_it = root["FREQ"][freq]->begin("chan_def");
+           freq_it != root["FREQ"][freq]->end("chan_def"); freq_it++) {
+        if (freq_it[4]->to_string() == f){
+          ch_number_in_scan[i][s] = last_channel[s] + 1;
+          last_channel[s] += 1;
+          break;
+        }
+      }
+    }
+  }
 }
 
 void Manager_node::end_correlation() {

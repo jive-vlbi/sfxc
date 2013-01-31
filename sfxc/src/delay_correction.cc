@@ -2,7 +2,7 @@
 #include "sfxc_math.h"
 #include "config.h"
 
-Delay_correction::Delay_correction(int stream_nr)
+Delay_correction::Delay_correction(int stream_nr_)
     : output_buffer(Output_buffer_ptr(new Output_buffer())),
       output_memory_pool(32),current_time(-1), delay_table_set(false),
       stream_nr(stream_nr), stream_idx(-1)
@@ -20,11 +20,9 @@ Delay_correction::~Delay_correction() {
 
 void Delay_correction::do_task() {
   SFXC_ASSERT(has_work());
-
   Input_buffer_element input = input_buffer->front_and_pop();
   int nbuffer=input->nfft;
   current_fft+=nbuffer;
-
   // Allocate output buffer
   int output_stride =  fft_cor_size()/2 + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
   cur_output = output_memory_pool.allocate();
@@ -196,14 +194,19 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   size_t prev_fft_size = fft_size();
   size_t prev_fft_cor_size = fft_cor_size();
   int old_window = correlation_parameters.window;
-  correlation_parameters = parameters;
 
   stream_idx = 0;
   while ((stream_idx < parameters.station_streams.size()) &&
          (parameters.station_streams[stream_idx].station_stream != stream_nr))
     stream_idx++;
-  SFXC_ASSERT(stream_idx < parameters.station_streams.size());
+  if(stream_idx == parameters.station_streams.size()){
+    int sb = correlation_parameters.sideband == 'L' ? -1 : 1;
+    double f = parameters.channel_freq + parameters.bandwidth  * 0.5 * sb;
+    return; // station not in current timeslice
+  }
+
   bits_per_sample = parameters.station_streams[stream_idx].bits_per_sample;
+  correlation_parameters = parameters;
   oversamp = (int)round(sample_rate() / (2 * bandwidth()));
 
   current_time = parameters.start_time;

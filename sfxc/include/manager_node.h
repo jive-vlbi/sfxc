@@ -76,6 +76,9 @@ public:
   /// Called when the output_node is finished
   void end_correlation();
 private:
+  // Two dimensional array of dimensions [nchannels][nstations],
+  // indicates per station which channels are to be correlated
+  std::vector<std::vector<int> > ch_number_in_scan;
 
   std::string get_current_mode() const;
   void send_global_header();

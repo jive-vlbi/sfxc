@@ -25,7 +25,8 @@ Correlation_core_phased::do_task() {
 
   SFXC_ASSERT(input_buffers.size()==number_input_streams_in_use());
   for (size_t i = 0; i < number_input_streams_in_use(); i++) {
-    input_elements[i] = &input_buffers[i]->front()->data[0];
+    int stream = streams_in_scan[i];
+    input_elements[i] = &input_buffers[stream]->front()->data[0];
   }
   const int stride = input_buffers[0]->front()->stride;
   const int nbuffer = input_buffers[0]->front()->data.size() / stride;
@@ -34,8 +35,10 @@ Correlation_core_phased::do_task() {
     integration_step(accumulation_buffers, buf);
     current_fft++;
   }
-  for (size_t i = 0; i < number_input_streams_in_use(); i++)
-    input_buffers[i]->pop();
+  for (size_t i = 0; i < number_input_streams_in_use(); i++){
+    int stream = streams_in_scan[i];
+    input_buffers[stream]->pop();
+  }
 
   if (current_fft == number_ffts_in_integration) {
     PROGRESS_MSG("node " << node_nr_ << ", "
@@ -67,6 +70,7 @@ Correlation_core_phased::set_parameters(const Correlation_parameters &parameters
       input_conj_buffers[i].resize(fft_size() + 1);
   }
   n_flagged.resize(baselines.size());
+  get_input_streams();
 }
 
 void

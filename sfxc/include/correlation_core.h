@@ -63,13 +63,14 @@ protected:
   void integration_write(std::vector<Complex_buffer> &integration_buffer, int phase_center, int bin);
   void sub_integration();
   void find_invalid();
+  void get_input_streams();
 
   void uvshift(const Complex_buffer &input_buffer, Complex_buffer &output_buffer, double ddelay1,
                double ddelay2, double rate1, double rate2);
 
   size_t number_channels();
   size_t fft_size();
-  size_t n_stations();
+  size_t number_input_streams();
 
   size_t number_input_streams_in_use();
 
@@ -81,6 +82,7 @@ protected:
   // the complex conjugate of input_elements
   std::vector< Complex_buffer >           input_conj_buffers; 
   std::vector<bit_statistics_ptr>         statistics;
+  std::vector<int>                        streams_in_scan;
   // Tracks the number of correlator points where one (but not both) stations on a baseline had invalid data
   std::vector< std::pair<int64_t,int64_t> > n_flagged;
 
@@ -114,8 +116,8 @@ inline size_t Correlation_core::fft_size() {
   return correlation_parameters.fft_size_correlation;
 }
 
-inline size_t Correlation_core::n_stations() {
-  return correlation_parameters.station_streams.size();
+inline size_t Correlation_core::number_input_streams() {
+  return input_buffers.size();
 }
 
 inline size_t Correlation_core::number_input_streams_in_use() {

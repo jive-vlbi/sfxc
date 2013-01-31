@@ -107,6 +107,7 @@ class Reader_thread : public Thread {
     struct job {
       int number_ffts_in_integration;
       std::vector<int> bits_per_sample;
+      std::vector<int> stream_list;
       int station_streams_size;
     };
 
@@ -196,11 +197,12 @@ class Reader_thread : public Thread {
       for (size_t i=0; i<bit_sample_readers_.size(); i++) {
         SFXC_ASSERT(bit_sample_readers_[i] !=
                     Bit_sample_reader_ptr());
-        if (i < jb.station_streams_size ) {
+        int index = jb.stream_list[i];
+        if (index >= 0) {
           DEBUG_MSG("CONFIGURING THE READER ! :" << jb.number_ffts_in_integration);
           bit_sample_readers_[i]->set_parameters(
             jb.number_ffts_in_integration,
-            jb.bits_per_sample[i]);
+            jb.bits_per_sample[index]);
           readers_active_=true;
         }
       }
@@ -217,15 +219,18 @@ class Reader_thread : public Thread {
          parameters.sample_rate,
          parameters.fft_size_delaycor);
       // First create a list of input streams
-      std::vector<int> stream_list(parameters.station_streams.size());
-      for(int i = 0; i < stream_list.size(); i++)
-        stream_list[parameters.station_streams[i].station_stream] = i;
-      // For each input stream save the number of bits per sample
-      for(int i = 0; i < stream_list.size(); i++){
-        int index = stream_list[i];
-        jb.bits_per_sample.push_back(parameters.station_streams[index].bits_per_sample);
-      }
+      jb.stream_list.resize(bit_sample_readers_.size());
       jb.station_streams_size = parameters.station_streams.size();
+      for(int i = 0; i < bit_sample_readers_.size(); i++)
+        jb.stream_list[i] = -1;
+      for(int i = 0; i < jb.station_streams_size; i++)
+        jb.stream_list[parameters.station_streams[i].station_stream] = i;
+      // For each input stream save the number of bits per sample
+      for(int i = 0; i < jb.stream_list.size(); i++){
+        int index = jb.stream_list[i];
+        if (index >= 0)
+          jb.bits_per_sample.push_back(parameters.station_streams[index].bits_per_sample);
+      }
 
       //DEBUG_MSG("Add A Time slice:" << jb.station_streams_size );
       queue_.push(jb);
@@ -259,6 +264,8 @@ private:
 
   /// Number of the correlator node
   int nr_corr_node;
+  /// Number of input streams
+  int n_streams;
 
   std::vector< Delay_correction_ptr >         delay_modules;
   Correlation_core                            *correlation_core, *correlation_core_normal;

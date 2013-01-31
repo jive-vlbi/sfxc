@@ -327,7 +327,8 @@ public:
   Correlation_parameters
   get_correlation_parameters(const std::string &scan_name,
                              const std::string &channel_name,
-                             const std::vector<std::string> &station_name,
+                             const std::string &station_name,
+                             const std::vector<int> &station_in_scan,
                              const std::map<std::string, int> &correlator_node_station_to_input) const;
   std::string rack_type(const std::string &station) const;
   std::string transport_type(const std::string &station) const;

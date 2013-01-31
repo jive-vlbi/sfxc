@@ -29,7 +29,7 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, bool pulsar_binning
     nr_corr_node(nr_corr_node), 
     pulsar_parameters(get_log_writer()),
     pulsar_binning(pulsar_binning_),
-    phased_array(phased_array_) {
+    phased_array(phased_array_), n_streams(0) {
   #ifdef USE_IPP
   ippSetNumThreads(1);
   #endif
@@ -205,10 +205,11 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   // create the bit sample reader tasklet
   if (reader_thread_.bit_sample_readers().size() <= stream_nr) {
     reader_thread_.bit_sample_readers().resize(stream_nr+1, Bit_sample_reader_ptr());
+    n_streams = stream_nr + 1;
   }
   reader_thread_.bit_sample_readers()[stream_nr] =
        Bit_sample_reader_ptr(new Correlator_node_data_reader_tasklet());
-  reader_thread_.bit_sample_readers()[stream_nr]->connect_to(data_readers_ctrl.get_data_reader(stream_nr));
+  reader_thread_.bit_sample_readers()[stream_nr]->connect_to(stream_nr, data_readers_ctrl.get_data_reader(stream_nr));
 
   // connect reader to data stream worker
 
@@ -348,12 +349,16 @@ Correlator_node::set_parameters() {
   n_integration_slice_in_time_slice =
     (parameters.stop_time-parameters.start_time) / parameters.integration_time;
   // set the output stream
+  int n_streams_in_scan = parameters.station_streams.size();
+  int nstations = n_streams_in_scan;
+  if (parameters.cross_polarize)
+    nstations /= 2;
   int nBaselines = correlation_core->number_of_baselines();
-  int size_of_one_baseline = sizeof(std::complex<FLOAT>) *
-                             (parameters.number_channels + 1);
-  int size_uvw = correlation_core->uvw_tables.size()*sizeof(Output_uvw_coordinates);
+  int size_of_one_baseline = sizeof(std::complex<FLOAT>) * (parameters.number_channels + 1);
+
+  int size_uvw = nstations*sizeof(Output_uvw_coordinates);
   // when the cross_polarize flag is set then the correlator node receives 2 polarizations
-  int size_stats = delay_modules.size()*sizeof(Output_header_bitstatistics);
+  int size_stats = n_streams_in_scan*sizeof(Output_header_bitstatistics);
 
   int slice_size;
   slice_size = nBins * ( sizeof(int32_t) + sizeof(Output_header_timeslice) + size_uvw + size_stats +

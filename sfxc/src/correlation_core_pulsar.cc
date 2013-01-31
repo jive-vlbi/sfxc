@@ -80,6 +80,7 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 
   if(accumulation_buffers.size()!=nbins)
     accumulation_buffers.resize(nbins);
+  get_input_streams();
 }
 
 void Correlation_core_pulsar::do_task() {
@@ -95,10 +96,12 @@ void Correlation_core_pulsar::do_task() {
 
   SFXC_ASSERT(input_buffers.size()==number_input_streams_in_use());
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
-    input_elements[i] = &input_buffers[i]->front()->data[0];
+    int stream = streams_in_scan[i];
+    input_elements[i] = &input_buffers[stream]->front()->data[0];
   }
-  const int stride = input_buffers[0]->front()->stride;
-  const int nbuffer = input_buffers[0]->front()->data.size() / stride;
+  const int first_stream = streams_in_scan[0];
+  const int stride = input_buffers[first_stream]->front()->stride;
+  const int nbuffer = input_buffers[first_stream]->front()->data.size() / stride;
   for (int buf = 0; buf < nbuffer * stride ; buf += stride){
     // Process the data of the current fft
     integration_step(dedispersion_buffer, buf);
@@ -106,8 +109,10 @@ void Correlation_core_pulsar::do_task() {
     current_fft ++;
   }
 
-  for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++)
-    input_buffers[i]->pop();
+  for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++){
+    int stream = streams_in_scan[i];
+    input_buffers[stream]->pop();
+  }
 
   if (current_fft == number_ffts_in_integration) {
     PROGRESS_MSG("node " << node_nr_ << ", "

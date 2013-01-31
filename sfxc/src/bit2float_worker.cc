@@ -50,8 +50,9 @@ Bit2float_worker::do_task() {
     switch(state) {
     case IDLE:
     {
-      if ((write - read) < 3)
+      if ((write - read) < 3){
         return samples_written;
+      }
 
       uint8_t header = inp_data[read++ % inp_size];
       switch(header) {
@@ -237,6 +238,10 @@ set_new_parameters(const Correlation_parameters &parameters) {
   while ((i<parameters.station_streams.size())&&
          (parameters.station_streams[i].station_stream!=stream_nr))
     i++;
+  if (i == parameters.station_streams.size()){
+    // Data stream is not participating in current time slice
+    return;
+  }
   SFXC_ASSERT(i<parameters.station_streams.size());
   new_parameters.bits_per_sample = parameters.station_streams[i].bits_per_sample;
 
@@ -392,6 +397,7 @@ Bit2float_worker::allocate_element(){
   int nfft = std::min(nfft_max, n_ffts_per_integration - current_fft);
   int nsamples = nfft * fft_size;
   out_element = memory_pool_.allocate();
+  
   if(out_element.data().data.size() != nsamples)
     out_element.data().data.resize(nsamples);
   out_element.data().nfft = nfft;

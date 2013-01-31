@@ -51,7 +51,6 @@ public:
   void set_parameters(const Correlation_parameters &parameters);
   /// Do one delay step
   void do_task();
-
   bool has_work();
   const char *name() {
     return __PRETTY_FUNCTION__;

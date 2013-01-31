@@ -13,7 +13,7 @@ Channel_extractor_dynamic::Channel_extractor_dynamic
 {
   dirname_ = dirname;
   compile_ = compile;
-	name_ = "Channel_extractor_dynamic(fast algorithm)";
+  name_ = "Channel_extractor_dynamic(fast algorithm)";
 }
 
 void Channel_extractor_dynamic::initialise(
@@ -36,11 +36,11 @@ void Channel_extractor_dynamic::initialise(
   table[idx++] = '_';
   table[idx++] = '@';
   table[idx++] = '=';
-	table[idx++] = '+';
-	//std::cout << "VALUE:" << idx;
-	assert(idx == 64 );
+  table[idx++] = '+';
+  //std::cout << "VALUE:" << idx;
+  assert(idx == 64 );
 
-	/// Generate the name
+  // Generate the name
   std::stringstream str;
   str << "dynamic_channel_extractor";
   for (unsigned int i=0;i<track_positions_.size();i++){
@@ -60,28 +60,26 @@ void Channel_extractor_dynamic::initialise(
   /// Does it work ?
   if ( hidden_implementation_ == NULL ){
 
-			/// No ! so we need to compile ourself the extractor.
-      DEBUG_MSG("Unable to load the dynamic extractor:" << dirname_ << str.str() );
+    /// No ! so we need to compile ourself the extractor.
+    DEBUG_MSG("Unable to load the dynamic extractor:" << dirname_ << str.str() );
 
-      /// Are we allowed to compile ?
-      if ( compile_ ){
-					/// Yes... so let's do it
-          hidden_implementation_ = compile_load_construct( dirname_+str.str(), track_positions_,
-                                   size_of_one_input_word_, input_sample_size_ );
-					if( hidden_implementation_ == NULL ){
-							DEBUG_MSG("Compiling optimized extractor fails ! use slow one instead");
-							name_ = "Channel_extractor_dynamic (slow mode!)";
-							hidden_implementation_ = new Channel_extractor_5();
-
-					}
-        }
-			else {
-							DEBUG_MSG("Unable to compile extractor ! use slow one instead");
-							name_ = "Channel_extractor_dynamic (slow mode!)";
-							hidden_implementation_ = new Channel_extractor_5();
-			}
+    /// Are we allowed to compile ?
+    if ( compile_ ){
+      /// Yes... so let's do it
+      hidden_implementation_ = compile_load_construct( dirname_+str.str(), track_positions_,
+                                                       size_of_one_input_word_, input_sample_size_ );
+      if( hidden_implementation_ == NULL ){
+        DEBUG_MSG("Compiling optimized extractor fails ! use slow one instead");
+        name_ = "Channel_extractor_dynamic (slow mode!)";
+        hidden_implementation_ = new Channel_extractor_5();
+      }
+    } else {
+      DEBUG_MSG("Unable to compile extractor ! use slow one instead");
+      name_ = "Channel_extractor_dynamic (slow mode!)";
+      hidden_implementation_ = new Channel_extractor_5();
     }
-	/// Check it was succesfully loaded.
+  }
+  /// Check it was succesfully loaded.
   assert( hidden_implementation_ != NULL );
 
   /// If so initialize it

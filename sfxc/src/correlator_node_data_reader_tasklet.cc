@@ -12,7 +12,8 @@ Correlator_node_data_reader_tasklet::
 /// Set the input
 void
 Correlator_node_data_reader_tasklet::
-connect_to(Data_reader_ptr reader_) {
+connect_to(int stream_nr_, Data_reader_ptr reader_) {
+  stream_nr = stream_nr_;
   reader = reader_;
   breader_ = Data_reader_blocking_ptr( new Data_reader_blocking( reader_.get() ) );
 }

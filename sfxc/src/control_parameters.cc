@@ -893,12 +893,8 @@ get_mark5a_tracks(const std::string &mode,
   std::vector<int> track_pos = get_track_bit_position(mode, station);
   input_parameters.n_tracks = n_mark5a_tracks(mode, station);
 
-  const std::string &track_name =
-    get_vex().get_track(mode, station);
-  const std::string &freq_name =
-    get_vex().get_frequency(mode, station);
+  const std::string &track_name = get_vex().get_track(mode, station);
   Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
-  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
 
   // Determine if data modulation is active
   Vex::Node::const_iterator mod_it = track->begin("data_modulation");
@@ -907,50 +903,54 @@ get_mark5a_tracks(const std::string &mode,
   else
     input_parameters.data_modulation=0;
 
+  int ch_index = 0;
   std::vector<int> sign_tracks, mag_tracks;
   for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
     const std::string &channel_name = frequency_channel(ch_nr);
+    int freq_nr = frequency_number(channel_name, station, mode);
+    
+    if (freq_nr >= 0){
+      // tracks
+      Input_node_parameters::Channel_parameters channel_param;
+      channel_param.bits_per_sample = 1;
+      channel_param.sideband = sideband(channel_name, station, mode);
+      channel_param.polarisation = polarisation(channel_name, station, mode);
+      channel_param.frequency_number = ch_index++;
+      sign_tracks.resize(0);
+      mag_tracks.resize(0);
 
-    // tracks
-    Input_node_parameters::Channel_parameters channel_param;
-    channel_param.bits_per_sample = 1;
-    channel_param.sideband = sideband(channel_name, station, mode);
-    channel_param.polarisation = polarisation(channel_name, station, mode);
-    channel_param.frequency_number = frequency_number(channel_name, station, mode);
-    sign_tracks.resize(0);
-    mag_tracks.resize(0);
-
-    for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
-         fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
-      if (channel_name == fanout_def_it[1]->to_string()) {
-        Vex::Node::const_iterator it = fanout_def_it->begin();
-        ++it;
-        ++it;
-        ++it;
-        int headstack = it->to_int();
-        ++it;
-        if(fanout_def_it[2]->to_string() == "sign"){
-          for (; it != fanout_def_it->end(); ++it) {
-            int track = (headstack - 1)*32 + it->to_int() - 2;
-            sign_tracks.push_back(track_pos[track]);
-          }
-        } else{
-          channel_param.bits_per_sample = 2;
-          for (; it != fanout_def_it->end(); ++it) {
-            int track = (headstack - 1)*32 + it->to_int() - 2;
-            mag_tracks.push_back(track_pos[track]);
+      for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
+           fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
+        if (channel_name == fanout_def_it[1]->to_string()) {
+          Vex::Node::const_iterator it = fanout_def_it->begin();
+          ++it;
+          ++it;
+          ++it;
+          int headstack = it->to_int();
+          ++it;
+          if(fanout_def_it[2]->to_string() == "sign"){
+            for (; it != fanout_def_it->end(); ++it) {
+              int track = (headstack - 1)*32 + it->to_int() - 2;
+              sign_tracks.push_back(track_pos[track]);
+            }
+          } else{
+            channel_param.bits_per_sample = 2;
+            for (; it != fanout_def_it->end(); ++it) {
+              int track = (headstack - 1)*32 + it->to_int() - 2;
+              mag_tracks.push_back(track_pos[track]);
+            }
           }
         }
       }
+      if((channel_param.bits_per_sample == 2) && (mag_tracks.size() != sign_tracks.size()))
+        sfxc_abort("Number of magnitude tracks do not match the number of sign tracks");
+      for(int i=0; i<sign_tracks.size();i++){
+        channel_param.tracks.push_back(sign_tracks[i]);
+        if(channel_param.bits_per_sample == 2)
+          channel_param.tracks.push_back(mag_tracks[i]);
+      }
+      input_parameters.channels.push_back(channel_param);
     }
-    if((channel_param.bits_per_sample == 2) && (mag_tracks.size() != sign_tracks.size()))
-      sfxc_abort("Number of magnitude tracks do not match the number of sign tracks");
-    for(int i=0; i<sign_tracks.size();i++){
-      channel_param.tracks.push_back(sign_tracks[i]);
-      if(channel_param.bits_per_sample == 2)
-        channel_param.tracks.push_back(mag_tracks[i]);
-    }
-    input_parameters.channels.push_back(channel_param);
   }
 }
 
@@ -983,46 +983,49 @@ get_mark5b_tracks(const std::string &mode,
     get_mark5b_standard_mapping(mode, station, input_parameters);
   }else{
     input_parameters.n_tracks = n_mark5b_bitstreams(mode, station);
-    // Parse the bitstream section
+    // Parse the bitstream sectioni
+    int ch_index = 0;
     Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
     for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
       const std::string &channel_name = frequency_channel(ch_nr);
-
-      // Iterate over the bitstreams
-      int n_bitstream = 0;
-      Input_node_parameters::Channel_parameters channel_param;
-      channel_param.bits_per_sample = 1;
-      channel_param.sideband = sideband(channel_name, station, mode);
-      channel_param.polarisation = polarisation(channel_name, station, mode);
-      channel_param.frequency_number = frequency_number(channel_name, station, mode);
-      int sign_track, mag_track;
-      for (Vex::Node::const_iterator bitstream_it = bitstream->begin("stream_def");
-          bitstream_it != bitstream->end("stream_def"); ++bitstream_it) {
-        if (channel_name == bitstream_it[0]->to_string()) {
-          Vex::Node::const_iterator it = bitstream_it->begin();
-          ++it;
-          ++it;
-          ++it;
-          if (bitstream_it[1]->to_string() == "sign"){
-            sign_track = it->to_int();
-          }else{
-            channel_param.bits_per_sample = 2;
-            mag_track = it->to_int();
+      int freq_nr = frequency_number(channel_name, station, mode);
+      if (freq_nr >= 0){
+        // Iterate over the bitstreams
+        int n_bitstream = 0;
+        Input_node_parameters::Channel_parameters channel_param;
+        channel_param.bits_per_sample = 1;
+        channel_param.sideband = sideband(channel_name, station, mode);
+        channel_param.polarisation = polarisation(channel_name, station, mode);
+        channel_param.frequency_number = ch_index++;
+        int sign_track, mag_track;
+        for (Vex::Node::const_iterator bitstream_it = bitstream->begin("stream_def");
+            bitstream_it != bitstream->end("stream_def"); ++bitstream_it) {
+          if (channel_name == bitstream_it[0]->to_string()) {
+            Vex::Node::const_iterator it = bitstream_it->begin();
+            ++it;
+            ++it;
+            ++it;
+            if (bitstream_it[1]->to_string() == "sign"){
+              sign_track = it->to_int();
+            }else{
+              channel_param.bits_per_sample = 2;
+              mag_track = it->to_int();
+            }
+          }
+          n_bitstream++;
+        }
+        // If there are 64 bitstreams then an input word is 8 bytes long, otherewise is is 4 bytes
+        int word_size = (n_bitstream <= 32) ? 32 : 64;
+        for(int i = 0; i < word_size / n_bitstream;  i++){
+          int sign = sign_track + i * n_bitstream;
+          channel_param.tracks.push_back(sign);
+          if(channel_param.bits_per_sample == 2){
+            int magn = mag_track + i * n_bitstream;
+            channel_param.tracks.push_back(magn);
           }
         }
-        n_bitstream++;
+        input_parameters.channels.push_back(channel_param);
       }
-      // If there are 64 bitstreams then an input word is 8 bytes long, otherewise is is 4 bytes
-      int word_size = (n_bitstream <= 32) ? 32 : 64;
-      for(int i = 0; i < word_size / n_bitstream;  i++){
-        int sign = sign_track + i * n_bitstream;
-        channel_param.tracks.push_back(sign);
-        if(channel_param.bits_per_sample == 2){
-          int magn = mag_track + i * n_bitstream;
-          channel_param.tracks.push_back(magn);
-        }
-      }
-      input_parameters.channels.push_back(channel_param);
     }
   }
 }
@@ -1075,26 +1078,31 @@ get_vdif_tracks(const std::string &mode,
     num_tracks += bits_per_sample(mode, station);
   }
 
+  int ch_index = 0;
   input_parameters.n_tracks = num_tracks;
   for (size_t ch_nr = 0; ch_nr < number_frequency_channels(); ch_nr++) {
     const std::string &channel_name = frequency_channel(ch_nr);
+    int freq_nr = frequency_number(channel_name, station, mode);
+    if (freq_nr >= 0){
+      Input_node_parameters::Channel_parameters channel_param;
+      channel_param.bits_per_sample = bits_per_sample(mode, station);
+      channel_param.sideband = sideband(channel_name, station, mode);
+      channel_param.polarisation = polarisation(channel_name, station, mode);
+      channel_param.frequency_number = ch_index++;
 
-    Input_node_parameters::Channel_parameters channel_param;
-    channel_param.bits_per_sample = bits_per_sample(mode, station);
-    channel_param.sideband = sideband(channel_name, station, mode);
-    channel_param.polarisation = polarisation(channel_name, station, mode);
-    channel_param.frequency_number = frequency_number(channel_name, station, mode);
-
-    for (int i = 0; i < 32; i += num_tracks) {
-      for (Vex::Node::const_iterator channel_it = thread->begin("channel");
-	   channel_it != thread->end("channel"); channel_it++) {
-	if (channel_name == channel_it[0]->to_string()) {
-	  for (int track = bits_per_sample(mode, station) - 1; track >= 0; track--)
-	    channel_param.tracks.push_back(channel_it[2]->to_int() * bits_per_sample(mode, station) + track + i);
-	}
+      for (int i = 0; i < 32; i += num_tracks) {
+        for (Vex::Node::const_iterator channel_it = thread->begin("channel");
+             channel_it != thread->end("channel"); channel_it++) {
+          if (channel_name == channel_it[0]->to_string()) {
+            for (int track = bits_per_sample(mode, station) - 1; track >= 0; track--)
+              channel_param.tracks.push_back(channel_it[2]->to_int() * bits_per_sample(mode, station) + track + i);
+            //for (int track = 0 ; track < bits_per_sample(mode, station) ; track++)
+            //  channel_param.tracks.push_back(channel_it[2]->to_int() * bits_per_sample(mode, station) + track + i);
+          }
+        }
       }
+      input_parameters.channels.push_back(channel_param);
     }
-    input_parameters.channels.push_back(channel_param);
   }
 }
 
@@ -1177,27 +1185,30 @@ get_mark5b_standard_mapping(const std::string &mode,
   input_parameters.n_tracks = subband_to_track.size() * bits_per_sample_;
 
   { // Fill the sign and magnitude bits:
+    int ch_index = 0;
     int nr_bit_streams = subband_to_track.size()*bits_per_sample_;
     for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
       const std::string &channel_name = frequency_channel(ch_nr);
       int bit_stream_nr = subband_to_track[channel_name]*bits_per_sample_;
-
-      Input_node_parameters::Channel_parameters channel_param;
-      channel_param.bits_per_sample = bits_per_sample_;
-      channel_param.sideband = sideband(channel_name, station, mode);
-      channel_param.polarisation = polarisation(channel_name, station, mode);
-      channel_param.frequency_number = frequency_number(channel_name, station, mode);
-      if (bits_per_sample_ == 2) {
-        for (; bit_stream_nr < 32; bit_stream_nr += nr_bit_streams) {
-          channel_param.tracks.push_back(bit_stream_nr);
-          channel_param.tracks.push_back(bit_stream_nr+1);
+      int freq_nr = frequency_number(channel_name, station, mode);
+      if (freq_nr >= 0){
+        Input_node_parameters::Channel_parameters channel_param;
+        channel_param.bits_per_sample = bits_per_sample_;
+        channel_param.sideband = sideband(channel_name, station, mode);
+        channel_param.polarisation = polarisation(channel_name, station, mode);
+        channel_param.frequency_number = ch_index++;
+        if (bits_per_sample_ == 2) {
+          for (; bit_stream_nr < 32; bit_stream_nr += nr_bit_streams) {
+            channel_param.tracks.push_back(bit_stream_nr);
+            channel_param.tracks.push_back(bit_stream_nr+1);
+          }
+        } else {
+          for (; bit_stream_nr < 32; bit_stream_nr += nr_bit_streams) {
+            channel_param.tracks.push_back(bit_stream_nr);
+          }
         }
-      } else {
-        for (; bit_stream_nr < 32; bit_stream_nr += nr_bit_streams) {
-          channel_param.tracks.push_back(bit_stream_nr);
-        }
+        input_parameters.channels.push_back(channel_param);
       }
-      input_parameters.channels.push_back(channel_param);
     }
   }
 }
@@ -1223,7 +1234,6 @@ get_input_node_parameters(const std::string &mode_name,
     result.track_bit_rate =
       (int)(freq["sample_rate"]->to_double_amount("Ms/sec")*1000000);
   }
-
   std::string record_transport_type = transport_type(station_name);
   if (record_transport_type == "Mark5A") {
     get_mark5a_tracks(mode_name, station_name, result);
@@ -1298,15 +1308,19 @@ int
 Control_parameters::
 cross_channel(const std::string &channel_name,
               const std::string &mode) const {
-  std::string freq = frequency(channel_name, station(0), mode);
-  char side = sideband(channel_name, station(0), mode);
-  char pol  = polarisation(channel_name, station(0), mode);
-  for (size_t i=0; i<number_frequency_channels(); i++) {
-    if (channel(i) != channel_name) {
-      if ((freq == frequency(channel(i), station(0), mode)) &&
-          (side == sideband(channel(i), station(0), mode)) &&
-          (pol != polarisation(channel(i), station(0), mode))) {
-        return i;
+  for(int s = 0; s < number_stations(); s++){
+    std::string freq = frequency(channel_name, station(s), mode);
+    if (freq != std::string()){
+      char side = sideband(channel_name, station(s), mode);
+      char pol  = polarisation(channel_name, station(s), mode);
+      for (size_t i=0; i<number_frequency_channels(); i++) {
+        if (channel(i) != channel_name) {
+          if ((freq == frequency(channel(i), station(s), mode)) &&
+              (side == sideband(channel(i), station(s), mode)) &&
+              (pol != polarisation(channel(i), station(s), mode))) {
+            return i;
+          }
+        }
       }
     }
   }
@@ -1476,7 +1490,6 @@ frequency_number(const std::string &channel_name,
     count++;
   }
 
-  SFXC_ASSERT(frequency_number != -1);
   return frequency_number;
 }
 
@@ -1560,7 +1573,8 @@ Correlation_parameters
 Control_parameters::
 get_correlation_parameters(const std::string &scan_name,
                            const std::string &channel_name,
-                           const std::vector<std::string> &station_name,
+                           const std::string &station_name,
+                           const std::vector<int> &station_in_scan,
                            const std::map<std::string, int> &correlator_node_station_to_input) const {
   std::set<std::string> freq_set;
   std::set<std::string>::const_iterator freq_set_it;
@@ -1593,7 +1607,7 @@ get_correlation_parameters(const std::string &scan_name,
        freq_it != mode->end("FREQ"); ++freq_it) {
     for (Vex::Node::const_iterator elem_it = freq_it->begin();
 	 elem_it != freq_it->end(); ++elem_it) {
-      if (elem_it->to_string() == station_name[0]) {
+      if (elem_it->to_string() == station_name) {
 	freq_mode = freq_it[0]->to_string();
       }
     }
@@ -1619,8 +1633,7 @@ get_correlation_parameters(const std::string &scan_name,
   }
 
   int count = 0;
-  for (freq_set_it = freq_set.begin();
-       freq_set_it != freq_set.end(); ++freq_set_it) {
+  for (freq_set_it = freq_set.begin(); freq_set_it != freq_set.end(); ++freq_set_it) {
     if (*freq_set_it == freq_temp) {
       corr_param.channel_nr = count;
     }
@@ -1632,7 +1645,7 @@ get_correlation_parameters(const std::string &scan_name,
        if_it != mode->end("IF"); ++if_it) {
     for (Vex::Node::const_iterator elem_it = if_it->begin();
          elem_it != if_it->end(); ++elem_it) {
-      if (elem_it->to_string() == station_name[0]) {
+      if (elem_it->to_string() == station_name) {
         if_mode = if_it[0]->to_string();
       }
     }
@@ -1640,7 +1653,7 @@ get_correlation_parameters(const std::string &scan_name,
   for (Vex::Node::const_iterator bbc_it = mode->begin("BBC");
        bbc_it != mode->end("BBC"); ++bbc_it) {
     for (size_t i=1; i<bbc_it->size(); i++) {
-      if (bbc_it[i]->to_string() == station_name[0]) {
+      if (bbc_it[i]->to_string() == station_name) {
         bbc_mode = bbc_it[0]->to_string();
       }
     }
@@ -1665,7 +1678,6 @@ get_correlation_parameters(const std::string &scan_name,
     corr_param.cross_polarize = false;
   }
 
-
   corr_param.reference_station = -1;
   if (reference_station() != "") {
     for (size_t station_nr=0; station_nr < number_stations(); station_nr++) {
@@ -1682,21 +1694,23 @@ get_correlation_parameters(const std::string &scan_name,
       correlator_node_station_to_input.find(station[0]->to_string());
     if (station_nr_it != correlator_node_station_to_input.end()) {
       if (station_nr_it->second >= 0) {
-        Correlation_parameters::Station_parameters station_param;
-        station_param.station_number = station_number(station[0]->to_string());
-        station_param.station_stream = station_nr_it->second;
-        station_param.start_time = station[1]->to_int_amount("sec");
-        station_param.stop_time = station[2]->to_int_amount("sec");
-        station_param.bits_per_sample = bits_per_sample(mode_name, station[0]->to_string());
-        station_param.sample_rate = sample_rate(mode_name, station[0]->to_string());
-        station_param.channel_freq = channel_freq(mode_name, station[0]->to_string(), channel_name);
-        station_param.bandwidth = bandwidth(mode_name, station[0]->to_string());
-	station_param.sideband = sideband(channel_name, station[0]->to_string(), mode_name);
-        corr_param.station_streams.push_back(station_param);
+        int number = station_nr_it->second;
+        if(station_in_scan[number] >= 0){
+          Correlation_parameters::Station_parameters station_param;
+          station_param.station_number = station_number(station[0]->to_string());
+          station_param.station_stream = station_nr_it->second;
+          station_param.start_time = station[1]->to_int_amount("sec");
+          station_param.stop_time = station[2]->to_int_amount("sec");
+          station_param.bits_per_sample = bits_per_sample(mode_name, station[0]->to_string());
+          station_param.sample_rate = sample_rate(mode_name, station[0]->to_string());
+          station_param.channel_freq = channel_freq(mode_name, station[0]->to_string(), channel_name);
+          station_param.bandwidth = bandwidth(mode_name, station[0]->to_string());
+          station_param.sideband = sideband(channel_name, station[0]->to_string(), mode_name);
+          corr_param.station_streams.push_back(station_param);
+        }
       }
     }
   }
-
   return corr_param;
 }
 
