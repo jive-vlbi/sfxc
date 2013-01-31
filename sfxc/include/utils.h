@@ -65,7 +65,7 @@
 #define SIZE_VDIF_WORD            sizeof(int32_t)
 
 // Number of mark5b frames to read at once
-#define N_MK5B_BLOCKS_TO_READ     16 
+#define N_MK5B_BLOCKS_TO_READ     8 
 
 #define SFXC_PORT                1233
 #define MAX_TCP_CONNECTIONS      16
