@@ -1909,12 +1909,14 @@ std::ostream &operator<<(std::ostream &out,
     if (i!=0)
       out << ", ";
     out << std::endl;
-    out << "{ \"stream\" : " <<param.station_streams[i].station_stream
-    << ", \"start\" : " <<param.station_streams[i].start_time
-    << ", \"stop\" : " <<param.station_streams[i].stop_time
-    << ",  \"bits_per_sample\": " << param.station_streams[i].bits_per_sample
+    out << "{ \"stream\": " <<param.station_streams[i].station_stream
+    << ", \"start\": " <<param.station_streams[i].start_time
+    << ", \"stop\": " <<param.station_streams[i].stop_time
+    << ", \"bits_per_sample\": " << param.station_streams[i].bits_per_sample
     << ", \"sample_rate\": " << param.station_streams[i].sample_rate
     << ", \"bandwidth\": " << param.station_streams[i].bandwidth
+    << "  \"channel_freq\": " << param.station_streams[i].channel_freq
+    << "  \"sideband\": " << param.station_streams[i].sideband
     << " }";
   }
   out << "] }" << std::endl;
