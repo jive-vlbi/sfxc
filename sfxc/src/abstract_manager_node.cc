@@ -530,20 +530,6 @@ Abstract_manager_node::get_input_node_map() const {
   return input_node_map;
 }
 
-size_t
-Abstract_manager_node::get_channel(const std::string &channel) {
-  for (size_t channel_nr = 0;
-       channel_nr < control_parameters.number_frequency_channels();
-       channel_nr++) {
-    if (channel == control_parameters.frequency_channel(channel_nr)) {
-      return channel_nr;
-    }
-  }
-  // error message
-  sfxc_abort((std::string("Couldn't find the frequency channel : ")+channel).c_str());
-  return control_parameters.number_frequency_channels();
-}
-
 void
 Abstract_manager_node::
 output_node_set_global_header(char* header_msg, int size) {

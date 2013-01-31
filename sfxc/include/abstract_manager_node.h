@@ -121,8 +121,6 @@ public:
 
   void send(Delay_table_akima &delay_table, int station, int to_rank);
 
-  size_t get_channel(const std::string &channel);
-
   const std::map<std::string, int> &get_input_node_map() const;
 
   Time integration_time() const {
