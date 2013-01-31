@@ -5,7 +5,7 @@
 Delay_correction::Delay_correction(int stream_nr_)
     : output_buffer(Output_buffer_ptr(new Output_buffer())),
       output_memory_pool(32),current_time(-1), delay_table_set(false),
-      stream_nr(stream_nr), stream_idx(-1)
+      stream_nr(stream_nr_), stream_idx(-1)
 {
 }
 
