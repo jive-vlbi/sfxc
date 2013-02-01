@@ -834,14 +834,14 @@ std::string
 Control_parameters::frequency_channel(size_t channel_nr, const std::string& mode_name, const std::string &station_name) const {
   SFXC_ASSERT(channel_nr < number_frequency_channels());
 
-  char pol = polarisation(channel(channel_nr), station_name, mode_name);
+  char pol = polarisation(channel(channel_nr), station(0), mode_name);
   int64_t freq_min, freq_max; 
   if (sideband(channel(channel_nr), station(0), mode_name) == 'L') {
     freq_max = channel_freq(mode_name, station(0), channel(channel_nr));
-    freq_min = freq_max - bandwidth(mode_name, station_name) / 2;
+    freq_min = freq_max - bandwidth(mode_name, station(0));
   } else {
     freq_min = channel_freq(mode_name, station(0), channel(channel_nr));
-    freq_max = freq_min + bandwidth(mode_name, station_name) / 2;
+    freq_max = freq_min + bandwidth(mode_name, station(0));
   }
 
   const std::string &freq_name = get_vex().get_frequency(mode_name, station_name);
