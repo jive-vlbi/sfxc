@@ -210,6 +210,7 @@ public:
   std::string sideband(int i) const;
   std::string reference_station() const;
   int reference_station_number() const;
+  std::string setup_station() const;
   std::string experiment() const;
 
   bool phased_array() const;

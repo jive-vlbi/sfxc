@@ -608,6 +608,14 @@ Control_parameters::reference_station() const {
 }
 
 std::string
+Control_parameters::setup_station() const {
+  if (ctrl["setup_station"] == Json::Value())
+    return station(0);
+  else
+    return ctrl["setup_station"].asString();
+}
+
+std::string
 Control_parameters::experiment() const {
   return ctrl["exper_name"].asString();
 }
@@ -834,14 +842,14 @@ std::string
 Control_parameters::frequency_channel(size_t channel_nr, const std::string& mode_name, const std::string &station_name) const {
   SFXC_ASSERT(channel_nr < number_frequency_channels());
 
-  char pol = polarisation(channel(channel_nr), station(0), mode_name);
+  char pol = polarisation(channel(channel_nr), setup_station(), mode_name);
   int64_t freq_min, freq_max; 
-  if (sideband(channel(channel_nr), station(0), mode_name) == 'L') {
-    freq_max = channel_freq(mode_name, station(0), channel(channel_nr));
-    freq_min = freq_max - bandwidth(mode_name, station(0));
+  if (sideband(channel(channel_nr), setup_station(), mode_name) == 'L') {
+    freq_max = channel_freq(mode_name, setup_station(), channel(channel_nr));
+    freq_min = freq_max - bandwidth(mode_name, setup_station());
   } else {
-    freq_min = channel_freq(mode_name, station(0), channel(channel_nr));
-    freq_max = freq_min + bandwidth(mode_name, station(0));
+    freq_min = channel_freq(mode_name, setup_station(), channel(channel_nr));
+    freq_max = freq_min + bandwidth(mode_name, setup_station());
   }
 
   const std::string &freq_name = get_vex().get_frequency(mode_name, station_name);
@@ -1345,25 +1353,22 @@ int
 Control_parameters::
 cross_channel(const std::string &channel_name,
               const std::string &mode) const {
-  for(int s = 0; s < number_stations(); s++){
-    std::string freq = frequency(channel_name, station(s), mode);
-    if (freq != std::string()){
-      char side = sideband(channel_name, station(s), mode);
-      char pol  = polarisation(channel_name, station(s), mode);
-      for (size_t i=0; i<number_frequency_channels(); i++) {
-        if (channel(i) != channel_name) {
-          if ((freq == frequency(channel(i), station(s), mode)) &&
-              (side == sideband(channel(i), station(s), mode)) &&
-              (pol != polarisation(channel(i), station(s), mode))) {
-            return i;
-          }
-        }
+  std::string freq = frequency(channel_name, setup_station(), mode);
+  if (freq != std::string()){
+    char side = sideband(channel_name, setup_station(), mode);
+    char pol  = polarisation(channel_name, setup_station(), mode);
+    for (size_t i = 0; i < number_frequency_channels(); i++) {
+      if (channel(i) != channel_name) {
+	if ((freq == frequency(channel(i), setup_station(), mode)) &&
+	    (side == sideband(channel(i), setup_station(), mode)) &&
+	    (pol != polarisation(channel(i), setup_station(), mode))) {
+	  return i;
+	}
       }
     }
   }
   return -1;
 }
-
 
 char
 Control_parameters::
@@ -1444,7 +1449,7 @@ polarisation_type_for_global_output_header() const {
        ++mode_it) {
     std::string mode = mode_it.key();
     // Assume station 0 is in all scans
-    std::string station_name = station(0);
+    std::string station_name = setup_station();
     for (size_t ch_nr=0; ch_nr<number_frequency_channels(); ch_nr++) {
       std::string channel_name = frequency_channel(ch_nr, mode, station_name);
       char pol = polarisation(channel_name, station_name, mode);
@@ -1587,7 +1592,7 @@ get_correlation_parameters(const std::string &scan_name,
   Vex::Node::const_iterator mode =
     vex.get_root_node()["MODE"][mode_name];
 
-  const std::string &station_name = station(0);
+  const std::string &station_name = setup_station();
   const std::string &channel_name =
     frequency_channel(channel_nr, mode_name, station_name);
 
