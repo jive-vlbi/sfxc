@@ -256,7 +256,7 @@ public:
 
   // Return the Frequency channels from the VEX file, filtered by the ctrl file
   size_t number_frequency_channels() const;
-  std::string frequency_channel(size_t channel_nr) const;
+  std::string frequency_channel(size_t channel_nr, const std::string& mode_name, const std::string &station_name) const;
 
   bool cross_polarize() const;
   int cross_channel(int channel_nr,
@@ -273,10 +273,6 @@ public:
   std::string frequency(const std::string &channel_name,
                         const std::string &station_name,
                         const std::string &mode) const;
-
-  int frequency_number(const std::string &channel_name,
-		       const std::string &station_name,
-		       const std::string &mode) const;
 
   char sideband(const std::string &channel_name,
                 const std::string &station_name,
@@ -326,9 +322,7 @@ public:
   // Return the correlation parameters needed by a correlator node
   Correlation_parameters
   get_correlation_parameters(const std::string &scan_name,
-                             const std::string &channel_name,
-                             const std::string &station_name,
-                             const std::vector<int> &station_in_scan,
+                             size_t channel_nr,
                              const std::map<std::string, int> &correlator_node_station_to_input) const;
   std::string rack_type(const std::string &station) const;
   std::string transport_type(const std::string &station) const;

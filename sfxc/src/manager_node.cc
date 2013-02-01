@@ -306,25 +306,12 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
                  << corr_node_nr);
   }
 
-  std::string channel_name =
-    control_parameters.frequency_channel(current_channel);
-  std::string station_name;
   Correlation_parameters correlation_parameters;
-  int nr_stations = control_parameters.number_stations();
-  for (int i=0; i<nr_stations; i++) {
-    if (ch_number_in_scan[current_channel][i] >= 0){
-      station_name = get_control_parameters().station(i);
-      break;
-    }
-  }
-  SFXC_ASSERT(station_name != std::string());
   std::string scan_name = control_parameters.scan(current_scan);
   correlation_parameters =
     control_parameters.
     get_correlation_parameters(scan_name,
-                               channel_name,
-                               station_name,
-                               ch_number_in_scan[current_channel],
+                               current_channel,
                                get_input_node_map());
   correlation_parameters.start_time =
     start_time + integration_time() * integration_slice_nr;
@@ -612,19 +599,15 @@ void Manager_node::initialise_scan(const std::string &scan) {
     SFXC_ASSERT(last_channel[i] == -1);
   ch_number_in_scan.resize(control_parameters.number_frequency_channels());
   for(int i = 0; i < ch_number_in_scan.size(); i++){
-    std::string f = control_parameters.frequency_channel(i);
     ch_number_in_scan[i].resize(control_parameters.number_stations());
     for(int s = 0; s < ch_number_in_scan[i].size(); s++){
-      std::string station = control_parameters.station(s);
-      std::string freq = vex.get_frequency(mode_name, station);
+      std::string station_name = control_parameters.station(s);
+      std::string channel_name = control_parameters.frequency_channel(i, mode_name, station_name);
+      std::string freq = vex.get_frequency(mode_name, station_name);
       ch_number_in_scan[i][s] = -1;
-      for (Vex::Node::const_iterator freq_it = root["FREQ"][freq]->begin("chan_def");
-           freq_it != root["FREQ"][freq]->end("chan_def"); freq_it++) {
-        if (freq_it[4]->to_string() == f){
-          ch_number_in_scan[i][s] = last_channel[s] + 1;
-          last_channel[s] += 1;
-          break;
-        }
+      if (!channel_name.empty()) {
+	ch_number_in_scan[i][s] = last_channel[s] + 1;
+	last_channel[s] += 1;
       }
     }
   }
