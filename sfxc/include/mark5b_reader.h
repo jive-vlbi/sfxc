@@ -64,7 +64,10 @@ public:
   Time goto_time(Data_frame &data, Time time);
 
   /// Get the current time in microseconds
-  Time get_current_time();
+  Time get_current_time(){
+    return current_time_;
+  }
+  Time compute_current_time();
 
   /// Read another mark5b-frame
   bool read_new_block(Data_frame &data);

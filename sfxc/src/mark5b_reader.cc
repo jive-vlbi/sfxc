@@ -30,7 +30,6 @@ Mark5b_reader::open_input_stream(Data_frame &data){
   }
 
   is_open_ = true;
-  current_time_ = get_current_time();
   start_day_ = current_header.julian_day();
   start_time_ = current_time_;
   data.start_time = current_time_;
@@ -48,7 +47,7 @@ Mark5b_reader::goto_time(Data_frame &data, Time time) {
   return get_current_time();
 }
 
-Time Mark5b_reader::get_current_time() {
+Time Mark5b_reader::compute_current_time() {
   Time time;
   if(is_open_){
     int samples_per_word = 32 / nr_of_bitstreams;
@@ -99,7 +98,7 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
     return resync_header(data);
   if(current_header.julian_day() != current_jday % 1000)
     current_jday++;
-  current_time_ = get_current_time();
+  current_time_ = compute_current_time();
   data.start_time = current_time_;
   // Check if there is a fill pattern in the data and if so, mark the data invalid
   data.invalid.resize(0);
@@ -253,7 +252,7 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
       if (check_header(current_header)){
         if(current_header.julian_day() != current_jday % 1000)
           current_jday++;
-        current_time_ = get_current_time();
+        current_time_ = compute_current_time();
         data.start_time = current_time_;
         data.invalid.resize(0);
         find_fill_pattern(data);
