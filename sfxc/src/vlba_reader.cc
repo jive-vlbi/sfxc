@@ -40,11 +40,62 @@ VLBA_reader::open_input_stream(Data_frame &data){
 
 Time
 VLBA_reader::goto_time(Data_frame &data, Time time) {
-  while (time > get_current_time()) {
-    if (!read_new_block(data))
-      break;
-  }
+  if (!data_reader_->is_seekable()){
+    // Reading from a socket, read one frame at a time
+    while (time > get_current_time()) {
+      if (!read_new_block(data))
+        break;
+    }
+  } else if (time > get_current_time()){
+    // Do fast binary search
+    const Time one_sec(1000000.);
+    const Time t_one_byte((8 * 1000000.) / data_rate());
+    Time delta_time = time - get_current_time();
 
+    while(delta_time>=one_sec){
+      // Read an integer number of frames
+      size_t bytes_data_to_read = one_sec / t_one_byte - SIZE_VLBA_FRAME*N;
+      SFXC_ASSERT(bytes_data_to_read %(SIZE_VLBA_FRAME*N)==0);
+
+      int no_frames_to_read=bytes_data_to_read/(SIZE_VLBA_FRAME*N);
+      size_t read_n_bytes = bytes_data_to_read + no_frames_to_read*N*(SIZE_VLBA_HEADER+SIZE_VLBA_AUX_HEADER);
+
+      /// A blocking read operation. The operation is looping until the file
+      /// is eof or the requested amount of data is retreived.
+      size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
+      if ( byte_read != read_n_bytes) {
+        std::cout << "Tried to read " << read_n_bytes << " but read " << byte_read << " instead\n";
+        sfxc_abort("Couldn't read the requested amount of data.");
+        return get_current_time();
+      }
+
+      // Need to read the data to check the header
+      if (!read_new_block(data)) {
+        DEBUG_MSG("Couldn't read data");
+      }
+      delta_time = time - get_current_time();
+    }
+    // Now read the last bit of data up to the requested time
+    ssize_t bytes_data_to_read = delta_time / t_one_byte - SIZE_VLBA_FRAME*N;
+    if(bytes_data_to_read>0){
+      SFXC_ASSERT(bytes_data_to_read %(SIZE_VLBA_FRAME*N)==0);
+
+      int no_frames_to_read=bytes_data_to_read/(SIZE_VLBA_FRAME*N);
+      size_t read_n_bytes = bytes_data_to_read + no_frames_to_read*N*(SIZE_VLBA_HEADER+SIZE_VLBA_AUX_HEADER);
+
+      size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), read_n_bytes, NULL );
+      if ( byte_read != read_n_bytes) {
+        std::cout << "Tried to read " << read_n_bytes << " but read " << byte_read << " instead\n";
+        sfxc_abort("Couldn't read the requested amount of data.");
+        return get_current_time();
+      }
+
+      // Need to read the data to check the header
+      if (!read_new_block(data)) {
+        DEBUG_MSG("Couldn't read data");
+      }
+    }  
+  }
   return get_current_time();
 }
 

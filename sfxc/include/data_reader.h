@@ -62,6 +62,9 @@ public:
   /** returns true if at least one byte can be read **/
   virtual bool can_read() = 0;
 
+  /** returns true if stream supports seek **/
+  bool is_seekable(){return is_seekable_;}
+
   virtual int get_fd() {
     return -1;
   }
@@ -73,6 +76,8 @@ private:
 
   uint64_t _data_counter;
   int data_slice;
+protected:
+  bool is_seekable_;
 };
 
 

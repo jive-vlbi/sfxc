@@ -24,6 +24,7 @@ Data_reader_file::Data_reader_file(const char *filename) :
     std::string msg = std::string("Filename '")+std::string(filename)+std::string("' doesn't exist");
     sfxc_abort(msg.c_str());
   }
+  is_seekable_ = true;
 }
 
 Data_reader_file::Data_reader_file(const std::string &filename) :
@@ -37,6 +38,7 @@ Data_reader_file::Data_reader_file(const std::string &filename) :
     std::string msg = std::string("Filename '")+filename+std::string("' doesn't exist");
     sfxc_abort(msg.c_str());
   }
+  is_seekable_ = true;
 }
 
 Data_reader_file::~Data_reader_file() {

@@ -13,7 +13,7 @@
 #include <string.h>
 #include <limits>
 
-Data_reader::Data_reader() : _data_counter(0), data_slice(-1) {}
+Data_reader::Data_reader() : _data_counter(0), data_slice(-1), is_seekable_(false) {}
 
 Data_reader::~Data_reader() {}
 
