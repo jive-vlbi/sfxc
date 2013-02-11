@@ -28,8 +28,8 @@ void Delay_correction::do_task() {
   cur_output = output_memory_pool.allocate();
   cur_output->stride = output_stride;
   // The windowing touches each block twice, so the last block needs to be preserved
-  int nfft_cor = (nbuffer * fft_size() + tbuf_end - tbuf_start) / (fft_cor_size() / 2) - 1;
-  if(cur_output->data.size() != nfft_cor  * output_stride)
+  int nfft_cor = (nbuffer * fft_size() + tbuf_end - tbuf_start) / (fft_rot_size() / 2) - 1;
+  if (cur_output->data.size() != nfft_cor * output_stride)
     cur_output->data.resize(nfft_cor * output_stride);
 #ifndef DUMMY_CORRELATION
   size_t tbuf_size = time_buffer.size();
@@ -54,30 +54,32 @@ void Delay_correction::do_task() {
   for(int i=0; i<nfft_cor; i++){
     // apply window function
     size_t eob = tbuf_size - tbuf_start%tbuf_size; // how many samples to end of buffer
-    size_t nsamp = std::min(eob, fft_cor_size());
+    size_t nsamp = std::min(eob, fft_rot_size());
     SFXC_MUL_F(&time_buffer[tbuf_start%tbuf_size], &window[0], &temp_buffer[0], nsamp);
-    if(nsamp < fft_cor_size())
-      SFXC_MUL_F(&time_buffer[0], &window[nsamp], &temp_buffer[nsamp], fft_cor_size() - nsamp);
-    tbuf_start += fft_cor_size()/2;
+    if(nsamp < fft_rot_size())
+      SFXC_MUL_F(&time_buffer[0], &window[nsamp], &temp_buffer[nsamp], fft_rot_size() - nsamp);
+    tbuf_start += fft_rot_size()/2;
     SFXC_ASSERT(tbuf_start < tbuf_end);
     // Do the final fft from time to frequency
     if (correlation_parameters.sideband != correlation_parameters.station_streams[stream_idx].sideband)
-      SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_cor_size());
-    fft_t2f_cor.rfft(&temp_buffer[0], &cur_output->data[i * output_stride]);
+      SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_rot_size());
+    fft_t2f_cor.rfft(&temp_buffer[0], &temp_fft_buffer[0]);
+    memcpy(&cur_output->data[i * output_stride], &temp_fft_buffer[0], output_stride * sizeof(std::complex<FLOAT>));
   }
   if ((current_fft == n_ffts_per_integration) && (correlation_parameters.window == SFXC_WINDOW_NONE)){
     // Also get the last fft
     size_t eob = tbuf_size - tbuf_start%tbuf_size; // how many samples to end of buffer
-    size_t nsamp = std::min(eob, fft_cor_size()/2);
+    size_t nsamp = std::min(eob, fft_rot_size()/2);
     memcpy(&temp_buffer[0], &time_buffer[tbuf_start%tbuf_size], nsamp * sizeof(FLOAT));
-    if(nsamp < fft_cor_size())
-      memcpy(&temp_buffer[nsamp], &time_buffer[0], (fft_cor_size()/2 - nsamp) * sizeof(FLOAT));
-    memset(&temp_buffer[fft_cor_size()/2], 0, sizeof(FLOAT) * fft_cor_size()/2);
+    if(nsamp < fft_rot_size())
+      memcpy(&temp_buffer[nsamp], &time_buffer[0], (fft_rot_size()/2 - nsamp) * sizeof(FLOAT));
+    memset(&temp_buffer[fft_rot_size()/2], 0, sizeof(FLOAT) * fft_rot_size()/2);
     // Do the final fft from time to frequency
     if (correlation_parameters.sideband != correlation_parameters.station_streams[stream_idx].sideband)
-      SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_cor_size());
+      SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_rot_size());
     cur_output->data.resize((nfft_cor+1) * output_stride);
-    fft_t2f_cor.rfft(&temp_buffer[0], &cur_output->data[nfft_cor * output_stride]);
+    fft_t2f_cor.rfft(&temp_buffer[0], &temp_fft_buffer[0]);
+    memcpy(&cur_output->data[nfft_cor * output_stride], &temp_fft_buffer[0], output_stride * sizeof(std::complex<FLOAT>));
   }
 #endif // DUMMY_CORRELATION
   if(nfft_cor > 0){
@@ -191,18 +193,13 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
 
 void
 Delay_correction::set_parameters(const Correlation_parameters &parameters) {
-  size_t prev_fft_size = fft_size();
-  size_t prev_fft_cor_size = fft_cor_size();
-  int old_window = correlation_parameters.window;
-
   stream_idx = 0;
   while ((stream_idx < parameters.station_streams.size()) &&
          (parameters.station_streams[stream_idx].station_stream != stream_nr))
     stream_idx++;
-  if(stream_idx == parameters.station_streams.size()){
-    int sb = correlation_parameters.sideband == 'L' ? -1 : 1;
-    double f = parameters.channel_freq + parameters.bandwidth  * 0.5 * sb;
-    return; // station not in current timeslice
+  if (stream_idx == parameters.station_streams.size()) {
+    // Data stream is not participating in current time slice
+    return;
   }
 
   bits_per_sample = parameters.station_streams[stream_idx].bits_per_sample;
@@ -215,30 +212,29 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 
   SFXC_ASSERT(((int64_t)fft_size() * 1000000000) % sample_rate() == 0);
 
-  if ((prev_fft_size != fft_size()) || (prev_fft_cor_size != fft_cor_size())) {
-    size_t nfft_min = std::max(2*fft_cor_size()/fft_size(), (size_t)1);
-    size_t nfft_max = std::max(CORRELATOR_BUFFER_SIZE / fft_size(), nfft_min) + nfft_min;
-    time_buffer.resize(nfft_max * fft_size());
+  size_t nfft_min = std::max(2*fft_rot_size()/fft_size(), (size_t)1);
+  size_t nfft_max = std::max(CORRELATOR_BUFFER_SIZE / fft_size(), nfft_min) + nfft_min;
+  time_buffer.resize(nfft_max * fft_size());
 
-    exp_array.resize(fft_size());
-    frequency_buffer.resize(fft_size());
-    temp_buffer.resize(2*parameters.fft_size_correlation);
+  exp_array.resize(fft_size());
+  frequency_buffer.resize(fft_size());
+  temp_buffer.resize(fft_rot_size());
+  temp_fft_buffer.resize(fft_rot_size()/2 + 4);
 
-    fft_t2f.resize(fft_size());
-    fft_f2t.resize(fft_size());
-    fft_t2f_cor.resize(2 * parameters.fft_size_correlation);
-  }
+  fft_t2f.resize(fft_size());
+  fft_f2t.resize(fft_size());
+  fft_t2f_cor.resize(fft_rot_size());
   create_window();
   create_flip();
-  SFXC_ASSERT(frequency_buffer.size() == fft_size());
 
   SFXC_ASSERT(parameters.fft_size_correlation >= parameters.fft_size_delaycor);
   n_ffts_per_integration =
+    (parameters.station_streams[stream_idx].bandwidth / parameters.bandwidth) *
+    (parameters.fft_size_correlation / parameters.fft_size_delaycor) *
     Control_parameters::nr_ffts_per_integration_slice(
       (int) parameters.integration_time.get_time_usec(),
       parameters.sample_rate,
-      parameters.fft_size_correlation) * 
-      (parameters.fft_size_correlation / parameters.fft_size_delaycor);
+      parameters.fft_size_correlation);
 
   current_fft = 0;
   tbuf_start = 0;
@@ -293,7 +289,7 @@ int Delay_correction::sideband() {
 
 void 
 Delay_correction::create_window(){
-  const int n = fft_cor_size();
+  const int n = fft_rot_size();
   window.resize(n);
   switch(correlation_parameters.window){
   case SFXC_WINDOW_NONE:
@@ -341,7 +337,7 @@ Delay_correction::create_window(){
 
 void
 Delay_correction::create_flip() {
-  const int n = fft_cor_size();
+  const int n = fft_rot_size();
   flip.resize(n);
   for (int i = 0; i < n; i++)
     flip[i] = ((i % 2) == 0) ? 1 : -1;

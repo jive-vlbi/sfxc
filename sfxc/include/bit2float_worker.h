@@ -116,6 +116,7 @@ private:
   bool have_new_parameters;
   struct New_parameters{
     int n_ffts_per_integration;
+    int n_ffts_per_buffer;
     int bits_per_sample;
     int sample_rate;
     int fft_size_delaycor;

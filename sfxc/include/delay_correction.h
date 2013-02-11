@@ -62,6 +62,7 @@ private:
   void fringe_stopping(FLOAT output[]);
   // access functions to the correlation parameters
   size_t fft_size();
+  size_t fft_rot_size();
   size_t fft_cor_size();
   int buffer_size;
   int sample_rate();
@@ -92,6 +93,7 @@ private:
   Memory_pool_vector_element< std::complex<FLOAT> > frequency_buffer;
   Memory_pool_vector_element<FLOAT> time_buffer;
   Memory_pool_vector_element<FLOAT> temp_buffer;
+  Memory_pool_vector_element< std::complex<FLOAT> > temp_fft_buffer;
   Memory_pool_vector_element<FLOAT> window;
   Memory_pool_vector_element<FLOAT> flip;
   
@@ -110,15 +112,20 @@ inline size_t Delay_correction::fft_size() {
   return correlation_parameters.fft_size_delaycor;
 }
 
+inline size_t Delay_correction::fft_rot_size() {
+  return (correlation_parameters.station_streams[stream_idx].bandwidth / correlation_parameters.bandwidth) * 2 * correlation_parameters.fft_size_correlation;
+}
+
 inline size_t Delay_correction::fft_cor_size() {
-  return 2*correlation_parameters.fft_size_correlation;
+  return 2 * correlation_parameters.fft_size_correlation;
 }
 
 inline int Delay_correction::bandwidth() {
-  return correlation_parameters.bandwidth;
+  return correlation_parameters.station_streams[stream_idx].bandwidth;
 }
+
 inline int Delay_correction::sample_rate() {
-  return correlation_parameters.sample_rate;
+  return correlation_parameters.station_streams[stream_idx].sample_rate;
 }
 
 inline int64_t Delay_correction::channel_freq() {
