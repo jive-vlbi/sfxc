@@ -64,7 +64,7 @@ void Delay_correction::do_task() {
     if (correlation_parameters.sideband != correlation_parameters.station_streams[stream_idx].sideband)
       SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_rot_size());
     fft_t2f_cor.rfft(&temp_buffer[0], &temp_fft_buffer[0]);
-    memcpy(&cur_output->data[i * output_stride], &temp_fft_buffer[0], output_stride * sizeof(std::complex<FLOAT>));
+    memcpy(&cur_output->data[i * output_stride], &temp_fft_buffer[temp_fft_offset], output_stride * sizeof(std::complex<FLOAT>));
   }
   if ((current_fft == n_ffts_per_integration) && (correlation_parameters.window == SFXC_WINDOW_NONE)){
     // Also get the last fft
@@ -79,7 +79,7 @@ void Delay_correction::do_task() {
       SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_rot_size());
     cur_output->data.resize((nfft_cor+1) * output_stride);
     fft_t2f_cor.rfft(&temp_buffer[0], &temp_fft_buffer[0]);
-    memcpy(&cur_output->data[nfft_cor * output_stride], &temp_fft_buffer[0], output_stride * sizeof(std::complex<FLOAT>));
+    memcpy(&cur_output->data[nfft_cor * output_stride], &temp_fft_buffer[temp_fft_offset], output_stride * sizeof(std::complex<FLOAT>));
   }
 #endif // DUMMY_CORRELATION
   if(nfft_cor > 0){
@@ -226,6 +226,18 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   fft_t2f_cor.resize(fft_rot_size());
   create_window();
   create_flip();
+
+  // Calculate the offset into temp_fft_buffer where we can find the
+  // spectral points that we want to correlate.
+  int64_t delta, freq = channel_freq();
+  if (parameters.sideband != parameters.station_streams[stream_idx].sideband)
+    freq += sideband() * bandwidth();
+  if (parameters.sideband == 'L')
+    delta = freq - parameters.channel_freq;
+  else
+    delta = parameters.channel_freq - freq;
+  SFXC_ASSERT(delta >= 0);
+  temp_fft_offset = (fft_cor_size() / 2) * delta  / parameters.bandwidth;
 
   SFXC_ASSERT(parameters.fft_size_correlation >= parameters.fft_size_delaycor);
   n_ffts_per_integration =

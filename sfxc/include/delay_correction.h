@@ -94,6 +94,7 @@ private:
   Memory_pool_vector_element<FLOAT> time_buffer;
   Memory_pool_vector_element<FLOAT> temp_buffer;
   Memory_pool_vector_element< std::complex<FLOAT> > temp_fft_buffer;
+  int temp_fft_offset;
   Memory_pool_vector_element<FLOAT> window;
   Memory_pool_vector_element<FLOAT> flip;
   
