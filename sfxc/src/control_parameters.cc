@@ -788,18 +788,6 @@ Control_parameters::number_scans() const {
   return vex.get_root_node()["SCHED"]->size();
 }
 
-std::string
-Control_parameters::
-station_in_scan(const std::string& scan, int station_nr) const {
-  Vex::Node::const_iterator it =
-    vex.get_root_node()["SCHED"][scan]->begin("station");
-  for (int curr=0; curr < station_nr; curr++) {
-    ++it;
-    SFXC_ASSERT(it != vex.get_root_node()["SCHED"][scan]->end("station"));
-  }
-  return it[0]->to_string();
-}
-
 size_t
 Control_parameters::number_stations_in_scan(const std::string& scan) const {
   size_t n_stations=0;
