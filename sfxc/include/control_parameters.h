@@ -246,6 +246,8 @@ public:
   std::string scan_source(const std::string &scan) const;
 
   size_t number_scans() const;
+
+  bool station_in_scan(const std::string& scan, const std::string &station) const;
   size_t number_stations_in_scan(const std::string& scan) const;
 
   // Takes cross polarisation into account

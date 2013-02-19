@@ -155,14 +155,27 @@ void Manager_node::start() {
         // set track information
         initialise_scan(control_parameters.scan(current_scan));
 
+        std::vector<bool> station_in_scan(control_parameters.number_stations(), false);
+        for (size_t station=0; station < control_parameters.number_stations();
+             station++) {
+          for(int ch=0; ch<ch_number_in_scan.size(); ch++){
+            if (ch_number_in_scan[ch][station] >= 0){
+              station_in_scan[station] = true;
+              break;
+            }
+          }
+        }
+
         // Set the input nodes to the proper start time
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
-          Time station_time =
-            input_node_get_current_time(control_parameters.station(station));
-          if (station_time >
-              start_time + integration_time() * integration_slice_nr) {
-            integration_slice_nr = (int) ((station_time - start_time) / integration_time());
+          if(station_in_scan[station]){
+            Time station_time =
+              input_node_get_current_time(control_parameters.station(station));
+            if (station_time >
+                start_time + integration_time() * integration_slice_nr) {
+              integration_slice_nr = (int) ((station_time - start_time) / integration_time());
+            }
           }
         }
 
@@ -174,9 +187,10 @@ void Manager_node::start() {
         }
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
-          input_node_set_time(control_parameters.station(station),
-                              start_time + integration_time()*integration_slice_nr,
-                              stop_time_scan);
+          if(station_in_scan[station])
+            input_node_set_time(control_parameters.station(station),
+                                start_time + integration_time()*integration_slice_nr,
+                                stop_time_scan);
         }
         status = START_CORRELATION_TIME_SLICE;
         break;
@@ -595,19 +609,19 @@ void Manager_node::initialise_scan(const std::string &scan) {
   // Determine for each station which channels are to be correlated
   const Vex::Node &root=vex.get_root_node();
   std::vector<int> last_channel(control_parameters.number_stations(), -1);
-  for (int i=0; i< last_channel.size();i++)
-    SFXC_ASSERT(last_channel[i] == -1);
   ch_number_in_scan.resize(control_parameters.number_frequency_channels());
   for(int i = 0; i < ch_number_in_scan.size(); i++){
     ch_number_in_scan[i].resize(control_parameters.number_stations());
     for(int s = 0; s < ch_number_in_scan[i].size(); s++){
       std::string station_name = control_parameters.station(s);
-      std::string channel_name = control_parameters.frequency_channel(i, mode_name, station_name);
-      std::string freq = vex.get_frequency(mode_name, station_name);
       ch_number_in_scan[i][s] = -1;
-      if (!channel_name.empty()) {
-	ch_number_in_scan[i][s] = last_channel[s] + 1;
-	last_channel[s] += 1;
+      if(control_parameters.station_in_scan(scan, station_name)){
+        std::string channel_name = control_parameters.frequency_channel(i, mode_name, station_name);
+        std::string freq = vex.get_frequency(mode_name, station_name);
+        if (!channel_name.empty()) {
+          ch_number_in_scan[i][s] = last_channel[s] + 1;
+          last_channel[s] += 1;
+        }
       }
     }
   }
