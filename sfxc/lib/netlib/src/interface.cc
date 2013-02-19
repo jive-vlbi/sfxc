@@ -11,6 +11,7 @@
 #include "interface.h"
 #include "connexion.h"
 #include "connexion_listener.h"
+#include "utils.h"
 
 std::ostream& operator<<(std::ostream& out, InterfaceIP& intf) {
   out << "name: " << intf.name() << " ipv4 address: " << intf.ip();
@@ -173,7 +174,7 @@ Connexion* InterfaceIP::connect_to(const std::string& ipaddress, unsigned short 
   serverAddress.sin_port = htons(port);
 
   if (connect(socketDescriptor, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
-    std::cout << "cannot connect to port " << port << " on "
+    std::cout << RANK_OF_NODE << " : cannot connect to port " << port << " on "
 	      << inet_ntoa(serverAddress.sin_addr) << std::endl;
     close(socketDescriptor);
     //MTHROW("Unable to connect to "+ipaddress);
@@ -285,7 +286,7 @@ Connexion* InterfaceIP::connect_to(uint64_t ipaddress, unsigned short port, int 
   serverAddress.sin_port = htons(port);
 
   if (connect(socketDescriptor, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
-    std::cout << "cannot connect to port " << port << " on "
+    std::cout << RANK_OF_NODE<< " : cannot connect to port " << port << " on "
 	      << inet_ntoa(serverAddress.sin_addr) << std::endl;
     close(socketDescriptor);
     //MTHROW("Unable to connect to "+ipaddress);
