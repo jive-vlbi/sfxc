@@ -243,7 +243,7 @@ Input_node_tasklet::get_delays(Time start_time, int64_t nsamples, std::vector<De
                         (dstop.remaining_samples != dstart.remaining_samples));
 
   if(delay_different){
-    if(nsamples < 3){
+    if(nsamples == 1){
       delay_list.push_back(dstop);
     }else{
       get_delays(start_time, nsamples / 2, delay_list);
