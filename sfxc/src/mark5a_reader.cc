@@ -25,14 +25,13 @@ Mark5a_reader::goto_time(Data_frame &data, Time time) {
         break;
     }
   } else if (time > get_current_time()){
-    // Do fast binary search
+    // Skip through data stream with 1 second steps
     const Time one_sec(1000000.);
     const Time t_one_frame(8*N*SIZE_MK5A_FRAME / (data_rate() / 1000000.));
-    const size_t max_blocks_to_read = std::numeric_limits<size_t>::max() / (SIZE_MK5A_FRAME*N);
     Time delta_time = time - get_current_time();
     while(delta_time>=one_sec){
       // Read an integer number of frames
-      size_t n_blocks = std::min((size_t)(delta_time / t_one_frame)/2, max_blocks_to_read);
+      size_t n_blocks = one_sec / t_one_frame;
       size_t read_n_bytes =  (n_blocks - 1) * SIZE_MK5A_FRAME*N;
 
       // A blocking read operation. The operation is looping until the file

@@ -50,18 +50,16 @@ Mark5b_reader::goto_time(Data_frame &data, Time time) {
         break;
     }
   } else if (time > get_current_time()){
-    // Do fast binary search
+    // Search data with 1 second steps
     const size_t size_mk5b_block =
       (SIZE_MK5B_HEADER+SIZE_MK5B_FRAME)*SIZE_MK5B_WORD;
-    const size_t max_blocks_to_read = std::numeric_limits<size_t>::max() /
-                                      (size_mk5b_block * N_MK5B_BLOCKS_TO_READ);
 
     // first search until we are within 1 sec from requested time
     const Time one_sec(1000000.);
     Time delta_time = time - get_current_time();
     while (delta_time >= one_sec){
       SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
-      size_t n_blocks = std::min((size_t)(delta_time/time_between_headers_)/2, max_blocks_to_read);
+      size_t n_blocks = one_sec / time_between_headers_;
       // Don't read the last header, to be able to check whether we are at the right time
       size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block;
       size_t byte_read = Data_reader_blocking::get_bytes_s( data_reader_.get(), bytes_to_read, NULL );

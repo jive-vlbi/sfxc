@@ -47,7 +47,7 @@ VLBA_reader::goto_time(Data_frame &data, Time time) {
         break;
     }
   } else if (time > get_current_time()){
-    // Do fast binary search
+    // Skip through data stream with 1 second steps
     const Time one_sec(1000000.);
     const Time t_one_byte((8 * 1000000.) / data_rate());
     Time delta_time = time - get_current_time();
