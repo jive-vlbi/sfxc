@@ -64,7 +64,6 @@ Correlator_node_data_reader_tasklet::do_task() {
     {
       int8_t new_delay;
       breader_->get_bytes(sizeof(new_delay), (char *)&new_delay);
-      SFXC_ASSERT((new_delay >= 0) && (new_delay < samples_per_byte));
       data[write++ % dsize] = new_delay;
       break;
     }
@@ -138,10 +137,6 @@ bool Correlator_node_data_reader_tasklet::active() {
 }
 
 void
-Correlator_node_data_reader_tasklet::
-set_parameters(const int n_ffts_to_read_,
-               const int bits_per_sample_) {
-  bits_per_sample = bits_per_sample_;
-  samples_per_byte = 8 / bits_per_sample;
+Correlator_node_data_reader_tasklet::set_parameters() {
   new_stream_available = true;
 }

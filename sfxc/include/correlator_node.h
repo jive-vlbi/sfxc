@@ -197,18 +197,13 @@ class Reader_thread : public Thread {
       for (size_t i=0; i<bit_sample_readers_.size(); i++) {
         SFXC_ASSERT(bit_sample_readers_[i] !=
                     Bit_sample_reader_ptr());
-        int index = jb.stream_list[i];
-        if (index >= 0) {
-          DEBUG_MSG("CONFIGURING THE READER ! :" << jb.number_ffts_in_integration);
-          bit_sample_readers_[i]->set_parameters(
-            jb.number_ffts_in_integration,
-            jb.bits_per_sample[index]);
+        if (jb.stream_list[i] >= 0) {
+          bit_sample_readers_[i]->set_parameters();
           readers_active_=true;
         }
       }
       queue_.pop();
     }
-
 
     /// This function add a new timeslice to read...
     void add_time_slice_to_read(const Correlation_parameters& parameters) {
@@ -225,12 +220,6 @@ class Reader_thread : public Thread {
         jb.stream_list[i] = -1;
       for(int i = 0; i < jb.station_streams_size; i++)
         jb.stream_list[parameters.station_streams[i].station_stream] = i;
-      // For each input stream save the number of bits per sample
-      for(int i = 0; i < jb.stream_list.size(); i++){
-        int index = jb.stream_list[i];
-        if (index >= 0)
-          jb.bits_per_sample.push_back(parameters.station_streams[index].bits_per_sample);
-      }
 
       //DEBUG_MSG("Add A Time slice:" << jb.station_streams_size );
       queue_.push(jb);

@@ -40,8 +40,7 @@ public:
     return __PRETTY_FUNCTION__;
   }
 
-  void set_parameters(const int n_ffts_to_read,
-                      const int bits_per_sample);
+  void set_parameters();
 
 private:
   Data_reader_ptr           reader;
@@ -50,8 +49,6 @@ private:
   Input_buffer              input_buffer;
 
   bool new_stream_available;
-  int bits_per_sample;
-  int samples_per_byte;
   int stream_nr;
 
   int state;
