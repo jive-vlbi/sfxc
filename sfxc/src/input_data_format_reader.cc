@@ -40,25 +40,27 @@ void Input_data_format_reader::find_fill_pattern(Data_frame &data){
       if (start < buffer_size -1)
         start += 1;
     }
-    // Find the end of the fill pattern
-    end = start;
-    int step = std::min(MARK5_FILLPATTERN_NWORDS, buffer_size - start - 1);
-    while(step > 0){
-      if(buffer[end + step] == MARK5_FILLPATTERN){
-        end += step;
-        if(end + step >= buffer_size)
-          step = buffer_size - end - 1;
-      }else{
-        step /= 2;
+    if (start < buffer_size -1){ 
+      // Find the end of the fill pattern
+      end = start;
+      int step = std::min(MARK5_FILLPATTERN_NWORDS, buffer_size - start - 1);
+      while(step > 0){
+        if(buffer[end + step] == MARK5_FILLPATTERN){
+          end += step;
+          if(end + step >= buffer_size)
+            step = buffer_size - end - 1;
+        }else{
+          step /= 2;
+        }
       }
+      int old_size = data.invalid.size();
+      data.invalid.resize(old_size + 1);
+      data.invalid[old_size].invalid_begin = start* 4;
+      data.invalid[old_size].nr_invalid = (end - start + 1) * 4; // nr_invalid is in bytes
+      if (RANK_OF_NODE >= -1){
+        std::cout << RANK_OF_NODE << " : " << (end - start + 1) << " words of fill pattern found1\n";
+      }
+      start = end + 1;
     }
-    int old_size = data.invalid.size();
-    data.invalid.resize(old_size + 1);
-    data.invalid[old_size].invalid_begin = start* 4;
-    data.invalid[old_size].nr_invalid = (end - start + 1) * 4; // nr_invalid is in bytes
-    if (RANK_OF_NODE == -1){
-      std::cout << RANK_OF_NODE << " : " << (end - start + 1) << " words of fill pattern found1\n";
-    }
-    start = end + 1;
   }
 }
