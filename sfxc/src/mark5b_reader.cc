@@ -58,7 +58,6 @@ Mark5b_reader::goto_time(Data_frame &data, Time time) {
     const Time one_sec(1000000.);
     Time delta_time = time - get_current_time();
     while (delta_time >= one_sec){
-      SFXC_ASSERT(current_header.frame_nr % N_MK5B_BLOCKS_TO_READ == 0);
       size_t n_blocks = one_sec / time_between_headers_;
       // Don't read the last header, to be able to check whether we are at the right time
       size_t bytes_to_read = (n_blocks-1)*N_MK5B_BLOCKS_TO_READ*size_mk5b_block;
@@ -226,7 +225,6 @@ void Mark5b_reader::set_parameters(const Input_node_parameters &param) {
   N = (nr_of_bitstreams <= 32)? 4: 8;
   int tbr = param.track_bit_rate;
   SFXC_ASSERT((tbr % 1000000) == 0);
-  SFXC_ASSERT((N_MK5B_BLOCKS_TO_READ*SIZE_MK5B_FRAME)%(tbr/1000000) == 0);
   time_between_headers_ = Time((double)N_MK5B_BLOCKS_TO_READ * SIZE_MK5B_FRAME * SIZE_MK5B_WORD / (N * tbr / 1000000));
   SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
   sample_rate = param.sample_rate();
