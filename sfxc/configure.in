@@ -114,18 +114,30 @@ fi
 
 if test $USE_IPP = "yes"; then
   AC_DEFINE([USE_IPP], [1], [Use the Intel Performance Primitives])
-  if test "$IPP_PATH" != ""; then
-     FFT_LDADD="-L$IPP_PATH/sharedlib"
-     FFT_CPPFLAGS="-I$IPP_PATH/include"
-     LDFLAGS="$LDFLAGS -L$IPP_PATH/sharedlib"
-     CPPFLAGS="$CPPFLAGS -I$IPP_PATH/include"
-  fi
-  AC_CHECK_LIB(ippsem64t, ippsGetLibVersion, [], [
+  AC_CHECK_LIB(ippsem64t, ippsGetLibVersion, [OLD_IPP=1], [OLD_IPP=0], -L$IPP_PATH/sharedlib)
+  if test $OLD_IPP == 1; then
+    if test "$IPP_PATH" != ""; then
+       FFT_LDADD="-L$IPP_PATH/sharedlib"
+       FFT_CPPFLAGS="-I$IPP_PATH/include"
+       LDFLAGS="$LDFLAGS -L$IPP_PATH/sharedlib"
+       CPPFLAGS="$CPPFLAGS -I$IPP_PATH/include"
+    fi
+    FFT_LDADD="$FFT_LDADD -lippsem64t -lippvmem64t"
+    FFT_LDADD_FLOAT="$FFT_LDADD"
+  else
+    AC_CHECK_LIB(ipps, ippsGetLibVersion, [], [
         echo "Could not find Intel IPP library."
         exit -1
-        ])
-  FFT_LDADD="$FFT_LDADD -lippsem64t -lippvmem64t"
-  FFT_LDADD_FLOAT="$FFT_LDADD"
+        ], -L$IPP_PATH/lib/intel64 -L$IPP_PATH/../compiler/lib/intel64 -liomp5)
+    if test "$IPP_PATH" != ""; then
+       FFT_LDADD="-L$IPP_PATH/lib/intel64 -L$IPP_PATH/../compiler/lib/intel64/"
+       FFT_CPPFLAGS="-I$IPP_PATH/include"
+       LDFLAGS="$LDFLAGS -L$IPP_PATH/lib/intel64 -L$IPP_PATH/../compiler/lib/intel64/"
+       CPPFLAGS="$CPPFLAGS -I$IPP_PATH/include"
+    fi
+    FFT_LDADD="$FFT_LDADD -lipps -lippvm -liomp5"
+    FFT_LDADD_FLOAT="$FFT_LDADD"
+  fi
 else
   AC_CHECK_LIB(fftw3f, fftwf_execute, [], [
         echo "Couldn't find fftw3f library."
