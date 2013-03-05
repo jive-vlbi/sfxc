@@ -1,3 +1,57 @@
+Prerequisites
+-------------
+
+The jive5ab service uses a new VEX parser that is now purely
+implemented in Python.  It is mostly compatible with the old VEX
+parser that is distributed together with the SFXC software correlator.
+The new VEX parser can be downloaded from the NEXPReS WiKi:
+
+  <http://www.jive.nl/nexpres/lib/exe/fetch.php?media=nexpres:vex-1.0.tar.gz>
+
+The VEX parser needs PLY (Python Lex-Yacc) which can be downloaded from:
+
+  <http://www.dabeaz.com/ply>
+
+It has been tested with PLY 3.4; older (or newer) version may or may
+not work.
+
+
+Starting the jive5ab service
+----------------------------
+
+Usage: jive5ab-service.py [options] station [port]
+
+Options:
+  -h, --help            show this help message and exit
+  -p PORT, --port=PORT  jive5ab control port
+  -d, --debug           turn on debug information
+  -s, --sfxc            receive and feed data to SFXC
+
+The service can be run in two different modes.  In the default mode it
+functions as a data "source".  In this mode it generates data and
+sends it to a jive5ab "sink" instance.  Use this mode to run jive5ab
+at a (simulated) station.
+
+When the --sfxc option is given, the service runs as a data "sink".
+In this mode it reads packets from the network and feeds them into the
+SFXC software correlator.  Use this mode to run jive5ab at the correlator.
+
+The --port option can be used to run multiple jive5ab instances on a
+single machine.  This way you can give each instance a different
+control port which is used for communication between the service and
+the jive5ab instance that it controls.  The default port is 2620.
+
+The --debug option enables printing of debug information.  This option
+will also prevent the service from daemonizing such that you can
+actually see the debug messages.
+
+When starting the service, you specify the two-letter station code in
+the command line to let the service know its identity.  Optionally you
+can specify the port number to run the service on as the last
+argument, in standard web.py fashion.  By default the service runs on
+port 8080.
+
+
 Protocol description for the jive5ab service
 --------------------------------------------
 
