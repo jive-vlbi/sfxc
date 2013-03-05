@@ -15,6 +15,7 @@ import web
 import vex
 
 import config
+import daemon
 
 urlparse.uses_relative.append('mk5')
 urlparse.uses_netloc.append('mk5')
@@ -485,6 +486,11 @@ if __name__ == "__main__":
 
     args = ["jive5ab", "-m3", "-p", str(config.port)]
     log = open("jive5ab-" + config.station + ".log", "w")
+
+    if not config.debug:
+        daemon.daemonize()
+        pass
+
     proc = subprocess.Popen(args, stdout=log, stderr=log)
     try:
         app.run()
