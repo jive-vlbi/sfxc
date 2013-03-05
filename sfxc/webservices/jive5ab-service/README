@@ -1,0 +1,106 @@
+Protocol description for the jive5ab service
+--------------------------------------------
+
+/configure
+
+  Configures a jive5ab instance for a data transfer.  For a "source"
+  instance a JSON object needs to be posted with the following
+  members:
+
+    "vex"    String
+
+      VEX file for the experiment as a string with embedded newlines 
+
+    "mtu"    Number
+
+      Maximum size (in bytes) of UDP packets to send.  Must be set to
+      the maximum packet size supported by the network to prevent
+      fragmentation
+
+    "destination"    Object
+
+      Mapping from channel names (CH01, CH02, etc.) to destination.
+      The destination is of the form HOSTNAME:PORT.  For example:
+
+      {
+        "CH01": "sfxc-f0:2030",
+        "CH02": "sfxc-f0:2030",
+        "CH03": "sfxc-f1:2030",
+        "CH04": "sfxc-f1:2030"
+      }
+
+  For as "sink" instance (started with the --sfxc option) a JSON
+  object needs to be posted with the following members:
+
+    "vex"    String
+
+      VEX file for the experiment as a string with embedded newlines 
+
+    "mtu"    Number
+
+      Maximum size (in bytes) of UDP packets to send.  Must be set to
+      the maximum packet size supported by the network to prevent
+      fragmentation
+
+    "destination"    String
+
+      Description of the socket where SFXC will read the data from.
+      Use the same string here as listed in the correlator control
+      file, e.g. "mk5:///tmp/mk5-Wb/Wb-eVLBI:0" for a local UNIX
+      socket connection.
+
+    "port"    Number
+
+       Port number to listen on.  This is the port number that the
+       "source" kive5ab instance will send the data to.
+
+  If the configuration was successful, it returns a JSON object with
+  the following members:
+
+    "station"    String
+
+      Two-letter station code of the jive5ab instance.
+
+    "experiment"    String
+
+      Experiment name.
+
+  If the configuration was not successful, it returns a JSON object
+  with the following members:
+
+    "error"    String
+
+      Error message that (hopefully) indicates what went wrong.
+
+
+/start
+
+   Starts the data transfer.  If successful, returns an empty JSON
+   object.  If unsuccessful it returns a JSON object similar with an
+   error message like the /configure request does.
+
+/stop
+
+   Stops the data transfer.  If successful, returns an empty JSON
+   object.  If unsuccessful it returns a JSON object similar with an
+   error message like the /configure request does.
+
+/status
+
+  Request status.  If successful, returns a JSON object with the
+  following members:
+
+    "datarate"    Number
+
+      Current datarate in bits/s.
+
+    "station"    String
+
+      Two-letter station code of the jive5ab instance.
+
+    "experiment"    String
+
+      Experiment name.
+
+  If unsuccessful it returns a JSON object similar with an error
+  message like the /configure request does.

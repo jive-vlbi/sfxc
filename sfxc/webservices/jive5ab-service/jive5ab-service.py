@@ -1,18 +1,25 @@
 #! /usr/bin/python
 
 import json
+import optparse
 import os
 import re
+import socket
+import subprocess
 import sys
 import tempfile
 import time
-import socket
-import subprocess
+import urlparse
 
 import web
 import vex
 
 import config
+
+urlparse.uses_relative.append('mk5')
+urlparse.uses_netloc.append('mk5')
+urlparse.uses_params.append('mk5')
+urlparse.clear_cache()
 
 os.environ['TZ'] = 'UTC'
 time.tzset()
@@ -123,10 +130,10 @@ def mark5_mode(vex, station):
             continue
         if track_frame_format == "Mark4":
             return "mode=mark4:%d;" % num_tracks
-        if track_frame_format == "Mark5B":
+        if track_frame_format == "Mark5B" or track_frame_format == "MARK5B":
             return "mode=ext:0x%x:%d;" % (((1 << num_tracks) - 1), decimation)
         pass
-    return
+    raise AssertionError, "unsupported Mark5 mode"
 
 def error_response(command, resp):
     result = {}
@@ -150,40 +157,57 @@ def mark5_play_rate(vex, station):
         return "play_rate=data:%f;" % ((sample_rate * 1e-6) / fanout)
     return
 
-class configure:
-    def POST(self):
-        web.header('Content-Type', 'application/json')
-        input = json.loads(web.data())
-        try:
-            v = vex.parse(input['vex'])
-        except:
-            result = {}
-            result['error'] = "couldn't parse VEX"
-            return json.dumps(result)
+def split_mode(vex, station):
+    das = find_das(vex, station)
+    record_transport_type = vex['DAS'][das]['record_transport_type']
+    if record_transport_type == 'Mark5B':
+        bitstreams = find_bitstreams(vex, station)
+        if bitstreams:
+            stream_list = vex['BITSTREAMS'][bitstreams].getall('stream_def')
+            num_streams = len(stream_list)
+            if num_streams == 32:
+                split = "16bitx2+8Ch2bit_hv"
+            elif num_streams == 16:
+                split = "8Ch2bit_hv"
+            else:
+                raise AssertionError, "unsupported number of streams"
 
+            split += "+swap_sign_mag"
+            print split
+            
+        pass
+
+class configure:
+    def source(self, input, vex, mtu):
         if not 'destination' in input:
             result = {}
             result['error'] = "missing destination"
             return json.dumps(result)
 
         try:
-            hostname = input['destination'].split(':')[0]
-            port = int(input['destination'].split(':')[1])
+            map = {}
+            for key in input['destination']:
+                destination = input['destination'][key]
+                if not destination in map:
+                    map[destination] = []
+                    pass
+                map[destination].append(key)
+                continue
+
+            if len(map) > 1:
+                split_mode(vex, config.station)
+                result = {}
+                result['error'] = "splitting not implemented yet"
+                return json.dumps(result)
+
+            destination = map.keys()[0]
+            hostname = destination.split(':')[0]
+            port = int(destination.split(':')[1])
         except:
             result = {}
             result['error'] = "malformed destination: %s" % input['destination']
             return json.dumps(result)
 
-        mtu = 1500
-        if 'mtu' in input:
-            try:
-                mtu = int(input['mtu'])
-            except:
-                result = {}
-                result['error'] = "malformed mtu: %s" % input['mtu']
-                return json.dumps(result)
-            pass
-            
         resp = send_command("version?;")
         if not check_reply(resp, 0):
             return error_reponse("version?", resp)
@@ -197,7 +221,7 @@ class configure:
         send_command(command)
 
         try:
-            command = mark5_play_rate(v, config.station)
+            command = mark5_play_rate(vex, config.station)
         except:
             result = {}
             result['error'] = "can't find play rate for station %s" % config.station
@@ -210,7 +234,7 @@ class configure:
             return json.dumps(result)
 
         try:
-            command = mark5_mode(v, config.station)
+            command = mark5_mode(vex, config.station)
         except:
             result = {}
             result['error'] = "can't find mode for station %s" % config.station
@@ -239,15 +263,122 @@ class configure:
         if not check_reply(resp, 0):
             return error_response(command, resp)
 
+        config.experiment = vex['GLOBAL']['EXPER']
         result = {'station': config.station,
-                  'experiment': v['GLOBAL']['EXPER']}
+                  'experiment': config.experiment}
         return json.dumps(result)
+
+    def sink(self, input, vex, mtu):
+        if not 'port' in input:
+            result = {}
+            result['error'] = "missing port"
+            return json.dumps(result)
+
+        try:
+            port = int(input['port'])
+        except:
+            result = {}
+            result['error'] = "malformed port: %s" % input['port']
+            return json.dumps(result)
+
+        if not 'destination' in input:
+            result = {}
+            result['error'] = "missing destination"
+            return json.dumps(result)
+        try:
+            url = urlparse.urlparse(input['destination'])
+            destination = url.path
+        except:
+            result = {}
+            result['error'] = "malformed destination: %s" % input['destination']
+            return json.dumps(result)
+
+        resp = send_command("version?;")
+        if not check_reply(resp, 0):
+            return error_reponse("version?", resp)
+
+        try:
+            command = mark5_play_rate(vex, config.station)
+        except:
+            result = {}
+            result['error'] = "can't find play rate for station %s" % config.station
+            return json.dumps(result)
+        resp = send_command(command)
+        if not check_reply(resp, 0):
+            return error_response(command, resp)
+            result = {}
+            result['error'] = "unexpected response to %s command: %s" % (command, resp)
+            return json.dumps(result)
+
+        try:
+            command = mark5_mode(vex, config.station)
+        except:
+            result = {}
+            result['error'] = "can't find mode for station %s" % config.station
+            return json.dumps(result)
+        resp = send_command(command)
+        if not check_reply(resp, 0):
+            return error_response(command, resp)
+
+        command = "mtu=%d;" % mtu
+        resp = send_command(command)
+        if not check_reply(resp, 0):
+            return error_response(command, resp)
+
+        command = "net_protocol=udp;"
+        resp = send_command(command)
+        if not check_reply(resp, 0):
+            return error_response(command, resp)
+
+        command = "net_port=%d;" % port
+        resp = send_command(command)
+        if not check_reply(resp, 0):
+            return error_response(command, resp)
+
+        command = "net2sfxc=open:%s;" % destination
+        resp = send_command(command)
+        if not check_reply(resp, 0):
+            return error_response(command, resp)
+
+        config.experiment = vex['GLOBAL']['EXPER']
+        result = {'station': config.station,
+                  'experiment': config.experiment}
+        return json.dumps(result)
+
+    def POST(self):
+        web.header('Content-Type', 'application/json')
+        input = json.loads(web.data())
+        try:
+            v = vex.parse(input['vex'])
+        except:
+            result = {}
+            result['error'] = "couldn't parse VEX"
+            return json.dumps(result)
+
+        mtu = 1500
+        if 'mtu' in input:
+            try:
+                mtu = int(input['mtu'])
+            except:
+                result = {}
+                result['error'] = "malformed mtu: %s" % input['mtu']
+                return json.dumps(result)
+            pass
+
+        if config.sfxc:
+            return self.sink(input, v, mtu)
+        else:
+            return self.source(input, v, mtu)
 
     pass
 
 class start:
     def POST(self):
         web.header('Content-Type', 'application/json')
+
+        if config.sfxc:
+            result = {}
+            return json.dumps(result)
 
         what = "in2net"
         if config.simulate:
@@ -267,6 +398,17 @@ class start:
 class stop:
     def POST(self):
         web.header('Content-Type', 'application/json')
+
+        config.experiment = ""
+
+        if config.sfxc:
+            command = "net2sfxc=close;"
+            resp = send_command(command)
+            if not check_reply(resp, 0):
+                return error_response(command, resp)
+
+            result = {}
+            return json.dumps(result)
 
         what = "in2net"
         if config.simulate:
@@ -306,6 +448,8 @@ class status:
         try:
             m = r.search(resp.split(':')[4])
             result['datarate'] = int(m.group(1))
+            result['station'] = config.station
+            result['experiment'] = config.experiment
         except:
             result['error'] = 'not started'
             pass
@@ -314,10 +458,30 @@ class status:
     pass
 
 if __name__ == "__main__":
-    config.station = sys.argv[1]
-    config.port = int(sys.argv[2])
-    del sys.argv[1]
-    del sys.argv[1]
+    usage = "usage: %prog [options] station [port]"
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option("-p", "--port", dest="port",
+                      type="int", default="2620",
+                      help="jive5ab control port",
+                      metavar="PORT")
+    parser.add_option("-d", "--debug", dest="debug",
+                      action="store_true", default=False,
+                      help="turn on debug information")
+    parser.add_option("-s", "--sfxc", dest="sfxc",
+                      action="store_true", default=False,
+                      help="receive and feed data to SFXC")
+
+    (options, args) = parser.parse_args()
+    if len(args) < 1:
+        parser.error("incorrect number of arguments")
+        pass
+
+    config.port = options.port
+    config.debug = options.debug
+    config.sfxc = options.sfxc
+
+    config.station = args[0]
+    sys.argv = args
 
     args = ["jive5ab", "-m3", "-p", str(config.port)]
     log = open("jive5ab-" + config.station + ".log", "w")
