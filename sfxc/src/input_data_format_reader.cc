@@ -57,9 +57,11 @@ void Input_data_format_reader::find_fill_pattern(Data_frame &data){
       data.invalid.resize(old_size + 1);
       data.invalid[old_size].invalid_begin = start* 4;
       data.invalid[old_size].nr_invalid = (end - start + 1) * 4; // nr_invalid is in bytes
+#if 0
       if (RANK_OF_NODE >= -1){
-        std::cout << RANK_OF_NODE << " : " << (end - start + 1) << " words of fill pattern found1\n";
+        std::cout << RANK_OF_NODE << " : " << (end - start + 1) << " words of fill pattern found" << std::endl;
       }
+#endif
       start = end + 1;
     }
   }
