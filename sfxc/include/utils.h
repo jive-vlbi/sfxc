@@ -68,7 +68,7 @@
 #define N_MK5B_BLOCKS_TO_READ     8 
 
 #define SFXC_PORT                1233
-#define MAX_TCP_CONNECTIONS      16
+#define MAX_TCP_CONNECTIONS      128
 
 #define SFXC_INVALIDATE_SAMPLES
 #ifdef SFXC_INVALIDATE_SAMPLES
