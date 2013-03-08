@@ -109,6 +109,15 @@ def get_sample_rate(vex, station):
         return
     return float(sample_rate.split()[0]) * unit
 
+def mark5_mask(vex, station):
+    bitstreams = find_bitstreams(vex, station)
+    stream_list = vex['BITSTREAMS'][bitstreams].getall('stream_def')
+    mask = 0
+    for stream in stream_list:
+        mask |= (1 << int(stream[2]))
+        continue
+    return mask
+
 def mark5_mode(vex, station):
     sample_rate = get_sample_rate(vex, station)
     decimation = int(32e6 / sample_rate)
@@ -117,9 +126,8 @@ def mark5_mode(vex, station):
     if record_transport_type == 'Mark5B':
         bitstreams = find_bitstreams(vex, station)
         if bitstreams:
-            stream_list = vex['BITSTREAMS'][bitstreams].getall('stream_def')
-            num_streams = len(stream_list)
-            return "mode=ext:0x%x:%d;" % (((1 << num_streams) - 1), decimation)
+            mask = mark5_mask(vex, station)
+            return "mode=ext:0x%x:%d;" % (mask, decimation)
         pass
     tracks = find_tracks(vex, station)
     if tracks:
