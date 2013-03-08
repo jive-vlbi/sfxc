@@ -13,8 +13,12 @@ fp.close()
 
 data['vex'] = vex
 data['mtu'] = 9000
-data['destination'] = { 'CH01': "sfxc-h0:9999",
-                        'CH02': "sfxc-h0:9999" }
+data['destination'] = {
+    'CH01': "sfxc-h0:9999",
+    'CH02': "sfxc-h0:9999",
+    'CH03': "sfxc-h1:9999",
+    'CH04': "sfxc-h1:9999"
+    }
 #data['port'] = 9999
 #data['destination'] = "mk5:///tmp/mk5-Wb"
 
