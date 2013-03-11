@@ -192,6 +192,38 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
   return 0;
 }
 
+void
+Uvw_model::add_scans(const Uvw_model &other)
+{
+  if (scans.empty()) {
+    *this = other;
+    return;
+  }
+
+  SFXC_ASSERT(u.size() == v.size());
+  SFXC_ASSERT(u.size() == w.size());
+  SFXC_ASSERT(sources.size() <= other.sources.size());
+  for (int i = 0; i < other.sources.size(); i++) {
+    if (i < sources.size()) {
+      SFXC_ASSERT(sources[i] == other.sources[i]);
+    } else {
+      sources.push_back(other.sources[i]);
+    }
+  }
+
+  int prev_scans_size = scans.size();
+  scans.insert(scans.end(), other.scans.begin(), other.scans.end());
+  for (int i = prev_scans_size; i < scans.size(); i++) {
+    scans[i].times += times.size();
+    scans[i].model_index += u.size();
+  }
+
+  times.insert(times.end(), other.times.begin(), other.times.end());
+  u.insert(u.end(), other.u.begin(), other.u.end());
+  v.insert(v.end(), other.v.begin(), other.v.end());
+  w.insert(w.end(), other.w.begin(), other.w.end());
+}
+
 void Uvw_model::initialise_spline_for_next_scan() {
   int n_sources_in_previous_scan = splineakima_u.size();
   if (scan_nr >= (scans.size() - n_sources_in_previous_scan))

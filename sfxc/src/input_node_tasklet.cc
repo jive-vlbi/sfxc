@@ -174,7 +174,7 @@ Input_node_tasklet::stop_tasklets() {
 }
 
 void Input_node_tasklet::set_delay_table(Delay_table_akima &table) {
-  delay_table = table;
+  delay_table.add_scans(table);
 }
 
 void

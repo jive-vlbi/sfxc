@@ -579,14 +579,14 @@ void Correlation_core::add_uvw_table(int sn, Uvw_model &table) {
   if (sn>=uvw_tables.size())
     uvw_tables.resize(sn+1);
 
-  uvw_tables[sn]=table;
+  uvw_tables[sn].add_scans(table);
 }
 
 void Correlation_core::add_delay_table(int sn, Delay_table_akima &table) {
   if (sn>=delay_tables.size())
     delay_tables.resize(sn+1);
 
-  delay_tables[sn]=table;
+  delay_tables[sn].add_scans(table);
 }
 
 void Correlation_core::add_source_list(const std::map<std::string, int> &sources_){

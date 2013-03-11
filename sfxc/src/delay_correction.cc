@@ -258,9 +258,9 @@ void Delay_correction::connect_to(Input_buffer_ptr new_input_buffer) {
   input_buffer = new_input_buffer;
 }
 
-void Delay_correction::set_delay_table(const Delay_table_akima &delay_table_) {
+void Delay_correction::set_delay_table(const Delay_table_akima &table) {
   delay_table_set = true;
-  delay_table = delay_table_;
+  delay_table.add_scans(table);
 }
 
 double Delay_correction::get_delay(Time time) {

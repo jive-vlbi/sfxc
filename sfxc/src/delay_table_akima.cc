@@ -231,6 +231,36 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
   initialise_next_scan();
 }
 
+void
+Delay_table_akima::add_scans(const Delay_table_akima &other)
+{
+  if (scans.empty()) {
+    *this = other;
+    return;
+  }
+
+  SFXC_ASSERT(clock_offset == other.clock_offset);
+  SFXC_ASSERT(clock_rate == other.clock_rate);
+  SFXC_ASSERT(clock_epoch == other.clock_epoch);
+
+  int prev_scans_size = scans.size();
+  scans.insert(scans.end(), other.scans.begin(), other.scans.end());
+  for (int i = prev_scans_size; i < scans.size(); i++) {
+    scans[i].source += sources.size();
+    scans[i].times += times.size();
+    scans[i].delays += delays.size();
+    scans[i].phases += phases.size();
+    scans[i].amplitudes += amplitudes.size();
+  }
+
+  sources.insert(sources.end(), other.sources.begin(), other.sources.end());
+  times.insert(times.end(), other.times.begin(), other.times.end());
+  delays.insert(delays.end(), other.delays.begin(), other.delays.end());
+  phases.insert(phases.end(), other.phases.begin(), other.phases.end());
+  amplitudes.insert(amplitudes.end(), other.amplitudes.begin(),
+		    other.amplitudes.end());
+}
+
 bool Delay_table_akima::initialise_next_scan() {
   int n_sources_in_previous_scan = splineakima.size();
   if (scan_nr >= (scans.size() - n_sources_in_previous_scan))
@@ -287,6 +317,8 @@ double Delay_table_akima::delay(const Time &time, int phase_center) {
   while (scans[scan_nr].end < time){
     if (!initialise_next_scan()) break;
   }
+  SFXC_ASSERT(time >= scans[scan_nr].begin);
+  SFXC_ASSERT(time <= scans[scan_nr].end);
   SFXC_ASSERT(splineakima.size() > 0);
   double sec = (time - scans[scan_nr].begin).get_time();
   double result = gsl_spline_eval(splineakima[phase_center], sec, acc[phase_center]);
@@ -357,22 +389,20 @@ bool Delay_table_akima::goto_scan(const Time &time){
   return false;
 }
 
-
-
 std::ostream &
 operator<<(std::ostream &out, const Delay_table_akima &delay_table) {
   const std::vector<double> &times = delay_table.times;
   const std::vector<double> &delays = delay_table.delays;
   const std::vector<std::string> &sources = delay_table.sources;
 
-  for(int i = 0; i < delay_table.scans.size() ; i++){
+  for (int i = 0; i < delay_table.scans.size(); i++) {
     const Delay_table_akima::Scan &scan = delay_table.scans[i];
-    out << "scan " << i << " : start = " << scan.begin << ", stop = " << scan.end 
-        << ", source = " << sources[scan.source] << "\n";
+    out << "scan " << i << ": start = " << scan.begin << ", stop = " << scan.end 
+        << ", source = " << sources[scan.source] << std::endl;
     const Time one_sec(1000000);
     int n = (scan.end - scan.begin) / one_sec;
-    for(int k = 0 ; k < n ; k++){
-      out << " t = " << times[scan.times + k] << " \t delay =" << delays[scan.delays + k] << "\n";
+    for (int k = 0; k <= n; k++) {
+      out << " t = " << times[scan.times + k] << " \t delay =" << delays[scan.delays + k] << std::endl;
     }
   }
   return out;

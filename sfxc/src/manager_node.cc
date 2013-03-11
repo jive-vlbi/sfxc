@@ -410,77 +410,6 @@ Manager_node::initialise() {
     std::string filename = control_parameters.data_sources(station_name)[0];
     set_data_reader(input_rank(station_name), 0, filename);
   }
-  // Get start of first scan and end of last scan in correlation
-  const Vex vex = control_parameters.get_vex();
-  Time t_begin, t_end;
-  {
-  Vex::Date start_time(control_parameters.get_start_time().date_string());
-  Vex::Date stop_time(control_parameters.get_stop_time().date_string());
-  // Find the name of the last scan
-  std::string last_scan_name = vex.get_scan_name(start_time);
-  Vex::Node::const_iterator it = vex.get_root_node()["SCHED"][last_scan_name];
-  while (++it != vex.get_root_node()["SCHED"]->end()){
-    Vex::Date start_scan = vex.start_of_scan(it.key());
-    if(start_scan >= stop_time)
-      break;
-
-    last_scan_name = vex.get_scan_name(start_scan);
-  }
-
-  t_begin = Time(vex.get_start_time_of_scan(vex.get_scan_name(start_time)));
-  t_end = Time(vex.get_stop_time_of_scan(last_scan_name));
-  }
-
-  // Send the delay tables:
-  get_log_writer() << "Set delay_table" << std::endl;
-  for (size_t station=0;
-       station < control_parameters.number_stations(); station++) {
-    Delay_table_akima delay_table;
-    const std::string &station_name = control_parameters.station(station);
-    const std::string &delay_file =
-      control_parameters.get_delay_table_name(station_name); // also generates delay file if it doesn't exist
-    delay_table.open(delay_file.c_str(), t_begin, t_end);
-    if (!delay_table.initialised()) {
-      DEBUG_MSG("Delay table could not be read");
-      control_parameters.generate_delay_table(station_name, delay_file);
-      delay_table.open(delay_file.c_str(), t_begin, t_end);
-      if(!delay_table.initialised()){
-        std::string msg = std::string("Couldn't generate delay table, please remove '") +
-                          delay_file + std::string("' and restart the correlator");
-        sfxc_abort(msg.c_str());
-      }
-    }
-    // Get clock offset
-    Vex::Node root = vex.get_root_node();
-    std::string site_clock = root["STATION"][station_name]["CLOCK"]->to_string();
-    double offset = root["CLOCK"][site_clock]["clock_early"][1]->to_double();
-    double rate = root["CLOCK"][site_clock]["clock_early"][3]->to_double() / 1e6;
-    // To allow large clock offsets, the reader time is adjusted
-    const double max_offset = 1000000.;
-    double reader_offset = round(offset / max_offset) * max_offset;
-    offset = (offset - reader_offset) * 1e-6; // convert to microseconds 
-    std::cout.precision(19);
-    std::cout << "offset = " << offset << ", reader_offset = " << reader_offset <<"\n";
-    std::string str_epoch = root["CLOCK"][site_clock]["clock_early"][2]->to_string();
-    Time epoch(str_epoch);
-    delay_table.set_clock_offset(offset, rate, epoch);
-    send(delay_table, /* station_nr */ 0, input_rank(station));
-    control_parameters.set_reader_offset(station_name, Time(reader_offset));
-    correlator_node_set_all(delay_table, station_name);
-  }
-
-  // Send the UVW tables:
-  get_log_writer() << "Set uvw_table" << std::endl;
-  for (size_t station=0;
-       station < control_parameters.number_stations(); station++) {
-    Uvw_model uvw_table;
-    const std::string &station_name = control_parameters.station(station);
-    const std::string &delay_file =
-      control_parameters.get_delay_table_name(station_name);
-    uvw_table.open(delay_file.c_str(), t_begin, t_end);
-
-    correlator_node_set_all(uvw_table, station_name);
-  }
 
   start_time = control_parameters.get_start_time();
   stop_time = control_parameters.get_stop_time();
@@ -592,6 +521,54 @@ void Manager_node::initialise_scan(const std::string &scan) {
   stop_time_scan -= (stop_time_scan-start_time)%integration_time();
   SFXC_ASSERT(((stop_time_scan-start_time)%integration_time()) == Time());
 
+  // Send the delay tables:
+  get_log_writer() << "Set delay_table" << std::endl;
+  for (size_t station = 0;
+       station < control_parameters.number_stations();
+       station++) {
+    Delay_table_akima delay_table;
+    const std::string &station_name = control_parameters.station(station);
+    const std::string &delay_file =
+      control_parameters.get_delay_table_name(station_name); // also generates delay file if it doesn't exist
+    delay_table.open(delay_file.c_str(), scan_start, stop_time_scan);
+    SFXC_ASSERT(delay_table.initialised());
+
+    // Get clock offset
+    Vex::Node root = vex.get_root_node();
+    std::string site_clock = root["STATION"][station_name]["CLOCK"]->to_string();
+    double offset = root["CLOCK"][site_clock]["clock_early"][1]->to_double();
+    double rate = root["CLOCK"][site_clock]["clock_early"][3]->to_double() / 1e6;
+    // To allow large clock offsets, the reader time is adjusted
+    const double max_offset = 1000000.;
+    double reader_offset = round(offset / max_offset) * max_offset;
+    offset = (offset - reader_offset) * 1e-6; // convert to microseconds 
+#if 0
+    std::cout.precision(19);
+    std::cout << "offset = " << offset << ", reader_offset = " << reader_offset << std::endl;
+#endif
+    std::string str_epoch = root["CLOCK"][site_clock]["clock_early"][2]->to_string();
+    Time epoch(str_epoch);
+    delay_table.set_clock_offset(offset, rate, epoch);
+    send(delay_table, /* station_nr */ 0, input_rank(station));
+    control_parameters.set_reader_offset(station_name, Time(reader_offset));
+    correlator_node_set_all(delay_table, station_name);
+  }
+
+  // Send the UVW tables:
+  get_log_writer() << "Set uvw_table" << std::endl;
+  for (size_t station = 0;
+       station < control_parameters.number_stations();
+       station++) {
+    Uvw_model uvw_table;
+    const std::string &station_name = control_parameters.station(station);
+    const std::string &delay_file =
+      control_parameters.get_delay_table_name(station_name);
+    uvw_table.open(delay_file.c_str(), scan_start, stop_time_scan);
+
+    correlator_node_set_all(uvw_table, station_name);
+  }
+
+  get_log_writer() << "Set track parameters" << std::endl;
 
   // Send the track parameters to the input nodes
   const std::string &mode_name = vex.get_mode(scan);

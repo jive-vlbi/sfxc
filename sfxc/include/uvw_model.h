@@ -49,6 +49,8 @@ public:
   int open(const char *delayTableName);
   int open(const char *delayTableName, Time tstart, Time tstop);
 
+  void add_scans(const Uvw_model &other);
+
   std::ofstream& uvw_values(std::ofstream &, Time starttime, Time stoptime,
                             Time inttime);
 

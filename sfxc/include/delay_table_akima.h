@@ -62,6 +62,8 @@ public:
   //Set clock offset and rate
   void set_clock_offset(const double offset, const double rate, const Time epoch);
 
+  void add_scans(const Delay_table_akima &other);
+
   //calculate the delay for the delayType at time in microseconds
   // delay is in seconds
   double delay(const Time &time, int phase_center=0);
@@ -75,17 +77,9 @@ public:
   int n_phase_centers(){
     return splineakima.size();
   }
-  // Get the array of sources
-  const std::vector<std::string> &get_source_list(){
-    return sources;
-  }
   // Get source at phase_center for current scan
   const std::string &get_source(int phase_center){
     return sources[scans[scan_nr + phase_center].source];
-  }
-  // Get index of source at phase_center for current scan
-  int get_source_index(int phase_center){
-    return scans[scan_nr + phase_center].source;
   }
   /// A spline only interpolates one scan.
   /// This functions preprocesses the spline for the next scan.
