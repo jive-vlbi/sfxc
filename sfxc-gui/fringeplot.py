@@ -64,6 +64,11 @@ class LeftScaleDraw(Qwt.QwtScaleDraw):
     pass
 
 class FringePlotCurve(Qwt.QwtPlotCurve):
+    def __init__(self, tip, *args):
+        Qwt.QwtPlotCurve.__init__(self, *args)
+        self.tip = tip
+        return
+
     def updateLegend(self, legend):
         Qwt.QwtPlotCurve.updateLegend(self, legend)
         item = legend.find(self)
@@ -71,6 +76,9 @@ class FringePlotCurve(Qwt.QwtPlotCurve):
             pen = Qt.QPen(self.pen())
             pen.setWidth(3)
             item.setCurvePen(pen)
+            if self.tip:
+                item.setToolTip(self.tip)
+                pass
             pass
         return
 
@@ -207,6 +215,33 @@ class FringePlotWindow(Qt.QWidget):
             pass
 
         self.cross = False
+
+        # Create a sorted list of frequencies
+        self.frequencies = []
+        station = self.reference
+        for scan in vex['SCHED']:
+            mode = vex['SCHED'][scan]['mode']
+            for freq in vex['MODE'][mode].getall('FREQ'):
+                if station in freq[1:]:
+                    channels = vex['FREQ'][freq[0]].getall('chan_def')
+                    for chan_def in channels:
+                        freq = chan_def[1].split()
+                        frequency = float(freq[0])
+                        if freq[1] == 'GHz':
+                            frequency *= 1e9
+                        elif freq[1] == 'MHz':
+                            frequency *= 1e6
+                        elif freq[1] == 'KHz':
+                            frequency *= 1e3
+                            pass
+                        if not frequency in self.frequencies:
+                            self.frequencies.append(frequency)
+                            pass
+                        continue
+                    break
+                continue
+            break
+        self.frequencies.sort()
 
         menubar = Qt.QMenuBar(self)
         menu = menubar.addMenu("&Reference")
@@ -392,11 +427,21 @@ class FringePlotWindow(Qt.QWidget):
                         title += "L"
                         pass
 
+                    try:
+                        tip = "%.2f MHz" % (self.frequencies[band] * 1e-6)
+                        if usb:
+                            tip += " USB"
+                        else:
+                            tip += " LSB"
+                            pass
+                    except:
+                        tip = ""
+
                     pen = Qt.QPen()
                     pen.setColor(Qt.QColor(plot.color[(plot_idx >> 1) % 16]))
                     pen.setWidth(1)
 
-                    plot.curve[plot_idx] = FringePlotCurve(title)
+                    plot.curve[plot_idx] = FringePlotCurve(tip, title)
                     plot.curve[plot_idx].setData(range(self.cordata.number_channels),
                                             range(self.cordata.number_channels))
                     plot.curve[plot_idx].setPen(pen)
