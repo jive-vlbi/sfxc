@@ -537,7 +537,9 @@ void Manager_node::initialise_scan(const std::string &scan) {
     Vex::Node root = vex.get_root_node();
     std::string site_clock = root["STATION"][station_name]["CLOCK"]->to_string();
     double offset = root["CLOCK"][site_clock]["clock_early"][1]->to_double();
-    double rate = root["CLOCK"][site_clock]["clock_early"][3]->to_double() / 1e6;
+    double rate = 0.0;
+    if (root["CLOCK"][site_clock]["clock_early"]->size() > 3)
+      rate = root["CLOCK"][site_clock]["clock_early"][3]->to_double() / 1e6;
     // To allow large clock offsets, the reader time is adjusted
     const double max_offset = 1000000.;
     double reader_offset = round(offset / max_offset) * max_offset;
@@ -546,8 +548,9 @@ void Manager_node::initialise_scan(const std::string &scan) {
     std::cout.precision(19);
     std::cout << "offset = " << offset << ", reader_offset = " << reader_offset << std::endl;
 #endif
-    std::string str_epoch = root["CLOCK"][site_clock]["clock_early"][2]->to_string();
-    Time epoch(str_epoch);
+    Time epoch;
+    if (root["CLOCK"][site_clock]["clock_early"]->size() > 3)
+      epoch = Time(root["CLOCK"][site_clock]["clock_early"][2]->to_string());
     delay_table.set_clock_offset(offset, rate, epoch);
     send(delay_table, /* station_nr */ 0, input_rank(station));
     control_parameters.set_reader_offset(station_name, Time(reader_offset));
