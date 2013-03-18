@@ -288,22 +288,23 @@ class progressDialog(QtGui.QDialog):
 
         sfxc = '/home/sfxc/bin/sfxc'
         args = ['mpirun',
-                '--mca', 'btl_tcp_if_include', 'bond0,ib0,eth0,eth2.4',
-                '--mca', 'oob_tcp_if_exclude', 'eth3',
+                '--mca', 'btl_tcp_if_include', 'bond0,eth0,eth2.4',
+                '--mca', 'oob_tcp_if_exclude', 'eth1,eth2,eth3',
                 '--machinefile', machine_file, '--rankfile', rank_file,
                 '--np', str(ranks), sfxc, ctrl_file, vex_file]
         if os.environ['LOGNAME'] == 'kettenis':
             sfxc = '/home/kettenis/opt/sfxc.openmpi/bin/sfxc'
             args = ['/home/sfxc/bin/mpirun',
-                    '--mca', 'btl_tcp_if_include', 'bond0,ib0,eth0,eth2.4',
-                    '--mca', 'oob_tcp_if_exclude', 'eth3',
+                    '--mca', 'btl_tcp_if_include', 'bond0,eth0,eth2.4',
+                    '--mca', 'oob_tcp_if_exclude', 'eth1,eth2,eth3',
                     '--machinefile', machine_file, '--rankfile', rank_file,
                     '--np', str(ranks), sfxc, ctrl_file, vex_file]
             pass
         elif os.environ['LOGNAME'] == 'keimpema':
             sfxc = '/home/keimpema/sfxc/bin/sfxc'
             args = ['mpirun',
-                    '--mca', 'btl_tcp_if_include', 'bond0,ib0,eth0,eth2.4',
+                    '--mca', 'btl_tcp_if_include', 'bond0,eth0,eth2.4',
+                    '--mca', 'oob_tcp_if_exclude', 'eth1,eth2,eth3',
                     '--machinefile', machine_file, '--rankfile', rank_file,
                     '--np', str(ranks), sfxc, ctrl_file, vex_file]
         self.proc = subprocess.Popen(args, stdout=subprocess.PIPE,
