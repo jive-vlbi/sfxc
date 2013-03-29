@@ -50,8 +50,6 @@ void Input_data_format_reader_tasklet::do_execute() {
 void
 Input_data_format_reader_tasklet::
 do_task() {
-  SFXC_ASSERT(reader_->is_open());
-
   allocate_element();
 
   if (reader_->eof()){
