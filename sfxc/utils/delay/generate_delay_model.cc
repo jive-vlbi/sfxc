@@ -208,23 +208,7 @@ long ceps(std::string timeString, int ref_year) {
   }
   return clock_epoch;
 }
-/*
-  double site_position(const Vexpp_node &vex,
-  const std::string &station) {
-  std::vector<double> result;
-  Vex::Node::const_iterator position =
-  vex["SITE"][vex["STATION"][station]["SITE"]->to_string()]["site_position"];
-  int i=0;
-  for (Vex::Node::const_iterator site = position->begin();
-  site != position->end(); ++site) {
-  double pos;
-  int err = sscanf(site->to_string().c_str(), "%lf m", &pos);
-  assert(err == 1);
-  result[i] = pos;
-  i++;
-  }
-  }
-*/
+
 int initialise_data(const char *vex_filename,
                     const std::string &station_name) {
   Vex vex(vex_filename);
