@@ -97,8 +97,13 @@ Time Mark5b_reader::get_current_time() {
     }
     if(frame_nr_valid)
       time.set_time(current_jday, current_header.seconds() + subsec);
-    else
-      time.set_time_usec(current_jday, current_header.microseconds());
+    else{
+      // Round to the nearest frame (VLBA timestamp lacks accuracy)
+      Time current_second(current_jday, current_header.seconds());
+      Time subsec(current_header.microseconds() - current_header.seconds()*1000000);
+      int nframes = (int) round(subsec / time_between_headers());
+      time = current_second + time_between_headers() * nframes;
+    }
     time -= offset;
   }
   return time;
