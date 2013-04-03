@@ -114,7 +114,7 @@ inline size_t Delay_correction::fft_size() {
 }
 
 inline size_t Delay_correction::fft_rot_size() {
-  return (correlation_parameters.station_streams[stream_idx].bandwidth / correlation_parameters.bandwidth) * 2 * correlation_parameters.fft_size_correlation;
+  return (correlation_parameters.station_streams[stream_idx].sample_rate / correlation_parameters.sample_rate) * 2 * correlation_parameters.fft_size_correlation;
 }
 
 inline size_t Delay_correction::fft_cor_size() {

@@ -235,11 +235,11 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   else
     delta = parameters.channel_freq - freq;
   SFXC_ASSERT(delta >= 0);
-  temp_fft_offset = (fft_cor_size() / 2) * delta  / parameters.bandwidth;
+  temp_fft_offset = delta * fft_cor_size() / parameters.sample_rate;
 
   SFXC_ASSERT(parameters.fft_size_correlation >= parameters.fft_size_delaycor);
   n_ffts_per_integration =
-    (parameters.station_streams[stream_idx].bandwidth / parameters.bandwidth) *
+    (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
     (parameters.fft_size_correlation / parameters.fft_size_delaycor) *
     Control_parameters::nr_ffts_per_integration_slice(
       (int) parameters.integration_time.get_time_usec(),

@@ -1274,6 +1274,12 @@ get_input_node_parameters(const std::string &mode_name,
   result.integr_time = integration_time();
   result.offset = reader_offset(station_name);
   result.phasecal_integr_time = phasecal_integration_time();
+
+  // Scale FFT size based on the sample rate.  This is important for
+  // "mixed bandwidth" correlation where we need to make sure that we
+  // send enough data to the correlator nodes.
+  result.fft_size *= sample_rate(mode_name, station_name) / sample_rate(mode_name, setup_station());
+
   const std::string &freq_name =
     get_vex().get_frequency(mode_name, station_name);
   Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
