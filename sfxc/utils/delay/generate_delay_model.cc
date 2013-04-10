@@ -23,6 +23,7 @@
 #include <vector>
 #include <time.h>
 #include <math.h>
+#include <unistd.h>
 
 #include "generate_delay_model.h"
 #include "vex/Vex++.h"
