@@ -202,15 +202,6 @@ Uvw_model::add_scans(const Uvw_model &other)
 
   SFXC_ASSERT(u.size() == v.size());
   SFXC_ASSERT(u.size() == w.size());
-  SFXC_ASSERT(sources.size() <= other.sources.size());
-  for (int i = 0; i < other.sources.size(); i++) {
-    if (i < sources.size()) {
-      SFXC_ASSERT(sources[i] == other.sources[i]);
-    } else {
-      sources.push_back(other.sources[i]);
-    }
-  }
-
   int prev_scans_size = scans.size();
   scans.insert(scans.end(), other.scans.begin(), other.scans.end());
   for (int i = prev_scans_size; i < scans.size(); i++) {
@@ -218,6 +209,7 @@ Uvw_model::add_scans(const Uvw_model &other)
     scans[i].model_index += u.size();
   }
 
+  sources.insert(sources.end(), other.sources.begin(), other.sources.end());
   times.insert(times.end(), other.times.begin(), other.times.end());
   u.insert(u.end(), other.u.begin(), other.u.end());
   v.insert(v.end(), other.v.begin(), other.v.end());
