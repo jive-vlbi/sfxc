@@ -147,8 +147,6 @@ void Delay_correction::fractional_bit_shift(FLOAT *input,
 void Delay_correction::fringe_stopping(FLOAT output[]) {
   const double mult_factor_phi = -sideband()*2.0*M_PI;
   const double center_freq = channel_freq() + sideband()*bandwidth()*0.5;
-  // Only compute the delay at integer microseconds
-  //  int n_recompute_delay = sample_rate()/1000000;
 
   double phi, delta_phi, sin_phi, cos_phi;
   phi = center_freq * get_delay(current_time) + get_phase(current_time) / mult_factor_phi;
@@ -237,11 +235,11 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   else
     delta = parameters.channel_freq - freq;
   SFXC_ASSERT(delta >= 0);
-  temp_fft_offset = (fft_cor_size() / 2) * delta  / parameters.bandwidth;
+  temp_fft_offset = delta * fft_cor_size() / parameters.sample_rate;
 
   SFXC_ASSERT(parameters.fft_size_correlation >= parameters.fft_size_delaycor);
   n_ffts_per_integration =
-    (parameters.station_streams[stream_idx].bandwidth / parameters.bandwidth) *
+    (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
     (parameters.fft_size_correlation / parameters.fft_size_delaycor) *
     Control_parameters::nr_ffts_per_integration_slice(
       (int) parameters.integration_time.get_time_usec(),

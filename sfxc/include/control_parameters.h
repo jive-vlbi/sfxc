@@ -238,7 +238,7 @@ public:
   /****************************************************/
   int bits_per_sample(const std::string& mode, const std::string& station) const;
   int sample_rate(const std::string& mode, const std::string& station) const;
-  int bandwidth(const std::string& mode, const std::string& station) const;
+  int bandwidth(const std::string& mode, const std::string& station, const std::string& channel) const;
   int64_t channel_freq(const std::string& mode, const std::string& station, const std::string& channel) const;
 
   std::string scan(int i) const;

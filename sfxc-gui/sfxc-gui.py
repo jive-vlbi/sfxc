@@ -212,29 +212,31 @@ class progressDialog(QtGui.QDialog):
             pass
 
         # Generate delays for this subjob.
-        procs = {}
-        success = True
-        delay_directory = self.json_input['delay_directory']
-        for station in self.json_input['stations']:
-            path = urlparse.urlparse(delay_directory).path
-            delay_file = path + '/' +  exper + '_' + station + '.del'
-            args = ['generate_delay_model', '-a', vex_file, station,
-                    delay_file, time2vex(self.start), time2vex(self.stop)]
-            procs[station] = subprocess.Popen(args)
-            continue
-        for station in procs:
-            procs[station].wait()
-            if procs[station].returncode != 0:
-                msg = "Delay model couldn't be generated for " + station + "."
-                QtGui.QMessageBox.warning(self, "Aborted", msg)
-                path = urlparse.urlparse(self.json_input['delay_directory']).path
+        if not options.skip_generate_delays:
+            procs = {}
+            success = True
+            delay_directory = self.json_input['delay_directory']
+            for station in self.json_input['stations']:
+                path = urlparse.urlparse(delay_directory).path
                 delay_file = path + '/' +  exper + '_' + station + '.del'
-                os.remove(delay_file)
-                success = False
+                args = ['generate_delay_model', '-a', vex_file, station,
+                        delay_file, time2vex(self.start), time2vex(self.stop)]
+                procs[station] = subprocess.Popen(args)
+                continue
+            for station in procs:
+                procs[station].wait()
+                if procs[station].returncode != 0:
+                    msg = "Delay model couldn't be generated for " + station + "."
+                    QtGui.QMessageBox.warning(self, "Aborted", msg)
+                    path = urlparse.urlparse(self.json_input['delay_directory']).path
+                    delay_file = path + '/' +  exper + '_' + station + '.del'
+                    os.remove(delay_file)
+                    success = False
+                    pass
+                continue
+            if not success:
+                sys.exit(1)
                 pass
-            continue
-        if not success:
-            sys.exit(1)
             pass
 
         # When doing e-VLBI we want to start correlating a few seconds
@@ -477,6 +479,9 @@ parser.add_option("-r", "--reference", dest="reference",
 parser.add_option("-e", "--evlbi", dest="evlbi",
                   action="store_true", default=False,
                   help="e-VLBI")
+parser.add_option("-s", "--skip-generate-delays", dest="skip_generate_delays",
+                  action="store_true", default=False,
+                  help="Do not generate delay files")
 parser.add_option("-i", "--timeout-interval", dest="timeout_interval",
                   type='int', default='300',
                   help="After how many seconds of inactivity the job is terminated, setting to zero disables. Default = 300")
