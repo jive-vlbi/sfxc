@@ -205,6 +205,7 @@ Uvw_model::add_scans(const Uvw_model &other)
   int prev_scans_size = scans.size();
   scans.insert(scans.end(), other.scans.begin(), other.scans.end());
   for (int i = prev_scans_size; i < scans.size(); i++) {
+    scans[i].source += sources.size();
     scans[i].times += times.size();
     scans[i].model_index += u.size();
   }
