@@ -4,6 +4,7 @@ import json
 import optparse
 import os
 import re
+import signal
 import socket
 import subprocess
 import sys
@@ -669,11 +670,23 @@ if __name__ == "__main__":
         pass
 
     proc = subprocess.Popen(args, stdout=log, stderr=log)
+
+    def sig_term(signum, stack_frame):
+        if proc.poll() is None:
+            proc.terminate()
+            proc.wait()
+            pass
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, sig_term)
+
     try:
         app.run()
     finally:
-        proc.terminate()
-        proc.wait()
+        if proc.poll() is None:
+            proc.terminate()
+            proc.wait()
+            pass
         pass
 
     pass
