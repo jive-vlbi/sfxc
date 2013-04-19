@@ -464,7 +464,11 @@ class configure:
             return json.dumps(result)
         try:
             url = urlparse.urlparse(input['destination'])
-            destination = url.path
+            if url.port:
+                destination = str(url.port)
+            else:
+                destination = url.path
+                pass
         except:
             result = {}
             result['error'] = "malformed destination: %s" % input['destination']
