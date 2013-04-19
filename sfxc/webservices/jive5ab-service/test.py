@@ -19,8 +19,9 @@ data['destination'] = {
     'CH03': "sfxc-h1:9999",
     'CH04': "sfxc-h1:9999"
     }
-#data['port'] = 9999
-#data['destination'] = "mk5:///tmp/mk5-Wb"
+data['port'] = 9999
+data['destination'] = "mk5:///tmp/mk5-Wb"
+data['destination'] = "mk5://localhost:8888/mk5-Wb"
 
 conn = httplib.HTTPConnection("0.0.0.0:8080")
 conn.request("POST", "/configure", json.dumps(data))
