@@ -415,8 +415,12 @@ Manager_node::initialise() {
   stop_time = control_parameters.get_stop_time();
   // Get a list of all scan names
   current_scan = control_parameters.scan(start_time.date_string());
-  SFXC_ASSERT(current_scan >= 0);
-  SFXC_ASSERT((size_t)current_scan < control_parameters.number_scans());
+  if (current_scan == -1) {
+    std::cerr << "Cannot find scan corresponding to start time "
+	      << start_time.date_string() << std::endl;
+    sfxc_abort();
+  }
+  SFXC_ASSERT(current_scan < control_parameters.number_scans());
 
   if(control_parameters.pulsar_binning()){
     // If pulsar binning is enabled : get all pulsar parameters (polyco files, etc.)
