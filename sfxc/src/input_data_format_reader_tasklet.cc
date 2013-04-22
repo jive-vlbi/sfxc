@@ -32,7 +32,6 @@ void Input_data_format_reader_tasklet::do_execute() {
   isRunning = true;
   /// blocks until we have an interval to process
   fetch_next_time_interval();
-
   /// then let's work
   while ( isRunning ) {
     /// if there is still some data to process we do it
@@ -104,6 +103,11 @@ do_task() {
       return;
   }
 
+  if(input_element_.start_time != current_time[channel]){
+    std::cerr.precision(16);
+    std::cerr << RANK_OF_NODE << " : start_time = " << input_element_.start_time.get_time_usec()
+              << ", current_time = " << current_time[channel].get_time_usec() << "\n";
+  }
   SFXC_ASSERT(input_element_.start_time == current_time[channel]);
 
   if(data_modulation)
@@ -142,7 +146,8 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
       randomize_block();
       input_element_.start_time = time;
       input_element_.channel = 0;
-    }
+    }else if (time < current_interval_.start_time_)
+      time = current_interval_.start_time_;
   }
 
   for (size_t i = 0; i < current_time.size(); i++)
