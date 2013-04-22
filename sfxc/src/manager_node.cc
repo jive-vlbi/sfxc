@@ -537,7 +537,7 @@ void Manager_node::initialise_scan(const std::string &scan) {
     const std::string &delay_file =
       control_parameters.get_delay_table_name(station_name); // also generates delay file if it doesn't exist
     delay_table.open(delay_file.c_str(), scan_start, stop_time_scan);
-    //SFXC_ASSERT(delay_table.initialised());
+    SFXC_ASSERT(delay_table.initialised());
 
     // Get clock offset
     Vex::Node root = vex.get_root_node();
