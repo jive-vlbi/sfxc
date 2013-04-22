@@ -210,7 +210,7 @@ initialise(const char *ctrl_file, const char *vex_file,
   }
 
   // Get start date
-  start_time =Time(vex.get_start_time_of_experiment());
+  start_time = Time(vex.get_start_time_of_experiment());
   initialised = true;
 
   return true;
@@ -1274,6 +1274,17 @@ get_input_node_parameters(const std::string &mode_name,
   result.integr_time = integration_time();
   result.offset = reader_offset(station_name);
   result.phasecal_integr_time = phasecal_integration_time();
+
+  Vex::Node::const_iterator mode = vex.get_root_node()["MODE"][mode_name];
+  if (mode == vex.get_root_node()["MODE"]->end()) {
+    std::cerr << "Cannot find mode " << mode_name << std::endl;
+    sfxc_abort();
+  }
+  if (vex.get_frequency(mode_name, station_name) == std::string()) {
+    std::cerr << "Cannot find $FREQ block for " << station_name
+	      << " in mode " << mode_name << std::endl;
+    sfxc_abort();
+  }
 
   // Scale FFT size based on the sample rate.  This is important for
   // "mixed bandwidth" correlation where we need to make sure that we
