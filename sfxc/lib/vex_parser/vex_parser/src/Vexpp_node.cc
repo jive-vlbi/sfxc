@@ -357,7 +357,8 @@ Vexpp_node::type() {
 /* Date members */
 Vexpp_node::Date::Date() : year(0), day(0), hour(0), minute(0), second(0) {}
 
-Vexpp_node::Date::Date(const std::string &date) {
+Vexpp_node::Date::Date(const std::string &date) :
+    year(0), day(0), hour(0), minute(0), second(0) {
   sscanf(date.c_str(), "%dy%dd%dh%dm%ds",
          &year, &day, &hour, &minute, &second);
 }
