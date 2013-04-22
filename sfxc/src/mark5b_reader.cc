@@ -255,7 +255,7 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
     bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), frame_size - header_size, &buffer[header_size]);
     total_bytes_read += bytes_read;
     if(bytes_read <= 0){
-      std::cout << "Couldn't find new sync word before EOF, eof = " << eof() << "\n";
+      std::cout << RANK_OF_NODE << " : Couldn't find new sync word (Mark5B) before EOF, eof = " << eof() << "\n";
       return false;
     }
     for(header_pos = 0 ; header_pos < frame_size - header_size ; header_pos += SIZE_MK5B_WORD){
@@ -316,6 +316,6 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
       }
     }
   }
-  std::cout << "Couldn't find new sync word within search window\n";
+  std::cout << RANK_OF_NODE << " : Couldn't find new sync word (Mark5B)  within search window\n";
   return false;
 }
