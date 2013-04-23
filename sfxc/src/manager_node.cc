@@ -610,7 +610,6 @@ void Manager_node::initialise_scan(const std::string &scan) {
   n_sources_in_current_scan = control_parameters.get_vex().n_sources(scan);
 
   // Determine for each station which channels are to be correlated
-  const Vex::Node &root=vex.get_root_node();
   std::vector<int> last_channel(control_parameters.number_stations(), -1);
   ch_number_in_scan.resize(control_parameters.number_frequency_channels());
   for(int i = 0; i < ch_number_in_scan.size(); i++){
@@ -620,7 +619,6 @@ void Manager_node::initialise_scan(const std::string &scan) {
       ch_number_in_scan[i][s] = -1;
       if(control_parameters.station_in_scan(scan, station_name)){
         std::string channel_name = control_parameters.frequency_channel(i, mode_name, station_name);
-        std::string freq = vex.get_frequency(mode_name, station_name);
         if (!channel_name.empty()) {
           ch_number_in_scan[i][s] = last_channel[s] + 1;
           last_channel[s] += 1;
