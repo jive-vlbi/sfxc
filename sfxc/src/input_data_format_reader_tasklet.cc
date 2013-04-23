@@ -21,20 +21,17 @@ Input_data_format_reader_tasklet::~Input_data_format_reader_tasklet(){
 }
 
 void Input_data_format_reader_tasklet::stop() {
-  isRunning = false;
-  /// We add an empty interval to unblock the thread
+  // An empty interval signals we're done
   Time dummy;
-  //dummy = (int64_t)0;
   add_time_interval(dummy, dummy);
 }
 
 void Input_data_format_reader_tasklet::do_execute() {
-  isRunning = true;
-  /// blocks until we have an interval to process
+  // Block until we have an interval to process
   fetch_next_time_interval();
-  /// then let's work
-  while ( isRunning ) {
-    /// if there is still some data to process we do it
+  // Do some work until we see an empty interval
+  while (! current_interval_.empty()) {
+    // As long as there still is data to process, do so
     if (*(std::min_element(current_time.begin(), current_time.end())) < current_interval_.stop_time_) {
       do_task();
     } else {
@@ -42,7 +39,6 @@ void Input_data_format_reader_tasklet::do_execute() {
     }
   }
   DEBUG_MSG(" INPUT READER WILL EXIT ITS LOOP ");
-  /// We close the queue in which we output our data.
   output_buffer_->close();
 }
 

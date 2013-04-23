@@ -106,8 +106,6 @@ private:
   Time start_previous_frame;
   /// Output buffer of mark5a data blocks
   Output_buffer_ptr                   output_buffer_;
-  /// Flag that indicates if the reader is active
-  bool isRunning;
 
   /// The current interval to process
   Time_interval current_interval_;
