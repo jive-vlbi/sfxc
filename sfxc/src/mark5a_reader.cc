@@ -294,7 +294,6 @@ Mark5a_reader::set_parameters(const Input_node_parameters &input_node_param) {
   SFXC_ASSERT(DATA_RATE_ > 0);
   time_between_headers_ = Time(N * 8 * SIZE_MK5A_FRAME / (data_rate() / 1000000.));
   offset = input_node_param.offset;
-  std::cout << RANK_OF_NODE << " : offset = " << offset.get_time_usec() << "\n";
   // Generate mask to select which tracks are used in the header search
   generate_track_mask();
 }
