@@ -136,7 +136,8 @@ void Input_node_tasklet::initialise(int num_tracks)
 }
 
 Input_node_tasklet::~Input_node_tasklet() {
-  channel_extractor_->empty_input_queue();
+  if (channel_extractor_)
+    channel_extractor_->empty_input_queue();
   data_writer_.empty_input_queue();
 
 	PROGRESS_MSG( "Total duration:" << rttimer_processing_.measured_time() << " sec" );
@@ -162,7 +163,8 @@ Input_node_tasklet::start_tasklets() {
 void
 Input_node_tasklet::stop_tasklets() {
   reader_.stop();
-  channel_extractor_->stop();
+  if (channel_extractor_)
+    channel_extractor_->stop();
   data_writer_.stop_threads();
   rttimer_processing_.stop();
 }
