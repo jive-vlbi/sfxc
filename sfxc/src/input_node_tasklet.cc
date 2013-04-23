@@ -101,12 +101,8 @@ Input_node_tasklet(Input_reader_ptr_ reader_ptr, Data_memory_pool_ptr memory_poo
 void
 Input_node_tasklet::
 add_time_interval(Time &start_time, Time &stop_time) {
-  //SFXC_ASSERT(!integer_delay_.empty());
-  //SFXC_ASSERT(integer_delay_[0] != NULL);
-
-  //  SFXC_ASSERT(!delay_pool.empty());
   /// Add a list of delays to the data writers
-  Delay_memory_pool_element delay_list=delay_pool.allocate();
+  Delay_memory_pool_element delay_list = delay_pool.allocate();
   delay_list.data().resize(0);
   delay_list.data().push_back(get_delay(start_time));
 
@@ -141,13 +137,11 @@ void Input_node_tasklet::initialise(int num_tracks)
 
 Input_node_tasklet::~Input_node_tasklet() {
   channel_extractor_->empty_input_queue();
-//  integer_delay_.empty_input_queue();
   data_writer_.empty_input_queue();
 
 	PROGRESS_MSG( "Total duration:" << rttimer_processing_.measured_time() << " sec" );
 	PROGRESS_MSG( "      reading:" << toMB(reader_.get_num_processed_bytes())/rttimer_processing_.measured_time() << " MB/s" );
 	PROGRESS_MSG( "  channelizer:" << toMB(channel_extractor_->get_num_processed_bytes())/rttimer_processing_.measured_time() << " MB/s duration:" << channel_extractor_->get_sec() );
-//	PROGRESS_MSG( "integer_delay:" << toMB(integer_delay_.get_num_processed_bytes())/rttimer_processing_.measured_time() << " MB/s" );
 	PROGRESS_MSG( "      writing:" << toMB(data_writer_.get_num_processed_bytes())/data_writer_.get_sec() << " MB/s duration:" << data_writer_.get_sec() );
 }
 

@@ -194,9 +194,7 @@ void Correlator_node::main_loop() {
 
 void Correlator_node::add_delay_table(int sn, Delay_table_akima &table) {
   SFXC_ASSERT((size_t)sn < delay_modules.size());
-  //  SFXC_ASSERT(integer_delay_modules[sn] != Integer_delay_correction_ptr());
   SFXC_ASSERT(delay_modules[sn] != Delay_correction_ptr());
-  //  integer_delay_modules[sn]->set_delay_table(table);
   delay_modules[sn]->set_delay_table(table);
   correlation_core->add_delay_table(sn, table);
 }
