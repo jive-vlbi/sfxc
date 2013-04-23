@@ -96,7 +96,7 @@ void Input_node::main_loop() {
 void Input_node::terminate() {
   DEBUG_MSG("WAITING FOR THE TASKLET TO FINISH");
   input_node_tasklet->stop_tasklets();
-	input_node_tasklet->wait_termination();
+  input_node_tasklet->wait_termination();
 
   while (!data_writers_ctrl.ready())
     usleep(100000); // .1 second:
