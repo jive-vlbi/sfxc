@@ -85,7 +85,7 @@ Data_reader_mk5::Data_reader_mk5(const std::string& url) {
     if (res0 == NULL)
       return;
 
-    fd = ::socket(res0->ai_family, res0->ai_socktype, 0);
+    fd = ::socket(res0->ai_family, res0->ai_socktype, res0->ai_protocol);
     if (fd == -1) {
       ::freeaddrinfo(res0);
       return;
