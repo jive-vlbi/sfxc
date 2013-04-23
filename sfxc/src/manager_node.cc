@@ -540,12 +540,26 @@ void Manager_node::initialise_scan(const std::string &scan) {
     SFXC_ASSERT(delay_table.initialised());
 
     // Get clock offset
-    Vex::Node root = vex.get_root_node();
-    std::string site_clock = root["STATION"][station_name]["CLOCK"]->to_string();
-    double offset = root["CLOCK"][site_clock]["clock_early"][1]->to_double();
+    const Vex::Node &root = vex.get_root_node();
+    Vex::Node::const_iterator clock = root["STATION"][station_name]["CLOCK"];
+    if (clock == root["STATION"][station_name]->end()) {
+      std::cerr << "Cannot find $CLOCK reference for " << station_name << std::endl;
+      sfxc_abort();
+    }
+    const std::string &clock_name = clock->to_string();
+    if (root["CLOCK"][clock_name] == root["CLOCK"]->end()) {
+      std::cerr << "Cannot find " << clock_name << " in $CLOCK block" << std::endl;
+      sfxc_abort();
+    }
+    Vex::Node::const_iterator clock_early = root["CLOCK"][clock_name]["clock_early"];
+    if (clock_early == root["CLOCK"][clock_name]->end()) {
+      std::cerr << "Cannot find clock for " << station_name << std::endl;
+      sfxc_abort();
+    }
+    double offset = clock_early[1]->to_double();
     double rate = 0.0;
-    if (root["CLOCK"][site_clock]["clock_early"]->size() > 3)
-      rate = root["CLOCK"][site_clock]["clock_early"][3]->to_double() / 1e6;
+    if (clock_early->size() > 3)
+      rate = clock_early[3]->to_double() / 1e6;
     // To allow large clock offsets, the reader time is adjusted
     const double max_offset = 1000000.;
     double reader_offset = round(offset / max_offset) * max_offset;
@@ -555,8 +569,8 @@ void Manager_node::initialise_scan(const std::string &scan) {
     std::cout << "offset = " << offset << ", reader_offset = " << reader_offset << std::endl;
 #endif
     Time epoch;
-    if (root["CLOCK"][site_clock]["clock_early"]->size() > 3)
-      epoch = Time(root["CLOCK"][site_clock]["clock_early"][2]->to_string());
+    if (clock_early->size() > 3)
+      epoch = Time(clock_early[2]->to_string());
     delay_table.set_clock_offset(offset, rate, epoch);
     send(delay_table, /* station_nr */ 0, input_rank(station));
     control_parameters.set_reader_offset(station_name, Time(reader_offset));
