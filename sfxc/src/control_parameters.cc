@@ -1275,14 +1275,42 @@ get_input_node_parameters(const std::string &mode_name,
   result.offset = reader_offset(station_name);
   result.phasecal_integr_time = phasecal_integration_time();
 
-  Vex::Node::const_iterator mode = vex.get_root_node()["MODE"][mode_name];
-  if (mode == vex.get_root_node()["MODE"]->end()) {
+  const Vex::Node &root = vex.get_root_node();
+  Vex::Node::const_iterator mode = root["MODE"][mode_name];
+  if (mode == root["MODE"]->end()) {
     std::cerr << "Cannot find mode " << mode_name << std::endl;
     sfxc_abort();
   }
-  if (vex.get_frequency(mode_name, station_name) == std::string()) {
-    std::cerr << "Cannot find $FREQ block for " << station_name
+  const std::string &freq_name = vex.get_frequency(mode_name, station_name);
+  if (freq_name == std::string()) {
+    std::cerr << "Cannot find $FREQ reference for " << station_name
 	      << " in mode " << mode_name << std::endl;
+    sfxc_abort();
+  }
+  if (root["FREQ"][freq_name] == root["FREQ"]->end()) {
+    std::cerr << "Cannot find " << freq_name << " in $FREQ block" << std::endl;
+    sfxc_abort();
+  }
+
+  const std::string &if_name = vex.get_IF(mode_name, station_name);
+  if (if_name == std::string()) {
+    std::cerr << "Cannot find $IF reference for " << station_name
+	      << " in mode " << mode_name << std::endl;
+    sfxc_abort();
+  }
+  if (root["IF"][if_name] == root["IF"]->end()) {
+    std::cerr << "Cannot find " << if_name << " in $IF block" << std::endl;
+    sfxc_abort();
+  }
+
+  const std::string &bbc_name = vex.get_BBC(mode_name, station_name);
+  if (bbc_name == std::string()) {
+    std::cerr << "Cannot find $BBC reference for " << station_name
+	      << " in mode " << mode_name << std::endl;
+    sfxc_abort();
+  }
+  if (root["BBC"][bbc_name] == root["BBC"]->end()) {
+    std::cerr << "Cannot find " << bbc_name << " in $BBC block" << std::endl;
     sfxc_abort();
   }
 
@@ -1291,8 +1319,6 @@ get_input_node_parameters(const std::string &mode_name,
   // send enough data to the correlator nodes.
   result.fft_size *= sample_rate(mode_name, station_name) / sample_rate(mode_name, setup_station());
 
-  const std::string &freq_name =
-    get_vex().get_frequency(mode_name, station_name);
   Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
 
   // sample_rate
