@@ -49,7 +49,7 @@ def update(src, dest):
     ref_tapelog_obs = re.compile(r'\s*ref \$TAPELOG_OBS')
     def_station = re.compile(r'\s*def ([a-zA-Z]+);')
     enddef = re.compile(r'\*enddef;')
-    block = re.compile(r'\$[A-Z]+;')
+    block = re.compile(r'\$[A-Z_]+;')
     block_eop = re.compile(r'\$EOP;')
     block_clock = re.compile(r'\$CLOCK;')
     block_station = re.compile(r'\$STATION;')
@@ -70,6 +70,7 @@ def update(src, dest):
     src.seek(0)
     suppress_block = False
     station_block = False
+    comment_line = False
     station = None
     for line in src:
         if not has_eop and ref_exper.match(line):
@@ -109,16 +110,13 @@ def update(src, dest):
             pass
         if not suppress_block:
             dest.write(line)
+            comment_line = line.startswith("*-")
             continue
 
         continue
 
-    dest.write("*" + 77 * "-" + "\n")
-    gps.create_clock_block(vex, dest)
-    dest.write("*" + 77 * "-" + "\n")
-    eop.create_eop_block(vex, dest)
-    dest.write("*" + 77 * "-" + "\n")
     if not has_tapelog_obs:
+        dest.write("*" + 77 * "-" + "\n")
         dest.write("$TAPELOG_OBS;\n")
         for station in vex['STATION']:
             dest.write("*\n")
@@ -128,6 +126,12 @@ def update(src, dest):
             dest.write("enddef;\n")
             continue
         pass
+    if not comment_line:
+        dest.write("*" + 77 * "-" + "\n")
+        pass
+    gps.create_clock_block(vex, dest)
+    dest.write("*" + 77 * "-" + "\n")
+    eop.create_eop_block(vex, dest)
     return
 
 if __name__ == "__main__":
