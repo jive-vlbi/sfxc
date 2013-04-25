@@ -6,7 +6,7 @@ import re
 import sys
 import time
 
-from vex_parser import Vex
+import vex
 
 import eop
 import gps
@@ -37,9 +37,9 @@ def get_stop(vex):
     return time2vex(start + duration)
 
 def update(src, dest):
-    vex = Vex(src.name)
-    exper = vex['GLOBAL']['EXPER']
-    start = get_start(vex)
+    v = vex.parse(src.read())
+    exper = v['GLOBAL']['EXPER']
+    start = get_start(v)
     start = vex2time(start)
     tm = time.gmtime(start - 86400)
     ref_exper = re.compile(r'\s*ref \$EXPER')
@@ -118,20 +118,20 @@ def update(src, dest):
     if not has_tapelog_obs:
         dest.write("*" + 77 * "-" + "\n")
         dest.write("$TAPELOG_OBS;\n")
-        for station in vex['STATION']:
+        for station in v['STATION']:
             dest.write("*\n")
             dest.write("def %s;\n" % station.upper())
             dest.write("     VSN = 1 : %s-eVLBI : %s : %s;\n"  \
-                           % (station, get_start(vex), get_stop(vex)))
+                           % (station, get_start(v), get_stop(v)))
             dest.write("enddef;\n")
             continue
         pass
     if not comment_line:
         dest.write("*" + 77 * "-" + "\n")
         pass
-    gps.create_clock_block(vex, dest)
+    gps.create_clock_block(v, dest)
     dest.write("*" + 77 * "-" + "\n")
-    eop.create_eop_block(vex, dest)
+    eop.create_eop_block(v, dest)
     return
 
 if __name__ == "__main__":
