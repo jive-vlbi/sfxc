@@ -94,9 +94,19 @@ class vex2ccf_service:
         print web.data()
         web.header('Access-Control-Allow-Origin', '*')
         web.header('Content-Type', 'application/json')
-        response = dispatcher._marshaled_dispatch(web.data())
-        print response
-        return response
+        input = json.loads(web.data())
+        if 'method' in input:
+            response = dispatcher._marshaled_dispatch(web.data())
+            print response
+            return response
+        try:
+            v = vex.parse(input['vex'])
+        except:
+            result = {}
+            result['error'] = "couldn't parse VEX"
+            return json.dumps(result)
+        result = do_vex2ccf(v)
+        return json.dumps(result)
 
     pass
 
