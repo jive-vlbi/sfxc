@@ -14,7 +14,7 @@ import jsonrpclib.SimpleJSONRPCServer
 import web
 
 # JIVE Python modules
-from vex_parser import Vex
+import vex
 from vex2ccf import vex2ccf as do_vex2ccf
 
 os.environ['TZ'] = 'UTC'
@@ -81,13 +81,9 @@ def daemonize():
         # parent returns
         sys.exit(0)
 
-def vex2ccf(vex):
-    fp = tempfile.NamedTemporaryFile()
-    fp.write(vex)
-    fp.flush()
-    vex = Vex(fp.name)
-    json_output = do_vex2ccf(vex)
-    fp.close()
+def vex2ccf(s):
+    v = vex.parse(s)
+    json_output = do_vex2ccf(v)
     return json_output
 
 dispatcher = jsonrpclib.SimpleJSONRPCServer.SimpleJSONRPCDispatcher()
