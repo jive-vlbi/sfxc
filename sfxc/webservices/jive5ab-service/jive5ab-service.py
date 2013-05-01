@@ -406,6 +406,16 @@ class configure:
         if not check_reply(resp, 0):
             return error_response(command, resp)
 
+        if mtu < 5000:
+            ipd = 8
+        else:
+            ipd = 65
+            pass
+        command = "ipd=%d;" % ipd
+        resp = send_command(command)
+        if not check_reply(resp, 0):
+            return error_response(command, resp)
+
         command = "net_protocol=udp;"
         resp = send_command(command)
         if not check_reply(resp, 0):
