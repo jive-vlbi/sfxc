@@ -251,12 +251,12 @@ set_new_parameters(const Correlation_parameters &parameters) {
   new_parameters.fft_size_correlation = parameters.fft_size_correlation;
   int nfft_min = std::max(parameters.fft_size_correlation / parameters.fft_size_delaycor, 1);
   new_parameters.n_ffts_per_buffer =
-    (parameters.station_streams[stream_idx].bandwidth / parameters.bandwidth) *
+    (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
     std::max(CORRELATOR_BUFFER_SIZE / parameters.fft_size_delaycor, nfft_min);
 
   if(parameters.fft_size_correlation > parameters.fft_size_delaycor) 
     new_parameters.n_ffts_per_integration =
-      (parameters.station_streams[stream_idx].bandwidth / parameters.bandwidth) *
+      (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
       (parameters.fft_size_correlation / parameters.fft_size_delaycor) *
         Control_parameters::nr_ffts_per_integration_slice(
           (int)parameters.integration_time.get_time_usec(),
@@ -264,7 +264,7 @@ set_new_parameters(const Correlation_parameters &parameters) {
           parameters.fft_size_correlation);
   else
     new_parameters.n_ffts_per_integration =
-      (parameters.station_streams[stream_idx].bandwidth / parameters.bandwidth) *
+    (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
         Control_parameters::nr_ffts_per_integration_slice(
           (int)parameters.integration_time.get_time_usec(),
           parameters.sample_rate,

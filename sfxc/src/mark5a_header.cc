@@ -199,7 +199,7 @@ bool Mark5a_header::checkCRC(uint8_t mask) {
   for (size_t i=0; i<12*N; i++) {
     if (crcBlock[i] != 0) {
       std::cout << "Error in crc " << i << " "
-      << std::hex << crcBlock[i] << std::dec
+      << std::hex << (int)crcBlock[i] << std::dec
       << std::endl;
       return false;
     }

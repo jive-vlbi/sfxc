@@ -238,7 +238,7 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
 
   }while(continue_searching);
 
-  std::cout << "Couldn't find new sync word before EOF\n";
+  std::cout << "Couldn't find new sync word within search window\n";
   return false;
 }
 

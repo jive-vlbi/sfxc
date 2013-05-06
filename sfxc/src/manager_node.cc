@@ -526,8 +526,10 @@ void Manager_node::initialise_scan(const std::string &scan) {
   for (size_t station = 0;
        station < control_parameters.number_stations();
        station++) {
-    Delay_table_akima delay_table;
     const std::string &station_name = control_parameters.station(station);
+    if(!control_parameters.station_in_scan(scan, station_name))
+      continue;
+    Delay_table_akima delay_table;
     const std::string &delay_file =
       control_parameters.get_delay_table_name(station_name); // also generates delay file if it doesn't exist
     delay_table.open(delay_file.c_str(), scan_start, stop_time_scan);
@@ -562,8 +564,10 @@ void Manager_node::initialise_scan(const std::string &scan) {
   for (size_t station = 0;
        station < control_parameters.number_stations();
        station++) {
-    Uvw_model uvw_table;
     const std::string &station_name = control_parameters.station(station);
+    if(!control_parameters.station_in_scan(scan, station_name))
+      continue;
+    Uvw_model uvw_table;
     const std::string &delay_file =
       control_parameters.get_delay_table_name(station_name);
     uvw_table.open(delay_file.c_str(), scan_start, stop_time_scan);
@@ -577,8 +581,9 @@ void Manager_node::initialise_scan(const std::string &scan) {
   const std::string &mode_name = vex.get_mode(scan);
   for (size_t station=0;
        station<control_parameters.number_stations(); station++) {
-    const std::string &station_name =
-      control_parameters.station(station);
+    const std::string &station_name = control_parameters.station(station);
+    if(!control_parameters.station_in_scan(scan, station_name))
+      continue;
 
     Input_node_parameters input_node_param =
       control_parameters.get_input_node_parameters(mode_name, station_name);
