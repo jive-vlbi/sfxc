@@ -121,8 +121,8 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
                                                          sizeof(tmp_header),
                                                          (char *)&tmp_header );
       // Resync if frame is invalid or we didn't get the expected frame number
-      if((!check_header(tmp_header)) || 
-         (((tmp_header.frame_nr % N_MK5B_BLOCKS_TO_READ) != 0) && frame_nr_valid))
+      if (!check_header(tmp_header) || 
+	  ((tmp_header.frame_nr % N_MK5B_BLOCKS_TO_READ) != 0 && frame_nr_valid))
         return resync_header(data); // Find next valid header in data file
       previous_header = current_header;
       current_header = tmp_header;
@@ -284,14 +284,8 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
       total_bytes_read += bytes_read;
       // because we assume that we always read N_MK5B_BLOCKS_TO_READ frames, we need to
       // find the first block for which frame_nr % N_MK5B_BLOCKS_TO_READ == 0
-      if (tmp_header.frame_nr % N_MK5B_BLOCKS_TO_READ != 0){
-        int nframes = N_MK5B_BLOCKS_TO_READ - (tmp_header.frame_nr % N_MK5B_BLOCKS_TO_READ);
-        for(int j = 0; j < nframes ; j++){
-          total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), sizeof(tmp_header), (char *)&tmp_header);
-          total_bytes_read += Data_reader_blocking::get_bytes_s( data_reader_.get(), frame_size, buffer);
-        }
-      }
-      if (check_header(tmp_header)){
+      if (check_header(tmp_header) &&
+	  (tmp_header.frame_nr % N_MK5B_BLOCKS_TO_READ) == 0) {
         previous_header = current_header;
         current_header = tmp_header;
         // Now that we have found the first frame read the rest of the data
