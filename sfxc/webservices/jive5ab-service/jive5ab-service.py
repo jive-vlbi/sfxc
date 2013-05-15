@@ -618,13 +618,6 @@ class stop:
         what = config.what
         config.what = ""
 
-        if what != "fill2net" and what != "spill2net":
-            command = "%s=off" % what
-            resp = send_command(command)
-            if not check_reply(resp, 0):
-                return error_response(command, resp)
-            pass
-
         command = "%s=disconnect" % what
         resp = send_command(command)
         if not check_reply(resp, 0):
