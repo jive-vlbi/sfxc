@@ -1,5 +1,6 @@
 #! /usr/bin/python
 
+# Standard Python modules.
 import json
 import optparse
 import os
@@ -11,6 +12,14 @@ import sys
 import tempfile
 import time
 import urlparse
+
+# The json module is new in Python 2.6; fall back on simplejson if it
+# isn't available.
+try:
+    import json
+except:
+    import simplejson as json
+    pass
 
 import web
 import vex
@@ -155,7 +164,8 @@ def mark5_play_rate(vex, station):
     das = find_das(vex, station)
     record_transport_type = vex['DAS'][das]['record_transport_type']
     if record_transport_type == 'Mark5B':
-        return "play_rate=data:%f;" % (sample_rate * 1e-6)
+        clock = int(round(sample_rate * 1e-6))
+        return "clock_set=%d:ext:%d;" % (clock, clock)
     tracks = find_tracks(vex, station)
     if tracks:
         track_frame_format = vex['TRACKS'][tracks]['track_frame_format']
