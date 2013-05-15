@@ -1,5 +1,6 @@
 #include "input_data_format_reader_tasklet.h"
 #define NSKIP  16  // Number of frames to skip if we can't find a new header
+#define NSKEW  128
 
 Input_data_format_reader_tasklet::
 Input_data_format_reader_tasklet(
@@ -56,7 +57,7 @@ do_task() {
   }
   for (size_t i = 0; i < current_time.size(); i++) {
     int nframes_left = (current_interval_.stop_time_ - current_time[i]) / reader_->time_between_headers();
-    int skew = std::max(0, std::min(2 * NSKIP, nframes_left - 1));
+    int skew = std::max(0, std::min(2 * NSKEW, nframes_left - 1));
 
     if (current_time[i] < max_time - reader_->time_between_headers() * skew) {
       int nframes = (max_time - current_time[i]) / reader_->time_between_headers() - skew;
