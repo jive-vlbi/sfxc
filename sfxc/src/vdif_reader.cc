@@ -5,7 +5,7 @@ VDIF_reader::VDIF_reader(boost::shared_ptr<Data_reader> data_reader,
 			 Data_frame &data, Time ref_time)
   : Input_data_format_reader(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
-    sample_rate(0)
+    sample_rate(0), first_header_seen(false)
 {
   ref_jday = (int)ref_time.get_mjd();
 }
@@ -83,14 +83,20 @@ VDIF_reader::read_new_block(Data_frame &data) {
   if (data_reader_->eof())
     return false;
 
-  int data_size = current_header.data_size();
-  if (buffer.size() == 0) {
+  if (!first_header_seen) {
     memcpy(&first_header, &current_header, 16);
-    buffer.resize(data_size);
+    first_header_seen = true;
   }
 
-  if (current_header.dataframe_length != first_header.dataframe_length) {
-    Data_reader_blocking::get_bytes_s(data_reader_.get(), first_header.dataframe_length * 8 - 16, NULL);
+  int data_size = first_header.data_size();
+  if (buffer.size() == 0)
+    buffer.resize(data_size);
+
+  if (((uint32_t *)&current_header)[0] == 0x11223344 ||
+      ((uint32_t *)&current_header)[1] == 0x11223344 ||
+      ((uint32_t *)&current_header)[2] == 0x11223344 ||
+      ((uint32_t *)&current_header)[3] == 0x11223344) {
+    Data_reader_blocking::get_bytes_s(data_reader_.get(), data_size, NULL);
     goto restart;
   }
 
