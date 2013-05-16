@@ -101,7 +101,7 @@ Input_node_tasklet(Input_reader_ptr_ reader_ptr, Data_memory_pool_ptr memory_poo
 void
 Input_node_tasklet::
 add_time_interval(Time &start_time, Time &stop_time) {
-  /// Add a list of delays to the data writers
+  /// Create a list of integer delay changes for the data writers
   Delay_memory_pool_element delay_list = delay_pool.allocate();
   delay_list.data().resize(0);
   delay_list.data().push_back(get_delay(start_time));
@@ -113,9 +113,16 @@ add_time_interval(Time &start_time, Time &stop_time) {
   data_writer_.add_delay(delay_list);
   data_writer_.add_time_interval(start_time, stop_time);
 
-  /// A new interval is added to the mark5 reader-tasklet. It is converted into
-  /// usec
-  reader_.add_time_interval(start_time, stop_time);
+  // A new interval is added to the mark5 reader-tasklet 
+  // We adjust the start and stop times to take into account the integer delay
+  Time tbh = reader_.get_data_reader()->time_between_headers();
+  Time delay_start(delay_table.delay(start_time)*1e6);
+  Time delay_stop(delay_table.delay(stop_time)*1e6);
+  int32_t start_frames = (int32_t) std::floor(delay_start/tbh + .5);
+  int32_t stop_frames = (int32_t) std::floor(delay_stop/tbh + .5) + 1;
+  Time start_time_reader = start_time + tbh * start_frames;
+  Time stop_time_reader = stop_time + tbh * stop_frames;
+  reader_.add_time_interval(start_time_reader, stop_time_reader);
 }
 
 void Input_node_tasklet::initialise(int num_tracks)
@@ -261,9 +268,8 @@ Input_node_tasklet::get_delay(Time time) {
   SFXC_ASSERT(delay_table.initialised());
   double delay_ = delay_table.delay(time);
   int32_t delay_in_samples = (int32_t) std::floor(delay_*sample_rate+.5);
-  SFXC_ASSERT(delay_in_samples <= 0);
 
-  int32_t delay_in_bytes = -((-delay_in_samples)/(8/bits_per_sample))-1;
+  int32_t delay_in_bytes = (int) floor((delay_in_samples-1)*1./(8/bits_per_sample));
   int32_t delay_in_remaining_samples =
                     delay_in_samples-delay_in_bytes*(8/bits_per_sample);
   if (delay_in_remaining_samples*bits_per_sample == 8) {
@@ -271,8 +277,6 @@ Input_node_tasklet::get_delay(Time time) {
     delay_in_remaining_samples = 0;
   }
 
-  SFXC_ASSERT((delay_in_bytes <= 0) &&
-         (delay_in_remaining_samples < 8));
   SFXC_ASSERT((delay_in_bytes*(8/bits_per_sample) +
           delay_in_remaining_samples) ==
          delay_in_samples);

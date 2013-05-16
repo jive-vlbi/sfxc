@@ -155,7 +155,6 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
     case FIND_TSTART:{
       while (in.read(reinterpret_cast < char * > (line), 7*sizeof(double))) {
 
-        SFXC_ASSERT(line[4] <= 0);
         Time time(current_mjd, line[0]);
 
         if(line[4] == 0){
@@ -324,7 +323,6 @@ double Delay_table_akima::delay(const Time &time, int phase_center) {
   double result = gsl_spline_eval(splineakima[phase_center], sec, acc[phase_center]);
   sec = (time - clock_epoch).get_time();
   double clock_drift = clock_offset + sec * clock_rate;
-  SFXC_ASSERT(result < 0);
   return result + clock_drift;
 }
 

@@ -118,7 +118,6 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
     }
     case FIND_TSTART:{
       while (in.read(reinterpret_cast < char * > (line), 7*sizeof(double))) {
-        SFXC_ASSERT(line[4] <= 0);
         Time time(current_mjd, line[0]);
 
         if(line[4] == 0){
@@ -280,7 +279,6 @@ void Uvw_model::get_uvw(int phase_center, Time time, double *u, double *v, doubl
   *w = gsl_spline_eval(splineakima_w[phase_center], sec, acc_w[phase_center]);
 //  std::cout << RANK_OF_NODE<< " : u=" << *u << ", v=" << *v << ", w=" << *w << " ; center = " << phase_center
 //            << ", time = " << time << "\n";
-  SFXC_ASSERT(*w < 0);
 }
 
 //calculates the delay for the delayType at time in microseconds
