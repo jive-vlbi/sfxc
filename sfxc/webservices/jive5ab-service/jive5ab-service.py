@@ -171,6 +171,21 @@ def mark5_mode(vex, station):
         pass
     raise AssertionError, "unsupported Mark5 mode"
 
+def vdif_framesize(vex, station, mtu):
+    if recorder_type(vex, station) == 'Mark5B':
+        if mtu < 5000:
+            return 1000
+        else:
+            return 5000
+        pass
+    else:
+        if mtu < 8000:
+            return 1280
+        else:
+            return 8000
+        pass
+    pass
+
 def error_response(command, resp):
     result = {}
     result['error'] = "unexpected response to %s command: %s" % (command, resp)
@@ -302,6 +317,7 @@ def split_channel(vex, station, channel):
 class configure:
     def init(self, mtu):
         self.station = config.station
+        self.vdifsize = vdif_framesize(self.vex, self.station, mtu)
         if recorder_type(self.vex, self.station) == 'Mark5B':
             bitstreams = find_bitstreams(self.vex, self.station)
             tracks = find_tracks(self.vex, self.station)
@@ -324,11 +340,6 @@ class configure:
                     continue
                 pass
             self.bits_per_channel = self.bits_per_sample
-            if mtu < 5000:
-                self.vdifsize = 1000
-            else:
-                self.vdifsize = 5000
-                pass
             pass
         else:
             tracks = find_tracks(self.vex, self.station)
@@ -344,11 +355,6 @@ class configure:
                         break
                     continue
                 self.bits_per_channel = self.bits_per_sample * self.fanout
-                pass
-            if mtu < 8000:
-                self.vdifsize = 1280
-            else:
-                self.vdifsize = 8000
                 pass
             pass
         pass
@@ -466,17 +472,17 @@ class configure:
             return error_response(command, resp)
 
         if len(map) > 1:
+            command = "%s=vdifsize:%d" % (what, self.vdifsize)
+            resp = send_command(command)
+            if not check_reply(resp, 0):
+                return error_response(command, resp)
+
             command = "%s=bitsperchannel:%d" % (what, self.bits_per_channel)
             resp = send_command(command)
             if not check_reply(resp, 0):
                 return error_response(command, resp)
 
             command = "%s=bitspersample:%d" % (what, self.bits_per_sample)
-            resp = send_command(command)
-            if not check_reply(resp, 0):
-                return error_response(command, resp)
-
-            command = "%s=vdifsize:%d" % (what, self.vdifsize)
             resp = send_command(command)
             if not check_reply(resp, 0):
                 return error_response(command, resp)
@@ -537,29 +543,36 @@ class configure:
         if not check_reply(resp, 0):
             return error_reponse("version?", resp)
 
-        try:
-            command = mark5_play_rate(vex, config.station)
-        except:
-            result = {}
-            result['error'] = "can't find play rate for station %s" % config.station
-            return json.dumps(result)
-        resp = send_command(command)
-        if not check_reply(resp, 0):
-            return error_response(command, resp)
-            result = {}
-            result['error'] = "unexpected response to %s command: %s" % (command, resp)
-            return json.dumps(result)
-
-        try:
-            command = mark5_mode(vex, config.station)
+        das = find_das(self.vex, self.station)
+        record_transport_type = self.vex['DAS'][das]['record_transport_type']
+        if record_transport_type == 'VDIF':
+            command = "mode=legacyvdif:1:%d" % self.vdifsize
+            resp = send_command(command)
+            if not check_reply(resp, 0):
+                return error_response(command, resp)
             pass
-        except:
-            result = {}
-            result['error'] = "can't find mode for station %s" % config.station
-            return json.dumps(result)
-        resp = send_command(command)
-        if not check_reply(resp, 0):
-            return error_response(command, resp)
+        else:
+            try:
+                command = mark5_play_rate(vex, config.station)
+            except:
+                result = {}
+                result['error'] = "can't find play rate for station %s" % config.station
+                return json.dumps(result)
+            resp = send_command(command)
+            if not check_reply(resp, 0):
+                return error_response(command, resp)
+
+            try:
+                command = mark5_mode(vex, config.station)
+                pass
+            except:
+                result = {}
+                result['error'] = "can't find mode for station %s" % config.station
+                return json.dumps(result)
+            resp = send_command(command)
+            if not check_reply(resp, 0):
+                return error_response(command, resp)
+            pass
 
         command = "mtu=%d;" % mtu
         resp = send_command(command)
