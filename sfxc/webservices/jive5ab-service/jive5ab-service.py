@@ -119,6 +119,24 @@ def get_sample_rate(vex, station):
         return
     return float(sample_rate.split()[0]) * unit
 
+def recorder_type(vex, station):
+    das = find_das(vex, station)
+    record_transport_type = vex['DAS'][das]['record_transport_type']
+    if not record_transport_type == 'VDIF':
+        return record_transport_type
+    bitstreams = find_bitstreams(vex, station)
+    if bitstreams:
+        return 'Mark5B'
+    tracks = find_tracks(vex, station)
+    if tracks:
+        track_frame_format = vex['TRACKS'][tracks]['track_frame_format']
+        if track_frame_format == 'Mark5B' or track_frame_format == 'MARK5B':
+            return 'Mark5B'
+        if track_frame_format == 'Mark4' or track_frame_format == 'VLBA':
+            return 'Mark5A'
+        pass
+    raise AssertionError, "unsupported recorder type"
+
 def mark5_mask(vex, station):
     bitstreams = find_bitstreams(vex, station)
     stream_list = vex['BITSTREAMS'][bitstreams].getall('stream_def')
@@ -132,8 +150,7 @@ def mark5_mode(vex, station):
     sample_rate = get_sample_rate(vex, station)
     decimation = int(32e6 / sample_rate)
     das = find_das(vex, station)
-    record_transport_type = vex['DAS'][das]['record_transport_type']
-    if record_transport_type == 'Mark5B':
+    if recorder_type(vex, station) == 'Mark5B':
         bitstreams = find_bitstreams(vex, station)
         if bitstreams:
             mask = mark5_mask(vex, station)
@@ -147,10 +164,10 @@ def mark5_mode(vex, station):
         for fanout_def in fanout_list:
             num_tracks += len(fanout_def) - 4
             continue
-        if track_frame_format == "Mark4":
-            return "mode=mark4:%d;" % num_tracks
-        if track_frame_format == "Mark5B" or track_frame_format == "MARK5B":
+        if recorder_type(vex, station) == 'Mark5B':
             return "mode=ext:0x%x:%d;" % (((1 << num_tracks) - 1), decimation)
+        if track_frame_format == 'Mark4':
+            return "mode=mark4:%d;" % num_tracks
         pass
     raise AssertionError, "unsupported Mark5 mode"
 
@@ -161,14 +178,11 @@ def error_response(command, resp):
 
 def mark5_play_rate(vex, station):
     sample_rate = get_sample_rate(vex, station)
-    das = find_das(vex, station)
-    record_transport_type = vex['DAS'][das]['record_transport_type']
-    if record_transport_type == 'Mark5B':
+    if recorder_type(vex, station) == 'Mark5B':
         clock = int(round(sample_rate * 1e-6))
         return "clock_set=%d:ext:%d;" % (clock, clock)
     tracks = find_tracks(vex, station)
     if tracks:
-        track_frame_format = vex['TRACKS'][tracks]['track_frame_format']
         fanout_list = vex['TRACKS'][tracks].getall('fanout_def')
         fanout = 0
         for fanout_def in fanout_list:
@@ -178,9 +192,7 @@ def mark5_play_rate(vex, station):
     return
 
 def split_mode(vex, station):
-    das = find_das(vex, station)
-    record_transport_type = vex['DAS'][das]['record_transport_type']
-    if record_transport_type == 'Mark5B':
+    if recorder_type(vex, station) == 'Mark5B':
         bitstreams = find_bitstreams(vex, station)
         if bitstreams:
             stream_list = vex['BITSTREAMS'][bitstreams].getall('stream_def')
@@ -226,9 +238,7 @@ def split_mode(vex, station):
     return split
 
 def split_channel(vex, station, channel):
-    das = find_das(vex, station)
-    record_transport_type = vex['DAS'][das]['record_transport_type']
-    if record_transport_type == 'Mark5B':
+    if recorder_type(vex, station) == 'Mark5B':
         bitstreams = find_bitstreams(vex, station)
         if bitstreams:
             stream_list = vex['BITSTREAMS'][bitstreams].getall('stream_def')
@@ -241,6 +251,21 @@ def split_channel(vex, station, channel):
             for stream_def in stream_list:
                 if stream_def[0] == channel:
                     return int(stream_def[3]) / bits_per_sample
+                continue
+            pass
+        tracks = find_tracks(vex, station)
+        if tracks:
+            fanout_list = vex['TRACKS'][tracks].getall('fanout_def')
+            bits_per_sample = 1
+            for fanout_def in fanout_list:
+                if fanout_def[2] == "mag":
+                    bits_per_sample = 2
+                    break
+                continue
+            for fanout_def in fanout_list:
+                if fanout_def[1] == channel:
+                    track = int(fanout_def[4])
+                    return (track - 2) / bits_per_sample
                 continue
             pass
         pass
@@ -274,31 +299,36 @@ def split_channel(vex, station, channel):
 
     raise AssertionError, "cannot map channel"
 
-def get_format(vex, station):
-    das = find_das(vex, station)
-    record_transport_type = vex['DAS'][das]['record_transport_type']
-    return record_transport_type
-
 class configure:
-    def init(self):
+    def init(self, mtu):
         self.station = config.station
-        das = find_das(self.vex, self.station)
-        self.record_transport_type = \
-            self.vex['DAS'][das]['record_transport_type']
-        if self.record_transport_type == 'Mark5B':
+        if recorder_type(self.vex, self.station) == 'Mark5B':
             bitstreams = find_bitstreams(self.vex, self.station)
+            tracks = find_tracks(self.vex, self.station)
+            self.bits_per_sample = 1
             if bitstreams:
                 stream_list = \
                     self.vex['BITSTREAMS'][bitstreams].getall('stream_def')
-                self.bits_per_sample = 1
                 for stream_def in stream_list:
                     if stream_def[1] == "mag":
                         self.bits_per_sample = 2
                         break
                     continue
-                self.bits_per_channel = self.bits_per_sample
                 pass
-            self.vdifsize = 5000
+            elif tracks:
+                fanout_list = self.vex['TRACKS'][tracks].getall('fanout_def')
+                for fanout_def in fanout_list:
+                    if fanout_def[2] == "mag":
+                        self.bits_per_sample = 2
+                        break
+                    continue
+                pass
+            self.bits_per_channel = self.bits_per_sample
+            if mtu < 5000:
+                self.vdifsize = 1000
+            else:
+                self.vdifsize = 5000
+                pass
             pass
         else:
             tracks = find_tracks(self.vex, self.station)
@@ -315,7 +345,11 @@ class configure:
                     continue
                 self.bits_per_channel = self.bits_per_sample * self.fanout
                 pass
-            self.vdifsize = 8000
+            if mtu < 8000:
+                self.vdifsize = 1280
+            else:
+                self.vdifsize = 8000
+                pass
             pass
         pass
 
@@ -437,6 +471,11 @@ class configure:
             if not check_reply(resp, 0):
                 return error_response(command, resp)
 
+            command = "%s=bitspersample:%d" % (what, self.bits_per_sample)
+            resp = send_command(command)
+            if not check_reply(resp, 0):
+                return error_response(command, resp)
+
             command = "%s=vdifsize:%d" % (what, self.vdifsize)
             resp = send_command(command)
             if not check_reply(resp, 0):
@@ -513,6 +552,7 @@ class configure:
 
         try:
             command = mark5_mode(vex, config.station)
+            pass
         except:
             result = {}
             result['error'] = "can't find mode for station %s" % config.station
@@ -556,13 +596,6 @@ class configure:
             result['error'] = "couldn't parse VEX"
             return json.dumps(result)
 
-        try:
-            self.init()
-        except:
-            result = {}
-            result['error'] = "couldn't determine data format"
-            return json.dumps(result)
-
         mtu = 1500
         if 'mtu' in input:
             try:
@@ -572,6 +605,13 @@ class configure:
                 result['error'] = "malformed mtu: %s" % input['mtu']
                 return json.dumps(result)
             pass
+
+        try:
+            self.init(mtu)
+        except:
+            result = {}
+            result['error'] = "couldn't determine data format"
+            return json.dumps(result)
 
         if config.sfxc:
             return self.sink(input, self.vex, mtu)
