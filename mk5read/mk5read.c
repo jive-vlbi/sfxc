@@ -459,6 +459,7 @@ int
 main(int argc, char *argv[])
 {
  	SSHANDLE xlrHandle;
+	struct sockaddr_in sin;
 	struct sockaddr_un sun;
 	socklen_t len;
 	int s, fd;
@@ -466,15 +467,19 @@ main(int argc, char *argv[])
 	time_t t1, t2;
 	int64_t xlen;
 	int debug = 0;
+	int port = 0;
 	int err;
 	int ch;
 
 	log_init(1);
 
-	while ((ch = getopt(argc, argv, "d")) != -1) {
+	while ((ch = getopt(argc, argv, "dp:")) != -1) {
 		switch (ch) {
 		case 'd':
 			debug = 1;
+			break;
+		case 'p':
+			port = atoi(optarg);
 			break;
 		default:
 			usage();
@@ -498,16 +503,28 @@ main(int argc, char *argv[])
 	signal(SIGTERM, handler);
 	signal(SIGPIPE, SIG_IGN);
 
-	s = socket(PF_LOCAL, SOCK_STREAM, 0);
-	if (s == -1)
-		fatal("socket");
+	if (port) {
+		s = socket(PF_INET, SOCK_STREAM, 0);
+		if (s == -1)
+			fatal("socket");
 
-	sun.sun_family = AF_LOCAL;
-	strlcpy(sun.sun_path, MK5READ_SOCKET, sizeof(sun.sun_path));
-	unlink(MK5READ_SOCKET);
-	if (bind(s, (struct sockaddr *)&sun, sizeof(sun)) == -1)
-		fatal("bind");
-	chmod(MK5READ_SOCKET, 0666);
+		sin.sin_family = AF_INET;
+		sin.sin_port = htons(port);
+		sin.sin_addr.s_addr = INADDR_ANY;
+		if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) == -1)
+			fatal("bind");
+	} else {
+		s = socket(PF_LOCAL, SOCK_STREAM, 0);
+		if (s == -1)
+			fatal("socket");
+
+		sun.sun_family = AF_LOCAL;
+		strlcpy(sun.sun_path, MK5READ_SOCKET, sizeof(sun.sun_path));
+		unlink(MK5READ_SOCKET);
+		if (bind(s, (struct sockaddr *)&sun, sizeof(sun)) == -1)
+			fatal("bind");
+		chmod(MK5READ_SOCKET, 0666);
+	}
 
 	if (listen(s, 1) == -1)
 		fatal("listen");
