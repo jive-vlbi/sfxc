@@ -26,6 +26,7 @@
 
 struct mk5read_msg {
   char            vsn[9];
+  char            pad[7];
   uint64_t        off;
 };
 
