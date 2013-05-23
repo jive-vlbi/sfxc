@@ -238,6 +238,39 @@ int initialise_data(const char *vex_filename,
     i++;
   }
 
+  Vex::Node::const_iterator velocity =
+    vex.get_root_node()["SITE"][site_name]["site_velocity"];
+  Vex::Node::const_iterator epoch =
+    vex.get_root_node()["SITE"][site_name]["site_position_epoch"];
+  if (velocity != vex.get_root_node()["SITE"][site_name]->end() &&
+      epoch == vex.get_root_node()["SITE"][site_name]->end()) {
+    // Don't insist on having a site_position_epoch if the velocity vector is 0.
+    if (velocity[0]->to_double() != 0.0 || velocity[1]->to_double() != 0.0 ||
+	velocity[2]->to_double() != 0.0) {
+      std::cerr << "missing site_position_epoch" << std::endl;
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  if (velocity != vex.get_root_node()["SITE"][site_name]->end() &&
+      epoch != vex.get_root_node()["SITE"][site_name]->end()) {
+    double epoch_mjd = epoch->to_double();
+    if (epoch_mjd < 50000) {
+      struct tm tm;
+      ::strptime(epoch->to_date().to_string().c_str(), "%Yy%jd%Hh%Mm%Ss", &tm);
+      epoch_mjd = 40587 + ::timegm(&tm) / 86400;
+    }
+    Vex::Node::const_iterator start = vex.get_root_node()["SCHED"]->begin()["start"];
+    struct tm tm;
+    ::strptime(start->to_string().c_str(), "%Yy%jd%Hh%Mm%Ss", &tm);
+    double mjd = 40587 + ::timegm(&tm) / 86400;
+    double years = ((mjd - epoch_mjd) / 364.25);
+
+    station_data.site_position[0] += velocity[0]->to_double_amount("m/yr") * years;
+    station_data.site_position[1] += velocity[1]->to_double_amount("m/yr") * years;
+    station_data.site_position[2] += velocity[2]->to_double_amount("m/yr") * years;
+  }
+
   if (vex.get_root_node()["ANTENNA"][site_name]["axis_type"][0]->to_string()=="az")
     station_data.axis_type=3;
   if (vex.get_root_node()["ANTENNA"][site_name]["axis_type"][0]->to_string()=="ha")
