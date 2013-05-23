@@ -19,7 +19,7 @@ bit_statistics::~bit_statistics(){
 }
 
 void 
-bit_statistics::reset_statistics(int bits_per_sample_){
+bit_statistics::reset_statistics(int bits_per_sample_, int scale_){
   SFXC_ASSERT(bits_per_sample_ == 1 || bits_per_sample_ == 2);
   if(bits_per_sample != bits_per_sample_){
     bits_per_sample = bits_per_sample_;
@@ -29,6 +29,7 @@ bit_statistics::reset_statistics(int bits_per_sample_){
     statistics.resize(5);
 #endif
   }
+  scale = scale_;
   memset(&data_counts[0],0,data_counts.size()*sizeof(int));
   nInvalid = 0;
 }
@@ -58,9 +59,7 @@ bit_statistics::get_statistics(){
     }
   }
   statistics[statistics.size()-1] += nInvalid;
-//  std::cout << RANK_OF_NODE << " ; statistics = " << statistics[0];
-//  for(int i=1;i<statistics.size();i++)
-//    std::cout << ", " << statistics[i];
-//  std::cout << "\n";
+  for (size_t i = 0; i < statistics.size(); i++)
+    statistics[i] /= scale;
   return &statistics[0];
 }

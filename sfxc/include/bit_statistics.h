@@ -17,11 +17,12 @@ class bit_statistics{
 public:
   bit_statistics();
   ~bit_statistics();
-  void reset_statistics(int bits_per_sample_);
+  void reset_statistics(int bits_per_sample_, int scale_);
   void inc_counter(unsigned char word);
   void inc_invalid(int n);
   int *get_statistics();
   int bits_per_sample;
+  int scale;
 private:
   int nInvalid;
   std::vector<int> data_counts;
