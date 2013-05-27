@@ -660,7 +660,7 @@ void Manager_node::send_global_header(){
     output_header.correlator_version = atoi(SVN_VERSION);
 
     output_header.polarisation_type =
-      control_parameters.polarisation_type_for_global_output_header();
+      control_parameters.polarisation_type_for_global_output_header(get_current_mode());
     strncpy(output_header.correlator_branch, SVN_BRANCH, 15);
     output_header.correlator_branch[14] = 0;
     output_header.job_nr = control_parameters.job_nr();

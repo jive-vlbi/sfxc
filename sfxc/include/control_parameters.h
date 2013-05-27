@@ -307,7 +307,7 @@ public:
     return nr_ffts * ((fft_size * bits_per_sample / 8) + 2 + 2 * sizeof(int32_t));
   }
 
-  int polarisation_type_for_global_output_header() const;
+  int polarisation_type_for_global_output_header(const std::string &mode) const;
 
   /****************************************************/
   /* Extract structs for the correlation:             */

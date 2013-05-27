@@ -1407,13 +1407,15 @@ cross_channel(const std::string &channel_name,
   if (freq != std::string()){
     char side = sideband(channel_name, setup_station(), mode);
     char pol  = polarisation(channel_name, setup_station(), mode);
-    for (size_t i = 0; i < number_frequency_channels(); i++) {
-      if (channel(i) != channel_name) {
-	if ((freq == frequency(channel(i), setup_station(), mode)) &&
-	    (side == sideband(channel(i), setup_station(), mode)) &&
-	    (pol != polarisation(channel(i), setup_station(), mode))) {
-	  return i;
-	}
+    if(pol != ' '){
+      for (size_t i = 0; i < number_frequency_channels(); i++) {
+        if (channel(i) != channel_name) {
+	  if ((freq == frequency(channel(i), setup_station(), mode)) &&
+	      (side == sideband(channel(i), setup_station(), mode)) &&
+	      (pol != polarisation(channel(i), setup_station(), mode))) {
+  	    return i;
+  	  } 
+        }
       }
     }
   }
@@ -1488,20 +1490,16 @@ polarisation(const std::string &channel_name,
 
 int
 Control_parameters::
-polarisation_type_for_global_output_header() const {
+polarisation_type_for_global_output_header(const std::string &mode) const {
   if (cross_polarize())
     return Output_header_global::LEFT_RIGHT_POLARISATION_WITH_CROSSES;
 
   bool left = false, right = false;
-  for (Vex::Node::const_iterator mode_it =
-         vex.get_root_node()["MODE"]->begin();
-       mode_it != vex.get_root_node()["MODE"]->end();
-       ++mode_it) {
-    std::string mode = mode_it.key();
-    // Assume station 0 is in all scans
-    std::string station_name = setup_station();
-    for (size_t ch_nr=0; ch_nr<number_frequency_channels(); ch_nr++) {
-      std::string channel_name = frequency_channel(ch_nr, mode, station_name);
+  // Assume station 0 is in all scans
+  std::string station_name = setup_station();
+  for (size_t ch_nr=0; ch_nr<number_frequency_channels(); ch_nr++) {
+    std::string channel_name = frequency_channel(ch_nr, mode, station_name);
+    if (channel_name != std::string()){
       if (channel_name != std::string()){
         char pol = polarisation(channel_name, station_name, mode);
         if (std::toupper(pol) == 'L')
@@ -1538,11 +1536,13 @@ frequency(const std::string &channel_name,
     }
   }
 
-  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
-  for (Vex::Node::const_iterator ch_it = freq->begin("chan_def");
-       ch_it != freq->end("chan_def"); ch_it++) {
-    if (ch_it[4]->to_string() == channel_name) {
-      return ch_it[1]->to_string();
+  if (freq_name != std::string()){
+    Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
+    for (Vex::Node::const_iterator ch_it = freq->begin("chan_def");
+         ch_it != freq->end("chan_def"); ch_it++) {
+      if (ch_it[4]->to_string() == channel_name) {
+        return ch_it[1]->to_string();
+      }
     }
   }
 
