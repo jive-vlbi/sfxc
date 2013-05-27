@@ -848,7 +848,9 @@ Control_parameters::frequency_channel(size_t channel_nr, const std::string& mode
   SFXC_ASSERT(channel_nr < number_frequency_channels());
 
   char pol = polarisation(channel(channel_nr), setup_station(), mode_name);
-  int64_t freq_min, freq_max; 
+  if (pol == ' ')
+    return std::string(); // Channel not present
+  int64_t freq_min, freq_max;
   if (sideband(channel(channel_nr), setup_station(), mode_name) == 'L') {
     freq_max = channel_freq(mode_name, setup_station(), channel(channel_nr));
     freq_min = freq_max - bandwidth(mode_name, setup_station(), channel(channel_nr));
@@ -1500,11 +1502,13 @@ polarisation_type_for_global_output_header() const {
     std::string station_name = setup_station();
     for (size_t ch_nr=0; ch_nr<number_frequency_channels(); ch_nr++) {
       std::string channel_name = frequency_channel(ch_nr, mode, station_name);
-      char pol = polarisation(channel_name, station_name, mode);
-      if (std::toupper(pol) == 'L')
-        left = true;
-      else if (std::toupper(pol) == 'R')
-        right = true;
+      if (channel_name != std::string()){
+        char pol = polarisation(channel_name, station_name, mode);
+        if (std::toupper(pol) == 'L')
+          left = true;
+        else if (std::toupper(pol) == 'R')
+          right = true;
+      }
     }
   }
   if (left && right)
