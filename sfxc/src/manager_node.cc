@@ -551,15 +551,32 @@ void Manager_node::initialise_scan(const std::string &scan) {
       std::cerr << "Cannot find " << clock_name << " in $CLOCK block" << std::endl;
       sfxc_abort();
     }
-    Vex::Node::const_iterator clock_early = root["CLOCK"][clock_name]["clock_early"];
-    if (clock_early == root["CLOCK"][clock_name]->end()) {
+    clock = root["CLOCK"][clock_name]["clock_early"];
+    if (clock == root["CLOCK"][clock_name]->end()) {
       std::cerr << "Cannot find clock for " << station_name << std::endl;
       sfxc_abort();
     }
-    double offset = clock_early[1]->to_double();
-    double rate = 0.0;
-    if (clock_early->size() > 3)
-      rate = clock_early[3]->to_double() / 1e6;
+    Time start, epoch;
+    double offset = 0.0, rate = 0.0;
+    for (clock = root["CLOCK"][clock_name]->begin("clock_early");
+	 clock != root["CLOCK"][clock_name]->end("clock_early"); clock++) {
+      if (scan_start < Time(clock[0]->to_string())) {
+	if (clock == root["CLOCK"][clock_name]->begin("clock_early")) {
+	  std::cerr << "Clock doesn't cover scan " << scan
+		    << " for station " << station_name << std::endl;
+	  sfxc_abort();
+	}
+	break;
+      }
+      start = Time(clock[0]->to_string());
+      offset = clock[1]->to_double();
+      rate = 0.0;
+      if (clock->size() > 3) {
+	rate = clock[3]->to_double() / 1e6;
+	epoch = Time(clock[2]->to_string());
+      }
+    }
+
     // To allow large clock offsets, the reader time is adjusted
     const double max_offset = 1000000.;
     double reader_offset = round(offset / max_offset) * max_offset;
@@ -568,10 +585,7 @@ void Manager_node::initialise_scan(const std::string &scan) {
     std::cout.precision(19);
     std::cout << "offset = " << offset << ", reader_offset = " << reader_offset << std::endl;
 #endif
-    Time epoch;
-    if (clock_early->size() > 3)
-      epoch = Time(clock_early[2]->to_string());
-    delay_table.set_clock_offset(offset, rate, epoch);
+    delay_table.set_clock_offset(offset, start, rate, epoch);
     send(delay_table, /* station_nr */ 0, input_rank(station));
     control_parameters.set_reader_offset(station_name, Time(reader_offset));
     correlator_node_set_all(delay_table, station_name);

@@ -162,21 +162,17 @@ send(Delay_table_akima &table, int sn, int rank) {
   int32_t n_scans = table.scans.size();
   int32_t n_times = table.times.size();
   int32_t n_delays = table.delays.size();
-  int32_t size = 5 * sizeof(int32_t) + n_sources * 81 * sizeof(char) + 
+  int32_t n_clocks = table.clock_offsets.size();
+  int32_t size = 6 * sizeof(int32_t) + n_sources * 81 * sizeof(char) + 
                  n_scans * (2 * sizeof(int64_t) + 5 * sizeof(int32_t)) +
-                 (n_times + 3*n_delays) * sizeof(double) + 2 * sizeof(double)+
-                 sizeof(int64_t);
+                 (n_times + 3*n_delays) * sizeof(double) +
+                 n_clocks * (2 * sizeof(int64_t) + 2 * sizeof(double));
 
   char buffer[size];
   int position=0;
 
   // First integer is the station number
   MPI_Pack(&sn, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-  // clock offset, rate, and epoch
-  MPI_Pack(&table.clock_offset, 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&table.clock_rate, 1, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
-  int64_t ticks = table.clock_epoch.get_clock_ticks();
-  MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
 
   // all sources
   MPI_Pack(&n_sources, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
@@ -208,6 +204,18 @@ send(Delay_table_akima &table, int sn, int rank) {
   MPI_Pack(&table.delays[0], n_delays, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&table.phases[0], n_delays, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&table.amplitudes[0], n_delays, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
+  // all clocks
+  MPI_Pack(&n_clocks, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  for (int i = 0; i < n_clocks; i++) {
+    int64_t ticks = table.clock_starts[i].get_clock_ticks();
+    MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+  }
+  MPI_Pack(&table.clock_offsets[0], n_clocks, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
+  for (int i = 0; i < n_clocks; i++) {
+    int64_t ticks = table.clock_epochs[i].get_clock_ticks();
+    MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+  }
+  MPI_Pack(&table.clock_rates[0], n_clocks, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
 
   SFXC_ASSERT(position == size);
 //  std::cout << "sending " << size << " bytes of data " << "\n";
@@ -231,12 +239,6 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
 
   // First, get the station number
   MPI_Unpack(buffer, size, &position, &sn, 1, MPI_INT32, MPI_COMM_WORLD);
-  // clock offset, rate, and epoch
-  MPI_Unpack(buffer, size, &position, &table.clock_offset, 1, MPI_DOUBLE, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &table.clock_rate, 1, MPI_DOUBLE, MPI_COMM_WORLD);
-  int64_t ticks;
-  MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
-  table.clock_epoch.set_clock_ticks(ticks);
 
   // Get all sources
   int32_t n_sources;
@@ -281,6 +283,25 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
   MPI_Unpack(buffer, size, &position, &table.phases[0], n_delays, MPI_DOUBLE, MPI_COMM_WORLD);
   table.amplitudes.resize(n_delays);
   MPI_Unpack(buffer, size, &position, &table.amplitudes[0], n_delays, MPI_DOUBLE, MPI_COMM_WORLD);
+  // Get all clocks
+  int32_t n_clocks;
+  MPI_Unpack(buffer, size, &position, &n_clocks, 1, MPI_INT32, MPI_COMM_WORLD);
+  table.clock_starts.resize(n_clocks);
+  for (int i = 0; i < n_clocks; i++) {
+    int64_t ticks;
+    MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+    table.clock_starts[i].set_clock_ticks(ticks);
+  }
+  table.clock_offsets.resize(n_clocks);
+  MPI_Unpack(buffer, size, &position, &table.clock_offsets[0], n_clocks, MPI_DOUBLE, MPI_COMM_WORLD);
+  table.clock_epochs.resize(n_clocks);
+  for (int i = 0; i < n_clocks; i++) {
+    int64_t ticks;
+    MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+    table.clock_epochs[i].set_clock_ticks(ticks);
+  }
+  table.clock_rates.resize(n_clocks);
+  MPI_Unpack(buffer, size, &position, &table.clock_rates[0], n_clocks, MPI_DOUBLE, MPI_COMM_WORLD);
 
   SFXC_ASSERT(position == size);
 

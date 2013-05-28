@@ -41,14 +41,16 @@
 
 // Default constructor
 Delay_table_akima::Delay_table_akima()
-    : scan_nr(0), clock_offset(0), clock_rate(0), clock_epoch(0){}
+  : scan_nr(0), clock_nr(0) {
+}
 
 // Copy constructor
 Delay_table_akima::Delay_table_akima(const Delay_table_akima &other)
-    : scan_nr(0) {
-  clock_offset = other.clock_offset;
-  clock_rate = other.clock_rate;
-  clock_epoch = other.clock_epoch;
+  : scan_nr(0), clock_nr(0) {
+  clock_starts = other.clock_starts;
+  clock_offsets = other.clock_offsets;
+  clock_rates = other.clock_rates;
+  clock_epochs = other.clock_epochs;
   sources = other.sources;
   scans = other.scans;
   times = other.times;
@@ -63,9 +65,10 @@ Delay_table_akima::~Delay_table_akima() {}
 
 void Delay_table_akima::operator=(const Delay_table_akima &other) {
   scan_nr = 0;
-  clock_offset = other.clock_offset;
-  clock_rate = other.clock_rate;
-  clock_epoch = other.clock_epoch;
+  clock_starts = other.clock_starts;
+  clock_offsets = other.clock_offsets;
+  clock_rates = other.clock_rates;
+  clock_epochs = other.clock_epochs;
   sources = other.sources;
   scans = other.scans;
   times = other.times;
@@ -94,10 +97,11 @@ bool Delay_table_akima::operator==(const Delay_table_akima &other) const {
 }
 
 // Set clock offset and rate
-void Delay_table_akima::set_clock_offset(const double offset, const double rate, const Time epoch){
-  clock_offset = offset;
-  clock_rate = rate;
-  clock_epoch = epoch;
+void Delay_table_akima::set_clock_offset(const double offset, const Time start, const double rate, const Time epoch){
+  clock_starts.push_back(start);
+  clock_offsets.push_back(offset);
+  clock_rates.push_back(rate);
+  clock_epochs.push_back(epoch);
 }
 
 //read the delay table, do some checks and
@@ -238,10 +242,6 @@ Delay_table_akima::add_scans(const Delay_table_akima &other)
     return;
   }
 
-  SFXC_ASSERT(clock_offset == other.clock_offset);
-  SFXC_ASSERT(clock_rate == other.clock_rate);
-  SFXC_ASSERT(clock_epoch == other.clock_epoch);
-
   int prev_scans_size = scans.size();
   scans.insert(scans.end(), other.scans.begin(), other.scans.end());
   for (int i = prev_scans_size; i < scans.size(); i++) {
@@ -258,6 +258,14 @@ Delay_table_akima::add_scans(const Delay_table_akima &other)
   phases.insert(phases.end(), other.phases.begin(), other.phases.end());
   amplitudes.insert(amplitudes.end(), other.amplitudes.begin(),
 		    other.amplitudes.end());
+  clock_starts.insert(clock_starts.end(), other.clock_starts.begin(),
+		      other.clock_starts.end());
+  clock_offsets.insert(clock_offsets.end(), other.clock_offsets.begin(),
+		      other.clock_offsets.end());
+  clock_epochs.insert(clock_epochs.end(), other.clock_epochs.begin(),
+		      other.clock_epochs.end());
+  clock_rates.insert(clock_rates.end(), other.clock_rates.begin(),
+		      other.clock_rates.end());
 }
 
 bool Delay_table_akima::initialise_next_scan() {
@@ -307,6 +315,10 @@ bool Delay_table_akima::initialise_next_scan() {
     gsl_spline_init(splineakima_amp[i], &times[scan.times], &amplitudes[scan.amplitudes], n_pts);
   }
 
+  clock_nr = clock_starts.size() - 1;
+  while (clock_nr > 0 && clock_starts[clock_nr] > scans[scan_nr].begin)
+    clock_nr--;
+
   return true;
 }
 
@@ -321,8 +333,8 @@ double Delay_table_akima::delay(const Time &time, int phase_center) {
   SFXC_ASSERT(splineakima.size() > 0);
   double sec = (time - scans[scan_nr].begin).get_time();
   double result = gsl_spline_eval(splineakima[phase_center], sec, acc[phase_center]);
-  sec = (time - clock_epoch).get_time();
-  double clock_drift = clock_offset + sec * clock_rate;
+  sec = (time - clock_epochs[clock_nr]).get_time();
+  double clock_drift = clock_offsets[clock_nr] + sec * clock_rates[clock_nr];
   return result + clock_drift;
 }
 
@@ -334,7 +346,7 @@ double Delay_table_akima::rate(const Time &time, int phase_center) {
   SFXC_ASSERT(splineakima.size() > 0);
   double sec = (time - scans[scan_nr].begin).get_time();
   double result = gsl_spline_eval_deriv(splineakima[phase_center], sec, acc[phase_center]);
-  return result + clock_rate;
+  return result + clock_rates[clock_nr];
 }
 
 double Delay_table_akima::phase(const Time &time, int phase_center){

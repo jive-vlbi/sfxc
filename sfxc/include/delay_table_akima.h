@@ -60,7 +60,7 @@ public:
   void open(const char *delayTableName);
   void open(const char *delayTableName, const Time tstart, const Time tstop);
   //Set clock offset and rate
-  void set_clock_offset(const double offset, const double rate, const Time epoch);
+  void set_clock_offset(const double offset, const Time start, const double rate, const Time epoch);
 
   void add_scans(const Delay_table_akima &other);
 
@@ -93,8 +93,11 @@ public:
   }
 private:
   int scan_nr;
-  Time clock_epoch;
-  double clock_offset, clock_rate;
+  int clock_nr;
+  std::vector<Time> clock_starts;
+  std::vector<double> clock_offsets;
+  std::vector<Time> clock_epochs;
+  std::vector<double> clock_rates;
   std::vector<Scan> scans;
   std::vector<std::string> sources;
   std::vector<double> times;
