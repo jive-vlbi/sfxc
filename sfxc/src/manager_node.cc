@@ -560,14 +560,10 @@ void Manager_node::initialise_scan(const std::string &scan) {
     double offset = 0.0, rate = 0.0;
     for (clock = root["CLOCK"][clock_name]->begin("clock_early");
 	 clock != root["CLOCK"][clock_name]->end("clock_early"); clock++) {
-      if (scan_start < Time(clock[0]->to_string())) {
-	if (clock == root["CLOCK"][clock_name]->begin("clock_early")) {
-	  std::cerr << "Clock doesn't cover scan " << scan
-		    << " for station " << station_name << std::endl;
-	  sfxc_abort();
-	}
-	break;
-      }
+      if (scan_start < Time(clock[0]->to_string()))
+	continue;
+      if (start > Time(clock[0]->to_string()))
+	continue;
       start = Time(clock[0]->to_string());
       offset = clock[1]->to_double();
       rate = 0.0;
@@ -575,6 +571,11 @@ void Manager_node::initialise_scan(const std::string &scan) {
 	rate = clock[3]->to_double() / 1e6;
 	epoch = Time(clock[2]->to_string());
       }
+    }
+    if (start == Time()) {
+      std::cerr << "Clock doesn't cover scan " << scan
+		<< " for station " << station_name << std::endl;
+      sfxc_abort();
     }
 
     // To allow large clock offsets, the reader time is adjusted
