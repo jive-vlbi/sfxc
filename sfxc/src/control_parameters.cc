@@ -1320,15 +1320,8 @@ get_input_node_parameters(const std::string &mode_name,
   // "mixed bandwidth" correlation where we need to make sure that we
   // send enough data to the correlator nodes.
   result.fft_size *= sample_rate(mode_name, station_name) / sample_rate(mode_name, setup_station());
+  result.track_bit_rate =  (int)sample_rate(mode_name, station_name);
 
-  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
-
-  // sample_rate
-  for (Vex::Node::const_iterator chan = freq->begin("chan_def");
-       chan != freq->end("chan_def"); ++chan) {
-    result.track_bit_rate =
-      (int)(freq["sample_rate"]->to_double_amount("Ms/sec")*1000000);
-  }
   std::string record_transport_type = transport_type(station_name);
   if (record_transport_type == "Mark5A") {
     get_mark5a_tracks(mode_name, station_name, result);
