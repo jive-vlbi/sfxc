@@ -141,13 +141,6 @@ int32_t VDIF_reader::Header::jday_epoch() const {
   return mjd(1, month, year);
 }
 
-Time VDIF_reader::time_between_headers() {
-  int samples_per_frame = 8 * current_header.data_size() / ((current_header.bits_per_sample + 1) * (1 << current_header.log2_nchan));
-  Time time_between_headers_(samples_per_frame / (sample_rate / 1000000));
-  SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
-  return time_between_headers_;
-}
-
 void VDIF_reader::set_parameters(const Input_node_parameters &param) {
   sample_rate = param.sample_rate();
   SFXC_ASSERT(((int)sample_rate % 1000000) == 0);
@@ -161,4 +154,7 @@ void VDIF_reader::set_parameters(const Input_node_parameters &param) {
   } else {
     thread_map[0] = 0;
   }
+  // Compute the time between two VDIF frames
+  time_between_headers_ = Time(param.frame_size*8.e6 / (sample_rate * param.bits_per_sample()));
+  SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
 }

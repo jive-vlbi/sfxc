@@ -97,6 +97,7 @@ private:
   int epoch_jday; // Time origin of the timestamps in the data headers
   // current time in microseconds
   Time current_time_;
+  Time time_between_headers_;
   double sample_rate;
   // For testing
   Debug_level debug_level_;
@@ -111,6 +112,11 @@ private:
   // Mapping between thread IDs and channel numbers.
   std::map<int, int> thread_map;
 };
+
+inline Time 
+VDIF_reader::time_between_headers() {
+ return time_between_headers_;
+}
 
 inline int32_t 
 VDIF_reader::Header::header_size() const{
