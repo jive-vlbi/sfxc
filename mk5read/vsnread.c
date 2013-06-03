@@ -50,7 +50,7 @@ print_labels(void)
 	ULONG xlrError;
 	char errString[XLR_ERROR_LENGTH];
 	S_BANKSTATUS bankStatus;
-	UINT bankID;
+	UINT32 bankID;
 	char *p;
 
 	if (XLROpen(1, &xlrHandle) != XLR_SUCCESS) {
@@ -122,12 +122,31 @@ print_labels(void)
 	return 0;
 }
 
+void
+print_mk5read_reply(char reply[], const int size){
+  int i,j;
+  char vsn[2][size];
+  sscanf(reply, "!bank_set? 0 : A : %s : B : %s", vsn[0], vsn[1]);
+  for(i=0;i<2;i++){
+    j = 0;
+    while(vsn[i][j] != '\0'){
+      if ((vsn[i][j] == '/') || (vsn[i][j] == ':') || (vsn[i][j] == ';')){
+        vsn[i][j] = '\0';
+        break;
+      }
+      j++;
+    }
+    printf("%s\n", vsn[i]);
+  }
+}
+
 int
 main(int argc, char **argv)
 {
 	struct sockaddr_in sin;
+        char request[1024], reply[1024];
 	int ch, force = 0;
-	int s;
+	int s, nbytes;
 
 	while ((ch = getopt(argc, argv, "f")) != -1) {
 		switch (ch) {
@@ -145,7 +164,9 @@ main(int argc, char **argv)
 	if (argc > 0)
 		usage();
 
-	if (!force) {
+	if (force) {
+	        print_labels();
+        }else{
 		/*
 		 * Check if Mark5A is running by connecting to
 		 * localhost:2620.  If that fails with ECONNREFUSED,
@@ -161,12 +182,17 @@ main(int argc, char **argv)
 		sin.sin_addr.s_addr = inet_addr("127.0.0.1");
 		sin.sin_port = htons(2620);
 
-		if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) != -1)
-			return (EXIT_FAILURE);
-		if (errno != ECONNREFUSED)
-			return (EXIT_FAILURE);
+		if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) == 0){
+                     strcpy(request, "bank_set?");
+                     write(s, request, sizeof(request));
+                     nbytes = read(s, reply, sizeof(reply));
+                     if(nbytes <= 0)
+                         return(EXIT_FAILURE);
+                     print_mk5read_reply(reply, sizeof(reply));
+                }else{
+			print_labels();
+                }
 	}
 
-	print_labels();
 	return (EXIT_SUCCESS);
 }
