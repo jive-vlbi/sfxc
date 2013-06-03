@@ -122,8 +122,13 @@ VDIF_reader::read_new_block(Data_frame &data) {
     else
       data.channel = 0;
   } else {
-    if (thread_map.count(current_header.thread_id) == 0)
-      goto restart;
+    if (thread_map.count(current_header.thread_id) == 0){
+      // If this is the only thread we obtain its thread_id from the data
+      if(thread_map.size() == 0)
+        thread_map[current_header.thread_id] = 0;
+      else
+        goto restart;
+    }
     data.channel = thread_map[current_header.thread_id];
   }
 
@@ -147,13 +152,13 @@ void VDIF_reader::set_parameters(const Input_node_parameters &param) {
   offset = param.offset;
 
   // Create a mapping from thread ID to channel number.
+  // If n_tracks > 0 then the data contains a single VDIF thread,
+  // the thread_id of this thread comes from the actual data
   thread_map.clear();
   if (param.n_tracks == 0) {
     for (size_t i = 0; i < param.channels.size(); i++)
       thread_map[param.channels[i].tracks[0]] = i;
-  } else {
-    thread_map[0] = 0;
-  }
+  } 
   // Compute the time between two VDIF frames
   time_between_headers_ = Time(param.frame_size*8.e6 / (sample_rate * param.bits_per_sample()));
   SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
