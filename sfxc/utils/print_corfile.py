@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys, struct, pdb
 from numpy import *
+from optparse import OptionParser
 
 timeslice_header_size = 16
 uvw_header_size = 32
@@ -139,25 +140,31 @@ def read_time_slice(infile, stats, data, nchan):
   # We read one time slice to many
   infile.seek(-timeslice_header_size, 1) 
 
-def print_usage():
-  i = sys.argv[0].rfind("/") + 1
-  filename = sys.argv[0][i:]
-  print "Usage : " + filename + " <correlator output file>"
+def get_options():
+  parser = OptionParser('%prog [options] <correlator output file>')
+  parser.add_option('-n', '--noheader', action='store_true',default=False, help='Do not print the global header')
+  (opts, args) = parser.parse_args()
+  if len(args) == 0:
+    parser.print_help()
+    parser.exit()
+  if len(args) != 1:
+    parser.error('No correlator file specified')
+  return (args[0], opts.noheader)
 
-############################### Main program ##########################
+############################## Main program ##########################
 
-if (len(sys.argv) != 2) or (sys.argv == "--help"):
-  print_usage()
-  sys.exit()
+filename, noheader = get_options()
 
 try:
-  infile = open(sys.argv[1], 'rb')
+  infile = open(filename, 'rb')
 except:
-  print "Could not open file : " + sys.argv[1]
+  print "Could not open file : " + filename
   sys.exit()
 
 # Read global header
 global_header_size = struct.unpack('i', infile.read(4))[0]
+if not noheader:
+  print_global_header(infile)
 infile.seek(0)
 gheader_buf = infile.read(global_header_size)
 global_header = struct.unpack('i32s2h5i4c',gheader_buf[:64])
