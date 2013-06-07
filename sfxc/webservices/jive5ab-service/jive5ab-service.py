@@ -303,8 +303,8 @@ def split_channel(vex, station, channel):
                     headstack = int(fanout_def[3])
                     track = int(fanout_def[4])
                     bits_per_channel = bits_per_sample * fanout
-                    index = ((track - 2) - (track % 1)) / bits_per_channel
-                    index += (track %1)
+                    index = ((track - 2) - (track % 2)) / bits_per_channel
+                    index += (track % 2)
                     if headstack == 2:
                         index += 32 / bits_per_channel
                     return index
