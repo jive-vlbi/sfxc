@@ -160,7 +160,13 @@ class progressDialog(QtGui.QDialog):
         self.ctrl_file = ctrl_file
         self.evlbi = options.evlbi
         self.reference = options.reference
-        self.timeout_interval = options.timeout_interval;
+        self.timeout_interval = options.timeout_interval
+
+        # Disable the watchdog for e-VLBI.  We don't want to stop the
+        # correlator just because there is a longish gap.
+        if self.evlbi:
+            self.timeout_interval = 0
+            pass
 
         exper = self.vex['GLOBAL']['EXPER']
         exper = self.vex['EXPER'][exper]['exper_name']
