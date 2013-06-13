@@ -102,13 +102,16 @@ Channel_extractor_interface* Channel_extractor_dynamic::compile_load_construct(
   fan_out = track_positions[0].size();
   n_subbands = track_positions.size();
 
-  char* filename = (char*)"ch_ex_params.txt";
-  FILE* fpt = fopen(filename,"wt");
-  if(!fpt){
-    std::cout << RANK_OF_NODE << " : Unable to compile the channel extractor, temporary file " << filename 
-              << " could not be opened for writing\n";
+  char filename[] = "chex.XXXXXX";
+  int fd = mkstemp(filename);
+  if (fd == -1) {
+    std::cout << RANK_OF_NODE << ": Unable to compile the channel extractor"
+	      << ", temporary file " << filename
+              << " could not be created" << std::endl;
     return NULL;
   }
+
+  FILE *fpt = fdopen(fd, "w");
   fprintf(fpt, "n_subbands = %d;\n", n_subbands);
   fprintf(fpt, "bits_per_sample= %d;\n", bits_per_sample);
   fprintf(fpt, "fan_out= %d;\n", fan_out);
