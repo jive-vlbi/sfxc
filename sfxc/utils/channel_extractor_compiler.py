@@ -81,6 +81,9 @@ do_compile = True
 
 # Default input file or user given one ?
 input_file = 'ch_ex_params.txt'
+if len(sys.argv) > 1:
+  input_file = sys.argv[1]
+  pass
 input_data = open(input_file).read()
 
 exec input_data # isn't that tricky :)
