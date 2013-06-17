@@ -126,7 +126,9 @@ void
 print_mk5read_reply(char reply[], const int size){
   int i,j;
   char vsn[2][size];
-  sscanf(reply, "!bank_set? 0 : A : %s : B : %s", vsn[0], vsn[1]);
+  // FORMAT : "!bank_set? 0 : A : VSN_0 : B : VSN_1 ;"
+  sscanf(&reply[19], "%s : B :", vsn[0]);
+  sscanf(&reply[25+strlen(vsn[0])], "%s", vsn[1]);
   for(i=0;i<2;i++){
     j = 0;
     while(vsn[i][j] != '\0'){
