@@ -28,11 +28,11 @@ def time2vex(secs):
 usage = "usage: %prog [options] vexfile"
 parser = optparse.OptionParser(usage=usage)
 parser.add_option("-n", "--nodes", dest="number_nodes",
-                  default=128, type="int",
+                  default=256, type="int",
                   help="Number of correlator nodes",
                   metavar="N")
 parser.add_option("-m", "--machines", dest="machines",
-                  default="a,b,c,d", type="string",
+                  default="a,b,c,d,e,f,g,h", type="string",
                   help="Machines to run correlator nodes on",
                   metavar="LIST")
 
@@ -65,6 +65,10 @@ mk5s = [
 #'10.88.1.207',  #mk5-7
 '10.88.1.220', # mk5-c0
 '10.88.1.221', # mk5-c1
+'10.88.1.222', # mk5-c2
+'10.88.1.223', # mk5-c3
+'10.88.1.224', # mk5-c4
+'10.88.1.225', # mk5-c5
 #'10.88.1.208', #mk5-8
 #'10.88.1.209', #mk5-9
 #'10.88.1.210', #mk5-10
@@ -93,7 +97,7 @@ for station in vex['STATION']:
 # Generate a list of machines to use.
 machines = []
 for machine in options.machines.split(','):
-    if machine in ['a', 'b', 'c', 'd']:
+    if machine in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
         for unit in [0, 1, 2, 3]:
             machines.append("sfxc-" + machine + str(unit) + ".sfxc")
             continue
@@ -293,7 +297,9 @@ for ctrl_file in args[1:]:
     #    + "-n " + str(number_nodes) + " " \
     #    + sfxc + " " + ctrl_file + " " + vex_file \
     #    + " 2>&1 | tee " + log_file
-    cmd = "mpirun --mca btl_tcp_if_include bond0,ib0,eth2.4,eth0  -machinefile " + machine_file + " " \
+    cmd = "mpirun --mca btl_tcp_if_include bond0,eth2.4,eth0 " \
+        + "--mca oob_tcp_if_exclude eth1,eth2,eth3 "\
+        +"-machinefile " + machine_file + " " \
         "--rankfile " + rank_file + " " \
         + "-n " + str(number_nodes) + " " \
         + sfxc + " " + ctrl_file + " " + vex_file \
