@@ -57,7 +57,7 @@ class MultiDict(UserDict.DictMixin):
     def __str__(self):
         s = '{'
         for pair in self._items:
-            s += str(pair[0]) + ': ' + str(pair[1]) + ', '
+            s += str(pair[0]) + ": '" + str(pair[1]) + "', "
             continue
         return s.strip(', ') + '}'
 
