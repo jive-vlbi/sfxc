@@ -17,6 +17,7 @@ tokens = [
     'SEMICOLON',
     'EQ',
     'DOLLAR',
+    'STRING',
     'IDENT',
 ] + list(reserved.values())
 
@@ -25,6 +26,12 @@ t_COLON     = r':'
 t_SEMICOLON = r';'
 t_EQ        = r'='
 t_DOLLAR    = r'\$'
+
+def t_STRING(t):
+    r'\"(\\.|[^\\"])*\"'
+    t.value = t.value[1:-1]
+    t.type = 'IDENT'
+    return t
 
 def t_IDENT(t):
     r'[^&$\*:;=\t\n\r ]+'
