@@ -286,7 +286,7 @@ public:
    int data_rate,
    int fft_size) {
     Time time_one_fft(fft_size / (data_rate / 1000000.));
-    return ceil(integration_time / time_one_fft);
+    return floor(integration_time / time_one_fft);
   }
 
   /**
