@@ -148,6 +148,9 @@ do_task() {
       input_buffer_->pop();
       return 0;
     }else{
+      // Mode to the next integer delay change
+      while((delay_index < delay_size - 1) && (cur_delay[delay_index+1].time <= _current_time))
+        delay_index++; 
       data_writer.slice_size += cur_delay[delay_index].remaining_samples;
       write_delay(data_writer.writer, cur_delay[delay_index].remaining_samples);
       // decrease the sample count because we always send entire bytes
