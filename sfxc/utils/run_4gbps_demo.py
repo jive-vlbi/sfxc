@@ -29,25 +29,19 @@ log_node = "head"
 
 input_nodes = {
     'Ef': 'sfxc-e0',
-    'On': 'sfxc-e0',
-    'Od': 'sfxc-e0',
-    'Ys': 'sfxc-e1',
-    'Yd': 'sfxc-e1'
+    'Mh': 'sfxc-e1',
+    'Md': 'sfxc-e1'
     }
 
 local_cmd_port = {
     'Ef': 2620,
-    'On': 2621,
-    'Od': 2621,
-    'Ys': 2622,
-    'Yd': 2622
+    'Mh': 2620,
+    'Md': 2620
     }
 data_port = {
     'Ef': 2630,
-    'On': 2631,
-    'Od': 2631,
-    'Ys': 2632,
-    'Yd': 2632
+    'Mh': 2630,
+    'Md': 2630
     }
 data_socket = {}
 
@@ -99,11 +93,9 @@ stations.sort()
 # Generate a list of machines to use.
 machines = []
 for machine in options.machines.split(','):
-    if machine in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']:
+    if machine in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j' ]:
         for unit in [0, 1, 2, 3]:
             node = "sfxc-" + machine + str(unit)
-            if node in ['sfxc-e0', 'sfxc-f0', 'sfxc-g0', 'sfxc-h0']:
-                continue
             machines.append("sfxc-" + machine + str(unit))
             continue
         pass
@@ -116,10 +108,8 @@ for machine in options.machines.split(','):
 for machine in options.machines.split(','):
     if machine in ['e', 'f', 'g', 'h']:
         input_nodes['Ef'] = 'sfxc-%c0' % machine
-        input_nodes['On'] = 'sfxc-%c0' % machine
-        input_nodes['Od'] = 'sfxc-%c0' % machine
-        input_nodes['Ys'] = 'sfxc-%c1' % machine
-        input_nodes['Yd'] = 'sfxc-%c1' % machine
+        input_nodes['Mh'] = 'sfxc-%c1' % machine
+        input_nodes['Md'] = 'sfxc-%c1' % machine
         pass
     continue
 
@@ -130,13 +120,14 @@ for station in json_input["data_sources"]:
     else:
         data_socket[station] = '/tmp/mk5read'
         pass
+    print "datasocket[",station,']=',data_socket[station]
     continue
 
 readers = {}
 
 def start_reader(station):
-    args = ["ssh", input_nodes[station], "bin/jive5ab", "-m3", "-p", str(local_cmd_port[station])]
-    args = ["ssh", input_nodes[station], "tmp/evlbi5a/jive5ab", "-m3", "-p", str(local_cmd_port[station])]
+    args = ["ssh", input_nodes[station], "/home/sfxc/jive5ab_runjob/jive5ab", "-m3", "-p", str(local_cmd_port[station])]
+    #args = ["ssh", input_nodes[station], "tmp/evlbi5a/jive5ab", "-m3", "-p", str(local_cmd_port[station])]
     print args
     log = open(station + "-reader.log", 'w')
     p = subprocess.Popen(args, stdout=log, stderr=log)
@@ -233,19 +224,9 @@ try:
 
     # Create a MPI machine file for the job.
     fp = open(machine_file, 'w')
-    print >>fp, manager_node
-    print >>fp, output_node
-    print >>fp, log_node
-    for station in stations:
-        print >>fp, input_nodes[station], "#", station
-        continue
-    for i in range(8):
-        for machine in machines:
-            if machine in ['sfxc-e1', 'sfxc-f1', 'sfxc-g1', 'sfxc-h1'] and i < 4:
-                continue
-            print >>fp, machine
-            continue
-        continue
+    print >>fp, manager_node, " slots = 4"
+    for machine in machines:
+        print >>fp, machine, " slots = 8"
     fp.close()
 
     # Create a MPI rank file for the job.
@@ -263,7 +244,7 @@ try:
         continue
     for i in range(8):
         for machine in machines:
-            if machine in ['sfxc-e1', 'sfxc-f1', 'sfxc-g1', 'sfxc-h1'] and i < 4:
+            if machine in ['sfxc-e0', 'sfxc-f0', 'sfxc-g0', 'sfxc-h0', 'sfxc-e1', 'sfxc-f1', 'sfxc-g1', 'sfxc-h1'] and i < 4:
                 continue
             print >>fp, "rank", str(rank), "=", machine, "slot=", str(i)
             rank += 1
@@ -275,17 +256,8 @@ try:
     number_nodes = 3 + len(stations) + options.number_nodes
     sfxc = '/home/sfxc/bin/sfxc'
     args = ['/home/sfxc/bin/mpirun',
-            '--mca', 'btl_tcp_if_include', 'bond0,ib0,eth0,eth2.4',
-            '--mca', 'oob_tcp_if_exclude', 'eth3',
-            '--machinefile', machine_file, '--rankfile', rank_file,
-            '--np', str(number_nodes), sfxc, ctrl_file, vex_file]
-    sfxc = "/home/kettenis/opt/sfxc.mpich/bin/sfxc.sh"
-    args = ["mpirun.mpich", "-np", str(number_nodes),
-            "-machinefile", machine_file, sfxc, ctrl_file, vex_file]
-    sfxc = '/home/kettenis/opt/sfxc.openmpi/bin/sfxc'
-    args = ['/home/sfxc/bin/mpirun',
-            '--mca', 'btl_tcp_if_include', 'bond0,ib0,eth0,eth2.4',
-            '--mca', 'oob_tcp_if_exclude', 'eth3',
+            '--mca', 'btl_tcp_if_include', 'bond0,eth0,eth2.4',
+            '--mca', 'oob_tcp_if_exclude', 'eth1,eth2,eth3',
             '--machinefile', machine_file, '--rankfile', rank_file,
             '--np', str(number_nodes), sfxc, ctrl_file, vex_file]
     log = open(log_file, 'w')
