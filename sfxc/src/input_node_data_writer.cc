@@ -132,6 +132,9 @@ do_task() {
   }
   if(sync_stream){
     block_size=input_element.channel_data.data().data.size();
+    // Move to the next integer delay change
+    while((delay_index < delay_size - 1) && (cur_delay[delay_index+1].time <= _current_time))
+       delay_index++; 
     int64_t dsamples = _current_time.diff_samples(input_element.start_time);
     byte_offset = dsamples*bits_per_sample/8 + cur_delay[delay_index].bytes;
     if(byte_offset < 0){
@@ -148,9 +151,6 @@ do_task() {
       input_buffer_->pop();
       return 0;
     }else{
-      // Mode to the next integer delay change
-      while((delay_index < delay_size - 1) && (cur_delay[delay_index+1].time <= _current_time))
-        delay_index++; 
       data_writer.slice_size += cur_delay[delay_index].remaining_samples;
       write_delay(data_writer.writer, cur_delay[delay_index].remaining_samples);
       // decrease the sample count because we always send entire bytes
