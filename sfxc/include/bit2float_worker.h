@@ -108,6 +108,7 @@ private:
   int bits_per_sample;
   /// Data rate [samples/sec]
   int sample_rate;
+  int base_sample_rate;
   /// index of the current stream in the station list
   int stream_nr;
   int16_t invalid_samples;
@@ -119,6 +120,7 @@ private:
     int n_ffts_per_buffer;
     int bits_per_sample;
     int sample_rate;
+    int base_sample_rate;
     int fft_size_delaycor;
     int fft_size_correlation;
   } new_parameters;

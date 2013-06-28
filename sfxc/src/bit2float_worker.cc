@@ -247,6 +247,7 @@ set_new_parameters(const Correlation_parameters &parameters) {
 
   SFXC_ASSERT((parameters.number_channels*bits_per_sample)%8 == 0);
   new_parameters.sample_rate = parameters.station_streams[stream_idx].sample_rate;
+  new_parameters.base_sample_rate = parameters.sample_rate;
   new_parameters.fft_size_delaycor = parameters.fft_size_delaycor;
   new_parameters.fft_size_correlation = parameters.fft_size_correlation;
   int nfft_min = std::max(parameters.fft_size_correlation / parameters.fft_size_delaycor, 1);
@@ -278,13 +279,14 @@ Bit2float_worker::
 set_parameters() {
   bits_per_sample = new_parameters.bits_per_sample;
   sample_rate = new_parameters.sample_rate;
+  base_sample_rate = new_parameters.base_sample_rate;
 
   fft_size = new_parameters.fft_size_delaycor;
   int fft_size_correlation = new_parameters.fft_size_correlation;
   SFXC_ASSERT(((int64_t)fft_size * 1000000) % sample_rate == 0);
   nfft_max = new_parameters.n_ffts_per_buffer;
   n_ffts_per_integration = new_parameters.n_ffts_per_integration;
-  statistics->reset_statistics(bits_per_sample);
+  statistics->reset_statistics(bits_per_sample, sample_rate / base_sample_rate);
 
   current_fft = 0;
   invalid_left = 0;
