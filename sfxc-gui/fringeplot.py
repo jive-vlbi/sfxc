@@ -111,18 +111,18 @@ class FringePlot(Qwt.QwtPlot):
 
         scaleDraw = LeftScaleDraw()
         self.setAxisScaleDraw(Qwt.QwtPlot.yLeft, scaleDraw)
-        scaleDraw = BottomScaleDraw(number_channels)
+        scaleDraw = BottomScaleDraw(2 * number_channels)
         self.setAxisScaleDraw(Qwt.QwtPlot.xBottom, scaleDraw)
-        scaleDiv = Qwt.QwtScaleDiv(0, number_channels, [],
-                                   [number_channels / 4, 3 * number_channels / 4],
-                                   [0, number_channels / 2, number_channels])
+        scaleDiv = Qwt.QwtScaleDiv(0, 2 * number_channels, [],
+                                   [number_channels / 2, 3 * number_channels / 2],
+                                   [0, number_channels, 2 * number_channels])
         self.setAxisScaleDiv(Qwt.QwtPlot.xBottom, scaleDiv)
         self.setAxisTitle(Qwt.QwtPlot.yLeft, station1 + '-' + station2)
         self.setAxisMaxMajor(Qwt.QwtPlot.yLeft, 2)
         self.curve = {}
 
         self.centercurve = Qwt.QwtPlotCurve("XXX")
-        x = [ number_channels / 2, number_channels / 2 ]
+        x = [ number_channels, number_channels]
         y = [ -1, 2 ]
         self.centercurve.setData(x, y)
         self.centercurve.setPen(Qt.Qt.lightGray)
@@ -459,17 +459,16 @@ class FringePlotWindow(Qt.QWidget):
                     pass
 
                 a = correlations[baseline][idx].sum(axis=0)
-                if station == baseline[0]:
+                if station == baseline[1]:
                     a = np.conj(a)
                     pass
-                b = np.fft.fft(a, self.cordata.number_channels)
-                c = b[(self.cordata.number_channels / 2):]
-                d = b[0:(self.cordata.number_channels / 2)]
+                b = np.fft.ifft(a, 2 * self.cordata.number_channels)
+                c = b[self.cordata.number_channels:]
+                d = b[0:self.cordata.number_channels]
                 e = np.concatenate((c, d))
                 f = np.absolute(e)
-                g = f / np.sum(f)
 
-                plot.curve[plot_idx].setData(range(self.cordata.number_channels), g)
+                plot.curve[plot_idx].setData(range(2 * self.cordata.number_channels), f)
                 continue
             plot.replot()
             continue
