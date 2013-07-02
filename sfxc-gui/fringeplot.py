@@ -94,6 +94,16 @@ class FringePlotLegend(Qwt.QwtLegend):
 
     pass
 
+class FringePlotPicker(Qwt.QwtPlotPicker):
+    def trackerText(self, point):
+        map = self.plot().canvasMap(Qwt.QwtPlot.xBottom)
+        lags = map.invTransform(point.x()) - self.number_channels
+        delay = lags / self.sample_rate
+        s = "%.1f" % (delay * 1e6)
+        return Qwt.QwtText(Qt.QString(s) + " " + Qt.QChar(0xb5))
+
+    pass
+
 class FringePlot(Qwt.QwtPlot):
     color = [ "#bae4b3", "#74c476", "#31a354", "#006d2c",
               "#bdd7e7", "#6baed6", "#3182bd", "#08519c",
@@ -218,20 +228,30 @@ class FringePlotWindow(Qt.QWidget):
 
         # Create a sorted list of frequencies
         self.frequencies = []
+        self.sample_rate = 1e12
         station = self.reference
         for scan in vex['SCHED']:
             mode = vex['SCHED'][scan]['mode']
             for freq in vex['MODE'][mode].getall('FREQ'):
                 if station in freq[1:]:
+                    value = vex['FREQ'][freq[0]]['sample_rate'].split()
+                    sample_rate = float(value[0])
+                    if value[1] == 'Gs/sec':
+                        sample_rate *= 1e9
+                    elif value[1] == 'Ms/sec':
+                        sample_rate *= 1e6
+                    if sample_rate < self.sample_rate:
+                        self.sample_rate = sample_rate
+                        pass
                     channels = vex['FREQ'][freq[0]].getall('chan_def')
                     for chan_def in channels:
-                        freq = chan_def[1].split()
-                        frequency = float(freq[0])
-                        if freq[1] == 'GHz':
+                        value = chan_def[1].split()
+                        frequency = float(value[0])
+                        if value[1] == 'GHz':
                             frequency *= 1e9
-                        elif freq[1] == 'MHz':
+                        elif value[1] == 'MHz':
                             frequency *= 1e6
-                        elif freq[1] == 'KHz':
+                        elif value[1] == 'KHz':
                             frequency *= 1e3
                             pass
                         if not frequency in self.frequencies:
@@ -300,6 +320,14 @@ class FringePlotWindow(Qt.QWidget):
             self.layout.addWidget(plot)
             self.layout.setRowStretch(self.layout.rowCount() - 1, 100)
             self.plots.append(plot)
+            picker = FringePlotPicker(plot.canvas())
+            picker.setSelectionFlags(Qwt.QwtPicker.PointSelection | Qwt.QwtPicker.DragSelection)
+            picker.setRubberBandPen(Qt.QColor(Qt.Qt.red))
+            picker.setRubberBand(Qwt.QwtPicker.VLineRubberBand)
+            picker.setMousePattern(Qwt.QwtPicker.MouseSelect1, Qt.Qt.LeftButton)
+            picker.setTrackerMode(Qwt.QwtPicker.ActiveOnly)
+            picker.sample_rate = self.sample_rate
+            picker.number_channels = number_channels
             continue
         legend = FringePlotLegend()
         legend.setItemMode(Qwt.QwtLegend.CheckableItem)
