@@ -133,7 +133,7 @@ class FringePlot(Qwt.QwtPlot):
 
         self.centercurve = Qwt.QwtPlotCurve("XXX")
         x = [ number_channels, number_channels]
-        y = [ -1, 2 ]
+        y = [ -1, 9 ]
         self.centercurve.setData(x, y)
         self.centercurve.setPen(Qt.Qt.lightGray)
         self.centercurve.setItemAttribute(Qwt.QwtPlotItem.AutoScale, False)
