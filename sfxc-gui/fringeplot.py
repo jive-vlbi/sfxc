@@ -100,7 +100,7 @@ class FringePlotPicker(Qwt.QwtPlotPicker):
         lags = map.invTransform(point.x()) - self.number_channels
         delay = lags / self.sample_rate
         s = "%.1f" % (delay * 1e6)
-        return Qwt.QwtText(Qt.QString(s) + " " + Qt.QChar(0xb5))
+        return Qwt.QwtText(Qt.QString(s) + ' ' + Qt.QChar(0xb5) + 's')
 
     pass
 
