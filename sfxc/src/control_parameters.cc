@@ -1090,6 +1090,11 @@ get_vdif_tracks(const std::string &mode,
 
   const Vex::Node &root = get_vex().get_root_node();
   const std::string threads_name = get_vex().get_section("THREADS", mode, station);
+  if (threads_name == std::string()) {
+    std::cerr << "Cannot find $THREADS reference for " << station
+	      << " in mode" << mode << std::endl;
+    sfxc_abort();
+  }
 
   Vex::Node::const_iterator thread = vex.get_root_node()["THREADS"][threads_name];
   int num_threads = 0;
