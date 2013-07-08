@@ -7,7 +7,6 @@ Input_data_format_reader_tasklet(
   Data_format_reader_ptr reader,
   Input_memory_pool_ptr memory_pool)
     : memory_pool_(memory_pool),
-      n_bytes_per_input_word(reader->bytes_per_input_word()),
       data_modulation(false), seqno(0) {
 
   SFXC_ASSERT(sizeof(value_type) == 1);
@@ -288,7 +287,7 @@ void
 Input_data_format_reader_tasklet::demodulate(Input_element &data)
 // See page 6 of Mark4 memo 230A, Whitney 2005
 {
-  n_bytes_per_input_word = reader_->bytes_per_input_word();
+  const size_t n_bytes_per_input_word = reader_->bytes_per_input_word();
           
   std::vector<value_type> &buffer=data.buffer->data;
   int frame_size=buffer.size()/n_bytes_per_input_word;
