@@ -123,8 +123,6 @@ private:
   /// Determines if data modulation is turned on(p.6 of Mark4 memo 230A, Whitney 2005)
   bool data_modulation;
 
-  size_t n_bytes_per_input_word;
-
   int seqno;
 };
 
