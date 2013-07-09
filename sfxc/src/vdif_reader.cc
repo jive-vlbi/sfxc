@@ -158,9 +158,12 @@ void VDIF_reader::set_parameters(const Input_node_parameters &param) {
   if (param.n_tracks == 0) {
     for (size_t i = 0; i < param.channels.size(); i++)
       thread_map[param.channels[i].tracks[0]] = i;
-    time_between_headers_ = Time(param.frame_size*8.e6 / (sample_rate * param.bits_per_sample()));
-  }else
-    time_between_headers_ = Time(param.frame_size*8.e6 / (sample_rate * param.n_tracks));
-   
+    time_between_headers_ = Time(param.frame_size * 8.e6 / (sample_rate * param.bits_per_sample()));
+    bits_per_complete_sample = param.bits_per_sample();
+  } else {
+    time_between_headers_ = Time(param.frame_size * 8.e6 / (sample_rate * param.n_tracks));
+    bits_per_complete_sample = param.n_tracks;
+  }
+
   SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
 }

@@ -84,7 +84,8 @@ public:
   void set_parameters(const Input_node_parameters &param);
 
   size_t bytes_per_input_word() const {
-    return SIZE_VDIF_WORD;
+    // Round up to the nearest 32-bit word boundary
+    return ((bits_per_complete_sample + 31) / 32) * 4;
   }
 
   TRANSPORT_TYPE get_transport_type() const{
@@ -98,6 +99,7 @@ private:
   // current time in microseconds
   Time current_time_;
   Time time_between_headers_;
+  int bits_per_complete_sample;
   double sample_rate;
   // For testing
   Debug_level debug_level_;
