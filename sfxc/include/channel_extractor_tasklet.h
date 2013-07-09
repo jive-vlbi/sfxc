@@ -16,6 +16,7 @@
 #include "tasklet/tasklet.h"
 #include "thread.h"
 #include "input_node_types.h"
+#include "input_data_format_reader.h"
 #include "control_parameters.h"
 
 #include "channel_extractor_interface.h"
@@ -52,13 +53,10 @@ public:
   /// A pointer to the Output_buffer
   typedef boost::shared_ptr<Output_buffer>     Output_buffer_ptr;
 
+  typedef boost::shared_ptr<Input_data_format_reader>
+                                               Data_format_reader_ptr;
 
-  /**
-   * Constructor
-   * \param samples_per_block Number of input words to process
-   * \param N                 Number of bytes per input word
-   **/
-  Channel_extractor_tasklet(int samples_per_block, int N);
+  Channel_extractor_tasklet(Data_format_reader_ptr reader);
 
   virtual ~Channel_extractor_tasklet();
 
@@ -115,6 +113,8 @@ protected:
   /// List of the output queues
   std::vector<Output_buffer_ptr>  output_buffers_;
 
+  Data_format_reader_ptr          reader_;
+
   /// Actual channel extractor
   Channel_extractor_interface     *ch_extractor;
 
@@ -130,8 +130,8 @@ protected:
   size_t bits_per_sample; //< Number of bits per output sample
 
   // Size of one input word in bytes (#tracks/8)
-  const int N;                 ///< Number of bytes per input word
-  int samples_per_block; ///< Number input words per input chunk of data.
+  int N;                 //< Number of bytes per input word
+  int samples_per_block; //< Number input words per input chunk of data.
 
 
   /// Call this function to reinit the statistics information.

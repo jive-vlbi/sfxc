@@ -34,12 +34,7 @@
  **/
 class Channel_extractor_tasklet_VDIF :  public Channel_extractor_tasklet{
 public:
-  /**
-   * Constructor
-   * \param samples_per_block Number of input words to process
-   * \param N                 Number of bytes per input word
-   **/
-  Channel_extractor_tasklet_VDIF(int samples_per_block, int N);
+  Channel_extractor_tasklet_VDIF(Data_format_reader_ptr reader);
 
   virtual ~Channel_extractor_tasklet_VDIF();
   /// Process one piece of data

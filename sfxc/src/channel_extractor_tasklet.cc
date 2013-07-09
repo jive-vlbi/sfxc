@@ -22,13 +22,13 @@
 // Increase the size of the output_memory_pool_ to allow more buffering
 // (8M/SIZE_MK5A_FRAME=) 400 input blocks is 1 second of data
 Channel_extractor_tasklet::
-Channel_extractor_tasklet(int samples_per_block, int N_)
+Channel_extractor_tasklet(Data_format_reader_ptr reader)
     : output_memory_pool_(400*MAX_SUBBANDS),
+    reader_(reader),
     n_subbands(0),
     fan_out(0), seqno(0),
-    N(N_), samples_per_block(samples_per_block),
+    N(0), samples_per_block(0),
     num_channel_extractor_threads(NUM_CHANNEL_EXTRACTOR_THREADS) {
-  SFXC_ASSERT(N_ > 0);
   init_stats();
   last_duration_=0;
 #ifdef USE_EXTRACTOR_5
@@ -261,6 +261,8 @@ set_parameters(const Input_node_parameters &input_node_param){
   bits_per_sample = input_node_param.bits_per_sample();
   fan_out    = bits_per_sample *
                input_node_param.subsamples_per_sample();
+  N = reader_->bytes_per_input_word();
+  samples_per_block = reader_->size_data_block() / N;
   std::vector< std::vector<int> > track_positions;
   subband2track.resize(input_node_param.channels.size());
   memset(&subband2track[0], 0, input_node_param.channels.size() * sizeof(uint64_t));

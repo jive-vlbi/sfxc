@@ -129,14 +129,10 @@ void Input_node_tasklet::initialise(int num_tracks)
 {
   if (reader_.get_data_reader()->get_transport_type() == VDIF && num_tracks == 0)
     channel_extractor_= Channel_extractor_tasklet_ptr( 
-        new Channel_extractor_tasklet_VDIF(reader_.get_data_reader()->size_data_block() /
-                                           reader_.size_input_word(),
-                                           reader_.size_input_word()));
+	new Channel_extractor_tasklet_VDIF(reader_.get_data_reader()));
   else
     channel_extractor_= Channel_extractor_tasklet_ptr( 
-        new Channel_extractor_tasklet(reader_.get_data_reader()->size_data_block() /
-                                      reader_.size_input_word(),
-                                      reader_.size_input_word()));
+        new Channel_extractor_tasklet(reader_.get_data_reader()));
 
   channel_extractor_->connect_to(reader_.get_output_buffer());
   initialized = true;

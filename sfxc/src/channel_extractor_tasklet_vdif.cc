@@ -9,9 +9,9 @@
 // Increase the size of the output_memory_pool_ to allow more buffering
 // (8M/SIZE_MK5A_FRAME=) 400 input blocks is 1 second of data
 Channel_extractor_tasklet_VDIF::
-Channel_extractor_tasklet_VDIF(int samples_per_block, int N_):Channel_extractor_tasklet(samples_per_block,N_)
+Channel_extractor_tasklet_VDIF(Data_format_reader_ptr reader)
+  : Channel_extractor_tasklet(reader)
 {
-  SFXC_ASSERT(N_ > 0);
   init_stats();
   last_duration_ = 0;
   num_channel_extractor_threads = 0;
