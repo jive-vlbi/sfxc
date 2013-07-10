@@ -872,12 +872,11 @@ Control_parameters::frequency_channel(size_t channel_nr, const std::string& mode
       ch_freq_max = ch_freq_min + (int)chan[3]->to_double_amount("MHz") * 1e6;
     }
 
-    // For now consider the channel to match if we the frequency
-    // corresponding to one of the band edges matches exactly.  This
-    // covers the "normal" case where all stations use the same setup
-    // as well as the case of mixed 16/32 MHz observations where the
-    // band edges line up properly.
-    if ((freq_min == ch_freq_min || freq_max == ch_freq_max) &&
+    // We have a match if the channel corresponding to CHANNEL_NR is
+    // wholly conatined in this channel.  This covers the "normal"
+    // case where all stations use the same setup as well as the case
+    // of mixed 16/32 MHz and 16/64 MHz observations.
+    if ((freq_min >= ch_freq_min && freq_max <= ch_freq_max) &&
 	pol == polarisation(chan[4]->to_string(), station_name, mode_name))
       return chan[4]->to_string();
   }
