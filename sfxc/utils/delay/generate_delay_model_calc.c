@@ -627,12 +627,18 @@ generate_delay_tables(FILE *output, char *stationname, double start,
 {
   output_file = output;
 
-  assert(stationname[2] == '\0');
+  assert(strlen(stationname) > 0);
+  assert(strlen(stationname) < 3);
 
   if (ftell(output) == 0) {
     int32_t header_size = 3;
+    char name[3];
+
+    strncpy(name, stationname, sizeof(name));
+    name[3] = 0;
+
     fwrite(&header_size, 1, sizeof(int32_t), output_file);
-    fwrite(stationname, 3, sizeof(char), output_file);
+    fwrite(name, 3, sizeof(char), output_file);
   }
 
   for (scan_nr = 0; scan_nr < n_scans; scan_nr++) {
