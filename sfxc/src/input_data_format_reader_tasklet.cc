@@ -111,6 +111,10 @@ do_task() {
 
   data_read_ += input_element_.buffer->data.size();
   push_element();
+  for (int i = 0; i < duplicate[channel].size(); i++) {
+    input_element_.channel = duplicate[channel][i];
+    push_element();
+  }
 }
 
 void
@@ -188,10 +192,25 @@ Input_data_format_reader_tasklet::set_parameters(const Input_node_parameters &pa
   data_modulation = params.data_modulation;
   reader_->set_parameters(params);
 
-  if (reader_->get_transport_type() == VDIF && params.n_tracks == 0)
+  if (reader_->get_transport_type() == VDIF && params.n_tracks == 0) {
     current_time.resize(params.channels.size());
-  else
+
+    // If we have multiple channels that are mapped to the same VDIF
+    // thread, we will need to duplicate the data.  This typically
+    // happens for mixed bandwidth correlations.
+    duplicate.resize(params.channels.size());
+    for (int i = 0; i < params.channels.size(); i++) {
+      int thread = params.channels[i].tracks[0];
+      for (int j = 0; j < params.channels.size(); j++) {
+	if (j != i && params.channels[j].tracks[0] == thread)
+	  duplicate[i].push_back(j);
+      }
+    }
+  } else {
     current_time.resize(1);
+    duplicate.resize(1);
+  }
+
   for (size_t i = 0; i < current_time.size(); i++)
     current_time[i] = reader_->get_current_time();
 }

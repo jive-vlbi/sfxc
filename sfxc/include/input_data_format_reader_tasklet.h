@@ -124,6 +124,8 @@ private:
   bool data_modulation;
 
   int seqno;
+
+  std::vector< std::vector<int> > duplicate;
 };
 
 #endif // INPUT_DATA_FORMAT_READER_TASKLET_H
