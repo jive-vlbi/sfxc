@@ -24,6 +24,7 @@ int main(int argc, char *argv[]) {
   Delay_table_akima delay_table;
   std::cout << "about to open " << argv[1] << "\n";
   delay_table.open(argv[1]);
+  delay_table.set_clock_offset(0., 0., 0., 0.);
   std::cout << "about to open " << argv[2] << "\n";
   std::ofstream out(argv[2]);
   out.precision(20);
