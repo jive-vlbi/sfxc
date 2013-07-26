@@ -1,6 +1,10 @@
 AM_CXXFLAGS = $(SFXC_CXXFLAGS)
 AM_CPPFLAGS = $(SFXC_CPPFLAGS) -I/usr/local/cuda/include
-LDADD = $(SFXC_LDADD) correlation.o -L/usr/local/cuda/lib -lcudart
+LDADD = $(SFXC_LDADD) -L/usr/local/cuda/lib -lcudart
+
+SUFFIXES = .cu
+.cu.o:
+	nvcc -m64 -c -o $@ $<
 
 if SFXC
 bin_PROGRAMS = sfxc
@@ -74,7 +78,8 @@ sfxc_SOURCES = $(OBJ) $(FFT_SOURCES) sfxc.cc \
   input_node_data_writer_tasklet.cc \
   output_header.cc \
   correlator_time.cc \
-  svn_version.cc 
+  svn_version.cc \
+  correlation.cu
 
 sfxc_DEPENDENCIES = update_svn_version svn_version.$(OBJEXT)
 
