@@ -1,6 +1,6 @@
 AM_CXXFLAGS = $(SFXC_CXXFLAGS)
-AM_CPPFLAGS = $(SFXC_CPPFLAGS)
-LDADD = $(SFXC_LDADD)
+AM_CPPFLAGS = $(SFXC_CPPFLAGS) -I/usr/local/cuda/include
+LDADD = $(SFXC_LDADD) correlation.o -L/usr/local/cuda/lib -lcudart
 
 if SFXC
 bin_PROGRAMS = sfxc

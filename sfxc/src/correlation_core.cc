@@ -3,6 +3,8 @@
 #include <utils.h>
 #include <set>
 
+#include <cuda_runtime.h>
+
 Correlation_core::Correlation_core()
     : current_fft(0), total_ffts(0), split_output(false){
 }
@@ -29,12 +31,12 @@ void Correlation_core::do_task() {
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
     int j = streams_in_scan[i];
     input_elements[i] = &input_buffers[j]->front()->data[0];
-    if (input_buffers[j]->front()->data.size() > input_conj_buffers[i].size())
-      input_conj_buffers[i].resize(input_buffers[j]->front()->data.size());
+    cudaMemcpy(dev_input[i], &input_elements[i][0], input_buffers[j]->front()->data.size() * sizeof(std::complex<FLOAT>), cudaMemcpyHostToDevice);
   }
   const int first_stream = streams_in_scan[0];
   const int stride = input_buffers[first_stream]->front()->stride;
   const int nbuffer = input_buffers[first_stream]->front()->data.size() / stride;
+
   // Process the data of the current fft buffer
   integration_step(accumulation_buffers, nbuffer, stride);
   current_fft += nbuffer;
@@ -107,9 +109,9 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   create_baselines(parameters);
   if (input_elements.size() != number_input_streams_in_use()) {
     input_elements.resize(number_input_streams_in_use());
-  }
-  if (input_conj_buffers.size() != number_input_streams_in_use()) {
-    input_conj_buffers.resize(number_input_streams_in_use());
+    dev_input.resize(number_input_streams_in_use());
+    for (size_t i = 0; i < dev_input.size(); i++)
+      cudaMalloc(&dev_input[i], 32 * 260 * sizeof(std::complex<FLOAT>));
   }
   n_flagged.resize(baselines.size());
   get_input_streams();
@@ -240,8 +242,10 @@ void Correlation_core::integration_initialise() {
 
   if (accumulation_buffers.size() != baselines.size()) {
     accumulation_buffers.resize(baselines.size());
+    dev_output.resize(baselines.size());
     for (size_t i=0; i<accumulation_buffers.size(); i++) {
       accumulation_buffers[i].resize(fft_size() + 1);
+      cudaMalloc(&dev_output[i], fft_size() * sizeof(std::complex<FLOAT>));
     }
   }
 
@@ -250,38 +254,36 @@ void Correlation_core::integration_initialise() {
     SFXC_ASSERT(accumulation_buffers[i].size() == fft_size() + 1);
     size_t size = accumulation_buffers[i].size() * sizeof(std::complex<FLOAT>);
     memset(&accumulation_buffers[i][0], 0, size);
+    cudaMemcpy(dev_output[i], &accumulation_buffers[i][0],
+        fft_size() * sizeof(std::complex<FLOAT>), cudaMemcpyHostToDevice);
   }
   memset(&n_flagged[0], 0, sizeof(std::pair<int64_t,int64_t>)*n_flagged.size());
   next_sub_integration = 1;
 }
 
+extern "C" {
+  void autocorr(void *, void *, int, int);
+  void crosscorr(void *, void *, void *, int, int);
+}
+
 void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride) {
 #ifndef DUMMY_CORRELATION
   // do the correlation
-  SFXC_ASSERT(nbuffer * stride <= input_conj_buffers[0].size());
   for (size_t i = 0; i < number_input_streams_in_use(); i++) {
-    for (size_t buf_idx = 0; buf_idx < nbuffer * stride; buf_idx += stride) {
-      // get the complex conjugates of the input
-      SFXC_CONJ_FC(&input_elements[i][buf_idx], &(input_conj_buffers[i])[buf_idx], fft_size() + 1);
-      // Auto correlation
-      std::pair<size_t,size_t> &stations = baselines[i];
-      SFXC_ASSERT(stations.first == stations.second);
-      SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
-			  /* in2 */ &input_conj_buffers[stations.first][buf_idx],
-			  /* out */ &integration_buffer[i][0], fft_size() + 1);
-    }
+    std::pair<size_t,size_t> &stations = baselines[i];
+    SFXC_ASSERT(stations.first == stations.second);
+    // Auto correlation
+    autocorr(dev_input[stations.first], dev_output[i], nbuffer, stride);
   }
 
   for (size_t i = number_input_streams_in_use(); i < baselines.size(); i++) {
-    for (size_t buf_idx = 0; buf_idx < nbuffer * stride; buf_idx += stride) {
-      // Cross correlations
-      std::pair<size_t,size_t> &stations = baselines[i];
-      SFXC_ASSERT(stations.first != stations.second);
-      SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
-			  /* in2 */ &input_conj_buffers[stations.second][buf_idx],
-			  /* out */ &integration_buffer[i][0], fft_size() + 1);
-    }
+    std::pair<size_t,size_t> &stations = baselines[i];
+    SFXC_ASSERT(stations.first != stations.second);
+    // Cross correlations
+    crosscorr(dev_input[stations.first], dev_input[stations.second],
+	      dev_output[i], nbuffer, stride);
   }
+
 #endif // DUMMY_CORRELATION
 }
 
@@ -511,6 +513,8 @@ Correlation_core::sub_integration(){
   const int n_phase_centers = phase_centers.size();
   const int n_station = number_input_streams_in_use();
   for (int i = 0; i < n_station; i++) {
+    cudaMemcpy(&accumulation_buffers[i][0], dev_output[i],
+        fft_size() * sizeof(std::complex<FLOAT>), cudaMemcpyDeviceToHost);
     for(int j = 0; j < n_phase_centers; j++){
       for(int k = 0; k < n_fft; k++){
         phase_centers[j][i][k] += accumulation_buffers[i][k];
@@ -523,6 +527,8 @@ Correlation_core::sub_integration(){
     std::pair<size_t,size_t> &inputs = baselines[i];
     int station1 = streams_in_scan[inputs.first];
     int station2 = streams_in_scan[inputs.second];
+    cudaMemcpy(&accumulation_buffers[i][0], dev_output[i],
+        fft_size() * sizeof(std::complex<FLOAT>), cudaMemcpyDeviceToHost);
 
     // The pointing center
     for(int j = 0; j < n_fft; j++)
@@ -543,6 +549,8 @@ Correlation_core::sub_integration(){
     SFXC_ASSERT(accumulation_buffers[i].size() == n_fft);
     size_t size = accumulation_buffers[i].size() * sizeof(std::complex<FLOAT>);
     memset(&accumulation_buffers[i][0], 0, size);
+    cudaMemcpy(dev_output[i], &accumulation_buffers[i][0],
+        fft_size() * sizeof(std::complex<FLOAT>), cudaMemcpyHostToDevice);
   }
   previous_fft = current_fft;
 }

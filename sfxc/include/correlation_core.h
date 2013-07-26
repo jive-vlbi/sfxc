@@ -86,6 +86,9 @@ protected:
   // Tracks the number of correlator points where one (but not both) stations on a baseline had invalid data
   std::vector< std::pair<int64_t,int64_t> > n_flagged;
 
+  std::vector<void *> dev_input;
+  std::vector<void *> dev_output;
+
   Correlation_parameters                               correlation_parameters;
   int                                                  oversamp; // Oversample factor
   // A list of all sources in the current job
