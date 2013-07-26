@@ -24,8 +24,8 @@ VDIF_reader::open_input_stream(Data_frame &data) {
   epoch_jday = current_header.jday_epoch();
   current_time_ = get_current_time();
   data.start_time = current_time_;
-  uint start_sec = current_header.sec_from_epoch;
-  uint epoch = current_header.ref_epoch;
+  uint32_t start_sec = current_header.sec_from_epoch;
+  uint32_t epoch = current_header.ref_epoch;
   std::cout << RANK_OF_NODE << "Start of VDIF data at jday=" << epoch_jday + start_sec / (24 * 60 * 60)
             << ", seconds in epoch = " << start_sec << ", epoch=" << epoch 
             << ", t=" <<  current_time_ << std::endl;
