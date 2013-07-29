@@ -25,6 +25,9 @@
 #else
 #include "sfxc_fft_float.h"
 #endif
+
+#include "cufft.h"
+
 class Delay_correction {
 public:
   typedef Correlator_node_types::Channel_queue       Input_buffer;
@@ -106,6 +109,9 @@ private:
 
   Time fft_length;
   SFXC_FFT        fft_t2f, fft_f2t, fft_t2f_cor;
+  cufftHandle plan_t2f_cor;
+  FLOAT *dev_temp_buffer;
+  int nfft_max;
   Memory_pool_vector_element< std::complex<FLOAT> >  exp_array;
 };
 

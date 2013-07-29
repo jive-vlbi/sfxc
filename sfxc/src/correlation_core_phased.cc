@@ -12,6 +12,7 @@ Correlation_core_phased::~Correlation_core_phased()
 
 void
 Correlation_core_phased::do_task() {
+#if 0
   SFXC_ASSERT(has_work());
 
   if (current_fft % 1000 == 0) {
@@ -47,6 +48,7 @@ Correlation_core_phased::do_task() {
     integration_write(accumulation_buffers, 0, 0);
     current_integration++;
   }
+#endif
 }
 
 void

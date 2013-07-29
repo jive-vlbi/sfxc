@@ -1,6 +1,6 @@
 AM_CXXFLAGS = $(SFXC_CXXFLAGS)
 AM_CPPFLAGS = $(SFXC_CPPFLAGS) -I/usr/local/cuda/include
-LDADD = $(SFXC_LDADD) -L/usr/local/cuda/lib -lcudart
+LDADD = $(SFXC_LDADD) -L/usr/local/cuda/lib -lcudart -lcufft
 
 SUFFIXES = .cu
 .cu.o:

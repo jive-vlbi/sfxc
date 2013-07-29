@@ -2,6 +2,8 @@
 #include "sfxc_math.h"
 #include "config.h"
 
+#include "cuda_runtime.h"
+
 Delay_correction::Delay_correction(int stream_nr_)
     : output_buffer(Output_buffer_ptr(new Output_buffer())),
       output_memory_pool(32),current_time(-1), delay_table_set(false),
@@ -29,8 +31,15 @@ void Delay_correction::do_task() {
   cur_output->stride = output_stride;
   // The windowing touches each block twice, so the last block needs to be preserved
   int nfft_cor = (nbuffer * fft_size() + tbuf_end - tbuf_start) / (fft_rot_size() / 2) - 1;
-  if (cur_output->data.size() != nfft_cor * output_stride)
-    cur_output->data.resize(nfft_cor * output_stride);
+  cur_output->size = nfft_cor * output_stride;
+  if (cur_output->max_size < nfft_max * output_stride) {
+    SFXC_ASSERT(nfft_cor <= nfft_max);
+    if (cur_output->max_size > 0)
+      cudaFree(cur_output->dev_data);
+    cudaMalloc(&cur_output->dev_data, nfft_max * output_stride * sizeof(std::complex<FLOAT>));
+    cur_output->max_size = nfft_max * output_stride;
+  }
+
 #ifndef DUMMY_CORRELATION
   size_t tbuf_size = time_buffer.size();
   for(int buf=0;buf<nbuffer;buf++){
@@ -55,18 +64,21 @@ void Delay_correction::do_task() {
     // apply window function
     size_t eob = tbuf_size - tbuf_start%tbuf_size; // how many samples to end of buffer
     size_t nsamp = std::min(eob, fft_rot_size());
-    SFXC_MUL_F(&time_buffer[tbuf_start%tbuf_size], &window[0], &temp_buffer[0], nsamp);
+    SFXC_MUL_F(&time_buffer[tbuf_start%tbuf_size], &window[0], &temp_buffer[i * fft_rot_size()], nsamp);
     if(nsamp < fft_rot_size())
-      SFXC_MUL_F(&time_buffer[0], &window[nsamp], &temp_buffer[nsamp], fft_rot_size() - nsamp);
+      SFXC_MUL_F(&time_buffer[0], &window[nsamp], &temp_buffer[i * fft_rot_size() + nsamp], fft_rot_size() - nsamp);
     tbuf_start += fft_rot_size()/2;
     SFXC_ASSERT(tbuf_start < tbuf_end);
     // Do the final fft from time to frequency
     if (correlation_parameters.sideband != correlation_parameters.station_streams[stream_idx].sideband)
-      SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_rot_size());
+      SFXC_MUL_F(&temp_buffer[i * fft_rot_size()], &flip[0], &temp_buffer[i * fft_rot_size()], fft_rot_size());
+#if 0
     fft_t2f_cor.rfft(&temp_buffer[0], &temp_fft_buffer[0]);
-    memcpy(&cur_output->data[i * output_stride], &temp_fft_buffer[temp_fft_offset], output_stride * sizeof(std::complex<FLOAT>));
+    cudaMemcpy(&cur_output->dev_data[i * output_stride], &temp_fft_buffer[temp_fft_offset], output_stride * sizeof(std::complex<FLOAT>), cudaMemcpyHostToDevice);
+#endif
   }
   if ((current_fft == n_ffts_per_integration) && (correlation_parameters.window == SFXC_WINDOW_NONE)){
+    sfxc_abort();
     // Also get the last fft
     size_t eob = tbuf_size - tbuf_start%tbuf_size; // how many samples to end of buffer
     size_t nsamp = std::min(eob, fft_rot_size()/2);
@@ -77,11 +89,18 @@ void Delay_correction::do_task() {
     // Do the final fft from time to frequency
     if (correlation_parameters.sideband != correlation_parameters.station_streams[stream_idx].sideband)
       SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_rot_size());
+#if 0
     cur_output->data.resize((nfft_cor+1) * output_stride);
+#endif
     fft_t2f_cor.rfft(&temp_buffer[0], &temp_fft_buffer[0]);
+#if 0
     memcpy(&cur_output->data[nfft_cor * output_stride], &temp_fft_buffer[temp_fft_offset], output_stride * sizeof(std::complex<FLOAT>));
+#endif
+    cudaMemcpy(&cur_output->dev_data[nfft_cor * output_stride], &temp_fft_buffer[temp_fft_offset], output_stride * sizeof(std::complex<FLOAT>), cudaMemcpyHostToDevice);
   }
 #endif // DUMMY_CORRELATION
+  cudaMemcpy(dev_temp_buffer, &temp_buffer[0], nfft_cor * fft_rot_size() * sizeof(FLOAT), cudaMemcpyHostToDevice);
+  cufftExecR2C(plan_t2f_cor, dev_temp_buffer, (cufftComplex *)cur_output->dev_data);
   if(nfft_cor > 0){
     output_buffer->push(cur_output);
   }
@@ -211,17 +230,23 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   SFXC_ASSERT(((int64_t)fft_size() * 1000000000) % sample_rate() == 0);
 
   size_t nfft_min = std::max(2*fft_rot_size()/fft_size(), (size_t)1);
-  size_t nfft_max = std::max(CORRELATOR_BUFFER_SIZE / fft_size(), nfft_min) + nfft_min;
+  nfft_max = std::max(CORRELATOR_BUFFER_SIZE / fft_size(), nfft_min) + nfft_min;
   time_buffer.resize(nfft_max * fft_size());
 
   exp_array.resize(fft_size());
   frequency_buffer.resize(fft_size());
-  temp_buffer.resize(fft_rot_size());
+  temp_buffer.resize(nfft_max * fft_rot_size());
+  cudaMalloc(&dev_temp_buffer, nfft_max * fft_rot_size() * sizeof(FLOAT));
   temp_fft_buffer.resize(fft_rot_size()/2 + 4);
 
   fft_t2f.resize(fft_size());
   fft_f2t.resize(fft_size());
   fft_t2f_cor.resize(fft_rot_size());
+  int n = fft_rot_size();
+  int output_stride =  fft_cor_size()/2 + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
+  int inembed[1] = { fft_rot_size() };
+  int onembed[1] = { fft_cor_size() / 2 + 1 };
+  cufftPlanMany(&plan_t2f_cor, 1, &n, inembed, 1, fft_rot_size(), onembed, 1, output_stride, CUFFT_R2C, nfft_max);
   create_window();
   create_flip();
 

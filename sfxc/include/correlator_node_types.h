@@ -45,10 +45,11 @@ public:
   typedef boost::shared_ptr<Channel_queue>                Channel_queue_ptr;
 
   struct Delay_memory_pool_data {
-    Delay_memory_pool_data(): stride(0) {}
+    Delay_memory_pool_data(): stride(0), size(0), max_size(0) {}
     // The number of elements reserved for each fft, the start of each fft should be propely (16 bytes) alligned
-    size_t stride; 
-    Memory_pool_vector_element< std::complex<FLOAT> > data;
+    size_t stride;
+    size_t size, max_size;
+    std::complex<FLOAT> *dev_data;
   };
   typedef Memory_pool< Delay_memory_pool_data >         Delay_memory_pool;
   typedef Delay_memory_pool::Element                    Delay_memory_pool_element;

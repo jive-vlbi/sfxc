@@ -1,1 +1,1 @@
-aclocal && autoconf && libtoolize --force && automake --add-missing
+aclocal && autoconf && glibtoolize --force && automake --add-missing

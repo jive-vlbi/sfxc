@@ -84,6 +84,7 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 }
 
 void Correlation_core_pulsar::do_task() {
+#if 0
   SFXC_ASSERT(has_work());
   if (current_fft % 1000 == 0) {
     PROGRESS_MSG("node " << node_nr_ << ", "
@@ -125,6 +126,7 @@ void Correlation_core_pulsar::do_task() {
     }
     current_integration++;
   }
+#endif
 }
 
 void Correlation_core_pulsar::integration_initialise() {

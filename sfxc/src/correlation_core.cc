@@ -30,12 +30,11 @@ void Correlation_core::do_task() {
   }
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
     int j = streams_in_scan[i];
-    input_elements[i] = &input_buffers[j]->front()->data[0];
-    cudaMemcpy(dev_input[i], &input_elements[i][0], input_buffers[j]->front()->data.size() * sizeof(std::complex<FLOAT>), cudaMemcpyHostToDevice);
+    dev_input[i] = input_buffers[j]->front()->dev_data;
   }
   const int first_stream = streams_in_scan[0];
   const int stride = input_buffers[first_stream]->front()->stride;
-  const int nbuffer = input_buffers[first_stream]->front()->data.size() / stride;
+  const int nbuffer = input_buffers[first_stream]->front()->size / stride;
 
   // Process the data of the current fft buffer
   integration_step(accumulation_buffers, nbuffer, stride);
@@ -107,11 +106,8 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
 
   create_baselines(parameters);
-  if (input_elements.size() != number_input_streams_in_use()) {
-    input_elements.resize(number_input_streams_in_use());
+  if (dev_input.size() != number_input_streams_in_use()) {
     dev_input.resize(number_input_streams_in_use());
-    for (size_t i = 0; i < dev_input.size(); i++)
-      cudaMalloc(&dev_input[i], 32 * 260 * sizeof(std::complex<FLOAT>));
   }
   n_flagged.resize(baselines.size());
   get_input_streams();
