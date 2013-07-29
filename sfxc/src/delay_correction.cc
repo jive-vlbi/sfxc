@@ -9,6 +9,8 @@ Delay_correction::Delay_correction(int stream_nr_)
       output_memory_pool(32),current_time(-1), delay_table_set(false),
       stream_nr(stream_nr_), stream_idx(-1)
 {
+  temp_buffer = NULL;
+  dev_temp_buffer = NULL;
 }
 
 Delay_correction::~Delay_correction() {
@@ -99,7 +101,7 @@ void Delay_correction::do_task() {
     cudaMemcpy(&cur_output->dev_data[nfft_cor * output_stride], &temp_fft_buffer[temp_fft_offset], output_stride * sizeof(std::complex<FLOAT>), cudaMemcpyHostToDevice);
   }
 #endif // DUMMY_CORRELATION
-  cudaMemcpy(dev_temp_buffer, &temp_buffer[0], nfft_cor * fft_rot_size() * sizeof(FLOAT), cudaMemcpyHostToDevice);
+  cudaMemcpyAsync(dev_temp_buffer, &temp_buffer[0], nfft_cor * fft_rot_size() * sizeof(FLOAT), cudaMemcpyHostToDevice, 0);
   cufftExecR2C(plan_t2f_cor, dev_temp_buffer, (cufftComplex *)cur_output->dev_data);
   if(nfft_cor > 0){
     output_buffer->push(cur_output);
@@ -235,8 +237,10 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
 
   exp_array.resize(fft_size());
   frequency_buffer.resize(fft_size());
-  temp_buffer.resize(nfft_max * fft_rot_size());
-  cudaMalloc(&dev_temp_buffer, nfft_max * fft_rot_size() * sizeof(FLOAT));
+  if (temp_buffer == NULL)
+    cudaMallocHost(&temp_buffer, nfft_max * fft_rot_size() * sizeof(FLOAT));
+  if (dev_temp_buffer == NULL)
+    cudaMalloc(&dev_temp_buffer, nfft_max * fft_rot_size() * sizeof(FLOAT));
   temp_fft_buffer.resize(fft_rot_size()/2 + 4);
 
   fft_t2f.resize(fft_size());
