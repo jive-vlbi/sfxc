@@ -28,6 +28,11 @@ ref          yylval = Vexpp_node(); return REF;
   return IDENT;
 }
 
+\"(\\.|[^\\"])*\" {
+  yylval = Vexpp_node( yytext );
+  return IDENT;
+}
+
 \*[^\r\n]*{ENDL} {/* disregard comments */
   linenr = linenr + 1;
 }

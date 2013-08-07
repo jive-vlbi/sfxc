@@ -17,6 +17,11 @@ Vexpp_node::Vexpp_node(const char* ident) {
   assert(ident != NULL);
   m_type = STRING;
   name = ident;
+
+  if (name[0] == '"') {
+    name.erase(0, 1);
+    name.erase(name.size() - 1, 1);
+  }
 }
 
 std::ostream &operator<<(std::ostream &out, const Vexpp_node& data) {
