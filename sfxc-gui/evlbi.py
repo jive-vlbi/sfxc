@@ -16,7 +16,7 @@ import MySQLdb as db
 import jsonrpclib
 
 # JIVE Python modules
-from vex_parser import Vex
+from vex import Vex
 
 class DataFlow:
     def __init__(self, vex, control_host=None, input_host=None):

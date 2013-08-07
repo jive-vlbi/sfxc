@@ -28,7 +28,7 @@ from weightplot import WeightPlotWindow
 from fringeplot import FringePlotWindow
 
 # JIVE Python modules
-from vex_parser import Vex
+from vex import Vex
 from cordata import CorrelatedData
 
 def vex2time(str):

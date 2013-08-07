@@ -18,7 +18,7 @@ import PyQt4.Qwt5 as Qwt
 from PyQt4.Qwt5.anynumpy import *
 
 # JIVE Python modules
-from vex_parser import Vex
+from vex import Vex
 from cordata import CorrelatedData
 
 def vex2time(str):
