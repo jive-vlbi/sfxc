@@ -63,7 +63,7 @@ class LeftScaleDraw(Qwt.QwtScaleDraw):
 
     pass
 
-class FringePlotCurve(Qwt.QwtPlotCurve):
+class AutoPlotCurve(Qwt.QwtPlotCurve):
     def updateLegend(self, legend):
         Qwt.QwtPlotCurve.updateLegend(self, legend)
         item = legend.find(self)
@@ -76,7 +76,7 @@ class FringePlotCurve(Qwt.QwtPlotCurve):
 
     pass
 
-class FringePlotLegend(Qwt.QwtLegend):
+class AutoPlotLegend(Qwt.QwtLegend):
     def sizeHint(self):
         size = Qwt.QwtLegend.sizeHint(self)
         numrows = min(self.contentsWidget().layout().numRows(), 4)
@@ -86,20 +86,20 @@ class FringePlotLegend(Qwt.QwtLegend):
 
     pass
 
-class FringePlot(Qwt.QwtPlot):
+class AutoPlot(Qwt.QwtPlot):
     color = [ "#bae4b3", "#74c476", "#31a354", "#006d2c",
               "#bdd7e7", "#6baed6", "#3182bd", "#08519c",
               "#fcae91", "#fb6a4a", "#de2d26", "#a50f15",
               "#cccccc", "#999999", "#666666", "#000000" ]
 
-    def __init__(self, parent, station1, station2, number_channels, *args):
+    def __init__(self, parent, station, number_channels, *args):
         Qwt.QwtPlot.__init__(self, *args)
 
         self.setCanvasBackground(Qt.Qt.white)
 
         self.x = []
         self.y = {}
-        self.station = station2
+        self.station = station
 
         scaleDraw = LeftScaleDraw()
         self.setAxisScaleDraw(Qwt.QwtPlot.yLeft, scaleDraw)
@@ -109,7 +109,7 @@ class FringePlot(Qwt.QwtPlot):
                                    [number_channels / 4, 3 * number_channels / 4],
                                    [0, number_channels / 2, number_channels])
         self.setAxisScaleDiv(Qwt.QwtPlot.xBottom, scaleDiv)
-        self.setAxisTitle(Qwt.QwtPlot.yLeft, station1 + '-' + station2)
+        self.setAxisTitle(Qwt.QwtPlot.yLeft, station)
         self.setAxisMaxMajor(Qwt.QwtPlot.yLeft, 2)
         self.curve = {}
 
@@ -143,16 +143,15 @@ class FringePlot(Qwt.QwtPlot):
 
     pass
 
-class FringePlotWindow(Qt.QWidget):
-    def __init__(self, vex, ctrl_files, cordata, reference=None, integrations=32, *args):
+class AutoPlotWindow(Qt.QWidget):
+    def __init__(self, vex, ctrl_files, cordata, integrations=32, *args):
         Qt.QWidget.__init__(self, *args)
 
         exper = vex['GLOBAL']['EXPER']
         exper = vex['EXPER'][exper]['exper_name']
-        self.setWindowTitle(exper + " Fringes")
+        self.setWindowTitle(exper + " Autocorrelations")
 
         self.integration_slice = 0
-        self.reference = reference
         self.integrations = integrations
 
         self.output_file = 0
@@ -197,29 +196,11 @@ class FringePlotWindow(Qt.QWidget):
         fp.close()
         number_channels = json_input['number_channels']
 
-        if not self.reference:
-            self.reference = stations[0]
-            pass
-
         if not self.integrations in [1, 2, 4, 8, 16, 32]:
             self.integrations = 32
             pass
 
-        self.cross = False
-
         menubar = Qt.QMenuBar(self)
-        menu = menubar.addMenu("&Reference")
-        self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
-                     self.setReference)
-        grp = Qt.QActionGroup(menu)
-        for station in stations:
-            act = Qt.QAction(station, menu)
-            act.setCheckable(True)
-            if act.text() == self.reference:
-                act.setChecked(True)
-            grp.addAction(act)
-            menu.addAction(act)
-            continue
         menu = menubar.addMenu("&Integrations")
         self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
                      self.setIntegrations)
@@ -232,21 +213,6 @@ class FringePlotWindow(Qt.QWidget):
             grp.addAction(act)
             menu.addAction(act)
             continue
-        menu = menubar.addMenu("&Polarisations")
-        self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
-                     self.setPolarizations)
-        grp = Qt.QActionGroup(menu)
-        act = Qt.QAction("&Parallel Hands", menu)
-        act.setCheckable(True)
-        act.setChecked(True)
-        grp.addAction(act)
-        menu.addAction(act)
-        if json_input["cross_polarize"]:
-            act = Qt.QAction("&Cross Hands", menu)
-            act.setCheckable(True)
-            grp.addAction(act)
-            menu.addAction(act)
-            pass
 
         self.stations = []
         for station in vex['STATION']:
@@ -257,13 +223,13 @@ class FringePlotWindow(Qt.QWidget):
         self.plots = []
         self.layout = Qt.QGridLayout()
         for station in stations:
-            plot = FringePlot(self, station, station, number_channels)
+            plot = AutoPlot(self, station, number_channels)
             plot.enableAxis(Qwt.QwtPlot.xBottom, False)
             self.layout.addWidget(plot)
             self.layout.setRowStretch(self.layout.rowCount() - 1, 100)
             self.plots.append(plot)
             continue
-        legend = FringePlotLegend()
+        legend = AutoPlotLegend()
         legend.setItemMode(Qwt.QwtLegend.CheckableItem)
         self.plots[-1].insertLegend(legend, Qwt.QwtPlot.ExternalLegend)
 
@@ -284,39 +250,9 @@ class FringePlotWindow(Qt.QWidget):
         self.resize(600, len(stations) * 100 + 50)
         pass
 
-    def setReference(self, act):
-        reference = str(act.text())
-        for plot in self.plots:
-            if plot.station == reference:
-                plot.station = self.reference
-                break
-            continue
-        self.reference = reference
-        for plot in self.plots:
-            plot.setAxisTitle(Qwt.QwtPlot.yLeft,
-                              self.reference + '-' + plot.station)
-            continue
-        self.replot()
-        return
-
     def setIntegrations(self, act):
         self.cordata.history = int(str(act.text()))
         self.cordata.correlations = {}
-        return
-
-    def setPolarizations(self, act):
-        if str(act.text()) == "&Parallel Hands":
-            self.cross = False
-        else:
-            self.cross = True
-            pass
-        for plot in self.plots:
-            for idx in plot.curve:
-                plot.curve[idx].detach()
-                continue
-            plot.curve = {}
-            continue
-        self.replot()
         return
 
     def stretch(self):
@@ -362,9 +298,7 @@ class FringePlotWindow(Qt.QWidget):
                     pass
                 usb = (idx >> 2) & 1
                 band = (idx >> 3) & 0x1f
-                if self.cross and pol1 == pol2:
-                    continue
-                if not self.cross and not pol1 == pol2:
+                if not pol1 == pol2:
                     continue
 
                 plot_idx = (band << 3) | (usb << 2) | (pol2 << 1) | (pol1 << 0)
@@ -385,7 +319,7 @@ class FringePlotWindow(Qt.QWidget):
                     pen.setColor(Qt.QColor(plot.color[(plot_idx >> 1) % 16]))
                     pen.setWidth(1)
 
-                    plot.curve[plot_idx] = FringePlotCurve(title)
+                    plot.curve[plot_idx] = AutoPlotCurve(title)
                     plot.curve[plot_idx].setData(range(self.cordata.number_channels),
                                             range(self.cordata.number_channels))
                     plot.curve[plot_idx].setPen(pen)
@@ -407,11 +341,6 @@ class FringePlotWindow(Qt.QWidget):
                     a = np.conj(a)
                     pass
                 g = np.absolute(a)
-                g[0] = 0
-                g[1] = 0
-                g[2] = 0
-                g[3] = 0
-                g[4] = 0
 
                 plot.curve[plot_idx].setData(range(self.cordata.number_channels), g)
                 continue
@@ -432,10 +361,6 @@ class FringePlotWindow(Qt.QWidget):
 if __name__ == '__main__':
     usage = "usage: %prog [options] vexfile ctrlfile"
     parser = optparse.OptionParser(usage=usage)
-    parser.add_option("-r", "--reference", dest="reference",
-                      default="", type="string",
-                      help="Reference station",
-                      metavar="STATION")
     parser.add_option("-i", "--integrations", dest="integrations",
                       default=32, type="int",
                       help="Number of integrations",
@@ -456,7 +381,7 @@ if __name__ == '__main__':
 
     vex = Vex(vex_file)
 
-    plot = FringePlotWindow(vex, ctrl_files, None, options.reference, options.integrations)
+    plot = AutoPlotWindow(vex, ctrl_files, None, options.integrations)
     plot.show()
 
     sys.exit(app.exec_())
