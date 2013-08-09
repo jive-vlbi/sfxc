@@ -120,7 +120,7 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
       while (in.read(reinterpret_cast < char * > (line), 7*sizeof(double))) {
         Time time(current_mjd, line[0]);
 
-        if(line[4] == 0){
+        if(line[0] == 0 && line[4] == 0){
           state = READ_SCAN_HEADER;
           break;
         }else if(time >= tstart){
@@ -160,7 +160,7 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
       }
       // Read the data
       do {
-        if (line[4] == 0) {
+        if (line[0] == 0 && line[4] == 0) {
           if(times.size() == 1){
             // Instead of the first point of the desired scan, we got the
             // last point of the previous scan.  Get rid of it.

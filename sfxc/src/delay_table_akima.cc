@@ -161,7 +161,7 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
 
         Time time(current_mjd, line[0]);
 
-        if(line[4] == 0){
+        if(line[0] == 0 && line[4] == 0){
           state = READ_SCAN_HEADER;
           break;
         }else if(time >= tstart){
@@ -205,7 +205,7 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
       Scan &scan = scans.back();
       // Read the data
       do {
-        if (line[4] == 0) {
+        if (line[0] == 0 && line[4] == 0) {
           if(times.size() == 1){
             // Instead of the first point of the desired scan, we got the
             // last point of the previous scan.  Get rid of it.
