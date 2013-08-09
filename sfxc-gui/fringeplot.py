@@ -162,7 +162,7 @@ class FringePlot(Qwt.QwtPlot):
     pass
 
 class FringePlotWindow(Qt.QWidget):
-    def __init__(self, vex, ctrl_files, cordata, reference=None, evlbi=False, integrations=32, *args):
+    def __init__(self, vex, ctrl_files, cordata, reference=None, evlbi=False, integrations=32, unwindow=False, *args):
         Qt.QWidget.__init__(self, *args)
 
         exper = vex['GLOBAL']['EXPER']
@@ -173,6 +173,7 @@ class FringePlotWindow(Qt.QWidget):
         self.reference = reference
         self.evlbi = evlbi
         self.integrations = integrations
+        self.unwindow = unwindow
 
         self.output_file = 0
         self.output_files = []
@@ -495,8 +496,17 @@ class FringePlotWindow(Qt.QWidget):
                 d = b[0:self.cordata.number_channels]
                 e = np.concatenate((c, d))
                 f = np.absolute(e)
-
-                plot.curve[plot_idx].setData(range(2 * self.cordata.number_channels), f)
+                if self.unwindow:
+                    q = np.hanning(len(f))
+                    r = np.convolve(q, q, 'same')
+                    f = self.cordata.number_channels * f / r
+                    start = self.cordata.number_channels / 8
+                    stop = 15 * self.cordata.number_channels / 8
+                else:
+                    start = 0
+                    stop = 2 * self.cordata.number_channels
+                    pass
+                plot.curve[plot_idx].setData(range(start, stop), f[start:stop])
                 continue
             plot.replot()
             continue
@@ -542,6 +552,9 @@ if __name__ == '__main__':
                       default=32, type="int",
                       help="Number of integrations",
                       metavar="N")
+    parser.add_option("--unwindow", dest="unwindow",
+                      action="store_true", default=False,
+                      help="Attempt to undo the effect of windowing")
 
     (options, args) = parser.parse_args()
     if len(args) < 2:
@@ -558,7 +571,9 @@ if __name__ == '__main__':
 
     vex = Vex(vex_file)
 
-    plot = FringePlotWindow(vex, ctrl_files, None, options.reference, options.evlbi, options.integrations)
+    plot = FringePlotWindow(vex, ctrl_files, None, options.reference,
+                            options.evlbi, options.integrations,
+                            options.unwindow)
     plot.show()
 
     sys.exit(app.exec_())
