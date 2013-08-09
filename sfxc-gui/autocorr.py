@@ -64,6 +64,11 @@ class LeftScaleDraw(Qwt.QwtScaleDraw):
     pass
 
 class AutoPlotCurve(Qwt.QwtPlotCurve):
+    def __init__(self, tip, *args):
+        Qwt.QwtPlotCurve.__init__(self, *args)
+        self.tip = tip
+        return
+
     def updateLegend(self, legend):
         Qwt.QwtPlotCurve.updateLegend(self, legend)
         item = legend.find(self)
@@ -71,6 +76,9 @@ class AutoPlotCurve(Qwt.QwtPlotCurve):
             pen = Qt.QPen(self.pen())
             pen.setWidth(3)
             item.setCurvePen(pen)
+            if self.tip:
+                item.setToolTip(self.tip)
+                pass
             pass
         return
 
@@ -83,6 +91,16 @@ class AutoPlotLegend(Qwt.QwtLegend):
         if numrows > 0:
             return Qt.QSize(size.width(), numrows * size.height())
         return size;
+
+    pass
+
+class AutoPlotPicker(Qwt.QwtPlotPicker):
+    def trackerText(self, point):
+        map = self.plot().canvasMap(Qwt.QwtPlot.xBottom)
+        channel = map.invTransform(point.x())
+        freq = (channel * self.sample_rate) / self.number_channels
+        s = "%.1f" % (freq * 1e-3)
+        return Qwt.QwtText(Qt.QString(s) + ' ' + 'kHz')
 
     pass
 
@@ -200,6 +218,43 @@ class AutoPlotWindow(Qt.QWidget):
             self.integrations = 32
             pass
 
+        # Create a sorted list of frequencies
+        self.frequencies = []
+        self.sample_rate = 1e12
+        station = stations[0]
+        for scan in vex['SCHED']:
+            mode = vex['SCHED'][scan]['mode']
+            for freq in vex['MODE'][mode].getall('FREQ'):
+                if station in freq[1:]:
+                    value = vex['FREQ'][freq[0]]['sample_rate'].split()
+                    sample_rate = float(value[0])
+                    if value[1] == 'Gs/sec':
+                        sample_rate *= 1e9
+                    elif value[1] == 'Ms/sec':
+                        sample_rate *= 1e6
+                    if sample_rate < self.sample_rate:
+                        self.sample_rate = sample_rate
+                        pass
+                    channels = vex['FREQ'][freq[0]].getall('chan_def')
+                    for chan_def in channels:
+                        value = chan_def[1].split()
+                        frequency = float(value[0])
+                        if value[1] == 'GHz':
+                            frequency *= 1e9
+                        elif value[1] == 'MHz':
+                            frequency *= 1e6
+                        elif value[1] == 'KHz':
+                            frequency *= 1e3
+                            pass
+                        if not frequency in self.frequencies:
+                            self.frequencies.append(frequency)
+                            pass
+                        continue
+                    break
+                continue
+            break
+        self.frequencies.sort()
+
         menubar = Qt.QMenuBar(self)
         menu = menubar.addMenu("&Integrations")
         self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
@@ -228,6 +283,14 @@ class AutoPlotWindow(Qt.QWidget):
             self.layout.addWidget(plot)
             self.layout.setRowStretch(self.layout.rowCount() - 1, 100)
             self.plots.append(plot)
+            picker = AutoPlotPicker(plot.canvas())
+            picker.setSelectionFlags(Qwt.QwtPicker.PointSelection | Qwt.QwtPicker.DragSelection)
+            picker.setRubberBandPen(Qt.QColor(Qt.Qt.red))
+            picker.setRubberBand(Qwt.QwtPicker.VLineRubberBand)
+            picker.setMousePattern(Qwt.QwtPicker.MouseSelect1, Qt.Qt.LeftButton)
+            picker.setTrackerMode(Qwt.QwtPicker.ActiveOnly)
+            picker.sample_rate = self.sample_rate
+            picker.number_channels = number_channels
             continue
         legend = AutoPlotLegend()
         legend.setItemMode(Qwt.QwtLegend.CheckableItem)
@@ -315,11 +378,21 @@ class AutoPlotWindow(Qt.QWidget):
                         title += "L"
                         pass
 
+                    try:
+                        tip = "%.2f MHz" % (self.frequencies[band] * 1e-6)
+                        if usb:
+                            tip += " USB"
+                        else:
+                            tip += " LSB"
+                            pass
+                    except:
+                        tip = ""
+
                     pen = Qt.QPen()
                     pen.setColor(Qt.QColor(plot.color[(plot_idx >> 1) % 16]))
                     pen.setWidth(1)
 
-                    plot.curve[plot_idx] = AutoPlotCurve(title)
+                    plot.curve[plot_idx] = AutoPlotCurve(tip, title)
                     plot.curve[plot_idx].setData(range(self.cordata.number_channels),
                                             range(self.cordata.number_channels))
                     plot.curve[plot_idx].setPen(pen)
