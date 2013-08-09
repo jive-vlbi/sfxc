@@ -950,7 +950,7 @@ get_mark5a_tracks(const std::string &mode,
 
   // Determine if data modulation is active
   Vex::Node::const_iterator mod_it = track->begin("data_modulation");
-  if(mod_it->to_string()=="on")
+  if (mod_it != track->end() && mod_it->to_string() == "on")
     input_parameters.data_modulation=1;
   else
     input_parameters.data_modulation=0;
@@ -1029,12 +1029,11 @@ get_mark5b_tracks(const std::string &mode,
                   Input_node_parameters &input_parameters) const {
   // First determine if there is a bitstreams section for the current station in the vex file.
   const Vex::Node &root=get_vex().get_root_node();
+
   const std::string bitstreams_name = get_vex().get_bitstreams(mode, station);
-  if(bitstreams_name == std::string()){
-    get_mark5b_standard_mapping(mode, station, input_parameters);
-  }else{
+  if (bitstreams_name != std::string()) {
     input_parameters.n_tracks = n_mark5b_bitstreams(mode, station);
-    // Parse the bitstream sectioni
+    // Parse the bitstream section
     int ch_index = 0;
     Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
     for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
@@ -1078,7 +1077,58 @@ get_mark5b_tracks(const std::string &mode,
         input_parameters.channels.push_back(channel_param);
       }
     }
+    return;
   }
+
+  const std::string tracks_name = get_vex().get_track(mode, station);
+  if (tracks_name != std::string()) {
+    Vex::Node::const_iterator track = root["TRACKS"][tracks_name];
+    if (track["track_frame_format"]->to_string() == "MARK5B") {
+      input_parameters.n_tracks = n_mark5a_tracks(mode, station);
+      // Parse the $TRACKS section
+      int ch_index = 0;
+      for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
+	const std::string &channel_name = frequency_channel(ch_nr, mode, station);
+
+	if (channel_name != std::string()) {
+	  // Iterate over the tracks, interpreting them as bitstreams
+	  int n_bitstream = 0;
+	  Input_node_parameters::Channel_parameters channel_param;
+	  channel_param.bits_per_sample = 1;
+	  channel_param.sideband = sideband(channel_name, station, mode);
+	  channel_param.polarisation = polarisation(channel_name, station, mode);
+	  channel_param.frequency_number = ch_index++;
+	  int sign_track, mag_track;
+	  for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
+	       fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
+	    if (channel_name == fanout_def_it[1]->to_string()) {
+	      if (fanout_def_it[2]->to_string() == "sign") {
+		sign_track = fanout_def_it[4]->to_int() - 2;
+	      } else {
+		channel_param.bits_per_sample = 2;
+		mag_track = fanout_def_it[4]->to_int() - 2;
+	      }
+	    }
+	    n_bitstream++;
+	  }
+	  // If there are 64 bitstreams then an input word is 8 bytes long, otherewise is is 4 bytes
+	  int word_size = (n_bitstream <= 32) ? 32 : 64;
+	  for (int i = 0; i < word_size / n_bitstream;  i++) {
+	    int sign = sign_track + i * n_bitstream;
+	    channel_param.tracks.push_back(sign);
+	    if (channel_param.bits_per_sample == 2) {
+	      int magn = mag_track + i * n_bitstream;
+	      channel_param.tracks.push_back(magn);
+	    }
+	  }
+	  input_parameters.channels.push_back(channel_param);
+	}
+      }
+      return;
+    }
+  }
+
+  get_mark5b_standard_mapping(mode, station, input_parameters);
 }
 
 void
@@ -1852,8 +1902,10 @@ Input_node_parameters::operator==(const Input_node_parameters &other) const {
 std::ostream &
 operator<<(std::ostream &out,
            const Input_node_parameters &param) {
-  out << "{ \"tbr\" : " << param.track_bit_rate << ", "
-  << "\"integr_time\" : " << param.integr_time << ", " << std::endl;
+  out << "{ \"n_tracks\": " << param.n_tracks << ", "
+      <<"\"track_bit_rate\": " << param.track_bit_rate << ", "
+      << "\"integr_time\": " << param.integr_time << ", "
+      << std::endl;
 
   out << " channels: [";
   for (size_t i=0; i<param.channels.size(); i++) {
