@@ -40,7 +40,6 @@ tokens = [
     'SEMICOLON',
     'EQ',
     'DOLLAR',
-    'STRING',
     'IDENT',
 ] + list(reserved.values())
 
