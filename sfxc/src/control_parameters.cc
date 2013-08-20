@@ -1196,7 +1196,9 @@ get_vdif_tracks(const std::string &mode,
       channel_param.polarisation = polarisation(channel_name, station, mode);
       channel_param.frequency_number = ch_index++;
 
-      for (int i = 0; i < 32; i += num_tracks) {
+      // NB: Number of channels (and therefore num_tracks) is always a power of two
+      const int word_size = (num_tracks <= 32) ? 32 : num_tracks; 
+      for (int i = 0; i < word_size; i += num_tracks) {
         for (Vex::Node::const_iterator channel_it = thread->begin("channel");
              channel_it != thread->end("channel"); channel_it++) {
           if (channel_name == channel_it[0]->to_string()) {
