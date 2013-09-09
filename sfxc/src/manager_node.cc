@@ -672,7 +672,11 @@ void Manager_node::send_global_header(){
     Time int_time = control_parameters.integration_time();// Integration time: microseconds
     output_header.integration_time = (int)int_time.get_time_usec();
     output_header.output_format_version = OUTPUT_FORMAT_VERSION;
-    output_header.correlator_version = atoi(SVN_VERSION);
+    
+    const char *svn_version = SVN_VERSION;
+    if (strchr(svn_version, ':'))
+      svn_version = strchr(svn_version, ':') + 1;
+    output_header.correlator_version = atoi(svn_version);
 
     output_header.polarisation_type =
       control_parameters.polarisation_type_for_global_output_header(get_current_mode());
