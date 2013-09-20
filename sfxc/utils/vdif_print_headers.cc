@@ -8,6 +8,7 @@
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <getopt.h>
 #include "correlator_time.h"
 
@@ -40,23 +41,41 @@ Time get_time(int ref_epoch, int sec_from_epoch){
   return time;
 }
 
-void get_options(int argc, char*argv[], char **filename, int &size_frame){
+void usage(char *filename){
+  std::cout << "usage: " << filename << "[OPTIONS] <vdif-file>\n";
+  std::cout << "Options :\n";
+  std::cout << "  -q, --quiet          Only print bad frames\n"; 
+  std::cout << "  -s, --skip=N         Skip the first N frames.\n"; 
+  std::cout << "  -f, --frame-size=M   Override the frame size given in the VDIF headers..\n";
+}
+
+void get_options(int argc, char*argv[], char **filename, int &frame_size, int &nskip, bool &quiet){
   int c, opt_index = 0;
   static struct option long_options[] = {
       {"help",    no_argument, 0, 'h'},
-      {"size_frame",    required_argument, 0, 's'},
+      {"frame-size",    required_argument, 0, 'f'},
+      {"skip",    required_argument, 0, 's'},
+      {"quiet",    required_argument, 0, 'q'},
       {0, 0, 0, 0}
   };
-  size_frame = 0;
-  while( (c = getopt_long (argc, argv, "hs:",  long_options, 
+  frame_size = 0;
+  nskip = 0;
+  quiet = false;
+  while( (c = getopt_long (argc, argv, "qhs:f:",  long_options, 
                            &opt_index)) != -1){
     switch (c){
     case 'h':
-      std::cout << "usage: " << filename << "[-s frame_size] <vdif-file>\n";
+      usage(argv[0]);
       exit(0);
       break;
+    case 'q':
+      quiet = true;
+      break;
     case 's':
-      sscanf(optarg, "%d", &size_frame);
+      sscanf(optarg, "%d", &nskip);
+      break;
+    case 'f':
+      sscanf(optarg, "%d", &frame_size);
       break;
     default:
       printf ("option %s", long_options[opt_index].name);
@@ -64,26 +83,109 @@ void get_options(int argc, char*argv[], char **filename, int &size_frame){
     }
   }
   if ((argc-optind) != 1) {
-    std::cout << "usage: " << filename << "[-s frame_size] <vdif-file>\n";
+    std::cout << "Input file not specified\n";
+    usage(argv[0]);
+    exit(1);
+  }
+  if ((nskip > 0) && (frame_size <= 0)){
+    std::cout << "Skip frames requires frame size to be give.\n";
     exit(1);
   }
   *filename = argv[optind];
 }
- 
+
+void print_header(Header &header){
+  Time t = get_time(header.ref_epoch, header.sec_from_epoch);
+  int data_size = 8*header.dataframe_length;
+  int header_size = (16+16*(1-header.legacy_mode));
+  uint16_t s_id = header.station_id;
+  char *s = (char *)&s_id;
+  char station[3];
+  if (isalnum(s[0]) && isalnum(s[1])){
+    station[0] = s[1];
+    station[1] = s[0];
+    station[2] = 0;
+  }else{
+    station[0] = ' ';
+    station[1] = ' ';
+    station[2] = 0;
+  }
+  std::cout << t << " ,frame_nr = " << header.dataframe_in_second 
+            << ", thread_id = " << header.thread_id << ", nchan = " << (1 << header.log2_nchan)
+            << ", invalid = " << (int)header.invalid << ", legacy = " << (int)header.legacy_mode
+            << ", station = " << station
+            << ", bps-1 = " << (int) header.bits_per_sample
+            << ", data_size = " << data_size << "\n";
+}
+
+bool check_header(Header &header, Header &first_header){
+  // Check if current header is valid by comparing again a previous valid header
+  // FIXME this can be done more efficient
+  if(header.legacy_mode != first_header.legacy_mode)
+    return false; 
+  if(header.ref_epoch != first_header.ref_epoch)
+    return false; 
+  if(header.dataframe_length != first_header.dataframe_length)
+    return false; 
+  if(header.log2_nchan != first_header.log2_nchan)
+    return false; 
+  if(header.version != first_header.version)
+    return false; 
+  if(header.station_id != first_header.station_id)
+    return false; 
+  if(header.bits_per_sample != first_header.bits_per_sample)
+    return false; 
+  if(header.data_type != first_header.data_type)
+    return false; 
+  return true;
+}
+
+int64_t find_next_valid_header(FILE *infile, Header &prev_header){
+  // Move file pointer to where the current header was supposed to start
+  fseek(infile, -sizeof(Header), SEEK_CUR);
+
+  const int N = 1024;
+  const int hsize = sizeof(Header);
+  unsigned char buf[N];
+  size_t nBytes = fread(buf, 1, N, infile);
+  size_t total_bytes=0;
+  while (nBytes > 0){
+    int i;
+    for(i=0;i<N-hsize;i++){
+      Header *new_header = (Header *)&buf[i];
+      if (check_header(*new_header, prev_header)){
+        // Found new valid header
+        fseek(infile, -N+i, SEEK_CUR);
+        return total_bytes + i; 
+      }
+    }
+    memcpy(&buf[0], &buf[i], hsize);
+    nBytes = fread(&buf[hsize], 1, N-hsize, infile);
+    total_bytes += nBytes;
+  }
+  // EOF is reached
+  return 0;
+}
+
 int main(int argc, char *argv[]) {
-  int size_frame;
+  int frame_size, nskip;
+  bool quiet;
   char *filename;
-  get_options(argc, argv, &filename, size_frame);
+  get_options(argc, argv, &filename, frame_size, nskip, quiet);
 
   FILE *infile = fopen(filename, "r");
   if(infile == NULL){
     std::cout << "Could not open " << filename << " for reading.\n";
     return 1;
   }
+  // Skip the first nskip frames
+  fseek(infile, frame_size * nskip, SEEK_SET);
 
   bool eof = false;
   int invalid_nr = 0;
   size_t data_size = 1, header_size = 0;
+  bool first_header = true;
+  Header prev_header;
   while (eof == false){
     Header header;
     unsigned char *header_buf = (unsigned char *) &header;
@@ -98,32 +200,45 @@ int main(int argc, char *argv[]) {
         std::cout << "Invalid frame with fill pattern : Nr of previous bad frames = " << invalid_nr << "\n";
         invalid_nr++;
       }else{
-        Time t = get_time(header.ref_epoch, header.sec_from_epoch);
-        data_size = 8*header.dataframe_length;
-        header_size = (16+16*(1-header.legacy_mode));
-        uint16_t s_id = header.station_id;
-        char *s = (char *)&s_id;
-        char station[3];
-        if (isalnum(s[0]) && isalnum(s[1])){
-          station[0] = s[1];
-          station[1] = s[0];
-          station[2] = 0;
-        }else{
-          station[0] = ' ';
-          station[1] = ' ';
-          station[2] = 0;
+        // We save the first header to be able to determine if a frame is valid or not
+        if (first_header){
+          first_header = false;
+          memcpy(&prev_header, header_buf, sizeof(Header));
         }
-        invalid_nr = 0;
-        std::cout << t << " ,frame_nr = " << header.dataframe_in_second 
-                  << ", thread_id = " << header.thread_id << ", nchan = " << (1 << header.log2_nchan)
-                  << ", invalid = " << (int)header.invalid << ", legacy = " << (int)header.legacy_mode
-                  << ", station = " << station
-                  << ", bps-1 = " << (int) header.bits_per_sample
-                  << ", data_size = " << data_size << "\n";
+        if (check_header(header, prev_header)){
+          data_size = 8*header.dataframe_length;
+          header_size = (16+16*(1-header.legacy_mode));
+          invalid_nr = 0;
+          // Save the last valid header
+          memcpy(&prev_header, header_buf, sizeof(Header));
+          if(!quiet)
+            print_header(header);
+        }else{
+          int64_t nBytes = find_next_valid_header(infile, prev_header);
+          if (nBytes <=0){
+            std::cout << "INVALID HEADER found, no new valid header before EOF.\n";
+            if(quiet){
+              std::cout << "Last valid header : \n";
+              print_header(header);
+            }
+            exit(1);
+          }else{
+            std::cout << "INVALID HEADER found, found new header after " << nBytes << " bytes = ";
+            if (frame_size > 0)
+              std::cout << nBytes * 1. / frame_size << " frames\n";
+            else
+              std::cout << nBytes * 1. /data_size << " frames\n";
+            if(quiet){
+              std::cout << "Previous valid header : \n";
+              print_header(prev_header);
+            }
+            continue;
+          }
+        }
       }
-      if (size_frame > 0){
+      if (frame_size > 0){
         // The frame size in the header is overridden
-        fseek(infile, size_frame-header_size, SEEK_CUR);
+        fseek(infile, frame_size-header_size, SEEK_CUR);
       }else{
         fseek(infile, data_size-header_size, SEEK_CUR);
       }
