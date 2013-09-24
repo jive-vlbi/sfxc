@@ -20,6 +20,7 @@ from PyQt4.Qwt5.anynumpy import *
 # JIVE Python modules
 from vex import Vex
 from cordata import CorrelatedData
+from autocorr import AutoPlotWindow
 
 # NumPy
 import numpy as np
@@ -169,11 +170,15 @@ class FringePlotWindow(Qt.QWidget):
         exper = vex['EXPER'][exper]['exper_name']
         self.setWindowTitle(exper + " Fringes")
 
+        self.vex = vex
+        self.ctrl_files = ctrl_files
         self.integration_slice = 0
         self.reference = reference
         self.evlbi = evlbi
         self.integrations = integrations
         self.unwindow = unwindow
+
+        self.aplot = None
 
         self.output_file = 0
         self.output_files = []
@@ -305,6 +310,16 @@ class FringePlotWindow(Qt.QWidget):
             menu.addAction(act)
             pass
 
+        menu = menubar.addMenu("&Tools")
+        self.connect(menu, Qt.SIGNAL("triggered(QAction *)"),
+                     self.showAutocorrelations)
+        self.connect(menu, Qt.SIGNAL("aboutToShow()"),
+                     self.updateAutocorrelations)
+        act = Qt.QAction("&Autocorrelations", menu)
+        act.setCheckable(True)
+        menu.addAction(act)
+        self.aplot_act = act
+
         self.stations = []
         for station in vex['STATION']:
             self.stations.append(station)
@@ -387,6 +402,24 @@ class FringePlotWindow(Qt.QWidget):
             plot.curve = {}
             continue
         self.replot()
+        return
+
+    def showAutocorrelations(self, act):
+        if not self.aplot:
+            self.aplot = AutoPlotWindow(self.vex, self.ctrl_files,
+                                        self.cordata, self.integrations)
+            pass
+        if act.isChecked():
+            self.aplot.show()
+        else:
+            self.aplot.hide()
+            pass
+        return
+
+    def updateAutocorrelations(self):
+        if self.aplot:
+            self.aplot_act.setChecked(self.aplot.isVisible())
+            pass
         return
 
     def stretch(self):
