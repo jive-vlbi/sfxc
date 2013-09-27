@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys, datetime, pdb
-import vex_parser, vex_time
+import vex as Vex
+import vex_time
 from optparse import OptionParser
 
 if sys.version_info > (2, 5):
@@ -37,8 +38,9 @@ except StandardError, err:
   sys.exit(1);
 
 try:
-  vex = vex_parser.Vex(vex_in_name)
   vex_in = open(vex_in_name, "r")
+  vex = Vex.parse(vex_in.read())
+  vex_in.seek(0)
 except StandardError, err:
   print "Error loading input vexfile : " + str(err)
   sys.exit(1);

@@ -3,8 +3,8 @@ from numpy import *
 from pylab import *
 import numpy.polynomial as polynomial
 import sys, struct, datetime, pdb
-import vex_parser, vex_time
-import parameters
+import vex as Vex
+import parameters, vex_time
 from optparse import OptionParser
 
 try:
@@ -288,6 +288,10 @@ def get_options():
   if options.controlfile != None:
     try:
       ctrl = json.load(open(options.controlfile, "r"))
+      try:
+        setup_station = ctrl["setup_station"]
+      except KeyError:
+        setup_station = ctrl["stations"][0]
       # TODO : Add file extensions for pulsar binning / multiple phase center
       if ctrl["output_file"][:7] != 'file://':
         raise StandardError('Correlator output_file should start with file://')
@@ -297,15 +301,17 @@ def get_options():
       sys.exit(1)
   else:
     corfile = options.corfile
+    setup_station = ref_station
   try:
-    vex = vex_parser.Vex(vex_name)
+    vex = Vex.parse(open(vex_name, "r").read())
   except StandardError, err:
     print >> sys.stderr, "Error loading vex file : " + str(err)
     sys.exit(1)
-  return (vex, corfile, ref_station, options.maxiter, options.precision, options.global_fit, ctrl)
+  return (vex, corfile, ref_station, options.maxiter, options.precision, options.global_fit, setup_station, ctrl)
 
 def write_clocks(vex, param, delays, rates, snr, global_fit, ref_station):
   vex_stations = [s for s in vex['STATION']]
+  vex_stations.sort()
   # First compute channel weights
   W = zeros(snr.shape)
   for c in range(n_channels):
@@ -369,10 +375,11 @@ def write_clocks(vex, param, delays, rates, snr, global_fit, ref_station):
   print '}'
   
 ######################## MAIN ##############################3
-(vex, corfile, ref_station, maxiter, precision, global_fit, ctrl) = get_options() 
+(vex, corfile, ref_station, maxiter, precision, global_fit, setup_station, ctrl) = get_options() 
 
 vex_stations = [s for s in vex['STATION']]
-param = parameters.parameters(vex, corfile) 
+vex_stations.sort()
+param = parameters.parameters(vex, corfile, setup_station) 
 try:
   ref_station_nr = vex_stations.index(ref_station)
 except:

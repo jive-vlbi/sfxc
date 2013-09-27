@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 import sys, struct, datetime, pdb
-import vex_parser, vex_time
+import vex_time
 from sfxcdata_utils import *
 
 class parameters:
-  def __init__(self, vex, corfilename, timeout = 0):
+  def __init__(self, vex, corfilename, setup_station, timeout = 0):
     self.vex = vex
     self.timeout = timeout
+    self.setup_station = setup_station
     try:
       inputfile = open(corfilename, 'rb')
     except:
@@ -100,13 +101,20 @@ class parameters:
 
   def get_channels(self, mode):
     vex = self.vex
-    ch_mode = vex['MODE'][mode]['FREQ'][0]
-    station = vex['MODE'][mode]['FREQ'][1]
+    setup_station = self.setup_station
+    freqs = vex['MODE'][mode].getall('FREQ')
+    ch_mode = ""
+    for block in freqs:
+      if setup_station in block:
+        ch_mode = block[0]
+    if ch_mode == "":
+      print >> sys.stderr, "Error : Could not find FREQ block for setup station (" + setup_station + ") in mode " + mode
+      sys.exit(1)
     for bmode in  vex['MODE'][mode].getall('BBC'):
-      if station in bmode:
+      if setup_station in bmode:
         bbc_mode = bmode[0]
     for imode in vex['MODE'][mode].getall('IF'):
-      if station in imode:
+      if setup_station in imode:
         if_mode = imode[0]
     chandefs = vex['FREQ'][ch_mode].getall('chan_def')
     bbcs = vex['BBC'][bbc_mode].getall('BBC_assign')

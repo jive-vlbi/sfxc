@@ -3,8 +3,8 @@ from numpy import *
 from pylab import *
 import numpy.polynomial as polynomial
 import sys, struct, datetime, pdb
-import vex_parser, vex_time
-import parameters
+import vex as Vex
+import parameters, vex_time
 import signal
 from sfxcdata_utils import *
 from optparse import OptionParser
@@ -246,6 +246,10 @@ def get_options():
   if options.controlfile != None:
     try:
       ctrl = json.load(open(options.controlfile, "r"))
+      try:
+        setup_station = ctrl["setup_station"]
+      except KeyError:
+        setup_station = ctrl["stations"][0]
       # TODO : Add file extensions for pulsar binning / multiple phase center
       if ctrl["output_file"][:7] != 'file://':
         raise StandardError('Correlator output_file should start with file://')
@@ -255,8 +259,9 @@ def get_options():
       sys.exit(1)
   else:
     corfile = options.corfile
+    setup_station = ref_station
   try:
-    vex = vex_parser.Vex(vex_name)
+    vex = Vex.parse(open(vex_name, "r").read())
   except StandardError, err:
     print >> sys.stderr, "Error loading vex file : " + str(err)
     sys.exit(1)
@@ -265,7 +270,7 @@ def get_options():
   except:
     print >> sys.stderr, "Error : Could not open " + corfile
     sys.exit(1)
-  param = parameters.parameters(vex, corfile, options.timeout)
+  param = parameters.parameters(vex, corfile, setup_station, options.timeout)
   # Determine which integrations to include in the clock search
   start_of_correlation = vex_time.get_time(param.starttime)
   if options.begin_time != None:
@@ -291,6 +296,7 @@ def get_options():
 
 def write_clocks(vex, param, delays, rates, snr, ref_station):
   vex_stations = [s for s in vex['STATION']]
+  vex_stations.sort()
   # First compute channel weights
   W = zeros(snr.shape)
   for c in range(n_channels):
@@ -366,6 +372,7 @@ def sighandler(signum, frame):
 (vex, corfile, ref_station, start_integration, n_integrations, timeout, param) = get_options()
 # initialize variables
 vex_stations = [s for s in vex['STATION']]
+vex_stations.sort()
 try:
   ref_station_nr = vex_stations.index(ref_station)
 except:
