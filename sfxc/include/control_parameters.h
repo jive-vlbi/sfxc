@@ -325,6 +325,7 @@ public:
                              const std::map<std::string, int> &correlator_node_station_to_input) const;
   std::string rack_type(const std::string &station) const;
   std::string transport_type(const std::string &station) const;
+  std::string data_format(const std::string &station) const;
 
   const Vex &get_vex() const;
 

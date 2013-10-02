@@ -36,18 +36,17 @@ start_input_node(int rank, const std::string &station) {
 
   // Start the appropriate input reader.
   int station_number = control_parameters.station_number(station);
-  if (control_parameters.transport_type(station) == "Mark5A") {
-    if (control_parameters.rack_type(station) == "VLBA")
-      MPI_Send(&station_number, 1, MPI_INT32,
-               rank, MPI_TAG_SET_INPUT_NODE_VLBA, MPI_COMM_WORLD);
-    else
-      MPI_Send(&station_number, 1, MPI_INT32,
-               rank, MPI_TAG_SET_INPUT_NODE_MARK5A, MPI_COMM_WORLD);
-  } else if (control_parameters.transport_type(station) == "VDIF") {
+  if (control_parameters.data_format(station) == "Mark4") {
+    MPI_Send(&station_number, 1, MPI_INT32,
+	     rank, MPI_TAG_SET_INPUT_NODE_MARK5A, MPI_COMM_WORLD);
+  } else if (control_parameters.data_format(station) == "VLBA") {
+    MPI_Send(&station_number, 1, MPI_INT32,
+	     rank, MPI_TAG_SET_INPUT_NODE_VLBA, MPI_COMM_WORLD);
+  } else if (control_parameters.data_format(station) == "VDIF") {
     MPI_Send(&station_number, 1, MPI_INT32,
 	     rank, MPI_TAG_SET_INPUT_NODE_VDIF, MPI_COMM_WORLD);
   } else {
-    SFXC_ASSERT(control_parameters.transport_type(station) == "Mark5B");
+    SFXC_ASSERT(control_parameters.data_format(station) == "Mark5B");
     MPI_Send(&station_number, 1, MPI_INT32,
              rank, MPI_TAG_SET_INPUT_NODE_MARK5B, MPI_COMM_WORLD);
   }

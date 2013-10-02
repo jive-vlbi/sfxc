@@ -672,9 +672,7 @@ int
 Control_parameters::bits_per_sample(const std::string &mode,
                                     const std::string &station) const
 {
-  const std::string &record_transport_type = transport_type(station);
-
-  if (record_transport_type == "VDIF") {
+  if (data_format(station) == "VDIF") {
     const std::string threads_name = get_vex().get_section("THREADS", mode, station);
     Vex::Node::const_iterator thread = vex.get_root_node()["THREADS"][threads_name];
     for (Vex::Node::const_iterator thread_it = thread->begin("thread");
@@ -683,7 +681,7 @@ Control_parameters::bits_per_sample(const std::string &mode,
     }
   }
 
-  if (record_transport_type == "Mark5B") {
+  if (data_format(station) == "Mark5B") {
     const std::string &bitstreams_name = get_vex().get_bitstreams(mode, station);
     if (bitstreams_name != std::string()) {
       Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
@@ -700,7 +698,8 @@ Control_parameters::bits_per_sample(const std::string &mode,
 
   // Fall back on the $TRACKS block for Mark5B recordings if there is
   // no $BITSTREAMS block.
-  if (record_transport_type == "Mark5A" || record_transport_type == "Mark5B") {
+  if (data_format(station) == "Mark4" || data_format(station) == "VLBA" ||
+      data_format(station) == "Mark5B") {
     const std::string &track_name = get_vex().get_track(mode, station);
     Vex::Node::const_iterator track = vex.get_root_node()["TRACKS"][track_name];
     for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
@@ -1378,13 +1377,13 @@ get_input_node_parameters(const std::string &mode_name,
   result.fft_size *= sample_rate(mode_name, station_name) / sample_rate(mode_name, setup_station());
   result.track_bit_rate =  (int)sample_rate(mode_name, station_name);
 
-  std::string record_transport_type = transport_type(station_name);
-  if (record_transport_type == "Mark5A") {
-    get_mark5a_tracks(mode_name, station_name, result);
-  } else if (record_transport_type == "VDIF") {
+  if (data_format(station_name) == "VDIF") {
     get_vdif_tracks(mode_name, station_name, result);
+  } else if (data_format(station_name) == "Mark4" ||
+	     data_format(station_name) == "VLBA")  {
+    get_mark5a_tracks(mode_name, station_name, result);
   } else {
-    SFXC_ASSERT(record_transport_type == "Mark5B");
+    SFXC_ASSERT(data_format(station_name) == "Mark5B");
     get_mark5b_tracks(mode_name, station_name, result);
   }
 
@@ -1400,6 +1399,25 @@ Control_parameters::transport_type(const std::string &station) const {
   Vex::Node::const_iterator das_it = get_vex().get_root_node()["DAS"][das];
 
   return das_it["record_transport_type"]->to_string();
+}
+
+std::string
+Control_parameters::data_format(const std::string &station) const {
+  if (transport_type(station) == "Mark5A") {
+    if (rack_type(station) == "VLBA4")
+      return "Mark4";
+    return rack_type(station);
+  }
+
+  // Temporary until the various VEX parsers learn about Mark5C
+  // (and Dr. Bob stops needlessly editing VEX files)
+  if (transport_type(station) == "Mark5B" && rack_type(station) == "WIDAR")
+    return "VDIF";
+
+  if (transport_type(station) == "Mark5C" && rack_type(station) == "WIDAR")
+    return "VDIF";
+
+  return transport_type(station);
 }
 
 std::string
