@@ -26,10 +26,20 @@ public:
   MPI_Transfer();
 
   static void send(Delay_table_akima &table, int sn, int rank);
-  static void receive(MPI_Status &status, Delay_table_akima &table, int &sn);
+  static void bcast_corr_nodes(Delay_table_akima &table, int sn);
+  static void pack(std::vector<char> &buffer, Delay_table_akima &table, int sn);
 
+  static void receive(MPI_Status &status, Delay_table_akima &table, int &sn);
+  static void receive_bcast(MPI_Status &status, Delay_table_akima &table, int &sn);
+  static void unpack(std::vector<char> &buffer, Delay_table_akima &table, int &sn);
+  
   static void send(Uvw_model &table, int sn, int rank);
+  static void bcast_corr_nodes(Uvw_model &table, int sn);
+  static void pack(std::vector<char> &buffer, Uvw_model &table, int sn);
+
   static void receive(MPI_Status &status, Uvw_model &table, int &sn);
+  static void receive_bcast(MPI_Status &status, Uvw_model &table, int &sn);
+  static void unpack(std::vector<char> &buffer, Uvw_model &table, int &sn);
 
   static void send(Pulsar_parameters &table, int rank);
   static void receive(MPI_Status &status, Pulsar_parameters &pulsar_param);

@@ -140,6 +140,13 @@ int main(int argc, char *argv[]) {
       }
     } else {
       Log_writer_mpi log_writer(RANK_OF_NODE, control_parameters.message_level());
+      // Determine number of correlator nodes and broadcast to all nodes
+      int nr_corr_nodes = numtasks - control_parameters.number_stations() - 3;
+      MPI_Bcast(&nr_corr_nodes, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_COMM_WORLD);
+      // Create a communicator for all correlator nodes which can be used for 
+      // collective communications. Note that ALL mpi processes must create 
+      // the communicator not only the correlator nodes.
+      create_correlator_node_comm(nr_corr_nodes);
 
       if (PRINT_PID) {
         DEBUG_MSG("Manager node, pid = " << getpid());
@@ -153,6 +160,13 @@ int main(int argc, char *argv[]) {
       node.start();
     }
   } else {
+    int nr_corr_nodes;
+    MPI_Bcast(&nr_corr_nodes, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_COMM_WORLD);
+    // Create a communicator for all correlator nodes which can be used for 
+    // collective communications. Note that ALL mpi processes must create 
+    // the communicator not only the correlator nodes.
+    create_correlator_node_comm(nr_corr_nodes);
+ 
     start_node();
   }
 

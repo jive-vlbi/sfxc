@@ -46,6 +46,7 @@ extern Mutex g_mpi_thebig_mutex;
 
 void start_node();
 void end_node(int32_t rank);
+void create_correlator_node_comm(int size);
 
 enum MPI_TAG {
   // INITIALISATION OF THE DIFFERENT TYPES OF NODES:

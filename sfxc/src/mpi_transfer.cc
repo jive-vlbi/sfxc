@@ -154,10 +154,9 @@ recv_connect_writer_to_msg(uint32_t info[4], std::vector<uint64_t>& params, cons
   SFXC_ASSERT(position == size);
 }
 
-
 void
 MPI_Transfer::
-send(Delay_table_akima &table, int sn, int rank) {
+pack(std::vector<char> &buffer, Delay_table_akima &table, int sn) {
   int32_t n_sources = table.sources.size();
   int32_t n_scans = table.scans.size();
   int32_t n_times = table.times.size();
@@ -168,140 +167,155 @@ send(Delay_table_akima &table, int sn, int rank) {
                  (n_times + 3*n_delays) * sizeof(double) +
                  n_clocks * (2 * sizeof(int64_t) + 2 * sizeof(double));
 
-  char buffer[size];
+  buffer.resize(size);
   int position=0;
 
   // First integer is the station number
-  MPI_Pack(&sn, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&sn, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
 
   // all sources
-  MPI_Pack(&n_sources, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&n_sources, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
   for(int i = 0; i < n_sources; i++){
     char source[81];
     strncpy(source, table.sources[i].c_str(), 80);
     source[80] = 0;
-    MPI_Pack(source, 81, MPI_CHAR, buffer, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(source, 81, MPI_CHAR, &buffer[0], size, &position, MPI_COMM_WORLD);
   }
   // all scans
-  MPI_Pack(&n_scans, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&n_scans, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
   for(int i = 0; i < n_scans; i++){
     Delay_table_akima::Scan &scan = table.scans[i];
     int64_t ticks = scan.begin.get_clock_ticks();
-    MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&ticks, 1, MPI_INT64, &buffer[0], size, &position, MPI_COMM_WORLD);
     ticks = scan.end.get_clock_ticks();
-    MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&scan.source, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&scan.times, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&scan.delays, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&scan.phases, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&scan.amplitudes, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&ticks, 1, MPI_INT64, &buffer[0], size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&scan.source, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&scan.times, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&scan.delays, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&scan.phases, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&scan.amplitudes, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
   }
   // all times
-  MPI_Pack(&n_times, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&table.times[0], n_times, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&n_times, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.times[0], n_times, MPI_DOUBLE, &buffer[0], size, &position, MPI_COMM_WORLD);
   // all delays
-  MPI_Pack(&n_delays, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&table.delays[0], n_delays, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&table.phases[0], n_delays, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&table.amplitudes[0], n_delays, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&n_delays, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.delays[0], n_delays, MPI_DOUBLE, &buffer[0], size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.phases[0], n_delays, MPI_DOUBLE, &buffer[0], size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.amplitudes[0], n_delays, MPI_DOUBLE, &buffer[0], size, &position, MPI_COMM_WORLD);
   // all clocks
-  MPI_Pack(&n_clocks, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&n_clocks, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
   for (int i = 0; i < n_clocks; i++) {
     int64_t ticks = table.clock_starts[i].get_clock_ticks();
-    MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&ticks, 1, MPI_INT64, &buffer[0], size, &position, MPI_COMM_WORLD);
   }
-  MPI_Pack(&table.clock_offsets[0], n_clocks, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.clock_offsets[0], n_clocks, MPI_DOUBLE, &buffer[0], size, &position, MPI_COMM_WORLD);
   for (int i = 0; i < n_clocks; i++) {
     int64_t ticks = table.clock_epochs[i].get_clock_ticks();
-    MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&ticks, 1, MPI_INT64, &buffer[0], size, &position, MPI_COMM_WORLD);
   }
-  MPI_Pack(&table.clock_rates[0], n_clocks, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.clock_rates[0], n_clocks, MPI_DOUBLE, &buffer[0], size, &position, MPI_COMM_WORLD);
 
   SFXC_ASSERT(position == size);
-//  std::cout << "sending " << size << " bytes of data " << "\n";
-  MPI_Send(buffer, position, MPI_PACKED, rank, MPI_TAG_DELAY_TABLE, MPI_COMM_WORLD);
 }
 
 void
 MPI_Transfer::
-receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
-  MPI_Status status2;
+send(Delay_table_akima &table, int sn, int rank) {
+  std::vector<char> buffer;
+  pack(buffer, table, sn);
+  int size = buffer.size();
+  MPI_Send(&buffer[0], size, MPI_PACKED, rank, MPI_TAG_DELAY_TABLE, MPI_COMM_WORLD);
+}
 
-  int size;
-  MPI_Get_elements(&status, MPI_CHAR, &size);
-  SFXC_ASSERT(size > 0);
-  char buffer[size];
+void
+MPI_Transfer::
+bcast_corr_nodes(Delay_table_akima &table, int sn){
+  std::vector<char> buffer;
+  pack(buffer, table, sn);
+  int n_ranks, n_corr_nodes;
+  MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+  MPI_Comm_size(MPI_COMM_CORR_NODES, &n_corr_nodes);
+  // NB:: MPI_COMM_CORR_NODES includes the management node
+  n_corr_nodes -= 1;
 
-  MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE,
-           status.MPI_TAG, MPI_COMM_WORLD, &status2);
+  int size = buffer.size();
+  for(int rank=n_ranks-n_corr_nodes; rank<n_ranks; rank++)
+    MPI_Send(&size, 1, MPI_INT32, rank, MPI_TAG_DELAY_TABLE, MPI_COMM_WORLD);
+  MPI_Bcast(&buffer[0], size, MPI_PACKED, RANK_MANAGER_NODE, MPI_COMM_CORR_NODES);
+}
 
+void
+MPI_Transfer::
+unpack(std::vector<char> &buffer, Delay_table_akima &table, int &sn) {
+  int size = buffer.size();
   int position = 0;
 
   // First, get the station number
-  MPI_Unpack(buffer, size, &position, &sn, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &sn, 1, MPI_INT32, MPI_COMM_WORLD);
 
   // Get all sources
   int32_t n_sources;
-  MPI_Unpack(buffer, size, &position, &n_sources, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &n_sources, 1, MPI_INT32, MPI_COMM_WORLD);
   table.sources.resize(n_sources);
   for(int j = 0; j < n_sources ; j++){
     char source[81];
-    MPI_Unpack(buffer, size, &position, source, 81, MPI_CHAR, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, source, 81, MPI_CHAR, MPI_COMM_WORLD);
     table.sources[j] = source;
   }
 
   // Get all scans
   int32_t n_scans;
-  MPI_Unpack(buffer, size, &position, &n_scans, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &n_scans, 1, MPI_INT32, MPI_COMM_WORLD);
   table.scans.resize(n_scans);
   for(int i = 0; i < n_scans; i++){
     Delay_table_akima::Scan &scan = table.scans[i];
 
     int64_t ticks;
-    MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
     scan.begin.set_clock_ticks(ticks);
-    MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
     scan.end.set_clock_ticks(ticks);
 
-    MPI_Unpack(buffer, size, &position, &scan.source, 1, MPI_INT32, MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &scan.times, 1, MPI_INT32, MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &scan.delays, 1, MPI_INT32, MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &scan.phases, 1, MPI_INT32, MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &scan.amplitudes, 1, MPI_INT32, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &scan.source, 1, MPI_INT32, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &scan.times, 1, MPI_INT32, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &scan.delays, 1, MPI_INT32, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &scan.phases, 1, MPI_INT32, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &scan.amplitudes, 1, MPI_INT32, MPI_COMM_WORLD);
   }
   // Get all times
   int32_t n_times;
-  MPI_Unpack(buffer, size, &position, &n_times, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &n_times, 1, MPI_INT32, MPI_COMM_WORLD);
   table.times.resize(n_times);
-  MPI_Unpack(buffer, size, &position, &table.times[0], n_times, MPI_DOUBLE, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &table.times[0], n_times, MPI_DOUBLE, MPI_COMM_WORLD);
   // Get all delays
   int32_t n_delays;
-  MPI_Unpack(buffer, size, &position, &n_delays, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &n_delays, 1, MPI_INT32, MPI_COMM_WORLD);
   table.delays.resize(n_delays);
-  MPI_Unpack(buffer, size, &position, &table.delays[0], n_delays, MPI_DOUBLE, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &table.delays[0], n_delays, MPI_DOUBLE, MPI_COMM_WORLD);
   table.phases.resize(n_delays);
-  MPI_Unpack(buffer, size, &position, &table.phases[0], n_delays, MPI_DOUBLE, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &table.phases[0], n_delays, MPI_DOUBLE, MPI_COMM_WORLD);
   table.amplitudes.resize(n_delays);
-  MPI_Unpack(buffer, size, &position, &table.amplitudes[0], n_delays, MPI_DOUBLE, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &table.amplitudes[0], n_delays, MPI_DOUBLE, MPI_COMM_WORLD);
   // Get all clocks
   int32_t n_clocks;
-  MPI_Unpack(buffer, size, &position, &n_clocks, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &n_clocks, 1, MPI_INT32, MPI_COMM_WORLD);
   table.clock_starts.resize(n_clocks);
   for (int i = 0; i < n_clocks; i++) {
     int64_t ticks;
-    MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
     table.clock_starts[i].set_clock_ticks(ticks);
   }
   table.clock_offsets.resize(n_clocks);
-  MPI_Unpack(buffer, size, &position, &table.clock_offsets[0], n_clocks, MPI_DOUBLE, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &table.clock_offsets[0], n_clocks, MPI_DOUBLE, MPI_COMM_WORLD);
   table.clock_epochs.resize(n_clocks);
   for (int i = 0; i < n_clocks; i++) {
     int64_t ticks;
-    MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
     table.clock_epochs[i].set_clock_ticks(ticks);
   }
   table.clock_rates.resize(n_clocks);
-  MPI_Unpack(buffer, size, &position, &table.clock_rates[0], n_clocks, MPI_DOUBLE, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &table.clock_rates[0], n_clocks, MPI_DOUBLE, MPI_COMM_WORLD);
 
   SFXC_ASSERT(position == size);
 
@@ -318,113 +332,157 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
 
 void
 MPI_Transfer::
-send(Uvw_model &table, int sn, int rank) {
-  int32_t n_sources = table.sources.size();
-  int32_t n_scans = table.scans.size();
-  int32_t n_times = table.times.size();
-  int32_t n_model = table.u.size();
-  int32_t size = 5 * sizeof(int32_t) + n_sources * 81 * sizeof(char) + 
-                 n_scans * (2 * sizeof(int64_t) + 3 * sizeof(int32_t)) +
-                 (n_times + 3 * n_model) * sizeof(double);
-
-  char buffer[size];
-  int position=0;
-
-  // First integer is the station number
-  MPI_Pack(&sn, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-  // all sources
-  MPI_Pack(&n_sources, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-  for(int i = 0; i < n_sources; i++){
-    char source[81];
-    strncpy(source, table.sources[i].c_str(), 80);
-    source[80] = 0;
-    MPI_Pack(source, 81, MPI_CHAR, buffer, size, &position, MPI_COMM_WORLD);
-  }
-  // all scans
-  MPI_Pack(&n_scans, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-  for(int i = 0; i < n_scans; i++){
-    Uvw_model::Scan &scan = table.scans[i];
-    int64_t ticks = scan.begin.get_clock_ticks();
-    MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
-    ticks = scan.end.get_clock_ticks();
-    MPI_Pack(&ticks, 1, MPI_INT64, buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&scan.source, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&scan.times, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-    MPI_Pack(&scan.model_index, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-  }
-  // all times
-  MPI_Pack(&n_times, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&table.times[0], n_times, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
-  // the model
-  MPI_Pack(&n_model, 1, MPI_INT32, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&table.u[0], n_model, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&table.v[0], n_model, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&table.w[0], n_model, MPI_DOUBLE, buffer, size, &position, MPI_COMM_WORLD);
-
-  SFXC_ASSERT(position == size);
-//  std::cout << "sending " << size << " bytes of data " << "\n";
-  MPI_Send(buffer, position, MPI_PACKED, rank, MPI_TAG_UVW_TABLE, MPI_COMM_WORLD);
-}
-
-void
-MPI_Transfer::
-receive(MPI_Status &status, Uvw_model &table, int &sn) {
+receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
   MPI_Status status2;
 
   int size;
   MPI_Get_elements(&status, MPI_CHAR, &size);
   SFXC_ASSERT(size > 0);
-  char buffer[size];
+  std::vector<char> buffer(size);
 
-  MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE,
+  MPI_Recv(&buffer[0], size, MPI_CHAR, status.MPI_SOURCE,
            status.MPI_TAG, MPI_COMM_WORLD, &status2);
+  unpack(buffer, table, sn);
+}
 
+void
+MPI_Transfer::
+receive_bcast(MPI_Status &status, Delay_table_akima &table, int &sn) {
+  MPI_Status status2;
+
+  int size;
+  MPI_Recv(&size, 1, MPI_INT32, status.MPI_SOURCE,
+           status.MPI_TAG, MPI_COMM_WORLD, &status2);
+  std::vector<char> buffer(size);
+  MPI_Bcast(&buffer[0], size, MPI_PACKED, RANK_MANAGER_NODE, MPI_COMM_CORR_NODES);
+  unpack(buffer, table, sn);
+}
+
+void
+MPI_Transfer::
+pack(std::vector<char> &buffer, Uvw_model &table, int sn) {
+  int32_t n_sources = table.sources.size();
+  int32_t n_scans = table.scans.size();
+  int32_t n_times = table.times.size();
+  int32_t n_model = table.u.size();
+  int32_t size = 5 * sizeof(int32_t) + n_sources * 81 * sizeof(char) +
+                 n_scans * (2 * sizeof(int64_t) + 3 * sizeof(int32_t)) +
+                 (n_times + 3 * n_model) * sizeof(double);
+
+  buffer.resize(size);
+  int position=0;
+
+  // First integer is the station number
+  MPI_Pack(&sn, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+  // all sources
+  MPI_Pack(&n_sources, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+  for(int i = 0; i < n_sources; i++){
+    char source[81];
+    strncpy(source, table.sources[i].c_str(), 80);
+    source[80] = 0;
+    MPI_Pack(source, 81, MPI_CHAR, &buffer[0], size, &position, MPI_COMM_WORLD);
+  }
+  // all scans
+  MPI_Pack(&n_scans, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+  for(int i = 0; i < n_scans; i++){
+    Uvw_model::Scan &scan = table.scans[i];
+    int64_t ticks = scan.begin.get_clock_ticks();
+    MPI_Pack(&ticks, 1, MPI_INT64, &buffer[0], size, &position, MPI_COMM_WORLD);
+    ticks = scan.end.get_clock_ticks();
+    MPI_Pack(&ticks, 1, MPI_INT64, &buffer[0], size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&scan.source, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&scan.times, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&scan.model_index, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+  }
+  // all times
+  MPI_Pack(&n_times, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.times[0], n_times, MPI_DOUBLE, &buffer[0], size, &position, MPI_COMM_WORLD);
+  // the model
+  MPI_Pack(&n_model, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.u[0], n_model, MPI_DOUBLE, &buffer[0], size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.v[0], n_model, MPI_DOUBLE, &buffer[0], size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&table.w[0], n_model, MPI_DOUBLE, &buffer[0], size, &position, MPI_COMM_WORLD);
+
+  SFXC_ASSERT(position == size);
+//  std::cout << "sending " << size << " bytes of data " << "\n";
+}
+
+void
+MPI_Transfer::
+send(Uvw_model &table, int sn, int rank) {
+  std::vector<char> buffer;
+  pack(buffer, table, sn);
+  int size = buffer.size();
+  MPI_Send(&buffer[0], size, MPI_PACKED, rank, MPI_TAG_UVW_TABLE, MPI_COMM_WORLD);
+}
+
+void
+MPI_Transfer::
+bcast_corr_nodes(Uvw_model &table, int sn) {
+  std::vector<char> buffer;
+  pack(buffer, table, sn);
+  int n_ranks, n_corr_nodes;
+  MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+  MPI_Comm_size(MPI_COMM_CORR_NODES, &n_corr_nodes);
+  // NB:: MPI_COMM_CORR_NODES includes the management node
+  n_corr_nodes -= 1;
+
+  int size = buffer.size();
+  for(int rank=n_ranks-n_corr_nodes; rank<n_ranks; rank++)
+    MPI_Send(&size, 1, MPI_INT32, rank, MPI_TAG_UVW_TABLE, MPI_COMM_WORLD);
+  MPI_Bcast(&buffer[0], size, MPI_PACKED, RANK_MANAGER_NODE, MPI_COMM_CORR_NODES);
+}
+
+void
+MPI_Transfer::
+unpack(std::vector<char> &buffer, Uvw_model &table, int &sn) {
+  int size = buffer.size();
   int position = 0;
 
   // First, get the station number
-  MPI_Unpack(buffer, size, &position, &sn, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &sn, 1, MPI_INT32, MPI_COMM_WORLD);
 
   // Get all sources
   int32_t n_sources;
-  MPI_Unpack(buffer, size, &position, &n_sources, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &n_sources, 1, MPI_INT32, MPI_COMM_WORLD);
   table.sources.resize(n_sources);
   for(int j = 0; j < n_sources ; j++){
     char source[81];
-    MPI_Unpack(buffer, size, &position, source, 81, MPI_CHAR, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, source, 81, MPI_CHAR, MPI_COMM_WORLD);
     table.sources[j] = source;
   }
 
   // Get all scans
   int32_t n_scans;
-  MPI_Unpack(buffer, size, &position, &n_scans, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &n_scans, 1, MPI_INT32, MPI_COMM_WORLD);
   table.scans.resize(n_scans);
   for(int i = 0; i < n_scans; i++){
     Uvw_model::Scan &scan = table.scans[i];
 
     int64_t ticks;
-    MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
     scan.begin.set_clock_ticks(ticks);
-    MPI_Unpack(buffer, size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
     scan.end.set_clock_ticks(ticks);
 
-    MPI_Unpack(buffer, size, &position, &scan.source, 1, MPI_INT32, MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &scan.times, 1, MPI_INT32, MPI_COMM_WORLD);
-    MPI_Unpack(buffer, size, &position, &scan.model_index, 1, MPI_INT32, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &scan.source, 1, MPI_INT32, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &scan.times, 1, MPI_INT32, MPI_COMM_WORLD);
+    MPI_Unpack(&buffer[0], size, &position, &scan.model_index, 1, MPI_INT32, MPI_COMM_WORLD);
   }
   // Get all times
   int32_t n_times;
-  MPI_Unpack(buffer, size, &position, &n_times, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &n_times, 1, MPI_INT32, MPI_COMM_WORLD);
   table.times.resize(n_times);
-  MPI_Unpack(buffer, size, &position, &table.times[0], n_times, MPI_DOUBLE, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &table.times[0], n_times, MPI_DOUBLE, MPI_COMM_WORLD);
   // Get all delays
   int32_t n_model;
-  MPI_Unpack(buffer, size, &position, &n_model, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &n_model, 1, MPI_INT32, MPI_COMM_WORLD);
   table.u.resize(n_model);
   table.v.resize(n_model);
   table.w.resize(n_model);
-  MPI_Unpack(buffer, size, &position, &table.u[0], n_model, MPI_DOUBLE, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &table.v[0], n_model, MPI_DOUBLE, MPI_COMM_WORLD);
-  MPI_Unpack(buffer, size, &position, &table.w[0], n_model, MPI_DOUBLE, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &table.u[0], n_model, MPI_DOUBLE, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &table.v[0], n_model, MPI_DOUBLE, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, &table.w[0], n_model, MPI_DOUBLE, MPI_COMM_WORLD);
 
   SFXC_ASSERT(position == size);
 
@@ -437,6 +495,33 @@ receive(MPI_Status &status, Uvw_model &table, int &sn) {
   table.splineakima_w.resize(0);
   table.initialise_spline_for_next_scan();
   //std::cout << RANK_OF_NODE << " : receives all data (" << size << " bytes) " << "\n";
+}
+
+void
+MPI_Transfer::
+receive(MPI_Status &status, Uvw_model &table, int &sn) {
+  MPI_Status status2;
+
+  int size;
+  MPI_Get_elements(&status, MPI_CHAR, &size);
+  SFXC_ASSERT(size > 0);
+  std::vector<char> buffer(size);
+
+  MPI_Recv(&buffer[0], size, MPI_CHAR, status.MPI_SOURCE,
+           status.MPI_TAG, MPI_COMM_WORLD, &status2);
+  unpack(buffer, table, sn);
+}
+
+void
+MPI_Transfer::
+receive_bcast(MPI_Status &status, Uvw_model &table, int &sn) {
+  MPI_Status status2;
+  int size;
+  MPI_Recv(&size, 1, MPI_INT32, status.MPI_SOURCE,
+           status.MPI_TAG, MPI_COMM_WORLD, &status2);
+  std::vector<char> buffer(size);
+  MPI_Bcast(&buffer[0], size, MPI_PACKED, RANK_MANAGER_NODE, MPI_COMM_CORR_NODES);
+  unpack(buffer, table, sn);
 }
 
 void

@@ -458,20 +458,12 @@ void
 Abstract_manager_node::
 correlator_node_set_all(Delay_table_akima &delay_table,
                         const std::string &station_name) {
-  for (size_t i=0; i<correlator_node_rank.size(); i++) {
-    send(delay_table,
-         input_node(station_name),
-         correlator_node_rank[i]);
-  }
+  MPI_Transfer::bcast_corr_nodes(delay_table, input_node(station_name));
 
   // Cross polarize?
   if (control_parameters.cross_polarize()) {
     int nStations = control_parameters.number_stations();
-    for (size_t i=0; i<correlator_node_rank.size(); i++) {
-      send(delay_table,
-           input_node(station_name)+nStations,
-           correlator_node_rank[i]);
-    }
+    MPI_Transfer::bcast_corr_nodes(delay_table, input_node(station_name)+nStations);
   }
 }
 
@@ -479,11 +471,7 @@ void
 Abstract_manager_node::
 correlator_node_set_all(Uvw_model &uvw_table,
                         const std::string &station_name) {
-  for (size_t i=0; i<correlator_node_rank.size(); i++) {
-    MPI_Transfer::send(uvw_table,
-                       input_node(station_name),
-                       correlator_node_rank[i]);
-  }
+  MPI_Transfer::bcast_corr_nodes(uvw_table, input_node(station_name));
 }
 
 void

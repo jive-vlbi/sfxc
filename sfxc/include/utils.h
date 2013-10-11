@@ -86,7 +86,11 @@
 
 /// This is the MPI rank or the processID
 extern int RANK_OF_NODE;
-// Rank of the current node
+#ifdef USE_MPI
+#include <mpi.h>
+extern MPI_Group MPI_GROUP_CORR_NODES;
+extern MPI_Comm MPI_COMM_CORR_NODES;
+#endif
 
 #ifdef SFXC_PRINT_DEBUG
 #define FORMAT_MSG(msg) \
@@ -95,7 +99,7 @@ extern int RANK_OF_NODE;
     << msg
 
 #ifdef USE_MPI
-#include <mpi.h>
+
 #define DEBUG_MSG(msg) \
     { if (RANK_OF_NODE < 0) { MPI_Comm_rank(MPI_COMM_WORLD,&RANK_OF_NODE); }; \
       std::cout << FORMAT_MSG(msg) << std::endl << std::flush; }

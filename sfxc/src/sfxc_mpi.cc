@@ -16,6 +16,8 @@
 #include "correlator_node.h"
 
 IF_MT_MPI_ENABLED( Mutex g_mpi_thebig_mutex );
+MPI_Group MPI_GROUP_CORR_NODES;
+MPI_Comm MPI_COMM_CORR_NODES;
 
 void start_node() {
   int rank;
@@ -49,81 +51,26 @@ void start_node() {
       log_node.start();
       break;
     }
-  case MPI_TAG_SET_INPUT_NODE_MARK5A: {
-      // The integer is the number of the input_reader:
-      int32_t msg;
-      MPI_Recv(&msg, 1, MPI_INT32,
-               RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
-      if (PRINT_PID) {
-        DEBUG_MSG("Input node, pid = " << getpid());
-      }
-      if (PRINT_HOST) {
-        char hostname[255];
-        gethostname(hostname, 255);
-        DEBUG_MSG("Input node, hostname = " << hostname);
-      }
-      Time ref_date;
-      int64_t clock_ticks;
-      MPI_Recv(&clock_ticks, 1, MPI_INT64, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-      ref_date.set_clock_ticks(clock_ticks);
-
-      Input_node input_node(rank, msg, MARK5A, ref_date);
-      input_node.start();
-      break;
-    }
-  case MPI_TAG_SET_INPUT_NODE_VLBA: {
-      // The integer is the number of the input_reader:
-      int32_t msg;
-      MPI_Recv(&msg, 1, MPI_INT32,
-               RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
-      if (PRINT_PID) {
-        DEBUG_MSG("Input node, pid = " << getpid());
-      }
-      if (PRINT_HOST) {
-        char hostname[255];
-        gethostname(hostname, 255);
-        DEBUG_MSG("Input node, hostname = " << hostname);
-      }
-      Time ref_date;
-      int64_t clock_ticks;
-      MPI_Recv(&clock_ticks, 1, MPI_INT64, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-      ref_date.set_clock_ticks(clock_ticks);
-
-      Input_node input_node(rank, msg, VLBA, ref_date);
-      input_node.start();
-      break;
-    }
-  case MPI_TAG_SET_INPUT_NODE_VDIF: {
-      // The integer is the number of the input_reader:
-      int32_t msg;
-      MPI_Recv(&msg, 1, MPI_INT32,
-               RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
-      if (PRINT_PID) {
-        DEBUG_MSG("Input node, pid = " << getpid());
-      }
-      if (PRINT_HOST) {
-        char hostname[255];
-        gethostname(hostname, 255);
-        DEBUG_MSG("Input node, hostname = " << hostname);
-      }
-      Time ref_date;
-      int64_t clock_ticks;
-      MPI_Recv(&clock_ticks, 1, MPI_INT64, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-      ref_date.set_clock_ticks(clock_ticks);
-
-      Input_node input_node(rank, msg, VDIF, ref_date);
-      input_node.start();
-      break;
-    }
+  case MPI_TAG_SET_INPUT_NODE_MARK5A:
+  case MPI_TAG_SET_INPUT_NODE_VLBA:
+  case MPI_TAG_SET_INPUT_NODE_VDIF: 
   case MPI_TAG_SET_INPUT_NODE_MARK5B: {
-      // The integer is the number of the input_reader:
-      int32_t msg;
-      MPI_Recv(&msg, 1, MPI_INT32,
+      // The integer is the number of input nodes:
+      int32_t station_nr;
+      MPI_Recv(&station_nr, 1, MPI_INT32,
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
+      TRANSPORT_TYPE data_format;
+      if(status.MPI_TAG == MPI_TAG_SET_INPUT_NODE_MARK5B)
+        data_format = MARK5B;
+      else if(status.MPI_TAG == MPI_TAG_SET_INPUT_NODE_MARK5A)
+        data_format = MARK5A;
+      else if(status.MPI_TAG == MPI_TAG_SET_INPUT_NODE_VLBA)
+        data_format = VLBA;
+      else{
+        SFXC_ASSERT(status.MPI_TAG == MPI_TAG_SET_INPUT_NODE_VDIF)
+        data_format = VDIF;
+      }
+      
       if (PRINT_PID) {
         DEBUG_MSG("Input node, pid = " << getpid());
       }
@@ -136,8 +83,8 @@ void start_node() {
       int64_t clock_ticks;
       MPI_Recv(&clock_ticks, 1, MPI_INT64, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
       ref_date.set_clock_ticks(clock_ticks);
-
-      Input_node input_node(rank, msg, MARK5B, ref_date);
+      // Start the input node
+      Input_node input_node(rank, station_nr, data_format, ref_date);
       input_node.start();
       break;
     }
@@ -161,8 +108,8 @@ void start_node() {
   case MPI_TAG_SET_CORRELATOR_NODE_PHASED:
   case MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING:
   case MPI_TAG_SET_CORRELATOR_NODE: {
-      int32_t msg;
-      MPI_Recv(&msg, 1, MPI_INT32,
+      int32_t corr_nr;
+      MPI_Recv(&corr_nr, 1, MPI_INT32,
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
       if (PRINT_PID) {
@@ -173,9 +120,11 @@ void start_node() {
         gethostname(hostname, 255);
         DEBUG_MSG("Correlator node, hostname = " << hostname);
       }
+
+      // Start correlator node
       bool binning = status.MPI_TAG == MPI_TAG_SET_CORRELATOR_NODE_PSR_BINNING;
       bool phased = status.MPI_TAG == MPI_TAG_SET_CORRELATOR_NODE_PHASED;
-      Correlator_node node(rank, msg, binning, phased);
+      Correlator_node node(rank, corr_nr, binning, phased);
       node.start();
       break;
     }
@@ -195,4 +144,20 @@ void start_node() {
 void end_node(int32_t rank) {
   MPI_Send(&rank, 1, MPI_INT32,
            rank, MPI_TAG_END_NODE, MPI_COMM_WORLD);
+}
+
+void create_correlator_node_comm(int nr_corr_nodes){
+  // Create communicator group for the correlator nodes
+  int nodes[nr_corr_nodes+1];
+  int nr_nodes;
+
+  MPI_Comm_size(MPI_COMM_WORLD, &nr_nodes);
+  nodes[0] = RANK_MANAGER_NODE;
+  for(int i=1;i<nr_corr_nodes+1;i++)
+    nodes[i] = (nr_nodes - nr_corr_nodes) + i-1;
+
+  MPI_Group global_group;
+  MPI_Comm_group(MPI_COMM_WORLD, &global_group);
+  MPI_Group_incl(global_group, nr_corr_nodes+1, nodes, &MPI_GROUP_CORR_NODES);
+  MPI_Comm_create(MPI_COMM_WORLD, MPI_GROUP_CORR_NODES, &MPI_COMM_CORR_NODES);
 }
