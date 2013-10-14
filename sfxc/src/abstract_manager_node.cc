@@ -458,13 +458,13 @@ void
 Abstract_manager_node::
 correlator_node_set_all(Delay_table_akima &delay_table,
                         const std::string &station_name) {
-  MPI_Transfer::bcast_corr_nodes(delay_table, input_node(station_name));
-
-  // Cross polarize?
-  if (control_parameters.cross_polarize()) {
+  int sn[2] = {input_node(station_name), -1};
+  if (control_parameters.cross_polarize()){
     int nStations = control_parameters.number_stations();
-    MPI_Transfer::bcast_corr_nodes(delay_table, input_node(station_name)+nStations);
+    sn[1] = sn[0] + nStations;
   }
+
+  MPI_Transfer::bcast_corr_nodes(delay_table, sn);
 }
 
 void

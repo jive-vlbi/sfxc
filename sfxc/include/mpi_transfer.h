@@ -26,12 +26,12 @@ public:
   MPI_Transfer();
 
   static void send(Delay_table_akima &table, int sn, int rank);
-  static void bcast_corr_nodes(Delay_table_akima &table, int sn);
-  static void pack(std::vector<char> &buffer, Delay_table_akima &table, int sn);
+  static void bcast_corr_nodes(Delay_table_akima &table, int sn[2]);
+  static void pack(std::vector<char> &buffer, Delay_table_akima &table, int sn[2]);
 
   static void receive(MPI_Status &status, Delay_table_akima &table, int &sn);
-  static void receive_bcast(MPI_Status &status, Delay_table_akima &table, int &sn);
-  static void unpack(std::vector<char> &buffer, Delay_table_akima &table, int &sn);
+  static void receive_bcast(MPI_Status &status, Delay_table_akima &table, int sn[2]);
+  static void unpack(std::vector<char> &buffer, Delay_table_akima &table, int sn[2]);
   
   static void send(Uvw_model &table, int sn, int rank);
   static void bcast_corr_nodes(Uvw_model &table, int sn);

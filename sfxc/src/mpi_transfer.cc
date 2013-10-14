@@ -156,13 +156,13 @@ recv_connect_writer_to_msg(uint32_t info[4], std::vector<uint64_t>& params, cons
 
 void
 MPI_Transfer::
-pack(std::vector<char> &buffer, Delay_table_akima &table, int sn) {
+pack(std::vector<char> &buffer, Delay_table_akima &table, int sn[2]) {
   int32_t n_sources = table.sources.size();
   int32_t n_scans = table.scans.size();
   int32_t n_times = table.times.size();
   int32_t n_delays = table.delays.size();
   int32_t n_clocks = table.clock_offsets.size();
-  int32_t size = 6 * sizeof(int32_t) + n_sources * 81 * sizeof(char) + 
+  int32_t size = 7 * sizeof(int32_t) + n_sources * 81 * sizeof(char) + 
                  n_scans * (2 * sizeof(int64_t) + 5 * sizeof(int32_t)) +
                  (n_times + 3*n_delays) * sizeof(double) +
                  n_clocks * (2 * sizeof(int64_t) + 2 * sizeof(double));
@@ -171,7 +171,7 @@ pack(std::vector<char> &buffer, Delay_table_akima &table, int sn) {
   int position=0;
 
   // First integer is the station number
-  MPI_Pack(&sn, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+  MPI_Pack(sn, 2, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
 
   // all sources
   MPI_Pack(&n_sources, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
@@ -221,7 +221,8 @@ pack(std::vector<char> &buffer, Delay_table_akima &table, int sn) {
 
 void
 MPI_Transfer::
-send(Delay_table_akima &table, int sn, int rank) {
+send(Delay_table_akima &table, int station_nr, int rank) {
+  int sn[2] = {station_nr, -1};
   std::vector<char> buffer;
   pack(buffer, table, sn);
   int size = buffer.size();
@@ -230,7 +231,7 @@ send(Delay_table_akima &table, int sn, int rank) {
 
 void
 MPI_Transfer::
-bcast_corr_nodes(Delay_table_akima &table, int sn){
+bcast_corr_nodes(Delay_table_akima &table, int sn[2]){
   std::vector<char> buffer;
   pack(buffer, table, sn);
   int n_ranks, n_corr_nodes;
@@ -247,12 +248,12 @@ bcast_corr_nodes(Delay_table_akima &table, int sn){
 
 void
 MPI_Transfer::
-unpack(std::vector<char> &buffer, Delay_table_akima &table, int &sn) {
+unpack(std::vector<char> &buffer, Delay_table_akima &table, int sn[2]) {
   int size = buffer.size();
   int position = 0;
 
   // First, get the station number
-  MPI_Unpack(&buffer[0], size, &position, &sn, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(&buffer[0], size, &position, sn, 2, MPI_INT32, MPI_COMM_WORLD);
 
   // Get all sources
   int32_t n_sources;
@@ -332,10 +333,10 @@ unpack(std::vector<char> &buffer, Delay_table_akima &table, int &sn) {
 
 void
 MPI_Transfer::
-receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
+receive(MPI_Status &status, Delay_table_akima &table, int &station_nr) {
   MPI_Status status2;
 
-  int size;
+  int size, sn[2];
   MPI_Get_elements(&status, MPI_CHAR, &size);
   SFXC_ASSERT(size > 0);
   std::vector<char> buffer(size);
@@ -343,11 +344,12 @@ receive(MPI_Status &status, Delay_table_akima &table, int &sn) {
   MPI_Recv(&buffer[0], size, MPI_CHAR, status.MPI_SOURCE,
            status.MPI_TAG, MPI_COMM_WORLD, &status2);
   unpack(buffer, table, sn);
+  station_nr = sn[0];
 }
 
 void
 MPI_Transfer::
-receive_bcast(MPI_Status &status, Delay_table_akima &table, int &sn) {
+receive_bcast(MPI_Status &status, Delay_table_akima &table, int sn[2]) {
   MPI_Status status2;
 
   int size;
