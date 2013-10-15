@@ -481,7 +481,7 @@ Input_node_data_writer::write_initial_invalid_data(Writer_struct &data_writer, i
     int64_t next_delay_pos;
     if(delay_index<delay_size-1){
       Time dt = cur_delay[delay_index+1].time - _current_time;
-      next_delay_pos = (int64_t) (dt / byte_length) * 8 / bits_per_sample;
+      next_delay_pos = (int64_t) (dt / (byte_length * 8 / bits_per_sample));
     }else{
       next_delay_pos = data_writer.slice_size * 2;
     }
