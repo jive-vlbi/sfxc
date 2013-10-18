@@ -27,8 +27,11 @@ void Delay_correction::do_task() {
   int output_stride =  fft_cor_size()/2 + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
   cur_output = output_memory_pool.allocate();
   cur_output->stride = output_stride;
+  int window_func = correlation_parameters.window;
+  int nfft_cor = (nbuffer * fft_size() + tbuf_end - tbuf_start) / (fft_rot_size() / 2);
   // The windowing touches each block twice, so the last block needs to be preserved
-  int nfft_cor = (nbuffer * fft_size() + tbuf_end - tbuf_start) / (fft_rot_size() / 2) - 1;
+  if (window_func != SFXC_WINDOW_NONE)
+    nfft_cor -= 1;
   if (cur_output->data.size() != nfft_cor * output_stride)
     cur_output->data.resize(nfft_cor * output_stride);
 #ifndef DUMMY_CORRELATION
@@ -51,35 +54,24 @@ void Delay_correction::do_task() {
     total_ffts++;
   }
  
+  size_t nsamp_per_window = (window_func == SFXC_WINDOW_NONE) ? fft_rot_size()/2 : fft_rot_size();
   for(int i=0; i<nfft_cor; i++){
     // apply window function
     size_t eob = tbuf_size - tbuf_start%tbuf_size; // how many samples to end of buffer
-    size_t nsamp = std::min(eob, fft_rot_size());
+    size_t nsamp = std::min(eob, nsamp_per_window);
     SFXC_MUL_F(&time_buffer[tbuf_start%tbuf_size], &window[0], &temp_buffer[0], nsamp);
-    if(nsamp < fft_rot_size())
-      SFXC_MUL_F(&time_buffer[0], &window[nsamp], &temp_buffer[nsamp], fft_rot_size() - nsamp);
+    if(nsamp < nsamp_per_window)
+      SFXC_MUL_F(&time_buffer[0], &window[nsamp], &temp_buffer[nsamp], nsamp_per_window - nsamp);
+    // When SFXC_WINDOW_NONE is set we zeropad
+    if(window_func == SFXC_WINDOW_NONE)
+      memset(&temp_buffer[nsamp_per_window], 0, nsamp_per_window*sizeof(FLOAT));
     tbuf_start += fft_rot_size()/2;
-    SFXC_ASSERT(tbuf_start < tbuf_end);
+    SFXC_ASSERT(tbuf_start <= tbuf_end);
     // Do the final fft from time to frequency
     if (correlation_parameters.sideband != correlation_parameters.station_streams[stream_idx].sideband)
       SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_rot_size());
     fft_t2f_cor.rfft(&temp_buffer[0], &temp_fft_buffer[0]);
     memcpy(&cur_output->data[i * output_stride], &temp_fft_buffer[temp_fft_offset], output_stride * sizeof(std::complex<FLOAT>));
-  }
-  if ((current_fft == n_ffts_per_integration) && (correlation_parameters.window == SFXC_WINDOW_NONE)){
-    // Also get the last fft
-    size_t eob = tbuf_size - tbuf_start%tbuf_size; // how many samples to end of buffer
-    size_t nsamp = std::min(eob, fft_rot_size()/2);
-    memcpy(&temp_buffer[0], &time_buffer[tbuf_start%tbuf_size], nsamp * sizeof(FLOAT));
-    if(nsamp < fft_rot_size())
-      memcpy(&temp_buffer[nsamp], &time_buffer[0], (fft_rot_size()/2 - nsamp) * sizeof(FLOAT));
-    memset(&temp_buffer[fft_rot_size()/2], 0, sizeof(FLOAT) * fft_rot_size()/2);
-    // Do the final fft from time to frequency
-    if (correlation_parameters.sideband != correlation_parameters.station_streams[stream_idx].sideband)
-      SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_rot_size());
-    cur_output->data.resize((nfft_cor+1) * output_stride);
-    fft_t2f_cor.rfft(&temp_buffer[0], &temp_fft_buffer[0]);
-    memcpy(&cur_output->data[nfft_cor * output_stride], &temp_fft_buffer[temp_fft_offset], output_stride * sizeof(std::complex<FLOAT>));
   }
 #endif // DUMMY_CORRELATION
   if(nfft_cor > 0){
