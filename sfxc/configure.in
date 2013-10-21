@@ -322,6 +322,5 @@ echo "Build sfxc: $WITH_SFXC"
 echo "Build utils/*: $WITH_SFXC_UTILS"
 echo "Build generate_delay_model: $WITH_GENDELAY"
 echo "Build calc10: $WITH_CALC"
-echo "Build dnfp_fileclient/server: yes"
 echo "=========================================================="
 

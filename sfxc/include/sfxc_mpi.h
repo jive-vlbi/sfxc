@@ -123,7 +123,7 @@ enum MPI_TAG {
 
   /** Create a data reader stream for incoming data using TCP
    * - INT32_t: stream number
-   * - CHAR+: file descriptor file:// or dnfp:// or mark5://
+   * - CHAR+: file descriptor file:// or mark5://
    **/
   MPI_TAG_ADD_DATA_READER,
 

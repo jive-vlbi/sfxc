@@ -128,9 +128,6 @@ data_sources: An associative array containing the data sources for the
               during the correlation.
               The data sources can be specified as a file
               "file://<path>/<filename>",       
-              "dnfp://<host>:<port>/<fileID>" 
-                with dnfp, sfxc is pulling the data from a server (like a webserver).
-                the <fileID> is the symbolic name of the file to retreive. 
               "mark5://<protocol>:<port>",    
                 sfxc is receiving data from a streamer application (netcat) started
                 externally.   

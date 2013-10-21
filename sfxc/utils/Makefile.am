@@ -12,8 +12,6 @@ bin_PROGRAMS = mark5a_print_headers \
                mark5b_print_headers \
                vdif_print_headers \
                print_new_output_format \
-               dnfp_fileserver \
-               dnfp_fileclient \
                extract_channelizer
 
 if SFXC_UTILS
@@ -41,7 +39,6 @@ extract_channelizer_SOURCES = \
   ../src/mark5a_reader.cc \
   ../src/mark5a_header.cc \
   ../src/data_reader_factory.cc \
-  ../src/data_reader_dnfp.cc \
   ../src/data_reader_mk5.cc \
   ../src/data_reader_socket.cc \
   ../src/data_reader_udp.cc \
@@ -51,31 +48,6 @@ extract_channelizer_SOURCES = \
   ../src/channel_extractor_5.cc \
   ../src/utils.cc \
   ../src/correlator_time.cc
-
-dnfp_fileserver_SOURCES = \
-  dnfp_fileserver.cc \
-   ../src/data_reader.cc \
-   ../src/data_writer.cc \
-   ../src/data_reader_file.cc \
-   ../src/data_reader_udp.cc \
-   ../src/data_writer_socket.cc \
-   ../src/data_reader_socket.cc \
-   ../src/data_reader_blocking.cc \
-   ../src/data_reader_dnfp.cc \
-   ../src/utils.cc
-
-dnfp_fileclient_SOURCES = \
-  dnfp_fileclient.cc \
-   ../src/data_reader.cc \
-   ../src/data_writer.cc \
-   ../src/data_writer_file.cc \
-   ../src/data_reader_file.cc \
-   ../src/data_reader_udp.cc \
-   ../src/data_writer_socket.cc \
-   ../src/data_reader_socket.cc \
-   ../src/data_reader_blocking.cc  \
-   ../src/data_reader_dnfp.cc \
-   ../src/utils.cc
 
 mark5b_print_headers_SOURCES = \
   mark5b_print_headers.cc
