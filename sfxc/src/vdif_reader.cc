@@ -116,7 +116,7 @@ VDIF_reader::read_new_block(Data_frame &data) {
   if (current_header.invalid > 0) {
     data.invalid.resize(1);
     data.invalid[0].invalid_begin = 0;
-    data.invalid[0].nr_invalid = current_header.data_size();
+    data.invalid[0].nr_invalid = data_size;
     if (thread_map.count(current_header.thread_id) > 0)
       data.channel = thread_map[current_header.thread_id];
     else

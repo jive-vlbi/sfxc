@@ -78,7 +78,7 @@ public:
 
   void print_header();
   size_t size_data_block() const {
-    return current_header.data_size();
+    return first_header.data_size();
   }
 
   void set_parameters(const Input_node_parameters &param);
