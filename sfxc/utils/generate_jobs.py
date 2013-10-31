@@ -13,7 +13,7 @@ except:
     pass
 
 # JIVE Python modules.
-from vex_parser import Vex
+from vex import Vex
 
 def vex2time(str):
     tupletime = time.strptime(str, "%Yy%jd%Hh%Mm%Ss");
