@@ -1152,8 +1152,15 @@ get_vdif_tracks(const std::string &mode,
       input_parameters.frame_size = thread_it[8]->to_int();
     num_threads++;
   }
+  int num_channels = 0;
+  for (Vex::Node::const_iterator channel_it = thread->begin("channel");
+       channel_it != thread->end("channel"); channel_it++) {
+    num_channels++;
+  }
 
-  if (num_threads != 1) {
+  // We can handle multi-thread, single-channel VDIF in a more
+  // efficient way as we don't need to do any unpacking.
+  if (num_threads == num_channels) {
       input_parameters.n_tracks = 0;
       for (size_t i = 0; i < number_frequency_channels(); i++) {
 	const std::string &channel_name = frequency_channel(i, mode, station);
