@@ -36,11 +36,8 @@ public:
 
   Data_reader_ptr get_data_reader(int i=0);
 private:
-  void set_data_reader(int stream_nr, Data_reader_ptr reader, bool use_buffering=false);
+  void set_data_reader(int stream_nr, Data_reader_ptr reader);
 
-  bool use_buffering_;
-
-  Data_buffered_reader_ptr  reader2buffer_;
   Data_reader_ptr           reader_;
 };
 
