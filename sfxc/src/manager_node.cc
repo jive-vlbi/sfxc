@@ -407,8 +407,8 @@ Manager_node::initialise() {
        station<control_parameters.number_stations(); station++) {
     // setting the first data-source of the first station
     const std::string &station_name = control_parameters.station(station);
-    std::string filename = control_parameters.data_sources(station_name)[0];
-    set_data_reader(input_rank(station_name), 0, filename);
+    set_data_reader(input_rank(station_name), 0,
+		    control_parameters.data_sources(station_name));
   }
 
   start_time = control_parameters.get_start_time();

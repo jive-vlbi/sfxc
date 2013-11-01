@@ -51,7 +51,7 @@ public:
   /* set Data_readers */
   // for files
   void set_data_reader(int rank, int stream_nr,
-                       const std::string &filename);
+                       const std::vector<std::string> &sources);
   // for tcp
   void set_TCP(int writer_rank, int writer_stream_nr,
                int reader_rank, int reader_stream_nr);

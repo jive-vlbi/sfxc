@@ -194,12 +194,21 @@ get_status(int rank) {
 void
 Abstract_manager_node::
 set_data_reader(int rank, int32_t stream_nr,
-                const std::string &filename) {
-  //DEBUG_MSG(filename << " => " << rank<< "[" << stream_nr << "]");
-  int len = sizeof(int32_t)+filename.size() +1; // for \0
+                const std::vector<std::string> &sources) {
+  int len = sizeof(int32_t);
+
+  for (int i = 0; i < sources.size(); i++)
+    len += sources[i].size() + 1;
+
   char msg[len];
-  memcpy(msg,&stream_nr,sizeof(int32_t));
-  memcpy(msg+sizeof(int32_t), filename.c_str(), filename.size()+1);
+  char *p = msg;
+  memcpy(p, &stream_nr, sizeof(int32_t));
+  p += sizeof(int32_t);
+
+  for (int i = 0; i < sources.size(); i++) {
+    memcpy(p, sources[i].c_str(), sources[i].size() + 1);
+    p += sources[i].size() + 1;
+  }
 
   MPI_Send(msg, len, MPI_CHAR,
            rank, MPI_TAG_ADD_DATA_READER, MPI_COMM_WORLD);

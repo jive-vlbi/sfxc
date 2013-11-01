@@ -14,7 +14,7 @@
 
 class Data_reader_factory {
 public:
-  static Data_reader* get_reader(const std::string& url);
+  static Data_reader* get_reader(const std::vector<std::string>& sources);
 };
 
 #endif // DATA_READER_FACTORY_H

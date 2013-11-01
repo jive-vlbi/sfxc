@@ -25,18 +25,32 @@ Single_data_reader_controller::process_event(MPI_Status &status) {
 
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
-      SFXC_ASSERT(size > 0);
+      SFXC_ASSERT(size > sizeof(int32_t));
       char msg[size];
+      char *p = msg;
       MPI_Recv(&msg, size, MPI_CHAR, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      int32_t stream_nr;
-      memcpy(&stream_nr, msg, sizeof(int32_t));
-      char *filename = msg+sizeof(int32_t);
       SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
       SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
-      boost::shared_ptr<Data_reader>
-      reader(Data_reader_factory::get_reader(filename));
+      int32_t stream_nr;
+      memcpy(&stream_nr, p, sizeof(int32_t));
+      size -= sizeof(int32_t);
+      p += sizeof(int32_t);
+
+      // Make sure the array is null-terminated
+      if (size > 0)
+	p[size - 1] = 0;
+
+      std::vector<std::string> sources;
+      while (size > 0) {
+	sources.push_back(p);
+	size -= strlen(p) + 1;
+	p += strlen(p) + 1;
+      }
+      SFXC_ASSERT(sources.size() > 0);
+
+      boost::shared_ptr<Data_reader> reader(Data_reader_factory::get_reader(sources));
 
       set_data_reader(stream_nr, reader);
 

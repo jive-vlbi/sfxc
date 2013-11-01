@@ -73,10 +73,12 @@ int main(int argc, char** argv)
 
               Mark5a_reader::Data_frame data;
 
-              std::string urlsrc = control_parameters.data_sources(station_name)[current_scan-begin_scan];
-              boost::shared_ptr<Data_reader> reader= boost::shared_ptr<Data_reader>( Data_reader_factory::get_reader(urlsrc) );
+              std::string source = control_parameters.data_sources(station_name)[current_scan-begin_scan];
+	      std::vector<std::string> sources(1, source);
+              boost::shared_ptr<Data_reader> reader =
+		boost::shared_ptr<Data_reader>(Data_reader_factory::get_reader(sources));
               boost::shared_ptr<Mark5a_reader> m_reader =
-                boost::shared_ptr<Mark5a_reader>( new Mark5a_reader(reader, Time(0)) );
+                boost::shared_ptr<Mark5a_reader>(new Mark5a_reader(reader, Time(0)));
               while((!m_reader->open_input_stream(data)) && (!m_reader->eof()))
                 ;
               int n_subbands = input_node_param.channels.size();

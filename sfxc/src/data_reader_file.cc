@@ -9,35 +9,35 @@
 
 #include "data_reader_file.h"
 #include "utils.h"
-#include <string.h>
+#include <string>
 #include <iostream>
-#include <algorithm>
 
-Data_reader_file::Data_reader_file(const char *filename) :
-    Data_reader() {
-  if (strncmp(filename, "file://", 7) != 0) {
-    std::string msg = std::string("Filename '")+std::string(filename)+std::string("' doesn't start with file://");
-    sfxc_abort(msg.c_str());
-  }
-  file.open(filename+7, std::ios::in | std::ios::binary);
-  if (!file.is_open()) {
-    std::string msg = std::string("Filename '")+std::string(filename)+std::string("' doesn't exist");
-    sfxc_abort(msg.c_str());
-  }
-  is_seekable_ = true;
+Data_reader_file::Data_reader_file(const std::vector<std::string> &sources) :
+  Data_reader() {
+  init(sources);
 }
 
-Data_reader_file::Data_reader_file(const std::string &filename) :
-    Data_reader() {
-  if (strncmp(filename.c_str(), "file://", 7) != 0) {
-    std::string msg = std::string("Filename '")+filename+std::string("' doesn't start with file://");
-    sfxc_abort(msg.c_str());
+Data_reader_file::Data_reader_file(const std::string &source) :
+  Data_reader() {
+  std::vector<std::string> sources(1, source);
+  init(sources);
+}
+
+void
+Data_reader_file::init(const std::vector<std::string> &sources)
+{
+  for (int i = 0; i < sources.size(); i++) {
+    SFXC_ASSERT(sources[i].compare(0, 7, "file://") == 0);
+    filenames.push(sources[i].substr(7));
   }
-  file.open(filename.c_str()+7, std::ios::in | std::ios::binary);
+  
+  file.open(filenames.front().c_str(), std::ios::in | std::ios::binary);
   if (!file.is_open()) {
-    std::string msg = std::string("Filename '")+filename+std::string("' doesn't exist");
+    std::string msg = std::string("Cannot open ") + filenames.front();
     sfxc_abort(msg.c_str());
   }
+  filenames.pop();
+
   is_seekable_ = true;
 }
 
@@ -46,19 +46,33 @@ Data_reader_file::~Data_reader_file() {
 }
 
 size_t
-Data_reader_file::do_get_bytes(size_t nBytes, char*out) {
+Data_reader_file::do_get_bytes(size_t nbytes, char *out) {
   if (!file.good()) {
     return -1;
   }
+
   if (out == NULL) {
-    uint64_t pos = file.tellg();
-    file.seekg (nBytes, std::ios::cur);
-    uint64_t pos2 = file.tellg();
-    return pos2 - pos;
+    std::streampos pos = file.tellg();
+    file.seekg(nbytes, std::ios::cur);
+    return file.tellg() - pos;
   }
-  file.read(out, nBytes);
-  if (file.eof()) return file.gcount();
-  return nBytes;
+
+  file.read(out, nbytes);
+
+  if (file.eof()) {
+    nbytes = file.gcount();
+    if (filenames.size() > 0) {
+      file.close();
+      file.open(filenames.front().c_str(), std::ios::in | std::ios::binary);
+      if (!file.is_open()) {
+	std::string msg = std::string("Cannot open ") + filenames.front();
+	sfxc_abort(msg.c_str());
+      }
+      filenames.pop();
+    }
+  }
+
+  return nbytes;
 }
 
 bool Data_reader_file::eof() {
