@@ -413,7 +413,7 @@ class AutoPlotWindow(Qt.QWidget):
                 if station == baseline[0]:
                     a = np.conj(a)
                     pass
-                g = np.absolute(a)
+                g = np.absolute(a) / self.integrations
 
                 plot.curve[plot_idx].setData(range(self.cordata.number_channels), g)
                 continue
