@@ -351,6 +351,8 @@ class AutoPlotWindow(Qt.QWidget):
             for plot in self.plots:
                 if plot.station == station:
                     break
+                continue
+            s = 0
             for idx in correlations[baseline]:
                 if station == baseline[0]:
                     pol1 = (idx >> 1) & 1
@@ -414,9 +416,11 @@ class AutoPlotWindow(Qt.QWidget):
                     a = np.conj(a)
                     pass
                 g = np.absolute(a) / self.integrations
+                s = max(s, np.median(g))
 
                 plot.curve[plot_idx].setData(range(self.cordata.number_channels), g)
                 continue
+            plot.setAxisScale(Qwt.QwtPlot.yLeft, 0, 3 * s)
             plot.replot()
             continue
         return
