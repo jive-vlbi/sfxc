@@ -42,7 +42,7 @@ void Channel_extractor_dynamic::initialise(
 
   // Generate the name
   std::stringstream str;
-  str << "dynamic_channel_extractor";
+  str << "dynamic_channel_extractor[" << size_of_one_input_word_ << "-"<< input_sample_size_<<"]";
   for (unsigned int i=0;i<track_positions_.size();i++){
       str << "[";
       for (unsigned int j=0;j<track_positions_[i].size();j++){
