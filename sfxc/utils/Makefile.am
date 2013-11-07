@@ -22,10 +22,16 @@ bin_PROGRAMS += generate_uvw_coordinates \
                 produce_html_plotpage \
                 produce_html_diffpage \
                 vex2ccf \
-                baseline_info 
+                baseline_info \
+                create_psrfits
 endif
 
 bin_SCRIPTS  = run_sfxc.py vumeter.py gen_all_delay_tables.py channel_extractor_compiler.py print_corfile.py
+
+create_psrfits_SOURCES = \
+  create_psrfits.cc \
+  ../src/utils.cc \
+  ../src/correlator_time.cc
 
 extract_channelizer_SOURCES = \
   extract_channelizer.cc \
@@ -54,8 +60,8 @@ mark5b_print_headers_SOURCES = \
 
 vdif_print_headers_SOURCES = \
   vdif_print_headers.cc \
-  ../src/utils.cc \
-  ../src/correlator_time.cc
+  ../src/correlator_time.cc\
+  ../src/utils.cc 
 
 mark5a_print_headers_SOURCES = \
   mark5a_print_headers.cc \

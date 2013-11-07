@@ -73,6 +73,8 @@ sfxc_SOURCES = $(OBJ) $(FFT_SOURCES) sfxc.cc \
   input_node_data_writer_tasklet.cc \
   output_header.cc \
   correlator_time.cc \
+  aips_cal.cc \
+  bandpass.cc \
   svn_version.cc 
 
 sfxc_DEPENDENCIES = update_svn_version svn_version.$(OBJEXT)

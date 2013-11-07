@@ -224,7 +224,7 @@ for scan in vex['SCHED']:
         json_output["delay_directory"] = delay_uri
 
         # Boring stuff.
-        json_output["cross_polarize"] = True
+        json_output["cross_polarize"] = False
         json_output["message_level"] = 1
 
         # Write the output to a new control file.

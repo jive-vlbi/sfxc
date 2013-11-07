@@ -18,7 +18,16 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 
   correlation_parameters = parameters;
   oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
-
+  try{
+    if(!is_open_)
+      btable.open_table("/home/keimpema/data/fp003/fp003.bp", fft_size(), true);
+      cltable.open_table("/home/keimpema/data/fp003/fp003.cl", fft_size());
+//      btable.open_table("/home/keimpema/data/gv020g/gv020g.m15a.bp", fft_size());
+    is_open_ = true;
+  }catch(const std::string s){
+   std::cerr << "Problem : " << s << "\n";
+   throw s;
+  }
   create_baselines(parameters);
   if (input_elements.size() != number_input_streams_in_use()) {
     input_elements.resize(number_input_streams_in_use());
@@ -121,7 +130,8 @@ void Correlation_core_pulsar::do_task() {
     find_invalid();
     for(int bin=0;bin<nbins;bin++){
       integration_normalize(accumulation_buffers[bin]);
-      integration_write(accumulation_buffers[bin], 0, bin);
+      integration_write_headers(0, bin);
+      integration_write_baselines(accumulation_buffers[bin]);
     }
     current_integration++;
   }

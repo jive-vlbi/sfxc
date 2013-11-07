@@ -206,6 +206,7 @@ set_parameters(const Input_node_parameters &input_node_param,
                 nr_ffts_per_integration_slice((int)input_node_param.integr_time.get_time_usec(),
                                               sample_rate, input_node_param.fft_size);
   size_slice = nr_ffts * input_node_param.fft_size;
+  std::cout << "size_slice = " << size_slice << ", nr_ffts = " << nr_ffts << "\n";
 }
 
 

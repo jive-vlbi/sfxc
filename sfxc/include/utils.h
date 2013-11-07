@@ -140,53 +140,51 @@ void sfxc_abort(const char *msg="");
 
 #ifdef USE_IPP
   #ifdef USE_DOUBLE
-    #define FLOAT                   double
-    #define SFXC_ZERO_F             sfxc_zero
-    #define SFXC_ZERO_FC            sfxc_zero_c
     #define SFXC_FFT                sfxc_fft_ipp
-    #define SFXC_MUL_FC_I           sfxc_mul_c_I
-    #define SFXC_CONJ_FC            sfxc_conj_c
-    #define SFXC_ADD_FC             sfxc_add_c
-    #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_c 
-    #define SFXC_MUL_F              sfxc_mul
   #else // !USE_DOUBLE
-    #define FLOAT                   float
-    #define SFXC_ZERO_F             sfxc_zero_f
-    #define SFXC_ZERO_FC            sfxc_zero_fc
     #define SFXC_FFT                sfxc_fft_ipp_float
-    #define SFXC_MUL_FC_I           sfxc_mul_fc_I
-    #define SFXC_CONJ_FC            sfxc_conj_fc
-    #define SFXC_ADD_FC             sfxc_add_fc
-    #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_fc 
-    #define SFXC_MUL_F              sfxc_mul_f
   #endif
-  #define SFXC_FFT_FLOAT          sfxc_fft_ipp_float
+  #define SFXC_FFT_FLOAT            sfxc_fft_ipp_float
 #else
   #include <fftw3.h>
   #ifdef USE_DOUBLE
-    #define FLOAT                   double
     #define FFTW_COMPLEX            fftw_complex
-    #define SFXC_ZERO_F             sfxc_zero
-    #define SFXC_ZERO_FC            sfxc_zero_c
     #define SFXC_FFT                sfxc_fft_fftw
-    #define SFXC_MUL_FC_I           sfxc_mul_c_I
-    #define SFXC_CONJ_FC            sfxc_conj_c
-    #define SFXC_ADD_FC             sfxc_add_c
-    #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_c 
-    #define SFXC_MUL_F              sfxc_mul
   #else // !USE_DOUBLE
-    #define FLOAT                   float
     #define FFTW_COMPLEX            fftwf_complex
-    #define SFXC_ZERO_F             sfxc_zero_f
-    #define SFXC_ZERO_FC            sfxc_zero_fc
     #define SFXC_FFT                sfxc_fft_fftw_float
-    #define SFXC_MUL_FC_I           sfxc_mul_fc_I
-    #define SFXC_CONJ_FC            sfxc_conj_fc
-    #define SFXC_ADD_FC             sfxc_add_fc
-    #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_fc 
-    #define SFXC_MUL_F              sfxc_mul_f
   #endif
-  #define SFXC_FFT_FLOAT          sfxc_fft_fftw_float
+  #define SFXC_FFT_FLOAT            sfxc_fft_fftw_float
+#endif
+
+#ifdef USE_DOUBLE
+  #define FLOAT                   double
+  #define SFXC_ZERO_F             sfxc_zero
+  #define SFXC_ZERO_FC            sfxc_zero_c
+  #define SFXC_MUL_FC_I           sfxc_mul_c_I
+  #define SFXC_MAGNITUDE_FC       sfxc_magnitude
+  #define SFXC_CONJ_FC            sfxc_conj_c
+  #define SFXC_ADD_F              sfxc_add
+  #define SFXC_ADD_FC             sfxc_add_c
+  #define SFXC_SUB_FC             sfxc_sub_c
+  #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_c 
+  #define SFXC_MUL_F              sfxc_mul
+  #define SFXC_MULC               sfxc_mul_c
+  #define SFXC_MULC_I             sfxc_mulc_I
+#else // !USE_DOUBLE
+  #define FLOAT                   float
+  #define SFXC_ZERO_F             sfxc_zero_f
+  #define SFXC_ZERO_FC            sfxc_zero_fc
+  #define SFXC_MAGNITUDE_FC       sfxc_magnitude_f
+  #define SFXC_MUL_FC_I           sfxc_mul_fc_I
+  #define SFXC_CONJ_FC            sfxc_conj_fc
+  #define SFXC_ADD_F              sfxc_add_f
+  #define SFXC_ADD_FC             sfxc_add_fc
+  #define SFXC_SUB_FC             sfxc_sub_fc
+  #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_fc 
+  #define SFXC_MUL_F              sfxc_mul_f
+  #define SFXC_MULC               sfxc_mul_fc
+  #define SFXC_MULC_I             sfxc_mulc_f_I
 #endif
 
 // Supported window functions

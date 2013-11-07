@@ -4,7 +4,9 @@
 
 #define MINIMUM_PROCESSED_SAMPLES 1024
 
-Correlator_node_bit2float_tasklet::Correlator_node_bit2float_tasklet() {}
+Correlator_node_bit2float_tasklet::Correlator_node_bit2float_tasklet(bool phased_array_) {
+  phased_array = phased_array_;
+  }
 
 Correlator_node_bit2float_tasklet::~Correlator_node_bit2float_tasklet() {}
 
@@ -48,7 +50,7 @@ Correlator_node_bit2float_tasklet::connect_to(int nr_stream, bit_statistics_ptr 
   if (bit2float_workers_.size() <= nr_stream) {
     bit2float_workers_.resize(nr_stream+1, boost::shared_ptr<Bit2float_worker>());
   }
-  bit2float_workers_[nr_stream] = Bit2float_worker::new_sptr(nr_stream, statistics);
+  bit2float_workers_[nr_stream] = Bit2float_worker::new_sptr(nr_stream, statistics, phased_array);
   SFXC_ASSERT( nr_stream < bit2float_workers_.size() );
   bit2float_workers_[nr_stream]->connect_to(buffer);
 }

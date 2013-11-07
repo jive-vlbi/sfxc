@@ -109,7 +109,7 @@ public:
   Correlation_parameters()
       : number_channels(0), fft_size_delaycor(0), fft_size_correlation(0), integration_nr(-1), slice_nr(-1), 
         slice_offset(-1), sample_rate(0), channel_freq(0), bandwidth(0),
-        sideband('n'), channel_nr(0), polarisation('n'), pulsar_binning(false), window(SFXC_WINDOW_RECT) {}
+        sideband('n'), frequency_nr(0), polarisation('n'), pulsar_binning(false), window(SFXC_WINDOW_RECT) {}
 
 
   bool operator==(const Correlation_parameters& other) const;
@@ -152,7 +152,7 @@ public:
   int64_t channel_freq;     // Center frequency of the band in Hz
   int32_t bandwidth;        // Bandwidth of the channel in Hz
   char    sideband;         // U or L
-  int32_t channel_nr;       // channel number ordered in the list
+  int32_t frequency_nr;          // Frequency number ordered in the list
   char    polarisation;     // L or R
 
   bool    cross_polarize;   // do the cross polarisations

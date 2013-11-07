@@ -39,12 +39,13 @@ int main(int argc, char *argv[]) {
               << " \t" << start_time_scan
               << " \t" << stop_time_scan
               << std::endl;
-    Time step = Time(10000.);
+    Time step = Time(100000.);
     for (Time time = start_time_scan; time < stop_time_scan; time += step) {
-      out << (int64_t)time.get_time_usec();
+      //out << (int64_t)time.get_time_usec();
+      out << time;
       for(int j = 0 ; j < delay_table.n_phase_centers(); j++)
         out << " \t(" << delay_table.delay(time, j) 
-            << ", " << delay_table.phase(time, j)
+            << ", " << delay_table.phase(time, j)*180/M_PI
             << ", " << delay_table.amplitude(time, j) << ")";
       out << std::endl;
     }

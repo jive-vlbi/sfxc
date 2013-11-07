@@ -21,7 +21,7 @@ public:
   typedef Correlator_node_types::Channel_circular_input_buffer_ptr  Channel_circular_input_buffer_ptr;
   typedef Correlator_node_types::Invalid                            Invalid;
 
-  Correlator_node_bit2float_tasklet();
+  Correlator_node_bit2float_tasklet(bool phased_array_);
   virtual ~Correlator_node_bit2float_tasklet();
   /*****************************************************************************
   * @desc Main function called in the thread. This function is inherited from
@@ -84,6 +84,7 @@ public:
 
 private:
   std::vector<Bit2float_worker_sptr>    bit2float_workers_;
+  bool phased_array;
 
   /// Amount of processing time.
   Timer timer_;

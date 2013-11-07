@@ -168,8 +168,12 @@ initialise(const char *ctrl_file, const char *vex_file,
       ctrl["window_function"] = "HANN";
   }
   // Set the fft sizes
-  if (ctrl["fft_size_delaycor"] == Json::Value())
-    ctrl["fft_size_delaycor"] = 256;
+  if (ctrl["fft_size_delaycor"] == Json::Value()){
+    if(ctrl["fft_size_correlation"] == Json::Value())
+      ctrl["fft_size_delaycor"] = 256;
+    else
+      ctrl["fft_size_delaycor"] = std::min(256, fft_size_correlation());
+  }
 
   if (ctrl["fft_size_correlation"] == Json::Value()){
     if (ctrl["multi_phase_center"].asBool())
@@ -1691,10 +1695,10 @@ Control_parameters::station_number(const std::string &station_name) const
     for (std::map<std::string, int>::iterator it = station_map.begin();
 	 it != station_map.end(); it++) {
       it->second = station_number;
+      std::cout << it->first << " : nr = " << station_number << "\n";
       station_number++;
     }
   }
-
   return station_map[station_name];
 }
 
@@ -1720,6 +1724,7 @@ get_correlation_parameters(const std::string &scan_name,
   const std::string &station_name = setup_station();
   const std::string &channel_name =
     frequency_channel(channel_nr, mode_name, station_name);
+  std::cout << "CH " << channel_nr << " : " << channel_name << "\n";
 
   Correlation_parameters corr_param;
   corr_param.start_time = vex.start_of_scan(scan_name).to_miliseconds() * 1000;
@@ -1755,6 +1760,7 @@ get_correlation_parameters(const std::string &scan_name,
        ++ch_it) {
     if (ch_it[4]->to_string() == channel_name) {
       corr_param.channel_freq = (int64_t)round(ch_it[1]->to_double_amount("MHz")*1000000);
+      //std::cout << "Added " << channel_name << " = " << corr_param.channel_freq << "\n";
       corr_param.bandwidth = (int)(ch_it[3]->to_double_amount("MHz")*1000000);
       corr_param.sideband = ch_it[2]->to_char();
       freq_temp = ch_it[1]->to_string();
@@ -1766,7 +1772,7 @@ get_correlation_parameters(const std::string &scan_name,
   int count = 0;
   for (freq_set_it = freq_set.begin(); freq_set_it != freq_set.end(); ++freq_set_it) {
     if (*freq_set_it == freq_temp) {
-      corr_param.channel_nr = count;
+      corr_param.frequency_nr = count;
     }
     count++;
   }
@@ -2127,20 +2133,28 @@ Pulsar_parameters::parse_polyco(std::vector<Polyco_params> &param, std::string f
       read_error = inpline.fail();
     }else if(line_nr-end_of_prev_block == 1){
       inpline >> param[block_index].ref_phase;
+      std::cout << param[block_index].ref_phase << " ";
       inpline >> param[block_index].ref_freq;
+      std::cout << param[block_index].ref_freq << " ";
       inpline >> temp;
       strncpy(param[block_index].site, temp.c_str(), 6);
       param[block_index].site[5]=0; // make sure sting is null terminated
+      std::cout << param[block_index].site << " ";
       inpline >> param[block_index].data_span;
+      std::cout << param[block_index].data_span << " ";
       inpline >> param[block_index].n_coef;
+      std::cout << param[block_index].n_coef << " ";
       n_coef = param[block_index].n_coef;
       param[block_index].coef.resize(n_coef);
       inpline >> param[block_index].obs_freq;
+      std::cout << param[block_index].obs_freq << " ";
       read_error = inpline.fail();
       // The binary phase parameters are optional
       inpline >> param[block_index].bin_phase[0];
+      std::cout << param[block_index].bin_phase[0] << " ";
       if(!inpline.fail()){
         inpline >> param[block_index].bin_phase[1];
+        std::cout << param[block_index].bin_phase[1] << "\n";
         read_error = inpline.fail();
       }else{
         param[block_index].bin_phase[0]=0;
@@ -2149,8 +2163,10 @@ Pulsar_parameters::parse_polyco(std::vector<Polyco_params> &param, std::string f
     }else{
       while((!inpline.eof())&&(!inpline.fail())&&(coef_idx<n_coef)){
         inpline >> param[block_index].coef[coef_idx];
+        std::cout << param[block_index].coef[coef_idx] << " "; 
         coef_idx++;
       }
+      std::cout << "\n";
       if((!inpline.fail())&&(coef_idx == n_coef)){
         polyco_completed = true;
         block_index++;

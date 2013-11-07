@@ -671,7 +671,7 @@ void Manager_node::send_global_header(){
     output_header.number_channels = control_parameters.number_channels();  // Number of frequency channels
     Time int_time = control_parameters.integration_time();// Integration time: microseconds
     output_header.integration_time = (int)int_time.get_time_usec();
-    output_header.output_format_version = OUTPUT_FORMAT_VERSION;
+    output_header.output_format_version = control_parameters.phased_array()? OUTPUT_FORMAT_VERSION_PHASED : OUTPUT_FORMAT_VERSION;
     
     const char *svn_version = SVN_VERSION;
     if (strchr(svn_version, ':'))

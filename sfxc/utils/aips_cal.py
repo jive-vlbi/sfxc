@@ -23,29 +23,62 @@ def parse_cli_args():
     print "Error loading config file : " + str(err)
     sys.exit(1);
 
-  try:
-    delay_directory = cfg['delay_directory']
-    if delay_directory.lower().startswith('file://'):
-      delay_directory = delay_directory[7:]
-      
-    if delay_directory == "":
-      delay_directory = "./"
-  except KeyError:
-    delay_directory = "./"
-
-  delays = {}
-  for s in cfg['stations']:
-    filename = delay_directory + '/' + cfg['exper_name'] + '_' + s + '.del'
-    print 'open delay for station ', s, ' : file = ', filename
-    file = open(filename, 'r+')
-    hsize = struct.unpack('i', file.read(4))[0]
-    header = file.read(hsize)
-    delays[s.upper()] = file
-
   a = cfg['aips']
   AIPS.userno = a['user_nr']
   uvdata = AIPSUVData(a['name'].encode('ascii'), a['class'].encode('ascii'), a['disk'], a['seq'])
-  return delays, uvdata
+  if cfg['outname'].startswith('file://'):
+    outname = cfg['outname'][7:]
+  else:
+    outname = cfg['outname']
+  return outname, uvdata
+
+def get_bp(uvdata,outname):
+  bp = uvdata.table('BP', 0)
+  nstation = bp.keywords['NO_ANT']
+  nif = bp.keywords['NO_IF']
+  npol = bp.keywords['NO_POL']
+  nchan = bp.keywords['NO_CHAN']
+  outfile = open(outname+'.bp', 'w')
+  bp_table = [[[] for j in range(4+(npol-1)*2)] for i in range(nstation)] 
+  #pdb.set_trace()
+  date_obs = [int(t) for t in uvdata.header.date_obs.split('-')] # format : year-month-day
+  mjd_obs = mjd(date_obs[2], date_obs[1], date_obs[0])
+  # Read the bp table into memory. 
+  for row in bp:
+   ant_no = row.antenna-1
+   bp_table[ant_no][0].append(row.time)
+   bp_table[ant_no][1].append(row.interval)
+   bp_table[ant_no][2].append(row.real_1)
+   bp_table[ant_no][3].append(row.imag_1)
+   if(npol == 2):
+     bp_table[ant_no][4].append(row.real_2)
+     bp_table[ant_no][5].append(row.imag_2)
+  # Convert to numpy arrays
+  for ant in bp_table:
+    for i in range(4+(npol-1)*2):
+      ant[i] = array(ant[i], dtype='float32')
+
+  #A table to convert the AIPS station numbers to SFXC station number
+  aips2sfxc = []
+  sfxc_antennas = sorted(uvdata.antennas)
+  for ant in uvdata.antennas:
+    aips2sfxc.append(sfxc_antennas.index(ant))
+  
+  #write the BP to disk
+  global_header = array([nstation, nif, npol, nchan, mjd_obs], dtype='int32')
+  global_header.tofile(outfile)
+  for ant_no, ant in enumerate(bp_table):
+    header = array([aips2sfxc[ant_no],len(ant[0])], dtype='int32')
+    header.tofile(outfile)
+    for i in xrange(len(ant[0])):
+      # Get the inverse of the complex bandpass
+      bp_1 = 1. / (ant[2][i] + 1j * ant[3][i])
+      ant[0][i:i+1].tofile(outfile) # time
+      ant[1][i:i+1].tofile(outfile) # interval
+      bp_1.tofile(outfile)
+      if npol == 2:
+        bp_2 = 1. / (ant[4][i] + 1j * ant[5][i])
+        bp_2.tofile(outfile)
 
 def get_cl(uvdata):
   cl = uvdata.table('CL', 0)
@@ -102,6 +135,13 @@ def mjd2date(mjd):
   M = (m + 2) % 12 + 1
   D = d + 1
   return Y,M,D
+
+def mjd(day, month, year):
+  a = (14-month)/12;
+  y = year + 4800 - a;
+  m = month + 12*a - 3;
+  jdn = day + ((153*m+2)/5) + 365*y + (y/4) - (y/100) + (y/400) - 32045
+  return int(jdn - 2400000.5)
 
 def get_cal(scan, station):
   t = scan['time']
@@ -185,6 +225,6 @@ def apply_cal(delays, uvdata, cal):
 ######
 ###### 
 
-delays, uvdata = parse_cli_args()
-cal = get_cl(uvdata)
-apply_cal(delays, uvdata, cal)
+outname, uvdata = parse_cli_args()
+get_cl(uvdata)
+get_bp(uvdata, outname)

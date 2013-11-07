@@ -1,10 +1,12 @@
 #include "correlation_core.h"
 #include "output_header.h"
-#include <utils.h>
+#include "bandpass.h"
+#include "utils.h"
 #include <set>
 
 Correlation_core::Correlation_core()
     : current_fft(0), total_ffts(0), split_output(false){
+ is_open_ = false;
 }
 
 Correlation_core::~Correlation_core() {
@@ -61,7 +63,8 @@ void Correlation_core::do_task() {
       }else{
         source_nr = 0;
       }
-      integration_write(phase_centers[i], i, source_nr);
+      integration_write_headers(i, source_nr);
+      integration_write_baselines(phase_centers[i]);
     }
     current_integration++;
   } else if(current_fft >= next_sub_integration * number_ffts_in_sub_integration){
@@ -103,7 +106,28 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
 
   correlation_parameters = parameters;
   oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
-
+  try{
+    if(!is_open_){
+//      btable.open_table("/home/keimpema/data/gv020g/J2139.bp", fft_size(), false);
+//      cltable.open_table("/home/keimpema/data/gv020g/J2139.bad.cl", fft_size());
+      btable.open_table("/home/keimpema/data/gv020g/gv020g.m15a.bp", fft_size(), false);
+//      cltable.open_table("/home/keimpema/data/gv020g/gv020g.test.cl", fft_size());
+      cltable.open_table("/home/keimpema/data/gv020g/gv020g.m15a.cl", fft_size());
+//      cltable.open_table("/home/keimpema/data/fp003/fp003.cl", fft_size());
+//      btable.open_table("/home/keimpema/data/fp002/fp003.bp", fft_size());
+//      btable.open_table("/home/keimpema/data/ep077/ep077.sc11.bp", fft_size());
+//      cltable.open_table("/home/keimpema/data/ep077/ep077.sc11.cl", fft_size());
+      //std::cout << RANK_OF_NODE << " : opened bp\n";
+    }
+    is_open_ = true;
+  }catch(const std::string s){
+   std::cerr << "Problem(1) : " << s << "\n";
+   throw s;
+  }
+  if (RANK_OF_NODE == 8){
+    for(int i=0;i<correlation_parameters.station_streams.size();i++)
+      std::cout << "stream " << i << " = " << correlation_parameters.station_streams[i].station_number << "\n";
+  }
   create_baselines(parameters);
   if (input_elements.size() != number_input_streams_in_use()) {
     input_elements.resize(number_input_streams_in_use());
@@ -324,15 +348,44 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
       integration_buffer[b][i] /= norm;
     }
   }
+
+  for (size_t b = 0; b < baselines.size(); b++) {
+    Time time = correlation_parameters.start_time + correlation_parameters.integration_time / 2;
+    std::pair<size_t,size_t> &baseline = baselines[b];
+    int stream1, stream2;
+    for(int i=0; i < correlation_parameters.station_streams.size(); i++){
+      if (correlation_parameters.station_streams[i].station_stream == streams_in_scan[baseline.first])
+        stream1 = i;
+      if (correlation_parameters.station_streams[i].station_stream == streams_in_scan[baseline.second])
+        stream2 = i;
+    }
+    int station1 = correlation_parameters.station_streams[stream1].station_number;
+    int station2 = correlation_parameters.station_streams[stream2].station_number;
+    //Apply bandpass
+    int polarisation = correlation_parameters.polarisation == 'R' ? 0 : 1;
+    double freq = correlation_parameters.channel_freq; 
+    if(RANK_OF_NODE == -19) 
+      std::cout <<"b="<<b<< ", station1 =" << station1 << ", station2 = " << station2 << ", ch = " << correlation_parameters.frequency_nr << ", pol = " << polarisation << " (=" << correlation_parameters.polarisation << " ) "
+                << ", time = " << time << ", start_time = " << correlation_parameters.start_time << ", stream1 = " << streams_in_scan[baseline.first] << ", steam2=" << streams_in_scan[baseline.second]
+                << ", baseline = (" << baseline.first << ", " << baseline.second <<")\n";
+    try{
+    btable.apply_bandpass(time, &integration_buffer[b][0], station1, freq, correlation_parameters.sideband, polarisation, false);
+    btable.apply_bandpass(time, &integration_buffer[b][0], station2, freq, correlation_parameters.sideband, polarisation, true);
+    cltable.apply_callibration(time, &integration_buffer[b][0], station1, freq, correlation_parameters.sideband, polarisation, false);
+    cltable.apply_callibration(time, &integration_buffer[b][0], station2, freq, correlation_parameters.sideband, polarisation, true);
+    }catch(const std::string s){
+      std::cerr << "was? : " << s <<"\n";
+      throw s;
+    }
+  }
 }
 
-void Correlation_core::integration_write(std::vector<Complex_buffer> &integration_buffer, int phase_center, int sourcenr) {
+void Correlation_core::integration_write_headers(int phase_center, int sourcenr) {
 
   // Make sure that the input buffers are released
   // This is done by reference counting
 
   SFXC_ASSERT(writer != boost::shared_ptr<Data_writer>());
-  SFXC_ASSERT(integration_buffer.size() == baselines.size());
 
   // Write the output file index
   {
@@ -351,8 +404,6 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
   int nstations = nstreams;
   if (correlation_parameters.cross_polarize) 
     nstations /= 2;
-  std::vector<int> stream2station;
-
   {
     // initialise with -1
     stream2station.resize(input_buffers.size(), -1);
@@ -369,6 +420,8 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     Output_header_timeslice htimeslice;
 
     htimeslice.number_baselines = baselines.size();
+    //if (htimeslice.number_baselines != 2000)
+    //  std::cerr << RANK_OF_NODE << " : Fehler, htimeslice.number_baselines = " << (int) htimeslice.number_baselines << "\n";
     htimeslice.integration_slice =
       correlation_parameters.integration_nr + current_integration;
     htimeslice.number_uvw_coordinates = nstations;
@@ -403,8 +456,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
       }
       stats[i].station_nr=station+1;
       stats[i].sideband = (correlation_parameters.sideband=='L') ? 0 : 1;
-
-      stats[i].frequency_nr=(unsigned char)correlation_parameters.channel_nr;
+      stats[i].frequency_nr=(unsigned char)correlation_parameters.frequency_nr;
 #ifndef SFXC_ZERO_STATS
       if(statistics[stream]->bits_per_sample==2){
         stats[i].levels[0]=levels[0];
@@ -436,10 +488,25 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     writer->put_bytes(nWrite, (char *)&stats[0]);
   }
 
-  integration_buffer_float.resize(number_channels() + 1);
-  size_t n = fft_size() / number_channels();
+}
 
+void Correlation_core::integration_write_baselines(std::vector<Complex_buffer> &integration_buffer) {
+  int nstreams = correlation_parameters.station_streams.size();
+  int nstations = nstreams;
+  if (correlation_parameters.cross_polarize) 
+    nstations /= 2;
+  size_t n = fft_size() / number_channels();
+  
+  SFXC_ASSERT(integration_buffer.size() == baselines.size());
+
+  int polarisation = 1;
+  if (correlation_parameters.polarisation == 'R') {
+    polarisation = 0;
+  } 
+
+  integration_buffer_float.resize(number_channels() + 1);
   Output_header_baseline hbaseline;
+
   for (size_t i = 0; i < baselines.size(); i++) {
     std::pair<size_t,size_t> &inputs = baselines[i];
     int station1 = streams_in_scan[inputs.first];
@@ -484,7 +551,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
       hbaseline.sideband = 0;
     }
     // The number of the channel in the vex-file,
-    hbaseline.frequency_nr = (unsigned char)correlation_parameters.channel_nr;
+    hbaseline.frequency_nr = (unsigned char)correlation_parameters.frequency_nr;
     // sorted increasingly
     // 1 byte left:
     hbaseline.empty = ' ';

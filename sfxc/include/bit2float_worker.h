@@ -36,7 +36,7 @@ public:
   // Invalid data
   typedef Correlator_node_types::Invalid            Invalid;
 
-  Bit2float_worker(int stream_nr, bit_statistics_ptr statistics_);
+  Bit2float_worker(int stream_nr, bit_statistics_ptr statistics_, bool phased_array_);
   ~Bit2float_worker() {
     // We need to make sure that output_element is released
     Output_pool_element dummy;
@@ -71,7 +71,7 @@ public:
   // Obtain the list of invalid samples
   std::vector<Invalid> *get_invalid();
 
-  static Bit2float_worker_sptr new_sptr(int stream_nr_, bit_statistics_ptr statistics_);
+  static Bit2float_worker_sptr new_sptr(int stream_nr_, bit_statistics_ptr statistics_, bool phased_array_);
 private:
   // get the position index of the next delay change / invalid block
   int get_next_delay();
@@ -80,6 +80,7 @@ private:
   void allocate_element(); // Allocate a new output packet
   Output_pool_element out_element; // The current output packet
   int out_index; // Current index in the data buffer of out_element
+  bool phased_array;
 
   Input_buffer_ptr    input_buffer_;
   Output_queue_ptr    output_buffer_;

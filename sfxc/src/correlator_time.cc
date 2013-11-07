@@ -40,6 +40,11 @@ double Time::get_time_usec() const{
 
 double Time::get_time() const{
   int64_t ticks_per_day = (int64_t) (SECONDS_PER_DAY * clock_rate);
+  if (clock_rate == 0){
+    std::cerr << "Error : clock_rate == 0\n";
+    return 0;
+  }
+
   return (nticks % ticks_per_day) / clock_rate;
 }
 

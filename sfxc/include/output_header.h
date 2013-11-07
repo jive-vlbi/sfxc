@@ -66,6 +66,7 @@
 */
 
 #define OUTPUT_FORMAT_VERSION  1
+#define OUTPUT_FORMAT_VERSION_PHASED  2
 
 struct Output_header_global {
   Output_header_global()

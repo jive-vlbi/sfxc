@@ -18,7 +18,7 @@ def print_global_header(infile):
   minute = (global_header[4]%(60*60))/60
   second = global_header[4]%60
   n = global_header[1].index('\0')
-  print "Experiment %s, SFXC version = %s, date = %dy%dd%dh%dm%ds, nchan = %d"%(global_header[1][:n], global_header[8], global_header[2], global_header[3], hour, minute, second, global_header[5])
+  print "Experiment %s, SFXC version = %s, date = %dy%dd%dh%dm%ds, nchan = %d, header size = %d"%(global_header[1][:n], global_header[8], global_header[2], global_header[3], hour, minute, second, global_header[5], global_header[0])
 
 def print_stats(stats):
   for stat in stats.iteritems():
@@ -75,12 +75,20 @@ def read_statistics(infile, stats, nstatistics):
     except KeyError:
       stats[station_nr] = [nstr]
 
-def read_baselines(infile, data, nbaseline, nchan):
-  baseline_data_size = (nchan + 1) * 8 # data is complex floats
+def read_baselines(infile, data, nbaseline, nchan, format):
+  if format == 2:
+    # data is in phased array format
+    baseline_data_size = (nchan + 1) * 4
+    fmt = str((nchan+1)) + 'f'
+  else:
+    baseline_data_size = (nchan + 1) * 8 # data is complex floats
+    fmt = str(2*(nchan+1)) + 'f'
+  
+  # data is complex floats
+  print 'nbaseline = ', nbaseline
   baseline_buffer = infile.read(nbaseline * (baseline_header_size + baseline_data_size)) 
   if len(baseline_buffer) != nbaseline * (baseline_header_size + baseline_data_size):
     raise Exception("EOF")
-  fmt = str(2*(nchan+1)) + 'f'
 
   index = 0
   for b in range(nbaseline):
@@ -95,26 +103,37 @@ def read_baselines(infile, data, nbaseline, nchan):
     sideband = (byte>>2)&1
     freq_nr = byte>>3
     J = complex(0,1)
-    if station1 != station2:
+    if format == 2:
       buf = struct.unpack(fmt, baseline_buffer[index:index + baseline_data_size])
-      # Skip over the first/last channel
-      vreal = array(buf[0:2*(nchan+1):2])
-      vim = array(buf[1:2*(nchan+1):2])
-      if isnan(vreal).any()==False and isnan(vim).any()==False:
-        #pdb.set_trace()
-        # format is [nbaseline, nif, num_sb, npol, nchan+1], dtype=complex128
-        val, snr, offset = get_baseline_stats(vreal + J*vim)
-        nstr = 'freq = %d, sb = %d , pol = %d, fringe ampl = %.6f , SNR = %.6f, offset = %d, weight = %.6f'%(freq_nr, sideband, pol, val, snr, offset, weight)
-        try:
-          data[baseline].append(nstr)
-        except KeyError:
-          data[baseline] = [nstr]
-      else:
-        print "b="+`baseline`+", freq_nr = "+`freq_nr`+",sb="+`sideband`+",pol="+`pol`
-        pdb.set_trace()
+      vreal = array(buf)
+      vmin = vreal.min()
+      vmax = vreal.max()
+      vstd = vreal.std()
+      nstr = 'freq = %d, sb = %d , pol = %d, min = %.6f, max = %.6f, std = %.6f, weight = %.6f'%(freq_nr, sideband, pol, vmin, vmax, vstd, weight)
+      try:
+        data[baseline].append(nstr)
+      except KeyError:
+        data[baseline] = [nstr]
+    else:
+      if station1 != station2:
+        buf = struct.unpack(fmt, baseline_buffer[index:index + baseline_data_size])
+        vreal = array(buf[0:2*(nchan+1):2])
+        vim = array(buf[1:2*(nchan+1):2])
+        if isnan(vreal).any()==False and isnan(vim).any()==False:
+          #pdb.set_trace()
+          # format is [nbaseline, nif, num_sb, npol, nchan+1], dtype=complex128
+          val, snr, offset = get_baseline_stats(vreal + J*vim)
+          nstr = 'freq = %d, sb = %d , pol = %d, fringe ampl = %.6f , SNR = %.6f, offset = %d, weight = %.6f'%(freq_nr, sideband, pol, val, snr, offset, weight)
+          try:
+            data[baseline].append(nstr)
+          except KeyError:
+            data[baseline] = [nstr]
+        else:
+          print "b="+`baseline`+", freq_nr = "+`freq_nr`+",sb="+`sideband`+",pol="+`pol`
+          pdb.set_trace()
     index += baseline_data_size
 
-def read_time_slice(infile, stats, data, nchan):
+def read_time_slice(infile, stats, data, nchan, format):
   #get timeslice header
   tsheader_buf = infile.read(timeslice_header_size)
   if len(tsheader_buf) != timeslice_header_size:
@@ -131,7 +150,7 @@ def read_time_slice(infile, stats, data, nchan):
     read_statistics(infile, stats, nstatistics)
     # Read the baseline data    
     nbaseline = timeslice_header[1]
-    read_baselines(infile, data, nbaseline, nchan)
+    read_baselines(infile, data, nbaseline, nchan, format)
     # Get next time slice header
     tsheader_buf = infile.read(timeslice_header_size)
     if len(tsheader_buf) != timeslice_header_size:
@@ -169,12 +188,13 @@ infile.seek(0)
 gheader_buf = infile.read(global_header_size)
 global_header = struct.unpack('i32s2h5i4c',gheader_buf[:64])
 nchan = global_header[5]
+format = global_header[7]
 nslices = 0
 while True:
   stats = {}
   data = {}
   try:
-    read_time_slice(infile, stats, data, nchan)
+    read_time_slice(infile, stats, data, nchan, format)
     nslices += 1
   except Exception, e:
     if e.args[0] != 'EOF':

@@ -1,6 +1,9 @@
 #include <math.h>
 #include "bit2float_worker.h"
 
+#define MINUS_1_SIGMA 0.13212055882855767
+#define PLUS_1_SIGMA 0.86787944117144233
+
 const FLOAT sample_value_ms[] = {
                                   -7, -2, 2, 7
                                 };
@@ -9,14 +12,15 @@ const FLOAT sample_value_m[]  = {
                                   -5, 5
                                 };
 
-Bit2float_worker::Bit2float_worker(int stream_nr_, bit_statistics_ptr statistics_)
+Bit2float_worker::Bit2float_worker(int stream_nr_, bit_statistics_ptr statistics_, bool phased_array_)
     : output_buffer_(new Output_queue()),
     fft_size(-1),
     bits_per_sample(-1),
     sample_rate(-1),
     memory_pool_(32),
     have_new_parameters(false), stream_nr(stream_nr_),
-    n_ffts_per_integration(0), current_fft(0), state(IDLE), statistics(statistics_)
+    n_ffts_per_integration(0), current_fft(0), state(IDLE),
+    phased_array(phased_array_), statistics(statistics_)
     /**/
 {
   SFXC_ASSERT(!memory_pool_.empty());
@@ -111,9 +115,26 @@ Bit2float_worker::do_task() {
       }
 
       if (invalid_to_write > 0) {
-        memset(&out_frame.data[out_index], 0, invalid_to_write * sizeof(FLOAT));
+        /*if(phased_array){
+          for(int i=0; i < invalid_to_write; i++){
+            double val, r = rand() * 1. / RAND_MAX;
+            if(r < MINUS_1_SIGMA)
+              val = sample_value_ms[0];
+            else if(r<0.5)
+              val = sample_value_ms[1];
+            else if(r<PLUS_1_SIGMA)
+              val = sample_value_ms[2];
+            else 
+              val = sample_value_ms[3];
+
+            out_frame.data[out_index] = val; 
+            out_index++;
+          }
+        }else{*/
+          memset(&out_frame.data[out_index], 0, invalid_to_write * sizeof(FLOAT));
+          out_index += invalid_to_write;
+//        }
         invalid_left -= invalid_to_write;
-        out_index += invalid_to_write;
         samples_written += invalid_to_write;
       }
       if (invalid_left == 0)
@@ -140,6 +161,7 @@ Bit2float_worker::do_task() {
 
       bytes_left -= (samp_to_write + sample_in_byte) / samples_per_byte;
       sample_in_byte = bit2float(&out_frame.data[out_index], sample_in_byte, samp_to_write, &read);
+
       out_index += samp_to_write;
       if (bytes_left == 0) {
         SFXC_ASSERT(sample_in_byte == 0);
@@ -280,7 +302,6 @@ set_parameters() {
   bits_per_sample = new_parameters.bits_per_sample;
   sample_rate = new_parameters.sample_rate;
   base_sample_rate = new_parameters.base_sample_rate;
-
   fft_size = new_parameters.fft_size_delaycor;
   int fft_size_correlation = new_parameters.fft_size_correlation;
   SFXC_ASSERT(((int64_t)fft_size * 1000000) % sample_rate == 0);
@@ -303,8 +324,8 @@ void Bit2float_worker::empty_input_queue() {
 }
 
 Bit2float_worker_sptr
-Bit2float_worker::new_sptr(int stream_nr_, bit_statistics_ptr statistics_){
-  return Bit2float_worker_sptr(new Bit2float_worker(stream_nr_, statistics_));
+Bit2float_worker::new_sptr(int stream_nr_, bit_statistics_ptr statistics_, bool phased_array){
+  return Bit2float_worker_sptr(new Bit2float_worker(stream_nr_, statistics_, phased_array));
 }
 
 int 

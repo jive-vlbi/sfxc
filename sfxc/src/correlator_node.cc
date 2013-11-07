@@ -29,6 +29,7 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, bool pulsar_binning
     nr_corr_node(nr_corr_node), 
     pulsar_parameters(get_log_writer()),
     pulsar_binning(pulsar_binning_),
+    bit2float_thread_(phased_array_),
     phased_array(phased_array_), n_streams(0) {
   #ifdef USE_IPP
   ippSetNumThreads(1);
@@ -352,7 +353,11 @@ Correlator_node::set_parameters() {
   if (parameters.cross_polarize)
     nstations /= 2;
   int nBaselines = correlation_core->number_of_baselines();
-  int size_of_one_baseline = sizeof(std::complex<FLOAT>) * (parameters.number_channels + 1);
+  int size_of_one_baseline;
+  if (phased_array)
+    size_of_one_baseline = sizeof(FLOAT) * (parameters.number_channels + 1);
+  else
+    size_of_one_baseline = sizeof(std::complex<FLOAT>) * (parameters.number_channels + 1);
 
   int size_uvw = nstations*sizeof(Output_uvw_coordinates);
   // when the cross_polarize flag is set then the correlator node receives 2 polarizations

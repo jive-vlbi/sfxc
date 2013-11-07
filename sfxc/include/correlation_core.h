@@ -10,6 +10,8 @@
 #include "bit_statistics.h"
 #include "timer.h"
 #include <fstream>
+#include "bandpass.h"
+#include "aips_cal.h"
 
 class Correlation_core : public Tasklet {
 //friend class Correlation_core_pulsar;
@@ -60,7 +62,8 @@ protected:
   virtual void integration_initialise();
   void integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride);
   void integration_normalize(std::vector<Complex_buffer> &integration_buffer);
-  void integration_write(std::vector<Complex_buffer> &integration_buffer, int phase_center, int bin);
+  void integration_write_headers(int phase_center, int bin);
+  void integration_write_baselines(std::vector<Complex_buffer> &integration_buffer);
   void sub_integration();
   void find_invalid();
   void get_input_streams();
@@ -75,7 +78,11 @@ protected:
   size_t number_input_streams_in_use();
 
 protected:
+  bandpass btable;
+  aips_cal cltable;
+  bool is_open_;
   int previous_fft;
+  std::vector<int> stream2station;
   std::vector<Input_buffer_ptr>           input_buffers;
   std::vector< std::complex<FLOAT> * >    input_elements;
   std::vector< std::vector<Invalid> * >   invalid_elements;
