@@ -192,7 +192,6 @@ set_parameters(const Input_node_parameters &input_node_param,
   bits_per_sample=input_node_param.bits_per_sample();
   int nr_output_bytes = (input_node_param.fft_size * bits_per_sample) / 8;
   SFXC_ASSERT(((nr_output_bytes*(8/bits_per_sample))*1000000LL) % sample_rate== 0);
-//  delta_time = (nr_output_bytes*(8/bits_per_sample))*1000000LL/sample_rate;
 
   for (size_t i=0; i < number_frequency_channels; i++)
     data_writer_.add_channel();
