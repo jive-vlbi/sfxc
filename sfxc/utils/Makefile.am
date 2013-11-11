@@ -22,7 +22,8 @@ bin_PROGRAMS += generate_uvw_coordinates \
                 produce_html_plotpage \
                 produce_html_diffpage \
                 vex2ccf \
-                baseline_info 
+                baseline_info \
+                polyflag
 endif
 
 bin_SCRIPTS  = run_sfxc.py vumeter.py gen_all_delay_tables.py channel_extractor_compiler.py print_corfile.py
@@ -142,3 +143,8 @@ make_anim_SOURCES = \
   ../src/utils.cc \
   ../src/sfxc_fft_float.cc
 
+polyflag_SOURCES = \
+  polyflag.cc \
+  ../src/delay_table_akima.cc \
+  ../src/correlator_time.cc \
+  ../src/utils.cc
