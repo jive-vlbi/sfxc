@@ -3,12 +3,12 @@
 #ifndef VEXPP_H
 #define VEXPP_H
 
+#include <cassert>
 #include <cstddef>
 #include <string>
 #include <vector>
 #include <map>
 #include <iostream>
-#include <assert.h>
 
 /** The main class for the C++ Vex parser **/
 class Vex {

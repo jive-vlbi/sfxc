@@ -3,8 +3,8 @@
 %{
 #define YYERROR_VERBOSE 1
 
-#include <math.h>
-#include <stdio.h>
+#include <cmath>
+#include <cstdio>
 #include <iostream>
 
 #include "generic.h"
@@ -14,8 +14,8 @@
 %token IDENT COLON SEMICOLON EQ DOLLAR DEF ENDDEF SCAN ENDSCAN REF
 
 %{
-#include <math.h>
-#include <stdio.h>
+#include <cmath>
+#include <cstdio>
 #include <iostream>
 %}
 

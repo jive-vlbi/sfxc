@@ -1,8 +1,8 @@
 #ifndef VEXPP_ITERATOR_H
 #define VEXPP_ITERATOR_H
 
+#include <cassert>
 #include <cstddef>
-#include <assert.h>
 #include "Vexpp_node.h"
 
 
