@@ -1499,66 +1499,63 @@ char
 Control_parameters::
 polarisation(const std::string &channel_name,
              const std::string &station_name,
-             const std::string &mode) const {
-  std::string if_mode_freq;
-  std::string if_node_Node;
-  std::string if_ref_BBC;
-  std::string if_ref_BBCnr;
-  std::string if_ref_Ref;
-
-  Vex::Node::const_iterator mode_block = vex.get_root_node()["MODE"][mode];
-  for (Vex::Node::const_iterator if_it = mode_block->begin("FREQ");
-       if_it != mode_block->end("FREQ"); ++if_it) {
-    for (Vex::Node::const_iterator elem_it = if_it->begin();
-         elem_it != if_it->end(); ++elem_it) {
-      if (elem_it->to_string() == station_name) {
-        if_mode_freq = if_it[0]->to_string();
-      }
-    }
+             const std::string &mode_name) const {
+  const Vex::Node &root = vex.get_root_node();
+  Vex::Node::const_iterator mode = root["MODE"][mode_name];
+  if (mode == root["MODE"]->end()) {
+    std::cerr << "Cannot find mode " << mode_name << std::endl;
+    sfxc_abort();
   }
-  for (Vex::Node::const_iterator if_it = mode_block->begin("IF");
-       if_it != mode_block->end("IF"); ++if_it) {
-    for (Vex::Node::const_iterator elem_it = if_it->begin();
-         elem_it != if_it->end(); ++elem_it) {
-      if (elem_it->to_string() == station_name) {
-        if_node_Node = if_it[0]->to_string();
-      }
-    }
+  const std::string &freq_name = vex.get_frequency(mode_name, station_name);
+  if (freq_name == std::string()) {
+    std::cerr << "Cannot find $FREQ reference for " << station_name
+	      << " in mode " << mode_name << std::endl;
+    sfxc_abort();
   }
-  for (Vex::Node::const_iterator bbc_it = mode_block->begin("BBC");
-       bbc_it != mode_block->end("BBC"); ++bbc_it) {
-    for (size_t i=1; i<bbc_it->size(); i++) {
-      if (bbc_it[i]->to_string() == station_name) {
-        if_ref_BBC = bbc_it[0]->to_string();
-      }
-    }
+  if (root["FREQ"][freq_name] == root["FREQ"]->end()) {
+    std::cerr << "Cannot find " << freq_name << " in $FREQ block" << std::endl;
+    sfxc_abort();
   }
 
-  for (Vex::Node::const_iterator frq_block =
-         vex.get_root_node()["FREQ"][if_mode_freq]->begin("chan_def");
-       frq_block != vex.get_root_node()["FREQ"][if_mode_freq]->end("chan_def");
-       ++frq_block) {
-    for (Vex::Node::const_iterator elem_it = frq_block->begin();
-         elem_it != frq_block->end(); ++elem_it) {
-      if (elem_it->to_string() == channel_name) {
-        if_ref_BBCnr = frq_block[5]->to_string();
-      }
-    }
+  const std::string &if_name = vex.get_IF(mode_name, station_name);
+  if (if_name == std::string()) {
+    std::cerr << "Cannot find $IF reference for " << station_name
+	      << " in mode " << mode_name << std::endl;
+    sfxc_abort();
+  }
+  if (root["IF"][if_name] == root["IF"]->end()) {
+    std::cerr << "Cannot find " << if_name << " in $IF block" << std::endl;
+    sfxc_abort();
   }
 
-  for (Vex::Node::const_iterator bbc_block =
-         vex.get_root_node()["BBC"][if_ref_BBC]->begin();
-       bbc_block != vex.get_root_node()["BBC"][if_ref_BBC]->end();
-       ++bbc_block) {
-    for (Vex::Node::const_iterator bbcnr_it = bbc_block->begin();
-         bbcnr_it != bbc_block->end(); ++bbcnr_it) {
-      if (bbcnr_it->to_string() == if_ref_BBCnr) {
-        if_ref_Ref = bbc_block[2]->to_string();
-      }
-    }
+  const std::string &bbc_name = vex.get_BBC(mode_name, station_name);
+  if (bbc_name == std::string()) {
+    std::cerr << "Cannot find $BBC reference for " << station_name
+	      << " in mode " << mode_name << std::endl;
+    sfxc_abort();
+  }
+  if (root["BBC"][bbc_name] == root["BBC"]->end()) {
+    std::cerr << "Cannot find " << bbc_name << " in $BBC block" << std::endl;
+    sfxc_abort();
   }
 
-  return vex.polarisation(if_node_Node, if_ref_Ref);
+  std::string bbc_ref;
+  Vex::Node::const_iterator freq = root["FREQ"][freq_name];
+  for (Vex::Node::const_iterator chan = freq->begin("chan_def");
+       chan != freq->end("chan_def"); chan++) {
+    if (chan[4]->to_string() == channel_name)
+      bbc_ref = chan[5]->to_string();
+  }
+
+  std::string if_ref;
+  Vex::Node::const_iterator bbc = root["BBC"][bbc_name];
+  for (Vex::Node::const_iterator bbc_it = bbc->begin("BBC_assign");
+       bbc_it != bbc->end("BBC_assign"); bbc_it++) {
+    if (bbc_it[0]->to_string() == bbc_ref)
+      if_ref = bbc_it[2]->to_string();
+  }
+
+  return vex.polarisation(if_name, if_ref);
 }
 
 int
