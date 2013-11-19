@@ -4,7 +4,7 @@ CPPFLAGS=-I${SS}/linux/include
 LDFLAGS=-L${SS}/linux/lib/gcc_v4 -L${SS}/linux/driver/lib
 CFLAGS=-Wall -g -O2
 
-all: mk5read vsnread mk5udp
+all: mk5read
 
 mk5read: mk5read.c
 	$(CXX) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $< $(SS_LIBS)
