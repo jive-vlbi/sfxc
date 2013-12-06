@@ -86,7 +86,7 @@ def gps(station, t1):
         pass
     for m in l:
         dir = month[m[1] - 1] + str(m[0] % 100)
-        url = "ftp://vlbeer.ira.inaf.it/pub/gps/" + dir + \
+        url = "ftp://vlbeer.ira.inaf.it/vlb_arc/home/gps/" + dir + \
             "/gps." + station.lower()
         filename = station + "-%d%02d.gps" % m
         try:
