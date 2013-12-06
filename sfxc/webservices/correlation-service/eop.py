@@ -3,7 +3,7 @@ import time
 import sys
 import urllib
 
-from vex_parser import Vex
+from vex import Vex
 
 os.environ['TZ'] = 'UTC'
 time.tzset()

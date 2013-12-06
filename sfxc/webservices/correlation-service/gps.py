@@ -5,7 +5,7 @@ import urllib
 
 import numpy
 
-from vex_parser import Vex
+from vex import Vex
 
 gps_correction = {
     "HART":      -1.2,
