@@ -635,7 +635,7 @@ generate_delay_tables(FILE *output, char *stationname, double start,
     char name[3];
 
     strncpy(name, stationname, sizeof(name));
-    name[3] = 0;
+    name[2] = 0;
 
     fwrite(&header_size, 1, sizeof(int32_t), output_file);
     fwrite(name, 3, sizeof(char), output_file);

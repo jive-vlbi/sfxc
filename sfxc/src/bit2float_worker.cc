@@ -245,7 +245,6 @@ set_new_parameters(const Correlation_parameters &parameters) {
 
   new_parameters.bits_per_sample = parameters.station_streams[stream_idx].bits_per_sample;
 
-  SFXC_ASSERT((parameters.number_channels*bits_per_sample)%8 == 0);
   new_parameters.sample_rate = parameters.station_streams[stream_idx].sample_rate;
   new_parameters.base_sample_rate = parameters.sample_rate;
   new_parameters.fft_size_delaycor = parameters.fft_size_delaycor;
