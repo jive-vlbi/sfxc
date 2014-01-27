@@ -1,13 +1,13 @@
 #ifndef VEXPP_NODE_H
 #define VEXPP_NODE_H
 
+#include <cassert>
 #include <cstddef>
+#include <cstdlib>
 #include <string>
 #include <vector>
 #include <map>
 #include <iostream>
-#include <assert.h>
-#include <stdlib.h>
 
 template <class Vexpp_node_iterator_type>
 class Vexpp_node_iterator;

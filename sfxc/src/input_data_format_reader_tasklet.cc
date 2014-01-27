@@ -86,6 +86,19 @@ do_task() {
 	      << ", expected=" << start_next_frame << "\n";
 #endif
     if (nframes_missing > 0) {
+      time_t t;
+      struct tm tm;
+      ::time(&t);
+      gmtime_r(&t, &tm);
+      Time now(mjd(tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900),
+	       tm.tm_hour * 3600 + tm.tm_min * 60 + tm.tm_sec + 5);
+      if (input_element_.start_time > now) {
+	// Data from the future; drop the frame, insert an invalid block and complain
+	std::cerr << RANK_OF_NODE << ": causality violation " << input_element_.start_time << std::endl;
+	push_random_blocks(1, channel);
+	return;
+      }
+
       Input_element old_input_element = input_element_;
       push_random_blocks(nframes_missing, channel);
       input_element_ = old_input_element;

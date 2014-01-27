@@ -5,7 +5,7 @@
 
 #define MSG(a) { std::cout << a << std::endl; }
 
-#include <stdio.h>
+#include <cstdio>
 extern FILE *yyin, *yyout;
 
 #include "vex/Vex++.h"

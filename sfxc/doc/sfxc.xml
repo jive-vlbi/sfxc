@@ -1,0 +1,247 @@
+<?xml version='1.0'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+               "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+  <!ENTITY sfxc "<application><acronym>SFXC</acronym></application>">
+]>
+
+<book>
+
+<bookinfo>
+<title>&sfxc; User's Manual</title>
+<author>
+<firstname>Mark</firstname>
+<surname>Kettenis</surname>
+<affiliation><orgname>JIVE</orgname></affiliation>
+</author>
+</bookinfo>
+
+<chapter>
+<title>Running the &sfxc; correlator</title>
+
+<para>
+&sfxc; is an <acronym>MPI</acronym> application.  This means that
+running it is somewhat dependent on the <acronym>MPI</acronym>
+implementation installed on your system.  The instructions here are
+for OpenMPI, which currently seems to be the most popular Open Source
+MPI implementation for Linux systems.
+
+<screen>
+<prompt>$</prompt> <command>mpirun --machinefile <parameter>machinefile</parameter> --rankfile <parameter>rankfile</parameter> --np <parameter>np</parameter> sfxc <parameter>controlfile</parameter> <parameter>vexfile</parameter> </command>
+</screen>
+
+where <parameter>controlfile</parameter> is the name of the correlator
+control file that describes the correlation
+parameters, <parameter>vexfile</parameter> is the name of the VEX file
+that describes the experiment, <parameter>np</parameter> is the number of
+MPI processes to start as described by the machine
+file <parameter>machinefile</parameter> and rank
+file <parameter>rankfile</parameter>.
+</para>
+
+<para>
+When creating the rank file, there are a few things that need to be
+taken into account.
+
+The process with rank 0 becomes the manager process.  Since the manager
+process doesn't really do a lot, there is no point in assigning more than
+a single slot to it.
+
+The process with rank 1 becomes the log process.  As with the manager
+process, there is no point in assigning more than a single slot.
+
+The process with rank 2 becomes the output process.  This process will be
+able to take advantage of multiple cores, so assigning two slots is a
+good idea if you expect a significant output data rate.
+
+At JIVE we usually run all these processes on the cluster head node.
+</para>
+
+<para>
+The processes starting at rank 3 become input processes.  There will
+be one input process for each station in the correrlation.  When
+correlating directly from Mark5 disk packs, these processes will need
+to run on the Mark5s containing the diskpacks for those stations.
+When correlating from files, these processes will need to run on
+machines that have access to the data files for these stations.
+
+The process with rank 3 will be assigned to the station that comes
+first when the stations are ordered alphabetically by station code.
+The process with rank 4 will be assigned to the station that comes
+second, etc.
+
+The input processes do the unpacking and corner turning of the input
+data, which can be cpu intensive.  So assigning multiple slots is a
+good idea.  By default the unpacking happens in two seperate threads,
+so using two or three slots makes sense.
+</para>
+
+<para>
+The remainder of the processes will be assigned to correlations
+processes.  A single slot is sufficient for these processes.
+</para>
+
+</chapter>
+
+<chapter>
+<title>The correlator control file</title>
+
+<para>
+The correlator control file uses the JavaScript Object Notation (JSON)
+format.  It is constumary to give these files
+a <filename>.ctrl</filename> extension.
+</para>
+
+<variablelist>
+  <varlistentry>
+    <term><varname>output_file</varname></term>
+    <listitem>
+      <para>
+	A string specifying the name of the file to write the
+	correltor output to.  It is costumary to give this file
+	a <filename>.cor</filename> extension.
+      </para>
+    </listitem>
+  </varlistentry>
+  <varlistentry>
+    <term><varname>number_channels</varname></term>
+    <listitem>
+      <para>
+	An integer specifying the number of desired spectral channels
+	in the correlator output.  Has to be power of two.
+      </para>
+    </listitem>
+  </varlistentry>
+  <varlistentry>
+    <term><varname>cross_polarize</varname></term>
+    <listitem>
+      <para>
+	A boolean indicating whether cross hands should be calculated
+	or not.
+      </para>
+    </listitem>
+  </varlistentry>
+  <varlistentry>
+    <term><varname>stations</varname></term>
+    <listitem>
+      <para>
+	A list of strings specifying the stations that are to be correlated.
+      </para>
+    </listitem>
+  </varlistentry>
+  <varlistentry>
+    <term><varname>data_sources</varname></term>
+    <listitem>
+      <para>
+	An object containing a list of strings for each station
+	specifying the data source locations for each station.  Each
+	data source location is specified in the form of a Uniform
+	Resource Identifier (URI).  To correlate data from plain
+	files, the standard <uri>file</uri> scheme can be used.
+	Correlating data directly from Mark5 disk packs is achieved by
+	specifying an appropriate <uri>mk5:</uri> URI.  All URIs for a
+	single station must use the same scheme.  Specifying multiple
+	URIs for a single station is currently only supported for
+	the <uri>file</uri> scheme.
+      </para>
+    </listitem>
+  </varlistentry>
+  <varlistentry>
+    <term><varname>start</varname></term>
+    <listitem>
+      <para>
+	A string specifying the start time of the correlation.  The
+	time should be specified in VEX (####y###d##h##m##s) format
+	representing UTC.  For real-time correlation the
+	string <literal>"now"</literal> can be used, which will
+	instruct the correlator to use the current wall clock time (in
+	UTC) as the start time.
+      </para>
+    </listitem>
+  </varlistentry>
+  <varlistentry>
+    <term><varname>stop</varname></term>
+    <listitem>
+      <para>
+	A string specifying the end time of the correlation.  The
+	time should be specified in VEX (####y###d##h##m##s) format
+	representing UTC.
+      </para>
+    </listitem>
+  </varlistentry>
+  <varlistentry>
+    <term><varname>exper_name</varname></term>
+    <listitem>
+      <para>
+	A string specifying the experiment name.  Used for generating
+	and referencing the appropriate delay tables.
+      </para>
+    </listitem>
+  </varlistentry>
+  <varlistentry>
+    <term><varname>delay_directory</varname></term>
+    <listitem>
+      <para>
+	A string specifying the directory in which to store the delay tables.
+      </para>
+    </listitem>
+  </varlistentry>
+</variablelist>
+
+<para>
+An example of a control file is given below:
+</para>
+
+<example><title>Control file example</title>
+<programlisting>
+{
+    "exper_name": "F13C4", 
+    "cross_polarize": true, 
+    "number_channels": 256, 
+    "output_file": "file:///home/kettenis/test/f13c4/f13c4_no0023.cor", 
+    "stations": [
+        "Eb", 
+        "Fd", 
+        "Nl"
+    ], 
+    "data_sources": {
+        "Nl": [
+            "file:///scratch/kettenis/f13c4/f13c4_nl_no0023.m5b"
+        ], 
+        "Eb": [
+            "file:///scratch/kettenis/f13c4/f13c4_eb_no0023.m5b"
+        ], 
+        "Fd": [
+            "file:///scratch/kettenis/f13c4/f13c4_fd_no0023.m5b"
+        ]
+    }
+    "start": "2013y148d10h29m26s", 
+    "stop": "2013y148d10h34m06s", 
+    "delay_directory": "file:///home/kettenis/test/f13c4/delays"
+}
+</programlisting>
+</example>
+</chapter>
+
+<chapter>
+<title>Preparing your VEX file</title>
+
+<para>
+Some information needs to be provided in the VEX file that is
+typically not emitted by the scheduling software.  It is essential
+that you have $CLOCK and $EOP blocks.  Some of the tools distributed
+with SFXC also use the $TAPELOG_OBS block.  We recommend that in the
+$EOP block you provide entries at a 24 hour intervals and have an
+additional entry for the day before and the day after the observation.
+All these blocks need to be properly referenced; from the $GLOBAL
+block for $EOP and from the $STATION block fot the $CLOCK and $EOP
+blocks.
+</para>
+
+<para>
+&sfxc; has been tested extensively with VEX output from (NRAO) SCHED.
+Your mileage may vary with output from other VLBI scheduling software.
+</para>
+
+</chapter>
+
+</book>

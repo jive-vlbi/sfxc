@@ -289,24 +289,6 @@ public:
     return floor(integration_time / time_one_fft);
   }
 
-  /**
-   * Computes the number of bytes transferred from the input node to the
-   * correlator node for one integration slice.
-   **/
-  static int nr_bytes_per_integration_slice_input_node_to_correlator_node
-  (const Time &integration_time,
-   int data_rate,
-   int bits_per_sample,
-   int fft_size) {
-    int nr_ffts = nr_ffts_per_integration_slice(integration_time,
-                  data_rate,
-                  fft_size);
-    // One byte for the offset
-    // One extra byte at the end for the offset
-    // two int32_t for the invalid sequence
-    return nr_ffts * ((fft_size * bits_per_sample / 8) + 2 + 2 * sizeof(int32_t));
-  }
-
   int polarisation_type_for_global_output_header(const std::string &mode) const;
 
   /****************************************************/

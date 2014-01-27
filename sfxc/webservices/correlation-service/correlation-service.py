@@ -9,7 +9,7 @@ import time
 import web
 
 # JIVE Python modules.
-from vex_parser import Vex
+import vex
 import vex_update
 from evlbi import DataFlow
 
@@ -161,10 +161,7 @@ class new_experiment:
         if not web.ctx['ip'] in access_list:
             return error_response("Access denied")
         try:
-            fp = tempfile.NamedTemporaryFile()
-            fp.write(web.data())
-            fp.flush()
-            vex = Vex(fp.name)
+            vex = vex.parse(web.data)
         except:
             return error_response("Can't parse VEX")
 

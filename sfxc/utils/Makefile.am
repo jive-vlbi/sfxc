@@ -21,8 +21,8 @@ bin_PROGRAMS += generate_uvw_coordinates \
                 make_anim \
                 produce_html_plotpage \
                 produce_html_diffpage \
-                vex2ccf \
                 baseline_info \
+                polyflag \
                 create_psrfits
 endif
 
@@ -115,10 +115,6 @@ baseline_info_SOURCES = \
   ../src/sfxc_fft_float.cc \
   gnuplot_i.cc
 
-vex2ccf_SOURCES = \
-  vex2ccf.cc \
-  ../src/utils.cc
-
 generate_uvw_coordinates_SOURCES = \
   generate_uvw_coordinates.cc \
   ../src/uvw_model.cc \
@@ -148,3 +144,8 @@ make_anim_SOURCES = \
   ../src/utils.cc \
   ../src/sfxc_fft_float.cc
 
+polyflag_SOURCES = \
+  polyflag.cc \
+  ../src/delay_table_akima.cc \
+  ../src/correlator_time.cc \
+  ../src/utils.cc
