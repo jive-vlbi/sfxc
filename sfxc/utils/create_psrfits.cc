@@ -631,14 +631,74 @@ void get_quantization(SFXCdata &sfxcdata, vector<int> &channels, float lower_bou
     //Sort all data
     sort(buf[i].begin(), buf[i].end());
     // Filter the zeros
-    int start = 0;
-    while((buf[i][start] < 1) && (start < buf[i].size()))
+    int start=0;
+    while((buf[i][start] < -1) && (start < buf[i].size()-1))
       start += 1;
-    int M = N - start;
+    int end = start;
+    while((buf[i][end] < 1) && (end < buf[i].size()-1))
+      end += 1;
+    // Copy the non zeros
+    for(int j=0;j<N-end;j++)
+      buf[i][start+j] = buf[i][end+j];
+    int M = N-(end-start);
+    double median = buf[i][M/2];
+    double average = 0, average_squares=0;
+    std::cout << i << ": M = " << M << ", N="<<N<<"\n";
+    for(int j=0;j<M;j++){
+      if (i==64) std::cout << buf[i][j] << "\n";
+      average += buf[i][j];
+      average_squares += buf[i][j]*buf[i][j];
+    }
+    average /= M;
+    average_squares /= M;
+    double sigma = sqrt(average_squares - average*average);
+    // From Jenet and Anderson, 1998
+    step[i] = sigma * 0.02957;
+    lower_bound[i] = median - step[i] *127;
+    std::cout << i << " : step = " << step[i] << ", median = " << median << ", average = " << average << ", av_sq = " << average_squares << "\n";
+  }
+}
+
+void get_quantization2(SFXCdata &sfxcdata, vector<int> &channels, float lower_bound[], float step[]){
+  // Get the quantiation levels. Each sub-integration is a sum of Rayleigh distributed samples of the
+  // signal power. Because of the central limit theorem this sum should be approximately gaussian.
+  const int nint = sfxcdata.nsubint;
+  const int nsamples = sfxcdata.nsamples;
+  const int nchan = sfxcdata.gheader.number_channels;
+  const int nfreq = channels.size();
+  
+  const int pol = 0;  // Use a single polarization
+
+  const int nint_in_8sec = (int) round(8000000./sfxcdata.gheader.integration_time);
+  const int bint = max(nint/2 - nint_in_8sec, 0);
+  const int eint = min(bint+2*nint_in_8sec, nint-1);
+  
+  const int N = (eint-bint+1) * nsamples;
+  vector<vector<float> > buf(nchan*nfreq);
+  for(int i=0;i<nchan*nfreq;i++)
+    buf[i].resize(N);
+
+  // Copy the data range to an auxilary array
+  std::cout << "nsamples = " << nsamples << ", nchan = " << nchan << ", nfreq = " << nfreq<< "\n";
+  for(int int_nr = bint; int_nr <= eint; int_nr++){
+    std::cout << "int_nr = " << int_nr << " / " << eint << "\n";
+    for(int freq_nr = 0; freq_nr < nfreq; freq_nr++){
+      int freq = channels[freq_nr];
+      for(int sample = 0; sample < nsamples; sample++){
+        int j = (int_nr-bint)*nsamples+sample;
+        float *data_row = sfxcdata.get_sample(int_nr, freq, sample, pol);
+        for(int i=0; i<nchan; i++)
+          buf[freq_nr*nchan+i][j] = data_row[i];
+      }
+    }
+  }
+  for(int i=0;i<nchan*nfreq;i++){
+    //Sort all data
+    sort(buf[i].begin(), buf[i].end());
     // Alternative method : just pick the numbers from the buffer select up to 10^-4
-    lower_bound[i] = buf[i][start + M / 10000];
+    lower_bound[i] = buf[i][N / 1000];
     // Fixme : this was 10^-4
-    step[i] = (buf[i][N-M/1000-1] - lower_bound[i]) / 255;
+    step[i] = (buf[i][N-N/1000-1] - lower_bound[i]) / 255;
   }
 }
 
@@ -703,7 +763,7 @@ void write_subints(FILE *outfile, vector<SFXCdata> &sfxcdata, vector<int> &chann
             int idx = sb_idx*nchan + ch;
             int val = round((data_row[ch]-lower_bound[idx]) / dlevel[idx]);
             buf[ch] = max(min(val, 255), 0);
-            if ((subint_nr == 10) && (ch==16))
+            if ((subint_nr == 10) && (ch==48))
               cout << "buf["<<idx<<"]="<<(int)buf[ch]<< ", orig = " << val  << ", dlevel = " << dlevel[idx] << ", lower = " << lower_bound[idx] << ", data = " << data_row[ch] 
                    << "\n";
           }
