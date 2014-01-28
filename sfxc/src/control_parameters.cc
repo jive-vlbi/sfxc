@@ -419,6 +419,17 @@ Control_parameters::check(std::ostream &writer) const {
       ok = false;
     }
   }
+  // If phased array mode is activated, check for calibration tables
+  if (ctrl["phased_array"].asBool()){
+    if(ctrl["cl_table"] == Json::Value()){
+      writer << "Phased array mode requires \"cl_table\" to be specified" << std::endl;
+      ok = false;
+    }
+    if(ctrl["bp_table"] == Json::Value()){
+      writer << "Phased array mode requires \"bp_table\" to be specified" << std::endl;
+      ok = false;
+    }
+  }
   
   // Check pulsar binning
   if (ctrl["pulsar_binning"].asBool()){
@@ -562,6 +573,27 @@ int
 Control_parameters::fft_size_correlation() const {
   return ctrl["fft_size_correlation"].asInt();
 }
+
+std::string
+Control_parameters::cl_table() const {
+  if(ctrl["cl_table"] == Json::Value())
+    return std::string();
+  std::string cl_table = ctrl["cl_table"].asString();
+  if (cl_table.substr(0,7) == "file://") 
+    return cl_table.substr(7);
+  return cl_table;
+}
+
+std::string
+Control_parameters::bp_table() const {
+  if(ctrl["bp_table"] == Json::Value())
+    return std::string();
+  std::string bp_table = ctrl["bp_table"].asString();
+  if (bp_table.substr(0,7) == "file://") 
+    return bp_table.substr(7);
+  return bp_table;
+}
+
 
 int
 Control_parameters::window_function() const{

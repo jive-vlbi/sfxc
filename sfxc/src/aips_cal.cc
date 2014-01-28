@@ -13,11 +13,12 @@ aips_cal::aips_cal(){
 }
 
 void
-aips_cal::open_table(const char *name, int nchan_){
+aips_cal::open_table(const std::string &name, int nchan_){
   // Read calibration data from aips CL table
-  FILE *file = fopen(name, "r");
+  FILE *file = fopen(name.c_str(), "r");
   if (file == NULL)
-    throw string("Could not open CL table : ") + name;
+    sfxc_abort(("Could not open CL table : " + name).c_str());
+  
   nchan = nchan_;
  
   // Read header

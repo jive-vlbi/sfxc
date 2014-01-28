@@ -57,7 +57,8 @@ public:
   void add_delay_table(int sn, Delay_table_akima &table);
   std::vector<Delay_table_akima> delay_tables;
   void add_source_list(const std::map<std::string, int> &sources_);
-
+  void add_cl_table(std::string name);
+  void add_bp_table(std::string name);
 protected:
   virtual void integration_initialise();
   void integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride);
@@ -78,9 +79,11 @@ protected:
   size_t number_input_streams_in_use();
 
 protected:
-  bandpass btable;
+  std::string bptable_name;
+  std::string cltable_name;
+  size_t old_fft_size;
+  bandpass bptable;
   aips_cal cltable;
-  bool is_open_;
   int previous_fft;
   std::vector<int> stream2station;
   std::vector<Input_buffer_ptr>           input_buffers;

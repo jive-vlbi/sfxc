@@ -5,8 +5,7 @@
 #include <set>
 
 Correlation_core::Correlation_core()
-    : current_fft(0), total_ffts(0), split_output(false){
- is_open_ = false;
+    : current_fft(0), total_ffts(0), split_output(false), old_fft_size(0){
 }
 
 Correlation_core::~Correlation_core() {
@@ -106,24 +105,7 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
 
   correlation_parameters = parameters;
   oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
-  try{
-    if(!is_open_){
-//      btable.open_table("/home/keimpema/data/gv020g/J2139.bp", fft_size(), false);
-//      cltable.open_table("/home/keimpema/data/gv020g/J2139.bad.cl", fft_size());
-      btable.open_table("/home/keimpema/data/gv020g/gv020g.m15a.bp", fft_size(), false);
-//      cltable.open_table("/home/keimpema/data/gv020g/gv020g.test.cl", fft_size());
-      cltable.open_table("/home/keimpema/data/gv020g/gv020g.m15a.cl", fft_size());
-//      cltable.open_table("/home/keimpema/data/fp003/fp003.cl", fft_size());
-//      btable.open_table("/home/keimpema/data/fp002/fp003.bp", fft_size());
-//      btable.open_table("/home/keimpema/data/ep077/ep077.sc11.bp", fft_size());
-//      cltable.open_table("/home/keimpema/data/ep077/ep077.sc11.cl", fft_size());
-      //std::cout << RANK_OF_NODE << " : opened bp\n";
-    }
-    is_open_ = true;
-  }catch(const std::string s){
-   std::cerr << "Problem(1) : " << s << "\n";
-   throw s;
-  }
+
   if (RANK_OF_NODE == 8){
     for(int i=0;i<correlation_parameters.station_streams.size();i++)
       std::cout << "stream " << i << " = " << correlation_parameters.station_streams[i].station_number << "\n";
@@ -134,6 +116,14 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   }
   if (input_conj_buffers.size() != number_input_streams_in_use()) {
     input_conj_buffers.resize(number_input_streams_in_use());
+  }
+  // Read calibration tables
+  if (old_fft_size != fft_size()){
+    old_fft_size = fft_size();
+    if (cltable_name != std::string())
+      cltable.open_table(cltable_name, fft_size());
+    if (bptable_name != std::string())
+      bptable.open_table(bptable_name, fft_size(), false);
   }
   n_flagged.resize(baselines.size());
   get_input_streams();
@@ -368,14 +358,13 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
       std::cout <<"b="<<b<< ", station1 =" << station1 << ", station2 = " << station2 << ", ch = " << correlation_parameters.frequency_nr << ", pol = " << polarisation << " (=" << correlation_parameters.polarisation << " ) "
                 << ", time = " << time << ", start_time = " << correlation_parameters.start_time << ", stream1 = " << streams_in_scan[baseline.first] << ", steam2=" << streams_in_scan[baseline.second]
                 << ", baseline = (" << baseline.first << ", " << baseline.second <<")\n";
-    try{
-    btable.apply_bandpass(time, &integration_buffer[b][0], station1, freq, correlation_parameters.sideband, polarisation, false);
-    btable.apply_bandpass(time, &integration_buffer[b][0], station2, freq, correlation_parameters.sideband, polarisation, true);
-    cltable.apply_callibration(time, &integration_buffer[b][0], station1, freq, correlation_parameters.sideband, polarisation, false);
-    cltable.apply_callibration(time, &integration_buffer[b][0], station2, freq, correlation_parameters.sideband, polarisation, true);
-    }catch(const std::string s){
-      std::cerr << "was? : " << s <<"\n";
-      throw s;
+    if (bptable.is_open()){
+      bptable.apply_bandpass(time, &integration_buffer[b][0], station1, freq, correlation_parameters.sideband, polarisation, false);
+      bptable.apply_bandpass(time, &integration_buffer[b][0], station2, freq, correlation_parameters.sideband, polarisation, true);
+    }
+    if (cltable.is_open()){
+      cltable.apply_callibration(time, &integration_buffer[b][0], station1, freq, correlation_parameters.sideband, polarisation, false);
+      cltable.apply_callibration(time, &integration_buffer[b][0], station2, freq, correlation_parameters.sideband, polarisation, true);
     }
   }
 }
@@ -718,4 +707,14 @@ void Correlation_core::find_invalid() {
     n_flagged[b].first += nflagged[0];
     n_flagged[b].second += nflagged[1];
   }
+}
+
+void Correlation_core::
+add_cl_table(std::string name){
+  cltable_name = name;
+}
+
+void Correlation_core::
+add_bp_table(std::string name){
+  bptable_name = name;
 }

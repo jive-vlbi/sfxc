@@ -18,16 +18,7 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 
   correlation_parameters = parameters;
   oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
-  try{
-    if(!is_open_)
-      btable.open_table("/home/keimpema/data/fp003/fp003.bp", fft_size(), true);
-      cltable.open_table("/home/keimpema/data/fp003/fp003.cl", fft_size());
-//      btable.open_table("/home/keimpema/data/gv020g/gv020g.m15a.bp", fft_size());
-    is_open_ = true;
-  }catch(const std::string s){
-   std::cerr << "Problem : " << s << "\n";
-   throw s;
-  }
+
   create_baselines(parameters);
   if (input_elements.size() != number_input_streams_in_use()) {
     input_elements.resize(number_input_streams_in_use());
@@ -39,6 +30,15 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
       input_conj_buffers[i].resize(fft_size() + 1);
   }
   n_flagged.resize(baselines.size());
+
+  // Read calibration tables 
+  if (old_fft_size != fft_size()){
+    old_fft_size = fft_size();
+    if (cltable_name != std::string())
+      cltable.open_table(cltable_name, fft_size());
+    if (bptable_name != std::string())
+      bptable.open_table(bptable_name, fft_size(), false);
+  }
 
   double start_mjd = parameters.start_time.get_mjd();
   fft_duration = ((double)fft_size() * 1000000) / parameters.sample_rate;

@@ -487,6 +487,11 @@ Manager_node::initialise() {
     }
   }
 
+  if(control_parameters.cl_table() != std::string())
+    correlator_node_set_all(MPI_TAG_CL_TABLE, control_parameters.cl_table());
+  if(control_parameters.bp_table() != std::string())
+    correlator_node_set_all(MPI_TAG_BP_TABLE, control_parameters.bp_table());
+
   // Write the global header in the outpul file
   send_global_header();
 

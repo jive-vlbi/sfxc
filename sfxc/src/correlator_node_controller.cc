@@ -44,6 +44,27 @@ Correlator_node_controller::process_event(MPI_Status &status) {
         node.add_delay_table(sn[1], table);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
+  case MPI_TAG_BP_TABLE: 
+      // Passthrough
+  case MPI_TAG_CL_TABLE: {
+      MPI_Status status2;
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      int size;
+      MPI_Get_elements(&status, MPI_CHAR, &size);
+      char table[size];
+      MPI_Recv(&table[0], size, MPI_CHAR, status.MPI_SOURCE,
+               status.MPI_TAG, MPI_COMM_WORLD, &status2);
+      if (status.MPI_TAG == MPI_TAG_BP_TABLE){
+        node.correlation_core_normal->add_bp_table(table);
+        if(node.pulsar_binning)
+          node.correlation_core_pulsar->add_bp_table(table);
+      }else{
+        node.correlation_core_normal->add_cl_table(table);
+        if(node.pulsar_binning)
+          node.correlation_core_pulsar->add_cl_table(table);
+      }
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
   case MPI_TAG_UVW_TABLE: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       Uvw_model table;

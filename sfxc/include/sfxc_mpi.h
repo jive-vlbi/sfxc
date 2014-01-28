@@ -261,6 +261,14 @@ enum MPI_TAG {
    * - ?
    **/
   MPI_TAG_UVW_TABLE,
+  /** Send a CL table
+   * - ?
+   **/
+  MPI_TAG_CL_TABLE,
+  /** Send a BP table
+   * - ?
+   **/
+  MPI_TAG_BP_TABLE,
 
   /** The correlation node is ready to process data
    * - ?
@@ -439,6 +447,12 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
     }
   case MPI_TAG_UVW_TABLE: {
       return "MPI_TAG_UVW_TABLE";
+    }
+  case MPI_TAG_CL_TABLE: {
+      return "MPI_TAG_CL_TABLE";
+    }
+  case MPI_TAG_BP_TABLE: {
+      return "MPI_TAG_BP_TABLE";
     }
   case MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED: {
       return "MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED";

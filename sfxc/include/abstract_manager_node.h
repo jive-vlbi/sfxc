@@ -116,6 +116,7 @@ public:
                                const std::string &station_name);
   void correlator_node_set_all(Pulsar_parameters &pulsar);
   void correlator_node_set_all(std::set<std::string> &sources);
+  void correlator_node_set_all(MPI_TAG msg_type, std::string msg);
 
   void set_correlator_node_ready(size_t correlator_rank, bool ready=true);
 

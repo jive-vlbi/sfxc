@@ -4,7 +4,6 @@
 
 Correlation_core_phased::Correlation_core_phased()
 {
- is_open_ = false;
 }
 
 Correlation_core_phased::~Correlation_core_phased()
@@ -46,7 +45,7 @@ Correlation_core_phased::do_task() {
       while (correlation_parameters.station_streams[stream].station_stream != streams_in_scan[i])
         stream++; 
       size_t station = correlation_parameters.station_streams[stream].station_number;
-      btable.apply_bandpass(time, &input_elements[i][buf], station, freq, correlation_parameters.sideband, polarisation);
+      bptable.apply_bandpass(time, &input_elements[i][buf], station, freq, correlation_parameters.sideband, polarisation);
       cltable.apply_callibration(time, &input_elements[i][buf], station, freq, correlation_parameters.sideband, polarisation);
       if(i==0){
         memcpy(&subint_buffer[0], &input_elements[0][buf], (fft_size() + 1) * sizeof(std::complex<FLOAT>));
@@ -105,17 +104,10 @@ Correlation_core_phased::set_parameters(const Correlation_parameters &parameters
   subint_conj_buffer.resize(fft_size()+1);
   autocor_conj_buffer.resize(fft_size()+1);
   n_flagged.resize(baselines.size());
-  try{
-    if(!is_open_){
-      btable.open_table("/home/keimpema/data/gv020g/gv020g.m15a.bp", fft_size(), true);
-      //btable.open_table("/home/keimpema/data/fp003/fp003.bp", fft_size(), true);
-      //cltable.open_table("/home/keimpema/data/fp003/fp003.cl", fft_size());
-      cltable.open_table("/home/keimpema/data/gv020g/gv020g.m15a.cl", fft_size());
-      is_open_ = true;
-    }
-  }catch(const std::string s){
-   std::cerr << "Problem : " << s << "\n";
-   throw s;
+  if (old_fft_size != fft_size()){
+    old_fft_size = fft_size();
+    cltable.open_table(cltable_name, fft_size());
+    bptable.open_table(bptable_name, fft_size(), true);
   }
   get_input_streams();
 }

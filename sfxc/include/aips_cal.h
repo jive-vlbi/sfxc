@@ -8,7 +8,8 @@ public:
   aips_cal();
   virtual ~aips_cal(){}
   void apply_callibration(const Time t, std::complex<FLOAT> *band, int station, double freq, char sideband, int pol_nr, bool do_conjg=false);
-  void open_table(const char *filename, int nchan_);
+  void open_table(const std::string &filename, int nchan_);
+  bool is_open() {return opened;}
 public:
   struct cl_data{
     std::vector<double> delays, rates, weights, disp_delays;

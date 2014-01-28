@@ -212,6 +212,8 @@ public:
   int reference_station_number() const;
   std::string setup_station() const;
   std::string experiment() const;
+  std::string cl_table() const;
+  std::string bp_table() const;
 
   bool phased_array() const;
   bool pulsar_binning() const;

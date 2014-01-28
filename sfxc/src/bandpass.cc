@@ -11,11 +11,11 @@ bandpass::bandpass(){
 }
 
 void
-bandpass::open_table(const char *name, int nchan_, bool phase_only){
+bandpass::open_table(const std::string &name, int nchan_, bool phase_only){
   // Read bandpass table, downsampling the numbering of spectral points to nchan
-  FILE *file = fopen(name, "r");
+  FILE *file = fopen(name.c_str(), "r");
   if (file == NULL)
-    throw string("Could not open bandpass table : ") + name;
+    sfxc_abort(("Could not open BP table : " + name).c_str());
   nchan = nchan_;
   
   // Read header

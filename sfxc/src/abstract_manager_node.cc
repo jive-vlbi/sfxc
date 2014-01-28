@@ -465,6 +465,17 @@ correlator_node_set(Correlation_parameters &parameters,
 
 void
 Abstract_manager_node::
+correlator_node_set_all(MPI_TAG msg_type, std::string msg) {
+  for (size_t i=0; i<correlator_node_rank.size(); i++) {
+    int rank = correlator_node_rank[i];
+    int32_t size = msg.size() + 1;
+    MPI_Send((void *)&msg.c_str()[0], size, MPI_CHAR, rank, msg_type, MPI_COMM_WORLD);
+  }
+}
+
+
+void
+Abstract_manager_node::
 correlator_node_set_all(Delay_table_akima &delay_table,
                         const std::string &station_name) {
   int sn[2] = {input_node(station_name), -1};
