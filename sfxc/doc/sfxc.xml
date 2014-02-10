@@ -147,8 +147,7 @@ a <filename>.ctrl</filename> extension.
     <listitem>
       <para>
 	A floating-point number specifying the integration time in
-	seconds.  Currently needs to be a power of two (but the
-	exponent can be negative, so 0.5, 0.25, etc. are allowed).
+	seconds.  Will be rounded to the nearest integral microsecond.
       </para>
     </listitem>
   </varlistentry>
