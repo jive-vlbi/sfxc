@@ -143,6 +143,16 @@ a <filename>.ctrl</filename> extension.
     </listitem>
   </varlistentry>
   <varlistentry>
+    <term><varname>integr_time</varname></term>
+    <listitem>
+      <para>
+	A floating-point number specifying the integration time in
+	seconds.  Currently needs to be a power of two (but the
+	exponent can be negative, so 0.5, 0.25, etc. are allowed).
+      </para>
+    </listitem>
+  </varlistentry>
+  <varlistentry>
     <term><varname>cross_polarize</varname></term>
     <listitem>
       <para>
