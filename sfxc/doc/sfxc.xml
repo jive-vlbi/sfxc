@@ -80,6 +80,37 @@ The remainder of the processes will be assigned to correlations
 processes.  A single slot is sufficient for these processes.
 </para>
 
+<example><title>Rank file example</title>
+<programlisting>
+rank 0=head slot=0
+rank 1=head slot=1
+rank 2=head slot=2,3
+rank 3=sfxc-d2 slot=0,1
+rank 4=sfxc-d2 slot=2,3
+rank 5=sfxc-d3 slot=0,1
+rank 6=sfxc-a0 slot=0
+rank 7=sfxc-a1 slot=0
+...
+rank 36=sfxc-a2 slot=7
+rank 37=sfxc-a3 slot=7
+</programlisting>
+</example>
+
+<para>
+&sfxc; will automatically generate delay tables using the CALC10 code
+that's included in the distribution.  The CALC10 needs some additional
+input files to do its work.  These are the JPL Solar System Ephemeris
+(<filename>DE405_le.jpl</filename>), ocean loading information
+(<filename>ocean.dat</filename>) and antenna tilt
+(<filename>tilt.dat</filename>).  It expects to find these in a
+directory pointed to by the <envar>CALC_DIR</envar> environment
+variable.  A copy of <filename>DE405_le.jpl</filename> as well as
+ocean loading and antenna tilt information for many antennas that
+co-observe with the European VLBI Network (EVN) can be found
+in <filename>sfxc/lib/calc10/data</filename> in the source
+distribution.
+</para>
+
 </chapter>
 
 <chapter>
@@ -213,13 +244,14 @@ An example of a control file is given below:
         "Fd": [
             "file:///scratch/kettenis/f13c4/f13c4_fd_no0023.m5b"
         ]
-    }
+    }, 
     "start": "2013y148d10h29m26s", 
     "stop": "2013y148d10h34m06s", 
     "delay_directory": "file:///home/kettenis/test/f13c4/delays"
 }
 </programlisting>
 </example>
+
 </chapter>
 
 <chapter>
@@ -238,8 +270,150 @@ blocks.
 </para>
 
 <para>
+It is important that the description of the data format in the VEX
+file is correct.  &sfxc; currently supports the Mark4, VLBA, Mark5B
+and VDIF data format and includes some heuristics to determine the
+correct data format from the VEX file.  If &sfxc; crashes, seems to
+hang or complains it cannot find any valid data, please check that the
+data format description in your VEX file matches reality.
+</para>
+
+<variablelist>
+  <varlistentry>
+    <term>Mark4</term>
+    <listitem>
+      <para>
+        record_transport_type should be set to Mark5A and
+	electronics_rack_type should be set to Mark4 or VLBA4 in the
+	$DAS block; track_frame_format should be set to Mark4 in the
+	$TRACKS section
+      </para>
+    </listitem>
+  </varlistentry>
+  <varlistentry>
+    <term>VLBA</term>
+    <listitem>
+      <para>
+	record_transport_type should be set to Mark5A and
+	electronics_rack_type should be set to VLBA in the $DAS block;
+	track_frame_format should be set to VLBA in the $TRACKS
+	section
+      </para>
+    </listitem>
+  </varlistentry>
+  <varlistentry>
+    <term>Mark5B</term>
+    <listitem>
+      <para>
+	record_transport_type should be set to Mark5B in the $DAS
+	block, and either a $TRACKS setion should be present and have
+	its track_frame_format keyword set to Mark5B
+	<footnote>
+	  <para>
+	  SCHED spells this as MARK5B, which is tolerated by &sfxc;
+	  </para>
+	</footnote>
+	, or a $BITSTREAMS block must be present as proposed for the
+	upcoming VEX 2 standard.
+      </para>
+    </listitem>
+  </varlistentry>
+  <varlistentry>
+    <term>VDIF</term>
+    <listitem>
+      <para>
+	VEX 1.5 does not provide the means to properly specify VDIF as
+	the recording format.  Current versions of $sfxc; recognize
+	the $THREADS block as proposed for the new VEX 2 standard by
+	Walter Brisken from NRAO.
+	<footnote>
+	  <para>
+	    <ulink url="https://safe.nrao.edu/wiki/bin/view/VLBA/Vex2doc#A_61_36THREADS_61_Block"><uri>https://safe.nrao.edu/wiki/bin/view/VLBA/Vex2doc#A_61_36THREADS_61_Block</uri></ulink>
+	  </para>
+	</footnote>
+	However this proposal has been withdrawn in favour of a new
+	$DATASTREAMS block.  The intention is to have &sfxc; recognize
+	$DATASTREAMS blocks once the final VEX 2 standard arrives.  In
+	the meantime a $THREADS block will need to be added, as SCHED
+	doesn't do this.
+      </para>
+      <para>
+	record_transport_type should be set to Mark5C or VDIF in the
+	$DAS block.  If the record_transport_type is set to Mark5C,
+	electronics_rack_type must be WIDAR.  A $THREADS block must be
+	present.
+      </para>
+    </listitem>
+  </varlistentry>
+</variablelist>
+
+<para>
 &sfxc; has been tested extensively with VEX output from (NRAO) SCHED.
 Your mileage may vary with output from other VLBI scheduling software.
+</para>
+
+</chapter>
+
+<chapter>
+<title>Post-processing</title>
+
+<para>
+As with the Mark4 hardware correlator, &sfxc; output is converted into
+an AIPS++/CASA MeasurementSet using the <command>j2ms2</command>
+program.  Create a directory with the name of experiment as given in
+the VEX file.  Copy the VEX file into this directory and rename it to
+<filename><parameter>experiment</parameter>.vix</filename>
+where <parameter>experiment</parameter> is again the name of the
+experiment as given in the VEX file.
+
+<screen>
+<prompt>$</prompt> <command>j2ms2 <parameter>file</parameter> ...</command>
+</screen>
+
+where <parameter>file</parameter> is the name of the correlator output
+file.  This will produce a MeasurementSet
+named <filename><parameter>experiment</parameter>.ms</filename>.  It
+is possible to specify multiple correlator output files on
+the <command>j2ms2</command> command line.  The visibilities in these
+files are simply concatenated and written out into a single
+MeasurementSet.
+</para>
+
+<para>
+To convert data into FITS-IDI such that it can be read into AIPS,
+the <command>tConvert</command> program can be used.
+
+<screen>
+<prompt>$</prompt> <command>tConvert <parameter>experiment</parameter>.ms <parameter>experiment</parameter>.IDI </command>
+</screen>
+
+The resulting FITS-IDI can be read directly into AIPS using <command>FITLD</command>.
+</para>
+
+<para>
+Note that at JIVE we run some additional post-processing tools on the
+MeasurementSet before converting data into FITS-IDI.  The most
+important things are:
+<itemizedlist>
+<listitem>
+<para>
+Amplitude correction for a-bit data;
+currently <command>j2ms2</command> assumes all data is 2-bit.
+</para>
+</listitem>
+<listitem>
+<para>
+Flagging of delay-rate zero events.
+</para>
+</listitem>
+<listitem>
+<para>
+Flagging of data with low weights.
+</para>
+</listitem>
+</itemizedlist>
+If you correlate and convert your own data, you may have to take care
+of these things when reducing the data in AIPS.
 </para>
 
 </chapter>
