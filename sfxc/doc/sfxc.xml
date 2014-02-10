@@ -228,6 +228,7 @@ An example of a control file is given below:
     "exper_name": "F13C4", 
     "cross_polarize": true, 
     "number_channels": 256, 
+    "integr_time": 1, 
     "output_file": "file:///home/kettenis/test/f13c4/f13c4_no0023.cor", 
     "stations": [
         "Eb", 
