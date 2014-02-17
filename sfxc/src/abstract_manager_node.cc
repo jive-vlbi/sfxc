@@ -55,10 +55,10 @@ start_input_node(int rank, const std::string &station) {
   ///DEBUG_MSG("WAITING FOR NODE PARAMTERS !");
   /// add a new set of parameters
   Connexion_params* params= new Connexion_params();
-  input_node_cnx_params_.push_back( params );
+  input_node_cnx_params_.push_back(params);
 
   /// receive the connexion parameters for the current input_node
-  MPI_Transfer::receive_ip_address( params->ip_port_, rank );
+  MPI_Transfer::receive_ip_address(params->ip_port_, params->hostname_, rank);
 
   /// wait to receive the the acknowledment showing that hte node
   /// is correctly initialized.
@@ -83,10 +83,10 @@ start_output_node(int rank) {
   ///DEBUG_MSG("WAITING FOR OUTPUT_NODE PARAMETERS !");
   /// add a new set of parameters
   Connexion_params* params= new Connexion_params();
-  output_node_cnx_params_.push_back( params );
+  output_node_cnx_params_.push_back(params);
 
   /// receive the connexion parameters for the current input_node
-  MPI_Transfer::receive_ip_address( params->ip_port_, rank );
+  MPI_Transfer::receive_ip_address(params->ip_port_, params->hostname_, rank);
 
   MPI_Status status;
   MPI_Recv(&msg, 1, MPI_INT32,
@@ -260,13 +260,13 @@ Abstract_manager_node::connect_to(
   int writer_stream_nr,
   int reader_rank,
   int reader_stream_nr,
-  std::vector<uint64_t>& params, int rank, MPI_Request* req) {
+  Connexion_params* params, int rank, MPI_Request* req) {
   // DEBUG_MSG(writer_rank << "[" << writer_stream_nr << "] => "
   //          << reader_rank << "[" << reader_stream << "]");
   uint32_t msg[4] = {writer_rank, writer_stream_nr, reader_rank, reader_stream_nr};
 
   // connect to some tcp endpoint
-  MPI_Transfer::send_connect_to_msg(msg, params, rank);
+  MPI_Transfer::send_connect_to_msg(msg, params->ip_port_, params->hostname_, rank);
 
   // req is used to receive the acknowledgment
   CHECK_MPI( MPI_Irecv( NULL, 0, MPI_UINT32,
@@ -281,13 +281,13 @@ Abstract_manager_node::connect_writer_to(
   int writer_stream_nr,
   int reader_rank,
   int reader_stream_nr,
-  std::vector<uint64_t>& params, int rank, MPI_Request* req) {
+  Connexion_params* params, int rank, MPI_Request* req) {
   // DEBUG_MSG(writer_rank << "[" << writer_stream_nr << "] => "
   //          << reader_rank << "[" << reader_stream << "]");
   uint32_t msg[4] = {writer_rank, writer_stream_nr, reader_rank, reader_stream_nr};
 
   // connect to some tcp endpoint
-  MPI_Transfer::send_connect_writer_to_msg(msg, params, rank);
+  MPI_Transfer::send_connect_writer_to_msg(msg, params->ip_port_, params->hostname_, rank);
 
   // req is used to receive the acknowledgment
   CHECK_MPI( MPI_Irecv( NULL, 0, MPI_UINT32,

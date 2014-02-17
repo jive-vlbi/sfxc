@@ -50,7 +50,7 @@ void Input_node::initialise() {
 
   /// initialize and retreive the listening addresses/port
   std::vector<uint64_t> addrs;
-  data_writers_ctrl.get_listening_ip( addrs );
+  data_writers_ctrl.get_listening_ip(addrs);
 
   /// send this to the manager NODE
   MPI_Transfer::send_ip_address(addrs, RANK_MANAGER_NODE);

@@ -16,37 +16,58 @@
 
 MPI_Transfer::MPI_Transfer() {}
 
-void MPI_Transfer::send_ip_address(std::vector<uint64_t>& param, const int rank) {
-  /// The param argument should contains a list of IP-port addresses
-  SFXC_ASSERT(param.size() > 0);
-  SFXC_ASSERT(param.size() % 2 == 0);
+void MPI_Transfer::send_ip_address(std::vector<uint64_t>& params, const int rank) {
+  char hostname[HOST_NAME_MAX + 1];
+  if (gethostname(hostname, sizeof(hostname)) == -1)
+    hostname[0] = 0;
 
-  CHECK_MPI(MPI_Send(&param[0], param.size(), MPI_INT64, rank,
-		     MPI_TAG_CONNEXION_INFO, MPI_COMM_WORLD));
+  uint32_t len = strlen(hostname);
+  size_t size = sizeof(uint32_t) + len + params.size() * sizeof(uint64_t);
+  char buffer[size];
+
+  int position = 0;
+  CHECK_MPI(MPI_Pack(&len, 1, MPI_UINT32, buffer, size, &position, MPI_COMM_WORLD));
+  CHECK_MPI(MPI_Pack(hostname, len, MPI_CHAR, buffer, size, &position, MPI_COMM_WORLD));
+  CHECK_MPI(MPI_Pack(&params[0], params.size(), MPI_INT64, buffer, size, &position, MPI_COMM_WORLD));
+  SFXC_ASSERT(position == size);
+
+  CHECK_MPI(MPI_Send(buffer, size, MPI_CHAR, rank, MPI_TAG_CONNEXION_INFO, MPI_COMM_WORLD));
 }
 
-void MPI_Transfer::receive_ip_address(std::vector<uint64_t>& param, const int rank) {
+void MPI_Transfer::receive_ip_address(std::vector<uint64_t>& params, std::string& hostname, const int rank) {
   MPI_Status status;
   int size;
 
   MPI_Probe(rank, MPI_TAG_CONNEXION_INFO, MPI_COMM_WORLD, &status);
-  MPI_Get_elements(&status, MPI_INT64, &size);
+  MPI_Get_elements(&status, MPI_CHAR, &size);
 
-  SFXC_ASSERT(size > 0);
-  SFXC_ASSERT(size % 2 == 0);
+  char buffer[size];
+  CHECK_MPI(MPI_Recv(buffer, size, MPI_CHAR, rank, MPI_TAG_CONNEXION_INFO, MPI_COMM_WORLD, &status));
 
-  param.resize(size);
-  CHECK_MPI(MPI_Recv(&param[0], size, MPI_INT64, rank,
-		     MPI_TAG_CONNEXION_INFO, MPI_COMM_WORLD, &status));
+  int position = 0;
+  uint32_t len;
+  CHECK_MPI(MPI_Unpack(buffer, size, &position, &len, 1, MPI_UINT32, MPI_COMM_WORLD));
+  char str[len + 1];
+  CHECK_MPI(MPI_Unpack(buffer, size, &position, str, len, MPI_CHAR, MPI_COMM_WORLD));
+  str[len] = 0;
+  hostname = str;
+  int num_params = (size - position) / sizeof(uint64_t);
+  params.resize(num_params);
+  CHECK_MPI(MPI_Unpack(buffer, size, &position, &params[0], num_params, MPI_INT64, MPI_COMM_WORLD));
+  SFXC_ASSERT(position == size);
 }
 
 void
 MPI_Transfer::
-send_connect_to_msg(const uint32_t info[4], const std::vector<uint64_t>& params, const int rank) {
-  int size = 4 * sizeof(int32_t) + params.size() * sizeof(uint64_t);
+send_connect_to_msg(const uint32_t info[4], const std::vector<uint64_t>& params, const std::string& hostname, const int rank) {
+  int size = sizeof(uint32_t) + hostname.size() + 4 * sizeof(int32_t) + params.size() * sizeof(uint64_t);
   int position = 0;
   char buffer[size];
+  uint32_t len;
 
+  len = hostname.size();
+  CHECK_MPI(MPI_Pack(&len, 1, MPI_UINT32, buffer, size, &position, MPI_COMM_WORLD));
+  CHECK_MPI(MPI_Pack(const_cast<void*>((void *)hostname.c_str()), len, MPI_CHAR, buffer, size, &position, MPI_COMM_WORLD));
   CHECK_MPI(MPI_Pack(const_cast<void*>((void*)info), 4, MPI_UINT32, buffer, size, &position, MPI_COMM_WORLD));
   CHECK_MPI(MPI_Pack(const_cast<void*>((void*) &params[0]), params.size(), MPI_INT64,
 		     buffer, size, &position, MPI_COMM_WORLD) );
@@ -58,7 +79,7 @@ send_connect_to_msg(const uint32_t info[4], const std::vector<uint64_t>& params,
 
 void
 MPI_Transfer::
-recv_connect_to_msg(uint32_t info[4], std::vector<uint64_t>& params, const int rank) {
+recv_connect_to_msg(uint32_t info[4], std::vector<uint64_t>& params, std::string& hostname, const int rank) {
   MPI_Status status;
   int size;
 
@@ -66,14 +87,20 @@ recv_connect_to_msg(uint32_t info[4], std::vector<uint64_t>& params, const int r
   CHECK_MPI(MPI_Get_elements(&status, MPI_CHAR, &size));
 
   char buffer[size];
-  int num_params = (size - (sizeof(uint32_t) * 4)) / sizeof(uint64_t);
-  params.resize(num_params);
   CHECK_MPI(MPI_Recv(buffer, size, MPI_CHAR, rank,
 		     MPI_TAG_ADD_TCP_READER_CONNECTED_TO, MPI_COMM_WORLD, &status));
 
   int position = 0;
+  uint32_t len;
+  CHECK_MPI(MPI_Unpack(buffer, size, &position, &len, 1, MPI_UINT32, MPI_COMM_WORLD));
+  char str[len + 1];
+  CHECK_MPI(MPI_Unpack(buffer, size, &position, str, len, MPI_CHAR, MPI_COMM_WORLD));
+  str[len] = 0;
+  hostname = str;
   CHECK_MPI(MPI_Unpack(buffer, size, &position, info,
 		       4, MPI_UINT32, MPI_COMM_WORLD));
+  int num_params = (size - (sizeof(uint32_t) + len + 4 * sizeof(uint32_t))) / sizeof(uint64_t);
+  params.resize(num_params);
   CHECK_MPI(MPI_Unpack(buffer, size, &position, &params[0],
 		       num_params, MPI_INT64, MPI_COMM_WORLD));
   SFXC_ASSERT(position == size);
@@ -81,14 +108,18 @@ recv_connect_to_msg(uint32_t info[4], std::vector<uint64_t>& params, const int r
 
 void
 MPI_Transfer::
-send_connect_writer_to_msg(const uint32_t info[4], const std::vector<uint64_t>& params, const int rank) {
-  int size = 4 * sizeof(int32_t) + params.size() * sizeof(uint64_t);
+send_connect_writer_to_msg(const uint32_t info[4], const std::vector<uint64_t>& params, const std::string& hostname, const int rank) {
+  int size = sizeof(uint32_t) + hostname.size() + 4 * sizeof(int32_t) + params.size() * sizeof(uint64_t);
   int position = 0;
   char buffer[size];
+  uint32_t len;
 
+  len = hostname.size();
+  CHECK_MPI(MPI_Pack(&len, 1, MPI_UINT32, buffer, size, &position, MPI_COMM_WORLD));
+  CHECK_MPI(MPI_Pack(const_cast<void*>((void *)hostname.c_str()), len, MPI_CHAR, buffer, size, &position, MPI_COMM_WORLD));
   CHECK_MPI(MPI_Pack(const_cast<void*>((void*)info), 4, MPI_UINT32, buffer, size, &position, MPI_COMM_WORLD));
-  CHECK_MPI(MPI_Pack(const_cast<void*>((void*)&params[0]), params.size(), MPI_INT64,
-		     buffer, size, &position, MPI_COMM_WORLD));
+  CHECK_MPI(MPI_Pack(const_cast<void*>((void*) &params[0]), params.size(), MPI_INT64,
+		     buffer, size, &position, MPI_COMM_WORLD) );
   SFXC_ASSERT(position == size);
 
   CHECK_MPI(MPI_Send(buffer, size, MPI_CHAR, rank,
@@ -97,7 +128,7 @@ send_connect_writer_to_msg(const uint32_t info[4], const std::vector<uint64_t>& 
 
 void
 MPI_Transfer::
-recv_connect_writer_to_msg(uint32_t info[4], std::vector<uint64_t>& params, const int rank) {
+recv_connect_writer_to_msg(uint32_t info[4], std::vector<uint64_t>& params, std::string& hostname, const int rank) {
   MPI_Status status;
   int size;
 
@@ -105,14 +136,20 @@ recv_connect_writer_to_msg(uint32_t info[4], std::vector<uint64_t>& params, cons
   CHECK_MPI(MPI_Get_elements(&status, MPI_CHAR, &size));
 
   char buffer[size];
-  int num_params = (size - (sizeof(uint32_t) *4)) / sizeof(uint64_t);
-  params.resize(num_params);
   CHECK_MPI(MPI_Recv(buffer, size, MPI_CHAR, rank,
 		     MPI_TAG_ADD_TCP_WRITER_CONNECTED_TO, MPI_COMM_WORLD, &status));
 
   int position = 0;
+  uint32_t len;
+  CHECK_MPI(MPI_Unpack(buffer, size, &position, &len, 1, MPI_UINT32, MPI_COMM_WORLD));
+  char str[len + 1];
+  CHECK_MPI(MPI_Unpack(buffer, size, &position, str, len, MPI_CHAR, MPI_COMM_WORLD));
+  str[len] = 0;
+  hostname = str;
   CHECK_MPI(MPI_Unpack(buffer, size, &position, info,
 		       4, MPI_UINT32, MPI_COMM_WORLD));
+  int num_params = (size - (sizeof(uint32_t) + len + 4 * sizeof(uint32_t))) / sizeof(uint64_t);
+  params.resize(num_params);
   CHECK_MPI(MPI_Unpack(buffer, size, &position, &params[0],
 		       num_params, MPI_INT64, MPI_COMM_WORLD));
   SFXC_ASSERT(position == size);

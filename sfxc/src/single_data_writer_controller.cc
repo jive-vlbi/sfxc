@@ -36,45 +36,55 @@ Single_data_writer_controller::Process_event_status
 Single_data_writer_controller::process_event(MPI_Status &status) {
   MPI_Status status2;
   switch (status.MPI_TAG) {
-		case MPI_TAG_ADD_TCP_WRITER_CONNECTED_TO: {
+  case MPI_TAG_ADD_TCP_WRITER_CONNECTED_TO: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
 
-			uint32_t info[4];
-			std::vector<uint64_t> ip_ports;
-			MPI_Transfer::recv_connect_writer_to_msg(info, ip_ports, status.MPI_SOURCE);
+      uint32_t info[4];
+      std::vector<uint64_t> ip_ports;
+      std::string hostname;
+      MPI_Transfer::recv_connect_writer_to_msg(info, ip_ports, hostname, status.MPI_SOURCE);
 
-			//DEBUG_MSG("SINGLE DATA Connexion: " << info[0] << " ->" <<  info[2] );
-			//DEBUG_MSG("SINGLE DATA  ip address:" <<  ip_ports.size() );
+      CHECK_MPI(MPI_Ssend(&info, 4, MPI_UINT32,
+			  info[2], MPI_TAG_ADD_TCP_READER_CONNECTED_FROM,
+			  MPI_COMM_WORLD));
 
-      CHECK_MPI( MPI_Ssend(&info, 4, MPI_UINT32,
-													 info[2], MPI_TAG_ADD_TCP_READER_CONNECTED_FROM,
-													 MPI_COMM_WORLD ) );
+      // Connect to the given host
+      pConnexion cnx = NULL;
+      for (unsigned int i = 0; i < ip_ports.size() && cnx == NULL; i += 2) {
+	if (!Network::match_interface(ip_ports[i]))
+	  continue;
+        try {
+	  cnx = Network::connect_to(ip_ports[i], ip_ports[i + 1]);
+        } catch (Exception& e) {}
+      }
 
-			//DEBUG_MSG("SINGLE DATA  connecting !:" );
+      if (cnx == NULL) {
+	struct addrinfo hints = {}, *res;
 
-			// Connect to the given host
-			pConnexion cnx= NULL;
-			for(unsigned int i=0;i<ip_ports.size() && cnx == NULL;i+=2){
-					try{
-						cnx = Network::connect_to( ip_ports[i], ip_ports[i+1] );
-					}catch(Exception& e){}
-			}
+	hints.ai_family = AF_INET;
+	if (getaddrinfo(hostname.c_str(), NULL, &hints, &res) == 0) {
+	  try {
+	    struct sockaddr_in *addr = (struct sockaddr_in *)res->ai_addr;
+	    cnx = Network::connect_to(addr->sin_addr.s_addr, ip_ports[1]);
+	  } catch (Exception& e) {}
 
-			if( cnx != NULL ){
-				boost::shared_ptr<Data_writer>
-				reader( new Data_writer_socket( cnx ) );
-				set_data_writer(info[1], reader);
-			}else{
-				MTHROW("Unable to connect");
-			}
+	  freeaddrinfo(res);
+	}
+      }
 
-			CHECK_MPI( MPI_Send(NULL, 0, MPI_UINT32,
-													 status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
-													 MPI_COMM_WORLD ) );
+      if (cnx != NULL) {
+	boost::shared_ptr<Data_writer> reader(new Data_writer_socket(cnx));
+	set_data_writer(info[1], reader);
+      } else {
+	MTHROW("Unable to connect");
+      }
+
+      CHECK_MPI(MPI_Send(NULL, 0, MPI_UINT32,
+			 status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
+			 MPI_COMM_WORLD));
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
-
 
   case MPI_TAG_ADD_DATA_WRITER_FILE2: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
