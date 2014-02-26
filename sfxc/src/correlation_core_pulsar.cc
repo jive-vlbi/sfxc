@@ -127,9 +127,13 @@ void Correlation_core_pulsar::do_task() {
     PROGRESS_MSG("node " << node_nr_ << ", "
                  << current_fft << " of " << number_ffts_in_integration);
 
+    Time tmid = correlation_parameters.start_time + 
+                correlation_parameters.integration_time/2;
     find_invalid();
     for(int bin=0;bin<nbins;bin++){
       integration_normalize(accumulation_buffers[bin]);
+      // Apply calibration tables
+      calibrate(accumulation_buffers[bin], tmid);
       integration_write_headers(0, bin);
       integration_write_baselines(accumulation_buffers[bin]);
     }
@@ -138,6 +142,7 @@ void Correlation_core_pulsar::do_task() {
 }
 
 void Correlation_core_pulsar::integration_initialise() {
+  number_output_products = baselines.size();
   const int size = fft_size() + 1;
   for(int bin=0;bin<nbins;bin++){
     if (accumulation_buffers[bin].size() != baselines.size()) {

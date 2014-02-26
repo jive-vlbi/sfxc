@@ -140,7 +140,7 @@ aips_cal::find_next_row(int station, int pol_nr, int if_nr){
 }
 
 void 
-aips_cal::apply_callibration(const Time t, complex<FLOAT> *band, int station, double freq, char sideband, int pol_nr, bool do_conjg){
+aips_cal::apply_calibration(const Time t, complex<FLOAT> *band, int station, double freq, char sideband, int pol_nr, bool do_conjg){
   // NB : do_conjg has the default argument : false
   if (!opened)
     throw string("apply_calibration called before opening table");

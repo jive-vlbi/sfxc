@@ -63,6 +63,7 @@ protected:
   virtual void integration_initialise();
   void integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride);
   void integration_normalize(std::vector<Complex_buffer> &integration_buffer);
+  void calibrate(std::vector<Complex_buffer> &buffer, Time tmid);
   void integration_write_headers(int phase_center, int bin);
   void integration_write_baselines(std::vector<Complex_buffer> &integration_buffer);
   void sub_integration();
@@ -81,6 +82,7 @@ protected:
 protected:
   std::string bptable_name;
   std::string cltable_name;
+  int number_output_products;
   size_t old_fft_size;
   bandpass bptable;
   aips_cal cltable;

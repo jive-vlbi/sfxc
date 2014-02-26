@@ -1,95 +1,74 @@
 #include "correlation_core_phased.h"
 #include "output_header.h"
-#include <utils.h>
+#include "bandpass.h"
+#include "utils.h"
+#include <set>
 
 Correlation_core_phased::Correlation_core_phased()
 {
 }
 
-Correlation_core_phased::~Correlation_core_phased()
-{
+Correlation_core_phased::~Correlation_core_phased() {
 }
 
-void
-Correlation_core_phased::do_task() {
+void Correlation_core_phased::do_task() {
   SFXC_ASSERT(has_work());
-
   if (current_fft % 1000 == 0) {
     PROGRESS_MSG("node " << node_nr_ << ", "
                  << current_fft << " of " << number_ffts_in_integration);
   }
 
-  if (current_fft % number_ffts_in_integration == 0) {
+  if (current_fft%number_ffts_in_integration == 0) {
     integration_initialise();
   }
-
-  SFXC_ASSERT(input_buffers.size()==number_input_streams_in_use());
-  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
-    int stream = streams_in_scan[i];
-    input_elements[i] = &input_buffers[stream]->front()->data[0];
+  for (size_t i=0; i < number_input_streams_in_use(); i++) {
+    int j = streams_in_scan[i];
+    input_elements[i] = &input_buffers[j]->front()->data[0];
+    if (input_buffers[j]->front()->data.size() > input_conj_buffers[i].size())
+      input_conj_buffers[i].resize(input_buffers[j]->front()->data.size());
   }
-  const Time tfft = correlation_parameters.integration_time / number_ffts_in_integration;
-  Time time = correlation_parameters.start_time + tfft * 0.5 + tfft * current_fft;
-  int polarisation = correlation_parameters.polarisation == 'R'? 0 : 1;
-  double freq = correlation_parameters.channel_freq;
-  //std::cout.precision(16);
-  //if (RANK_OF_NODE == 10) std::cout << "freq = " << freq << "\n"; 
   const int first_stream = streams_in_scan[0];
   const int stride = input_buffers[first_stream]->front()->stride;
   const int nbuffer = input_buffers[first_stream]->front()->data.size() / stride;
-  for (int buf = 0; buf < nbuffer * stride ; buf += stride){
-    #ifndef DUMMY_CORRELATION
-    int sub_integration = current_fft / number_ffts_in_sub_integration;
-    for (size_t i = 0; i < number_input_streams_in_use(); i++) {
-      size_t stream = 0;
-      while (correlation_parameters.station_streams[stream].station_stream != streams_in_scan[i])
-        stream++; 
-      size_t station = correlation_parameters.station_streams[stream].station_number;
-      bptable.apply_bandpass(time, &input_elements[i][buf], station, freq, correlation_parameters.sideband, polarisation);
-      cltable.apply_callibration(time, &input_elements[i][buf], station, freq, correlation_parameters.sideband, polarisation);
-      if(i==0){
-        memcpy(&subint_buffer[0], &input_elements[0][buf], (fft_size() + 1) * sizeof(std::complex<FLOAT>));
-        memset(&autocor_buffer[0], 0, (fft_size() + 1) * sizeof(std::complex<FLOAT>));
+  // Process the data of the current fft buffer
+  int buf_idx=0;
+  while(buf_idx < nbuffer){
+    int n = std::min(number_ffts_in_sub_integration, nbuffer-buf_idx);
+    integration_step(accumulation_buffers, buf_idx, buf_idx+n, stride);
+    current_fft += n;
+    buf_idx += n;
+    if (current_fft == number_ffts_in_integration) {
+      PROGRESS_MSG("node " << node_nr_ << ", "
+                   << current_fft << " of " << number_ffts_in_integration);
+
+      sub_integration();
+      for(int i = 0 ; i < phase_centers.size(); i++){
+        int source_nr;
+        if(split_output){
+          delay_tables[0].goto_scan(correlation_parameters.start_time);
+          source_nr = sources[delay_tables[0].get_source(i)];
+        }else{
+          source_nr = 0;
+        }
+        integration_write_headers(i, source_nr);
+        integration_write_subints(phase_centers[i]);
       }
-      else
-        SFXC_ADD_FC(&input_elements[i][buf], &subint_buffer[0], fft_size() + 1);
-      // Also accumulate the auto correlations
-      SFXC_CONJ_FC(&input_elements[i][buf], &autocor_conj_buffer[0], fft_size() + 1);
-      SFXC_ADD_PRODUCT_FC(&input_elements[i][buf], &autocor_conj_buffer[0], &autocor_buffer[0], fft_size() + 1);
-      //if(RANK_OF_NODE == 10) std::cout <<"idx = "<< i << "station = " << station << "time = " << time << "\n";
+      current_integration++;
+    }else if(current_fft >= next_sub_integration*number_ffts_in_sub_integration){
+      sub_integration();
+      next_sub_integration++;
     }
-    SFXC_CONJ_FC(&subint_buffer[0], &subint_conj_buffer[0], fft_size() + 1);
-    SFXC_MULC(&subint_buffer[0], &subint_conj_buffer[0], &power_buffer[0], fft_size() + 1);
-    SFXC_SUB_FC(&autocor_buffer[0], &power_buffer[0], fft_size() + 1);
-    SFXC_ADD_FC(&power_buffer[0], &accumulation_buffers[sub_integration][0], fft_size() + 1);
-    current_fft++;
-    time += tfft;
-    //if(current_fft % number_ffts_in_sub_integration == 0)
-    //  std::cout << RANK_OF_NODE << " : SUBINT " << sub_integration << " / " << number_ffts_in_sub_integration << "\n";
-    #else // DUMMY_CORRELATION
-    current_fft++;
-    #endif // DUMMY_CORRELATION
   }
-  for (size_t i = 0; i < number_input_streams_in_use(); i++){
+  for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++){
     int stream = streams_in_scan[i];
     input_buffers[stream]->pop();
   }
-
-  if (current_fft == number_ffts_in_integration) {
-    PROGRESS_MSG("node " << node_nr_ << ", "
-                 << current_fft << " of " << number_ffts_in_integration);
-
-    integration_normalize();
-    integration_write_headers(0, 0);
-    integration_write_subints();
-    current_integration++;
-  }
+ 
 }
 
 void
 Correlation_core_phased::set_parameters(const Correlation_parameters &parameters,
-					int node_nr)
-{
+                                 int node_nr) {
   node_nr_ = node_nr;
   current_integration = 0;
   current_fft = 0;
@@ -101,87 +80,109 @@ Correlation_core_phased::set_parameters(const Correlation_parameters &parameters
   if (input_elements.size() != number_input_streams_in_use()) {
     input_elements.resize(number_input_streams_in_use());
   }
-  subint_conj_buffer.resize(fft_size()+1);
-  autocor_conj_buffer.resize(fft_size()+1);
-  n_flagged.resize(baselines.size());
+  if (input_conj_buffers.size() != number_input_streams_in_use()) {
+    input_conj_buffers.resize(number_input_streams_in_use());
+  }
+  // Read calibration tables
   if (old_fft_size != fft_size()){
     old_fft_size = fft_size();
-    cltable.open_table(cltable_name, fft_size());
-    bptable.open_table(bptable_name, fft_size(), true);
+    if (cltable_name != std::string())
+      cltable.open_table(cltable_name, fft_size());
+    if (bptable_name != std::string())
+      bptable.open_table(bptable_name, fft_size(), true);
   }
+  n_flagged.resize(baselines.size());
   get_input_streams();
 }
 
-void
-Correlation_core_phased::create_baselines(const Correlation_parameters &parameters){
-  number_ffts_in_integration =
-    Control_parameters::nr_ffts_per_integration_slice(
-      (int) parameters.integration_time.get_time_usec(),
-      parameters.sample_rate,
-      parameters.fft_size_correlation); 
-  // One less because of the overlapping windows
-  if (parameters.window != SFXC_WINDOW_NONE)
-    number_ffts_in_integration -= 1;
-
-  number_ffts_in_sub_integration =
-    Control_parameters::nr_ffts_per_integration_slice(
-      (int) parameters.sub_integration_time.get_time_usec(),
-      parameters.sample_rate,
-      parameters.fft_size_correlation);
-  if(RANK_OF_NODE == 9) 
-    std::cerr << "number_ffts_in_sub_integration = " << number_ffts_in_sub_integration 
-              << ", number_ffts_in_integration = " << number_ffts_in_integration << "\n";
-  baselines.clear();
-  baselines.resize((number_ffts_in_integration+1) / number_ffts_in_sub_integration);
-//  if (baselines.size() != 2000)
-//    std::cerr << "Baseline.size = " << baselines.size()
-//              << ", number_ffts_in_sub_integration = " << number_ffts_in_sub_integration 
-//              << ", number_ffts_in_integration = " << number_ffts_in_integration << "\n";
-}
-
 void Correlation_core_phased::integration_initialise() {
-  int num_sub_integrations =
-    ((number_ffts_in_integration+1) / number_ffts_in_sub_integration);
-  if (accumulation_buffers.size() != num_sub_integrations) {
-    accumulation_buffers.resize(num_sub_integrations);
-    for (size_t i = 0; i < accumulation_buffers.size(); i++) {
+  number_output_products =
+    ceil(number_ffts_in_integration / number_ffts_in_sub_integration);
+  previous_fft = 0;
+
+  if(phase_centers.size() != correlation_parameters.n_phase_centers)
+    phase_centers.resize(correlation_parameters.n_phase_centers);
+
+  for(int i = 0 ; i < phase_centers.size() ; i++){
+    if (phase_centers[i].size() != number_output_products){
+      phase_centers[i].resize(number_output_products);
+      for(int j = 0 ; j < phase_centers[i].size() ; j++){
+        phase_centers[i][j].resize(fft_size() + 1);
+      }
+    }
+  }
+
+  for(int i = 0 ; i < phase_centers.size() ; i++){
+    for (int j = 0; j < phase_centers[i].size(); j++) {
+      SFXC_ASSERT(phase_centers[i][j].size() == fft_size() + 1);
+      size_t size = phase_centers[i][j].size() * sizeof(std::complex<FLOAT>);
+      memset(&phase_centers[i][j][0], 0, size);
+    }
+  }
+
+  if (accumulation_buffers.size() != baselines.size()) {
+    accumulation_buffers.resize(baselines.size());
+    for (size_t i=0; i<accumulation_buffers.size(); i++) {
       accumulation_buffers[i].resize(fft_size() + 1);
     }
   }
 
-  for (size_t i = 0; i < accumulation_buffers.size(); i++) {
+  SFXC_ASSERT(accumulation_buffers.size() == baselines.size());
+  for (size_t i=0; i<accumulation_buffers.size(); i++) {
+    SFXC_ASSERT(accumulation_buffers[i].size() == fft_size() + 1);
     size_t size = accumulation_buffers[i].size() * sizeof(std::complex<FLOAT>);
     memset(&accumulation_buffers[i][0], 0, size);
   }
-  subint_buffer.resize(fft_size() + 1);
-  autocor_buffer.resize(fft_size() + 1);
-  power_buffer.resize(fft_size() + 1);
   memset(&n_flagged[0], 0, sizeof(std::pair<int64_t,int64_t>)*n_flagged.size());
+  next_sub_integration = 1;
 }
 
-void Correlation_core_phased::integration_normalize() {
-
+void Correlation_core_phased::
+integration_step(std::vector<Complex_buffer> &integration_buffer, 
+                 int first, int last, int stride) 
+{
+  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
+    for (size_t buf_idx = first*stride; 
+         buf_idx < last * stride; 
+         buf_idx += stride) {
+      // get the complex conjugates of the input
+      SFXC_CONJ_FC(&input_elements[i][buf_idx], &(input_conj_buffers[i])[buf_idx], 
+                   fft_size() + 1);
+    }
+  }
+  for (size_t i = number_input_streams_in_use(); i < baselines.size(); i++) {
+    for (size_t buf_idx = first*stride; 
+         buf_idx < last * stride; 
+         buf_idx += stride) {
+      // Cross correlations
+      std::pair<size_t,size_t> &stations = baselines[i];
+      SFXC_ASSERT(stations.first != stations.second);
+      SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
+			  /* in2 */ &input_conj_buffers[stations.second][buf_idx],
+			  /* out */ &integration_buffer[i][0], fft_size() + 1);
+    }
+  }
 }
 
-void Correlation_core_phased::integration_write_subints() {
-  
+void Correlation_core_phased::integration_write_subints(std::vector<Complex_buffer> &integration_buffer) {
   SFXC_ASSERT(accumulation_buffers.size() == baselines.size());
 
   int polarisation = (correlation_parameters.polarisation == 'R')? 0 : 1;
 
-  std::vector<float> integration_buffer;
-  integration_buffer.resize(number_channels() + 1);
+  std::vector<float> float_buffer;
+  float_buffer.resize(number_channels() + 1);
   Output_header_baseline hbaseline;
 
   size_t n = fft_size() / number_channels();
-  for (size_t i = 0; i < baselines.size(); i++) {
+  for (size_t i = 0; i < integration_buffer.size(); i++) {
     for (size_t j = 0; j < number_channels(); j++) {
-      integration_buffer[j] = accumulation_buffers[i][j * n].real();
+      float_buffer[j] = integration_buffer[i][j * n].real();
       for (size_t k = 1; k < n ; k++)
-        integration_buffer[j] += accumulation_buffers[i][j * n + k].real();
-      integration_buffer[j] /= n;
+        float_buffer[j] += integration_buffer[i][j * n + k].real();
+      float_buffer[j] /= n;
     }
-    integration_buffer[number_channels()] = accumulation_buffers[i][number_channels() * n].real();
+    float_buffer[number_channels()] = 
+                            integration_buffer[i][number_channels()*n].real();
     hbaseline.weight = 1;                        // The number of good samples
     hbaseline.station_nr1 = 0;
     hbaseline.station_nr2 = 0;
@@ -206,7 +207,56 @@ void Correlation_core_phased::integration_write_subints() {
     int nWrite = sizeof(hbaseline);
     writer->put_bytes(nWrite, (char *)&hbaseline);
     writer->put_bytes((number_channels() + 1) * sizeof(float),
-                      ((char*)&integration_buffer[0]));
+                      ((char*)&float_buffer[0]));
   }
+}
+
+void 
+Correlation_core_phased::sub_integration(){
+  Time tfft(0., correlation_parameters.sample_rate); 
+  tfft.inc_samples(fft_size());
+  // Apply calibration
+  const Time tmid = correlation_parameters.start_time + 
+                    tfft*(previous_fft+(current_fft-previous_fft)/2.); 
+  calibrate(accumulation_buffers, tmid); 
+
+  const int n_fft = fft_size() + 1;
+  const int n_phase_centers = phase_centers.size();
+  const int n_station = number_input_streams_in_use();
+  const int n_baseline = accumulation_buffers.size();
+  if(RANK_OF_NODE ==-10) std::cout << "nbaseline = " << n_baseline
+                                   << ", subint = " << next_sub_integration-1
+                                   << " / " << phase_centers[0].size()
+                                   << "fft = " << current_fft
+                                   << ", nfft_per_sub="<< number_ffts_in_sub_integration
+                                   << "\n";
+  for(int i = n_station ; i < n_baseline ; i++){
+    std::pair<size_t,size_t> &inputs = baselines[i];
+    int station1 = streams_in_scan[inputs.first];
+    int station2 = streams_in_scan[inputs.second];
+
+    // The pointing center
+    SFXC_ADD_FC(&accumulation_buffers[i][0], 
+                &phase_centers[0][next_sub_integration-1][0],
+                n_fft);
+    // UV shift the additional phase centers
+    for(int j = 1; j < n_phase_centers; j++){
+      double delay1 = delay_tables[station1].delay(tmid);
+      double delay2 = delay_tables[station2].delay(tmid);
+      double ddelay1 = delay_tables[station1].delay(tmid, j)-delay1;
+      double ddelay2 = delay_tables[station2].delay(tmid, j)-delay2;
+      double rate1 = delay_tables[station1].rate(tmid);
+      double rate2 = delay_tables[station2].rate(tmid);
+      uvshift(accumulation_buffers[i], phase_centers[j][next_sub_integration-1], 
+              ddelay1, ddelay2, rate1, rate2);
+    }
+  }
+  // Clear the accumulation buffers
+  for (size_t i=0; i<accumulation_buffers.size(); i++) {
+    SFXC_ASSERT(accumulation_buffers[i].size() == n_fft);
+    size_t size = accumulation_buffers[i].size() * sizeof(std::complex<FLOAT>);
+    memset(&accumulation_buffers[i][0], 0, size);
+  }
+  previous_fft = current_fft;
 }
 

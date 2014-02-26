@@ -5,7 +5,8 @@
 #include <set>
 
 Correlation_core::Correlation_core()
-    : current_fft(0), total_ffts(0), split_output(false), old_fft_size(0){
+    : current_fft(0), total_ffts(0), split_output(false), old_fft_size(0),
+      number_output_products(0){
 }
 
 Correlation_core::~Correlation_core() {
@@ -48,6 +49,8 @@ void Correlation_core::do_task() {
     PROGRESS_MSG("node " << node_nr_ << ", "
                  << current_fft << " of " << number_ffts_in_integration);
 
+    Time tmid = correlation_parameters.start_time + 
+                correlation_parameters.integration_time/2;
     sub_integration();
     find_invalid();
     for(int i = 0 ; i < phase_centers.size(); i++){
@@ -62,6 +65,9 @@ void Correlation_core::do_task() {
       }else{
         source_nr = 0;
       }
+      // Apply calibration tables
+      calibrate(phase_centers[i], tmid);
+      
       integration_write_headers(i, source_nr);
       integration_write_baselines(phase_centers[i]);
     }
@@ -230,6 +236,7 @@ bool Correlation_core::has_work() {
 }
 
 void Correlation_core::integration_initialise() {
+  number_output_products = baselines.size();
   previous_fft = 0;
 
   if(phase_centers.size() != correlation_parameters.n_phase_centers)
@@ -338,15 +345,20 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
       integration_buffer[b][i] /= norm;
     }
   }
+}
 
-  for (size_t b = 0; b < baselines.size(); b++) {
-    Time time = correlation_parameters.start_time + correlation_parameters.integration_time / 2;
+void Correlation_core::calibrate(std::vector<Complex_buffer> &buffer,
+                                 Time tmid){
+  const int n_station = number_input_streams_in_use();
+  for (size_t b = n_station; b < baselines.size(); b++) {
     std::pair<size_t,size_t> &baseline = baselines[b];
     int stream1, stream2;
     for(int i=0; i < correlation_parameters.station_streams.size(); i++){
-      if (correlation_parameters.station_streams[i].station_stream == streams_in_scan[baseline.first])
+      if (correlation_parameters.station_streams[i].station_stream == 
+          streams_in_scan[baseline.first])
         stream1 = i;
-      if (correlation_parameters.station_streams[i].station_stream == streams_in_scan[baseline.second])
+      if (correlation_parameters.station_streams[i].station_stream == 
+          streams_in_scan[baseline.second])
         stream2 = i;
     }
     int station1 = correlation_parameters.station_streams[stream1].station_number;
@@ -354,17 +366,18 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
     //Apply bandpass
     int polarisation = correlation_parameters.polarisation == 'R' ? 0 : 1;
     double freq = correlation_parameters.channel_freq; 
-    if(RANK_OF_NODE == -19) 
-      std::cout <<"b="<<b<< ", station1 =" << station1 << ", station2 = " << station2 << ", ch = " << correlation_parameters.frequency_nr << ", pol = " << polarisation << " (=" << correlation_parameters.polarisation << " ) "
-                << ", time = " << time << ", start_time = " << correlation_parameters.start_time << ", stream1 = " << streams_in_scan[baseline.first] << ", steam2=" << streams_in_scan[baseline.second]
-                << ", baseline = (" << baseline.first << ", " << baseline.second <<")\n";
+
     if (bptable.is_open()){
-      bptable.apply_bandpass(time, &integration_buffer[b][0], station1, freq, correlation_parameters.sideband, polarisation, false);
-      bptable.apply_bandpass(time, &integration_buffer[b][0], station2, freq, correlation_parameters.sideband, polarisation, true);
+      bptable.apply_bandpass(tmid, &buffer[b][0], station1, freq, 
+                        correlation_parameters.sideband, polarisation, false);
+      bptable.apply_bandpass(tmid, &buffer[b][0], station2, freq, 
+                         correlation_parameters.sideband, polarisation, true);
     }
     if (cltable.is_open()){
-      cltable.apply_callibration(time, &integration_buffer[b][0], station1, freq, correlation_parameters.sideband, polarisation, false);
-      cltable.apply_callibration(time, &integration_buffer[b][0], station2, freq, correlation_parameters.sideband, polarisation, true);
+      cltable.apply_calibration(tmid, &buffer[b][0], station1, freq,
+                        correlation_parameters.sideband, polarisation, false);
+      cltable.apply_calibration(tmid, &buffer[b][0], station2, freq, 
+                         correlation_parameters.sideband, polarisation, true);
     }
   }
 }
@@ -408,7 +421,7 @@ void Correlation_core::integration_write_headers(int phase_center, int sourcenr)
   { // Writing the timeslice header
     Output_header_timeslice htimeslice;
 
-    htimeslice.number_baselines = baselines.size();
+    htimeslice.number_baselines = number_output_products;
     //if (htimeslice.number_baselines != 2000)
     //  std::cerr << RANK_OF_NODE << " : Fehler, htimeslice.number_baselines = " << (int) htimeslice.number_baselines << "\n";
     htimeslice.integration_slice =
@@ -555,9 +568,6 @@ void Correlation_core::integration_write_baselines(std::vector<Complex_buffer> &
 void 
 Correlation_core::sub_integration(){
   const int current_sub_int = (int) round((double)current_fft / number_ffts_in_sub_integration);
-//  const Time tmid = correlation_parameters.start_time +
-//                    correlation_parameters.sub_integration_time * current_sub_int -
-//                    correlation_parameters.sub_integration_time / 2 ;
   Time tfft(0., correlation_parameters.sample_rate); 
   tfft.inc_samples(fft_size());
   const Time tmid = correlation_parameters.start_time + tfft*(previous_fft+(current_fft-previous_fft)/2.); 
