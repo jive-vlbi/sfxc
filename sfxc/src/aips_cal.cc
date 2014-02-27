@@ -12,14 +12,15 @@ aips_cal::aips_cal(){
   freq_nr = 0;
 }
 
-void
-aips_cal::open_table(const std::string &name, int nchan_){
+void aips_cal::
+open_table(const std::string &name, int nchan_, Time recompute_time_){
   // Read calibration data from aips CL table
   FILE *file = fopen(name.c_str(), "r");
   if (file == NULL)
     sfxc_abort(("Could not open CL table : " + name).c_str());
   
   nchan = nchan_;
+  recompute_time = recompute_time_;
  
   // Read header
   size_t nbytes;
@@ -68,7 +69,7 @@ aips_cal::open_table(const std::string &name, int nchan_){
     times[row] = Time(start_mjd, time/1000000.);
     time_interval[row] = Time(interval);
     if(RANK_OF_NODE == -10)
-      std::cout << "row = " <<  row << ", time = " << times[row] << ", interval = " << time_interval[row] <<"\n";
+      cout << "row = " <<  row << ", time = " << times[row] << ", interval = " << time_interval[row] <<"\n";
 
     for(int station = 0; station < nstation; station++){
       int i = row * npol * nif;
@@ -105,7 +106,8 @@ aips_cal::open_table(const std::string &name, int nchan_){
 
 void
 aips_cal::init(){
-  // Init vector containing the current row indices, these are not necessarily the same for all subbands because of weights
+  // Init vector containing the current row indices, these are not necessarily
+  // the same for all subbands because of weights
   current_row.resize(nstation);  
   next_row.resize(nstation);
   int nrows = times.size();
@@ -123,6 +125,12 @@ aips_cal::init(){
       }
     }
   }
+  // Initialize the calibrtion tables
+  calib_tables.resize(nstation);
+  for(int i=0;i<calib_tables.size();i++){
+    calib_tables[i].table.resize(nchan);
+    calib_tables[i].table_conjg.resize(nchan);
+  }
 }
 
 int 
@@ -131,16 +139,102 @@ aips_cal::find_next_row(int station, int pol_nr, int if_nr){
   const int nrows = times.size();
   const int idx = pol_nr * nif + if_nr;
   int row = current_row[station][idx] + 1;
-  if((row<nrows)&&(station ==2)&&(RANK_OF_NODE==-10)) std::cerr << RANK_OF_NODE << "<CHECK> "<< row << " :  weight next = " << cl_table[station].weights[row*npol*nif+idx] << ", tnext = " << times[row] << "\n";
   while((row < nrows-1) && (cl_table[station].weights[row*npol*nif+idx] < MINIMUM_WEIGHT)){
     row++;
-    if((row<nrows)&&(station ==2)&&(RANK_OF_NODE==-10)) std::cerr << RANK_OF_NODE << "<CHECK> "<< row << " :  weight next = " << cl_table[station].weights[row*npol*nif+idx] << ", tnext = " << times[row] << "\n";
   }
   return (row < nrows)? row : nrows-1;
 }
 
-void 
-aips_cal::apply_calibration(const Time t, complex<FLOAT> *band, int station, double freq, char sideband, int pol_nr, bool do_conjg){
+void aips_cal::
+compute_calibration(const Time t, int station, int freq_nr, int pol_nr, char sideband){
+  // Set meta information for the calibration data we are about to compute
+  calib_tables[station].time = t;
+  calib_tables[station].freq_nr = freq_nr;
+  calib_tables[station].pol_nr = pol_nr;
+  vector<complex<FLOAT> > &table = calib_tables[station].table;
+  vector<complex<FLOAT> > &table_conjg = calib_tables[station].table_conjg;
+
+  // Move to the correct time
+  int idx = pol_nr * nif + freq_nr;
+  int current = current_row[station][idx];
+  int next = next_row[station][idx];
+  if(t > times[next]){
+    current_row[station][idx] = next;
+    next = find_next_row(station, pol_nr, freq_nr);
+    while((next < times.size()-1) && (t > times[next])){
+      current_row[station][idx] = next;
+      next = find_next_row(station, pol_nr, freq_nr);
+    }
+    current = current_row[station][idx];
+    next_row[station][idx] = next;
+  }
+  if((t < times[current]) || (t>times[next])){
+    // No valid calibration data
+    // FIXME: Here we should use ippsSet
+    for(int j=0;j<table.size();j++){
+      table[j] = complex<FLOAT>(1.);
+      table_conjg[j] = table[j];
+    }
+    return; 
+  }
+
+  double clint = (times[next]-times[current]).get_time();
+  if (clint == 0){
+    cout << "duplicate !\n";
+    return;
+  }
+  double dt = (t - times[current]).get_time();
+  double df = bandwidths[freq_nr] / nchan; 
+  int index1 = current*nif*npol + pol_nr*nif + freq_nr;
+  int index2 = next*nif*npol + pol_nr*nif + freq_nr;
+  // Get the delay (linearly intepolatated)
+  double delay1 = cl_table[station].delays[index1];
+  double delay2 = cl_table[station].delays[index2];
+  double w1 = (clint-dt)/clint, w2= dt/clint;
+  double delay = w1*delay1 + w2*delay2;
+  // The rate is a bit more complex, first compute complex gain and then interpolate the complex values
+  double freq = frequencies[freq_nr];
+  double ph_rate1 = 2.*M_PI*cl_table[station].rates[index1]*freq*dt;
+  double ph_rate2 = 2.*M_PI*cl_table[station].rates[index2]*freq*(dt-clint);
+  double crate_real = cos(ph_rate1)*w1 + cos(ph_rate2)*w2;
+  double crate_imag = sin(ph_rate1)*w1 + sin(ph_rate2)*w2;
+  double ph_rate = atan2(crate_imag, crate_real);
+  // The amplitude from the complex gains are obtained through linear interpolation 
+  // The phases byinterpolating the complex gains and taking the argument of the result.
+  complex<double> gain1 = cl_table[station].gains[index1];
+  complex<double> gain2 = cl_table[station].gains[index2];
+  complex<double> gain = w1*gain1 + w2*gain2;
+  double phase = atan2(imag(gain), real(gain));
+  double amplitude = abs(gain1) * w1 + abs(gain2) * w2;
+  // Get the dispersive delay
+  double ddelay1 = cl_table[station].disp_delays[index1];
+  double ddelay2 = cl_table[station].disp_delays[index2];
+  double ddelay = w1*ddelay1 + w2*ddelay2;
+  // AIPS uses channel center with possibly a different number of channels
+  double phase_offset = 2 * M_PI * bandwidths[freq_nr] * delay / (2* nchan_aips); 
+  phase_offset = 0.; // FIXME Remove this!
+  if(sideband == 'L'){
+    for(int i=0; i<nchan; i++){
+      double phi = 2 * M_PI * (i * df * delay) + ph_rate + phase - phase_offset;
+      double frac = SPEED_OF_LIGHT * SPEED_OF_LIGHT / (freq - (nchan-1-i) * df);
+      phi += 2 * M_PI * frac * ddelay;
+      table[nchan-1-i] = amplitude*complex<double>(cos(phi), sin(phi));
+    }
+  }else{
+    SFXC_ASSERT(sideband == 'U');
+    for(int i=0; i<nchan+1; i++){
+      double phi = -2 * M_PI * (i * df * delay) - ph_rate - phase + phase_offset;
+      double frac = SPEED_OF_LIGHT * SPEED_OF_LIGHT / (freq + i * df);
+      phi += -2 * M_PI * frac * ddelay;
+      table[i] = amplitude*complex<double>(cos(phi), sin(phi));
+    } 
+  }
+  SFXC_CONJ_FC(&table[0], &table_conjg[0], table.size());
+}
+void aips_cal::
+apply_calibration(const Time t, complex<FLOAT> *band, int station, double freq, 
+                  char sideband, int pol_nr, bool do_conjg)
+{
   // NB : do_conjg has the default argument : false
   if (!opened)
     throw string("apply_calibration called before opening table");
@@ -161,84 +255,16 @@ aips_cal::apply_calibration(const Time t, complex<FLOAT> *band, int station, dou
     cerr << "Requested frequency not in aips_cal table\n";
     throw string("Requested frequency not in aips_cal table");
   }
- 
-  // Move to the correct time
-  int idx = pol_nr * nif + freq_nr;
-  if((station == 2)&&(RANK_OF_NODE==-10)) std::cerr << RANK_OF_NODE << " : idx = " << idx << ", pol_nr = " << pol_nr << " / " << npol << ", freq = " << freq_nr << " / " << nif << "; size = " << ", station = " << station << ", nstation = " << current_row.size() << "\n";
-  int current = current_row[station][idx];
-  int next = next_row[station][idx];
-  if((station ==2)&&(RANK_OF_NODE==-10)) std::cerr << RANK_OF_NODE << ": move to correct time, next = " << next << ", current = " << current << ", t= " << t << ", tnext = " << times[next] << "\n";
-  if(t > times[next]){
-    current_row[station][idx] = next;
-    next = find_next_row(station, pol_nr, freq_nr);
-    while((next < times.size()-1) && (t > times[next])){
-      current_row[station][idx] = next;
-      next = find_next_row(station, pol_nr, freq_nr);
-      if((station ==2)&&(RANK_OF_NODE==-10)) std::cerr << RANK_OF_NODE << "move2 to correct time, next = " << next << ", current = " << current_row[station][idx]
-                << "t= " << t << ", tnext = " << times[next] << "\n";
-    }
-    current = current_row[station][idx];
-    next_row[station][idx] = next;
-  }
-  if((t < times[current]) || (t>times[next])){
-    if((station ==2)&&(RANK_OF_NODE==-10)) cerr << RANK_OF_NODE << " : t = " << t<< ", freq = " << freq_nr << ", pol = "<< pol_nr << " is not in cl table for station " << station << "\n";
-    return; // no valid calibration data
-  }
 
-  // Apply the calibation FIXME : This can be optimized
-  double clint = (times[next]-times[current]).get_time();
-  if (clint == 0){
-    cout << "duplicate !\n";
-    return;
-  }
-  double dt = (t - times[current]).get_time();
-  double df = bandwidths[freq_nr] / nchan; 
-  int index1 = current*nif*npol + pol_nr*nif + freq_nr;
-  int index2 = next*nif*npol + pol_nr*nif + freq_nr;
-  // Get the delay (linearly intepolatated)
-  double delay1 = cl_table[station].delays[index1];
-  double delay2 = cl_table[station].delays[index2];
-  double w1 = (clint-dt)/clint, w2= dt/clint;
-  double delay = w1*delay1 + w2*delay2;
-  // The rate is a bit more complex, first compute complex gain and then interpolate the complex values
-  double ph_rate1 = 2.*M_PI*cl_table[station].rates[index1]*frequencies[freq_nr]*dt;
-  double ph_rate2 = 2.*M_PI*cl_table[station].rates[index2]*frequencies[freq_nr]*(dt-clint);
-  double crate_real = cos(ph_rate1)*w1 + cos(ph_rate2)*w2;
-  double crate_imag = sin(ph_rate1)*w1 + sin(ph_rate2)*w2;
-  double ph_rate = atan2(crate_imag, crate_real);
-  // The amplitude from the complex gains are obtained through linear interpolation, the phases by
-  // interpolating the complex gains and taking the argument of the result.
-  complex<double> gain1 = cl_table[station].gains[index1];
-  complex<double> gain2 = cl_table[station].gains[index2];
-  complex<double> gain = w1*gain1 + w2*gain2;
-  double phase = atan2(imag(gain), real(gain));
-  double amplitude = abs(gain1) * w1 + abs(gain2) * w2;
-  // Get the dispersive delay
-  double ddelay1 = cl_table[station].disp_delays[index1];
-  double ddelay2 = cl_table[station].disp_delays[index2];
-  double ddelay = w1*ddelay1 + w2*ddelay2;
-  if(RANK_OF_NODE == -19) cout << "t = " << t <<", delay1 =" << delay1 << ", gain = " << gain1 <<", df = " << df << ", f = " 
-                              << frequencies[freq_nr] <<", nchan = " << nchan << "freq = " << freq << ", sideband = " << sideband
-                              << ", nchan_aips = " << nchan_aips << ", bw = " << bandwidths[freq_nr] << ", station = " << station << "\n";
-  // AIPS uses channel center with possibly a different number of channels
-  double phase_offset = 2 * M_PI * bandwidths[freq_nr] * delay / (2* nchan_aips); 
-  phase_offset = 0.; // FIXME Remove this!
-  const double conj = do_conjg ? -1 : 1;
-  if(sideband == 'L'){
-    for(int i=0; i<nchan; i++){
-      double phi = 2 * M_PI * (i * df * delay) + ph_rate + phase - phase_offset;
-      double frac = SPEED_OF_LIGHT * SPEED_OF_LIGHT / (freq - (nchan-1-i) * df);
-      phi += 2 * M_PI * frac * ddelay;
-      band[nchan - 1 - i] *= amplitude*complex<double>(cos(phi), conj*sin(phi));
-    }
-  }else{
-    SFXC_ASSERT(sideband == 'U');
-    for(int i=0; i<nchan+1; i++){
-      double phi = -2 * M_PI * (i * df * delay) - ph_rate - phase + phase_offset;
-      double frac = SPEED_OF_LIGHT * SPEED_OF_LIGHT / (freq + i * df);
-      phi += -2 * M_PI * frac * ddelay;
-      band[i] *= amplitude*complex<double>(cos(phi), conj*sin(phi));
-    }
-    //SFXC_MUL_FC_I(&bp[freq_nr*nchan], band, nchan);
-  }
+  // Compute calibration table if necessary
+  if ((t-calib_tables[station].time >= recompute_time) ||
+      (calib_tables[station].freq_nr != freq_nr) ||
+      (calib_tables[station].pol_nr != pol_nr))
+    compute_calibration(t, station, freq_nr, pol_nr, sideband);
+
+  // Apply calibration
+  if(do_conjg)
+    SFXC_MUL_FC_I(&calib_tables[station].table_conjg[0], &band[0], nchan);
+  else
+    SFXC_MUL_FC_I(&calib_tables[station].table[0], &band[0], nchan);
 }
