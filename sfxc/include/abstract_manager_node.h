@@ -23,6 +23,7 @@ class Connexion_params
 	public:
 		/// list of all listening ip/port
 		std::vector<uint64_t> ip_port_;
+		std::string hostname_;
 };
 
 /** Abstract manager node which defines generic functions needed by
@@ -57,20 +58,16 @@ public:
                int reader_rank, int reader_stream_nr);
 
 
-	// for tcp
-	// request that hte reader connect to the writer (this is simplified)
-	void connect_to( int writer_rank,
-									 int writer_stream_nr,
-                   int reader_rank,
-                   int reader_stream_nr,
-                   std::vector<uint64_t>& params, int rank, MPI_Request* req );
-
-	void connect_writer_to( int writer_rank,
-									 int writer_stream_nr,
-                   int reader_rank,
-                   int reader_stream_nr,
-                   std::vector<uint64_t>& params, int rank, MPI_Request* req );
-
+  // for tcp
+  // request that hte reader connect to the writer (this is simplified)
+  void connect_to(int writer_rank, int writer_stream_nr,
+		  int reader_rank, int reader_stream_nr,
+		  Connexion_params* params, int rank, MPI_Request* req);
+  
+  void connect_writer_to(int writer_rank, int writer_stream_nr,
+			 int reader_rank, int reader_stream_nr,
+			 Connexion_params* params, int rank, MPI_Request* req);
+  
   // for void
   void set_data_writer_void(int writer_rank, int writer_stream_nr);
 
