@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <limits>
+#include <stdexcept>
 #include "correlator_time.h"
 
 Time::Time() : clock_rate(MAX_SAMPLE_RATE), sample_rate(1), nticks(0){
@@ -16,8 +17,10 @@ Time::Time(double usec, double sample_rate_) : clock_rate(MAX_SAMPLE_RATE){
 }
 
 Time::Time(const std::string &time) : clock_rate(MAX_SAMPLE_RATE), sample_rate(1){
-  int year, day, hour, minute, second;
-  sscanf(time.c_str(), "%dy%dd%dh%dm%ds", &year, &day, &hour, &minute, &second);
+  int year, day, hour, minute, second, n;
+  n = sscanf(time.c_str(), "%dy%dd%dh%dm%ds", &year, &day, &hour, &minute, &second);
+  if (n != 5)
+    throw std::invalid_argument("Invalid datetime string: "+ time);
   int time_mjd = mjd(1, 1, year) + day -1;
   set_time(time_mjd, 60 * (60 * hour + minute) + second);
 }
