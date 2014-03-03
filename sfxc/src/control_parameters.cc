@@ -168,16 +168,17 @@ initialise(const char *ctrl_file, const char *vex_file,
       ctrl["window_function"] = "HANN";
   }
   // Set the fft sizes
-  if (ctrl["fft_size_delaycor"] == Json::Value())
-    ctrl["fft_size_delaycor"] = 256;
-
   if (ctrl["fft_size_correlation"] == Json::Value()){
-    if (ctrl["multi_phase_center"].asBool())
-      ctrl["fft_size_correlation"] = 4096;
-    else
-      ctrl["fft_size_correlation"] = std::max(fft_size_delaycor(), number_channels());
-  }
+    int min_size = ctrl["multi_phase_center"].asBool() ? 4096 : 256;
 
+    if (ctrl["fft_size_delaycor"] != Json::Value())
+      min_size = std::max(min_size, ctrl["fft_size_delaycor"].asInt());
+
+    ctrl["fft_size_correlation"] = std::max(min_size, number_channels());
+  }
+  if (ctrl["fft_size_delaycor"] == Json::Value())
+    ctrl["fft_size_delaycor"] = std::min(256, ctrl["fft_size_correlation"].asInt());
+  
   // Set the sub integartion time
   if(ctrl["sub_integr_time"] == Json::Value()){
     double integr_time_usec = round(integration_time().get_time_usec());
