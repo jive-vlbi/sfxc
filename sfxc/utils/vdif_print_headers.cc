@@ -46,23 +46,28 @@ void usage(char *filename){
   std::cout << "Options :\n";
   std::cout << "  -q, --quiet          Only print bad frames\n"; 
   std::cout << "  -s, --skip=N         Skip the first N frames.\n"; 
-  std::cout << "  -f, --frame-size=M   Override the frame size given in the VDIF headers..\n";
+  std::cout << "  -n, --n-frames=M     Only print the first M frames.\n"; 
+  std::cout << "  -f, --frame-size=P   Override the frame size given in the VDIF headers..\n";
 }
 
-void get_options(int argc, char*argv[], char **filename, int &frame_size, int &nskip, bool &quiet){
+void get_options(int argc, char*argv[], char **filename, int &frame_size, int &nskip, int &nframes, bool &quiet){
   int c, opt_index = 0;
   static struct option long_options[] = {
       {"help",    no_argument, 0, 'h'},
       {"frame-size",    required_argument, 0, 'f'},
       {"skip",    required_argument, 0, 's'},
+      {"nframes",  required_argument, 0, 'n'},
       {"quiet",    required_argument, 0, 'q'},
       {0, 0, 0, 0}
   };
   frame_size = 0;
   nskip = 0;
   quiet = false;
-  while( (c = getopt_long (argc, argv, "qhs:f:",  long_options, 
+  nframes = -1;
+  bool error = false;
+  while( (c = getopt_long (argc, argv, "qhs:f:n:",  long_options, 
                            &opt_index)) != -1){
+    int i;
     switch (c){
     case 'h':
       usage(argv[0]);
@@ -71,14 +76,24 @@ void get_options(int argc, char*argv[], char **filename, int &frame_size, int &n
     case 'q':
       quiet = true;
       break;
+    case 'n':
+      i = sscanf(optarg, "%d", &nframes);
+      error = (i == 0);
+      break;
     case 's':
-      sscanf(optarg, "%d", &nskip);
+      i = sscanf(optarg, "%d", &nskip);
+      error = (i == 0);
       break;
     case 'f':
-      sscanf(optarg, "%d", &frame_size);
+      i = sscanf(optarg, "%d", &frame_size);
+      error = (i == 0);
       break;
     default:
       printf ("option %s", long_options[opt_index].name);
+      abort();
+    }
+    if (error){
+      printf("Bad argument to option %s\n", long_options[opt_index].name);
       abort();
     }
   }
@@ -168,10 +183,10 @@ int64_t find_next_valid_header(FILE *infile, Header &prev_header){
 }
 
 int main(int argc, char *argv[]) {
-  int frame_size, nskip;
+  int frame_size, nskip, nframes=-1;
   bool quiet;
   char *filename;
-  get_options(argc, argv, &filename, frame_size, nskip, quiet);
+  get_options(argc, argv, &filename, frame_size, nskip, nframes, quiet);
 
   FILE *infile = fopen(filename, "r");
   if(infile == NULL){
@@ -183,10 +198,11 @@ int main(int argc, char *argv[]) {
 
   bool eof = false;
   int invalid_nr = 0;
+  int n = 0;
   size_t data_size = 1, header_size = 0;
   bool first_header = true;
   Header prev_header;
-  while (eof == false){
+  while ((n++ != nframes) && (eof == false)){
     Header header;
     unsigned char *header_buf = (unsigned char *) &header;
     size_t nwords = fread(&header_buf[0],4,4,infile);

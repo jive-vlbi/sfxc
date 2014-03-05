@@ -11,6 +11,7 @@ pkginclude_HEADERS = *.h *.py
 bin_PROGRAMS = mark5a_print_headers \
                mark5b_print_headers \
                vdif_print_headers \
+               vlba_print_headers \
                print_new_output_format \
                extract_channelizer
 
@@ -59,8 +60,6 @@ vdif_print_headers_SOURCES = \
 
 mark5a_print_headers_SOURCES = \
   mark5a_print_headers.cc \
-  ../src/log_writer.cc \
-  ../src/log_writer_cout.cc \
   ../src/data_reader.cc \
   ../src/data_reader_file.cc \
   ../src/data_reader_blocking.cc  \
@@ -72,6 +71,18 @@ mark5a_print_headers_SOURCES = \
   ../src/control_parameters.cc \
   ../src/correlator_time.cc
 
+vlba_print_headers_SOURCES = \
+  vlba_print_headers.cc \
+  ../src/data_reader.cc \
+  ../src/data_reader_file.cc \
+  ../src/data_reader_blocking.cc  \
+  ../src/input_data_format_reader.cc \
+  ../src/vlba_reader.cc \
+  ../src/vlba_header.cc \
+  ../src/channel_extractor_5.cc \
+  ../src/utils.cc \
+  ../src/control_parameters.cc \
+  ../src/correlator_time.cc
 
 produce_html_plotpage_SOURCES = \
   produce_html_plotpage.cc \

@@ -3,84 +3,82 @@
  *
  * Author(s): Nico Kruithof <Kruithof@JIVE.nl>, 2007
  *
- * $Id$
+ * $Id: vlba_print_headers.cc 1292 2011-12-09 13:45:41Z keimpema $
  *
  */
 
 #include <iostream>
-
-#include "log_writer_cout.h"
 #include "data_reader_file.h"
 #include "data_reader_blocking.h"
 
 #include "utils.h"
 #include "input_node_types.h"
-#include "mark5a_reader.h"
+#include "vlba_reader.h"
+#include "vlba_header.h"
 
 typedef Input_node_types::Data_memory_pool Data_memory_pool;
+
 int find_start_of_header(boost::shared_ptr<Data_reader> reader,
-                         Mark5a_reader::Data_frame &data) {
+                         VLBA_reader::Data_frame &data,
+                         std::vector<unsigned char> &header) {
   // We fill the "data" and then look for the header
   // if we don't find a header, read in another half block and continue.
-
-  data.buffer->data.resize(SIZE_MK5A_FRAME);
+  data.buffer->data.resize(SIZE_VLBA_FRAME);
   char *buffer_start = (char *)&data.buffer->data[0];
 
   { // Read half a block
-    size_t bytes_to_read = SIZE_MK5A_FRAME/2;
-    char *data = (char *)buffer_start+SIZE_MK5A_FRAME/2;
+    size_t bytes_to_read = SIZE_VLBA_FRAME/2;
+    char *data = (char *)buffer_start+SIZE_VLBA_FRAME/2;
 
     int byte_read = Data_reader_blocking::get_bytes_s( reader.get(), bytes_to_read, data);
 
     if( byte_read != bytes_to_read ){
-      std::cout << "Unable to read enough bytes of data, cannot find a mark5a header before the end-of-file\n";
-      exit(1);
+      sfxc_abort("Unable to read enough bytes of data, cannot find a vlba header before the end-of-file");
     }
   }
 
   int nOnes=0, header_start=-1, nTracks8 = -1;
   for (int block=0; (block<16) && (header_start<0); block++) {
-    // Move the last half to the first half and read frameMk5a/2 bytes:
-    memcpy(buffer_start, buffer_start+SIZE_MK5A_FRAME/2, SIZE_MK5A_FRAME/2);
+    // Move the last half to the first half and read size_vlba_frame/2 bytes:
+    memcpy(buffer_start, buffer_start+SIZE_VLBA_FRAME/2, SIZE_VLBA_FRAME/2);
 
     { // Read half a block
-      size_t bytes_to_read = SIZE_MK5A_FRAME/2;
-      char *data = (char*)buffer_start+SIZE_MK5A_FRAME/2;
+      size_t bytes_to_read = SIZE_VLBA_FRAME/2;
+      char *data = (char*)buffer_start+SIZE_VLBA_FRAME/2;
 
       int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(), bytes_to_read, data);
-
     }
 
-    // the header contains 64 bits before the syncword and
-    //                     64 bits after the syncword.
-    // We skip those bytes since we want to find an entire syncword
-    for (int byte=0; (byte<SIZE_MK5A_FRAME-64*8) && (header_start<0); byte++) {
+    for (int byte=0; (byte<SIZE_VLBA_FRAME - SIZE_VLBA_HEADER*8 ) && (header_start<0); byte++) {
       if ((char)buffer_start[byte] == (char)(~0)) {
         nOnes ++;
       } else {
+        // Because the syncword is 32 ones, we should find atleast 32 (more depending on #tracks)
         if (nOnes>=32) {
-          // make sure the begin of the header is in the first_block
-          // syncword is 32 samples, auxiliary data field 64 samples
-          header_start = byte - nOnes - 64*(nOnes/32);
-          if (header_start >= 0) {
+          // make sure that really found the start of the header
+          int header_start=byte-nOnes;
+          if(header_start>=0){
             // We found a complete header
             nTracks8 = nOnes/32;
 
-            memmove(buffer_start, buffer_start+header_start,
-                    SIZE_MK5A_FRAME-header_start);
+            // Store the header and get the first track8 worth of data
+            int ndata_read=SIZE_VLBA_FRAME-header_start-nTracks8*SIZE_VLBA_HEADER;
+            header.resize(nTracks8*(SIZE_VLBA_HEADER+SIZE_VLBA_AUX_HEADER));
+            memcpy(&header[nTracks8*SIZE_VLBA_AUX_HEADER], 
+                   buffer_start+header_start, 
+                   nTracks8*SIZE_VLBA_HEADER);
+            memmove(buffer_start, buffer_start+header_start+nTracks8*SIZE_VLBA_HEADER, ndata_read);
+            int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),SIZE_VLBA_FRAME-ndata_read,
+                                                               (char*)&data.buffer->data[ndata_read]);
 
-            int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),
-                                     header_start,
-                                     buffer_start+SIZE_MK5A_FRAME-header_start);
-
+            // read the remaining data
             if (nTracks8 > 1) {
-              data.buffer->data.resize(nTracks8*SIZE_MK5A_FRAME);
-              data.buffer->data.resize(nTracks8*SIZE_MK5A_FRAME);
-              buffer_start = (char *)&data.buffer->data[0];
+              data.buffer->data.resize(nTracks8*SIZE_VLBA_FRAME);
 
+              buffer_start = (char *)&data.buffer->data[0];
               int bytes_read = Data_reader_blocking::get_bytes_s(reader.get(),
-                                                  (nTracks8-1)*SIZE_MK5A_FRAME,
-                                                   buffer_start+SIZE_MK5A_FRAME);
+                                                  (nTracks8-1)*SIZE_VLBA_FRAME,
+                                                   buffer_start+SIZE_VLBA_FRAME);
             }
             return nTracks8;
           }
@@ -92,27 +90,33 @@ int find_start_of_header(boost::shared_ptr<Data_reader> reader,
   return -1;
 }
 
-void get_input_node_parameters(Input_node_parameters &param, Mark5a_reader::Data_frame data, char *filename)
+void get_input_node_parameters(Input_node_parameters &param, VLBA_reader::Data_frame data, char *filename)
 // Get a subset of the input node parameter which are needed by 
-// the mark5a reader to read the timestamps in the datastream
+// the vlba reader to read the timestamps in the datastream
 {
   int n_tracks_8;
   bool header_correct=false;
   bool first_msg=true;
   boost::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
   do{
-    n_tracks_8 = find_start_of_header(reader, data);
+    std::vector<unsigned char> buffer;
+    n_tracks_8 = find_start_of_header(reader, data, buffer);
     if(n_tracks_8 > 0){
-            Mark5a_header header(n_tracks_8);
-            header.set_header(&data.buffer->data[0]);
-            header_correct = header.checkCRC(0xff);
-            if((first_msg)&&(!header_correct)){
-              std::cout << RANK_OF_NODE
-                        << " Warning : Invalid crc-code in the mark5a data file, further warnings are supressed.\n";
-              first_msg=false;
-            }
+      VLBA_header header;
+      header.set_header(n_tracks_8, &buffer[0]);
+      header_correct = header.checkCRC(0xff);
+      if((first_msg)&&(!header_correct)){
+         std::cout << RANK_OF_NODE
+                   << " Warning : Invalid crc-code in the vlba data file, further warnings are supressed.\n";
+         first_msg=false;
+      }
     }
-  }while(!header_correct);
+  }while((!header_correct) && (!reader->eof()));
+  if(reader->eof()){
+    std::cerr << "Error finding header before EOF\n";
+    exit(1);
+  }
+
   param.n_tracks = n_tracks_8 * 8;
   param.track_bit_rate = 1;
 }
@@ -167,7 +171,7 @@ int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG
   RANK_OF_NODE = 0;
 #endif
-  int n_time_stamps=-1, year=0;
+  int n_time_stamps=-1, year = 0;
   char *filename; 
 
   parse_arguments(argc, argv, &filename, &n_time_stamps, &year);
@@ -179,29 +183,28 @@ int main(int argc, char *argv[]) {
     ref_time.set_time(mjd_year, 0);
   }
 
-  Mark5a_reader::Data_frame data;
+  VLBA_reader::Data_frame data;
   data.buffer = memory_pool_->allocate();
 
   Input_node_parameters param;
   get_input_node_parameters(param, data, filename);
 
   boost::shared_ptr<Data_reader> reader(new Data_reader_file(filename));
-  Mark5a_reader *mark5a_reader = new Mark5a_reader(reader, ref_time);
-  mark5a_reader->set_parameters(param);
+  VLBA_reader *vlba_reader = new VLBA_reader(reader, ref_time);
+  vlba_reader->set_parameters(param);
 
-  while ((!mark5a_reader->open_input_stream(data)) && (!mark5a_reader->eof()))
+  while ((!vlba_reader->open_input_stream(data)) && (!vlba_reader->eof()))
     ;
+  int64_t prev_time = (int64_t)vlba_reader->get_current_time().get_time_usec(), current_time;
 
   int n = 0;
-  int64_t prev_time = (int64_t)mark5a_reader->get_current_time().get_time_usec(), current_time;
   do {
-    current_time = (int64_t)mark5a_reader->get_current_time().get_time_usec();
+    current_time = (int64_t)vlba_reader->get_current_time().get_time_usec();
     std::cout
     << current_time
-    << " \t" << mark5a_reader->get_current_time()
+    << " \t" << vlba_reader->get_current_time()
     << " \t" << current_time - prev_time
     << std::endl;
     prev_time = current_time;
-  } while ((++n != n_time_stamps) && (mark5a_reader->read_new_block(data)));
-
+  } while((++n != n_time_stamps) && (vlba_reader->read_new_block(data)));
 }

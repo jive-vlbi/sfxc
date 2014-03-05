@@ -26,23 +26,71 @@ void find_first_header(FILE *infile){
  fseek(infile, -4, SEEK_CUR);
 }
 
+void usage(char *filename){
+  std::cout << "Usage : " << filename << " [OPTIONS] <filename>\n"
+            << "Options : -n <number>, Only print <number> timestamps\n"
+            << "          -y <YEAR>, the year in which the recording was made\n";
+}
+
+void parse_arguments(int argc, char *argv[], char **filename, int *n_time_stamps, int *year){
+  int c;
+  *n_time_stamps = -1;
+  *year = 0;
+    
+  while ((c = getopt (argc, argv, "n:y:")) != -1){
+    bool error = false;
+    char *next;
+
+    switch (c){
+    case 'n':
+      next = optarg;
+      *n_time_stamps = strtol(optarg, &next, 10);
+      error = (next == optarg);
+     break;
+    case 'y':
+      next = optarg;
+      *year = strtol(optarg, &next, 10);
+      error = (next == optarg);
+      break;
+    case '?':
+      std::cerr << "Error : Invalid option, " << (char)optopt << "\n";
+      usage(argv[0]);
+      exit(1);
+    }
+    if (error){
+      std::cerr << "Error : invalid parameter\n";
+      exit(1);
+    }
+  }
+  if(argc - optind != 1){
+    std::cerr << "Invalid number of arguments\n";
+    usage(argv[0]);
+    exit(1);
+  }
+  *filename = argv[optind];
+}
+
+
 // Prints the timestamps in the headers of a mark5b file
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    std::cout << "usage: " << argv[0] << " <mark5b-file>" << std::endl;
-    return 1;
-  }
+  int n_time_stamps=-1, year=0;
+  char *filename; 
 
-  FILE *infile = fopen(argv[1], "r");
+  parse_arguments(argc, argv, &filename, &n_time_stamps, &year);
+
+  FILE *infile = fopen(filename, "r");
   if(infile == NULL){
-    std::cout << "Could not open " << argv[1] << " for reading.\n";
+    std::cout << "Could not open " << filename << " for reading.\n";
     return 1;
   }
 
   find_first_header(infile);
   int header[4];
   int bytes_read = fread(&header[0], 1, MARK5B_HEADER_SIZE, infile);
+  int n=0;
   while(bytes_read == MARK5B_HEADER_SIZE){
+    if (n++ == n_time_stamps)
+      break; 
     if (header[0] != SYNCWORD){
       std::cout << "Invalid header\n";
     }else{
@@ -62,6 +110,15 @@ int main(int argc, char *argv[]) {
       for(int b = 16, mul = 1; b < 32; b+=4, mul *=10){
         subsec += ((header[3]&mask) >> b) * mul;
         mask = mask << 4;
+      }
+      // If a year is given then compute the full MJD
+      if (year > 0){
+        int y = year + 4799;
+        int mjd_year = 365*y + (y/4) - (y/100) + (y/400) - 2431738.5; 
+        if (mjd >= mjd_year%1000)
+          mjd = mjd_year + mjd - mjd_year%1000;
+        else
+          mjd = mjd_year + mjd - mjd_year%1000 + 1000;
       }
       char time_string[80];
       sprintf(time_string, "%02d:%02d:%02d.%d", sec/(60*60), (sec%(60*60))/60, sec%60, subsec);
