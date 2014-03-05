@@ -2,7 +2,7 @@
 
 # Standard Python modules.
 import os, re, stat, sys, time
-import optparse
+import optparse, subprocess
 
 # The json module is new in Python 2.6; fall back on simplejson if it
 # isn't available.
@@ -10,13 +10,16 @@ try:
     import json
 except:
     import simplejson as json
-    pass
 
 # JIVE Python modules.
 from vex import Vex
 
+def iso2time(str):
+    tupletime = time.strptime(str.rstrip(), "%Y-%m-%d %H:%M:%S")
+    return time.mktime(tupletime)
+
 def vex2time(str):
-    tupletime = time.strptime(str, "%Yy%jd%Hh%Mm%Ss");
+    tupletime = time.strptime(str, "%Yy%jd%Hh%Mm%Ss")
     return time.mktime(tupletime)
 
 def time2vex(secs):
@@ -28,13 +31,15 @@ parser = optparse.OptionParser(usage=usage)
 parser.add_option("-i", "--integration-time", dest="integr_time",
                   default=1, type="float", help="Integration time",
                   metavar="SECONDS")
+parser.add_option("-S", "--sub-integration-time", dest="sub_integr_time",
+                  type="float", help="Sub-integration time",
+                  metavar="MICROSECONDS")
 parser.add_option("-c", "--channels", dest="number_channels",
                   default=1024, type="int",
                   help="Number of spectral channels for each subband",
                   metavar="N")
-parser.add_option("-d", "--data-dir", dest="data_dir",
-                  default="/home/kettenis/mnt", type="string",
-                  help="Data directory", metavar="DIR")
+parser.add_option("-C", "--cross-polarize", dest="cross_polarize", default=False,
+                  action="store_true", help="Enable cross polarizations")
 parser.add_option("-s", "--stations", dest="stations", type="string",
                   help="Stations to correlate", metavar="LIST")
 parser.add_option("-n", "--max-scans", dest="max_scans",
@@ -42,8 +47,12 @@ parser.add_option("-n", "--max-scans", dest="max_scans",
                   help="Maximem number of scans per job", metavar="N")
 parser.add_option("-t", "--template", dest="template", type="string",
                   help="Control file template", metavar="FILE")
-parser.add_option("-f", "--fuse", dest="fuse", default=False,
-                  action="store_true", help="FUSE based correlation")
+parser.add_option("-o", "--output-directory", dest="output_dir", type="string",
+                  help="The directory the correlator output files are written to", 
+                  metavar="DIRECTORY")
+parser.add_option("-f", "--from-files", dest="from_files", default='',
+                  help="Correlate stations from files, FORMAT=Station1:host:pattern,Station2:host:patern, ...\n\
+                        E.g. : -f Ef:my_host:/scratch/sfxc/N08C1*.m5a", metavar="LIST");
 parser.add_option("-e", "--evlbi", dest="evlbi", default=False,
                   action="store_true", help="e-VLBI correlation")
 
@@ -58,6 +67,7 @@ if len(args) != 1:
 
 vex_file = args[0]
 basename = os.path.splitext(os.path.basename(vex_file))[0]
+output_dir = os.getcwd() if options.output_dir == None else options.output_dir
 
 # Parse the VEX file.
 vex = Vex(vex_file)
@@ -73,15 +83,50 @@ for station in vex['STATION']:
         tapelog_obs = vex['STATION'][station]['TAPELOG_OBS']
     except:
         tapelog_obs = None
-        pass
     media[station] = []
     if tapelog_obs:
         for vsn in vex['TAPELOG_OBS'][tapelog_obs].getall('VSN'):
             media[station].append({'vsn': vsn[1], 'start': vex2time(vsn[2]),
                                    'stop': vex2time(vsn[3])})
-            continue
-        pass
-    continue
+
+# Create a dictory in which we store if a station is Mark5A, Mark5B, VLBA or VDIF
+media_type = {}
+for station in vex['STATION']:
+  das = vex['STATION'][station]['DAS']
+  record_transport_type = vex['DAS'][das]['record_transport_type'].lower()
+  if record_transport_type == 'mark5a':
+    electronics_rack_type = vex['DAS'][das]['electronics_rack_type'].lower()
+    if electronics_rack_type == 'vlba':
+      type = 'vlba'
+    else:
+      type = 'mark5a'
+  elif record_transport_type == 'mark5b':
+    type = 'mark5b'
+  else:
+    #Unfortunatly we don't have a proper way to tell if its VDIF format
+    type = 'vdif'
+  media_type[station] = type
+
+#Generate list of files for stations that are correlated from file
+media_files = {}
+for item in options.from_files.split(','):
+  if item != '':
+    t = item.split(':')
+    if len(t) != 3:
+      print 'Error : bad argument to files list'
+      sys.exit(1)
+    year = int(vex['EXPER'][exper]['exper_nominal_start'].partition('y')[0])
+    type = media_type[t[0]]
+    print ['ssh', t[1], 'get_file_list.py', '-y', `year`, type, t[2]]
+    a = subprocess.Popen(['ssh', t[1], 'get_file_list.py', '-y', `year`, type,\
+                          t[2]], stdout=subprocess.PIPE)
+    lines = a.stdout.readlines()
+    files = []
+    for line in lines:
+      l = line.partition(' ')
+      start_time = iso2time(l[2])
+      files.append((l[0], start_time))
+    media_files[t[0]] = files
 
 # Create control file template.
 json_template = {}
@@ -89,7 +134,6 @@ if options.template:
     fp = open(options.template, 'r')
     json_template = json.load(fp)
     fp.close()
-    pass
 
 mode = None
 stop_time = -1
@@ -108,7 +152,6 @@ for scan in vex['SCHED']:
         num_scans = 0
     else:
         new_job = False
-        pass
 
     # Start a new job whenever the mode changes.
     # Figure out the subbands to correlate based on the new mode.
@@ -118,9 +161,7 @@ for scan in vex['SCHED']:
         channels = []
         for channel in vex['FREQ'][freq].getall('chan_def'):
             channels.append(channel[4])
-            pass
         new_job = True
-        pass
 
     # Create a list of stations participating in this scan.
     stations = []
@@ -128,18 +169,7 @@ for scan in vex['SCHED']:
         station = transfer[0]
         if not options.stations or station in options.stations:
             stations.append(station)
-            pass
-        continue
     stations.sort()
-
-    # A gap signals the start of a new Mark5 scan.  A new Mark5 scan
-    # means we have to start a new job.
-    if options.fuse and stop_time != vex2time(vex['SCHED'][scan]['start']):
-        for station in stations:
-            mk5_scan[station] = scan
-            continue
-        new_job = True
-        pass
 
     # Start a new job whenever a station joins or leaves the
     # observation.
@@ -147,9 +177,7 @@ for scan in vex['SCHED']:
         for station in stations:
             if not station in json_output["stations"]:
                 mk5_scan[station] = scan
-                continue
         new_job = True
-        pass
 
     # Loop over all the "station" parameters in the scan, figuring out
     # the real length of the scan.
@@ -159,7 +187,6 @@ for scan in vex['SCHED']:
         station = transfer[0]
         start_time = min(start_time, int(transfer[1].split()[0]))
         stop_time = max(stop_time, int(transfer[2].split()[0]))
-        continue
 
     # Figure out the real start and stop time.
     start_time += vex2time(vex['SCHED'][scan]['start'])
@@ -174,9 +201,6 @@ for scan in vex['SCHED']:
                     mk5_scan[station] = scan
                     new_job = True
                     break
-                pass
-            continue
-        continue
 
     # Loop over all the "station" parameters in the scan, figuring out
     # the start offset of the scan on the media.
@@ -187,22 +211,31 @@ for scan in vex['SCHED']:
             raise AssertionError, "Unknown unit " + transfer[3].split()[1]
         offset = int(round(float(transfer[3].split()[0]) * 1e9))
         offsets[station] = offset
-        continue
 
     # Loop over all stations, creating a list of input data files.
     data_sources = {}
     for station in stations:
-        if options.fuse:
-            data_source = options.data_dir + "/" + exper.lower() + '_' \
-                + station.lower() + '_' + mk5_scan[station].lower()
-            data_sources[station] = ["file://" + data_source]
+        if station in media_files:
+            data_source = []
+            i=0
+            oldfile = None
+            for file in media_files[station]:
+                if (file[1] > start_time) and (file[1]<stop_time):
+                    if(oldfile != None):
+                        data_source.append(oldfile[0])
+                elif file[1] >= stop_time:
+                  break
+                oldfile = file
+            if(oldfile != None):
+                data_source.append(oldfile[0])
+            print scan, ' : ', data_source        
+            data_sources[station] = data_source
         elif options.evlbi:
             data_source = "/tmp/mk5-" + station + "/" + station + "-eVLBI:0"
             data_sources[station] = ["mk5://" + data_source]
         else:
             data_source = vsn[station] + ":" + str(offsets[station])
             data_sources[station] = ["mk5://" + data_source]
-        continue
 
     if new_job:
         # Clean the slate again.
@@ -216,15 +249,18 @@ for scan in vex['SCHED']:
         # Semi-boring stuff.
         json_output["number_channels"] = options.number_channels
         json_output["integr_time"] = options.integr_time
+        if options.sub_integr_time != None:
+            json_output["sub_integr_time"] = options.sub_integr_time
+        json_output["integr_time"] = options.integr_time
         json_output["exper_name"] = exper
         output_file = basename + '_' + scan.lower() + ".cor"
-        output_uri = "file://" + os.getcwd() + "/" + output_file
+        output_uri = "file://" + output_dir + "/" + output_file
         json_output["output_file"] =  output_uri
         delay_uri = "file://" + os.getcwd() + "/delays"
         json_output["delay_directory"] = delay_uri
 
         # Boring stuff.
-        json_output["cross_polarize"] = True
+        json_output["cross_polarize"] = options.cross_polarize
         json_output["message_level"] = 1
 
         # Write the output to a new control file.
@@ -232,11 +268,9 @@ for scan in vex['SCHED']:
     else:
         # Just update the stop time.
         json_output["stop"] = time2vex(stop_time)
-        pass
 
     if options.evlbi:
         json_output["start"] = "now"
-        pass
 
     # Write out the correlator control file.
     fp = open(ctrl_file, 'w')
@@ -244,4 +278,3 @@ for scan in vex['SCHED']:
     fp.close()
 
     num_scans += 1
-    continue

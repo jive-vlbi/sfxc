@@ -158,6 +158,8 @@ int main(int argc, char *argv[]) {
         now = gmtime(&rawtime);
         int today_mjd = compute_mjd(now->tm_mday,now->tm_mon+1,now->tm_year+1900);
         full_mjd = (today_mjd/1000)*1000 + mjd;
+        if (full_mjd > today_mjd)
+          full_mjd -= 1000;
       }
       std::string time_string = get_time_string(full_mjd, sec);
       std::cout << "mjd = " << mjd << ", sec = " << sec << ", subsec = " << subsec 
