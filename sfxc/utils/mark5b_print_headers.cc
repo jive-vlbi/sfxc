@@ -6,6 +6,7 @@
  */
 
 #include <iostream>
+#include <string>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -70,6 +71,37 @@ void parse_arguments(int argc, char *argv[], char **filename, int *n_time_stamps
   *filename = argv[optind];
 }
 
+int compute_mjd(int day, int month, int year)
+// Calculate the modified julian day, formula taken from the all knowing wikipedia
+{
+  int a = (14-month)/12;
+  int y = year + 4800 - a;
+  int m = month + 12*a - 3;
+  int jdn = day + ((153*m+2)/5) + 365*y + (y/4) - (y/100) + (y/400) - 32045;
+  return jdn - 2400000.5;
+}
+
+void get_date(int mjd, int *year, int *day){
+// Valid from 1-1-1901 to 1-1-2100
+  int mjd1901 = 15385;
+  int ndays = mjd - mjd1901;
+  int p1 = ndays / (365 * 4 + 1);
+  int p2 = (ndays - p1 * (365 * 4 + 1)) / 365;
+  *year = 4 * p1 + p2 + 1901;
+  *day = 1 + (ndays - p1 * (365 * 4 + 1)) % 365;
+}
+
+std::string get_time_string(int mjd, int sec){
+  char tstr[80];
+  int year, yday, hour, minute;
+
+  get_date(mjd, &year, &yday);
+  hour = sec / 3600;
+  minute = (sec%3600)/60;
+
+  snprintf(tstr, 80, "%dy%03dd%02dh%02dm%02ds", year, yday, hour, minute, sec%60);
+  return(std::string(tstr));
+}
 
 // Prints the timestamps in the headers of a mark5b file
 int main(int argc, char *argv[]) {
@@ -111,17 +143,23 @@ int main(int argc, char *argv[]) {
         subsec += ((header[3]&mask) >> b) * mul;
         mask = mask << 4;
       }
-      // If a year is given then compute the full MJD
+      // Compute / guess the full MJD
+      int full_mjd;
       if (year > 0){
-        int y = year + 4799;
-        int mjd_year = 365*y + (y/4) - (y/100) + (y/400) - 2431738.5; 
+        int mjd_year = compute_mjd(1, 1, year);
         if (mjd >= mjd_year%1000)
-          mjd = mjd_year + mjd - mjd_year%1000;
+          full_mjd = mjd_year + mjd - mjd_year%1000;
         else
-          mjd = mjd_year + mjd - mjd_year%1000 + 1000;
+          full_mjd = mjd_year + mjd - mjd_year%1000 + 1000;
+      }else{
+        time_t rawtime;
+        struct tm *now;
+        time(&rawtime);
+        now = gmtime(&rawtime);
+        int today_mjd = compute_mjd(now->tm_mday,now->tm_mon+1,now->tm_year+1900);
+        full_mjd = (today_mjd/1000)*1000 + mjd;
       }
-      char time_string[80];
-      sprintf(time_string, "%02d:%02d:%02d.%d", sec/(60*60), (sec%(60*60))/60, sec%60, subsec);
+      std::string time_string = get_time_string(full_mjd, sec);
       std::cout << "mjd = " << mjd << ", sec = " << sec << ", subsec = " << subsec 
                 << ", frame_nr = " << frame_nr << "; t = " << time_string << "\n";
     }
