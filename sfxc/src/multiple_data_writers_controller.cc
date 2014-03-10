@@ -10,14 +10,15 @@
 #include <arpa/inet.h>
 
 #include "multiple_data_writers_controller.h"
-#include "sfxc_mpi.h"
-#include "mpi_transfer.h"
-#include "network.h"
-#include "interface.h"
 #include "data_writer_file.h"
 #include "data_writer_tcp.h"
 #include "data_writer_socket.h"
+
+//#include "sfxc_mpi.h"
 #include "tcp_connection.h"
+#include "mpi_transfer.h"
+#include "network.h"
+//#include "interface.h"
 
 
 Multiple_data_writers_controller::
@@ -36,9 +37,8 @@ Multiple_data_writers_controller::
 ~Multiple_data_writers_controller() {}
 
 void
-Multiple_data_writers_controller::get_listening_ip(
-  std::vector<uint64_t>& ip_port) {
-
+Multiple_data_writers_controller::
+get_listening_ip(std::vector<uint64_t>& ip_port) {
   std::vector<std::string> names;
   std::vector<InterfaceIP*> interfaces;
   names.push_back(String("myri0"));
@@ -52,7 +52,7 @@ Multiple_data_writers_controller::get_listening_ip(
 }
 
 boost::shared_ptr<Data_writer>
-Multiple_data_writers_controller::get_data_writer(size_t i) {
+Multiple_data_writers_controller::get_data_writer(unsigned int i) {
   SFXC_ASSERT(i < data_writers.size());
   return data_writers[i];
 }
@@ -155,7 +155,7 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
       }
       SFXC_ASSERT(tcp_connection.get_port() > 0);
 
-      std::vector<uint64_t>  ip_addresses;
+      std::vector<uint64_t> ip_addresses;
       // Add number of the data stream:
       ip_addresses.push_back(ranks[2]);
       // Add the ip addresses
@@ -194,14 +194,13 @@ Multiple_data_writers_controller::process_event(MPI_Status &status) {
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       int stream_nr;
       memcpy(&stream_nr, msg, sizeof(int32_t));
-      char *filename = msg+sizeof(int32_t);
+      char *filename = msg + sizeof(int32_t);
       SFXC_ASSERT(status.MPI_SOURCE == status2.MPI_SOURCE);
       SFXC_ASSERT(status.MPI_TAG == status2.MPI_TAG);
 
       boost::shared_ptr<Data_writer>
-      data_writer(new Data_writer_file(filename));
-
-      add_data_writer(stream_nr, data_writer);
+	writer(new Data_writer_file(filename));
+      add_data_writer(stream_nr, writer);
 
       MPI_Send(&stream_nr, 1, MPI_INT32,
                status.MPI_SOURCE, MPI_TAG_CONNECTION_ESTABLISHED,
@@ -221,9 +220,8 @@ Multiple_data_writers_controller::ready() {
 void
 Multiple_data_writers_controller::
 add_data_writer(unsigned int i, boost::shared_ptr<Data_writer> writer) {
-  if (data_writers.size() <= i) {
-    data_writers.resize(i+1);
-  }
+  if (data_writers.size() <= i)
+    data_writers.resize(i + 1);
   SFXC_ASSERT(i < data_writers.size());
 
   data_writers[i] = writer;
