@@ -50,6 +50,9 @@ parser.add_option("-t", "--template", dest="template", type="string",
 parser.add_option("-o", "--output-directory", dest="output_dir", type="string",
                   help="The directory the correlator output files are written to", 
                   metavar="DIRECTORY")
+parser.add_option("-d", "--delay-directory", dest="delay_dir", type="string",
+                  help="The directory delay files are written to", 
+                  metavar="DIRECTORY")
 parser.add_option("-f", "--from-files", dest="from_files", default='',
                   help="Correlate stations from files, FORMAT=Station1:host:pattern,Station2:host:patern, ...\n\
                         E.g. : -f Ef:my_host:/scratch/sfxc/N08C1*.m5a", metavar="LIST");
@@ -256,7 +259,10 @@ for scan in vex['SCHED']:
         output_file = basename + '_' + scan.lower() + ".cor"
         output_uri = "file://" + output_dir + "/" + output_file
         json_output["output_file"] =  output_uri
-        delay_uri = "file://" + os.getcwd() + "/delays"
+        if options.delay_dir == None:
+          delay_uri = "file://" + os.getcwd() + "/delays"
+        else:
+          delay_uri = "file://" + options.delay_dir
         json_output["delay_directory"] = delay_uri
 
         # Boring stuff.
