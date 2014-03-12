@@ -20,18 +20,24 @@ def print_global_header(infile):
   n = global_header[1].index('\0')
   print "Experiment %s, SFXC version = %s, date = %dy%dd%dh%dm%ds, nchan = %d"%(global_header[1][:n], global_header[8], global_header[2], global_header[3], hour, minute, second, global_header[5])
 
-def print_stats(stats):
+def print_stats(stats, stations=None):
   for stat in stats.iteritems():
-    print "Station ", stat[0]
+    if stations == None:
+      print "Station ", stat[0]
+    else:
+      print "Station ", stations[stat[0]]
     for nstr in stat[1]:
       print nstr
 
-def print_baselines(data):
+def print_baselines(data, stations=None):
   keys = data.keys()
   keys.sort()
   for key in keys:
     bl = data[key]
-    print "Baseline :  station1 = ", key[0], ", station2 = ", key[1]
+    if stations == None:
+      print "Baseline :  station1 = ", key[0], ", station2 = ", key[1]
+    else:
+      print "Baseline :  station1 = ", stations[key[0]], ", station2 = ", stations[key[1]]
     for nstr in bl:
       print nstr
 
@@ -140,20 +146,43 @@ def read_time_slice(infile, stats, data, nchan):
   # We read one time slice to many
   infile.seek(-timeslice_header_size, 1) 
 
+def get_stations(vex_file):
+  f = open(vex_file, 'r')
+  stations = []
+  line = f.readline().lstrip().upper()
+  while line != "" and line[:9] != "$STATION;":
+    line = f.readline().lstrip().upper()
+  # Now get the station names
+  line = f.readline().lstrip()
+  while line != "" and line[:1] != "$":
+    if line[:4] == "def ":
+      z = line.find(';')
+      stations.append(line[4:z].lstrip())
+    line = f.readline().lstrip()
+
+  if len(stations) == 0:
+    print "Error, no stations found in vex_file : ", vex_file
+    sys.exit(1)
+  stations.sort()
+  return stations
+
 def get_options():
   parser = OptionParser('%prog [options] <correlator output file>')
-  parser.add_option('-n', '--noheader', action='store_true',default=False, help='Do not print the global header')
+  parser.add_option('-n', '--noheader', action='store_true',
+                    default=False, help='Do not print the global header')
+  parser.add_option('-v', '--vex', dest="vex_file", type="string",
+                    help='Get station names from vex file (has to be the same as used during correlation)')
   (opts, args) = parser.parse_args()
   if len(args) == 0:
     parser.print_help()
     parser.exit()
   if len(args) != 1:
     parser.error('No correlator file specified')
-  return (args[0], opts.noheader)
+  return (args[0], opts.noheader, opts.vex_file)
 
 ############################## Main program ##########################
 
-filename, noheader = get_options()
+filename, noheader, vex_file = get_options()
 
 try:
   infile = open(filename, 'rb')
@@ -161,10 +190,14 @@ except:
   print "Could not open file : " + filename
   sys.exit()
 
+# Get list of station names
+stations = get_stations(vex_file) if vex_file != None else None
+
 # Read global header
 global_header_size = struct.unpack('i', infile.read(4))[0]
 if not noheader:
   print_global_header(infile)
+
 infile.seek(0)
 gheader_buf = infile.read(global_header_size)
 global_header = struct.unpack('i32s2h5i4c',gheader_buf[:64])
@@ -183,5 +216,5 @@ while True:
     sys.exit(0)
    
   print "---------- time slice ", nslices," ---------"
-  print_stats(stats)
-  print_baselines(data)
+  print_stats(stats, stations)
+  print_baselines(data, stations)
