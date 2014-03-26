@@ -25,7 +25,7 @@ bandpass::open_table(const std::string &name, int nchan_, bool phase_only){
   nbytes = fread(&nif, 1, sizeof(nif), file);
   nbytes = fread(&npol, 1, sizeof(npol), file);
   nbytes = fread(&nchan_aips, 1, sizeof(nstation), file);
-  cerr << "nstation =" << nstation << ", nif = "<< nif << ", npol = " << npol << ", nchan_aips " << nchan_aips << ", nchan = " << nchan <<"\n";
+  //cerr << "nstation =" << nstation << ", nif = "<< nif << ", npol = " << npol << ", nchan_aips " << nchan_aips << ", nchan = " << nchan <<"\n";
   // Read in table of frequencies
   frequencies.resize(nif);
   nbytes = fread(&frequencies[0], 1, nif * sizeof(double), file);
@@ -53,14 +53,35 @@ bandpass::open_table(const std::string &name, int nchan_, bool phase_only){
         throw string("premature end of bandpass table");
       // Average down / up
       for(int i=0; i<nchan*nif; i++){
-        int k = i * nchan_aips / nchan;
-        if(std::abs(aips_bandpass[k]) < 0.01)
+        int p = i * nchan_aips / nchan;
+        int q;
+        if(i < nchan*nif-1)
+          q = (nchan_aips < nchan) ? p+1 : p;
+        else
+          q = p;
+        complex<float> bpval;
+        if(p == q)
+          bpval = aips_bandpass[p];
+        else{
+          if(((abs(aips_bandpass[p])) < 0.01) || (abs(aips_bandpass[p]))<0.01){
+            // When either point is close to zero just use nearest neighbour
+            int r = (int) round(i * nchan_aips * 1./ nchan);
+            bpval = aips_bandpass[r];
+          }else{
+            // We interpolate the amplitudes linearly, phases using more robust non-linear interpolation
+            float f = i * nchan_aips * 1./ nchan - p;
+            float amp = f*abs(aips_bandpass[p]) + (1-f)*abs(aips_bandpass[q]);
+            complex<float> bpc = f*aips_bandpass[p] + (1-f)*aips_bandpass[q];
+            bpval = amp * bpc/abs(bpc);
+          }
+        }
+        if(abs(bpval) < 0.01)
           bp[i] = 0;
         else{
           if(phase_only)
-            bp[i] = std::abs(aips_bandpass[k]) / aips_bandpass[k];
+            bp[i] = std::abs(bpval) / bpval;
           else
-            bp[i] = float(1.) / aips_bandpass[k];
+            bp[i] = float(1.) / bpval;
         }
       }
     }
