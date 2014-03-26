@@ -33,15 +33,15 @@ public:
 
   bool ready();
 
-  Data_writer_ptr get_data_writer(size_t i);
+  Data_writer_ptr get_data_writer(unsigned int i);
 
-	// This is the set of listening IP/port
-	void get_listening_ip(std::vector<uint64_t>& ip_port);
+  // This is the set of listening IP/port
+  void get_listening_ip(std::vector<uint64_t>& ip_port);
 
 private:
   void add_data_writer(unsigned int i, Data_writer_ptr writer);
 
-  std::vector< Data_writer_ptr >  data_writers;
+  std::vector<Data_writer_ptr> data_writers;
 
   TCP_Connection tcp_connection;
 };

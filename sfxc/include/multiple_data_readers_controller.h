@@ -10,16 +10,14 @@
 #ifndef MULTIPLE_DATA_READERS_CONTROLLER_H
 #define MULTIPLE_DATA_READERS_CONTROLLER_H
 
-#include "tcp_connection.h"
-
 #include "controller.h"
-
+#include "tcp_connection.h"
 #include "data_writer.h"
 #include "data_reader2buffer.h"
 #include "data_reader_buffer.h"
 
-#include "memory_pool_elements.h"
 #include "memory_pool.h"
+#include "memory_pool_elements.h"
 #include "threadsafe_queue.h"
 
 
@@ -52,7 +50,7 @@ public:
 
   /** Returns the data reader, which is either the real reader or the
    *  buffered reader if a buffer is set. **/
-  Data_reader_ptr get_data_reader(int i);
+  Data_reader_ptr get_data_reader(unsigned int i);
 
   /* Returns true if data_reader(i) != NULL */
   bool initialised(unsigned int i);
@@ -60,13 +58,13 @@ public:
   /** The number of input readers **/
   size_t number_of_data_readers();
 
-	void stop();
+  void stop();
 
   // This is the set of listening IP/port
-	void get_listening_ip(std::vector<uint64_t>& ip_port);
-private:
+  void get_listening_ip(std::vector<uint64_t>& ip_port);
 
-  void add_data_reader(int i, boost::shared_ptr<Data_reader> reader);
+private:
+  void add_data_reader(unsigned int i, boost::shared_ptr<Data_reader> reader);
 
   // These are pointers, because a resize of the vector will
   // copy construct all the elements and then destroy the old

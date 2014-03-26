@@ -118,8 +118,8 @@ add_time_interval(Time &start_time, Time &stop_time) {
   Time tbh = reader_.get_data_reader()->time_between_headers();
   Time delay_start(delay_table.delay(start_time)*1e6);
   Time delay_stop(delay_table.delay(stop_time)*1e6);
-  int32_t start_frames = (int32_t) std::floor(delay_start/tbh + .5);
-  int32_t stop_frames = (int32_t) std::floor(delay_stop/tbh + .5) + 1;
+  int32_t start_frames = (int32_t) std::floor(delay_start/tbh);
+  int32_t stop_frames = (int32_t) std::ceil(delay_stop/tbh);
   Time start_time_reader = start_time + tbh * start_frames;
   Time stop_time_reader = stop_time + tbh * stop_frames;
   reader_.add_time_interval(start_time_reader, stop_time_reader);

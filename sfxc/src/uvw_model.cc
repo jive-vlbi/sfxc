@@ -180,7 +180,8 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
           scan_end = line[0];
         }
       } while(in.read(reinterpret_cast < char * > (line), 7*sizeof(double)));
-      if((scans[n_scans - 2].begin == scan.begin) && (scans[n_scans - 2].end != scan.end))
+      if((n_scans > 1) && (scans[n_scans - 2].begin == scan.begin) && 
+         (scans[n_scans - 2].end != scan.end))
         sfxc_abort("Premature ending of phase center\n");
     }
   }
