@@ -15,16 +15,19 @@
 using namespace std;
 FILE *uit;
 bool flag = false;
+#define POL_R  0
+#define POL_L  1
+#define POL_RL 2
+#define POL_I  3
+
 
 SFXCdata::SFXCdata(const char *infilename, const char *vexname){
-  cout << "opening " << vexname << "\n";
   vex.open(vexname);
   infile = fopen(infilename, "r");
   if (!infile)
     throw "Could not open input file";
 
   // Obtain correlation from input file
-  cout << "get_parameters(infile, vex, params);\n";
   get_parameters();
 
   current_int = -1; // current integration
@@ -32,17 +35,21 @@ SFXCdata::SFXCdata(const char *infilename, const char *vexname){
 
 void 
 SFXCdata::get_parameters(){
-  // Read the global header
-  int32_t global_header_size = 0;
-  fread(&global_header_size, 1, sizeof(int32_t), infile);
-  fseek(infile, 0, 0);
-  size_t nbytes = fread(&gheader, 1, global_header_size, infile);
-  if ((nbytes != global_header_size) || (nbytes==0)){
+  // Read the global header, the header size of the current data file might
+  // be different than that of the current global_header_size
+  int32_t data_header_size = 0;
+  size_t nbytes = fread(&data_header_size, 1, sizeof(int32_t), infile);
+  if (nbytes != sizeof(int32_t))
     throw "Error : Premature EOF in input file";
-  }
+  fseek(infile, 0, 0);
+  int32_t global_header_size = std::min((size_t) data_header_size, 
+                                        sizeof(Output_header_global));
+  nbytes = fread(&gheader, 1, global_header_size, infile);
+  if ((nbytes != global_header_size) || (nbytes==0))
+    throw "Error : Premature EOF in input file";
+  fseek(infile, data_header_size, 0);
   // Get the meta information from vex file
   string exper_id = vex.get_root_node()["GLOBAL"]["EXPER"]->to_string();
-  cout << "exper_id = " << exper_id << "\n";
   pi_name = vex.get_root_node()["EXPER"][exper_id]["PI_name"]->to_string();  
   exper_name = vex.get_root_node()["EXPER"][exper_id]["exper_name"]->to_string(); 
   cout << exper_id << pi_name << exper_name << "\n"; 
@@ -75,7 +82,6 @@ SFXCdata::get_parameters(){
     }
     int sb = vex_subbands[i].sideband; // 0 = LSB, 1 = USB
     vex_subband_idx[sb][size-1]=i;
-    std::cout << "vex_subband["<<sb<<"]["<<size-1<<"]="<<i<<"\n";
   }
 
   // Get the actually correlated subbands from the first integration
@@ -89,13 +95,9 @@ SFXCdata::get_parameters(){
     Output_uvw_coordinates huvw;
     Output_header_bitstatistics hstatistics;
     const int data_size = (gheader.number_channels+1) * sizeof(float); 
-    cout << "data_size = " << data_size << "\n";
     unsigned char buffer[data_size];
 
     sizeof_integration += nbytes;
-    cout << "N=" << htimeslice.number_uvw_coordinates
-         << ", " << htimeslice.number_statistics
-         << ", " << htimeslice.number_baselines << "\n";
     for(int i=0; i< htimeslice.number_uvw_coordinates; i++)
       sizeof_integration += fread(&huvw, 1, sizeof(huvw), infile);
     for(int i=0; i< htimeslice.number_statistics; i++)
@@ -179,16 +181,17 @@ SFXCdata::get_subbands(vector<subband> &vex_subbands){
 
 void 
 SFXCdata::src_coords(const string &src_name){
+  // Store coordinates of src_name in variables src_ra and src_dec as strings
   int d, h, m;
   float s;
   string vra = vex.get_root_node()["SOURCE"][src_name]["ra"]->to_string();
-  cout << "src_name = " << src_name << ", vra = " << vra << "\n";
   sscanf(vra.c_str(), "%dh%dm%fs", &h, &m, &s);
   char buf[14];
   sprintf(buf, "%02d:%02d:%07.4f", h, m, s);
   src_ra = string(buf);
 
   string vdec = vex.get_root_node()["SOURCE"][src_name]["dec"]->to_string();
+  cout << "src_name = " << src_name << ", vra = " << vra << ", vdec = " << vdec << "\n";
   sscanf(vdec.c_str(), "%dd%d\'%fs\"", &d, &m, &s);
   // The format is (-dd:mm:ss.sss) 
   sprintf(buf,"%02d:%02d:%06.3f", d, m, s);
@@ -208,8 +211,6 @@ SFXCdata::read_integration(int int_nr){
   // Store array of dimensions (#subbands, #samples, #pol, #chan) as one dimensional array
   const int nchan = gheader.number_channels;
   const size_t ndata = nsamples * subbands.size() * npol * nchan;
-  cout << "ndata = " << ndata << ", nsamp = " << nsamples << ", nsub = " << subbands.size()
-       << ", npol = " << npol <<", nchan =" << nchan <<"\n";
   data.resize(ndata);
   // Read the data
   Output_header_timeslice htimeslice;
@@ -256,12 +257,13 @@ SFXCdata::read_integration(int int_nr){
 }
 
 float *
-SFXCdata::get_sample(int int_nr, int subband_nr, int sample, int pol_nr){
+SFXCdata::get_spectrum(int int_nr, int subband_nr, int sample, int pol_nr){
   if (int_nr != current_int)
     read_integration(int_nr);
-
+  
   int nchan = gheader.number_channels;
-  int idx = subband_nr * nchan * npol * nsamples + (sample*npol + pol_nr) * nchan;
+  int pol = (npol == 1) ? 0 : pol_nr;
+  int idx = subband_nr * nchan * npol * nsamples + (sample*npol + pol) * nchan;
 //  cout << "int_nr = " << int_nr << ", subband_nr = " << subband_nr << ", sample = " << sample << ", pol_nr = " << pol_nr 
 //      << ", idx = " << idx << ", size = " << data.size()<< "\n";
   return &data[idx];
@@ -343,25 +345,18 @@ void hdr_end(FILE *outfile){
   fprintf(outfile, "%-80s", end);
 }
 
-void write_subint_hdu(FILE *outfile, vector<SFXCdata> &sfxcdata, vector<int> &channels){
-  struct Output_header_global &first_header = sfxcdata[0].gheader;
+void write_subint_hdu(FILE *outfile, SFXCdata &sfxcdata, vector<int> &channels, int polarization){
+  struct Output_header_global &gheader = sfxcdata.gheader;
   hdr_string(outfile, "XTENSION", "BINTABLE", "***** Subintegration data  *****");
   hdr_int(outfile, "BITPIX", 8, "N/A");
   hdr_int(outfile, "NAXIS", 2, " 2-dimensional binary table");
   int nsubband = channels.size();
-  int nchan = first_header.number_channels*nsubband;
-  // FIXME : Only first polarization is written
+  int nchan = gheader.number_channels*nsubband;
+  // FIXME : Only a single polarization is written
   //int size_of_row = sizeof(double)*10 + sizeof(float)*(5+nchan*2*(1+sfxcdata.npol)) + sfxcdata.nsamples * nchan*sfxcdata.npol;
-  int size_of_row = sizeof(double)*10 + sizeof(float)*(5+nchan*2*(1+1)) + (sfxcdata[0].nsamples) * nchan; 
+  int size_of_row = sizeof(double)*10 + sizeof(float)*(5+nchan*2*(1+1)) + (sfxcdata.nsamples) * nchan; 
   hdr_int(outfile, "NAXIS1", size_of_row, "width of table in bytes");
-  // Get the total number of sub integrations, including the dead time between scans
-  int nscans = sfxcdata.size();
-  int begin_day = sfxcdata[0].gheader.start_day;
-  int begin_time = sfxcdata[0].gheader.start_time;
-  int end_day = sfxcdata[nscans-1].gheader.start_day;
-  int end_time = sfxcdata[nscans-1].gheader.start_time;
-  int nsubint = (end_day-begin_day)*86400 + (end_time - begin_time) + sfxcdata[nscans-1].nsubint;
-  hdr_int(outfile, "NAXIS2", nsubint, "Number of rows in table (NSUBINT)");
+  hdr_int(outfile, "NAXIS2", sfxcdata.nsubint, "Number of rows in table (NSUBINT)");
   hdr_int(outfile, "PCOUNT", 0, "size of special data area");
   hdr_int(outfile, "GCOUNT", 1, "one data group (required keyword)");
   hdr_int(outfile, "TFIELDS", 20, "Number of fields per row");
@@ -370,10 +365,10 @@ void write_subint_hdu(FILE *outfile, vector<SFXCdata> &sfxcdata, vector<int> &ch
   hdr_string(outfile, "INT_UNIT", "SEC", "Unit of time axis (SEC, PHS (0-1), DEG)");
   hdr_string(outfile, "SCALE", "UNCAL", "Intensity units (FluxDen/RefFlux/Jansky)");
   hdr_string(outfile, "POL_TYPE", "INTEN", "Polarisation identifier (e.g., AABBCRCI, AA+BB)");
-  // FIXME : Only first polarization is written
+  // FIXME : Only a single polarization is written
   //hdr_int(outfile, "NPOL", sfxcdata[0].npol, "Nr of polarisations");
   hdr_int(outfile, "NPOL", 1, "Nr of polarisations");
-  double tbin = first_header.integration_time / (1000000. * (sfxcdata[0].nsamples)); 
+  double tbin = gheader.integration_time / (1000000. * (sfxcdata.nsamples)); 
   hdr_float(outfile, "TBIN", tbin, 6, "[s] Time per bin or sample");
   hdr_int(outfile, "NBIN", 1, "Nr of bins (PSR/CAL mode; else 1)");
   hdr_int(outfile, "NBIN_PRD", 1, "Nr of bins/pulse period (for gated data)");
@@ -382,24 +377,24 @@ void write_subint_hdu(FILE *outfile, vector<SFXCdata> &sfxcdata, vector<int> &ch
   hdr_int(outfile, "ZERO_OFF", 0, "Zero offset for SEARCH-mode data");
   hdr_int(outfile, "SIGNINT", 0, "1 for signed ints in SEARCH-mode data, else 0");
   // Determine the number of subints before this scan
-  string start_time = sfxcdata[0].vex.get_start_time_of_experiment();
+  string start_time = sfxcdata.vex.get_start_time_of_experiment();
   int ref_year, ref_day, ref_time;
   vex_time(start_time.c_str(), ref_year, ref_day, ref_time);
-  double days_in_sec = (first_header.start_day - ref_day)*86400;
-  double int_time =  first_header.integration_time / 1000000.;
-  int nsuboffs = (int) round((days_in_sec + first_header.start_time  - ref_time) / int_time);
+  double days_in_sec = (gheader.start_day - ref_day)*86400;
+  double int_time =  gheader.integration_time / 1000000.;
+  int nsuboffs = (int) round((days_in_sec + gheader.start_time  - ref_time) / int_time);
 
   // Determine the total bandwidth
   double bandwidth=0;
   for(int i=0;i<nsubband;i++)
-    bandwidth += sfxcdata[0].subbands[channels[i]].bandwidth;
+    bandwidth += sfxcdata.subbands[channels[i]].bandwidth;
   hdr_int(outfile, "NSUBOFFS", nsuboffs, "Subint offset (Contiguous SEARCH-mode files)");
   hdr_int(outfile, "NCHAN", nchan, "Number of channels/sub-bands in this file");
   hdr_float(outfile, "CHAN_BW", bandwidth / nchan,3, "[MHz] Channel/sub-band width");
   hdr_float(outfile, "DM", 0, 2, "[cm-3 pc] DM for post-detection dedisperion");
   hdr_float(outfile, "RM", 0, 2, "[rad m-2] RM for post-detection deFaraday");
   hdr_int(outfile, "NCHNOFFS", 0, "Channel/sub-band offset for split files");
-  hdr_int(outfile, "NSBLK", sfxcdata[0].nsamples, "Samples/row (SEARCH mode, else 1)"); 
+  hdr_int(outfile, "NSBLK", sfxcdata.nsamples, "Samples/row (SEARCH mode, else 1)"); 
 
   hdr_string(outfile, "EXTNAME", "SUBINT", "name of this binary table extension");
 
@@ -453,21 +448,21 @@ void write_subint_hdu(FILE *outfile, vector<SFXCdata> &sfxcdata, vector<int> &ch
   hdr_string(outfile, "TUNIT16", "MHz", "Units of field");
   hdr_string(outfile, "TTYPE17", "DAT_WTS", "Weights for each channel");
   hdr_string(outfile, "TFORM17", buf, "NCHAN floats");
-  // FIXME : Only first polarization
-  //sprintf(buf, "%dE", nchan*sfxcdata[0].npol);
+  // FIXME : Only a single polarization
+  //sprintf(buf, "%dE", nchan*sfxcdata.npol);
   sprintf(buf, "%dE", nchan);
   hdr_string(outfile, "TTYPE18", "DAT_OFFS", "Data offset for each channel");
   hdr_string(outfile, "TFORM18", buf, "NCHAN*NPOL floats");
   hdr_string(outfile, "TTYPE19", "DAT_SCL", "Data scale factor (outval=dataval*scl + offs)");
   hdr_string(outfile, "TFORM19", buf, "NCHAN*NPOL floats");
   hdr_string(outfile, "TTYPE20", "DATA", "Subint data table");
-  // FIXME : Only first polarization is written
-  //sprintf(buf, "(%d, %d, %d)", nchan, sfxcdata[0].npol, sfxcdata.nsamples);
-  sprintf(buf, "(%d, %d, %d)", nchan, 1, sfxcdata[0].nsamples); 
+  // FIXME : Only a single polarization is written
+  //sprintf(buf, "(%d, %d, %d)", nchan, sfxcdata.npol, sfxcdata.nsamples);
+  sprintf(buf, "(%d, %d, %d)", nchan, 1, sfxcdata.nsamples); 
   hdr_string(outfile, "TDIM20", buf, "Dimensions (NBIN,NCHAN,NPOL/NCHAN,NPOL,NSBLK)");
-  // FIXME : Only first polarization is written
+  // FIXME : Only a single polarization is written
   //sprintf(buf, "%dB", nchan * sfxcdata[0].npol * sfxcdata[0].nsamples); 
-  sprintf(buf, "%dB", nchan * (sfxcdata[0].nsamples)); 
+  sprintf(buf, "%dB", nchan * (sfxcdata.nsamples)); 
   hdr_string(outfile, "TFORM20", buf, "I (Fold), X (1-bit) or B (2-8 bit) Search");
   hdr_string(outfile, "TUNIT20", "Jy", "Units of subint data");
   hdr_end(outfile);
@@ -494,7 +489,7 @@ size_t write_double_be(double fval[], size_t nval, FILE *outfile){
   return nbytes;
 }
 
-void fits_subint_row_meta(double row_nr, int subint, FILE *outfile, SFXCdata &sfxcdata, vector<int> &channels, int ref_day, int ref_time, float weight){
+void fits_subint_row_meta(double row_nr, int subint, FILE *outfile, SFXCdata &sfxcdata, vector<int> &channels, int ref_day, int ref_time, float weight, int fft_size){
   // Start a new row in the subint table, this function writes all columns except the last column 
   // containing the actual data.
   double int_time = sfxcdata.gheader.integration_time;
@@ -549,25 +544,23 @@ void fits_subint_row_meta(double row_nr, int subint, FILE *outfile, SFXCdata &sf
   total += write_double_be(&aux_rm, 1, outfile);
   int nsubbands = channels.size();
   int nchan = sfxcdata.gheader.number_channels;
-  float old_f=sfxcdata.subbands[channels[0]].frequency;
   for(int ch_idx=0;ch_idx<nsubbands;ch_idx++){
     int ch = channels[ch_idx];
     double f0 = sfxcdata.subbands[ch].frequency; 
     double bandwidth = sfxcdata.subbands[ch].bandwidth;
     int sb = sfxcdata.subbands[ch].sideband*2-1; // LSB: -1, USB: 1
-    cout.precision(16);
+    // If the fft_size if the correlation was larger than nchan, then all
+    // frequencies are shifted by an amount delta
+    int ratio = fft_size/nchan;
+    float delta= (ratio-1) * bandwidth / (2*fft_size);
     if(sb==-1){
       for(int i=nchan;i>0;i--){
-        float f = f0 - i*bandwidth/nchan;
-        //cout << "sb=" << ch << ", f="<<f<<", step="<<old_f-f<<"\n";
-        old_f = f;
+        float f = f0 + delta - i*bandwidth/nchan;
         total += write_float_be(&f, 1, outfile);
       }
     }else{
       for(int i=0;i<nchan;i++){
-        float f = f0 + i*bandwidth/nchan;
-        //cout << "sb=" << ch << ", f="<<f<<", step="<<old_f-f<<"\n";
-        old_f = f;
+        float f = f0 + delta + i*bandwidth/nchan;
         total += write_float_be(&f, 1, outfile);
       }
     }
@@ -579,31 +572,30 @@ void fits_subint_row_meta(double row_nr, int subint, FILE *outfile, SFXCdata &sf
   }
   // Data offset for each channel
   float off = 0; 
-  // FIXME : Only first polarization
-  //for(int i=0;i<nchan*sfxcdata.npol;i++){
+  // FIXME : Only a single polarization
+  //for(int i=0;i<nchan*sfxcdata.npol;i++)
   for(int i=0;i<nchan*nsubbands;i++){
     total += write_float_be(&off, 1, outfile);
   }
   // Data scale factor (outval=dataval*scl + offs)
   float scl = 1; 
-  //FIXME : Only first polarization
-  //for(int i=0;i<nchan*sfxcdata.npol;i++){
+  //FIXME : Only a single polarization
+  // for(int i=0;i<nchan*sfxcdata.npol;i++)
   for(int i=0;i<nchan*nsubbands;i++){
     total += write_float_be(&scl, 1, outfile);
   }
-  cout << "Wrote " << total << " bytes of table data\n";
 }
 
-void get_quantization(SFXCdata &sfxcdata, vector<int> &channels, float lower_bound[], float step[]){
+void get_quantization(SFXCdata &sfxcdata, vector<int> &channels, int polarization, float lower_bound[], float step[]){
   // Get the quantiation levels. Each sub-integration is a sum of Rayleigh distributed samples of the
   // signal power. Because of the central limit theorem this sum should be approximately gaussian.
   const int nint = sfxcdata.nsubint;
   const int nsamples = sfxcdata.nsamples;
   const int nchan = sfxcdata.gheader.number_channels;
   const int nfreq = channels.size();
+ 
+  const int pol = (polarization == POL_I) ? 0 : polarization;
   
-  const int pol = 0;  // Use a single polarization
-
   const int nint_in_8sec = (int) round(8000000./sfxcdata.gheader.integration_time);
   const int bint = max(nint/2 - nint_in_8sec, 0);
   const int eint = min(bint+2*nint_in_8sec, nint-1);
@@ -614,16 +606,20 @@ void get_quantization(SFXCdata &sfxcdata, vector<int> &channels, float lower_bou
     buf[i].resize(N);
 
   // Copy the data range to an auxilary array
-  std::cout << "nsamples = " << nsamples << ", nchan = " << nchan << ", nfreq = " << nfreq<< "\n";
   for(int int_nr = bint; int_nr <= eint; int_nr++){
-    std::cout << "int_nr = " << int_nr << " / " << eint << "\n";
+    //std::cout << "int_nr = " << int_nr << " / " << eint << "\n";
     for(int freq_nr = 0; freq_nr < nfreq; freq_nr++){
       int freq = channels[freq_nr];
       for(int sample = 0; sample < nsamples; sample++){
         int j = (int_nr-bint)*nsamples+sample;
-        float *data_row = sfxcdata.get_sample(int_nr, freq, sample, pol);
+        float *data_row = sfxcdata.get_spectrum(int_nr, freq, sample, pol);
         for(int i=0; i<nchan; i++)
           buf[freq_nr*nchan+i][j] = data_row[i];
+        if (polarization == POL_I){
+          float *data_row = sfxcdata.get_spectrum(int_nr, freq, sample, 1-pol);
+          for(int i=0; i<nchan; i++)
+            buf[freq_nr*nchan+i][j] += data_row[i];
+        }
       }
     }
   }
@@ -643,9 +639,7 @@ void get_quantization(SFXCdata &sfxcdata, vector<int> &channels, float lower_bou
     int M = N-(end-start);
     double median = buf[i][M/2];
     double average = 0, average_squares=0;
-    std::cout << i << ": M = " << M << ", N="<<N<<"\n";
     for(int j=0;j<M;j++){
-      if (i==64) std::cout << buf[i][j] << "\n";
       average += buf[i][j];
       average_squares += buf[i][j]*buf[i][j];
     }
@@ -655,7 +649,7 @@ void get_quantization(SFXCdata &sfxcdata, vector<int> &channels, float lower_bou
     // From Jenet and Anderson, 1998
     step[i] = sigma * 0.02957;
     lower_bound[i] = median - step[i] *127;
-    std::cout << i << " : step = " << step[i] << ", median = " << median << ", average = " << average << ", av_sq = " << average_squares << "\n";
+    //std::cout << i << " : step = " << step[i] << ", median = " << median << ", average = " << average << ", av_sq = " << average_squares << "\n";
   }
 }
 
@@ -686,7 +680,7 @@ void get_quantization2(SFXCdata &sfxcdata, vector<int> &channels, float lower_bo
       int freq = channels[freq_nr];
       for(int sample = 0; sample < nsamples; sample++){
         int j = (int_nr-bint)*nsamples+sample;
-        float *data_row = sfxcdata.get_sample(int_nr, freq, sample, pol);
+        float *data_row = sfxcdata.get_spectrum(int_nr, freq, sample, pol);
         for(int i=0; i<nchan; i++)
           buf[freq_nr*nchan+i][j] = data_row[i];
       }
@@ -709,79 +703,62 @@ void vex_time(const char *time_str, int &ref_year, int &ref_day, int &ref_time){
   ref_time = second + 60*(hour*60+minute);
 }
 
-void pad_zeros(double integration, int old_int_nr, int new_int_nr, int ref_day, int ref_time, SFXCdata &data, vector<int> &channels, FILE *outfile){
-  // Add data rows filled with zero's between scans
-  const int nchan = data.gheader.number_channels, nsamples = data.nsamples, npol = 1; // FIXME : Only first is used data->npol;
-  unsigned char buffer[nchan * npol * nsamples];
-  memset(buffer, 0, nchan*npol*nsamples);
-  for(int i = old_int_nr; i < new_int_nr; i++){
-    fits_subint_row_meta(integration, i, outfile, data, channels, ref_day, ref_time, 0.); // start new row
-    fwrite(buffer, 1, nchan * npol * nsamples, outfile);
-    integration += 1;
-  }
-}
-
-void write_subints(FILE *outfile, vector<SFXCdata> &sfxcdata, vector<int> &channels){
+void write_subints(FILE *outfile, SFXCdata &sfxcdata, vector<int> &channels, int polarization, int fft_size){
   // Requantize subintgrations to 8 bit and write the results to disk.
-  string start_time = sfxcdata[0].vex.get_start_time_of_experiment();
+  string start_time_str = sfxcdata.vex.get_start_time_of_experiment();
   int ref_year, ref_day, ref_time;
-  vex_time(start_time.c_str(), ref_year, ref_day, ref_time);
-  double int_time = sfxcdata[0].gheader.integration_time / 1000000.;
-  int current_day = sfxcdata[0].gheader.start_day;
-  int current_time =  sfxcdata[0].gheader.start_time;
-  int int_nr = round(((current_day-ref_day)*86400 + (current_time - ref_time))/int_time);
+  vex_time(start_time_str.c_str(), ref_year, ref_day, ref_time);
+  double int_time = sfxcdata.gheader.integration_time / 1000000.;
+  int start_day = sfxcdata.gheader.start_day;
+  int start_time = sfxcdata.gheader.start_time;
+  int int_nr = round(((start_day-ref_day)*86400 + (start_time - ref_time))/int_time);
 
-  int integration = 0;
-  for(vector<SFXCdata>::iterator data = sfxcdata.begin(); data != sfxcdata.end(); data++){
-    const int nsubint = data->nsubint, nsamples = data->nsamples, npol = 1; // FIXME : Only first is used data->npol;
-    const int nchan = data->gheader.number_channels;
-    const int nfreq = channels.size();
-    int start_day = data->gheader.start_day;
-    int start_time =  data->gheader.start_time;
-    int new_int_nr = round(((start_day-ref_day)*86400 + (start_time - ref_time)) / int_time);
-    pad_zeros(integration, int_nr, new_int_nr, ref_day, ref_time, *data, channels, outfile);
-    integration += new_int_nr - int_nr;
-    int_nr = new_int_nr;
-    
-    float lower_bound[nchan*nfreq], dlevel[nchan*nfreq];
-    get_quantization(*data, channels, lower_bound, dlevel);
-    flag = true;
-    cout << "dlevel = " << dlevel[nchan/2] << ", lower bound = " << lower_bound[nchan/2] 
-         << ", nchan = " << nchan << ", nfreq= " << nfreq<< "\n";
-    // Now write the data (requantized to 8bit), for now just the first channel
-    uint8_t buf[nchan];//buf[nsamples];
-    for(int subint_nr = 0; subint_nr < nsubint; subint_nr++){
-      cout << "JOPPIE : integration = " << integration << ", subint_nr = " << subint_nr << "\n";
-      fits_subint_row_meta(integration, int_nr, outfile, *data, channels, ref_day, ref_time, 1.); // start new row
-      size_t nbytes = 0;
-      for(int sample = 0; sample < nsamples; sample++){
-        int pol = 0; // FIXME : Just the first polarization
-        for(int sb_idx=0;sb_idx<nfreq;sb_idx++){
-          int freq = channels[sb_idx];
-          float *data_row = data->get_sample(subint_nr, freq, sample, pol);
-          for(int ch = 0; ch < nchan; ch++){
-            int idx = sb_idx*nchan + ch;
-            int val = round((data_row[ch]-lower_bound[idx]) / dlevel[idx]);
-            buf[ch] = max(min(val, 255), 0);
-            if ((subint_nr == 10) && (ch==48))
-              cout << "buf["<<idx<<"]="<<(int)buf[ch]<< ", orig = " << val  << ", dlevel = " << dlevel[idx] << ", lower = " << lower_bound[idx] << ", data = " << data_row[ch] 
-                   << "\n";
-          }
-          //nbytes += fwrite(buf, 1, nsamples, outfile);
-          nbytes += fwrite(buf, 1, nchan, outfile);
+  // FIXME : Only single pol is supported
+  const int nsubint = sfxcdata.nsubint, nsamples = sfxcdata.nsamples, npol = 1; // data->npol;
+  const int nchan = sfxcdata.gheader.number_channels;
+  const int nfreq = channels.size();
+  float lower_bound[nchan*nfreq], dlevel[nchan*nfreq];
+  get_quantization(sfxcdata, channels, polarization, lower_bound, dlevel);
+  flag = true;
+  //cout << "dlevel = " << dlevel[nchan/2] << ", lower bound = " << lower_bound[nchan/2] 
+  //     << ", nchan = " << nchan << ", nfreq= " << nfreq<< "\n";
+  // Now write the data (requantized to 8bit), for now just the first channel
+  uint8_t buf[nchan];//buf[nsamples];
+  for(int subint_nr = 0; subint_nr < nsubint; subint_nr++){
+    fits_subint_row_meta(subint_nr, int_nr, outfile, sfxcdata, channels, ref_day, ref_time, 1., fft_size); // start new row
+    size_t nbytes = 0;
+    for(int sample = 0; sample < nsamples; sample++){
+      int pol = (polarization == POL_I) ? 0 : polarization; // FIXME : Only single polarization is supported
+      for(int sb_idx=0;sb_idx<nfreq;sb_idx++){
+        int freq = channels[sb_idx];
+        // FIXME CLean up the implementation of polarization summing
+        float *data_row = sfxcdata.get_spectrum(subint_nr, freq, sample, pol);
+        float *data_row2 = (polarization != POL_I) ? NULL : sfxcdata.get_spectrum(subint_nr, freq, sample, 1-pol);
+        for(int ch = 0; ch < nchan; ch++){
+          int idx = sb_idx*nchan + ch;
+          int val;
+          if (data_row2 == NULL)
+            val = round((data_row[ch]-lower_bound[idx]) / dlevel[idx]);
+          else
+            val = round((data_row[ch]+data_row2[ch]-lower_bound[idx]) / dlevel[idx]);
+          buf[ch] = max(min(val, 255), 0);
+          if ((subint_nr == -10) && (ch==48))
+            cout << "buf["<<idx<<"]="<<(int)buf[ch]<< ", orig = " << val  << ", dlevel = " << dlevel[idx] << ", lower = " << lower_bound[idx] << ", data = " << data_row[ch] 
+                 << "\n";
         }
+        //nbytes += fwrite(buf, 1, nsamples, outfile);
+        nbytes += fwrite(buf, 1, nchan, outfile);
       }
-      cout << "Wrote " << nbytes << " bytes of data in integration " << integration << "\n";
-      integration++;
-      int_nr++;
     }
+    cout << "Wrote " << nbytes << " bytes of data in integration " << int_nr<< "\n";
+    int_nr++;
   }
   // Pad the table, the table length has to be a multiple of the HDU quantum
   hdu_pad(outfile, 0);
 }
 
-void write_primary_hdu(FILE *outfile, vector<SFXCdata> &sfxcdata, vector<int> &channels){
-  const Output_header_global &gheader = sfxcdata[0].gheader;
+void write_primary_hdu(FILE *outfile, SFXCdata &sfxcdata, vector<int> &channels, int polarization){
+  const Output_header_global &gheader = sfxcdata.gheader;
   time_t rawtime;
   struct tm * timeinfo;
   char temp[81];
@@ -804,11 +781,10 @@ void write_primary_hdu(FILE *outfile, vector<SFXCdata> &sfxcdata, vector<int> &c
   sprintf(temp, "%d-%02d-%02dT%02d:%02d:%02d", 1900+timeinfo->tm_year, 1+timeinfo->tm_mon, timeinfo->tm_mday, 
           timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
   hdr_string(outfile, "DATE", temp, "File creation date (YYYY-MM-DDThh:mm:ss UTC)");
-  hdr_string(outfile, "OBSERVER", sfxcdata[0].pi_name, "Observer name(s)");
-  hdr_string(outfile, "PROJID", sfxcdata[0].exper_name, "Project name");
+  hdr_string(outfile, "OBSERVER", sfxcdata.pi_name, "Observer name(s)");
+  hdr_string(outfile, "PROJID", sfxcdata.exper_name, "Project name");
   hdr_string(outfile, "TELESCOP", "Geocenter", "Telescope name");
 
-  cout <<"1\n";
   // Virtual telescope is at geocenter
   hdr_float(outfile, "ANT_X", 0, 1, "[m] Antenna ITRF X-coordinate (D)");
   hdr_float(outfile, "ANT_Y", 0, 1, "[m] Antenna ITRF Y-coordinate (D)");
@@ -816,8 +792,8 @@ void write_primary_hdu(FILE *outfile, vector<SFXCdata> &sfxcdata, vector<int> &c
   hdr_string(outfile, "FRONTEND", "PHASED", "Receiver ID");
   hdr_int(outfile, "IBEAM", 1, "Beam ID for multibeam systems");
 
-  // FIXME : Only first polarization is used 
-  //hdr_int(outfile, "NRCVR", sfxcdata[0].npol, "Number of receiver polarisation channels"); 
+  // FIXME : Only a polarization can be used 
+  //hdr_int(outfile, "NRCVR", sfxcdata.npol, "Number of receiver polarisation channels"); 
   hdr_int(outfile, "NRCVR", 1, "Number of receiver polarisation channels"); 
   
   hdr_string(outfile, "FD_POLN", "CIRC", "LIN or CIRC");
@@ -832,22 +808,19 @@ void write_primary_hdu(FILE *outfile, vector<SFXCdata> &sfxcdata, vector<int> &c
   hdr_int(outfile, "TCYCLE", 0, "[s] On-line cycle time (D)"); 
   hdr_string(outfile, "OBS_MODE", "SEARCH", "(PSR, CAL, SEARCH)");
   // Get start time of experiment (start of first scan in vex file)
-  string start_time = sfxcdata[0].vex.get_start_time_of_experiment();
+  string start_time = sfxcdata.vex.get_start_time_of_experiment();
   int ref_year, ref_day, ref_time;
   vex_time(start_time.c_str(), ref_year, ref_day, ref_time);
   string t = vex2datetime(ref_year, ref_day, ref_time);
   hdr_string(outfile, "DATE-OBS", t, "Date of observation (YYYY-MM-DDThh:mm:ss UTC");
-  cout << "nfreq = " << sfxcdata[0].subbands.size() << "\n";
 
   // Determine the centre frequency and the total bandwith. Because subbands don't have to be
   // continuous we compute this imformation from upper and lower frequency.
   int nsubband = channels.size();
-  SFXCdata::subband &lowersb = sfxcdata[0].subbands[channels[0]];
-  SFXCdata::subband &uppersb = sfxcdata[0].subbands[channels[nsubband-1]];
+  SFXCdata::subband &lowersb = sfxcdata.subbands[channels[0]];
+  SFXCdata::subband &uppersb = sfxcdata.subbands[channels[nsubband-1]];
   double f0 = lowersb.frequency + lowersb.bandwidth*(lowersb.sideband-1);
   double f1 = uppersb.frequency + uppersb.bandwidth*(uppersb.sideband);
-  cout << "f0 = " << f0 << ", bw = " << lowersb.bandwidth << ", sb= " << lowersb.sideband << "\n";
-  cout << "f1 = " << f1 << ", bw = " << uppersb.bandwidth << ", sb= " << uppersb.sideband << "\n";
   double obsfreq = (f0+f1)/2;
   double bandwidth = f1-f0;
   hdr_float(outfile, "OBSFREQ", obsfreq, 2, "[MHz] Centre frequency for observation");
@@ -856,24 +829,22 @@ void write_primary_hdu(FILE *outfile, vector<SFXCdata> &sfxcdata, vector<int> &c
   hdr_int(outfile, "CHAN_DM", 0, "[cm-3 pc] DM used for on-line dedispersion"); 
   hdr_string(outfile, "PNT_ID", "PNT_ID", "Name or ID for pointing ctr (multibeam feeds)");
 
-  hdr_string(outfile, "SRC_NAME", sfxcdata[0].src_name, "Source or scan ID");
+  hdr_string(outfile, "SRC_NAME", sfxcdata.src_name, "Source or scan ID");
   hdr_string(outfile, "COORD_MD", "J2000", "Coordinate mode (J2000, GALACTIC, ECLIPTIC)");
   hdr_float(outfile, "EQUINOX", 2000, 1, "Equinox of coords (e.g. 2000.0)");
-  hdr_string(outfile, "RA", sfxcdata[0].src_ra, "Right ascension (hh:mm:ss.ssss)");
-  hdr_string(outfile, "DEC", sfxcdata[0].src_dec, "Declination (-dd:mm:ss.sss)");
+  hdr_string(outfile, "RA", sfxcdata.src_ra, "Right ascension (hh:mm:ss.ssss)");
+  hdr_string(outfile, "DEC", sfxcdata.src_dec, "Declination (-dd:mm:ss.sss)");
   // TODO : Bogus values for now
   hdr_float(outfile, "BMAJ", 0.5, 1, "[deg] Beam major axis length"); 
   hdr_float(outfile, "BMIN", 0.5, 1, "[deg] Beam minor axis length"); 
   hdr_int(outfile, "BPA", 0, "[deg] Beam position angle"); 
-  hdr_string(outfile, "STT_CRD1", sfxcdata[0].src_ra, "Start coord 1 (hh:mm:ss.sss or ddd.ddd)");
-  hdr_string(outfile, "STT_CRD2", sfxcdata[0].src_dec, "Start coord 2 (-dd:mm:ss.sss or -dd.ddd)");
+  hdr_string(outfile, "STT_CRD1", sfxcdata.src_ra, "Start coord 1 (hh:mm:ss.sss or ddd.ddd)");
+  hdr_string(outfile, "STT_CRD2", sfxcdata.src_dec, "Start coord 2 (-dd:mm:ss.sss or -dd.ddd)");
   // Leave empty
   hdr_string(outfile, "TRK_MODE", "TRACK   ", "Track mode (TRACK, SCANGC, SCANLAT)");
-  hdr_string(outfile, "STP_CRD1", sfxcdata[0].src_ra, "Stop coord 1 (hh:mm:ss.sss or ddd.ddd)");
-  hdr_string(outfile, "STP_CRD2", sfxcdata[0].src_dec, "Stop coord 2 (-dd:mm:ss.sss or -dd.ddd)");
-  // start of last data file in seconds since midnight of first data file
-  int t_last = (sfxcdata.back().gheader.start_day - gheader.start_day)*86400 + sfxcdata.back().gheader.start_time;
-  double scanlen = t_last + sfxcdata.back().nsubint * gheader.integration_time / 1000000. - gheader.start_time;
+  hdr_string(outfile, "STP_CRD1", sfxcdata.src_ra, "Stop coord 1 (hh:mm:ss.sss or ddd.ddd)");
+  hdr_string(outfile, "STP_CRD2", sfxcdata.src_dec, "Stop coord 2 (-dd:mm:ss.sss or -dd.ddd)");
+  double scanlen = sfxcdata.nsubint * gheader.integration_time / 1000000.;
   hdr_float(outfile, "SCANLEN", scanlen, 1, "[s] Requested scan length (E)"); 
   hdr_string(outfile, "FD_MODE", "FA", "Feed track mode - FA, CPA, SPA, TPA");
   hdr_float(outfile, "FA_REQ", 0, 1, "[deg] Feed/Posn angle requested (E)"); 
@@ -897,32 +868,56 @@ void usage(char *name){
   int i = strlen(name);
   while ((i > 0) && (name[i] != '/'))
     i--;
-  cout << "Usage : " << &name[i] << " [-c channels] <vex file> <input file 1> ... <input file N> <output file> \n";
+  cout << "Usage : " << &name[i] << "[OPTIONS] <vex file> <input file> <output file> \n\n"
+       << "Options : \n"
+       << "  -c CHANNELS       List of channels to include [Default All channels]\n" 
+       << "  -f FFT_SIZE       FFT size which was used during correlation\n" 
+       << "  -p POLARIZATIONS  Select polarizations : R, L, I  [Default I (sums R&L)]\n";
 }
 
 int main(int argc, char *argv[]){
   FILE *outfile;
   char *channels_str = NULL;
+  char *pol_str = NULL;
+  int fft_size = 0;
   uit = fopen("debug.txt", "w");
   // Parse command line arguments
   opterr = 0;
   int c;
-  while ((c = getopt (argc, argv, "c:")) != -1){
+  while ((c = getopt (argc, argv, "c:p:f:h")) != -1){
     switch (c){
+      case 'p':
+        pol_str = optarg;
+        break;
       case 'c':
         channels_str = optarg;
         break;
+      case 'f':
+        fft_size = atoi(optarg);
+        if(fft_size == 0){
+          cerr << "Invalid parameter to option -f\n";
+          exit(1);
+        }
+        break;
+      case 'h':
+        usage(argv[0]);
+        exit(0);
+        break;
       case '?':
         if (optopt == 'c')
-          cout << "Option -c requires a list of channels.\n";
+          cerr << "Option -c requires a list of channels.\n";
+        else if (optopt == 'c')
+          cerr << "Option -f requires parameter.\n";
+        else if (optopt == 'p')
+          cerr << "Option -p takes R, L, R&L, or I as argument.\n";
         else 
-          cout << "Unknown option -" << (char)optopt << "\n";
+          cerr << "Unknown option -" << (char)optopt << "\n";
         exit(1);
     }
   }
   int narg = argc - optind;
   cout << "argc = " << argc << ", optind = " << optind << "\n";
-  if((narg < 3) || (opterr != 0)){
+  if((narg != 3) || (opterr != 0)){
     usage(argv[0]);
     exit(0);
   }
@@ -933,14 +928,10 @@ int main(int argc, char *argv[]){
     exit(1);
   }
   // Open SFXC correlator files, there can be more than one
-  std::vector<SFXCdata> sfxcdata;
-  for(int i=optind+1;i<argc-1;i++){
-    SFXCdata data(argv[i], argv[optind]); // argv[1] == vexfile,  argv[i] == input file
-    sfxcdata.push_back(data);
-  }
+  SFXCdata sfxcdata(argv[argc-2], argv[argc-3]);
   // Create a list of channels to be included in the PSRFITS file
   // NB: We assume all correlator files have the same amount of channels
-  int nchannels = sfxcdata[0].subbands.size();
+  int nchannels = sfxcdata.subbands.size();
   std::vector<int> channels;
   if (channels_str == NULL){
     channels.resize(nchannels);
@@ -976,19 +967,45 @@ int main(int argc, char *argv[]){
     }
     for (set<int>::iterator it = channel_set.begin(); it !=channel_set.end(); it++){
       int ch = *it;
-      cout << "ch["<<channels.size()<<"]="<<ch<<"\n";
-      if(ch >= sfxcdata[0].subbands.size()){
+      if(ch >= sfxcdata.subbands.size()){
         cerr << "Error, invalid channel number\n";
         exit(1);
       }
       channels.push_back(ch);
     }
   }
-  cout<<"write_primary_hdu(outfile, sfxcdata);\n";
-  write_primary_hdu(outfile, sfxcdata, channels);
-  cout << "write_subint_hdu(outfile, sfxcdata);\n";
-  write_subint_hdu(outfile, sfxcdata, channels);
-  cout << "write_subints(outfile, data, sfxcdata);\n";
-  write_subints(outfile, sfxcdata, channels);
+  // Setting default fft_size if it wasn't passed as an parameter
+  if (fft_size == 0)
+    fft_size = sfxcdata.gheader.number_channels;
+  if (fft_size < sfxcdata.gheader.number_channels){
+    cerr << "Invalid fft_size, it cannot be smaller than the number of "
+         << "channels in the data file. "
+         << "NB: number_channels = " <<  sfxcdata.gheader.number_channels
+         << "\n";
+    exit(1);
+  }
+  // Get polarizations
+  int pol;
+  if ((pol_str == NULL) || (strcmp(pol_str, "I") == 0))
+    pol = POL_I;
+  else if (strcmp(pol_str, "R") == 0)
+    pol = POL_R;
+  else if (strcmp(pol_str, "L") == 0)
+    pol = POL_L;
+  else if (strcmp(pol_str, "R&L") == 0){
+    cerr << "Sorry, we don't support more than one polarizaion yet\n";
+    exit(1);
+  }else{
+    cerr << "Invalid polarization option : " << pol_str << "\n";
+    exit(1);
+  }
+
+  // write the fits file
+  std::cout << "primary hdi, pol="<<pol<< "\n";
+  write_primary_hdu(outfile, sfxcdata, channels, pol);
+  std::cout << "subin hdu\n";
+  write_subint_hdu(outfile, sfxcdata, channels, pol);
+  std::cout << "write_subints\n";
+  write_subints(outfile, sfxcdata, channels, pol, fft_size);
   return 0;
 }
