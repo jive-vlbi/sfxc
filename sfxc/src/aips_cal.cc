@@ -210,15 +210,23 @@ compute_calibration(const Time t, int station, int freq_nr, int pol_nr, char sid
   double ddelay1 = cl_table[station].disp_delays[index1];
   double ddelay2 = cl_table[station].disp_delays[index2];
   double ddelay = w1*ddelay1 + w2*ddelay2;
+  if(RANK_OF_NODE == -10) cout << "t = " << t <<", delay =" << delay1 << ", gain = " << gain1 <<", df = " << df << ", f = " 
+                              << frequencies[freq_nr] <<", nchan = " << nchan << "freq = " << freq << ", sideband = " << sideband
+                              << ", nchan_aips = " << nchan_aips << ", bw = " << bandwidths[freq_nr] << ", station = " << station 
+                              <<", current = " << current << ", next = " << next << "\n";
   // AIPS uses channel center with possibly a different number of channels
   double phase_offset = 2 * M_PI * bandwidths[freq_nr] * delay / (2* nchan_aips); 
   phase_offset = 0.; // FIXME Remove this!
   if(sideband == 'L'){
+    double delta = bandwidths[freq_nr] / nchan_aips;
     for(int i=0; i<nchan; i++){
       double phi = 2 * M_PI * (i * df * delay) + ph_rate + phase - phase_offset;
-      double frac = SPEED_OF_LIGHT * SPEED_OF_LIGHT / (freq - (nchan-1-i) * df);
+      double frac = SPEED_OF_LIGHT * SPEED_OF_LIGHT / (freq - delta + (i+1)*df);
       phi += 2 * M_PI * frac * ddelay;
       table[nchan-1-i] = amplitude*complex<double>(cos(phi), sin(phi));
+      if(RANK_OF_NODE == -10) 
+        std::cout << station << " : table["<<nchan-1-i<<"] = "<< table[nchan-1-i] 
+                  <<", ph = " << std::arg(table[nchan-1-i])*180/M_PI<<"deg\n";
     }
   }else{
     SFXC_ASSERT(sideband == 'U');
@@ -227,6 +235,9 @@ compute_calibration(const Time t, int station, int freq_nr, int pol_nr, char sid
       double frac = SPEED_OF_LIGHT * SPEED_OF_LIGHT / (freq + i * df);
       phi += -2 * M_PI * frac * ddelay;
       table[i] = amplitude*complex<double>(cos(phi), sin(phi));
+      if(RANK_OF_NODE == -10) 
+        std::cout << station << " : table["<<i<<"] = "<< table[i] 
+                  <<", ph = " << std::arg(table[i])*180/M_PI<<"deg\n";
     } 
   }
   SFXC_CONJ_FC(&table[0], &table_conjg[0], table.size());
@@ -259,8 +270,15 @@ apply_calibration(const Time t, complex<FLOAT> *band, int station, double freq,
   // Compute calibration table if necessary
   if ((t-calib_tables[station].time >= recompute_time) ||
       (calib_tables[station].freq_nr != freq_nr) ||
-      (calib_tables[station].pol_nr != pol_nr))
+      (calib_tables[station].pol_nr != pol_nr)){
+    if(RANK_OF_NODE == -10) 
+      std::cout << "station = "<<station <<", freq="<<freq_nr << ", pol_nr="<<pol_nr
+                << ", recompute_time = " << (int64_t) recompute_time.get_time_usec()
+                << ", oldtime = " << calib_tables[station].time
+                << ", newtime = " << t 
+                << "\n";
     compute_calibration(t, station, freq_nr, pol_nr, sideband);
+  }
 
   // Apply calibration
   if(do_conjg)
