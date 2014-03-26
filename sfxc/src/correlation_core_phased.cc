@@ -33,7 +33,8 @@ void Correlation_core_phased::do_task() {
   // Process the data of the current fft buffer
   int buf_idx=0;
   while(buf_idx < nbuffer){
-    int n = std::min(number_ffts_in_sub_integration, nbuffer-buf_idx);
+    int n = std::min(next_sub_integration*number_ffts_in_sub_integration - current_fft,
+                     nbuffer - buf_idx);
     integration_step(accumulation_buffers, buf_idx, buf_idx+n, stride);
     current_fft += n;
     buf_idx += n;
@@ -146,7 +147,7 @@ integration_step(std::vector<Complex_buffer> &integration_buffer,
          buf_idx < last * stride; 
          buf_idx += stride) {
       // get the complex conjugates of the input
-      SFXC_CONJ_FC(&input_elements[i][buf_idx], &(input_conj_buffers[i])[buf_idx], 
+      SFXC_CONJ_FC(&input_elements[i][buf_idx], &input_conj_buffers[i][buf_idx], 
                    fft_size() + 1);
     }
   }
@@ -229,6 +230,7 @@ Correlation_core_phased::sub_integration(){
                                    << " / " << phase_centers[0].size()
                                    << "fft = " << current_fft
                                    << ", nfft_per_sub="<< number_ffts_in_sub_integration
+                                   << ", tmid = " << (int64_t)tmid.get_time_usec()
                                    << "\n";
   for(int i = n_station ; i < n_baseline ; i++){
     std::pair<size_t,size_t> &inputs = baselines[i];
