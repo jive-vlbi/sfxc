@@ -19,7 +19,7 @@ public:
   };
 public:
   SFXCdata(const char *infile, const char *vexname);
-  float *get_sample(int int_nr, int subband_nr, int sample, int pol_nr);
+  float *get_spectrum(int int_nr, int subband_nr, int sample, int pol_nr);
 private:
   void read_integration(int int_nr);
   void src_coords(const std::string &src_name);
