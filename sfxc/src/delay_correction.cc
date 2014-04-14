@@ -141,14 +141,14 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
   const double center_freq = channel_freq() + sideband()*bandwidth()*0.5;
 
   double phi, delta_phi, sin_phi, cos_phi;
-  phi = center_freq * get_delay(current_time) + get_phase(current_time) / mult_factor_phi;
+  phi = center_freq * get_delay(current_time) + get_phase(current_time) / (2 * M_PI);
   double floor_phi = std::floor(phi);
   phi = mult_factor_phi*(phi-floor_phi);
 
   { // compute delta_phi
     SFXC_ASSERT(((int64_t)fft_size() * 1000000) % sample_rate() == 0);
     double phi_end = center_freq * get_delay(current_time + fft_length) + 
-                     get_phase(current_time + fft_length) / mult_factor_phi;
+                     get_phase(current_time + fft_length) / (2 * M_PI);
     phi_end = mult_factor_phi*(phi_end-floor_phi);
 
     delta_phi = (phi_end - phi) / fft_size();
