@@ -525,9 +525,7 @@ class FringePlotWindow(Qt.QWidget):
                     a = np.conj(a)
                     pass
                 b = np.fft.ifft(a, 2 * self.cordata.number_channels)
-                c = b[self.cordata.number_channels:]
-                d = b[0:self.cordata.number_channels]
-                e = np.concatenate((c, d))
+                e = np.fft.fftshift(b)
                 f = np.absolute(e)
                 if self.unwindow:
                     q = np.hanning(len(f))
