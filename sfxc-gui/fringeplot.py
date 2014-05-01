@@ -172,7 +172,7 @@ class FringePlotWindow(Qt.QWidget):
 
         self.vex = vex
         self.ctrl_files = ctrl_files
-        self.integration_slice = 0
+        self.integration_slice = -1
         self.reference = reference
         self.evlbi = evlbi
         self.integrations = integrations

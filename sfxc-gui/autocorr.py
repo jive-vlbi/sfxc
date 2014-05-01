@@ -169,7 +169,7 @@ class AutoPlotWindow(Qt.QWidget):
         exper = vex['EXPER'][exper]['exper_name']
         self.setWindowTitle(exper + " Autocorrelations")
 
-        self.integration_slice = 0
+        self.integration_slice = -1
         self.integrations = integrations
 
         self.output_file = 0
