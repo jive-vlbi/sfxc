@@ -32,7 +32,7 @@ void Correlation_core_phased::do_task() {
   const int nbuffer = input_buffers[first_stream]->front()->data.size() / stride;
   // Process the data of the current fft buffer
   int buf_idx=0;
-  while(buf_idx < nbuffer){
+  while((buf_idx < nbuffer) && (current_fft < number_ffts_in_integration)){
     int n = std::min(next_sub_integration*number_ffts_in_sub_integration - current_fft,
                      nbuffer - buf_idx);
     integration_step(accumulation_buffers, buf_idx, buf_idx+n, stride);
@@ -76,6 +76,7 @@ Correlation_core_phased::set_parameters(const Correlation_parameters &parameters
 
   correlation_parameters = parameters;
   oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
+  use_autocorrelations = parameters.only_autocorrelations;
 
   create_baselines(parameters);
   if (input_elements.size() != number_input_streams_in_use()) {
@@ -151,13 +152,21 @@ integration_step(std::vector<Complex_buffer> &integration_buffer,
                    fft_size() + 1);
     }
   }
-  for (size_t i = number_input_streams_in_use(); i < baselines.size(); i++) {
+  int begin, end;
+  if (use_autocorrelations){
+    begin = 0;
+    end = number_input_streams_in_use();
+  }else{
+    begin = number_input_streams_in_use();
+    end = baselines.size();
+  }
+  for (size_t i = begin; i < end; i++) {
     for (size_t buf_idx = first*stride; 
          buf_idx < last * stride; 
          buf_idx += stride) {
       // Cross correlations
       std::pair<size_t,size_t> &stations = baselines[i];
-      SFXC_ASSERT(stations.first != stations.second);
+      //SFXC_ASSERT(stations.first != stations.second);
       SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
 			  /* in2 */ &input_conj_buffers[stations.second][buf_idx],
 			  /* out */ &integration_buffer[i][0], fft_size() + 1);
@@ -232,7 +241,15 @@ Correlation_core_phased::sub_integration(){
                                    << ", nfft_per_sub="<< number_ffts_in_sub_integration
                                    << ", tmid = " << (int64_t)tmid.get_time_usec()
                                    << "\n";
-  for(int i = n_station ; i < n_baseline ; i++){
+  int begin, end;
+  if (use_autocorrelations){
+    begin = 0;
+    end = n_station;
+  }else{
+    begin = n_station;
+    end = n_baseline;
+  }
+  for(int i = begin ; i < end ; i++){
     std::pair<size_t,size_t> &inputs = baselines[i];
     int station1 = streams_in_scan[inputs.first];
     int station2 = streams_in_scan[inputs.second];

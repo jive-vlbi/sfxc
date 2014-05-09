@@ -17,6 +17,7 @@ protected:
                         int first, int last, int stride);
   void sub_integration();
   void integration_write_subints(std::vector<Complex_buffer> &integration_buffer);
+  bool use_autocorrelations;
 };
 
 #endif /*CORRELATION_CORE_H_*/

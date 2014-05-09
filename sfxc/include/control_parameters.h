@@ -163,6 +163,7 @@ public:
   char source[11];              // name of the source under observation
   int32_t n_phase_centers;   // The number of phase centers in the current scan
   int32_t pulsar_binning;
+  bool only_autocorrelations;
   Pulsar_parameters *pulsar_parameters;
 };
 

@@ -349,8 +349,7 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
 
 void Correlation_core::calibrate(std::vector<Complex_buffer> &buffer,
                                  Time tmid){
-  const int n_station = number_input_streams_in_use();
-  for (size_t b = n_station; b < baselines.size(); b++) {
+  for (size_t b = 0; b < baselines.size(); b++) {
     std::pair<size_t,size_t> &baseline = baselines[b];
     int stream1, stream2;
     for(int i=0; i < correlation_parameters.station_streams.size(); i++){

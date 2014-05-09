@@ -199,6 +199,10 @@ initialise(const char *ctrl_file, const char *vex_file,
       ctrl["phasecal_integr_time"] = 0;
   }
 
+  if(ctrl["only_autocorrelations"] == Json::Value()) {
+    ctrl["only_autocorrelations"] = false;
+  }
+
   if (ctrl["start"].asString().compare("now") == 0) {
     char *now;
     time_t t;
@@ -1763,6 +1767,7 @@ get_correlation_parameters(const std::string &scan_name,
   corr_param.window = window_function();  
   corr_param.slice_offset =
     number_correlation_cores_per_timeslice(mode_name);
+  corr_param.only_autocorrelations = ctrl["only_autocorrelations"].asBool();
 
   // Assumption: sample rate the the same for all stations:
   for (Vex::Node::const_iterator freq_it = mode->begin("FREQ");
