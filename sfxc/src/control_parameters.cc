@@ -735,7 +735,7 @@ Control_parameters::bandwidth(const std::string &mode,
 
   for (Vex::Node::const_iterator chan = freq->begin("chan_def"); chan != freq->end("chan_def"); chan++) {
     if (chan[4]->to_string() == channel)
-      return (int)(chan[3]->to_double_amount("MHz") * 1e6);
+      return (int)chan[3]->to_double_amount("Hz");
   }
 
   SFXC_ASSERT(false);
@@ -751,7 +751,7 @@ Control_parameters::channel_freq(const std::string &mode,
 
   for (Vex::Node::const_iterator chan = freq->begin("chan_def"); chan != freq->end("chan_def"); chan++) {
     if (chan[4]->to_string() == channel)
-      return (int64_t)round(chan[1]->to_double_amount("MHz") * 1e6);
+      return (int64_t)round(chan[1]->to_double_amount("Hz"));
   }
 
   SFXC_ASSERT(false);
@@ -864,11 +864,11 @@ Control_parameters::frequency_channel(size_t channel_nr, const std::string& mode
   int64_t ch_freq_min, ch_freq_max;
   for (Vex::Node::const_iterator chan = freq->begin("chan_def"); chan != freq->end("chan_def"); chan++) {
     if (chan[2]->to_char() == 'L') {
-      ch_freq_max = (int64_t)round(chan[1]->to_double_amount("MHz") * 1e6);
-      ch_freq_min = ch_freq_max - (int)chan[3]->to_double_amount("MHz") * 1e6;
+      ch_freq_max = (int64_t)round(chan[1]->to_double_amount("Hz"));
+      ch_freq_min = ch_freq_max - (int)chan[3]->to_double_amount("Hz");
     } else {
-      ch_freq_min = (int64_t)round(chan[1]->to_double_amount("MHz") * 1e6);
-      ch_freq_max = ch_freq_min + (int)chan[3]->to_double_amount("MHz") * 1e6;
+      ch_freq_min = (int64_t)round(chan[1]->to_double_amount("Hz"));
+      ch_freq_max = ch_freq_min + (int)chan[3]->to_double_amount("Hz");
     }
 
     // We have a match if the channel corresponding to CHANNEL_NR is
@@ -1752,8 +1752,8 @@ get_correlation_parameters(const std::string &scan_name,
        ch_it != freq->end("chan_def");
        ++ch_it) {
     if (ch_it[4]->to_string() == channel_name) {
-      corr_param.channel_freq = (int64_t)round(ch_it[1]->to_double_amount("MHz")*1000000);
-      corr_param.bandwidth = (int)(ch_it[3]->to_double_amount("MHz")*1000000);
+      corr_param.channel_freq = (int64_t)round(ch_it[1]->to_double_amount("Hz"));
+      corr_param.bandwidth = (int)ch_it[3]->to_double_amount("Hz");
       corr_param.sideband = ch_it[2]->to_char();
       freq_temp = ch_it[1]->to_string();
       bbc_nr = ch_it[5]->to_string();
