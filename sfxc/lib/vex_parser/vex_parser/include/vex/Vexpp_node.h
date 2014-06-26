@@ -159,6 +159,9 @@ private:
   std::string name;
   Array       lst;
   Dict        dict;
+
+  std::string dimension(const std::string &unit) const;
+  double scale(const std::string &unit) const;
 };
 
 // IO operators

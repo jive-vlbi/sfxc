@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <algorithm>
+#include <math.h>
 #include <stdio.h>
 
 #include "vex/Vex++.h"
@@ -171,6 +172,57 @@ void Vexpp_node::join(Self& value) {
 }
 
 // Convertors
+std::string Vexpp_node::dimension(const std::string &unit) const {
+  if (unit == "um" || unit == "mm" || unit == "cm" || unit == "m" ||
+      unit == "km")
+    return "length";
+
+  if (unit == "psec" || unit == "nsec" || unit == "usec" || unit == "msec" ||
+      unit == "sec" || unit == "min" || unit == "hr" || unit == "yr")
+    return "time";
+
+  if (unit.find("/")) {
+    std::string unit1 = unit.substr(0, unit.find("/"));
+    std::string unit2 = unit.substr(unit.find("/") + 1);
+    if (dimension(unit1) == "length" && dimension(unit2) == "time")
+      return "velocity";
+  }
+
+  return std::string();
+}
+
+double Vexpp_node::scale(const std::string &unit) const {
+  if (unit == "psec")
+    return 1e-12;
+  if (unit == "nsec")
+    return 1e-9;
+  if (unit == "um" || unit == "usec")
+    return 1e-6;
+  if (unit == "mm" || unit == "msec")
+    return 1e-3;
+  if (unit == "cm")
+    return 1e-2;
+  if (unit == "m" || unit == "sec")
+    return 1;
+  if (unit == "km")
+    return 1e3;
+
+  if (unit == "min")
+    return 60;
+  if (unit == "hr")
+    return 3600;
+  if (unit == "yr")
+    return 365.25 * 86400;
+
+  if (unit.find("/")) {
+    std::string unit1 = unit.substr(0, unit.find("/"));
+    std::string unit2 = unit.substr(unit.find("/") + 1);
+    return scale(unit1) / scale(unit2);
+  }
+
+  return NAN;
+}
+
 int Vexpp_node::to_int() const {
   assert(m_type == STRING);
   int result, err;
@@ -185,7 +237,11 @@ int Vexpp_node::to_int_amount(const std::string &unit) const {
   char unit2[name.size()];
   err = sscanf(name.c_str(), "%d %s", &result, unit2);
   assert(err==2);
-  assert(unit == unit2);
+  if (unit != unit2) {
+    assert(dimension(unit) != std::string());
+    assert(dimension(unit) == dimension(unit2));
+    return result * scale(unit2) / scale(unit);
+  }
 
   return result;
 }
@@ -206,7 +262,11 @@ double Vexpp_node::to_double_amount(const std::string &unit) const {
   char unit2[name.size()];
   err = sscanf(name.c_str(), "%lf %s", &result, unit2);
   assert(err==2);
-  assert(unit == unit2);
+  if (unit != unit2) {
+    assert(dimension(unit) != std::string());
+    assert(dimension(unit) == dimension(unit2));
+    return result * scale(unit2) / scale(unit);
+  }
 
   return result;
 }
