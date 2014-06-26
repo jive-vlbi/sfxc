@@ -181,6 +181,10 @@ std::string Vexpp_node::dimension(const std::string &unit) const {
       unit == "sec" || unit == "min" || unit == "hr" || unit == "yr")
     return "time";
 
+  if (unit == "mHz" || unit == "Hz" || unit == "kHz" || unit == "MHz" ||
+      unit == "GHz")
+    return "frequency";
+
   if (unit.find("/")) {
     std::string unit1 = unit.substr(0, unit.find("/"));
     std::string unit2 = unit.substr(unit.find("/") + 1);
@@ -198,14 +202,18 @@ double Vexpp_node::scale(const std::string &unit) const {
     return 1e-9;
   if (unit == "um" || unit == "usec")
     return 1e-6;
-  if (unit == "mm" || unit == "msec")
+  if (unit == "mm" || unit == "msec" || unit == "mHz")
     return 1e-3;
   if (unit == "cm")
     return 1e-2;
-  if (unit == "m" || unit == "sec")
+  if (unit == "m" || unit == "sec" || unit == "Hz")
     return 1;
-  if (unit == "km")
+  if (unit == "km" || unit == "kHz")
     return 1e3;
+  if (unit == "MHz")
+    return 1e6;
+  if (unit == "GHz")
+    return 1e9;
 
   if (unit == "min")
     return 60;
