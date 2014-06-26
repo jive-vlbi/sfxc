@@ -81,5 +81,5 @@ svn_version.cc: update_svn_version
 
 update_svn_version:
 	echo "char *SVN_VERSION=\"`svnversion -nc ..`\";" > svn_version.cc
-	echo "char *SVN_BRANCH=\"TRUNK\";" >> svn_version.cc
+	echo "char *SVN_BRANCH=\"STABLE-3.1\";" >> svn_version.cc
 	$(CXX) $(CXXFLAGS) -c svn_version.cc
