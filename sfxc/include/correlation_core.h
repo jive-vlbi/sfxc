@@ -21,6 +21,7 @@ public:
 
   typedef Memory_pool_vector_element<std::complex<FLOAT> > Complex_buffer;
   typedef Memory_pool_vector_element<std::complex<float> > Complex_buffer_float;
+  typedef Memory_pool_vector_element<FLOAT> Real_buffer;
 
   Correlation_core();
   virtual ~Correlation_core();
@@ -73,6 +74,7 @@ protected:
   size_t number_input_streams();
 
   size_t number_input_streams_in_use();
+  void create_window();
 
 protected:
   int previous_fft;
@@ -101,6 +103,16 @@ protected:
   boost::shared_ptr<Data_writer>                       writer;
 
   Timer fft_timer;
+
+  SFXC_FFT fft_f2t, fft_t2f;
+  Complex_buffer temp_buffer;
+#if 0
+  Complex_buffer complex_buffer;
+  std::vector< std::complex<FLOAT> > window;
+#else
+  Real_buffer real_buffer;
+  std::vector<FLOAT> window;
+#endif
 
   // Needed for writing the progress messages
   int node_nr_;

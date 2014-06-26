@@ -253,6 +253,20 @@ void Correlation_core::integration_initialise() {
   }
   memset(&n_flagged[0], 0, sizeof(std::pair<int64_t,int64_t>)*n_flagged.size());
   next_sub_integration = 1;
+
+#if 0
+  fft_f2t.resize(2 * fft_size());
+  fft_t2f.resize(2 * number_channels());
+  temp_buffer.resize(2 * fft_size());
+  complex_buffer.resize(2 * fft_size());
+  create_window();
+#else
+  fft_f2t.resize(2 * fft_size());
+  fft_t2f.resize(2 * number_channels());
+  temp_buffer.resize(fft_size() + 1);
+  real_buffer.resize(2 * fft_size());
+  create_window();
+#endif
 }
 
 void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride) {
@@ -436,8 +450,8 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     writer->put_bytes(nWrite, (char *)&stats[0]);
   }
 
+  SFXC_ASSERT(fft_size() >= number_channels());
   integration_buffer_float.resize(number_channels() + 1);
-  size_t n = fft_size() / number_channels();
 
   Output_header_baseline hbaseline;
   for (size_t i = 0; i < baselines.size(); i++) {
@@ -445,13 +459,33 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     int station1 = streams_in_scan[inputs.first];
     int station2 = streams_in_scan[inputs.second];
 
-    for (size_t j = 0; j < number_channels() + 1; j++) {
-      integration_buffer_float[j] = integration_buffer[i][j * n];
-      for (size_t k = 1; k < n && j < number_channels(); k++)
-        integration_buffer_float[j] += integration_buffer[i][j * n + k];
-      integration_buffer_float[j] /= n;
+    if (fft_size() != number_channels()) {
+#if 0
+      memset(&temp_buffer[0], 0, temp_buffer.size() * sizeof(std::complex<FLOAT>));
+      memcpy(&temp_buffer[0], &integration_buffer[i][0], integration_buffer[i].size() * sizeof(std::complex<FLOAT>));
+      fft_f2t.ifft(&temp_buffer[0], &complex_buffer[0]);
+      for (size_t j = 0; j < number_channels(); j++)
+	complex_buffer[number_channels() + j] =
+	  complex_buffer[2 * fft_size() - number_channels() + j];
+      SFXC_MUL_FC_I(&window[0], &complex_buffer[0], 2 * number_channels());
+      fft_t2f.fft(&complex_buffer[0], &temp_buffer[0]);
+#else
+      fft_f2t.irfft(&integration_buffer[i][0], &real_buffer[0]);
+      for (size_t j = 0; j < number_channels(); j++)
+	real_buffer[number_channels() + j] =
+	  real_buffer[2 * fft_size() - number_channels() + j];
+      SFXC_MUL_F(&real_buffer[0], &window[0], &real_buffer[0], 2 * number_channels());
+      fft_t2f.rfft(&real_buffer[0], &temp_buffer[0]);
+#endif
+      for (size_t j = 0; j < number_channels() + 1; j++) {
+	integration_buffer_float[j] = temp_buffer[j];
+	integration_buffer_float[j] /= (2 * fft_size());
+      }
+    } else {
+      for (size_t j = 0; j < number_channels() + 1; j++)
+	integration_buffer_float[j] = integration_buffer[i][j];
     }
-    integration_buffer_float[number_channels()] *= n; // Only one point contributes to the last point
+
     const int64_t total_samples = number_ffts_in_integration * fft_size();
     int32_t *levels = statistics[station1]->get_statistics(); // We get the number of invalid samples from the bitstatistics
     if (station1 == station2){
@@ -650,5 +684,86 @@ void Correlation_core::find_invalid() {
     SFXC_ASSERT(nflagged[1] >= 0);
     n_flagged[b].first += nflagged[0];
     n_flagged[b].second += nflagged[1];
+  }
+}
+
+double
+rect(int n, int i)
+{
+  if (i >= n / 4 && i < (3 * n) / 4)
+    return 1.0;
+  else
+    return 0.0;
+}
+
+double
+cos(int n, int i)
+{
+  return sin(M_PI * i /(n - 1));
+}
+
+double
+hamming(int n, int i)
+{
+  return 0.54 - 0.46 * cos(2 * M_PI * i / (n - 1));
+}
+
+double
+hann(int n, int i)
+{
+  return 0.5 * (1 - cos(2 * M_PI * i / (n - 1)));
+}
+
+double
+convolve(double (*f)(int, int), int n, int i)
+{
+  double sum = 0.0;
+
+  i += n / 2;
+  i -= 1;
+
+  for (int j = 0; j <= i; j++) {
+    if ((i - j) >= n)
+      continue;
+    sum += f(n, j) * f(n, i - j);
+  }
+
+  return sum;
+}
+
+void 
+Correlation_core::create_window() {
+  const int n = 2 * number_channels();
+  const int m = 2 * fft_size();
+
+  window.resize(n);
+
+  switch(correlation_parameters.window){
+  case SFXC_WINDOW_NONE:
+  case SFXC_WINDOW_RECT:
+    // rectangular window (including zero padding)
+    for (int i = 0; i < n; i++)
+      window[(i + n / 2) % n] =
+	(m / n) * convolve(rect, n, i) / convolve(rect, m, ((m - n) / 2) + i);
+    break;
+  case SFXC_WINDOW_COS:
+    // Cosine window
+    for (int i = 0; i < n; i++)
+      window[(i + n / 2) % n] =
+	(m / n) * convolve(cos, n, i) / convolve(cos, m, ((m - n) / 2) + i);
+    break;
+  case SFXC_WINDOW_HAMMING:
+    // Hamming window
+    for (int i = 0; i < n; i++)
+      window[(i + n / 2) % n] =
+	(m / n) * convolve(hamming, n, i) / convolve(hamming, m, ((m - n) / 2) + i);
+    break;
+  case SFXC_WINDOW_HANN:
+    for (int i = 0; i < n; i++)
+      window[(i + n / 2) % n] =
+	(m / n) * convolve(hann, n, i) / convolve(hann, m, ((m - n) / 2) + i);
+    break;
+  default:
+    sfxc_abort("Invalid windowing function");
   }
 }
