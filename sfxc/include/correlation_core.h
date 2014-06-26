@@ -106,13 +106,8 @@ protected:
 
   SFXC_FFT fft_f2t, fft_t2f;
   Complex_buffer temp_buffer;
-#if 0
-  Complex_buffer complex_buffer;
-  std::vector< std::complex<FLOAT> > window;
-#else
   Real_buffer real_buffer;
   std::vector<FLOAT> window;
-#endif
 
   // Needed for writing the progress messages
   int node_nr_;

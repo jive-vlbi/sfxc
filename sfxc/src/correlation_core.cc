@@ -254,19 +254,11 @@ void Correlation_core::integration_initialise() {
   memset(&n_flagged[0], 0, sizeof(std::pair<int64_t,int64_t>)*n_flagged.size());
   next_sub_integration = 1;
 
-#if 0
-  fft_f2t.resize(2 * fft_size());
-  fft_t2f.resize(2 * number_channels());
-  temp_buffer.resize(2 * fft_size());
-  complex_buffer.resize(2 * fft_size());
-  create_window();
-#else
   fft_f2t.resize(2 * fft_size());
   fft_t2f.resize(2 * number_channels());
   temp_buffer.resize(fft_size() + 1);
   real_buffer.resize(2 * fft_size());
   create_window();
-#endif
 }
 
 void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride) {
@@ -460,23 +452,12 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     int station2 = streams_in_scan[inputs.second];
 
     if (fft_size() != number_channels()) {
-#if 0
-      memset(&temp_buffer[0], 0, temp_buffer.size() * sizeof(std::complex<FLOAT>));
-      memcpy(&temp_buffer[0], &integration_buffer[i][0], integration_buffer[i].size() * sizeof(std::complex<FLOAT>));
-      fft_f2t.ifft(&temp_buffer[0], &complex_buffer[0]);
-      for (size_t j = 0; j < number_channels(); j++)
-	complex_buffer[number_channels() + j] =
-	  complex_buffer[2 * fft_size() - number_channels() + j];
-      SFXC_MUL_FC_I(&window[0], &complex_buffer[0], 2 * number_channels());
-      fft_t2f.fft(&complex_buffer[0], &temp_buffer[0]);
-#else
       fft_f2t.irfft(&integration_buffer[i][0], &real_buffer[0]);
       for (size_t j = 0; j < number_channels(); j++)
 	real_buffer[number_channels() + j] =
 	  real_buffer[2 * fft_size() - number_channels() + j];
       SFXC_MUL_F(&real_buffer[0], &window[0], &real_buffer[0], 2 * number_channels());
       fft_t2f.rfft(&real_buffer[0], &temp_buffer[0]);
-#endif
       for (size_t j = 0; j < number_channels() + 1; j++) {
 	integration_buffer_float[j] = temp_buffer[j];
 	integration_buffer_float[j] /= (2 * fft_size());
