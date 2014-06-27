@@ -1703,7 +1703,6 @@ get_correlation_parameters(const std::string &scan_name,
                            const std::map<std::string, int> &correlator_node_station_to_input) const {
   std::set<std::string> freq_set;
   std::set<std::string>::const_iterator freq_set_it;
-  std::string freq_mode;
   std::string bbc_nr;
   std::string bbc_mode;
   std::string if_nr;
@@ -1730,24 +1729,12 @@ get_correlation_parameters(const std::string &scan_name,
   corr_param.window = window_function();  
   corr_param.slice_offset =
     number_correlation_cores_per_timeslice(mode_name);
-
-  // Assumption: sample rate the the same for all stations:
-  for (Vex::Node::const_iterator freq_it = mode->begin("FREQ");
-       freq_it != mode->end("FREQ"); ++freq_it) {
-    for (Vex::Node::const_iterator elem_it = freq_it->begin();
-	 elem_it != freq_it->end(); ++elem_it) {
-      if (elem_it->to_string() == station_name) {
-	freq_mode = freq_it[0]->to_string();
-      }
-    }
-  }
-
-  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_mode];
-  corr_param.sample_rate =
-    (int)(1000000*freq["sample_rate"]->to_double_amount("Ms/sec"));
+  corr_param.sample_rate = sample_rate(mode_name, station_name);
 
   corr_param.sideband = ' ';
   std::string freq_temp;
+  const std::string &freq_name = get_vex().get_frequency(mode_name, station_name);
+  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
   for (Vex::Node::const_iterator ch_it = freq->begin("chan_def");
        ch_it != freq->end("chan_def");
        ++ch_it) {
