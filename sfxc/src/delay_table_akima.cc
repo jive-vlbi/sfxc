@@ -349,6 +349,17 @@ double Delay_table_akima::rate(const Time &time, int phase_center) {
   return result + clock_rates[clock_nr];
 }
 
+double Delay_table_akima::accel(const Time &time, int phase_center) {
+  while (scans[scan_nr].end < time){
+    if (!initialise_next_scan()) break;
+  }
+
+  SFXC_ASSERT(splineakima.size() > 0);
+  double sec = (time - scans[scan_nr].begin).get_time();
+  double result = gsl_spline_eval_deriv2(splineakima[phase_center], sec, acc[phase_center]);
+  return result + clock_rates[clock_nr];
+}
+
 double Delay_table_akima::phase(const Time &time, int phase_center){
   while (scans[scan_nr].end < time){
     if (!initialise_next_scan()) break;
