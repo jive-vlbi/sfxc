@@ -161,17 +161,12 @@ void Correlator_node::main_loop() {
 
         correlate();
         if (!has_requested && correlation_core->almost_finished()) {
-          //if (n_integration_slice_in_time_slice==1)
-          //{
-          ///DEBUG_MSG("TIME TO GET NEW DATA !");
-          // Notify manager node:
           int32_t msg = get_correlate_node_number();
           MPI_Send(&msg, 1, MPI_INT32, RANK_MANAGER_NODE,
                    MPI_TAG_CORRELATION_OF_TIME_SLICE_ENDED,
                    MPI_COMM_WORLD);
 
           has_requested = true;
-          //}
         }
         if (correlation_core->finished()) {
           ///DEBUG_MSG("CORRELATION CORE FINISHED !" << n_integration_slice_in_time_slice);
