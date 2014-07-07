@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -57,6 +58,11 @@ pthread_t command_thread;
 pthread_mutex_t ss_lock;
 
 char Label[BANK_INVALID][XLR_LABEL_LENGTH];
+
+S_DEVINFO devInfo;
+S_XLRSWREV swRev;
+
+char osRev[512];
 
 void	logit(int, const char *, ...);
 void	vlog(int, const char *, va_list);
@@ -346,6 +352,66 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 }
 
 void
+get_ssrev(void)
+{
+	SSHANDLE xlrHandle;
+	ULONG xlrError;
+	char errString[XLR_ERROR_LENGTH];
+	static int initialized = 0;
+
+	if (initialized)
+		return;
+
+	if (XLROpen(1, &xlrHandle) != XLR_SUCCESS) {
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(errString, xlrError);
+		logit(LOG_CRIT, "%s", errString);
+		XLRClose(xlrHandle);
+		return;
+	}
+	
+	if (XLRGetDeviceInfo(xlrHandle, &devInfo) != XLR_SUCCESS) {
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(errString, xlrError);
+		logit(LOG_CRIT, "%s", errString);
+		XLRClose(xlrHandle);
+		return;
+	}
+
+	if (XLRGetVersion(xlrHandle, &swRev) != XLR_SUCCESS) {
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(errString, xlrError);
+		logit(LOG_CRIT, "%s", errString);
+		XLRClose(xlrHandle);
+		return;
+	}
+
+	XLRClose(xlrHandle);
+	initialized = 1;
+}
+
+void
+get_osrev(void)
+{
+	char *p;
+	int fd;
+
+	fd = open("/proc/version", O_RDONLY);
+	if (fd == -1) {
+		logit(LOG_CRIT, "/proc/version: %s", strerror(errno));
+		return;
+	}
+
+	read(fd, osRev, sizeof(osRev));
+	close(fd);
+
+	osRev[sizeof(osRev) - 1] = 0;
+	p = strchr(osRev, '\n');
+	if (p)
+		*p = 0;
+}
+
+void
 handler(int sig)
 {
 	unlink(MK5READ_SOCKET);
@@ -436,6 +502,25 @@ command_loop(void *arg)
 				snprintf(reply, sizeof(reply), 
 				    "!bank_set? 0 : A : %s : B : %s ; \n",
 				    Label[BANK_A], Label[BANK_B]);
+			} else if (strncmp(request, "SS_rev?",
+					   strlen("SS_rev?")) == 0) {
+				snprintf(reply, sizeof(reply),
+				    "!SS_rev? 0 : BoardType %s : SerialNum %u"
+				    " : ApiVersion %s : ApiDateCode %s"
+				    " : FirmwareVersion %s : FirmDateCode %s"
+				    " : MonitorVersion %s : XbarVersion %s"
+				    " : AtaVersion %s : UAtaVersion %s"
+				    " : DriverVersion %s ; \n",
+				    devInfo.BoardType, devInfo.SerialNum,
+				    swRev.ApiVersion, swRev.ApiDateCode,
+				    swRev.FirmwareVersion, swRev.FirmDateCode,
+				    swRev.MonitorVersion, swRev.XbarVersion,
+				    swRev.AtaVersion, swRev.UAtaVersion,
+				    swRev.DriverVersion);
+			} else if (strncmp(request, "OS_rev?",
+					   strlen("OS_rev?")) == 0) {
+				snprintf(reply, sizeof(reply),
+					 "!OS_rev? 0 : %s ; \n", osRev);
 			} else {
 				for (size_t i = 0; i < strlen(request); i++) {
 					if (isspace(request[i])) {
@@ -528,6 +613,9 @@ main(int argc, char *argv[])
 
 	if (listen(s, 1) == -1)
 		fatal("listen");
+
+	get_ssrev();
+	get_osrev();
 
 	err = pthread_mutex_init(&ss_lock, NULL);
 	assert(err == 0);
