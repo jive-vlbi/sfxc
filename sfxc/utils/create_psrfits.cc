@@ -239,13 +239,14 @@ SFXCdata::read_integration(int int_nr){
         pol = hbaseline.polarisation1; 
       int nsubband = subbands.size();
       int idx = (f * nsamples + sample) * npol * nchan + pol * nchan;
-      for (int j = 0; j < nchan; j++){
-        //cout << "pushed : " << buffer[j] << "\n";
-        //data[idx] = sqrt((buffer[j]*conj(buffer[j])).real());
-        data[idx] = buffer[j];
-        if((flag)&&(j==15)&&(f==0)&&(pol==0)) fprintf(uit, "%f\n", data[idx]);
-        //cout << idx << " : data[idx] =" << data[idx] << "\n";
-        idx += 1;
+      if(hbaseline.sideband == 0){
+        // LSB
+        for (int j = nchan; j > 0; j--)
+          data[idx++] = buffer[j];
+      }else{
+        // USB
+        for (int j = 0; j < nchan; j++)
+          data[idx++] = buffer[j];
       }
       sample += 1;
     }
@@ -819,8 +820,8 @@ void write_primary_hdu(FILE *outfile, SFXCdata &sfxcdata, vector<int> &channels,
   int nsubband = channels.size();
   SFXCdata::subband &lowersb = sfxcdata.subbands[channels[0]];
   SFXCdata::subband &uppersb = sfxcdata.subbands[channels[nsubband-1]];
-  double f0 = lowersb.frequency + lowersb.bandwidth*(lowersb.sideband-1);
-  double f1 = uppersb.frequency + uppersb.bandwidth*(uppersb.sideband);
+  double f0 = lowersb.frequency + lowersb.bandwidth*(2*lowersb.sideband-1);
+  double f1 = uppersb.frequency + uppersb.bandwidth*(2*uppersb.sideband-1);
   double obsfreq = (f0+f1)/2;
   double bandwidth = f1-f0;
   hdr_float(outfile, "OBSFREQ", obsfreq, 2, "[MHz] Centre frequency for observation");
