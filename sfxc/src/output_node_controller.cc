@@ -138,6 +138,57 @@ Output_node_controller::process_event(MPI_Status &status) {
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
+  case MPI_TAG_OUTPUT_NODE_SET_TSYS_FILE: {
+      int len;
+      MPI_Get_elements(&status, MPI_CHAR, &len);
+      SFXC_ASSERT(len > 0);
+
+      char filename[len];
+      MPI_Recv(&filename, len, MPI_CHAR, status.MPI_SOURCE,
+	       status.MPI_TAG, MPI_COMM_WORLD, &status2);
+      SFXC_ASSERT(filename[len - 1] == 0);
+      SFXC_ASSERT(strncmp(filename, "file://", 7) == 0);
+      tsys_file.open(filename + 7, std::ios::out | std::ios::trunc | std::ios::binary);
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+  case MPI_TAG_OUTPUT_NODE_WRITE_TSYS: {
+      int len;
+      MPI_Get_elements(&status, MPI_CHAR, &len);
+
+      char msg[len];
+      MPI_Recv(&msg, len, MPI_CHAR, status.MPI_SOURCE,
+	       status.MPI_TAG, MPI_COMM_WORLD, &status2);
+
+      int pos = 0;
+      uint8_t station_number, frequency_number, sideband, polarisation;
+      MPI_Unpack(msg, len, &pos, &station_number, 1, MPI_UINT8, MPI_COMM_WORLD);
+      MPI_Unpack(msg, len, &pos, &frequency_number, 1, MPI_UINT8, MPI_COMM_WORLD);
+      MPI_Unpack(msg, len, &pos, &sideband, 1, MPI_UINT8, MPI_COMM_WORLD);
+      MPI_Unpack(msg, len, &pos, &polarisation, 1, MPI_UINT8, MPI_COMM_WORLD);
+
+      Time start_time;
+      uint64_t start_time_ticks;
+      MPI_Unpack(msg, len, &pos, &start_time_ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+      start_time.set_clock_ticks(start_time_ticks);
+      uint32_t mjd = start_time.get_mjd();
+      uint32_t secs = start_time.get_time();
+
+      uint64_t tsys[4];
+      MPI_Unpack(msg, len, &pos, &tsys[0], 4, MPI_INT64, MPI_COMM_WORLD);
+
+      if (tsys_file.is_open()) {
+	tsys_file.write((char *)&station_number, sizeof(station_number));
+	tsys_file.write((char *)&frequency_number, sizeof(frequency_number));
+	tsys_file.write((char *)&sideband, sizeof(sideband));
+	tsys_file.write((char *)&polarisation, sizeof(polarisation));
+	tsys_file.write((char *)&mjd, sizeof(mjd));
+	tsys_file.write((char *)&secs, sizeof(secs));
+	tsys_file.write((char *)&tsys[0], sizeof(tsys));
+      }
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
   }
   return PROCESS_EVENT_STATUS_UNKNOWN;
 }

@@ -192,6 +192,7 @@ public:
   std::vector<std::string> data_sources(const std::string &station) const;
   std::string get_output_file() const;
   std::string get_phasecal_file() const;
+  std::string get_tsys_file() const;
 
   std::string station(int i) const;
   size_t number_stations() const;

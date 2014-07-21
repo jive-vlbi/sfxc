@@ -521,6 +521,11 @@ Control_parameters::get_phasecal_file() const {
 }
 
 std::string
+Control_parameters::get_tsys_file() const {
+  return create_path(ctrl["tsys_file"].asString());
+}
+
+std::string
 Control_parameters::station(int i) const {
   return ctrl["stations"][i].asString();
 }

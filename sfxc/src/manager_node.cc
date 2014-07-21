@@ -482,6 +482,17 @@ Manager_node::initialise() {
     }
   }
 
+  {
+    std::string filename = control_parameters.get_tsys_file();
+    if (!filename.empty()) {
+      SFXC_ASSERT(strncmp(filename.c_str(), "file://", 7) == 0);
+      int len = filename.size() + 1;
+      char msg[len];
+      strncpy(msg, filename.c_str(), len);
+      MPI_Send(msg, len, MPI_CHAR, RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_SET_TSYS_FILE, MPI_COMM_WORLD);
+    }
+  }
+
   // Write the global header in the outpul file
   send_global_header();
 

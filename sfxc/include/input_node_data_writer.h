@@ -134,6 +134,15 @@ private:
   Time phasecal_time;
   size_t phasecal_count;
   Time phasecal_integration_time;
+
+  void do_tsys(void);
+  uint64_t tsys_on_lo;
+  uint64_t tsys_on_hi;
+  uint64_t tsys_off_lo;
+  uint64_t tsys_off_hi;
+  Time tsys_time;
+  size_t tsys_count;
+  Time tsys_integration_time;
 };
 
 inline Time
