@@ -51,6 +51,22 @@ Output_node_controller::process_event(MPI_Status &status) {
       phasecal_header.subjob_nr = global_header.subjob_nr;
       phasecal_file.write((char *)&phasecal_header, sizeof(phasecal_header));
 
+      if (tsys_file.is_open()) {
+	struct Output_header_tsys tsys_header;
+	tsys_header.header_size = sizeof(tsys_header);
+	memcpy(&tsys_header.experiment, global_header.experiment,
+	       sizeof(tsys_header.experiment));
+	tsys_header.output_format_version =
+	  global_header.output_format_version;
+	tsys_header.correlator_version = global_header.correlator_version;
+	memcpy(&tsys_header.correlator_branch,
+	       global_header.correlator_branch,
+	       sizeof(tsys_header.correlator_branch));
+	tsys_header.job_nr = global_header.job_nr;
+	tsys_header.subjob_nr = global_header.subjob_nr;
+	tsys_file.write((char *)&tsys_header, sizeof(tsys_header));
+      }
+
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY: {

@@ -174,6 +174,18 @@ struct Output_header_phasecal {
   int32_t subjob_nr;
 };
 
+struct Output_header_tsys {
+  uint32_t header_size;		// Size of tsys header in bytes
+  char experiment[32];		// Name of the experiment
+
+  uint32_t output_format_version;	// Version number of the output format
+  uint32_t correlator_version;		// SVN revision of the correlator
+
+  char correlator_branch[15];
+  int32_t job_nr;
+  int32_t subjob_nr;
+};
+
 std::ostream &
 operator<<(std::ostream &out,
            const Output_header_global &global_header);
