@@ -892,7 +892,7 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.polarisation, 1, MPI_CHAR,
            message_buffer, size, &position, MPI_COMM_WORLD);
-  MPI_Pack(&corr_param.channel_nr, 1, MPI_INT32,
+  MPI_Pack(&corr_param.frequency_nr, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
 
   char cross_polarize;
@@ -1012,7 +1012,7 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
              &corr_param.polarisation, 1, MPI_CHAR,
              MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
-             &corr_param.channel_nr, 1, MPI_INT32,
+             &corr_param.frequency_nr, 1, MPI_INT32,
              MPI_COMM_WORLD);
   char cross_polarize;
   MPI_Unpack(buffer, size, &position,

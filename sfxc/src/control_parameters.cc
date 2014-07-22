@@ -888,6 +888,34 @@ Control_parameters::frequency_channel(size_t channel_nr, const std::string& mode
   return std::string();
 }
 
+int
+Control_parameters::frequency_number(size_t channel_nr, const std::string& mode_name) const {
+  std::set<int64_t> freq_set;
+  std::set<int64_t>::const_iterator freq_set_it;
+  int64_t frequency;
+
+  const std::string& channel_name = channel(channel_nr);
+  const std::string& station_name = setup_station();
+  const std::string& freq_name = get_vex().get_frequency(mode_name, station_name);
+  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
+  for (Vex::Node::const_iterator ch_it = freq->begin("chan_def");
+       ch_it != freq->end("chan_def");
+       ++ch_it) {
+    if (ch_it[4]->to_string() == channel_name)
+      frequency = (int64_t)round(ch_it[1]->to_double_amount("Hz"));
+    freq_set.insert((int64_t)round(ch_it[1]->to_double_amount("Hz")));
+  }
+
+  int count = 0;
+  for (freq_set_it = freq_set.begin(); freq_set_it != freq_set.end(); ++freq_set_it) {
+    if (*freq_set_it == frequency)
+      return count;
+    count++;
+  }
+
+  return -1;
+}
+
 const Vex &
 Control_parameters::get_vex() const {
   SFXC_ASSERT(initialised);
@@ -959,7 +987,6 @@ get_mark5a_tracks(const std::string &mode,
   else
     input_parameters.data_modulation=0;
 
-  int ch_index = 0;
   std::vector<int> sign_tracks, mag_tracks;
   for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
     const std::string &channel_name = frequency_channel(ch_nr, mode, station);
@@ -968,9 +995,9 @@ get_mark5a_tracks(const std::string &mode,
       // tracks
       Input_node_parameters::Channel_parameters channel_param;
       channel_param.bits_per_sample = 1;
-      channel_param.sideband = sideband(channel_name, station, mode);
-      channel_param.polarisation = polarisation(channel_name, station, mode);
-      channel_param.frequency_number = ch_index++;
+      channel_param.sideband = sideband(channel(ch_nr), setup_station(), mode);
+      channel_param.polarisation = polarisation(channel(ch_nr), setup_station(), mode);
+      channel_param.frequency_number = frequency_number(ch_nr, mode);
       sign_tracks.resize(0);
       mag_tracks.resize(0);
 
@@ -1038,7 +1065,6 @@ get_mark5b_tracks(const std::string &mode,
   if (bitstreams_name != std::string()) {
     input_parameters.n_tracks = n_mark5b_bitstreams(mode, station);
     // Parse the bitstream section
-    int ch_index = 0;
     Vex::Node::const_iterator bitstream = vex.get_root_node()["BITSTREAMS"][bitstreams_name];
     for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
       const std::string &channel_name = frequency_channel(ch_nr, mode, station);
@@ -1048,9 +1074,9 @@ get_mark5b_tracks(const std::string &mode,
         int n_bitstream = 0;
         Input_node_parameters::Channel_parameters channel_param;
         channel_param.bits_per_sample = 1;
-        channel_param.sideband = sideband(channel_name, station, mode);
-        channel_param.polarisation = polarisation(channel_name, station, mode);
-        channel_param.frequency_number = ch_index++;
+	channel_param.sideband = sideband(channel(ch_nr), setup_station(), mode);
+	channel_param.polarisation = polarisation(channel(ch_nr), setup_station(), mode);
+        channel_param.frequency_number = frequency_number(ch_nr, mode);
         int sign_track, mag_track;
         for (Vex::Node::const_iterator bitstream_it = bitstream->begin("stream_def");
             bitstream_it != bitstream->end("stream_def"); ++bitstream_it) {
@@ -1090,7 +1116,6 @@ get_mark5b_tracks(const std::string &mode,
     if (track["track_frame_format"]->to_string() == "MARK5B") {
       input_parameters.n_tracks = n_mark5a_tracks(mode, station);
       // Parse the $TRACKS section
-      int ch_index = 0;
       for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
 	const std::string &channel_name = frequency_channel(ch_nr, mode, station);
 
@@ -1099,9 +1124,9 @@ get_mark5b_tracks(const std::string &mode,
 	  int n_bitstream = 0;
 	  Input_node_parameters::Channel_parameters channel_param;
 	  channel_param.bits_per_sample = 1;
-	  channel_param.sideband = sideband(channel_name, station, mode);
-	  channel_param.polarisation = polarisation(channel_name, station, mode);
-	  channel_param.frequency_number = ch_index++;
+	  channel_param.sideband = sideband(channel(ch_nr), setup_station(), mode);
+	  channel_param.polarisation = polarisation(channel(ch_nr), setup_station(), mode);
+	  channel_param.frequency_number = frequency_number(ch_nr, mode);
 	  int sign_track, mag_track;
 	  for (Vex::Node::const_iterator fanout_def_it = track->begin("fanout_def");
 	       fanout_def_it != track->end("fanout_def"); ++fanout_def_it) {
@@ -1168,8 +1193,8 @@ get_vdif_tracks(const std::string &mode,
   // efficient way as we don't need to do any unpacking.
   if (num_threads == num_channels) {
       input_parameters.n_tracks = 0;
-      for (size_t i = 0; i < number_frequency_channels(); i++) {
-	const std::string &channel_name = frequency_channel(i, mode, station);
+      for (size_t ch_nr = 0; ch_nr < number_frequency_channels(); ch_nr++) {
+	const std::string &channel_name = frequency_channel(ch_nr, mode, station);
 
 	Input_node_parameters::Channel_parameters channel_param;
 
@@ -1181,6 +1206,9 @@ get_vdif_tracks(const std::string &mode,
 	}
 
 	channel_param.bits_per_sample = bits_per_sample(mode, station);
+	channel_param.sideband = sideband(channel(ch_nr), setup_station(), mode);
+	channel_param.polarisation = polarisation(channel(ch_nr), setup_station(), mode);
+	channel_param.frequency_number = frequency_number(ch_nr, mode);
 	channel_param.tracks.push_back(thread_id);
 	channel_param.tracks.push_back(-1); // XXX
 	input_parameters.channels.push_back(channel_param);
@@ -1195,7 +1223,6 @@ get_vdif_tracks(const std::string &mode,
     num_tracks += bits_per_sample(mode, station);
   }
 
-  int ch_index = 0;
   input_parameters.n_tracks = num_tracks;
   for (size_t ch_nr = 0; ch_nr < number_frequency_channels(); ch_nr++) {
     const std::string &channel_name = frequency_channel(ch_nr, mode, station);
@@ -1203,9 +1230,9 @@ get_vdif_tracks(const std::string &mode,
     if (channel_name != std::string()) {
       Input_node_parameters::Channel_parameters channel_param;
       channel_param.bits_per_sample = bits_per_sample(mode, station);
-      channel_param.sideband = sideband(channel_name, station, mode);
-      channel_param.polarisation = polarisation(channel_name, station, mode);
-      channel_param.frequency_number = ch_index++;
+      channel_param.sideband = sideband(channel(ch_nr), setup_station(), mode);
+      channel_param.polarisation = polarisation(channel(ch_nr), setup_station(), mode);
+      channel_param.frequency_number = frequency_number(ch_nr, mode);
 
       // NB: Number of channels (and therefore num_tracks) is always a power of two
       const int word_size = (num_tracks <= 32) ? 32 : num_tracks; 
@@ -1304,7 +1331,6 @@ get_mark5b_standard_mapping(const std::string &mode,
   input_parameters.n_tracks = subband_to_track.size() * bits_per_sample_;
 
   { // Fill the sign and magnitude bits:
-    int ch_index = 0;
     int nr_bit_streams = subband_to_track.size()*bits_per_sample_;
     for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
       const std::string &channel_name = frequency_channel(ch_nr, mode, station);
@@ -1313,9 +1339,9 @@ get_mark5b_standard_mapping(const std::string &mode,
       if (channel_name != std::string()) {
         Input_node_parameters::Channel_parameters channel_param;
         channel_param.bits_per_sample = bits_per_sample_;
-        channel_param.sideband = sideband(channel_name, station, mode);
-        channel_param.polarisation = polarisation(channel_name, station, mode);
-        channel_param.frequency_number = ch_index++;
+	channel_param.sideband = sideband(channel(ch_nr), setup_station(), mode);
+	channel_param.polarisation = polarisation(channel(ch_nr), setup_station(), mode);
+        channel_param.frequency_number = frequency_number(ch_nr, mode);
         if (bits_per_sample_ == 2) {
           for (; bit_stream_nr < 32; bit_stream_nr += nr_bit_streams) {
             channel_param.tracks.push_back(bit_stream_nr);
@@ -1706,8 +1732,6 @@ Control_parameters::
 get_correlation_parameters(const std::string &scan_name,
 			   size_t channel_nr,
                            const std::map<std::string, int> &correlator_node_station_to_input) const {
-  std::set<std::string> freq_set;
-  std::set<std::string>::const_iterator freq_set_it;
   std::string bbc_nr;
   std::string bbc_mode;
   std::string if_nr;
@@ -1737,7 +1761,6 @@ get_correlation_parameters(const std::string &scan_name,
   corr_param.sample_rate = sample_rate(mode_name, station_name);
 
   corr_param.sideband = ' ';
-  std::string freq_temp;
   const std::string &freq_name = get_vex().get_frequency(mode_name, station_name);
   Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
   for (Vex::Node::const_iterator ch_it = freq->begin("chan_def");
@@ -1747,19 +1770,11 @@ get_correlation_parameters(const std::string &scan_name,
       corr_param.channel_freq = (int64_t)round(ch_it[1]->to_double_amount("Hz"));
       corr_param.bandwidth = (int)ch_it[3]->to_double_amount("Hz");
       corr_param.sideband = ch_it[2]->to_char();
-      freq_temp = ch_it[1]->to_string();
       bbc_nr = ch_it[5]->to_string();
     }
-    freq_set.insert(ch_it[1]->to_string());
   }
+  corr_param.frequency_nr = frequency_number(channel_nr, mode_name);
 
-  int count = 0;
-  for (freq_set_it = freq_set.begin(); freq_set_it != freq_set.end(); ++freq_set_it) {
-    if (*freq_set_it == freq_temp) {
-      corr_param.channel_nr = count;
-    }
-    count++;
-  }
   //in the following two blocks (if_mode and bbc_mode) we assume only one of the
   //station name HO
   for (Vex::Node::const_iterator if_it = mode->begin("IF");

@@ -409,8 +409,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
       }
       stats[i].station_nr=station+1;
       stats[i].sideband = (correlation_parameters.sideband=='L') ? 0 : 1;
-
-      stats[i].frequency_nr=(unsigned char)correlation_parameters.channel_nr;
+      stats[i].frequency_nr = (unsigned char)correlation_parameters.frequency_nr;
 #ifndef SFXC_ZERO_STATS
       if(statistics[stream]->bits_per_sample==2){
         stats[i].levels[0]=levels[0];
@@ -499,7 +498,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
       hbaseline.sideband = 0;
     }
     // The number of the channel in the vex-file,
-    hbaseline.frequency_nr = (unsigned char)correlation_parameters.channel_nr;
+    hbaseline.frequency_nr = (unsigned char)correlation_parameters.frequency_nr;
     // sorted increasingly
     // 1 byte left:
     hbaseline.empty = ' ';
