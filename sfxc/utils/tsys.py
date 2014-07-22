@@ -30,6 +30,7 @@ header = "=I32sII15sxii"
 format = "=BBBBII4Q"
 
 tsys = {}
+times = {}
 
 # Values for Ef in  F13C4
 tcal = {
@@ -287,19 +288,24 @@ while fp:
         pass
     if stations[station] != antab_station:
         continue
-    if not station in tsys:
-        tsys[station] = {'secs': secs, 'values': {}}
+    if not station in times:
+        times[station] = []
+        tsys[station] = {}
         pass
-    if not tsys[station]['secs'] == secs:
-        tupletime = time.gmtime(tsys[station]['secs'])
-        print "%d %02d:%02d.%02d" % (tupletime.tm_yday, tupletime.tm_hour, tupletime.tm_min, ((tupletime.tm_sec * 100) / 60)),
-        for idx in index:
-            print "%.1f" % (tsys[station]['values'][mapping[idx]] * tcal[idx]),
-            continue
-        print ""
-        tsys[station]['secs'] = secs
+    if not secs in times[station]:
+        times[station].append(secs)
+        tsys[station][secs] = {}
         pass
-    tsys[station]['values'][(frequency, sideband, polarisation)] = P_avg/(P_on - P_off)
+    tsys[station][secs][(frequency, sideband, polarisation)] = P_avg/(P_on - P_off)
+    continue
+
+for secs in times[station]:
+    tupletime = time.gmtime(secs)
+    print "%d %02d:%02d.%02d" % (tupletime.tm_yday, tupletime.tm_hour, tupletime.tm_min, ((tupletime.tm_sec * 100) / 60)),
+    for idx in index:
+        print "%.1f" % (tsys[station][secs][mapping[idx]] * tcal[idx]),
+        continue
+    print ""
     continue
 
 print "/"
