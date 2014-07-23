@@ -309,6 +309,7 @@ for station in xrange(len(stations)):
         break
     continue
 
+times[station].sort()
 for secs in times[station]:
     tupletime = time.gmtime(secs)
     print "%d %02d:%02d.%02d" % (tupletime.tm_yday, tupletime.tm_hour, tupletime.tm_min, ((tupletime.tm_sec * 100) / 60)),
