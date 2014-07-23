@@ -336,8 +336,41 @@ Input_node_data_writer::do_tsys() {
   if ((input_element.start_time.get_clock_ticks() % tsys_integration_time.get_clock_ticks()) == 0) {
     if (tsys_time.get_clock_ticks() != 0) {
       size_t len = 4 * sizeof(uint8_t) + sizeof(uint64_t) + 4 * sizeof(uint64_t);
+      int64_t tsys_on_hi, tsys_on_lo, tsys_off_hi, tsys_off_lo;
       char msg[len];
       int pos = 0;
+
+      tsys_on_hi = tsys_on_lo = tsys_off_hi = tsys_off_lo = 0;
+      for (int i = 0; i < 256; i++) {
+	if ((i & 3) == 0 || (i & 3) == 3) {
+	  tsys_on_hi += tsys_on[i];
+	  tsys_off_hi += tsys_off[i];
+	} else {
+	  tsys_on_lo += tsys_on[i];
+	  tsys_off_lo += tsys_off[i];
+	}
+	if (((i >> 2) & 3) == 0 || ((i >> 2) & 3) == 3) {
+	  tsys_on_hi += tsys_on[i];
+	  tsys_off_hi += tsys_off[i];
+	} else {
+	  tsys_on_lo += tsys_on[i];
+	  tsys_off_lo += tsys_off[i];
+	}
+	if (((i >> 4) & 3) == 0 || ((i >> 4) & 3) == 3) {
+	  tsys_on_hi += tsys_on[i];
+	  tsys_off_hi += tsys_off[i];
+	} else {
+	  tsys_on_lo += tsys_on[i];
+	  tsys_off_lo += tsys_off[i];
+	}
+	if (((i >> 6) & 3) == 0 || ((i >> 6) & 3) == 3) {
+	  tsys_on_hi += tsys_on[i];
+	  tsys_off_hi += tsys_off[i];
+	} else {
+	  tsys_on_lo += tsys_on[i];
+	  tsys_off_lo += tsys_off[i];
+	}
+      }
 
       MPI_Pack(&station_number, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
       MPI_Pack(&frequency_number, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
@@ -354,10 +387,8 @@ Input_node_data_writer::do_tsys() {
     }
 
     // Clear counters.
-    tsys_on_lo = 0;
-    tsys_on_hi = 0;
-    tsys_off_lo = 0;
-    tsys_off_hi = 0;
+    memset(&tsys_on[0], 0, sizeof(tsys_on));
+    memset(&tsys_off[0], 0, sizeof(tsys_off));
     tsys_count = 0;
     tsys_time = input_element.start_time;
   }
@@ -374,30 +405,11 @@ Input_node_data_writer::do_tsys() {
       }
     }
     tsys_count %= (sample_rate / 80);
-    switch (bits_per_sample) {
-    case 2:
-      if (tsys_count < (sample_rate / 160)) {
-	tsys_on_lo += tsys_lo[(data[i] >> 0) & 3];
-	tsys_on_lo += tsys_lo[(data[i] >> 2) & 3];
-	tsys_on_lo += tsys_lo[(data[i] >> 4) & 3];
-	tsys_on_lo += tsys_lo[(data[i] >> 6) & 3];
-	tsys_on_hi += tsys_hi[(data[i] >> 0) & 3];
-	tsys_on_hi += tsys_hi[(data[i] >> 2) & 3];
-	tsys_on_hi += tsys_hi[(data[i] >> 4) & 3];
-	tsys_on_hi += tsys_hi[(data[i] >> 6) & 3];
-      } else {
-	tsys_off_lo += tsys_lo[(data[i] >> 0) & 3];
-	tsys_off_lo += tsys_lo[(data[i] >> 2) & 3];
-	tsys_off_lo += tsys_lo[(data[i] >> 4) & 3];
-	tsys_off_lo += tsys_lo[(data[i] >> 6) & 3];
-	tsys_off_hi += tsys_hi[(data[i] >> 0) & 3];
-	tsys_off_hi += tsys_hi[(data[i] >> 2) & 3];
-	tsys_off_hi += tsys_hi[(data[i] >> 4) & 3];
-	tsys_off_hi += tsys_hi[(data[i] >> 6) & 3];
-      }
-      tsys_count += 4;
-      break;
-    }
+    if (tsys_count < (sample_rate / 160))
+      tsys_on[data[i]]++;
+    else
+      tsys_off[data[i]]++;
+    tsys_count += 4;
   }
 
   input_element.processed = true;
