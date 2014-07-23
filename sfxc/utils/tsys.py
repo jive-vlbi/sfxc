@@ -65,6 +65,11 @@ for station in vex['STATION']:
     continue
 stations.sort()
 
+if not antab_station in stations:
+    print "station %s not found in VEX" % antab_station
+    sys.exit(1)
+    pass
+
 fp = open(ctrl_file, 'r')
 json_input = json.load(fp)
 fp.close()
@@ -234,11 +239,11 @@ if freq:
         mount = "ELEV"
     elif 'GCNRAO' in gain:
         mount = "GCNRAO"
-        print mount,
-        print "DPFU = %.3f, %.3f" % tuple(gain['DPFU']),
-        print "POLY %.3f" % gain['POLY']
-        print "/"
         pass
+    print mount,
+    print "DPFU = %.3f, %.3f" % tuple(gain['DPFU']),
+    print "POLY %.3f" % gain['POLY']
+    print "/"
     pass
 
 print "TSYS %s" % antab_station.upper()
@@ -297,6 +302,11 @@ while fp:
         tsys[station][secs] = {}
         pass
     tsys[station][secs][(frequency, sideband, polarisation)] = P_avg/(P_on - P_off)
+    continue
+
+for station in xrange(len(stations)):
+    if stations[station] == antab_station:
+        break
     continue
 
 for secs in times[station]:
