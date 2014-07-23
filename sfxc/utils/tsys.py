@@ -1,4 +1,5 @@
 import json
+import optparse
 import os
 import struct
 import sys
@@ -54,12 +55,24 @@ tcal = {
 
 gains = {}
 
-vex_file = sys.argv[1]
-ctrl_file = sys.argv[2]
-antab_station = sys.argv[3]
+usage = "usage: %prog [options] vexfile ctrlfile"
+parser = optparse.OptionParser(usage=usage)
+parser.add_option("-f", "--file", dest="tsys_file",
+                      default="", type="string",
+                      help="Tsys measurements",
+                      metavar="FILE")
+
+(options, args) = parser.parse_args()
+if len(args) < 3:
+    parser.error("incorrect number of arguments")
+    pass
+
+vex_file = args[0]
+ctrl_file = args[1]
+antab_station = args[2]
 
 stations = []
-vex = Vex(sys.argv[1])
+vex = Vex(vex_file)
 for station in vex['STATION']:
     stations.append(station)
     continue
@@ -258,7 +271,11 @@ for i in xrange(len(index)):
 
 first = None
 last = None
-tsys_file = urlparse.urlparse(json_input['tsys_file']).path
+if options.tsys_file:
+    tsys_file = options.tsys_file
+else:
+    tsys_file = urlparse.urlparse(json_input['tsys_file']).path
+    pass
 fp = open(tsys_file, 'r')
 buf = fp.read(struct.calcsize(header))
 while fp:
