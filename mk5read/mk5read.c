@@ -321,7 +321,7 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 			p = strchr(bankStatus.Label, '/');
 			if (p)
 				*p = 0;
-			if (strcmp(vsn, bankStatus.Label) == 0)
+			if (strncmp(vsn, bankStatus.Label, 8) == 0)
 				matchedBankID = bankID;
 		} else
 			memset(Label[bankID], 0, XLR_LABEL_LENGTH);
