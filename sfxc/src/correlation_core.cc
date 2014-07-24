@@ -101,6 +101,13 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   current_integration = 0;
   current_fft = 0;
 
+  // If the relevant correlation parameters change, clear the window
+  // vector.  It will be recreated when the next integration starts.
+  if (parameters.number_channels != correlation_parameters.number_channels ||
+      parameters.fft_size_correlation != correlation_parameters.fft_size_correlation ||
+      parameters.window != correlation_parameters.window)
+    window.clear();
+
   correlation_parameters = parameters;
   oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
 
@@ -717,6 +724,9 @@ void
 Correlation_core::create_window() {
   const int n = 2 * number_channels();
   const int m = 2 * fft_size();
+
+  if (!window.empty())
+    return;
 
   window.resize(n);
 
