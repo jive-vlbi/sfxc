@@ -258,7 +258,9 @@ void Correlation_core::integration_initialise() {
   fft_t2f.resize(2 * number_channels());
   temp_buffer.resize(fft_size() + 1);
   real_buffer.resize(2 * fft_size());
-  create_window();
+
+  if (fft_size() != number_channels())
+    create_window();
 }
 
 void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride) {
