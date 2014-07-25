@@ -63,6 +63,7 @@ void Correlation_core::do_task() {
       }
       integration_write(phase_centers[i], i, source_nr);
     }
+    tsys_write();
     current_integration++;
   } else if(current_fft >= next_sub_integration * number_ffts_in_sub_integration){
     sub_integration();
@@ -518,6 +519,53 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
                       ((char*)&integration_buffer_float[0]));
   }
 }
+
+void
+Correlation_core::tsys_write() {
+  std::vector<int> stream2station;
+  stream2station.resize(input_buffers.size(), -1);
+  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
+    size_t station_stream =
+      correlation_parameters.station_streams[i].station_stream;
+    stream2station[station_stream] =
+      correlation_parameters.station_streams[i].station_number;
+  }
+
+  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
+    size_t len = 4 * sizeof(uint8_t) + sizeof(uint64_t) + 4 * sizeof(uint64_t);
+    int64_t tsys_on_hi, tsys_on_lo, tsys_off_hi, tsys_off_lo;
+    int *tsys;
+    char msg[len];
+    int pos = 0;
+
+    int stream = streams_in_scan[i];
+    uint8_t station_number = stream2station[stream];
+    uint8_t frequency_number = correlation_parameters.frequency_nr;
+    uint8_t sideband = (correlation_parameters.sideband == 'L' ? 0 : 1);
+    uint8_t polarisation = (correlation_parameters.polarisation == 'R' ? 0 : 1);
+    if (correlation_parameters.cross_polarize && stream >= input_buffers.size() / 2)
+      polarisation = 1 - polarisation;
+
+    tsys = statistics[stream]->get_tsys();
+    tsys_on_lo = tsys[0];
+    tsys_on_hi = tsys[1];
+    tsys_off_lo = tsys[2];
+    tsys_off_hi = tsys[3];
+
+    MPI_Pack(&station_number, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&frequency_number, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&sideband, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&polarisation, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
+    uint64_t ticks = correlation_parameters.start_time.get_clock_ticks();
+    MPI_Pack(&ticks, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&tsys_on_lo, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&tsys_on_hi, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&tsys_off_lo, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&tsys_off_hi, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
+
+    MPI_Send(msg, pos, MPI_PACKED, RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_WRITE_TSYS, MPI_COMM_WORLD);
+  }
+}  
 
 void 
 Correlation_core::sub_integration(){

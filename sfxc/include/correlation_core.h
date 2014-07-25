@@ -2,6 +2,7 @@
 #define CORRELATION_CORE_H_
 
 #include "sfxc_math.h"
+#include "sfxc_mpi.h"
 #include "tasklet/tasklet.h"
 #include "delay_correction.h"
 #include "control_parameters.h"
@@ -62,6 +63,7 @@ protected:
   void integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride);
   void integration_normalize(std::vector<Complex_buffer> &integration_buffer);
   void integration_write(std::vector<Complex_buffer> &integration_buffer, int phase_center, int bin);
+  void tsys_write();
   void sub_integration();
   void find_invalid();
   void get_input_streams();

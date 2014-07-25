@@ -110,7 +110,6 @@ do_task() {
   struct Writer_struct& data_writer = data_writers_.front();
 
   do_phasecal();
-  do_tsys();
 
   int64_t byte_offset=0;
   int samples_per_byte = 8/bits_per_sample;
@@ -314,107 +313,6 @@ Input_node_data_writer::do_phasecal() {
   input_element.processed = true;
 }
 
-const int8_t tsys_lo[] = { 0, 1, 1, 0 };
-const int8_t tsys_hi[] = { 1, 0, 0, 1 };
-
-void
-Input_node_data_writer::do_tsys() {
-  Input_buffer_element &input_element = input_buffer_->front();
-  int samples_per_byte = 8 / bits_per_sample;
-  size_t size = input_element.channel_data.data().data.size();
-  uint8_t *data = (uint8_t *)&input_element.channel_data.data().data[0];
-
-  if (bits_per_sample == 1)
-    return;
-
-  if (tsys_integration_time.get_clock_ticks() == 0)
-    return;
-
-  if (input_element.processed)
-    return;
-
-  if ((input_element.start_time.get_clock_ticks() % tsys_integration_time.get_clock_ticks()) == 0) {
-    if (tsys_time.get_clock_ticks() != 0) {
-      size_t len = 4 * sizeof(uint8_t) + sizeof(uint64_t) + 4 * sizeof(uint64_t);
-      int64_t tsys_on_hi, tsys_on_lo, tsys_off_hi, tsys_off_lo;
-      char msg[len];
-      int pos = 0;
-
-      tsys_on_hi = tsys_on_lo = tsys_off_hi = tsys_off_lo = 0;
-      for (int i = 0; i < 256; i++) {
-	if ((i & 3) == 0 || (i & 3) == 3) {
-	  tsys_on_hi += tsys_on[i];
-	  tsys_off_hi += tsys_off[i];
-	} else {
-	  tsys_on_lo += tsys_on[i];
-	  tsys_off_lo += tsys_off[i];
-	}
-	if (((i >> 2) & 3) == 0 || ((i >> 2) & 3) == 3) {
-	  tsys_on_hi += tsys_on[i];
-	  tsys_off_hi += tsys_off[i];
-	} else {
-	  tsys_on_lo += tsys_on[i];
-	  tsys_off_lo += tsys_off[i];
-	}
-	if (((i >> 4) & 3) == 0 || ((i >> 4) & 3) == 3) {
-	  tsys_on_hi += tsys_on[i];
-	  tsys_off_hi += tsys_off[i];
-	} else {
-	  tsys_on_lo += tsys_on[i];
-	  tsys_off_lo += tsys_off[i];
-	}
-	if (((i >> 6) & 3) == 0 || ((i >> 6) & 3) == 3) {
-	  tsys_on_hi += tsys_on[i];
-	  tsys_off_hi += tsys_off[i];
-	} else {
-	  tsys_on_lo += tsys_on[i];
-	  tsys_off_lo += tsys_off[i];
-	}
-      }
-
-      MPI_Pack(&station_number, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
-      MPI_Pack(&frequency_number, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
-      MPI_Pack(&sideband, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
-      MPI_Pack(&polarisation, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
-      uint64_t ticks = tsys_time.get_clock_ticks();
-      MPI_Pack(&ticks, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
-      MPI_Pack(&tsys_on_lo, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
-      MPI_Pack(&tsys_on_hi, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
-      MPI_Pack(&tsys_off_lo, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
-      MPI_Pack(&tsys_off_hi, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
-      
-      MPI_Send(msg, pos, MPI_PACKED, RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_WRITE_TSYS, MPI_COMM_WORLD);
-    }
-
-    // Clear counters.
-    memset(&tsys_on[0], 0, sizeof(tsys_on));
-    memset(&tsys_off[0], 0, sizeof(tsys_off));
-    tsys_count = 0;
-    tsys_time = input_element.start_time;
-  }
-
-  size_t invalid_index = 0;
-  for (size_t i = 0; i < size; i++) {
-    if (invalid_index < input_element.invalid.size()) {
-      if (i == input_element.invalid[invalid_index].invalid_begin) {
-	i += input_element.invalid[invalid_index].nr_invalid;
-	tsys_count += input_element.invalid[invalid_index].nr_invalid * samples_per_byte;
-	invalid_index++;
-	if (i >= size)
-	  break;
-      }
-    }
-    tsys_count %= (sample_rate / 80);
-    if (tsys_count < (sample_rate / 160))
-      tsys_on[data[i]]++;
-    else
-      tsys_off[data[i]]++;
-    tsys_count += 4;
-  }
-
-  input_element.processed = true;
-}
-
 void
 Input_node_data_writer::
 add_timeslice(Data_writer_sptr data_writer, int64_t nr_samples) {
@@ -447,7 +345,6 @@ set_parameters(int nr_stream, const Input_node_parameters &input_param, int stat
   else
     sideband = 0;
   phasecal_integration_time = input_param.phasecal_integr_time;
-  tsys_integration_time = input_param.integr_time;
 }
 
 // Empty the input queue, called from the destructor of Input_node

@@ -67,6 +67,8 @@ public:
   *****************************************************************************/
   void set_parameters(const Correlation_parameters &params);
 
+  void add_delay_table(int nr_stream, Delay_table_akima &table);
+
   /*****************************************************************************
   * @desc Clear all input links
   *****************************************************************************/

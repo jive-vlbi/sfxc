@@ -10,12 +10,12 @@ const FLOAT sample_value_m[]  = {
                                 };
 
 Bit2float_worker::Bit2float_worker(int stream_nr_, bit_statistics_ptr statistics_)
-    : output_buffer_(new Output_queue()),
+  : output_buffer_(new Output_queue()),
     fft_size(-1),
     bits_per_sample(-1),
     sample_rate(-1),
     memory_pool_(32),
-    have_new_parameters(false), stream_nr(stream_nr_),
+    delay_table_set(true), have_new_parameters(false), stream_nr(stream_nr_),
     n_ffts_per_integration(0), current_fft(0), state(IDLE), statistics(statistics_)
     /**/
 {
@@ -74,7 +74,7 @@ Bit2float_worker::do_task() {
             // insert a sample into the stream
             memset(&out_frame.data[out_index], 0, sizeof(FLOAT));
             out_index++;
-	        } else {
+	  } else {
             // remove a sample from the stream
             SFXC_ASSERT(sample_in_byte == 0);
             sample_in_byte = 1;
@@ -243,8 +243,8 @@ set_new_parameters(const Correlation_parameters &parameters) {
     return;
   }
 
+  new_parameters.start_time = parameters.start_time;
   new_parameters.bits_per_sample = parameters.station_streams[stream_idx].bits_per_sample;
-
   new_parameters.sample_rate = parameters.station_streams[stream_idx].sample_rate;
   new_parameters.base_sample_rate = parameters.sample_rate;
   new_parameters.fft_size_delaycor = parameters.fft_size_delaycor;
@@ -293,6 +293,28 @@ set_parameters() {
   cur_delay = -1;
   allocate_element();
   invalid.resize(0);
+  if (bits_per_sample == 2) {
+    double delay_in_samples =
+      delay_table.delay(new_parameters.start_time) * sample_rate;
+    tsys_count = std::floor(delay_in_samples + 0.5);
+    // Calculate number of samples within the full cycle.
+    tsys_count %= (sample_rate / 80);
+    while (tsys_count < 0)
+      tsys_count += sample_rate / 80;
+    tsys_on = (tsys_count < (sample_rate / 160));
+    // Calculate number of samples within this falf-cycle.
+    tsys_count %= (sample_rate / 160);
+    // Calculate number of samples left for this half-cycle.
+    tsys_count = ((sample_rate / 160) - tsys_count);
+    // Convert to bytes.  
+    tsys_count /= 4;
+  }
+}
+
+void
+Bit2float_worker::set_delay_table(Delay_table_akima &table) {
+  delay_table_set = true;
+  delay_table.add_scans(table);
 }
 
 // Empty the input queue, called from the destructor of Input_node
@@ -321,7 +343,11 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples, uint64_t *re
     memcpy((char*)&output[iout],
            &lookup_table[(int)input_data[read % dsize]][start],
            samp_to_write * sizeof(FLOAT));
-    stats->inc_counter(input_data[read % dsize]);
+    stats->inc_counter(input_data[read % dsize], tsys_on);
+    if (--tsys_count == 0) {
+      tsys_count = (sample_rate / 160) / 4;
+      tsys_on = !tsys_on;
+    }
     nsamples -= samp_to_write;
     iout += samp_to_write;
     if (samp_to_write + start == 4)
@@ -338,7 +364,11 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples, uint64_t *re
         memcpy((char*)&output[iout],
                &lookup_table[(int)input_data[index]][0],
                4 * sizeof(FLOAT));
-        stats->inc_counter(input_data[index]);
+        stats->inc_counter(input_data[index], tsys_on);
+	if (--tsys_count == 0) {
+	  tsys_count = (sample_rate / 160) / 4;
+	  tsys_on = !tsys_on;
+	}
         iout += 4;
       }
       nbytes -= towrite;
@@ -360,7 +390,7 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples, uint64_t *re
     memcpy((char*)&output[iout],
            &lookup_table_1bit[(int)input_data[read % dsize]][start],
            samp_to_write * sizeof(FLOAT));
-    stats->inc_counter(input_data[read % dsize]);
+    stats->inc_counter(input_data[read % dsize], true);
     nsamples -= samp_to_write;
     iout += samp_to_write;
     if (samp_to_write+start == 8)
@@ -377,7 +407,7 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples, uint64_t *re
         memcpy((char*)&output[iout],
                &lookup_table_1bit[(int)input_data[index]][0],
                8 * sizeof(FLOAT));
-        stats->inc_counter(input_data[index]);
+        stats->inc_counter(input_data[index], true);
         iout += 8;
       }
       nbytes -= towrite;
