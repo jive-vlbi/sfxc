@@ -30,6 +30,7 @@ public:
   std::string date_string() const;
 
   static const Time max_time(); 
+  double diff(const Time &other) const;
   int64_t diff_samples(const Time &other) const; 
 
   void inc_samples(int64_t samples);

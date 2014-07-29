@@ -52,6 +52,10 @@ const Time Time::max_time(){
   return new_time;
 }
 
+double Time::diff(const Time &other) const {
+  return (nticks - other.nticks) / clock_rate;
+}
+
 int64_t Time::get_clock_ticks() const{
   return nticks;
 }
