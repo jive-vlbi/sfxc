@@ -216,8 +216,8 @@ int initialise_data(const char *vex_filename,
 
   Vex::Node root = vex.get_root_node();
 
-  std::string site_name =
-    root["STATION"][station_name]["SITE"]->to_string();
+  std::string site = root["STATION"][station_name]["SITE"]->to_string();
+  std::string site_name = root["SITE"][site]["site_name"]->to_string();
 
   strcpy(station_data.site_name, site_name.c_str());
   for (int i=site_name.size(); i<8; i++) {
@@ -228,7 +228,7 @@ int initialise_data(const char *vex_filename,
 
   int i = 0;
   Vex::Node::const_iterator position =
-    vex.get_root_node()["SITE"][site_name]["site_position"];
+    vex.get_root_node()["SITE"][site]["site_position"];
   for (Vex::Node::const_iterator site = position->begin();
        site != position->end(); ++site) {
     double pos;
@@ -239,11 +239,11 @@ int initialise_data(const char *vex_filename,
   }
 
   Vex::Node::const_iterator velocity =
-    vex.get_root_node()["SITE"][site_name]["site_velocity"];
+    vex.get_root_node()["SITE"][site]["site_velocity"];
   Vex::Node::const_iterator epoch =
-    vex.get_root_node()["SITE"][site_name]["site_position_epoch"];
-  if (velocity != vex.get_root_node()["SITE"][site_name]->end() &&
-      epoch == vex.get_root_node()["SITE"][site_name]->end()) {
+    vex.get_root_node()["SITE"][site]["site_position_epoch"];
+  if (velocity != vex.get_root_node()["SITE"][site]->end() &&
+      epoch == vex.get_root_node()["SITE"][site]->end()) {
     // Don't insist on having a site_position_epoch if the velocity vector is 0.
     if (velocity[0]->to_double() != 0.0 || velocity[1]->to_double() != 0.0 ||
 	velocity[2]->to_double() != 0.0) {
@@ -252,8 +252,8 @@ int initialise_data(const char *vex_filename,
     }
   }
 
-  if (velocity != vex.get_root_node()["SITE"][site_name]->end() &&
-      epoch != vex.get_root_node()["SITE"][site_name]->end()) {
+  if (velocity != vex.get_root_node()["SITE"][site]->end() &&
+      epoch != vex.get_root_node()["SITE"][site]->end()) {
     double epoch_mjd = epoch->to_double();
     if (epoch_mjd < 50000) {
       struct tm tm;
@@ -271,13 +271,13 @@ int initialise_data(const char *vex_filename,
     station_data.site_position[2] += velocity[2]->to_double_amount("m/yr") * years;
   }
 
-  if (vex.get_root_node()["ANTENNA"][site_name]["axis_type"][0]->to_string()=="az")
+  if (vex.get_root_node()["ANTENNA"][site]["axis_type"][0]->to_string()=="az")
     station_data.axis_type=3;
-  if (vex.get_root_node()["ANTENNA"][site_name]["axis_type"][0]->to_string()=="ha")
+  if (vex.get_root_node()["ANTENNA"][site]["axis_type"][0]->to_string()=="ha")
     station_data.axis_type=1;
 
   station_data.axis_offset =
-    vex.get_root_node()["ANTENNA"][site_name]["axis_offset"]->to_double_amount("m");
+    vex.get_root_node()["ANTENNA"][site]["axis_offset"]->to_double_amount("m");
 
 
   { // EOP information
@@ -285,11 +285,11 @@ int initialise_data(const char *vex_filename,
          eop != vex.get_root_node()["EOP"]->end(); ++eop) {
       station_data.tai_utc = eop["TAI-UTC"]->to_double();
       std::string eop_ref_epoch = eop["eop_ref_epoch"]->to_string();
-      int year = str_to_long(eop_ref_epoch,0,4);  //pos=0, length=4
-      int doy = str_to_long(eop_ref_epoch,5,3);
+      int year = 0, doy = 0, hour = 0, n;
+      n = sscanf(eop_ref_epoch.c_str(), "%dy%dd%dh", &year, &doy, &hour);
+      assert(n >= 2);
       int month, day;
       yd2md(year,doy,month,day);
-      double hour = str_to_long(eop_ref_epoch,9,2);
       station_data.eop_ref_epoch = JD(year,month,day) + (hour - 12) / 24; // Julian day
       station_data.num_eop_points = eop["num_eop_points"]->to_int();
       assert(station_data.num_eop_points<=10);
