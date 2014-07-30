@@ -24,6 +24,14 @@ class MultiDict(UserDict.DictMixin):
         return len(self._items)
 
     def __getitem__(self, key):
+        if hasattr(key, "__iter__"):
+            d = {}
+            for k in key:
+                for i in self[k]:
+                    d[i] = self[k][i]
+                    continue
+                continue
+            return d
         for pair in self._items:
             if pair[0] == key:
                 return pair[1]
