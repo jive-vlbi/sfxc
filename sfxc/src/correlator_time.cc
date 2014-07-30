@@ -17,11 +17,11 @@ Time::Time(double usec, double sample_rate_) : clock_rate(MAX_SAMPLE_RATE){
 }
 
 Time::Time(const std::string &time) : clock_rate(MAX_SAMPLE_RATE), sample_rate(1){
-  int year, day, hour, minute, second, n;
+  int year, day, hour = 0, minute = 0, second = 0, n;
   n = sscanf(time.c_str(), "%dy%dd%dh%dm%ds", &year, &day, &hour, &minute, &second);
-  if (n != 5)
-    throw std::invalid_argument("Invalid datetime string: "+ time);
-  int time_mjd = mjd(1, 1, year) + day -1;
+  if (n < 2)
+    throw std::invalid_argument("Invalid datetime string: " + time);
+  int time_mjd = mjd(1, 1, year) + day - 1;
   set_time(time_mjd, 60 * (60 * hour + minute) + second);
 }
 
