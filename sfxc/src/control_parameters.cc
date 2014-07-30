@@ -1432,11 +1432,15 @@ get_input_node_parameters(const std::string &mode_name,
 
 std::string
 Control_parameters::transport_type(const std::string &station) const {
-  std::string das =
-    get_vex().get_root_node()["STATION"][station]["DAS"]->to_string();
-  Vex::Node::const_iterator das_it = get_vex().get_root_node()["DAS"][das];
-
-  return das_it["record_transport_type"]->to_string();
+  const Vex::Node &root = vex.get_root_node();
+  Vex::Node::const_iterator station_block = root["STATION"][station];
+  for (Vex::Node::const_iterator das_it = station_block->begin("DAS");
+       das_it != station_block->end("DAS"); ++das_it) {
+    const std::string das = das_it->to_string();
+    if (root["DAS"][das]["record_transport_type"] != root["DAS"][das]->end())
+      return root["DAS"][das]["record_transport_type"]->to_string();
+  }
+  return std::string();
 }
 
 std::string
@@ -1460,11 +1464,15 @@ Control_parameters::data_format(const std::string &station) const {
 
 std::string
 Control_parameters::rack_type(const std::string &station) const {
-  std::string das =
-    get_vex().get_root_node()["STATION"][station]["DAS"]->to_string();
-  Vex::Node::const_iterator das_it = get_vex().get_root_node()["DAS"][das];
-
-  return das_it["electronics_rack_type"]->to_string();
+  const Vex::Node &root = vex.get_root_node();
+  Vex::Node::const_iterator station_block = root["STATION"][station];
+  for (Vex::Node::const_iterator das_it = station_block->begin("DAS");
+       das_it != station_block->end("DAS"); ++das_it) {
+    const std::string das = das_it->to_string();
+    if (root["DAS"][das]["electronics_rack_type"] != root["DAS"][das]->end())
+      return root["DAS"][das]["electronics_rack_type"]->to_string();
+  }
+  return std::string();
 }
 
 bool
