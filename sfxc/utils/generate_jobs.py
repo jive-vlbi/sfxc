@@ -95,7 +95,7 @@ for station in vex['STATION']:
 # Create a dictory in which we store if a station is Mark5A, Mark5B, VLBA or VDIF
 media_type = {}
 for station in vex['STATION']:
-  das = vex['STATION'][station]['DAS']
+  das = vex['STATION'][station].getall('DAS')
   record_transport_type = vex['DAS'][das]['record_transport_type'].lower()
   if record_transport_type == 'mark5a':
     electronics_rack_type = vex['DAS'][das]['electronics_rack_type'].lower()
@@ -110,7 +110,7 @@ for station in vex['STATION']:
     type = 'vdif'
   media_type[station] = type
 
-#Generate list of files for stations that are correlated from file
+# Generate list of files for stations that are correlated from file
 media_files = {}
 for item in options.from_files.split(','):
   if item != '':
@@ -210,7 +210,10 @@ for scan in vex['SCHED']:
     offsets = {}
     for transfer in vex['SCHED'][scan].getall('station'):
         station = transfer[0]
-        if transfer[3].split()[1].upper() != 'GB':
+        if transfer[3].split()[1] == 'ft':
+            offsets[station] = 0
+            continue
+        if transfer[3].split()[1] != 'GB':
             raise AssertionError, "Unknown unit " + transfer[3].split()[1]
         offset = int(round(float(transfer[3].split()[0]) * 1e9))
         offsets[station] = offset
@@ -236,9 +239,11 @@ for scan in vex['SCHED']:
         elif options.evlbi:
             data_source = "/tmp/mk5-" + station + "/" + station + "-eVLBI:0"
             data_sources[station] = ["mk5://" + data_source]
-        else:
+        elif station in vsn:
             data_source = vsn[station] + ":" + str(offsets[station])
             data_sources[station] = ["mk5://" + data_source]
+        else:
+            data_sources[station] = ["file://"]
 
     if new_job:
         # Clean the slate again.
