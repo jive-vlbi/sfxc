@@ -184,6 +184,11 @@ class AutoPlotWindow(Qt.QWidget):
                     stations.append(station)
                     pass
                 continue
+            try:
+                setup_station = json_input['setup_station']
+            except:
+                setup_station = stations[0]
+                pass
             output_file = urlparse.urlparse(json_input['output_file']).path
             try:
                 if json_input['multi_phase_center']:
@@ -221,11 +226,10 @@ class AutoPlotWindow(Qt.QWidget):
         # Create a sorted list of frequencies
         self.frequencies = []
         self.sample_rate = 1e12
-        station = stations[0]
         for scan in vex['SCHED']:
             mode = vex['SCHED'][scan]['mode']
             for freq in vex['MODE'][mode].getall('FREQ'):
-                if station in freq[1:]:
+                if setup_station in freq[1:]:
                     value = vex['FREQ'][freq[0]]['sample_rate'].split()
                     sample_rate = float(value[0])
                     if value[1] == 'Gs/sec':
