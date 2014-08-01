@@ -25,7 +25,7 @@ class MultiDict(UserDict.DictMixin):
 
     def __getitem__(self, key):
         if hasattr(key, "__iter__"):
-            d = {}
+            d = MultiDict()
             for k in key:
                 for i in self[k]:
                     d[i] = self[k][i]
