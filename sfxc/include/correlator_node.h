@@ -20,6 +20,7 @@
 #include "log_writer_mpi.h"
 #include "correlation_core.h"
 #include "correlation_core_pulsar.h"
+#include "coherent_dedispersion.h"
 #include "delay_correction.h"
 #include <tasklet/tasklet_manager.h>
 #include "timer.h"
@@ -61,7 +62,8 @@ public:
   typedef boost::shared_ptr<Correlator_node_data_reader_tasklet>
   Bit_sample_reader_ptr;
 
-  typedef boost::shared_ptr<Delay_correction>     Delay_correction_ptr;
+  typedef boost::shared_ptr<Delay_correction>      Delay_correction_ptr;
+  typedef boost::shared_ptr<Coherent_dedispersion> Coherent_dedispersion_ptr;
 
   bool has_requested;
 
@@ -71,6 +73,8 @@ public:
     STOPPED=0,
     // The node is correlating
     CORRELATING,
+    // Correlation is done
+    PURGE,
     END_CORRELATING
   };
 
@@ -89,9 +93,10 @@ public:
   /// Callback function for adding a data_writer:
   void hook_added_data_writer(size_t writer);
 
-  void add_delay_table(int sn, Delay_table_akima &table);
+  void set_delay_table(int sn, Delay_table_akima &table);
+  void set_uvw_table(int sn, Uvw_model &table);
 
-  void output_node_set_timeslice(int slice_nr, int slice_offset, int n_slices,
+  void output_node_set_timeslice(int slice_nr, int slice_offset,
                                  int stream_nr, int bytes, int nbins);
 
   void receive_parameters(const Correlation_parameters &parameters);
@@ -105,7 +110,7 @@ class Reader_thread : public Thread {
     std::vector< Bit_sample_reader_ptr >        bit_sample_readers_;
 
     struct job {
-      int number_ffts_in_integration;
+//      int number_ffts_in_integration;
       std::vector<int> bits_per_sample;
       std::vector<int> stream_list;
       int station_streams_size;
@@ -208,11 +213,7 @@ class Reader_thread : public Thread {
     /// This function add a new timeslice to read...
     void add_time_slice_to_read(const Correlation_parameters& parameters) {
       struct job jb;
-      jb.number_ffts_in_integration =
-        Control_parameters::nr_ffts_per_integration_slice
-        (parameters.integration_time,
-         parameters.sample_rate,
-         parameters.fft_size_delaycor);
+//      jb.number_ffts_in_integration = parameters.slice_size / parameters.fft_size_delaycor;
       // First create a list of input streams
       jb.stream_list.resize(bit_sample_readers_.size());
       jb.station_streams_size = parameters.station_streams.size();
@@ -237,9 +238,11 @@ private:
   /// Main "usefull" function in which the real correlation computation is
   /// done.
   void correlate();
+  void purge(); // Clear all inter-thread queues
   void main_loop();
 
   bool pulsar_binning; // Set to true if pulsar binning is enabled
+  bool coherent_dedispersion; //Set to true if coherent dedispersion is enabled
   bool phased_array; // Set to true if in phased array mode
   Correlator_node_controller       correlator_node_ctrl;
 
@@ -255,14 +258,17 @@ private:
   int nr_corr_node;
   /// Number of input streams
   int n_streams;
+  /// Before starting a new scan the delay table for that scan is send
+  bool new_delay_tables;
+  std::vector<Delay_table_akima>          delay_tables;
+  std::vector<Uvw_model>                  uvw_tables;
 
-  std::vector< Delay_correction_ptr >         delay_modules;
-  Correlation_core                            *correlation_core, *correlation_core_normal;
-  Correlation_core_pulsar                     *correlation_core_pulsar;
+  std::vector<Delay_correction_ptr>       delay_modules;
+  std::vector<Coherent_dedispersion_ptr>  dedispersion_modules;
+  Correlation_core *correlation_core, *correlation_core_normal;
+  Correlation_core_pulsar *correlation_core_pulsar;
 
-  int n_integration_slice_in_time_slice;
-
-  std::queue<Correlation_parameters>          integration_slices_queue;
+  std::queue<Correlation_parameters> integration_slices_queue;
 
   Timer bit_sample_reader_timer_, bits_to_float_timer_, delay_timer_, correlation_timer_;
 

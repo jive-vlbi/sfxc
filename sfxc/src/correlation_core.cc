@@ -24,10 +24,10 @@ void Correlation_core::do_task() {
     PROGRESS_MSG("node " << node_nr_ << ", "
                  << current_fft << " of " << number_ffts_in_integration);
   }
-
-  if (current_fft%number_ffts_in_integration == 0) {
+  if (current_fft == 0) {
     integration_initialise();
   }
+  SFXC_ASSERT(current_fft < number_ffts_in_integration);
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
     int j = streams_in_scan[i];
     input_elements[i] = &input_buffers[j]->front()->data[0];
@@ -36,7 +36,8 @@ void Correlation_core::do_task() {
   }
   const int first_stream = streams_in_scan[0];
   const int stride = input_buffers[first_stream]->front()->stride;
-  const int nbuffer = input_buffers[first_stream]->front()->data.size() / stride;
+  const int nbuffer = std::min((size_t)number_ffts_in_integration - current_fft,
+                              input_buffers[first_stream]->front()->data.size() / stride);
   // Process the data of the current fft buffer
   integration_step(accumulation_buffers, nbuffer, stride);
   current_fft += nbuffer;
@@ -44,12 +45,15 @@ void Correlation_core::do_task() {
     int stream = streams_in_scan[i];
     input_buffers[stream]->pop();
   }
+  if(RANK_OF_NODE ==-10) std::cerr << "fft = " << current_fft 
+                                   << " / " << number_ffts_in_integration
+                                   << "\n";
  
   if (current_fft == number_ffts_in_integration) {
     PROGRESS_MSG("node " << node_nr_ << ", "
                  << current_fft << " of " << number_ffts_in_integration);
 
-    Time tmid = correlation_parameters.start_time + 
+    Time tmid = correlation_parameters.integration_start + 
                 correlation_parameters.integration_time/2;
     sub_integration();
     find_invalid();
@@ -57,10 +61,8 @@ void Correlation_core::do_task() {
       integration_normalize(phase_centers[i]);
       int source_nr;
       if(split_output){
-        delay_tables[0].goto_scan(correlation_parameters.start_time);
         source_nr = sources[delay_tables[0].get_source(i)];
-      }
-      else if(correlation_parameters.pulsar_binning){
+      }else if(correlation_parameters.pulsar_binning){
         source_nr = 1; // Source 0 is reserved for of-pulse data
       }else{
         source_nr = 0;
@@ -86,20 +88,20 @@ bool Correlation_core::finished() {
   return current_fft == number_ffts_in_integration;
 }
 
-void Correlation_core::connect_to(size_t stream, std::vector<Invalid> *invalid_) {
+void Correlation_core::connect_to(size_t stream, bit_statistics_ptr statistics_, std::vector<Invalid> *invalid_) {
   if (stream >= invalid_elements.size()) {
     invalid_elements.resize(stream+1);
-  }
-  invalid_elements[stream] = invalid_;
-}
-
-void Correlation_core::connect_to(size_t stream, bit_statistics_ptr statistics_, Input_buffer_ptr buffer) {
-  if (stream >= input_buffers.size()) {
-    input_buffers.resize(stream+1);
     statistics.resize(stream+1);
   }
-  input_buffers[stream] = buffer;
+  invalid_elements[stream] = invalid_;
   statistics[stream] = statistics_;
+}
+
+void Correlation_core::connect_to(size_t stream, Input_buffer_ptr buffer) {
+  if (stream >= input_buffers.size()) {
+    input_buffers.resize(stream+1);
+  }
+  input_buffers[stream] = buffer;
 }
 
 void
@@ -152,17 +154,14 @@ Correlation_core::get_input_streams(){
 void
 Correlation_core::create_baselines(const Correlation_parameters &parameters){
   number_ffts_in_integration =
-    Control_parameters::nr_ffts_per_integration_slice(
-      (int) parameters.integration_time.get_time_usec(),
+    Control_parameters::nr_ffts_to_output_node(
+      parameters.integration_time,
       parameters.sample_rate,
-      parameters.fft_size_correlation); 
-  // One less because of the overlapping windows
-  if(parameters.window != SFXC_WINDOW_NONE)
-    number_ffts_in_integration -= 1;
+      parameters.fft_size_correlation);
 
   number_ffts_in_sub_integration =
-    Control_parameters::nr_ffts_per_integration_slice(
-      (int) parameters.sub_integration_time.get_time_usec(),
+    Control_parameters::nr_ffts_to_output_node(
+      parameters.sub_integration_time,
       parameters.sample_rate,
       parameters.fft_size_correlation);
   baselines.clear();
@@ -431,7 +430,7 @@ void Correlation_core::integration_write_headers(int phase_center, int sourcenr)
    // write the uvw coordinates
     Output_uvw_coordinates uvw[htimeslice.number_uvw_coordinates];
     // We evaluate in the middle of time slice
-    Time time = correlation_parameters.start_time + correlation_parameters.integration_time / 2;
+    Time time = correlation_parameters.integration_start + correlation_parameters.integration_time / 2;
     for (size_t i=0; i < nstations; i++){
       double u,v,w;
       int stream = streams_in_scan[i];
@@ -569,7 +568,7 @@ Correlation_core::sub_integration(){
   const int current_sub_int = (int) round((double)current_fft / number_ffts_in_sub_integration);
   Time tfft(0., correlation_parameters.sample_rate); 
   tfft.inc_samples(fft_size());
-  const Time tmid = correlation_parameters.start_time + tfft*(previous_fft+(current_fft-previous_fft)/2.); 
+  const Time tmid = correlation_parameters.integration_start + tfft*(previous_fft+(current_fft-previous_fft)/2.); 
 
   // Start with the auto correlations
   const int n_fft = fft_size() + 1;
@@ -640,18 +639,18 @@ Correlation_core::uvshift(const Complex_buffer &input_buffer, Complex_buffer &ou
   }
 }
 
-void Correlation_core::add_uvw_table(int sn, Uvw_model &table) {
+void Correlation_core::set_uvw_table(int sn, Uvw_model &table) {
   if (sn>=uvw_tables.size())
     uvw_tables.resize(sn+1);
 
   uvw_tables[sn].add_scans(table);
 }
 
-void Correlation_core::add_delay_table(int sn, Delay_table_akima &table) {
+void Correlation_core::set_delay_table(int sn, Delay_table_akima &table) {
   if (sn>=delay_tables.size())
     delay_tables.resize(sn+1);
 
-  delay_tables[sn].add_scans(table);
+  delay_tables[sn] = table;
 }
 
 void Correlation_core::add_source_list(const std::map<std::string, int> &sources_){

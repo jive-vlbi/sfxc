@@ -33,7 +33,6 @@
 #endif // PRINT_TIMER
 
 #define INVALID_TIME              -1
-#define MAX_SAMPLE_RATE  (256000000)
 /// Constants
 // Some constants define the headers in the input -> correlator_node steam
 #define HEADER_DATA       0
@@ -169,8 +168,7 @@ void sfxc_abort(const char *msg="");
   #define SFXC_SUB_FC             sfxc_sub_c
   #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_c 
   #define SFXC_MUL_F              sfxc_mul
-  #define SFXC_MULC               sfxc_mul_c
-  #define SFXC_MULC_I             sfxc_mulc_I
+  #define SFXC_MUL_FC             sfxc_mul_c
 #else // !USE_DOUBLE
   #define FLOAT                   float
   #define SFXC_ZERO_F             sfxc_zero_f
@@ -183,8 +181,7 @@ void sfxc_abort(const char *msg="");
   #define SFXC_SUB_FC             sfxc_sub_fc
   #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_fc 
   #define SFXC_MUL_F              sfxc_mul_f
-  #define SFXC_MULC               sfxc_mul_fc
-  #define SFXC_MULC_I             sfxc_mulc_f_I
+  #define SFXC_MUL_FC             sfxc_mul_fc
 #endif
 
 // Supported window functions

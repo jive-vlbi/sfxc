@@ -34,7 +34,8 @@ Multiple_data_writers_controller(Node &node, int max_connections)
 }
 
 Multiple_data_writers_controller::
-~Multiple_data_writers_controller() {}
+~Multiple_data_writers_controller() {
+}
 
 void
 Multiple_data_writers_controller::

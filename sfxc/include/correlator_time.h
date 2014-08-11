@@ -4,10 +4,10 @@
 #include <stdint.h>
 #include <math.h>
 #include <iostream>
-#include "utils.h"
 
 #define REFERENCE_MJD (51544)
 #define SECONDS_PER_DAY (86400)
+#define MAX_SAMPLE_RATE  (256000000)
 
 class Time{
 public:
@@ -15,6 +15,13 @@ public:
   Time(int mjd, double sec, double sample_rate_ = MAX_SAMPLE_RATE);
   Time(double usec, double sample_rate_ = MAX_SAMPLE_RATE);
   Time(const std::string &time);
+  static int mjd(int day, int month, int year){
+    int a = (14-month)/12;
+    int y = year + 4800 - a;
+    int m = month + 12*a - 3;
+    int jdn = day + ((153*m+2)/5) + 365*y + (y/4) - (y/100) + (y/400) - 32045;
+    return jdn - 2400000.5;
+  }
 
   void set_sample_rate(double sample_rate_);
   int64_t get_clock_ticks() const;

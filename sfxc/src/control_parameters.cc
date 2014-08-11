@@ -15,12 +15,12 @@
 
 
 Control_parameters::Control_parameters()
-    : initialised(false) {}
+    : initialised(false),pulsar_parameters(std::cout) {}
 
 Control_parameters::Control_parameters(const char *ctrl_file,
                                        const char *vex_file,
                                        std::ostream& log_writer)
-    : initialised(false) {
+    : initialised(false), pulsar_parameters(log_writer){
   if(!initialise(ctrl_file, vex_file, log_writer))
     sfxc_abort();
 }
@@ -166,6 +166,8 @@ initialise(const char *ctrl_file, const char *vex_file,
       ctrl["window_function"] = "NONE";
     else
       ctrl["window_function"] = "HANN";
+    // FIXME : Remove
+    ctrl["window_function"] = "NONE";
   }
   // Set the fft sizes
   if (ctrl["fft_size_correlation"] == Json::Value()){
@@ -207,13 +209,22 @@ initialise(const char *ctrl_file, const char *vex_file,
     char *now;
     time_t t;
     struct tm tm;
-    ::time(&t);
-    ::gmtime_r(&t, &tm);
-    ::asprintf(&now, "%dy%dd%dh%dm%ds", tm.tm_year + 1900, tm.tm_yday + 1,
-	       tm.tm_hour, tm.tm_min, tm.tm_sec);
+    time(&t);
+    gmtime_r(&t, &tm);
+    int a = asprintf(&now, "%dy%dd%dh%dm%ds", tm.tm_year + 1900, tm.tm_yday + 1,
+	              tm.tm_hour, tm.tm_min, tm.tm_sec);
     ctrl["start"] = now;
   }
 
+  // Read pulsar parameters
+  bool result = read_pulsar_parameters();
+  if (ctrl["pulsar_binning"].asBool() && (pulsar_parameters.pulsars.size() == 0)){
+    log_writer << "Error : No pulsar parameters specified in pulsar binning mode" << std::endl;
+    return false;
+  }else if (!result){
+    log_writer << "Error parsing pulsar parameters" << std::endl;
+    return false;
+  }
   // Get start date
   start_time = Time(vex.get_start_time_of_experiment());
   initialised = true;
@@ -421,7 +432,8 @@ Control_parameters::check(std::ostream &writer) const {
     }
   }
   // If phased array mode is activated, check for calibration tables
-  if (ctrl["phased_array"].asBool()){
+  // FIXME restore check!
+  /*if (ctrl["phased_array"].asBool()){
     if(ctrl["cl_table"] == Json::Value()){
       writer << "Phased array mode requires \"cl_table\" to be specified" << std::endl;
       ok = false;
@@ -430,7 +442,7 @@ Control_parameters::check(std::ostream &writer) const {
       writer << "Phased array mode requires \"bp_table\" to be specified" << std::endl;
       ok = false;
     }
-  }
+  }*/
   
   // Check pulsar binning
   if (ctrl["pulsar_binning"].asBool()){
@@ -570,6 +582,19 @@ Control_parameters::fft_size_delaycor() const {
   return ctrl["fft_size_delaycor"].asInt();
 }
 
+double
+Control_parameters::dispersive_delay(double freq_low, double freq_high, double DM) const{
+  // Compute the dispersive delay in microseconds for a given channel
+  // The frequencies are in MHz.
+  return 4149377593.3609958 * DM * (1. / (freq_low*freq_low) - 1. / (freq_high*freq_high));
+}
+
+int
+Control_parameters::fft_size_dedispersion(const std::string &scan_name) const {
+  get_dedispersion_parameters(scan_name);
+  return dedispersion_parameters.fft_size_dedispersion;
+}
+
 int
 Control_parameters::fft_size_correlation() const {
   return ctrl["fft_size_correlation"].asInt();
@@ -683,24 +708,35 @@ bool Control_parameters::multi_phase_center() const{
 }
 
 bool
-Control_parameters::get_pulsar_parameters(Pulsar_parameters &pars) const{
-  if(!pulsar_binning())
-    return false;
-  for(Json::Value::const_iterator it = ctrl["pulsars"].begin();
+Control_parameters::read_pulsar_parameters(){
+  if (ctrl["pulsars"] == Json::Value()){
+    std::cout << "No pulsars found \n";
+    return true;
+  }
+  for(Json::Value::iterator it = ctrl["pulsars"].begin();
       it!=ctrl["pulsars"].end(); it++){
     std::string name= it.key().asString();
+    std::cout << "Found pulsar " << name << "\n";
     Pulsar_parameters::Pulsar newPulsar;
     if(name.size() > 10)
       name.resize(10);
     strcpy(&newPulsar.name[0], name.c_str());
     newPulsar.nbins = (*it)["nbins"].asInt();
+    // If coherent dedispersion is not requested, default to incoherent dedispersion
+    if ((*it)["coherent_dedispersion"] == Json::Value())
+      newPulsar.coherent_dedispersion = false;
+    else
+      newPulsar.coherent_dedispersion = (*it)["coherent_dedispersion"].asBool();
     unsigned int zero=0, one=1; //needed to prevent compiler error
     newPulsar.interval.start = (*it)["interval"][zero].asDouble();
     newPulsar.interval.stop  = (*it)["interval"][one].asDouble();
-    if(!pars.parse_polyco(newPulsar.polyco_params,(*it)["polyco_file"].asString().substr(7)))
+    if(!pulsar_parameters.parse_polyco(newPulsar.polyco_params,(*it)["polyco_file"].asString().substr(7))){
+      std::cout << "BAD POLY!!!!\n";
       return false;
-    pars.pulsars.insert(std::pair<std::string,Pulsar_parameters::Pulsar>(name,newPulsar));
+    }
+    pulsar_parameters.pulsars.insert(std::pair<std::string,Pulsar_parameters::Pulsar>(name,newPulsar));
   }
+  std::cout << "SUC6\n";
   return true;
 }
 
@@ -1365,17 +1401,17 @@ get_mark5b_standard_mapping(const std::string &mode,
 
 Input_node_parameters
 Control_parameters::
-get_input_node_parameters(const std::string &mode_name,
+get_input_node_parameters(const std::string &scan_name,
                           const std::string &station_name) const {
   Input_node_parameters result;
   result.track_bit_rate = -1;
   result.frame_size = -1;
-  result.fft_size = std::max(fft_size_delaycor(), fft_size_correlation());
   result.integr_time = integration_time();
   result.offset = reader_offset(station_name);
   result.phasecal_integr_time = phasecal_integration_time();
 
   const Vex::Node &root = vex.get_root_node();
+  const std::string &mode_name = vex.get_mode(scan_name);
   Vex::Node::const_iterator mode = root["MODE"][mode_name];
   if (mode == root["MODE"]->end()) {
     std::cerr << "Cannot find mode " << mode_name << std::endl;
@@ -1414,12 +1450,7 @@ get_input_node_parameters(const std::string &mode_name,
     sfxc_abort();
   }
 
-  // Scale FFT size based on the sample rate.  This is important for
-  // "mixed bandwidth" correlation where we need to make sure that we
-  // send enough data to the correlator nodes.
-  result.fft_size *= sample_rate(mode_name, station_name) / sample_rate(mode_name, setup_station());
   result.track_bit_rate =  (int)sample_rate(mode_name, station_name);
-
   if (data_format(station_name) == "VDIF") {
     get_vdif_tracks(mode_name, station_name, result);
   } else if (data_format(station_name) == "Mark4" ||
@@ -1430,11 +1461,110 @@ get_input_node_parameters(const std::string &mode_name,
     get_mark5b_tracks(mode_name, station_name, result);
   }
 
+  // Set Channel offsets and dispersive delays 
+  get_dedispersion_parameters(scan_name);
+  const int sample_rate_ = sample_rate(mode_name, setup_station());
+  const int nchannel = number_frequency_channels();
+  for(size_t ch = 0; ch < nchannel; ch++)
+    result.channels[ch].channel_offset = dedispersion_parameters.channel_offset[ch];
+  result.buffer_time =  dedispersion_parameters.fft_size_dedispersion / 
+                        (2*sample_rate_ / 1000000.);
+
+  // Set slice size
+  result.slice_size = nr_samples_per_slice(integration_time(), 
+                                           sample_rate_, 
+                                           fft_size_dedispersion(scan_name),
+                                           fft_size_correlation());
+  // Scale the slice size based on the sample rate.  This is important for
+  // "mixed bandwidth" correlation where we need to make sure that we
+  // send enough data to the correlator nodes.
+  std::cerr << "int = "<<integration_time() 
+            << ", buf="<<result.buffer_time.get_time_usec() 
+            << ", cor = " << fft_size_correlation() 
+            << "disp = " << fft_size_dedispersion(scan_name) 
+            << ", mode =" << mode_name << "\n";
+  result.slice_size *=  sample_rate(mode_name, station_name) / sample_rate_; 
+  std::cerr << "ctrl: slice_size ="<< result.slice_size 
+            << ", rate =" << sample_rate_ 
+            << ", srate = " << sample_rate(mode_name, station_name) << "\n";
+  
   SFXC_ASSERT(!result.channels[0].tracks.empty());
   result.track_bit_rate /= result.channels[0].tracks.size() / result.channels[0].bits_per_sample;
   return result;
 }
 
+void
+Control_parameters::get_dedispersion_parameters(const std::string &scan) const{
+  // Only update dedispersion parameters when we move to a new scan
+  if(scan == dedispersion_parameters.scan)
+    return;
+
+  int fft_size = ctrl["fft_size_correlation"].asInt();
+
+  const Vex::Node &root = vex.get_root_node();
+  const std::string &mode_name = vex.get_mode(scan);
+  const int nchannel = number_frequency_channels();
+  
+  // Initialize all parameters
+  dedispersion_parameters.scan = scan;
+  dedispersion_parameters.channel_offset.resize(nchannel);
+  for(int i=0;i<nchannel;i++)
+    dedispersion_parameters.channel_offset[i] = 0.;
+
+  // check for coherent dedispersion
+  if(pulsar_binning() || phased_array()){
+    std::string source = scan_source(scan);
+    // See if current source is a pulsar and if coherent dedispersion is requested
+    std::map<std::string, Pulsar_parameters::Pulsar>::const_iterator it = 
+                                       pulsar_parameters.pulsars.find(source);
+    if((it != pulsar_parameters.pulsars.end()) && 
+      (it->second.coherent_dedispersion)){
+      // Coherent dedisperion is requested, start by computing the mid point
+      // of the lowest channel. All other channels will be aligned to this frequency
+      std::string ref = setup_station();
+      struct Channel{ double freq, bw; int sb;};
+      Channel channels[nchannel];
+      int max_ch = 0;
+      for(size_t ch = 0; ch < nchannel; ch++){
+        channels[ch].freq = channel_freq(mode_name, ref, channel(ch)) / 1000000.;
+        channels[ch].bw = bandwidth(mode_name, ref, channel(ch)) / 1000000.;
+        channels[ch].sb  = sideband(channel(ch), ref, mode_name) == 'L' ? -1 : 1;
+        double freq = channels[ch].freq + channels[ch].sb*channels[ch].bw/2;
+        double max_freq = channels[max_ch].freq + channels[max_ch].sb*channels[max_ch].bw/2;
+        if(freq > max_freq)
+          max_ch = ch;
+      }
+      // Compute the dispersion for each channel
+      const double sample_rate_ = sample_rate(mode_name, ref) / 1000000.;
+      const double DM = it->second.polyco_params[0].DM;
+      const double max_freq = channels[max_ch].freq + channels[max_ch].sb*channels[max_ch].bw/2; 
+      double max_dt = 0;
+      for(size_t ch = 0; ch < nchannel; ch++){
+        double base_freq = channels[ch].freq;
+        int sb  = channels[ch].sb;
+        double bw = channels[ch].bw;
+        double band_edge = base_freq + sb * bw;
+        double dt = sb * dispersive_delay(base_freq, band_edge, DM);
+        double offset = dispersive_delay(base_freq + sb*bw/2, max_freq, DM);
+        max_dt = std::max(dt, max_dt);
+        // FIXME Due to bug/limitation in Input_node_data_writer the offset has to be an integer microsecond
+        dedispersion_parameters.channel_offset[ch] = round(offset);
+        std::cout.precision(16);
+        std::cout << "CH "<<ch << ", dt = " << dt << ", offset = "
+                  << offset << ", dm = " << DM  << ", base " << base_freq 
+                  << ", edge = " << band_edge << ", mid="<< base_freq + sb*bw/2 << ", bw = " << sb*bw 
+                  << ", max = " << max_freq << "\n";
+      }
+      int cur_fft_size=1;
+      while (cur_fft_size < max_dt * sample_rate_)
+         cur_fft_size <<= 1;
+      // NB: fft_size is misnamed, it contains the number of spectral channels
+      fft_size = std::max(cur_fft_size, fft_size);
+    }
+  }
+  dedispersion_parameters.fft_size_dedispersion = fft_size;
+}
+ 
 std::string
 Control_parameters::transport_type(const std::string &station) const {
   std::string das =
@@ -1735,6 +1865,7 @@ Control_parameters::station_number(const std::string &station_name) const
 Correlation_parameters
 Control_parameters::
 get_correlation_parameters(const std::string &scan_name,
+                           const Time start_time,
 			   size_t channel_nr,
                            const std::map<std::string, int> &correlator_node_station_to_input) const {
   std::set<std::string> freq_set;
@@ -1757,10 +1888,8 @@ get_correlation_parameters(const std::string &scan_name,
   std::cout << "CH " << channel_nr << " : " << channel_name << "\n";
 
   Correlation_parameters corr_param;
-  corr_param.start_time = vex.start_of_scan(scan_name).to_miliseconds() * 1000;
-  corr_param.stop_time = vex.stop_of_scan(scan_name).to_miliseconds() * 1000;
   corr_param.integration_time = integration_time();
-  corr_param.sub_integration_time = sub_integration_time(); 
+  corr_param.sub_integration_time = sub_integration_time();
   corr_param.number_channels = number_channels();
   corr_param.fft_size_delaycor = fft_size_delaycor();
   corr_param.fft_size_correlation = fft_size_correlation();
@@ -1856,6 +1985,31 @@ get_correlation_parameters(const std::string &scan_name,
     SFXC_ASSERT(corr_param.reference_station != -1);
   }
 
+  // Get source information
+  strncpy(corr_param.source, scan_source(scan_name).c_str(), 11);
+
+  // Compute stream start / stop
+  get_dedispersion_parameters(scan_name);
+  corr_param.channel_offset = dedispersion_parameters.channel_offset[channel_nr];
+  Time integer_offset = round(corr_param.channel_offset * corr_param.sample_rate/1000000) /
+                        (corr_param.sample_rate/1000000);
+/*  std::cout.precision(16);
+  std::cout << channel_nr << " : channel_offset = " << dedispersion_parameters.channel_offset[channel_nr]
+            << ", integer_offset = " << integer_offset.get_time_usec() 
+            << ", fft_early = " << dedispersion_parameters.fft_size_dedispersion / (corr_param.sample_rate/1000000.)
+            << "\n";*/
+  corr_param.integration_start = start_time + integer_offset;
+  // The stream starts half a frame early
+  corr_param.stream_start = corr_param.integration_start - 
+                            Time(dedispersion_parameters.fft_size_dedispersion /
+                                 (2*corr_param.sample_rate/1000000.));
+                                             
+  corr_param.fft_size_dedispersion = fft_size_dedispersion(scan_name); 
+  corr_param.slice_size = nr_samples_per_slice(integration_time(), 
+                                            corr_param.sample_rate,
+                                            corr_param.fft_size_dedispersion,
+                                            fft_size_correlation());
+
   for (Vex::Node::const_iterator station = scan->begin("station");
        station != scan->end("station"); ++station) {
     const std::string &channel_name =
@@ -1881,6 +2035,10 @@ get_correlation_parameters(const std::string &scan_name,
     }
   }
 
+/*  std::cout << corr_param.fft_size_delaycor
+            <<","<<corr_param.fft_size_dedispersion
+            <<","<<corr_param.fft_size_correlation
+            << ", " << corr_param.slice_size << "\n";*/
   return corr_param;
 }
 
@@ -2036,9 +2194,9 @@ operator==(const Input_node_parameters::Channel_parameters &other) const {
 
 bool
 Correlation_parameters::operator==(const Correlation_parameters& other) const {
-  if (start_time != other.start_time)
+  if (stream_start != other.stream_start)
     return false;
-  if (stop_time != other.stop_time)
+  if (slice_size != other.slice_size)
     return false;
   if (integration_time != other.integration_time)
     return false;
@@ -2075,8 +2233,8 @@ Correlation_parameters::operator==(const Correlation_parameters& other) const {
 std::ostream &operator<<(std::ostream &out,
                          const Correlation_parameters &param) {
   out << "{ ";
-  out << "\"start_time\": " << param.start_time << ", " << std::endl;
-  out << "  \"stop_time\": " << param.stop_time << ", " << std::endl;
+  out << "\"stream_start\": " << param.stream_start << ", " << std::endl;
+  out << "  \"slice_size\": " << param.slice_size << ", " << std::endl;
   out << "  \"integr_time\": " << param.integration_time << ", " << std::endl;
   out << "  \"number_channels\": " << param.number_channels << ", " << std::endl;
   out << "  \"fft_size_delaycor\": " << param.fft_size_delaycor << ", " << std::endl;

@@ -21,7 +21,7 @@ Abstract_manager_node::
 Abstract_manager_node(int rank, int numtasks,
                       Log_writer *writer,
                       const Control_parameters &param)
-    : Node(rank, writer), control_parameters(param), numtasks(numtasks), pulsar_parameters(*writer) {
+    : Node(rank, writer), control_parameters(param), numtasks(numtasks) {
   integration_time_ = Time(param.integration_time());
   }
 
@@ -333,11 +333,11 @@ void
 Abstract_manager_node::
 input_node_set_time_slice(const std::string &station,
                           int32_t channel, int32_t stream_nr,
-                          Time start_time, Time stop_time) {
+                          Time start_time, Time integration_time) {
   int64_t message[] = {channel,
                        stream_nr,
                        start_time.get_clock_ticks(),
-                       stop_time.get_clock_ticks()};
+                       integration_time.get_clock_ticks()};
   MPI_Send(&message, 4, MPI_INT64,
            input_rank(station),
            MPI_TAG_INPUT_NODE_ADD_TIME_SLICE, MPI_COMM_WORLD);

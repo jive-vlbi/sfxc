@@ -21,7 +21,7 @@
 
 // Forward declaration
 class Node;
-
+extern int RANK_OF_NODE; // REMOVE ME
 /** A controller manages one component of a node, for example the input,
  * correlation or output. The controller processes MPI events and adjusts the
  * status of the node accordingly.

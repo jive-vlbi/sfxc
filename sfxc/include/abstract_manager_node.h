@@ -87,10 +87,10 @@ public:
   void input_node_set_time(const std::string &station,
                            Time start_time, Time stop_time);
 
-  // Send a new time slice, start and stop time are in milliseconds
+  // Send a new time slice
   void input_node_set_time_slice(const std::string &station, int32_t channel,
                                  int32_t stream_nr,
-                                 Time start_time, Time stop_time);
+                                 Time start_time, Time integration_time);
 
 
   void output_node_set_global_header(char* header_msg, int size);
@@ -138,7 +138,6 @@ protected:
 
   // Data
   Control_parameters control_parameters;
-  Pulsar_parameters pulsar_parameters;
   int numtasks;
 
   // Map from a station name to the Input_node number

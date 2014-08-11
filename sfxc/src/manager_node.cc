@@ -320,15 +320,11 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   correlation_parameters =
     control_parameters.
     get_correlation_parameters(scan_name,
+                               start_time + integration_time() * integration_slice_nr,
                                current_channel,
                                get_input_node_map());
-  correlation_parameters.start_time =
-    start_time + integration_time() * integration_slice_nr;
-  correlation_parameters.stop_time  =
-    start_time + integration_time() * (integration_slice_nr+1);
   correlation_parameters.integration_nr = integration_slice_nr;
   correlation_parameters.slice_nr = output_slice_nr;
-  strncpy(correlation_parameters.source, control_parameters.scan_source(scan_name).c_str(), 11);
   correlation_parameters.pulsar_binning = control_parameters.pulsar_binning();
   if (control_parameters.multi_phase_center())
     correlation_parameters.n_phase_centers = n_sources_in_current_scan;
@@ -360,16 +356,16 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
       input_node_set_time_slice(control_parameters.station(station_nr),
                                 ch_number_in_scan[current_channel][station_nr],
                                 /*stream*/corr_node_nr,
-                                correlation_parameters.start_time,
-                                correlation_parameters.stop_time);
+                                correlation_parameters.integration_start,
+                                correlation_parameters.integration_time);
 
       if (cross_channel != -1) {
         // Add the cross polarisation channel
         input_node_set_time_slice(control_parameters.station(station_nr),
                                   ch_number_in_scan[cross_channel][station_nr],
                                   /*stream*/corr_node_nr+n_corr_nodes,
-                                  correlation_parameters.start_time,
-                                  correlation_parameters.stop_time);
+                                  correlation_parameters.integration_start,
+                                  correlation_parameters.integration_time);
       }
     }
   }
@@ -386,7 +382,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
       current_channel ++;
       cross_channel =
         control_parameters.cross_channel(current_channel,
-                                         control_parameters.get_mode(correlation_parameters.start_time));
+                                         control_parameters.get_mode(correlation_parameters.integration_start));
     }
   }
 #ifdef SFXC_DETERMINISTIC
@@ -419,8 +415,7 @@ Manager_node::initialise() {
 
   if(control_parameters.pulsar_binning()){
     // If pulsar binning is enabled : get all pulsar parameters (polyco files, etc.)
-    if (!control_parameters.get_pulsar_parameters(pulsar_parameters))
-      sfxc_abort("Error parsing pulsar information from control file\n");
+    Pulsar_parameters &pulsar_parameters = control_parameters.get_pulsar_parameters();
     correlator_node_set_all(pulsar_parameters);
     // Set the output files (minimum of two bins for off-pulse data)
     int max_nbins=2;
@@ -470,6 +465,12 @@ Manager_node::initialise() {
     }
   }else
     set_data_writer(RANK_OUTPUT_NODE, 0, control_parameters.get_output_file());
+
+  if(control_parameters.phased_array()){ 
+    Pulsar_parameters &pulsar_parameters = control_parameters.get_pulsar_parameters();
+    correlator_node_set_all(pulsar_parameters);
+  }
+
 
   {
     std::string filename = control_parameters.get_phasecal_file();
@@ -525,7 +526,7 @@ void Manager_node::initialise_scan(const std::string &scan) {
   stop_time_scan -= (stop_time_scan-start_time)%integration_time();
   SFXC_ASSERT(((stop_time_scan-start_time)%integration_time()) == Time());
 
-  // Send the delay tables:
+  // Send the delay tables: 
   get_log_writer() << "Set delay_table" << std::endl;
   for (size_t station = 0;
        station < control_parameters.number_stations();
@@ -534,9 +535,12 @@ void Manager_node::initialise_scan(const std::string &scan) {
     if(!control_parameters.station_in_scan(scan, station_name))
       continue;
     Delay_table_akima delay_table;
+    // also generates delay file if it doesn't exist
     const std::string &delay_file =
-      control_parameters.get_delay_table_name(station_name); // also generates delay file if it doesn't exist
-    delay_table.open(delay_file.c_str(), scan_start, stop_time_scan);
+      control_parameters.get_delay_table_name(station_name);
+    Time one_sec = 1000000.; 
+    delay_table.open(delay_file.c_str(), scan_start-one_sec,
+                     stop_time_scan+one_sec);
     SFXC_ASSERT(delay_table.initialised());
 
     // Get clock offset
@@ -611,20 +615,21 @@ void Manager_node::initialise_scan(const std::string &scan) {
   get_log_writer() << "Set track parameters" << std::endl;
 
   // Send the track parameters to the input nodes
-  const std::string &mode_name = vex.get_mode(scan);
   for (size_t station=0;
        station<control_parameters.number_stations(); station++) {
     const std::string &station_name = control_parameters.station(station);
+    std::cerr << "get_input_node_parameters for " << scan <<", " << station_name <<"\n";
     if(!control_parameters.station_in_scan(scan, station_name))
       continue;
 
     Input_node_parameters input_node_param =
-      control_parameters.get_input_node_parameters(mode_name, station_name);
+      control_parameters.get_input_node_parameters(scan, station_name);
     input_node_set(station_name, input_node_param);
   }
   n_sources_in_current_scan = control_parameters.get_vex().n_sources(scan);
 
   // Determine for each station which channels are to be correlated
+  const std::string &mode_name = vex.get_mode(scan);
   std::vector<int> last_channel(control_parameters.number_stations(), -1);
   ch_number_in_scan.resize(control_parameters.number_frequency_channels());
   for(int i = 0; i < ch_number_in_scan.size(); i++){

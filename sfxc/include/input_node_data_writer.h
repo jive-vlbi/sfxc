@@ -14,6 +14,7 @@
 #define INPUT_NODE_DATA_WRITER_H_INCLUDED
 
 #include <boost/shared_ptr.hpp>
+#include <queue>
 #include "data_writer.h"
 #include "utils.h"
 #include "thread.h"
@@ -85,12 +86,18 @@ public:
 
 private:
   Input_buffer_ptr    input_buffer_;
+  std::deque<Input_buffer_element>  buffer_;
   Data_writer_queue   data_writers_;
   int                 delay_index;
   int sample_rate;
   int bits_per_sample;
+  int stream_nr;
   Time integration_time;
+  Time channel_offset;
+  Time buffer_time;
+  int frames_to_buffer;
   bool sync_stream;
+  int intnr;
   uint8_t station_number;
   uint8_t frequency_number;
   uint8_t sideband;
@@ -120,7 +127,6 @@ private:
   Time_interval current_interval_;
 
   Time _current_time;
-  Time _slice_start;
   Time byte_length;
 
   double last_duration_;

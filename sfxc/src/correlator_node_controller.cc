@@ -27,7 +27,8 @@
 Correlator_node_controller::Correlator_node_controller(Correlator_node &node)
     : Controller(node), node(node) {}
 
-Correlator_node_controller::~Correlator_node_controller() {}
+Correlator_node_controller::~Correlator_node_controller() {
+}
 
 Controller::Process_event_status
 Correlator_node_controller::process_event(MPI_Status &status) {
@@ -37,11 +38,11 @@ Correlator_node_controller::process_event(MPI_Status &status) {
       Delay_table_akima table;
       int sn[2];
       MPI_Transfer::receive_bcast(status, table, sn);
-      node.add_delay_table(sn[0], table);
+      node.set_delay_table(sn[0], table);
       // If there cross-polarizations are computed, then add delay table 
       // to the other polarisation as well.
       if(sn[1] >= 0 )
-        node.add_delay_table(sn[1], table);
+        node.set_delay_table(sn[1], table);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_BP_TABLE: 
@@ -70,17 +71,15 @@ Correlator_node_controller::process_event(MPI_Status &status) {
       Uvw_model table;
       int sn;
       MPI_Transfer::receive_bcast(status, table, sn);
-      node.correlation_core_normal->add_uvw_table(sn, table);
+      node.correlation_core_normal->set_uvw_table(sn, table);
       if(node.pulsar_binning)
-        node.correlation_core_pulsar->add_uvw_table(sn, table);
+        node.correlation_core_pulsar->set_uvw_table(sn, table);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_CORR_PARAMETERS: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       Correlation_parameters parameters;
       MPI_Transfer::receive(status, parameters);
-      if(parameters.pulsar_binning)
-        parameters.pulsar_parameters = &node.pulsar_parameters;
       node.receive_parameters(parameters);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;

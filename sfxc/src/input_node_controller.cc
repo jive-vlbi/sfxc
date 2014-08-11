@@ -54,12 +54,12 @@ Input_node_controller::process_event(MPI_Status &status) {
     }
   case MPI_TAG_INPUT_NODE_ADD_TIME_SLICE: {
       int64_t message[4];
-      Time slice_start, slice_stop;
+      Time slice_start, slice_length;
       MPI_Recv(&message, 4, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
       slice_start.set_clock_ticks(message[2]);
-      slice_stop.set_clock_ticks(message[3]);
-      node.add_time_slice_to_stream(message[0],message[1],slice_start,slice_stop);
+      slice_length.set_clock_ticks(message[3]);
+      node.add_time_slice_to_stream(message[0],message[1],slice_start,slice_length);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_GET_STATUS: {

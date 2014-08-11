@@ -106,6 +106,7 @@ void Input_node::terminate() {
            RANK_MANAGER_NODE, MPI_TAG_DATASTREAM_EMPTY, MPI_COMM_WORLD);
 
   DEBUG_MSG("Input node terminate.");
+  std::cerr << RANK_OF_NODE << " : TERMINATE\n";
   status = END_NODE;
 }
 
@@ -127,12 +128,11 @@ void Input_node::add_time_interval(Time start_time, Time stop_time) {
 }
 
 void Input_node::add_time_slice_to_stream(int channel, int stream, Time starttime_slice,
-                                          Time stoptime_slice) {
+                                          Time integrationtime) {
   SFXC_ASSERT(data_writers_ctrl.get_data_writer(stream) !=
               Multiple_data_writers_controller::Data_writer_ptr());
 
   SFXC_ASSERT(input_node_tasklet != NULL);
-  SFXC_ASSERT(stoptime_slice > starttime_slice);
 
   input_node_tasklet->add_data_writer(channel,
                                       data_writers_ctrl.get_data_writer(stream));

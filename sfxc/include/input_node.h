@@ -83,7 +83,7 @@ public:
   // Times in seconds
   void add_time_interval(Time start_time, Time stop_time);
 
-  void add_time_slice_to_stream(int channel, int stream, Time starttime, Time stoptime);
+  void add_time_slice_to_stream(int channel, int stream, Time starttime, Time integrationtime);
 
   int get_status();
 

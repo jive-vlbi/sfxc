@@ -32,6 +32,7 @@ protected:
   struct{double begin;double end;} gate;
   double start_phase;   // Start phase of current slice [pulsar period].
   double fft_duration;  // The time one FFT window worth of data represents [us]
+  bool coherent_dedispersion;
   int64_t us_per_day;
 };
 

@@ -8,7 +8,8 @@ Correlator_node_bit2float_tasklet::Correlator_node_bit2float_tasklet(bool phased
   phased_array = phased_array_;
   }
 
-Correlator_node_bit2float_tasklet::~Correlator_node_bit2float_tasklet() {}
+Correlator_node_bit2float_tasklet::~Correlator_node_bit2float_tasklet() {
+}
 
 void Correlator_node_bit2float_tasklet::empty_input_queue(){
   for (size_t i = 0; i < bit2float_workers_.size(); i++){
@@ -16,8 +17,16 @@ void Correlator_node_bit2float_tasklet::empty_input_queue(){
   }
 }
 
+void Correlator_node_bit2float_tasklet::empty_output_queue(){
+  for (size_t i = 0; i < bit2float_workers_.size(); i++){
+      bit2float_workers_[i]->empty_output_queue();
+  }
+}
+
 void Correlator_node_bit2float_tasklet::stop(){
   isrunning_=false;
+  for (size_t i = 0; i < bit2float_workers_.size(); i++)
+      bit2float_workers_[i]->stop();
 }
 
 void Correlator_node_bit2float_tasklet::do_execute(){
@@ -72,8 +81,21 @@ Correlator_node_bit2float_tasklet::get_invalid(int nr_stream){
   SFXC_ASSERT( nr_stream < bit2float_workers_.size() );
   return bit2float_workers_[nr_stream]->get_invalid();
 }
+bit_statistics_ptr 
+Correlator_node_bit2float_tasklet::get_bit_statistics(int nr_stream){
+  SFXC_ASSERT( nr_stream < bit2float_workers_.size() );
+  return bit2float_workers_[nr_stream]->get_bit_statistics();
+}
  
 std::vector< Bit2float_worker_sptr >& 
 Correlator_node_bit2float_tasklet::bit2float_workers() {
   return bit2float_workers_;
+}
+
+bool
+Correlator_node_bit2float_tasklet::finished() {
+  bool result = true;
+  for(int i=0; i< bit2float_workers_.size(); i++)
+    result = result && bit2float_workers_[i]->finished();
+  return result;
 }

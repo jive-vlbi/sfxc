@@ -1,6 +1,7 @@
 #ifndef AIPS_CAL_H
 #define AIPS_CAL_H
 #include <vector>
+#include "utils.h"
 #include "correlator_time.h"
 
 class aips_cal{

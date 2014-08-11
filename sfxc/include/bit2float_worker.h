@@ -38,6 +38,8 @@ public:
 
   Bit2float_worker(int stream_nr, bit_statistics_ptr statistics_, bool phased_array_);
   ~Bit2float_worker() {
+    while (!output_buffer_->empty())
+      sleep(1);
     // We need to make sure that output_element is released
     Output_pool_element dummy;
     out_element=dummy;
@@ -67,11 +69,21 @@ public:
   // Empty the input queue, called from the destructor of Input_node
   // This is necessary because of pre-extracting data
   void empty_input_queue();
+  /// Empty output queue
+  void empty_output_queue();
   
   // Obtain the list of invalid samples
   std::vector<Invalid> *get_invalid();
 
+  // Returns true if the current integration has been processed
+  bool finished();
+  // Stop processing
+  void stop();
+
   static Bit2float_worker_sptr new_sptr(int stream_nr_, bit_statistics_ptr statistics_, bool phased_array_);
+    bit_statistics_ptr get_bit_statistics(){
+      return statistics;
+    }
 private:
   // get the position index of the next delay change / invalid block
   int get_next_delay();
@@ -81,6 +93,7 @@ private:
   Output_pool_element out_element; // The current output packet
   int out_index; // Current index in the data buffer of out_element
   bool phased_array;
+  bool isRunning;
 
   Input_buffer_ptr    input_buffer_;
   Output_queue_ptr    output_buffer_;
@@ -122,8 +135,8 @@ private:
     int bits_per_sample;
     int sample_rate;
     int base_sample_rate;
+    int fft_size_dedispersion;
     int fft_size_delaycor;
-    int fft_size_correlation;
   } new_parameters;
   /// List of all invalid samples in the time slice
   std::vector<Invalid> invalid;

@@ -1,6 +1,7 @@
 #ifndef BANDPASS_H
 #define BANDPASS_H
 #include <vector>
+#include "utils.h"
 #include "correlator_time.h"
 
 class bandpass{

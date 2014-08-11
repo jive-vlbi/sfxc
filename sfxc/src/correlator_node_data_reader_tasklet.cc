@@ -2,7 +2,7 @@
 
 Correlator_node_data_reader_tasklet::
 Correlator_node_data_reader_tasklet()
-    : input_buffer(34000000), bytes_left(0),
+    : input_buffer(33000000), bytes_left(0),
     new_stream_available(false),state(IDLE) {
 }
 
@@ -34,6 +34,7 @@ Correlator_node_data_reader_tasklet::do_task() {
   uint64_t write = input_buffer.write;
 
   SFXC_ASSERT(read <= write);
+  int result;
 
   switch (state) {
   case IDLE:
@@ -44,14 +45,16 @@ Correlator_node_data_reader_tasklet::do_task() {
     state = PROCESSING_STREAM;
     /* FALLTHROUGH */
   case PROCESSING_STREAM:
-    breader_->get_bytes(sizeof(header), (char *)&header);
+    result = breader_->get_bytes(sizeof(header), (char *)&header);
+    SFXC_ASSERT(result > 0);
     SFXC_ASSERT(write < (read + dsize - 3));
     data[write++ % dsize] = header;
     switch (header) {
     case HEADER_DATA:
     {
       uint16_t nbytes;
-      breader_->get_bytes(sizeof(nbytes), (char *)&nbytes);
+      result = breader_->get_bytes(sizeof(nbytes), (char *)&nbytes);
+      SFXC_ASSERT(result > 0);
       char *nbytes_buffer = (char *)&nbytes;
       data[write++ % dsize] = nbytes & 0xff;
       data[write++ % dsize] = nbytes >> 8;
@@ -63,14 +66,15 @@ Correlator_node_data_reader_tasklet::do_task() {
     case HEADER_DELAY:
     {
       int8_t new_delay;
-      breader_->get_bytes(sizeof(new_delay), (char *)&new_delay);
+      result= breader_->get_bytes(sizeof(new_delay), (char *)&new_delay);
+      SFXC_ASSERT(result > 0);
       data[write++ % dsize] = new_delay;
       break;
     }
     case HEADER_INVALID:
     {
       uint16_t n_invalid;
-      breader_->get_bytes(sizeof(n_invalid), (char *)&n_invalid);
+      result = breader_->get_bytes(sizeof(n_invalid), (char *)&n_invalid);
       data[write++ % dsize] = n_invalid & 0xff;
       data[write++ % dsize] = n_invalid >> 8;
       break;

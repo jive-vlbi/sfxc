@@ -161,9 +161,9 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
       // Read the data
       do {
         if (line[0] == 0 && line[4] == 0) {
-          if(times.size() == 1){
+          if(times.size() <= 3){
             // Instead of the first point of the desired scan, we got the
-            // last point of the previous scan.  Get rid of it.
+            // end of the previous scan.  Get rid of it.
             scans.resize(0);
             times.resize(0);
           }else{

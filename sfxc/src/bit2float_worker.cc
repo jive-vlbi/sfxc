@@ -1,9 +1,6 @@
 #include <math.h>
 #include "bit2float_worker.h"
 
-#define MINUS_1_SIGMA 0.13212055882855767
-#define PLUS_1_SIGMA 0.86787944117144233
-
 const FLOAT sample_value_ms[] = {
                                   -7, -2, 2, 7
                                 };
@@ -20,7 +17,8 @@ Bit2float_worker::Bit2float_worker(int stream_nr_, bit_statistics_ptr statistics
     memory_pool_(32),
     have_new_parameters(false), stream_nr(stream_nr_),
     n_ffts_per_integration(0), current_fft(0), state(IDLE),
-    phased_array(phased_array_), statistics(statistics_)
+    phased_array(phased_array_), statistics(statistics_), 
+    isRunning(true)
     /**/
 {
   SFXC_ASSERT(!memory_pool_.empty());
@@ -45,12 +43,15 @@ Bit2float_worker::do_task() {
   Output_pool_data &out_frame = out_element.data();
   size_t output_buffer_size = out_frame.data.size();
 
-  while (out_index != output_buffer_size) {
-    uint64_t read = input_buffer_->read;
-    uint64_t write = input_buffer_->write;
-
+  uint64_t read = input_buffer_->read;
+  uint64_t write = input_buffer_->write;
+  while ((out_index != output_buffer_size) && isRunning) {
     SFXC_ASSERT(sample_in_byte < 8);
     SFXC_ASSERT(read <= write);
+    SFXC_ASSERT(bytes_left >= 0);
+    SFXC_ASSERT(current_fft <= n_ffts_per_integration);
+    SFXC_ASSERT(current_fft >= 0);
+    SFXC_ASSERT(out_index <= output_buffer_size);
     switch(state) {
     case IDLE:
     {
@@ -78,7 +79,7 @@ Bit2float_worker::do_task() {
             // insert a sample into the stream
             memset(&out_frame.data[out_index], 0, sizeof(FLOAT));
             out_index++;
-	        } else {
+          } else {
             // remove a sample from the stream
             SFXC_ASSERT(sample_in_byte == 0);
             sample_in_byte = 1;
@@ -96,6 +97,13 @@ Bit2float_worker::do_task() {
         state = SEND_INVALID;
         break;
       }
+      case HEADER_ENDSTREAM:{
+        std::cerr << "out_index =" << out_index << ", buffer_size = " << output_buffer_size 
+                  << ", current_fft = " << current_fft
+                  << ", n_ffts_per_integration = " << n_ffts_per_integration<<"\n";
+        SFXC_ASSERT_MSG(false, "Received endstream prematurely");
+        break;
+      } 
       default:
         SFXC_ASSERT_MSG(false, "Read invalid header from input buffer");
       }
@@ -115,25 +123,8 @@ Bit2float_worker::do_task() {
       }
 
       if (invalid_to_write > 0) {
-        /*if(phased_array){
-          for(int i=0; i < invalid_to_write; i++){
-            double val, r = rand() * 1. / RAND_MAX;
-            if(r < MINUS_1_SIGMA)
-              val = sample_value_ms[0];
-            else if(r<0.5)
-              val = sample_value_ms[1];
-            else if(r<PLUS_1_SIGMA)
-              val = sample_value_ms[2];
-            else 
-              val = sample_value_ms[3];
-
-            out_frame.data[out_index] = val; 
-            out_index++;
-          }
-        }else{*/
-          memset(&out_frame.data[out_index], 0, invalid_to_write * sizeof(FLOAT));
-          out_index += invalid_to_write;
-//        }
+        memset(&out_frame.data[out_index], 0, invalid_to_write * sizeof(FLOAT));
+        out_index += invalid_to_write;
         invalid_left -= invalid_to_write;
         samples_written += invalid_to_write;
       }
@@ -170,53 +161,73 @@ Bit2float_worker::do_task() {
       samples_written += samp_to_write;
       break;
     }
-    case PURGE_STREAM:
-      size_t bytes_to_advance = std::min((size_t)(write - read), bytes_left);
-      read += bytes_to_advance;
-      bytes_left -= bytes_to_advance;
-      if (bytes_left == 0) {
-        if ((write - read) > 0) {
-          switch(inp_data[read % inp_size]) {
-          case HEADER_ENDSTREAM:
-            read += 1;
-            state = IDLE;
-            break;
-          case HEADER_DELAY:
-            if ((write - read) >= 2)
-              read += 2;
-            break;
-          case HEADER_INVALID:
-            if ((write - read) >= 3)
-              read += 3;
-            break;
-          case HEADER_DATA:
-            if ((write - read) >= 3) {
-              read += 1;
-              bytes_left = inp_data[read++ % inp_size];
-              bytes_left |= (inp_data[read++ % inp_size] << 8);
-              SFXC_ASSERT(bytes_left > 0);
-            }
-            break;
-          }
-        }
-      }
-      break;
     }
     SFXC_ASSERT(read <= write);
     input_buffer_->read = read;
-  }
-  if (out_index == output_buffer_size) {
-    output_buffer_->push(out_element);
-    current_fft += out_element.data().nfft;
-    if (current_fft == n_ffts_per_integration)
-      state = PURGE_STREAM;
-    else
-      allocate_element();
+    write = input_buffer_->write;
   }
 
+  if ((out_index == output_buffer_size) && (state != PURGE_STREAM)){
+    int nfft = out_element.data().nfft;
+    output_buffer_->push(out_element);
+    // Increase current_fft after checking for end of integration to prevent
+    // (unlikely) race condition in Bit2float_worker::finished()
+    if (current_fft+nfft == n_ffts_per_integration){
+      state = PURGE_STREAM;
+      current_fft += nfft;
+    }else{
+      current_fft += nfft;
+      allocate_element();
+    }
+  }
+
+  // Purge remainder of stream after the last FFT was pushed into the output queue
+  int minavail = 1;
+  while(((write - read)>=minavail) && (state == PURGE_STREAM)){
+    minavail = 3;
+    if (bytes_left >0){
+      size_t bytes_to_advance = std::min((size_t)(write - read), bytes_left);
+      read += bytes_to_advance;
+      bytes_left -= bytes_to_advance;
+    }else {
+      switch(inp_data[read % inp_size]) {
+      case HEADER_ENDSTREAM:
+        read += 1;
+        state = IDLE;
+        break;
+      case HEADER_DELAY:
+        if ((write - read) >= 2)
+          read += 2;
+        break;
+      case HEADER_INVALID:
+        if ((write - read) >= 3)
+          read += 3;
+        break;
+      case HEADER_DATA:
+        if ((write - read) >= 3) {
+          read += 1;
+          bytes_left = inp_data[read++ % inp_size];
+          bytes_left |= (inp_data[read++ % inp_size] << 8);
+          SFXC_ASSERT(bytes_left > 0);
+        }
+        break;
+      }
+    }
+    input_buffer_->read = read;
+    write = input_buffer_->write;
+  }
   return samples_written;
 }
 
+bool 
+Bit2float_worker::finished(){
+  return (current_fft == n_ffts_per_integration) && (state == IDLE);
+}
+
+void 
+Bit2float_worker::stop(){
+  isRunning = false;
+}
 
 bool
 Bit2float_worker::has_work() {
@@ -228,7 +239,7 @@ Bit2float_worker::has_work() {
   if (sample_rate <= 0)
     return false;
 
-  if (current_fft == n_ffts_per_integration)
+  if (finished())
     return false;
 
   if((input_buffer_->bytes_read() == 0)&&(state!=SEND_INVALID))
@@ -262,6 +273,7 @@ set_new_parameters(const Correlation_parameters &parameters) {
     stream_idx++;
   if (stream_idx == parameters.station_streams.size()) {
     // Data stream is not participating in current time slice
+    std::cout << "NOT IN SLICE : " << stream_nr << "\n";
     return;
   }
 
@@ -269,28 +281,16 @@ set_new_parameters(const Correlation_parameters &parameters) {
 
   new_parameters.sample_rate = parameters.station_streams[stream_idx].sample_rate;
   new_parameters.base_sample_rate = parameters.sample_rate;
+  new_parameters.fft_size_dedispersion = parameters.fft_size_dedispersion;
   new_parameters.fft_size_delaycor = parameters.fft_size_delaycor;
-  new_parameters.fft_size_correlation = parameters.fft_size_correlation;
-  int nfft_min = std::max(parameters.fft_size_correlation / parameters.fft_size_delaycor, 1);
+  int nfft_min = std::max(parameters.fft_size_dedispersion / parameters.fft_size_delaycor, 1);
   new_parameters.n_ffts_per_buffer =
     (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
     std::max(CORRELATOR_BUFFER_SIZE / parameters.fft_size_delaycor, nfft_min);
 
-  if(parameters.fft_size_correlation > parameters.fft_size_delaycor) 
-    new_parameters.n_ffts_per_integration =
-      (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
-      (parameters.fft_size_correlation / parameters.fft_size_delaycor) *
-        Control_parameters::nr_ffts_per_integration_slice(
-          (int)parameters.integration_time.get_time_usec(),
-          parameters.sample_rate,
-          parameters.fft_size_correlation);
-  else
-    new_parameters.n_ffts_per_integration =
-    (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
-        Control_parameters::nr_ffts_per_integration_slice(
-          (int)parameters.integration_time.get_time_usec(),
-          parameters.sample_rate,
-          parameters.fft_size_delaycor);
+  new_parameters.n_ffts_per_integration =
+  (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
+  parameters.slice_size / parameters.fft_size_delaycor;
 
   have_new_parameters=true;
 }
@@ -302,11 +302,11 @@ set_parameters() {
   sample_rate = new_parameters.sample_rate;
   base_sample_rate = new_parameters.base_sample_rate;
   fft_size = new_parameters.fft_size_delaycor;
-  int fft_size_correlation = new_parameters.fft_size_correlation;
   SFXC_ASSERT(((int64_t)fft_size * 1000000) % sample_rate == 0);
   nfft_max = new_parameters.n_ffts_per_buffer;
   n_ffts_per_integration = new_parameters.n_ffts_per_integration;
   statistics->reset_statistics(bits_per_sample, sample_rate / base_sample_rate);
+  empty_output_queue();
 
   current_fft = 0;
   invalid_left = 0;
@@ -318,8 +318,13 @@ set_parameters() {
 
 // Empty the input queue, called from the destructor of Input_node
 void Bit2float_worker::empty_input_queue() {
-  input_buffer_->read = 0;
-  input_buffer_->write = 0;
+  input_buffer_->read = input_buffer_->write;
+}
+
+// Empty the output queue
+void Bit2float_worker::empty_output_queue() {
+  while (output_buffer_->size() > 0)
+    output_buffer_->pop();
 }
 
 Bit2float_worker_sptr
@@ -423,6 +428,13 @@ void
 Bit2float_worker::allocate_element(){
   int nfft = std::min(nfft_max, n_ffts_per_integration - current_fft);
   int nsamples = nfft * fft_size;
+  if(RANK_OF_NODE == -10) std::cerr<<"nsamples = " << nsamples 
+                                  <<", current_fft = " << current_fft << " / " << n_ffts_per_integration
+                                  <<", nfft = " << nfft 
+                                  <<", nfft_max = " << nfft_max
+                                  << ", fft_size = " << fft_size
+                                  << ", pool_free = " << memory_pool_.number_free_element()
+                                  << "\n";
   out_element = memory_pool_.allocate();
   
   if(out_element.data().data.size() != nsamples)

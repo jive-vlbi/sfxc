@@ -37,8 +37,9 @@ public:
   bool finished();
   bool almost_finished();
 
-  void connect_to(size_t stream, bit_statistics_ptr statistics_, Input_buffer_ptr buffer);
-  void connect_to(size_t stream, std::vector<Invalid> *invalid_);
+  void connect_to(size_t stream, Input_buffer_ptr buffer);
+  void connect_to(size_t stream, bit_statistics_ptr statistics_, 
+                  std::vector<Invalid> *invalid_);
 
   virtual void set_parameters(const Correlation_parameters &parameters,
                               int node_nr);
@@ -52,9 +53,9 @@ public:
     return writer;
   }
 
-  void add_uvw_table(int sn, Uvw_model &table);
+  void set_uvw_table(int sn, Uvw_model &table);
   std::vector< Uvw_model>  uvw_tables; // Should be private
-  void add_delay_table(int sn, Delay_table_akima &table);
+  void set_delay_table(int sn, Delay_table_akima &table);
   std::vector<Delay_table_akima> delay_tables;
   void add_source_list(const std::map<std::string, int> &sources_);
   void add_cl_table(std::string name);

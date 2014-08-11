@@ -16,6 +16,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <threadsafe_queue.h>
+#include <iostream>
 
 /** Reads data from a buffer and writes it to a Data_writer.
  **/

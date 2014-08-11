@@ -16,6 +16,8 @@ Delay_correction::~Delay_correction() {
   double time = delay_timer.measured_time()*1000000;
   PROGRESS_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
 #endif
+  while (output_buffer->size() > 0)
+    output_buffer->pop();
 }
 
 void Delay_correction::do_task() {
@@ -23,15 +25,30 @@ void Delay_correction::do_task() {
   Input_buffer_element input = input_buffer->front_and_pop();
   int nbuffer=input->nfft;
   current_fft+=nbuffer;
+  //Time ttt = Time(55870, 79405.0);
+  Time ttt = Time(55870, 0.);
+  if((RANK_OF_NODE==-10)&&(current_time >= ttt)) std::cerr << "delay : " << n_ffts_per_integration << " / " << current_fft << "\n";
   // Allocate output buffer
-  int output_stride =  fft_cor_size()/2 + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
-  cur_output = output_memory_pool.allocate();
+  int output_stride =  fft_out_size()/2 + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
+  Output_buffer_element cur_output = output_memory_pool.allocate();
   cur_output->stride = output_stride;
   int window_func = correlation_parameters.window;
-  int nfft_cor = (nbuffer * fft_size() + tbuf_end - tbuf_start) / (fft_rot_size() / 2);
   // The windowing touches each block twice, so the last block needs to be preserved
+  int nfft_cor = (nbuffer * fft_size() + tbuf_end - tbuf_start) / (fft_rot_size() / 2);
   if (window_func != SFXC_WINDOW_NONE)
     nfft_cor -= 1;
+  total_fft_cor += nfft_cor;
+  if(RANK_OF_NODE == -10) std::cerr << "fft = " << current_fft 
+                                   << " / " << n_ffts_per_integration
+                                   << ", queue_size = " << input_buffer->size()
+                                   << ", nfft_cor = " << nfft_cor
+                                   << ", nbuffer = " << nbuffer
+                                   << ", tend ="<<tbuf_end << "("<<tbuf_end%time_buffer.size()*2./fft_rot_size() << ")"
+                                   << ", tstart " << tbuf_start << "("<<tbuf_start%time_buffer.size()*2./fft_rot_size() << ")"
+                                   << ", total_out = " << total_fft_cor
+                                   << ", tbuf_size = " << time_buffer.size()
+                                   << " , fft_rot_size() " << fft_rot_size()
+                                   << "\n";
   if (cur_output->data.size() != nfft_cor * output_stride)
     cur_output->data.resize(nfft_cor * output_stride);
 #ifndef DUMMY_CORRELATION
@@ -77,6 +94,11 @@ void Delay_correction::do_task() {
   if(nfft_cor > 0){
     output_buffer->push(cur_output);
   }
+}
+
+void Delay_correction::empty_output_queue(){
+  while (output_buffer->size() > 0)
+    output_buffer->pop();
 }
 
 void Delay_correction::fractional_bit_shift(FLOAT *input,
@@ -167,13 +189,27 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
   sin_phi = amplitude * sin(phi);
   cos_phi = amplitude * cos(phi);
 #endif
-
+  unsigned int state = (unsigned int) floor(current_time.get_time_usec()); // FIXME remove
   for (size_t i = 0; i < fft_size(); i++) {
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     // 7)subtract dopplers and put real part in Bufs for the current segment
     output[i] =
       frequency_buffer[i].real()*cos_phi + frequency_buffer[i].imag()*sin_phi;
-
+    // FIXME remove this debug
+    /*int64_t usec = (int64_t) round(current_time.get_time_usec());
+    if((usec%1000 >=100) && (usec%1000 <200)){
+      double val = rand_r(&state)*1./RAND_MAX;
+      if (val > 0.8347256)
+        output[i] = 7.;
+      else if (val > 0.5)
+        output[i] = 2.;
+      else if (val > 0.1652743)
+        output[i] = -2.;
+      else
+        output[i] = -7.;
+    }
+    else
+      output[i] = 0;*/
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     temp=sin_phi-(a*sin_phi-b*cos_phi);
     cos_phi=cos_phi-(a*cos_phi+b*sin_phi);
@@ -183,6 +219,8 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
 
 void
 Delay_correction::set_parameters(const Correlation_parameters &parameters) {
+  empty_output_queue();
+  total_fft_cor =0;
   stream_idx = 0;
   while ((stream_idx < parameters.station_streams.size()) &&
          (parameters.station_streams[stream_idx].station_stream != stream_nr))
@@ -196,7 +234,7 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   correlation_parameters = parameters;
   oversamp = (int)round(sample_rate() / (2 * bandwidth()));
 
-  current_time = parameters.start_time;
+  current_time = parameters.stream_start;
   current_time.set_sample_rate(sample_rate());
   fft_length = Time((double)fft_size() / (sample_rate() / 1000000));
 
@@ -227,20 +265,18 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   else
     delta = parameters.channel_freq - freq;
   SFXC_ASSERT(delta >= 0);
-  temp_fft_offset = delta * fft_cor_size() / parameters.sample_rate;
+  temp_fft_offset = delta * fft_out_size() / parameters.sample_rate;
 
   SFXC_ASSERT(parameters.fft_size_correlation >= parameters.fft_size_delaycor);
   n_ffts_per_integration =
     (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
-    (parameters.fft_size_correlation / parameters.fft_size_delaycor) *
-    Control_parameters::nr_ffts_per_integration_slice(
-      (int) parameters.integration_time.get_time_usec(),
-      parameters.sample_rate,
-      parameters.fft_size_correlation);
-
+    parameters.slice_size / parameters.fft_size_delaycor;
   current_fft = 0;
   tbuf_start = 0;
   tbuf_end = 0;
+/*  std::cerr << RANK_OF_NODE << " : fft_size_dedispersion = " 
+            << correlation_parameters.fft_size_dedispersion 
+            << ", nfft_max " << nfft_max<< "\n";*/
 }
 
 void Delay_correction::connect_to(Input_buffer_ptr new_input_buffer) {
@@ -250,7 +286,7 @@ void Delay_correction::connect_to(Input_buffer_ptr new_input_buffer) {
 
 void Delay_correction::set_delay_table(const Delay_table_akima &table) {
   delay_table_set = true;
-  delay_table.add_scans(table);
+  delay_table = table;
 }
 
 double Delay_correction::get_delay(Time time) {

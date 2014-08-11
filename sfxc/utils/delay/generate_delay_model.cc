@@ -27,6 +27,7 @@
 
 #include "generate_delay_model.h"
 #include "vex/Vex++.h"
+#include "correlator_time.h"
 
 #define PI (3.14159265358979323846) //copied from prep_job/calc_model.h
 #define SPEED_OF_LIGHT (299792458.0)
@@ -343,7 +344,7 @@ int initialise_data(const char *vex_filename,
     }
   }
 
-  std::string startTime;
+  Time startTime;
   scan_data = new struct Scan_data[n_scans];
   int scan_nr=0;
   for (Vex::Node::const_iterator scan_block = vex.get_root_node()["SCHED"]->begin();
@@ -363,19 +364,21 @@ int initialise_data(const char *vex_filename,
         struct Scan_data &scan = scan_data[scan_nr];
 
         startTime = scan_block["start"]->to_string();
-        scan.year = str_to_long(startTime,0,4);  //pos=0, length=4
-        int doy = str_to_long(startTime,5,3);
+        startTime -= 1000000.; // Start 1 sec before
+        int doy, sec, ms;
+        startTime.get_date(scan.year, doy);
         // convert day of year to (month,day)
         yd2md(scan.year,doy,scan.month,scan.day);
-        scan.hour  = str_to_long(startTime,9,2);
-        scan.min = str_to_long(startTime,12,2);
-        scan.sec = str_to_long(startTime,15,2);
+        startTime.get_time(scan.hour, scan.min, sec, ms);
+        scan.sec = sec;
         // delay table for sfxc needs this one
         scan.sec_of_day = scan.hour*3600. + scan.min*60. + scan.sec;
         scan.scan_start =
           scan.sec + 60*(scan.min + 60*(scan.hour + 24*(double)doy));
-        scan.scan_stop = scan.scan_start + duration;
-        scan.nr_of_intervals = (int)(duration/delta_time);
+        scan.scan_stop = scan.scan_start + duration + 2; // Stop 1 sec after
+        std::cout.precision(16);
+        std::cout << "scan_start = " << scan.scan_start << ", duration = " << duration <<", scan_stop ="<<scan.scan_stop <<"\n";
+        scan.nr_of_intervals = (int)(duration/delta_time) + 2;
         int n_sources_in_scan = vex.n_sources(scan_block.key());
         typedef struct Source_data *Source_data_ptr;
         scan.sources = new Source_data_ptr[n_sources_in_scan];

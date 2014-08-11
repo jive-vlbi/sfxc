@@ -9,6 +9,7 @@ bin_PROGRAMS = generate_delay_model
 
 generate_delay_model_SOURCES=\
   generate_delay_model.cc \
-  generate_delay_model_calc.c
+  generate_delay_model_calc.c \
+  ../../src/correlator_time.cc
 
 pkginclude_HEADERS = *.h

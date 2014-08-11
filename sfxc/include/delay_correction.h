@@ -25,6 +25,7 @@
 #else
 #include "sfxc_fft_float.h"
 #endif
+
 class Delay_correction {
 public:
   typedef Correlator_node_types::Channel_queue       Input_buffer;
@@ -52,6 +53,11 @@ public:
   /// Do one delay step
   void do_task();
   bool has_work();
+  /// Returns true when all data has been processed
+  bool finished(){ return current_fft >= n_ffts_per_integration;}
+  /// clear output queue
+  void empty_output_queue();
+    
   const char *name() {
     return __PRETTY_FUNCTION__;
   }
@@ -63,7 +69,7 @@ private:
   // access functions to the correlation parameters
   size_t fft_size();
   size_t fft_rot_size();
-  size_t fft_cor_size();
+  size_t fft_out_size();
   int buffer_size;
   int sample_rate();
   int bandwidth();
@@ -79,6 +85,7 @@ private:
   Input_buffer_ptr    input_buffer;
 
   Time             current_time;
+  int total_fft_cor;// FIXME debug variable 
   Correlation_parameters correlation_parameters;
   int   stream_nr;
   int   stream_idx;
@@ -102,7 +109,6 @@ private:
 
   Output_buffer_ptr   output_buffer;
   Output_memory_pool  output_memory_pool;
-  Output_buffer_element cur_output;
 
   Time fft_length;
   SFXC_FFT        fft_t2f, fft_f2t, fft_t2f_cor;
@@ -113,12 +119,12 @@ inline size_t Delay_correction::fft_size() {
   return correlation_parameters.fft_size_delaycor;
 }
 
-inline size_t Delay_correction::fft_rot_size() {
-  return (correlation_parameters.station_streams[stream_idx].sample_rate / correlation_parameters.sample_rate) * 2 * correlation_parameters.fft_size_correlation;
+inline size_t Delay_correction::fft_out_size() {
+  return 2*correlation_parameters.fft_size_dedispersion;
 }
 
-inline size_t Delay_correction::fft_cor_size() {
-  return 2 * correlation_parameters.fft_size_correlation;
+inline size_t Delay_correction::fft_rot_size() {
+  return (correlation_parameters.station_streams[stream_idx].sample_rate / correlation_parameters.sample_rate) * 2 * correlation_parameters.fft_size_dedispersion;
 }
 
 inline int Delay_correction::bandwidth() {
@@ -132,6 +138,4 @@ inline int Delay_correction::sample_rate() {
 inline int64_t Delay_correction::channel_freq() {
   return correlation_parameters.station_streams[stream_idx].channel_freq;
 }
-
-
 #endif /*DELAY_CORRECTION_H*/

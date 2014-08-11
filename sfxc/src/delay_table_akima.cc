@@ -113,6 +113,7 @@ void Delay_table_akima::open(const char *delayTableName) {
 
 void Delay_table_akima::open(const char *delayTableName, const Time tstart, const Time tstop){
   std::ifstream in(delayTableName);
+  std::cerr<< "Open " << tstart << " to " << tstop << "\n";
   if(!in.is_open())
     sfxc_abort((std::string("Could not open delay table ")+std::string(delayTableName)).c_str());
 
@@ -151,6 +152,7 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
         } else if (start_time_scan >= tstop){
           done_reading = true;
         }else {
+          //std::cout << "--- new scan ---\n";
           state = START_NEW_SCAN;
         }
       }
@@ -206,9 +208,9 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
       // Read the data
       do {
         if (line[0] == 0 && line[4] == 0) {
-          if(times.size() == 1){
+          if(times.size() <= 3){
             // Instead of the first point of the desired scan, we got the
-            // last point of the previous scan.  Get rid of it.
+            // end of the previous scan.  Get rid of it.
             scans.resize(0);
             times.resize(0);
           }else{
@@ -224,6 +226,7 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
           amplitudes.push_back(line[6]);
           scan_end = line[0];
         }
+        //std::cout << "new scan_end=" << scan_end << "\n";
       } while(in.read(reinterpret_cast < char * > (line), 7*sizeof(double)));
       correlation_scan = scans.size() - 1;
       break;

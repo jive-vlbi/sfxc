@@ -53,7 +53,6 @@ void Output_node::initialise() {
 Output_node::~Output_node() {
   if (!get_assertion_raised()) {
     DEBUG_MSG("Output node finished");
-
     // empty the input buffers to the output
     SFXC_ASSERT(status == END_NODE);
     SFXC_ASSERT(input_streams_order.empty());

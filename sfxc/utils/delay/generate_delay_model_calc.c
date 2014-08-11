@@ -643,6 +643,7 @@ generate_delay_tables(FILE *output, char *stationname, double start,
 
   for (scan_nr = 0; scan_nr < n_scans; scan_nr++) {
     struct Scan_data *scan = &scan_data[scan_nr];
+    printf("scan_start=%f, scan_stop=%f, start=%f, stop=%f\n", scan->scan_start, scan->scan_stop, start, stop);
     if (scan->scan_stop <= start)
       continue;
     if (scan->scan_start >= stop)

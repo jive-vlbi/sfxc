@@ -28,14 +28,15 @@ def time2vex(secs):
 usage = "usage: %prog [options] vexfile"
 parser = optparse.OptionParser(usage=usage)
 parser.add_option("-n", "--nodes", dest="number_nodes",
-                  default=320, type="int",
+                  default=256, type="int",
                   help="Number of correlator nodes",
                   metavar="N")
 parser.add_option("-m", "--machines", dest="machines",
                   default="a,b,c,d,e,f,g,h,i,j", type="string",
                   help="Machines to run correlator nodes on",
                   metavar="LIST")
-
+parser.add_option('-f', '--file', dest='files', type="string",
+                  help = "Stations that are passed as a file, usage : STATION1:SFXC_NODE,STATION2:SFXC_NODE,...")
 (options, args) = parser.parse_args()
 
 if len(args) < 2:
@@ -44,6 +45,13 @@ if len(args) < 2:
 
 vex_file = args[0]
 
+
+files = {}
+if options.files:
+  f = options.files.split(',')
+  for val in f:
+    station,node = val.split(':')
+    files[station] = 'sfxc-'+node+'.sfxc'
 # Parse the VEX file.
 vex = Vex(vex_file)
 exper = vex['GLOBAL']['EXPER']
@@ -61,24 +69,24 @@ mk5s = [
 #'10.88.1.203', #mk5-3
 #'10.88.1.204', #mk5-4
 #'10.88.1.205', #mk5-5
-#'10.88.1.206', #mk5-6
+'10.88.1.206', #mk5-6
 #'10.88.1.207',  #mk5-7
 #'10.88.1.220', # mk5-c0
 #'10.88.1.221', # mk5-c1
 #'10.88.1.222', # mk5-c2
 #'10.88.1.223', # mk5-c3
 #'10.88.1.224', # mk5-c4
-'10.88.1.225', # mk5-c5
+#'10.88.1.225', # mk5-c5
 #'10.88.1.208', #mk5-8
-#'10.88.1.209' #mk5-9
+#'10.88.1.209', #mk5-9
 '10.88.1.210', #mk5-10
 '10.88.1.211', #mk5-11
 '10.88.1.212', #mk5-12
 #'10.88.1.213', #mk5-13
 '10.88.1.214', #mk5-14
 '10.88.1.215', #mk5-15
-'10.88.1.216' #mk5-16
-]
+'10.88.1.216'] #mk5-16
+
 manager_node = "head.sfxc"
 output_node = "head.sfxc"
 log_node = "head.sfxc"
@@ -157,15 +165,13 @@ for ctrl_file in args[1:]:
     # way too complicated.
     data_dir = None
     for station in stations:
+      if station not in files:
         data_source = json_input['data_sources'][station][0]
         if urlparse.urlparse(data_source).scheme == 'file':
             path = urlparse.urlparse(data_source).path
             if not data_dir:
                 data_dir = os.path.dirname(path)
-                pass
             assert data_dir == os.path.dirname(path)
-            pass
-        continue
 
     # Check if the input data files are there.  Do this in a loop that
     # gets repeated until all files have been found.
@@ -229,14 +235,12 @@ for ctrl_file in args[1:]:
                     if vsn in vsn_list[mk5]:
                         input_nodes[station] = mk5
                         break
-                    continue
-                continue
-            pass
 
         # Check if we found them all.  If not, give the operator a
         # chance to mount the missing media.
         missing = False
         for station in stations:
+          if station not in files:
             if not station in input_nodes:
                 if not missing:
                     print "Please mount media with the following VSNs:"
@@ -261,6 +265,7 @@ for ctrl_file in args[1:]:
     #print >>fp, output_node
     #print >>fp, log_node
     for station in stations:
+      if station not in files:
         #ifhn = "ifhn="+input_nodes[station]
 	print >>fp, " #", station
         print >>fp, input_nodes[station], " slots=4"
@@ -278,16 +283,25 @@ for ctrl_file in args[1:]:
     print >>fp, "rank 1=", output_node, "slot=1"
     print >>fp, "rank 2=", log_node, "slot=2,3"
     rank=2
+    # Create ranks
+    ranks = {}
+    for machine in machines:
+      ranks[machine] = 8
     for station in stations:
-        rank += 1
+      rank += 1
+      if station in files:
+        node = files[station]
+        print >>fp, "rank", str(rank), "=", node, "slot=4,5,6,7"
+        ranks[node] -= 4
+      else:
         print >>fp, "rank", str(rank), "=", input_nodes[station], "slot=0,2"
-        continue
+
     for i in range(8):
         for machine in machines:
+          if ranks[machine] > 0:
             rank += 1
             print >>fp, "rank", str(rank), "=", machine, "slot=", str(i)
-            continue
-        continue
+            ranks[machine] -= 1
     fp.close()
 
     # Start the job.

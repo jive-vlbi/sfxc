@@ -36,7 +36,7 @@ Time get_time(int ref_epoch, int sec_from_epoch){
   Time time;
   int ref_year = 2000+ref_epoch/2;
   int ref_month = 1+6*(ref_epoch&1);
-  int ref_mjd = mjd(1,ref_month,ref_year);
+  int ref_mjd = Time::mjd(1,ref_month,ref_year);
   time.set_time(ref_mjd, sec_from_epoch);
   return time;
 }

@@ -62,6 +62,14 @@ public:
 
 
   /*****************************************************************************
+  * @desc Retreive the bit statistics for the specified station.
+  * @param int nr_stream The identifier of the stream.
+  * assert( nr_stream < number_stations() )
+  *****************************************************************************/
+  bit_statistics_ptr get_bit_statistics(int nr_stream);
+
+
+  /*****************************************************************************
   * @desc Initialize the stream with the given parameters.
   * @param const Correlator_node_parameters &params
   *****************************************************************************/
@@ -72,7 +80,12 @@ public:
   *****************************************************************************/
   void empty_input_queue();
 
-	/*****************************************************************************
+  /*****************************************************************************
+  * @desc Empty the output queues of all bit2float workers
+  *****************************************************************************/
+  void empty_output_queue();
+
+  /****************************************************************************
   * @desc Return the amount of data processed by this tasklet.
   *****************************************************************************/
  	inline uint64_t get_num_processed_bytes(){ return data_processed_; }
@@ -81,6 +94,11 @@ public:
   * @desc Return the integer delay array.
   *****************************************************************************/
   std::vector< Bit2float_worker_sptr >& bit2float_workers();
+
+  /*****************************************************************************
+  * @desc Returns true if all bit2float workers finished processing their data
+  *****************************************************************************/
+  bool finished();
 
 private:
   std::vector<Bit2float_worker_sptr>    bit2float_workers_;
