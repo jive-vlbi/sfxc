@@ -290,7 +290,7 @@ int initialise_data(const char *vex_filename,
       assert(n >= 2);
       int month, day;
       yd2md(year,doy,month,day);
-      station_data.eop_ref_epoch = JD(year,month,day) + (hour - 12) / 24; // Julian day
+      station_data.eop_ref_epoch = JD(year,month,day) + (hour - 12.) / 24; // Julian day
       station_data.num_eop_points = eop["num_eop_points"]->to_int();
       assert(station_data.num_eop_points<=10);
       for (int i=0; i<station_data.num_eop_points; i++) {
