@@ -26,34 +26,42 @@ Windowing::do_task(){
   cur_output->data.resize(output_stride*nfft);
   int out_fft = 0;
 
-  int i = 0;
-  while(i < input_data.size()){
-    const int fft_step = fft_rot_size / 2;
+  const int size = input_data.size();
+  int i = std::min(samples_to_skip, size);
+  current_time.inc_samples(i);
+  while((i < size) && (out_fft < nfft)){
+    const int fft_step = std::min(fft_rot_size/2 - index, size-i);
     if(window_func == SFXC_WINDOW_NONE){
-      memcpy(&buffers[buf][0], &input_data[i], fft_step*sizeof(FLOAT));
+      memcpy(&buffers[buf][index], &input_data[i], fft_step*sizeof(FLOAT));
     }else{
       SFXC_MUL_F(&input_data[i], 
-                 &window[fft_step], 
-                 &buffers[buf][fft_step],
+                 &window[fft_rot_size/2 + index], 
+                 &buffers[buf][fft_rot_size/2 + index],
                  fft_step);
       SFXC_MUL_F(&input_data[i], 
-                 &window[0], 
-                 &buffers[1-buf][0], 
+                 &window[index], 
+                 &buffers[1-buf][index], 
                  fft_step);
     }
-
+    index += fft_step;
     // Do the final fft from time to frequency
-    if((current_time >= integration_start) && (out_fft < nfft)){
-      fft_t2f.rfft(&buffers[buf][0], &temp_fft_buffer[0]);
-      memcpy(&cur_output->data[out_fft * output_stride], 
-             &temp_fft_buffer[temp_fft_offset], 
-             (fft_size_correlation+1) * sizeof(std::complex<FLOAT>));
-      out_fft += 1;
+    if(index == fft_rot_size/2){
+      if(current_time >= integration_start){
+        fft_t2f.rfft(&buffers[buf][0], &temp_fft_buffer[0]);
+        memcpy(&cur_output->data[out_fft * output_stride], 
+               &temp_fft_buffer[temp_fft_offset], 
+               (fft_size_correlation+1) * sizeof(std::complex<FLOAT>));
+        out_fft += 1;
+      }
+      index = 0;
+      buf = 1-buf;
     }
-    buf = 1-buf;
+    SFXC_ASSERT(index <= fft_rot_size/2);
     i += fft_step;
     current_time.inc_samples(fft_step);
   }
+  samples_to_skip = std::max(0, samples_to_skip-size);
+
   if (RANK_OF_NODE == -5)
     std::cerr << "nffts_per_integration = " << nffts_per_integration
               << ", current_fft = " << current_fft << "\n"; 
@@ -101,6 +109,8 @@ Windowing::set_parameters(const Correlation_parameters &parameters){
   integration_start = parameters.integration_start;
   current_time = parameters.stream_start;
   current_time.set_sample_rate(parameters.station_streams[stream_idx].sample_rate);
+  samples_to_skip = (int)round((integration_start-current_time).get_time_usec() * 
+                               (parameters.station_streams[stream_idx].sample_rate * 1e-6));
   if(window_func != SFXC_WINDOW_NONE)
     current_time.inc_samples(-fft_rot_size / 2);
   if(RANK_OF_NODE == 5){
@@ -113,6 +123,7 @@ Windowing::set_parameters(const Correlation_parameters &parameters){
             << ", " << parameters.stream_start.get_time_usec() << "\n";}
   
   current_fft = 0;
+  index = 0;
 
   nffts_per_integration =
       Control_parameters::nr_ffts_to_output_node(

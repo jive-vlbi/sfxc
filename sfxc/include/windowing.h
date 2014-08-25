@@ -33,6 +33,8 @@ private:
   Correlation_queue_element allocate_element(int nfft);
   void create_window();
 private:
+  int index;
+  int samples_to_skip;
   int stream_nr;
   int window_func;
   int output_stride;
