@@ -191,8 +191,6 @@ main(int argc, char **argv)
                      if(nbytes <= 0)
                          return(EXIT_FAILURE);
                      print_mk5read_reply(reply, sizeof(reply));
-                }else{
-			print_labels();
                 }
 	}
 
