@@ -16,10 +16,10 @@
 class Correlation_core : public Tasklet {
 //friend class Correlation_core_pulsar;
 public:
-  typedef Delay_correction::Output_buffer_element       Input_buffer_element;
-  typedef Delay_correction::Output_buffer               Input_buffer;
-  typedef Delay_correction::Output_buffer_ptr           Input_buffer_ptr;
-  typedef Correlator_node_types::Invalid                Invalid;
+  typedef Correlator_node_types::Correlation_queue         Input_buffer;
+  typedef Correlator_node_types::Correlation_queue_ptr     Input_buffer_ptr;
+  typedef Input_buffer::value_type                         Input_buffer_element;
+  typedef Correlator_node_types::Invalid                   Invalid;
 
   typedef Memory_pool_vector_element<std::complex<FLOAT> > Complex_buffer;
   typedef Memory_pool_vector_element<std::complex<float> > Complex_buffer_float;

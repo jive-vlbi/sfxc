@@ -69,7 +69,6 @@ private:
   // access functions to the correlation parameters
   size_t fft_size();
   size_t fft_rot_size();
-  size_t fft_out_size();
   int buffer_size;
   int sample_rate();
   int bandwidth();
@@ -85,7 +84,6 @@ private:
   Input_buffer_ptr    input_buffer;
 
   Time             current_time;
-  int total_fft_cor;// FIXME debug variable 
   Correlation_parameters correlation_parameters;
   int   stream_nr;
   int   stream_idx;
@@ -98,11 +96,6 @@ private:
   Delay_table_akima   delay_table;
 
   Memory_pool_vector_element< std::complex<FLOAT> > frequency_buffer;
-  Memory_pool_vector_element<FLOAT> time_buffer;
-  Memory_pool_vector_element<FLOAT> temp_buffer;
-  Memory_pool_vector_element< std::complex<FLOAT> > temp_fft_buffer;
-  int temp_fft_offset;
-  Memory_pool_vector_element<FLOAT> window;
   Memory_pool_vector_element<FLOAT> flip;
   
   Timer delay_timer;
@@ -117,14 +110,6 @@ private:
 
 inline size_t Delay_correction::fft_size() {
   return correlation_parameters.fft_size_delaycor;
-}
-
-inline size_t Delay_correction::fft_out_size() {
-  return 2*correlation_parameters.fft_size_dedispersion;
-}
-
-inline size_t Delay_correction::fft_rot_size() {
-  return (correlation_parameters.station_streams[stream_idx].sample_rate / correlation_parameters.sample_rate) * 2 * correlation_parameters.fft_size_dedispersion;
 }
 
 inline int Delay_correction::bandwidth() {

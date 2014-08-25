@@ -166,8 +166,6 @@ initialise(const char *ctrl_file, const char *vex_file,
       ctrl["window_function"] = "NONE";
     else
       ctrl["window_function"] = "HANN";
-    // FIXME : Remove
-    ctrl["window_function"] = "NONE";
   }
   // Set the fft sizes
   if (ctrl["fft_size_correlation"] == Json::Value()){
@@ -432,8 +430,7 @@ Control_parameters::check(std::ostream &writer) const {
     }
   }
   // If phased array mode is activated, check for calibration tables
-  // FIXME restore check!
-  /*if (ctrl["phased_array"].asBool()){
+  if ((ctrl["phased_array"].asBool()) && (!ctrl["only_autocorrelations"].asBool())){
     if(ctrl["cl_table"] == Json::Value()){
       writer << "Phased array mode requires \"cl_table\" to be specified" << std::endl;
       ok = false;
@@ -442,7 +439,7 @@ Control_parameters::check(std::ostream &writer) const {
       writer << "Phased array mode requires \"bp_table\" to be specified" << std::endl;
       ok = false;
     }
-  }*/
+  }
   
   // Check pulsar binning
   if (ctrl["pulsar_binning"].asBool()){
@@ -1468,7 +1465,7 @@ get_input_node_parameters(const std::string &scan_name,
   for(size_t ch = 0; ch < nchannel; ch++)
     result.channels[ch].channel_offset = dedispersion_parameters.channel_offset[ch];
   result.buffer_time =  dedispersion_parameters.fft_size_dedispersion / 
-                        (2*sample_rate_ / 1000000.);
+                          (2*sample_rate_ / 1000000.);
 
   // Set slice size
   result.slice_size = nr_samples_per_slice(integration_time(), 
@@ -1885,7 +1882,6 @@ get_correlation_parameters(const std::string &scan_name,
   const std::string &station_name = setup_station();
   const std::string &channel_name =
     frequency_channel(channel_nr, mode_name, station_name);
-  std::cout << "CH " << channel_nr << " : " << channel_name << "\n";
 
   Correlation_parameters corr_param;
   corr_param.integration_time = integration_time();

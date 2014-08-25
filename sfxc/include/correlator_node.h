@@ -22,6 +22,7 @@
 #include "correlation_core_pulsar.h"
 #include "coherent_dedispersion.h"
 #include "delay_correction.h"
+#include "windowing.h"
 #include <tasklet/tasklet_manager.h>
 #include "timer.h"
 
@@ -63,6 +64,7 @@ public:
   Bit_sample_reader_ptr;
 
   typedef boost::shared_ptr<Delay_correction>      Delay_correction_ptr;
+  typedef boost::shared_ptr<Windowing>             Windowing_ptr;
   typedef boost::shared_ptr<Coherent_dedispersion> Coherent_dedispersion_ptr;
 
   bool has_requested;
@@ -264,6 +266,7 @@ private:
   std::vector<Uvw_model>                  uvw_tables;
 
   std::vector<Delay_correction_ptr>       delay_modules;
+  std::vector<Windowing_ptr>              windowing;
   std::vector<Coherent_dedispersion_ptr>  dedispersion_modules;
   Correlation_core *correlation_core, *correlation_core_normal;
   Correlation_core_pulsar *correlation_core_pulsar;

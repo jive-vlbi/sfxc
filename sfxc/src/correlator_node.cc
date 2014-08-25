@@ -14,7 +14,6 @@
 #include "data_writer.h"
 #include "utils.h"
 #include "output_header.h"
-#include "delay_correction.h"
 #ifdef USE_IPP
 #include <ippcore.h>
 #endif
@@ -226,7 +225,6 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   reader_thread_.bit_sample_readers()[stream_nr]->connect_to(stream_nr, data_readers_ctrl.get_data_reader(stream_nr));
 
   // connect reader to data stream worker
-
   bit_statistics_ptr statistics = bit_statistics_ptr(new bit_statistics());
   bit2float_thread_.connect_to(stream_nr, statistics,
                                reader_thread_.bit_sample_readers()[stream_nr]->get_output_buffer());
@@ -240,12 +238,16 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
     // Connect the delay_correction to the bits2float_converter
     delay_modules[stream_nr]->connect_to(bit2float_thread_.get_output_buffer(stream_nr));
   }
-
-
-  // Connect the correlation_core to delay_correction
+  // Create windowing modules
+  if (windowing.size() <= stream_nr)
+    windowing.resize(stream_nr+1, boost::shared_ptr<Windowing>());
+  windowing[stream_nr] = Windowing_ptr(new Windowing(stream_nr));
+  // Connect the windowing to delay_correction
+  windowing[stream_nr]->connect_to(delay_modules[stream_nr]->get_output_buffer());
+  // Connect correlation_core
   correlation_core_normal->connect_to(stream_nr, 
-                                 delay_modules[stream_nr]->get_output_buffer());
-  correlation_core_normal->connect_to(stream_nr, statistics,
+                                      windowing[stream_nr]->get_output_buffer());
+  correlation_core_normal->connect_to(stream_nr, statistics, 
                                       bit2float_thread_.get_invalid(stream_nr));
   if(phased_array || pulsar_binning){
     if (dedispersion_modules.size() <= stream_nr)
@@ -255,7 +257,7 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   }
   if(pulsar_binning){
     correlation_core_pulsar->connect_to(stream_nr,
-                          dedispersion_modules[stream_nr]->get_output_buffer());
+                                        windowing[stream_nr]->get_output_buffer());
     correlation_core_pulsar->connect_to(stream_nr, statistics,
                                       bit2float_thread_.get_invalid(stream_nr));
   }
@@ -295,6 +297,15 @@ void Correlator_node::correlate() {
           dedispersion_modules[i]->do_task();
           done_work=true;
         }
+      }
+    }
+  }
+
+  for (size_t i=0; i<windowing.size(); i++) {
+    if (windowing[i] != Windowing_ptr()) {
+      if (windowing[i]->has_work()) {
+        windowing[i]->do_task();
+        done_work=true;
       }
     }
   }
@@ -385,7 +396,7 @@ Correlator_node::set_parameters() {
       // Current source is not a pulsar
       nBins = 1;
       for(int stream_nr = 0 ; stream_nr < delay_modules.size() ; stream_nr++)
-        correlation_core_normal->connect_to(stream_nr, 
+        windowing[stream_nr]->connect_to(
                                  delay_modules[stream_nr]->get_output_buffer());
       correlation_core = correlation_core_normal;
       correlation_core->set_parameters(parameters, get_correlate_node_number());
@@ -397,10 +408,10 @@ Correlator_node::set_parameters() {
       for(int stream_nr = 0 ; stream_nr < delay_modules.size() ; stream_nr++){
         if (coherent_dedispersion){
           dedispersion_modules[stream_nr]->set_parameters(parameters, pulsar);
-          correlation_core_pulsar->connect_to(stream_nr, 
+          windowing[stream_nr]->connect_to(
                         dedispersion_modules[stream_nr]->get_output_buffer());
         }else{ 
-          correlation_core_pulsar->connect_to(stream_nr, 
+          windowing[stream_nr]->connect_to(
                                 delay_modules[stream_nr]->get_output_buffer());
         }
       }
@@ -414,7 +425,7 @@ Correlator_node::set_parameters() {
       // Current source is not a pulsar
       nBins = 1;
       for(int stream_nr = 0 ; stream_nr < delay_modules.size() ; stream_nr++)
-        correlation_core_normal->connect_to(stream_nr, 
+        windowing[stream_nr]->connect_to(
                                  delay_modules[stream_nr]->get_output_buffer());
       correlation_core = correlation_core_normal;
       correlation_core->set_parameters(parameters, get_correlate_node_number());
@@ -427,10 +438,10 @@ Correlator_node::set_parameters() {
         if (coherent_dedispersion){
           SFXC_ASSERT(dedispersion_modules.size() > stream_nr);
           dedispersion_modules[stream_nr]->set_parameters(parameters, pulsar);
-          correlation_core->connect_to(stream_nr, 
+          windowing[stream_nr]->connect_to(
                         dedispersion_modules[stream_nr]->get_output_buffer());
         }else{ 
-          correlation_core->connect_to(stream_nr, 
+          windowing[stream_nr]->connect_to(
                                 delay_modules[stream_nr]->get_output_buffer());
         }
       }
@@ -444,6 +455,11 @@ Correlator_node::set_parameters() {
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
       delay_modules[i]->set_parameters(parameters);
+    }
+  }
+  for (size_t i=0; i<windowing.size(); i++) {
+    if (windowing[i] != Windowing_ptr()) {
+      windowing[i]->set_parameters(parameters);
     }
   }
   bit2float_thread_.set_parameters(parameters);

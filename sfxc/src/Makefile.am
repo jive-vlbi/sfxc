@@ -42,6 +42,7 @@ OBJ=\
   correlation_core_phased.cc \
   correlation_core_pulsar.cc \
   delay_correction.cc \
+  windowing.cc\
   coherent_dedispersion.cc \
   uvw_model.cc \
   channel_extractor_tasklet.cc \

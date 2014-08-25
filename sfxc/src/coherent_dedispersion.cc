@@ -1,5 +1,4 @@
 #include "coherent_dedispersion.h"
-Time stream_start; // FIXME remove
 
 Coherent_dedispersion::Coherent_dedispersion(int stream_nr_): 
       output_queue(Delay_queue_ptr(new Delay_queue())),
@@ -17,15 +16,13 @@ Coherent_dedispersion::~Coherent_dedispersion(){
 void
 Coherent_dedispersion::do_task(){
   Delay_queue_element input = input_queue->front_and_pop();
-  Memory_pool_vector_element<std::complex<FLOAT> > &input_data = input->data;
-  const int input_stride = input->stride;
-  const int n_input_fft=input_data.size() / input_stride;
+  Memory_pool_vector_element<FLOAT> &input_data = input->data;
+  const int n_input_fft=input_data.size() / fft_size_dedispersion;
   total_input_fft += n_input_fft;
   if((RANK_OF_NODE == -10) && (current_fft > nffts_per_integration -1000)) 
   //if((RANK_OF_NODE == 10) && (stream_nr == 0)) 
     std::cerr<<"nfft = " <<n_input_fft 
              << ", size = " << input_data.size()
-             << ", stride = " << input_stride
              << ", current_time " << (int64_t) current_time.get_time_usec()
              << ", current_fft = " << current_fft
              << ", input fft nr =" << total_input_fft
@@ -37,13 +34,16 @@ Coherent_dedispersion::do_task(){
 
   for(int i=0; i<n_input_fft; i++){
     // Apply dedispersion
-    SFXC_MUL_FC(&input_data[i*input_stride], &filter[0], 
+    memcpy(&zeropad_buffer[0], 
+           &input_data[i*fft_size_dedispersion], 
+           fft_size_dedispersion*sizeof(FLOAT));
+    fft.rfft(&zeropad_buffer[0], &dedispersion_buffer[0]);
+    SFXC_MUL_FC(&dedispersion_buffer[0], &filter[0], 
                 &dedispersion_buffer[0], fft_size_dedispersion + 1);
-    fft_f2t.irfft(&dedispersion_buffer[0], &time_buffer[current_buffer][0]);
-    if (current_time >= start_time){
-      overlap_add();
-    }else
-      SFXC_ASSERT(i==0);
+    fft.irfft(&dedispersion_buffer[0], &time_buffer[current_buffer][0]);
+
+    // Perform overlap-add
+    overlap_add();
     current_buffer = 1 - current_buffer;
     current_time.inc_samples(fft_size_dedispersion);
   }
@@ -81,13 +81,12 @@ Coherent_dedispersion::overlap_add(){
   if(RANK_OF_NODE == -10) std::cerr << "overlap_add, fft =" << current_fft
                                    << " / " << nffts_per_integration
                                    << "\n";
-  Memory_pool_vector_element< std::complex<FLOAT> > &data = cur_output->data;
+  Memory_pool_vector_element<FLOAT> &data = cur_output->data;
   //NB : fft_size_dedispersion >= fft_size_correlation
   const int step_size = fft_size_correlation / 2;
   const int nstep=fft_size_dedispersion/step_size;
-  int k = 0; // The position in output_buffer
 
-  for(int n=0; n < nstep; n++){
+  for(int n=0; (n < nstep) && (current_fft < nffts_per_integration); n++){
     int i, j;
     if(n<nstep/2){
       i = 3*fft_size_dedispersion/2 + n*step_size;
@@ -97,26 +96,18 @@ Coherent_dedispersion::overlap_add(){
       j = fft_size_dedispersion + (n-nstep/2) *step_size;
     }
     if ((RANK_OF_NODE == -10) && (stream_nr == 0))
-      std::cerr << "n="<<n << "/"<<nstep<<", i="<<i<<", j="<<j<<", k="<<k
+      std::cerr << "n="<<n << "/"<<nstep<<", i="<<i<<", j="<<j
                 << ", fft_dedisp="<< fft_size_dedispersion<<", fft_corr="<<fft_size_correlation
                 << ", outpos=" << out_pos<<"\n";
     // Sum overlapping windows
     SFXC_ADD_F(&time_buffer[current_buffer][i],
                &time_buffer[1-current_buffer][j],
-               &output_buffer[k],
+               &data[out_pos],
                step_size);
-    k = (k+step_size)%fft_size_correlation;
-    if((k == 0) && (current_fft < nffts_per_integration)){
-      fft_t2f.rfft(&output_buffer[0], &data[out_pos]);
-      //FIXME Remove this check again
-      for(int z = fft_size_correlation; z<fft_size_correlation*2;z++)
-        SFXC_ASSERT(output_buffer[z] == 0);
-      if((RANK_OF_NODE == -10) && (stream_nr == 0) && current_fft > nffts_per_integration-200) std::cerr << current_fft << " : out[10] = " << output_buffer[10] << "\n";
-      out_pos += output_stride;
+    out_pos += step_size;
+    if(out_pos % fft_size_correlation == 0)
       current_fft += 1;
-    }
   }
-  SFXC_ASSERT(k==0);
   if((current_fft < -nffts_per_integration) && (current_fft > 499988) && (input_queue->size() == 0)){
     std::cerr << RANK_OF_NODE << " : PROBLEM current_fft = " << current_fft 
               << ", time = " << current_time 
@@ -162,8 +153,7 @@ Coherent_dedispersion::create_dedispersion_filter(){
 void
 Coherent_dedispersion::allocate_element(int nfft){
   cur_output = output_memory_pool.allocate();
-  cur_output->stride = output_stride;
-  cur_output->data.resize(output_stride*nfft);
+  cur_output->data.resize(fft_size_correlation*nfft);
   out_pos = 0;
 }
 
@@ -214,14 +204,10 @@ Coherent_dedispersion::set_parameters(const Correlation_parameters &parameters, 
   integer_channel_offset.inc_samples(n);
   start_time = parameters.integration_start;
   stop_time = parameters.integration_start + parameters.integration_time; 
-  stream_start = parameters.stream_start;//FIXME remove
   if(RANK_OF_NODE == 10){
   std::cout.precision(16);
   std::cout << RANK_OF_NODE << " :  integer_channel_offset = " <<  integer_channel_offset.get_time_usec()
             << ", channel_offset = " << channel_offset  << "\n";
-  std::cout << RANK_OF_NODE << " : stream_start = " << parameters.stream_start 
-            << ", " << parameters.stream_start.get_time_usec() 
-            << ", offset = " << channel_offset << "\n";
   std::cout << RANK_OF_NODE << " : start_time = " << start_time 
             << ", " << start_time.get_time_usec() << "\n";
   std::cout << RANK_OF_NODE << " : stop_time = " << stop_time 
@@ -236,17 +222,15 @@ Coherent_dedispersion::set_parameters(const Correlation_parameters &parameters, 
         parameters.integration_time,
         parameters.sample_rate,
         parameters.fft_size_correlation);
-  output_stride = parameters.fft_size_correlation + 4; // ensure 8 bytes allignment
   // Initialize buffers
   time_buffer[0].resize(2*fft_size_dedispersion);
   time_buffer[1].resize(2*fft_size_dedispersion);
   dedispersion_buffer.resize(fft_size_dedispersion+1);
-  output_buffer.resize(2*fft_size_correlation);
+  zeropad_buffer.resize(2*fft_size_dedispersion);
   // zero padding
-  SFXC_ZERO_F(&output_buffer[fft_size_correlation], fft_size_correlation); 
+  SFXC_ZERO_F(&zeropad_buffer[fft_size_dedispersion], fft_size_dedispersion); 
 
   // Initialize the FFT's
-  fft_f2t.resize(2*fft_size_dedispersion);
-  fft_t2f.resize(2*fft_size_correlation);
+  fft.resize(2*fft_size_dedispersion);
   create_dedispersion_filter();
 }

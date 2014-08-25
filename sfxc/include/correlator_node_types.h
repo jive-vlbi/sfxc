@@ -45,14 +45,22 @@ public:
   typedef boost::shared_ptr<Channel_queue>                Channel_queue_ptr;
 
   struct Delay_memory_pool_data {
-    Delay_memory_pool_data(): stride(0) {}
-    // The number of elements reserved for each fft, the start of each fft should be propely (16 bytes) alligned
-    size_t stride; 
-    Memory_pool_vector_element< std::complex<FLOAT> > data;
+    Memory_pool_vector_element<FLOAT> data;
   };
   typedef Memory_pool< Delay_memory_pool_data >         Delay_memory_pool;
   typedef Delay_memory_pool::Element                    Delay_memory_pool_element;
   typedef Threadsafe_queue<Delay_memory_pool_element>   Delay_queue;
   typedef boost::shared_ptr<Delay_queue>                Delay_queue_ptr;
+
+  struct Correlation_memory_pool_data {
+    Correlation_memory_pool_data(): stride(0) {}
+    // The number of elements reserved for each fft, the start of each fft should be propely (16 bytes) alligned
+    size_t stride; 
+    Memory_pool_vector_element< std::complex<FLOAT> > data;
+  };
+  typedef Memory_pool< Correlation_memory_pool_data >         Correlation_memory_pool;
+  typedef Correlation_memory_pool::Element                    Correlation_memory_pool_element;
+  typedef Threadsafe_queue<Correlation_memory_pool_element>   Correlation_queue;
+  typedef boost::shared_ptr<Correlation_queue>                Correlation_queue_ptr;
 };
 #endif // CORRELATOR_NODE_TYPES_H

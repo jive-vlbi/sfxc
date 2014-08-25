@@ -158,6 +158,8 @@ Correlation_core::create_baselines(const Correlation_parameters &parameters){
       parameters.integration_time,
       parameters.sample_rate,
       parameters.fft_size_correlation);
+  if(parameters.window != SFXC_WINDOW_NONE)
+    number_ffts_in_integration -= 1;
 
   number_ffts_in_sub_integration =
     Control_parameters::nr_ffts_to_output_node(
