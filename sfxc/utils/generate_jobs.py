@@ -53,9 +53,9 @@ parser.add_option("-o", "--output-directory", dest="output_dir", type="string",
 parser.add_option("-d", "--delay-directory", dest="delay_dir", type="string",
                   help="The directory delay files are written to", 
                   metavar="DIRECTORY")
-parser.add_option("-f", "--from-files", dest="from_files", default='',
-                  help="Correlate stations from files, FORMAT=Station1:host:pattern,Station2:host:patern, ...\n\
-                        E.g. : -f Ef:my_host:/scratch/sfxc/N08C1*.m5a", metavar="LIST");
+parser.add_option("-f", "--file-parameters", dest="file_parameters", type='string',
+                  help="Specify JSON file which contains locations and filename patterns for stations that are\
+                  to be correlated from files, rather than mark5s");
 parser.add_option("-e", "--evlbi", dest="evlbi", default=False,
                   action="store_true", help="e-VLBI correlation")
 
@@ -110,33 +110,38 @@ for station in vex['STATION']:
     type = 'vdif'
   media_type[station] = type
 
-# Generate list of files for stations that are correlated from file
-media_files = {}
-for item in options.from_files.split(','):
-  if item != '':
-    t = item.split(':')
-    if len(t) != 3:
-      print 'Error : bad argument to files list'
-      sys.exit(1)
-    year = int(vex['EXPER'][exper]['exper_nominal_start'].partition('y')[0])
-    type = media_type[t[0]]
-    print ['ssh', t[1], 'get_file_list.py', '-y', `year`, type, t[2]]
-    a = subprocess.Popen(['ssh', t[1], 'get_file_list.py', '-y', `year`, type,\
-                          t[2]], stdout=subprocess.PIPE)
-    lines = a.stdout.readlines()
-    files = []
-    for line in lines:
-      l = line.partition(' ')
-      start_time = iso2time(l[2])
-      files.append((l[0], start_time))
-    media_files[t[0]] = files
-
 # Create control file template.
 json_template = {}
 if options.template:
     fp = open(options.template, 'r')
     json_template = json.load(fp)
     fp.close()
+
+# Generate list of files for stations that are correlated from file
+media_files = {}
+if options.file_parameters != None:
+  fp = open(options.file_parameters, 'r')
+  file_parameters = json.load(fp)
+  for station in file_parameters["file_parameters"]:
+    for item in file_parameters["file_parameters"][station]["sources"]:
+      t = item.partition(':')
+      if t[2] == '':
+        print 'Error : badly formated location string in ', options.file_parameters
+        sys.exit(1)
+      year = int(vex['EXPER'][exper]['exper_nominal_start'].partition('y')[0])
+      type = media_type[station]
+      print ['ssh', t[0], 'get_file_list.py', '-y', `year`, type, t[2]]
+      a = subprocess.Popen(['ssh', t[0], 'get_file_list.py', '-y', `year`, type,\
+                            t[2]], stdout=subprocess.PIPE)
+      lines = a.stdout.readlines()
+      files = []
+      for line in lines:
+        l = line.partition(' ')
+        start_time = iso2time(l[2])
+        files.append((l[0], start_time))
+      media_files[station] = files
+  # Add the file locations to ctrl files for run_jobs.py
+  json_template["file_parameters"] = file_parameters["file_parameters"]
 
 mode = None
 stop_time = -1
