@@ -156,6 +156,13 @@ void Correlation_core_pulsar::integration_initialise() {
     memset(&dedispersion_buffer[j][0], 0, size*sizeof(std::complex<FLOAT>));
   }
   memset(&n_flagged[0], 0, sizeof(std::pair<int64_t,int64_t>)*n_flagged.size());
+  fft_f2t.resize(2 * fft_size());
+  fft_t2f.resize(2 * number_channels());
+  temp_buffer.resize(fft_size() + 1);
+  real_buffer.resize(2 * fft_size());
+
+  if (fft_size() != number_channels())
+    create_window();
 }
 
 void Correlation_core_pulsar::integration_step(std::vector<Complex_buffer> &integration_buffer, int buf_idx) {
@@ -171,7 +178,7 @@ void Correlation_core_pulsar::integration_step(std::vector<Complex_buffer> &inte
                         /* in2 */ &input_conj_buffers[stations.first][0],
                         /* out */ &integration_buffer[i][0], fft_size() + 1);
   }
-
+  
   for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
     // Cross correlations
     std::pair<size_t,size_t> &stations = baselines[i];
