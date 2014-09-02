@@ -30,15 +30,27 @@ Data_reader_file::init(const std::vector<std::string> &sources)
     SFXC_ASSERT(sources[i].compare(0, 7, "file://") == 0);
     filenames.push(sources[i].substr(7));
   }
-  
-  file.open(filenames.front().c_str(), std::ios::in | std::ios::binary);
-  if (!file.is_open()) {
-    std::string msg = std::string("Cannot open ") + filenames.front();
-    sfxc_abort(msg.c_str());
+  if(!open_next_file()){
+    sfxc_abort("Could not open any input files");
   }
-  filenames.pop();
-
   is_seekable_ = true;
+}
+
+bool
+Data_reader_file::open_next_file(){
+  bool opened_file = false;
+  if (file.is_open())
+    file.close();
+
+  while ((!opened_file) && (filenames.size() > 0)) {
+    file.open(filenames.front().c_str(), std::ios::in | std::ios::binary);
+    if (file.is_open()) 
+      opened_file = true;
+    else
+      std::cerr << RANK_OF_NODE << " : Warning : Cannot open " <<  filenames.front() << "\n";
+    filenames.pop();
+  }
+  return opened_file;
 }
 
 Data_reader_file::~Data_reader_file() {
@@ -47,8 +59,9 @@ Data_reader_file::~Data_reader_file() {
 
 size_t
 Data_reader_file::do_get_bytes(size_t nbytes, char *out) {
-  if (!file.good()) {
-    return -1;
+  if (!file.good()){
+    if (!open_next_file())
+      return -1;
   }
 
   if (out == NULL) {
@@ -61,15 +74,7 @@ Data_reader_file::do_get_bytes(size_t nbytes, char *out) {
 
   if (file.eof()) {
     nbytes = file.gcount();
-    if (filenames.size() > 0) {
-      file.close();
-      file.open(filenames.front().c_str(), std::ios::in | std::ios::binary);
-      if (!file.is_open()) {
-	std::string msg = std::string("Cannot open ") + filenames.front();
-	sfxc_abort(msg.c_str());
-      }
-      filenames.pop();
-    }
+    open_next_file();
   }
 
   return nbytes;
