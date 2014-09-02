@@ -25,6 +25,7 @@ public:
 
 private:
   void init(const std::vector<std::string> &sources);
+  bool open_next_file();
   size_t do_get_bytes(size_t nBytes, char *out);
 
   std::queue<std::string> filenames;
