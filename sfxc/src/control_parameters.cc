@@ -1437,6 +1437,10 @@ Control_parameters::transport_type(const std::string &station) const {
   for (Vex::Node::const_iterator das_it = station_block->begin("DAS");
        das_it != station_block->end("DAS"); ++das_it) {
     const std::string das = das_it->to_string();
+    if (root["DAS"][das] == root["DAS"]->end()) {
+      std::cerr << "Cannot find " << das << " in $DAS block" << std::endl;
+      sfxc_abort();
+    }
     if (root["DAS"][das]["record_transport_type"] != root["DAS"][das]->end())
       return root["DAS"][das]["record_transport_type"]->to_string();
   }
@@ -1472,6 +1476,10 @@ Control_parameters::rack_type(const std::string &station) const {
   for (Vex::Node::const_iterator das_it = station_block->begin("DAS");
        das_it != station_block->end("DAS"); ++das_it) {
     const std::string das = das_it->to_string();
+    if (root["DAS"][das] == root["DAS"]->end()) {
+      std::cerr << "Cannot find " << das << " in $DAS block" << std::endl;
+      sfxc_abort();
+    }
     if (root["DAS"][das]["electronics_rack_type"] != root["DAS"][das]->end())
       return root["DAS"][das]["electronics_rack_type"]->to_string();
   }
