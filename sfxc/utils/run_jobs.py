@@ -31,6 +31,10 @@ parser.add_option("-n", "--nodes", dest="number_nodes",
                   default=256, type="int",
                   help="Number of correlator nodes",
                   metavar="N")
+parser.add_option("-d", "--no-delays", dest="gen_delays",
+                  default = True,
+                  action = "store_false",
+                  help="Disable generating new delays")
 parser.add_option("-m", "--machines", dest="machines",
                   default="a,b,c,d,e,f,g,h,i,j", type="string",
                   help="Machines to run correlator nodes on",
@@ -97,32 +101,33 @@ for ctrl_file in args[1:]:
 
     # Make sure the delay files are up to date, and generate new ones
     # if they're not.
-    procs = {}
-    success = True
-    for station in stations:
-        path = urlparse.urlparse(json_input['delay_directory']).path
-        delay_file = path + '/' +  exper + '_' + station + '.del'
-        if not os.access(delay_file, os.R_OK) or \
-           os.stat(delay_file).st_mtime < os.stat(vex_file).st_mtime:
-            args = ['generate_delay_model', vex_file, station, delay_file]
-            procs[station] = subprocess.Popen(args, stdout=subprocess.PIPE)
-            pass
-        continue
-    for station in procs:
-        output = procs[station].communicate()[0]
-        procs[station].wait()
-        if procs[station].returncode != 0:
-            print "Delay model couldn't be generated for " + station + ":"
-            print output
-            path = urlparse.urlparse(json_input['delay_directory']).path
-            delay_file = path + '/' +  exper + '_' + station + '.del'
-            os.remove(delay_file)
-            success = False
-            pass
-        continue
-    if not success:
-        sys.exit(1)
-        pass
+    if options.gen_delays:
+      procs = {}
+      success = True
+      for station in stations:
+          path = urlparse.urlparse(json_input['delay_directory']).path
+          delay_file = path + '/' +  exper + '_' + station + '.del'
+          if not os.access(delay_file, os.R_OK) or \
+             os.stat(delay_file).st_mtime < os.stat(vex_file).st_mtime:
+              args = ['generate_delay_model', vex_file, station, delay_file]
+              procs[station] = subprocess.Popen(args, stdout=subprocess.PIPE)
+              pass
+          continue
+      for station in procs:
+          output = procs[station].communicate()[0]
+          procs[station].wait()
+          if procs[station].returncode != 0:
+              print "Delay model couldn't be generated for " + station + ":"
+              print output
+              path = urlparse.urlparse(json_input['delay_directory']).path
+              delay_file = path + '/' +  exper + '_' + station + '.del'
+              os.remove(delay_file)
+              success = False
+              pass
+          continue
+      if not success:
+          sys.exit(1)
+          pass
 
     # Figure out the directory where the input data files are located.
     # Should be the same for all stations otherwise things will become
