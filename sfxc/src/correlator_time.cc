@@ -17,12 +17,29 @@ Time::Time(double usec, double sample_rate_) : clock_rate(MAX_SAMPLE_RATE){
 }
 
 Time::Time(const std::string &time) : clock_rate(MAX_SAMPLE_RATE), sample_rate(1){
-  int year, day, hour = 0, minute = 0, second = 0, n;
-  n = sscanf(time.c_str(), "%dy%dd%dh%dm%ds", &year, &day, &hour, &minute, &second);
-  if (n < 2)
+  struct tm tm;
+  const char *end;
+
+  tm.tm_hour = tm.tm_min = tm.tm_sec = 0;
+  end = strptime(time.c_str(), "%Yy%jd%Hh%Mm%S", &tm);
+  // Skip subsecond field for now
+  if (end && *end == '.') {
+    end++;
+    while (isdigit(*end))
+      end++;
+  }
+  if (end && *end == 's')
+    end++;
+  if (end == NULL)
+    end = strptime(time.c_str(), "%Yy%jd%Hh%Mm", &tm);
+  if (end == NULL)
+    end = strptime(time.c_str(), "%Yy%jd%Hh", &tm);
+  if (end == NULL)
+    end = strptime(time.c_str(), "%Yy%jd", &tm);
+  if (end == NULL || *end)
     throw std::invalid_argument("Invalid datetime string: " + time);
-  int time_mjd = mjd(1, 1, year) + day - 1;
-  set_time(time_mjd, 60 * (60 * hour + minute) + second);
+  int time_mjd = mjd(1, 1, 1900 + tm.tm_year) + tm.tm_yday;
+  set_time(time_mjd, 60 * (60 * tm.tm_hour + tm.tm_min) + tm.tm_sec);
 }
 
 void Time::set_sample_rate(double sample_rate_){
@@ -91,7 +108,7 @@ std::string Time::date_string() const{
 
   get_date(year, day);
   get_time(hour, minute, second, milisecond);
-  snprintf(date, 25, "%04dy%03dd%02dh%02dm%02ds%03dms",
+  snprintf(date, 25, "%04dy%03dd%02dh%02dm%02d.%03ds",
            year, day, hour, minute, second, milisecond);
   return std::string(date);
 }

@@ -112,7 +112,7 @@ std::string VLBA_reader::time_to_string(int64_t time) {
   int day = time;
 
   char time_str[40];
-  snprintf(time_str,40, "%03dd%02dh%02dm%02ds%03dms",
+  snprintf(time_str,40, "%03dd%02dh%02dm%02d.%03ds",
            day, hour, minute, second, milisecond);
   return std::string(time_str);
 
