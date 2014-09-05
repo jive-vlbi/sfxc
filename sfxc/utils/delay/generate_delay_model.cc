@@ -216,6 +216,11 @@ int initialise_data(const char *vex_filename,
 
   Vex::Node root = vex.get_root_node();
 
+  if (root["STATION"][station_name] == root["STATION"]->end()) {
+    std::cerr << "station " << station_name << " not found" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
   std::string site = root["STATION"][station_name]["SITE"]->to_string();
   std::string site_name = root["SITE"][site]["site_name"]->to_string();
 
@@ -292,6 +297,12 @@ int initialise_data(const char *vex_filename,
       yd2md(year,doy,month,day);
       station_data.eop_ref_epoch = JD(year,month,day) + (hour - 12.) / 24; // Julian day
       station_data.num_eop_points = eop["num_eop_points"]->to_int();
+      if (station_data.num_eop_points < 3) {
+	std::cerr << "a minimum of 3 EOP points are required (only "
+		  << station_data.num_eop_points
+		  << " specified)" << std::endl;
+	exit(EXIT_FAILURE);
+      }
       assert(station_data.num_eop_points<=10);
       for (int i=0; i<station_data.num_eop_points; i++) {
         station_data.ut1_utc[i] = eop["ut1-utc"][i]->to_double_amount("sec");
