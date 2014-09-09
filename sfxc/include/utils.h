@@ -155,6 +155,7 @@ void sfxc_abort(const char *msg="");
     #define SFXC_ZERO_FC            sfxc_zero_fc
     #define SFXC_FFT                sfxc_fft_ipp_float
     #define SFXC_MUL_FC_I           sfxc_mul_fc_I
+    #define SFXC_MUL_F_FC_I         sfxc_mul_f_fc_I
     #define SFXC_CONJ_FC            sfxc_conj_fc
     #define SFXC_ADD_FC             sfxc_add_fc
     #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_fc 
@@ -181,6 +182,7 @@ void sfxc_abort(const char *msg="");
     #define SFXC_ZERO_FC            sfxc_zero_fc
     #define SFXC_FFT                sfxc_fft_fftw_float
     #define SFXC_MUL_FC_I           sfxc_mul_fc_I
+    #define SFXC_MUL_F_FC_I         sfxc_mul_f_fc_I
     #define SFXC_CONJ_FC            sfxc_conj_fc
     #define SFXC_ADD_FC             sfxc_add_fc
     #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_fc 

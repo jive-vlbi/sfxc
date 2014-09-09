@@ -46,6 +46,10 @@
     ippsMul_32fc_I((const Ipp32fc*)s1, (Ipp32fc *) s2dest, len);
   }
 
+  extern inline void sfxc_mul_f_fc_I(const float *s1, std::complex<float> *s2dest, int len){
+    ippsMul_32f32fc_I((const Ipp32f *)s1, (Ipp32fc *) s2dest, len);
+  }
+
   extern inline void sfxc_conj_fc(const std::complex<float> *s1, std::complex<float> *dest, int len){
     ippsConj_32fc((const Ipp32fc*) s1, (Ipp32fc*) dest, len);
   }
@@ -116,6 +120,13 @@
       s2dest[i] = s1[i] * s2dest[i];
     }
   } 
+
+  extern inline void sfxc_mul_f_fc_I(const float *s1, std::complex<float> *s2dest, int len){
+    for(int i = 0; i < len; i++){
+      s2dest[i] = s1[i] * s2dest[i];
+    }
+  } 
+
   extern inline void sfxc_conj_fc(const std::complex<float> *s1, std::complex<float> *dest, int len){
     for(int i = 0; i < len; i++){
       dest[i] = conj(s1[i]);
