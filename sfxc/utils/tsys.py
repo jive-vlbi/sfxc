@@ -255,7 +255,11 @@ if freq:
         pass
     print mount,
     print "DPFU = %.3f, %.3f" % tuple(gain['DPFU']),
-    print "POLY %.3f" % gain['POLY']
+    try:
+        print "POLY %.4g" % gain['POLY']
+    except:
+        print gain['POLY']
+        print "POLY %s" % ','.join(["%.4g" % (f) for f in gain['POLY']])
     print "/"
     pass
 
@@ -284,6 +288,10 @@ while fp:
         entry = struct.unpack(format, buf)
     except:
         break
+    if (entry[6] + entry[7]) == 0:
+        continue
+    if (entry[8] + entry[9]) == 0:
+        continue
     f_on = float(entry[7])/(entry[6] + entry[7])
     f_off = float(entry[9])/(entry[8] + entry[9])
     P_on = 1 / (2 * (erfinv(1 - f_on))**2)
