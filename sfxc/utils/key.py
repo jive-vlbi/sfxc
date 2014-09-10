@@ -24,8 +24,6 @@ def s_err(scanner, error):
     raise RuntimeError, "line: %d", scanner.line_no
 
 def s_keyword(scanner, token):
-    if re.match("^([0-9]*\.[0-9]+|[+-]?[0-9]+\.?)$", token):
-        return s_number(scanner, token) # FFS
     if len(token) > 9 or '.' in token:
         res = ('value', token)
     else:
@@ -75,9 +73,9 @@ scanner = re.Scanner([
         (",", lambda s, t: ('comma',)),
         ("[+-]?[0-9]+:[0-9]+:[0-9]+(.[0-9]*)?", s_angle),
         ("[+-]?[0-9]+:[0-9]+(.[0-9]*)?", s_angle),
-        ("[A-Za-z.0-9]([()A-Za-z_0-9._+-]+)?", s_keyword), # apparently parens are cool?! and unquoted minus signs?
         ("[+-]?[0-9]*\.[0-9]+(E[+-][0-9]{1,3})?", s_number),
         ("[+-]?[0-9]+\.?", s_number),
+        ("[A-Za-z.0-9]([()A-Za-z_0-9._+-]+)?", s_keyword), # apparently parens are cool?! and unquoted minus signs?
         (".*", s_misc)
         ])
 
