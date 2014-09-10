@@ -288,14 +288,16 @@ while fp:
         entry = struct.unpack(format, buf)
     except:
         break
-    if (entry[6] + entry[7]) == 0:
+    if (entry[6] + entry[7]) < 5000:
         continue
-    if (entry[8] + entry[9]) == 0:
+    if (entry[8] + entry[9]) < 5000:
         continue
     f_on = float(entry[7])/(entry[6] + entry[7])
     f_off = float(entry[9])/(entry[8] + entry[9])
     P_on = 1 / (2 * (erfinv(1 - f_on))**2)
     P_off = 1 / (2 * (erfinv(1 - f_off))**2)
+    if P_on < P_off:
+        continue
     P_avg = (P_on + P_off) / 2
     station = entry[0]
     frequency = entry[1]
@@ -339,7 +341,11 @@ for secs in times[station]:
     tupletime = time.gmtime(secs)
     print "%d %02d:%02d.%02d" % (tupletime.tm_yday, tupletime.tm_hour, tupletime.tm_min, ((tupletime.tm_sec * 100) / 60)),
     for idx in index:
-        print "%.1f" % (tsys[station][secs][mapping[idx]] * tcal[idx]),
+        try:
+            print "%.1f" % (tsys[station][secs][mapping[idx]] * tcal[idx]),
+        except:
+            print "999.9",
+            pass
         continue
     print ""
     continue
