@@ -182,7 +182,7 @@ def phase_offsets(data, station, offsets, rates, snr):
       w /= wmax
     else:
       w[:] = 1
-    coef_phase = polynomial.polyfit(x, phase[N/10:N+1-N/10], 1, w=w)
+    coef_phase = polynomial.polynomial.polyfit(x, phase[N/10:N+1-N/10], 1, w=w)
     M = nfreq^1
     vis_rate = sum(data[chan, :, :]*exp(-2j*pi*(arange(0, M+1) * coef_phase[1]/(2.*M))),axis=1)
     phase_rate = unwrap(arctan2(imag(vis_rate), real(vis_rate)))
@@ -192,7 +192,7 @@ def phase_offsets(data, station, offsets, rates, snr):
       w /= rate_wmax
     else:
       w[:] = 1
-    coef_rate = polynomial.polyfit(arange(phase_rate.size), phase_rate, 1, w=w)
+    coef_rate = polynomial.polynomial.polyfit(arange(phase_rate.size), phase_rate, 1, w=w)
     offsets[chan,station] = -coef_phase[1]
     rates[chan,station] = -coef_rate[1]
     if (chan == 0) and (station==-1):
