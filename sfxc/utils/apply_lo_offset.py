@@ -53,7 +53,7 @@ while True:
     delta = (t-tstart)
     seconds = delta.seconds + 86400*delta.days
     phase0 = seconds*(offset-floor(offset))
-    phase0 = -2*pi*(phase0-floor(phase0))
+    phase0 = 2*pi*(phase0-floor(phase0))
   else:
     line = unpack('7d', delayfile.read(56))
     t = get_datetime(mjd, line[0])
@@ -66,6 +66,6 @@ while True:
     # issues with possible loss of floating point precision.
     delta = (t-t0)
     seconds = delta.seconds + 86400*delta.days
-    phase = -2*pi*seconds*offset + phase0
+    phase = 2*pi*seconds*offset + phase0
     delayfile.seek(-16,1)
     delayfile.write(pack('2d',phase,line[6]))
