@@ -848,13 +848,16 @@ void
 MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   int size = 0;
   size =
-    4*sizeof(int64_t) + 13*sizeof(int32_t) + sizeof(int64_t) +
-    3*sizeof(char) + corr_param.station_streams.size() * (5 * sizeof(int32_t) + 3 * sizeof(int64_t) + sizeof(char)) +
+    5*sizeof(int64_t) + 13*sizeof(int32_t) + sizeof(int64_t) +
+    3*sizeof(char) + corr_param.station_streams.size() * (5 * sizeof(int32_t) + 3 * sizeof(int64_t) + sizeof(char) + sizeof(double)) +
     11*sizeof(char);
   int position = 0;
   char message_buffer[size];
 
-  int64_t ticks = corr_param.start_time.get_clock_ticks();
+  int64_t ticks = corr_param.experiment_start.get_clock_ticks();
+  MPI_Pack(&ticks, 1, MPI_INT64,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+  ticks = corr_param.start_time.get_clock_ticks();
   MPI_Pack(&ticks, 1, MPI_INT64,
            message_buffer, size, &position, MPI_COMM_WORLD);
   ticks = corr_param.stop_time.get_clock_ticks();
@@ -936,6 +939,8 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
              message_buffer, size, &position, MPI_COMM_WORLD);
     MPI_Pack(&station->sideband, 1, MPI_CHAR,
              message_buffer, size, &position, MPI_COMM_WORLD);
+    MPI_Pack(&station->LO_offset, 1, MPI_DOUBLE,
+             message_buffer, size, &position, MPI_COMM_WORLD);
   }
 
   SFXC_ASSERT(position == size);
@@ -957,6 +962,10 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
            status.MPI_TAG, MPI_COMM_WORLD, &status2);
   int position = 0;
   int64_t ticks;
+  MPI_Unpack(buffer, size, &position,
+             &ticks, 1, MPI_INT64,
+             MPI_COMM_WORLD);
+  corr_param.experiment_start.set_clock_ticks(ticks);
   MPI_Unpack(buffer, size, &position,
              &ticks, 1, MPI_INT64,
              MPI_COMM_WORLD);
@@ -1067,6 +1076,9 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
                MPI_COMM_WORLD);
     MPI_Unpack(buffer, size, &position,
                &station_param.sideband, 1, MPI_CHAR,
+               MPI_COMM_WORLD);
+    MPI_Unpack(buffer, size, &position,
+               &station_param.LO_offset, 1, MPI_DOUBLE,
                MPI_COMM_WORLD);
     corr_param.station_streams.push_back(station_param);
   }

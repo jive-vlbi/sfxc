@@ -84,6 +84,8 @@ private:
   int   stream_idx;
   int   bits_per_sample;
   int oversamp; // The amount of oversampling
+  double LO_offset;
+  double start_phase;
 
   int n_ffts_per_integration, current_fft, total_ffts;
   size_t tbuf_start, tbuf_end;

@@ -130,12 +130,14 @@ public:
     int32_t bandwidth;
     char sideband;
     int32_t bits_per_sample;
+    double LO_offset; // LO offset in Hz
   };
 
   typedef std::vector<Station_parameters> Station_list;
   typedef Station_list::iterator          Station_iterator;
 
   // Data members
+  Time experiment_start;    // Start time of the experiment
   Time start_time;          // Start of the slice in microseconds
   Time stop_time;           // End of the slice in microseconds
   Time integration_time;
@@ -217,6 +219,7 @@ public:
   bool phased_array() const;
   bool pulsar_binning() const;
   bool multi_phase_center() const;
+  double LO_offset(const std::string &station) const;
   
   Time reader_offset(const std::string &s) const{
     return reader_offsets.find(s)->second;
