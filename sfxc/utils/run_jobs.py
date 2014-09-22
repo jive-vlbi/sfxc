@@ -250,7 +250,7 @@ for ctrl_file in args[1:]:
           if machine not in machines:
             print >>fp, machine, " slots=8"
             ranks[machine] = 8
-      elif machine.startswith('aribox'):
+      elif machine.startswith('aribox') or (machine == '10.88.1.230'):
         print >>fp, machine, " slots=16"
         ranks[machine] = 16
 
