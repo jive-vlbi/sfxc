@@ -14,6 +14,74 @@ import gps
 os.environ['TZ'] = 'UTC'
 time.tzset()
 
+bitstreams_dbbc = [
+    (1, 16),
+    (2, 24),
+    (3, 0),
+    (4, 8),
+    (5, 18),
+    (6, 26),
+    (7, 2),
+    (8, 10),
+    (9, 20),
+    (10, 28),
+    (11, 4),
+    (12, 12),
+    (13, 22),
+    (14, 30),
+    (15, 6),
+    (16, 14)
+    ]
+
+bitstreams_vlba4 = [
+    (1, 16),
+    (2, 18),
+    (3, 0),
+    (4, 2),
+    (5, 20),
+    (6, 22),
+    (7, 4),
+    (8, 6),
+    (9, 24),
+    (10, 26),
+    (11, 8),
+    (12, 10),
+    (13, 28),
+    (14, 30),
+    (15, 12),
+    (16, 14)
+    ]
+
+bitstreams_wb = [
+    (1, 18),
+    (2, 16),
+    (3, 2),
+    (4, 0),
+    (5, 22),
+    (6, 20),
+    (7, 6),
+    (8, 4),
+    (9, 26),
+    (10, 24),
+    (11, 10),
+    (12, 8),
+    (13, 30),
+    (14, 28),
+    (15, 14),
+    (16, 12)
+    ]
+
+bitstreams = {
+    'Ef': bitstreams_dbbc,
+    'Hh': bitstreams_dbbc,
+    'Nt': bitstreams_dbbc,
+    'On': bitstreams_dbbc,
+    'Sh': bitstreams_vlba4,
+    'Tr': bitstreams_dbbc,
+    'Wb': bitstreams_wb,
+    'Ys': bitstreams_vlba4
+    }
+
 def vex2time(str):
     tupletime = time.strptime(str, "%Yy%jd%Hh%Mm%Ss");
     return time.mktime(tupletime)
@@ -48,14 +116,18 @@ def update(src, dest):
     ref_clock = re.compile(r'\s*ref \$CLOCK')
     ref_tapelog_obs = re.compile(r'\s*ref \$TAPELOG_OBS')
     def_station = re.compile(r'\s*def ([a-zA-Z]+);')
-    enddef = re.compile(r'\*enddef;')
+    enddef = re.compile(r'\s*enddef;')
     block = re.compile(r'\$[A-Z_]+;')
+    block_mode = re.compile(r'\$MODE;')
     block_eop = re.compile(r'\$EOP;')
     block_clock = re.compile(r'\$CLOCK;')
     block_station = re.compile(r'\$STATION;')
+    block_site = re.compile(r'\$SITE;')
+    site_position_epoch = re.compile(r'\s*site_position_epoch\s*=\s*(\d+);')
     has_eop = False
     has_clock = False
     has_tapelog_obs = False
+    has_bitstreams = False
     for line in src:
         if ref_eop.match(line):
             has_eop = True
@@ -69,7 +141,9 @@ def update(src, dest):
         continue
     src.seek(0)
     suppress_block = False
+    mode_block = False
     station_block = False
+    site_block = False
     comment_line = False
     station = None
     for line in src:
@@ -94,7 +168,22 @@ def update(src, dest):
             continue
         if block.match(line):
             suppress_block = False
+            mode_block = False
             station_block = False
+            site_block = False
+            pass
+        if block_mode.match(line):
+            mode_block = True
+            pass
+        if mode_block and enddef.match(line):
+            if not has_bitstreams:
+                for station in v['STATION']:
+                    if station in bitstreams:
+                        dest.write("     ref $BITSTREAMS = %s:%s;\n" % (station.upper(), station))
+                        pass
+                    continue
+                pass
+            mode_block = False
             pass
         if block_station.match(line):
             station_block = True
@@ -105,6 +194,16 @@ def update(src, dest):
         if station_block and enddef.match(line):
             station = None
             pass
+        if block_site.match(line):
+            site_block = True
+            pass
+        if site_block and site_position_epoch.match(line):
+            epoch = int(site_position_epoch.match(line).group(1))
+            secs = (epoch - 40587) * 86400
+            tupletime = time.gmtime(secs)
+            epoch = time.strftime("%Yy%jd", tupletime)
+            dest.write("     site_position_epoch = %s;\n" % epoch)
+            continue
         if block_eop.match(line) or block_clock.match(line):
             suppress_block = True
             pass
@@ -115,6 +214,20 @@ def update(src, dest):
 
         continue
 
+    if not has_bitstreams:
+        dest.write("*" + 77 * "-" + "\n")
+        dest.write("$BITSTREAMS;\n")
+        for station in bitstreams:
+            dest.write("*\n")
+            dest.write("def %s;\n" % station.upper())
+            mapping = bitstreams[station]
+            for stream in mapping:
+                dest.write("     stream_def = &CH%02d : sign : %2d : %2d;\n" % (stream[0], stream[1], stream[1]))
+                dest.write("     stream_def = &CH%02d :  mag : %2d : %2d;\n" % (stream[0], stream[1] + 1, stream[1] + 1))
+                continue
+            dest.write("enddef;\n")
+            continue
+        pass
     if not has_tapelog_obs:
         dest.write("*" + 77 * "-" + "\n")
         dest.write("$TAPELOG_OBS;\n")

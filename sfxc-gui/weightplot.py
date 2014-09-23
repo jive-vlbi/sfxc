@@ -221,7 +221,7 @@ class WeightPlotWindow(Qt.QWidget):
         exper = vex['EXPER'][exper]['exper_name']
         self.setWindowTitle(exper + " Weights")
 
-        self.integration_slice = 0
+        self.integration_slice = -1
         self.realtime = realtime
         self.history = history
 

@@ -307,6 +307,10 @@ enum MPI_TAG {
 
   MPI_TAG_OUTPUT_NODE_WRITE_PHASECAL,
 
+  MPI_TAG_OUTPUT_NODE_SET_TSYS_FILE,
+
+  MPI_TAG_OUTPUT_NODE_WRITE_TSYS,
+
   // General messages
   //-------------------------------------------------------------------------//
 

@@ -37,6 +37,7 @@ private:
   Output_node &node;
 
   std::ofstream phasecal_file;
+  std::ofstream tsys_file;
 };
 
 /**

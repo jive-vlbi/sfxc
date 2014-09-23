@@ -334,9 +334,9 @@ double Delay_table_akima::delay(const Time &time, int phase_center) {
   SFXC_ASSERT(time >= scans[scan_nr].begin);
   SFXC_ASSERT(time <= scans[scan_nr].end);
   SFXC_ASSERT(splineakima.size() > 0);
-  double sec = (time - scans[scan_nr].begin).get_time();
+  double sec = time.diff(scans[scan_nr].begin);
   double result = gsl_spline_eval(splineakima[phase_center], sec, acc[phase_center]);
-  sec = (time - clock_epochs[clock_nr]).get_time();
+  sec = time.diff(clock_epochs[clock_nr]);
   double clock_drift = clock_offsets[clock_nr] + sec * clock_rates[clock_nr];
   return result + clock_drift;
 }
@@ -347,8 +347,19 @@ double Delay_table_akima::rate(const Time &time, int phase_center) {
   }
 
   SFXC_ASSERT(splineakima.size() > 0);
-  double sec = (time - scans[scan_nr].begin).get_time();
+  double sec = time.diff(scans[scan_nr].begin);
   double result = gsl_spline_eval_deriv(splineakima[phase_center], sec, acc[phase_center]);
+  return result + clock_rates[clock_nr];
+}
+
+double Delay_table_akima::accel(const Time &time, int phase_center) {
+  while (scans[scan_nr].end < time){
+    if (!initialise_next_scan()) break;
+  }
+
+  SFXC_ASSERT(splineakima.size() > 0);
+  double sec = time.diff(scans[scan_nr].begin);
+  double result = gsl_spline_eval_deriv2(splineakima[phase_center], sec, acc[phase_center]);
   return result + clock_rates[clock_nr];
 }
 
@@ -357,7 +368,7 @@ double Delay_table_akima::phase(const Time &time, int phase_center){
     if (!initialise_next_scan()) break;
   }
   SFXC_ASSERT(splineakima.size() > phase_center);
-  double sec = (time - scans[scan_nr].begin).get_time();
+  double sec = time.diff(scans[scan_nr].begin);
   double result = gsl_spline_eval(splineakima_ph[phase_center], sec, acc_ph[phase_center]);
   return result;
 }
@@ -367,7 +378,7 @@ double Delay_table_akima::amplitude(const Time &time, int phase_center){
     if (!initialise_next_scan()) break;
   }
   SFXC_ASSERT(splineakima.size() > phase_center);
-  double sec = (time - scans[scan_nr].begin).get_time();
+  double sec = time.diff(scans[scan_nr].begin);
   double result = gsl_spline_eval(splineakima_amp[phase_center], sec, acc_amp[phase_center]);
   return result;
 }

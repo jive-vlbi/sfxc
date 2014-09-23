@@ -250,7 +250,7 @@ goto_time(Time time) {
 
   if (time != new_time) {
     DEBUG_MSG("Warning: Couldn't go to time " << time << "us.");
-    DEBUG_MSG("Current time is              " << current_time << "us.");
+    DEBUG_MSG("Current time is              " << current_time[0] << "us.");
     DEBUG_MSG("Time found is                " << new_time << "us.");
   }
 

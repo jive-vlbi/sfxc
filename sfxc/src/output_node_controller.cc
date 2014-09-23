@@ -51,6 +51,22 @@ Output_node_controller::process_event(MPI_Status &status) {
       phasecal_header.subjob_nr = global_header.subjob_nr;
       phasecal_file.write((char *)&phasecal_header, sizeof(phasecal_header));
 
+      if (tsys_file.is_open()) {
+	struct Output_header_tsys tsys_header;
+	tsys_header.header_size = sizeof(tsys_header);
+	memcpy(&tsys_header.experiment, global_header.experiment,
+	       sizeof(tsys_header.experiment));
+	tsys_header.output_format_version =
+	  global_header.output_format_version;
+	tsys_header.correlator_version = global_header.correlator_version;
+	memcpy(&tsys_header.correlator_branch,
+	       global_header.correlator_branch,
+	       sizeof(tsys_header.correlator_branch));
+	tsys_header.job_nr = global_header.job_nr;
+	tsys_header.subjob_nr = global_header.subjob_nr;
+	tsys_file.write((char *)&tsys_header, sizeof(tsys_header));
+      }
+
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_OUTPUT_STREAM_SLICE_SET_PRIORITY: {
@@ -135,6 +151,57 @@ Output_node_controller::process_event(MPI_Status &status) {
       phasecal_file.write((char *)&integration_time_secs, sizeof(integration_time_secs));
       phasecal_file.write((char *)&num_samples, sizeof(num_samples));
       phasecal_file.write((char *)&samples[0], num_samples * sizeof(samples[0]));
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+  case MPI_TAG_OUTPUT_NODE_SET_TSYS_FILE: {
+      int len;
+      MPI_Get_elements(&status, MPI_CHAR, &len);
+      SFXC_ASSERT(len > 0);
+
+      char filename[len];
+      MPI_Recv(&filename, len, MPI_CHAR, status.MPI_SOURCE,
+	       status.MPI_TAG, MPI_COMM_WORLD, &status2);
+      SFXC_ASSERT(filename[len - 1] == 0);
+      SFXC_ASSERT(strncmp(filename, "file://", 7) == 0);
+      tsys_file.open(filename + 7, std::ios::out | std::ios::trunc | std::ios::binary);
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+  case MPI_TAG_OUTPUT_NODE_WRITE_TSYS: {
+      int len;
+      MPI_Get_elements(&status, MPI_CHAR, &len);
+
+      char msg[len];
+      MPI_Recv(&msg, len, MPI_CHAR, status.MPI_SOURCE,
+	       status.MPI_TAG, MPI_COMM_WORLD, &status2);
+
+      int pos = 0;
+      uint8_t station_number, frequency_number, sideband, polarisation;
+      MPI_Unpack(msg, len, &pos, &station_number, 1, MPI_UINT8, MPI_COMM_WORLD);
+      MPI_Unpack(msg, len, &pos, &frequency_number, 1, MPI_UINT8, MPI_COMM_WORLD);
+      MPI_Unpack(msg, len, &pos, &sideband, 1, MPI_UINT8, MPI_COMM_WORLD);
+      MPI_Unpack(msg, len, &pos, &polarisation, 1, MPI_UINT8, MPI_COMM_WORLD);
+
+      Time start_time;
+      uint64_t start_time_ticks;
+      MPI_Unpack(msg, len, &pos, &start_time_ticks, 1, MPI_INT64, MPI_COMM_WORLD);
+      start_time.set_clock_ticks(start_time_ticks);
+      uint32_t mjd = start_time.get_mjd();
+      uint32_t secs = start_time.get_time();
+
+      uint64_t tsys[4];
+      MPI_Unpack(msg, len, &pos, &tsys[0], 4, MPI_INT64, MPI_COMM_WORLD);
+
+      if (tsys_file.is_open()) {
+	tsys_file.write((char *)&station_number, sizeof(station_number));
+	tsys_file.write((char *)&frequency_number, sizeof(frequency_number));
+	tsys_file.write((char *)&sideband, sizeof(sideband));
+	tsys_file.write((char *)&polarisation, sizeof(polarisation));
+	tsys_file.write((char *)&mjd, sizeof(mjd));
+	tsys_file.write((char *)&secs, sizeof(secs));
+	tsys_file.write((char *)&tsys[0], sizeof(tsys));
+      }
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

@@ -68,6 +68,7 @@ public:
   // delay is in seconds
   double delay(const Time &time, int phase_center=0);
   double rate(const Time &time, int phase_center=0);
+  double accel(const Time &time, int phase_center=0);
   double phase(const Time &time, int phase_center=0);
   double amplitude(const Time &time, int phase_center=0);
 

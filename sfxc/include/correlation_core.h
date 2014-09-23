@@ -2,6 +2,7 @@
 #define CORRELATION_CORE_H_
 
 #include "sfxc_math.h"
+#include "sfxc_mpi.h"
 #include "tasklet/tasklet.h"
 #include "delay_correction.h"
 #include "control_parameters.h"
@@ -23,6 +24,7 @@ public:
 
   typedef Memory_pool_vector_element<std::complex<FLOAT> > Complex_buffer;
   typedef Memory_pool_vector_element<std::complex<float> > Complex_buffer_float;
+  typedef Memory_pool_vector_element<FLOAT> Real_buffer;
 
   Correlation_core();
   virtual ~Correlation_core();
@@ -67,6 +69,7 @@ protected:
   void calibrate(std::vector<Complex_buffer> &buffer, Time tmid);
   void integration_write_headers(int phase_center, int bin);
   void integration_write_baselines(std::vector<Complex_buffer> &integration_buffer);
+  void tsys_write();
   void sub_integration();
   void find_invalid();
   void get_input_streams();
@@ -79,6 +82,7 @@ protected:
   size_t number_input_streams();
 
   size_t number_input_streams_in_use();
+  void create_window();
 
 protected:
   std::string bptable_name;
@@ -114,6 +118,11 @@ protected:
   boost::shared_ptr<Data_writer>                       writer;
 
   Timer fft_timer;
+
+  SFXC_FFT fft_f2t, fft_t2f;
+  Complex_buffer temp_buffer;
+  Real_buffer real_buffer;
+  std::vector<FLOAT> window;
 
   // Needed for writing the progress messages
   int node_nr_;

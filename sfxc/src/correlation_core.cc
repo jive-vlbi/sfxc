@@ -73,6 +73,7 @@ void Correlation_core::do_task() {
       integration_write_headers(i, source_nr);
       integration_write_baselines(phase_centers[i]);
     }
+    tsys_write();
     current_integration++;
   } else if(current_fft >= next_sub_integration * number_ffts_in_sub_integration){
     sub_integration();
@@ -110,6 +111,13 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   node_nr_ = node_nr;
   current_integration = 0;
   current_fft = 0;
+
+  // If the relevant correlation parameters change, clear the window
+  // vector.  It will be recreated when the next integration starts.
+  if (parameters.number_channels != correlation_parameters.number_channels ||
+      parameters.fft_size_correlation != correlation_parameters.fft_size_correlation ||
+      parameters.window != correlation_parameters.window)
+    window.clear();
 
   correlation_parameters = parameters;
   oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
@@ -275,6 +283,14 @@ void Correlation_core::integration_initialise() {
   }
   memset(&n_flagged[0], 0, sizeof(std::pair<int64_t,int64_t>)*n_flagged.size());
   next_sub_integration = 1;
+
+  fft_f2t.resize(2 * fft_size());
+  fft_t2f.resize(2 * number_channels());
+  temp_buffer.resize(fft_size() + 1);
+  real_buffer.resize(2 * fft_size());
+
+  if (fft_size() != number_channels())
+    create_window();
 }
 
 void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride) {
@@ -458,7 +474,7 @@ void Correlation_core::integration_write_headers(int phase_center, int sourcenr)
       }
       stats[i].station_nr=station+1;
       stats[i].sideband = (correlation_parameters.sideband=='L') ? 0 : 1;
-      stats[i].frequency_nr=(unsigned char)correlation_parameters.frequency_nr;
+      stats[i].frequency_nr = (unsigned char)correlation_parameters.frequency_nr;
 #ifndef SFXC_ZERO_STATS
       if(statistics[stream]->bits_per_sample==2){
         stats[i].levels[0]=levels[0];
@@ -497,7 +513,6 @@ void Correlation_core::integration_write_baselines(std::vector<Complex_buffer> &
   int nstations = nstreams;
   if (correlation_parameters.cross_polarize) 
     nstations /= 2;
-  size_t n = fft_size() / number_channels();
   
   SFXC_ASSERT(integration_buffer.size() == baselines.size());
 
@@ -514,13 +529,22 @@ void Correlation_core::integration_write_baselines(std::vector<Complex_buffer> &
     int station1 = streams_in_scan[inputs.first];
     int station2 = streams_in_scan[inputs.second];
 
-    for (size_t j = 0; j < number_channels() + 1; j++) {
-      integration_buffer_float[j] = integration_buffer[i][j * n];
-      for (size_t k = 1; k < n && j < number_channels(); k++)
-        integration_buffer_float[j] += integration_buffer[i][j * n + k];
-      integration_buffer_float[j] /= n;
+    if (fft_size() != number_channels()) {
+      fft_f2t.irfft(&integration_buffer[i][0], &real_buffer[0]);
+      for (size_t j = 0; j < number_channels(); j++)
+	real_buffer[number_channels() + j] =
+	  real_buffer[2 * fft_size() - number_channels() + j];
+      SFXC_MUL_F(&real_buffer[0], &window[0], &real_buffer[0], 2 * number_channels());
+      fft_t2f.rfft(&real_buffer[0], &temp_buffer[0]);
+      for (size_t j = 0; j < number_channels() + 1; j++) {
+	integration_buffer_float[j] = temp_buffer[j];
+	integration_buffer_float[j] /= (2 * fft_size());
+      }
+    } else {
+      for (size_t j = 0; j < number_channels() + 1; j++)
+	integration_buffer_float[j] = integration_buffer[i][j];
     }
-    integration_buffer_float[number_channels()] *= n; // Only one point contributes to the last point
+
     const int64_t total_samples = number_ffts_in_integration * fft_size();
     int32_t *levels = statistics[station1]->get_statistics(); // We get the number of invalid samples from the bitstatistics
     if (station1 == station2){
@@ -564,6 +588,53 @@ void Correlation_core::integration_write_baselines(std::vector<Complex_buffer> &
                       ((char*)&integration_buffer_float[0]));
   }
 }
+
+void
+Correlation_core::tsys_write() {
+  std::vector<int> stream2station;
+  stream2station.resize(input_buffers.size(), -1);
+  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
+    size_t station_stream =
+      correlation_parameters.station_streams[i].station_stream;
+    stream2station[station_stream] =
+      correlation_parameters.station_streams[i].station_number;
+  }
+
+  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
+    size_t len = 4 * sizeof(uint8_t) + sizeof(uint64_t) + 4 * sizeof(uint64_t);
+    int64_t tsys_on_hi, tsys_on_lo, tsys_off_hi, tsys_off_lo;
+    int *tsys;
+    char msg[len];
+    int pos = 0;
+
+    int stream = streams_in_scan[i];
+    uint8_t station_number = stream2station[stream];
+    uint8_t frequency_number = correlation_parameters.frequency_nr;
+    uint8_t sideband = (correlation_parameters.sideband == 'L' ? 0 : 1);
+    uint8_t polarisation = (correlation_parameters.polarisation == 'R' ? 0 : 1);
+    if (correlation_parameters.cross_polarize && stream >= input_buffers.size() / 2)
+      polarisation = 1 - polarisation;
+
+    tsys = statistics[stream]->get_tsys();
+    tsys_on_lo = tsys[0];
+    tsys_on_hi = tsys[1];
+    tsys_off_lo = tsys[2];
+    tsys_off_hi = tsys[3];
+
+    MPI_Pack(&station_number, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&frequency_number, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&sideband, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&polarisation, 1, MPI_UINT8, msg, len, &pos, MPI_COMM_WORLD);
+    uint64_t ticks = correlation_parameters.integration_start.get_clock_ticks();
+    MPI_Pack(&ticks, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&tsys_on_lo, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&tsys_on_hi, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&tsys_off_lo, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
+    MPI_Pack(&tsys_off_hi, 1, MPI_INT64, msg, len, &pos, MPI_COMM_WORLD);
+
+    MPI_Send(msg, pos, MPI_PACKED, RANK_OUTPUT_NODE, MPI_TAG_OUTPUT_NODE_WRITE_TSYS, MPI_COMM_WORLD);
+  }
+}  
 
 void 
 Correlation_core::sub_integration(){
@@ -727,4 +798,88 @@ add_cl_table(std::string name){
 void Correlation_core::
 add_bp_table(std::string name){
   bptable_name = name;
+}
+
+double
+rect(int n, int i)
+{
+  if (i >= n / 4 && i < (3 * n) / 4)
+    return 1.0;
+  else
+    return 0.0;
+}
+
+double
+cos(int n, int i)
+{
+  return sin(M_PI * i /(n - 1));
+}
+
+double
+hamming(int n, int i)
+{
+  return 0.54 - 0.46 * cos(2 * M_PI * i / (n - 1));
+}
+
+double
+hann(int n, int i)
+{
+  return 0.5 * (1 - cos(2 * M_PI * i / (n - 1)));
+}
+
+double
+convolve(double (*f)(int, int), int n, int i)
+{
+  double sum = 0.0;
+
+  i += n / 2;
+  i -= 1;
+
+  for (int j = 0; j <= i; j++) {
+    if ((i - j) >= n)
+      continue;
+    sum += f(n, j) * f(n, i - j);
+  }
+
+  return sum;
+}
+
+void 
+Correlation_core::create_window() {
+  const int n = 2 * number_channels();
+  const int m = 2 * fft_size();
+
+  if (!window.empty())
+    return;
+
+  window.resize(n);
+
+  switch(correlation_parameters.window){
+  case SFXC_WINDOW_NONE:
+  case SFXC_WINDOW_RECT:
+    // rectangular window (including zero padding)
+    for (int i = 0; i < n; i++)
+      window[(i + n / 2) % n] =
+	(m / n) * convolve(rect, n, i) / convolve(rect, m, ((m - n) / 2) + i);
+    break;
+  case SFXC_WINDOW_COS:
+    // Cosine window
+    for (int i = 0; i < n; i++)
+      window[(i + n / 2) % n] =
+	(m / n) * convolve(cos, n, i) / convolve(cos, m, ((m - n) / 2) + i);
+    break;
+  case SFXC_WINDOW_HAMMING:
+    // Hamming window
+    for (int i = 0; i < n; i++)
+      window[(i + n / 2) % n] =
+	(m / n) * convolve(hamming, n, i) / convolve(hamming, m, ((m - n) / 2) + i);
+    break;
+  case SFXC_WINDOW_HANN:
+    for (int i = 0; i < n; i++)
+      window[(i + n / 2) % n] =
+	(m / n) * convolve(hann, n, i) / convolve(hann, m, ((m - n) / 2) + i);
+    break;
+  default:
+    sfxc_abort("Invalid windowing function");
+  }
 }

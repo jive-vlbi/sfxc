@@ -195,7 +195,7 @@ def Vex(file):
     fp = open(file, 'r')
     vex = fp.read()
     fp.close()
-    return parse(vex)
+    return parse(vex.replace('\r\n', '\n'))
 
 if __name__ == "__main__":
     import sys

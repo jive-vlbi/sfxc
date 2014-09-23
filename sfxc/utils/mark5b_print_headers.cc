@@ -9,6 +9,7 @@
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #define MARK5B_HEADER_SIZE 16
 #define MARK5B_FRAME_SIZE 10000

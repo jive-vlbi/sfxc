@@ -361,7 +361,7 @@ class progressDialog(QtGui.QDialog):
             pass
         output = self.proc.asyncread()
         if output:
-            r1 = re.compile(r'(\d+y\d+d\d+h\d+m\d+s)')
+            r1 = re.compile(r'Starting correlation')
             r2 = re.compile(r'Terminating nodes')
             r3 = re.compile(r'^Node #(\d+) fatal error.*Could not find header')
 
