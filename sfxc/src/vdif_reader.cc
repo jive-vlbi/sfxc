@@ -65,7 +65,7 @@ VDIF_reader::get_current_time() {
     double seconds_since_reference = (double)current_header.sec_from_epoch - (ref_jday - epoch_jday) * 24 * 60 * 60;
     double subsec = 0;
     if (sample_rate > 0) {
-      int samples_per_frame = 8 * current_header.data_size() / ((current_header.bits_per_sample + 1) * (1 << current_header.log2_nchan));
+      int samples_per_frame = 8 * first_header.data_size() / ((first_header.bits_per_sample + 1) * (1 << first_header.log2_nchan));
       subsec = (double)current_header.dataframe_in_second * samples_per_frame / sample_rate;
     }
     time.set_time(ref_jday, seconds_since_reference + subsec);
@@ -102,7 +102,7 @@ VDIF_reader::read_new_block(Data_frame &data) {
 
   SFXC_ASSERT(data_size == buffer.size());
 
-  if (current_header.legacy_mode == 0) {
+  if (first_header.legacy_mode == 0) {
     char *header = (char *)&current_header;
     Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&header[16]);
     if (data_reader_->eof())
