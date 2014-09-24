@@ -122,16 +122,18 @@ void Delay_correction::fractional_bit_shift(FLOAT *input,
 
 void Delay_correction::fringe_stopping(FLOAT output[]) {
   const double mult_factor_phi = -sideband()*2.0*M_PI;
-  const double center_freq = channel_freq() + sideband()*bandwidth()*0.5;
+  const double center_freq = channel_freq() + sideband()*(bandwidth()*0.5 + LO_offset);
 
   double phi, delta_phi, sin_phi, cos_phi;
-  phi = center_freq * get_delay(current_time) + get_phase(current_time) / (2 * M_PI);
+  double lo_phase = start_phase + LO_offset*current_time.diff(correlation_parameters.stream_start);
+  phi = center_freq * get_delay(current_time) + lo_phase + get_phase(current_time) / (2 * M_PI);
   double floor_phi = std::floor(phi);
   phi = mult_factor_phi*(phi-floor_phi);
 
   { // compute delta_phi
     SFXC_ASSERT(((int64_t)fft_size() * 1000000) % sample_rate() == 0);
     double phi_end = center_freq * get_delay(current_time + fft_length) + 
+                     lo_phase + fft_length.get_time()*LO_offset +
                      get_phase(current_time + fft_length) / (2 * M_PI);
     phi_end = mult_factor_phi*(phi_end-floor_phi);
 
@@ -212,6 +214,13 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   n_ffts_per_integration =
     (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
     parameters.slice_size / parameters.fft_size_delaycor;
+  LO_offset = parameters.station_streams[stream_idx].LO_offset;
+  double dt = current_time.diff(parameters.experiment_start);
+  if (dt < 1)
+    start_phase = LO_offset * dt;
+  else
+    start_phase = (LO_offset-floor(LO_offset)) * dt;
+  start_phase = start_phase - floor(start_phase);
   current_fft = 0;
   tbuf_start = 0;
   tbuf_end = 0;

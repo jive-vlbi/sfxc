@@ -135,16 +135,19 @@ public:
     int32_t bandwidth;
     char sideband;
     int32_t bits_per_sample;
+    double LO_offset; // LO offset in Hz
   };
 
   typedef std::vector<Station_parameters> Station_list;
   typedef Station_list::iterator          Station_iterator;
 
   // Data members
+  Time experiment_start;    // Start time of the experiment
   Time stream_start;        // Start of the slice
   int32_t slice_size;       // Number of samples in slice
   Time integration_start;   // The time at which to start accumulating
   Time integration_time;    // The length of one integration
+
   Time sub_integration_time;// The length of one sub integration
   double channel_offset;    // The dispersive delay relative to the reference frequency
   int32_t number_channels;  // number of frequency channels
@@ -231,6 +234,7 @@ public:
   bool pulsar_binning() const;
   bool only_autocorrelations() const;
   bool multi_phase_center() const;
+  double LO_offset(const std::string &station) const;
   
   Time reader_offset(const std::string &s) const{
     return reader_offsets.find(s)->second;

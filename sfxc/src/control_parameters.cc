@@ -625,6 +625,16 @@ Control_parameters::bp_table() const {
   return bp_table;
 }
 
+double
+Control_parameters::LO_offset(const std::string &station) const {
+  if (ctrl["LO_offset"] == Json::Value())
+    return 0;
+  if (ctrl["LO_offset"][station] == Json::Value())
+    return 0;
+
+  return ctrl["LO_offset"][station].asDouble();
+}
+
 
 int
 Control_parameters::window_function() const{
@@ -1936,6 +1946,7 @@ get_correlation_parameters(const std::string &scan_name,
     frequency_channel(channel_nr, mode_name, station_name);
 
   Correlation_parameters corr_param;
+  corr_param.experiment_start = vex.get_start_time_of_experiment();
   corr_param.integration_time = integration_time();
   corr_param.sub_integration_time = sub_integration_time();
   corr_param.number_channels = number_channels();
@@ -2030,6 +2041,7 @@ get_correlation_parameters(const std::string &scan_name,
           station_param.channel_freq = channel_freq(mode_name, station[0]->to_string(), channel_name);
           station_param.bandwidth = bandwidth(mode_name, station[0]->to_string(), channel_name);
           station_param.sideband = sideband(channel_name, station[0]->to_string(), mode_name);
+          station_param.LO_offset = LO_offset(station[0]->to_string());
           corr_param.station_streams.push_back(station_param);
         }
       }

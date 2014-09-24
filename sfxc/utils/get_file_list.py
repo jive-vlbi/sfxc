@@ -35,7 +35,7 @@ def parse_datastring(datestring):
   a = a[2].partition('m')
   minute = int(a[0])
   a = a[2].partition('s')
-  sec = int(a[0])
+  sec = int(float(a[0]))
   time = datetime.datetime(year, 1, 1, hour, minute, sec)
   dt = datetime.timedelta(days=doy-1)
   return time + dt
