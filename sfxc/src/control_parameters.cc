@@ -130,9 +130,13 @@ initialise(const char *ctrl_file, const char *vex_file,
   if (ctrl["phased_array"] == Json::Value())
     ctrl["phased_array"] = false;
 
+  if(ctrl["only_autocorrelations"] == Json::Value()) {
+    ctrl["only_autocorrelations"] = false;
+  }
+
   if (ctrl["multi_phase_center"] == Json::Value()){
     ctrl["multi_phase_center"] = false;
-    if(!ctrl["pulsar_binning"].asBool()){
+    if(!ctrl["pulsar_binning"].asBool() && !ctrl["only_autocorrelations"].asBool()){
       Vex::Node::const_iterator it = vex.get_root_node()["SCHED"]->begin();
       while(it != vex.get_root_node()["SCHED"]->end()){
         int n_sources = 0;
@@ -197,10 +201,6 @@ initialise(const char *ctrl_file, const char *vex_file,
       ctrl["phasecal_integr_time"] = 10;
     else
       ctrl["phasecal_integr_time"] = 0;
-  }
-
-  if(ctrl["only_autocorrelations"] == Json::Value()) {
-    ctrl["only_autocorrelations"] = false;
   }
 
   if (ctrl["start"].asString().compare("now") == 0) {
@@ -440,7 +440,10 @@ Control_parameters::check(std::ostream &writer) const {
       ok = false;
     }
   }
-  
+  if (ctrl["multi_phase_center"].asBool() && ctrl["only_autocorrelations"].asBool()){
+    writer << "Multiple phase centers cannot be set when \"only_autocorrelations\" is enabled.\n";
+    ok = false;
+  }
   // Check pulsar binning
   if (ctrl["pulsar_binning"].asBool()){
     // use pulsar binning
@@ -703,6 +706,10 @@ bool Control_parameters::phased_array() const{
 
 bool Control_parameters::pulsar_binning() const{
   return ctrl["pulsar_binning"].asBool();
+}
+
+bool Control_parameters::only_autocorrelations() const{
+  return ctrl["only_autocorrelations"].asBool();
 }
 
 bool Control_parameters::multi_phase_center() const{

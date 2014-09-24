@@ -415,11 +415,14 @@ Correlator_node::set_parameters() {
       correlation_core_pulsar->set_parameters(parameters, pulsar, get_correlate_node_number());
     }
   }else if(phased_array){
+    if (parameters.only_autocorrelations)
+      nBins = parameters.station_streams.size();
+    else
+      nBins = parameters.n_phase_centers;
     std::map<std::string, Pulsar_parameters::Pulsar>::iterator cur_pulsar_it =
                            pulsar_parameters.pulsars.find(std::string(&parameters.source[0]));
     if(cur_pulsar_it == pulsar_parameters.pulsars.end()){
       // Current source is not a pulsar
-      nBins = 1;
       for(int stream_nr = 0 ; stream_nr < delay_modules.size() ; stream_nr++)
         windowing[stream_nr]->connect_to(
                                  delay_modules[stream_nr]->get_output_buffer());
@@ -428,7 +431,6 @@ Correlator_node::set_parameters() {
     }else{
       Pulsar_parameters::Pulsar &pulsar = cur_pulsar_it->second;
       coherent_dedispersion = pulsar.coherent_dedispersion;
-      nBins = parameters.n_phase_centers;
       // Select the correct read queue 
       for(int stream_nr = 0 ; stream_nr < delay_modules.size() ; stream_nr++){
         if (coherent_dedispersion){

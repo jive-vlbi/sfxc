@@ -229,6 +229,7 @@ public:
 
   bool phased_array() const;
   bool pulsar_binning() const;
+  bool only_autocorrelations() const;
   bool multi_phase_center() const;
   
   Time reader_offset(const std::string &s) const{

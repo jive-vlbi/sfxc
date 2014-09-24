@@ -54,13 +54,17 @@ void Correlation_core_phased::do_task() {
       sub_integration();
       for(int i = 0 ; i < phase_centers.size(); i++){
         int source_nr;
+        int pcenter = 0;
         if(split_output){
-          delay_tables[0].goto_scan(correlation_parameters.integration_start);
-          source_nr = sources[delay_tables[0].get_source(i)];
+            delay_tables[0].goto_scan(correlation_parameters.integration_start);
+            source_nr = sources[delay_tables[0].get_source(i)];
+            pcenter = i;
+        } else if(use_autocorrelations){
+            source_nr = streams_in_scan[i];
         }else{
           source_nr = 0;
         }
-        integration_write_headers(i, source_nr);
+        integration_write_headers(pcenter, source_nr);
         integration_write_subints(phase_centers[i]);
       }
       current_integration++;
@@ -113,8 +117,11 @@ void Correlation_core_phased::integration_initialise() {
     ceil(number_ffts_in_integration / number_ffts_in_sub_integration);
   previous_fft = 0;
 
-  if(phase_centers.size() != correlation_parameters.n_phase_centers)
-    phase_centers.resize(correlation_parameters.n_phase_centers);
+  int n_phase_centers = use_autocorrelations ? streams_in_scan.size() : 
+                                               correlation_parameters.n_phase_centers;
+
+  if(phase_centers.size() != n_phase_centers)
+    phase_centers.resize(n_phase_centers);
 
   for(int i = 0 ; i < phase_centers.size() ; i++){
     if (phase_centers[i].size() != number_output_products){
@@ -277,20 +284,26 @@ Correlation_core_phased::sub_integration(){
     int station1 = streams_in_scan[inputs.first];
     int station2 = streams_in_scan[inputs.second];
 
-    // The pointing center
-    SFXC_ADD_FC(&accumulation_buffers[i][0], 
-                &phase_centers[0][next_sub_integration-1][0],
-                n_fft);
-    // UV shift the additional phase centers
-    for(int j = 1; j < n_phase_centers; j++){
-      double delay1 = delay_tables[station1].delay(tmid);
-      double delay2 = delay_tables[station2].delay(tmid);
-      double ddelay1 = delay_tables[station1].delay(tmid, j)-delay1;
-      double ddelay2 = delay_tables[station2].delay(tmid, j)-delay2;
-      double rate1 = delay_tables[station1].rate(tmid);
-      double rate2 = delay_tables[station2].rate(tmid);
-      uvshift(accumulation_buffers[i], phase_centers[j][next_sub_integration-1], 
-              ddelay1, ddelay2, rate1, rate2);
+    if (use_autocorrelations){
+      SFXC_ADD_FC(&accumulation_buffers[i][0], 
+                  &phase_centers[i][next_sub_integration-1][0],
+                  n_fft);
+    }else{
+      // The pointing center
+      SFXC_ADD_FC(&accumulation_buffers[i][0], 
+                  &phase_centers[0][next_sub_integration-1][0],
+                  n_fft);
+      // UV shift the additional phase centers
+      for(int j = 1; j < n_phase_centers; j++){
+        double delay1 = delay_tables[station1].delay(tmid);
+        double delay2 = delay_tables[station2].delay(tmid);
+        double ddelay1 = delay_tables[station1].delay(tmid, j)-delay1;
+        double ddelay2 = delay_tables[station2].delay(tmid, j)-delay2;
+        double rate1 = delay_tables[station1].rate(tmid);
+        double rate2 = delay_tables[station2].rate(tmid);
+        uvshift(accumulation_buffers[i], phase_centers[j][next_sub_integration-1], 
+                ddelay1, ddelay2, rate1, rate2);
+      }
     }
   }
   // Clear the accumulation buffers
