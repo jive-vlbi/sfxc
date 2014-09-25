@@ -154,13 +154,15 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
     time = goto_time(current_interval_.start_time_);
     int64_t nframes = (int64_t)round((time - current_interval_.start_time_)/ reader_->time_between_headers());
     time = current_interval_.start_time_ + reader_->time_between_headers() * nframes;
-    if (time > current_interval_.stop_time_) {
-      time = current_interval_.stop_time_ - reader_->time_between_headers();
-      randomize_block();
-      input_element_.start_time = time;
-      input_element_.channel = 0;
-    }else if (time < current_interval_.start_time_)
+    if (time < current_interval_.start_time_)
       time = current_interval_.start_time_;
+  }
+
+  if (time > current_interval_.stop_time_) {
+    time = current_interval_.stop_time_ - reader_->time_between_headers();
+    randomize_block();
+    input_element_.start_time = time;
+    input_element_.channel = 0;
   }
 
   for (size_t i = 0; i < current_time.size(); i++)
