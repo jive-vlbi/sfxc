@@ -115,7 +115,7 @@ fi
 
 if test $USE_IPP = "yes"; then
   AC_DEFINE([USE_IPP], [1], [Use the Intel Performance Primitives])
-  AC_CHECK_LIB(ippsem64t, ippsGetLibVersion, [OLD_IPP=1], [OLD_IPP=0], -L$IPP_PATH/sharedlib)
+  AC_CHECK_LIB(ippsem64t, ippsGetLibVersion, [OLD_IPP=1], [OLD_IPP=0], [-L$IPP_PATH/sharedlib -Wl,-no-as-needed])
   if test $OLD_IPP == 1; then
     if test "$IPP_PATH" != ""; then
        FFT_LDADD="-L$IPP_PATH/sharedlib"
