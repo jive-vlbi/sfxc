@@ -49,6 +49,14 @@ parser.add_option("-f", "--file", dest="tsys_file",
                       default="", type="string",
                       help="Tsys measurements",
                       metavar="FILE")
+parser.add_option("-r", "--rxgfile", dest="rxg_file",
+                      default="", type="string",
+                      help="RXG file",
+                      metavar="FILE")
+parser.add_option("-i", "--integration-time", dest="delta_secs",
+                      default=20, type="int",
+                      help="integration time",
+                      metavar="SECS")
 
 (options, args) = parser.parse_args()
 if len(args) < 3:
@@ -66,6 +74,19 @@ for station in vex['STATION']:
     continue
 stations.sort()
 
+# Build a list of start and stop time pairs of each scan
+scans = []
+for scan in vex['SCHED']:
+    start = vex2time(vex['SCHED'][scan]['start'])
+    for station in vex['SCHED'][scan].getall('station'):
+        if station[0] == antab_station:
+            length = int(station[2].split()[0])
+            stop = start + length
+            scans.append((start, stop))
+            continue
+        continue
+    continue
+
 if not antab_station in stations:
     print "station %s not found in VEX" % antab_station
     sys.exit(1)
@@ -82,33 +103,18 @@ fp = open('vlba_gains.key', 'r')
 vlba_gains = key.read_keyfile(fp)
 fp.close()
 
-for gain in vlba_gains:
-    gain_dict = {}
-    for pair in gain:
-        gain_dict[pair[0]] = pair[1]
-        continue
-    gain = gain_dict
-    if not antab_station.upper() in gain:
-        continue
-    if start < timerang2time(gain['TIMERANG'][0:4]):
-        continue
-    if start >= timerang2time(gain['TIMERANG'][4:8]):
-        continue
-    gains[gain['FREQ']] = gain
-    continue
-
 if 'setup_station' in json_input:
     setup_station = json_input['setup_station']
 else:
     setup_station = station[0]
     pass
 
-if antab_station == 'Ef':
+if options.rxg_file:
     pol_mapping = {'rcp': 0, 'lcp': 1}
     freqs = []
     rxgs = {}
 
-    fp = open('calefM.rxg')
+    fp = open(options.rxg_file)
     lineno = -1
     for line in fp:
         if line.startswith('*'):
@@ -163,6 +169,22 @@ if antab_station == 'Ef':
     gains[freq]['POLY'] = poly
     gains[freq]['FREQ'] = (lo, hi)
     gains[freq]['FT'] = 1.0
+    pass
+else:
+    for gain in vlba_gains:
+        gain_dict = {}
+        for pair in gain:
+            gain_dict[pair[0]] = pair[1]
+            continue
+        gain = gain_dict
+        if not antab_station.upper() in gain:
+            continue
+        if start < timerang2time(gain['TIMERANG'][0:4]):
+            continue
+        if start >= timerang2time(gain['TIMERANG'][4:8]):
+            continue
+        gains[gain['FREQ']] = gain
+        continue
     pass
 
 channels = json_input['channels']
@@ -227,10 +249,16 @@ def get_if_pol(station, mode, if_name):
         continue
     return None
 
+def get_sample_rate(station, mode):
+    freq = get_freq(station, mode)
+    value = vex['FREQ'][freq]['sample_rate'].split()
+    return float(value[0]) * 1e6
+
 pol_mapping = {'R': 0, 'L': 1}
 sideband_mapping = {'L': 0, 'U': 1}
 
 freq = get_freq(setup_station, mode)
+sample_rate = get_sample_rate(antab_station, mode)
 
 sidebands = []
 frequencies = []
@@ -348,6 +376,10 @@ for i in xrange(len(index)):
         (i + 1, idx, comment_mapping[idx][0], bandwidth, comment_mapping[idx][1], tcal[idx])
     continue
 
+scan = 0
+binned_secs = scans[0][0]
+delta_secs = options.delta_secs
+
 if options.tsys_file:
     tsys_files = [options.tsys_file]
 else:
@@ -379,25 +411,35 @@ for tsys_file in tsys_files:
         sideband = entry[2]
         polarisation = entry[3]
         mjd = entry[4]
-        secs = roundup(entry[5], 10)
-        secs = (mjd - 40587) * 86400 + secs
+        secs = (mjd - 40587) * 86400 + entry[5]
+        if secs < scans[scan][0]:
+            continue
+        while secs >= scans[scan][1]:
+            scan += 1
+            continue
+        if binned_secs < scans[scan][0]:
+            binned_secs = scans[scan][0]
+            pass
+        while secs >= binned_secs + delta_secs:
+            binned_secs += delta_secs
+            continue
         if stations[station] != antab_station:
             continue
         if not station in counts:
             counts[station] = {}
             pass
-        if not secs in counts[station]:
-            counts[station][secs] = {}
+        if not binned_secs in counts[station]:
+            counts[station][binned_secs] = {}
             pass
 
         idx = (frequency, sideband, polarisation)
-        if not idx in counts[station][secs]:
-            counts[station][secs][idx] = [0, 0, 0, 0]
+        if not idx in counts[station][binned_secs]:
+            counts[station][binned_secs][idx] = [0, 0, 0, 0]
             pass
-        counts[station][secs][idx][0] += entry[6]
-        counts[station][secs][idx][1] += entry[7]
-        counts[station][secs][idx][2] += entry[8]
-        counts[station][secs][idx][3] += entry[9]
+        counts[station][binned_secs][idx][0] += entry[6]
+        counts[station][binned_secs][idx][1] += entry[7]
+        counts[station][binned_secs][idx][2] += entry[8]
+        counts[station][binned_secs][idx][3] += entry[9]
         continue
     continue
 
@@ -414,7 +456,7 @@ for station in counts:
 
         for idx in counts[station][secs]:
             entry = counts[station][secs][idx]
-            if (entry[0] + entry[1] + entry[2] + entry[3]) < 10 * 32e6:
+            if (entry[0] + entry[1] + entry[2] + entry[3]) < 0.9 * delta_secs * sample_rate:
                 continue
             f_on = float(entry[1])/(entry[0] + entry[1])
             f_off = float(entry[3])/(entry[2] + entry[3])
@@ -436,7 +478,7 @@ for station in xrange(len(stations)):
 
 times[station].sort()
 for secs in times[station]:
-    tupletime = time.gmtime(secs)
+    tupletime = time.gmtime(secs + 0.5 * delta_secs)
     if not tsys[station][secs]:
         continue
     print "%d %02d:%02d.%02d" % (tupletime.tm_yday, tupletime.tm_hour, tupletime.tm_min, ((tupletime.tm_sec * 100) / 60)),
