@@ -7,6 +7,8 @@ import struct
 import sys
 import time
 import urlparse
+import numpy as np
+import scipy.interpolate
 from scipy.special import erfinv
 
 # JIVE Python modules
@@ -26,6 +28,9 @@ def timerang2time(timerang):
                  int(timerang[3]), 0, 0, -1, -1, -1)
     return time.mktime(tupletime)
 
+def roundup(n, m):
+    return int(((n + (m - 1)) // m) * m)
+
 os.environ['TZ'] = 'UTC'
 time.tzset()
 
@@ -33,31 +38,12 @@ header = "=I32sII15sxii"
 format = "=BBBBII4Q"
 
 tsys = {}
+counts = {}
 times = {}
-
-# Values for Ef in  F13C4
-tcal = {
-    'R1': 1.69,
-    'R2': 1.69,
-    'R3': 1.69,
-    'R4': 1.70,
-    'R5': 1.74,
-    'R6': 1.70,
-    'R7': 1.80,
-    'R8': 1.78,
-    'L1': 1.69,
-    'L2': 1.69,
-    'L3': 1.68,
-    'L4': 1.70,
-    'L5': 1.74,
-    'L6': 1.70,
-    'L7': 1.80,
-    'L8': 1.77
-    }
 
 gains = {}
 
-usage = "usage: %prog [options] vexfile ctrlfile"
+usage = "usage: %prog [options] vexfile station ctrlfile"
 parser = optparse.OptionParser(usage=usage)
 parser.add_option("-f", "--file", dest="tsys_file",
                       default="", type="string",
@@ -70,8 +56,8 @@ if len(args) < 3:
     pass
 
 vex_file = args[0]
-ctrl_file = args[1]
-antab_station = args[2]
+antab_station = args[1]
+ctrl_file = args[2]
 
 stations = []
 vex = Vex(vex_file)
@@ -115,6 +101,59 @@ if 'setup_station' in json_input:
     setup_station = json_input['setup_station']
 else:
     setup_station = station[0]
+    pass
+
+if antab_station == 'Ef':
+    pol_mapping = {'rcp': 0, 'lcp': 1}
+    freqs = []
+    rxgs = {}
+
+    fp = open('calefM.rxg')
+    for line in fp:
+        if line.startswith('*'):
+            continue
+        if line.startswith('ELEV'):
+            mount = line.split()[0]
+            poly = [float(x) for x in line.split()[2:]]
+            continue
+        if line.startswith('range'):
+            values = line.split()
+            lo = float(values[1])
+            hi = float(values[2])
+            continue
+        if line.startswith('lcp') or line.startswith('rcp'):
+            values = line.split()
+            if len(values) != 3:
+                continue
+            pol = pol_mapping[values[0]]
+            freq = float(values[1])
+            if not freq in freqs:
+                freqs.append(freq)
+                pass
+            if not freq in rxgs:
+                rxgs[freq] = {}
+                pass
+            rxgs[freq][pol] = float(values[2])
+            continue
+        continue
+    freqs = sorted(freqs)
+    rcp = []
+    lcp = []
+    for freq in freqs:
+        rcp.append(rxgs[freq][0])
+        lcp.append(rxgs[freq][1])
+        continue
+    freqs = np.array(freqs)
+    rcp = np.array(rcp)
+    lcp = np.array(lcp)
+    rcp = scipy.interpolate.interp1d(freqs, rcp)
+    lcp = scipy.interpolate.interp1d(freqs, lcp)
+    freq = freqs[0]
+    gains[freq] = {}
+    gains[freq]['TCAL'] = {0: rcp, 1: lcp}
+    gains[freq][mount] = True
+    gains[freq]['DPFU'] = (1.0, 1.0)
+    gains[freq]['POLY'] = poly
     pass
 
 channels = json_input['channels']
@@ -179,12 +218,15 @@ freq = get_freq(setup_station, mode)
 sidebands = []
 frequencies = []
 num_channels = 0
+bandwidth = 0
 for chan_def in vex['FREQ'][freq].getall('chan_def'):
     sideband = chan_def[2]
     if not sideband in sidebands:
         sidebands.append(sideband)
         pass
     frequency = float(chan_def[1].split()[0])
+    bandwidth = float(chan_def[3].split()[0])
+    frequency += bandwidth / 2
     if not frequency in frequencies:
         frequencies.append(frequency)
         pass
@@ -241,7 +283,7 @@ if freq:
     for polarisation in polarisations:
         for n in xrange(num_channels):
             idx = "%s%d" % (polarisation, n + 1)
-            tcal[idx] = gain['TCAL'][pol_mapping[polarisation]]
+            tcal[idx] = gain['TCAL'][pol_mapping[polarisation]](frequencies[0])
             continue
         continue
 
@@ -260,10 +302,11 @@ if freq:
     try:
         print "POLY %.4g" % gain['POLY']
     except:
-        print gain['POLY']
         print "POLY %s" % ','.join(["%.4g" % (f) for f in gain['POLY']])
     print "/"
     pass
+
+tcal = {'R1': 3.16, 'L1': 3.03}
 
 print "TSYS %s" % antab_station.upper()
 print "INDEX = %s" % ', '.join(["'%s'" % (s) for s in index])
@@ -271,66 +314,89 @@ print "/"
 
 for i in xrange(len(index)):
     idx = index[i]
-    print "!Column %d = %s: %.2f MHz, %cSB" % \
-        (i + 1, idx, comment_mapping[idx][0], comment_mapping[idx][1])
+    print "!Column %d = %s: %.2f MHz, %cSB, Tcal %.2f K" % \
+        (i + 1, idx, comment_mapping[idx][0], comment_mapping[idx][1], tcal[idx])
     continue
 
-first = None
-last = None
 if options.tsys_file:
-    tsys_file = options.tsys_file
+    tsys_files = [options.tsys_file]
 else:
-    tsys_file = urlparse.urlparse(json_input['tsys_file']).path
+    tsys_files = []
+    for ctrl_file in args[2:]:
+        fp = open(ctrl_file, 'r')
+        json_input = json.load(fp)
+        fp.close()
+        tsys_file = urlparse.urlparse(json_input['tsys_file']).path
+        tsys_files.append(tsys_file)
+        continue
     pass
-fp = open(tsys_file, 'r')
-buf = fp.read(struct.calcsize(header))
-while fp:
-    try:
-        buf = fp.read(struct.calcsize(format))
-        entry = struct.unpack(format, buf)
-    except:
-        break
-    if (entry[6] + entry[7]) < 5000:
+for tsys_file in tsys_files:
+    fp = open(tsys_file, 'r')
+    buf = fp.read(struct.calcsize(header))
+    while fp:
+        try:
+            buf = fp.read(struct.calcsize(format))
+            entry = struct.unpack(format, buf)
+        except:
+            break
+        if (entry[6] + entry[7]) < 500:
+            continue
+        if (entry[8] + entry[9]) < 500:
+            continue
+
+        station = entry[0]
+        frequency = entry[1]
+        sideband = entry[2]
+        polarisation = entry[3]
+        mjd = entry[4]
+        secs = roundup(entry[5], 10)
+        secs = (mjd - 40587) * 86400 + secs
+        if stations[station] != antab_station:
+            continue
+        if not station in counts:
+            counts[station] = {}
+            pass
+        if not secs in counts[station]:
+            counts[station][secs] = {}
+            pass
+
+        idx = (frequency, sideband, polarisation)
+        if not idx in counts[station][secs]:
+            counts[station][secs][idx] = [0, 0, 0, 0]
+            pass
+        counts[station][secs][idx][0] += entry[6]
+        counts[station][secs][idx][1] += entry[7]
+        counts[station][secs][idx][2] += entry[8]
+        counts[station][secs][idx][3] += entry[9]
         continue
-    if (entry[8] + entry[9]) < 5000:
+    continue
+
+for station in counts:
+    for secs in counts[station]:
+        if not station in times:
+            times[station] = []
+            tsys[station] = {}
+            pass
+        if not secs in times[station]:
+            times[station].append(secs)
+            tsys[station][secs] = {}
+            pass
+
+        for idx in counts[station][secs]:
+            entry = counts[station][secs][idx]
+            if (entry[0] + entry[1] + entry[2] + entry[3]) < 10 * 32e6:
+                continue
+            f_on = float(entry[1])/(entry[0] + entry[1])
+            f_off = float(entry[3])/(entry[2] + entry[3])
+            P_on = 1 / (2 * (erfinv(1 - f_on))**2)
+            P_off = 1 / (2 * (erfinv(1 - f_off))**2)
+            if P_on < P_off:
+                continue
+            P_avg = (P_on + P_off) / 2
+
+            tsys[station][secs][idx] = P_avg/(P_on - P_off)
+            continue
         continue
-    f_on = float(entry[7])/(entry[6] + entry[7])
-    f_off = float(entry[9])/(entry[8] + entry[9])
-    P_on = 1 / (2 * (erfinv(1 - f_on))**2)
-    P_off = 1 / (2 * (erfinv(1 - f_off))**2)
-    if P_on < P_off:
-        continue
-    P_avg = (P_on + P_off) / 2
-    station = entry[0]
-    frequency = entry[1]
-    sideband = entry[2]
-    polarisation = entry[3]
-    mjd = entry[4]
-    secs = entry[5]
-    secs = (mjd - 40587) * 86400 + secs
-    if not first:
-        first = secs
-        pass
-    if not last:
-        last = secs
-        pass
-    if secs < first:
-        first = secs
-        pass
-    if secs > last:
-        last = secs
-        pass
-    if stations[station] != antab_station:
-        continue
-    if not station in times:
-        times[station] = []
-        tsys[station] = {}
-        pass
-    if not secs in times[station]:
-        times[station].append(secs)
-        tsys[station][secs] = {}
-        pass
-    tsys[station][secs][(frequency, sideband, polarisation)] = P_avg/(P_on - P_off)
     continue
 
 for station in xrange(len(stations)):
@@ -341,6 +407,8 @@ for station in xrange(len(stations)):
 times[station].sort()
 for secs in times[station]:
     tupletime = time.gmtime(secs)
+    if not tsys[station][secs]:
+        continue
     print "%d %02d:%02d.%02d" % (tupletime.tm_yday, tupletime.tm_hour, tupletime.tm_min, ((tupletime.tm_sec * 100) / 60)),
     for idx in index:
         try:
