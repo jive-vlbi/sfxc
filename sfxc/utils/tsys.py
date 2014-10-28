@@ -99,10 +99,6 @@ fp.close()
 start = vex2time(json_input['start'])
 stop = vex2time(json_input['stop'])
 
-fp = open('vlba_gains.key', 'r')
-vlba_gains = key.read_keyfile(fp)
-fp.close()
-
 if 'setup_station' in json_input:
     setup_station = json_input['setup_station']
 else:
@@ -171,6 +167,10 @@ if options.rxg_file:
     gains[freq]['FT'] = 1.0
     pass
 else:
+    fp = open('vlba_gains.key', 'r')
+    vlba_gains = key.read_keyfile(fp)
+    fp.close()
+
     for gain in vlba_gains:
         gain_dict = {}
         for pair in gain:
@@ -271,7 +271,10 @@ for chan_def in vex['FREQ'][freq].getall('chan_def'):
         pass
     frequency = float(chan_def[1].split()[0])
     bandwidth = float(chan_def[3].split()[0])
-    frequency += bandwidth / 2
+    if sideband == 'L':
+        frequency -= bandwidth / 2
+    else:
+        frequency += bandwidth / 2
     if not frequency in frequencies:
         frequencies.append(frequency)
         pass
@@ -296,7 +299,7 @@ for polarisation in polarisations:
     for sideband in sidebands:
         for n in xrange(len(frequencies)):
             chan_mapping[(frequencies[n], sideband, polarisation)] = \
-                (n, sideband_mapping[sideband], pol_mapping[polarisation])
+                (n / len(sidebands), sideband_mapping[sideband], pol_mapping[polarisation])
             continue
         continue
     continue
@@ -307,7 +310,7 @@ comment_mapping = {}
 for polarisation in polarisations:
     for n in xrange(num_channels):
         index.append("%s%d" % (polarisation, n + 1))
-        frequency = frequencies[n / len(sidebands)]
+        frequency = frequencies[n]
         sideband = sidebands[n % len(sidebands)]
         mapping[index[-1]] = chan_mapping[(frequency, sideband, polarisation)]
         comment_mapping[index[-1]] = (frequency, sideband, polarisation)
@@ -330,7 +333,7 @@ if freq:
             idx = "%s%d" % (polarisation, n + 1)
             pol = pol_mapping[polarisation]
             try:
-                tcal[idx] = gain['TCAL'][pol](frequencies[0])
+                tcal[idx] = gain['TCAL'][pol](frequencies[n])
             except:
                 tcal[idx] = gain['TCAL'][pol]
             continue
