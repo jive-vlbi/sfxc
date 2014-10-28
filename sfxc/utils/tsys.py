@@ -109,19 +109,26 @@ if antab_station == 'Ef':
     rxgs = {}
 
     fp = open('calefM.rxg')
+    lineno = -1
     for line in fp:
         if line.startswith('*'):
             continue
-        if line.startswith('ELEV'):
+        lineno += 1
+        if lineno == 0:
+            if line.startswith('range'):
+                values = line.split()
+                lo = float(values[1])
+                hi = float(values[2])
+                continue
+            pass
+        elif lineno == 4:
+            dfpu = [float(x) for x in line.split()]
+            continue
+        elif lineno == 5:
             mount = line.split()[0]
             poly = [float(x) for x in line.split()[2:]]
             continue
-        if line.startswith('range'):
-            values = line.split()
-            lo = float(values[1])
-            hi = float(values[2])
-            continue
-        if line.startswith('lcp') or line.startswith('rcp'):
+        elif line.startswith('lcp') or line.startswith('rcp'):
             values = line.split()
             if len(values) != 3:
                 continue
@@ -152,8 +159,10 @@ if antab_station == 'Ef':
     gains[freq] = {}
     gains[freq]['TCAL'] = {0: rcp, 1: lcp}
     gains[freq][mount] = True
-    gains[freq]['DPFU'] = (1.0, 1.0)
+    gains[freq]['DPFU'] = dfpu
     gains[freq]['POLY'] = poly
+    gains[freq]['FREQ'] = (lo, hi)
+    gains[freq]['FT'] = 1.0
     pass
 
 channels = json_input['channels']
@@ -191,6 +200,14 @@ def get_channel_pol(station, mode, chan_name):
     for chan_def in vex['FREQ'][freq].getall('chan_def'):
         if chan_name == chan_def[4]:
             return get_bbc_pol(station, mode, chan_def[5])
+        continue
+    return None
+
+def get_channel_bw(station, mode, chan_name):
+    freq = get_freq(station, mode)
+    for chan_def in vex['FREQ'][freq].getall('chan_def'):
+        if chan_name == chan_def[4]:
+            return float(chan_def[3].split[0])
         continue
     return None
 
@@ -283,11 +300,15 @@ if freq:
     for polarisation in polarisations:
         for n in xrange(num_channels):
             idx = "%s%d" % (polarisation, n + 1)
-            tcal[idx] = gain['TCAL'][pol_mapping[polarisation]](frequencies[0])
+            pol = pol_mapping[polarisation]
+            try:
+                tcal[idx] = gain['TCAL'][pol](frequencies[0])
+            except:
+                tcal[idx] = gain['TCAL'][pol]
             continue
         continue
 
-    print "GAIN %s" % antab_station.upper()
+    print "GAIN %s" % antab_station.upper(),
     if 'EQUAT' in gain:
         mount = "EQUAT"
     elif 'ALTAZ' in gain:
@@ -298,24 +319,33 @@ if freq:
         mount = "GCNRAO"
         pass
     print mount,
-    print "DPFU = %.3f, %.3f" % tuple(gain['DPFU']),
+    print "DPFU=%#.5g,%#.5g" % tuple(gain['DPFU']),
     try:
-        print "POLY %.4g" % gain['POLY']
+        print "FREQ=%.0f" % gain['FREQ']
     except:
-        print "POLY %s" % ','.join(["%.4g" % (f) for f in gain['POLY']])
+        print "FREQ=%.0f,%.0f" % tuple(gain['FREQ'])
+    try:
+        print "POLY=%#.5g" % gain['POLY']
+    except:
+        print "POLY=%s" % ','.join(["%#.5g" % (f) for f in gain['POLY']])
     print "/"
     pass
 
-tcal = {'R1': 3.16, 'L1': 3.03}
+#tcal = {'R1': 3.16, 'L1': 3.03}
 
-print "TSYS %s" % antab_station.upper()
-print "INDEX = %s" % ', '.join(["'%s'" % (s) for s in index])
+print "TSYS %s" % antab_station.upper(),
+try:
+    print "FT=%.3f" % gain['FT'],
+except:
+    print "FT=%.3f,%.3f" % tuple(gain['FT']),
+print "TIMEOFF=0"
+print "INDEX=%s" % ','.join(["'%s'" % (s) for s in index])
 print "/"
 
 for i in xrange(len(index)):
     idx = index[i]
-    print "!Column %d = %s: %.2f MHz, %cSB, Tcal %.2f K" % \
-        (i + 1, idx, comment_mapping[idx][0], comment_mapping[idx][1], tcal[idx])
+    print "!Column %d = %s: %.2f MHz, BW=%.2f MHz, %cSB, Tcal=%.2f K" % \
+        (i + 1, idx, comment_mapping[idx][0], bandwidth, comment_mapping[idx][1], tcal[idx])
     continue
 
 if options.tsys_file:
