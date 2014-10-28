@@ -80,9 +80,9 @@ for scan in vex['SCHED']:
     start = vex2time(vex['SCHED'][scan]['start'])
     for station in vex['SCHED'][scan].getall('station'):
         if station[0] == antab_station:
-            length = int(station[2].split()[0])
-            stop = start + length
-            scans.append((start, stop))
+            stop = start + int(station[2].split()[0])
+            data_good = int(station[1].split()[0])
+            scans.append((start + data_good, stop))
             continue
         continue
     continue
