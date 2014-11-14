@@ -1,4 +1,4 @@
-%defines
+%defines "vex_parser.h"
 
 %{
 #define YYERROR_VERBOSE 1
