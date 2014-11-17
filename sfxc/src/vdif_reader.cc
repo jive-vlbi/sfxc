@@ -65,7 +65,7 @@ VDIF_reader::get_current_time() {
     double seconds_since_reference = (double)current_header.sec_from_epoch - (ref_jday - epoch_jday) * 24 * 60 * 60;
     double subsec = 0;
     if (sample_rate > 0) {
-      int samples_per_frame = 8 * current_header.data_size() / ((current_header.bits_per_sample + 1) * (1 << current_header.log2_nchan));
+      int samples_per_frame = 8 * first_header.data_size() / ((first_header.bits_per_sample + 1) * (1 << first_header.log2_nchan));
       subsec = (double)current_header.dataframe_in_second * samples_per_frame / sample_rate;
     }
     time.set_time(ref_jday, seconds_since_reference + subsec);
@@ -77,6 +77,8 @@ VDIF_reader::get_current_time() {
 bool
 VDIF_reader::read_new_block(Data_frame &data) {
   std::vector<value_type> &buffer = data.buffer->data;
+  const int max_restarts = 256;
+  int restarts = 0;
 
  restart:
   Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&current_header);
@@ -86,6 +88,15 @@ VDIF_reader::read_new_block(Data_frame &data) {
   if (!first_header_seen) {
     memcpy(&first_header, &current_header, 16);
     first_header_seen = true;
+  } 
+  
+  if (first_header.legacy_mode == 0) {
+    // FIXME : If first header has fill pattern this will fail
+    // We should use the information that vex2 provides
+    char *header = (char *)&current_header;
+    Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&header[16]);
+    if (data_reader_->eof())
+      return false;
   }
 
   int data_size = first_header.data_size();
@@ -97,17 +108,12 @@ VDIF_reader::read_new_block(Data_frame &data) {
       ((uint32_t *)&current_header)[2] == 0x11223344 ||
       ((uint32_t *)&current_header)[3] == 0x11223344) {
     Data_reader_blocking::get_bytes_s(data_reader_.get(), data_size, NULL);
+    if (++restarts > max_restarts)
+      return false;
     goto restart;
   }
 
   SFXC_ASSERT(data_size == buffer.size());
-
-  if (current_header.legacy_mode == 0) {
-    char *header = (char *)&current_header;
-    Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&header[16]);
-    if (data_reader_->eof())
-      return false;
-  }
 
   Data_reader_blocking::get_bytes_s( data_reader_.get(), data_size, (char *)&buffer[0]);
   if (data_reader_->eof())
@@ -122,12 +128,15 @@ VDIF_reader::read_new_block(Data_frame &data) {
     else
       data.channel = 0;
   } else {
-    if (thread_map.count(current_header.thread_id) == 0){
+    if (thread_map.count(current_header.thread_id) == 0) {
       // If this is the only thread we obtain its thread_id from the data
-      if(thread_map.size() == 0)
+      if(thread_map.size() == 0) {
         thread_map[current_header.thread_id] = 0;
-      else
+      } else {
+	if (++restarts > max_restarts)
+	  return false;
         goto restart;
+      }
     }
     data.channel = thread_map[current_header.thread_id];
   }
