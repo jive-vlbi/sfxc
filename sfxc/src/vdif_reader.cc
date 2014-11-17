@@ -88,6 +88,15 @@ VDIF_reader::read_new_block(Data_frame &data) {
   if (!first_header_seen) {
     memcpy(&first_header, &current_header, 16);
     first_header_seen = true;
+  } 
+  
+  if (first_header.legacy_mode == 0) {
+    // FIXME : If first header has fill pattern this will fail
+    // We should use the information that vex2 provides
+    char *header = (char *)&current_header;
+    Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&header[16]);
+    if (data_reader_->eof())
+      return false;
   }
 
   int data_size = first_header.data_size();
@@ -105,13 +114,6 @@ VDIF_reader::read_new_block(Data_frame &data) {
   }
 
   SFXC_ASSERT(data_size == buffer.size());
-
-  if (first_header.legacy_mode == 0) {
-    char *header = (char *)&current_header;
-    Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&header[16]);
-    if (data_reader_->eof())
-      return false;
-  }
 
   Data_reader_blocking::get_bytes_s( data_reader_.get(), data_size, (char *)&buffer[0]);
   if (data_reader_->eof())
