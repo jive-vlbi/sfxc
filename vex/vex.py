@@ -26,6 +26,10 @@ import ply.yacc as yacc
 
 from MultiDict import MultiDict
 
+states = (
+    ('literal', 'exclusive'),
+)
+
 reserved = {
     'def': 'DEF',
     'enddef': 'ENDDEF',
@@ -48,6 +52,27 @@ t_COLON     = r':'
 t_SEMICOLON = r';'
 t_EQ        = r'='
 t_DOLLAR    = r'\$'
+
+def t_literal(t):
+    r'start_literal\(\s*\)\s*;'
+    t.lexer.begin('literal')
+    pass
+
+def t_literal_end(t):
+    r'end_literal\(\s*\)\s*;'
+    t.lexer.begin('INITIAL')
+    pass
+
+def t_literal_newline(t):
+    r'\n+'
+    t.lexer.lineno += len(t.value)
+    return
+
+def t_literal_error(t):
+    t.lexer.skip(1)
+    pass
+
+t_literal_ignore = ''
 
 def t_STRING(t):
     r'\"(\\.|[^\\"])*\"'
