@@ -286,29 +286,53 @@ int initialise_data(const char *vex_filename,
 
 
   { // EOP information
+    int i = station_data.num_eop_points = 0;
     for (Vex::Node::const_iterator eop = vex.get_root_node()["EOP"]->begin();
          eop != vex.get_root_node()["EOP"]->end(); ++eop) {
-      station_data.tai_utc = eop["TAI-UTC"]->to_double();
-      std::string eop_ref_epoch = eop["eop_ref_epoch"]->to_string();
+      std::string str = eop["eop_ref_epoch"]->to_string();
       int year = 0, doy = 0, hour = 0, n;
-      n = sscanf(eop_ref_epoch.c_str(), "%dy%dd%dh", &year, &doy, &hour);
+      n = sscanf(str.c_str(), "%dy%dd%dh", &year, &doy, &hour);
       assert(n >= 2);
       int month, day;
-      yd2md(year,doy,month,day);
-      station_data.eop_ref_epoch = JD(year,month,day) + (hour - 12.) / 24; // Julian day
-      station_data.num_eop_points = eop["num_eop_points"]->to_int();
-      if (station_data.num_eop_points < 3) {
-	std::cerr << "a minimum of 3 EOP points are required (only "
-		  << station_data.num_eop_points
-		  << " specified)" << std::endl;
-	exit(EXIT_FAILURE);
+      yd2md(year, doy, month, day);
+      double eop_ref_epoch = JD(year,month,day) + (hour - 12.) / 24; // Julian day
+
+      if (station_data.num_eop_points == 0) {
+	station_data.tai_utc = eop["TAI-UTC"]->to_double();
+	station_data.eop_ref_epoch = eop_ref_epoch;
+      } else {
+	if (station_data.tai_utc != eop["TAI-UTC"]->to_double()) {
+	  std::cerr << "observing over leap seconds is not supported" << std::endl;
+	  exit(EXIT_FAILURE);
+	}
+	if (station_data.eop_ref_epoch + station_data.num_eop_points != eop_ref_epoch) {
+	  std::cerr << "incorrect interval for EOP points" << std::endl;
+	  exit(EXIT_FAILURE);
+	}
       }
-      assert(station_data.num_eop_points<=10);
-      for (int i=0; i<station_data.num_eop_points; i++) {
-        station_data.ut1_utc[i] = eop["ut1-utc"][i]->to_double_amount("sec");
-        station_data.x_wobble[i] = eop["x_wobble"][i]->to_double_amount("asec");
-        station_data.y_wobble[i] = eop["y_wobble"][i]->to_double_amount("asec");
+      int num_eop_points = eop["num_eop_points"]->to_int();
+      station_data.num_eop_points += num_eop_points;
+      assert(station_data.num_eop_points <= 10);
+      if (num_eop_points > 1) {
+	for (int j = 0; j < num_eop_points; j++) {
+	  station_data.ut1_utc[i] = eop["ut1-utc"][j]->to_double_amount("sec");
+	  station_data.x_wobble[i] = eop["x_wobble"][j]->to_double_amount("asec");
+	  station_data.y_wobble[i] = eop["y_wobble"][j]->to_double_amount("asec");
+	  i++;
+	}
+      } else {
+	station_data.ut1_utc[i] = eop["ut1-utc"]->to_double_amount("sec");
+	station_data.x_wobble[i] = eop["x_wobble"]->to_double_amount("asec");
+	station_data.y_wobble[i] = eop["y_wobble"]->to_double_amount("asec");
+	i++;
       }
+    }
+
+    if (station_data.num_eop_points < 3) {
+      std::cerr << "a minimum of 3 EOP points are required (only "
+		<< station_data.num_eop_points
+		<< " specified)" << std::endl;
+      exit(EXIT_FAILURE);
     }
   }
 
