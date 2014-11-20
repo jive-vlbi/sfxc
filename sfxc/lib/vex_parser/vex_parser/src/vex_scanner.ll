@@ -8,8 +8,22 @@
 
 TOKEN [^&$\*:;=\t\n\r\ ]
 ENDL  [(\r\n)\n]
+%x literal
 %%
 
+start_literal\([ \t]*\)[ \t]*; {
+  BEGIN(literal);
+}
+
+<literal>end_literal\([ \t]*\)[ \t]*; {
+  BEGIN(INITIAL);
+}
+
+<literal>{ENDL} {
+  linenr = linenr + 1;
+}
+
+<literal>[^\r\n]*	/* eat up literal body */
 
 :            yylval = Vexpp_node(); return COLON;
 ;            yylval = Vexpp_node(); return SEMICOLON;
