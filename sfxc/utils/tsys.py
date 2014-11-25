@@ -51,7 +51,11 @@ parser.add_option("-f", "--file", dest="tsys_file",
                       metavar="FILE")
 parser.add_option("-r", "--rxgfile", dest="rxg_file",
                       default="", type="string",
-                      help="RXG file",
+                      help="EVN RXG file",
+                      metavar="FILE")
+parser.add_option("-t", "--tcalfile", dest="tcal_file",
+                      default="", type="string",
+                      help="VLBA TCAL file",
                       metavar="FILE")
 parser.add_option("-i", "--integration-time", dest="delta_secs",
                       default=20, type="int",
@@ -158,15 +162,45 @@ if options.rxg_file:
     rcp = scipy.interpolate.interp1d(freqs, rcp)
     lcp = scipy.interpolate.interp1d(freqs, lcp)
     freq = freqs[0]
+    tcals = {0: rcp, 1: lcp}
     gains[freq] = {}
-    gains[freq]['TCAL'] = {0: rcp, 1: lcp}
     gains[freq][mount] = True
     gains[freq]['DPFU'] = dfpu
     gains[freq]['POLY'] = poly
     gains[freq]['FREQ'] = (lo, hi)
     gains[freq]['FT'] = 1.0
     pass
-else:
+elif options.tcal_file:
+    freqs = []
+    tcals = {}
+
+    fp = open(options.tcal_file)
+    for line in fp:
+        if line.startswith('!'):
+            continue
+        if line.startswith('RECEIVER'):
+            if len(freqs) > 0:
+                break
+            continue
+        values = line.split()
+        freq = float(values[0])
+        freqs.append(freq)
+        tcals[freq] = {1: float(values[1]), 0: float(values[2])}
+        continue
+    freqs = sorted(freqs)
+    rcp = []
+    lcp = []
+    for freq in freqs:
+        rcp.append(tcals[freq][0])
+        lcp.append(tcals[freq][1])
+        continue
+    freqs = np.array(freqs)
+    rcp = np.array(rcp)
+    lcp = np.array(lcp)
+    rcp = scipy.interpolate.interp1d(freqs, rcp)
+    lcp = scipy.interpolate.interp1d(freqs, lcp)
+    tcals = {0: rcp, 1: lcp}
+
     fp = open('vlba_gains.key', 'r')
     vlba_gains = key.read_keyfile(fp)
     fp.close()
@@ -317,7 +351,7 @@ for polarisation in polarisations:
         continue
     continue
 
-delta = 1000
+delta = 10000
 freq = None
 for t in gains:
     if abs(float(t) - frequencies[0]) < delta:
@@ -332,10 +366,7 @@ if freq:
         for n in xrange(num_channels):
             idx = "%s%d" % (polarisation, n + 1)
             pol = pol_mapping[polarisation]
-            try:
-                tcal[idx] = gain['TCAL'][pol](frequencies[n])
-            except:
-                tcal[idx] = gain['TCAL'][pol]
+            tcal[idx] = tcals[pol](frequencies[n])
             continue
         continue
 
@@ -361,8 +392,6 @@ if freq:
         print "POLY=%s" % ','.join(["%#.5g" % (f) for f in gain['POLY']])
     print "/"
     pass
-
-#tcal = {'R1': 3.16, 'L1': 3.03}
 
 print "TSYS %s" % antab_station.upper(),
 try:
