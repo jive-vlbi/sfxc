@@ -61,6 +61,10 @@ parser.add_option("-i", "--integration-time", dest="delta_secs",
                       default=20, type="int",
                       help="integration time",
                       metavar="SECS")
+parser.add_option("-c", "--cutoff", dest="cutoff",
+                      default=1e9, type="float",
+                      help="cutoff",
+                      metavar="K")
 
 (options, args) = parser.parse_args()
 if len(args) < 3:
@@ -183,6 +187,8 @@ elif options.tcal_file:
                 break
             continue
         values = line.split()
+        if len(values) == 0:
+            continue
         freq = float(values[0])
         freqs.append(freq)
         tcals[freq] = {1: float(values[1]), 0: float(values[2])}
@@ -361,14 +367,6 @@ for t in gains:
     continue
 if freq:
     gain = gains[freq]
-    tcal = {}
-    for polarisation in polarisations:
-        for n in xrange(num_channels):
-            idx = "%s%d" % (polarisation, n + 1)
-            pol = pol_mapping[polarisation]
-            tcal[idx] = tcals[pol](frequencies[n])
-            continue
-        continue
 
     print "GAIN %s" % antab_station.upper(),
     if 'EQUAT' in gain:
@@ -393,11 +391,20 @@ if freq:
     print "/"
     pass
 
+tcal = {}
+for polarisation in polarisations:
+    for n in xrange(num_channels):
+        idx = "%s%d" % (polarisation, n + 1)
+        pol = pol_mapping[polarisation]
+        tcal[idx] = tcals[pol](frequencies[n])
+        continue
+    continue
+
 print "TSYS %s" % antab_station.upper(),
 try:
     print "FT=%.3f" % gain['FT'],
 except:
-    print "FT=%.3f,%.3f" % tuple(gain['FT']),
+    print "FT=%.3f" % gain['FT'][0],
 print "TIMEOFF=0"
 print "INDEX=%s" % ','.join(["'%s'" % (s) for s in index])
 print "/"
@@ -444,6 +451,8 @@ for tsys_file in tsys_files:
         polarisation = entry[3]
         mjd = entry[4]
         secs = (mjd - 40587) * 86400 + entry[5]
+        if stations[station] != antab_station:
+            continue
         if secs < scans[scan][0]:
             continue
         while secs >= scans[scan][1]:
@@ -454,8 +463,6 @@ for tsys_file in tsys_files:
             pass
         while secs >= binned_secs + delta_secs:
             binned_secs += delta_secs
-            continue
-        if stations[station] != antab_station:
             continue
         if not station in counts:
             counts[station] = {}
@@ -516,10 +523,14 @@ for secs in times[station]:
     print "%d %02d:%02d.%02d" % (tupletime.tm_yday, tupletime.tm_hour, tupletime.tm_min, ((tupletime.tm_sec * 100) / 60)),
     for idx in index:
         try:
-            print "%.1f" % (tsys[station][secs][mapping[idx]] * tcal[idx]),
+            val = (tsys[station][secs][mapping[idx]] * tcal[idx])
         except:
-            print "999.9",
+            val = 999.9
             pass
+        if val > options.cutoff:
+            val = 999.9
+            pass
+        print "%.1f" % val,
         continue
     print ""
     continue
