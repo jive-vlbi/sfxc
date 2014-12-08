@@ -46,6 +46,8 @@ start_input_node(int rank, const std::string &station) {
     MPI_Send(&station_number, 1, MPI_INT32,
 	     rank, MPI_TAG_SET_INPUT_NODE_VDIF, MPI_COMM_WORLD);
   } else {
+    if (control_parameters.data_format(station) != "Mark5B")
+      std::cerr << "Invalid DAS for station " << station << "\n";
     SFXC_ASSERT(control_parameters.data_format(station) == "Mark5B");
     MPI_Send(&station_number, 1, MPI_INT32,
              rank, MPI_TAG_SET_INPUT_NODE_MARK5B, MPI_COMM_WORLD);
