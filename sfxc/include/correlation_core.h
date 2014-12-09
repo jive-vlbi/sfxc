@@ -77,6 +77,7 @@ protected:
 
   size_t number_input_streams_in_use();
   void create_window();
+  void create_weights();
 
 protected:
   int previous_fft;
@@ -109,7 +110,7 @@ protected:
   SFXC_FFT fft_f2t, fft_t2f;
   Complex_buffer temp_buffer;
   Real_buffer real_buffer;
-  std::vector<FLOAT> window;
+  std::vector<FLOAT> window, weights;
 
   // Needed for writing the progress messages
   int node_nr_;

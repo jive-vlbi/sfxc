@@ -267,8 +267,10 @@ void Correlation_core::integration_initialise() {
   temp_buffer.resize(fft_size() + 1);
   real_buffer.resize(2 * fft_size());
 
-  if (fft_size() != number_channels())
+  if (fft_size() != number_channels()){
     create_window();
+    create_weights();
+  }
 }
 
 void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride) {
@@ -624,6 +626,12 @@ Correlation_core::uvshift(const Complex_buffer &input_buffer, Complex_buffer &ou
   const double base_freq = correlation_parameters.channel_freq;
   const double dfreq = correlation_parameters.sample_rate/ ( 2. * fft_size()); 
 
+  // Compute amplitude scaling
+  FLOAT amplitude = 1;
+  int lag = abs((int)round((ddelay1 - ddelay2) * correlation_parameters.sample_rate));
+  if((lag < fft_size()) && (weights[lag] > 1e-4))
+    amplitude = 1. / weights[lag];
+
   double phi = base_freq * (ddelay1 * (1 - rate1) - ddelay2 * (1 - rate2));
   phi = 2 * M_PI * sb * (phi - floor(phi));
   double delta = 2 * M_PI * dfreq * (ddelay1 * (1 - rate1) - ddelay2 * (1 - rate2));
@@ -638,7 +646,7 @@ Correlation_core::uvshift(const Complex_buffer &input_buffer, Complex_buffer &ou
 #endif 
   const int size = input_buffer.size();
   for (int i = 0; i < size; i++) {
-    output_buffer[i] += input_buffer[i] * std::complex<FLOAT>(cos_phi, sin_phi);
+    output_buffer[i] += amplitude * input_buffer[i] * std::complex<FLOAT>(cos_phi, sin_phi);
     // Compute sin_phi=sin(phi); cos_phi = cos(phi);
     temp=sin_phi-(a*sin_phi-b*cos_phi);
     cos_phi=cos_phi-(a*cos_phi+b*sin_phi);
@@ -766,6 +774,37 @@ convolve(double (*f)(int, int), int n, int i)
   }
 
   return sum;
+}
+void
+Correlation_core::create_weights(){
+  double (*f)(int,int);
+  if (!weights.empty())
+    return;
+
+  switch(correlation_parameters.window){
+  case SFXC_WINDOW_NONE:
+  case SFXC_WINDOW_RECT:
+    // rectangular window (including zero padding)
+    f = rect; 
+    break;
+  case SFXC_WINDOW_COS:
+    // Cosine window
+    f = cos;
+    break;
+  case SFXC_WINDOW_HAMMING:
+    // Hamming window
+    f = hamming;
+    break;
+  case SFXC_WINDOW_HANN:
+    f = hann;
+    break;
+  default:
+    sfxc_abort("Invalid windowing function");
+  }
+  const int n = fft_size();
+  weights.resize(n);
+  for (int i = 0; i < n; i++)
+    weights[i] = convolve(f, 2*n, i+n) / n;
 }
 
 void 
