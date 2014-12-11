@@ -270,6 +270,8 @@ private:
 
   // Contains all timing/binning parameters relating to any pulsar in the current experiment
   Pulsar_parameters pulsar_parameters; 
+  Mask_parameters mask_parameters;
+
 #ifdef RUNTIME_STATISTIC
   QOS_MonitorSpeed reader_state_;
   QOS_MonitorSpeed delaycorrection_state_;

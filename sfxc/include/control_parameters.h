@@ -102,6 +102,14 @@ private:
   std::ostream& log_writer;
 };
 
+class Mask_parameters {
+ public:
+   Mask_parameters() : normalize(false) {}
+
+  bool normalize;
+  std::vector<double> mask;
+  std::vector<double> window;
+};
 
 /** Information about the correlation neede by the correlator node. **/
 class Correlation_parameters {
@@ -166,6 +174,7 @@ public:
   int32_t n_phase_centers;   // The number of phase centers in the current scan
   int32_t pulsar_binning;
   Pulsar_parameters *pulsar_parameters;
+  Mask_parameters *mask_parameters;
 };
 
 
@@ -185,6 +194,7 @@ public:
 
   bool check(std::ostream &log_writer) const;
   bool get_pulsar_parameters(Pulsar_parameters &pars) const;
+  bool get_mask_parameters(Mask_parameters &pars) const;
 
   /****************************************************/
   /* Get functions from the correlation control file: */
@@ -358,4 +368,5 @@ private:
 
   mutable std::map<std::string, int> station_map;
 };
+
 #endif /*CONTROL_PARAMETERS_H_*/

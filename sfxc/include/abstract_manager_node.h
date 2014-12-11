@@ -112,6 +112,7 @@ public:
   void correlator_node_set_all(Uvw_model &uvw_table,
                                const std::string &station_name);
   void correlator_node_set_all(Pulsar_parameters &pulsar);
+  void correlator_node_set_all(Mask_parameters &mask);
   void correlator_node_set_all(std::set<std::string> &sources);
 
   void set_correlator_node_ready(size_t correlator_rank, bool ready=true);
@@ -138,6 +139,7 @@ protected:
   // Data
   Control_parameters control_parameters;
   Pulsar_parameters pulsar_parameters;
+  Mask_parameters mask_parameters;
   int numtasks;
 
   // Map from a station name to the Input_node number

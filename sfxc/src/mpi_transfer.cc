@@ -1085,3 +1085,76 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
 
   SFXC_ASSERT(position == size);
 }
+
+void
+MPI_Transfer::
+pack(std::vector<char> &buffer, Mask_parameters &mask_param) {
+  int32_t normalize = mask_param.normalize;
+  int32_t mask_len = mask_param.mask.size();
+  int32_t window_len = mask_param.window.size();
+  int32_t size = 3 * sizeof(int32_t) + mask_len * sizeof(double) + window_len * sizeof(double);
+
+  buffer.resize(size);
+  int position = 0;
+
+  MPI_Pack(&normalize, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&mask_len, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+  for (int i = 0; i < mask_len; i++)
+    MPI_Pack(&mask_param.mask[i], 1, MPI_DOUBLE, &buffer[0], size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&window_len, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
+  for (int i = 0; i < window_len; i++)
+    MPI_Pack(&mask_param.window[i], 1, MPI_DOUBLE, &buffer[0], size, &position, MPI_COMM_WORLD);
+
+  SFXC_ASSERT(position == size);
+}
+
+void
+MPI_Transfer::
+unpack(std::vector<char> &buffer, Mask_parameters &mask_param) {
+  int size = buffer.size();
+  int position = 0;
+
+  MPI_Unpack(&buffer[0], size, &position, &mask_param.normalize, 1, MPI_INT32, MPI_COMM_WORLD);
+
+  int32_t mask_len;
+  MPI_Unpack(&buffer[0], size, &position, &mask_len, 1, MPI_INT32, MPI_COMM_WORLD);
+  mask_param.mask.resize(mask_len);
+  MPI_Unpack(&buffer[0], size, &position, &mask_param.mask[0], mask_len, MPI_DOUBLE, MPI_COMM_WORLD);
+
+  int32_t window_len;
+  MPI_Unpack(&buffer[0], size, &position, &window_len, 1, MPI_INT32, MPI_COMM_WORLD);
+  mask_param.window.resize(window_len);
+  MPI_Unpack(&buffer[0], size, &position, &mask_param.window[0], window_len, MPI_DOUBLE, MPI_COMM_WORLD);
+
+  SFXC_ASSERT(position == size);
+}
+
+void
+MPI_Transfer::
+bcast_corr_nodes(Mask_parameters &mask_param) {
+  std::vector<char> buffer;
+  pack(buffer, mask_param);
+  int n_ranks, n_corr_nodes;
+  MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
+  MPI_Comm_size(MPI_COMM_CORR_NODES, &n_corr_nodes);
+  // NB:: MPI_COMM_CORR_NODES includes the management node
+  n_corr_nodes -= 1;
+
+  int size = buffer.size();
+  for(int rank=n_ranks-n_corr_nodes; rank<n_ranks; rank++)
+    MPI_Send(&size, 1, MPI_INT32, rank, MPI_TAG_MASK_PARAMETERS, MPI_COMM_WORLD);
+  MPI_Bcast(&buffer[0], size, MPI_PACKED, RANK_MANAGER_NODE, MPI_COMM_CORR_NODES);
+}
+
+void
+MPI_Transfer::
+receive_bcast(MPI_Status &status, Mask_parameters &mask_param) {
+  MPI_Status status2;
+
+  int size;
+  MPI_Recv(&size, 1, MPI_INT32, status.MPI_SOURCE,
+           status.MPI_TAG, MPI_COMM_WORLD, &status2);
+  std::vector<char> buffer(size);
+  MPI_Bcast(&buffer[0], size, MPI_PACKED, RANK_MANAGER_NODE, MPI_COMM_CORR_NODES);
+  unpack(buffer, mask_param);
+}

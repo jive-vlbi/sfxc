@@ -495,6 +495,12 @@ correlator_node_set_all(Pulsar_parameters &pulsar) {
 
 void
 Abstract_manager_node::
+correlator_node_set_all(Mask_parameters &mask) {
+  MPI_Transfer::bcast_corr_nodes(mask);
+}
+
+void
+Abstract_manager_node::
 correlator_node_set_all(std::set<std::string> &sources) {
   for (size_t i=0; i<correlator_node_rank.size(); i++) {
     MPI_Transfer::send(sources, correlator_node_rank[i]);

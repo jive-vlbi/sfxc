@@ -1,6 +1,7 @@
 #include "correlation_core.h"
 #include "output_header.h"
 #include <utils.h>
+#include <complex>
 #include <set>
 
 Correlation_core::Correlation_core()
@@ -106,10 +107,14 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   // vector.  It will be recreated when the next integration starts.
   if (parameters.number_channels != correlation_parameters.number_channels ||
       parameters.fft_size_correlation != correlation_parameters.fft_size_correlation ||
-      parameters.window != correlation_parameters.window)
+      parameters.window != correlation_parameters.window) {
     window.clear();
+    mask.clear();
+  }
 
   correlation_parameters = parameters;
+  if (correlation_parameters.mask_parameters)
+    mask_parameters = *correlation_parameters.mask_parameters;
   oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
 
   create_baselines(parameters);
@@ -267,9 +272,10 @@ void Correlation_core::integration_initialise() {
   temp_buffer.resize(fft_size() + 1);
   real_buffer.resize(2 * fft_size());
 
-  if (fft_size() != number_channels()){
+  if (fft_size() != number_channels()) {
     create_window();
     create_weights();
+    create_mask();
   }
 }
 
@@ -463,6 +469,13 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     int station2 = streams_in_scan[inputs.second];
 
     if (fft_size() != number_channels()) {
+      if (mask_parameters.normalize) {
+	for (size_t j = 0; j < fft_size() + 1; j++) {
+	  if (abs(integration_buffer[i][j]) != 0.0)
+	    integration_buffer[i][j] /= abs(integration_buffer[i][j]);
+	}
+      }
+      SFXC_MUL_F_FC_I(&mask[0], &integration_buffer[i][0], fft_size() + 1);
       fft_f2t.irfft(&integration_buffer[i][0], &real_buffer[0]);
       for (size_t j = 0; j < number_channels(); j++)
 	real_buffer[number_channels() + j] =
@@ -815,6 +828,13 @@ Correlation_core::create_window() {
   if (!window.empty())
     return;
 
+  if (mask_parameters.window.size() > 0) {
+    for (int i = 0; i < mask_parameters.window.size(); i++)
+      window.push_back(mask_parameters.window[i]);
+    SFXC_ASSERT(window.size() == 2 * number_channels());
+    return;
+  }
+
   window.resize(n);
 
   switch(correlation_parameters.window){
@@ -845,4 +865,19 @@ Correlation_core::create_window() {
   default:
     sfxc_abort("Invalid windowing function");
   }
+}
+
+void
+Correlation_core::create_mask() {
+  if (!mask.empty())
+    return;
+
+  if (mask_parameters.mask.size() > 0) {
+    for (int i = 0; i < mask_parameters.mask.size(); i++)
+      mask.push_back(mask_parameters.mask[i]);
+    SFXC_ASSERT(mask.size() == fft_size() + 1);
+    return;
+  }
+
+  mask.assign(fft_size() + 1, 1.0);
 }

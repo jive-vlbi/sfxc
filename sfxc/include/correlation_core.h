@@ -78,6 +78,7 @@ protected:
   size_t number_input_streams_in_use();
   void create_window();
   void create_weights();
+  void create_mask();
 
 protected:
   int previous_fft;
@@ -92,6 +93,7 @@ protected:
   std::vector< std::pair<int64_t,int64_t> > n_flagged;
 
   Correlation_parameters                               correlation_parameters;
+  Mask_parameters                                      mask_parameters;
   int                                                  oversamp; // Oversample factor
   // A list of all sources in the current job
   std::map<std::string, int> sources;
@@ -110,7 +112,9 @@ protected:
   SFXC_FFT fft_f2t, fft_t2f;
   Complex_buffer temp_buffer;
   Real_buffer real_buffer;
-  std::vector<FLOAT> window, weights;
+  std::vector<FLOAT> window;
+  std::vector<FLOAT> weights;
+  std::vector<FLOAT> mask;
 
   // Needed for writing the progress messages
   int node_nr_;

@@ -331,7 +331,9 @@ enum MPI_TAG {
    **/
   MPI_TAG_LOG_MESSAGE,
 
-  MPI_TAG_ERROR
+  MPI_TAG_ERROR,
+
+  MPI_TAG_MASK_PARAMETERS
 };
 
 // Helps detecting missing constants in MPI_TAG:
@@ -434,6 +436,9 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
     }
   case   MPI_TAG_PULSAR_PARAMETERS: {
       return "MPI_TAG_PULSAR_PARAMETERS";
+    }
+  case MPI_TAG_MASK_PARAMETERS: {
+      return "MPI_TAG_MASK_PARAMETERS";
     }
   case   MPI_TAG_SOURCE_LIST: {
       return "MPI_TAG_SOURCE_LIST";
