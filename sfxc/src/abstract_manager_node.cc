@@ -46,6 +46,8 @@ start_input_node(int rank, const std::string &station) {
     MPI_Send(&station_number, 1, MPI_INT32,
 	     rank, MPI_TAG_SET_INPUT_NODE_VDIF, MPI_COMM_WORLD);
   } else {
+    if (control_parameters.data_format(station) != "Mark5B")
+      std::cerr << "Invalid DAS for station " << station << "\n";
     SFXC_ASSERT(control_parameters.data_format(station) == "Mark5B");
     MPI_Send(&station_number, 1, MPI_INT32,
              rank, MPI_TAG_SET_INPUT_NODE_MARK5B, MPI_COMM_WORLD);
@@ -500,6 +502,12 @@ correlator_node_set_all(Pulsar_parameters &pulsar) {
   for (size_t i=0; i<correlator_node_rank.size(); i++) {
     MPI_Transfer::send(pulsar, correlator_node_rank[i]);
   }
+}
+
+void
+Abstract_manager_node::
+correlator_node_set_all(Mask_parameters &mask) {
+  MPI_Transfer::bcast_corr_nodes(mask);
 }
 
 void

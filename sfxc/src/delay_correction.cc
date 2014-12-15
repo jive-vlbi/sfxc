@@ -214,12 +214,11 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
   n_ffts_per_integration =
     (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
     parameters.slice_size / parameters.fft_size_delaycor;
+
   LO_offset = parameters.station_streams[stream_idx].LO_offset;
   double dt = current_time.diff(parameters.experiment_start);
-  if (dt < 1)
-    start_phase = LO_offset * dt;
-  else
-    start_phase = (LO_offset-floor(LO_offset)) * dt;
+  // Compute start phase of LO offset with maximum numerical precision
+  start_phase = LO_offset*(dt-trunc(dt)) + (LO_offset-trunc(LO_offset))*trunc(dt);
   start_phase = start_phase - floor(start_phase);
   current_fft = 0;
   tbuf_start = 0;

@@ -161,6 +161,7 @@ void sfxc_abort(const char *msg="");
   #define SFXC_ZERO_F             sfxc_zero
   #define SFXC_ZERO_FC            sfxc_zero_c
   #define SFXC_MUL_FC_I           sfxc_mul_c_I
+  #define SFXC_MUL_F_FC_I         sfxc_mul_f_c_I
   #define SFXC_MAGNITUDE_FC       sfxc_magnitude
   #define SFXC_CONJ_FC            sfxc_conj_c
   #define SFXC_ADD_F              sfxc_add
@@ -175,6 +176,7 @@ void sfxc_abort(const char *msg="");
   #define SFXC_ZERO_FC            sfxc_zero_fc
   #define SFXC_MAGNITUDE_FC       sfxc_magnitude_f
   #define SFXC_MUL_FC_I           sfxc_mul_fc_I
+  #define SFXC_MUL_F_FC_I         sfxc_mul_f_fc_I
   #define SFXC_CONJ_FC            sfxc_conj_fc
   #define SFXC_ADD_F              sfxc_add_f
   #define SFXC_ADD_FC             sfxc_add_fc

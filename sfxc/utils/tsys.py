@@ -7,6 +7,8 @@ import struct
 import sys
 import time
 import urlparse
+import numpy as np
+import scipy.interpolate
 from scipy.special import erfinv
 
 # JIVE Python modules
@@ -26,6 +28,9 @@ def timerang2time(timerang):
                  int(timerang[3]), 0, 0, -1, -1, -1)
     return time.mktime(tupletime)
 
+def roundup(n, m):
+    return int(((n + (m - 1)) // m) * m)
+
 os.environ['TZ'] = 'UTC'
 time.tzset()
 
@@ -33,36 +38,33 @@ header = "=I32sII15sxii"
 format = "=BBBBII4Q"
 
 tsys = {}
+counts = {}
 times = {}
-
-# Values for Ef in  F13C4
-tcal = {
-    'R1': 1.69,
-    'R2': 1.69,
-    'R3': 1.69,
-    'R4': 1.70,
-    'R5': 1.74,
-    'R6': 1.70,
-    'R7': 1.80,
-    'R8': 1.78,
-    'L1': 1.69,
-    'L2': 1.69,
-    'L3': 1.68,
-    'L4': 1.70,
-    'L5': 1.74,
-    'L6': 1.70,
-    'L7': 1.80,
-    'L8': 1.77
-    }
 
 gains = {}
 
-usage = "usage: %prog [options] vexfile ctrlfile"
+usage = "usage: %prog [options] vexfile station ctrlfile"
 parser = optparse.OptionParser(usage=usage)
 parser.add_option("-f", "--file", dest="tsys_file",
                       default="", type="string",
                       help="Tsys measurements",
                       metavar="FILE")
+parser.add_option("-r", "--rxgfile", dest="rxg_file",
+                      default="", type="string",
+                      help="EVN RXG file",
+                      metavar="FILE")
+parser.add_option("-t", "--tcalfile", dest="tcal_file",
+                      default="", type="string",
+                      help="VLBA TCAL file",
+                      metavar="FILE")
+parser.add_option("-i", "--integration-time", dest="delta_secs",
+                      default=20, type="int",
+                      help="integration time",
+                      metavar="SECS")
+parser.add_option("-c", "--cutoff", dest="cutoff",
+                      default=1e9, type="float",
+                      help="cutoff",
+                      metavar="K")
 
 (options, args) = parser.parse_args()
 if len(args) < 3:
@@ -70,8 +72,8 @@ if len(args) < 3:
     pass
 
 vex_file = args[0]
-ctrl_file = args[1]
-antab_station = args[2]
+antab_station = args[1]
+ctrl_file = args[2]
 
 stations = []
 vex = Vex(vex_file)
@@ -79,6 +81,19 @@ for station in vex['STATION']:
     stations.append(station)
     continue
 stations.sort()
+
+# Build a list of start and stop time pairs of each scan
+scans = []
+for scan in vex['SCHED']:
+    start = vex2time(vex['SCHED'][scan]['start'])
+    for station in vex['SCHED'][scan].getall('station'):
+        if station[0] == antab_station:
+            stop = start + int(station[2].split()[0])
+            data_good = int(station[1].split()[0])
+            scans.append((start + data_good, stop))
+            continue
+        continue
+    continue
 
 if not antab_station in stations:
     print "station %s not found in VEX" % antab_station
@@ -92,29 +107,124 @@ fp.close()
 start = vex2time(json_input['start'])
 stop = vex2time(json_input['stop'])
 
-fp = open('vlba_gains.key', 'r')
-vlba_gains = key.read_keyfile(fp)
-fp.close()
-
-for gain in vlba_gains:
-    gain_dict = {}
-    for pair in gain:
-        gain_dict[pair[0]] = pair[1]
-        continue
-    gain = gain_dict
-    if not antab_station.upper() in gain:
-        continue
-    if start < timerang2time(gain['TIMERANG'][0:4]):
-        continue
-    if start >= timerang2time(gain['TIMERANG'][4:8]):
-        continue
-    gains[gain['FREQ']] = gain
-    continue
-
 if 'setup_station' in json_input:
     setup_station = json_input['setup_station']
 else:
     setup_station = station[0]
+    pass
+
+if options.rxg_file:
+    pol_mapping = {'rcp': 0, 'lcp': 1}
+    freqs = []
+    rxgs = {}
+
+    fp = open(options.rxg_file)
+    lineno = -1
+    for line in fp:
+        if line.startswith('*'):
+            continue
+        lineno += 1
+        if lineno == 0:
+            if line.startswith('range'):
+                values = line.split()
+                lo = float(values[1])
+                hi = float(values[2])
+                continue
+            pass
+        elif lineno == 4:
+            dfpu = [float(x) for x in line.split()]
+            continue
+        elif lineno == 5:
+            mount = line.split()[0]
+            poly = [float(x) for x in line.split()[2:]]
+            continue
+        elif line.startswith('lcp') or line.startswith('rcp'):
+            values = line.split()
+            if len(values) != 3:
+                continue
+            pol = pol_mapping[values[0]]
+            freq = float(values[1])
+            if not freq in freqs:
+                freqs.append(freq)
+                pass
+            if not freq in rxgs:
+                rxgs[freq] = {}
+                pass
+            rxgs[freq][pol] = float(values[2])
+            continue
+        continue
+    freqs = sorted(freqs)
+    rcp = []
+    lcp = []
+    for freq in freqs:
+        rcp.append(rxgs[freq][0])
+        lcp.append(rxgs[freq][1])
+        continue
+    freqs = np.array(freqs)
+    rcp = np.array(rcp)
+    lcp = np.array(lcp)
+    rcp = scipy.interpolate.interp1d(freqs, rcp)
+    lcp = scipy.interpolate.interp1d(freqs, lcp)
+    freq = freqs[0]
+    tcals = {0: rcp, 1: lcp}
+    gains[freq] = {}
+    gains[freq][mount] = True
+    gains[freq]['DPFU'] = dfpu
+    gains[freq]['POLY'] = poly
+    gains[freq]['FREQ'] = (lo, hi)
+    gains[freq]['FT'] = 1.0
+    pass
+elif options.tcal_file:
+    freqs = []
+    tcals = {}
+
+    fp = open(options.tcal_file)
+    for line in fp:
+        if line.startswith('!'):
+            continue
+        if line.startswith('RECEIVER'):
+            if len(freqs) > 0:
+                break
+            continue
+        values = line.split()
+        if len(values) == 0:
+            continue
+        freq = float(values[0])
+        freqs.append(freq)
+        tcals[freq] = {1: float(values[1]), 0: float(values[2])}
+        continue
+    freqs = sorted(freqs)
+    rcp = []
+    lcp = []
+    for freq in freqs:
+        rcp.append(tcals[freq][0])
+        lcp.append(tcals[freq][1])
+        continue
+    freqs = np.array(freqs)
+    rcp = np.array(rcp)
+    lcp = np.array(lcp)
+    rcp = scipy.interpolate.interp1d(freqs, rcp)
+    lcp = scipy.interpolate.interp1d(freqs, lcp)
+    tcals = {0: rcp, 1: lcp}
+
+    fp = open('vlba_gains.key', 'r')
+    vlba_gains = key.read_keyfile(fp)
+    fp.close()
+
+    for gain in vlba_gains:
+        gain_dict = {}
+        for pair in gain:
+            gain_dict[pair[0]] = pair[1]
+            continue
+        gain = gain_dict
+        if not antab_station.upper() in gain:
+            continue
+        if start < timerang2time(gain['TIMERANG'][0:4]):
+            continue
+        if start >= timerang2time(gain['TIMERANG'][4:8]):
+            continue
+        gains[gain['FREQ']] = gain
+        continue
     pass
 
 channels = json_input['channels']
@@ -155,6 +265,14 @@ def get_channel_pol(station, mode, chan_name):
         continue
     return None
 
+def get_channel_bw(station, mode, chan_name):
+    freq = get_freq(station, mode)
+    for chan_def in vex['FREQ'][freq].getall('chan_def'):
+        if chan_name == chan_def[4]:
+            return float(chan_def[3].split[0])
+        continue
+    return None
+
 def get_bbc_pol(station, mode, bbc_name):
     bbc = get_bbc(station, mode)
     for bbc_assign in vex['BBC'][bbc].getall('BBC_assign'):
@@ -171,20 +289,32 @@ def get_if_pol(station, mode, if_name):
         continue
     return None
 
+def get_sample_rate(station, mode):
+    freq = get_freq(station, mode)
+    value = vex['FREQ'][freq]['sample_rate'].split()
+    return float(value[0]) * 1e6
+
 pol_mapping = {'R': 0, 'L': 1}
 sideband_mapping = {'L': 0, 'U': 1}
 
 freq = get_freq(setup_station, mode)
+sample_rate = get_sample_rate(antab_station, mode)
 
 sidebands = []
 frequencies = []
 num_channels = 0
+bandwidth = 0
 for chan_def in vex['FREQ'][freq].getall('chan_def'):
     sideband = chan_def[2]
     if not sideband in sidebands:
         sidebands.append(sideband)
         pass
     frequency = float(chan_def[1].split()[0])
+    bandwidth = float(chan_def[3].split()[0])
+    if sideband == 'L':
+        frequency -= bandwidth / 2
+    else:
+        frequency += bandwidth / 2
     if not frequency in frequencies:
         frequencies.append(frequency)
         pass
@@ -209,7 +339,7 @@ for polarisation in polarisations:
     for sideband in sidebands:
         for n in xrange(len(frequencies)):
             chan_mapping[(frequencies[n], sideband, polarisation)] = \
-                (n, sideband_mapping[sideband], pol_mapping[polarisation])
+                (n / len(sidebands), sideband_mapping[sideband], pol_mapping[polarisation])
             continue
         continue
     continue
@@ -220,14 +350,14 @@ comment_mapping = {}
 for polarisation in polarisations:
     for n in xrange(num_channels):
         index.append("%s%d" % (polarisation, n + 1))
-        frequency = frequencies[n / len(sidebands)]
+        frequency = frequencies[n]
         sideband = sidebands[n % len(sidebands)]
         mapping[index[-1]] = chan_mapping[(frequency, sideband, polarisation)]
         comment_mapping[index[-1]] = (frequency, sideband, polarisation)
         continue
     continue
 
-delta = 1000
+delta = 10000
 freq = None
 for t in gains:
     if abs(float(t) - frequencies[0]) < delta:
@@ -237,15 +367,8 @@ for t in gains:
     continue
 if freq:
     gain = gains[freq]
-    tcal = {}
-    for polarisation in polarisations:
-        for n in xrange(num_channels):
-            idx = "%s%d" % (polarisation, n + 1)
-            tcal[idx] = gain['TCAL'][pol_mapping[polarisation]]
-            continue
-        continue
 
-    print "GAIN %s" % antab_station.upper()
+    print "GAIN %s" % antab_station.upper(),
     if 'EQUAT' in gain:
         mount = "EQUAT"
     elif 'ALTAZ' in gain:
@@ -256,81 +379,135 @@ if freq:
         mount = "GCNRAO"
         pass
     print mount,
-    print "DPFU = %.3f, %.3f" % tuple(gain['DPFU']),
+    print "DPFU=%#.5g,%#.5g" % tuple(gain['DPFU']),
     try:
-        print "POLY %.4g" % gain['POLY']
+        print "FREQ=%.0f" % gain['FREQ']
     except:
-        print gain['POLY']
-        print "POLY %s" % ','.join(["%.4g" % (f) for f in gain['POLY']])
+        print "FREQ=%.0f,%.0f" % tuple(gain['FREQ'])
+    try:
+        print "POLY=%#.5g" % gain['POLY']
+    except:
+        print "POLY=%s" % ','.join(["%#.5g" % (f) for f in gain['POLY']])
     print "/"
     pass
 
-print "TSYS %s" % antab_station.upper()
-print "INDEX = %s" % ', '.join(["'%s'" % (s) for s in index])
+tcal = {}
+for polarisation in polarisations:
+    for n in xrange(num_channels):
+        idx = "%s%d" % (polarisation, n + 1)
+        pol = pol_mapping[polarisation]
+        tcal[idx] = tcals[pol](frequencies[n])
+        continue
+    continue
+
+print "TSYS %s" % antab_station.upper(),
+try:
+    print "FT=%.3f" % gain['FT'],
+except:
+    print "FT=%.3f" % gain['FT'][0],
+print "TIMEOFF=0"
+print "INDEX=%s" % ','.join(["'%s'" % (s) for s in index])
 print "/"
 
 for i in xrange(len(index)):
     idx = index[i]
-    print "!Column %d = %s: %.2f MHz, %cSB" % \
-        (i + 1, idx, comment_mapping[idx][0], comment_mapping[idx][1])
+    print "!Column %d = %s: %.2f MHz, BW=%.2f MHz, %cSB, Tcal=%.2f K" % \
+        (i + 1, idx, comment_mapping[idx][0], bandwidth, comment_mapping[idx][1], tcal[idx])
     continue
 
-first = None
-last = None
+scan = 0
+binned_secs = scans[0][0]
+delta_secs = options.delta_secs
+
 if options.tsys_file:
-    tsys_file = options.tsys_file
+    tsys_files = [options.tsys_file]
 else:
-    tsys_file = urlparse.urlparse(json_input['tsys_file']).path
+    tsys_files = []
+    for ctrl_file in args[2:]:
+        fp = open(ctrl_file, 'r')
+        json_input = json.load(fp)
+        fp.close()
+        tsys_file = urlparse.urlparse(json_input['tsys_file']).path
+        tsys_files.append(tsys_file)
+        continue
     pass
-fp = open(tsys_file, 'r')
-buf = fp.read(struct.calcsize(header))
-while fp:
-    try:
-        buf = fp.read(struct.calcsize(format))
-        entry = struct.unpack(format, buf)
-    except:
-        break
-    if (entry[6] + entry[7]) < 5000:
+for tsys_file in tsys_files:
+    fp = open(tsys_file, 'r')
+    buf = fp.read(struct.calcsize(header))
+    while fp:
+        try:
+            buf = fp.read(struct.calcsize(format))
+            entry = struct.unpack(format, buf)
+        except:
+            break
+        if (entry[6] + entry[7]) < 500:
+            continue
+        if (entry[8] + entry[9]) < 500:
+            continue
+
+        station = entry[0]
+        frequency = entry[1]
+        sideband = entry[2]
+        polarisation = entry[3]
+        mjd = entry[4]
+        secs = (mjd - 40587) * 86400 + entry[5]
+        if stations[station] != antab_station:
+            continue
+        if secs < scans[scan][0]:
+            continue
+        while secs >= scans[scan][1]:
+            scan += 1
+            continue
+        if binned_secs < scans[scan][0]:
+            binned_secs = scans[scan][0]
+            pass
+        while secs >= binned_secs + delta_secs:
+            binned_secs += delta_secs
+            continue
+        if not station in counts:
+            counts[station] = {}
+            pass
+        if not binned_secs in counts[station]:
+            counts[station][binned_secs] = {}
+            pass
+
+        idx = (frequency, sideband, polarisation)
+        if not idx in counts[station][binned_secs]:
+            counts[station][binned_secs][idx] = [0, 0, 0, 0]
+            pass
+        counts[station][binned_secs][idx][0] += entry[6]
+        counts[station][binned_secs][idx][1] += entry[7]
+        counts[station][binned_secs][idx][2] += entry[8]
+        counts[station][binned_secs][idx][3] += entry[9]
         continue
-    if (entry[8] + entry[9]) < 5000:
+    continue
+
+for station in counts:
+    for secs in counts[station]:
+        if not station in times:
+            times[station] = []
+            tsys[station] = {}
+            pass
+        if not secs in times[station]:
+            times[station].append(secs)
+            tsys[station][secs] = {}
+            pass
+
+        for idx in counts[station][secs]:
+            entry = counts[station][secs][idx]
+            if (entry[0] + entry[1] + entry[2] + entry[3]) < 0.9 * delta_secs * sample_rate:
+                continue
+            f_on = float(entry[1])/(entry[0] + entry[1])
+            f_off = float(entry[3])/(entry[2] + entry[3])
+            P_on = 1 / (2 * (erfinv(1 - f_on))**2)
+            P_off = 1 / (2 * (erfinv(1 - f_off))**2)
+            if P_on < P_off:
+                continue
+            P_avg = (P_on + P_off) / 2
+
+            tsys[station][secs][idx] = P_avg/(P_on - P_off)
+            continue
         continue
-    f_on = float(entry[7])/(entry[6] + entry[7])
-    f_off = float(entry[9])/(entry[8] + entry[9])
-    P_on = 1 / (2 * (erfinv(1 - f_on))**2)
-    P_off = 1 / (2 * (erfinv(1 - f_off))**2)
-    if P_on < P_off:
-        continue
-    P_avg = (P_on + P_off) / 2
-    station = entry[0]
-    frequency = entry[1]
-    sideband = entry[2]
-    polarisation = entry[3]
-    mjd = entry[4]
-    secs = entry[5]
-    secs = (mjd - 40587) * 86400 + secs
-    if not first:
-        first = secs
-        pass
-    if not last:
-        last = secs
-        pass
-    if secs < first:
-        first = secs
-        pass
-    if secs > last:
-        last = secs
-        pass
-    if stations[station] != antab_station:
-        continue
-    if not station in times:
-        times[station] = []
-        tsys[station] = {}
-        pass
-    if not secs in times[station]:
-        times[station].append(secs)
-        tsys[station][secs] = {}
-        pass
-    tsys[station][secs][(frequency, sideband, polarisation)] = P_avg/(P_on - P_off)
     continue
 
 for station in xrange(len(stations)):
@@ -340,14 +517,20 @@ for station in xrange(len(stations)):
 
 times[station].sort()
 for secs in times[station]:
-    tupletime = time.gmtime(secs)
+    tupletime = time.gmtime(secs + 0.5 * delta_secs)
+    if not tsys[station][secs]:
+        continue
     print "%d %02d:%02d.%02d" % (tupletime.tm_yday, tupletime.tm_hour, tupletime.tm_min, ((tupletime.tm_sec * 100) / 60)),
     for idx in index:
         try:
-            print "%.1f" % (tsys[station][secs][mapping[idx]] * tcal[idx]),
+            val = (tsys[station][secs][mapping[idx]] * tcal[idx])
         except:
-            print "999.9",
+            val = 999.9
             pass
+        if val > options.cutoff:
+            val = 999.9
+            pass
+        print "%.1f" % val,
         continue
     print ""
     continue

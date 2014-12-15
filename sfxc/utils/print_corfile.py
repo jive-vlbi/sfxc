@@ -168,18 +168,20 @@ def read_time_slice(infile, stats, data, nchan, format):
 def get_stations(vex_file):
   f = open(vex_file, 'r')
   stations = []
-  line = f.readline()
-  while line != "" and line.lstrip().upper()[:9] != "$STATION;":
-    line = f.readline()
+  rawline = f.readline()
+  line = rawline.lstrip().upper()
+  while rawline != "" and line[:9] != "$STATION;":
+    rawline = f.readline()
+    line = rawline.lstrip().upper()
   # Now get the station names
-  line = f.readline()
-  sline = line.lstrip()
-  while line != "" and sline[:1] != "$":
-    if sline[:4] == "def ":
+  rawline = f.readline()
+  line = rawline.lstrip()
+  while rawline != "" and line[:1] != "$":
+    if line[:4] == "def ":
       z = line.find(';')
-      stations.append(sline[4:z].lstrip())
-    line = f.readline()
-    sline = line.lstrip()
+      stations.append(line[4:z].lstrip())
+    rawline = f.readline()
+    line = rawline.lstrip()
 
   if len(stations) == 0:
     print "Error, no stations found in vex_file : ", vex_file

@@ -296,6 +296,12 @@ def get_options():
       if ctrl["output_file"][:7] != 'file://':
         raise StandardError('Correlator output_file should start with file://')
       corfile = ctrl["output_file"][7:]
+      try:
+        if ctrl["pulsar_binning"]:
+          corfile += ".bin1"
+      except KeyError:
+        # No pulsar_binning keyword in control file
+        pass
     except StandardError, err:
       print >> sys.stderr, "Error loading control file : " + str(err)
       sys.exit(1)

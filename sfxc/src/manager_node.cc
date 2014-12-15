@@ -413,6 +413,9 @@ Manager_node::initialise() {
   }
   SFXC_ASSERT(current_scan < control_parameters.number_scans());
 
+  if (control_parameters.get_mask_parameters(mask_parameters))
+    correlator_node_set_all(mask_parameters);
+
   if(control_parameters.pulsar_binning()){
     // If pulsar binning is enabled : get all pulsar parameters (polyco files, etc.)
     Pulsar_parameters &pulsar_parameters = control_parameters.get_pulsar_parameters();

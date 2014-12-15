@@ -759,6 +759,30 @@ Control_parameters::read_pulsar_parameters(){
   return true;
 }
 
+bool
+Control_parameters::get_mask_parameters(Mask_parameters &pars) const {
+  if (ctrl["mask"] == Json::Value())
+    return false;
+
+  pars.normalize = ctrl["mask"]["normalize"].asBool();
+  if (ctrl["mask"]["mask"] != Json::Value()) {
+    std::string filename = create_path(ctrl["mask"]["mask"].asString());
+    std::ifstream infile(filename.c_str() + 7);
+    double d;
+    while (infile >> d)
+      pars.mask.push_back(d);
+  }
+  if (ctrl["mask"]["window"] != Json::Value()) {
+    std::string filename = create_path(ctrl["mask"]["window"].asString());
+    std::ifstream infile(filename.c_str() + 7);
+    double d;
+    while (infile >> d)
+      pars.window.push_back(d);
+  }
+
+  return true;
+}
+
 int
 Control_parameters::bits_per_sample(const std::string &mode,
                                     const std::string &station) const

@@ -80,6 +80,7 @@ Correlator_node_controller::process_event(MPI_Status &status) {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       Correlation_parameters parameters;
       MPI_Transfer::receive(status, parameters);
+      parameters.mask_parameters = &node.mask_parameters;
       node.receive_parameters(parameters);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
@@ -90,6 +91,12 @@ Correlator_node_controller::process_event(MPI_Status &status) {
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
+  case MPI_TAG_MASK_PARAMETERS: {
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      Mask_parameters parameters;
+      MPI_Transfer::receive_bcast(status, node.mask_parameters);
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+  }
   case MPI_TAG_SOURCE_LIST:{
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       std::map<std::string, int> sources;

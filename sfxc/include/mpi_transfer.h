@@ -50,6 +50,11 @@ public:
   static void send(Correlation_parameters &corr_param, int rank);
   static void receive(MPI_Status &status, Correlation_parameters &corr_param);
 
+  static void bcast_corr_nodes(Mask_parameters &mask_param);
+  static void pack(std::vector<char> &buffer, Mask_parameters &mask_param);
+  static void receive_bcast(MPI_Status &status, Mask_parameters &mask_param);
+  static void unpack(std::vector<char> &buffer, Mask_parameters &mask_param);
+
   static void send(std::set<std::string> &sources, int rank);
   static void receive(MPI_Status &status, std::map<std::string, int> &sources);
 
