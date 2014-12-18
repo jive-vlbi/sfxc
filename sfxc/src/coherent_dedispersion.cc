@@ -17,17 +17,18 @@ void
 Coherent_dedispersion::do_task(){
   Delay_queue_element input = input_queue->front_and_pop();
   Memory_pool_vector_element<FLOAT> &input_data = input->data;
+  if(current_time >= stop_time)
+    return;
   const int n_input_fft=input_data.size() / fft_size_dedispersion;
   total_input_fft += n_input_fft;
-  if((RANK_OF_NODE == -10) && (current_fft > nffts_per_integration -1000)) 
-  //if((RANK_OF_NODE == 10) && (stream_nr == 0)) 
+/*  if((RANK_OF_NODE == 5) && (current_fft > nffts_per_integration -1000)) 
     std::cerr<<"nfft = " <<n_input_fft 
              << ", size = " << input_data.size()
              << ", current_time " << (int64_t) current_time.get_time_usec()
              << ", current_fft = " << current_fft
              << ", input fft nr =" << total_input_fft
              << ", queue_length " << input_queue->size()
-             << "\n";
+             << "\n";*/
 
   // Allocate output buffer
   allocate_element(n_input_fft*fft_size_dedispersion/fft_size_correlation);
@@ -50,23 +51,10 @@ Coherent_dedispersion::do_task(){
   if((RANK_OF_NODE == -10) && (stream_nr == 0)) 
     std::cerr<<"now = " <<current_time << ", start = " << start_time
              <<", stop_time = " << stop_time << "\n";
-  //Time ttt = Time(55870, 79405.0);
-  Time ttt = Time(55870, 0.);
-  if((RANK_OF_NODE == -10) && (current_fft > nffts_per_integration -1000) && (current_time >= ttt)) 
-  //if((RANK_OF_NODE == 10) && (stream_nr == 0)) 
-                         std::cerr << "fft = " << current_fft 
-                                   << " / " << nffts_per_integration
-                                   << ", outpos = " << out_pos
-                                   << "\n";
   // Write output data
   if(out_pos > 0){
     cur_output->data.resize(out_pos);
     output_queue->push(cur_output);
-    if((RANK_OF_NODE == -10) && (current_fft > nffts_per_integration -1000) && (current_time >= ttt)) 
-    //if((RANK_OF_NODE == 10) && (stream_nr == 0)) 
-                           std::cerr << "push, outpos = " << out_pos 
-                                     << ", queue_size = " << output_queue->size()
-                                     << "\n";
   }
 }
 
@@ -78,15 +66,12 @@ Coherent_dedispersion::empty_output_queue(){
 
 void
 Coherent_dedispersion::overlap_add(){
-  if(RANK_OF_NODE == -10) std::cerr << "overlap_add, fft =" << current_fft
-                                   << " / " << nffts_per_integration
-                                   << "\n";
   Memory_pool_vector_element<FLOAT> &data = cur_output->data;
   //NB : fft_size_dedispersion >= fft_size_correlation
   const int step_size = fft_size_correlation / 2;
   const int nstep=fft_size_dedispersion/step_size;
 
-  for(int n=0; (n < nstep) && (current_fft < nffts_per_integration); n++){
+  for(int n=0; (n < nstep); n++){
     int i, j;
     if(n<nstep/2){
       i = 3*fft_size_dedispersion/2 + n*step_size;
@@ -107,16 +92,6 @@ Coherent_dedispersion::overlap_add(){
     out_pos += step_size;
     if(out_pos % fft_size_correlation == 0)
       current_fft += 1;
-  }
-  if((current_fft < -nffts_per_integration) && (current_fft > 499988) && (input_queue->size() == 0)){
-    std::cerr << RANK_OF_NODE << " : PROBLEM current_fft = " << current_fft 
-              << ", time = " << current_time 
-              << ", " << (int64_t) current_time.get_time_usec()<< "\n";
-    problem = true;
-  }else if((current_fft == nffts_per_integration) && problem){
-    std::cerr << RANK_OF_NODE << " : NO PROBLEM current_fft = " << current_fft 
-              << ", time = " << current_time 
-              << ", " << (int64_t) current_time.get_time_usec()<< "\n";
   }
 }
 
@@ -140,7 +115,7 @@ Coherent_dedispersion::create_dedispersion_filter(){
     //filter[i] = std::complex<FLOAT>(cos(arg), 
     //                                sin(arg));
     std::cerr.precision(8);
-    if((RANK_OF_NODE == 18) &&
+    if((RANK_OF_NODE == -18) &&
        (current_fft == 0) &&
        (stream_nr == 0))
       std::cerr << "filter["<<i<<"]="<<filter[i] 
@@ -204,7 +179,7 @@ Coherent_dedispersion::set_parameters(const Correlation_parameters &parameters, 
   integer_channel_offset.inc_samples(n);
   start_time = parameters.integration_start;
   stop_time = parameters.integration_start + parameters.integration_time; 
-  if(RANK_OF_NODE == 10){
+ if(RANK_OF_NODE == 5){
   std::cout.precision(16);
   std::cout << RANK_OF_NODE << " :  integer_channel_offset = " <<  integer_channel_offset.get_time_usec()
             << ", channel_offset = " << channel_offset  << "\n";
@@ -217,11 +192,6 @@ Coherent_dedispersion::set_parameters(const Correlation_parameters &parameters, 
   
   current_fft = 0;
 
-  nffts_per_integration =
-      Control_parameters::nr_ffts_to_output_node(
-        parameters.integration_time,
-        parameters.sample_rate,
-        parameters.fft_size_correlation);
   // Initialize buffers
   time_buffer[0].resize(2*fft_size_dedispersion);
   time_buffer[1].resize(2*fft_size_dedispersion);
