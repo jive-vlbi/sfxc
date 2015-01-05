@@ -58,7 +58,6 @@ Correlation_core_phased::set_parameters(const Correlation_parameters &parameters
   current_fft = 0;
 
   correlation_parameters = parameters;
-  oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
 
   create_baselines(parameters);
   if (input_elements.size() != number_input_streams_in_use()) {

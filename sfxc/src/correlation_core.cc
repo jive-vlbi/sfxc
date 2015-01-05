@@ -115,7 +115,6 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   correlation_parameters = parameters;
   if (correlation_parameters.mask_parameters)
     mask_parameters = *correlation_parameters.mask_parameters;
-  oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
 
   create_baselines(parameters);
   if (input_elements.size() != number_input_streams_in_use()) {
@@ -317,7 +316,7 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
     for (size_t i = 0; i < fft_size() + 1; i++) {
       norms[station] += integration_buffer[station][i].real();
     }
-    norms[station] /= (fft_size() / oversamp);
+    norms[station] /= fft_size();
     if(norms[station] < 1)
       norms[station] = 1;
 
