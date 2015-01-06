@@ -98,7 +98,7 @@ void Delay_correction::fractional_bit_shift(FLOAT *input,
   // the following should be double
   const double dfr  = (double)sample_rate() / fft_size(); // delta frequency
   const double tmp1 = -2.0*M_PI*fractional_delay/sample_rate();
-  const double tmp2 = M_PI*(integer_shift % (4*oversamp))/(2*oversamp);
+  const double tmp2 = M_PI*(integer_shift & (4*oversamp - 1))/(2*oversamp);
   const double constant_term = tmp2 -tmp1*0.5*bandwidth();
   const double linear_term = tmp1*dfr;
 
