@@ -272,8 +272,9 @@ void Correlation_core::integration_initialise() {
   real_buffer.resize(2 * fft_size());
 
   if (fft_size() != number_channels()) {
+    if (phase_centers.size() > 1)
+      create_weights();
     create_window();
-    create_weights();
     create_mask();
   }
 }
