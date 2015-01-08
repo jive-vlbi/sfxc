@@ -40,7 +40,7 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
       bptable.open_table(bptable_name, fft_size(), false);
   }
 
-  double start_mjd = parameters.integration_start.get_mjd();
+  double start_mjd = (parameters.integration_start - Time(parameters.channel_offset)).get_mjd();
   fft_duration = ((double)fft_size() * 1000000) / parameters.sample_rate;
   if (offsets.size() != fft_size() + 1)
     offsets.resize(fft_size() + 1);
@@ -84,8 +84,9 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
   SFXC_ASSERT(offsets.size() == fft_size() + 1);
   // TODO : Optimize the binning
   if(coherent_dedispersion){
-    for(int i = 0; i < fft_size() + 1 ;i++) 
-      offsets[i] = 0.;
+    double f = parameters.dedispersion_ref_frequency;
+    for(int i = 0; i < fft_size() + 1 ;i++)
+      offsets[i] = 4148.808 * polyco->DM * (1 / (f*f) - inv_freq_obs2) * freq;
   }else{
     for(int i = 0; i < fft_size() + 1 ;i++){ 
       double f = base_freq + i * dfreq;
@@ -155,7 +156,6 @@ void Correlation_core_pulsar::do_task() {
       integration_write_baselines(accumulation_buffers[bin]);
     }
     current_integration++;
-    std::cerr << RANK_OF_NODE << " : FINISHED \n";
   }
 }
 

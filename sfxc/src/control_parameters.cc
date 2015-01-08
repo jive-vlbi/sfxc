@@ -1579,6 +1579,7 @@ Control_parameters::get_dedispersion_parameters(const std::string &scan) const{
   dedispersion_parameters.channel_offset.resize(nchannel);
   for(int i=0;i<nchannel;i++)
     dedispersion_parameters.channel_offset[i] = 0.;
+  dedispersion_parameters.ref_frequency = 0.;
 
   // check for coherent dedispersion
   if(pulsar_binning() || phased_array()){
@@ -1629,6 +1630,7 @@ Control_parameters::get_dedispersion_parameters(const std::string &scan) const{
          cur_fft_size <<= 1;
       // NB: fft_size is misnamed, it contains the number of spectral channels
       fft_size = std::max(cur_fft_size, fft_size);
+      dedispersion_parameters.ref_frequency = max_freq;
     }
   }
   dedispersion_parameters.fft_size_dedispersion = fft_size;
@@ -2076,6 +2078,7 @@ get_correlation_parameters(const std::string &scan_name,
 
   // Compute stream start / stop
   get_dedispersion_parameters(scan_name);
+  corr_param.dedispersion_ref_frequency = dedispersion_parameters.ref_frequency; 
   corr_param.channel_offset = dedispersion_parameters.channel_offset[channel_nr];
   Time integer_offset = round(corr_param.channel_offset * corr_param.sample_rate/1000000) /
                         (corr_param.sample_rate/1000000);

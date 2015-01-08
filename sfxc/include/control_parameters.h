@@ -177,11 +177,12 @@ public:
   int32_t reference_station;// use a reference station
 
   Station_list station_streams; // input streams used
-  int32_t window;                   // Windowing function to be used
+  int32_t window;               // Windowing function to be used
   char source[11];              // name of the source under observation
-  int32_t n_phase_centers;   // The number of phase centers in the current scan
+  int32_t n_phase_centers;      // The number of phase centers in the current scan
   int32_t pulsar_binning;
   bool only_autocorrelations;
+  double dedispersion_ref_frequency; // The reference frequency to which the coherent dedispersion is applied
   Mask_parameters *mask_parameters;
 };
 
@@ -398,6 +399,7 @@ private:
   mutable struct Dedispersion_parameters{
     std::string scan;  // The scan name for which the parameters were computed
     int fft_size_dedispersion;
+    double ref_frequency;  // In MHz
     std::vector<double> channel_offset;
   } dedispersion_parameters;
   void get_dedispersion_parameters(const std::string &scan) const;
