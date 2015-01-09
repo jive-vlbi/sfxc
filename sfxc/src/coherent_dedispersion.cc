@@ -69,7 +69,10 @@ Coherent_dedispersion::overlap_add(){
   Memory_pool_vector_element<FLOAT> &data = cur_output->data;
   //NB : fft_size_dedispersion >= fft_size_correlation
   const int step_size = fft_size_correlation / 2;
-  const int nstep=fft_size_dedispersion/step_size;
+  int nstep=fft_size_dedispersion/step_size;
+  // First time only fft_size_dedispersion/2 of data is send
+  if(current_fft==0) 
+    nstep /= 2;
 
   for(int n=0; (n < nstep); n++){
     int i, j;
