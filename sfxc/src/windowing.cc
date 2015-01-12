@@ -46,13 +46,11 @@ Windowing::do_task(){
     index += fft_step;
     // Do the final fft from time to frequency
     if(index == fft_rot_size/2){
-      if(current_time >= integration_start){
-        fft_t2f.rfft(&buffers[buf][0], &temp_fft_buffer[0]);
-        memcpy(&cur_output->data[out_fft * output_stride], 
-               &temp_fft_buffer[temp_fft_offset], 
-               (fft_size_correlation+1) * sizeof(std::complex<FLOAT>));
-        out_fft += 1;
-      }
+      fft_t2f.rfft(&buffers[buf][0], &temp_fft_buffer[0]);
+      memcpy(&cur_output->data[out_fft * output_stride], 
+             &temp_fft_buffer[temp_fft_offset], 
+             (fft_size_correlation+1) * sizeof(std::complex<FLOAT>));
+      out_fft += 1;
       index = 0;
       buf = 1-buf;
     }
@@ -111,8 +109,6 @@ Windowing::set_parameters(const Correlation_parameters &parameters){
   current_time.set_sample_rate(parameters.station_streams[stream_idx].sample_rate);
   samples_to_skip = (int)round((integration_start-current_time).get_time_usec() * 
                                (parameters.station_streams[stream_idx].sample_rate * 1e-6));
-  if(window_func != SFXC_WINDOW_NONE)
-    current_time.inc_samples(-fft_rot_size / 2);
   if(RANK_OF_NODE == 5){
   std::cout.precision(16);
   std::cout << RANK_OF_NODE << " : current_time = " << current_time
