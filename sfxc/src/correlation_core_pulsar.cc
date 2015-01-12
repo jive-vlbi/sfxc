@@ -51,7 +51,11 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
   polyco = &pulsar.polyco_params[closest];
 
   // Compute the phase at the start of the period
-  double DT=((start_mjd - polyco->tmid) + fft_duration/(2*us_per_day))*1440;
+  double DT;
+  if (parameters.window == SFXC_WINDOW_NONE)
+    DT = ((start_mjd - polyco->tmid) + fft_duration/(2*us_per_day))*1440;
+  else
+    DT = ((start_mjd - polyco->tmid) + fft_duration/us_per_day)*1440;
   int N = polyco->coef.size();
   start_phase = 0;
   for (int i=N-1; i>0; i--){
