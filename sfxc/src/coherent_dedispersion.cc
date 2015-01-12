@@ -192,6 +192,7 @@ Coherent_dedispersion::set_parameters(const Correlation_parameters &parameters, 
             << ", " << stop_time.get_time_usec() << "\n";}
   current_time = parameters.stream_start;
   current_time.set_sample_rate(sample_rate);
+  current_time.inc_samples(-fft_size_dedispersion/2);
   
   current_fft = 0;
 
