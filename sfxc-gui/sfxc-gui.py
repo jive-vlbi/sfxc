@@ -198,7 +198,6 @@ class progressDialog(QtGui.QDialog):
         # Parse the rankfile to figure out wher the input node for
         # each station runs.
         self.stations = self.json_input['stations']
-        self.stations.sort()
         self.input_host = {}
         fp = open(rank_file, 'r')
         r1 = re.compile(r'rank (\d*)=(.*) slot=')
