@@ -33,7 +33,7 @@
 #endif // PRINT_TIMER
 
 #define INVALID_TIME              -1
-#define MAX_SAMPLE_RATE  (256000000)
+#define MAX_SAMPLE_RATE  (512000000)
 /// Constants
 // Some constants define the headers in the input -> correlator_node steam
 #define HEADER_DATA       0
