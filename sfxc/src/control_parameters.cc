@@ -392,14 +392,32 @@ Control_parameters::check(std::ostream &writer) const {
     }
   }
 
-  { // Check phasecal file
-    if (ctrl["phasecal_file"] != Json::Value()) {
-      std::string output_file = create_path(ctrl["phasecal_file"].asString());
-      if (strncmp(output_file.c_str(), "file://", 7) != 0) {
+  // Check phasecal file
+  if (ctrl["phasecal_file"] != Json::Value()) {
+    std::string filename = create_path(ctrl["phasecal_file"].asString());
+    if (strncmp(filename.c_str(), "file://", 7) != 0) {
+      ok = false;
+      writer << "Ctrl-file: Phasecal output should start with 'file://'"
+	     << std::endl;
+    }
+  }
+
+  // Check mask parameters
+  if (ctrl["mask"] != Json::Value()) {
+    if (ctrl["mask"]["mask"] != Json::Value()) {
+      std::string filename = create_path(ctrl["mask"]["mask"].asString());
+      if (strncmp(filename.c_str(), "file://", 7) != 0) {
         ok = false;
-        writer
-        << "Ctrl-file: Phasecal output should start with 'file://'"
-        << std::endl;
+        writer << "Ctrl-file: Mask file should start with 'file://'"
+	       << std::endl;
+      }
+    }
+    if (ctrl["mask"]["window"] != Json::Value()) {
+      std::string filename = create_path(ctrl["mask"]["window"].asString());
+      if (strncmp(filename.c_str(), "file://", 7) != 0) {
+        ok = false;
+        writer << "Ctrl-file: Window file should start with 'file://'"
+	       << std::endl;
       }
     }
   }
@@ -693,6 +711,10 @@ Control_parameters::get_mask_parameters(Mask_parameters &pars) const {
   if (ctrl["mask"]["mask"] != Json::Value()) {
     std::string filename = create_path(ctrl["mask"]["mask"].asString());
     std::ifstream infile(filename.c_str() + 7);
+    if (!infile) {
+      std::cerr << "Could not open mask file " << filename << std::endl;
+      sfxc_abort();
+    }
     double d;
     while (infile >> d)
       pars.mask.push_back(d);
@@ -700,6 +722,10 @@ Control_parameters::get_mask_parameters(Mask_parameters &pars) const {
   if (ctrl["mask"]["window"] != Json::Value()) {
     std::string filename = create_path(ctrl["mask"]["window"].asString());
     std::ifstream infile(filename.c_str() + 7);
+    if (!infile) {
+      std::cerr << "Could not open window file " << filename << std::endl;
+      sfxc_abort();
+    }
     double d;
     while (infile >> d)
       pars.window.push_back(d);
