@@ -15,7 +15,7 @@ Bit2float_worker::Bit2float_worker(int stream_nr_, bit_statistics_ptr statistics
     bits_per_sample(-1),
     sample_rate(-1),
     memory_pool_(32),
-    delay_table_set(true), have_new_parameters(false), stream_nr(stream_nr_),
+    delay_table_set(false), have_new_parameters(false), stream_nr(stream_nr_),
     n_ffts_per_integration(0), current_fft(0), state(IDLE), statistics(statistics_)
     /**/
 {
@@ -40,6 +40,8 @@ Bit2float_worker::do_task() {
 
   Output_pool_data &out_frame = out_element.data();
   size_t output_buffer_size = out_frame.data.size();
+
+  SFXC_ASSERT(delay_table_set);
 
   while (out_index != output_buffer_size) {
     uint64_t read = input_buffer_->read;
