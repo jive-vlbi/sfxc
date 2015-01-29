@@ -644,7 +644,6 @@ Correlation_core::uvshift(const Complex_buffer &input_buffer, Complex_buffer &ou
   int lag = abs((int)round((ddelay1 - ddelay2) * correlation_parameters.sample_rate));
   if((lag < fft_size()) && (weights[lag] > 1e-4))
     amplitude = 1. / weights[lag];
-
   double phi = base_freq * (ddelay1 * (1 - rate1) - ddelay2 * (1 - rate2));
   phi = 2 * M_PI * sb * (phi - floor(phi));
   double delta = 2 * M_PI * dfreq * (ddelay1 * (1 - rate1) - ddelay2 * (1 - rate2));
@@ -814,10 +813,27 @@ Correlation_core::create_weights(){
   default:
     sfxc_abort("Invalid windowing function");
   }
+  // Create zero padded window
   const int n = fft_size();
+  std::vector<FLOAT> tbuf(4*n);
+  std::vector<std::complex<FLOAT> > fbuf(2*n+1), conjbuf(2*n+1);
+  weights.resize(4*n);
+  for (int i = 0; i < 2*n; i++){
+    tbuf[i] = f(2*n, i);
+  }
+  memset(&tbuf[2*n], 0, 2*n*sizeof(FLOAT));
+  // Compute auto correlation of windowfunction in Fourier space
+  SFXC_FFT fft;
+  fft.resize(4*n);
+  fft.rfft(&tbuf[0], &fbuf[0]);
+  SFXC_CONJ_FC(&fbuf[0], &conjbuf[0], 2*n + 1);
+  SFXC_MUL_FC_I(&conjbuf[0], &fbuf[0], 2*n + 1);
+  fft.irfft(&fbuf[0], &tbuf[0]);
+  // We assume that the window function is symmetric
   weights.resize(n);
-  for (int i = 0; i < n; i++)
-    weights[i] = convolve(f, 2*n, i+n) / n;
+  for (int i=0; i<n; i++){
+    weights[i] = tbuf[i] / (tbuf[0]);
+  }
 }
 
 void 
