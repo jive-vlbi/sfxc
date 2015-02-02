@@ -25,7 +25,7 @@ void Delay_correction::do_task() {
   current_fft+=nbuffer;
   // Allocate output buffer
   int output_stride =  fft_cor_size()/2 + 4; // there are fft_size+1 points and each fft should be 16 bytes alligned
-  cur_output = output_memory_pool.allocate();
+  Output_buffer_element cur_output = output_memory_pool.allocate();
   cur_output->stride = output_stride;
   int window_func = correlation_parameters.window;
   int nfft_cor = (nbuffer * fft_size() + tbuf_end - tbuf_start) / (fft_rot_size() / 2);

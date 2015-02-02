@@ -104,7 +104,6 @@ private:
 
   Output_buffer_ptr   output_buffer;
   Output_memory_pool  output_memory_pool;
-  Output_buffer_element cur_output;
 
   Time fft_length;
   SFXC_FFT        fft_t2f, fft_f2t, fft_t2f_cor;
