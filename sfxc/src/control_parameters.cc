@@ -659,11 +659,6 @@ Control_parameters::channel(int i) const {
   return ctrl["channels"][i].asString();
 }
 
-size_t
-Control_parameters::channels_size() const {
-  return ctrl["channels"].size();
-}
-
 int Control_parameters::message_level() const {
   return ctrl["message_level"].asInt();
 }
