@@ -107,7 +107,7 @@ public:
   int correlator_rank(int correlator);
   void correlator_node_set(Correlation_parameters &parameters,
                            int corr_node_nr);
-  void correlator_node_set_all(Delay_table_akima &delay_table,
+  void correlator_node_set_all(Delay_table &delay_table,
                                const std::string &station_name);
   void correlator_node_set_all(Uvw_model &uvw_table,
                                const std::string &station_name);
@@ -117,7 +117,7 @@ public:
 
   void set_correlator_node_ready(size_t correlator_rank, bool ready=true);
 
-  void send(Delay_table_akima &delay_table, int station, int to_rank);
+  void send(Delay_table &delay_table, int station, int to_rank);
 
   const std::map<std::string, int> &get_input_node_map() const;
 

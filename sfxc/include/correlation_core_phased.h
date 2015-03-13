@@ -10,6 +10,8 @@ public:
   virtual ~Correlation_core_phased();
   virtual void do_task();
   virtual void set_parameters(const Correlation_parameters &parameters,
+                              std::vector<Delay_table_akima> &delays,
+                              std::vector<std::vector<double> > &uvw,
                               int node_nr);
 protected:
   virtual void integration_initialise();

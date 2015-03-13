@@ -101,6 +101,7 @@ Input_node_tasklet(Input_reader_ptr_ reader_ptr, Data_memory_pool_ptr memory_poo
 void
 Input_node_tasklet::
 add_time_interval(Time &start_time, Time &stop_time) {
+  akima_delays = delay_table.create_akima_spline(start_time, stop_time - start_time);
   /// Create a list of integer delay changes for the data writers
   Delay_memory_pool_element delay_list = delay_pool.allocate();
   delay_list.data().resize(0);
@@ -116,8 +117,8 @@ add_time_interval(Time &start_time, Time &stop_time) {
   // A new interval is added to the mark5 reader-tasklet 
   // We adjust the start and stop times to take into account the integer delay
   Time tbh = reader_.get_data_reader()->time_between_headers();
-  Time delay_start(delay_table.delay(start_time)*1e6);
-  Time delay_stop(delay_table.delay(stop_time)*1e6);
+  Time delay_start(akima_delays.delay(start_time)*1e6);
+  Time delay_stop(akima_delays.delay(stop_time)*1e6);
   int32_t start_frames = (int32_t) std::floor(delay_start/tbh);
   int32_t stop_frames = (int32_t) std::ceil(delay_stop/tbh);
   Time start_time_reader = start_time + tbh * start_frames;
@@ -172,7 +173,7 @@ Input_node_tasklet::stop_tasklets() {
   rttimer_processing_.stop();
 }
 
-void Input_node_tasklet::set_delay_table(Delay_table_akima &table) {
+void Input_node_tasklet::set_delay_table(Delay_table &table) {
   delay_table.add_scans(table);
 }
 
@@ -234,6 +235,7 @@ Input_node_tasklet::get_delays(Time start_time, int64_t nsamples, std::vector<De
 {
   Time stop_time = start_time;
   stop_time.inc_samples(nsamples);
+
   SFXC_ASSERT(stop_time>start_time);
   Delay dstart = get_delay(start_time);
   Delay dstop = get_delay(stop_time);
@@ -249,7 +251,7 @@ Input_node_tasklet::get_delays(Time start_time, int64_t nsamples, std::vector<De
       get_delays(start_time, nsamples - (nsamples / 2), delay_list);
     }
   }else{
-    bool rate_different = (delay_table.rate(start_time) * delay_table.rate(stop_time)) < 0;
+    bool rate_different = (akima_delays.rate(start_time) * akima_delays.rate(stop_time)) < 0;
     if((rate_different) && (nsamples >= 3)){
       get_delays(start_time, nsamples / 2, delay_list);
       start_time.inc_samples(nsamples / 2);
@@ -261,7 +263,7 @@ Input_node_tasklet::get_delays(Time start_time, int64_t nsamples, std::vector<De
 Delay
 Input_node_tasklet::get_delay(Time time) {
   SFXC_ASSERT(delay_table.initialised());
-  double delay_ = delay_table.delay(time);
+  double delay_ = akima_delays.delay(time);
   int32_t delay_in_samples = (int32_t) std::floor(delay_*sample_rate+.5);
 
   int32_t delay_in_bytes = (int) floor((delay_in_samples-1)*1./(8/bits_per_sample));

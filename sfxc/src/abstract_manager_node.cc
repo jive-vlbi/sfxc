@@ -467,7 +467,7 @@ correlator_node_set(Correlation_parameters &parameters,
 
 void
 Abstract_manager_node::
-correlator_node_set_all(Delay_table_akima &delay_table,
+correlator_node_set_all(Delay_table &delay_table,
                         const std::string &station_name) {
   int sn[2] = {input_node(station_name), -1};
   if (control_parameters.cross_polarize()){
@@ -525,7 +525,7 @@ set_correlator_node_ready(size_t correlator_nr, bool ready) {
 
 void
 Abstract_manager_node::
-send(Delay_table_akima &delay_table, int station, int to_rank) {
+send(Delay_table &delay_table, int station, int to_rank) {
   MPI_Transfer::send(delay_table, station, to_rank);
 
 }

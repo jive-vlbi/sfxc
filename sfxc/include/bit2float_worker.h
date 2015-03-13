@@ -59,8 +59,7 @@ public:
 
   Output_queue_ptr get_output_buffer();
 
-  void set_new_parameters(const Correlation_parameters &parameters);
-  void set_delay_table(Delay_table_akima &table);
+  void set_new_parameters(const Correlation_parameters &parameters, Delay_table_akima &delays);
 
   // Convert input bitstream to floating point
   int bit2float(FLOAT *output, int start, int nbits, uint64_t *read);
@@ -126,12 +125,10 @@ private:
     int base_sample_rate;
     int fft_size_delaycor;
     int fft_size_correlation;
+    int delay_in_samples;
     Time start_time;
   } new_parameters;
   /// List of all invalid samples in the time slice
   std::vector<Invalid> invalid;
-
-  bool delay_table_set;
-  Delay_table_akima delay_table;
 };
 #endif // INTEGER_DELAY_CORRECTION_PER_CHANNEL_H

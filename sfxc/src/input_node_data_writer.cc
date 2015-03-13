@@ -134,7 +134,7 @@ do_task() {
     block_size=input_element.channel_data.data().data.size();
     // Move to the next integer delay change
     while((delay_index < delay_size - 1) && (cur_delay[delay_index+1].time <= _current_time))
-       delay_index++; 
+       delay_index++;
     int64_t dsamples = _current_time.diff_samples(input_element.start_time);
     byte_offset = dsamples*bits_per_sample/8 + cur_delay[delay_index].bytes;
     if(byte_offset < 0){
@@ -328,6 +328,7 @@ add_timeslice(Data_writer_sptr data_writer, int64_t nr_samples) {
 void
 Input_node_data_writer::
 set_parameters(int nr_stream, const Input_node_parameters &input_param, int station_number_) {
+  stream_nr = nr_stream;
   sample_rate = input_param.sample_rate();
   _current_time.set_sample_rate(sample_rate);
   bits_per_sample = input_param.bits_per_sample();

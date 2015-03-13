@@ -142,7 +142,7 @@ int Input_node::get_status() {
   return status;
 }
 
-void Input_node::set_delay_table(Delay_table_akima &delay_table) {
+void Input_node::set_delay_table(Delay_table &delay_table) {
   SFXC_ASSERT(input_node_tasklet != NULL);
   input_node_tasklet->set_delay_table(delay_table);
 }

@@ -11,10 +11,15 @@ Correlation_core_pulsar::~Correlation_core_pulsar() {
 
 void
 Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters,
-                                        Pulsar &pulsar, int node_nr) {
+                                        Pulsar &pulsar,
+                                        std::vector<Delay_table_akima> &delays,
+                                        std::vector<std::vector<double> > &uvw,
+                                        int node_nr) {
   node_nr_ = node_nr;
   current_integration = 0;
   current_fft = 0;
+  delay_tables = delays;
+  uvw_table = uvw;
 
   correlation_parameters = parameters;
 

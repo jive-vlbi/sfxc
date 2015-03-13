@@ -91,6 +91,7 @@ private:
   int bits_per_sample;
   Time integration_time;
   bool sync_stream;
+  int stream_nr;
   uint8_t station_number;
   uint8_t frequency_number;
   uint8_t sideband;

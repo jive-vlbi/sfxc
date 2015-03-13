@@ -54,8 +54,7 @@ void Correlation_core::do_task() {
       integration_normalize(phase_centers[i]);
       int source_nr;
       if(split_output){
-        delay_tables[0].goto_scan(correlation_parameters.start_time);
-        source_nr = sources[delay_tables[0].get_source(i)];
+        source_nr = sources[delay_tables[first_stream].get_source(i)]; // FIXME restore
       }
       else if(correlation_parameters.pulsar_binning){
         source_nr = 1; // Source 0 is reserved for of-pulse data
@@ -98,10 +97,14 @@ void Correlation_core::connect_to(size_t stream, bit_statistics_ptr statistics_,
 
 void
 Correlation_core::set_parameters(const Correlation_parameters &parameters,
+                                 std::vector<Delay_table_akima> &delays,
+                                 std::vector<std::vector<double> > &uvw,
                                  int node_nr) {
   node_nr_ = node_nr;
   current_integration = 0;
   current_fft = 0;
+  delay_tables = delays;
+  uvw_table = uvw;
 
   // If the relevant correlation parameters change, clear the window
   // vector.  It will be recreated when the next integration starts.
@@ -405,12 +408,11 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     for (size_t i=0; i < nstations; i++){
       double u,v,w;
       int stream = streams_in_scan[i];
-      uvw_tables[stream].get_uvw(phase_center, time, &u, &v, &w);
       uvw[i].station_nr=stream2station[stream];
       uvw[i].reserved=0;
-      uvw[i].u=u;
-      uvw[i].v=v;
-      uvw[i].w=w;
+      uvw[i].u = uvw_table[stream][phase_center*3];
+      uvw[i].v = uvw_table[stream][phase_center*3 + 1];
+      uvw[i].w = uvw_table[stream][phase_center*3 + 2];
     }
 
     // Write the bit statistics
@@ -664,20 +666,6 @@ Correlation_core::uvshift(const Complex_buffer &input_buffer, Complex_buffer &ou
     cos_phi=cos_phi-(a*cos_phi+b*sin_phi);
     sin_phi=temp;
   }
-}
-
-void Correlation_core::add_uvw_table(int sn, Uvw_model &table) {
-  if (sn>=uvw_tables.size())
-    uvw_tables.resize(sn+1);
-
-  uvw_tables[sn].add_scans(table);
-}
-
-void Correlation_core::add_delay_table(int sn, Delay_table_akima &table) {
-  if (sn>=delay_tables.size())
-    delay_tables.resize(sn+1);
-
-  delay_tables[sn].add_scans(table);
 }
 
 void Correlation_core::add_source_list(const std::map<std::string, int> &sources_){

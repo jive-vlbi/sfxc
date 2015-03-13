@@ -39,14 +39,141 @@
 //function definitions
 //*****************************************************************************
 
+Delay_table_akima::Delay_table_akima(){
+  ref_count = new int(1);
+  mutex = new pthread_mutex_t;
+  pthread_mutex_init(mutex, NULL);
+}
+
+Delay_table_akima::~Delay_table_akima(){
+  free_reference();
+}
+
+Delay_table_akima::Delay_table_akima(const Delay_table_akima &other){
+  copy(other);
+}
+
+void
+Delay_table_akima::free_reference(){
+  pthread_mutex_lock(mutex);
+  *ref_count -= 1;
+  if(*ref_count == 0){
+    for(int i = 0 ; i < splineakima.size() ; i++){
+      gsl_spline_free(splineakima[i]);
+      gsl_spline_free(splineakima_ph[i]);
+      gsl_spline_free(splineakima_amp[i]);
+      gsl_interp_accel_free(acc[i]);
+      gsl_interp_accel_free(acc_ph[i]);
+      gsl_interp_accel_free(acc_amp[i]);
+    }
+    pthread_mutex_unlock(mutex);
+    pthread_mutex_destroy (mutex);
+    delete mutex;
+    delete ref_count;
+  } else{
+   pthread_mutex_unlock(mutex);
+  }
+  sources.resize(0);
+  splineakima.resize(0);
+  splineakima_ph.resize(0);
+  splineakima_amp.resize(0);
+  acc.resize(0);
+  acc_ph.resize(0);
+  acc_amp.resize(0);
+}
+
+void
+Delay_table_akima::copy(const Delay_table_akima &other){
+  pthread_mutex_lock(other.mutex);
+  mutex = other.mutex;
+  ref_count = other.ref_count;
+  *ref_count += 1;
+  clock_epoch = other.clock_epoch;
+  clock_offset = other.clock_offset;
+  clock_rate = other.clock_rate;
+  splineakima = other.splineakima;
+  splineakima_ph = other.splineakima_ph;
+  splineakima_amp = other.splineakima_amp;
+  acc = other.acc;
+  acc_ph = other.acc_ph;
+  acc_amp = other.acc_amp;
+  interval_begin = other.interval_begin;
+  interval_end = other.interval_end;
+  scan_begin = other.scan_begin;
+  sources = other.sources;
+  pthread_mutex_unlock(mutex);
+}
+
+void Delay_table_akima::operator=(const Delay_table_akima &other) {
+  free_reference();
+  copy(other);
+}
+
+//calculates the delay for the delayType at time
+//get the next line from the delay table file
+double Delay_table_akima::delay(const Time &time, int phase_center) {
+  SFXC_ASSERT(time >= interval_begin);
+  SFXC_ASSERT(time <= interval_end);
+  SFXC_ASSERT(splineakima.size() > 0);
+
+  double sec = time.diff(scan_begin);
+  //std::cerr << RANK_OF_NODE << ", t = " << time << ", interval = " << interval_begin << " - " << interval_end 
+  //          << ", scan_begin = " << scan_begin << ", sec = " << sec << "\n";
+  double result = gsl_spline_eval(splineakima[phase_center], sec, acc[phase_center]);
+  sec = time.diff(clock_epoch);
+  double clock_drift = clock_offset + sec * clock_rate;
+  return result + clock_drift;
+}
+
+double Delay_table_akima::rate(const Time &time, int phase_center) {
+  SFXC_ASSERT(time >= interval_begin);
+  SFXC_ASSERT(time <= interval_end);
+  SFXC_ASSERT(splineakima.size() > 0);
+
+  double sec = time.diff(scan_begin);
+  double result = gsl_spline_eval_deriv(splineakima[phase_center], sec, acc[phase_center]);
+  return result + clock_rate;
+}
+
+double Delay_table_akima::accel(const Time &time, int phase_center) {
+  SFXC_ASSERT(time >= interval_begin);
+  SFXC_ASSERT(time <= interval_end);
+  SFXC_ASSERT(splineakima.size() > 0);
+
+  double sec = time.diff(scan_begin);
+  double result = gsl_spline_eval_deriv2(splineakima[phase_center], sec, acc[phase_center]);
+  // FIXME: Why is the clock rate added to the acceleration?
+  return result + clock_rate;
+}
+
+double Delay_table_akima::phase(const Time &time, int phase_center){
+  SFXC_ASSERT(time >= interval_begin);
+  SFXC_ASSERT(time <= interval_end);
+  SFXC_ASSERT(splineakima.size() > phase_center);
+
+  double sec = time.diff(scan_begin);
+  double result = gsl_spline_eval(splineakima_ph[phase_center], sec, acc_ph[phase_center]);
+  return result;
+}
+
+double Delay_table_akima::amplitude(const Time &time, int phase_center){
+  SFXC_ASSERT(time >= interval_begin);
+  SFXC_ASSERT(time <= interval_end);
+  SFXC_ASSERT(splineakima.size() > phase_center);
+
+  double sec = time.diff(scan_begin);
+  double result = gsl_spline_eval(splineakima_amp[phase_center], sec, acc_amp[phase_center]);
+  return result;
+}
+
 // Default constructor
-Delay_table_akima::Delay_table_akima()
-  : scan_nr(0), clock_nr(0) {
+Delay_table::Delay_table()
+  : scan_nr(0), clock_nr(0), n_sources_in_current_scan(0) {
 }
 
 // Copy constructor
-Delay_table_akima::Delay_table_akima(const Delay_table_akima &other)
-  : scan_nr(0), clock_nr(0) {
+Delay_table::Delay_table(const Delay_table &other)
+  : scan_nr(0), clock_nr(0), n_sources_in_current_scan(0){
   clock_starts = other.clock_starts;
   clock_offsets = other.clock_offsets;
   clock_rates = other.clock_rates;
@@ -61,10 +188,11 @@ Delay_table_akima::Delay_table_akima(const Delay_table_akima &other)
 }
 
 // Destructor
-Delay_table_akima::~Delay_table_akima() {}
+Delay_table::~Delay_table() {}
 
-void Delay_table_akima::operator=(const Delay_table_akima &other) {
+void Delay_table::operator=(const Delay_table &other) {
   scan_nr = 0;
+  n_sources_in_current_scan = 0;
   clock_starts = other.clock_starts;
   clock_offsets = other.clock_offsets;
   clock_rates = other.clock_rates;
@@ -75,20 +203,10 @@ void Delay_table_akima::operator=(const Delay_table_akima &other) {
   delays = other.delays;
   phases = other.phases;
   amplitudes = other.amplitudes;
-  for(int i = 0 ; i < splineakima.size() ; i++){
-    gsl_spline_free(splineakima[i]);
-    gsl_spline_free(splineakima_ph[i]);
-    gsl_spline_free(splineakima_amp[i]);
-    gsl_interp_accel_free(acc[i]);
-    gsl_interp_accel_free(acc_ph[i]);
-    gsl_interp_accel_free(acc_amp[i]);
-  }
-  splineakima.resize(0);
-  acc.resize(0);
   initialise_next_scan();
 }
 
-bool Delay_table_akima::operator==(const Delay_table_akima &other) const {
+bool Delay_table::operator==(const Delay_table &other) const {
   if(scans.size() != other.scans.size()) return false;
   for(int i = 0 ; i < delays.size() ; i++){
     if (delays[i] != other.delays[i]) return false;
@@ -97,7 +215,7 @@ bool Delay_table_akima::operator==(const Delay_table_akima &other) const {
 }
 
 // Set clock offset and rate
-void Delay_table_akima::set_clock_offset(const double offset, const Time start, const double rate, const Time epoch){
+void Delay_table::set_clock_offset(const double offset, const Time start, const double rate, const Time epoch){
   clock_starts.push_back(start);
   clock_offsets.push_back(offset);
   clock_rates.push_back(rate);
@@ -106,12 +224,12 @@ void Delay_table_akima::set_clock_offset(const double offset, const Time start, 
 
 //read the delay table, do some checks and
 //calculate coefficients for parabolic interpolation
-void Delay_table_akima::open(const char *delayTableName) {
+void Delay_table::open(const char *delayTableName) {
   const Time start, stop = Time::max_time();
   open(delayTableName, start, stop);
 }
 
-void Delay_table_akima::open(const char *delayTableName, const Time tstart, const Time tstop){
+void Delay_table::open(const char *delayTableName, const Time tstart, const Time tstop){
   std::ifstream in(delayTableName);
   if(!in.is_open())
     sfxc_abort((std::string("Could not open delay table ")+std::string(delayTableName)).c_str());
@@ -231,11 +349,12 @@ void Delay_table_akima::open(const char *delayTableName, const Time tstart, cons
   }
   // Initialise
   scan_nr = 0;
+  n_sources_in_current_scan = 0;
   initialise_next_scan();
 }
 
 void
-Delay_table_akima::add_scans(const Delay_table_akima &other)
+Delay_table::add_scans(const Delay_table &other)
 {
   if (scans.empty()) {
     *this = other;
@@ -268,139 +387,125 @@ Delay_table_akima::add_scans(const Delay_table_akima &other)
 		      other.clock_rates.end());
 }
 
-bool Delay_table_akima::initialise_next_scan() {
-  int n_sources_in_previous_scan = splineakima.size();
+bool Delay_table::initialise_next_scan() {
+  int n_sources_in_previous_scan = n_sources_in_current_scan;
   if (scan_nr >= (scans.size() - n_sources_in_previous_scan))
     return false;
 
   scan_nr += n_sources_in_previous_scan;
-
-  for(int i = 0 ; i < splineakima.size() ; i++){
-    gsl_spline_free(splineakima[i]);
-    gsl_spline_free(splineakima_ph[i]);
-    gsl_spline_free(splineakima_amp[i]);
-    gsl_interp_accel_free(acc[i]);
-    gsl_interp_accel_free(acc_ph[i]);
-    gsl_interp_accel_free(acc_amp[i]);
-  }
+  // Check scan length (need at least 5 points)
+  if(scans[scan_nr].end.diff(scans[scan_nr].begin) < 4.)
+    return false;
 
   // Determine the number of sources in current scan
-  int n_sources = 1;
-  while((scan_nr + n_sources < scans.size()) && 
-        (scans[scan_nr + n_sources - 1].begin == scans[scan_nr + n_sources].begin))
-    n_sources++;
-
-  splineakima.resize(n_sources);
-  splineakima_ph.resize(n_sources);
-  splineakima_amp.resize(n_sources);
-  acc.resize(n_sources);
-  acc_ph.resize(n_sources);
-  acc_amp.resize(n_sources);
-  for(int i = 0; i < n_sources ; i++){
-    Scan &scan = scans[scan_nr + i];
-    // at least 4 sample points for a spline
-    const Time one_sec(1000000);
-    int n_pts = (scan.end - scan.begin) / one_sec + 1;
-    SFXC_ASSERT(n_pts > 4);
-
-    // Initialise the Akima spline
-    acc[i] = gsl_interp_accel_alloc();
-    acc_ph[i] = gsl_interp_accel_alloc();
-    acc_amp[i] = gsl_interp_accel_alloc();
-    splineakima[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
-    splineakima_ph[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
-    splineakima_amp[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
-    gsl_spline_init(splineakima[i], &times[scan.times], &delays[scan.delays], n_pts);
-    gsl_spline_init(splineakima_ph[i], &times[scan.times], &phases[scan.phases], n_pts);
-    gsl_spline_init(splineakima_amp[i], &times[scan.times], &amplitudes[scan.amplitudes], n_pts);
-  }
+  n_sources_in_current_scan = 1;
+  while((scan_nr + n_sources_in_current_scan < scans.size()) &&
+        (scans[scan_nr + n_sources_in_current_scan - 1].begin == scans[scan_nr + n_sources_in_current_scan].begin))
+    n_sources_in_current_scan++;
 
   clock_nr = clock_starts.size() - 1;
   while (clock_nr > 0 && clock_starts[clock_nr] > scans[scan_nr].begin)
     clock_nr--;
-
+  
   return true;
 }
 
-//calculates the delay for the delayType at time
-//get the next line from the delay table file
-double Delay_table_akima::delay(const Time &time, int phase_center) {
-  while (scans[scan_nr].end < time){
-    if (!initialise_next_scan()) break;
-  }
-  SFXC_ASSERT(time >= scans[scan_nr].begin);
-  SFXC_ASSERT(time <= scans[scan_nr].end);
-  SFXC_ASSERT(splineakima.size() > 0);
-  double sec = time.diff(scans[scan_nr].begin);
-  double result = gsl_spline_eval(splineakima[phase_center], sec, acc[phase_center]);
-  sec = time.diff(clock_epochs[clock_nr]);
-  double clock_drift = clock_offsets[clock_nr] + sec * clock_rates[clock_nr];
-  return result + clock_drift;
-}
-
-double Delay_table_akima::rate(const Time &time, int phase_center) {
-  while (scans[scan_nr].end < time){
-    if (!initialise_next_scan()) break;
-  }
-
-  SFXC_ASSERT(splineakima.size() > 0);
-  double sec = time.diff(scans[scan_nr].begin);
-  double result = gsl_spline_eval_deriv(splineakima[phase_center], sec, acc[phase_center]);
-  return result + clock_rates[clock_nr];
-}
-
-double Delay_table_akima::accel(const Time &time, int phase_center) {
-  while (scans[scan_nr].end < time){
-    if (!initialise_next_scan()) break;
+Delay_table_akima
+Delay_table::create_akima_spline(const Time start_, const Time duration){
+  //std::cerr << RANK_OF_NODE << " : " << start_ << ", duration " << duration << "\n";
+  // Round begin and end time to integer second
+  int mjd_start = (int) floor(start_.get_mjd());
+  double seconds_start = floor(start_.get_time_usec() / 1000000);
+  Time stop = start_ + duration;
+  int mjd_stop = (int) floor(stop.get_mjd());
+  double seconds_stop = ceil(stop.get_time_usec() / 1000000);
+  Time start = Time(mjd_start, seconds_start);
+  int n_seconds = (mjd_stop - mjd_start)*86400 + seconds_stop - seconds_start;
+  //std::cerr << RANK_OF_NODE << " : " << start << ", stop = " << stop << ", n_seconds = " << n_seconds 
+  //          << ", mjd="<< mjd_start<< ","<<mjd_stop << ", seconds="<< seconds_start << ", " << seconds_stop << "\n";
+  // Move to the correct scan
+  while(stop > scans[scan_nr].end){
+    if (!initialise_next_scan()){
+      std::string msg = "Error: time " + start.date_string() + " is not in delay table";
+      sfxc_abort(msg.c_str());
+    }
   }
 
-  SFXC_ASSERT(splineakima.size() > 0);
-  double sec = time.diff(scans[scan_nr].begin);
-  double result = gsl_spline_eval_deriv2(splineakima[phase_center], sec, acc[phase_center]);
-  return result + clock_rates[clock_nr];
-}
-
-double Delay_table_akima::phase(const Time &time, int phase_center){
-  while (scans[scan_nr].end < time){
-    if (!initialise_next_scan()) break;
+  // Determine interpolation interval
+  Time onesec(1000000.);
+  Time interval_begin = start - onesec*2;
+  Time interval_end = start + onesec*(2+n_seconds);
+  //std::cerr << RANK_OF_NODE << " : Initial inteval_begin = " << interval_begin << ", end = " << interval_end <<"\n";
+  if(interval_begin < scans[scan_nr].begin){
+    interval_begin = scans[scan_nr].begin;
+    if (interval_end.diff(interval_begin) < 4)
+      interval_end = interval_begin + onesec*4;
   }
-  SFXC_ASSERT(splineakima.size() > phase_center);
-  double sec = time.diff(scans[scan_nr].begin);
-  double result = gsl_spline_eval(splineakima_ph[phase_center], sec, acc_ph[phase_center]);
+  if(interval_end > scans[scan_nr].end){
+    interval_end = scans[scan_nr].end;
+    if (interval_end.diff(interval_begin) < 4)
+      interval_begin = interval_end - onesec*4;
+  }
+  //std::cerr << RANK_OF_NODE << " : Final inteval_begin = " << interval_begin << ", end = " << interval_end <<"\n";
+
+  // Create the splines
+  Delay_table_akima result;
+  result.splineakima.resize(n_sources_in_current_scan);
+  result.splineakima_ph.resize(n_sources_in_current_scan);
+  result.splineakima_amp.resize(n_sources_in_current_scan);
+  result.acc.resize(n_sources_in_current_scan);
+  result.acc_ph.resize(n_sources_in_current_scan);
+  result.acc_amp.resize(n_sources_in_current_scan);
+  result.sources.resize(n_sources_in_current_scan);
+  SFXC_ASSERT(n_sources_in_current_scan > 0);
+  for(int i = 0; i < n_sources_in_current_scan ; i++){
+    Scan &scan = scans[scan_nr + i];
+    result.sources[i] = sources[scan.source];
+
+    // at least 4 sample points for a spline
+    int n_pts = (interval_end - interval_begin) / onesec + 1;
+    int idx = (int)interval_begin.diff(scan.begin);
+    SFXC_ASSERT(n_pts > 4);
+
+    // Initialise the Akima spline
+    result.acc[i] = gsl_interp_accel_alloc();
+    result.acc_ph[i] = gsl_interp_accel_alloc();
+    result.acc_amp[i] = gsl_interp_accel_alloc();
+    result.splineakima[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
+    result.splineakima_ph[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
+    result.splineakima_amp[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
+
+    gsl_spline_init(result.splineakima[i], &times[scan.times+idx], &delays[scan.delays+idx], n_pts);
+    gsl_spline_init(result.splineakima_ph[i], &times[scan.times+idx], &phases[scan.phases+idx], n_pts);
+    gsl_spline_init(result.splineakima_amp[i], &times[scan.times+idx], &amplitudes[scan.amplitudes+idx], n_pts);
+  }
+
+  result.scan_begin = scans[scan_nr].begin;
+  result.interval_begin = interval_begin;
+  result.interval_end = interval_end;
+  result.clock_epoch = clock_epochs[clock_nr];
+  result.clock_offset = clock_offsets[clock_nr];
+  result.clock_rate = clock_rates[clock_nr];
   return result;
 }
 
-double Delay_table_akima::amplitude(const Time &time, int phase_center){
-  while (scans[scan_nr].end < time){
-    if (!initialise_next_scan()) break;
-  }
-  SFXC_ASSERT(splineakima.size() > phase_center);
-  double sec = time.diff(scans[scan_nr].begin);
-  double result = gsl_spline_eval(splineakima_amp[phase_center], sec, acc_amp[phase_center]);
-  return result;
-}
-
-Time Delay_table_akima::start_time_scan() {
+Time Delay_table::start_time_scan() {
   SFXC_ASSERT(scan_nr < scans.size());
   return scans[scan_nr].begin;
 }
-Time Delay_table_akima::stop_time_scan() {
+Time Delay_table::stop_time_scan() {
   SFXC_ASSERT(scan_nr < scans.size());
   return scans[scan_nr].end;
 }
 
-bool Delay_table_akima::goto_scan(const Time &time){
+bool Delay_table::goto_scan(const Time &time){
   if((time >= start_time_scan()) && (time < stop_time_scan()))
     return true;
 
   if(time < start_time_scan())
     scan_nr = 0;
-  for(int i = 0 ; i < splineakima.size() ; i++){
-    gsl_spline_free(splineakima[i]);
-    gsl_interp_accel_free(acc[i]);
-  }
-  splineakima.resize(0);
-  acc.resize(0);
+
+  n_sources_in_current_scan = 0;
   while ((scan_nr < scans.size()) && (time > scans[scan_nr].end)) 
     scan_nr++;
   if(scan_nr < scans.size()){
@@ -411,13 +516,13 @@ bool Delay_table_akima::goto_scan(const Time &time){
 }
 
 std::ostream &
-operator<<(std::ostream &out, const Delay_table_akima &delay_table) {
+operator<<(std::ostream &out, const Delay_table &delay_table) {
   const std::vector<double> &times = delay_table.times;
   const std::vector<double> &delays = delay_table.delays;
   const std::vector<std::string> &sources = delay_table.sources;
 
   for (int i = 0; i < delay_table.scans.size(); i++) {
-    const Delay_table_akima::Scan &scan = delay_table.scans[i];
+    const Delay_table::Scan &scan = delay_table.scans[i];
     out << "scan " << i << ": start = " << scan.begin << ", stop = " << scan.end 
         << ", source = " << sources[scan.source] << std::endl;
     const Time one_sec(1000000);

@@ -91,7 +91,7 @@ public:
   void hook_added_data_reader(size_t reader);
   void hook_added_data_writer(size_t writer);
 
-  void set_delay_table(Delay_table_akima &delay_table);
+  void set_delay_table(Delay_table &delay_table);
 
 private:
 

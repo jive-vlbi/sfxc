@@ -45,10 +45,8 @@ public:
   /// Set the input
   void connect_to(Input_buffer_ptr new_input_buffer);
 
-  /// Set the delay table
-  void set_delay_table(const Delay_table_akima &delay_table);
-
-  void set_parameters(const Correlation_parameters &parameters);
+  void set_parameters(const Correlation_parameters &parameters,
+                      Delay_table_akima &delays);
   /// Do one delay step
   void do_task();
   bool has_work();
@@ -89,7 +87,6 @@ private:
 
   int n_ffts_per_integration, current_fft, total_ffts;
   size_t tbuf_start, tbuf_end;
-  bool delay_table_set;
   Delay_table_akima   delay_table;
 
   Memory_pool_vector_element< std::complex<FLOAT> > frequency_buffer;

@@ -89,7 +89,8 @@ public:
   /// Callback function for adding a data_writer:
   void hook_added_data_writer(size_t writer);
 
-  void add_delay_table(int sn, Delay_table_akima &table);
+  void add_delay_table(Delay_table &table, int sn1, int sn2);
+  void add_uvw_table(Uvw_model &table, int sn1);
 
   void output_node_set_timeslice(int slice_nr, int slice_offset, int n_slices,
                                  int stream_nr, int bytes, int nbins);
@@ -263,6 +264,9 @@ private:
   int n_integration_slice_in_time_slice;
 
   std::queue<Correlation_parameters>          integration_slices_queue;
+  std::vector<int>                            delay_index;
+  std::vector<Delay_table>                    delay_tables;
+  std::vector<Uvw_model>                      uvw_tables;
 
   Timer bit_sample_reader_timer_, bits_to_float_timer_, delay_timer_, correlation_timer_;
 

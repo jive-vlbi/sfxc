@@ -21,11 +21,9 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  Delay_table_akima delay_table;
-  std::cout << "about to open " << argv[1] << "\n";
+  Delay_table delay_table;
   delay_table.open(argv[1]);
   delay_table.set_clock_offset(0., 0., 0., 0.);
-  std::cout << "about to open " << argv[2] << "\n";
   std::ofstream out(argv[2]);
   out.precision(20);
 
@@ -34,18 +32,20 @@ int main(int argc, char *argv[]) {
     std::cout << "read scan " << scan << "\n";
     Time start_time_scan = delay_table.start_time_scan();
     Time stop_time_scan = delay_table.stop_time_scan();
+    Time dt = delay_table.stop_time_scan() - delay_table.start_time_scan();
+    Delay_table_akima akima  = delay_table.create_akima_spline(start_time_scan, dt);
 
     std::cout << scan 
               << " \t" << start_time_scan
               << " \t" << stop_time_scan
               << std::endl;
-    Time step = Time(10000.);
+    Time step = Time(100000.);
     for (Time time = start_time_scan; time < stop_time_scan; time += step) {
       out << time << ", usec = " << (int64_t)time.get_time_usec();
-      for(int j = 0 ; j < delay_table.n_phase_centers(); j++)
-        out << " \t(" << delay_table.delay(time, j) 
-            << ", " << delay_table.phase(time, j)
-            << ", " << delay_table.amplitude(time, j) << ")";
+      for(int j = 0 ; j < akima.n_phase_centers(); j++)
+        out << " \t(" << akima.delay(time, j) 
+            << ", " << akima.phase(time, j)
+            << ", " << akima.amplitude(time, j) << ")";
       out << std::endl;
     }
     out << std::endl;

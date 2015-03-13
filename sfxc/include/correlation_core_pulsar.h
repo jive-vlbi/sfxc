@@ -11,7 +11,9 @@ public:
   virtual ~Correlation_core_pulsar();
   virtual void do_task();
   void set_parameters(const Correlation_parameters &parameters, Pulsar &pulsar,
-                              int node_nr);
+                      std::vector<Delay_table_akima> &delays,
+                      std::vector<std::vector<double> > &uvw,
+                      int node_nr);
 protected:
   virtual void integration_initialise();
   void integration_step(std::vector<Complex_buffer> &integration_buffer, int buf_idx);

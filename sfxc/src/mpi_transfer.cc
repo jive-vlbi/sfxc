@@ -157,7 +157,7 @@ recv_connect_writer_to_msg(uint32_t info[4], std::vector<uint64_t>& params, std:
 
 void
 MPI_Transfer::
-pack(std::vector<char> &buffer, Delay_table_akima &table, int sn[2]) {
+pack(std::vector<char> &buffer, Delay_table &table, int sn[2]) {
   int32_t n_sources = table.sources.size();
   int32_t n_scans = table.scans.size();
   int32_t n_times = table.times.size();
@@ -185,7 +185,7 @@ pack(std::vector<char> &buffer, Delay_table_akima &table, int sn[2]) {
   // all scans
   MPI_Pack(&n_scans, 1, MPI_INT32, &buffer[0], size, &position, MPI_COMM_WORLD);
   for(int i = 0; i < n_scans; i++){
-    Delay_table_akima::Scan &scan = table.scans[i];
+    Delay_table::Scan &scan = table.scans[i];
     int64_t ticks = scan.begin.get_clock_ticks();
     MPI_Pack(&ticks, 1, MPI_INT64, &buffer[0], size, &position, MPI_COMM_WORLD);
     ticks = scan.end.get_clock_ticks();
@@ -222,7 +222,7 @@ pack(std::vector<char> &buffer, Delay_table_akima &table, int sn[2]) {
 
 void
 MPI_Transfer::
-send(Delay_table_akima &table, int station_nr, int rank) {
+send(Delay_table &table, int station_nr, int rank) {
   int sn[2] = {station_nr, -1};
   std::vector<char> buffer;
   pack(buffer, table, sn);
@@ -232,7 +232,7 @@ send(Delay_table_akima &table, int station_nr, int rank) {
 
 void
 MPI_Transfer::
-bcast_corr_nodes(Delay_table_akima &table, int sn[2]){
+bcast_corr_nodes(Delay_table &table, int sn[2]){
   std::vector<char> buffer;
   pack(buffer, table, sn);
   int n_ranks, n_corr_nodes;
@@ -249,7 +249,7 @@ bcast_corr_nodes(Delay_table_akima &table, int sn[2]){
 
 void
 MPI_Transfer::
-unpack(std::vector<char> &buffer, Delay_table_akima &table, int sn[2]) {
+unpack(std::vector<char> &buffer, Delay_table &table, int sn[2]) {
   int size = buffer.size();
   int position = 0;
 
@@ -271,7 +271,7 @@ unpack(std::vector<char> &buffer, Delay_table_akima &table, int sn[2]) {
   MPI_Unpack(&buffer[0], size, &position, &n_scans, 1, MPI_INT32, MPI_COMM_WORLD);
   table.scans.resize(n_scans);
   for(int i = 0; i < n_scans; i++){
-    Delay_table_akima::Scan &scan = table.scans[i];
+    Delay_table::Scan &scan = table.scans[i];
 
     int64_t ticks;
     MPI_Unpack(&buffer[0], size, &position, &ticks, 1, MPI_INT64, MPI_COMM_WORLD);
@@ -322,19 +322,14 @@ unpack(std::vector<char> &buffer, Delay_table_akima &table, int sn[2]) {
   SFXC_ASSERT(position == size);
 
   table.scan_nr = 0;
-  table.acc.resize(0);
-  table.acc_ph.resize(0);
-  table.acc_amp.resize(0);
-  table.splineakima.resize(0);
-  table.splineakima_ph.resize(0);
-  table.splineakima_amp.resize(0);
+  table.n_sources_in_current_scan = 0;
   table.initialise_next_scan();
   //std::cout << RANK_OF_NODE << " : receives all data (" << size << " bytes) " << "\n";
 }
 
 void
 MPI_Transfer::
-receive(MPI_Status &status, Delay_table_akima &table, int &station_nr) {
+receive(MPI_Status &status, Delay_table &table, int &station_nr) {
   MPI_Status status2;
 
   int size, sn[2];
@@ -350,7 +345,7 @@ receive(MPI_Status &status, Delay_table_akima &table, int &station_nr) {
 
 void
 MPI_Transfer::
-receive_bcast(MPI_Status &status, Delay_table_akima &table, int sn[2]) {
+receive_bcast(MPI_Status &status, Delay_table &table, int sn[2]) {
   MPI_Status status2;
 
   int size;
@@ -496,7 +491,9 @@ unpack(std::vector<char> &buffer, Uvw_model &table, int &sn) {
   table.splineakima_u.resize(0);
   table.splineakima_v.resize(0);
   table.splineakima_w.resize(0);
-  table.initialise_spline_for_next_scan();
+  table.interval_begin = 0;
+  table.interval_end = 0;
+  table.initialise_next_scan();
   //std::cout << RANK_OF_NODE << " : receives all data (" << size << " bytes) " << "\n";
 }
 
@@ -696,7 +693,7 @@ MPI_Transfer::receive(MPI_Status &status, std::map<std::string, int> &sources){
     MPI_Unpack(buffer, size, &position, &source_len, 1, MPI_INT32, MPI_COMM_WORLD);
     MPI_Unpack(buffer, size, &position, &source[0], source_len, MPI_CHAR, MPI_COMM_WORLD);
     sources[std::string(source)] = i;
-    std::cout << "Added " << source << ", nr = " << i << "\n";
+    //std::cout << "Added " << source << ", nr = " << i << "\n";
   }
   SFXC_ASSERT(position == size);
 }

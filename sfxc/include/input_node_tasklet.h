@@ -53,7 +53,7 @@ public:
   void add_time_interval(Time &start_time, Time &stop_time);
 
   // Inherited from Input_node_tasklet
-  void set_delay_table(Delay_table_akima &delay);
+  void set_delay_table(Delay_table &delay);
   void set_parameters(const Input_node_parameters &input_node_param,
                       int station_number);
 
@@ -88,7 +88,8 @@ private:
   Timer rttimer_processing_;
   double last_duration_;
 
-  Delay_table_akima delay_table;
+  Delay_table delay_table;
+  Delay_table_akima akima_delays;
 
   bool initialized;
   int sample_rate;

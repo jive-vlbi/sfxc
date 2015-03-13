@@ -51,11 +51,15 @@ Correlation_core_phased::do_task() {
 
 void
 Correlation_core_phased::set_parameters(const Correlation_parameters &parameters,
+                                        std::vector<Delay_table_akima> &delays,
+                                        std::vector<std::vector<double> > &uvw,
 					int node_nr)
 {
   node_nr_ = node_nr;
   current_integration = 0;
   current_fft = 0;
+  delay_tables = delays;
+  uvw_table = uvw;
 
   correlation_parameters = parameters;
 

@@ -54,15 +54,10 @@ Correlator_node_bit2float_tasklet::connect_to(int nr_stream, bit_statistics_ptr 
 }
 
 void 
-Correlator_node_bit2float_tasklet::set_parameters(const Correlation_parameters &param){
+Correlator_node_bit2float_tasklet::set_parameters(const Correlation_parameters &param,
+                                                  std::vector<Delay_table_akima> &delays){
   for(int i=0; i<bit2float_workers_.size(); i++)
-    bit2float_workers_[i]->set_new_parameters(param);
-}
-
-void
-Correlator_node_bit2float_tasklet::add_delay_table(int nr_stream, Delay_table_akima &table) {
-  SFXC_ASSERT(nr_stream < bit2float_workers_.size());
-  return bit2float_workers_[nr_stream]->set_delay_table(table);
+    bit2float_workers_[i]->set_new_parameters(param, delays[i]);
 }
 
 Bit2float_worker::Output_queue_ptr

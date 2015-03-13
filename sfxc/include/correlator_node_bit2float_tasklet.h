@@ -65,9 +65,8 @@ public:
   * @desc Initialize the stream with the given parameters.
   * @param const Correlator_node_parameters &params
   *****************************************************************************/
-  void set_parameters(const Correlation_parameters &params);
-
-  void add_delay_table(int nr_stream, Delay_table_akima &table);
+  void set_parameters(const Correlation_parameters &params, 
+                      std::vector<Delay_table_akima> &delays);
 
   /*****************************************************************************
   * @desc Clear all input links
