@@ -70,7 +70,6 @@ int main(int argc, char *argv[]) {
 
   Delay_table delay_table;
   delay_table.open(argv[optind]);
-  delay_table.set_clock_offset(0., 0., 0., 0.);
   std::ofstream out(argv[optind+1]);
   out.precision(20);
 

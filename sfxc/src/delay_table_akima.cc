@@ -169,6 +169,8 @@ double Delay_table_akima::amplitude(const Time &time, int phase_center){
 // Default constructor
 Delay_table::Delay_table()
   : scan_nr(0), clock_nr(0), n_sources_in_current_scan(0) {
+    // Add default clock offset
+    set_clock_offset(0., 0., 0., 0.);
 }
 
 // Copy constructor
@@ -220,6 +222,9 @@ void Delay_table::set_clock_offset(const double offset, const Time start, const 
   clock_offsets.push_back(offset);
   clock_rates.push_back(rate);
   clock_epochs.push_back(epoch);
+  // We don't do clock jumps in the middle of a scan
+  if((scans.size() > 0) && (start <= scans[scan_nr].begin))
+    clock_nr = clock_starts.size() - 1;
 }
 
 //read the delay table, do some checks and
@@ -402,7 +407,6 @@ bool Delay_table::initialise_next_scan() {
   while((scan_nr + n_sources_in_current_scan < scans.size()) &&
         (scans[scan_nr + n_sources_in_current_scan - 1].begin == scans[scan_nr + n_sources_in_current_scan].begin))
     n_sources_in_current_scan++;
-
   clock_nr = clock_starts.size() - 1;
   while (clock_nr > 0 && clock_starts[clock_nr] > scans[scan_nr].begin)
     clock_nr--;
@@ -412,7 +416,6 @@ bool Delay_table::initialise_next_scan() {
 
 Delay_table_akima
 Delay_table::create_akima_spline(const Time start_, const Time duration){
-  //std::cerr << RANK_OF_NODE << " : " << start_ << ", duration " << duration << "\n";
   // Round begin and end time to integer second
   int mjd_start = (int) floor(start_.get_mjd());
   double seconds_start = floor(start_.get_time_usec() / 1000000);
@@ -421,8 +424,6 @@ Delay_table::create_akima_spline(const Time start_, const Time duration){
   double seconds_stop = ceil(stop.get_time_usec() / 1000000);
   Time start = Time(mjd_start, seconds_start);
   int n_seconds = (mjd_stop - mjd_start)*86400 + seconds_stop - seconds_start;
-  //std::cerr << RANK_OF_NODE << " : " << start << ", stop = " << stop << ", n_seconds = " << n_seconds 
-  //          << ", mjd="<< mjd_start<< ","<<mjd_stop << ", seconds="<< seconds_start << ", " << seconds_stop << "\n";
   // Move to the correct scan
   while(stop > scans[scan_nr].end){
     if (!initialise_next_scan()){
@@ -435,7 +436,6 @@ Delay_table::create_akima_spline(const Time start_, const Time duration){
   Time onesec(1000000.);
   Time interval_begin = start - onesec*2;
   Time interval_end = start + onesec*(2+n_seconds);
-  //std::cerr << RANK_OF_NODE << " : Initial inteval_begin = " << interval_begin << ", end = " << interval_end <<"\n";
   if(interval_begin < scans[scan_nr].begin){
     interval_begin = scans[scan_nr].begin;
     if (interval_end.diff(interval_begin) < 4)
@@ -446,7 +446,6 @@ Delay_table::create_akima_spline(const Time start_, const Time duration){
     if (interval_end.diff(interval_begin) < 4)
       interval_begin = interval_end - onesec*4;
   }
-  //std::cerr << RANK_OF_NODE << " : Final inteval_begin = " << interval_begin << ", end = " << interval_end <<"\n";
 
   // Create the splines
   Delay_table_akima result;
