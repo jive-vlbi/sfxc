@@ -201,9 +201,8 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters, Delay
 
   current_time = parameters.start_time;
   current_time.set_sample_rate(sample_rate());
+  SFXC_ASSERT(((int64_t)fft_size() * 1000000) % sample_rate() == 0);
   fft_length = Time((double)fft_size() / (sample_rate() / 1000000));
-
-  SFXC_ASSERT(((int64_t)fft_size() * 1000000000) % sample_rate() == 0);
 
   size_t nfft_min = std::max(2*fft_rot_size()/fft_size(), (size_t)1);
   size_t nfft_max = std::max(CORRELATOR_BUFFER_SIZE / fft_size(), nfft_min) + nfft_min;
