@@ -190,6 +190,8 @@ std::string Vexpp_node::dimension(const std::string &unit) const {
     std::string unit2 = unit.substr(unit.find("/") + 1);
     if (dimension(unit1) == "length" && dimension(unit2) == "time")
       return "velocity";
+    if (dimension(unit1) == "time" && dimension(unit2) == "time")
+      return "rate";
   }
 
   return std::string();
