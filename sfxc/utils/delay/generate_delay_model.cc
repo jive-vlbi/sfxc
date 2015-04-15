@@ -210,6 +210,66 @@ long ceps(std::string timeString, int ref_year) {
   return clock_epoch;
 }
 
+void
+check_site(Vex::Node& root, const std::string& site) {
+  // Check if all required information is there.
+  const char *params[] = { "site_name", "site_position", NULL };
+  for (int i = 0; params[i]; i++) {
+    if (root["SITE"][site][params[i]] == root["SITE"][site]->end()) {
+      std::cerr << "Parameter " << params[i] << " missing for site " << site
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+  }
+}
+
+void
+check_antenna(Vex::Node& root, const std::string& antenna) {
+  // Check if all required information is there.
+  const char *params[] = { "axis_type", "axis_offset", NULL };
+  for (int i = 0; params[i]; i++) {
+    if (root["ANTENNA"][antenna][params[i]] == root["ANTENNA"][antenna]->end()) {
+      std::cerr << "Parameter " << params[i] << " missing for antenna " << antenna
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+  }
+}
+
+void
+check_source(Vex::Node& root, const std::string& source) {
+  // Check if all required information is there.
+  const char *params[] = { "source_name", "ra", "dec", "ref_coord_frame", NULL };
+  for (int i = 0; params[i]; i++) {
+    if (root["SOURCE"][source][params[i]] == root["SOURCE"][source]->end()) {
+      std::cerr << "Parameter " << params[i] << " missing for source " << source
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  // We only support J2000 for now.
+  if (root["SOURCE"][source]["ref_coord_frame"]->to_string() != "J2000") {
+    std::cerr << "Unsupported reference frame "
+	      << root["SOURCE"][source]["ref_coord_frame"]->to_string()
+	      << " for source " << source << std::endl;
+    exit(EXIT_FAILURE);
+  }
+}
+
+void
+check_eop(Vex::Node& root, const std::string& eop) {
+  // Check if all required information is there.
+  const char *params[] = { "eop_ref_epoch", "TAI-UTC", "ut1-utc", "x_wobble", "y_wobble", NULL };
+  for (int i = 0; params[i]; i++) {
+    if (root["EOP"][eop][params[i]] == root["EOP"][eop]->end()) {
+      std::cerr << "Parameter " << params[i] << " missing for eop " << eop
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+  }
+}
+
 int initialise_data(const char *vex_filename,
                     const std::string &station_name) {
   Vex vex(vex_filename);
@@ -222,6 +282,7 @@ int initialise_data(const char *vex_filename,
   }
 
   std::string site = root["STATION"][station_name]["SITE"]->to_string();
+  check_site(root, site);
   std::string site_name = root["SITE"][site]["site_name"]->to_string();
 
   strcpy(station_data.site_name, site_name.c_str());
@@ -276,14 +337,16 @@ int initialise_data(const char *vex_filename,
     station_data.site_position[2] += velocity[2]->to_double_amount("m/yr") * years;
   }
 
-  if (vex.get_root_node()["ANTENNA"][site]["axis_type"][0]->to_string()=="az")
+  std::string antenna = root["STATION"][station_name]["ANTENNA"]->to_string();
+  check_antenna(root, antenna);
+
+  if (vex.get_root_node()["ANTENNA"][antenna]["axis_type"][0]->to_string()=="az")
     station_data.axis_type=3;
-  if (vex.get_root_node()["ANTENNA"][site]["axis_type"][0]->to_string()=="ha")
+  if (vex.get_root_node()["ANTENNA"][antenna]["axis_type"][0]->to_string()=="ha")
     station_data.axis_type=1;
 
   station_data.axis_offset =
-    vex.get_root_node()["ANTENNA"][site]["axis_offset"]->to_double_amount("m");
-
+    vex.get_root_node()["ANTENNA"][antenna]["axis_offset"]->to_double_amount("m");
 
   { // EOP information
     int i = station_data.num_eop_points = 0;
@@ -340,24 +403,26 @@ int initialise_data(const char *vex_filename,
   n_sources = 0;
   for (Vex::Node::const_iterator source = vex.get_root_node()["SOURCE"]->begin();
        source != vex.get_root_node()["SOURCE"]->end(); ++source) {
-    n_sources ++;
+    n_sources++;
   }
   source_data = new struct Source_data[n_sources];
   int source_idx = 0;
   for (Vex::Node::const_iterator source_block = vex.get_root_node()["SOURCE"]->begin();
         source_block != vex.get_root_node()["SOURCE"]->end(); ++source_block) {
     struct Source_data &source = source_data[source_idx];
+    check_source(root, source_block.key());
+
     strncpy(source.source_name, source_block["source_name"]->to_string().c_str(), 80);
-    for (int i=strlen(source_block["source_name"]->to_string().c_str()); i<80; i++) {
+    for (int i = strlen(source_block["source_name"]->to_string().c_str()); i < 80; i++) {
       source.source_name[i] = ' ';
     }
     source.source_name[80]='\0';
 
     int   hours, minutes, degs;
     double seconds;
-    sscanf( source_block["ra"]->to_string().c_str(), "%dh%dm%lfs", &hours, &minutes, &seconds );
-    source.ra = ((hours*3600 + 60*minutes + seconds ) * 2 * PI)/SECS_PER_DAY;
-    sscanf( source_block["dec"]->to_string().c_str(), "%dd%d\'%lf\"", &degs, &minutes, &seconds );
+    sscanf(source_block["ra"]->to_string().c_str(), "%dh%dm%lfs", &hours, &minutes, &seconds );
+    source.ra = ((hours * 3600 + 60 * minutes + seconds ) * 2 * PI) / SECS_PER_DAY;
+    sscanf(source_block["dec"]->to_string().c_str(), "%dd%d\'%lf\"", &degs, &minutes, &seconds );
     if (strchr(source_block["dec"]->to_string().c_str(), '-'))
       source.dec = -1*(PI/180)*(abs(degs)+minutes/60.0+seconds/3600);
     else
