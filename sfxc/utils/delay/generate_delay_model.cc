@@ -298,10 +298,10 @@ int initialise_data(const char *vex_filename,
       double eop_ref_epoch = JD(year,month,day) + (hour - 12.) / 24; // Julian day
 
       if (station_data.num_eop_points == 0) {
-	station_data.tai_utc = eop["TAI-UTC"]->to_double();
+	station_data.tai_utc = eop["TAI-UTC"]->to_double_amount("sec");
 	station_data.eop_ref_epoch = eop_ref_epoch;
       } else {
-	if (station_data.tai_utc != eop["TAI-UTC"]->to_double()) {
+	if (station_data.tai_utc != eop["TAI-UTC"]->to_double_amount("sec")) {
 	  std::cerr << "observing over leap seconds is not supported" << std::endl;
 	  exit(EXIT_FAILURE);
 	}
