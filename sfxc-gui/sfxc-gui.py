@@ -269,6 +269,7 @@ class progressDialog(QtGui.QDialog):
 
             # Write out the control file with a modified start time.
             self.json_input['start'] = time2vex(start)
+            os.unlink(ctrl_file)
             fp = open(ctrl_file, 'w')
             json.dump(self.json_input, fp, indent=4)
             fp.close()
