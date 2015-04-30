@@ -2,7 +2,7 @@
 
 Windowing::Windowing(int stream_nr_): 
       output_queue(Correlation_queue_ptr(new Correlation_queue())),
-      stream_nr(stream_nr_), output_memory_pool(32){
+      stream_nr(stream_nr_), output_memory_pool(2, NO_RESIZE){
 }
 
 Windowing::~Windowing(){
@@ -19,6 +19,8 @@ Windowing::do_task(){
   Memory_pool_vector_element<FLOAT> &input_data = input->data;
   const int nfft = std::min(nffts_per_integration - current_fft,
                             (int)input_data.size() / fft_size_correlation);
+  if(nfft == 0)
+    return;
   // Allocate new output buffer
   Correlation_queue_element cur_output = output_memory_pool.allocate();
   cur_output->stride = output_stride;
@@ -109,8 +111,9 @@ Windowing::set_parameters(const Correlation_parameters &parameters){
   current_time.set_sample_rate(parameters.station_streams[stream_idx].sample_rate);
   samples_to_skip = (int)round((integration_start-current_time).get_time_usec() * 
                                (parameters.station_streams[stream_idx].sample_rate * 1e-6));
-  if(RANK_OF_NODE == 5){
+  if(RANK_OF_NODE == 12){
   std::cout.precision(16);
+  std::cout << RANK_OF_NODE << " : fft_rot_size = " << fft_rot_size << "\n";
   std::cout << RANK_OF_NODE << " : current_time = " << current_time
             << ", " << current_time.get_time_usec() << "\n";
   std::cout << RANK_OF_NODE << " : start_time = " << integration_start 

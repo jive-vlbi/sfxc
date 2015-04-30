@@ -14,7 +14,7 @@ Bit2float_worker::Bit2float_worker(int stream_nr_, bit_statistics_ptr statistics
     fft_size(-1),
     bits_per_sample(-1),
     sample_rate(-1),
-    memory_pool_(32),
+    memory_pool_(4, NO_RESIZE), 
     delay_table_set(true), have_new_parameters(false), stream_nr(stream_nr_),
     n_ffts_per_integration(0), current_fft(0), state(IDLE),
     phased_array(phased_array_), statistics(statistics_), 
@@ -60,6 +60,8 @@ Bit2float_worker::do_task() {
       }
 
       uint8_t header = inp_data[read++ % inp_size];
+      //if(current_fft == 0)
+       // std::cerr << RANK_OF_NODE << " : stream = " << stream_nr << ", header = " << (int) header << "\n";
       switch(header) {
       case HEADER_DATA:
         bytes_left = inp_data[read++ % inp_size];

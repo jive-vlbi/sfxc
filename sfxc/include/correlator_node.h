@@ -20,7 +20,7 @@
 #include "log_writer_mpi.h"
 #include "correlation_core.h"
 #include "correlation_core_pulsar.h"
-#include "coherent_dedispersion.h"
+#include "dedispersion_tasklet.h"
 #include "delay_correction.h"
 #include "windowing.h"
 #include <tasklet/tasklet_manager.h>
@@ -267,7 +267,7 @@ private:
 
   std::vector<Delay_correction_ptr>       delay_modules;
   std::vector<Windowing_ptr>              windowing;
-  std::vector<Coherent_dedispersion_ptr>  dedispersion_modules;
+  Dedispersion_tasklet                    dedispersion_tasklet;
   Correlation_core *correlation_core, *correlation_core_normal;
   Correlation_core_pulsar *correlation_core_pulsar;
 

@@ -269,4 +269,4 @@ for scan in scans:
   read_scan(scan["files"], profile, station_idx, ref_station, scan["nchan"], scalar_avg)
   update_plots(profile, ax)
 show()
-
+pdb.set_trace()

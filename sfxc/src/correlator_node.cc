@@ -245,10 +245,7 @@ void Correlator_node::hook_added_data_reader(size_t stream_nr) {
   correlation_core_normal->connect_to(stream_nr, statistics, 
                                       bit2float_thread_.get_invalid(stream_nr));
   if(phased_array || pulsar_binning){
-    if (dedispersion_modules.size() <= stream_nr)
-      dedispersion_modules.resize(stream_nr+1);
-    dedispersion_modules[stream_nr] = Coherent_dedispersion_ptr(new Coherent_dedispersion(stream_nr));
-    dedispersion_modules[stream_nr]->connect_to(delay_modules[stream_nr]->get_output_buffer());
+    dedispersion_tasklet.connect_to(delay_modules[stream_nr]->get_output_buffer(), stream_nr);
   }
   if(pulsar_binning){
     correlation_core_pulsar->connect_to(stream_nr,
@@ -286,14 +283,7 @@ void Correlator_node::correlate() {
   }
   delay_timer_.stop();
   if(coherent_dedispersion){
-    for (size_t i=0; i<dedispersion_modules.size(); i++) {
-      if (dedispersion_modules[i] != Coherent_dedispersion_ptr()) {
-        if (dedispersion_modules[i]->has_work()) {
-          dedispersion_modules[i]->do_task();
-          done_work=true;
-        }
-      }
-    }
+    done_work |= dedispersion_tasklet.do_task();
   }
 
   for (size_t i=0; i<windowing.size(); i++) {
@@ -330,8 +320,8 @@ void Correlator_node::purge() {
     if (delay_modules[i] != Delay_correction_ptr()) {
       delay_modules[i]->empty_output_queue();
     }
-    if((coherent_dedispersion) && dedispersion_modules[i] != Coherent_dedispersion_ptr())
-      dedispersion_modules[i]->empty_output_queue();
+    if(coherent_dedispersion)
+      dedispersion_tasklet.empty_output_queue();
   }
 }
 
@@ -400,12 +390,13 @@ Correlator_node::set_parameters() {
       Pulsar_parameters::Pulsar &pulsar = cur_pulsar_it->second;
       coherent_dedispersion = pulsar.coherent_dedispersion;
       nBins = pulsar.nbins + 1; // One extra for off-pulse data
+      if (coherent_dedispersion)
+        dedispersion_tasklet.set_parameters(parameters, pulsar);
       // Select the correct read queue 
       for(int stream_nr = 0 ; stream_nr < delay_modules.size() ; stream_nr++){
         if (coherent_dedispersion){
-          dedispersion_modules[stream_nr]->set_parameters(parameters, pulsar);
           windowing[stream_nr]->connect_to(
-                        dedispersion_modules[stream_nr]->get_output_buffer());
+                        dedispersion_tasklet.get_output_buffer(stream_nr));
         }else{ 
           windowing[stream_nr]->connect_to(
                                 delay_modules[stream_nr]->get_output_buffer());
@@ -431,13 +422,13 @@ Correlator_node::set_parameters() {
     }else{
       Pulsar_parameters::Pulsar &pulsar = cur_pulsar_it->second;
       coherent_dedispersion = pulsar.coherent_dedispersion;
+      if (coherent_dedispersion)
+        dedispersion_tasklet.set_parameters(parameters, pulsar);
       // Select the correct read queue 
       for(int stream_nr = 0 ; stream_nr < delay_modules.size() ; stream_nr++){
         if (coherent_dedispersion){
-          SFXC_ASSERT(dedispersion_modules.size() > stream_nr);
-          dedispersion_modules[stream_nr]->set_parameters(parameters, pulsar);
           windowing[stream_nr]->connect_to(
-                        dedispersion_modules[stream_nr]->get_output_buffer());
+                        dedispersion_tasklet.get_output_buffer(stream_nr));
         }else{ 
           windowing[stream_nr]->connect_to(
                                 delay_modules[stream_nr]->get_output_buffer());

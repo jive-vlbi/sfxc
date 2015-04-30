@@ -112,9 +112,13 @@ void Correlation_core_pulsar::do_task() {
                  << current_fft << " of " << number_ffts_in_integration);
   }
 
-  if (current_fft%number_ffts_in_integration == 0) {
+  if (current_fft == 0) {
     integration_initialise();
   }
+
+  if(RANK_OF_NODE ==16) std::cerr << "fft = " << current_fft 
+                                   << " / " << number_ffts_in_integration
+                                   << "\n";
 
   SFXC_ASSERT(input_buffers.size()==number_input_streams_in_use());
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
@@ -127,8 +131,22 @@ void Correlation_core_pulsar::do_task() {
                                input_buffers[first_stream]->front()->data.size() / stride);
   for (int buf = 0; buf < nbuffer * stride ; buf += stride){
     // Process the data of the current fft
-    integration_step(dedispersion_buffer, buf);
-    dedisperse_buffer();
+    if(coherent_dedispersion){
+      double obs_freq_phase = get_phase();
+      double len=gate.end-gate.begin;
+      double phase = obs_freq_phase - offsets[0];
+      phase = phase - floor(phase);
+      int bin = 0;
+      if (phase >= gate.begin){
+        if(phase < gate.end)
+          bin = (int)((phase-gate.begin)*(nbins-1)/len) + 1;
+      }else if (phase + 1 < gate.end)
+        bin = (int)((phase + 1 - gate.begin)*(nbins-1)/len) + 1;
+      integration_step(accumulation_buffers[bin], buf);
+    }else{
+      integration_step(dedispersion_buffer, buf);
+      dedisperse_buffer();
+    }
     current_fft ++;
   }
 
@@ -148,6 +166,10 @@ void Correlation_core_pulsar::do_task() {
   if (current_fft == number_ffts_in_integration) {
     PROGRESS_MSG("node " << node_nr_ << ", "
                  << current_fft << " of " << number_ffts_in_integration);
+
+    if(RANK_OF_NODE ==16) std::cerr << "fft = " << current_fft 
+                                     << " / " << number_ffts_in_integration
+                                     << "\n";
 
     Time tmid = correlation_parameters.integration_start + 
                 correlation_parameters.integration_time/2;

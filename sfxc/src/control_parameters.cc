@@ -2386,28 +2386,28 @@ Pulsar_parameters::parse_polyco(std::vector<Polyco_params> &param, std::string f
       read_error = inpline.fail();
     }else if(line_nr-end_of_prev_block == 1){
       inpline >> param[block_index].ref_phase;
-      std::cout << param[block_index].ref_phase << " ";
+      //std::cout << param[block_index].ref_phase << " ";
       inpline >> param[block_index].ref_freq;
-      std::cout << param[block_index].ref_freq << " ";
+      //std::cout << param[block_index].ref_freq << " ";
       inpline >> temp;
       strncpy(param[block_index].site, temp.c_str(), 6);
       param[block_index].site[5]=0; // make sure sting is null terminated
-      std::cout << param[block_index].site << " ";
+      //std::cout << param[block_index].site << " ";
       inpline >> param[block_index].data_span;
-      std::cout << param[block_index].data_span << " ";
+      //std::cout << param[block_index].data_span << " ";
       inpline >> param[block_index].n_coef;
-      std::cout << param[block_index].n_coef << " ";
+      //std::cout << param[block_index].n_coef << " ";
       n_coef = param[block_index].n_coef;
       param[block_index].coef.resize(n_coef);
       inpline >> param[block_index].obs_freq;
-      std::cout << param[block_index].obs_freq << " ";
+      //std::cout << param[block_index].obs_freq << " ";
       read_error = inpline.fail();
       // The binary phase parameters are optional
       inpline >> param[block_index].bin_phase[0];
-      std::cout << param[block_index].bin_phase[0] << " ";
+      //std::cout << param[block_index].bin_phase[0] << " ";
       if(!inpline.fail()){
         inpline >> param[block_index].bin_phase[1];
-        std::cout << param[block_index].bin_phase[1] << "\n";
+        //std::cout << param[block_index].bin_phase[1] << "\n";
         read_error = inpline.fail();
       }else{
         param[block_index].bin_phase[0]=0;
@@ -2416,10 +2416,10 @@ Pulsar_parameters::parse_polyco(std::vector<Polyco_params> &param, std::string f
     }else{
       while((!inpline.eof())&&(!inpline.fail())&&(coef_idx<n_coef)){
         inpline >> param[block_index].coef[coef_idx];
-        std::cout << param[block_index].coef[coef_idx] << " "; 
+        //std::cout << param[block_index].coef[coef_idx] << " "; 
         coef_idx++;
       }
-      std::cout << "\n";
+      //std::cout << "\n";
       if((!inpline.fail())&&(coef_idx == n_coef)){
         polyco_completed = true;
         block_index++;

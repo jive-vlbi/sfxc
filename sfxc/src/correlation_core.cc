@@ -46,7 +46,7 @@ void Correlation_core::do_task() {
     int stream = streams_in_scan[i];
     input_buffers[stream]->pop();
   }
-  if(RANK_OF_NODE ==-10) std::cerr << "fft = " << current_fft 
+  if(RANK_OF_NODE == -16) std::cerr << "fft = " << current_fft 
                                    << " / " << number_ffts_in_integration
                                    << "\n";
  
