@@ -605,7 +605,7 @@ void Manager_node::initialise_scan(const std::string &scan) {
 #endif
     delay_table.set_clock_offset(offset, start, rate, epoch);
     send(delay_table, /* station_nr */ 0, input_rank(station));
-    control_parameters.set_reader_offset(station_name, Time(reader_offset));
+    control_parameters.set_reader_offset(station_name, Time(reader_offset*1e6));
     correlator_node_set_all(delay_table, station_name);
   }
 
