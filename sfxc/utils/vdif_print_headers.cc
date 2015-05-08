@@ -44,28 +44,35 @@ Time get_time(int ref_epoch, int sec_from_epoch){
 void usage(char *filename){
   std::cout << "usage: " << filename << "[OPTIONS] <vdif-file>\n";
   std::cout << "Options :\n";
-  std::cout << "  -q, --quiet          Only print bad frames\n"; 
-  std::cout << "  -s, --skip=N         Skip the first N frames.\n"; 
+  std::cout << "  -q, --quiet          Only print bad frames\n";
+  std::cout << "  -s, --search         Search for NRAO 0xacabfeed syncword\n";
+  std::cout << "  -b, --skip-bytes=N   Skip the first N bytes.\n"; 
+  std::cout << "  -f, --skip-frames=N  Skip the first N frames.\n"; 
   std::cout << "  -n, --n-frames=M     Only print the first M frames.\n"; 
-  std::cout << "  -f, --frame-size=P   Override the frame size given in the VDIF headers..\n";
+  std::cout << "  -F, --frame-size=P   Override the frame size given in the VDIF headers..\n";
 }
 
-void get_options(int argc, char*argv[], char **filename, int &frame_size, int &nskip, int &nframes, bool &quiet){
+void get_options(int argc, char*argv[], char **filename, int &frame_size, 
+                 long &nskip_bytes, int &nskip_frames, int &nframes, 
+                 bool &search, bool &quiet){
   int c, opt_index = 0;
   static struct option long_options[] = {
       {"help",    no_argument, 0, 'h'},
-      {"frame-size",    required_argument, 0, 'f'},
-      {"skip",    required_argument, 0, 's'},
+      {"search",    no_argument, 0, 's'},
+      {"frame-size",    required_argument, 0, 'F'},
+      {"skip-bytes",    required_argument, 0, 'b'},
+      {"skip-frames",    required_argument, 0, 'f'},
       {"nframes",  required_argument, 0, 'n'},
       {"quiet",    required_argument, 0, 'q'},
       {0, 0, 0, 0}
   };
   frame_size = 0;
-  nskip = 0;
+  nskip_bytes = 0;
+  nskip_frames = 0;
   quiet = false;
   nframes = -1;
   bool error = false;
-  while( (c = getopt_long (argc, argv, "qhs:f:n:",  long_options, 
+  while( (c = getopt_long (argc, argv, "qhsb:f:F:n:",  long_options, 
                            &opt_index)) != -1){
     int i;
     switch (c){
@@ -76,15 +83,22 @@ void get_options(int argc, char*argv[], char **filename, int &frame_size, int &n
     case 'q':
       quiet = true;
       break;
+    case 's':
+      search = true;
+      break;
     case 'n':
       i = sscanf(optarg, "%d", &nframes);
       error = (i == 0);
       break;
-    case 's':
-      i = sscanf(optarg, "%d", &nskip);
+    case 'b':
+      i = sscanf(optarg, "%ld", &nskip_bytes);
       error = (i == 0);
       break;
     case 'f':
+      i = sscanf(optarg, "%d", &nskip_frames);
+      error = (i == 0);
+      break;
+    case 'F':
       i = sscanf(optarg, "%d", &frame_size);
       error = (i == 0);
       break;
@@ -102,7 +116,11 @@ void get_options(int argc, char*argv[], char **filename, int &frame_size, int &n
     usage(argv[0]);
     exit(1);
   }
-  if ((nskip > 0) && (frame_size <= 0)){
+  if ((nskip_frames > 0) && (nskip_bytes > 0)){
+    std::cout << "Skip frames and skip bytes can't both be set\n";
+    exit(1);
+  }
+  if ((nskip_frames > 0) && (frame_size <= 0)){
     std::cout << "Skip frames requires frame size to be give.\n";
     exit(1);
   }
@@ -182,11 +200,35 @@ int64_t find_next_valid_header(FILE *infile, Header &prev_header){
   return 0;
 }
 
+void find_syncword(FILE *f){
+  long p = ftell(f);
+  long minpos = 5 * sizeof(int32_t); // Sync word is the 5th word
+  if(p < minpos)
+    fseek(f, minpos, SEEK_SET);
+  std::vector<char> buffer(1000);
+  int nBytes = fread(&buffer[0], 1, buffer.size(), f);
+  while(nBytes > 0){
+    for(int i=0; i<buffer.size()-sizeof(uint32_t); i++){
+      if(*((uint32_t *) &buffer[i]) == 0xacabfeed){
+        long newpos = -(buffer.size() - i + 5*sizeof(uint32_t));
+        std::cout << "Found start of header at byte " << ftell(f) + newpos << "\n";
+        fseek(f, newpos, SEEK_CUR);
+        return;
+      }
+    }
+    nBytes = fread(&buffer[0], 1, buffer.size(), f);
+  }
+  std::cout << "Could not find syncword in datafile\n";
+  exit(1);
+}
+
 int main(int argc, char *argv[]) {
-  int frame_size, nskip, nframes=-1;
-  bool quiet;
+  int frame_size, nskip_frames, nframes=-1;
+  long nskip_bytes;
+  bool search, quiet;
   char *filename;
-  get_options(argc, argv, &filename, frame_size, nskip, nframes, quiet);
+  get_options(argc, argv, &filename, frame_size, nskip_bytes, 
+              nskip_frames, nframes, search, quiet);
 
   FILE *infile = fopen(filename, "r");
   if(infile == NULL){
@@ -194,8 +236,14 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   // Skip the first nskip frames
-  fseek(infile, frame_size * nskip, SEEK_SET);
-
+  if(nskip_bytes > 0)
+    fseek(infile, nskip_bytes, SEEK_SET);
+  if(nskip_frames > 0)
+    fseek(infile, frame_size * nskip_frames, SEEK_SET);
+ 
+  if(search) 
+    find_syncword(infile);
+  std::cout << ", pos = " << ftell(infile) << ", nbytes = " << nskip_bytes << ", frames = " << nskip_frames<< "\n";
   bool eof = false;
   int invalid_nr = 0;
   int n = 0;
