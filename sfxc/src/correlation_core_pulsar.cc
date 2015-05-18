@@ -21,7 +21,18 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
   delay_tables = delays;
   uvw_table = uvw;
 
+  // If the relevant correlation parameters change, clear the window
+  // vector.  It will be recreated when the next integration starts.
+  if (parameters.number_channels != correlation_parameters.number_channels ||
+      parameters.fft_size_correlation != correlation_parameters.fft_size_correlation ||
+      parameters.window != correlation_parameters.window) {
+    window.clear();
+    mask.clear();
+  }
+
   correlation_parameters = parameters;
+  if (correlation_parameters.mask_parameters)
+    mask_parameters = *correlation_parameters.mask_parameters;
 
   create_baselines(parameters);
   if (input_elements.size() != number_input_streams_in_use()) {
@@ -169,8 +180,10 @@ void Correlation_core_pulsar::integration_initialise() {
   temp_buffer.resize(fft_size() + 1);
   real_buffer.resize(2 * fft_size());
 
-  if (fft_size() != number_channels())
+  if (fft_size() != number_channels()){
+    create_mask();
     create_window();
+  }
 }
 
 void Correlation_core_pulsar::integration_step(std::vector<Complex_buffer> &integration_buffer, int buf_idx) {
