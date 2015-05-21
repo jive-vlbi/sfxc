@@ -234,11 +234,11 @@ sfxc_fft_fftw::ifft(const std::complex<double> *in, std::complex<double> *out){
 void
 sfxc_fft_fftw::irfft(const std::complex<double> *in, double *out){
   SFXC_ASSERT((void *)in != (void *)out);
-  if(!plan_forward_r2c_set){
+  if(!plan_backward_r2c_set){
     plan_backward_r2c = alloc_r2c(FFTW_BACKWARD);
     plan_backward_r2c_set = true;
   }
-  fftw_execute_dft_r2c(plan_backward_r2c, (double *)in, (fftw_complex *)out);
+  fftw_execute_dft_c2r(plan_backward_r2c, (fftw_complex *)in, (double *)out);
 }
 
 #endif // USE_IPP
