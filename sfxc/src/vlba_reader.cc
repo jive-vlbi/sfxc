@@ -19,8 +19,6 @@ bool
 VLBA_reader::open_input_stream(Data_frame &data){
   SFXC_ASSERT(N > 0);
   if (!find_start_of_header(data)){
-    if (eof())
-      sfxc_abort("Could not find header before eof()");
     return false;
   }
 
