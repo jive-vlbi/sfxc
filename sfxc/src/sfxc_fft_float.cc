@@ -234,7 +234,7 @@ sfxc_fft_fftw_float::ifft(const std::complex<float> *in, std::complex<float> *ou
 void
 sfxc_fft_fftw_float::irfft(const std::complex<float> *in, float *out){
   SFXC_ASSERT((void *)in != (void *)out);
-  if(!plan_forward_r2c_set){
+  if(!plan_backward_r2c_set){
     plan_backward_r2c = alloc_r2c(FFTW_BACKWARD);
     plan_backward_r2c_set = true;
   }
