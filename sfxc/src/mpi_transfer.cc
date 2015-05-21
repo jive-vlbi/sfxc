@@ -701,7 +701,7 @@ MPI_Transfer::receive(MPI_Status &status, std::map<std::string, int> &sources){
 void
 MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
   int size = 0;
-  size = 6 * sizeof(int32_t) + 3 * sizeof(int64_t);
+  size = 7 * sizeof(int32_t) + 3 * sizeof(int64_t);
   for (Input_node_parameters::Channel_iterator channel =
          input_node_param.channels.begin();
        channel != input_node_param.channels.end(); channel++) {
@@ -730,6 +730,9 @@ MPI_Transfer::send(Input_node_parameters &input_node_param, int rank) {
            message_buffer, size, &position, MPI_COMM_WORLD);
   ticks = input_node_param.phasecal_integr_time.get_clock_ticks();
   MPI_Pack(&ticks, 1, MPI_INT64,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+  int exit_on_empty_datastream = input_node_param.exit_on_empty_datastream ? 1 : 0;
+  MPI_Pack(&exit_on_empty_datastream, 1, MPI_INT32, 
            message_buffer, size, &position, MPI_COMM_WORLD);
 
   length = (int32_t)input_node_param.channels.size();
@@ -803,6 +806,10 @@ MPI_Transfer::receive(MPI_Status &status, Input_node_parameters &input_node_para
              &ticks, 1, MPI_INT64,
              MPI_COMM_WORLD);
   input_node_param.phasecal_integr_time.set_clock_ticks(ticks);
+  int exit_on_empty_datastream;
+  MPI_Unpack(buffer, size, &position, &exit_on_empty_datastream, 
+             1, MPI_INT32, MPI_COMM_WORLD);
+  input_node_param.exit_on_empty_datastream = (exit_on_empty_datastream == 1);
   int32_t n_channels;
   MPI_Unpack(buffer, size, &position,
              &n_channels, 1, MPI_INT32,

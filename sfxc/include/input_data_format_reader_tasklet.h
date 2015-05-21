@@ -123,6 +123,9 @@ private:
   /// Determines if data modulation is turned on(p.6 of Mark4 memo 230A, Whitney 2005)
   bool data_modulation;
 
+  /// Determines if the correlation is aborted when the data stream contains no data
+  bool exit_on_empty_datastream;
+
   int seqno;
 
   std::vector< std::vector<int> > duplicate;
