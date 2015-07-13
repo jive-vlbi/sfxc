@@ -1179,7 +1179,8 @@ get_mark5b_tracks(const std::string &mode,
   const std::string tracks_name = get_vex().get_track(mode, station);
   if (tracks_name != std::string()) {
     Vex::Node::const_iterator track = root["TRACKS"][tracks_name];
-    if (track["track_frame_format"]->to_string() == "MARK5B") {
+    if (track["track_frame_format"]->to_string() == "Mark5B" ||
+	track["track_frame_format"]->to_string() == "MARK5B") {
       input_parameters.n_tracks = n_mark5a_tracks(mode, station);
       // Parse the $TRACKS section
       for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
