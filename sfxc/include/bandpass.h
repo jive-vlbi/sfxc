@@ -8,7 +8,7 @@ class bandpass{
 public:
   bandpass();
   virtual ~bandpass(){}
-  void apply_bandpass(const Time t, std::complex<FLOAT> *band, int station, double freq, char sideband, int pol_nr, bool do_conjg=false);
+  void apply_bandpass(const Time t, std::complex<FLOAT> *band, int station, double freq, char sideband, char pol, bool do_conjg=false);
   void open_table(const std::string &filename, int nchan_, bool phase_only);
   bool is_open() {return opened;}
 private:

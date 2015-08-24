@@ -388,7 +388,7 @@ void Correlation_core::calibrate(std::vector<Complex_buffer> &buffer,
     int station1 = correlation_parameters.station_streams[stream1].station_number;
     int station2 = correlation_parameters.station_streams[stream2].station_number;
     //Apply bandpass
-    int polarisation = correlation_parameters.polarisation == 'R' ? 0 : 1;
+    char  polarisation = correlation_parameters.polarisation;
     double freq = correlation_parameters.channel_freq; 
 
     if (bptable.is_open()){

@@ -91,12 +91,13 @@ bandpass::open_table(const std::string &name, int nchan_, bool phase_only){
 }
 
 void 
-bandpass::apply_bandpass(const Time t, complex<FLOAT> *band, int station, double freq, char sideband, int pol_nr, bool do_conjg){
+bandpass::apply_bandpass(const Time t, complex<FLOAT> *band, int station, double freq, char sideband, char pol, bool do_conjg){
   if (!opened)
     throw string("apply_bandpass called before opening bandpass table");
   // Get the index of the current_frequency
   int n = 0;
   int sb = (sideband == 'L') ? -1:0;
+  int pol_nr = toupper(pol) == 'R' ? 0 : npol-1;
   double delta = bandwidths[freq_nr] / nchan_aips; // Lower side bands in AIPS are shifted by this amount
   while( (freq != frequencies[freq_nr] - sb*(bandwidths[freq_nr]-delta)) && (n < nif)){
     freq_nr = (freq_nr+1) % nif;

@@ -10,7 +10,7 @@ public:
   virtual ~aips_cal(){}
   void compute_calibration(const Time t, int station, int freq_nr, int pol_nr, char sideband);
   void apply_calibration(const Time t, std::complex<FLOAT> *band, int station,
-                         double freq, char sideband, int pol_nr, bool do_conjg=false);
+                         double freq, char sideband, char pol, bool do_conjg=false);
   void open_table(const std::string &filename, int nchan_, Time recompute_delay_=10000);
   bool is_open() {return opened;}
 public:

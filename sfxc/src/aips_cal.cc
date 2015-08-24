@@ -244,7 +244,7 @@ compute_calibration(const Time t, int station, int freq_nr, int pol_nr, char sid
 }
 void aips_cal::
 apply_calibration(const Time t, complex<FLOAT> *band, int station, double freq, 
-                  char sideband, int pol_nr, bool do_conjg)
+                  char sideband, char pol, bool do_conjg)
 {
   // NB : do_conjg has the default argument : false
   if (!opened)
@@ -268,6 +268,7 @@ apply_calibration(const Time t, complex<FLOAT> *band, int station, double freq,
   }
 
   // Compute calibration table if necessary
+  int pol_nr = toupper(pol) == 'R' ? 0 : npol-1;
   if ((t-calib_tables[station].time >= recompute_time) ||
       (calib_tables[station].freq_nr != freq_nr) ||
       (calib_tables[station].pol_nr != pol_nr)){
