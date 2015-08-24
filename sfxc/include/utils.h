@@ -126,6 +126,7 @@ extern MPI_Comm MPI_COMM_CORR_NODES;
 
 void abort_sfxc_assertion(const char *file, int line, const char* message);
 void sfxc_abort(const char *msg="");
+void pause_sfxc_for_gdb(void);
 
 #ifdef NDEBUG
 #define SFXC_ASSERT(c)
