@@ -80,54 +80,6 @@ def get_bp_old(uvdata,outname):
         bp_2 = (ant[4][i] + 1j * ant[5][i])
         bp_2.tofile(outfile)
 
-def get_fg(uvdata,outname):
-  fg = uvdata.table('FG', 0)
-  nstation = bp.keywords['NO_ANT']
-  nif = bp.keywords['NO_IF']
-  npol = bp.keywords['NO_POL']
-  nchan = bp.keywords['NO_CHAN']
-  outfile = open(outname+'.bp', 'w')
-  bp_table = zeros([nstation, npol, nchan*nif], dtype=complex64)
-  weights = zeros([nstation, npol, nchan*nif], dtype=float32)
-  #pdb.set_trace()
-  # Read the bp table and do weighted sum of all bandpasses
-  for row in bp:
-    ant_no = row.antenna-1
-    for i in range(nif):
-      for c in range(nchan):
-        j = i*nchan + c
-        if row.weight_1[i] > 0.01:
-          if row.real_1[j] < 20.:
-            weights[ant_no][0][j] += row.weight_1[i]
-            bp_table[ant_no][0][j] += (row.real_1[j] + 1j*row.imag_1[j])*row.weight_1[i]
-        if (npol ==2) and (row.weight_2[i] > 0.01):
-          if row.real_2[j] < 20.:
-            weights[ant_no][1][j] += row.weight_2[i]
-            bp_table[ant_no][1][j] += (row.real_2[j] + 1j*row.imag_2[j])*row.weight_2[i]
-    if (ant_no == 3):
-      #print row.time,' : ',weights[4][0][0:32]#,'\n', bp_table[4][0][0:32],'\n',row.weight_1
-      print row.time,' : ', row.weight_1
-      #pdb.set_trace()
-  # normalize bandpass
-  bp_table /= (weights + 1e-8)
-
-  #A table to convert the AIPS station numbers to SFXC station number
-  aips2sfxc = []
-  sfxc_antennas = sorted(uvdata.antennas)
-  for ant in uvdata.antennas:
-    aips2sfxc.append(sfxc_antennas.index(ant))
-    print 'ant = ', ant, ', idx = ', aips2sfxc[-1]
-  
-  #write the BP to disk
-  global_header = array([nstation, nif, npol, nchan], dtype='int32')
-  global_header.tofile(outfile)
-  for ant_no, ant in enumerate(bp_table):
-    header = array([aips2sfxc[ant_no]], dtype='int32')
-    header.tofile(outfile)
-    ant[0].tofile(outfile)
-    if npol == 2:
-      ant[1].tofile(outfile)
-
 def get_bp(uvdata,outname):
   bp = uvdata.table('BP', 0)
   nstation = bp.keywords['NO_ANT']
@@ -142,19 +94,30 @@ def get_bp(uvdata,outname):
   for row in bp:
     ant_no = row.antenna-1
     for i in range(nif):
+      try:
+          weight_1 = row.weight_1[i]
+          if npol == 2:
+              weight_2 = row.weight_2[i]
+      except TypeError:
+          # If there is only one IF the datatype of weight_1 is not list
+          weight_1 = row.weight_1
+          if npol == 2:
+              weight_2 = row.weight_2
+    
       for c in range(nchan):
         j = i*nchan + c
-        if row.weight_1[i] > 0.01:
+        if weight_1 > 0.01:
           if row.real_1[j] < 20.:
-            weights[ant_no][0][j] += row.weight_1[i]
-            bp_table[ant_no][0][j] += (row.real_1[j] + 1j*row.imag_1[j])*row.weight_1[i]
-        if (npol ==2) and (row.weight_2[i] > 0.01):
+            weights[ant_no][0][j] += weight_1
+            bp_table[ant_no][0][j] += (row.real_1[j] + 1j*row.imag_1[j])*weight_1
+        if (npol ==2) and (weight_2 > 0.01):
           if row.real_2[j] < 20.:
-            weights[ant_no][1][j] += row.weight_2[i]
-            bp_table[ant_no][1][j] += (row.real_2[j] + 1j*row.imag_2[j])*row.weight_2[i]
+            weights[ant_no][1][j] += weight_2
+            bp_table[ant_no][1][j] += (row.real_2[j] + 1j*row.imag_2[j])*weight_2
+        print "bp_table["+str(ant_no)+"][0,1]["+str(j)+"]=",bp_table[ant_no][0][j],",", bp_table[ant_no][1][j]
     if (ant_no == 3):
       #print row.time,' : ',weights[4][0][0:32]#,'\n', bp_table[4][0][0:32],'\n',row.weight_1
-      print row.time,' : ', row.weight_1
+      print row.time,' : ', weight_1
   #pdb.set_trace()
   # normalize bandpass
   bp_table /= (weights + 1e-8)
@@ -172,7 +135,10 @@ def get_bp(uvdata,outname):
   # Write the IF's to disk
   fq = uvdata.table('FQ', 0)
   f0 = uvdata.header.crval[2] # The reference frequency
-  frequencies = around(array([f + f0 for f in fq[0].if_freq], dtype ='float64'))
+  if not(type(fq[0].if_freq) is list):
+    frequencies = around(array([f0 + fq[0].if_freq], dtype ='float64'))
+  else:
+    frequencies = around(array([f + f0 for f in fq[0].if_freq], dtype ='float64'))
   frequencies.tofile(outfile)
   # Store the bandwidths
   bandwidths = array(fq[0].total_bandwidth, dtype='float64')
