@@ -945,8 +945,16 @@ Control_parameters::frequency_channel(size_t channel_nr, const std::string& mode
     // We have a match if the channel corresponding to CHANNEL_NR is
     // wholly conatined in this channel.  This covers the "normal"
     // case where all stations use the same setup as well as the case
-    // of mixed 16/32 MHz and 16/64 MHz observations.
+    // of mixed 16/32 MHz and 16/64 MHz observations,
     if ((freq_min >= ch_freq_min && freq_max <= ch_freq_max) &&
+	pol == polarisation(chan[4]->to_string(), station_name, mode_name))
+      return chan[4]->to_string();
+
+    // We also match if this channel is wholly contained in the
+    // channel corresponding to CHANNEL_NR.  This covers the case of
+    // mixed bandwidth observations where we correlate wide bands but
+    // want to include narrower bands in the result.
+    if ((ch_freq_min >= freq_min && ch_freq_max <= freq_max) &&
 	pol == polarisation(chan[4]->to_string(), station_name, mode_name))
       return chan[4]->to_string();
   }
@@ -1480,8 +1488,9 @@ get_input_node_parameters(const std::string &mode_name,
   // Scale FFT size based on the sample rate.  This is important for
   // "mixed bandwidth" correlation where we need to make sure that we
   // send enough data to the correlator nodes.
-  result.fft_size *= sample_rate(mode_name, station_name) / sample_rate(mode_name, setup_station());
-  result.track_bit_rate =  (int)sample_rate(mode_name, station_name);
+  result.fft_size = (result.fft_size * (uint64_t)sample_rate(mode_name, station_name)) / sample_rate(mode_name, setup_station());
+  SFXC_ASSERT(result.fft_size != 0)
+  result.track_bit_rate = sample_rate(mode_name, station_name);
 
   if (data_format(station_name) == "VDIF") {
     get_vdif_tracks(mode_name, station_name, result);

@@ -211,7 +211,11 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters, Delay
   exp_array.resize(fft_size());
   frequency_buffer.resize(fft_size());
   temp_buffer.resize(fft_rot_size());
-  temp_fft_buffer.resize(fft_rot_size()/2 + 4);
+  if (fft_cor_size() > fft_rot_size())
+    temp_fft_buffer.resize(fft_cor_size()/2 + 4);
+  else
+    temp_fft_buffer.resize(fft_rot_size()/2 + 4);
+  memset(&temp_fft_buffer[0], 0, sizeof(temp_fft_buffer[0]));
 
   fft_t2f.resize(fft_size());
   fft_f2t.resize(fft_size());
@@ -233,12 +237,11 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters, Delay
 
   SFXC_ASSERT(parameters.fft_size_correlation >= parameters.fft_size_delaycor);
   n_ffts_per_integration =
-    (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
-    (parameters.fft_size_correlation / parameters.fft_size_delaycor) *
-    Control_parameters::nr_ffts_per_integration_slice(
-      (int) parameters.integration_time.get_time_usec(),
-      parameters.sample_rate,
-      parameters.fft_size_correlation);
+    ((parameters.fft_size_correlation / parameters.fft_size_delaycor) *
+     Control_parameters::nr_ffts_per_integration_slice(
+         (int) parameters.integration_time.get_time_usec(),
+	 parameters.sample_rate, parameters.fft_size_correlation) *
+     (uint64_t)parameters.station_streams[stream_idx].sample_rate) / parameters.sample_rate;
 
   LO_offset = parameters.station_streams[stream_idx].LO_offset;
   double dt = current_time.diff(parameters.experiment_start);
