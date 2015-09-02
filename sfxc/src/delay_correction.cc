@@ -70,8 +70,8 @@ void Delay_correction::do_task() {
     // Do the final fft from time to frequency
     if (correlation_parameters.sideband != correlation_parameters.station_streams[stream_idx].sideband)
       SFXC_MUL_F(&temp_buffer[0], &flip[0], &temp_buffer[0], fft_rot_size());
-    fft_t2f_cor.rfft(&temp_buffer[0], &temp_fft_buffer[0]);
-    memcpy(&cur_output->data[i * output_stride], &temp_fft_buffer[temp_fft_offset], output_stride * sizeof(std::complex<FLOAT>));
+    fft_t2f_cor.rfft(&temp_buffer[0], &temp_fft_buffer[temp_fft_offset]);
+    memcpy(&cur_output->data[i * output_stride], &temp_fft_buffer[output_offset], output_stride * sizeof(std::complex<FLOAT>));
   }
 #endif // DUMMY_CORRELATION
   if(nfft_cor > 0){
@@ -215,7 +215,7 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters, Delay
     temp_fft_buffer.resize(fft_cor_size()/2 + 4);
   else
     temp_fft_buffer.resize(fft_rot_size()/2 + 4);
-  memset(&temp_fft_buffer[0], 0, sizeof(temp_fft_buffer[0]));
+  memset(&temp_fft_buffer[0], 0, temp_fft_buffer.size() * sizeof(temp_fft_buffer[0]));
 
   fft_t2f.resize(fft_size());
   fft_f2t.resize(fft_size());
@@ -232,8 +232,10 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters, Delay
     delta = freq - parameters.channel_freq;
   else
     delta = parameters.channel_freq - freq;
-  SFXC_ASSERT(delta >= 0);
-  temp_fft_offset = delta * fft_cor_size() / parameters.sample_rate;
+  if (delta > 0)
+    output_offset = delta * fft_cor_size() / parameters.sample_rate;
+  else
+    temp_fft_offset = -delta * fft_cor_size() / parameters.sample_rate;
 
   SFXC_ASSERT(parameters.fft_size_correlation >= parameters.fft_size_delaycor);
   n_ffts_per_integration =
