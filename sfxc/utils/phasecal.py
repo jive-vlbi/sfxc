@@ -9,51 +9,62 @@ import scipy as sp
 import pylab as p
 from scipy import fftpack, signal
 
-fp = open(sys.argv[1], 'r')
-fp.read(68)
-fp.read(7 * (20 + 1600 * 4))
+# JIVE Python modules
+from vex import Vex
 
-header = fp.read(20)
-header = struct.unpack("BBBBIIII", header)
-print header
-num_samples = header[7]
-buf = fp.read(num_samples * 4)
-dd = np.frombuffer(buf, dtype='int32').astype(float)
-ddx = dd.max()
-ddp = dd / ddx
+vex = Vex(sys.argv[1])
+for freq in vex['FREQ']:
+    sample_rate = vex['FREQ'][freq]['sample_rate']
+    if sample_rate.split()[1] == "Ms/sec":
+        sample_rate = float(sample_rate.split()[0]) * 1e6
+        break
+    break
+for freq in vex['FREQ']:
+    chan_def = vex['FREQ'][freq]['chan_def']
+    if chan_def[1].split()[1] == "MHz":
+        freq = float(chan_def[1].split()[0]) * 1e6
+        break
+    break
 
-dmvec = np.exp(2 * math.pi * 1j * 510e3/16e6 * np.array(range(num_samples)))
+offset = (int(freq + 999999) / 1000000) * 1e6 - freq
 
-#p.plot(ddp, color="red")
-#p.plot(dmvec.real, color="blue")
-#p.plot(dmvec.imag, color="green")
-#p.show()
+in_fp = open(sys.argv[2], 'r')
+header = in_fp.read(68)
 
-sdd = sp.fftpack.ifft(dd)
-sddh = np.concatenate((sdd[0:num_samples / 2], np.zeros(num_samples / 2)))
-dda = sp.fftpack.fft(sddh)
-#dda = sp.fftpack.hilbert(dd)
+out_fp = open(sys.argv[3], 'w')
+out_fp.write(header)
 
-ddc = dda * dmvec
+while in_fp:
+    header = in_fp.read(20)
+    if len(header) == 0:
+        break
+    header = struct.unpack("BBBBIIII", header)
+    sideband = header[2]
+    sign = -1 if sideband == 0 else 1
+    num_samples = header[7]
+    buf = in_fp.read(num_samples * 4)
+    dd = np.frombuffer(buf, dtype='int32').astype(float)
 
-#p.plot(ddc.real, color="red")
-#p.plot(ddc.imag, color="blue")
-#p.show()
+    # Filter out vectors with no valid data
+    ddx = dd.max()
+    if ddx == 0:
+        continue
 
-pp = np.sum(ddc.reshape((100, -1)), axis=0)
+    dmvec = np.exp((sign * 2 * math.pi * 1j * offset / sample_rate) *
+                   np.array(range(num_samples)))
 
-#p.plot(pp.real, color="red")
-#p.plot(pp.imag, color="blue")
-#p.plot(np.abs(pp), color="black")
-#p.show()
+    sdd = sp.fftpack.ifft(dd)
+    sddh = np.concatenate((sdd[0:num_samples / 2], np.zeros(num_samples / 2)))
+    dda = sp.fftpack.fft(sddh)
 
-spp = sp.fftpack.ifft(pp)
-abp = np.abs(spp)
-xabp = np.max(abp)
-abp = abp / xabp
+    ddc = dda * dmvec
 
-pbp = np.angle(spp) / (2 * math.pi)
+    pp = np.sum(ddc.reshape((100, -1)), axis=0)
 
-p.plot(abp, color="red")
-p.plot(pbp, color="blue")
-p.show()
+    header = list(header)
+    header[7] = len(pp)
+    header = struct.pack("BBBBIIII", *header)
+    out_fp.write(header)
+    buf = np.getbuffer(pp.astype('complex64'))
+    out_fp.write(buf)
+    continue

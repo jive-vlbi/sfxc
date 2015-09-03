@@ -47,7 +47,7 @@ in the $FREQ block in the VEX file, again starting from zero.
 
 The format of the processed phasecal data is very similar.  The header
 of the file is exactly the same, but the samples in the data blocks
-are now complex.  So the format becomes:
+are now complex floats.  So the format becomes:
 
 struct data {
   uint8_t station_number;       // Station number
@@ -58,5 +58,5 @@ struct data {
   uint32_t start_sec;           // Start time (second within day)
   uint32_t integration_time;    // Integration time in seconds
   uint32_t num_samples;         // Number of samples in vector
-  int32_t samples[2 * num_samples]; // Complex vector of integrated, folded samples
+  float complex samples[num_samples]; // Complex vector of integrated, folded samples
 };
