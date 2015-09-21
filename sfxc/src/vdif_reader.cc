@@ -19,9 +19,9 @@ VDIF_reader::open_input_stream(Data_frame &data) {
   }
 
   is_open_ = true;
-  epoch_jday = current_header.jday_epoch();
   current_time_ = get_current_time();
   data.start_time = current_time_;
+  int32_t epoch_jday = current_header.jday_epoch();
   uint32_t start_sec = current_header.sec_from_epoch;
   uint32_t epoch = current_header.ref_epoch;
   std::cout << RANK_OF_NODE << "Start of VDIF data at jday=" << epoch_jday + start_sec / (24 * 60 * 60)
@@ -60,7 +60,7 @@ VDIF_reader::get_current_time() {
   Time time;
 
   if (is_open_) {
-    double seconds_since_reference = (double)current_header.sec_from_epoch - (ref_jday - epoch_jday) * 24 * 60 * 60;
+    double seconds_since_reference = (double)current_header.sec_from_epoch - (ref_jday - current_header.jday_epoch()) * 24 * 60 * 60;
     double subsec = 0;
     if (sample_rate > 0) {
       int samples_per_frame = 8 * first_header.data_size() / ((first_header.bits_per_sample + 1) * (1 << first_header.log2_nchan));

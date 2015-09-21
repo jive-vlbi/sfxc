@@ -95,7 +95,6 @@ public:
 private:
   // Time information
   int ref_jday; //date relative to which times are calculated(mod Julian day)
-  int epoch_jday; // Time origin of the timestamps in the data headers
   // current time in microseconds
   Time current_time_;
   Time time_between_headers_;
