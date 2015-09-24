@@ -675,7 +675,7 @@ void Manager_node::send_global_header(){
     Output_header_global output_header;
     memset(&output_header, 0, sizeof(Output_header_global));
     output_header.header_size = sizeof(Output_header_global);
-    strcpy(output_header.experiment,control_parameters.experiment().c_str());      // Name of the experiment
+    strcpy(output_header.experiment, control_parameters.get_exper_name().c_str());      // Name of the experiment
     Time start = control_parameters.get_start_time();
     int start_year, start_day;
     // Start year and day (day of year) of the experiment

@@ -226,7 +226,6 @@ public:
   std::string reference_station() const;
   int reference_station_number() const;
   std::string setup_station() const;
-  std::string experiment() const;
 
   bool phased_array() const;
   bool pulsar_binning() const;
@@ -240,7 +239,6 @@ public:
   
   void set_reader_offset(const std::string &s, const Time t);
 
-  std::string get_delay_directory() const;
   std::string get_delay_table_name(const std::string &station_name) const;
   void generate_delay_table(const std::string &station_name,
                             const std::string &filename) const;
@@ -326,6 +324,7 @@ public:
   std::string data_format(const std::string &station) const;
 
   const Vex &get_vex() const;
+  std::string get_exper_name() const;
 
   /// The start time of the first scan in the vex file
   Time start_time;
