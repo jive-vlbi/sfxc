@@ -210,6 +210,15 @@ bool Mark5b_reader::check_header(Header &header){
   if (header.crc == 0)
     return true;
 
+  // Skip the CRC check for frames that have the sub-second field set
+  // to 0, but a non-zero frame number.  Some Fila10G firmwares don't
+  // fill in the sub-second field (which is fine) but put garbage into
+  // the CRC field (which isn't).
+  if (header.subsec1 == 0 && header.subsec2 == 0 &&
+      header.subsec3 == 0 && header.subsec4 == 0 &&
+      header.frame_nr != 0)
+    return true;
+
   // Check the CRC of the mark5b header
   unsigned int crc = 0;
   uint8_t *data = (uint8_t *) &header;
