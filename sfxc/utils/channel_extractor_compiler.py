@@ -217,15 +217,10 @@ while pcroll[0] < 7:
       curpos=j%8
       diff = curpos-endpos
       roll = " none "
-      #if diff == 0:
-      #  roll = ""
       if diff <= 0:
         roll = "<<"+`-diff`
       if diff > 0:
         roll = ">>"+`diff`
-      #if diff == -7 or diff == 7:
-      #  lines[idx]+= " ((currbuffer["+`seqd*size_input_word+j/8`+"]) "+roll+") "
-      #else:
       lines[idx]+= " (((currbuffer["+`seqd*size_input_word+j/8`+"]) & "+`(1<<(j%8))`+") "+roll+") "
       pcroll[idx]+=1
     idx = idx+1
