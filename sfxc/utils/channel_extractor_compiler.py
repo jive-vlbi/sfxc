@@ -208,11 +208,19 @@ seqd = 0
 while pcroll[0] < 7:
   idx = 0
   for ch in track_positions:
-    for j in ch:
+    i = 0
+    while i < len(ch):
+      j = ch[i]
       if not (pcroll[idx] == 0):
         lines[idx] += " | "
         if(ch.index(j)%3==0):
           lines[idx] += "\n\t\t\t\t "
+
+      if i < len(ch) - 1 and j == ch[i + 1] + 1 and not j % 8 == 0:
+        mask = 3; j = ch[i + 1]; i += 2; pcroll[idx] += 1
+      else:
+        mask = 1; i += 1
+      
       endpos=(pcroll[idx]/bits_per_sample+1)*bits_per_sample-pcroll[idx]%bits_per_sample-1
       curpos=j%8
       diff = curpos-endpos
@@ -221,7 +229,7 @@ while pcroll[0] < 7:
         roll = "<<"+`-diff`
       if diff > 0:
         roll = ">>"+`diff`
-      lines[idx]+= " (((currbuffer["+`seqd*size_input_word+j/8`+"]) & "+`(1<<(j%8))`+") "+roll+") "
+      lines[idx]+= " (((currbuffer["+`seqd*size_input_word+j/8`+"]) & "+`(mask<<(j%8))`+") "+roll+") "
       pcroll[idx]+=1
     idx = idx+1
 
