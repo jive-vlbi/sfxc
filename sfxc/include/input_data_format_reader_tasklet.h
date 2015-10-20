@@ -115,6 +115,7 @@ private:
 
   /// Current time
   std::vector<Time> current_time;
+  std::vector<int> nframes_left;
   Time max_time;
 
   // Amount of data that was received by this component

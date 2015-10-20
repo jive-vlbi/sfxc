@@ -55,8 +55,7 @@ do_task() {
     return;
   }
   for (size_t i = 0; i < current_time.size(); i++) {
-    int nframes_left = (current_interval_.stop_time_ - current_time[i]) / reader_->time_between_headers();
-    int skew = std::max(0, std::min(2 * NSKEW, nframes_left - 1));
+    int skew = std::max(0, std::min(2 * NSKEW, nframes_left[i] - 1));
 
     if (current_time[i] < max_time - reader_->time_between_headers() * skew) {
       int nframes = (max_time - current_time[i]) / reader_->time_between_headers() - skew;
@@ -67,9 +66,8 @@ do_task() {
   }
 
   if (!reader_->read_new_block(input_element_)) {
-    int nframes_left = (current_interval_.stop_time_ - current_time[0]) / reader_->time_between_headers();
     // Insert invalid blocks to prevent bad data streams to stall the correlation
-    push_random_blocks(std::min(NSKIP, nframes_left), 0);
+    push_random_blocks(std::min(NSKIP, nframes_left[0]), 0);
     return;
   }
 
@@ -77,10 +75,9 @@ do_task() {
   SFXC_ASSERT(channel >= 0 && channel < current_time.size());
 
   Time start_next_frame = current_time[channel];
-  int nframes_left = (current_interval_.stop_time_ - start_next_frame) / reader_->time_between_headers();
   if (input_element_.start_time != start_next_frame) {
     int nframes_missing = (input_element_.start_time - start_next_frame) / reader_->time_between_headers();
-    nframes_missing = std::min(nframes_missing, nframes_left);
+    nframes_missing = std::min(nframes_missing, nframes_left[channel]);
 #if 0
     std::cerr << RANK_OF_NODE << " : nframes_missing = " << nframes_missing << "; t= " << input_element_.start_time
 	      << ", expected=" << start_next_frame << "\n";
@@ -108,7 +105,7 @@ do_task() {
     }
 
     // We are done; don't insert the last frame
-    if (nframes_missing == nframes_left)
+    if (nframes_missing == nframes_left[channel])
       return;
   }
 
@@ -116,6 +113,7 @@ do_task() {
     std::cerr.precision(16);
     std::cerr << RANK_OF_NODE << " : start_time = " << input_element_.start_time.get_time_usec()
               << ", current_time = " << current_time[channel].get_time_usec() << "\n";
+    std::cerr << RANK_OF_NODE << " channel = " << channel << std::endl;
   }
   SFXC_ASSERT(input_element_.start_time == current_time[channel]);
 
@@ -140,8 +138,10 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
   if (!reader_->is_open() && !reader_->open_input_stream(input_element_)) {
     if (reader_->eof() && exit_on_empty_datastream)
       sfxc_abort("Could not find header before eof()");
-    for (size_t i = 0; i < current_time.size(); i++)
+    for (size_t i = 0; i < current_time.size(); i++) {
       current_time[i] = current_interval_.start_time_;
+      nframes_left[i] = (current_interval_.stop_time_ - current_time[i]) / reader_->time_between_headers();
+    }
     return;
   }
 
@@ -167,8 +167,10 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
     input_element_.channel = 0;
   }
 
-  for (size_t i = 0; i < current_time.size(); i++)
+  for (size_t i = 0; i < current_time.size(); i++) {
     current_time[i] = time;
+    nframes_left[i] = (current_interval_.stop_time_ - current_time[i]) / reader_->time_between_headers();
+  }
 
   data_read_ += input_element_.buffer->data.size();
   push_element();
@@ -211,6 +213,7 @@ Input_data_format_reader_tasklet::set_parameters(const Input_node_parameters &pa
 
   if (reader_->get_transport_type() == VDIF && params.n_tracks == 0) {
     current_time.resize(params.channels.size());
+    nframes_left.resize(params.channels.size());
 
     // If we have multiple channels that are mapped to the same VDIF
     // thread, we will need to duplicate the data.  This typically
@@ -225,11 +228,14 @@ Input_data_format_reader_tasklet::set_parameters(const Input_node_parameters &pa
     }
   } else {
     current_time.resize(1);
+    nframes_left.resize(1);
     duplicate.resize(1);
   }
 
-  for (size_t i = 0; i < current_time.size(); i++)
+  for (size_t i = 0; i < current_time.size(); i++) {
     current_time[i] = reader_->get_current_time();
+    nframes_left[i] = (current_interval_.stop_time_ - current_time[i]) / reader_->time_between_headers();
+  }
 
   exit_on_empty_datastream = params.exit_on_empty_datastream;
 }
@@ -279,6 +285,7 @@ push_element() {
   SFXC_ASSERT(input_element_.buffer->data.size() == reader_->size_data_block());
   input_element_.seqno = seqno++;
   current_time[input_element_.channel] += reader_->time_between_headers();
+  nframes_left[input_element_.channel]--;
   if (current_time[input_element_.channel] > max_time)
     max_time = current_time[input_element_.channel];
   output_buffer_->push(input_element_);
