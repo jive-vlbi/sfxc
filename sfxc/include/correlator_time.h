@@ -65,6 +65,14 @@ private:
 
 std::ostream& operator<<(std::ostream &o, const Time t);
 
+inline int64_t Time::get_clock_ticks() const {
+  return nticks;
+}
+
+inline void Time::set_clock_ticks(int64_t nticks_) {
+  nticks = nticks_;
+}
+
 inline void Time::set_time(int mjd, double sec){
   nticks = (int64_t)((mjd - REFERENCE_MJD) * SECONDS_PER_DAY * clock_rate) + (int64_t)round(sec * clock_rate);
 }

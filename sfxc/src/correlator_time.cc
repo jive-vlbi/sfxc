@@ -73,14 +73,6 @@ double Time::diff(const Time &other) const {
   return (nticks - other.nticks) / clock_rate;
 }
 
-int64_t Time::get_clock_ticks() const{
-  return nticks;
-}
-
-void Time::set_clock_ticks(int64_t nticks_){
-  nticks = nticks_;
-}
-
 void Time::get_date(int &year, int &day) const{
 // Valid from 1-1-1901 to 1-1-2100
   const int mjd1901 = 15385;
