@@ -215,6 +215,9 @@ initialise(const char *ctrl_file, const char *vex_file,
     ctrl["start"] = now;
   }
 
+  if (ctrl["stop"].asString().compare("end") == 0)
+    ctrl["stop"] = vex.get_stop_time_of_experiment();
+
   // Get start date
   start_time = Time(vex.get_start_time_of_experiment());
   initialised = true;
