@@ -57,8 +57,8 @@ do_task() {
   for (size_t i = 0; i < current_time.size(); i++) {
     int skew = std::max(0, std::min(2 * NSKEW, nframes_left[i] - 1));
 
-    if (current_time[i] < max_time - reader_->time_between_headers() * skew) {
-      int nframes = (max_time - current_time[i]) / reader_->time_between_headers() - skew;
+    if (nframes_left[i] > min_frames_left + skew) {
+      int nframes = (nframes_left[i] - min_frames_left) - skew;
       // Insert invalid blocks to prevent bad data streams to stall the correlation
       push_random_blocks(nframes, i);
       return;
@@ -142,6 +142,7 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
       current_time[i] = current_interval_.start_time_;
       nframes_left[i] = (current_interval_.stop_time_ - current_time[i]) / reader_->time_between_headers();
     }
+    min_frames_left = nframes_left[0];
     return;
   }
 
@@ -171,6 +172,7 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
     current_time[i] = time;
     nframes_left[i] = (current_interval_.stop_time_ - current_time[i]) / reader_->time_between_headers();
   }
+  min_frames_left = nframes_left[0];
 
   data_read_ += input_element_.buffer->data.size();
   push_element();
@@ -286,8 +288,8 @@ push_element() {
   input_element_.seqno = seqno++;
   current_time[input_element_.channel] += reader_->time_between_headers();
   nframes_left[input_element_.channel]--;
-  if (current_time[input_element_.channel] > max_time)
-    max_time = current_time[input_element_.channel];
+  if (nframes_left[input_element_.channel] < min_frames_left) 
+    min_frames_left = nframes_left[input_element_.channel];
   output_buffer_->push(input_element_);
 }
 

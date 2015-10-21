@@ -116,7 +116,7 @@ private:
   /// Current time
   std::vector<Time> current_time;
   std::vector<int> nframes_left;
-  Time max_time;
+  int min_frames_left;
 
   // Amount of data that was received by this component
   uint64_t data_read_;
