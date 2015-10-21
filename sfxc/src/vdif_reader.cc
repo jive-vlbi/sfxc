@@ -79,39 +79,46 @@ VDIF_reader::read_new_block(Data_frame &data) {
   int restarts = 0;
 
  restart:
-  Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&current_header);
-  if (data_reader_->eof())
-    return false;
-
   if (!first_header_seen) {
+    Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&current_header);
+    if (data_reader_->eof())
+      return false;
+
     memcpy(&first_header, &current_header, 16);
     first_header_seen = true;
-  } 
-  
-  if (first_header.legacy_mode == 0) {
-    // FIXME : If first header has fill pattern this will fail
-    // We should use the information that vex2 provides
-    char *header = (char *)&current_header;
-    Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&header[16]);
+
+    if (first_header.legacy_mode == 0) {
+      // FIXME : If first header has fill pattern this will fail
+      // We should use the information that vex2 provides
+      char *header = (char *)&current_header;
+      Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&header[16]);
+      if (data_reader_->eof())
+	return false;
+    }
+  } else {
+    if (first_header.legacy_mode == 0) {
+      Data_reader_blocking::get_bytes_s(data_reader_.get(), 32, (char *)&current_header);
+    } else {
+      Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&current_header);
+    }
     if (data_reader_->eof())
       return false;
   }
 
   int data_size = first_header.data_size();
   if (buffer.size() == 0)
-    buffer.resize(data_size);
+    buffer.resize(N_VDIF_FRAMES_PER_BLOCK * data_size);
 
   if (((uint32_t *)&current_header)[0] == 0x11223344 ||
       ((uint32_t *)&current_header)[1] == 0x11223344 ||
       ((uint32_t *)&current_header)[2] == 0x11223344 ||
-      ((uint32_t *)&current_header)[3] == 0x11223344) {
+      ((uint32_t *)&current_header)[3] == 0x11223344 ||
+      (current_header.dataframe_in_second % N_VDIF_FRAMES_PER_BLOCK) != 0) {
     Data_reader_blocking::get_bytes_s(data_reader_.get(), data_size, NULL);
     if (++restarts > max_restarts)
       return false;
     goto restart;
   }
-
-  SFXC_ASSERT(data_size == buffer.size());
 
   Data_reader_blocking::get_bytes_s( data_reader_.get(), data_size, (char *)&buffer[0]);
   if (data_reader_->eof())
@@ -137,6 +144,20 @@ VDIF_reader::read_new_block(Data_frame &data) {
       }
     }
     data.channel = thread_map[current_header.thread_id];
+  }
+
+  for (int i = 1; i < N_VDIF_FRAMES_PER_BLOCK; i++) {
+    if (first_header.legacy_mode == 0) {
+      Data_reader_blocking::get_bytes_s( data_reader_.get(), 32, NULL);
+    } else {
+      Data_reader_blocking::get_bytes_s( data_reader_.get(), 16, NULL);
+    }
+    if (data_reader_->eof())
+      return false;
+
+    Data_reader_blocking::get_bytes_s( data_reader_.get(), data_size, (char *)&buffer[i * data_size]);
+    if (data_reader_->eof())
+      return false;
   }
 
   data.start_time = get_current_time();
@@ -168,7 +189,7 @@ void VDIF_reader::set_parameters(const Input_node_parameters &param) {
     time_between_headers_ = Time(param.frame_size * 8.e6 / (sample_rate * param.bits_per_sample()));
     bits_per_complete_sample = param.bits_per_sample();
   } else {
-    time_between_headers_ = Time(param.frame_size * 8.e6 / (sample_rate * param.n_tracks));
+    time_between_headers_ = Time(N_VDIF_FRAMES_PER_BLOCK * param.frame_size * 8.e6 / (sample_rate * param.n_tracks));
     bits_per_complete_sample = param.n_tracks;
   }
 

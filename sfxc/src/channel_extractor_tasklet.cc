@@ -11,6 +11,7 @@
 #include "channel_extractor_dynamic.h"
 
 #include "mark5a_header.h"
+#include "vdif_reader.h"
 
 // Number of threads for paralle processing in the channel extraction phase.
 #ifndef NUM_CHANNEL_EXTRACTOR_THREADS
@@ -276,7 +277,7 @@ set_parameters(const Input_node_parameters &input_node_param){
     }
   }
   if (input_node_param.frame_size != -1)
-    samples_per_block = input_node_param.frame_size / N;
+    samples_per_block = N_VDIF_FRAMES_PER_BLOCK * input_node_param.frame_size / N;
   ch_extractor->initialise(track_positions, N, samples_per_block, bits_per_sample);
 
   DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );

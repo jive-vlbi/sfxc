@@ -10,6 +10,8 @@
 #ifndef VDIF_READER_H
 #define VDIF_READER_H
 
+#define N_VDIF_FRAMES_PER_BLOCK	1
+
 #include "input_data_format_reader.h"
 
 #include "data_reader.h"
@@ -78,7 +80,7 @@ public:
 
   void print_header();
   size_t size_data_block() const {
-    return first_header.data_size();
+    return N_VDIF_FRAMES_PER_BLOCK * first_header.data_size();
   }
 
   void set_parameters(const Input_node_parameters &param);
