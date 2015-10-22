@@ -107,13 +107,13 @@ VDIF_reader::read_new_block(Data_frame &data) {
 
   int data_size = first_header.data_size();
   if (buffer.size() == 0)
-    buffer.resize(N_VDIF_FRAMES_PER_BLOCK * data_size);
+    buffer.resize(size_data_block());
 
   if (((uint32_t *)&current_header)[0] == 0x11223344 ||
       ((uint32_t *)&current_header)[1] == 0x11223344 ||
       ((uint32_t *)&current_header)[2] == 0x11223344 ||
       ((uint32_t *)&current_header)[3] == 0x11223344 ||
-      (current_header.dataframe_in_second % N_VDIF_FRAMES_PER_BLOCK) != 0) {
+      (current_header.dataframe_in_second % vdif_frames_per_block) != 0) {
     Data_reader_blocking::get_bytes_s(data_reader_.get(), data_size, NULL);
     if (++restarts > max_restarts)
       return false;
@@ -146,7 +146,7 @@ VDIF_reader::read_new_block(Data_frame &data) {
     data.channel = thread_map[current_header.thread_id];
   }
 
-  for (int i = 1; i < N_VDIF_FRAMES_PER_BLOCK; i++) {
+  for (int i = 1; i < vdif_frames_per_block; i++) {
     if (first_header.legacy_mode == 0) {
       Data_reader_blocking::get_bytes_s( data_reader_.get(), 32, NULL);
     } else {
@@ -188,9 +188,11 @@ void VDIF_reader::set_parameters(const Input_node_parameters &param) {
       thread_map[param.channels[i].tracks[0]] = i;
     time_between_headers_ = Time(param.frame_size * 8.e6 / (sample_rate * param.bits_per_sample()));
     bits_per_complete_sample = param.bits_per_sample();
+    vdif_frames_per_block = 1;
   } else {
     time_between_headers_ = Time(N_VDIF_FRAMES_PER_BLOCK * param.frame_size * 8.e6 / (sample_rate * param.n_tracks));
     bits_per_complete_sample = param.n_tracks;
+    vdif_frames_per_block = N_VDIF_FRAMES_PER_BLOCK;
   }
 
   SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);

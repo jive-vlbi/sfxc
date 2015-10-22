@@ -80,7 +80,7 @@ public:
 
   void print_header();
   size_t size_data_block() const {
-    return N_VDIF_FRAMES_PER_BLOCK * first_header.data_size();
+    return vdif_frames_per_block * first_header.data_size();
   }
 
   void set_parameters(const Input_node_parameters &param);
@@ -101,6 +101,7 @@ private:
   Time current_time_;
   Time time_between_headers_;
   int bits_per_complete_sample;
+  int vdif_frames_per_block;
   double sample_rate;
   // For testing
   Debug_level debug_level_;
