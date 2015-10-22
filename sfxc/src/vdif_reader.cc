@@ -125,9 +125,10 @@ VDIF_reader::read_new_block(Data_frame &data) {
     return false;
 
   if (current_header.invalid > 0) {
-    data.invalid.resize(1);
-    data.invalid[0].invalid_begin = 0;
-    data.invalid[0].nr_invalid = data_size;
+    struct Input_node_types::Invalid_block invalid;
+    invalid.invalid_begin = 0;
+    invalid.nr_invalid = data_size;
+    data.invalid.push_back(invalid);
     if (thread_map.count(current_header.thread_id) > 0)
       data.channel = thread_map[current_header.thread_id];
     else
@@ -147,10 +148,11 @@ VDIF_reader::read_new_block(Data_frame &data) {
   }
 
   for (int i = 1; i < vdif_frames_per_block; i++) {
+    Header header;
     if (first_header.legacy_mode == 0) {
-      Data_reader_blocking::get_bytes_s( data_reader_.get(), 32, NULL);
+      Data_reader_blocking::get_bytes_s( data_reader_.get(), 32, (char *)&header);
     } else {
-      Data_reader_blocking::get_bytes_s( data_reader_.get(), 16, NULL);
+      Data_reader_blocking::get_bytes_s( data_reader_.get(), 16, (char *)&header);
     }
     if (data_reader_->eof())
       return false;
@@ -158,6 +160,13 @@ VDIF_reader::read_new_block(Data_frame &data) {
     Data_reader_blocking::get_bytes_s( data_reader_.get(), data_size, (char *)&buffer[i * data_size]);
     if (data_reader_->eof())
       return false;
+
+    if (header.invalid > 0) {
+      struct Input_node_types::Invalid_block invalid;
+      invalid.invalid_begin = i * data_size;
+      invalid.nr_invalid = data_size;
+      data.invalid.push_back(invalid);
+    }
   }
 
   data.start_time = get_current_time();
