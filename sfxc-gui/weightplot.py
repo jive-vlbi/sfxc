@@ -260,7 +260,7 @@ class WeightPlotWindow(Qt.QWidget):
 
             # If the start time is specified as "now" we'll need to
             # look in the correlator output to fine the real start
-            # time of the job.  If the correlator ourput file doesn't
+            # time of the job.  If the correlator output file doesn't
             # exist yet, wait until one shows up.
             while json_input['start'] == "now":
                 try:
@@ -280,6 +280,12 @@ class WeightPlotWindow(Qt.QWidget):
                     fp.close()
                     pass
                 continue
+
+            # If the stop time is specified as "end", determine the
+            # actual stop time from the VEX file.
+            if json_input["stop"] == "end":
+                json_input["stop"] = vex['EXPER'][exper]['exper_nominal_stop']
+                pass
 
             start = vex2time(json_input['start'])
             stop = vex2time(json_input['stop'])
