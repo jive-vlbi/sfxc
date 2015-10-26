@@ -64,6 +64,16 @@ class progressDialog(QtGui.QDialog):
         if self.subjob == -1:
             return
 
+        try:
+            num_integrations = self.cordata.integration_slice
+            branch = self.cordata.correlator_branch
+            revision = self.cordata.correlator_version
+            correlator_version = "%s r%d" % (branch, revision)
+        except:
+            num_integrations = -1
+            correlator_version = ""
+            pass
+
         conn = db.connect(host="db0", port=3306,
                           db="correlator_control",
                           read_default_file="~/.my.cnf")
@@ -71,6 +81,12 @@ class progressDialog(QtGui.QDialog):
         cursor = conn.cursor()
         cursor.execute("UPDATE data_logbook" \
                            + " SET correlator_status='%s'" % self.status \
+                           + " WHERE subjob_id=%d" % self.subjob)
+        cursor.execute("UPDATE data_logbook" \
+                           + " SET num_integrations='%d'" % num_integrations \
+                           + " WHERE subjob_id=%d" % self.subjob)
+        cursor.execute("UPDATE data_logbook" \
+                           + " SET correlator_version='%s'" % correlator_version \
                            + " WHERE subjob_id=%d" % self.subjob)
         cursor.close()
         conn.commit()
@@ -301,7 +317,7 @@ class progressDialog(QtGui.QDialog):
             pass
 
         sfxc = self.path + '/sfxc'
-        args = ['mpirun',
+        args = ['/home/sfxc/bin/mpirun',
                 '--mca', 'btl_tcp_if_include', 'bond0,eth0,eth2.4',
                 '--mca', 'oob_tcp_if_exclude', 'eth1,eth2,eth3',
                 '--machinefile', machine_file, '--rankfile', rank_file,
