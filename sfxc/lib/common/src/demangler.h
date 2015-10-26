@@ -67,11 +67,10 @@ private:
 //     ...
 //     GetTypeName(object); will return "MyClass"
 template<class T>
-std::string& get_type_name(T& data) {
+std::string& get_type_name(const T& data) {
   static Demangler g_dem( typeid(T).name() );
   return g_dem.value();
 }
-
 
 // Function to get the typename of an object.
 // Use the template instead of parameter
