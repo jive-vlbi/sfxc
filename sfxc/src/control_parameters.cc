@@ -1549,10 +1549,14 @@ Control_parameters::data_format(const std::string &station) const {
 
   // Temporary until the various VEX parsers learn about Mark5C
   // (and Dr. Bob stops needlessly editing VEX files)
-  if (transport_type(station) == "Mark5B" ||
-      transport_type(station) == "Mark5C") {
+  if (transport_type(station) == "Mark5B") {
     if (rack_type(station) == "DVP" || rack_type(station) == "RDBE2" ||
 	rack_type(station) == "WIDAR")
+      return "VDIF";
+  }
+  if (transport_type(station) == "Mark5C") {
+    if (rack_type(station) == "DBBC" || rack_type(station) == "DVP" ||
+	rack_type(station) == "RDBE2" || rack_type(station) == "WIDAR")
       return "VDIF";
   }
 
