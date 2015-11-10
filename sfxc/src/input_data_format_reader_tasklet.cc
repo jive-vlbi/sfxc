@@ -105,7 +105,7 @@ do_task() {
     }
 
     // We are done; don't insert the last frame
-    if (nframes_missing == nframes_left[channel])
+    if (nframes_missing >= nframes_left[channel])
       return;
   }
 
