@@ -146,7 +146,7 @@ class WeightPlot(Qwt.QwtPlot):
 
         seconds = stop - start
         if seconds > self.history:
-            start = self.start + (val * (seconds - self.history)) / 100
+            start = self.start + (val * (seconds - self.history)) / 99
             stop = start + self.history
             if stop > self.stop:
                 stop = self.stop
@@ -483,7 +483,11 @@ if __name__ == '__main__':
     parser = optparse.OptionParser(usage=usage)
     parser.add_option("-H", "--history", dest="history",
                       default=86400, type="int",
-                      help="History", metavar="SECONDS")
+                      help="history", metavar="SECONDS")
+    parser.add_option("-r", "--realtime", dest="realtime",
+                      action="store_true", default=False,
+                      help="realtime")
+                      
 
     (options, args) = parser.parse_args()
     if len(args) < 2:
@@ -500,7 +504,7 @@ if __name__ == '__main__':
 
     vex = Vex(vex_file)
 
-    plot = WeightPlotWindow(vex, ctrl_files, None, False, options.history)
+    plot = WeightPlotWindow(vex, ctrl_files, None, options.realtime, options.history)
     plot.show()
 
     sys.exit(app.exec_())
