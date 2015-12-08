@@ -351,7 +351,7 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
   }
 
   // Normalize the cross correlations
-  const int64_t total_samples = number_ffts_in_integration * fft_size();
+  const int64_t samples_in_integration = number_ffts_in_integration * fft_size();
   for (size_t b = number_input_streams_in_use(); b < baselines.size(); b++) {
     SFXC_ASSERT(b < baselines.size());
     std::pair<size_t,size_t> &baseline = baselines[b];
@@ -359,6 +359,8 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
     int station2 = streams_in_scan[baseline.second];
     int32_t *levels1 = statistics[station1]->get_statistics(); 
     int32_t *levels2 = statistics[station2]->get_statistics();
+    // because of coherent dedispersion total_samples might not match samples_in_integration
+    int64_t total_samples = levels1[0] + levels1[1] +levels1[2] +levels1[3] +levels1[4];
     int64_t n_valid1 =  total_samples - levels1[4]; // levels[4] contain the number of invalid samples
     int64_t n_valid2 =  total_samples - levels2[4];
     double N1 = n_valid1 > 0? 1 - n_flagged[b].first  * 1. / n_valid1 : 1;
@@ -560,8 +562,9 @@ void Correlation_core::integration_write_baselines(std::vector<Complex_buffer> &
 	integration_buffer_float[j] = integration_buffer[i][j];
     }
 
-    const int64_t total_samples = number_ffts_in_integration * fft_size();
     int32_t *levels = statistics[station1]->get_statistics(); // We get the number of invalid samples from the bitstatistics
+    const int64_t samples_in_integration = number_ffts_in_integration * fft_size();
+    const int64_t total_samples = levels[0] + levels[1] + levels[2] + levels[3] + levels[4];
     if (station1 == station2){
       hbaseline.weight = std::max(total_samples - levels[4], (int64_t) 0);       // The number of good samples
     }else{
@@ -569,6 +572,7 @@ void Correlation_core::integration_write_baselines(std::vector<Complex_buffer> &
       SFXC_ASSERT(n_flagged[i].first >= 0);
       hbaseline.weight = std::max(total_samples - levels[4] - n_flagged[i].first, (int64_t)0);       // The number of good samples
     }
+    hbaseline.weight = samples_in_integration * hbaseline.weight / total_samples;
     // Station number in the vex-file
     hbaseline.station_nr1 = stream2station[station1];
     // Station number in the vex-file
