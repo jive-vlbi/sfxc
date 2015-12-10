@@ -58,6 +58,7 @@ pthread_t command_thread;
 pthread_mutex_t ss_lock;
 
 char Label[BANK_INVALID][XLR_LABEL_LENGTH];
+UINT32 Selected = BANK_INVALID;
 
 S_DEVINFO devInfo;
 S_XLRSWREV swRev;
@@ -136,6 +137,7 @@ read_labels(void)
 		return;
 	}
 
+	Selected = BANK_INVALID;
 	for (bankID = BANK_A; bankID != BANK_INVALID; bankID++) {
 		if (XLRGetBankStatus(xlrHandle, bankID, &bankStatus) != XLR_SUCCESS) {
 			xlrError = XLRGetLastError();
@@ -156,6 +158,9 @@ read_labels(void)
 			    XLR_LABEL_LENGTH);
 		} else
 			memset(Label[bankID], 0, XLR_LABEL_LENGTH);
+
+		if (bankStatus.Selected)
+			Selected = bankID;
 	}
 
 	XLRClose(xlrHandle);
@@ -348,6 +353,8 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 		return -1;
 	}
 
+	Selected = matchedBankID;
+
 	return 0;
 }
 
@@ -499,9 +506,15 @@ command_loop(void *arg)
 					pthread_mutex_unlock(&ss_lock);
 				}
 
-				snprintf(reply, sizeof(reply), 
-				    "!bank_set? 0 : A : %s : B : %s ; \n",
-				    Label[BANK_A], Label[BANK_B]);
+				if (Selected == BANK_B) {
+					snprintf(reply, sizeof(reply), 
+					    "!bank_set? 0 : B : %s : A : %s ; \n",
+					    Label[BANK_B], Label[BANK_A]);
+				}  else {
+					snprintf(reply, sizeof(reply), 
+					    "!bank_set? 0 : A : %s : B : %s ; \n",
+					    Label[BANK_A], Label[BANK_B]);
+				}
 			} else if (strncmp(request, "SS_rev?",
 					   strlen("SS_rev?")) == 0) {
 				snprintf(reply, sizeof(reply),
