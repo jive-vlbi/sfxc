@@ -2,7 +2,7 @@
 
 Correlator_node_data_reader_tasklet::
 Correlator_node_data_reader_tasklet()
-    : input_buffer(18100000), bytes_left(0),
+  : input_buffer(37100000), bytes_left(0),
     new_stream_available(false),state(IDLE) {
 }
 
