@@ -15,7 +15,7 @@
 
 // Number of threads for paralle processing in the channel extraction phase.
 #ifndef NUM_CHANNEL_EXTRACTOR_THREADS
-#define NUM_CHANNEL_EXTRACTOR_THREADS 1
+#define NUM_CHANNEL_EXTRACTOR_THREADS 0
 #endif
 
 //#define USE_EXTRACTOR_5
