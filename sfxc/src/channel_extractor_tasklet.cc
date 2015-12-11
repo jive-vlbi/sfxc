@@ -21,10 +21,9 @@
 //#define USE_EXTRACTOR_5
 
 // Increase the size of the output_memory_pool_ to allow more buffering
-// (8M/SIZE_MK5A_FRAME=) 400 input blocks is 1 second of data
 Channel_extractor_tasklet::
 Channel_extractor_tasklet(Data_format_reader_ptr reader)
-    : output_memory_pool_(400*MAX_SUBBANDS),
+  : output_memory_pool_(2 * MAX_SUBBANDS * 32 * 64),
     reader_(reader),
     n_subbands(0),
     fan_out(0), seqno(0),
