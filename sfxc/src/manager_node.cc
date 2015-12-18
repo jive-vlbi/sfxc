@@ -356,14 +356,15 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   for (size_t station_nr=0;
        station_nr< nStations;
        station_nr++) {
-    if(ch_number_in_scan[current_channel][station_nr] >= 0){
+    if (ch_number_in_scan[current_channel][station_nr] >= 0) {
       input_node_set_time_slice(control_parameters.station(station_nr),
                                 ch_number_in_scan[current_channel][station_nr],
                                 /*stream*/corr_node_nr,
                                 correlation_parameters.start_time,
                                 correlation_parameters.stop_time);
 
-      if (cross_channel != -1) {
+      if (cross_channel != -1 &&
+	  ch_number_in_scan[cross_channel][station_nr] >= 0) {
         // Add the cross polarisation channel
         input_node_set_time_slice(control_parameters.station(station_nr),
                                   ch_number_in_scan[cross_channel][station_nr],
