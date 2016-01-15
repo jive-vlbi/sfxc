@@ -59,7 +59,7 @@ public:
 
   /// A spline only interpolates one scan.
   /// This functions preprocesses the spline for the next scan.
-  void initialise_next_scan();
+  bool initialise_next_scan();
   void create_akima_spline(Time t);
 
   bool initialised() const {
@@ -69,6 +69,8 @@ public:
 private:
   // First entry of the next scan
   int scan_nr;
+  // Number of sources in the current scan
+  int n_sources_in_scan;
   std::vector<Scan> scans;
   std::vector<std::string> sources;
   std::vector<double> times, u, v, w;
