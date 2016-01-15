@@ -13,12 +13,32 @@ fringe_guard = 0.05  # Used to compute the SNR, this is the percentage that is i
 def print_global_header(infile):
   infile.seek(0)
   gheader_buf = infile.read(global_header_size)
-  global_header = struct.unpack('i32s2h5i4c',gheader_buf[:64])
+  if global_header_size == 64:
+    global_header = struct.unpack('i32s2h5ib3c',gheader_buf[:64])
+  else:
+    global_header = struct.unpack('i32s2h5ib15s',gheader_buf[:76])
   hour = global_header[4] / (60*60)
   minute = (global_header[4]%(60*60))/60
   second = global_header[4]%60
+  pol = ['LL', 'RR', 'LL+RR', 'LL+RR+LR+RL'][global_header[9]]
+  
+  if global_header_size == 64:
+    print "SFXC version = %s"%(global_header[8])
+  else:
+    n = global_header[-1].index('\0')
+    print "SFXC version = %s, branch = %s"%(global_header[8], global_header[-1][:n])
+
   n = global_header[1].index('\0')
-  print "Experiment %s, SFXC version = %s, date = %dy%dd%dh%dm%ds, nchan = %d"%(global_header[1][:n], global_header[8], global_header[2], global_header[3], hour, minute, second, global_header[5])
+  print "Experiment %s, date = %dy%dd%dh%dm%ds, int_time = %d, nchan = %d, polarization = %s"%(global_header[1][:n], global_header[2], global_header[3], hour, minute, second, global_header[6], global_header[5], pol)
+
+def print_uvw(uvws, stations=None):
+  for uvw in uvws.iteritems():
+    if stations == None:
+      print "Station ", uvw[0]
+    else:
+      print "Station ", stations[uvw[0]]
+    for nstr in uvw[1]:
+      print nstr
 
 def print_stats(stats, stations=None):
   for stat in stats.iteritems():
@@ -57,6 +77,22 @@ def get_baseline_stats(data):
   snr = sqrt(((fringe_val - avg)**2) * navg / max(noise,1e-12))
   fringe_offset = int(round((fringe_pos - n / 2) / 2.)) # devide by two because of oversampling
   return (fringe_val, snr, fringe_offset)
+
+def read_uvw(infile, uvw, nuvw):
+  uvw_buffer = infile.read(uvw_header_size * nuvw)
+  if len(uvw_buffer) != uvw_header_size * nuvw:
+    raise Exception("EOF")
+  index = 0
+  for i in range(nuvw):
+    header = struct.unpack('2i3d', uvw_buffer[index:index + uvw_header_size])
+    index += uvw_header_size
+    station_nr = header[0]
+    (u,v,w) = header[2:]
+    nstr = 'u = %.15g, v = %.15g, w = %.15g'%(u,v,w)
+    try:
+      uvw[station_nr].append(nstr)
+    except KeyError:
+      uvw[station_nr] = [nstr]
 
 def read_statistics(infile, stats, nstatistics):
   stat_buffer = infile.read(stat_header_size * nstatistics)
@@ -120,7 +156,7 @@ def read_baselines(infile, data, nbaseline, nchan):
         pdb.set_trace()
     index += baseline_data_size
 
-def read_time_slice(infile, stats, data, nchan):
+def read_time_slice(infile, stats, uvw, data, nchan):
   #get timeslice header
   tsheader_buf = infile.read(timeslice_header_size)
   if len(tsheader_buf) != timeslice_header_size:
@@ -129,9 +165,9 @@ def read_time_slice(infile, stats, data, nchan):
   current_slice = timeslice_header[0]  
   
   while current_slice == timeslice_header[0]:
+    #Read UVW coordinates
     nuvw = timeslice_header[2]
-    infile.read(uvw_header_size * nuvw)
-      
+    read_uvw(infile, uvw, nuvw)
     # Read the bit statistics
     nstatistics = timeslice_header[3]
     read_statistics(infile, stats, nstatistics)
@@ -172,7 +208,13 @@ def get_stations(vex_file):
 
 def get_options():
   parser = OptionParser('%prog [options] <correlator output file>')
-  parser.add_option('-n', '--noheader', action='store_true',
+  parser.add_option('-S', '--no-sampler-stats', action='store_false', dest="printstats", 
+                    default=True, help='Do not print sampler statistics')
+  parser.add_option('-V', '--no-visibilities', action='store_false', dest="printvis", 
+                    default=True, help='Do not print visibilities')
+  parser.add_option('-U', '--no-uvw', action='store_false', dest="printuvw", 
+                    default=True, help='Do not print UVW coordinates')
+  parser.add_option('-n', '--no-header', action='store_true',
                     default=False, help='Do not print the global header')
   parser.add_option('-v', '--vex', dest="vex_file", type="string",
                     help='Get station names from vex file (has to be the same as used during correlation)')
@@ -182,11 +224,11 @@ def get_options():
     parser.exit()
   if len(args) != 1:
     parser.error('No correlator file specified')
-  return (args[0], opts.noheader, opts.vex_file)
+  return (args[0], opts.no_header, opts.printstats, opts.printvis, opts.printuvw, opts.vex_file)
 
 ############################## Main program ##########################
 
-filename, noheader, vex_file = get_options()
+filename, noheader, printstats, printvis, printuvw, vex_file = get_options()
 
 try:
   infile = open(filename, 'rb')
@@ -209,9 +251,10 @@ nchan = global_header[5]
 nslices = 0
 while True:
   stats = {}
+  uvw = {}
   data = {}
   try:
-    read_time_slice(infile, stats, data, nchan)
+    read_time_slice(infile, stats, uvw, data, nchan)
     nslices += 1
   except Exception, e:
     if e.args[0] != 'EOF':
@@ -220,5 +263,11 @@ while True:
     sys.exit(0)
    
   print "---------- time slice ", nslices," ---------"
-  print_stats(stats, stations)
-  print_baselines(data, stations)
+  if printstats:
+    print_stats(stats, stations)
+
+  if printuvw:
+    print_uvw(uvw, stations)
+
+  if printvis:
+    print_baselines(data, stations)
