@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 # Standard Python modules.
-import os, re, stat, sys, time
+import os, sys, time
 import optparse, subprocess
 
 # The json module is new in Python 2.6; fall back on simplejson if it
@@ -44,7 +44,7 @@ parser.add_option("-s", "--stations", dest="stations", type="string",
                   help="Stations to correlate", metavar="LIST")
 parser.add_option("-n", "--max-scans", dest="max_scans",
                   default=sys.maxint, type="int",
-                  help="Maximem number of scans per job", metavar="N")
+                  help="Maximum number of scans per job", metavar="N")
 parser.add_option("-t", "--template", dest="template", type="string",
                   help="Control file template", metavar="FILE")
 parser.add_option("-o", "--output-directory", dest="output_dir", type="string",
@@ -58,11 +58,25 @@ parser.add_option("-f", "--file-parameters", dest="file_parameters", type='strin
                   to be correlated from files, rather than mark5s");
 parser.add_option("-e", "--evlbi", dest="evlbi", default=False,
                   action="store_true", help="e-VLBI correlation")
+parser.add_option("-m", "--max-datagood", dest="max_datagood", default=False,
+                  action="store_true", help="Use the maximum data good to adjust the start time")
+parser.add_option("-a", "--scans", dest="scans", type="string",
+                  help="List of scan numbers to correlate (NB. first scan has scan number 1)", metavar="LIST")
 
 (options, args) = parser.parse_args()
 if options.stations:
     options.stations = options.stations.split(',')
     pass
+
+if options.scans:
+  scans = options.scans.split(',')
+  options.scans = []
+  for i in scans:
+    j = i.partition('-')
+    if j[2] == '':
+      options.scans.append(int(i))
+    else:
+      options.scans += range(int(j[0]), int(j[2])+1)
 
 if len(args) != 1:
     parser.error("incorrect number of arguments")
@@ -154,7 +168,12 @@ json_output = json_template.copy()
 json_output["stations"] = []
 json_output["channels"] = []
 
-for scan in vex['SCHED']:
+for scan_idx, scan in enumerate(vex['SCHED']):
+    if options.scans and (scan_idx+1) not in options.scans:
+      new_job = True
+      numscans = 0
+      continue
+
     if num_scans >= options.max_scans:
         new_job = True
         num_scans = 0
@@ -189,11 +208,14 @@ for scan in vex['SCHED']:
 
     # Loop over all the "station" parameters in the scan, figuring out
     # the real length of the scan.
-    start_time = sys.maxint
+    start_time = 0 if options.max_datagood else sys.maxint
     stop_time = 0
     for transfer in vex['SCHED'][scan].getall('station'):
         station = transfer[0]
-        start_time = min(start_time, int(transfer[1].split()[0]))
+        if options.max_datagood:
+          start_time = max(start_time, int(transfer[1].split()[0]))
+        else:
+          start_time = min(start_time, int(transfer[1].split()[0]))
         stop_time = max(stop_time, int(transfer[2].split()[0]))
 
     # Figure out the real start and stop time.
