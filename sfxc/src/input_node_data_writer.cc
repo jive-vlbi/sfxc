@@ -160,17 +160,6 @@ do_task() {
   }
   Data_writer_sptr writer = data_writer.writer;
 
-  // Check whether we have written all data to the data_writer
-  if (data_writer.slice_size <= 0) {
-    write_end_of_stream(data_writer.writer);
-    // resync clock to a multiple of the integration time
-    _current_time = _slice_start + integration_time;
-    data_writer.writer->deactivate();
-    data_writers_.pop();
-    DEBUG_MSG("POPPING FOR A NEW WRITER......");
-    return 0;
-  }
-
   int index=byte_offset;
   int invalid_index = 0;
   int next_invalid_pos = input_element.invalid.size() > 0 ? input_element.invalid[0].invalid_begin :
@@ -209,12 +198,7 @@ do_task() {
           next_invalid_pos = input_element.invalid[invalid_index].invalid_begin;
         else
           next_invalid_pos = block_size + 1;
-      }else{
-        input_element.invalid[invalid_index].nr_invalid -= nr_invalid;
-        next_invalid_pos = end_pos;
       }
-      if(index >= block_size)
-        input_buffer_->pop();
     }else{
       int data_to_write = std::min(next_delay_pos-index, end_index-index);
       data_to_write = std::min(next_invalid_pos-index, data_to_write);
@@ -223,8 +207,22 @@ do_task() {
       index += data_to_write;
     }
   }
-  data_writer.slice_size-=total_to_write*samples_per_byte;
+  data_writer.slice_size -= total_to_write*samples_per_byte;
   _current_time.inc_samples(total_to_write*samples_per_byte);
+  // If we are at the end of the input buffer remove it from the queue
+  if(index >= block_size){
+    input_buffer_->pop();
+  }
+
+  // Check whether we have written all data to the data_writer
+  if (data_writer.slice_size <= 0) {
+    write_end_of_stream(data_writer.writer);
+    // resync clock to a multiple of the integration time
+    _current_time = _slice_start + integration_time;
+    data_writer.writer->deactivate();
+    data_writers_.pop();
+    DEBUG_MSG("POPPING FOR A NEW WRITER......");
+  }
 
   return total_to_write;
 }
@@ -460,10 +458,6 @@ Input_node_data_writer::write_data(Data_writer_sptr writer, int ndata, int byte_
       bytes_written+=result;
     }
     start += data_to_write;
-  }
-  // If we are at the end of the input buffer remove it from the queue
-  if((bytes_written+byte_offset)%block_size==0){
-    input_buffer_->pop();
   }
 }
 

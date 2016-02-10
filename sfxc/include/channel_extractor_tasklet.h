@@ -123,6 +123,10 @@ protected:
 
   /// Contains channel number for each track
   std::vector<uint64_t> subband2track;
+  /// When correlating mixed bandwith some channels are duplicated.  This 
+  /// maps the logical channel number to the channel number in the recording.
+   std::vector<uint64_t> subbandmap;
+
 
   // Cached values
   size_t n_subbands;      //< Number of subbands
