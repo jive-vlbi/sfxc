@@ -89,7 +89,8 @@ void Input_node::start() {
 void Input_node::main_loop() {
   while ( status != END_NODE )
 	{
-    check_and_process_message();
+    if (check_and_process_waiting_message() == NO_MESSAGE)
+      usleep(100);
   }
 }
 
