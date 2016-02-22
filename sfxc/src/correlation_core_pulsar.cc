@@ -26,7 +26,6 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
   }
 
   correlation_parameters = parameters;
-  oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
   if (correlation_parameters.mask_parameters)
     mask_parameters = *correlation_parameters.mask_parameters;
 
@@ -127,7 +126,7 @@ void Correlation_core_pulsar::do_task() {
     integration_initialise();
   }
 
-  if(RANK_OF_NODE ==16) std::cerr << "fft = " << current_fft 
+  if(RANK_OF_NODE ==-16) std::cerr << "fft = " << current_fft 
                                    << " / " << number_ffts_in_integration
                                    << "\n";
 

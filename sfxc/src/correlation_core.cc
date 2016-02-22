@@ -125,7 +125,6 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   correlation_parameters = parameters;
   if (correlation_parameters.mask_parameters)
     mask_parameters = *correlation_parameters.mask_parameters;
-  oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
 
   if (RANK_OF_NODE == 8){
     for(int i=0;i<correlation_parameters.station_streams.size();i++)
@@ -295,8 +294,9 @@ void Correlation_core::integration_initialise() {
   real_buffer.resize(2 * fft_size());
 
   if (fft_size() != number_channels()) {
+    if (phase_centers.size() > 1)
+      create_weights();
     create_window();
-    create_weights();
     create_mask();
   }
 }
@@ -339,7 +339,7 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
     for (size_t i = 0; i < fft_size() + 1; i++) {
       norms[station] += integration_buffer[station][i].real();
     }
-    norms[station] /= (fft_size() / oversamp);
+    norms[station] /= fft_size();
     if(norms[station] < 1)
       norms[station] = 1;
 
@@ -376,6 +376,7 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
 
 void Correlation_core::calibrate(std::vector<Complex_buffer> &buffer,
                                  Time tmid){
+  return;
   for (size_t b = 0; b < baselines.size(); b++) {
     std::pair<size_t,size_t> &baseline = baselines[b];
     int stream1, stream2;

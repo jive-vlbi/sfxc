@@ -107,7 +107,7 @@ protected:
 
   Correlation_parameters                               correlation_parameters;
   Mask_parameters                                      mask_parameters;
-  int                                                  oversamp; // Oversample factor
+
   // A list of all sources in the current job
   std::map<std::string, int> sources;
   bool split_output;

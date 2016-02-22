@@ -4,10 +4,10 @@
 #include <stdint.h>
 #include <math.h>
 #include <iostream>
+#include "utils.h"
 
 #define REFERENCE_MJD (51544)
 #define SECONDS_PER_DAY (86400)
-#define MAX_SAMPLE_RATE  (256000000)
 
 class Time{
 public:

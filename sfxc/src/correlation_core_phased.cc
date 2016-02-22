@@ -90,7 +90,6 @@ Correlation_core_phased::set_parameters(const Correlation_parameters &parameters
   current_fft = 0;
 
   correlation_parameters = parameters;
-  oversamp = (int) round(parameters.sample_rate / (2 * parameters.bandwidth));
   use_autocorrelations = parameters.only_autocorrelations;
 
   create_baselines(parameters);
