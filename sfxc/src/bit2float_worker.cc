@@ -15,7 +15,7 @@ Bit2float_worker::Bit2float_worker(int stream_nr_, bit_statistics_ptr statistics
     bits_per_sample(-1),
     sample_rate(-1),
     memory_pool_(4, NO_RESIZE), 
-    delay_table_set(true), have_new_parameters(false), stream_nr(stream_nr_),
+    delay_table_set(false), have_new_parameters(false), stream_nr(stream_nr_),
     n_ffts_per_integration(0), current_fft(0), state(IDLE),
     phased_array(phased_array_), statistics(statistics_), 
     isRunning(true)
@@ -46,12 +46,9 @@ Bit2float_worker::do_task() {
   uint64_t read = input_buffer_->read;
   uint64_t write = input_buffer_->write;
   while ((out_index != output_buffer_size) && isRunning) {
+
     SFXC_ASSERT(sample_in_byte < 8);
     SFXC_ASSERT(read <= write);
-    SFXC_ASSERT(bytes_left >= 0);
-    SFXC_ASSERT(current_fft <= n_ffts_per_integration);
-    SFXC_ASSERT(current_fft >= 0);
-    SFXC_ASSERT(out_index <= output_buffer_size);
     switch(state) {
     case IDLE:
     {

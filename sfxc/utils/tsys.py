@@ -43,11 +43,15 @@ times = {}
 
 gains = {}
 
-usage = "usage: %prog [options] vexfile station ctrlfile"
+usage = "usage: %prog [options] station [vexfile ctrlfile...]"
 parser = optparse.OptionParser(usage=usage)
 parser.add_option("-f", "--file", dest="tsys_file",
                       default="", type="string",
                       help="Tsys measurements",
+                      metavar="FILE")
+parser.add_option("-l", "--lisfile", dest="lis_file",
+                      default="", type="string",
+                      help="job list file",
                       metavar="FILE")
 parser.add_option("-r", "--rxgfile", dest="rxg_file",
                       default="", type="string",
@@ -67,13 +71,31 @@ parser.add_option("-c", "--cutoff", dest="cutoff",
                       metavar="K")
 
 (options, args) = parser.parse_args()
-if len(args) < 3:
+if len(args) < 1:
     parser.error("incorrect number of arguments")
     pass
 
-vex_file = args[0]
-antab_station = args[1]
-ctrl_file = args[2]
+antab_station = args[0]
+
+if options.lis_file:
+    fp = open(options.lis_file, 'r')
+    line = fp.readline()
+    line = line.split()
+    exper = line[0]
+    vex_file = line[1]
+    for line in fp:
+        if not line.startswith('+'):
+            continue
+        line = line.split()
+        job = line[1].split('/')[0]
+        scan = line[3]
+        ctrl_file = "%s/%s_%s.ctrl" % (job, exper, scan)
+        break
+    fp.close()
+else:
+    vex_file = args[1]
+    ctrl_file = args[2]
+    pass
 
 stations = []
 vex = Vex(vex_file)
@@ -110,7 +132,7 @@ stop = vex2time(json_input['stop'])
 if 'setup_station' in json_input:
     setup_station = json_input['setup_station']
 else:
-    setup_station = station[0]
+    setup_station = json_input['stations'][0]
     pass
 
 if options.rxg_file:
@@ -415,11 +437,23 @@ for i in xrange(len(index)):
         (i + 1, idx, comment_mapping[idx][0], bandwidth, comment_mapping[idx][1], tcal[idx])
     continue
 
-scan = 0
-binned_secs = scans[0][0]
-delta_secs = options.delta_secs
-
-if options.tsys_file:
+if options.lis_file:
+    fp = open(options.lis_file, 'r')
+    line = fp.readline()
+    line = line.split()
+    exper = line[0]
+    tsys_files = []
+    for line in fp:
+        if not line.startswith('+'):
+            continue
+        line = line.split()
+        job = line[1].split('/')[0]
+        scan = line[3]
+        tsys_file = "%s/%s_%s.tsys" % (job, exper, scan)
+        tsys_files.append(tsys_file)
+        continue
+    fp.close()
+elif options.tsys_file:
     tsys_files = [options.tsys_file]
 else:
     tsys_files = []
@@ -431,6 +465,11 @@ else:
         tsys_files.append(tsys_file)
         continue
     pass
+
+scan = 0
+binned_secs = scans[0][0]
+delta_secs = options.delta_secs
+
 for tsys_file in tsys_files:
     fp = open(tsys_file, 'r')
     buf = fp.read(struct.calcsize(header))
