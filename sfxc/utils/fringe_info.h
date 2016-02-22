@@ -64,7 +64,7 @@ public:
 
   void read_plots(bool stop_at_eof);
 
-  void print_html(const Vex &vex, char *vex_filename);
+  void print_html(const Vex &vex, char *vex_filename, std::string setup_station);
   void print_html_bitstatistics(const Vex &vex, const std::string &mode, std::ofstream &index_html);
   const Fringe_info &get_first_plot() const;
   const Fringe_info &get_plot(const Output_header_baseline &baseline_header) const;
@@ -79,7 +79,7 @@ private:
   std::string get_statistics_color(int64_t val, int64_t N);
 
   bool get_channels(const Vex &vex, const std::string &mode, std::vector<Channel> &channels);
-  void get_bbc(const Vex &vex, std::vector<std::string> &stations, std::string &mode,
+  void get_bbc(const Vex &vex, std::vector<std::string> &stations, std::string &setup_station, std::string &mode,
                std::vector< std::vector<int> > &bbcs, std::vector<double> &bandwiths);
 
   void set_plot(const Fringe_info &fringe_info);

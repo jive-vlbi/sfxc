@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <libgen.h>
 #include <complex>
+#include <getopt.h> 
 #include "log_writer_cout.h"
 #include "gnuplot_i.h"
 #include "utils.h"
@@ -47,36 +48,62 @@ bool copy_file(char *from, char *to) {
   return true;
 }
 
+void usage(char *argv[]){
+  std::cout << "Usage: " << argv[0] << " [options] <vex-file> <correlation_file> [<output_directory>]\n"
+            << "       Options : -h, --help, Print this message\n"
+            << "                 -f, --monitor, Don't stop reading at EOF\n"
+            << "                 -s, --setup-station [STATION CODE], Set setup station\n";
+}
+
 // Generates the html-pages used for the ftp-fringe tests.
 int main(int argc, char *argv[]) {
 #ifdef SFXC_PRINT_DEBUG
   RANK_OF_NODE = 0;
 #endif
-
-  if ((argc < 3) || (argc > 5)) {
-    std::cout << "usage: " << argv[0] << " [-f] <vex-file> <correlation_file> [<output_directory>]"
-    << std::endl;
-    exit(1);
-  }
-
-  // test for -f
+  // Get options
+  struct option options[] = {{"monitor",  no_argument,       0, 'f'},
+                             {"help", no_argument, 0, 'h'},
+                             {"setup-station",    required_argument, 0, 's'},
+                             {0, 0, 0, 0}};
+  int c;
   bool update = false;
-  if (strcmp(argv[1], "-f") == 0) {
-    update = true;
-    argc--;
-    argv++;
-  } else {
-    if (argc > 4) {
-      std::cout << "usage: " << argv[0] << " [-f] <vex-file> <correlation_file> [<output_directory>]"
-      << std::endl;
+  std::string setup_station = "";
+  while(true){
+    int option_index = 0;
+    c = getopt_long (argc, argv, "hfs:", options, &option_index);
+
+    /* Detect the end of the options. */
+    if (c == -1)
+     break;
+
+    switch (c){
+    case 'h':
+      usage(argv);
+      exit(0);
+      break;
+    case 'f':
+      update = true;
+      break;
+    case 's':
+      setup_station = optarg;
+      break;
+    default:
+      std::cerr << "Error : invalid option\n";
+      usage(argv);
       exit(1);
     }
+  }
+  int n_arguments = (argc - optind);
+  if((n_arguments !=2) && (n_arguments != 3)){
+    std::cerr << "Invalid number of arguments\n";
+    usage(argv);
+    exit(1);
   }
 
   // Parse the vex file
   Vex vex;
   {
-    char * vex_file = argv[1];
+    char * vex_file = argv[optind];
     std::ifstream in(vex_file);
     if (!in.is_open()) {
       std::cout << "Could not open vex file ["<<vex_file<<"]"<< std::endl;
@@ -91,20 +118,20 @@ int main(int argc, char *argv[]) {
   }
 
   // open the input file
-  FILE *input = fopen(argv[2], "rb");
+  FILE *input = fopen(argv[optind+1], "rb");
   if(input == NULL){
-    std::cout << "Couldn't open correlator file : " << argv[2] << "\n";
+    std::cout << "Couldn't open correlator file : " << argv[optind+1] << "\n";
     exit(1);
   }
 
   char *output_dir = (char*)".";
-  if (argc==4)
-    output_dir = argv[3];
+  if (optind < argc)
+    output_dir = argv[optind+2];
   char *vex_file;
 
   {
     // Copy the vex-file:
-    char *from =argv[1];
+    char *from =argv[optind];
     // Basename might change from2, so we need to copy it
     char from2[strlen(from)+1]; strcpy(from2, from);
     char to[strlen(from)+strlen(output_dir)+2];
@@ -115,12 +142,12 @@ int main(int argc, char *argv[]) {
     copy_file(from, to);
   }
 
-  if (argc== 4) {
+  if (n_arguments == 3) {
     // Goto the output directory
     int err = chdir(output_dir);
     // Make sure it exists
     if (err != 0) {
-      std::cout << "Could not go to directory " << argv[3] << std::endl;
+      std::cout << "Could not go to directory " << argv[optind+2] << std::endl;
       return -1;
     }
   }
@@ -137,7 +164,7 @@ int main(int argc, char *argv[]) {
   do {
     fringe_info.read_plots(!update);
 
-    fringe_info.print_html(vex, vex_file);
+    fringe_info.print_html(vex, vex_file, setup_station);
 
     std::cout << "Produced html page" << std::endl;
   } while (update);

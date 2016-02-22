@@ -55,7 +55,7 @@ public:
   std::string get_mode(const std::string &scan) const;
 
   /// Returns the frequencies for a given mode
-  void get_frequencies(const std::string &mode, std::vector<double> &frequencies) const;
+  void get_frequencies(const std::string &mode, const std::string &station, std::vector<double> &frequencies) const;
 
   /// Returns the time at which the first scan starts
   std::string get_start_time_of_experiment() const;

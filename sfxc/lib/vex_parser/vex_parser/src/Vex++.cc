@@ -222,10 +222,9 @@ int Vex::n_sources(const std::string &scan_name) const{
   return n;
 }
 
-void Vex::get_frequencies(const std::string &mode, std::vector<double> &frequencies) const {
+void Vex::get_frequencies(const std::string &mode, const std::string &station, std::vector<double> &frequencies) const {
   Node root_node = get_root_node();
-  Node::iterator mode_it = root_node["MODE"][mode];
-  std::string freq_node = mode_it->begin("FREQ")[0]->to_string();
+  std::string freq_node = get_frequency(mode, station);
   std::set<double> freq_set;
   for (Node::iterator chan_it = root_node["FREQ"][freq_node]->begin("chan_def");
        chan_it != root_node["FREQ"][freq_node]->end("chan_def"); ++chan_it) {

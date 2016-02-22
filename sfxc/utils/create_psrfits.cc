@@ -147,9 +147,10 @@ SFXCdata::get_subbands(vector<subband> &vex_subbands){
   Vex::Date scan_start(gheader.start_year, gheader.start_day, gheader.start_time);
   string scan_name = vex.get_scan_name(scan_start);
   string mode = vex.get_mode(scan_name);
-  // Get sorted list of all frequencies
+  // Get sorted list of all frequencies, FIXME this doesn't support mixed bandwidth
   vector<double> bands;
-  vex.get_frequencies(mode, bands);
+  std::string station = vex.get_root_node()["SCHED"][scan_name]->begin("station")[0]->to_string();
+  vex.get_frequencies(mode, station, bands);
 
   // create sorted list of subbands
   Vex::Node root_node = vex.get_root_node();

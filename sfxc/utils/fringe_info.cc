@@ -304,8 +304,10 @@ Fringe_info_container::process_new_bit_statistics(){
 
 
 void
-Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &stations, std::string &mode,
-                               std::vector< std::vector<int> > &bbcs, std::vector<double> &bandwith)
+Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &stations, 
+                               std::string &setup_station, std::string &mode, 
+                               std::vector< std::vector<int> > &bbcs, 
+                               std::vector<double> &bandwith)
 {
   Vex::Node root_node = vex.get_root_node();
   for(int station=0; station < stations.size(); station++){
@@ -317,7 +319,7 @@ Fringe_info_container::get_bbc(const Vex &vex, std::vector<std::string> &station
       for(Vex::Node::iterator freq_it = root_node["FREQ"][freq]->begin("chan_def");
           freq_it != root_node["FREQ"][freq]->end("chan_def"); freq_it++){
         std::string bbc_name=(*freq_it)[5]->to_string();
-        if(get_bandwidths){
+        if((get_bandwidths) && (stations[station] == setup_station)){
            bandwith.push_back((*freq_it)[3]->to_double_amount("MHz"));
         } 
         // Find the physical BBC number
@@ -388,7 +390,7 @@ Fringe_info_container::get_channels(const Vex &vex, const std::string &mode, std
 }
 
 void
-Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
+Fringe_info_container::print_html(const Vex &vex, char *vex_filename, std::string setup_station_) {
   // Array with the station names
   std::vector<std::string> stations;
 
@@ -409,6 +411,7 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
        it != station_names.end(); it++) {
     stations.push_back(*it);
   }
+  std::string setup_station = (setup_station_=="") ? stations[0] : setup_station_;
 
   std::ofstream index_html("index2.html");
   assert(index_html.is_open());
@@ -437,8 +440,8 @@ Fringe_info_container::print_html(const Vex &vex, char *vex_filename) {
 
   Date start_time(global_header.start_year, global_header.start_day, (int) sec);
   std::string mode = vex.get_mode(vex.get_scan_name(start_time));
-  vex.get_frequencies(mode,frequencies);
-  get_bbc(vex, stations, mode, bbcs, bandwidths);
+  vex.get_frequencies(mode, setup_station, frequencies);
+  get_bbc(vex, stations, setup_station, mode, bbcs, bandwidths);
 
   index_html << " Integration time: "
              << integration_time << "s"
@@ -997,8 +1000,8 @@ print_diff_html(const Vex &vex,
        it != root_node["STATION"]->end(); it++) {
     stations.push_back(it.key());
   }
-  vex.get_frequencies(mode, frequencies);
-  get_bbc(vex, stations, mode, bbcs, bandwidths);
+  vex.get_frequencies(mode, stations[0], frequencies);
+  get_bbc(vex, stations, stations[0], mode, bbcs, bandwidths);
 
   std::ofstream index_html("index2.html");
   assert(index_html.is_open());
