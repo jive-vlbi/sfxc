@@ -59,7 +59,9 @@ void Uvw_model::operator=(const Uvw_model &other) {
   acc_u.resize(0);
   acc_v.resize(0);
   acc_w.resize(0);
- initialise_spline_for_next_scan();
+  interval_begin = 0;
+  interval_end = 0;
+  initialise_next_scan();
 }
 
 bool Uvw_model::operator==(const Uvw_model &other) const {
@@ -188,7 +190,9 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
 
   // Initialise
   scan_nr = 0;
-  initialise_spline_for_next_scan();
+  interval_begin = 0.;
+  interval_end = 0.;
+  initialise_next_scan();
   return 0;
 }
 
@@ -217,7 +221,7 @@ Uvw_model::add_scans(const Uvw_model &other)
   w.insert(w.end(), other.w.begin(), other.w.end());
 }
 
-void Uvw_model::initialise_spline_for_next_scan() {
+void Uvw_model::initialise_next_scan() {
   int n_sources_in_previous_scan = splineakima_u.size();
   if (scan_nr >= (scans.size() - n_sources_in_previous_scan))
     return;
@@ -245,11 +249,52 @@ void Uvw_model::initialise_spline_for_next_scan() {
   acc_u.resize(n_sources);
   acc_v.resize(n_sources);
   acc_w.resize(n_sources);
+}
+
+void Uvw_model::create_akima_spline(Time time_) {
+  if(scans[scan_nr].end < time_){
+    while (scans[scan_nr].end < time_)
+      initialise_next_scan();
+  } else {
+    // FIXME Do we really have to reallocate the accelerator object every time?
+    for(int i = 0 ; i < splineakima_u.size() ; i++){
+      gsl_spline_free(splineakima_u[i]);
+      gsl_spline_free(splineakima_v[i]);
+      gsl_spline_free(splineakima_w[i]);
+      gsl_interp_accel_free(acc_u[i]);
+      gsl_interp_accel_free(acc_v[i]);
+      gsl_interp_accel_free(acc_w[i]);
+    }
+  }
+
+  // Determine interpolation interval
+  int mjd_start = (int) floor(time_.get_mjd());
+  double seconds_start = floor(time_.get_time_usec() / 1000000);
+  //double seconds_start = floor((t-mjd_start) * 86400.);
+  Time start(mjd_start, seconds_start);
+  Time onesec(1000000.);
+  interval_begin = start;
+  interval_end = start + onesec;
+  Time interpol_begin = start - onesec*2;
+  Time interpol_end = start + onesec*3;
+
+  if(interpol_begin < scans[scan_nr].begin){
+    interpol_begin = scans[scan_nr].begin;
+    if (interpol_end.diff(interpol_begin) < 4)
+      interpol_end = interpol_begin + onesec*4;
+  }
+  if(interpol_end > scans[scan_nr].end){
+    interpol_end = scans[scan_nr].end;
+    if (interpol_end.diff(interpol_begin) < 4)
+      interpol_begin = interpol_end - onesec*4;
+  }
+
+  int n_sources = splineakima_u.size();
   for(int i = 0; i < n_sources ; i++){
     Scan &scan = scans[scan_nr + i];
-    // at least 4 sample points for a spline
-    const Time one_sec(1000000);
-    int n_pts = (int)((scan.end - scan.begin) / one_sec) + 1;
+    // at least 5 sample points for a spline
+    int n_pts = (int)((interpol_end - interpol_begin) / onesec) + 1;
+    int idx = (int)interpol_begin.diff(scan.begin);
     SFXC_ASSERT(n_pts > 4);
 
     // Initialise the Akima spline
@@ -260,17 +305,16 @@ void Uvw_model::initialise_spline_for_next_scan() {
     splineakima_v[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
     splineakima_w[i] = gsl_spline_alloc(gsl_interp_akima, n_pts);
 
-    gsl_spline_init(splineakima_u[i], &times[scan.times], &u[scan.model_index], n_pts);
-    gsl_spline_init(splineakima_v[i], &times[scan.times], &v[scan.model_index], n_pts);
-    gsl_spline_init(splineakima_w[i], &times[scan.times], &w[scan.model_index], n_pts);
+    gsl_spline_init(splineakima_u[i], &times[scan.times+idx], &u[scan.model_index+idx], n_pts);
+    gsl_spline_init(splineakima_v[i], &times[scan.times+idx], &v[scan.model_index+idx], n_pts);
+    gsl_spline_init(splineakima_w[i], &times[scan.times+idx], &w[scan.model_index+idx], n_pts);
   }
 }
 
 //calculates u,v, and w at time(microseconds)
 void Uvw_model::get_uvw(int phase_center, Time time, double *u, double *v, double *w) {
-  while (scans[scan_nr].end < time)
-    initialise_spline_for_next_scan();
-
+  if (time > interval_end)
+    create_akima_spline(time);
   SFXC_ASSERT(splineakima_u.size() > 0);
   SFXC_ASSERT((phase_center >= 0) && (phase_center < splineakima_u.size())) ;
 
@@ -294,7 +338,7 @@ std::ofstream& Uvw_model::uvw_values(std::ofstream &output, Time starttime,
   output.precision(14);
   std::cout.precision(16);
   while (time < stoptime) {
-    while (scans[scan_nr].end < time) initialise_spline_for_next_scan();
+    if (interval_end < time) create_akima_spline(time);
     double sec = (time - scans[scan_nr].begin).get_time();
     gsl_u = gsl_spline_eval (splineakima_u[0], sec, acc_u[0]);
     gsl_v = gsl_spline_eval (splineakima_v[0], sec, acc_v[0]);

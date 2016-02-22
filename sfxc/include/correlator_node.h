@@ -95,8 +95,8 @@ public:
   /// Callback function for adding a data_writer:
   void hook_added_data_writer(size_t writer);
 
-  void set_delay_table(int sn, Delay_table_akima &table);
-  void set_uvw_table(int sn, Uvw_model &table);
+  void add_delay_table(Delay_table &table, int sn1, int sn2);
+  void add_uvw_table(Uvw_model &table, int sn1);
 
   void output_node_set_timeslice(int slice_nr, int slice_offset,
                                  int stream_nr, int bytes, int nbins);
@@ -260,10 +260,6 @@ private:
   int nr_corr_node;
   /// Number of input streams
   int n_streams;
-  /// Before starting a new scan the delay table for that scan is send
-  bool new_delay_tables;
-  std::vector<Delay_table_akima>          delay_tables;
-  std::vector<Uvw_model>                  uvw_tables;
 
   std::vector<Delay_correction_ptr>       delay_modules;
   std::vector<Windowing_ptr>              windowing;
@@ -271,8 +267,11 @@ private:
   Correlation_core *correlation_core, *correlation_core_normal;
   Correlation_core_pulsar *correlation_core_pulsar;
 
-  std::queue<Correlation_parameters> integration_slices_queue;
-
+  std::queue<Correlation_parameters>          integration_slices_queue;
+  std::vector<int>                            delay_index;
+  std::vector<Delay_table>                    delay_tables;
+  std::vector<Uvw_model>                      uvw_tables;
+  
   Timer bit_sample_reader_timer_, bits_to_float_timer_, delay_timer_, correlation_timer_;
 
   bool isinitialized_;

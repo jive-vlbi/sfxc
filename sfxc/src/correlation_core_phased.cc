@@ -56,7 +56,6 @@ void Correlation_core_phased::do_task() {
         int source_nr;
         int pcenter = 0;
         if(split_output){
-            delay_tables[0].goto_scan(correlation_parameters.integration_start);
             source_nr = sources[delay_tables[0].get_source(i)];
             pcenter = i;
         } else if(use_autocorrelations){
@@ -84,10 +83,15 @@ void Correlation_core_phased::do_task() {
 
 void
 Correlation_core_phased::set_parameters(const Correlation_parameters &parameters,
-                                 int node_nr) {
+                                        std::vector<Delay_table_akima> &delays,
+                                        std::vector<std::vector<double> > &uvw,
+					int node_nr)
+{
   node_nr_ = node_nr;
   current_integration = 0;
   current_fft = 0;
+  delay_tables = delays;
+  uvw_table = uvw;
 
   correlation_parameters = parameters;
   use_autocorrelations = parameters.only_autocorrelations;

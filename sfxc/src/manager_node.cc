@@ -562,7 +562,7 @@ void Manager_node::initialise_scan(const std::string &scan) {
     const std::string &station_name = control_parameters.station(station);
     if(!control_parameters.station_in_scan(scan, station_name))
       continue;
-    Delay_table_akima delay_table;
+    Delay_table delay_table;
     // also generates delay file if it doesn't exist
     const std::string &delay_file =
       control_parameters.get_delay_table_name(station_name);

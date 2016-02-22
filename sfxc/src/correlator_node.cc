@@ -30,8 +30,7 @@ Correlator_node::Correlator_node(int rank, int nr_corr_node, bool pulsar_binning
     pulsar_binning(pulsar_binning_),
     bit2float_thread_(phased_array_),
     phased_array(phased_array_), n_streams(0),
-    coherent_dedispersion(false),
-    new_delay_tables(false){
+    coherent_dedispersion(false){
   #ifdef USE_IPP
   ippSetNumThreads(1);
   #endif
@@ -192,21 +191,27 @@ void Correlator_node::main_loop() {
   stop_threads();
 }
 
-void Correlator_node::set_uvw_table(int sn, Uvw_model &table) {
-  SFXC_ASSERT((size_t)sn < delay_modules.size());
-  if(sn > uvw_tables.size())
-    uvw_tables.resize(sn);
-  uvw_tables[sn] = table;
-  new_delay_tables = true;
+void Correlator_node::add_delay_table(Delay_table &table, int sn1, int sn2) {
+  SFXC_ASSERT(sn1<=sn2);
+  SFXC_ASSERT((size_t)sn1 < delay_modules.size());
+  SFXC_ASSERT((size_t)sn2 < delay_modules.size());
+  SFXC_ASSERT(delay_modules[sn1] != Delay_correction_ptr());
+  SFXC_ASSERT(delay_modules[sn2] != Delay_correction_ptr());
+  if(delay_tables.size() <= sn1)
+    delay_tables.resize(sn1+1);
+  if(delay_index.size() <= sn2)
+    delay_index.resize(sn2+1, -1);
+
+  delay_tables[sn1].add_scans(table);
+  delay_index[sn1] = sn1;
+  delay_index[sn2] = sn1;
 }
 
-void Correlator_node::set_delay_table(int sn, Delay_table_akima &table) {
-  SFXC_ASSERT((size_t)sn < delay_modules.size());
-  SFXC_ASSERT(delay_modules[sn] != Delay_correction_ptr());
-  if(sn+1 > delay_tables.size())
-    delay_tables.resize(sn+1);
-  delay_tables[sn] = table;
-  new_delay_tables = true;
+void Correlator_node::add_uvw_table(Uvw_model &table, int sn) {
+  if(uvw_tables.size() <= sn){
+    uvw_tables.resize(sn+1);
+  }
+  uvw_tables[sn].add_scans(table);
 }
 
 void Correlator_node::hook_added_data_reader(size_t stream_nr) {
@@ -347,24 +352,6 @@ Correlator_node::set_parameters() {
     start_threads();
   }
 
-  // Set new delay tables
-  if(new_delay_tables){
-    // FIXME No need to store delays for cross-polls
-    for (int sn=0; sn<delay_tables.size(); sn++){
-      Delay_table_akima &table = delay_tables[sn];
-      delay_modules[sn]->set_delay_table(table);
-      bit2float_thread_.add_delay_table(sn, table);
-      correlation_core->set_delay_table(sn, table);
-    }
-    for (int sn=0; sn<uvw_tables.size(); sn++){
-      Uvw_model &uvw = uvw_tables[sn];
-      correlation_core_normal->set_uvw_table(sn, uvw);
-      if(pulsar_binning)
-        correlation_core_pulsar->set_uvw_table(sn, uvw);
-    }
-    new_delay_tables = false;
-  }
-
   if (integration_slices_queue.empty())
     return;
 
@@ -373,6 +360,28 @@ Correlator_node::set_parameters() {
   const Correlation_parameters &parameters =
     integration_slices_queue.front();
 
+  // Get delay and UVW tables
+  // NB: The total number of streams in the job is not nessecarily the same 
+  // as the number of streams in the scan
+  int nstreams = delay_index.size();
+  Time tmid = parameters.integration_start + parameters.integration_time/2;
+  std::vector<Delay_table_akima> akima_tables(nstreams);
+  std::vector<std::vector<double> > uvw(uvw_tables.size());
+  for(int i=0;i<parameters.station_streams.size();i++){
+    int stream = parameters.station_streams[i].station_stream;
+    int index = delay_index[stream];
+    SFXC_ASSERT(index != -1);
+    akima_tables[stream] = 
+       delay_tables[index].create_akima_spline(parameters.stream_start,
+                                               parameters.integration_time);
+    if(stream < uvw.size()){
+      uvw[stream].resize(parameters.n_phase_centers*3);
+      for(int j=0;j<parameters.n_phase_centers;j++){
+        double *out = &uvw[stream][3*j];
+        uvw_tables[stream].get_uvw(j, tmid, &out[0], &out[1], &out[2]);
+      }
+    }
+  }
   int nBins=1;
   coherent_dedispersion = false;
   if(pulsar_binning){
@@ -385,7 +394,7 @@ Correlator_node::set_parameters() {
         windowing[stream_nr]->connect_to(
                                  delay_modules[stream_nr]->get_output_buffer());
       correlation_core = correlation_core_normal;
-      correlation_core->set_parameters(parameters, get_correlate_node_number());
+      correlation_core->set_parameters(parameters, akima_tables, uvw, get_correlate_node_number());
     }else{
       Pulsar_parameters::Pulsar &pulsar = cur_pulsar_it->second;
       coherent_dedispersion = pulsar.coherent_dedispersion;
@@ -403,7 +412,7 @@ Correlator_node::set_parameters() {
         }
       }
       correlation_core = correlation_core_pulsar;
-      correlation_core_pulsar->set_parameters(parameters, pulsar, get_correlate_node_number());
+      correlation_core_pulsar->set_parameters(parameters, pulsar, akima_tables, uvw, get_correlate_node_number());
     }
   }else if(phased_array){
     if (parameters.only_autocorrelations)
@@ -418,7 +427,7 @@ Correlator_node::set_parameters() {
         windowing[stream_nr]->connect_to(
                                  delay_modules[stream_nr]->get_output_buffer());
       correlation_core = correlation_core_normal;
-      correlation_core->set_parameters(parameters, get_correlate_node_number());
+      correlation_core->set_parameters(parameters, akima_tables, uvw, get_correlate_node_number());
     }else{
       Pulsar_parameters::Pulsar &pulsar = cur_pulsar_it->second;
       coherent_dedispersion = pulsar.coherent_dedispersion;
@@ -434,16 +443,16 @@ Correlator_node::set_parameters() {
                                 delay_modules[stream_nr]->get_output_buffer());
         }
       }
-      correlation_core->set_parameters(parameters, get_correlate_node_number());
+      correlation_core->set_parameters(parameters, akima_tables, uvw, get_correlate_node_number());
     }
   }else{
     nBins = parameters.n_phase_centers;
-    correlation_core->set_parameters(parameters, get_correlate_node_number());
+    correlation_core->set_parameters(parameters, akima_tables, uvw, get_correlate_node_number());
   }
 
   for (size_t i=0; i<delay_modules.size(); i++) {
     if (delay_modules[i] != Delay_correction_ptr()) {
-      delay_modules[i]->set_parameters(parameters);
+      delay_modules[i]->set_parameters(parameters, akima_tables[i]);
     }
   }
   for (size_t i=0; i<windowing.size(); i++) {
@@ -451,7 +460,7 @@ Correlator_node::set_parameters() {
       windowing[i]->set_parameters(parameters);
     }
   }
-  bit2float_thread_.set_parameters(parameters);
+  bit2float_thread_.set_parameters(parameters, akima_tables);
 
   has_requested=false;
   status = CORRELATING;

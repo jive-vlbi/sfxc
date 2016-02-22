@@ -44,6 +44,8 @@ public:
                   std::vector<Invalid> *invalid_);
 
   virtual void set_parameters(const Correlation_parameters &parameters,
+                              std::vector<Delay_table_akima> &delays,
+                              std::vector<std::vector<double> > &uvw,
                               int node_nr);
   void create_baselines(const Correlation_parameters &parameters);
   void set_data_writer(boost::shared_ptr<Data_writer> writer);
@@ -55,10 +57,8 @@ public:
     return writer;
   }
 
-  void set_uvw_table(int sn, Uvw_model &table);
-  std::vector< Uvw_model>  uvw_tables; // Should be private
-  void set_delay_table(int sn, Delay_table_akima &table);
   std::vector<Delay_table_akima> delay_tables;
+  std::vector<std::vector<double> > uvw_table;
   void add_source_list(const std::map<std::string, int> &sources_);
   void add_cl_table(std::string name);
   void add_bp_table(std::string name);

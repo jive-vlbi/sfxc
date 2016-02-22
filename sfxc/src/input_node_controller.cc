@@ -72,7 +72,7 @@ Input_node_controller::process_event(MPI_Status &status) {
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_DELAY_TABLE: {
-      Delay_table_akima delay_table;
+      Delay_table delay_table;
       int station;
       MPI_Transfer::receive(status, delay_table, station);
       node.set_delay_table(delay_table);

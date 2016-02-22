@@ -4,7 +4,7 @@
 
 Delay_correction::Delay_correction(int stream_nr_)
     : output_buffer(Output_buffer_ptr(new Output_buffer())),
-      output_memory_pool(2, NO_RESIZE),current_time(-1), delay_table_set(false),
+      output_memory_pool(32),current_time(-1),
       stream_nr(stream_nr_), stream_idx(-1)
 {
 }
@@ -182,7 +182,7 @@ void Delay_correction::fringe_stopping(FLOAT output[]) {
 }
 
 void
-Delay_correction::set_parameters(const Correlation_parameters &parameters) {
+Delay_correction::set_parameters(const Correlation_parameters &parameters, Delay_table_akima &delays) {
   empty_output_queue();
   stream_idx = 0;
   while ((stream_idx < parameters.station_streams.size()) &&
@@ -193,6 +193,7 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters) {
     return;
   }
 
+  delay_table = delays;
   bits_per_sample = parameters.station_streams[stream_idx].bits_per_sample;
   correlation_parameters = parameters;
   oversamp = (int)round(sample_rate() / (2 * bandwidth()));
@@ -233,23 +234,15 @@ void Delay_correction::connect_to(Input_buffer_ptr new_input_buffer) {
   input_buffer = new_input_buffer;
 }
 
-void Delay_correction::set_delay_table(const Delay_table_akima &table) {
-  delay_table_set = true;
-  delay_table = table;
-}
-
 double Delay_correction::get_delay(Time time) {
-  SFXC_ASSERT(delay_table_set);
   return delay_table.delay(time);
 }
 
 double Delay_correction::get_phase(Time time) {
-  SFXC_ASSERT(delay_table_set);
   return delay_table.phase(time);
 }
 
 double Delay_correction::get_amplitude(Time time) {
-  SFXC_ASSERT(delay_table_set);
   return delay_table.amplitude(time);
 }
 

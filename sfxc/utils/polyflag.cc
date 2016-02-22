@@ -101,7 +101,7 @@ main(int argc, char *argv[])
 			t_int = Time(ctrl["integr_time"].asDouble() * 1e6);
 
 		std::vector<std::string> station_names;
-		std::vector<Delay_table_akima> delay_tables;
+		std::vector<Delay_table> delay_tables;
 		for (Json::Value::iterator station = ctrl["stations"].begin();
 		     station != ctrl["stations"].end(); station++) {
 			if (excluded_stations.count((*station).asString()) > 0)
@@ -111,8 +111,8 @@ main(int argc, char *argv[])
 			std::string delay_table_name;
 			delay_table_name = delay_directory + "/" + exper_name + "_" + (*station).asString() + ".del";
 
-			Delay_table_akima delay_table;
-			delay_table.open (delay_table_name.c_str());
+			Delay_table delay_table;
+			delay_table.open(delay_table_name.c_str());
 			delay_tables.push_back(delay_table);
 		}
 
@@ -127,7 +127,11 @@ main(int argc, char *argv[])
 
 			if (stop_time_scan <= start_time_ctrl || start_time_scan >= stop_time_ctrl)
 				continue;
-
+                        std::vector<Delay_table_akima> akima(station_names.size());
+                        Time dt = stop_time_scan - start_time_scan;
+			for (int i = 0; i < station_names.size(); i++) {
+				akima[i] = delay_tables[i].create_akima_spline(start_time_scan, dt);
+                        } 
 			std::string mode = scan["mode"]->to_string();
 			std::string freq = vex.get_root_node()["MODE"][mode]["FREQ"]->begin()->to_string();
 
@@ -155,7 +159,7 @@ main(int argc, char *argv[])
 								  << time.date_string() << "\t" << rate1 << "\t" << rate2 << std::endl;
 						}
 #endif
-						double rate = (delay_tables[i].rate(time + (t_int / 2)) - delay_tables[j].rate(time + (t_int / 2)));
+						double rate = (akima[i].rate(time + (t_int / 2)) - akima[j].rate(time + (t_int / 2)));
 						if (std::abs(rate) < (min_wrap / (t_int.get_time() * min_freq))) {
 							if (!start_time_set) {
 								start_time = time;

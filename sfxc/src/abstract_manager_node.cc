@@ -335,11 +335,11 @@ void
 Abstract_manager_node::
 input_node_set_time_slice(const std::string &station,
                           int32_t channel, int32_t stream_nr,
-                          Time start_time, Time integration_time) {
+                          Time start_time, Time stop_time) {
   int64_t message[] = {channel,
                        stream_nr,
                        start_time.get_clock_ticks(),
-                       integration_time.get_clock_ticks()};
+                       stop_time.get_clock_ticks()};
   MPI_Send(&message, 4, MPI_INT64,
            input_rank(station),
            MPI_TAG_INPUT_NODE_ADD_TIME_SLICE, MPI_COMM_WORLD);
@@ -478,7 +478,7 @@ correlator_node_set_all(MPI_TAG msg_type, std::string msg) {
 
 void
 Abstract_manager_node::
-correlator_node_set_all(Delay_table_akima &delay_table,
+correlator_node_set_all(Delay_table &delay_table,
                         const std::string &station_name) {
   int sn[2] = {input_node(station_name), -1};
   if (control_parameters.cross_polarize()){
@@ -536,7 +536,7 @@ set_correlator_node_ready(size_t correlator_nr, bool ready) {
 
 void
 Abstract_manager_node::
-send(Delay_table_akima &delay_table, int station, int to_rank) {
+send(Delay_table &delay_table, int station, int to_rank) {
   MPI_Transfer::send(delay_table, station, to_rank);
 
 }

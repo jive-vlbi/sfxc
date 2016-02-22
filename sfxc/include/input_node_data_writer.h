@@ -91,12 +91,12 @@ private:
   int                 delay_index;
   int sample_rate;
   int bits_per_sample;
-  int stream_nr;
   Time integration_time;
   Time channel_offset;
   Time buffer_time;
   int frames_to_buffer;
   bool sync_stream;
+  int stream_nr;
   int intnr;
   uint8_t station_number;
   uint8_t frequency_number;

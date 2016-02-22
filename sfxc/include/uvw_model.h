@@ -59,7 +59,8 @@ public:
 
   /// A spline only interpolates one scan.
   /// This functions preprocesses the spline for the next scan.
-  void initialise_spline_for_next_scan();
+  void initialise_next_scan();
+  void create_akima_spline(Time t);
 
   bool initialised() const {
     return !times.empty();
@@ -71,6 +72,7 @@ private:
   std::vector<Scan> scans;
   std::vector<std::string> sources;
   std::vector<double> times, u, v, w;
+  Time interval_begin, interval_end;
   std::vector<gsl_interp_accel *> acc_u, acc_v, acc_w;
   std::vector<gsl_spline *> splineakima_u, splineakima_v, splineakima_w;
 };

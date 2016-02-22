@@ -15,7 +15,7 @@ Bit2float_worker::Bit2float_worker(int stream_nr_, bit_statistics_ptr statistics
     bits_per_sample(-1),
     sample_rate(-1),
     memory_pool_(4, NO_RESIZE), 
-    delay_table_set(false), have_new_parameters(false), stream_nr(stream_nr_),
+    have_new_parameters(false), stream_nr(stream_nr_),
     n_ffts_per_integration(0), current_fft(0), state(IDLE),
     phased_array(phased_array_), statistics(statistics_), 
     isRunning(true)
@@ -46,7 +46,6 @@ Bit2float_worker::do_task() {
   uint64_t read = input_buffer_->read;
   uint64_t write = input_buffer_->write;
   while ((out_index != output_buffer_size) && isRunning) {
-
     SFXC_ASSERT(sample_in_byte < 8);
     SFXC_ASSERT(read <= write);
     switch(state) {
@@ -265,7 +264,7 @@ get_output_buffer() {
 
 void
 Bit2float_worker::
-set_new_parameters(const Correlation_parameters &parameters) {
+set_new_parameters(const Correlation_parameters &parameters, Delay_table_akima &delay_table) {
   int stream_idx = 0;
   while ((stream_idx < parameters.station_streams.size()) &&
          (parameters.station_streams[stream_idx].station_stream != stream_nr))
@@ -286,6 +285,8 @@ set_new_parameters(const Correlation_parameters &parameters) {
   new_parameters.n_ffts_per_buffer =
     (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
     std::max(CORRELATOR_BUFFER_SIZE / parameters.fft_size_delaycor, nfft_min);
+  new_parameters.delay_in_samples = 
+    delay_table.delay(parameters.stream_start) * new_parameters.sample_rate;
 
   new_parameters.n_ffts_per_integration =
   (parameters.station_streams[stream_idx].sample_rate / parameters.sample_rate) *
@@ -314,9 +315,7 @@ set_parameters() {
   allocate_element();
   invalid.resize(0);
   if (bits_per_sample == 2) {
-    double delay_in_samples =
-      delay_table.delay(new_parameters.stream_start) * sample_rate;
-    tsys_count = std::floor(delay_in_samples + 0.5);
+    tsys_count = std::floor(new_parameters.delay_in_samples + 0.5);
     // Calculate number of samples within the full cycle.
     tsys_count %= (sample_rate / 80);
     while (tsys_count < 0)
@@ -329,12 +328,6 @@ set_parameters() {
     // Convert to bytes.  
     tsys_count /= 4;
   }
-}
-
-void
-Bit2float_worker::set_delay_table(Delay_table_akima &table) {
-  delay_table_set = true;
-  delay_table.add_scans(table);
 }
 
 // Empty the input queue, called from the destructor of Input_node
