@@ -26,7 +26,7 @@ def time2vex(secs):
     tupletime = time.gmtime(secs)
     return time.strftime("%Yy%jd%Hh%Mm%Ss", tupletime)
 
-global_hdr = 'I32sHHIIIIIB3x'
+global_hdr = 'I32sHHIIIIIB15s'
 timeslice_hdr = 'IIII'
 uvw_hdr = 'II3d'
 stat_hdr = 'BBBB4II'
@@ -48,6 +48,8 @@ class CorrelatedData:
         self.time = {}
         self.start_time = 0
         self.current_time = 0
+        self.correlator_branch = ""
+        self.correlator_version = 0
 
         self.stations = []
         for station in vex['STATION']:
@@ -87,6 +89,8 @@ class CorrelatedData:
 
             self.number_channels = h[5]
             self.integration_time = h[6] * 1e-6
+            self.correlator_branch = h[10].replace('\x00', ' ')
+            self.correlator_version = h[8]
             pass
 
         secs = 0

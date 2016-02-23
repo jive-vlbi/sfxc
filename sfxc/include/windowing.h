@@ -46,7 +46,7 @@ private:
   Memory_pool_vector_element<FLOAT> window;
   Memory_pool_vector_element<FLOAT> buffers[2];
   Memory_pool_vector_element< std::complex<FLOAT> > temp_fft_buffer;
-  int buf, temp_fft_offset;
+  int buf, temp_fft_offset, output_offset;
 
   Correlation_memory_pool output_memory_pool;
   Delay_queue_ptr input_queue;

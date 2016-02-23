@@ -19,9 +19,9 @@ VDIF_reader::open_input_stream(Data_frame &data) {
   }
 
   is_open_ = true;
-  epoch_jday = current_header.jday_epoch();
   current_time_ = get_current_time();
   data.start_time = current_time_;
+  int32_t epoch_jday = current_header.jday_epoch();
   uint32_t start_sec = current_header.sec_from_epoch;
   uint32_t epoch = current_header.ref_epoch;
   std::cout << RANK_OF_NODE << "Start of VDIF data at jday=" << epoch_jday + start_sec / (24 * 60 * 60)
@@ -60,7 +60,7 @@ VDIF_reader::get_current_time() {
   Time time;
 
   if (is_open_) {
-    double seconds_since_reference = (double)current_header.sec_from_epoch - (ref_jday - epoch_jday) * 24 * 60 * 60;
+    double seconds_since_reference = (double)current_header.sec_from_epoch - (ref_jday - current_header.jday_epoch()) * 24 * 60 * 60;
     double subsec = 0;
     if (sample_rate > 0) {
       int samples_per_frame = 8 * first_header.data_size() / ((first_header.bits_per_sample + 1) * (1 << first_header.log2_nchan));
@@ -79,48 +79,56 @@ VDIF_reader::read_new_block(Data_frame &data) {
   int restarts = 0;
 
  restart:
-  Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&current_header);
-  if (data_reader_->eof())
-    return false;
-
   if (!first_header_seen) {
+    Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&current_header);
+    if (data_reader_->eof())
+      return false;
+
     memcpy(&first_header, &current_header, 16);
     first_header_seen = true;
-  } 
-  
-  if (first_header.legacy_mode == 0) {
-    // FIXME : If first header has fill pattern this will fail
-    // We should use the information that vex2 provides
-    char *header = (char *)&current_header;
-    Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&header[16]);
+
+    if (first_header.legacy_mode == 0) {
+      // FIXME : If first header has fill pattern this will fail
+      // We should use the information that vex2 provides
+      char *header = (char *)&current_header;
+      Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&header[16]);
+      if (data_reader_->eof())
+	return false;
+    }
+  } else {
+    if (first_header.legacy_mode == 0) {
+      Data_reader_blocking::get_bytes_s(data_reader_.get(), 32, (char *)&current_header);
+    } else {
+      Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&current_header);
+    }
     if (data_reader_->eof())
       return false;
   }
 
   int data_size = first_header.data_size();
   if (buffer.size() == 0)
-    buffer.resize(data_size);
+    buffer.resize(size_data_block());
 
   if (((uint32_t *)&current_header)[0] == 0x11223344 ||
       ((uint32_t *)&current_header)[1] == 0x11223344 ||
       ((uint32_t *)&current_header)[2] == 0x11223344 ||
-      ((uint32_t *)&current_header)[3] == 0x11223344) {
+      ((uint32_t *)&current_header)[3] == 0x11223344 ||
+      (current_header.dataframe_in_second % vdif_frames_per_block) != 0) {
     Data_reader_blocking::get_bytes_s(data_reader_.get(), data_size, NULL);
     if (++restarts > max_restarts)
       return false;
     goto restart;
   }
 
-  SFXC_ASSERT(data_size == buffer.size());
-
   Data_reader_blocking::get_bytes_s( data_reader_.get(), data_size, (char *)&buffer[0]);
   if (data_reader_->eof())
     return false;
 
   if (current_header.invalid > 0) {
-    data.invalid.resize(1);
-    data.invalid[0].invalid_begin = 0;
-    data.invalid[0].nr_invalid = data_size;
+    struct Input_node_types::Invalid_block invalid;
+    invalid.invalid_begin = 0;
+    invalid.nr_invalid = data_size;
+    data.invalid.push_back(invalid);
     if (thread_map.count(current_header.thread_id) > 0)
       data.channel = thread_map[current_header.thread_id];
     else
@@ -137,6 +145,28 @@ VDIF_reader::read_new_block(Data_frame &data) {
       }
     }
     data.channel = thread_map[current_header.thread_id];
+  }
+
+  for (int i = 1; i < vdif_frames_per_block; i++) {
+    Header header;
+    if (first_header.legacy_mode == 0) {
+      Data_reader_blocking::get_bytes_s( data_reader_.get(), 32, (char *)&header);
+    } else {
+      Data_reader_blocking::get_bytes_s( data_reader_.get(), 16, (char *)&header);
+    }
+    if (data_reader_->eof())
+      return false;
+
+    Data_reader_blocking::get_bytes_s( data_reader_.get(), data_size, (char *)&buffer[i * data_size]);
+    if (data_reader_->eof())
+      return false;
+
+    if (header.invalid > 0) {
+      struct Input_node_types::Invalid_block invalid;
+      invalid.invalid_begin = i * data_size;
+      invalid.nr_invalid = data_size;
+      data.invalid.push_back(invalid);
+    }
   }
 
   data.start_time = get_current_time();
@@ -167,9 +197,11 @@ void VDIF_reader::set_parameters(const Input_node_parameters &param) {
       thread_map[param.channels[i].tracks[0]] = i;
     time_between_headers_ = Time(param.frame_size * 8.e6 / (sample_rate * param.bits_per_sample()));
     bits_per_complete_sample = param.bits_per_sample();
+    vdif_frames_per_block = 1;
   } else {
-    time_between_headers_ = Time(param.frame_size * 8.e6 / (sample_rate * param.n_tracks));
+    time_between_headers_ = Time(N_VDIF_FRAMES_PER_BLOCK * param.frame_size * 8.e6 / (sample_rate * param.n_tracks));
     bits_per_complete_sample = param.n_tracks;
+    vdif_frames_per_block = N_VDIF_FRAMES_PER_BLOCK;
   }
 
   SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);

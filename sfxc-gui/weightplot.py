@@ -146,7 +146,7 @@ class WeightPlot(Qwt.QwtPlot):
 
         seconds = stop - start
         if seconds > self.history:
-            start = self.start + (val * (seconds - self.history)) / 100
+            start = self.start + (val * (seconds - self.history)) / 99
             stop = start + self.history
             if stop > self.stop:
                 stop = self.stop
@@ -260,7 +260,7 @@ class WeightPlotWindow(Qt.QWidget):
 
             # If the start time is specified as "now" we'll need to
             # look in the correlator output to fine the real start
-            # time of the job.  If the correlator ourput file doesn't
+            # time of the job.  If the correlator output file doesn't
             # exist yet, wait until one shows up.
             while json_input['start'] == "now":
                 try:
@@ -280,6 +280,12 @@ class WeightPlotWindow(Qt.QWidget):
                     fp.close()
                     pass
                 continue
+
+            # If the stop time is specified as "end", determine the
+            # actual stop time from the VEX file.
+            if json_input["stop"] == "end":
+                json_input["stop"] = vex['EXPER'][exper]['exper_nominal_stop']
+                pass
 
             start = vex2time(json_input['start'])
             stop = vex2time(json_input['stop'])
@@ -477,7 +483,11 @@ if __name__ == '__main__':
     parser = optparse.OptionParser(usage=usage)
     parser.add_option("-H", "--history", dest="history",
                       default=86400, type="int",
-                      help="History", metavar="SECONDS")
+                      help="history", metavar="SECONDS")
+    parser.add_option("-r", "--realtime", dest="realtime",
+                      action="store_true", default=False,
+                      help="realtime")
+                      
 
     (options, args) = parser.parse_args()
     if len(args) < 2:
@@ -494,7 +504,7 @@ if __name__ == '__main__':
 
     vex = Vex(vex_file)
 
-    plot = WeightPlotWindow(vex, ctrl_files, None, False, options.history)
+    plot = WeightPlotWindow(vex, ctrl_files, None, options.realtime, options.history)
     plot.show()
 
     sys.exit(app.exec_())

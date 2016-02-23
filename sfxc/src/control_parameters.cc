@@ -228,6 +228,9 @@ initialise(const char *ctrl_file, const char *vex_file,
     log_writer << "Error parsing pulsar parameters" << std::endl;
     return false;
   }
+  if (ctrl["stop"].asString().compare("end") == 0)
+    ctrl["stop"] = vex.get_stop_time_of_experiment();
+
   // Get start date
   start_time = Time(vex.get_start_time_of_experiment());
   initialised = true;
@@ -720,11 +723,6 @@ Control_parameters::setup_station() const {
 }
 
 std::string
-Control_parameters::experiment() const {
-  return ctrl["exper_name"].asString();
-}
-
-std::string
 Control_parameters::channel(int i) const {
   return ctrl["channels"][i].asString();
 }
@@ -1069,6 +1067,23 @@ const Vex &
 Control_parameters::get_vex() const {
   SFXC_ASSERT(initialised);
   return vex;
+}
+
+std::string
+Control_parameters::get_exper_name() const {
+  const Vex::Node &root = get_vex().get_root_node();
+  if (root["GLOBAL"]["EXPER"] == root["GLOBAL"]->end()) {
+    std::cerr << "Cannot find EXPER in $GLOBAL block" << std::endl;
+    sfxc_abort();
+  }
+  const std::string exper = root["GLOBAL"]["EXPER"]->to_string();
+  if (root["EXPER"][exper] == root["EXPER"]->end()) {
+    std::cerr << "Cannot find " << exper << " in $EXPER block" << std::endl;
+    sfxc_abort();
+  }
+  if (root["EXPER"][exper]["exper_name"] != root["EXPER"][exper]->end())
+    return root["EXPER"][exper]["exper_name"]->to_string();
+  return std::string();
 }
 
 std::vector<int>
@@ -1705,10 +1720,14 @@ Control_parameters::data_format(const std::string &station) const {
 
   // Temporary until the various VEX parsers learn about Mark5C
   // (and Dr. Bob stops needlessly editing VEX files)
-  if (transport_type(station) == "Mark5B" ||
-      transport_type(station) == "Mark5C") {
+  if (transport_type(station) == "Mark5B") {
     if (rack_type(station) == "DVP" || rack_type(station) == "RDBE2" ||
 	rack_type(station) == "WIDAR")
+      return "VDIF";
+  }
+  if (transport_type(station) == "Mark5C") {
+    if (rack_type(station) == "DBBC" || rack_type(station) == "DVP" ||
+	rack_type(station) == "RDBE2" || rack_type(station) == "WIDAR")
       return "VDIF";
   }
 
@@ -2149,34 +2168,23 @@ get_correlation_parameters(const std::string &scan_name,
 }
 
 std::string
-Control_parameters::get_delay_directory() const {
-  if (ctrl["delay_directory"] == Json::Value()) {
-    return "file:///tmp";
-  } else {
-    return ctrl["delay_directory"].asString();
-  }
-}
-
-std::string
 Control_parameters::
 get_delay_table_name(const std::string &station_name) const {
-  if(strncmp(ctrl["delay_directory"].asString().c_str(), "file://",7) != 0)
+  if (strncmp(ctrl["delay_directory"].asString().c_str(),  "file://", 7) != 0)
     sfxc_abort("Ctrl-file: Delay directory doesn't start with 'file://'");
   std::string delay_table_name;
-  if(ctrl["delay_directory"].asString().size()==7)
+  if (ctrl["delay_directory"].asString().size()==7)
     // delay files are in the current directory
-    delay_table_name = ctrl["exper_name"].asString() + "_" +station_name + ".del";
+    delay_table_name = get_exper_name() + "_" +station_name + ".del";
   else
     delay_table_name = std::string(ctrl["delay_directory"].asString().c_str()+7) +
-                       "/" + ctrl["exper_name"].asString() + "_" +station_name + ".del";
+      "/" + get_exper_name() + "_" + station_name + ".del";
 
-  if (access(delay_table_name.c_str(), R_OK) == 0) {
+  if (access(delay_table_name.c_str(), R_OK) == 0)
     return delay_table_name;
-  }
   generate_delay_table(station_name, delay_table_name);
-  if (access(delay_table_name.c_str(), R_OK) == 0) {
+  if (access(delay_table_name.c_str(), R_OK) == 0)
     return delay_table_name;
-  }
   DEBUG_MSG("Tried to create the delay table at " << delay_table_name);
   sfxc_abort("Couldn't create the delay table.");
   return std::string("");

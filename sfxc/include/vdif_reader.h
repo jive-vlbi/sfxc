@@ -10,6 +10,8 @@
 #ifndef VDIF_READER_H
 #define VDIF_READER_H
 
+#define N_VDIF_FRAMES_PER_BLOCK	1
+
 #include "input_data_format_reader.h"
 
 #include "data_reader.h"
@@ -78,7 +80,7 @@ public:
 
   void print_header();
   size_t size_data_block() const {
-    return first_header.data_size();
+    return vdif_frames_per_block * first_header.data_size();
   }
 
   void set_parameters(const Input_node_parameters &param);
@@ -95,11 +97,11 @@ public:
 private:
   // Time information
   int ref_jday; //date relative to which times are calculated(mod Julian day)
-  int epoch_jday; // Time origin of the timestamps in the data headers
   // current time in microseconds
   Time current_time_;
   Time time_between_headers_;
   int bits_per_complete_sample;
+  int vdif_frames_per_block;
   double sample_rate;
   // For testing
   Debug_level debug_level_;

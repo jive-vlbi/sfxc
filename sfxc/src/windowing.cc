@@ -144,10 +144,16 @@ Windowing::set_parameters(const Correlation_parameters &parameters){
     delta = freq - parameters.channel_freq;
   else
     delta = parameters.channel_freq - freq;
-  SFXC_ASSERT(delta >= 0);
-  // TODO Is this correct?
-  temp_fft_offset = delta * 2 * fft_size_correlation / parameters.sample_rate;
+
+  if (delta > 0){
+    output_offset = delta * 2 * parameters.fft_size_correlation / parameters.sample_rate;
+    temp_fft_offset = 0;
+  } else {
+    output_offset = 0;
+    temp_fft_offset = -delta * 2 * parameters.fft_size_correlation / parameters.sample_rate;
+  }
   temp_fft_buffer.resize(fft_rot_size/2 + 4);
+  memset(&temp_fft_buffer[0], 0, temp_fft_buffer.size() * sizeof(temp_fft_buffer[0]));
   // Initialize buffers
   buffers[0].resize(fft_rot_size);
   buffers[1].resize(fft_rot_size);
