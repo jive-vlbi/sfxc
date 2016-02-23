@@ -91,7 +91,6 @@ private:
   double start_phase;
 
   int n_ffts_per_integration, current_fft, total_ffts;
-  size_t tbuf_start, tbuf_end;
   Delay_table_akima   delay_table;
 
   Memory_pool_vector_element< std::complex<FLOAT> > frequency_buffer;

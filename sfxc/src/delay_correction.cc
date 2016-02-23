@@ -221,8 +221,6 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters, Delay
   start_phase = LO_offset*(dt-trunc(dt)) + (LO_offset-trunc(LO_offset))*trunc(dt);
   start_phase = start_phase - floor(start_phase);
   current_fft = 0;
-  tbuf_start = 0;
-  tbuf_end = 0;
 /*  std::cerr << RANK_OF_NODE << " : fft_size_dedispersion = " 
             << correlation_parameters.fft_size_dedispersion 
             << ", nfft_max " << nfft_max<< "\n";*/

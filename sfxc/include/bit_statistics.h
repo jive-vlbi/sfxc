@@ -17,13 +17,14 @@ class bit_statistics{
 public:
   bit_statistics();
   ~bit_statistics();
-  void reset_statistics(int bits_per_sample_, int scale_);
+  void reset_statistics(int bits_per_sample_, uint64_t sample_rate_, uint64_t base_sample_rate_);
   void inc_counter(unsigned char word, bool);
   void inc_invalid(int n);
   int *get_statistics();
   int *get_tsys();
   int bits_per_sample;
-  int scale;
+  uint64_t sample_rate;
+  uint64_t base_sample_rate;
 private:
   int nInvalid;
   std::vector<int> data_counts_on;

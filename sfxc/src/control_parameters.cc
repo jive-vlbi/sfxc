@@ -1020,8 +1020,16 @@ Control_parameters::frequency_channel(size_t channel_nr, const std::string& mode
     // We have a match if the channel corresponding to CHANNEL_NR is
     // wholly conatined in this channel.  This covers the "normal"
     // case where all stations use the same setup as well as the case
-    // of mixed 16/32 MHz and 16/64 MHz observations.
+    // of mixed 16/32 MHz and 16/64 MHz observations,
     if ((freq_min >= ch_freq_min && freq_max <= ch_freq_max) &&
+	pol == polarisation(chan[4]->to_string(), station_name, mode_name))
+      return chan[4]->to_string();
+
+    // We also match if this channel is wholly contained in the
+    // channel corresponding to CHANNEL_NR.  This covers the case of
+    // mixed bandwidth observations where we correlate wide bands but
+    // want to include narrower bands in the result.
+    if ((ch_freq_min >= freq_min && ch_freq_max <= freq_max) &&
 	pol == polarisation(chan[4]->to_string(), station_name, mode_name))
       return chan[4]->to_string();
   }
@@ -1254,7 +1262,8 @@ get_mark5b_tracks(const std::string &mode,
   const std::string tracks_name = get_vex().get_track(mode, station);
   if (tracks_name != std::string()) {
     Vex::Node::const_iterator track = root["TRACKS"][tracks_name];
-    if (track["track_frame_format"]->to_string() == "MARK5B") {
+    if (track["track_frame_format"]->to_string() == "Mark5B" ||
+	track["track_frame_format"]->to_string() == "MARK5B") {
       input_parameters.n_tracks = n_mark5a_tracks(mode, station);
       // Parse the $TRACKS section
       for (size_t ch_nr=0; ch_nr < number_frequency_channels(); ch_nr++) {
@@ -1551,7 +1560,7 @@ get_input_node_parameters(const std::string &scan_name,
     sfxc_abort();
   }
 
-  result.track_bit_rate =  (int)sample_rate(mode_name, station_name);
+  result.track_bit_rate = sample_rate(mode_name, station_name);
   if (data_format(station_name) == "VDIF") {
     get_vdif_tracks(mode_name, station_name, result);
   } else if (data_format(station_name) == "Mark4" ||
@@ -1568,8 +1577,9 @@ get_input_node_parameters(const std::string &scan_name,
   const int nchannel = number_frequency_channels();
   for(size_t ch = 0; ch < nchannel; ch++)
     result.channels[ch].channel_offset = dedispersion_parameters.channel_offset[ch];
-  result.buffer_time =  dedispersion_parameters.fft_size_dedispersion / 
-                          (2*sample_rate_ / 1000000.);
+  result.buffer_time =  dedispersion_parameters.fft_size_dedispersion * 
+                        (sample_rate(mode_name, station_name) / sample_rate_) / 
+                        (2*sample_rate_ / 1000000.);
 
   // Set slice size
   result.slice_size = nr_samples_per_slice(integration_time(), 

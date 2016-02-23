@@ -27,6 +27,16 @@ int RANK_OF_NODE = -1; // Rank of the current node
 int RANK_OF_NODE = getpid(); // Rank of the current node
 #endif
 
+void pause_sfxc_for_gdb(void)
+{
+   volatile int halt = 1;
+   std::cerr << "pause_sfxc_for_gdb() : attach with GDB to pid " << getpid()
+             << ", br utils.cc:37, then change halt=0 to resume."
+             << std::endl;
+   // FIXME: change above "utils.cc:37" to reflect line nr of the while() below:
+   while (halt==1) { /* wait for GDB */ }
+   return;
+}
 
 void abort_sfxc_assertion(const char *file, int line, const char* message) 
 {

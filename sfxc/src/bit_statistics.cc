@@ -19,10 +19,12 @@ bit_statistics::~bit_statistics() {
 }
 
 void 
-bit_statistics::reset_statistics(int bits_per_sample_, int scale_) {
+bit_statistics::reset_statistics(int bits_per_sample_, uint64_t sample_rate_,
+				 uint64_t base_sample_rate_) {
   SFXC_ASSERT(bits_per_sample_ == 1 || bits_per_sample_ == 2);
   bits_per_sample = bits_per_sample_;
-  scale = scale_;
+  sample_rate = sample_rate_;
+  base_sample_rate = base_sample_rate_;
   data_counts_on.assign(256, 0);
   data_counts_off.assign(256, 0);
   nInvalid = 0;
@@ -56,7 +58,7 @@ bit_statistics::get_statistics() {
   }
   statistics[statistics.size()-1] += nInvalid;
   for (size_t i = 0; i < statistics.size(); i++)
-    statistics[i] /= scale;
+    statistics[i] = (base_sample_rate * statistics[i]) / sample_rate;
   return &statistics[0];
 }
 
