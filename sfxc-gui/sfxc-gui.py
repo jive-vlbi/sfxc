@@ -64,7 +64,7 @@ class progressDialog(QtGui.QDialog):
         if self.subjob == -1:
             return
 
-        conn = db.connect(host="ccs", port=3306,
+        conn = db.connect(host="db0", port=3306,
                           db="correlator_control",
                           read_default_file="~/.my.cnf")
 
@@ -92,7 +92,7 @@ class progressDialog(QtGui.QDialog):
         except:
             pass
 
-        conn = db.connect(host="ccs", port=3306,
+        conn = db.connect(host="db0", port=3306,
                           db="correlator_control",
                           read_default_file="~/.my.cnf")
 
@@ -109,7 +109,7 @@ class progressDialog(QtGui.QDialog):
         if self.subjob == -1:
             return -1
 
-        conn = db.connect(host="ccs", port=3306,
+        conn = db.connect(host="db0", port=3306,
                           db="correlator_control",
                           read_default_file="~/.my.cnf")
 
@@ -161,6 +161,12 @@ class progressDialog(QtGui.QDialog):
         self.evlbi = options.evlbi
         self.reference = options.reference
         self.timeout_interval = options.timeout_interval
+        self.path = options.path
+
+        # Default to using the SFXC binaries in $HOME/bin
+        if not self.path:
+            self.path = os.environ['HOME'] + "/bin"
+            pass
 
         # Disable the watchdog for e-VLBI.  We don't want to stop the
         # correlator just because there is a longish gap.
@@ -224,7 +230,7 @@ class progressDialog(QtGui.QDialog):
             for station in self.json_input['stations']:
                 path = urlparse.urlparse(delay_directory).path
                 delay_file = path + '/' +  exper + '_' + station + '.del'
-                args = ['generate_delay_model', '-a', vex_file, station,
+                args = [self.path + '/generate_delay_model', '-a', vex_file, station,
                         delay_file, time2vex(self.start), time2vex(self.stop)]
                 procs[station] = subprocess.Popen(args)
                 continue
@@ -269,6 +275,7 @@ class progressDialog(QtGui.QDialog):
 
             # Write out the control file with a modified start time.
             self.json_input['start'] = time2vex(start)
+            os.unlink(ctrl_file)
             fp = open(ctrl_file, 'w')
             json.dump(self.json_input, fp, indent=4)
             fp.close()
@@ -293,27 +300,12 @@ class progressDialog(QtGui.QDialog):
             self.ui.subjobEdit.setText(str(self.subjob))
             pass
 
-        sfxc = '/home/sfxc/bin/sfxc'
+        sfxc = self.path + '/sfxc'
         args = ['mpirun',
                 '--mca', 'btl_tcp_if_include', 'bond0,eth0,eth2.4',
                 '--mca', 'oob_tcp_if_exclude', 'eth1,eth2,eth3',
                 '--machinefile', machine_file, '--rankfile', rank_file,
                 '--np', str(ranks), sfxc, ctrl_file, vex_file]
-        if os.environ['LOGNAME'] == 'kettenis':
-            sfxc = '/home/kettenis/opt/sfxc.openmpi/bin/sfxc'
-            args = ['/home/sfxc/bin/mpirun',
-                    '--mca', 'btl_tcp_if_include', 'bond0,eth0,eth2.4',
-                    '--mca', 'oob_tcp_if_exclude', 'eth1,eth2,eth3',
-                    '--machinefile', machine_file, '--rankfile', rank_file,
-                    '--np', str(ranks), sfxc, ctrl_file, vex_file]
-            pass
-        elif os.environ['LOGNAME'] == 'keimpema':
-            sfxc = '/home/keimpema/sfxc/bin/sfxc'
-            args = ['mpirun',
-                    '--mca', 'btl_tcp_if_include', 'bond0,eth0,eth2.4',
-                    '--mca', 'oob_tcp_if_exclude', 'eth1,eth2,eth3',
-                    '--machinefile', machine_file, '--rankfile', rank_file,
-                    '--np', str(ranks), sfxc, ctrl_file, vex_file]
         self.proc = subprocess.Popen(args, stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
         if not self.proc:
@@ -438,6 +430,7 @@ class progressDialog(QtGui.QDialog):
                     terminate = True
                 self.monitor_pos = newpos
             if terminate:
+                print 'Watchdog timeout'
                 os.kill(self.proc.pid, signal.SIGTERM)
                 i = 0
                 while (i < 15) and (self.proc.poll() == None):
@@ -477,19 +470,22 @@ class progressDialog(QtGui.QDialog):
 
 usage = "usage: %prog [options] vexfile ctrlfile machinefile rankfile"
 parser = optparse.OptionParser(usage=usage)
-parser.add_option("-r", "--reference", dest="reference",
-                  default="", type="string",
-                  help="Reference station",
-                  metavar="STATION")
 parser.add_option("-e", "--evlbi", dest="evlbi",
                   action="store_true", default=False,
                   help="e-VLBI")
-parser.add_option("-s", "--skip-generate-delays", dest="skip_generate_delays",
-                  action="store_true", default=False,
-                  help="Do not generate delay files")
 parser.add_option("-i", "--timeout-interval", dest="timeout_interval",
                   type='int', default='300',
-                  help="After how many seconds of inactivity the job is terminated, setting to zero disables. Default = 300")
+                  help="watchdog timeout", metavar="SECS")
+parser.add_option("-p", "--path", dest="path",
+                  default="", type="string",
+                  help="use SFXC binaries in PATH", metavar="PATH")
+parser.add_option("-r", "--reference", dest="reference",
+                  default="", type="string",
+                  help="reference station",
+                  metavar="STATION")
+parser.add_option("-s", "--skip-generate-delays", dest="skip_generate_delays",
+                  action="store_true", default=False,
+                  help="do not generate delay files")
 
 (options, args) = parser.parse_args()
 if len(args) != 4:

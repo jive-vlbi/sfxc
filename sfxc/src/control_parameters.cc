@@ -203,6 +203,11 @@ initialise(const char *ctrl_file, const char *vex_file,
       ctrl["phasecal_integr_time"] = 0;
   }
 
+  // By default we abort the correlation if one of the input streams
+  // contains no data
+  if(ctrl["exit_on_empty_datastream"] == Json::Value())
+    ctrl["exit_on_empty_datastream"] = true;
+
   if (ctrl["start"].asString().compare("now") == 0) {
     char *now;
     time_t t;
@@ -593,6 +598,11 @@ Control_parameters::sub_integration_time() const {
 Time
 Control_parameters::phasecal_integration_time() const {
   return Time(ctrl["phasecal_integr_time"].asInt() * 1000000);
+}
+
+bool
+Control_parameters::exit_on_empty_datastream() const{
+  return ctrl["exit_on_empty_datastream"].asBool();
 }
 
 int
@@ -1499,6 +1509,7 @@ get_input_node_parameters(const std::string &scan_name,
   result.integr_time = integration_time();
   result.offset = reader_offset(station_name);
   result.phasecal_integr_time = phasecal_integration_time();
+  result.exit_on_empty_datastream = exit_on_empty_datastream();
 
   const Vex::Node &root = vex.get_root_node();
   const std::string &mode_name = vex.get_mode(scan_name);

@@ -67,8 +67,6 @@ Mark5a_reader::goto_time(Data_frame &data, Time time) {
 
 bool Mark5a_reader::open_input_stream(Data_frame &data){
   if (!find_start_of_header(data_reader_, data)){
-    if (eof())
-      sfxc_abort("Could not find header before eof()");
     return false;
   }
 

@@ -64,6 +64,8 @@ public:
   Time phasecal_integr_time;
   // Because of dispersion, consecutive time slices overlap. The overlapping section are buffered
   Time buffer_time;
+  // Abort the correlation if the input stream contains no valid data
+  bool exit_on_empty_datastream;
 };
 
 std::ostream &operator<<(std::ostream &out, const Input_node_parameters &param);
@@ -246,6 +248,7 @@ public:
   bool only_autocorrelations() const;
   bool multi_phase_center() const;
   double LO_offset(const std::string &station) const;
+  bool exit_on_empty_datastream() const;
   
   Time reader_offset(const std::string &s) const{
     return reader_offsets.find(s)->second;
@@ -257,7 +260,6 @@ public:
   std::string get_delay_table_name(const std::string &station_name) const;
   void generate_delay_table(const std::string &station_name,
                             const std::string &filename) const;
-
   std::string channel(int i) const;
 
   int message_level() const;

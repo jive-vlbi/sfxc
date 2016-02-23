@@ -138,6 +138,8 @@ Input_data_format_reader_tasklet::fetch_next_time_interval() {
     return;
 
   if (!reader_->is_open() && !reader_->open_input_stream(input_element_)) {
+    if (reader_->eof() && exit_on_empty_datastream)
+      sfxc_abort("Could not find header before eof()");
     for (size_t i = 0; i < current_time.size(); i++)
       current_time[i] = current_interval_.start_time_;
     return;
@@ -228,6 +230,8 @@ Input_data_format_reader_tasklet::set_parameters(const Input_node_parameters &pa
 
   for (size_t i = 0; i < current_time.size(); i++)
     current_time[i] = reader_->get_current_time();
+
+  exit_on_empty_datastream = params.exit_on_empty_datastream;
 }
 
 void

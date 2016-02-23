@@ -65,10 +65,18 @@ void update_clocks(Delay_table &delay_table, const Vex &vex, std::string &statio
     if (start > Time(clock[0]->to_string()))
       continue;
     start = Time(clock[0]->to_string());
-    offset = clock[1]->to_double();
+    offset = clock[1]->to_double_amount("sec");
     rate = 0.0;
     if (clock->size() > 3) {
-      rate = clock[3]->to_double() / 1e6;
+      if (clock[3]->to_string().find_first_of("\t ") != std::string::npos) {
+	rate = clock[3]->to_double_amount("sec/sec");
+      } else {
+	// No units were specified.  It would make sense to
+	// interpret this as a proper dimensionless quantity.
+	// Unfortunately historical practice at JIVE forces us to
+	// assume rates are specified in usec/sec.
+	rate = clock[3]->to_double() * 1e-6;
+      }
       epoch = Time(clock[2]->to_string());
     }
   }
@@ -78,9 +86,9 @@ void update_clocks(Delay_table &delay_table, const Vex &vex, std::string &statio
   }
 
   // To allow large clock offsets, the reader time is adjusted
-  const double max_offset = 1000000.;
+  const double max_offset = 1.0;
   double reader_offset = round(offset / max_offset) * max_offset;
-  offset = (offset - reader_offset) * 1e-6; // convert to microseconds 
+  offset = offset - reader_offset;
   // Add the clock offsets to the delay table
   delay_table.set_clock_offset(offset, start, rate, epoch);
 }

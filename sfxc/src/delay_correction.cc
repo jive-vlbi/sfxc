@@ -200,9 +200,8 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters, Delay
 
   current_time = parameters.stream_start;
   current_time.set_sample_rate(sample_rate());
+  SFXC_ASSERT(((int64_t)fft_size() * 1000000) % sample_rate() == 0);
   fft_length = Time((double)fft_size() / (sample_rate() / 1000000));
-
-  SFXC_ASSERT(((int64_t)fft_size() * 1000000000) % sample_rate() == 0);
 
   exp_array.resize(fft_size());
   frequency_buffer.resize(fft_size());

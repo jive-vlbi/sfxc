@@ -15,8 +15,6 @@ VDIF_reader::~VDIF_reader() {}
 bool 
 VDIF_reader::open_input_stream(Data_frame &data) {
   if (!read_new_block(data)){
-    if (eof())
-      sfxc_abort("Could not find header before eof()");
     return false;
   }
 
