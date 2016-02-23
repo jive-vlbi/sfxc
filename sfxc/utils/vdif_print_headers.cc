@@ -70,6 +70,7 @@ void get_options(int argc, char*argv[], char **filename, int &frame_size,
   nskip_bytes = 0;
   nskip_frames = 0;
   quiet = false;
+  search = false;
   nframes = -1;
   bool error = false;
   while( (c = getopt_long (argc, argv, "qhsb:f:F:n:",  long_options, 

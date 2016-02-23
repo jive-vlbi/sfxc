@@ -40,7 +40,7 @@
 
 //default constructor, set default values
 Uvw_model::Uvw_model()
-    : scan_nr(0) {}
+    : scan_nr(0), n_sources_in_scan(0) {}
 
 //destructor
 Uvw_model::~Uvw_model() {}
@@ -221,13 +221,30 @@ Uvw_model::add_scans(const Uvw_model &other)
   w.insert(w.end(), other.w.begin(), other.w.end());
 }
 
-void Uvw_model::initialise_next_scan() {
-  int n_sources_in_previous_scan = splineakima_u.size();
-  if (scan_nr >= (scans.size() - n_sources_in_previous_scan))
-    return;
+bool Uvw_model::initialise_next_scan() {
+  // Check if we are at the last scan
+  if (scan_nr >= (scans.size() - n_sources_in_scan))
+    return false;
 
-  scan_nr += n_sources_in_previous_scan;
+  scan_nr += n_sources_in_scan;
 
+  // Determine the number of sources in current scan
+  n_sources_in_scan = 1;
+  while((scan_nr + n_sources_in_scan < scans.size()) && 
+        (scans[scan_nr + n_sources_in_scan - 1].begin == scans[scan_nr + n_sources_in_scan].begin))
+    n_sources_in_scan += 1;
+  return true;
+}
+
+void Uvw_model::create_akima_spline(Time time_) {
+  while (scans[scan_nr].end < time_){
+      if (!initialise_next_scan()){
+        std::string msg = "Premature ending of UVW model, time "  +  
+                           time_.date_string() + " is out of range";
+        sfxc_abort(msg.c_str());
+      }
+  }
+  // FIXME Do we really have to reallocate the accelerator object every time?
   for(int i = 0 ; i < splineakima_u.size() ; i++){
     gsl_spline_free(splineakima_u[i]);
     gsl_spline_free(splineakima_v[i]);
@@ -235,36 +252,6 @@ void Uvw_model::initialise_next_scan() {
     gsl_interp_accel_free(acc_u[i]);
     gsl_interp_accel_free(acc_v[i]);
     gsl_interp_accel_free(acc_w[i]);
-  }
-
-  // Determine the number of sources in current scan
-  int n_sources = 1;
-  while((scan_nr + n_sources < scans.size()) && 
-        (scans[scan_nr + n_sources - 1].begin == scans[scan_nr + n_sources].begin))
-    n_sources++;
-
-  splineakima_u.resize(n_sources);
-  splineakima_v.resize(n_sources);
-  splineakima_w.resize(n_sources);
-  acc_u.resize(n_sources);
-  acc_v.resize(n_sources);
-  acc_w.resize(n_sources);
-}
-
-void Uvw_model::create_akima_spline(Time time_) {
-  if(scans[scan_nr].end < time_){
-    while (scans[scan_nr].end < time_)
-      initialise_next_scan();
-  } else {
-    // FIXME Do we really have to reallocate the accelerator object every time?
-    for(int i = 0 ; i < splineakima_u.size() ; i++){
-      gsl_spline_free(splineakima_u[i]);
-      gsl_spline_free(splineakima_v[i]);
-      gsl_spline_free(splineakima_w[i]);
-      gsl_interp_accel_free(acc_u[i]);
-      gsl_interp_accel_free(acc_v[i]);
-      gsl_interp_accel_free(acc_w[i]);
-    }
   }
 
   // Determine interpolation interval
@@ -288,9 +275,15 @@ void Uvw_model::create_akima_spline(Time time_) {
     if (interpol_end.diff(interpol_begin) < 4)
       interpol_begin = interpol_end - onesec*4;
   }
+  
+  acc_u.resize(n_sources_in_scan);
+  acc_v.resize(n_sources_in_scan);
+  acc_w.resize(n_sources_in_scan);
+  splineakima_u.resize(n_sources_in_scan);
+  splineakima_v.resize(n_sources_in_scan);
+  splineakima_w.resize(n_sources_in_scan);
 
-  int n_sources = splineakima_u.size();
-  for(int i = 0; i < n_sources ; i++){
+  for(int i = 0; i < n_sources_in_scan ; i++){
     Scan &scan = scans[scan_nr + i];
     // at least 5 sample points for a spline
     int n_pts = (int)((interpol_end - interpol_begin) / onesec) + 1;

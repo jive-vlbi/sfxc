@@ -15,16 +15,15 @@
 
 // Number of threads for paralle processing in the channel extraction phase.
 #ifndef NUM_CHANNEL_EXTRACTOR_THREADS
-#define NUM_CHANNEL_EXTRACTOR_THREADS 2
+#define NUM_CHANNEL_EXTRACTOR_THREADS 0
 #endif
 
 //#define USE_EXTRACTOR_5
 
 // Increase the size of the output_memory_pool_ to allow more buffering
-// (8M/SIZE_MK5A_FRAME=) 400 input blocks is 1 second of data
 Channel_extractor_tasklet::
 Channel_extractor_tasklet(Data_format_reader_ptr reader)
-    : output_memory_pool_(400*MAX_SUBBANDS),
+  : output_memory_pool_(2 * MAX_SUBBANDS * 32 * 64),
     reader_(reader),
     n_subbands(0),
     fan_out(0), seqno(0),
@@ -119,6 +118,7 @@ void Channel_extractor_tasklet::stop() {
 
 void
 Channel_extractor_tasklet::do_task() {
+  int n_subbands_recorded = subbandmap.size();
   // Number of output streams, one output stream corresponds to one subband
   SFXC_ASSERT(n_subbands == output_buffers_.size());
   SFXC_ASSERT(n_subbands > 0);
@@ -126,9 +126,10 @@ Channel_extractor_tasklet::do_task() {
   // Acquire output buffers for dechannelized data first.  This may
   // block, so if we do this after grabbing an input buffer we might
   // deadlock.
-  Output_buffer_element output_elements[n_subbands];
+  Output_buffer_element output_elements[n_subbands_recorded];
   //timer_waiting_output_.resume();
-  for (size_t subband = 0; subband < n_subbands; subband++)
+
+  for (size_t subband = 0; subband < n_subbands_recorded; subband++)
     output_elements[subband].channel_data = output_memory_pool_.allocate();
   //timer_waiting_output_.stop();
 
@@ -155,9 +156,9 @@ Channel_extractor_tasklet::do_task() {
   SFXC_ASSERT(n_output_bytes > 0);
 
   // Array of pointers to the actual output data arrays
-  unsigned char *output_positions[n_subbands];
+  unsigned char *output_positions[n_subbands_recorded];
   { // Acquire output buffers
-    for (size_t subband=0; subband<n_subbands; subband++) {
+    for (size_t subband=0; subband<n_subbands_recorded; subband++) {
       output_elements[subband].start_time = input_element.start_time;
       // allocate the right amount of memory for each output block
       if (output_elements[subband].channel_data.data().data.size() !=
@@ -215,8 +216,9 @@ Channel_extractor_tasklet::do_task() {
 
   { // release the input buffer and put the output buffer
     for (size_t i=0; i<n_subbands; i++) {
-      SFXC_ASSERT(output_buffers_[i] != Output_buffer_ptr());
-      output_buffers_[i]->push(output_elements[i]);
+      size_t j = subbandmap[i];
+      SFXC_ASSERT(output_buffers_[j] != Output_buffer_ptr());
+      output_buffers_[i]->push(output_elements[j]);
     }
   }
 
@@ -266,14 +268,28 @@ set_parameters(const Input_node_parameters &input_node_param){
   samples_per_block = reader_->size_data_block() / N;
   std::vector< std::vector<int> > track_positions;
   subband2track.resize(input_node_param.channels.size());
+  subbandmap.resize(input_node_param.channels.size());
   memset(&subband2track[0], 0, input_node_param.channels.size() * sizeof(uint64_t));
-   
+  
   for(int i = 0; i < input_node_param.channels.size(); i++){
-    track_positions.push_back(input_node_param.channels[i].tracks);
-    int ntracks_channel = input_node_param.channels[i].tracks.size();
-    for(int j = 0; j < ntracks_channel; j++){
-      int track = input_node_param.channels[i].tracks[j];
-      subband2track[i] |= (uint64_t)1 << track;
+    bool isduplicate = false;
+    // When correlating mixed-bandwidth experiments, some channels will
+    // be duplicated. Make sure we don't decode them twice
+    for (int j = 0; j < i; j++){
+      if (input_node_param.channels[i] == input_node_param.channels[j]){
+        isduplicate = true;
+        subbandmap[i] = subbandmap[j];
+        break;
+      }
+    }
+    if (!isduplicate){
+      subbandmap[i] = track_positions.size();
+      track_positions.push_back(input_node_param.channels[i].tracks);
+      int ntracks_channel = input_node_param.channels[i].tracks.size();
+      for(int j = 0; j < ntracks_channel; j++){
+        int track = input_node_param.channels[i].tracks[j];
+        subband2track[i] |= (uint64_t)1 << track;
+      }
     }
   }
   if (input_node_param.frame_size != -1)

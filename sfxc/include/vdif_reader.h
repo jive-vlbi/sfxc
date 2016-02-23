@@ -10,7 +10,7 @@
 #ifndef VDIF_READER_H
 #define VDIF_READER_H
 
-#define N_VDIF_FRAMES_PER_BLOCK	1
+#define N_VDIF_FRAMES_PER_BLOCK	4
 
 #include "input_data_format_reader.h"
 

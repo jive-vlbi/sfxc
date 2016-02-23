@@ -186,6 +186,7 @@ do_task() {
     }
   }
   Data_writer_sptr writer = data_writer.writer;
+
   int index=byte_offset;
   int invalid_index = 0;
   int next_invalid_pos = input_element.invalid.size() > 0 ? input_element.invalid[0].invalid_begin :

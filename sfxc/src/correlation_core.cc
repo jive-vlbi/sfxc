@@ -380,7 +380,6 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
 
 void Correlation_core::calibrate(std::vector<Complex_buffer> &buffer,
                                  Time tmid){
-  return;
   for (size_t b = 0; b < baselines.size(); b++) {
     std::pair<size_t,size_t> &baseline = baselines[b];
     int stream1, stream2;
