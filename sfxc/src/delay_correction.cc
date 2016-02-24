@@ -232,10 +232,13 @@ Delay_correction::set_parameters(const Correlation_parameters &parameters, Delay
     delta = freq - parameters.channel_freq;
   else
     delta = parameters.channel_freq - freq;
-  if (delta > 0)
+  if (delta > 0){
     output_offset = delta * fft_cor_size() / parameters.sample_rate;
-  else
+    temp_fft_offset = 0;
+  } else {
+    output_offset = 0;
     temp_fft_offset = -delta * fft_cor_size() / parameters.sample_rate;
+  }
 
   SFXC_ASSERT(parameters.fft_size_correlation >= parameters.fft_size_delaycor);
   n_ffts_per_integration =
