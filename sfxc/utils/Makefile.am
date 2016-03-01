@@ -28,7 +28,7 @@ bin_PROGRAMS += generate_uvw_coordinates \
 endif
 
 bin_SCRIPTS  = run_sfxc.py gen_all_delay_tables.py channel_extractor_compiler.py print_corfile.py \
-               generate_jobs.py get_file_list.py
+               generate_jobs.py get_file_list.py cor2filterbank.py
 
 create_psrfits_SOURCES = \
   create_psrfits.cc \

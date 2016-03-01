@@ -13,7 +13,7 @@ baseline_header_size = 8
 nskip = 0
 OLDBYTE = 300
 
-def get_configuration(vexfile, corfile):
+def get_configuration(vexfile, corfile, setup_station):
   # TODO: This should also determine which subbands have been correlated
   corfile.seek(0)
   gheader_buf = corfile.read(global_header_size)
@@ -34,7 +34,7 @@ def get_configuration(vexfile, corfile):
     print "Error: There should be an integer number of subintegrations per integration"
     sys.exit(1)
 
-  nsubband, maxfreq, bw = get_freq(vexfile, cfg["start_time"])
+  nsubband, maxfreq, bw = get_freq(vexfile, cfg["start_time"], setup_station)
   cfg["nsubband"] = nsubband
   cfg["maxfreq"] = maxfreq
   cfg["bandwidth"] = bw
@@ -115,16 +115,24 @@ def get_source(vexfile, start_time):
   dec =  (int(tdec[0])*100 + int(tdec[1]))*100 + float(tdec[2])
   return name, ra, dec
 
-def get_freq(vexfile, start_time):
-  #NB: This doesn't work for mixed bandwith
+def get_freq(vexfile, start_time, setup_station):
   scan = get_scan(vexfile, start_time)
   mode = vexfile['SCHED'][scan]['mode']
-  freq = vexfile['MODE'][mode]['FREQ'][0]
+  if setup_station == '':
+    freq = vexfile['MODE'][mode]['FREQ'][0]
+  else:
+    freq =''
+    for f in vexfile['MODE'][mode].getall('FREQ'):
+      if setup_station in f[1:]:
+        freq = f[0]
+    if freq == '':
+        raise KeyError(setup_station)
   channels = set()
   for channel in vexfile['FREQ'][freq].getall('chan_def'):
     f0 = float(channel[1].split()[0])
     sb = 0 if (channel[2].strip().upper() == 'L') else 1
     bw = float(channel[3].split()[0])
+    print f0 + sb*bw, bw
     channels.add(f0 + sb*bw)
   nsubband = len(channels)
   maxfreq = max(channels) 
@@ -215,6 +223,10 @@ def parse_args():
   parser.add_option("-i", "--ifs", dest='ifs', type='string', 
                   help='Range of sub-bands to correlate, format first:last. '+
                        'For example -i 0:3 will write the first 4 sub-bands.')
+  parser.add_option("-s", "--setup-station", dest='setup_station', type='string',
+                    help="Define setup station, the frequency setup of this station is used in the conversion. "+
+                         "The default is to use the first station in the vexfile",
+                    default="")
   parser.add_option("-p", "--pol", dest='pol', type='string', default='I',
                   help='Which polarization to use: R, L, or I (=R+L), default=I')
   (opts, args) = parser.parse_args()
@@ -225,7 +237,10 @@ def parse_args():
   else:
     ifs = opts.ifs.partition(':')
     bif = int(ifs[0])
-    eif = int(ifs[2])
+    if ifs[1] != '':
+      eif = int(ifs[2])
+    else:
+      eif = bif    
 
   if opts.pol.upper() == 'L':
     pol = 2
@@ -247,7 +262,7 @@ def parse_args():
 
   vexfile = vex.Vex(args[0])
   outfile = open(args[-1], 'w')
-  return vexfile, infiles, outfile, bif, eif, pol
+  return vexfile, infiles, outfile, bif, eif, pol, opts.setup_station
 
 def get_time(year, day, seconds):
   t = datetime.datetime(year, 1, 1)
@@ -304,11 +319,11 @@ def pad_zeros(outfile, npad, nsubint, nchan):
 #########
 ############################### Main program ##########################
 #########
-vexfile, infiles, outfile, bif, eif, pol = parse_args()
+vexfile, infiles, outfile, bif, eif, pol, setup_station = parse_args()
 
 # Read global header
 global_header_size = struct.unpack('i', infiles[0].read(4))[0]
-cfg = get_configuration(vexfile, infiles[0])
+cfg = get_configuration(vexfile, infiles[0], setup_station)
 if eif == -1:
   eif = cfg["nsubband"] - 1
 start_time = cfg["start_time"]
