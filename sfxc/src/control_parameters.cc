@@ -1559,6 +1559,10 @@ Control_parameters::data_format(const std::string &station) const {
 	rack_type(station) == "RDBE2" || rack_type(station) == "WIDAR")
       return "VDIF";
   }
+  if (transport_type(station) == "None") {
+    if (rack_type(station) == "DBBC")
+      return "VDIF";
+  }
 
   return transport_type(station);
 }
