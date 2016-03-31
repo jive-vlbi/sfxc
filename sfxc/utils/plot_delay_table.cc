@@ -5,6 +5,7 @@
 
 #include "utils.h"
 #include "delay_table_akima.h"
+#include "uvw_model.h"
 #include "control_parameters.h"
 
 void usage(const char *name){
@@ -13,7 +14,8 @@ void usage(const char *name){
             << "          -c, --clocks <vex file>     Use clock offsets from vex file\n"
             << "          -n, --nr-interpolate <nr>   The number of interpolated points to\n"
             << "                                      print between two rows of the delay\n"
-            << "                                      table\n";
+            << "                                      table\n"
+            << "          -u, --uvw                   Print UVW as well\n";
 }
 
 std::string
@@ -104,6 +106,7 @@ int main(int argc, char *argv[]) {
   RANK_OF_NODE = 0;
 #endif
   std::string vexfile;
+  bool print_uvw = false;
   int n_interpol = 9;
   int c;
 
@@ -113,11 +116,13 @@ int main(int argc, char *argv[]) {
         {
           {"help",    no_argument,       0, 'h'},
           {"number-points",    required_argument, 0, 'n'},
+          {"clocks",    required_argument, 0, 'c'},
+          {"uvw",    no_argument,       0, 'u'},
           {0, 0, 0, 0}
         };
       int option_index = 0;
 
-      c = getopt_long (argc, argv, "hn:c:",
+      c = getopt_long (argc, argv, "hn:c:u",
                        long_options, &option_index);
 
       /* Detect the end of the options. */
@@ -135,6 +140,9 @@ int main(int argc, char *argv[]) {
           break;
         case 'n':
           n_interpol = atoi(optarg);
+          break;
+        case 'u':
+          print_uvw = true;
           break;
         case '?':
           exit(1);
@@ -163,6 +171,9 @@ int main(int argc, char *argv[]) {
 
   Delay_table delay_table;
   delay_table.open(argv[optind]);
+  Uvw_model uvw_table;
+  if (print_uvw)
+    uvw_table.open(argv[optind]);
   std::ofstream out(argv[optind+1]);
   out.precision(20);
 
@@ -177,6 +188,8 @@ int main(int argc, char *argv[]) {
       update_clocks(delay_table, vex, station_name, start_time_scan);
     }
     Delay_table_akima akima  = delay_table.create_akima_spline(start_time_scan, dt);
+    if (print_uvw)
+      uvw_table.create_akima_spline(start_time_scan);
 
     std::cout << scan 
               << " \t" << start_time_scan
@@ -188,10 +201,17 @@ int main(int argc, char *argv[]) {
       for (int i=0;i<n_interpol+1;i++){
         Time time = t0 + step*i;
         out << time << ", usec = " << (int64_t)time.get_time_usec();
-        for(int j = 0 ; j < akima.n_phase_centers(); j++)
-          out << " \t(" << akima.delay(time, j) 
+        for(int j = 0 ; j < akima.n_phase_centers(); j++){
+          out << " \t(";
+          if (print_uvw){
+            double u,v,w;
+            uvw_table.get_uvw(j, time, &u, &v, &w);
+            out << u << ", " << v << ", " << w << ", ";
+          }
+          out << akima.delay(time, j) 
               << ", " << akima.phase(time, j)
               << ", " << akima.amplitude(time, j) << ")";
+        }
         out << std::endl;
       }
     }
