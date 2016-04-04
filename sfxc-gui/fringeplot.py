@@ -390,6 +390,7 @@ class FringePlotWindow(Qt.QWidget):
             plot.setAxisTitle(Qwt.QwtPlot.yLeft,
                               self.reference + '-' + plot.station)
             continue
+        self.clear()
         self.replot()
         return
 
@@ -404,12 +405,7 @@ class FringePlotWindow(Qt.QWidget):
         else:
             self.cross = True
             pass
-        for plot in self.plots:
-            for idx in plot.curve:
-                plot.curve[idx].detach()
-                continue
-            plot.curve = {}
-            continue
+        self.clear()
         self.replot()
         return
 
@@ -453,6 +449,15 @@ class FringePlotWindow(Qt.QWidget):
         self.stretch()
         Qt.QWidget.resizeEvent(self, e)
         pass
+
+    def clear(self):
+        for plot in self.plots:
+            for idx in plot.curve:
+                plot.curve[idx].detach()
+                continue
+            plot.curve = {}
+            continue
+        return
 
     def replot(self):
         current_time = datetime.utcnow().strftime("%F %T")
