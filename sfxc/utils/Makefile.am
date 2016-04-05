@@ -130,6 +130,7 @@ generate_uvw_coordinates_SOURCES = \
 plot_delay_table_SOURCES = \
   plot_delay_table.cc \
   ../src/delay_table_akima.cc \
+  ../src/uvw_model.cc \
   ../src/utils.cc \
   ../src/correlator_time.cc
 
