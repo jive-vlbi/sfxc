@@ -67,15 +67,19 @@ def get_baseline_stats(data):
   n = real_data.size
   fringe_pos = real_data.argmax()
   fringe_val = real_data[fringe_pos]
-  guard = max(round(real_data.size * fringe_guard), 1)
-  avg  = real_data[0:max(fringe_pos-guard, 0)].sum()
-  avg += real_data[min(fringe_pos+guard, n):n].sum()
-  navg = n - (fringe_pos - max(fringe_pos-guard, 0)) - (min(fringe_pos+guard, n) - fringe_pos)
+  guard = max(int(round(real_data.size * fringe_guard)), 1)
+  r1_min = max(0, fringe_pos + guard + 1 - n)
+  r1_max = max(fringe_pos - guard,0)
+  r2_min = min(fringe_pos + guard + 1, n)
+  r2_max = min(n, n+ fringe_pos - guard)
+  avg  = real_data[r1_min:r1_max].sum()
+  avg += real_data[r2_min:r2_max].sum()
+  navg = (r2_max-r2_min) + (r1_max-r1_min)
   avg /= max(navg, 1)
-  noise  = pow(real_data[0:max(fringe_pos-guard, 0)] - avg, 2).sum()
-  noise += pow(real_data[min(fringe_pos+guard, n):n] - avg, 2).sum()
-  snr = sqrt(((fringe_val - avg)**2) * navg / max(noise,1e-12))
-  fringe_offset = int(round((fringe_pos - n / 2) / 2.)) # devide by two because of oversampling
+  noise  = pow(real_data[r1_min:r1_max] - avg, 2).sum()
+  noise += pow(real_data[r2_min:r2_max] - avg, 2).sum()
+  snr = sqrt(((fringe_val - avg)**2) * navg / max(noise, 1e-12))
+  fringe_offset = fringe_pos - n / 2
   return (fringe_val, snr, fringe_offset)
 
 def read_uvw(infile, uvw, nuvw):
