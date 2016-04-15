@@ -317,11 +317,15 @@ class progressDialog(QtGui.QDialog):
             pass
 
         sfxc = self.path + '/sfxc'
+        subnet = "10.88.0.0/24"
         args = ['/home/sfxc/bin/mpirun',
-                '--mca', 'btl_tcp_if_include', 'bond0,eth0,eth2.4',
-                '--mca', 'oob_tcp_if_exclude', 'eth1,eth2,eth3',
+                '--mca', 'btl_tcp_if_include', subnet,
+                '--mca', 'oob_tcp_if_include', subnet,
+                '--mca', 'orte_keep_fqdn_hostnames', '1',
+                '--mca', 'orte_hetero_nodes', '1',
                 '--machinefile', machine_file, '--rankfile', rank_file,
                 '--np', str(ranks), sfxc, ctrl_file, vex_file]
+        print ' '.join(args)
         self.proc = subprocess.Popen(args, stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
         if not self.proc:

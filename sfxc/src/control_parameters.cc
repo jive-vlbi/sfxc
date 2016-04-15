@@ -37,8 +37,6 @@ initialise(const char *ctrl_file, const char *vex_file,
     std::ifstream in(ctrl_file);
     if (!in.is_open()) {
       log_writer << "Could not open control file [" << ctrl_file << "]" << std::endl;
-      SFXC_ASSERT_MSG(false,
-                      "Couldn't open control file");
       return false;
     }
     bool ok = reader.parse(in, ctrl);
@@ -47,8 +45,6 @@ initialise(const char *ctrl_file, const char *vex_file,
       log_writer  << "Failed to parse control file\n"
       << reader.getFormatedErrorMessages()
       << std::endl;
-      SFXC_ASSERT_MSG(false,
-                      "Failed to parse the control file");
       return false;
     }
   }
@@ -57,16 +53,12 @@ initialise(const char *ctrl_file, const char *vex_file,
     std::ifstream in(vex_file);
     if (!in.is_open()) {
       log_writer << "Could not open vex file [" <<vex_file<<"]"<< std::endl;
-      SFXC_ASSERT_MSG(false,
-                      "Could not open the vex-file");
       return false;
     }
 
     // parse the vex file
     if (!vex.open(vex_file)) {
       log_writer << "Could not parse vex file ["<<vex_file<<"]" << std::endl;
-      SFXC_ASSERT_MSG(false,
-                      "Could not parse the vex-file");
       return false;
     }
   }
@@ -1728,6 +1720,10 @@ Control_parameters::data_format(const std::string &station) const {
   if (transport_type(station) == "Mark5C") {
     if (rack_type(station) == "DBBC" || rack_type(station) == "DVP" ||
 	rack_type(station) == "RDBE2" || rack_type(station) == "WIDAR")
+      return "VDIF";
+  }
+  if (transport_type(station) == "None") {
+    if (rack_type(station) == "DBBC")
       return "VDIF";
   }
 

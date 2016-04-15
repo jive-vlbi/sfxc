@@ -167,8 +167,8 @@ class FringePlotWindow(Qt.QWidget):
         Qt.QWidget.__init__(self, *args)
 
         exper = vex['GLOBAL']['EXPER']
-        exper = vex['EXPER'][exper]['exper_name']
-        self.setWindowTitle(exper + " Fringes")
+        self.exper_name = vex['EXPER'][exper]['exper_name']
+        self.setWindowTitle(self.exper_name + " Fringes")
 
         self.vex = vex
         self.ctrl_files = ctrl_files
@@ -332,6 +332,11 @@ class FringePlotWindow(Qt.QWidget):
 
         self.plots = []
         self.layout = Qt.QGridLayout()
+        self.label = Qt.QLabel()
+        current_time = datetime.utcnow().strftime("%F %T")
+        self.label.setText('<b>' + self.exper_name + ' - Last update ' + current_time + ' (UTC)</b>')
+        self.label.setAlignment(QtCore.Qt.AlignHCenter)
+        self.layout.addWidget(self.label)
         for station in stations:
             if station == self.reference:
                 continue
@@ -385,6 +390,7 @@ class FringePlotWindow(Qt.QWidget):
             plot.setAxisTitle(Qwt.QwtPlot.yLeft,
                               self.reference + '-' + plot.station)
             continue
+        self.clear()
         self.replot()
         return
 
@@ -399,12 +405,7 @@ class FringePlotWindow(Qt.QWidget):
         else:
             self.cross = True
             pass
-        for plot in self.plots:
-            for idx in plot.curve:
-                plot.curve[idx].detach()
-                continue
-            plot.curve = {}
-            continue
+        self.clear()
         self.replot()
         return
 
@@ -449,7 +450,18 @@ class FringePlotWindow(Qt.QWidget):
         Qt.QWidget.resizeEvent(self, e)
         pass
 
+    def clear(self):
+        for plot in self.plots:
+            for idx in plot.curve:
+                plot.curve[idx].detach()
+                continue
+            plot.curve = {}
+            continue
+        return
+
     def replot(self):
+        current_time = datetime.utcnow().strftime("%F %T")
+        self.label.setText('<b>' + self.exper_name + ' - Last update ' + current_time + ' (UTC)</b>')
         time = self.cordata.time
         correlations = self.cordata.correlations
         for baseline in correlations:
