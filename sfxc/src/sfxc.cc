@@ -130,14 +130,13 @@ int main(int argc, char *argv[]) {
     Control_parameters control_parameters;
 
     Log_writer_cout log_writer(10);
-    if(!control_parameters.initialise(ctrl_file, vex_file, log_writer))
-      sfxc_abort();
-    if (!control_parameters.check(std::cout)) {
-      for (int i=0; i<numtasks; i++) {
-        if (i != RANK_MANAGER_NODE) {
-          end_node(i);
-        }
-      }
+    if ((!control_parameters.initialise(ctrl_file, vex_file, std::cout)) ||
+        (!control_parameters.check(std::cout))){
+      int error = -1;
+      MPI_Bcast(&error, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_COMM_WORLD);
+      MPI_Barrier( MPI_COMM_WORLD );
+      MPI_Finalize();
+      exit(1);
     } else {
       Log_writer_mpi log_writer(RANK_OF_NODE, control_parameters.message_level());
       // Determine number of correlator nodes and broadcast to all nodes
@@ -162,12 +161,15 @@ int main(int argc, char *argv[]) {
   } else {
     int nr_corr_nodes;
     MPI_Bcast(&nr_corr_nodes, 1, MPI_INT32, RANK_MANAGER_NODE, MPI_COMM_WORLD);
-    // Create a communicator for all correlator nodes which can be used for 
-    // collective communications. Note that ALL mpi processes must create 
-    // the communicator not only the correlator nodes.
-    create_correlator_node_comm(nr_corr_nodes);
+    // nr_corr_nodes is negative in case of error
+    if (nr_corr_nodes > 0){
+      // Create a communicator for all correlator nodes which can be used for 
+      // collective communications. Note that ALL mpi processes must create 
+      // the communicator not only the correlator nodes.
+      create_correlator_node_comm(nr_corr_nodes);
  
-    start_node();
+      start_node();
+    }
   }
 
   //close the mpi stuff
