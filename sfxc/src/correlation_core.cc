@@ -480,10 +480,14 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
       }
       SFXC_MUL_F_FC_I(&mask[0], &integration_buffer[i][0], fft_size() + 1);
       fft_f2t.irfft(&integration_buffer[i][0], &real_buffer[0]);
-      for (size_t j = 0; j < number_channels(); j++)
+      real_buffer[number_channels()] =
+	(real_buffer[number_channels()] +
+	 real_buffer[2 * fft_size() - number_channels()]) / 2;
+      for (size_t j = 1; j < number_channels(); j++)
 	real_buffer[number_channels() + j] =
 	  real_buffer[2 * fft_size() - number_channels() + j];
-      SFXC_MUL_F(&real_buffer[0], &window[0], &real_buffer[0], 2 * number_channels());
+      SFXC_MUL_F(&real_buffer[0], &window[0], &real_buffer[0],
+		 2 * number_channels());
       fft_t2f.rfft(&real_buffer[0], &temp_buffer[0]);
       for (size_t j = 0; j < number_channels() + 1; j++) {
 	integration_buffer_float[j] = temp_buffer[j];
@@ -745,19 +749,19 @@ rect(int n, int i)
 double
 cos(int n, int i)
 {
-  return sin(M_PI * i /(n - 1));
+  return sin(M_PI * i / n);
 }
 
 double
 hamming(int n, int i)
 {
-  return 0.54 - 0.46 * cos(2 * M_PI * i / (n - 1));
+  return 0.54 - 0.46 * cos(2 * M_PI * i / n);
 }
 
 double
 hann(int n, int i)
 {
-  return 0.5 * (1 - cos(2 * M_PI * i / (n - 1)));
+  return 0.5 * (1 - cos(2 * M_PI * i / n));
 }
 
 double
@@ -766,16 +770,18 @@ convolve(double (*f)(int, int), int n, int i)
   double sum = 0.0;
 
   i += n / 2;
-  i -= 1;
 
-  for (int j = 0; j <= i; j++) {
-    if ((i - j) >= n)
+  for (int j = 0; j <= n; j++) {
+    if ((i - j) < 0)
+      continue;
+    if ((i - j) > n)
       continue;
     sum += f(n, j) * f(n, i - j);
   }
 
   return sum;
 }
+
 void
 Correlation_core::create_weights(){
   double (*f)(int,int);
@@ -808,7 +814,7 @@ Correlation_core::create_weights(){
   std::vector<std::complex<FLOAT> > fbuf(2*n+1), conjbuf(2*n+1);
   weights.resize(4*n);
   for (int i = 0; i < 2*n; i++){
-    tbuf[i] = f(2*n, i);
+    tbuf[i] = f(2*n-1, i);
   }
   memset(&tbuf[2*n], 0, 2*n*sizeof(FLOAT));
   // Compute auto correlation of windowfunction in Fourier space
@@ -829,6 +835,7 @@ void
 Correlation_core::create_window() {
   const int n = 2 * number_channels();
   const int m = 2 * fft_size();
+  double (*f)(int, int);
 
   if (!window.empty())
     return;
@@ -846,30 +853,28 @@ Correlation_core::create_window() {
   case SFXC_WINDOW_NONE:
   case SFXC_WINDOW_RECT:
     // rectangular window (including zero padding)
-    for (int i = 0; i < n; i++)
-      window[(i + n / 2) % n] =
-	(m / n) * convolve(rect, n, i) / convolve(rect, m, ((m - n) / 2) + i);
+    f = rect; 
     break;
   case SFXC_WINDOW_COS:
     // Cosine window
-    for (int i = 0; i < n; i++)
-      window[(i + n / 2) % n] =
-	(m / n) * convolve(cos, n, i) / convolve(cos, m, ((m - n) / 2) + i);
+    f = cos;
     break;
   case SFXC_WINDOW_HAMMING:
     // Hamming window
-    for (int i = 0; i < n; i++)
-      window[(i + n / 2) % n] =
-	(m / n) * convolve(hamming, n, i) / convolve(hamming, m, ((m - n) / 2) + i);
+    f = hamming;
     break;
   case SFXC_WINDOW_HANN:
-    for (int i = 0; i < n; i++)
-      window[(i + n / 2) % n] =
-	(m / n) * convolve(hann, n, i) / convolve(hann, m, ((m - n) / 2) + i);
+    f = hann;
     break;
   default:
     sfxc_abort("Invalid windowing function");
   }
+
+  window[0] = (m / n) * convolve(f, n, n / 2) / convolve(f, m, m / 2);
+  for (int i = 1; i < n / 2; i++)
+    window[i] = window[n - i] =
+      (m / n) * convolve(f, n, n / 2 + i) / convolve(f, m, m / 2 + i);
+  window[n / 2] = convolve(f, n, n) / convolve(f, m, m);
 }
 
 void
