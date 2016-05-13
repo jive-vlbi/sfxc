@@ -23,18 +23,18 @@ Correlation_core_phased::do_task() {
     integration_initialise();
   }
 
-  SFXC_ASSERT(input_buffers.size()==number_input_streams_in_use());
   for (size_t i = 0; i < number_input_streams_in_use(); i++) {
     int stream = streams_in_scan[i];
     input_elements[i] = &input_buffers[stream]->front()->data[0];
   }
   const int stride = input_buffers[0]->front()->stride;
   const int nbuffer = input_buffers[0]->front()->data.size() / stride;
-  for (int buf = 0; buf < nbuffer * stride ; buf += stride){
+  for (size_t buf_idx = 0; buf_idx < nbuffer * stride ; buf_idx += stride){
     // Process the data of the current fft
-    integration_step(accumulation_buffers, buf);
+    integration_step(accumulation_buffers, buf_idx);
     current_fft++;
   }
+
   for (size_t i = 0; i < number_input_streams_in_use(); i++){
     int stream = streams_in_scan[i];
     input_buffers[stream]->pop();

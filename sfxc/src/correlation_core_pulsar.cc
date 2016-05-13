@@ -104,31 +104,31 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 
 void Correlation_core_pulsar::do_task() {
   SFXC_ASSERT(has_work());
+
   if (current_fft % 1000 == 0) {
     PROGRESS_MSG("node " << node_nr_ << ", "
                  << current_fft << " of " << number_ffts_in_integration);
   }
 
-  if (current_fft%number_ffts_in_integration == 0) {
+  if (current_fft % number_ffts_in_integration == 0) {
     integration_initialise();
   }
 
-  SFXC_ASSERT(input_buffers.size()==number_input_streams_in_use());
-  for (size_t i=0; i < number_input_streams_in_use(); i++) {
+  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
     int stream = streams_in_scan[i];
     input_elements[i] = &input_buffers[stream]->front()->data[0];
   }
   const int first_stream = streams_in_scan[0];
   const int stride = input_buffers[first_stream]->front()->stride;
   const int nbuffer = input_buffers[first_stream]->front()->data.size() / stride;
-  for (int buf = 0; buf < nbuffer * stride ; buf += stride){
+  for (size_t buf_idx = 0; buf_idx < nbuffer * stride; buf_idx += stride) {
     // Process the data of the current fft
-    integration_step(dedispersion_buffer, buf);
+    integration_step(dedispersion_buffer, buf_idx);
     dedisperse_buffer();
-    current_fft ++;
+    current_fft++;
   }
 
-  for (size_t i=0, nstreams=number_input_streams_in_use(); i<nstreams; i++){
+  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
     int stream = streams_in_scan[i];
     input_buffers[stream]->pop();
   }
@@ -138,7 +138,7 @@ void Correlation_core_pulsar::do_task() {
                  << current_fft << " of " << number_ffts_in_integration);
 
     find_invalid();
-    for(int bin=0;bin<nbins;bin++){
+    for(int bin = 0; bin < nbins; bin++) {
       integration_normalize(accumulation_buffers[bin]);
       integration_write(accumulation_buffers[bin], 0, bin);
     }
@@ -148,31 +148,31 @@ void Correlation_core_pulsar::do_task() {
 
 void Correlation_core_pulsar::integration_initialise() {
   const int size = fft_size() + 1;
-  for(int bin=0;bin<nbins;bin++){
+  for(int bin = 0; bin < nbins; bin++) {
     if (accumulation_buffers[bin].size() != baselines.size()) {
       accumulation_buffers[bin].resize(baselines.size());
-      for (int j=0; j<accumulation_buffers[bin].size(); j++) {
+      for (int j = 0; j < accumulation_buffers[bin].size(); j++) {
         accumulation_buffers[bin][j].resize(size);
       }
     }
   }
   if (dedispersion_buffer.size() != baselines.size()) {
     dedispersion_buffer.resize(baselines.size());
-    for (int j=0; j<dedispersion_buffer.size(); j++) {
+    for (int j = 0; j < dedispersion_buffer.size(); j++) {
       dedispersion_buffer[j].resize(size);
     }
   }
 
-  for (int bin=0; bin<nbins; bin++) {
-    for (int j=0; j<accumulation_buffers[bin].size(); j++) {
+  for (int bin = 0; bin < nbins; bin++) {
+    for (int j = 0; j < accumulation_buffers[bin].size(); j++) {
       SFXC_ASSERT(accumulation_buffers[bin][j].size() == size);
-      memset(&accumulation_buffers[bin][j][0], 0, size*sizeof(std::complex<FLOAT>));
+      memset(&accumulation_buffers[bin][j][0], 0, size * sizeof(std::complex<FLOAT>));
     }
   }
 
-  for (int j=0; j<dedispersion_buffer.size(); j++) {
+  for (int j = 0; j < dedispersion_buffer.size(); j++) {
     SFXC_ASSERT(dedispersion_buffer[j].size() == size);
-    memset(&dedispersion_buffer[j][0], 0, size*sizeof(std::complex<FLOAT>));
+    memset(&dedispersion_buffer[j][0], 0, size * sizeof(std::complex<FLOAT>));
   }
   memset(&n_flagged[0], 0, sizeof(std::pair<int64_t,int64_t>)*n_flagged.size());
   fft_f2t.resize(2 * fft_size());
@@ -188,24 +188,21 @@ void Correlation_core_pulsar::integration_initialise() {
 
 void Correlation_core_pulsar::integration_step(std::vector<Complex_buffer> &integration_buffer, int buf_idx) {
 #ifndef DUMMY_CORRELATION
-  // do the correlation
-  for (size_t i=0; i < number_input_streams_in_use(); i++) {
+  // Auto correlations
+  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
     // get the complex conjugates of the input
     SFXC_CONJ_FC(&input_elements[i][buf_idx], &(input_conj_buffers[i])[0], fft_size() + 1);
-    // Auto correlation
-    std::pair<size_t,size_t> &stations = baselines[i];
-    SFXC_ASSERT(stations.first == stations.second);
-    SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
-                        /* in2 */ &input_conj_buffers[stations.first][0],
+    SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[i][buf_idx], 
+                        /* in2 */ &input_conj_buffers[i][0],
                         /* out */ &integration_buffer[i][0], fft_size() + 1);
   }
   
-  for (size_t i=number_input_streams_in_use(); i < baselines.size(); i++) {
-    // Cross correlations
-    std::pair<size_t,size_t> &stations = baselines[i];
-    SFXC_ASSERT(stations.first != stations.second);
-    SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[stations.first][buf_idx], 
-                        /* in2 */ &input_conj_buffers[stations.second][0],
+  // Cross correlations
+  for (size_t i = number_input_streams_in_use(); i < baselines.size(); i++) {
+    std::pair<size_t, size_t> &baseline = baselines[i];
+    SFXC_ASSERT(baseline.first != baseline.second);
+    SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[baseline.first][buf_idx], 
+                        /* in2 */ &input_conj_buffers[baseline.second][0],
                         /* out */ &integration_buffer[i][0], fft_size() + 1);
   }
 #endif // DUMMY_CORRELATION
@@ -216,7 +213,7 @@ void Correlation_core_pulsar::dedisperse_buffer() {
   double len=gate.end-gate.begin;
   // first compute the phase bins
   SFXC_ASSERT(bins.size() == fft_size() + 1);
-  for (int j=0; j < fft_size() + 1; j++) {
+  for (int j = 0; j < fft_size() + 1; j++) {
     double phase = obs_freq_phase - offsets[j];
     phase = phase - floor(phase);
     if (phase >= gate.begin){
@@ -231,9 +228,9 @@ void Correlation_core_pulsar::dedisperse_buffer() {
   }
 
   // TODO check performance agains loop interchange
-  for (int i=0; i < baselines.size(); i++) {
+  for (int i = 0; i < baselines.size(); i++) {
     SFXC_ASSERT(dedispersion_buffer[i].size() == fft_size() + 1);
-    for(int j= 0 ; j < fft_size() + 1; j++) {
+    for(int j = 0 ; j < fft_size() + 1; j++) {
       int bin = bins[j];
       accumulation_buffers[bin][i][j] += dedispersion_buffer[i][j];
       dedispersion_buffer[i][j]=0;
