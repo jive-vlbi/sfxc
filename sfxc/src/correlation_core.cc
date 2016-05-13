@@ -368,13 +368,6 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     writer->put_bytes(nWrite, (char *)&sourcenr);
   }
 
-  int polarisation = 1;
-  if (correlation_parameters.polarisation == 'R') {
-    polarisation =0;
-  } else {
-    SFXC_ASSERT(correlation_parameters.polarisation == 'L');
-  }
-
   int nstreams = correlation_parameters.station_streams.size();
   int nstations = nstreams;
   if (correlation_parameters.cross_polarize) 
@@ -420,16 +413,11 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     Output_header_bitstatistics stats[nstreams];
     for (size_t i=0; i < nstreams; i++){
       int stream = streams_in_scan[i];
-      int station = stream2station[stream]-1;
+      int station = stream2station[stream];
       int32_t *levels=statistics[stream]->get_statistics();
-      if(correlation_parameters.cross_polarize){
-        int nstreams_max = input_buffers.size();
-        stats[i].polarisation=(stream>=nstreams_max/2)?1-polarisation:polarisation;
-      }else{
-        stats[i].polarisation=polarisation;
-      }
-      stats[i].station_nr=station+1;
+      stats[i].station_nr = station;
       stats[i].sideband = (correlation_parameters.sideband=='L') ? 0 : 1;
+      stats[i].polarisation = (correlation_parameters.station_streams[i].polarisation == 'R') ? 0 : 1;
       stats[i].frequency_nr = (unsigned char)correlation_parameters.frequency_nr;
 #ifndef SFXC_ZERO_STATS
       if(statistics[stream]->bits_per_sample==2){
@@ -512,16 +500,9 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
     // Station number in the vex-file
     hbaseline.station_nr2 = stream2station[station2];
 
-    // Polarisation for the first station
-    SFXC_ASSERT((polarisation == 0) || (polarisation == 1)); // (RCP: 0, LCP: 1)
-    hbaseline.polarisation1 = polarisation;
-    hbaseline.polarisation2 = polarisation;
-    if (correlation_parameters.cross_polarize) {
-      if (inputs.first >= nstations)
-        hbaseline.polarisation1 = 1-polarisation;
-      if (inputs.second >= nstations)
-        hbaseline.polarisation2 = 1-polarisation;
-    }
+    // Polarisation (RCP: 0, LCP: 1)
+    hbaseline.polarisation1 = (correlation_parameters.station_streams[inputs.first].polarisation == 'R') ? 0 : 1;
+    hbaseline.polarisation2 = (correlation_parameters.station_streams[inputs.second].polarisation == 'R') ? 0 : 1;
     // Upper or lower sideband (LSB: 0, USB: 1)
     if (correlation_parameters.sideband=='U') {
       hbaseline.sideband = 1;
@@ -564,9 +545,7 @@ Correlation_core::tsys_write() {
     uint8_t station_number = stream2station[stream];
     uint8_t frequency_number = correlation_parameters.frequency_nr;
     uint8_t sideband = (correlation_parameters.sideband == 'L' ? 0 : 1);
-    uint8_t polarisation = (correlation_parameters.polarisation == 'R' ? 0 : 1);
-    if (correlation_parameters.cross_polarize && stream >= input_buffers.size() / 2)
-      polarisation = 1 - polarisation;
+    uint8_t polarisation = (correlation_parameters.station_streams[i].polarisation == 'R' ? 0 : 1);
 
     tsys = statistics[stream]->get_tsys();
     tsys_on_lo = tsys[0];

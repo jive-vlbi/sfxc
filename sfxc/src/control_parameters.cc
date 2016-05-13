@@ -1953,6 +1953,7 @@ get_correlation_parameters(const std::string &scan_name,
           station_param.channel_freq = channel_freq(mode_name, station[0]->to_string(), channel_name);
           station_param.bandwidth = bandwidth(mode_name, station[0]->to_string(), channel_name);
           station_param.sideband = sideband(channel_name, station[0]->to_string(), mode_name);
+          station_param.polarisation = polarisation(channel_name, station[0]->to_string(), mode_name);
           station_param.LO_offset = LO_offset(station[0]->to_string());
           corr_param.station_streams.push_back(station_param);
         }

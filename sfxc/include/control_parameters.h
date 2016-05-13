@@ -139,6 +139,7 @@ public:
     int64_t channel_freq;
     int32_t bandwidth;
     char sideband;
+    char polarisation;
     int32_t bits_per_sample;
     double LO_offset; // LO offset in Hz
   };

@@ -345,6 +345,10 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
       Correlation_parameters::Station_parameters stream =
         correlation_parameters.station_streams[i];
       stream.station_stream += n_stations;
+      if (stream.polarisation == 'R')
+	stream.polarisation = 'L';
+      else
+	stream.polarisation = 'R';
       correlation_parameters.station_streams.push_back(stream);
     }
   }
