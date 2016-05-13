@@ -168,50 +168,19 @@ Correlation_core::create_baselines(const Correlation_parameters &parameters){
   }
   // Crosses
   int ref_station = parameters.reference_station;
-  if (parameters.cross_polarize) {
-    SFXC_ASSERT(number_input_streams_in_use() % 2 == 0);
-    size_t n_st_2 = number_input_streams_in_use()/2;
-    if (ref_station >= 0) {
-      // cross polarize with a reference station
-      for (int sn = 0 ; sn < ref_station; sn++) {
-        baselines.push_back(std::make_pair(sn       , ref_station       ));
-        baselines.push_back(std::make_pair(sn+n_st_2, ref_station       ));
-        baselines.push_back(std::make_pair(sn       , ref_station+n_st_2));
-        baselines.push_back(std::make_pair(sn+n_st_2, ref_station+n_st_2));
-      }
-      for (size_t sn = ref_station+1 ; sn < n_st_2; sn++) {
-        baselines.push_back(std::make_pair(ref_station       , sn       ));
-        baselines.push_back(std::make_pair(ref_station       , sn+n_st_2));
-        baselines.push_back(std::make_pair(ref_station+n_st_2, sn       ));
-        baselines.push_back(std::make_pair(ref_station+n_st_2, sn+n_st_2));
-      }
-    } else {
-      // cross polarize without a reference station
-      for (size_t sn = 0 ; sn < n_st_2 - 1; sn++) {
-        for (size_t sno = sn + 1; sno < n_st_2; sno ++) {
-          baselines.push_back(std::make_pair(sn       ,sno));
-          baselines.push_back(std::make_pair(sn       ,sno+n_st_2));
-          baselines.push_back(std::make_pair(sn+n_st_2,sno));
-          baselines.push_back(std::make_pair(sn+n_st_2,sno+n_st_2));
-        }
-      }
-    }
-  } else { // No cross_polarisation
-    if (parameters.reference_station >= 0) {
-      // no cross polarisation with a reference station
-      for (int sn = 0 ; sn < (int)number_input_streams_in_use(); sn++) {
-        if (sn != ref_station) {
-          baselines.push_back(std::pair<int,int>(sn,ref_station));
-        }
-      }
-    } else { // No reference station
-      // no cross polarisation without a reference station
-
-      for (size_t sn = 0 ; sn < number_input_streams_in_use() - 1; sn++) {
-        for (size_t sno = sn + 1; sno < number_input_streams_in_use() ; sno ++) {
-          baselines.push_back(std::pair<int,int>(sn,sno));
-        }
-      }
+  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
+    for (size_t j = i + 1; j < number_input_streams_in_use(); j++) {
+      int station1 = correlation_parameters.station_streams[i].station_number;
+      int station2 = correlation_parameters.station_streams[j].station_number;
+      if (station1 == station2)
+	continue;
+      if (ref_station >= 0 &&
+	  ref_station != station1 && ref_station != station2)
+	continue;
+      if (station1 < station2)
+	baselines.push_back(std::make_pair<size_t, size_t>(i, j));
+      else
+	baselines.push_back(std::make_pair<size_t, size_t>(j, i));
     }
   }
 }
