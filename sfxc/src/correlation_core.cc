@@ -460,9 +460,6 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
 	integration_buffer_float[j] = integration_buffer[i][j];
     }
 
-    if ((i % 2) == 1 && 0)
-      SFXC_CONJ_FC(&integration_buffer_float[0], &integration_buffer_float[0], number_channels() + 1);
-
     const int64_t total_samples = number_ffts_in_integration * fft_size();
     int32_t *levels = statistics[stream1]->get_statistics(); // We get the number of invalid samples from the bitstatistics
     if (stream1 == stream2) {
