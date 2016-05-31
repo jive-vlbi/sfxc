@@ -23,8 +23,8 @@ Correlation_core_phased::do_task() {
     integration_initialise();
   }
 
-  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
-    int stream = streams_in_scan[i];
+  for (size_t i = 0; i < number_input_streams(); i++) {
+    int stream = station_stream(i);
     input_elements[i] = &input_buffers[stream]->front()->data[0];
   }
   const int stride = input_buffers[0]->front()->stride;
@@ -35,8 +35,8 @@ Correlation_core_phased::do_task() {
     current_fft++;
   }
 
-  for (size_t i = 0; i < number_input_streams_in_use(); i++){
-    int stream = streams_in_scan[i];
+  for (size_t i = 0; i < number_input_streams(); i++) {
+    int stream = station_stream(i);
     input_buffers[stream]->pop();
   }
 
@@ -64,16 +64,15 @@ Correlation_core_phased::set_parameters(const Correlation_parameters &parameters
   correlation_parameters = parameters;
 
   create_baselines(parameters);
-  if (input_elements.size() != number_input_streams_in_use()) {
-    input_elements.resize(number_input_streams_in_use());
+  if (input_elements.size() != number_input_streams()) {
+    input_elements.resize(number_input_streams());
   }
-  if (input_conj_buffers.size() != number_input_streams_in_use()) {
-    input_conj_buffers.resize(number_input_streams_in_use());
-    for(int i=0;i<number_input_streams_in_use();i++)
+  if (input_conj_buffers.size() != number_input_streams()) {
+    input_conj_buffers.resize(number_input_streams());
+    for(int i = 0; i < number_input_streams(); i++)
       input_conj_buffers[i].resize(fft_size() + 1);
   }
   n_flagged.resize(baselines.size());
-  get_input_streams();
 }
 
 void
@@ -119,7 +118,7 @@ void Correlation_core_phased::integration_step(std::vector<Complex_buffer> &inte
 #ifndef DUMMY_CORRELATION
   int sub_integration = current_fft / number_ffts_in_sub_integration;
   SFXC_ASSERT(sub_integration < integration_buffer.size());
-  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
+  for (size_t i = 0; i < number_input_streams(); i++) {
     SFXC_ADD_FC(&input_elements[i][buf_idx],
 		&integration_buffer[sub_integration][0], fft_size() + 1);
   }

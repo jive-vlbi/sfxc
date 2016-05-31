@@ -66,16 +66,17 @@ protected:
   void tsys_write();
   void sub_integration();
   void find_invalid();
-  void get_input_streams();
 
   void uvshift(const Complex_buffer &input_buffer, Complex_buffer &output_buffer, double ddelay1,
                double ddelay2, double rate1, double rate2);
 
   size_t number_channels();
   size_t fft_size();
-  size_t number_input_streams();
 
-  size_t number_input_streams_in_use();
+  size_t number_input_streams();
+  int station_stream(int);
+  int station_number(int);
+
   void create_window();
   void create_weights();
   void create_mask();
@@ -88,7 +89,6 @@ protected:
   // the complex conjugate of input_elements
   std::vector< Complex_buffer >           input_conj_buffers; 
   std::vector<bit_statistics_ptr>         statistics;
-  std::vector<int>                        streams_in_scan;
   // Tracks the number of correlator points where one (but not both) stations on a baseline had invalid data
   std::vector< std::pair<int64_t,int64_t> > n_flagged;
 
@@ -131,12 +131,15 @@ inline size_t Correlation_core::fft_size() {
 }
 
 inline size_t Correlation_core::number_input_streams() {
-  return input_buffers.size();
-}
-
-inline size_t Correlation_core::number_input_streams_in_use() {
   return correlation_parameters.station_streams.size();
 }
 
+inline int Correlation_core::station_stream(int i) {
+  return correlation_parameters.station_streams[i].station_stream;
+}
+
+inline int Correlation_core::station_number(int i) {
+  return correlation_parameters.station_streams[i].station_number;
+}
 
 #endif /*CORRELATION_CORE_H_*/

@@ -35,13 +35,13 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
     mask_parameters = *correlation_parameters.mask_parameters;
 
   create_baselines(parameters);
-  if (input_elements.size() != number_input_streams_in_use()) {
-    input_elements.resize(number_input_streams_in_use());
+  if (input_elements.size() != number_input_streams()) {
+    input_elements.resize(number_input_streams());
   }
 
-  if (input_conj_buffers.size() != number_input_streams_in_use()) {
-    input_conj_buffers.resize(number_input_streams_in_use());
-    for(int i=0;i<number_input_streams_in_use();i++)
+  if (input_conj_buffers.size() != number_input_streams()) {
+    input_conj_buffers.resize(number_input_streams());
+    for(int i = 0; i < number_input_streams(); i++)
       input_conj_buffers[i].resize(fft_size() + 1);
   }
   n_flagged.resize(baselines.size());
@@ -99,7 +99,6 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
 
   if(accumulation_buffers.size()!=nbins)
     accumulation_buffers.resize(nbins);
-  get_input_streams();
 }
 
 void Correlation_core_pulsar::do_task() {
@@ -114,11 +113,11 @@ void Correlation_core_pulsar::do_task() {
     integration_initialise();
   }
 
-  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
-    int stream = streams_in_scan[i];
+  for (size_t i = 0; i < number_input_streams(); i++) {
+    int stream = station_stream(i);
     input_elements[i] = &input_buffers[stream]->front()->data[0];
   }
-  const int first_stream = streams_in_scan[0];
+  const int first_stream = station_stream(0);
   const int stride = input_buffers[first_stream]->front()->stride;
   const int nbuffer = input_buffers[first_stream]->front()->data.size() / stride;
   for (size_t buf_idx = 0; buf_idx < nbuffer * stride; buf_idx += stride) {
@@ -128,8 +127,8 @@ void Correlation_core_pulsar::do_task() {
     current_fft++;
   }
 
-  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
-    int stream = streams_in_scan[i];
+  for (size_t i = 0; i < number_input_streams(); i++) {
+    int stream = station_stream(i);
     input_buffers[stream]->pop();
   }
 
@@ -189,7 +188,7 @@ void Correlation_core_pulsar::integration_initialise() {
 void Correlation_core_pulsar::integration_step(std::vector<Complex_buffer> &integration_buffer, int buf_idx) {
 #ifndef DUMMY_CORRELATION
   // Auto correlations
-  for (size_t i = 0; i < number_input_streams_in_use(); i++) {
+  for (size_t i = 0; i < number_input_streams(); i++) {
     // get the complex conjugates of the input
     SFXC_CONJ_FC(&input_elements[i][buf_idx], &(input_conj_buffers[i])[0], fft_size() + 1);
     SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[i][buf_idx], 
@@ -198,7 +197,7 @@ void Correlation_core_pulsar::integration_step(std::vector<Complex_buffer> &inte
   }
   
   // Cross correlations
-  for (size_t i = number_input_streams_in_use(); i < baselines.size(); i++) {
+  for (size_t i = number_input_streams(); i < baselines.size(); i++) {
     std::pair<size_t, size_t> &baseline = baselines[i];
     SFXC_ASSERT(baseline.first != baseline.second);
     SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[baseline.first][buf_idx], 
