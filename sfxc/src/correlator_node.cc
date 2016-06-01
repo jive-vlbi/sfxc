@@ -328,9 +328,8 @@ Correlator_node::set_parameters() {
   // Get delay and UVW tables
   // NB: The total number of streams in the job is not nessecarily the same 
   // as the number of streams in the scan
-  int nstreams = delay_index.size();
   Time tmid = parameters.start_time + parameters.integration_time/2;
-  std::vector<Delay_table_akima> akima_tables(nstreams);
+  std::vector<Delay_table_akima> akima_tables(delay_index.size());
   std::vector<std::vector<double> > uvw(uvw_tables.size());
   for(int i=0;i<parameters.station_streams.size();i++){
     int stream = parameters.station_streams[i].station_stream;
@@ -380,16 +379,19 @@ Correlator_node::set_parameters() {
   n_integration_slice_in_time_slice =
     (parameters.stop_time-parameters.start_time) / parameters.integration_time;
   // set the output stream
-  int n_streams_in_scan = parameters.station_streams.size();
-  int nstations = n_streams_in_scan;
-  if (parameters.cross_polarize)
-    nstations /= 2;
+  int nstreams = parameters.station_streams.size();
+  std::set<int> stations_set;
+  for (int i = 0; i < nstreams; i++) {
+    int station = parameters.station_streams[i].station_number;
+    stations_set.insert(station);
+  }
+  int nstations = stations_set.size();
   int nBaselines = correlation_core->number_of_baselines();
   int size_of_one_baseline = sizeof(std::complex<FLOAT>) * (parameters.number_channels + 1);
 
   int size_uvw = nstations*sizeof(Output_uvw_coordinates);
   // when the cross_polarize flag is set then the correlator node receives 2 polarizations
-  int size_stats = n_streams_in_scan*sizeof(Output_header_bitstatistics);
+  int size_stats = nstreams * sizeof(Output_header_bitstatistics);
 
   int slice_size;
   slice_size = nBins * ( sizeof(int32_t) + sizeof(Output_header_timeslice) + size_uvw + size_stats +
