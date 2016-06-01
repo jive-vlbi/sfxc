@@ -1934,6 +1934,7 @@ get_correlation_parameters(const std::string &scan_name,
     SFXC_ASSERT(corr_param.reference_station != -1);
   }
 
+  std::set<int> stations_set;
   for (Vex::Node::const_iterator station = scan->begin("station");
        station != scan->end("station"); ++station) {
     const std::string &channel_name =
@@ -1945,7 +1946,42 @@ get_correlation_parameters(const std::string &scan_name,
         if (channel_name != std::string()) {
           Correlation_parameters::Station_parameters station_param;
           station_param.station_number = station_number(station[0]->to_string());
+          stations_set.insert(station_param.station_number);
           station_param.station_stream = station_nr_it->second;
+          station_param.start_time = station[1]->to_int_amount("sec");
+          station_param.stop_time = station[2]->to_int_amount("sec");
+          station_param.bits_per_sample = bits_per_sample(mode_name, station[0]->to_string());
+          station_param.sample_rate = sample_rate(mode_name, station[0]->to_string());
+          station_param.channel_freq = channel_freq(mode_name, station[0]->to_string(), channel_name);
+          station_param.bandwidth = bandwidth(mode_name, station[0]->to_string(), channel_name);
+          station_param.sideband = sideband(channel_name, station[0]->to_string(), mode_name);
+          station_param.polarisation = polarisation(channel_name, station[0]->to_string(), mode_name);
+          station_param.LO_offset = LO_offset(station[0]->to_string());
+          corr_param.station_streams.push_back(station_param);
+        }
+      }
+    }
+  }
+
+  if (!cross_polarize())
+    return corr_param;
+
+  channel_nr = cross_channel(channel_nr, mode_name);
+  for (Vex::Node::const_iterator station = scan->begin("station");
+       station != scan->end("station"); ++station) {
+    const std::string &channel_name =
+      frequency_channel(channel_nr, mode_name, station[0]->to_string());
+    std::map<std::string, int>::const_iterator station_nr_it =
+      correlator_node_station_to_input.find(station[0]->to_string());
+    if (station_nr_it != correlator_node_station_to_input.end()) {
+      if (station_nr_it->second >= 0) {
+        if (channel_name != std::string()) {
+          Correlation_parameters::Station_parameters station_param;
+          station_param.station_number = station_number(station[0]->to_string());
+	  if (stations_set.count(station_param.station_number) > 0)
+	    station_param.station_stream = station_nr_it->second + number_stations();
+	  else
+	    station_param.station_stream = station_nr_it->second;;
           station_param.start_time = station[1]->to_int_amount("sec");
           station_param.stop_time = station[2]->to_int_amount("sec");
           station_param.bits_per_sample = bits_per_sample(mode_name, station[0]->to_string());

@@ -334,24 +334,6 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     correlation_parameters.n_phase_centers = n_sources_in_current_scan;
   else
     correlation_parameters.n_phase_centers = 1;
-  correlation_parameters.cross_polarize = (cross_channel != -1);
-
-  // Check the cross polarisation
-  if (cross_channel != -1) {
-    int n_stations = control_parameters.number_stations();
-    int n_streams = correlation_parameters.station_streams.size();
-    // Add the cross polarisations
-    for (int i=0; i<n_streams; i++) {
-      Correlation_parameters::Station_parameters stream =
-        correlation_parameters.station_streams[i];
-      stream.station_stream += n_stations;
-      if (stream.polarisation == 'R')
-	stream.polarisation = 'L';
-      else
-	stream.polarisation = 'R';
-      correlation_parameters.station_streams.push_back(stream);
-    }
-  }
 
   correlator_node_set(correlation_parameters, corr_node_nr);
 
@@ -360,26 +342,27 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   for (size_t station_nr=0;
        station_nr< nStations;
        station_nr++) {
+    int stream = corr_node_nr;
     if (ch_number_in_scan[current_channel][station_nr] >= 0) {
       input_node_set_time_slice(control_parameters.station(station_nr),
                                 ch_number_in_scan[current_channel][station_nr],
-                                /*stream*/corr_node_nr,
+				stream,
                                 correlation_parameters.start_time,
                                 correlation_parameters.stop_time);
+      stream += n_corr_nodes;
+    }
 
-      if (cross_channel != -1 &&
-	  ch_number_in_scan[cross_channel][station_nr] >= 0) {
-        // Add the cross polarisation channel
-        input_node_set_time_slice(control_parameters.station(station_nr),
-                                  ch_number_in_scan[cross_channel][station_nr],
-                                  /*stream*/corr_node_nr+n_corr_nodes,
-                                  correlation_parameters.start_time,
-                                  correlation_parameters.stop_time);
-      }
+    if (cross_channel != -1 &&
+	ch_number_in_scan[cross_channel][station_nr] >= 0) {
+      input_node_set_time_slice(control_parameters.station(station_nr),
+				ch_number_in_scan[cross_channel][station_nr],
+				stream,
+				correlation_parameters.start_time,
+				correlation_parameters.stop_time);
     }
   }
 
-  current_channel ++;
+  current_channel++;
   if (control_parameters.cross_polarize()) {
     // Go to the next channel.
     cross_channel =
@@ -388,7 +371,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
     while ((current_channel <
             control_parameters.number_frequency_channels()) &&
            (cross_channel >= 0) && (cross_channel < (int)current_channel)) {
-      current_channel ++;
+      current_channel++;
       cross_channel =
         control_parameters.cross_channel(current_channel,
                                          control_parameters.get_mode(correlation_parameters.start_time));
