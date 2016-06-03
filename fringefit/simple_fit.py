@@ -1,18 +1,15 @@
 #!/usr/bin/python
-from numpy import *
 from pylab import *
 import numpy.polynomial as polynomial
-import sys, struct, datetime, pdb
-import vex as Vex
+import sys, struct, pdb
+from datetime import datetime, timedelta
 import parameters, vex_time
+import vex as Vex
+import json
 import signal
 from sfxcdata_utils import *
 from optparse import OptionParser
-
-try:
-  import json
-except ImportError:
-  import simplejson as json
+import time
 
 def p_good(V, n, max_int, dx):
   if(V > 13): # for V>13 the probility of error at the machine precision
@@ -20,44 +17,41 @@ def p_good(V, n, max_int, dx):
   Z = arange(0,max_int,dx)
   return trapz(Z*exp(-(Z**2+V**2)/2)*i0(Z*V)*(1-exp(-(Z**2)/2))**(n-1),dx=dx)
 
-def goto_integration(corfile, param, start_integration, timeout):
-  global_header_size = param.global_header_size
-  timeslice_header_size = parameters.timeslice_header_size
-  uvw_header_size = parameters.uvw_header_size
-  stat_header_size = parameters.stat_header_size
-  baseline_header_size = parameters.baseline_header_size
-  # Get global header
-  corfile.seek(0)
-  gheader_buf = read_data(corfile, global_header_size, timeout)
-  global_header = struct.unpack('i32s2h5i4c', gheader_buf[:64])
-  nchan = global_header[5]
-  integration_time = global_header[6]
-  # Skip to start integration
-  for i in xrange(start_integration):
-    for j in range(param.nsubint):
-      tsheader_buf = read_data(corfile, timeslice_header_size, timeout)
-      timeslice_header = struct.unpack('4i', tsheader_buf)
-      # skip over headers
-      nbaseline = timeslice_header[1]
-      nuvw = timeslice_header[2]
-      nstatistics = timeslice_header[3]
-      baseline_data_size = (nchan + 1) * 8 # data is complex floats
-      slice_size = uvw_header_size * nuvw + stat_header_size * nstatistics + \
-                   nbaseline * (baseline_header_size + baseline_data_size)
-      skip_data(corfile, slice_size, timeout)
+def goto_integration(corfile, start_pos, timeout):
+  corfile.seek(0, 2)
+  pos = corfile.tell()
+  if (timeout > 0):
+    oldpos = pos
+    oldtime = datetime.utcnow()
+    while pos < start_pos:
+      time.sleep(1)
+      corfile.seek(0, 2)
+      pos = corfile.tell()
+      newtime = datetime.utcnow()
+      if pos != oldpos:
+        oldpos = pos
+        oldtime = newtime
+      elif (newtime-oldtime).seconds > timeout:
+        break
 
-def read_integrations(inputfile, data, int_read, param, n_integrations, ref_station, timeout):
+  if pos < start_pos:
+    return False
+
+  corfile.seek(start_pos)
+  return True
+
+def read_integrations(inputfile, data, int_read, param, scan_param, n_integrations, ref_station, timeout):
   global_header_size = param.global_header_size
   timeslice_header_size = parameters.timeslice_header_size
   uvw_header_size = parameters.uvw_header_size
   stat_header_size = parameters.stat_header_size
   baseline_header_size = parameters.baseline_header_size
    
-  stations_in_job = param.stations
+  stations_in_job = scan_param['stations']
   n_stations = len(stations_in_job)  
-  channels = param.channels
+  channels = scan_param['channels']
   n_channels = len(channels)
-  nsubint = param.nsubint 
+  nsubint = scan_param['nsubint'] 
   nchan = param.nchan
 
   n_baseline = n_stations*(n_stations-1)/2
@@ -135,10 +129,10 @@ def lag_offsets(data, n_station, offsets, rates, snr):
       if (chan == 3) and (station==-3):
         pdb.set_trace()
 
-def apply_model(data, station1, station2, delays, rates, param,):
-  channels = param.channels
+def apply_model(data, station1, station2, delays, rates, param, scan_param):
+  channels = scan_param['channels']
   vex_freqs = param.freqs
-  n_station = len(param.stations)
+  n_station = len(scan_param['stations'])
   n_baseline = n_station * (n_station-1) / 2
   
   N = data.shape[2]-1
@@ -233,7 +227,7 @@ def get_options():
                     help='Start time of clock search [Default : first integration]')
   parser.add_option('-e', '--end-time', dest='end_time',
                     help='End time of clock search [Default : last integration]')
-  parser.add_option('-t', '--timeout', dest='timeout', type='int', default = '0',
+  parser.add_option('-t', '--timeout', dest='timeout', type='int', default = 0,
                     help='Determines after how many seconds of inactivity we assume that the correlator job ended. [Default : 0 seconds]')
   (options, args) = parser.parse_args()
   if len(args) != 2:
@@ -276,31 +270,15 @@ def get_options():
   except:
     print >> sys.stderr, "Error : Could not open " + corfile
     sys.exit(1)
-  param = parameters.parameters(vex, corfile, setup_station, options.timeout)
-  # Determine which integrations to include in the clock search
-  start_of_correlation = vex_time.get_time(param.starttime)
-  if options.begin_time != None:
-    begin_time = max(start_of_correlation, vex_time.get_time(options.begin_time))
-  else:
-    begin_time = start_of_correlation
-  diff_time = (begin_time - start_of_correlation)
-  start_integration = int((diff_time.days*86400+diff_time.seconds) / param.integration_time)
   if options.timeout > 0: 
     # We are running concurrently with a correlator job
-    if (options.end_time == None):
-      if options.controlfile == None:
+    if (options.end_time == None) and (options.controlfile == None):
         parser.error("When running concurrently with a correlator job either the end_time option should\
          be set or the control file should be used to drive this program.")
-      end_time = vex_time.get_time(ctrl["stop"])
-    else:
-      end_time = vex_time.get_time(options.end_time)
-    diff_time = end_time - begin_time
-    n_integrations = int((diff_time.days*86400+diff_time.seconds) / param.integration_time)
-  else:
-    n_integrations = param.n_integrations - start_integration
-  return (vex, inputfile, ref_station, start_integration, n_integrations, options.timeout, param)
+  param = parameters.parameters(vex, corfile, setup_station, options.timeout)
+  return (vex, ctrl, inputfile, ref_station, options, param)
 
-def write_clocks(vex, param, delays, rates, snr, ref_station):
+def write_clocks(vex, param, scan_param, delays, rates, snr, ref_station, begin_time, n_integrations):
   vex_stations = [s for s in vex['STATION']]
   vex_stations.sort()
   # First compute channel weights
@@ -308,14 +286,14 @@ def write_clocks(vex, param, delays, rates, snr, ref_station):
   for c in range(n_channels):
     for b in range(n_stations):
       P = p_good(snr[c,b], param.nchan, 20, 0.01)
-      W[c, b] = (1./16)*P**4/((1./16)*P**4+(1-P)**4)
+      W[c, b] = P**4/(P**4 + 16.*(1-P)**4)
   N = snr.shape[1]
   tot_weights = sum(W,axis=0)
   tot_weights[ref_station] = 1
   weights = W / (tot_weights + 1e-6)
   weights[:,ref_station] = 1
-  stations = [vex_stations[i] for i in param.stations]
-  channels = [param.channel_names[param.vex_channels.index(c)] for c in param.channels]
+  stations = [vex_stations[i] for i in scan_param['stations']]
+  channels = [param.channel_names[param.vex_channels.index(c)] for c in scan_param['channels']]
   print '{'
   print '\"stations\" : [',
   for s in range(n_stations-1):
@@ -325,7 +303,7 @@ def write_clocks(vex, param, delays, rates, snr, ref_station):
   for c in range(n_channels-1):
     print '\"'+channels[c]+'\", ',
   print '\"'+channels[n_channels-1]+'\"],'
-  tmid = vex_time.get_time(param.starttime) + datetime.timedelta(seconds = param.integration_time*param.n_integrations/2)
+  tmid = begin_time + timedelta(seconds = param.integration_time*n_integrations/2)
   tmid_tuple = tmid.utctimetuple()
   tmid_string = '%dy%dd%dh%dm%ds' %(tmid_tuple[0], tmid_tuple[7], tmid_tuple[3], tmid_tuple[4], tmid_tuple[5])
   print '\"epoch\" : \"'+tmid_string+'\",'
@@ -333,8 +311,8 @@ def write_clocks(vex, param, delays, rates, snr, ref_station):
   for s in range(n_stations):
     print '    \"' + stations[s] +'\" : {'
     for c in range(n_channels):
-      base_freq = param.freqs[param.channels[0][0]]
-      sb =  -1 if param.channels[c][1] == 0 else 1
+      base_freq = param.freqs[scan_param['channels'][0][0]]
+      sb =  -1 if scan_param['channels'][c][1] == 0 else 1
       delay = -delays[c,s] / (param.sample_rate)
       rate = -sb * rates[c,s]/(2*pi*param.integration_time*(base_freq + sb * param.sample_rate/4))
       snr_tot = snr[c,s]
@@ -350,8 +328,8 @@ def write_clocks(vex, param, delays, rates, snr, ref_station):
       print '}'
   print '}'
 
-def fringe_fit(data, delays, rates, snr, param):
-  n_stations = len(param.stations)
+def fringe_fit(data, delays, rates, snr, param, scan_param):
+  n_stations = len(scan_param['stations'])
   #Get initial estimate
   lag_offsets(data, n_stations, delays, rates, snr)
   #pdb.set_trace()
@@ -359,24 +337,96 @@ def fringe_fit(data, delays, rates, snr, param):
   drates = zeros(rates.shape)
   for it in range(2):
     for station in range(n_stations):
-      bldata = apply_model(data[:,station,:], ref_index, station, delays, rates, param)
+      bldata = apply_model(data[:,station,:], ref_index, station, delays, rates, param, scan_param)
       phase_offsets(bldata, station, ddelays, drates, snr)
     delays += ddelays
     rates += drates
   
+def goto_scan(scan, inputfile, param, timeout):
+  # Wait the correlation to reach the requested scan
+  scan_param = param.get_scan_param(scan)
+  if (timeout > 0):
+    inputfile.seek(0, 2)
+    oldpos = inputfile.tell()
+    oldtime = datetime.utcnow()
+    while scan_param == None:
+      time.sleep(1)
+      inputfile.seek(0, 2)
+      newpos = inputfile.tell()
+      newtime = datetime.utcnow()
+      if newpos != oldpos:
+        oldpos = newpos
+        oldtime = newtime
+      elif (newtime-oldtime).seconds > timeout:
+        break
+      scan_param = param.get_scan_param(scan)
+  return scan_param
+
+def get_parameters(vex, ctrl, corfile, scan_param, begin_time, end_time, timeout):
+  scan = scan_param["name"]
+  start_of_scan = vex_time.get_time(vex['SCHED'][scan]["start"])
+  scan_duration = int(vex["SCHED"][scan]["station"][2].partition('sec')[0])   
+  if scan == param.get_scan_name(param.starttime):
+    diff_time = begin_time - param.starttime
+    scan_duration -= (param.starttime - start_of_scan).seconds
+  else:
+    diff_time = begin_time - start_of_scan
+  scan_duration -= diff_time.seconds
+  if end_time != None:
+    scan_duration = min(scan_duration, (end_time - begin_time).seconds)
+  slice_in_scan = int(diff_time.seconds / param.integration_time)
+  start_slice = slice_in_scan + scan_param["start_slice"]
+  start_fpos = scan_param["fpos"] + slice_in_scan * scan_param["slice_size"]
+  if timeout > 0: 
+    # We are running concurrently with a correlator job
+    if (end_time == None):
+      end_time = vex_time.get_time(ctrl["stop"])
+    diff_time = end_time - begin_time
+    nseconds = min((diff_time.days*86400+diff_time.seconds), scan_duration)
+    nslice = int(nseconds / param.integration_time)
+  else:
+    corfile.seek(0,2)
+    pos = corfile.tell()
+    nslice = min((pos - start_fpos + 1)/scan_param['slice_size'],
+                 int(scan_duration / param.integration_time))
+  return start_fpos, start_slice, nslice
  
 def sighandler(signum, frame):
   # Data reading was interupted, compute delays and rates.
   # All variables are from global scope
   data_read = data[:,:,0:int_read[0],:]
   if int_read[0] > 0:
-    fringe_fit(data_read, delays, rates, snr, param)
-    write_clocks(vex, param, delays, rates, snr, ref_index)
+    fringe_fit(data_read, delays, rates, snr, param, scan_param)
+    write_clocks(vex, param, scan_param, delays, rates, snr, ref_index, begin_time, n_integrations)
   sys.exit(0)
 
+####
 ######################## MAIN ##############################
-(vex, corfile, ref_station, start_integration, n_integrations, timeout, param) = get_options()
+####
+(vex, ctrl, corfile, ref_station, options, param) = get_options()
+timeout = options.timeout
+
+# Determine which scan to clock search
+if options.begin_time != None:
+  begin_time = max(param.starttime, vex_time.get_time(options.begin_time))
+  scan = param.get_scan_name(begin_time)
+else:
+  begin_time = param.starttime
+  scan = param.get_scan_name(param.starttime)
+
+# Go to current scan
+scan_param = goto_scan(scan, corfile, param, timeout)
+if scan_param == None:
+  print >> sys.stderr, "Error : Premature end of correlation file"
+  exit(1)
+
+end_time = vex_time.get_time(options.end_time) if options.end_time != None else None   
+start_fpos, start_slice, n_integrations = get_parameters(vex, ctrl, corfile, scan_param, begin_time, end_time, timeout)
+
 # initialize variables
+channels = scan_param["channels"]
+stations = scan_param["stations"]
+
 vex_stations = [s for s in vex['STATION']]
 vex_stations.sort()
 try:
@@ -385,21 +435,20 @@ except:
   print >> sys.stderr, 'Error : reference station ' + ref_station + ' is not found in vex file'
   sys.exit(1)
 try:
-  ref_index = param.stations.index(ref_station_nr)
+  ref_index = stations.index(ref_station_nr)
 except:
   print >> sys.stderr, 'Error : reference station ' + ref_station + ' is not found in the correlator output file'
   sys.exit(1)
-n_channels = len(param.channels)
-n_stations = len(param.stations)
+
+n_channels = len(channels)
+n_stations = len(stations)
 delays = zeros([n_channels, n_stations])
 rates = zeros([n_channels, n_stations])
 snr = zeros([n_channels, n_stations])
 #print [vex_stations[i] for i in param.stations]
 
 # Skip to first integration
-try:
-  goto_integration(corfile, param, start_integration, timeout)
-except EndOfData:
+if not goto_integration(corfile, start_fpos, timeout):
   print >> sys.stderr, 'Error : Data ended prematurely'
   sys.exit(1)
 
@@ -409,7 +458,7 @@ int_read = [0]
 signal.signal(signal.SIGINT, sighandler)
 # Read the baseline data
 try:
-  read_integrations(corfile, data, int_read, param, n_integrations, ref_index, timeout)
+  read_integrations(corfile, data, int_read, param, scan_param, n_integrations, ref_index, timeout)
 except EndOfData:
   # data file ended prematurely
   if  int_read[0] < 2:
@@ -417,10 +466,11 @@ except EndOfData:
     sys.exit(1)
   else:
     print >> sys.stderr, "Warning : data ended before the requested time. Proceeding with ", int_read[0], " datapoints."
+  n_integrations = int_read[0]
 
 # compute delays and rates
-data = data[:,:,0:int_read[0],:]
-fringe_fit(data, delays, rates, snr, param)
+data = data[:,:,:n_integrations,:]
+fringe_fit(data, delays, rates, snr, param, scan_param)
 
 ############ Print output in JSON format ################
-write_clocks(vex, param, delays, rates, snr, ref_index)
+write_clocks(vex, param, scan_param, delays, rates, snr, ref_index, begin_time, n_integrations)
