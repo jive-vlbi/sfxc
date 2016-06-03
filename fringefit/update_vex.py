@@ -13,11 +13,23 @@ def parse_clock_early(clock_early):
   line = clock_early.partition('=')[2].partition(':')
   valid = line[0].strip()
   line = line[2].partition(':')
-  offset = float(line[0].partition('usec')[0])
-  line = line[2].partition(':')
+  sline = line[0].split()
+  offset = float(sline[0])
+  if sline[1] == 'sec':
+    offset *= 1e6 # Convert to microseconds
+  end = line[2].find(';')
+  line = line[2][:end].partition(':')
   epoch = line[0].strip()
-  line = line[2].partition(';')
-  rate = float(line[0])
+  sline = line[2].split()
+  rate = float(sline[0])
+  # convert to microsecond / second
+  if len(sline) > 1:
+    units = sline[1].partition('/')
+    if units[1] == '/':
+      if units[0] == 'sec':
+        rate *= 1e6
+      if units[2] == 'usec':
+        rate *= 1e6
   return valid, offset, epoch, rate
 
 ######################### Main #########################################
@@ -107,7 +119,7 @@ while not done_parsing:
       else:
         new_clock = old_clock + offsets[idx] + rates[idx]*dt
         new_rate = old_rate + rates[idx]
-      vex_out.write('    clock_early =  %s :  %.4f usec :  %s  :  %.3e; '%(valid, new_clock, old_epoch, new_rate))
+      vex_out.write('    clock_early =  %s :  %.4f usec :  %s  :  %.3e usec/sec; '%(valid, new_clock, old_epoch, new_rate))
       vex_out.write('* Modified on ' +  str(datetime.datetime.now()).partition('.')[0]+'\n')
       vex_out.write('* ' + line) # comment out old clock offsets
     except:
