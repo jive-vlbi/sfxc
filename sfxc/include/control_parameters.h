@@ -113,13 +113,21 @@ class Mask_parameters {
   std::vector<double> window;
 };
 
+struct BDWF_parameters {
+  int window_function;
+  int overlap_t; // Overlap factor along the time axis
+  int overlap_f; // Overlap factor along the frequency axis
+  double hwhm;   // Half width half maximum field of view (Arcmin)
+};
+
 /** Information about the correlation neede by the correlator node. **/
 class Correlation_parameters {
 public:
   Correlation_parameters()
-      : number_channels(0), fft_size_delaycor(0), fft_size_correlation(0), integration_nr(-1), slice_nr(-1), 
-        slice_offset(-1), sample_rate(0), channel_freq(0), bandwidth(0),
-        sideband('n'), frequency_nr(-1), polarisation('n'), pulsar_binning(false), window(SFXC_WINDOW_RECT) {}
+      : number_channels(0), fft_size_delaycor(0), fft_size_correlation(0), 
+        integration_nr(-1), slice_nr(-1), slice_offset(-1), sample_rate(0), 
+        channel_freq(0), bandwidth(0), sideband('n'), frequency_nr(-1), 
+        polarisation('n'), pulsar_binning(0),  enable_bdwf(0), window(-1) {}
 
 
   bool operator==(const Correlation_parameters& other) const;
@@ -176,8 +184,10 @@ public:
   char source[11];              // name of the source under observation
   int32_t n_phase_centers;   // The number of phase centers in the current scan
   int32_t pulsar_binning;
+  int32_t enable_bdwf;
   Pulsar_parameters *pulsar_parameters;
   Mask_parameters *mask_parameters;
+  BDWF_parameters *bdwf_parameters;
 };
 
 
@@ -198,6 +208,7 @@ public:
   bool check(std::ostream &log_writer) const;
   bool get_pulsar_parameters(Pulsar_parameters &pars) const;
   bool get_mask_parameters(Mask_parameters &pars) const;
+  bool get_bdwf_parameters(BDWF_parameters &pars) const;
 
   /****************************************************/
   /* Get functions from the correlation control file: */
@@ -230,6 +241,7 @@ public:
 
   bool phased_array() const;
   bool pulsar_binning() const;
+  bool enable_bdwf() const;
   bool multi_phase_center() const;
   double LO_offset(const std::string &station) const;
   bool exit_on_empty_datastream() const;

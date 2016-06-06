@@ -121,7 +121,7 @@ def read_statistics(infile, stats, nstatistics):
     except KeyError:
       stats[station_nr] = [nstr]
 
-def read_baselines(infile, data, nbaseline, nchan):
+def read_baselines(infile, data, nbaseline, nchan, printauto):
   baseline_data_size = (nchan + 1) * 8 # data is complex floats
   baseline_buffer = infile.read(nbaseline * (baseline_header_size + baseline_data_size)) 
   if len(baseline_buffer) != nbaseline * (baseline_header_size + baseline_data_size):
@@ -141,7 +141,7 @@ def read_baselines(infile, data, nbaseline, nchan):
     sideband = (byte>>2)&1
     freq_nr = byte>>3
     J = complex(0,1)
-    if station1 != station2:
+    if (station1 != station2) or (printauto):
       buf = struct.unpack(fmt, baseline_buffer[index:index + baseline_data_size])
       # Skip over the first/last channel
       vreal = array(buf[0:2*(nchan+1):2])
@@ -160,7 +160,7 @@ def read_baselines(infile, data, nbaseline, nchan):
         pdb.set_trace()
     index += baseline_data_size
 
-def read_time_slice(infile, stats, uvw, data, nchan):
+def read_time_slice(infile, stats, uvw, data, nchan, printauto):
   #get timeslice header
   tsheader_buf = infile.read(timeslice_header_size)
   if len(tsheader_buf) != timeslice_header_size:
@@ -177,7 +177,7 @@ def read_time_slice(infile, stats, uvw, data, nchan):
     read_statistics(infile, stats, nstatistics)
     # Read the baseline data    
     nbaseline = timeslice_header[1]
-    read_baselines(infile, data, nbaseline, nchan)
+    read_baselines(infile, data, nbaseline, nchan, printauto)
     # Get next time slice header
     tsheader_buf = infile.read(timeslice_header_size)
     if len(tsheader_buf) != timeslice_header_size:
@@ -220,6 +220,8 @@ def get_options():
                     default=True, help='Do not print UVW coordinates')
   parser.add_option('-n', '--no-header', action='store_true',
                     default=False, help='Do not print the global header')
+  parser.add_option('-a', '--auto-correlations', action='store_true', dest="printauto", 
+                    default=False, help='Also print auto-correlations')
   parser.add_option('-v', '--vex', dest="vex_file", type="string",
                     help='Get station names from vex file (has to be the same as used during correlation)')
   (opts, args) = parser.parse_args()
@@ -228,11 +230,12 @@ def get_options():
     parser.exit()
   if len(args) != 1:
     parser.error('No correlator file specified')
-  return (args[0], opts.no_header, opts.printstats, opts.printvis, opts.printuvw, opts.vex_file)
+  return (args[0], opts.no_header, opts.printstats, opts.printvis,\
+          opts.printuvw, opts.printauto, opts.vex_file)
 
 ############################## Main program ##########################
 
-filename, noheader, printstats, printvis, printuvw, vex_file = get_options()
+filename, noheader, printstats, printvis, printuvw, printauto, vex_file = get_options()
 
 try:
   infile = open(filename, 'rb')
@@ -258,7 +261,7 @@ while True:
   uvw = {}
   data = {}
   try:
-    read_time_slice(infile, stats, uvw, data, nchan)
+    read_time_slice(infile, stats, uvw, data, nchan, printauto)
     nslices += 1
   except Exception, e:
     if e.args[0] != 'EOF':

@@ -73,6 +73,7 @@ sfxc_SOURCES = $(OBJ) $(FFT_SOURCES) sfxc.cc \
   input_node_data_writer_tasklet.cc \
   output_header.cc \
   correlator_time.cc \
+  sfxc_math.cc \
   svn_version.cc 
 
 sfxc_DEPENDENCIES = update_svn_version svn_version.$(OBJEXT)
@@ -81,5 +82,5 @@ svn_version.cc: update_svn_version
 
 update_svn_version:
 	echo "const char *SVN_VERSION=\"`svnversion -nc ..`\";" > svn_version.cc
-	echo "const char *SVN_BRANCH=\"TRUNK\";" >> svn_version.cc
+	echo "const char *SVN_BRANCH=\"BDWF\";" >> svn_version.cc
 	$(CXX) $(CXXFLAGS) -c svn_version.cc

@@ -331,6 +331,7 @@ Correlator_node::set_parameters() {
   Time tmid = parameters.start_time + parameters.integration_time/2;
   std::vector<Delay_table_akima> akima_tables(delay_index.size());
   std::vector<std::vector<double> > uvw(uvw_tables.size());
+  std::vector<std::vector<double> > uvw_rate(uvw_tables.size());
   for(int i=0;i<parameters.station_streams.size();i++){
     int stream = parameters.station_streams[i].station_stream;
     int index = delay_index[stream];
@@ -340,9 +341,12 @@ Correlator_node::set_parameters() {
                                                 parameters.integration_time);
     if(stream < uvw.size()){
       uvw[stream].resize(parameters.n_phase_centers*3);
+      uvw_rate[stream].resize(parameters.n_phase_centers*3);
       for(int j=0;j<parameters.n_phase_centers;j++){
         double *out = &uvw[stream][3*j];
+        double *outr = &uvw_rate[stream][3*j];
         uvw_tables[stream].get_uvw(j, tmid, &out[0], &out[1], &out[2]);
+        uvw_tables[stream].get_uvw_rate(j, tmid, &outr[0], &outr[1], &outr[2]);
       }
     }
   }
@@ -354,16 +358,16 @@ Correlator_node::set_parameters() {
       // Current source is not a pulsar
       nBins = 1;
       correlation_core = correlation_core_normal;
-      correlation_core->set_parameters(parameters, akima_tables, uvw, get_correlate_node_number());
+      correlation_core->set_parameters(parameters, akima_tables, uvw, uvw_rate, get_correlate_node_number());
     }else{
       Pulsar_parameters::Pulsar &pulsar = cur_pulsar_it->second;
       nBins = pulsar.nbins + 1; // One extra for off-pulse data 
       correlation_core = correlation_core_pulsar;
-      correlation_core_pulsar->set_parameters(parameters, pulsar, akima_tables, uvw, get_correlate_node_number());
+      correlation_core_pulsar->set_parameters(parameters, pulsar, akima_tables, uvw, uvw_rate, get_correlate_node_number());
     }
   }else{
     nBins = parameters.n_phase_centers;
-    correlation_core->set_parameters(parameters, akima_tables, uvw, get_correlate_node_number());
+    correlation_core->set_parameters(parameters, akima_tables, uvw, uvw_rate, get_correlate_node_number());
   }
 
   for (size_t i=0; i<delay_modules.size(); i++) {

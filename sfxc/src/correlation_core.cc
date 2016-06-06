@@ -5,7 +5,8 @@
 #include <set>
 
 Correlation_core::Correlation_core()
-    : current_fft(0), total_ffts(0), split_output(false){
+    : current_fft(0), total_ffts(0), split_output(false), 
+      bdwf_spline(NULL), bdwf_acc(NULL){
 }
 
 Correlation_core::~Correlation_core() {
@@ -15,6 +16,10 @@ Correlation_core::~Correlation_core() {
   double time = fft_timer.measured_time()*1000000;
   PROGRESS_MSG("MFlops: " << 5.0*N*log2(N) * numiterations / (1.0*time));
 #endif
+  if (bdwf_spline != NULL)
+    gsl_spline_free(bdwf_spline);
+  if (bdwf_acc != NULL)
+    gsl_interp_accel_free(bdwf_acc);
 }
 
 void Correlation_core::do_task() {
@@ -31,8 +36,6 @@ void Correlation_core::do_task() {
   for (size_t i = 0; i < number_input_streams(); i++) {
     int stream = station_stream(i);
     input_elements[i] = &input_buffers[stream]->front()->data[0];
-    if (input_buffers[stream]->front()->data.size() > input_conj_buffers[i].size())
-      input_conj_buffers[i].resize(input_buffers[stream]->front()->data.size());
   }
   const int first_stream = station_stream(0);
   const int stride = input_buffers[first_stream]->front()->stride;
@@ -100,12 +103,14 @@ void
 Correlation_core::set_parameters(const Correlation_parameters &parameters,
                                  std::vector<Delay_table_akima> &delays,
                                  std::vector<std::vector<double> > &uvw,
+                                 std::vector<std::vector<double> > &uvw_rate_,
                                  int node_nr) {
   node_nr_ = node_nr;
   current_integration = 0;
   current_fft = 0;
   delay_tables = delays;
   uvw_table = uvw;
+  uvw_rate = uvw_rate_;
 
   // If the relevant correlation parameters change, clear the window
   // vector.  It will be recreated when the next integration starts.
@@ -124,10 +129,9 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
   if (input_elements.size() != number_input_streams()) {
     input_elements.resize(number_input_streams());
   }
-  if (input_conj_buffers.size() != number_input_streams()) {
-    input_conj_buffers.resize(number_input_streams());
-  }
   n_flagged.resize(baselines.size());
+  if (correlation_parameters.enable_bdwf)
+    init_bdwf();
 }
 
 void
@@ -240,33 +244,54 @@ void Correlation_core::integration_initialise() {
 
 void Correlation_core::integration_step(std::vector<Complex_buffer> &integration_buffer, int nbuffer, int stride) {
 #ifndef DUMMY_CORRELATION
-  SFXC_ASSERT(nbuffer * stride <= input_conj_buffers[0].size());
+  temp_buffer.resize(fft_size() + 1);
 
   // Auto correlations
   for (size_t i = 0; i < number_input_streams(); i++) {
+    std::pair<size_t,size_t> &stations = baselines[i];
+    SFXC_ASSERT(stations.first == stations.second);
     for (size_t buf_idx = 0; buf_idx < nbuffer * stride; buf_idx += stride) {
-      // get the complex conjugates of the input
-      SFXC_CONJ_FC(&input_elements[i][buf_idx], &(input_conj_buffers[i])[buf_idx], fft_size() + 1);
-      SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[i][buf_idx], 
-			  /* in2 */ &input_conj_buffers[i][buf_idx],
-			  /* out */ &integration_buffer[i][0], fft_size() + 1);
+      // Auto correlation
+      SFXC_MULCONJ_FC(/* in1 */ &input_elements[i][buf_idx], 
+                      /* in2 */ &input_elements[i][buf_idx],
+                      /* out */ &temp_buffer[0], fft_size() + 1);
+      SFXC_ADD_FC(/* in1 */ &temp_buffer[0], 
+                  /* out */ &integration_buffer[i][0], fft_size() + 1);
     }
   }
 
   // Cross correlations
   for (size_t i = number_input_streams(); i < baselines.size(); i++) {
+    double fft = current_fft;
     for (size_t buf_idx = 0; buf_idx < nbuffer * stride; buf_idx += stride) {
+      double bdwf;
+      if (correlation_parameters.enable_bdwf){
+        double t = fabs((fft+0.5)/number_ffts_in_integration - 0.5) * 
+                        correlation_parameters.integration_time.get_time() / 
+                        bdwf_hwhm[i];
+        if (t >= bdwf_maxrange)
+          bdwf = 0.;
+        else
+          bdwf = gsl_spline_eval(bdwf_spline, t, bdwf_acc);
+        bdwf_weight[i] += bdwf * fft_size();
+      }else
+        bdwf = 1.;
+      // Cross correlations
       std::pair<size_t, size_t> &baseline = baselines[i];
       SFXC_ASSERT(baseline.first != baseline.second);
       if ((i % 2) == 0 || 1) {
-      SFXC_ADD_PRODUCT_FC(/* in1 */ &input_elements[baseline.first][buf_idx], 
-			  /* in2 */ &input_conj_buffers[baseline.second][buf_idx],
-			  /* out */ &integration_buffer[i][0], fft_size() + 1);
+        SFXC_MULCONJ_FC(/* in1 */ &input_elements[baseline.first][buf_idx], 
+                        /* in2 */ &input_elements[baseline.second][buf_idx],
+                        /* out */ &temp_buffer[0], fft_size() + 1);
       } else {
-      SFXC_ADD_PRODUCT_FC(/* in1 */ &input_conj_buffers[baseline.first][buf_idx], 
-			  /* in2 */ &input_elements[baseline.second][buf_idx],
-			  /* out */ &integration_buffer[i][0], fft_size() + 1);
+        SFXC_MULCONJ_FC(/* in1 */ &input_elements[baseline.second][buf_idx], 
+                        /* in2 */ &input_elements[baseline.first][buf_idx],
+                        /* out */ &temp_buffer[0], fft_size() + 1);
       }
+      SFXC_ADD_PRODUCTC_F (/* in1 */ (FLOAT *) &temp_buffer[0], 
+                           /* in2 */ bdwf,
+                           /* out */ (FLOAT *) &integration_buffer[i][0], 2*(fft_size() + 1));
+      fft += 1;
     }
   }
 #endif // DUMMY_CORRELATION
@@ -304,8 +329,12 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
     double N1 = n_valid1 > 0? 1 - n_flagged[i].first  * 1. / n_valid1 : 1;
     double N2 = n_valid2 > 0? 1 - n_flagged[i].second * 1. / n_valid2 : 1;
     double N = N1 * N2;
-    if (N < 0.01) N = 1;
-    FLOAT norm = sqrt(N * norms[baseline.first] * norms[baseline.second]);
+    FLOAT norm;
+    FLOAT weight = (correlation_parameters.enable_bdwf) ? bdwf_weight[i] / total_samples : 1.;
+    if((N < 0.01) || (weight < 0.0001))
+      norm = 1;
+    else
+      norm = sqrt(N * norms[baseline.first]*norms[baseline.second]) * weight;
     for (size_t j = 0 ; j < fft_size() + 1; j++) {
       integration_buffer[i][j] /= norm;
     }
@@ -313,7 +342,6 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
 }
 
 void Correlation_core::integration_write(std::vector<Complex_buffer> &integration_buffer, int phase_center, int sourcenr) {
-
   // Make sure that the input buffers are released
   // This is done by reference counting
 
@@ -407,18 +435,55 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
   SFXC_ASSERT(fft_size() >= number_channels());
   integration_buffer_float.resize(number_channels() + 1);
 
+  std::vector<float> bdwf;
+  float spectral_weight = 1.;
   Output_header_baseline hbaseline;
   for (size_t i = 0; i < baselines.size(); i++) {
     std::pair<size_t, size_t> &baseline = baselines[i];
     int stream1 = station_stream(baseline.first);
     int stream2 = station_stream(baseline.second);
 
-    if (fft_size() != number_channels()) {
+    if (fft_size() == number_channels()) {
+      for (size_t j = 0; j < number_channels() + 1; j++)
+	integration_buffer_float[j] = integration_buffer[i][j];
+    } else if (correlation_parameters.enable_bdwf){
+      const Time tmid = correlation_parameters.start_time + correlation_parameters.integration_time/2.;
+      double c =  299792458.; // Speed of light
+      double du = uvw_table[stream1][0] - uvw_table[stream2][0];
+      double dv = uvw_table[stream2][1] - uvw_table[stream2][1];
+      double dlm = correlation_parameters.bdwf_parameters->hwhm * M_PI / (180*60);
+      double delay = sqrt(du*du + dv*dv) * dlm / c;
+      double hwhm = (delay > 1e-9) ? sqrt(3.) / (2*M_PI*delay) : 1e9;
+      int n = fft_size() / number_channels(); 
+      bdwf.resize(n);
+      double norm = 0.;
+      for(int k = 0; k < n; k++){
+        double dnu = correlation_parameters.bandwidth / fft_size();
+        double nu = fabs(k - n/2 + 0.5) * dnu / hwhm;
+        if (nu > bdwf_maxrange)
+          bdwf[k] = 0.;
+        else
+          bdwf[k] = gsl_spline_eval(bdwf_spline, nu, bdwf_acc);
+        norm += bdwf[k];
+      }
+      spectral_weight = std::max(0., norm / n); 
+      if (norm < 1e-4) norm = 1.;
+
+      for (size_t j = 0; j < number_channels(); j++) {
+        // Don't use DC edge
+        integration_buffer_float[j] = (j==0)? 0 : integration_buffer[i][j * n] * bdwf[0];
+        for (size_t k = 1; k < n ; k++)
+          integration_buffer_float[j] += integration_buffer[i][j * n + k] * bdwf[k];
+        integration_buffer_float[j] /= norm;
+      }
+      integration_buffer_float[number_channels()] = integration_buffer[i][fft_size()]; 
+    }else{
+      // Average down spectral points in the lag domain
       if (mask_parameters.normalize) {
-	for (size_t j = 0; j < fft_size() + 1; j++) {
-	  if (abs(integration_buffer[i][j]) != 0.0)
-	    integration_buffer[i][j] /= abs(integration_buffer[i][j]);
-	}
+        for (size_t j = 0; j < fft_size() + 1; j++) {
+          if (abs(integration_buffer[i][j]) != 0.0)
+            integration_buffer[i][j] /= abs(integration_buffer[i][j]);
+        }
       }
       SFXC_MUL_F_FC_I(&mask[0], &integration_buffer[i][0], fft_size() + 1);
       fft_f2t.irfft(&integration_buffer[i][0], &real_buffer[0]);
@@ -426,18 +491,15 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
 	(real_buffer[number_channels()] +
 	 real_buffer[2 * fft_size() - number_channels()]) / 2;
       for (size_t j = 1; j < number_channels(); j++)
-	real_buffer[number_channels() + j] =
-	  real_buffer[2 * fft_size() - number_channels() + j];
+        real_buffer[number_channels() + j] =
+          real_buffer[2 * fft_size() - number_channels() + j];
       SFXC_MUL_F(&real_buffer[0], &window[0], &real_buffer[0],
 		 2 * number_channels());
       fft_t2f.rfft(&real_buffer[0], &temp_buffer[0]);
       for (size_t j = 0; j < number_channels() + 1; j++) {
-	integration_buffer_float[j] = temp_buffer[j];
-	integration_buffer_float[j] /= (2 * fft_size());
+        integration_buffer_float[j] = temp_buffer[j];
+        integration_buffer_float[j] /= (2 * fft_size());
       }
-    } else {
-      for (size_t j = 0; j < number_channels() + 1; j++)
-	integration_buffer_float[j] = integration_buffer[i][j];
     }
 
     const int64_t total_samples = number_ffts_in_integration * fft_size();
@@ -448,6 +510,14 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
       SFXC_ASSERT(levels[4] >= 0);
       SFXC_ASSERT(n_flagged[i].first >= 0);
       hbaseline.weight = std::max(total_samples - levels[4] - n_flagged[i].first, (int64_t)0);       // The number of good samples
+      double w_bdwf;
+      if (correlation_parameters.enable_bdwf){
+        w_bdwf = std::max(0., spectral_weight*bdwf_weight[i]/total_samples);
+        if (RANK_OF_NODE == -14)
+          std::cerr << i << " : w_bdwf = " << w_bdwf << ", orig = " << bdwf_weight[i]<<"/" << total_samples << "\n";
+      } else
+        w_bdwf = 1.;
+      hbaseline.weight = hbaseline.weight * w_bdwf;
     }
     hbaseline.station_nr1 = station_number(baseline.first);
     hbaseline.station_nr2 = station_number(baseline.second);
@@ -808,3 +878,99 @@ Correlation_core::create_mask() {
 
   mask.assign(fft_size() + 1, 1.0);
 }
+
+void
+Correlation_core::init_bdwf(){
+  BDWF_parameters *bdwf = correlation_parameters.bdwf_parameters;
+  SFXC_ASSERT(bdwf != NULL);
+
+  // For each baseline compute the FWHM of the BDWF that will yield 
+  // the requested field of view. 
+  double c =  299792458.; // Speed of light
+  double sb = (correlation_parameters.sideband == 'L')? -1 : 1;
+  double lambda = c / (correlation_parameters.channel_freq + 
+                       sb*correlation_parameters.bandwidth/2.);
+  const Time tmid = correlation_parameters.start_time + 
+                    correlation_parameters.integration_time / 2.; 
+  double dlm = bdwf->hwhm * M_PI / (180*60);
+  const int n_phase_centers = phase_centers.size();
+  const int n_station = number_input_streams();
+  const int n_baseline = baselines.size();
+  bdwf_weight.resize(n_baseline);
+  bdwf_hwhm.resize(n_baseline);
+  std::cerr << "nbaseline = " << n_baseline << ", nstation = " << n_station << ", fft_size= " << fft_size()<< "\n";
+  for (int i = n_station ; i < n_baseline ; i++){
+    std::pair<size_t,size_t> &inputs = baselines[i];
+    int stream1 = station_stream(inputs.first);
+    int stream2 = station_stream(inputs.second);
+    double du = uvw_rate[stream1][0] - uvw_rate[stream2][0];
+    double dv = uvw_rate[stream1][1] - uvw_rate[stream2][1];
+    double rate = sqrt(du*du + dv*dv);
+    bdwf_hwhm[i] = sqrt(3.) * lambda / (2. * M_PI * dlm * rate);
+    bdwf_weight[i] = 0;
+    if(RANK_OF_NODE == 14) std::cerr << "bdwf_hwhm[" << i << "]=" << bdwf_hwhm[i] << ", stations = (" << stream1 
+                                     << ", " << stream2 << "), lambda = " << lambda << ", rate = " << rate << "\n"
+                                     << "uvw_rate(s1)="<<uvw_rate[stream1][0]<< ", " << uvw_rate[stream1][1]
+                                     << ", s2 = "<< uvw_rate[stream2][0]<< ", " << uvw_rate[stream2][1] << "\n";
+  }
+
+  // Create window
+  std::vector<double> window_x, window_y;
+  switch(bdwf->window_function){
+  case SFXC_BDWF_RECT:{
+    int n = 5;
+    window_x.resize(n);
+    window_y.resize(n);
+    for(int i = 0; i < n; i++){
+      window_x[i] =  i * 1. / (n-1);
+      window_y[i] = 1.;
+    }
+    bdwf_maxrange = 1.0; // Maximum offset in units of the HWHM
+    break;
+  }case SFXC_BDWF_SINC:{
+    int npoints = 101;
+    double hwhm = 1.89549426703398;
+    bdwf_maxrange = 10; 
+    window_x.resize(npoints);
+    window_y.resize(npoints);
+    window_x[0] = 0;
+    window_y[0] = 1;
+    for(int i = 1; i < npoints; i++){
+      window_x[i] = i * bdwf_maxrange / (npoints - 1);
+      window_y[i] = sin(window_x[i]*hwhm) / (window_x[i]*hwhm);
+    }
+    break;
+  }case SFXC_BDWF_AIRY:{
+    int npoints = 101;
+    double hwhm = 2.21508936772423;
+    bdwf_maxrange = 10.;
+    window_x.resize(npoints);
+    window_y.resize(npoints);
+    window_x[0] = 0;
+    window_y[0] = 1;
+    if (RANK_OF_NODE == -14)
+      std::cerr << "window[0]=("<<window_x[0]<<", " << window_y[0]<<")\n";
+    for(int i = 1; i < npoints; i++){
+      window_x[i] = i * bdwf_maxrange / (npoints - 1);
+      window_y[i] = 2*besselj1(window_x[i]*hwhm) / (window_x[i]*hwhm);
+      if (RANK_OF_NODE == -14)
+        std::cerr << "window["<<i<<"]=("<<window_x[i]<<", " << window_y[i]<<")\n";
+    }
+    break;
+  }
+  default:
+    std::cerr << "ERROR: Unknown BDWF encountered in correlation node!\n";
+    sfxc_abort();
+  }
+
+  // Create spline
+  if (bdwf_spline != NULL)
+    gsl_spline_free(bdwf_spline);
+  if (bdwf_acc != NULL)
+    gsl_interp_accel_free(bdwf_acc);
+
+  bdwf_acc = gsl_interp_accel_alloc();
+  bdwf_spline = gsl_spline_alloc(gsl_interp_akima, window_x.size());
+  gsl_spline_init(bdwf_spline, &window_x[0], &window_y[0], window_x.size());
+}
+

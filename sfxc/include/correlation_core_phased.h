@@ -12,6 +12,7 @@ public:
   virtual void set_parameters(const Correlation_parameters &parameters,
                               std::vector<Delay_table_akima> &delays,
                               std::vector<std::vector<double> > &uvw,
+                              std::vector<std::vector<double> > &uvw_rate,
                               int node_nr);
 protected:
   virtual void integration_initialise();

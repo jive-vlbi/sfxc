@@ -149,7 +149,9 @@ void pause_sfxc_for_gdb(void);
     #define SFXC_CONJ_FC            sfxc_conj_c
     #define SFXC_ADD_FC             sfxc_add_c
     #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_c 
+    #define SFXC_ADD_PRODUCTC_F     sfxc_add_productC
     #define SFXC_MUL_F              sfxc_mul
+    #define SFXC_MULCONJ_FC         sfxc_mulconj_c
   #else // !USE_DOUBLE
     #define FLOAT                   float
     #define SFXC_ZERO_F             sfxc_zero_f
@@ -160,7 +162,9 @@ void pause_sfxc_for_gdb(void);
     #define SFXC_CONJ_FC            sfxc_conj_fc
     #define SFXC_ADD_FC             sfxc_add_fc
     #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_fc 
+    #define SFXC_ADD_PRODUCTC_F     sfxc_add_productC_f 
     #define SFXC_MUL_F              sfxc_mul_f
+    #define SFXC_MULCONJ_FC         sfxc_mulconj_fc
   #endif
   #define SFXC_FFT_FLOAT          sfxc_fft_ipp_float
 #else
@@ -175,7 +179,9 @@ void pause_sfxc_for_gdb(void);
     #define SFXC_CONJ_FC            sfxc_conj_c
     #define SFXC_ADD_FC             sfxc_add_c
     #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_c 
+    #define SFXC_ADD_PRODUCTC_F     sfxc_add_productC 
     #define SFXC_MUL_F              sfxc_mul
+    #define SFXC_MULCONJ_FC         sfxc_mulconj_c
   #else // !USE_DOUBLE
     #define FLOAT                   float
     #define FFTW_COMPLEX            fftwf_complex
@@ -187,7 +193,9 @@ void pause_sfxc_for_gdb(void);
     #define SFXC_CONJ_FC            sfxc_conj_fc
     #define SFXC_ADD_FC             sfxc_add_fc
     #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_fc 
+    #define SFXC_ADD_PRODUCTC_F     sfxc_add_productC_f 
     #define SFXC_MUL_F              sfxc_mul_f
+    #define SFXC_MULCONJ_FC         sfxc_mulconj_fc
   #endif
   #define SFXC_FFT_FLOAT          sfxc_fft_fftw_float
 #endif
@@ -198,6 +206,11 @@ void pause_sfxc_for_gdb(void);
 #define SFXC_WINDOW_COS        2   // Cosine window
 #define SFXC_WINDOW_HAMMING    3   // Hamming window
 #define SFXC_WINDOW_HANN       4   // Hann window
+
+// Supported baseline dependend window functions (BDWFs)
+#define SFXC_BDWF_RECT         0  // Rectangular
+#define SFXC_BDWF_SINC         1  // Sinc
+#define SFXC_BDWF_AIRY         2  // BesselJ1(x) / x
 
 #ifdef PRINT_PROGRESS
 inline void getusec(unsigned long long &utime) {

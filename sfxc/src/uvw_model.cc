@@ -319,6 +319,20 @@ void Uvw_model::get_uvw(int phase_center, Time time, double *u, double *v, doubl
 //            << ", time = " << time << "\n";
 }
 
+void Uvw_model::get_uvw_rate(int phase_center, Time time, double *u, double *v, double *w) {
+  if (time > interval_end)
+    create_akima_spline(time);
+  SFXC_ASSERT(splineakima_u.size() > 0);
+  SFXC_ASSERT((phase_center >= 0) && (phase_center < splineakima_u.size())) ;
+
+  double sec = (time - scans[scan_nr].begin).get_time();
+  *u = gsl_spline_eval_deriv(splineakima_u[phase_center], sec, acc_u[phase_center]);
+  *v = gsl_spline_eval_deriv(splineakima_v[phase_center], sec, acc_v[phase_center]);
+  *w = gsl_spline_eval_deriv(splineakima_w[phase_center], sec, acc_w[phase_center]);
+//  std::cout << RANK_OF_NODE<< " : u=" << *u << ", v=" << *v << ", w=" << *w << " ; center = " << phase_center
+//            << ", time = " << time << "\n";
+}
+
 //calculates the delay for the delayType at time in microseconds
 //get the next line from the delay table file
 std::ofstream& Uvw_model::uvw_values(std::ofstream &output, Time starttime,

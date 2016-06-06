@@ -57,6 +57,8 @@ Correlator_node_controller::process_event(MPI_Status &status) {
       MPI_Transfer::receive(status, parameters);
       if(parameters.pulsar_binning)
         parameters.pulsar_parameters = &node.pulsar_parameters;
+      if(parameters.enable_bdwf)
+        parameters.bdwf_parameters = &node.bdwf_parameters;
       parameters.mask_parameters = &node.mask_parameters;
       node.receive_parameters(parameters);
 
@@ -65,6 +67,12 @@ Correlator_node_controller::process_event(MPI_Status &status) {
   case MPI_TAG_PULSAR_PARAMETERS: {
       get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
       MPI_Transfer::receive(status, node.pulsar_parameters);
+
+      return PROCESS_EVENT_STATUS_SUCCEEDED;
+    }
+  case MPI_TAG_BDWF_PARAMETERS: {
+      get_log_writer()(3) << print_MPI_TAG(status.MPI_TAG) << std::endl;
+      MPI_Transfer::receive(status, node.bdwf_parameters);
 
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }

@@ -14,6 +14,7 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
                                         Pulsar &pulsar,
                                         std::vector<Delay_table_akima> &delays,
                                         std::vector<std::vector<double> > &uvw,
+                                        std::vector<std::vector<double> > &uvw_rate,
                                         int node_nr) {
   node_nr_ = node_nr;
   current_integration = 0;

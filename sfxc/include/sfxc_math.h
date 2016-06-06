@@ -3,9 +3,12 @@
 #include <complex>
 #include "config.h"
 
+double besselj1(double x);
+
 // Define basic math functions
 #ifdef USE_IPP
   #include <ipps.h>
+  #include <ippvm.h>
   extern inline void sfxc_zero(double *p, size_t len){
     ippsZero_64f((Ipp64f *)p, len);
   }
@@ -73,6 +76,24 @@
   extern inline void sfxc_add_product_c(const std::complex<double> *s1, const std::complex<double> *s2, std::complex<double> *dest, int len){
     ippsAddProduct_64fc((const Ipp64fc*) s1, (const Ipp64fc*) s2, (Ipp64fc*) dest, len);
   }
+
+  extern inline void sfxc_add_productC_f(const float *s1, const float val, float *srcdest, int len){
+    ippsAddProductC_32f((const Ipp32f*) s1, (const Ipp32f) val, (Ipp32f*) srcdest, len);
+  }
+
+  extern inline void sfxc_add_productC(const double *s1, const double val, double *srcdest, int len){
+    for (int i=0; i<len; i++)
+      srcdest[i] += val*s1[i];
+  }
+
+  extern inline void sfxc_mulconj_fc (const std::complex<float> *s1, const std::complex<float> *s2 , std::complex<float> *dest, int len){
+    ippsMulByConj_32fc_A24 ((const Ipp32fc*) s1, (const Ipp32fc*) s2 , (Ipp32fc*) dest, len);
+  }
+
+  extern inline void sfxc_mulconj_c (const std::complex<double> *s1, const std::complex<double> *s2 , std::complex<double> *dest, int len){
+    ippsMulByConj_64fc_A53 ((const Ipp64fc*) s1, (const Ipp64fc*) s2 , (Ipp64fc*) dest, len);
+  }
+
 #else // USE FFTW
   #include <string.h>
   extern inline void sfxc_zero(double *p, size_t len){
@@ -159,6 +180,23 @@
     for(int i = 0; i < len; i++){
       dest[i] += s1[i] * s2[i];
     }
+  }
+  extern inline void sfxc_add_productC_f(const float *s1, const float val, float *srcdest, int len){
+    for (int i=0; i<len; i++)
+      srcdest[i] += val*s1[i];
+  }
+  extern inline void sfxc_add_productC(const double *s1, const double val, double *srcdest, int len){
+    for (int i=0; i<len; i++)
+      srcdest[i] += val*s1[i];
+  }
+  extern inline void sfxc_mulconj_fc (const std::complex<float> *s1, const std::complex<float> *s2 , std::complex<float> *dest, int len){
+    for (int i=0; i<len; i++)
+      dest[i] = s1[i] * conj(s2[i]);
+  }
+
+  extern inline void sfxc_mulconj_c (const std::complex<double> *s1, const std::complex<double> *s2 , std::complex<double> *dest, int len){
+    for (int i=0; i<len; i++)
+      dest[i] = s1[i] * conj(s2[i]);
   }
 #endif
 #endif // SFXC_MATH_H

@@ -13,6 +13,7 @@ public:
   void set_parameters(const Correlation_parameters &parameters, Pulsar &pulsar,
                       std::vector<Delay_table_akima> &delays,
                       std::vector<std::vector<double> > &uvw,
+                      std::vector<std::vector<double> > &uvw_rate,
                       int node_nr);
 protected:
   virtual void integration_initialise();
@@ -29,6 +30,7 @@ protected:
   std::vector<int>                              bins;
   /// The time bins are accumulated here
   std::vector< std::vector<Complex_buffer> >    accumulation_buffers;
+  std::vector< Complex_buffer >           input_conj_buffers;
 
   int nbins;
   struct{double begin;double end;} gate;

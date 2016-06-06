@@ -329,6 +329,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
   correlation_parameters.integration_nr = integration_slice_nr;
   correlation_parameters.slice_nr = output_slice_nr;
   strncpy(correlation_parameters.source, control_parameters.scan_source(scan_name).c_str(), 11);
+  correlation_parameters.enable_bdwf = control_parameters.enable_bdwf();
   correlation_parameters.pulsar_binning = control_parameters.pulsar_binning();
   if (control_parameters.multi_phase_center())
     correlation_parameters.n_phase_centers = n_sources_in_current_scan;
@@ -450,6 +451,7 @@ Manager_node::initialise() {
     }
     correlator_node_set_all(sources);
 
+
     // open one output file per source
     std::string base_filename = control_parameters.get_output_file();
     std::set<std::string>::iterator sources_it = sources.begin();
@@ -484,6 +486,12 @@ Manager_node::initialise() {
     }
   }
 
+  if(control_parameters.enable_bdwf()){
+    BDWF_parameters bdwf_parameters;
+    if (!control_parameters.get_bdwf_parameters(bdwf_parameters))
+      sfxc_abort("Error parsing BDWF parameters in control file\n");
+    correlator_node_set_all(bdwf_parameters);
+  }
   // Write the global header in the outpul file
   send_global_header();
 

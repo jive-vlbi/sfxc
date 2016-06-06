@@ -53,7 +53,8 @@ void
 Correlation_core_phased::set_parameters(const Correlation_parameters &parameters,
                                         std::vector<Delay_table_akima> &delays,
                                         std::vector<std::vector<double> > &uvw,
-					int node_nr)
+                                        std::vector<std::vector<double> > &uvw_rate,
+   					int node_nr)
 {
   node_nr_ = node_nr;
   current_integration = 0;
@@ -66,11 +67,6 @@ Correlation_core_phased::set_parameters(const Correlation_parameters &parameters
   create_baselines(parameters);
   if (input_elements.size() != number_input_streams()) {
     input_elements.resize(number_input_streams());
-  }
-  if (input_conj_buffers.size() != number_input_streams()) {
-    input_conj_buffers.resize(number_input_streams());
-    for(int i = 0; i < number_input_streams(); i++)
-      input_conj_buffers[i].resize(fft_size() + 1);
   }
   n_flagged.resize(baselines.size());
 }

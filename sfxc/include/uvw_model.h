@@ -56,6 +56,7 @@ public:
 
   //calculates u,v, and w at time(microseconds)
   void get_uvw(int phase_center, Time time, double *u, double *v, double *w);
+  void get_uvw_rate(int phase_center, Time time, double *u, double *v, double *w);
 
   /// A spline only interpolates one scan.
   /// This functions preprocesses the spline for the next scan.

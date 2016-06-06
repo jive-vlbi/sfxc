@@ -43,6 +43,7 @@ public:
   virtual void set_parameters(const Correlation_parameters &parameters,
                               std::vector<Delay_table_akima> &delays,
                               std::vector<std::vector<double> > &uvw,
+                              std::vector<std::vector<double> > &uvw_rate,
                               int node_nr);
   void create_baselines(const Correlation_parameters &parameters);
   void set_data_writer(boost::shared_ptr<Data_writer> writer);
@@ -56,6 +57,7 @@ public:
 
   std::vector<Delay_table_akima> delay_tables;
   std::vector<std::vector<double> > uvw_table;
+  std::vector<std::vector<double> > uvw_rate;
   void add_source_list(const std::map<std::string, int> &sources_);
 
 protected:
@@ -80,15 +82,25 @@ protected:
   void create_window();
   void create_weights();
   void create_mask();
-
+  void init_bdwf();
 protected:
   int previous_fft;
   std::vector<Input_buffer_ptr>           input_buffers;
   std::vector< std::complex<FLOAT> * >    input_elements;
   std::vector< std::vector<Invalid> * >   invalid_elements;
-  // the complex conjugate of input_elements
-  std::vector< Complex_buffer >           input_conj_buffers; 
   std::vector<bit_statistics_ptr>         statistics;
+
+  // The maxium offset along the time axis for which the BDWF is defined in
+  // units of the Full Width at Half Maximum (FWHM) of the window function
+  double                                  bdwf_maxrange;
+  // Per baseline HWHM along the time axis for the requested field of view 
+  std::vector<double>                     bdwf_hwhm;
+  // Per baseline bdwf adjusted weight
+  std::vector<double>                     bdwf_weight;
+  // GSL splining objects
+  gsl_interp_accel                        *bdwf_acc;
+  gsl_spline                              *bdwf_spline;
+
   // Tracks the number of correlator points where one (but not both) stations on a baseline had invalid data
   std::vector< std::pair<int64_t,int64_t> > n_flagged;
 

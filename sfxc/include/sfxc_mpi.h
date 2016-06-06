@@ -248,6 +248,10 @@ enum MPI_TAG {
    * - ?
    **/
   MPI_TAG_PULSAR_PARAMETERS,
+  /** Send the BDWF parameters defined in Control_parameters.h
+   * - ?
+   **/
+  MPI_TAG_BDWF_PARAMETERS,
   /** Send a list of all sources in the job
    * - ?
    **/
@@ -436,6 +440,9 @@ inline const char * const do_print_MPI_TAG(MPI_TAG tag) {
     }
   case   MPI_TAG_PULSAR_PARAMETERS: {
       return "MPI_TAG_PULSAR_PARAMETERS";
+    }
+  case   MPI_TAG_BDWF_PARAMETERS: {
+      return "MPI_TAG_BDWF_PARAMETERS";
     }
   case MPI_TAG_MASK_PARAMETERS: {
       return "MPI_TAG_MASK_PARAMETERS";

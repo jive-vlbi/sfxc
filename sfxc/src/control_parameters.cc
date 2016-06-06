@@ -119,6 +119,9 @@ initialise(const char *ctrl_file, const char *vex_file,
       it++;
     }
   }
+  if (ctrl["enable_bdwf"] == Json::Value())
+    ctrl["enable_bdwf"] = false;
+
   if (ctrl["phased_array"] == Json::Value())
     ctrl["phased_array"] = false;
 
@@ -141,9 +144,24 @@ initialise(const char *ctrl_file, const char *vex_file,
         it++;
       }
     }
-  } else if ((ctrl["multi_phase_center"].asBool() == true) && 
-             (ctrl["pulsar_binning"].asBool() == true)){
-    std::cout << "Pulsar binning cannot be used together with multiple phase centers\n";
+  } 
+  
+  if (ctrl["pulsar_binning"].asBool() == true){
+    if (ctrl["multi_phase_center"].asBool() == true){
+      std::cout << "Pulsar binning cannot be used together with multiple phase centers\n";
+      return false;
+    }
+    if (ctrl["phased_array"].asBool() == true){
+      std::cout << "Pulsar binning cannot be used in phase array mode\n";
+      return false;
+    }
+    if (ctrl["enable_bdwf"].asBool() == true){
+      std::cout << "BDWFs cannot be used together with pulsar binning\n";
+      return false;
+    }
+  }
+  if ((ctrl["phased_array"].asBool() == true) &&  (ctrl["enable_bdwf"].asBool() == true)){
+    std::cout << "BDWFs cannot be used in phased array mode\n";
     return false;
   }
   // No phased array in pulsar binning mode
@@ -434,6 +452,45 @@ Control_parameters::check(std::ostream &writer) const {
       ok = false;
     }
   }
+
+  // Check BDWF
+  if (enable_bdwf()){
+    if (ctrl["bdwf"] == Json::Value()){
+      writer << "BDWF is enabled but there is no \"bdwf\" block defined\n";
+      ok = false;
+    } else {
+      const char *overlap[] = {"overlap_t", "overlap_f"};
+      for (int i = 0; i < 2; i++){
+        if (ctrl["bdwf"][overlap[i]] != Json::Value()){
+          if ((ctrl["bdwf"][overlap[i]].asInt() < 1) || (ctrl["bdwf"][overlap[i]].asInt()&1 == 0)){
+            writer << "BDWF overlap must be an odd integer >= 1 (overlap=1 means no overlap)\n";
+            ok = false;
+          }
+        }
+      }
+      if (ctrl["bdwf"]["hwhm"] == Json::Value()){
+        writer << "No hwhm defined for BDWF\n";
+        ok = false;
+      }else if (ctrl["bdwf"]["hwhm"].asDouble() < 0.0){
+        writer << "The hwhm must be positive\n";
+        ok = false;
+      }
+      if (ctrl["bdwf"]["window_function"] == Json::Value()){
+        writer << "No window function defined for BDWF\n";
+        ok = false;
+      }else{
+        std::string window = ctrl["bdwf"]["window_function"].asString();
+        for (int i = 0; i < window.size(); i++)
+          window[i] = toupper(window[i]);
+      
+        if ((window != "RECTANGULAR") && (window != "SINC") && (window != "AIRY")){
+          writer << "Unknown BDWF window function \"" << window 
+                 << "\", valid choises are RECTANGULAR, SINC, and AIRY.\n";
+          ok = false;
+        }
+      }
+    }
+  }
   
   // Check pulsar binning
   if (ctrl["pulsar_binning"].asBool()){
@@ -667,6 +724,10 @@ bool Control_parameters::phased_array() const{
   return ctrl["phased_array"].asBool();
 }
 
+bool Control_parameters::enable_bdwf() const{
+  return ctrl["enable_bdwf"].asBool();
+}
+
 bool Control_parameters::pulsar_binning() const{
   return ctrl["pulsar_binning"].asBool();
 }
@@ -729,6 +790,48 @@ Control_parameters::get_mask_parameters(Mask_parameters &pars) const {
   return true;
 }
 
+bool
+Control_parameters::get_bdwf_parameters(BDWF_parameters &pars) const {
+  if (!enable_bdwf())
+    return false;
+
+  // This should have already been caught by check()
+  if (ctrl["bdwf"] == Json::Value())
+    return false;
+
+  std::string window = ctrl["bdwf"]["window_function"].asString();
+  for (int i = 0; i < window.size(); i++)
+    window[i] = toupper(window[i]);
+  
+  if (window == "RECTANGULAR")
+    pars.window_function = SFXC_BDWF_RECT;
+  else if (window == "SINC")
+    pars.window_function = SFXC_BDWF_SINC;
+  else if (window == "AIRY")
+    pars.window_function = SFXC_BDWF_AIRY;
+  else{
+    // This should have already been caught by check()
+    return false;
+  }
+
+  // Overlapping defaults to no overlapping
+  if (ctrl["bdwf"]["overlap_t"] != Json::Value()) 
+    pars.overlap_t = ctrl["bdwf"]["overlap_t"].asInt();
+  else
+    pars.overlap_t = 1;
+
+  if (ctrl["bdwf"]["overlap_f"] != Json::Value()) 
+    pars.overlap_f = ctrl["bdwf"]["overlap_f"].asInt();
+  else
+    pars.overlap_f = 1;
+
+  if (ctrl["bdwf"]["hwhm"] != Json::Value())
+    pars.hwhm = ctrl["bdwf"]["hwhm"].asDouble();
+  else
+    return false;
+
+  return true;
+}
 int
 Control_parameters::bits_per_sample(const std::string &mode,
                                     const std::string &station) const

@@ -112,6 +112,7 @@ public:
   void correlator_node_set_all(Uvw_model &uvw_table,
                                const std::string &station_name);
   void correlator_node_set_all(Pulsar_parameters &pulsar);
+  void correlator_node_set_all(BDWF_parameters &bdwf);
   void correlator_node_set_all(Mask_parameters &mask);
   void correlator_node_set_all(std::set<std::string> &sources);
 

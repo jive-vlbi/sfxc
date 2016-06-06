@@ -41,7 +41,10 @@ public:
   static void receive_bcast(MPI_Status &status, Uvw_model &table, int &sn);
   static void unpack(std::vector<char> &buffer, Uvw_model &table, int &sn);
 
-  static void send(Pulsar_parameters &table, int rank);
+  static void send(BDWF_parameters &bdwf_param, int rank);
+  static void receive(MPI_Status &status, BDWF_parameters &bdwf_param);
+
+  static void send(Pulsar_parameters &pulsar_param, int rank);
   static void receive(MPI_Status &status, Pulsar_parameters &pulsar_param);
 
   static void send(Input_node_parameters &input_node_param, int rank);

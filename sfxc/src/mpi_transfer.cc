@@ -591,6 +591,43 @@ MPI_Transfer::send(Pulsar_parameters &pulsar_param, int rank) {
 }
 
 void
+MPI_Transfer::receive(MPI_Status &status, BDWF_parameters &bdwf_param) {
+  MPI_Status status2;
+
+  int size;
+  MPI_Get_elements(&status, MPI_CHAR, &size);
+  SFXC_ASSERT(size > 0);
+  char buffer[size];
+  int position = 0;
+  MPI_Recv(&buffer, size, MPI_CHAR, status.MPI_SOURCE, status.MPI_TAG, MPI_COMM_WORLD, &status2);
+
+  MPI_Unpack(buffer, size, &position, &bdwf_param.window_function, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &bdwf_param.overlap_t, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &bdwf_param.overlap_f, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position, &bdwf_param.hwhm, 1, MPI_DOUBLE, MPI_COMM_WORLD);
+
+  SFXC_ASSERT(position == size);
+}
+
+void
+MPI_Transfer::send(BDWF_parameters &bdwf_param, int rank) {
+  int size = 1*sizeof(double) + 3*sizeof(int32_t);
+
+  // pack all data
+  int position = 0;
+  char message_buffer[size];
+
+  MPI_Pack(&bdwf_param.window_function, 1, MPI_INT32, message_buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&bdwf_param.overlap_t, 1, MPI_INT32, message_buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&bdwf_param.overlap_f, 1, MPI_INT32, message_buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&bdwf_param.hwhm, 1, MPI_DOUBLE, message_buffer, size, &position, MPI_COMM_WORLD);
+
+  // And finally send the data
+  SFXC_ASSERT(position == size);
+  MPI_Send(message_buffer, position, MPI_PACKED, rank, MPI_TAG_BDWF_PARAMETERS, MPI_COMM_WORLD);
+}
+
+void
 MPI_Transfer::receive(MPI_Status &status, Pulsar_parameters &pulsar_param) {
   MPI_Status status2;
 
@@ -852,7 +889,7 @@ void
 MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   int size = 0;
   size =
-    5*sizeof(int64_t) + 13*sizeof(int32_t) + sizeof(int64_t) +
+    5*sizeof(int64_t) + 14*sizeof(int32_t) + sizeof(int64_t) +
     3*sizeof(char) + corr_param.station_streams.size() * (5 * sizeof(int32_t) + 3 * sizeof(int64_t) + 2 * sizeof(char) + sizeof(double)) +
     11*sizeof(char);
   int position = 0;
@@ -916,6 +953,8 @@ MPI_Transfer::send(Correlation_parameters &corr_param, int rank) {
   MPI_Pack(&corr_param.n_phase_centers, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.pulsar_binning, 1, MPI_INT32,
+           message_buffer, size, &position, MPI_COMM_WORLD);
+  MPI_Pack(&corr_param.enable_bdwf, 1, MPI_INT32,
            message_buffer, size, &position, MPI_COMM_WORLD);
   MPI_Pack(&corr_param.source[0], 11, MPI_CHAR,
            message_buffer, size, &position, MPI_COMM_WORLD);
@@ -1047,6 +1086,8 @@ MPI_Transfer::receive(MPI_Status &status, Correlation_parameters &corr_param) {
              &corr_param.n_phase_centers, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
              &corr_param.pulsar_binning, 1, MPI_INT32, MPI_COMM_WORLD);
+  MPI_Unpack(buffer, size, &position,
+             &corr_param.enable_bdwf, 1, MPI_INT32, MPI_COMM_WORLD);
   MPI_Unpack(buffer, size, &position,
                &corr_param.source[0], 11, MPI_CHAR, MPI_COMM_WORLD);
 
