@@ -91,6 +91,10 @@ initialise(const char *ctrl_file, const char *vex_file,
     ctrl["reference_station"] = "";
   }
 
+  // Checking message level
+  if (ctrl["message_level"] == Json::Value()) 
+    ctrl["message_level"] = 1;
+
   if (ctrl["pulsar_binning"] == Json::Value()){
     ctrl["pulsar_binning"] = false;
   }else if(ctrl["pulsar_binning"].asBool()==true){
