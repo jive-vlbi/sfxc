@@ -391,6 +391,8 @@ Correlator_node::set_parameters() {
   }
   int nstations = stations_set.size();
   int nBaselines = correlation_core->number_of_baselines();
+  int nbdwf = (parameters.enable_bdwf) ? parameters.bdwf_parameters->overlap_t*2 + 1 : 1;
+  nBaselines *= nbdwf;
   int size_of_one_baseline = sizeof(std::complex<FLOAT>) * (parameters.number_channels + 1);
 
   int size_uvw = nstations*sizeof(Output_uvw_coordinates);
@@ -401,6 +403,7 @@ Correlator_node::set_parameters() {
   slice_size = nBins * ( sizeof(int32_t) + sizeof(Output_header_timeslice) + size_uvw + size_stats +
                nBaselines * ( size_of_one_baseline + sizeof(Output_header_baseline)));
   SFXC_ASSERT(nBins >= 1);
+  std::cerr << RANK_OF_NODE << " : slice : " << parameters.slice_nr << ", " <<parameters.slice_offset << "\n";
   output_node_set_timeslice(parameters.slice_nr,
                             parameters.slice_offset,
                             n_integration_slice_in_time_slice,

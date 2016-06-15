@@ -130,8 +130,12 @@ Correlation_core::set_parameters(const Correlation_parameters &parameters,
     input_elements.resize(number_input_streams());
   }
   n_flagged.resize(baselines.size());
-  if (correlation_parameters.enable_bdwf)
+  if (correlation_parameters.enable_bdwf){
+    nbdwf = correlation_parameters.bdwf_parameters->overlap_t * 2 + 1; 
     init_bdwf();
+  } else {
+    nbdwf = 1;
+  }
 }
 
 void
@@ -197,7 +201,7 @@ void Correlation_core::integration_initialise() {
 
   for (int i = 0; i < phase_centers.size(); i++) {
     if (phase_centers[i].size() != baselines.size()) {
-      phase_centers[i].resize(baselines.size());
+      phase_centers[i].resize(baselines.size() * nbdwf);
       for(int j = 0; j < phase_centers[i].size(); j++) {
         phase_centers[i][j].resize(fft_size() + 1);
       }
@@ -212,14 +216,14 @@ void Correlation_core::integration_initialise() {
     }
   }
 
-  if (accumulation_buffers.size() != baselines.size()) {
-    accumulation_buffers.resize(baselines.size());
+  if (accumulation_buffers.size() != nbdwf*baselines.size()) {
+    accumulation_buffers.resize(nbdwf*baselines.size());
     for (size_t i = 0; i < accumulation_buffers.size(); i++) {
       accumulation_buffers[i].resize(fft_size() + 1);
     }
   }
 
-  SFXC_ASSERT(accumulation_buffers.size() == baselines.size());
+  SFXC_ASSERT(accumulation_buffers.size() == nbdwf*baselines.size());
   for (size_t i = 0; i < accumulation_buffers.size(); i++) {
     SFXC_ASSERT(accumulation_buffers[i].size() == fft_size() + 1);
     size_t size = accumulation_buffers[i].size() * sizeof(std::complex<FLOAT>);
@@ -264,18 +268,6 @@ void Correlation_core::integration_step(std::vector<Complex_buffer> &integration
   for (size_t i = number_input_streams(); i < baselines.size(); i++) {
     double fft = current_fft;
     for (size_t buf_idx = 0; buf_idx < nbuffer * stride; buf_idx += stride) {
-      double bdwf;
-      if (correlation_parameters.enable_bdwf){
-        double t = fabs((fft+0.5)/number_ffts_in_integration - 0.5) * 
-                        correlation_parameters.integration_time.get_time() / 
-                        bdwf_hwhm[i];
-        if (t >= bdwf_maxrange)
-          bdwf = 0.;
-        else
-          bdwf = gsl_spline_eval(bdwf_spline, t, bdwf_acc);
-        bdwf_weight[i] += bdwf * fft_size();
-      }else
-        bdwf = 1.;
       // Cross correlations
       std::pair<size_t, size_t> &baseline = baselines[i];
       SFXC_ASSERT(baseline.first != baseline.second);
@@ -288,9 +280,29 @@ void Correlation_core::integration_step(std::vector<Complex_buffer> &integration
                         /* in2 */ &input_elements[baseline.first][buf_idx],
                         /* out */ &temp_buffer[0], fft_size() + 1);
       }
-      SFXC_ADD_PRODUCTC_F (/* in1 */ (FLOAT *) &temp_buffer[0], 
-                           /* in2 */ bdwf,
-                           /* out */ (FLOAT *) &integration_buffer[i][0], 2*(fft_size() + 1));
+      // BDWF overlapping is symmetric around current integration, nbdwf is always odd
+      for (size_t j = 0; j < nbdwf; j++){
+        double bdwf;
+        int k = i + j*baselines.size();
+        if (correlation_parameters.enable_bdwf){
+          int delta = (j+1)/2 * (1 - 2*((j+1)%2));
+          double t = fabs((fft+0.5)/number_ffts_in_integration - 0.5 + delta) * 
+                          correlation_parameters.integration_time.get_time() / 
+                          bdwf_hwhm[i];
+          if (t >= bdwf_maxrange)
+            bdwf = 0.;
+          else
+            bdwf = gsl_spline_eval(bdwf_spline, t, bdwf_acc);
+          bdwf_weight[k] += bdwf * fft_size();
+          if ((RANK_OF_NODE == -12) && (i == number_input_streams()))
+            std::cerr << "j="<<j<<",delta=" << delta <<", t=" << t << ", bdwf="<<bdwf<< ", hwhm=" <<bdwf_hwhm[i] <<"\n";
+        }else
+          bdwf = 1.;
+        SFXC_ADD_PRODUCTC_F (/* in1 */ (FLOAT *) &temp_buffer[0], 
+                             /* in2 */ bdwf,
+                             /* out */ (FLOAT *) &integration_buffer[k][0],
+                             2*(fft_size() + 1));
+      }
       fft += 1;
     }
   }
@@ -318,7 +330,8 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
 
   // Normalize the cross correlations
   const int64_t total_samples = number_ffts_in_integration * fft_size();
-  for (size_t i = number_input_streams(); i < baselines.size(); i++) {
+  const size_t nbaseline = baselines.size();
+  for (size_t i = number_input_streams(); i < nbaseline; i++) {
     std::pair<size_t, size_t> &baseline = baselines[i];
     int stream1 = station_stream(baseline.first);
     int stream2 = station_stream(baseline.second);
@@ -330,13 +343,19 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
     double N2 = n_valid2 > 0? 1 - n_flagged[i].second * 1. / n_valid2 : 1;
     double N = N1 * N2;
     FLOAT norm;
+    // Now that overlapping BDWF is implemented, do the normalization in post-processing
     FLOAT weight = (correlation_parameters.enable_bdwf) ? bdwf_weight[i] / total_samples : 1.;
-    if((N < 0.01) || (weight < 0.0001))
+    for (size_t j = 1; j < nbdwf; j++)
+      weight += bdwf_weight[i + j*nbaseline] / total_samples;
+    if ((N < 0.01) || (weight < 0.0001))
       norm = 1;
     else
       norm = sqrt(N * norms[baseline.first]*norms[baseline.second]) * weight;
-    for (size_t j = 0 ; j < fft_size() + 1; j++) {
-      integration_buffer[i][j] /= norm;
+    for (size_t k = 0 ; k < nbdwf ; k++){
+      size_t m = i + k * nbaseline;
+      for (size_t j = 0 ; j < fft_size() + 1; j++) {
+        integration_buffer[m][j] /= norm;
+      }
     }
   }
 }
@@ -346,7 +365,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
   // This is done by reference counting
 
   SFXC_ASSERT(writer != boost::shared_ptr<Data_writer>());
-  SFXC_ASSERT(integration_buffer.size() == baselines.size());
+  SFXC_ASSERT(integration_buffer.size() == nbdwf * baselines.size());
 
   // Write the output file index
   {
@@ -368,7 +387,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
   {
     // Timeslice header
     Output_header_timeslice htimeslice;
-    htimeslice.number_baselines = baselines.size();
+    htimeslice.number_baselines = baselines.size() * nbdwf;
     htimeslice.integration_slice =
       correlation_parameters.integration_nr + current_integration;
     htimeslice.number_uvw_coordinates = stations_set.size();
@@ -438,110 +457,118 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
   std::vector<float> bdwf;
   float spectral_weight = 1.;
   Output_header_baseline hbaseline;
-  for (size_t i = 0; i < baselines.size(); i++) {
-    std::pair<size_t, size_t> &baseline = baselines[i];
-    int stream1 = station_stream(baseline.first);
-    int stream2 = station_stream(baseline.second);
+  for (size_t ibdwf = 0; ibdwf < nbdwf; ibdwf++) {
+    for (size_t i = 0; i < baselines.size(); i++) {
+      std::pair<size_t, size_t> &baseline = baselines[i];
+      int stream1 = station_stream(baseline.first);
+      int stream2 = station_stream(baseline.second);
+      int index = i + ibdwf * baselines.size();
 
-    if (fft_size() == number_channels()) {
-      for (size_t j = 0; j < number_channels() + 1; j++)
-	integration_buffer_float[j] = integration_buffer[i][j];
-    } else if (correlation_parameters.enable_bdwf){
-      const Time tmid = correlation_parameters.start_time + correlation_parameters.integration_time/2.;
-      double c =  299792458.; // Speed of light
-      double du = uvw_table[stream1][0] - uvw_table[stream2][0];
-      double dv = uvw_table[stream2][1] - uvw_table[stream2][1];
-      double dlm = correlation_parameters.bdwf_parameters->hwhm * M_PI / (180*60);
-      double delay = sqrt(du*du + dv*dv) * dlm / c;
-      double hwhm = (delay > 1e-9) ? sqrt(3.) / (2*M_PI*delay) : 1e9;
-      int n = fft_size() / number_channels(); 
-      bdwf.resize(n);
-      double norm = 0.;
-      for(int k = 0; k < n; k++){
-        double dnu = correlation_parameters.bandwidth / fft_size();
-        double nu = fabs(k - n/2 + 0.5) * dnu / hwhm;
-        if (nu > bdwf_maxrange)
-          bdwf[k] = 0.;
-        else
-          bdwf[k] = gsl_spline_eval(bdwf_spline, nu, bdwf_acc);
-        norm += bdwf[k];
-      }
-      spectral_weight = std::max(0., norm / n); 
-      if (norm < 1e-4) norm = 1.;
+      if (fft_size() == number_channels()) {
+        for (size_t j = 0; j < number_channels() + 1; j++)
+          integration_buffer_float[j] = integration_buffer[index][j];
+      } else if (correlation_parameters.enable_bdwf) {
+        const Time tmid = correlation_parameters.start_time + correlation_parameters.integration_time/2.;
+        double c =  299792458.; // Speed of light
+        double du = uvw_table[stream1][0] - uvw_table[stream2][0];
+        double dv = uvw_table[stream2][1] - uvw_table[stream2][1];
+        double dlm = correlation_parameters.bdwf_parameters->hwhm * M_PI / (180*60);
+        double delay = sqrt(du*du + dv*dv) * dlm / c;
+        double hwhm = (delay > 1e-9) ? sqrt(3.) / (2*M_PI*delay) : 1e9;
+        int n_overlap = correlation_parameters.bdwf_parameters->overlap_f * 2 + 1;
+        int n = n_overlap * (fft_size() / number_channels()); 
+        bdwf.resize(n);
+        double norm = 0.;
+        for (int k = 0; k < n; k++) {
+          double dnu = correlation_parameters.bandwidth / fft_size();
+          double nu = fabs(k - n/2 + 0.5) * dnu / hwhm;
+          if (nu > bdwf_maxrange)
+            bdwf[k] = 0.;
+          else
+            bdwf[k] = gsl_spline_eval(bdwf_spline, nu, bdwf_acc);
+          norm += bdwf[k];
+        }
+        spectral_weight = std::max(0., norm / n); 
+        if (norm < 1e-4) norm = 1.;
 
-      for (size_t j = 0; j < number_channels(); j++) {
-        // Don't use DC edge
-        integration_buffer_float[j] = (j==0)? 0 : integration_buffer[i][j * n] * bdwf[0];
-        for (size_t k = 1; k < n ; k++)
-          integration_buffer_float[j] += integration_buffer[i][j * n + k] * bdwf[k];
-        integration_buffer_float[j] /= norm;
-      }
-      integration_buffer_float[number_channels()] = integration_buffer[i][fft_size()]; 
-    }else{
-      // Average down spectral points in the lag domain
-      if (mask_parameters.normalize) {
-        for (size_t j = 0; j < fft_size() + 1; j++) {
-          if (abs(integration_buffer[i][j]) != 0.0)
-            integration_buffer[i][j] /= abs(integration_buffer[i][j]);
+        for (size_t j = 0; j < number_channels(); j++) {
+          integration_buffer_float[j] = 0;
+          int m = (j - n_overlap/2) *  n / n_overlap;
+          for (size_t k = 0; k < n ; k++){
+            // Check boundry condition excluding DC edge (no phase information)
+            if ((m + k  > 0) && (m + k < fft_size()))
+              integration_buffer_float[j] += integration_buffer[index][m + k] * bdwf[k];
+          }
+          integration_buffer_float[j] /= norm; 
+        }
+        integration_buffer_float[number_channels()] = integration_buffer[index][fft_size()]; 
+      } else {
+        // Average down spectral points in the lag domain
+        if (mask_parameters.normalize) {
+          for (size_t j = 0; j < fft_size() + 1; j++) {
+            if (abs(integration_buffer[index][j]) != 0.0)
+              integration_buffer[i][j] /= abs(integration_buffer[i][j]);
+          }
+        }
+        SFXC_MUL_F_FC_I(&mask[0], &integration_buffer[i][0], fft_size() + 1);
+        fft_f2t.irfft(&integration_buffer[i][0], &real_buffer[0]);
+        real_buffer[number_channels()] =
+          (real_buffer[number_channels()] +
+           real_buffer[2 * fft_size() - number_channels()]) / 2;
+        for (size_t j = 1; j < number_channels(); j++)
+          real_buffer[number_channels() + j] =
+            real_buffer[2 * fft_size() - number_channels() + j];
+        SFXC_MUL_F(&real_buffer[0], &window[0], &real_buffer[0],
+                   2 * number_channels());
+        fft_t2f.rfft(&real_buffer[0], &temp_buffer[0]);
+        for (size_t j = 0; j < number_channels() + 1; j++) {
+          integration_buffer_float[j] = temp_buffer[j];
+          integration_buffer_float[j] /= (2 * fft_size());
         }
       }
-      SFXC_MUL_F_FC_I(&mask[0], &integration_buffer[i][0], fft_size() + 1);
-      fft_f2t.irfft(&integration_buffer[i][0], &real_buffer[0]);
-      real_buffer[number_channels()] =
-	(real_buffer[number_channels()] +
-	 real_buffer[2 * fft_size() - number_channels()]) / 2;
-      for (size_t j = 1; j < number_channels(); j++)
-        real_buffer[number_channels() + j] =
-          real_buffer[2 * fft_size() - number_channels() + j];
-      SFXC_MUL_F(&real_buffer[0], &window[0], &real_buffer[0],
-		 2 * number_channels());
-      fft_t2f.rfft(&real_buffer[0], &temp_buffer[0]);
-      for (size_t j = 0; j < number_channels() + 1; j++) {
-        integration_buffer_float[j] = temp_buffer[j];
-        integration_buffer_float[j] /= (2 * fft_size());
+
+      const int64_t total_samples = number_ffts_in_integration * fft_size();
+      int32_t *levels = statistics[stream1]->get_statistics(); // We get the number of invalid samples from the bitstatistics
+      if (stream1 == stream2) {
+        hbaseline.weight = std::max(total_samples - levels[4], (int64_t) 0);       // The number of good samples
+      } else {
+        SFXC_ASSERT(levels[4] >= 0);
+        SFXC_ASSERT(n_flagged[i].first >= 0);
+        hbaseline.weight = std::max(total_samples - levels[4] - n_flagged[i].first, (int64_t)0);       // The number of good samples
+        double w_bdwf;
+        if (correlation_parameters.enable_bdwf){
+          w_bdwf = std::max(0., spectral_weight*bdwf_weight[index]/total_samples);
+          if (RANK_OF_NODE == -14)
+            std::cerr << i << " : w_bdwf = " << w_bdwf << ", orig = " << bdwf_weight[index]<<"/" << total_samples 
+                      << ", spec = " << spectral_weight << "\n";
+        } else
+          w_bdwf = 1.;
+        hbaseline.weight = hbaseline.weight * w_bdwf;
       }
-    }
+      hbaseline.station_nr1 = station_number(baseline.first);
+      hbaseline.station_nr2 = station_number(baseline.second);
 
-    const int64_t total_samples = number_ffts_in_integration * fft_size();
-    int32_t *levels = statistics[stream1]->get_statistics(); // We get the number of invalid samples from the bitstatistics
-    if (stream1 == stream2) {
-      hbaseline.weight = std::max(total_samples - levels[4], (int64_t) 0);       // The number of good samples
-    } else {
-      SFXC_ASSERT(levels[4] >= 0);
-      SFXC_ASSERT(n_flagged[i].first >= 0);
-      hbaseline.weight = std::max(total_samples - levels[4] - n_flagged[i].first, (int64_t)0);       // The number of good samples
-      double w_bdwf;
-      if (correlation_parameters.enable_bdwf){
-        w_bdwf = std::max(0., spectral_weight*bdwf_weight[i]/total_samples);
-        if (RANK_OF_NODE == -14)
-          std::cerr << i << " : w_bdwf = " << w_bdwf << ", orig = " << bdwf_weight[i]<<"/" << total_samples << "\n";
-      } else
-        w_bdwf = 1.;
-      hbaseline.weight = hbaseline.weight * w_bdwf;
-    }
-    hbaseline.station_nr1 = station_number(baseline.first);
-    hbaseline.station_nr2 = station_number(baseline.second);
+      // Polarisation (RCP: 0, LCP: 1)
+      hbaseline.polarisation1 = (correlation_parameters.station_streams[baseline.first].polarisation == 'R') ? 0 : 1;
+      hbaseline.polarisation2 = (correlation_parameters.station_streams[baseline.second].polarisation == 'R') ? 0 : 1;
+      // Upper or lower sideband (LSB: 0, USB: 1)
+      if (correlation_parameters.sideband=='U') {
+        hbaseline.sideband = 1;
+      } else {
+        SFXC_ASSERT(correlation_parameters.sideband == 'L');
+        hbaseline.sideband = 0;
+      }
+      // The number of the channel in the vex-file,
+      hbaseline.frequency_nr = (unsigned char)correlation_parameters.frequency_nr;
+      // sorted increasingly
+      // 1 byte left:
+      hbaseline.empty = ' ';
 
-    // Polarisation (RCP: 0, LCP: 1)
-    hbaseline.polarisation1 = (correlation_parameters.station_streams[baseline.first].polarisation == 'R') ? 0 : 1;
-    hbaseline.polarisation2 = (correlation_parameters.station_streams[baseline.second].polarisation == 'R') ? 0 : 1;
-    // Upper or lower sideband (LSB: 0, USB: 1)
-    if (correlation_parameters.sideband=='U') {
-      hbaseline.sideband = 1;
-    } else {
-      SFXC_ASSERT(correlation_parameters.sideband == 'L');
-      hbaseline.sideband = 0;
+      int nWrite = sizeof(hbaseline);
+      writer->put_bytes(nWrite, (char *)&hbaseline);
+      writer->put_bytes((number_channels() + 1) * sizeof(std::complex<float>),
+                        ((char*)&integration_buffer_float[0]));
     }
-    // The number of the channel in the vex-file,
-    hbaseline.frequency_nr = (unsigned char)correlation_parameters.frequency_nr;
-    // sorted increasingly
-    // 1 byte left:
-    hbaseline.empty = ' ';
-
-    int nWrite = sizeof(hbaseline);
-    writer->put_bytes(nWrite, (char *)&hbaseline);
-    writer->put_bytes((number_channels() + 1) * sizeof(std::complex<float>),
-                      ((char*)&integration_buffer_float[0]));
   }
 }
 
@@ -591,10 +618,14 @@ Correlation_core::sub_integration(){
   // Start with the auto correlations
   const int n_fft = fft_size() + 1;
   const int n_phase_centers = phase_centers.size();
+  const int n_baseline = baselines.size();
   for (int i = 0; i < number_input_streams(); i++) {
     for (int j = 0; j < n_phase_centers; j++) {
-      for (int k = 0; k < n_fft; k++) {
-        phase_centers[j][i][k] += accumulation_buffers[i][k];
+      for (int k = 0; k < nbdwf; k++){
+        int n = i + k * n_baseline;
+        for (int m = 0; m < n_fft; m++) {
+          phase_centers[j][n][m] += accumulation_buffers[n][m];
+        }
       }
     }
   }
@@ -603,19 +634,21 @@ Correlation_core::sub_integration(){
     std::pair<size_t, size_t> &baseline = baselines[i];
     int stream1 = station_stream(baseline.first);
     int stream2 = station_stream(baseline.second);
-
-    // The pointing center
-    for(int j = 0; j < n_fft; j++)
-      phase_centers[0][i][j] += accumulation_buffers[i][j];
-    // UV shift the additional phase centers
-    for(int j = 1; j < n_phase_centers; j++) {
-      double delay1 = delay_tables[stream1].delay(tmid);
-      double delay2 = delay_tables[stream2].delay(tmid);
-      double ddelay1 = delay_tables[stream1].delay(tmid, j) - delay1;
-      double ddelay2 = delay_tables[stream2].delay(tmid, j) - delay2;
-      double rate1 = delay_tables[stream1].rate(tmid);
-      double rate2 = delay_tables[stream2].rate(tmid);
-      uvshift(accumulation_buffers[i], phase_centers[j][i], ddelay1, ddelay2, rate1, rate2);
+    for (int j = 0; j < nbdwf; j++){
+      int n = i + j * n_baseline;
+      // The pointing center
+      for(int k = 0; k < n_fft; k++)
+        phase_centers[0][n][k] += accumulation_buffers[n][k];
+      // UV shift the additional phase centers
+      for(int k = 1; k < n_phase_centers; k++) {
+        double delay1 = delay_tables[stream1].delay(tmid);
+        double delay2 = delay_tables[stream2].delay(tmid);
+        double ddelay1 = delay_tables[stream1].delay(tmid, k) - delay1;
+        double ddelay2 = delay_tables[stream2].delay(tmid, k) - delay2;
+        double rate1 = delay_tables[stream1].rate(tmid);
+        double rate2 = delay_tables[stream2].rate(tmid);
+        uvshift(accumulation_buffers[n], phase_centers[k][n], ddelay1, ddelay2, rate1, rate2);
+      }
     }
   }
   // Clear the accumulation buffers
@@ -896,7 +929,7 @@ Correlation_core::init_bdwf(){
   const int n_phase_centers = phase_centers.size();
   const int n_station = number_input_streams();
   const int n_baseline = baselines.size();
-  bdwf_weight.resize(n_baseline);
+  bdwf_weight.resize(n_baseline * nbdwf);
   bdwf_hwhm.resize(n_baseline);
   std::cerr << "nbaseline = " << n_baseline << ", nstation = " << n_station << ", fft_size= " << fft_size()<< "\n";
   for (int i = n_station ; i < n_baseline ; i++){
@@ -907,12 +940,13 @@ Correlation_core::init_bdwf(){
     double dv = uvw_rate[stream1][1] - uvw_rate[stream2][1];
     double rate = sqrt(du*du + dv*dv);
     bdwf_hwhm[i] = sqrt(3.) * lambda / (2. * M_PI * dlm * rate);
-    bdwf_weight[i] = 0;
-    if(RANK_OF_NODE == 14) std::cerr << "bdwf_hwhm[" << i << "]=" << bdwf_hwhm[i] << ", stations = (" << stream1 
+    if(RANK_OF_NODE == -14) std::cerr << "bdwf_hwhm[" << i << "]=" << bdwf_hwhm[i] << ", stations = (" << stream1 
                                      << ", " << stream2 << "), lambda = " << lambda << ", rate = " << rate << "\n"
                                      << "uvw_rate(s1)="<<uvw_rate[stream1][0]<< ", " << uvw_rate[stream1][1]
                                      << ", s2 = "<< uvw_rate[stream2][0]<< ", " << uvw_rate[stream2][1] << "\n";
   }
+  for (int i = 0; i < nbdwf * n_baseline; i++)
+    bdwf_weight[i] = 0;
 
   // Create window
   std::vector<double> window_x, window_y;

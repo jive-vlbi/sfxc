@@ -100,6 +100,7 @@ protected:
   // GSL splining objects
   gsl_interp_accel                        *bdwf_acc;
   gsl_spline                              *bdwf_spline;
+  int                                     nbdwf;
 
   // Tracks the number of correlator points where one (but not both) stations on a baseline had invalid data
   std::vector< std::pair<int64_t,int64_t> > n_flagged;

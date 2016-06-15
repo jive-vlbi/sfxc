@@ -462,8 +462,8 @@ Control_parameters::check(std::ostream &writer) const {
       const char *overlap[] = {"overlap_t", "overlap_f"};
       for (int i = 0; i < 2; i++){
         if (ctrl["bdwf"][overlap[i]] != Json::Value()){
-          if ((ctrl["bdwf"][overlap[i]].asInt() < 1) || (ctrl["bdwf"][overlap[i]].asInt()&1 == 0)){
-            writer << "BDWF overlap must be an odd integer >= 1 (overlap=1 means no overlap)\n";
+          if (ctrl["bdwf"][overlap[i]].asInt() < 0) { 
+            writer << "BDWF overlap must be an >= 0, (overlap=0 means no overlap)\n";
             ok = false;
           }
         }
@@ -832,6 +832,7 @@ Control_parameters::get_bdwf_parameters(BDWF_parameters &pars) const {
 
   return true;
 }
+
 int
 Control_parameters::bits_per_sample(const std::string &mode,
                                     const std::string &station) const
