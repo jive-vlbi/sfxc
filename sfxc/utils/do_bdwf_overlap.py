@@ -113,7 +113,7 @@ def do_overlap(outfile, integrations, nbaseline, nbdwf):
   n = len(integrations)
   m = n / 2
   nbl = nbaseline / nbdwf 
-   
+  
   for subint in range(len(integrations[m]["data"])):
     data = [integrations[z]["data"][subint] for z in range(n)]
     headers = [integrations[z]["blheader"][subint] for z in range(n)]
@@ -126,10 +126,6 @@ def do_overlap(outfile, integrations, nbaseline, nbdwf):
       s1, s2 =  headers[m][bl][1:3]
       for i in range(n):
         j = (i+1)/2 * (1 - 2*((i+1)%2)) # relative integration index
-        if (m+j) >= len(data):
-          print "len(data)=", len(data), ", m+j =", m+j
-        elif (bl + i*nbl) >= len(data[m+j]):
-          print "len(data[m+j]) =", len(data[m+j]), "bl =", bl, ", nbl=", nbl, ", i = ", i, ", total =", bl + i*nbl, ', n=', n
         avdata += data[m + j][bl + i*nbl]
         blweight += headers[m+j][bl + i*nbl][0]
       write_baseline(outfile, avdata, blweight, headers[m][bl])
@@ -177,6 +173,7 @@ while timeslice_bin != "":
     if len(integrations) == nbdwf:
       integrations = integrations[1:]
     integrations.append(new_integration())
+    old_slicenr = slicenr
   integration = integrations[-1]
   integration["tslice"].append(timeslice_bin)
   # process uvw
