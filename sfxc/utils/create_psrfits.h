@@ -18,7 +18,7 @@ public:
     int sideband;
   };
 public:
-  SFXCdata(const char *infile, const char *vexname);
+  SFXCdata(const char *infile, const char *vexname, const char *setup_station_);
   float *get_spectrum(int int_nr, int subband_nr, int sample, int pol_nr);
 private:
   void read_integration(int int_nr);
@@ -40,6 +40,7 @@ private:
   std::vector<float> data; // data array
   int current_int;
   size_t sizeof_integration;
+  std::string setup_station;
 };
 
 void equatorial2galactic(double ra, double dec, double &glon, double &glat);

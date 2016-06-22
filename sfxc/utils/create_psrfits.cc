@@ -21,8 +21,11 @@ bool flag = false;
 #define POL_I  3
 
 
-SFXCdata::SFXCdata(const char *infilename, const char *vexname){
+SFXCdata::SFXCdata(const char *infilename, const char *vexname, const char *setup_station_){
   vex.open(vexname);
+  // If no setup station is given we will use the first station
+  if (setup_station_ != NULL)
+    setup_station = setup_station_;
   infile = fopen(infilename, "r");
   if (!infile)
     throw "Could not open input file";
@@ -149,13 +152,16 @@ SFXCdata::get_subbands(vector<subband> &vex_subbands){
   string mode = vex.get_mode(scan_name);
   // Get sorted list of all frequencies, FIXME this doesn't support mixed bandwidth
   vector<double> bands;
-  std::string station = vex.get_root_node()["SCHED"][scan_name]->begin("station")[0]->to_string();
+  std::string station;
+  if (setup_station == std::string())
+    station = vex.get_root_node()["SCHED"][scan_name]->begin("station")[0]->to_string();
+  else
+    station = setup_station;
   vex.get_frequencies(mode, station, bands);
 
   // create sorted list of subbands
   Vex::Node root_node = vex.get_root_node();
-  Vex::Node::iterator mode_it = root_node["MODE"][mode];
-  std::string freq_node = mode_it->begin("FREQ")[0]->to_string();
+  std::string freq_node = vex.get_frequency(mode, station); 
   std::set<double> freq_set;
   for(int i=0;i<bands.size();i++){ 
     for (Vex::Node::iterator chan_it = root_node["FREQ"][freq_node]->begin("chan_def");
@@ -874,20 +880,25 @@ void usage(char *name){
        << "Options : \n"
        << "  -c CHANNELS       List of channels to include [Default All channels]\n" 
        << "  -f FFT_SIZE       FFT size which was used during correlation\n" 
-       << "  -p POLARIZATIONS  Select polarizations : R, L, I  [Default I (sums R&L)]\n";
+       << "  -p POLARIZATIONS  Select polarizations : R, L, I  [Default I (sums R&L)]\n"
+       << "  -s SETUP_STATION  Select setup station, this determines which frequency setup is used\n";
 }
 
 int main(int argc, char *argv[]){
   FILE *outfile;
   char *channels_str = NULL;
   char *pol_str = NULL;
+  char *setup_station = NULL;
   int fft_size = 0;
   uit = fopen("debug.txt", "w");
   // Parse command line arguments
   opterr = 0;
   int c;
-  while ((c = getopt (argc, argv, "c:p:f:h")) != -1){
+  while ((c = getopt (argc, argv, "c:p:f:s:h")) != -1){
     switch (c){
+      case 's':
+        setup_station = optarg;
+        break;
       case 'p':
         pol_str = optarg;
         break;
@@ -908,8 +919,10 @@ int main(int argc, char *argv[]){
       case '?':
         if (optopt == 'c')
           cerr << "Option -c requires a list of channels.\n";
-        else if (optopt == 'c')
+        else if (optopt == 'f')
           cerr << "Option -f requires parameter.\n";
+        else if (optopt == 's')
+          cerr << "Option -s requires parameter.\n";
         else if (optopt == 'p')
           cerr << "Option -p takes R, L, R&L, or I as argument.\n";
         else 
@@ -930,7 +943,7 @@ int main(int argc, char *argv[]){
     exit(1);
   }
   // Open SFXC correlator files, there can be more than one
-  SFXCdata sfxcdata(argv[argc-2], argv[argc-3]);
+  SFXCdata sfxcdata(argv[argc-2], argv[argc-3], setup_station);
   // Create a list of channels to be included in the PSRFITS file
   // NB: We assume all correlator files have the same amount of channels
   int nchannels = sfxcdata.subbands.size();
