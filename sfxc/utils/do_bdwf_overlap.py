@@ -70,9 +70,13 @@ def scan2timeslice(vex, global_header):
 def get_args():
   usage = '%prog <vex file> <correlation file> <output file> <overlap factor>'
   parser = OptionParser(usage=usage)
+  parser.add_option('-o', '--overlap-apply', dest='overlap_apply',
+                    help='Overlap factor to apply during overlapping',
+                    type='int')
   opts, args = parser.parse_args()
   if len(args) != 4:
-    parser.error('Incorrect number of arguments')  
+    parser.error('Incorrect number of arguments')
+
   vex = Vex(args[0])
   corfile = open(args[1], 'r')
   if os.path.exists(args[2]):
@@ -91,14 +95,17 @@ def get_args():
   overlap = int(args[3])
   if (overlap < 0):
     parser.error('Overlap factor must be >= 0')
-  return vex, corfile, outfile, overlap
+  if opts.overlap_apply == None:
+    opts.overlap_apply = overlap
+  elif (opts.overlap_apply < 0) or (opts.overlap_apply > overlap):
+    parser.error('Invalid argument to overlap-apply')
+  return vex, corfile, outfile, overlap, opts.overlap_apply
 
 def new_integration():
   return {"data": [], "blheader": [], "tslice": [], "stats": [], "uvw": []}
 
-def write_headers(outfile, h_tslice, h_uvw, h_stats, nbdwf):
-  nbaseline = struct.unpack("i", h_tslice[4:8])[0]
-  outfile.write(h_tslice[:4] + struct.pack("i", nbaseline/nbdwf) + h_tslice[8:])
+def write_headers(outfile, h_tslice, h_uvw, h_stats, nbaseline):
+  outfile.write(h_tslice[:4] + struct.pack("i", nbaseline) + h_tslice[8:])
   for h in h_uvw:
     outfile.write(h)
   for h in h_stats:
@@ -112,22 +119,21 @@ def write_baseline(outfile, bldata, blweight, blheaders):
 def do_overlap(outfile, integrations, nbaseline, nbdwf):
   n = len(integrations)
   m = n / 2
-  nbl = nbaseline / nbdwf 
   
   for subint in range(len(integrations[m]["data"])):
     data = [integrations[z]["data"][subint] for z in range(n)]
     headers = [integrations[z]["blheader"][subint] for z in range(n)]
     # TODO stats should be modified for the overlapping
-    write_headers(outfile, integration["tslice"][subint], integration["uvw"][subint], integration["stats"][subint], nbdwf)
-    for bl in range(nbl):
+    write_headers(outfile, integration["tslice"][subint], integration["uvw"][subint], integration["stats"][subint], nbaseline)
+    for bl in range(nbaseline):
       avdata = zeros((nchan+1), dtype='c8')
       # Do the overlap 
       blweight = 0
       s1, s2 =  headers[m][bl][1:3]
       for i in range(n):
         j = (i+1)/2 * (1 - 2*((i+1)%2)) # relative integration index
-        avdata += data[m + j][bl + i*nbl]
-        blweight += headers[m+j][bl + i*nbl][0]
+        avdata += data[m + j][bl + i*nbaseline]
+        blweight += headers[m+j][bl + i*nbaseline][0]
       write_baseline(outfile, avdata, blweight, headers[m][bl])
 
 
@@ -138,7 +144,7 @@ def do_overlap(outfile, integrations, nbaseline, nbdwf):
 # Proper time.
 os.environ['TZ'] = "UTC"
 
-vex, corfile, outfile, overlap = get_args()
+vex, corfile, outfile, overlap, overlap_apply = get_args()
 
 global_header, global_header_bin = read_global_header(corfile)
 outfile.write(global_header_bin)
@@ -146,6 +152,7 @@ timeslices = scan2timeslice(vex, global_header)
 
 current_scan = -1
 nbdwf = 2 * overlap + 1
+napply = 2 * overlap_apply + 1
 
 integration_time = global_header["integration_time"]
 nchan = global_header["number_channels"]
@@ -155,22 +162,24 @@ integrations = []
 while timeslice_bin != "":
   slicenr, nbaseline, nuvw, nstat = struct.unpack('4i', timeslice_bin)
 
+  # Check if we have reached the next scan
   if (current_scan < len(timeslices) - 1) and \
      (slicenr >= timeslices[current_scan + 1][0]):
     # Write last integrations of previous scan
     for i in range(0, len(integrations), 2):
-      do_overlap(outfile, integrations, nbaseline, nbdwf)
+      do_overlap(outfile, integrations, nbaseline/nbdwf, nbdwf)
       integrations = integrations[2:]
 
     current_scan += 1
     integrations = [new_integration()]
     old_slicenr = slicenr
+  # Check if we finished reading an integration
   if slicenr != old_slicenr:
-    # The first few integrations are overlapped less 
+    # NB: When less than 'napply' integrations have been read we overlap fewer times
     if (len(integrations)&1) == 1:
-      do_overlap(outfile, integrations, nbaseline, nbdwf)
+      do_overlap(outfile, integrations, nbaseline/nbdwf, nbdwf)
     # Only keep as many integrations as is needed for the overlapping
-    if len(integrations) == nbdwf:
+    if len(integrations) == napply:
       integrations = integrations[1:]
     integrations.append(new_integration())
     old_slicenr = slicenr
@@ -203,5 +212,5 @@ while timeslice_bin != "":
 
 # Write the last integrations
 for i in range(0, len(integrations), 2):
-  do_overlap(outfile, integrations, nbaseline, nbdwf)
+  do_overlap(outfile, integrations, nbaseline/nbdwf, nbdwf)
   integrations = integrations[2:]
