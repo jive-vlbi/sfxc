@@ -119,7 +119,9 @@ def write_baseline(outfile, bldata, blweight, blheaders):
 def do_overlap(outfile, integrations, nbaseline, nbdwf):
   n = len(integrations)
   m = n / 2
-  
+  integration = integrations[m]
+
+  print 'n=', n, ', subints = ', len(integrations[m]["data"]), 'nbdwf =', nbdwf, ', nbaseline =', nbaseline, ', len =', len(integrations[0]["data"][0])
   for subint in range(len(integrations[m]["data"])):
     data = [integrations[z]["data"][subint] for z in range(n)]
     headers = [integrations[z]["blheader"][subint] for z in range(n)]
@@ -131,7 +133,8 @@ def do_overlap(outfile, integrations, nbaseline, nbdwf):
       blweight = 0
       s1, s2 =  headers[m][bl][1:3]
       for i in range(n):
-        j = (i+1)/2 * (1 - 2*((i+1)%2)) # relative integration index
+        j = (i+1)/2 * (2*((i+1)%2) - 1) # relative integration index
+        print 'i=', i, ', j=', j, 'bl =', bl, ', m+j=', m+j, ', index =', bl + i*nbaseline
         avdata += data[m + j][bl + i*nbaseline]
         blweight += headers[m+j][bl + i*nbaseline][0]
       write_baseline(outfile, avdata, blweight, headers[m][bl])
