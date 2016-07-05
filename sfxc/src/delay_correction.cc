@@ -138,7 +138,7 @@ void Delay_correction::fractional_bit_shift(FLOAT *input,
 
 void Delay_correction::fringe_stopping(FLOAT output[]) {
   const double mult_factor_phi = -sideband()*2.0*M_PI;
-  const double center_freq = channel_freq() + sideband()*(bandwidth()*0.5 + LO_offset);
+  const double center_freq = channel_freq() + sideband()*bandwidth()*0.5 + LO_offset;
 
   double phi, delta_phi, sin_phi, cos_phi;
   double lo_phase = start_phase + LO_offset*current_time.diff(correlation_parameters.start_time);
