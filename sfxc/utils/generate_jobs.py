@@ -62,6 +62,9 @@ parser.add_option("-m", "--max-datagood", dest="max_datagood", default=False,
                   action="store_true", help="Use the maximum data good to adjust the start time")
 parser.add_option("-a", "--scans", dest="scans", type="string",
                   help="List of scan numbers to correlate (NB. first scan has scan number 1)", metavar="LIST")
+parser.add_option("-u", "--setup-station", dest="setup_station", type="string",
+                  default="", help="Select setup station", metavar="STATION")
+
 
 (options, args) = parser.parse_args()
 if options.stations:
@@ -130,6 +133,8 @@ if options.template:
     fp = open(options.template, 'r')
     json_template = json.load(fp)
     fp.close()
+if options.setup_station != "":
+  json_template["setup_station"] = options.setup_station
 
 # Generate list of files for stations that are correlated from file
 media_files = {}
@@ -167,7 +172,6 @@ mk5_scan = {}
 json_output = json_template.copy()
 json_output["stations"] = []
 json_output["channels"] = []
-
 for scan_idx, scan in enumerate(vex['SCHED']):
     if options.scans and (scan_idx+1) not in options.scans:
       new_job = True
@@ -180,16 +184,6 @@ for scan_idx, scan in enumerate(vex['SCHED']):
     else:
         new_job = False
 
-    # Start a new job whenever the mode changes.
-    # Figure out the subbands to correlate based on the new mode.
-    if mode != vex['SCHED'][scan]['mode']:
-        mode = vex['SCHED'][scan]['mode']
-        freq = vex['MODE'][mode]['FREQ'][0]
-        channels = []
-        for channel in vex['FREQ'][freq].getall('chan_def'):
-            channels.append(channel[4])
-        new_job = True
-
     # Create a list of stations participating in this scan.
     stations = []
     for transfer in vex['SCHED'][scan].getall('station'):
@@ -197,6 +191,22 @@ for scan_idx, scan in enumerate(vex['SCHED']):
         if not options.stations or station in options.stations:
             stations.append(station)
     stations.sort()
+    if len(stations) == 0:
+      continue
+    setup_station = options.setup_station if options.setup_station != "" else stations[0] 
+
+    # Start a new job whenever the mode changes.
+    # Figure out the subbands to correlate based on the new mode.
+    if mode != vex['SCHED'][scan]['mode']:
+        mode = vex['SCHED'][scan]['mode']
+        for f in vex['MODE'][mode].getall('FREQ'):
+           if setup_station in f[1:]:
+             break
+        freq = f[0]
+        channels = []
+        for channel in vex['FREQ'][freq].getall('chan_def'):
+            channels.append(channel[4])
+        new_job = True
 
     # Start a new job whenever a station joins or leaves the
     # observation.
