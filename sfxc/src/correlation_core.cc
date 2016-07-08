@@ -481,7 +481,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
         double norm = 0.;
         for (int k = 0; k < n; k++) {
           double dnu = correlation_parameters.bandwidth / fft_size();
-          double nu = fabs(k - n/2 + 0.5) * dnu / hwhm;
+          double nu = fabs(k - n/2) * dnu / hwhm;
           if (nu > bdwf_maxrange)
             bdwf[k] = 0.;
           else
@@ -494,7 +494,7 @@ void Correlation_core::integration_write(std::vector<Complex_buffer> &integratio
         for (size_t j = 0; j < number_channels(); j++) {
           integration_buffer_float[j] = 0;
           int m = (j - n_overlap/2) *  n / n_overlap;
-          for (size_t k = 0; k < n ; k++){
+          for (size_t k = 0; k < n ; k++) {
             // Check boundry condition excluding DC edge (no phase information)
             if ((m + k  > 0) && (m + k < fft_size()))
               integration_buffer_float[j] += integration_buffer[index][m + k] * bdwf[k];
