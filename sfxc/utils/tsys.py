@@ -46,29 +46,32 @@ gains = {}
 usage = "usage: %prog [options] station [vexfile ctrlfile...]"
 parser = optparse.OptionParser(usage=usage)
 parser.add_option("-f", "--file", dest="tsys_file",
-                      default="", type="string",
-                      help="Tsys measurements",
-                      metavar="FILE")
+                  default="", type="string",
+                  help="Tsys measurements",
+                  metavar="FILE")
 parser.add_option("-l", "--lisfile", dest="lis_file",
-                      default="", type="string",
-                      help="job list file",
-                      metavar="FILE")
+                  default="", type="string",
+                  help="job list file",
+                  metavar="FILE")
 parser.add_option("-r", "--rxgfile", dest="rxg_file",
-                      default="", type="string",
-                      help="EVN RXG file",
-                      metavar="FILE")
+                  default="", type="string",
+                  help="EVN RXG file",
+                  metavar="FILE")
 parser.add_option("-t", "--tcalfile", dest="tcal_file",
-                      default="", type="string",
-                      help="VLBA TCAL file",
-                      metavar="FILE")
+                  default="", type="string",
+                  help="VLBA TCAL file",
+                  metavar="FILE")
 parser.add_option("-i", "--integration-time", dest="delta_secs",
-                      default=20, type="int",
-                      help="integration time",
-                      metavar="SECS")
+                  default=20, type="int",
+                  help="integration time",
+                  metavar="SECS")
 parser.add_option("-c", "--cutoff", dest="cutoff",
-                      default=1e9, type="float",
-                      help="cutoff",
-                      metavar="K")
+                  default=1e9, type="float",
+                  help="cutoff",
+                  metavar="K")
+parser.add_option("-e", "--extrapolate", dest="extrapolate",
+                  action="store_true", default=False,
+                  help="extrapolate Tcal measurements")
 
 (options, args) = parser.parse_args()
 if len(args) < 1:
@@ -137,8 +140,9 @@ else:
 
 if options.rxg_file:
     pol_mapping = {'rcp': 0, 'lcp': 1}
-    freqs = []
+    freqs = {}
     rxgs = {}
+    dpfu = [0.0, 0.0]
 
     fp = open(options.rxg_file)
     lineno = -1
@@ -152,9 +156,20 @@ if options.rxg_file:
                 lo = float(values[1])
                 hi = float(values[2])
                 continue
+            if line.startswith('fixed'):
+                values = line.split()
+                lo = float(values[1])
+                hi = float(values[1])
+                continue
             pass
+        elif lineno == 3:
+            pols = line.split()
+            continue
         elif lineno == 4:
-            dfpu = [float(x) for x in line.split()]
+            values = line.split()
+            for pol,value in zip(pols,values):
+                dpfu[pol_mapping[pol]] = float(value)
+                continue
             continue
         elif lineno == 5:
             mount = line.split()[0]
@@ -166,32 +181,43 @@ if options.rxg_file:
                 continue
             pol = pol_mapping[values[0]]
             freq = float(values[1])
-            if not freq in freqs:
-                freqs.append(freq)
+            if not pol in freqs:
+                freqs[pol] = []
+                rxgs[pol] = {}
                 pass
-            if not freq in rxgs:
-                rxgs[freq] = {}
+            if not freq in freqs[pol]:
+                freqs[pol].append(freq)
                 pass
-            rxgs[freq][pol] = float(values[2])
+            rxgs[pol][freq] = float(values[2])
             continue
         continue
-    freqs = sorted(freqs)
-    rcp = []
-    lcp = []
-    for freq in freqs:
-        rcp.append(rxgs[freq][0])
-        lcp.append(rxgs[freq][1])
+    for pol in freqs:
+        freqs[pol] = sorted(freqs[pol])
         continue
-    freqs = np.array(freqs)
-    rcp = np.array(rcp)
-    lcp = np.array(lcp)
-    rcp = scipy.interpolate.interp1d(freqs, rcp)
-    lcp = scipy.interpolate.interp1d(freqs, lcp)
-    freq = freqs[0]
-    tcals = {0: rcp, 1: lcp}
+    values = {}
+    for pol in freqs:
+        values[pol] = []
+        for freq in freqs[pol]:
+            values[pol].append(rxgs[pol][freq])
+            continue
+        continue
+    if options.extrapolate:
+        for pol in freqs:
+            freqs[pol] = [0.0] + freqs[pol] + [1e12]
+            values[pol] = [values[pol][0]] + values[pol] + [values[pol][-1]]
+            continue
+        pass
+    tcals = {}
+    for pol in freqs:
+        freqs[pol] = np.array(freqs[pol])
+        values[pol] = np.array(values[pol])
+        values[pol] = scipy.interpolate.interp1d(freqs[pol], values[pol])
+        tcals[pol] = values[pol]
+        continue
+    freq = (lo + hi) / 2
     gains[freq] = {}
     gains[freq][mount] = True
-    gains[freq]['DPFU'] = dfpu
+    gains[freq]['DPFU'] = dpfu
     gains[freq]['POLY'] = poly
     gains[freq]['FREQ'] = (lo, hi)
     gains[freq]['FT'] = 1.0
@@ -365,6 +391,13 @@ for polarisation in polarisations:
             continue
         continue
     continue
+
+if not 0 in tcals:
+    polarisations.remove('R')
+    pass
+if not 1 in tcals:
+    polarisations.remove('L')
+    pass
 
 index = []
 mapping = {}
