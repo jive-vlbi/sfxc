@@ -219,7 +219,11 @@ if options.rxg_file:
     gains[freq][mount] = True
     gains[freq]['DPFU'] = dpfu
     gains[freq]['POLY'] = poly
-    gains[freq]['FREQ'] = (lo, hi)
+    if lo == hi:
+        gains[freq]['FREQ'] = lo
+    else:
+        gains[freq]['FREQ'] = (lo, hi)
+        pass
     gains[freq]['FT'] = 1.0
     pass
 elif options.tcal_file:
