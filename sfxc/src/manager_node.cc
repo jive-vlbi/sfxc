@@ -175,8 +175,8 @@ void Manager_node::start() {
         }
 
         // Check whether the new start time is before the stop time
-        get_log_writer() << "START_TIME: " << start_time << std::endl;
-        if (stop_time <= start_time) {
+        get_log_writer() << "START_TIME: " << start_time + integration_time() * integration_slice_nr << std::endl;
+        if (stop_time <= start_time + integration_time() * integration_slice_nr) {
           status = STOP_CORRELATING;
           break;
         }
