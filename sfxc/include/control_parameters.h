@@ -142,6 +142,7 @@ public:
     char polarisation;
     int32_t bits_per_sample;
     double LO_offset; // LO offset in Hz
+    int tsys_freq;
   };
 
   typedef std::vector<Station_parameters> Station_list;
@@ -232,6 +233,7 @@ public:
   bool pulsar_binning() const;
   bool multi_phase_center() const;
   double LO_offset(const std::string &station) const;
+  int tsys_freq(const std::string &station) const;
   bool exit_on_empty_datastream() const;
   
   Time reader_offset(const std::string &s) const{

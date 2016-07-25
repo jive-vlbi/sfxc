@@ -602,6 +602,15 @@ Control_parameters::LO_offset(const std::string &station) const {
   return ctrl["LO_offset"][station].asDouble();
 }
 
+int
+Control_parameters::tsys_freq(const std::string &station) const {
+  if (ctrl["tsys_freq"] == Json::Value())
+    return 80;
+  if (ctrl["tsys_freq"][station] == Json::Value())
+    return 80;
+
+  return ctrl["tsys_freq"][station].asInt();
+}
 
 int
 Control_parameters::window_function() const{
@@ -1961,6 +1970,7 @@ get_correlation_parameters(const std::string &scan_name,
           station_param.sideband = sideband(channel_name, station[0]->to_string(), mode_name);
           station_param.polarisation = polarisation(channel_name, station[0]->to_string(), mode_name);
           station_param.LO_offset = LO_offset(station[0]->to_string());
+          station_param.tsys_freq = tsys_freq(station[0]->to_string());
           corr_param.station_streams.push_back(station_param);
         }
       }
@@ -1995,6 +2005,7 @@ get_correlation_parameters(const std::string &scan_name,
           station_param.sideband = sideband(channel_name, station[0]->to_string(), mode_name);
           station_param.polarisation = polarisation(channel_name, station[0]->to_string(), mode_name);
           station_param.LO_offset = LO_offset(station[0]->to_string());
+          station_param.tsys_freq = tsys_freq(station[0]->to_string());
           corr_param.station_streams.push_back(station_param);
         }
       }

@@ -90,6 +90,7 @@ private:
   FLOAT lookup_table_1bit[256][8];
   bit_statistics_ptr statistics;
   int tsys_count;
+  int tsys_freq;
   bool tsys_on;
 
   int state;
@@ -123,6 +124,7 @@ private:
     int bits_per_sample;
     int sample_rate;
     int base_sample_rate;
+    int tsys_freq;
     int fft_size_delaycor;
     int fft_size_correlation;
     int delay_in_samples;
