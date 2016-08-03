@@ -14,6 +14,7 @@ Bit2float_worker::Bit2float_worker(int stream_nr_, bit_statistics_ptr statistics
     fft_size(-1),
     bits_per_sample(-1),
     sample_rate(-1),
+    tsys_freq(80),
     memory_pool_(32),
     have_new_parameters(false), stream_nr(stream_nr_),
     n_ffts_per_integration(0), current_fft(0), state(IDLE), statistics(statistics_)
@@ -247,6 +248,7 @@ set_new_parameters(const Correlation_parameters &parameters, Delay_table_akima &
   new_parameters.bits_per_sample = parameters.station_streams[stream_idx].bits_per_sample;
   new_parameters.sample_rate = parameters.station_streams[stream_idx].sample_rate;
   new_parameters.base_sample_rate = parameters.sample_rate;
+  new_parameters.tsys_freq = parameters.station_streams[stream_idx].tsys_freq;
   new_parameters.fft_size_delaycor = parameters.fft_size_delaycor;
   new_parameters.fft_size_correlation = parameters.fft_size_correlation;
   int nfft_min = std::max(parameters.fft_size_correlation / parameters.fft_size_delaycor, 1);
@@ -279,6 +281,7 @@ set_parameters() {
   bits_per_sample = new_parameters.bits_per_sample;
   sample_rate = new_parameters.sample_rate;
   base_sample_rate = new_parameters.base_sample_rate;
+  tsys_freq = new_parameters.tsys_freq;
 
   fft_size = new_parameters.fft_size_delaycor;
   int fft_size_correlation = new_parameters.fft_size_correlation;
@@ -296,14 +299,14 @@ set_parameters() {
   if (bits_per_sample == 2) {
     tsys_count = std::floor(new_parameters.delay_in_samples + 0.5);
     // Calculate number of samples within the full cycle.
-    tsys_count %= (sample_rate / 80);
+    tsys_count %= (sample_rate / tsys_freq);
     while (tsys_count < 0)
-      tsys_count += sample_rate / 80;
-    tsys_on = (tsys_count < (sample_rate / 160));
+      tsys_count += sample_rate / tsys_freq;
+    tsys_on = (tsys_count < (sample_rate / (2 * tsys_freq)));
     // Calculate number of samples within this falf-cycle.
-    tsys_count %= (sample_rate / 160);
+    tsys_count %= (sample_rate / (2 * tsys_freq));
     // Calculate number of samples left for this half-cycle.
-    tsys_count = ((sample_rate / 160) - tsys_count);
+    tsys_count = ((sample_rate / (2 * tsys_freq)) - tsys_count);
     // Convert to bytes.  
     tsys_count /= 4;
   }
@@ -337,7 +340,7 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples, uint64_t *re
            samp_to_write * sizeof(FLOAT));
     stats->inc_counter(input_data[read % dsize], tsys_on);
     if (--tsys_count == 0) {
-      tsys_count = (sample_rate / 160) / 4;
+      tsys_count = (sample_rate / (2 * tsys_freq)) / 4;
       tsys_on = !tsys_on;
     }
     nsamples -= samp_to_write;
@@ -358,7 +361,7 @@ Bit2float_worker::bit2float(FLOAT *output, int start, int nsamples, uint64_t *re
                4 * sizeof(FLOAT));
         stats->inc_counter(input_data[index], tsys_on);
 	if (--tsys_count == 0) {
-	  tsys_count = (sample_rate / 160) / 4;
+	  tsys_count = (sample_rate / (2 * tsys_freq)) / 4;
 	  tsys_on = !tsys_on;
 	}
         iout += 4;
