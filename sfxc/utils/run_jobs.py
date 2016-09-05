@@ -28,22 +28,40 @@ def time2vex(secs):
 usage = "usage: %prog [options] vexfile controlfiles"
 parser = optparse.OptionParser(usage=usage)
 parser.add_option("-n", "--nodes", dest="number_nodes",
-                  default=256, type="int",
+                  default=256,
+                  type="int", 
                   help="Number of correlator nodes",
                   metavar="N")
+#default_subnet = "10.88.0.0/24,192.168.1.0/24"
+default_subnet = "10.88.0.0/24"
+parser.add_option("-s", "--subnet", dest="subnet",
+                  help='Subnet for MPI communication, default=%s'%default_subnet,
+                  default = default_subnet)
 parser.add_option("-d", "--no-delays", dest="gen_delays",
                   default = True,
                   action = "store_false",
                   help="Disable generating new delays")
 parser.add_option("-m", "--machines", dest="machines",
-                  default="a,b,c,d,e,f,g,h,i,j", type="string",
+                  default="a,b,c,d,e,f,g,h,i,j,k", type="string",
                   help="Machines to run correlator nodes on",
                   metavar="LIST")
+parser.add_option("-e", "--exclude", dest="exclude_nodes",
+                  help="List of node to exclude from correlation",
+                  metavar="LIST")
+default_head_node = "out.sfxc"
+parser.add_option("-H", "--head-node", dest="head_node",
+                  default=default_head_node,
+                  help="Head node which gets the manager, log, and " +
+                        "output node. Default=%s"%default_head_node,
+                  metavar="NODE")
+parser.add_option("-M", "--on-mark5", help="Correlate with input node on the mark5s", 
+                  default= False, action="store_true")
 (options, args) = parser.parse_args()
 
 if len(args) < 2:
     parser.error("incorrect number of arguments")
-    pass
+
+ncore_manager = 8 if options.head_node == 'out.sfxc' else 4
 
 vex_file = args[0]
 # Parse the VEX file.
@@ -53,11 +71,13 @@ exper = vex['GLOBAL']['EXPER']
 # Proper time.
 os.environ['TZ'] = "UTC"
 
-mk5s = ['10.88.1.' + str(200+x) for x in range(17)]
-mk5s += ['10.88.1.' + str(200+x) for x in range(20,26)]
-manager_node = "head.sfxc"
-output_node = "head.sfxc"
-log_node = "head.sfxc"
+mk5s = ['10.88.0.' + str(50+x) for x in range(17)]
+mk5s += ['10.88.0.' + str(50+x) for x in range(20,26)]
+mk5s.remove('10.88.0.63') # still away
+
+manager_node = options.head_node
+output_node = options.head_node
+log_node = options.head_node
 
 # Generate a list of all media used for this experiment.
 media = {}
@@ -67,21 +87,35 @@ for station in vex['STATION']:
     for vsn in vex['TAPELOG_OBS'][tapelog_obs].getall('VSN'):
         media[station].append({'vsn': vsn[1], 'start': vex2time(vsn[2]),
                                'stop': vex2time(vsn[3])})
-        continue
-    continue
 
 # Generate a list of machines to use.
 machines = []
 for machine in options.machines.split(','):
-    if machine in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']:
+    if machine in ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k']:
         for unit in [0, 1, 2, 3]:
             machines.append("sfxc-" + machine + str(unit) + ".sfxc")
-            continue
-        pass
     else:
         machines.append(machine)
-        pass
-    continue
+# Remove nodes which are excluded from job
+if options.exclude_nodes != None:
+  nodes = ["sfxc-%s.sfxc"%node for node in options.exclude_nodes.split(',')]
+  for node in nodes:
+    try:
+      machines.remove(node)
+    except ValueError:
+      pass
+
+# Nodes with a 10Gb interface
+machines_10g = []
+for unit in [0, 1, 2, 3]:
+  machines_10g.append("sfxc-k" + str(unit) + ".sfxc")
+for machine in ['e', 'f', 'g', 'h']:
+  for unit in [0, 1]:
+    machines_10g.append("sfxc-" + machine + str(unit) + ".sfxc")
+
+# Sort input nodes in opposite order as the production enviroment
+machines_10g = sorted(set(machines_10g).intersection(machines), reverse=True)
+print machines_10g
 
 for ctrl_file in args[1:]:
     basename = os.path.splitext(os.path.basename(ctrl_file))[0]
@@ -133,6 +167,7 @@ for ctrl_file in args[1:]:
     # Should be the same for all stations otherwise things will become
     # way too complicated.
     data_dir = None
+    use_mark5 = False
     for station in stations:
       if station not in json_input['file_parameters']:
         data_source = json_input['data_sources'][station][0]
@@ -141,6 +176,8 @@ for ctrl_file in args[1:]:
             if not data_dir:
                 data_dir = os.path.dirname(path)
             assert data_dir == os.path.dirname(path)
+        elif urlparse.urlparse(data_source).scheme == 'mk5':
+          use_mark5 = True
 
     # Check if the input data files are there.  Do this in a loop that
     # gets repeated until all files have been found.
@@ -176,13 +213,16 @@ for ctrl_file in args[1:]:
                     continue
                 continue
             pass
-        else:
+        elif use_mark5:
             # For every Mark5, generate a list of VSNs present.  This is
             # faster than checking each VSN individually.
             vsn_list = {}
+            processes = {}
             for mk5 in mk5s:
                 args = ['/usr/bin/ssh', mk5, 'bin/vsnread']
-                p = subprocess.Popen(args, stdout=subprocess.PIPE)
+                processes[mk5] = subprocess.Popen(args, stdout=subprocess.PIPE)
+            for mk5 in mk5s:
+                p = processes[mk5]
                 output = p.communicate()[0]
                 p.wait()
                 if p.returncode == 0:
@@ -199,6 +239,8 @@ for ctrl_file in args[1:]:
                 data_source = json_input['data_sources'][station][0]
                 path = urlparse.urlparse(data_source).path
                 path = path.lstrip('/')
+                if path == "":
+                  path = urlparse.urlparse(data_source).netloc
                 vsn = path.split(':')[0]
                 for mk5 in mk5s:
                     if vsn in vsn_list[mk5]:
@@ -232,41 +274,52 @@ for ctrl_file in args[1:]:
     ranks = {}
     # Create a MPI machine file for the job.
     fp = open(machine_file, 'w')
-    print >>fp, manager_node, "slots=4" #Assume manager, output, and log node on the same machine
+    print >>fp, manager_node, "slots="+`ncore_manager` #Assume manager, output, and log node on the same machine
     #print >>fp, output_node
     #print >>fp, log_node
-    for station in stations:
-      if station not in json_input['file_parameters']:
-        #ifhn = "ifhn="+input_nodes[station]
-	print >>fp, " #", station
-        print >>fp, input_nodes[station], " slots=4"
-        ranks[input_nodes[station]]  = 4
+    if options.on_mark5:
+      for station in stations:
+        if station not in json_input['file_parameters']:
+          #ifhn = "ifhn="+input_nodes[station]
+          print >>fp, " #", station
+          print >>fp, input_nodes[station], " slots=4"
+          ranks[input_nodes[station]]  = 4
     for station in json_input['file_parameters']:
       source = json_input['file_parameters'][station]['sources'][0]
       machine = source.partition(':')[0]
       if machine.startswith('sfxc-'):
         if not machine.endswith('.sfxc'):
           machine += '.sfxc'
-          if machine not in machines:
-            print >>fp, machine, " slots=8"
-            ranks[machine] = 8
-      elif machine.startswith('aribox') or (machine == '10.88.1.230'):
-        print >>fp, machine, " slots=16"
-        ranks[machine] = 16
+          if (machine not in machines) and (machine not in ranks):
+            m = machine.split('-')
+            n = '8' if m[1][0] < 'i' else '16'
+            print >>fp, machine, " slots="+n
+            ranks[machine] = int(n)
+      elif machine.startswith('aribox') or (machine == '10.88.0.24'):
+        if machine not in ranks:
+          print >>fp, machine, " slots=16"
+          ranks[machine] = 16
+      elif machine.startswith('flexbuf'):
+        if machine not in ranks:
+          print >>fp, machine, " slots=12"
+          ranks[machine] = 12
 
     #for i in range(8):
     for machine in machines:
-        print >>fp, machine, " slots=8"
-        ranks[machine] = 8
+        m = machine.split('-')
+        n = '8' if m[1][0] < 'i' else '16'
+        print >>fp, machine, " slots="+n
+        ranks[machine] = int(n)
     fp.close()
 
     # Create a MPI rank file for the job.
     fp = open(rank_file, 'w')
     print >>fp, "rank 0=", manager_node, "slot=0"
-    print >>fp, "rank 1=", output_node, "slot=1"
-    print >>fp, "rank 2=", log_node, "slot=2,3"
+    print >>fp, "rank 1=", log_node, "slot=1"
+    print >>fp, "rank 2=", output_node, "slot=2,3"
     rank=2
     # Create ranks
+    idx_10g = 0
     for station in stations:
       rank += 1
       if station in json_input['file_parameters']:
@@ -278,8 +331,17 @@ for ctrl_file in args[1:]:
         slots = 'slot=' + ','.join([str(i) for i in range(ranks[node]-nthread, ranks[node])])
         ranks[node] -= nthread
         print >>fp, "rank", str(rank), "=", node, slots
-      else:
+      elif options.on_mark5:
         print >>fp, "rank", str(rank), "=", input_nodes[station], "slot=0,1,2"
+      else:
+        nthread = 2 # FIXME don't hardcode this
+        node = machines_10g[idx_10g]
+        idx_10g = (idx_10g + 1)%len(machines_10g)
+        slots = 'slot=' + ','.join([str(i) for i in range(ranks[node]-nthread, ranks[node])])
+        url = json_input['data_sources'][station][0].partition("mk5://")
+        json_input['data_sources'][station][0] = url[1] + input_nodes[station] + "/" + url[2]
+        ranks[node] -= nthread
+        print >>fp, "rank", str(rank), "=", node, slots
 
     for i in range(8):
         for machine in machines:
@@ -288,20 +350,24 @@ for ctrl_file in args[1:]:
             print >>fp, "rank", str(rank), "=", machine, "slot=", str(ranks[machine]-1)
             ranks[machine] -= 1
     fp.close()
+    output_control_file = "run_job.out.ctrl"
+    outfp = open(output_control_file, "w")
+    json.dump(json_input, outfp, indent=2)
+    outfp.close()
 
     # Start the job.
     number_nodes = 3 + len(stations) + options.number_nodes
     sfxc = "`which sfxc`"
-    #cmd = "mpirun -machinefile " + machine_file + " " \
-    #    + "-n " + str(number_nodes) + " " \
-    #    + sfxc + " " + ctrl_file + " " + vex_file \
-    #    + " 2>&1 | tee " + log_file
-    cmd = "mpirun --mca btl_tcp_if_include bond0,eth2.4,eth0 " \
-        + "--mca oob_tcp_if_exclude eth1,eth2,eth3 "\
-        +"-machinefile " + machine_file + " " \
-        "--rankfile " + rank_file + " " \
+    cmd = "mpirun --mca btl_tcp_if_include " \
+        + options.subnet + " " \
+        + "--mca oob_tcp_if_include " \
+        + options.subnet + " " \
+        + "--mca orte_keep_fqdn_hostnames 1 " \
+        + "--mca orte_hetero_nodes 1 "\
+        + "-machinefile " + machine_file + " "\
+        + "--rankfile " + rank_file + " " \
         + "-n " + str(number_nodes) + " " \
-        + sfxc + " " + ctrl_file + " " + vex_file \
+        + sfxc + " " + output_control_file + " " + vex_file \
         + " 2>&1 | tee " + log_file
     print cmd
     os.system(cmd)
