@@ -227,6 +227,10 @@ def parse_args():
                     help="Define setup station, the frequency setup of this station is used in the conversion. "+
                          "The default is to use the first station in the vexfile",
                     default="")
+  parser.add_option("-b", "--bandpass", dest='bandpass', default=False, action="store_true",
+                  help='Apply bandpass')
+  parser.add_option("-z", "--zerodm", dest='zerodm', default=False, action="store_true",
+                  help='Apply zerodm subtraction')
   parser.add_option("-p", "--pol", dest='pol', type='string', default='I',
                   help='Which polarization to use: R, L, or I (=R+L), default=I')
   (opts, args) = parser.parse_args()
@@ -262,7 +266,7 @@ def parse_args():
 
   vexfile = vex.Vex(args[0])
   outfile = open(args[-1], 'w')
-  return vexfile, infiles, outfile, bif, eif, pol, opts.setup_station
+  return vexfile, infiles, outfile, bif, eif, pol, opts.setup_station, opts.zerodm, opts.bandpass
 
 def get_time(year, day, seconds):
   t = datetime.datetime(year, 1, 1)
@@ -316,10 +320,47 @@ def pad_zeros(outfile, npad, nsubint, nchan):
   for i in xrange(npad):
     pad.tofile(outfile)
 
+def get_bandpass(infile, cfg, polarization):
+    # First determine the size of one subint
+    infile.seek(global_header_size)
+    data, nsubint = read_integration(infile, cfg, polarization)
+    pos = infile.tell()
+    size = pos - global_header_size
+    infile.seek(0, 2)
+    endpos = infile.tell()
+
+    # Use 10 seconds in the middle of the scan
+    n = endpos / size
+    inttime = cfg["inttime"]
+    if (n <= 3) or (n*inttime <= 3):
+        start = 0
+        toread = n
+    else:
+        m = int(ceil(5./inttime))
+        p = int(ceil(1./inttime))
+        start = min(p, n/2 - m)
+        toread = min(n-p, n/2 + m) - start
+
+    # Make the bandpass
+    infile.seek(global_header_size + start*size)
+    data, nsubint = read_integration(infile, cfg, polarization)
+    bandpass = data.sum(axis=0)
+    for i in range(1, toread):
+        data, nsubint = read_integration(infile, cfg, polarization)
+        bandpass += data.sum(axis=0)
+    
+    # Now normalize the bandpass per IF
+    nsubband = cfg["nsubband"]
+    nchan = cfg["nchan"]
+    for i in range(nsubband):
+        maxnorm = max(bandpass[i*nchan:(i+1)*nchan])
+        bandpass /= max(1., maxnorm)
+    return bandpass
+
 #########
 ############################### Main program ##########################
 #########
-vexfile, infiles, outfile, bif, eif, pol, setup_station = parse_args()
+vexfile, infiles, outfile, bif, eif, pol, setup_station, zerodm, dobp = parse_args()
 
 # Read global header
 global_header_size = struct.unpack('i', infiles[0].read(4))[0]
@@ -338,6 +379,8 @@ for infile in infiles:
   new_nchan = global_header[5]
   new_inttime = global_header[6] / 1000000
   new_start_time = get_time(global_header[2], global_header[3], global_header[4])
+  if zerodm or dobp:
+      bandpass = get_bandpass(infile, cfg, pol)
   infile.seek(global_header_size)
   tsheader_buf = infile.read(timeslice_header_size)
   timeslice_header = struct.unpack('4i', tsheader_buf)
@@ -373,14 +416,27 @@ for infile in infiles:
     pad_zeros(outfile, npad, nsubint, nchan)
   start_time = new_start_time
   nwritten = 0
+  nchan = cfg["nchan"]
   infile.seek(global_header_size)
   data, nread = read_integration(infile, cfg, pol)
   while nread == cfg["nsubint"]:
     #Write data
     if (nwritten >= nskip) and (nread > 0):
       # NB: we ordered subbands in reverse order
-      start = (cfg["nsubband"] - eif - 1) * cfg["nchan"]
-      end = (cfg["nsubband"] - bif) * cfg["nchan"]
+      start = (cfg["nsubband"] - eif - 1) * nchan
+      end = (cfg["nsubband"] - bif) * nchan
+      if zerodm:
+          print 'The range =', start/nchan, ', to', end/nchan
+          for i in range(start/cfg["nchan"], end/cfg["nchan"]):
+              cdata = data[:, i*nchan:(i+1)*nchan]
+              cbandpass = bandpass[i*nchan:(i+1)*nchan]
+              for j in range(data.shape[0]):
+                  av = cdata[j].sum() / nchan
+                  cdata[j] -= av * cbandpass
+      if dobp:
+          # Don't blow up band edges too much
+          bp = [x if x > 1e-2 else 1. for x in bandpass]
+          data /= bp
       data[:, start:end].tofile(outfile)
       dlen = data[:, start:end].size * 1. / cfg["nsubint"]
       print 'subint ', total_written, ' : Wrote ', nread, ' sub-integrations, dlen = ', dlen
