@@ -1581,9 +1581,12 @@ get_input_node_parameters(const std::string &scan_name,
   // Set Channel offsets and dispersive delays 
   get_dedispersion_parameters(scan_name);
   const int sample_rate_ = sample_rate(mode_name, setup_station());
-  const int nchannel = number_frequency_channels();
-  for(size_t ch = 0; ch < nchannel; ch++)
-    result.channels[ch].channel_offset = dedispersion_parameters.channel_offset[ch];
+  const int nchannel = result.channels.size();
+  for(size_t i = 0; i < nchannel; i++){
+    int ch = result.channels[i].frequency_number;
+    char sb = result.channels[i].sideband;
+    result.channels[i].channel_offset = dedispersion_parameters.channel_offset[std::make_pair(ch, sb)];
+  }
   result.buffer_time =  dedispersion_parameters.fft_size_dedispersion * 
                         (sample_rate(mode_name, station_name) / sample_rate_) / 
                         (2*sample_rate_ / 1000000.);
@@ -1596,15 +1599,7 @@ get_input_node_parameters(const std::string &scan_name,
   // Scale the slice size based on the sample rate.  This is important for
   // "mixed bandwidth" correlation where we need to make sure that we
   // send enough data to the correlator nodes.
-  std::cerr << "int = "<<integration_time() 
-            << ", buf="<<result.buffer_time.get_time_usec() 
-            << ", cor = " << fft_size_correlation() 
-            << "disp = " << fft_size_dedispersion(scan_name) 
-            << ", mode =" << mode_name << "\n";
   result.slice_size *=  sample_rate(mode_name, station_name) / sample_rate_; 
-  std::cerr << "ctrl: slice_size ="<< result.slice_size 
-            << ", rate =" << sample_rate_ 
-            << ", srate = " << sample_rate(mode_name, station_name) << "\n";
   
   SFXC_ASSERT(!result.channels[0].tracks.empty());
   result.track_bit_rate /= result.channels[0].tracks.size() / result.channels[0].bits_per_sample;
@@ -1625,9 +1620,14 @@ Control_parameters::get_dedispersion_parameters(const std::string &scan) const{
   
   // Initialize all parameters
   dedispersion_parameters.scan = scan;
-  dedispersion_parameters.channel_offset.resize(nchannel);
-  for(int i=0;i<nchannel;i++)
-    dedispersion_parameters.channel_offset[i] = 0.;
+  {
+  std::string ref = setup_station();
+  for(size_t ch = 0; ch < nchannel; ch++){
+    int freq = frequency_number(ch, mode_name);
+    char sb  = sideband(channel(ch), ref, mode_name);
+    dedispersion_parameters.channel_offset[std::make_pair(freq, sb)] = 0.;
+  }
+  }
   dedispersion_parameters.ref_frequency = 0.;
 
   // check for coherent dedispersion
@@ -1641,10 +1641,11 @@ Control_parameters::get_dedispersion_parameters(const std::string &scan) const{
       // Coherent dedisperion is requested, start by computing the mid point
       // of the lowest channel. All other channels will be aligned to this frequency
       std::string ref = setup_station();
-      struct Channel{ double freq, bw; int sb;};
+      struct Channel{ double freq, bw; int sb, freq_nr;};
       Channel channels[nchannel];
       int max_ch = 0;
       for(size_t ch = 0; ch < nchannel; ch++){
+        channels[ch].freq_nr = frequency_number(ch, mode_name);
         channels[ch].freq = channel_freq(mode_name, ref, channel(ch)) / 1000000.;
         channels[ch].bw = bandwidth(mode_name, ref, channel(ch)) / 1000000.;
         channels[ch].sb  = sideband(channel(ch), ref, mode_name) == 'L' ? -1 : 1;
@@ -1660,14 +1661,16 @@ Control_parameters::get_dedispersion_parameters(const std::string &scan) const{
       double max_dt = 0;
       for(size_t ch = 0; ch < nchannel; ch++){
         double base_freq = channels[ch].freq;
+        int freq_nr = channels[ch].freq_nr;
         int sb  = channels[ch].sb;
+        char sb_label  = (channels[ch].sb == -1) ? 'L': 'U';
         double bw = channels[ch].bw;
         double band_edge = base_freq + sb * bw;
         double dt = sb * dispersive_delay(base_freq, band_edge, DM);
         double offset = dispersive_delay(base_freq + sb*bw/2, max_freq, DM);
         max_dt = std::max(dt, max_dt);
         // FIXME Due to bug/limitation in Input_node_data_writer the offset has to be an integer microsecond
-        dedispersion_parameters.channel_offset[ch] = round(offset);
+        dedispersion_parameters.channel_offset[std::make_pair(freq_nr, sb_label)] = round(offset);
         std::cout.precision(16);
         std::cout << "CH "<<ch << ", dt = " << dt << ", offset = "
                   << offset << ", dm = " << DM  << ", base " << base_freq 
@@ -2136,7 +2139,9 @@ get_correlation_parameters(const std::string &scan_name,
   // Compute stream start / stop
   get_dedispersion_parameters(scan_name);
   corr_param.dedispersion_ref_frequency = dedispersion_parameters.ref_frequency; 
-  corr_param.channel_offset = dedispersion_parameters.channel_offset[channel_nr];
+  char sb = corr_param.sideband;
+  int freq_nr = corr_param.frequency_nr;
+  corr_param.channel_offset = dedispersion_parameters.channel_offset[std::make_pair(freq_nr, sb)];
   Time integer_offset = round(corr_param.channel_offset * corr_param.sample_rate/1000000) /
                         (corr_param.sample_rate/1000000);
 /*  std::cout.precision(16);

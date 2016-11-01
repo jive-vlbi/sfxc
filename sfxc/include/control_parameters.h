@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <map>
 #include <math.h>
+#include <utility>
 #include "utils.h"
 #include "correlator_time.h"
 
@@ -400,7 +401,7 @@ private:
     std::string scan;  // The scan name for which the parameters were computed
     int fft_size_dedispersion;
     double ref_frequency;  // In MHz
-    std::vector<double> channel_offset;
+    std::map<std::pair<int, char>, float>  channel_offset;
   } dedispersion_parameters;
   void get_dedispersion_parameters(const std::string &scan) const;
   std::map<std::string, Time> reader_offsets; // Contains the formatter clock offsets for all input nodes
