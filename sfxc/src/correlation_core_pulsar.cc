@@ -135,7 +135,6 @@ void Correlation_core_pulsar::do_task() {
                                    << " / " << number_ffts_in_integration
                                    << "\n";
 
-  SFXC_ASSERT(input_buffers.size()==number_input_streams_in_use());
   for (size_t i=0; i < number_input_streams_in_use(); i++) {
     int stream = streams_in_scan[i];
     input_elements[i] = &input_buffers[stream]->front()->data[0];
