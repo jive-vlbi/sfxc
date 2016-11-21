@@ -181,7 +181,7 @@
     </item>
    </layout>
   </widget>
-  <widget class="QTextEdit" name="logEdit">
+  <widget class="QPlainTextEdit" name="logEdit">
    <property name="geometry">
     <rect>
      <x>20</x>

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'progress.ui'
 #
-# Created: Mon Nov 17 15:18:49 2014
+# Created: Mon Nov 21 15:12:37 2016
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -74,7 +74,7 @@ class Ui_Dialog1(object):
         self.buttonAbort.setDefault(False)
         self.buttonAbort.setObjectName(_fromUtf8("buttonAbort"))
         self.hboxlayout2.addWidget(self.buttonAbort)
-        self.logEdit = QtGui.QTextEdit(Dialog1)
+        self.logEdit = QtGui.QPlainTextEdit(Dialog1)
         self.logEdit.setGeometry(QtCore.QRect(20, 130, 621, 171))
         self.logEdit.setReadOnly(True)
         self.logEdit.setObjectName(_fromUtf8("logEdit"))

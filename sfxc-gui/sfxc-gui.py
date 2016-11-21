@@ -210,6 +210,7 @@ class progressDialog(QtGui.QDialog):
         self.stop = vex2time(self.json_input['stop'])
         self.subjob = self.json_input.get('subjob', -1)
         self.ui.progressBar.setRange(self.start, self.stop)
+        self.ui.logEdit.setMaximumBlockCount(100000)
         self.time = self.start
         self.cordata = None
         self.scan = None
@@ -433,7 +434,7 @@ class progressDialog(QtGui.QDialog):
                         pass
                     pass
                 continue
-            self.ui.logEdit.append(output.rstrip())
+            self.ui.logEdit.appendPlainText(output.rstrip())
             self.log_fp.write(output)
             pass
 
