@@ -495,7 +495,7 @@ parser.add_option("-e", "--evlbi", dest="evlbi",
                   action="store_true", default=False,
                   help="e-VLBI")
 parser.add_option("-i", "--timeout-interval", dest="timeout_interval",
-                  type='int', default='300',
+                  type='int', default='600',
                   help="watchdog timeout", metavar="SECS")
 parser.add_option("-p", "--path", dest="path",
                   default="", type="string",
