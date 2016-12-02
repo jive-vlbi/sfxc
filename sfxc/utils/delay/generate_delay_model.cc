@@ -340,10 +340,13 @@ int initialise_data(const char *vex_filename,
   std::string antenna = root["STATION"][station_name]["ANTENNA"]->to_string();
   check_antenna(root, antenna);
 
-  if (vex.get_root_node()["ANTENNA"][antenna]["axis_type"][0]->to_string()=="az")
-    station_data.axis_type=3;
   if (vex.get_root_node()["ANTENNA"][antenna]["axis_type"][0]->to_string()=="ha")
     station_data.axis_type=1;
+  if (vex.get_root_node()["ANTENNA"][antenna]["axis_type"][0]->to_string()=="az")
+    station_data.axis_type=3;
+  if (vex.get_root_node()["ANTENNA"][antenna]["axis_type"][0]->to_string()=="x" &&
+      vex.get_root_node()["ANTENNA"][antenna]["axis_type"][1]->to_string()=="yew")
+    station_data.axis_type=4;
 
   station_data.axis_offset =
     vex.get_root_node()["ANTENNA"][antenna]["axis_offset"]->to_double_amount("m");
