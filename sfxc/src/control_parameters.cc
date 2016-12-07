@@ -1950,12 +1950,12 @@ get_correlation_parameters(const std::string &scan_name,
   std::set<int> stations_set;
   for (Vex::Node::const_iterator station = scan->begin("station");
        station != scan->end("station"); ++station) {
-    const std::string &channel_name =
-      frequency_channel(channel_nr, mode_name, station[0]->to_string());
     std::map<std::string, int>::const_iterator station_nr_it =
       correlator_node_station_to_input.find(station[0]->to_string());
     if (station_nr_it != correlator_node_station_to_input.end()) {
       if (station_nr_it->second >= 0) {
+	const std::string &channel_name =
+	  frequency_channel(channel_nr, mode_name, station[0]->to_string());
         if (channel_name != std::string()) {
           Correlation_parameters::Station_parameters station_param;
           station_param.station_number = station_number(station[0]->to_string());
@@ -1983,12 +1983,12 @@ get_correlation_parameters(const std::string &scan_name,
   channel_nr = cross_channel(channel_nr, mode_name);
   for (Vex::Node::const_iterator station = scan->begin("station");
        station != scan->end("station"); ++station) {
-    const std::string &channel_name =
-      frequency_channel(channel_nr, mode_name, station[0]->to_string());
     std::map<std::string, int>::const_iterator station_nr_it =
       correlator_node_station_to_input.find(station[0]->to_string());
     if (station_nr_it != correlator_node_station_to_input.end()) {
       if (station_nr_it->second >= 0) {
+	const std::string &channel_name =
+	  frequency_channel(channel_nr, mode_name, station[0]->to_string());
         if (channel_name != std::string()) {
           Correlation_parameters::Station_parameters station_param;
           station_param.station_number = station_number(station[0]->to_string());
