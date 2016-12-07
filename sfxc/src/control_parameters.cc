@@ -933,8 +933,13 @@ Control_parameters::frequency_channel(size_t channel_nr, const std::string& mode
   }
 
   const std::string &freq_name = get_vex().get_frequency(mode_name, station_name);
-  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
+  if (freq_name == std::string()) {
+    std::cerr << "Cannot find $FREQ reference for " << station_name
+	      << " in mode " << mode_name << std::endl;
+    sfxc_abort();
+  }
 
+  Vex::Node::const_iterator freq = vex.get_root_node()["FREQ"][freq_name];
   int64_t ch_freq_min, ch_freq_max;
   for (Vex::Node::const_iterator chan = freq->begin("chan_def"); chan != freq->end("chan_def"); chan++) {
     if (chan[2]->to_char() == 'L') {
