@@ -1,5 +1,5 @@
 SS=/usr/local/src/streamstor
-SS_LIBS=-lssapi -lwdapi1031 -lrt
+SS_LIBS=-lssapi -lwdapi1150 -lrt
 CPPFLAGS=-I${SS}/linux/include
 LDFLAGS=-L${SS}/linux/lib/gcc_v4 -L${SS}/linux/driver/lib
 CFLAGS=-Wall -g -O2

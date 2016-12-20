@@ -62,6 +62,7 @@ UINT32 Selected = BANK_INVALID;
 
 S_DEVINFO devInfo;
 S_XLRSWREV swRev;
+SSHANDLE xlrHandle = INVALID_SSHANDLE;
 
 char osRev[512];
 
@@ -120,26 +121,16 @@ vlog(int pri, const char *fmt, va_list ap)
 }
 
 void
-read_labels(void)
+read_labels(SSHANDLE* xlrHandle)
 {
-	SSHANDLE xlrHandle;
 	ULONG xlrError;
 	char errString[XLR_ERROR_LENGTH];
 	S_BANKSTATUS bankStatus;
 	UINT32 bankID;
-
-	if (XLROpen(1, &xlrHandle) != XLR_SUCCESS) {
-		xlrError = XLRGetLastError();
-		XLRGetErrorMessage(errString, xlrError);
-		logit(LOG_CRIT, "%s", errString);
-		XLRClose(xlrHandle);
-		memset(Label, 0, sizeof(Label));
-		return;
-	}
-
 	Selected = BANK_INVALID;
+
 	for (bankID = BANK_A; bankID != BANK_INVALID; bankID++) {
-		if (XLRGetBankStatus(xlrHandle, bankID, &bankStatus) != XLR_SUCCESS) {
+		if (XLRGetBankStatus(*xlrHandle, bankID, &bankStatus) != XLR_SUCCESS) {
 			xlrError = XLRGetLastError();
 			XLRGetErrorMessage(errString, xlrError);
 			logit(LOG_CRIT, "%s", errString);
@@ -163,11 +154,10 @@ read_labels(void)
 			Selected = bankID;
 	}
 
-	XLRClose(xlrHandle);
 }
 
 int64_t
-stream_data(SSHANDLE xlrHandle, uint64_t off, int fd)
+stream_data(SSHANDLE* xlrHandle, uint64_t off, int fd)
 {
 	S_READDESC readDesc;
 	ULONG xlrError;
@@ -177,7 +167,7 @@ stream_data(SSHANDLE xlrHandle, uint64_t off, int fd)
 	uint64_t len = 0, size;
 	ssize_t nbytes;
 
-	recordingLength = XLRGetLength(xlrHandle);
+	recordingLength = XLRGetLength(*xlrHandle);
 	if (recordingLength == 0) {
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(errString, xlrError);
@@ -197,7 +187,7 @@ stream_data(SSHANDLE xlrHandle, uint64_t off, int fd)
 		readDesc.AddrLo = off & 0xffffffff;
 		readDesc.XferLength = size;
 		readDesc.BufferAddr = (PUINT32)buf;
-		if (XLRRead(xlrHandle, &readDesc) != XLR_SUCCESS) {
+		if (XLRRead(*xlrHandle, &readDesc) != XLR_SUCCESS) {
 			xlrError = XLRGetLastError();
 			XLRGetErrorMessage(errString, xlrError);
 			logit(LOG_CRIT, "%s", errString);
@@ -215,9 +205,9 @@ stream_data(SSHANDLE xlrHandle, uint64_t off, int fd)
 			 * reinitializion of the hardware, such that
 			 * it is ready for the next request.
 			 */
-			XLRReset(xlrHandle);
-			XLRClose(xlrHandle);
-			XLROpen(1, &xlrHandle);
+			XLRReset(*xlrHandle);
+			XLRClose(*xlrHandle);
+			XLROpen(1, xlrHandle);
 			break;
 		}
 
@@ -240,19 +230,10 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 	UINT32 bankID, matchedBankID;
 	char *p;
 
-	if (XLROpen(1, xlrHandle) != XLR_SUCCESS) {
-		xlrError = XLRGetLastError();
-		XLRGetErrorMessage(errString, xlrError);
-		logit(LOG_CRIT, "%s", errString);
-		XLRClose(*xlrHandle);
-		return -1;
-	}
-
 	if (XLRSetMode(*xlrHandle, SS_MODE_SINGLE_CHANNEL) != XLR_SUCCESS) {
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(errString, xlrError);
 		logit(LOG_CRIT, "%s", errString);
-		XLRClose(*xlrHandle);
 		return -1;
 	}
 
@@ -260,7 +241,6 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(errString, xlrError);
 		logit(LOG_CRIT, "%s", errString);
-		XLRClose(*xlrHandle);
 		return -1;
 	}
 
@@ -268,7 +248,6 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(errString, xlrError);
 		logit(LOG_CRIT, "%s", errString);
-		XLRClose(*xlrHandle);
 		return -1;
 	}
 
@@ -276,7 +255,6 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(errString, xlrError);
 		logit(LOG_CRIT, "%s", errString);
-		XLRClose(*xlrHandle);
 		return -1;
 	}
 
@@ -284,7 +262,6 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(errString, xlrError);
 		logit(LOG_CRIT, "%s", errString);
-		XLRClose(*xlrHandle);
 		return -1;
 	}
 
@@ -292,7 +269,6 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(errString, xlrError);
 		logit(LOG_CRIT, "%s", errString);
-		XLRClose(*xlrHandle);
 		return -1;
 	}
 
@@ -300,7 +276,6 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(errString, xlrError);
 		logit(LOG_CRIT, "%s", errString);
-		XLRClose(*xlrHandle);
 		return -1;
 	}
 
@@ -332,15 +307,15 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 			memset(Label[bankID], 0, XLR_LABEL_LENGTH);
 	}
 
-	if (matchedBankID == BANK_INVALID)
+	if (matchedBankID == BANK_INVALID){
 		return -1;
+        }
 
 	if (bankStatus.MediaStatus == MEDIASTATUS_FAULTED) {
 		if (XLRSetOption(*xlrHandle, SS_OPT_SKIPCHECKDIR) != XLR_SUCCESS) {
 			xlrError = XLRGetLastError();
 			XLRGetErrorMessage(errString, xlrError);
 			logit(LOG_CRIT, "%s", errString);
-			XLRClose(*xlrHandle);
 			return -1;
 		}
 	}
@@ -349,7 +324,6 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(errString, xlrError);
 		logit(LOG_CRIT, "%s", errString);
-		XLRClose(*xlrHandle);
 		return -1;
 	}
 
@@ -359,41 +333,28 @@ open_diskpack(const char *vsn, SSHANDLE *xlrHandle)
 }
 
 void
-get_ssrev(void)
+get_ssrev(SSHANDLE* xlrHandle)
 {
-	SSHANDLE xlrHandle;
 	ULONG xlrError;
 	char errString[XLR_ERROR_LENGTH];
 	static int initialized = 0;
 
 	if (initialized)
 		return;
-
-	if (XLROpen(1, &xlrHandle) != XLR_SUCCESS) {
+	if (XLRGetDeviceInfo(*xlrHandle, &devInfo) != XLR_SUCCESS) {
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(errString, xlrError);
 		logit(LOG_CRIT, "%s", errString);
-		XLRClose(xlrHandle);
-		return;
-	}
-	
-	if (XLRGetDeviceInfo(xlrHandle, &devInfo) != XLR_SUCCESS) {
-		xlrError = XLRGetLastError();
-		XLRGetErrorMessage(errString, xlrError);
-		logit(LOG_CRIT, "%s", errString);
-		XLRClose(xlrHandle);
 		return;
 	}
 
-	if (XLRGetVersion(xlrHandle, &swRev) != XLR_SUCCESS) {
+	if (XLRGetVersion(*xlrHandle, &swRev) != XLR_SUCCESS) {
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(errString, xlrError);
 		logit(LOG_CRIT, "%s", errString);
-		XLRClose(xlrHandle);
 		return;
 	}
 
-	XLRClose(xlrHandle);
 	initialized = 1;
 }
 
@@ -422,6 +383,8 @@ void
 handler(int sig)
 {
 	unlink(MK5READ_SOCKET);
+	if( xlrHandle!=INVALID_SSHANDLE )
+		XLRClose(xlrHandle);
 	_exit(EXIT_FAILURE);
 }
 
@@ -444,6 +407,7 @@ command_loop(void *arg)
 	struct timeval tv;
 	ssize_t nbytes;
 	int s, fd;
+	SSHANDLE*  handle = (SSHANDLE*)arg;
 
 	s = socket(PF_INET, SOCK_STREAM, 0);
 	if (s == -1) {
@@ -502,7 +466,7 @@ command_loop(void *arg)
 			} else if (strncmp(request, "bank_set?",
 			    strlen("bank_set?")) == 0) {
 				if (pthread_mutex_trylock(&ss_lock) == 0) {
-					read_labels();
+					read_labels(handle);
 					pthread_mutex_unlock(&ss_lock);
 				}
 
@@ -553,10 +517,10 @@ command_loop(void *arg)
 	return NULL;
 }
 
+
 int
 main(int argc, char *argv[])
 {
- 	SSHANDLE xlrHandle;
 	struct sockaddr_in sin;
 	struct sockaddr_un sun;
 	socklen_t len;
@@ -568,6 +532,8 @@ main(int argc, char *argv[])
 	int port = 0;
 	int err;
 	int ch;
+	ULONG xlrError;
+	char errString[XLR_ERROR_LENGTH];
 
 	log_init(1);
 
@@ -595,11 +561,21 @@ main(int argc, char *argv[])
 			fatal("daemon");
 
 	log_init(debug);
+        signal(SIGINT, handler);
+        signal(SIGHUP, handler);
+        signal(SIGTERM, handler);
+        signal(SIGPIPE, SIG_IGN);
 
-	signal(SIGINT, handler);
-	signal(SIGHUP, handler);
-	signal(SIGTERM, handler);
-	signal(SIGPIPE, SIG_IGN);
+
+	if (XLROpen(1, &xlrHandle) != XLR_SUCCESS) {
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(errString, xlrError);
+		logit(LOG_CRIT, "%s", errString);
+		XLRClose(xlrHandle);
+		return -1;
+	}
+      	get_ssrev(&xlrHandle);
+	get_osrev();
 
 	if (port) {
 		s = socket(PF_INET, SOCK_STREAM, 0);
@@ -627,13 +603,10 @@ main(int argc, char *argv[])
 	if (listen(s, 1) == -1)
 		fatal("listen");
 
-	get_ssrev();
-	get_osrev();
-
 	err = pthread_mutex_init(&ss_lock, NULL);
 	assert(err == 0);
 
-	err = pthread_create(&command_thread, NULL, command_loop, NULL);
+	err = pthread_create(&command_thread, NULL, command_loop, &xlrHandle);
 	assert(err == 0);
 
 	for (;;) {
@@ -653,18 +626,19 @@ main(int argc, char *argv[])
 
 		if (open_diskpack(msg.vsn, &xlrHandle) == -1) {
 			close(fd);
+
+                        pthread_mutex_unlock(&ss_lock);
 			continue;
 		}
 
 		t1 = time(NULL);
-		xlen = stream_data(xlrHandle, msg.off, fd);
+		xlen = stream_data(&xlrHandle, msg.off, fd);
 		t2 = time(NULL);
 		if (debug && xlen != -1 && t1 != t2)
 			printf("%lld bytes in %d seconds: %f Mbit/s\n",
 			       (long long)xlen, (int)(t2 - t1),
 			       (double)xlen * 8 * 1e-6 / (t2 - t1));
 
-		XLRClose(xlrHandle);
 
 		pthread_mutex_unlock(&ss_lock);
 
