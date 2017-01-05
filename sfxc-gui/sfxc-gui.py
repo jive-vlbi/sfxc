@@ -137,40 +137,6 @@ class progressDialog(QtGui.QDialog):
             return result[0]
         return -1
 
-    def start_reader(self, station):
-        # Check if mk5read is already running and bail out if it is.
-        args = ["ssh", self.input_host[station], "pgrep", "mk5read"]
-        if subprocess.call(args) == 0:
-            return None
-
-        args = ["ssh", self.input_host[station], "bin/mk5read"]
-        log = open(station + "-reader.log", 'w')
-        p = subprocess.Popen(args, stdout=log, stderr=log)
-        return p
-
-    def start_readers(self):
-        self.readers = {}
-        for station in self.json_input['stations']:
-            if self.json_input["data_sources"][station][0].startswith("mk5"):
-                reader = self.start_reader(station)
-                if reader:
-                    self.readers[station] = reader
-                    pass
-                pass
-            continue
-        return
-
-    def stop_readers(self):
-        # Stop the readers, but only if we started them
-        for station in self.readers:
-            args = ["ssh", self.input_host[station], "pkill", "mk5read"]
-            subprocess.call(args)
-            continue
-        for station in self.readers:
-            self.readers[station].wait()
-            continue
-        return
-
     def run(self, vex_file, ctrl_file, machine_file, rank_file, options):
         self.vex = Vex(vex_file)
         self.ctrl_file = ctrl_file
@@ -234,10 +200,6 @@ class progressDialog(QtGui.QDialog):
                 continue
             continue
         fp.close()
-
-        if not self.evlbi:
-            self.start_readers()
-            pass
 
         # Generate delays for this subjob.
         if not options.skip_generate_delays:
@@ -463,10 +425,6 @@ class progressDialog(QtGui.QDialog):
         if self.proc.returncode != None:
             self.t.stop()
             self.log_fp.close()
-
-            if not self.evlbi:
-                self.stop_readers()
-                pass
 
             if self.proc.returncode == 0:
                 self.status = 'DONE'
