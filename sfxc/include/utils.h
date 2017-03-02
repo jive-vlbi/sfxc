@@ -261,6 +261,7 @@ int mjd(int day, int month, int year);
 inline double toMB(unsigned long long size) {
   return (1.0*size)/(1024*1024);
 }
+void print_backtrace(int level=10);
 
 std::string itoa (int32_t n);
 

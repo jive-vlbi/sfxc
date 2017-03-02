@@ -43,6 +43,7 @@ void abort_sfxc_assertion(const char *file, int line, const char* message)
   std::cout << "#" << RANK_OF_NODE << " "
   << file << ", l" << line
   << ", Assertion failed: " << message << std::endl;
+  print_backtrace();
 
 #ifdef USE_MPI
   int numtasks;
@@ -70,7 +71,7 @@ void sfxc_abort(const char *msg){
     std::cout << "Node #" << RANK_OF_NODE << " fatal error : " << msg << "\n";
   else
     std::cout << "Node #" << RANK_OF_NODE << " caused termination of all processes\n";
-
+  print_backtrace();
 
 #ifdef USE_MPI
   // Kill all other nodes 
@@ -258,4 +259,19 @@ int mjd(int day, int month, int year)
   int m = month + 12*a - 3;
   int jdn = day + ((153*m+2)/5) + 365*y + (y/4) - (y/100) + (y/400) - 32045;
   return jdn - 2400000.5;
+}
+
+void print_backtrace(int level)
+{
+  // level+1, because we will hide print_backtrace from the trace
+  void *array[level+1];
+  size_t size = backtrace (array, level+1);
+  char **strings = backtrace_symbols (array, size);
+
+  std::cout << "[RANK " << RANK_OF_NODE << "] Stack trace (maximally " << level << " deep)\n";
+  for (int i = 1; i < size; i++){
+    std::cout << "[RANK " << RANK_OF_NODE << "][" << i-1 << "] " << strings[i] << "\n";
+  }
+
+  free(strings);
 }
