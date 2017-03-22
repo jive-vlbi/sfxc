@@ -299,7 +299,8 @@ void Correlation_core::integration_normalize(std::vector<Complex_buffer> &integr
     int stream2 = station_stream(baseline.second);
     int32_t *levels1 = statistics[stream1]->get_statistics(); 
     int32_t *levels2 = statistics[stream2]->get_statistics();
-    int64_t n_valid1 =  total_samples - levels1[4]; // levels[4] contains the number of invalid samples
+    // levels[4] contains the number of invalid samples
+    int64_t n_valid1 =  total_samples - levels1[4]; 
     int64_t n_valid2 =  total_samples - levels2[4];
     double N1 = n_valid1 > 0? 1 - n_flagged[i].first  * 1. / n_valid1 : 1;
     double N2 = n_valid2 > 0? 1 - n_flagged[i].second * 1. / n_valid2 : 1;
@@ -599,6 +600,13 @@ void Correlation_core::find_invalid() {
   for (int b = number_input_streams(); b < baselines.size(); b++) {
     int stream1 = station_stream(baselines[b].first);
     int stream2 = station_stream(baselines[b].second);
+    // The sample rates of the two stations can potentially be different
+    const double scale[2] = {
+      correlation_parameters.station_streams[baselines[b].first].sample_rate * 1. /
+         correlation_parameters.sample_rate,
+      correlation_parameters.station_streams[baselines[b].second].sample_rate * 1. /
+         correlation_parameters.sample_rate
+    };
     std::vector<Invalid> *invalid[2] = {invalid_elements[stream1], invalid_elements[stream2]};
     int index[2] = {0, 0};
     int nflagged[2] = {0, 0};
@@ -608,8 +616,9 @@ void Correlation_core::find_invalid() {
 
     for (int i = 0; i < 2; i++) {
       if (invalid_size[i] > 0) {
-        invalid_start[i] = (*invalid[i])[0].start;
-        invalid_end[i] = invalid_start[i] + (*invalid[i])[index[i]].n_invalid;
+        invalid_start[i] = (int) floor((*invalid[i])[0].start / scale[i]);
+        invalid_end[i] = invalid_start[i] + 
+                         (int) floor((*invalid[i])[index[i]].n_invalid / scale[i]);
         index[i]++;
       }
     }
@@ -636,8 +645,9 @@ void Correlation_core::find_invalid() {
       for (int j = 0; j < 2; j++) {
         if (invalid_start[j] > invalid_end[j]) {
           if (index[j] < invalid_size[j]) {
-            invalid_start[j] = (*invalid[j])[index[j]].start;
-            invalid_end[j] = invalid_start[j] + (*invalid[j])[index[j]].n_invalid; 
+            invalid_start[j] = (int) floor((*invalid[j])[index[j]].start / scale[j]);
+            invalid_end[j] = invalid_start[j] + 
+                             (int) floor((*invalid[j])[index[j]].n_invalid / scale[j]);
             index[j]++;
 	  } else {
 	    invalid_start[j] = INT_MAX;
