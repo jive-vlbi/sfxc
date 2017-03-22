@@ -678,6 +678,13 @@ void Correlation_core::find_invalid() {
     int s1 = streams_in_scan[baselines[b].first];
     int s2 = streams_in_scan[baselines[b].second];
     std::vector<Invalid> *invalid[2] = {invalid_elements[s1], invalid_elements[s2]};
+    // The sample rates of the two stations can potentially be different
+    const double scale[2] = {
+      correlation_parameters.station_streams[baselines[b].first].sample_rate * 1. /
+         correlation_parameters.sample_rate,
+      correlation_parameters.station_streams[baselines[b].second].sample_rate * 1. /
+         correlation_parameters.sample_rate
+    };
     int index[2] = {0, 0};
     int nflagged[2] = {0, 0};
     int invalid_start[2] = {INT_MAX, INT_MAX};
@@ -686,8 +693,9 @@ void Correlation_core::find_invalid() {
 
     for (int i = 0; i < 2; i++){
       if (invalid_size[i] > 0){
-        invalid_start[i] = (*invalid[i])[0].start;
-        invalid_end[i] = invalid_start[i] +  (*invalid[i])[index[i]].n_invalid;
+        invalid_start[i] = (int) floor((*invalid[i])[0].start / scale[i]);
+        invalid_end[i] = invalid_start[i] + 
+                         (int) floor((*invalid[i])[index[i]].n_invalid / scale[i]);
         index[i]++;
       }
     }
@@ -711,13 +719,14 @@ void Correlation_core::find_invalid() {
         invalid_start[i] = invalid_start[1-i];
       }
       // update indexes
-      for(int j = 0; j < 2; j++){
-        if(invalid_start[j] > invalid_end[j]){
-          if(index[j] < invalid_size[j]){
-            invalid_start[j] =  (*invalid[j])[index[j]].start;
-            invalid_end[j] = invalid_start[j] + (*invalid[j])[index[j]].n_invalid; 
+      for (int j = 0; j < 2; j++) {
+        if (invalid_start[j] > invalid_end[j]) {
+          if (index[j] < invalid_size[j]) {
+            invalid_start[j] = (int) floor((*invalid[j])[index[j]].start / scale[j]);
+            invalid_end[j] = invalid_start[j] + 
+                             (int) floor((*invalid[j])[index[j]].n_invalid / scale[j]);
             index[j]++;
-           }else {
+           } else {
               invalid_start[j] = INT_MAX;
               invalid_end[j] = INT_MAX;
            }
