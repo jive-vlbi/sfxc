@@ -10,8 +10,6 @@
 #ifndef VDIF_READER_H
 #define VDIF_READER_H
 
-#define N_VDIF_FRAMES_PER_BLOCK	4
-
 #include "input_data_format_reader.h"
 
 #include "data_reader.h"
@@ -21,6 +19,9 @@
 #include <fstream>
 #include <vector>
 #include <boost/shared_ptr.hpp>
+
+// The number VDIF frames to be read is rounded to this number of bytes
+#define VDIF_FRAME_BUFFER_SIZE    32128
 
 class VDIF_reader : public Input_data_format_reader {
   enum Debug_level {

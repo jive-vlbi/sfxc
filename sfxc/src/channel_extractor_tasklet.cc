@@ -292,8 +292,10 @@ set_parameters(const Input_node_parameters &input_node_param){
       }
     }
   }
-  if (input_node_param.frame_size != -1)
-    samples_per_block = N_VDIF_FRAMES_PER_BLOCK * input_node_param.frame_size / N;
+  if (input_node_param.frame_size != -1) {
+    int vdif_frames_per_block = std::max(1, VDIF_FRAME_BUFFER_SIZE / input_node_param.frame_size);
+    samples_per_block = vdif_frames_per_block * input_node_param.frame_size / N;
+  }
   ch_extractor->initialise(track_positions, N, samples_per_block, bits_per_sample);
 
   DEBUG_MSG("Using channel extractor: " << ch_extractor->name() );

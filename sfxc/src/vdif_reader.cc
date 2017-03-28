@@ -199,10 +199,9 @@ void VDIF_reader::set_parameters(const Input_node_parameters &param) {
     bits_per_complete_sample = param.bits_per_sample();
     vdif_frames_per_block = 1;
   } else {
-    time_between_headers_ = Time(N_VDIF_FRAMES_PER_BLOCK * param.frame_size * 8.e6 / (sample_rate * param.n_tracks));
+    vdif_frames_per_block = std::max(1, VDIF_FRAME_BUFFER_SIZE / param.frame_size);
+    time_between_headers_ = Time(vdif_frames_per_block * param.frame_size * 8.e6 / (sample_rate * param.n_tracks));
     bits_per_complete_sample = param.n_tracks;
-    vdif_frames_per_block = N_VDIF_FRAMES_PER_BLOCK;
   }
-
   SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
 }
