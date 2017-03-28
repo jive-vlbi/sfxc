@@ -160,7 +160,6 @@ int main(int argc, char *argv[]) {
         DEBUG_MSG("Manager node, hostname = " << HOSTNAME_OF_NODE);
       }
       ID_OF_NODE = "Managernode";
-      LOG_MSG("test");
       Manager_node node(RANK_OF_NODE, numtasks, &log_writer, control_parameters);
       node.start();
     }

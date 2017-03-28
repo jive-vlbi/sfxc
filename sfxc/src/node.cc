@@ -49,7 +49,7 @@ void Node::start()
         return;
       }
       case ERROR_IN_PROCESSING: {
-        get_log_writer()(0) << "Error, failed to process message" << std::endl;
+        LOG_MSG_WRITER(get_log_writer()(0), "Error, failed to process message");
         break;
       }
       case MESSAGE_UNKNOWN: {
@@ -128,8 +128,8 @@ Node::process_event(MPI_Status &status) {
         break;
       }
       case Controller::PROCESS_EVENT_STATUS_FAILED: { // Processing failed
-        get_log_writer()(0)
-        << "Error in processing tag:" << status.MPI_TAG << std::endl;
+        LOG_MSG_WRITER(get_log_writer()(0), 
+                       "Error in processing tag:" << status.MPI_TAG);
         return ERROR_IN_PROCESSING;
       }
     }
@@ -137,7 +137,7 @@ Node::process_event(MPI_Status &status) {
   {
     char msg[80];
     snprintf(msg, 80, "Unknown event %s", print_MPI_TAG(status.MPI_TAG));
-    get_log_writer()(0) << msg << std::endl;
+    LOG_MSG_WRITER(get_log_writer()(0), msg);
     DEBUG_MSG("Source: " << status.MPI_SOURCE);
     DEBUG_MSG(print_MPI_TAG(status.MPI_TAG));
     SFXC_ASSERT_MSG(false,

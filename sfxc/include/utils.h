@@ -129,7 +129,11 @@ extern MPI_Comm MPI_COMM_CORR_NODES;
 #define MPI_DEBUG_MSG(msg)
 #endif
 
-#define LOG_MSG(msg) { std::cout << ID_OF_NODE << " (" << HOSTNAME_OF_NODE << ", Rank = " << RANK_OF_NODE << "): " << msg << "\n";}
+#define LOG_MSG_WRITER(logwriter, msg) \
+        { logwriter << ID_OF_NODE << " (" << HOSTNAME_OF_NODE \
+           << ", Rank = " << RANK_OF_NODE << "): " << msg << "\n"; }
+#define LOG_MSG_ERR(msg) LOG_MSG_WRITER(std::cerr, msg) 
+#define LOG_MSG(msg) LOG_MSG_WRITER(std::cout, msg) 
 
 void abort_sfxc_assertion(const char *file, int line, const char* message);
 void sfxc_abort(const char *msg="");

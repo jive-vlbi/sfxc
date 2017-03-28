@@ -34,9 +34,8 @@ std::string HOSTNAME_OF_NODE;
 void pause_sfxc_for_gdb(void)
 {
    volatile int halt = 1;
-   std::cerr << "pause_sfxc_for_gdb() : attach with GDB to pid " << getpid()
-             << ", br utils.cc:37, then change halt=0 to resume."
-             << std::endl;
+   LOG_MSG_ERR("pause_sfxc_for_gdb() : attach with GDB to pid " << getpid()
+             << ", br utils.cc:37, then change halt=0 to resume.");
    // FIXME: change above "utils.cc:37" to reflect line nr of the while() below:
    while (halt==1) { /* wait for GDB */ }
    return;
@@ -44,9 +43,7 @@ void pause_sfxc_for_gdb(void)
 
 void abort_sfxc_assertion(const char *file, int line, const char* message) 
 {
-  std::cout << "#" << RANK_OF_NODE << " "
-  << file << ", l" << line
-  << ", Assertion failed: " << message << std::endl;
+  LOG_MSG(file << ", l" << line << ", Assertion failed: " << message);
   print_backtrace();
 
 #ifdef USE_MPI
@@ -71,10 +68,10 @@ void abort_sfxc_assertion(const char *file, int line, const char* message)
 
 void sfxc_abort(const char *msg){
   // Note : default argument msg=""
-  if(strlen(msg)>0)
-    std::cout << "Node #" << RANK_OF_NODE << " fatal error : " << msg << "\n";
+  if (strlen(msg)>0) 
+    LOG_MSG("fatal error : " << msg)
   else
-    std::cout << "Node #" << RANK_OF_NODE << " caused termination of all processes\n";
+    LOG_MSG("caused termination of all processes")
   print_backtrace();
 
 #ifdef USE_MPI
@@ -272,7 +269,8 @@ void print_backtrace(int level)
   size_t size = backtrace (array, level+1);
   char **strings = backtrace_symbols (array, size);
 
-  std::cout << "[RANK " << RANK_OF_NODE << "] Stack trace (maximally " << level << " deep)\n";
+  std::cout << "[RANK " << RANK_OF_NODE << "][" << HOSTNAME_OF_NODE << "][" 
+            << ID_OF_NODE << "] Stack trace (max " << level << " levels deep)\n";
   for (int i = 1; i < size; i++){
     std::cout << "[RANK " << RANK_OF_NODE << "][" << i-1 << "] " << strings[i] << "\n";
   }
