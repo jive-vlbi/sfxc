@@ -78,8 +78,8 @@ bool Mark5a_reader::open_input_stream(Data_frame &data){
   current_day_ = header.day(track);
   current_time_.set_time_usec(current_mjd_, header.get_time_in_us(track));
   SFXC_ASSERT(header.check_header(mask));
-  std::cout << RANK_OF_NODE << " : Mark5a reader found start of data at : y=" << header.year(track)
-            << ", day = " << start_day_ << ", time =" << get_current_time() << "\n";
+  LOG_MSG("Mark5a reader found start of data at : y=" << header.year(track)
+           << ", day = " << start_day_ << ", time =" << get_current_time());
 
   set_data_frame_info(data);
   find_fill_pattern(data);
@@ -115,13 +115,13 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
   do {
     if (eof()) {
       current_time_ += time_between_headers();
-      std::cout << "eof()\n";
+      LOG_MSG("eof()");
       return false;
     }
     int result = Data_reader_blocking::get_bytes_s( data_reader_.get(), to_read, (char*)buffer );
     if (result < 0) {
       DEBUG_MSG("FAILURE IN READING");
-      std::cout <<"FAILURE IN READING\n";
+      LOG_MSG("FAILURE IN READING");
       current_time_ += time_between_headers();
       return false;
     } else if (result == 0) {}
@@ -134,12 +134,12 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
   header.set_header(&databuffer[0]);
   if((!header.check_header(mask))&&(!resync_header(data))){
     current_time_ += time_between_headers(); // Could't find valid header before EOF
-    std::cout << "invalid header \n";
+    LOG_MSG("invalid header");
     return false;
   }
   if (header.day(track) == 0 && header.get_time_in_us(track) == 0) {
       current_time_ += time_between_headers(); // Could't find valid header before EOF
-      std::cout << "invalid timestamp \n";
+      LOG_MSG("invalid timestamp");
       return false;
   }
 
@@ -157,7 +157,7 @@ bool Mark5a_reader::read_new_block(Data_frame &data) {
       check_time_stamp(header);
       if (debug_level_ >= CHECK_BIT_STATISTICS) {
         if (!check_track_bit_statistics(data)) {
-          std::cout << "Track bit statistics are off." << std::endl;
+          LOG_MSG("Track bit statistics are off.");
         }
       }
     }
@@ -206,7 +206,7 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
             byte = N*96; // Start after previous syncword
           }else{
             // Mamimum amount of data read
-            std::cout << RANK_OF_NODE << " : Mark5a resync attempt failed \n";
+            LOG_MSG(" : Mark5a resync attempt failed");
             return false;
           }
         }else{
@@ -235,7 +235,7 @@ bool Mark5a_reader::resync_header(Data_frame &data) {
 
   }while(continue_searching);
 
-  std::cout << "Couldn't find new sync word within search window\n";
+  LOG_MSG("Couldn't find new sync word within search window");
   return false;
 }
 
@@ -353,7 +353,7 @@ bool Mark5a_reader::find_start_of_header(boost::shared_ptr<Data_reader> reader,
     int byte_read = Data_reader_blocking::get_bytes_s( reader.get(), bytes_to_read, (char *) data);
 
     if( byte_read != bytes_to_read ){
-      std::cout << "Unable to read enough bytes of data, cannot find a mark5a header before the end-of-file\n";
+      LOG_MSG("Unable to read enough bytes of data, cannot find a mark5a header before the end-of-file");
       return false;
     }
   }
@@ -401,7 +401,7 @@ bool Mark5a_reader::find_start_of_header(boost::shared_ptr<Data_reader> reader,
             byte = N * 96; // Start after previous syncword
           }else{
             // Mamimum amount of data read
-            std::cout << RANK_OF_NODE << " : Could not find mark5a header before EOF\n";
+            LOG_MSG("Could not find mark5a header before EOF");
             return false;
           }
         }else{
@@ -416,7 +416,7 @@ bool Mark5a_reader::find_start_of_header(boost::shared_ptr<Data_reader> reader,
       }
     }
   }
-  std::cout << RANK_OF_NODE << " : Could not find mark5a header before EOF\n";
+  LOG_MSG("Could not find mark5a header before EOF");
   return false;
 }
 

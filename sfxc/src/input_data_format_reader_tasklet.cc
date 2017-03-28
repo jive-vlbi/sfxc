@@ -91,7 +91,7 @@ do_task() {
 	       tm.tm_hour * 3600 + tm.tm_min * 60 + tm.tm_sec + 5);
       if (input_element_.start_time > now) {
 	// Data from the future; drop the frame, insert an invalid block and complain
-	std::cerr << RANK_OF_NODE << ": causality violation " << input_element_.start_time << std::endl;
+	LOG_MSG(": causality violation " << input_element_.start_time);
 	push_random_blocks(1, channel);
 	return;
       }
@@ -111,9 +111,9 @@ do_task() {
 
   if(input_element_.start_time != current_time[channel]){
     std::cerr.precision(16);
-    std::cerr << RANK_OF_NODE << " : start_time = " << input_element_.start_time.get_time_usec()
+    std::cerr << ID_OF_NODE << " : start_time = " << input_element_.start_time.get_time_usec()
               << ", current_time = " << current_time[channel].get_time_usec() << "\n";
-    std::cerr << RANK_OF_NODE << " channel = " << channel << std::endl;
+    std::cerr << ID_OF_NODE << " channel = " << channel << std::endl;
   }
   SFXC_ASSERT(input_element_.start_time == current_time[channel]);
 

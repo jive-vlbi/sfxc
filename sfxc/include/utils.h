@@ -86,6 +86,11 @@
 
 /// This is the MPI rank or the processID
 extern int RANK_OF_NODE;
+/// This string describes the node
+extern std::string ID_OF_NODE;
+/// Contains the hostname of the machine on which the MPI node runs
+extern std::string HOSTNAME_OF_NODE;
+
 #ifdef USE_MPI
 #include <mpi.h>
 extern MPI_Group MPI_GROUP_CORR_NODES;
@@ -123,6 +128,8 @@ extern MPI_Comm MPI_COMM_CORR_NODES;
 #define DEBUG_MSG_RANK(rank,msg)
 #define MPI_DEBUG_MSG(msg)
 #endif
+
+#define LOG_MSG(msg) { std::cout << ID_OF_NODE << " (" << HOSTNAME_OF_NODE << ", Rank = " << RANK_OF_NODE << "): " << msg << "\n";}
 
 void abort_sfxc_assertion(const char *file, int line, const char* message);
 void sfxc_abort(const char *msg="");

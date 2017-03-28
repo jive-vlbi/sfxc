@@ -24,15 +24,15 @@ VDIF_reader::open_input_stream(Data_frame &data) {
   int32_t epoch_jday = current_header.jday_epoch();
   uint32_t start_sec = current_header.sec_from_epoch;
   uint32_t epoch = current_header.ref_epoch;
-  std::cout << RANK_OF_NODE << "Start of VDIF data at jday=" << epoch_jday + start_sec / (24 * 60 * 60)
-            << ", seconds in epoch = " << start_sec << ", epoch=" << epoch 
-            << ", t=" <<  current_time_ << std::endl;
+  LOG_MSG("Start of VDIF data at jday=" << epoch_jday + start_sec / (24 * 60 * 60)
+           << ", seconds in epoch = " << start_sec << ", epoch=" << epoch 
+           << ", t=" <<  current_time_);
   return true;
 }
 
 void 
 VDIF_reader::print_header() {
-  std::cerr << RANK_OF_NODE << "------------ full header ------------\n";
+  std::cerr << ID_OF_NODE << "------------ full header ------------\n";
   std::cerr << current_header.sec_from_epoch<<" ; " << (int)current_header.legacy_mode << " ; "
             << (int)current_header.invalid<<"\n";
   std::cerr << current_header.dataframe_in_second << " ; " << (int)current_header.ref_epoch
@@ -43,7 +43,7 @@ VDIF_reader::print_header() {
             << (int) current_header.bits_per_sample << " ;" << (int) current_header.data_type<<"\n";
   std::cerr << current_header.user_data1<<" ; "<<(int)current_header.edv<<"\n";
   std::cerr << current_header.user_data2<<" ; "<<current_header.user_data3<<" ; "<< current_header.user_data4<<"\n";
-  std::cerr << RANK_OF_NODE << "-------------------------------------\n";
+  std::cerr << ID_OF_NODE << "-------------------------------------\n";
 }
 
 Time

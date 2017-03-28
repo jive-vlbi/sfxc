@@ -110,6 +110,12 @@ int main(int argc, char *argv[]) {
   if (RANK_OF_NODE == 0)
     std::cout << "Application compiled with: -DMT_MPI_ENABLE" << std::endl;
 #endif // SFXC_DETERMINISTIC
+  // set the hostname
+  {
+  char hostname[255];
+  gethostname(hostname, 255);
+  HOSTNAME_OF_NODE = hostname;
+  }
 
   park_miller_set_seed(RANK_OF_NODE+1);
 
@@ -151,10 +157,10 @@ int main(int argc, char *argv[]) {
         DEBUG_MSG("Manager node, pid = " << getpid());
       }
       if (PRINT_HOST) {
-        char hostname[255];
-        gethostname(hostname, 255);
-        DEBUG_MSG("Manager node, hostname = " << hostname);
+        DEBUG_MSG("Manager node, hostname = " << HOSTNAME_OF_NODE);
       }
+      ID_OF_NODE = "Managernode";
+      LOG_MSG("test");
       Manager_node node(RANK_OF_NODE, numtasks, &log_writer, control_parameters);
       node.start();
     }

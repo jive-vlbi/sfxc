@@ -34,8 +34,8 @@ Mark5b_reader::open_input_stream(Data_frame &data){
   start_day_ = current_header.julian_day();
   start_time_ = current_time_;
   data.start_time = current_time_;
-  std::cout << RANK_OF_NODE << "Start of Mark5b data at jday=" << start_day_
-            << ", time = " << start_time_ << "\n";
+  LOG_MSG("Start of Mark5b data at jday=" << start_day_ 
+          << ", time = " << start_time_);
   return true;
 }
 
@@ -90,7 +90,7 @@ Time Mark5b_reader::get_current_time() {
     const double rate = (double)sample_rate * nr_of_bitstreams;
     const double subsec = (double)(frame_nr * 8 * SIZE_MK5B_FRAME * SIZE_MK5B_WORD) / rate;
     if((subsec > 1) && (frame_nr_valid)){
-      std::cout << RANK_OF_NODE << " : Warning Mark5b header contains invalid frame_nr, switching to VLBA timestamp\n";
+      LOG_MSG(" : Warning Mark5b header contains invalid frame_nr, switching to VLBA timestamp");
       frame_nr_valid = false;
     }
     if(frame_nr_valid)
@@ -249,7 +249,7 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
   const int header_size = SIZE_MK5B_HEADER * SIZE_MK5B_WORD;
   const int frame_size = SIZE_MK5B_FRAME * SIZE_MK5B_WORD;
   int total_bytes_read = 0;
-  std::cout << RANK_OF_NODE << " : Resync header, t = " << current_time_ << "\n";
+  LOG_MSG(" : Resync header, t = " << current_time_);
   // Find the next header in the input stream
   char *buffer=(char *)&data.buffer->data[0];
   int buffer_size = data.buffer->data.size();
@@ -262,7 +262,7 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
     bytes_read = Data_reader_blocking::get_bytes_s(data_reader_.get(), frame_size - header_size, &buffer[header_size]);
     total_bytes_read += bytes_read;
     if(bytes_read <= 0){
-      std::cout << RANK_OF_NODE << " : Couldn't find new sync word (Mark5B) before EOF, eof = " << eof() << "\n";
+      LOG_MSG("Couldn't find new sync word (Mark5B) before EOF, eof = " << eof());
       return false;
     }
     for(header_pos = 0 ; header_pos < frame_size - header_size ; header_pos += SIZE_MK5B_WORD){
@@ -317,6 +317,6 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
       }
     }
   }
-  std::cout << RANK_OF_NODE << " : Couldn't find new sync word (Mark5B)  within search window\n";
+  LOG_MSG("Couldn't find new sync word (Mark5B)  within search window");
   return false;
 }

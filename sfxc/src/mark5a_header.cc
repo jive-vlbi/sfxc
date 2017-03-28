@@ -16,7 +16,7 @@ Mark5a_header::Mark5a_header(int N_) : header_(NULL), N(N_) {
 
 void Mark5a_header::set_header(unsigned char* hdr) {
   if (hdr == NULL) 
-    std::cout << "Backtrace: " << Backtrace() << std::endl;
+    LOG_MSG("Backtrace: " << Backtrace());
   SFXC_ASSERT(hdr != NULL);
   header_ = hdr;
 }
@@ -153,8 +153,8 @@ int Mark5a_header::find_track(int headstack_, int track_) {
     }
   }
   //sfxc_abort("Couldn't find (headstack, track) in the mark5a header.");
-  std::cout << RANK_OF_NODE << " : Warning - couldn't find headstack="<<headstack_
-            << ", track="<< track_ << " in mark5a header\n";
+  LOG_MSG("Warning - couldn't find headstack="<<headstack_
+           << ", track="<< track_ << " in mark5a header");
   return -1;
 }
 
@@ -192,15 +192,14 @@ bool Mark5a_header::checkCRC(uint8_t mask) {
       break;
     }
   default:
-    std::cout << "Error in CRC check : Invalid N = " << N << "\n";
+    LOG_MSG("Error in CRC check : Invalid N = " << N);
     return false;
 }
 
   for (size_t i=0; i<12*N; i++) {
     if (crcBlock[i] != 0) {
-      std::cout << "Error in crc " << i << " "
-      << std::hex << (int)crcBlock[i] << std::dec
-      << std::endl;
+      LOG_MSG("Error in crc " << i << " "
+               << std::hex << (int)crcBlock[i] << std::dec);
       return false;
     }
   }
@@ -296,7 +295,7 @@ Mark5a_header::BCD(int word, unsigned int track) {
                get_bit(word+2,track)*2 +
                get_bit(word+3,track);
   if (result >= 10) {
-    std::cout << "BCD >= 10" << std::endl;
+    LOG_MSG("BCD >= 10");
   }
   return result;
 }

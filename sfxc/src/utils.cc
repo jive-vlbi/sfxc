@@ -26,6 +26,10 @@ int RANK_OF_NODE = -1; // Rank of the current node
 #else
 int RANK_OF_NODE = getpid(); // Rank of the current node
 #endif
+// This will contain an identifier for the current node
+std::string ID_OF_NODE;
+// This will contain the hostname the mpi node is running on
+std::string HOSTNAME_OF_NODE;
 
 void pause_sfxc_for_gdb(void)
 {

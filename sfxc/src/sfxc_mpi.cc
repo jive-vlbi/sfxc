@@ -37,16 +37,14 @@ void start_node() {
 
       SFXC_ASSERT (RANK_LOG_NODE == rank);
       int numtasks;
-      MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
+      MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
       if (PRINT_PID) {
         DEBUG_MSG("Log node, pid = " << getpid());
       }
       if (PRINT_HOST) {
-        char hostname[255];
-        gethostname(hostname, 255);
-        DEBUG_MSG("Log node, hostname = " << hostname);
+        DEBUG_MSG("Log node, hostname = " << HOSTNAME_OF_NODE);
       }
-
+      ID_OF_NODE = "Lognode";
       Log_node log_node(rank,numtasks);
       log_node.start();
       break;
@@ -71,18 +69,25 @@ void start_node() {
         data_format = VDIF;
       }
       
-      if (PRINT_PID) {
-        DEBUG_MSG("Input node, pid = " << getpid());
-      }
-      if (PRINT_HOST) {
-        char hostname[255];
-        gethostname(hostname, 255);
-        DEBUG_MSG("Input node, hostname = " << hostname);
-      }
       Time ref_date;
       int64_t clock_ticks;
       MPI_Recv(&clock_ticks, 1, MPI_INT64, RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
       ref_date.set_clock_ticks(clock_ticks);
+      int size;
+      MPI_Get_elements(&status, MPI_CHAR, &size);
+      char buffer[size+10];
+      strcpy(buffer, "Inputnode-");
+      MPI_Recv(&buffer[10], size, MPI_CHAR, RANK_MANAGER_NODE, 
+               MPI_TAG_SET_INPUT_SET_STATION_NAME, MPI_COMM_WORLD, &status);
+      ID_OF_NODE = buffer;
+
+      if (PRINT_PID) {
+        DEBUG_MSG("Input node, pid = " << getpid());
+      }
+      if (PRINT_HOST) {
+        DEBUG_MSG(ID_OF_NODE << ", hostname = " << HOSTNAME_OF_NODE);
+      }
+
       // Start the input node
       Input_node input_node(rank, station_nr, data_format, ref_date);
       input_node.start();
@@ -97,10 +102,9 @@ void start_node() {
         DEBUG_MSG("Output node, pid = " << getpid());
       }
       if (PRINT_HOST) {
-        char hostname[255];
-        gethostname(hostname, 255);
-        DEBUG_MSG("Output node, hostname = " << hostname);
+        DEBUG_MSG("Output node, hostname = " << HOSTNAME_OF_NAME);
       }
+      ID_OF_NODE = "Outputnode";
       Output_node node(rank);
       node.start();
       break;
@@ -111,14 +115,16 @@ void start_node() {
       int32_t corr_nr;
       MPI_Recv(&corr_nr, 1, MPI_INT32,
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      int size = 25; 
+      char buffer[size];
+      snprintf(buffer, size, "Correlatornode-%d", corr_nr);
+      ID_OF_NODE = buffer;
 
       if (PRINT_PID) {
         DEBUG_MSG("Correlator node, pid = " << getpid());
       }
       if (PRINT_HOST) {
-        char hostname[255];
-        gethostname(hostname, 255);
-        DEBUG_MSG("Correlator node, hostname = " << hostname);
+        DEBUG_MSG(ID_OF_NODE << ", hostname = " << HOSTNAME_OF_NODE);
       }
 
       // Start correlator node

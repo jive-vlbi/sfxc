@@ -54,6 +54,8 @@ start_input_node(int rank, const std::string &station) {
   }
   Time ref_time(control_parameters.get_vex().get_start_time_of_experiment());
   MPI_Send(&ref_time,  1, MPI_INT64, rank, MPI_TAG_SET_INPUT_NODE_REF_DATE,  MPI_COMM_WORLD);
+  MPI_Send(station.c_str(),  station.size()+1, MPI_CHAR, rank, 
+           MPI_TAG_SET_INPUT_SET_STATION_NAME, MPI_COMM_WORLD);
   ///DEBUG_MSG("WAITING FOR NODE PARAMTERS !");
   /// add a new set of parameters
   Connexion_params* params= new Connexion_params();
