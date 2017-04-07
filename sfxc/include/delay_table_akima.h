@@ -107,9 +107,6 @@ public:
 
   void add_scans(const Delay_table &other);
 
-  // Moves the delay table to the requested scan
-  bool goto_scan(const Time &time);
-
   // Get source at phase_center for current scan
   const std::string &get_source(int phase_center){
     return sources[scans[scan_nr + phase_center].source];

@@ -497,23 +497,6 @@ Time Delay_table::stop_time_scan() {
   return scans[scan_nr].end;
 }
 
-bool Delay_table::goto_scan(const Time &time) {
-  if (time >= start_time_scan() && time < stop_time_scan())
-    return true;
-
-  if (time < start_time_scan())
-    scan_nr = 0;
-
-  n_sources_in_current_scan = 0;
-  while (scan_nr < scans.size() && time > scans[scan_nr].end)
-    scan_nr++;
-  if (scan_nr < scans.size()) {
-    initialise_next_scan();
-    return true;
-  }
-  return false;
-}
-
 std::ostream &
 operator<<(std::ostream &out, const Delay_table &delay_table) {
   const std::vector<double> &times = delay_table.times;
