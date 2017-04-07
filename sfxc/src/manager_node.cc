@@ -374,7 +374,7 @@ void Manager_node::start_next_timeslice_on_node(int corr_node_nr) {
       current_channel++;
       cross_channel =
         control_parameters.cross_channel(current_channel,
-                                         control_parameters.get_mode(correlation_parameters.start_time));
+					 get_current_mode());
     }
   }
 #ifdef SFXC_DETERMINISTIC

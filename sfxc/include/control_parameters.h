@@ -280,8 +280,6 @@ public:
   int cross_channel(const std::string &channel_nr,
                     const std::string &mode) const;
 
-  std::string get_mode(const Time &time) const;
-
   char polarisation(const std::string &channel_name,
                     const std::string &station_name,
                     const std::string &mode) const;

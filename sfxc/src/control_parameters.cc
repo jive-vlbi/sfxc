@@ -1610,19 +1610,6 @@ Control_parameters::cross_polarize() const {
   return false;
 }
 
-std::string
-Control_parameters::
-get_mode(const Time &start_time) const {
-  std::string scan_name = vex.get_scan_name(Vex::Date(start_time.date_string()));
-  if(scan_name == std::string()){
-    std::string error_msg = std::string("get_mode called with invalid time : ");
-    error_msg += start_time.date_string();
-    sfxc_abort(error_msg.c_str());
-    return std::string();
-  }
-  return vex.get_mode(scan_name);
-}
-
 int
 Control_parameters::
 cross_channel(int channel_nr, const std::string &mode) const {
