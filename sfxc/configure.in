@@ -28,8 +28,9 @@ dnl Needed for the optimized channel extractor
 AC_CHECK_LIB(dl, dlopen)
 
 dnl setting flags for sfxc
-SFXC_CXXFLAGS='-I${top_srcdir}/include'
+SFXC_CXXFLAGS='-I${top_srcdir}/include -std=gnu++03'
 SFXC_LDADD=' '
+UTILS_CXXFLAGS='-std=gnu++03'
 
 AC_CHECK_FUNCS(sincos)
 
