@@ -46,6 +46,13 @@
     ippsMul_32fc_I((const Ipp32fc*)s1, (Ipp32fc *) s2dest, len);
   }
 
+  extern inline void sfxc_mul_f_c_I(const double *s1, std::complex<double>  *s2dest, int len){
+    // there is no IPP function for double precision
+    for(int i = 0; i < len; i++){
+      s2dest[i] = s1[i] * s2dest[i];
+    }
+  } 
+
   extern inline void sfxc_mul_f_fc_I(const float *s1, std::complex<float> *s2dest, int len){
     ippsMul_32f32fc_I((const Ipp32f *)s1, (Ipp32fc *) s2dest, len);
   }
@@ -116,6 +123,12 @@
    }
 
   extern inline void sfxc_mul_fc_I(const std::complex<float> *s1, std::complex<float> *s2dest, int len){
+    for(int i = 0; i < len; i++){
+      s2dest[i] = s1[i] * s2dest[i];
+    }
+  } 
+
+  extern inline void sfxc_mul_f_c_I(const double *s1, std::complex<double>  *s2dest, int len){
     for(int i = 0; i < len; i++){
       s2dest[i] = s1[i] * s2dest[i];
     }

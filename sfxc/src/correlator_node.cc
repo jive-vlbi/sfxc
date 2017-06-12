@@ -387,7 +387,7 @@ Correlator_node::set_parameters() {
   }
   int nstations = stations_set.size();
   int nBaselines = correlation_core->number_of_baselines();
-  int size_of_one_baseline = sizeof(std::complex<FLOAT>) * (parameters.number_channels + 1);
+  int size_of_one_baseline = sizeof(std::complex<float>) * (parameters.number_channels + 1);
 
   int size_uvw = nstations*sizeof(Output_uvw_coordinates);
   // when the cross_polarize flag is set then the correlator node receives 2 polarizations

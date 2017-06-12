@@ -157,6 +157,7 @@ void pause_sfxc_for_gdb(void);
     #define SFXC_ZERO_FC            sfxc_zero_c
     #define SFXC_FFT                sfxc_fft_ipp
     #define SFXC_MUL_FC_I           sfxc_mul_c_I
+    #define SFXC_MUL_F_FC_I         sfxc_mul_f_c_I
     #define SFXC_CONJ_FC            sfxc_conj_c
     #define SFXC_ADD_FC             sfxc_add_c
     #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_c 
@@ -183,6 +184,7 @@ void pause_sfxc_for_gdb(void);
     #define SFXC_ZERO_FC            sfxc_zero_c
     #define SFXC_FFT                sfxc_fft_fftw
     #define SFXC_MUL_FC_I           sfxc_mul_c_I
+    #define SFXC_MUL_F_FC_I         sfxc_mul_f_c_I
     #define SFXC_CONJ_FC            sfxc_conj_c
     #define SFXC_ADD_FC             sfxc_add_c
     #define SFXC_ADD_PRODUCT_FC     sfxc_add_product_c 
