@@ -229,14 +229,7 @@ Control_parameters::reference_station_number() const {
   if (reference_station == "")
     return -1;
 
-  for (size_t station_nr = 0;
-       station_nr < ctrl["stations"].size(); ++station_nr) {
-    if (ctrl["stations"][station_nr].asString() == reference_station) {
-      return station_nr;
-    }
-  }
-  std::cout << "Reference station not found" << std::endl;
-  return -1;
+  return station_number(ctrl["reference_station"].asString());
 }
 
 bool
@@ -368,11 +361,19 @@ Control_parameters::check(std::ostream &writer) const {
 
     if (ctrl["reference_station"] != Json::Value()) {
       if (ctrl["reference_station"].asString() != "") {
-        if (reference_station_number() == -1) {
+        int idx = -1;
+        for (int i = 0; i < number_stations(); i++) {
+          if (ctrl["stations"][i].asString() == 
+              ctrl["reference_station"].asString()) {
+            idx = i;
+            break;
+          }
+        }
+        if (idx == -1) {
           ok = false;
-          writer
-          << "Ctrl-file: Reference station not one of the input stations"
-          << std::endl;
+          writer 
+            << "Ctrl-file: Reference station not one of the input stations"
+            << std::endl;
         }
       }
     } else {
@@ -1929,15 +1930,7 @@ get_correlation_parameters(const std::string &scan_name,
     corr_param.cross_polarize = false;
   }
 
-  corr_param.reference_station = -1;
-  if (reference_station() != "") {
-    for (size_t station_nr=0; station_nr < number_stations(); station_nr++) {
-      if (reference_station() == station(station_nr)) {
-        corr_param.reference_station = station_nr;
-      }
-    }
-    SFXC_ASSERT(corr_param.reference_station != -1);
-  }
+  corr_param.reference_station = reference_station_number();
 
   std::set<int> stations_set;
   for (Vex::Node::const_iterator station = scan->begin("station");
