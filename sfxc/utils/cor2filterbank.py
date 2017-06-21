@@ -47,8 +47,8 @@ def get_configuration(vexfile, corfile, setup_station):
   print "jday=", cfg["mjd"], ", year = ", global_header[2], ", day=", global_header[3], ", sec = ", global_header[4]
   return cfg
 
-def write_header(cfg, outfile):
-  nchan = cfg["nchan"]
+def write_header(cfg, outfile, decimate):
+  nchan = cfg["nchan"] / 2 if decimate else cfg["nchan"]
   bw = cfg["bandwidth"]
   nsubband = cfg["nsubband"]
 
@@ -231,6 +231,8 @@ def parse_args():
                   help='Apply bandpass')
   parser.add_option("-z", "--zerodm", dest='zerodm', default=False, action="store_true",
                   help='Apply zerodm subtraction')
+  parser.add_option("-d", "--decimate-freq", dest='decimate', default=False, action="store_true",
+                  help='Compensate for zeropadding by removing the odd numbered frequency points, default=no')
   parser.add_option("-p", "--pol", dest='pol', type='string', default='I',
                   help='Which polarization to use: R, L, or I (=R+L), default=I')
   (opts, args) = parser.parse_args()
@@ -266,7 +268,7 @@ def parse_args():
 
   vexfile = vex.Vex(args[0])
   outfile = open(args[-1], 'w')
-  return vexfile, infiles, outfile, bif, eif, pol, opts.setup_station, opts.zerodm, opts.bandpass
+  return vexfile, infiles, outfile, bif, eif, pol, opts.setup_station, opts.zerodm, opts.bandpass, opts.decimate
 
 def get_time(year, day, seconds):
   t = datetime.datetime(year, 1, 1)
@@ -360,7 +362,7 @@ def get_bandpass(infile, cfg, polarization):
 #########
 ############################### Main program ##########################
 #########
-vexfile, infiles, outfile, bif, eif, pol, setup_station, zerodm, dobp = parse_args()
+vexfile, infiles, outfile, bif, eif, pol, setup_station, zerodm, dobp, decimate = parse_args()
 
 # Read global header
 global_header_size = struct.unpack('i', infiles[0].read(4))[0]
@@ -369,7 +371,7 @@ if eif == -1:
   eif = cfg["nsubband"] - 1
 start_time = cfg["start_time"]
 # Write filterbank header
-write_header(cfg, outfile)
+write_header(cfg, outfile, decimate)
 total_written = 0
 for infile in infiles:
   print_global_header(infile)
@@ -385,6 +387,7 @@ for infile in infiles:
   tsheader_buf = infile.read(timeslice_header_size)
   timeslice_header = struct.unpack('4i', tsheader_buf)
   new_nsubint = timeslice_header[1]
+  decimate_frac = 2 if decimate else 1
   if total_written > 0:
     # Check input and pad gap beteen scans with zeros
     error = False 
@@ -413,7 +416,7 @@ for infile in infiles:
     total_written += npad
     print 'padding ', npad, 'integrations'
     print 'diff, inttime,nwritten,nskip = ', diff, inttime,nwritten,nskip
-    pad_zeros(outfile, npad, nsubint, nchan)
+    pad_zeros(outfile, npad, nsubint, nchan / decimate_frac)
   start_time = new_start_time
   nwritten = 0
   nchan = cfg["nchan"]
@@ -437,8 +440,8 @@ for infile in infiles:
           # Don't blow up band edges too much
           bp = [x if x > 1e-2 else 1. for x in bandpass]
           data /= bp
-      data[:, start:end].tofile(outfile)
-      dlen = data[:, start:end].size * 1. / cfg["nsubint"]
+      data[:, start:end:decimate_frac].tofile(outfile)
+      dlen = data[:, start:end:decimate_frac].size * 1. / cfg["nsubint"]
       print 'subint ', total_written, ' : Wrote ', nread, ' sub-integrations, dlen = ', dlen
     else:
       print 'Skipped subint ', nwritten
