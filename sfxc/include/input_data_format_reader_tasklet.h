@@ -116,6 +116,8 @@ private:
   /// Current time
   std::vector<Time> current_time;
   std::vector<int> nframes_left;
+  int nr_skew, nr_read_error, nr_eof, nr_missing, nr_past;
+  Time old_time;
   int min_frames_left;
 
   // Amount of data that was received by this component

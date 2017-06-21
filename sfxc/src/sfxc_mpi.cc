@@ -75,9 +75,9 @@ void start_node() {
       ref_date.set_clock_ticks(clock_ticks);
       int size;
       MPI_Get_elements(&status, MPI_CHAR, &size);
-      char buffer[size+10];
-      strcpy(buffer, "Inputnode-");
-      MPI_Recv(&buffer[10], size, MPI_CHAR, RANK_MANAGER_NODE, 
+      char buffer[size+6];
+      strcpy(buffer, "Inode-");
+      MPI_Recv(&buffer[6], size, MPI_CHAR, RANK_MANAGER_NODE, 
                MPI_TAG_SET_INPUT_SET_STATION_NAME, MPI_COMM_WORLD, &status);
       ID_OF_NODE = buffer;
 
@@ -117,7 +117,7 @@ void start_node() {
                RANK_MANAGER_NODE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
       int size = 25; 
       char buffer[size];
-      snprintf(buffer, size, "Correlatornode-%d", corr_nr);
+      snprintf(buffer, size, "Cnode-%d", corr_nr);
       ID_OF_NODE = buffer;
 
       if (PRINT_PID) {

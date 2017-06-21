@@ -103,6 +103,7 @@ private:
   Time time_between_headers_;
   int bits_per_complete_sample;
   int vdif_frames_per_block;
+  int frame_size;
   double sample_rate;
   // For testing
   Debug_level debug_level_;

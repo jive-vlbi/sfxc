@@ -96,7 +96,8 @@ private:
 //  int64_t us_per_day;
   // start time and current time in miliseconds
   // start time is used to check the data rate
-  Time start_time_, current_time_;
+  Time start_time_, old_time_, current_time_;
+  int nr_resync;
 
   int N;
   int sample_rate;

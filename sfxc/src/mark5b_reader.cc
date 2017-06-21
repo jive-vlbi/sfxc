@@ -18,6 +18,7 @@ Mark5b_reader(boost::shared_ptr<Data_reader> data_reader,
   current_jday = ref_date.get_mjd();
   start_day_ = 0;
   start_time_ = 0;
+  nr_resync = 0;
 }
 
 
@@ -141,11 +142,17 @@ bool Mark5b_reader::read_new_block(Data_frame &data) {
 
     mark5b_block += SIZE_MK5B_FRAME*SIZE_MK5B_WORD;
   }
-
   if (data_reader_->eof()) return false;
   if(current_header.julian_day() != current_jday % 1000)
     current_jday++;
   current_time_ = get_current_time();
+  if (floor(current_time_.get_time_usec() / 1000000) != floor(old_time_.get_time_usec() / 1000000)) {
+    if (nr_resync > 0) {
+      LOG_MSG("Warning: mark5b (" << old_time_ << ") resynced " << nr_resync << " times");
+      nr_resync = 0;
+    }
+    old_time_ = current_time_;
+  }
   data.start_time = current_time_;
   // Check if there is a fill pattern in the data and if so, mark the data invalid
   data.invalid.resize(0);
@@ -249,7 +256,7 @@ bool Mark5b_reader::resync_header(Data_frame &data) {
   const int header_size = SIZE_MK5B_HEADER * SIZE_MK5B_WORD;
   const int frame_size = SIZE_MK5B_FRAME * SIZE_MK5B_WORD;
   int total_bytes_read = 0;
-  LOG_MSG(" : Resync header, t = " << current_time_);
+  nr_resync += 1;
   // Find the next header in the input stream
   char *buffer=(char *)&data.buffer->data[0];
   int buffer_size = data.buffer->data.size();

@@ -5,7 +5,8 @@ VDIF_reader::VDIF_reader(boost::shared_ptr<Data_reader> data_reader,
 			 Data_frame &data, Time ref_time)
   : Input_data_format_reader(data_reader),
     debug_level_(CHECK_PERIODIC_HEADERS),
-    sample_rate(0), first_header_seen(false)
+    sample_rate(0), first_header_seen(false),
+    frame_size(0)
 {
   ref_jday = (int)ref_time.get_mjd();
 }
@@ -63,7 +64,7 @@ VDIF_reader::get_current_time() {
     double seconds_since_reference = (double)current_header.sec_from_epoch - (ref_jday - current_header.jday_epoch()) * 24 * 60 * 60;
     double subsec = 0;
     if (sample_rate > 0) {
-      int samples_per_frame = 8 * first_header.data_size() / ((first_header.bits_per_sample + 1) * (1 << first_header.log2_nchan));
+      int samples_per_frame = 8 * frame_size / ((first_header.bits_per_sample + 1) * (1 << first_header.log2_nchan));
       subsec = (double)current_header.dataframe_in_second * samples_per_frame / sample_rate;
     }
     time.set_time(ref_jday, seconds_since_reference + subsec);
@@ -83,10 +84,19 @@ VDIF_reader::read_new_block(Data_frame &data) {
     Data_reader_blocking::get_bytes_s(data_reader_.get(), 16, (char *)&current_header);
     if (data_reader_->eof())
       return false;
-
+    if (((uint32_t *)&current_header)[0] == 0x11223344 ||
+        ((uint32_t *)&current_header)[1] == 0x11223344 ||
+        ((uint32_t *)&current_header)[2] == 0x11223344 ||
+        ((uint32_t *)&current_header)[3] == 0x11223344) {
+      LOG_MSG(": VDIF_READER, fill pattern in header, frame_size =" << frame_size);
+      // NB we default to non-legacy VDIF, at this point there is no way to tell
+      Data_reader_blocking::get_bytes_s(data_reader_.get(), frame_size + 16, NULL);
+      if (++restarts > max_restarts)
+        return false;
+      goto restart;
+    }
     memcpy(&first_header, &current_header, 16);
     first_header_seen = true;
-
     if (first_header.legacy_mode == 0) {
       // FIXME : If first header has fill pattern this will fail
       // We should use the information that vex2 provides
@@ -105,29 +115,35 @@ VDIF_reader::read_new_block(Data_frame &data) {
       return false;
   }
 
-  int data_size = first_header.data_size();
   if (buffer.size() == 0)
     buffer.resize(size_data_block());
 
+  bool dorestart = false;
   if (((uint32_t *)&current_header)[0] == 0x11223344 ||
       ((uint32_t *)&current_header)[1] == 0x11223344 ||
       ((uint32_t *)&current_header)[2] == 0x11223344 ||
-      ((uint32_t *)&current_header)[3] == 0x11223344 ||
-      (current_header.dataframe_in_second % vdif_frames_per_block) != 0) {
-    Data_reader_blocking::get_bytes_s(data_reader_.get(), data_size, NULL);
+      ((uint32_t *)&current_header)[3] == 0x11223344) {
+    LOG_MSG(": VDIF_READER, fill pattern in header, frame_size =" << frame_size);
+    dorestart = true;
+  } else if ((current_header.dataframe_in_second % vdif_frames_per_block) != 0) {
+    //    LOG_MSG("VDIF_READER, unexpected frame nr = " << current_header.dataframe_in_second);
+    dorestart = true;
+  }
+  if (dorestart) {
+    Data_reader_blocking::get_bytes_s(data_reader_.get(), frame_size, NULL);
     if (++restarts > max_restarts)
       return false;
     goto restart;
   }
 
-  Data_reader_blocking::get_bytes_s( data_reader_.get(), data_size, (char *)&buffer[0]);
+  Data_reader_blocking::get_bytes_s( data_reader_.get(), frame_size, (char *)&buffer[0]);
   if (data_reader_->eof())
     return false;
 
   if (current_header.invalid > 0) {
     struct Input_node_types::Invalid_block invalid;
     invalid.invalid_begin = 0;
-    invalid.nr_invalid = data_size;
+    invalid.nr_invalid = frame_size;
     data.invalid.push_back(invalid);
     if (thread_map.count(current_header.thread_id) > 0)
       data.channel = thread_map[current_header.thread_id];
@@ -157,14 +173,14 @@ VDIF_reader::read_new_block(Data_frame &data) {
     if (data_reader_->eof())
       return false;
 
-    Data_reader_blocking::get_bytes_s( data_reader_.get(), data_size, (char *)&buffer[i * data_size]);
+    Data_reader_blocking::get_bytes_s( data_reader_.get(), frame_size, (char *)&buffer[i * frame_size]);
     if (data_reader_->eof())
       return false;
 
     if (header.invalid > 0) {
       struct Input_node_types::Invalid_block invalid;
-      invalid.invalid_begin = i * data_size;
-      invalid.nr_invalid = data_size;
+      invalid.invalid_begin = i * frame_size;
+      invalid.nr_invalid = frame_size;
       data.invalid.push_back(invalid);
     }
   }

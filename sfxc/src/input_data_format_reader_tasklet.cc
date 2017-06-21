@@ -12,6 +12,11 @@ Input_data_format_reader_tasklet(
   SFXC_ASSERT(sizeof(value_type) == 1);
   output_buffer_ = Output_buffer_ptr(new Output_buffer());
   reader_ = reader;
+  nr_skew = 0;
+  nr_read_error = 0; 
+  nr_eof = 0;
+  nr_missing = 0;
+  nr_past = 0;
 
   data_read_=0;
   allocate_element();
@@ -46,19 +51,45 @@ void
 Input_data_format_reader_tasklet::
 do_task() {
   allocate_element();
+  if (floor(old_time.get_time_usec() / 1000000) != floor(current_time[0].get_time_usec() / 1000000)) {
+    if (nr_skew != 0) {
+      LOG_MSG("Warning: " << old_time << " nr_skew = "<< nr_skew);
+      nr_skew = 0;
+    }
+    if (nr_read_error !=0) {
+      LOG_MSG("Warning: " << old_time << " nr_read_error = "<< nr_read_error);
+      nr_read_error = 0;
+    }
+    if (nr_eof != 0) {
+      LOG_MSG("Warning: " << old_time << " nr_eof = "<< nr_eof);
+      nr_eof = 0;
+    }
+    if (nr_missing != 0) {
+      LOG_MSG("Warning: old time = " << old_time << ", new time = " << current_time[0] << ", nr_missing = "<< nr_missing);
+      nr_missing = 0;
+    }
+    if (nr_past != 0) {
+      LOG_MSG("Warning: " << old_time << " nr_past = "<< nr_past); 
+      nr_past =0;
+    }
+    old_time = current_time[0];
+  }
 
-  if (reader_->eof()){
-    for (size_t i = 0; i < current_time.size(); i++){
+  if (reader_->eof()) {
+    nr_eof++;
+    for (size_t i = 0; i < current_time.size(); i++) {
       if (current_time[i] < current_interval_.stop_time_)
         push_random_blocks(1, i);
     }
     return;
   }
+
   for (size_t i = 0; i < current_time.size(); i++) {
     int skew = std::max(0, std::min(2 * NSKEW, nframes_left[i] - 1));
-
+   
     if (nframes_left[i] > min_frames_left + skew) {
       int nframes = (nframes_left[i] - min_frames_left) - skew;
+      nr_skew += nframes;
       // Insert invalid blocks to prevent bad data streams to stall the correlation
       push_random_blocks(nframes, i);
       return;
@@ -66,8 +97,10 @@ do_task() {
   }
 
   if (!reader_->read_new_block(input_element_)) {
+    int nframes = std::min(NSKIP, nframes_left[0]);
+    nr_read_error += nframes;
     // Insert invalid blocks to prevent bad data streams to stall the correlation
-    push_random_blocks(std::min(NSKIP, nframes_left[0]), 0);
+    push_random_blocks(nframes, 0);
     return;
   }
 
@@ -76,8 +109,8 @@ do_task() {
 
   Time start_next_frame = current_time[channel];
   if (input_element_.start_time != start_next_frame) {
-    int nframes_missing = (input_element_.start_time - start_next_frame) / reader_->time_between_headers();
-    nframes_missing = std::min(nframes_missing, nframes_left[channel]);
+    int64_t nframes_missing = (input_element_.start_time - start_next_frame) / reader_->time_between_headers();
+    nframes_missing = std::min(nframes_missing, (int64_t) nframes_left[channel]);
 #if 0
     std::cerr << RANK_OF_NODE << " : nframes_missing = " << nframes_missing << "; t= " << input_element_.start_time
 	      << ", expected=" << start_next_frame << "\n";
@@ -96,10 +129,12 @@ do_task() {
 	return;
       }
 
+      nr_missing += nframes_missing;
       Input_element old_input_element = input_element_;
       push_random_blocks(nframes_missing, channel);
       input_element_ = old_input_element;
     } else if (nframes_missing < 0) {
+      nr_past += 1;
       // Data was in the past; simply drop the frame
       return;
     }
@@ -109,11 +144,11 @@ do_task() {
       return;
   }
 
-  if(input_element_.start_time != current_time[channel]){
+  if(input_element_.start_time != current_time[channel]) {
     std::cerr.precision(16);
     std::cerr << ID_OF_NODE << " : start_time = " << input_element_.start_time.get_time_usec()
-              << ", current_time = " << current_time[channel].get_time_usec() << "\n";
-    std::cerr << ID_OF_NODE << " channel = " << channel << std::endl;
+              << ", current_time = " << current_time[channel].get_time_usec() 
+              << " channel = " << channel << std::endl;
   }
   SFXC_ASSERT(input_element_.start_time == current_time[channel]);
 
