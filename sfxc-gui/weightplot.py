@@ -320,7 +320,7 @@ class WeightPlotWindow(Qt.QWidget):
                 pass
             if start_time >= start and start_time < stop:
                 scans.append((start_time, scan))
-                if prev_stop_time:
+                if prev_stop_time and start_time > prev_stop_time:
                     gaps.append((prev_stop_time, start_time))
                     pass
                 prev_stop_time = stop_time
