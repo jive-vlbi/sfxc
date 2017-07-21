@@ -236,10 +236,9 @@ void Manager_node::start() {
         } else if (start_time + integration_time() * (integration_slice_nr + 1) >
                    stop_time_scan) {
           // We can stop if we finished the last scan
-          if (current_scan == control_parameters.number_scans()) {
+          if (++current_scan == control_parameters.number_scans()) {
             status = STOP_CORRELATING;
           } else {
-            current_scan++;
             status = START_NEW_SCAN;
           }
         } else {
@@ -396,7 +395,8 @@ Manager_node::initialise() {
 
   start_time = control_parameters.get_start_time();
   stop_time = control_parameters.get_stop_time();
-  // Get a list of all scan names
+
+  // Find first scan
   current_scan = control_parameters.scan(start_time.date_string());
   if (current_scan == -1) {
     std::cerr << "Cannot find scan corresponding to start time "

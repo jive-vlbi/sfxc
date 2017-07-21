@@ -86,6 +86,14 @@ initialise(const char *ctrl_file, const char *vex_file,
     }
   }
 
+  // set the scans
+  if (ctrl["scans"] == Json::Value()) {
+    for (Vex::Node::const_iterator scan = vex.get_root_node()["SCHED"]->begin();
+	 scan != vex.get_root_node()["SCHED"]->end(); scan++) {
+      ctrl["scans"].append(scan.key());
+    } 
+  }
+
   // Checking reference station
   if (ctrl["reference_station"] == Json::Value()) {
     ctrl["reference_station"] = "";
@@ -558,6 +566,16 @@ Control_parameters::number_stations() const {
   return ctrl["stations"].size();
 }
 
+std::string
+Control_parameters::scan(int i) const {
+  return ctrl["scans"][i].asString();
+}
+
+size_t
+Control_parameters::number_scans() const {
+  return ctrl["scans"].size();
+}
+
 Time
 Control_parameters::integration_time() const {
   return Time(round(ctrl["integr_time"].asDouble()*1000000));
@@ -833,16 +851,6 @@ Control_parameters::channel_freq(const std::string &mode,
 }
 
 std::string
-Control_parameters::scan(int scan_nr) const {
-  Vex::Node::const_iterator it = vex.get_root_node()["SCHED"]->begin();
-  for (int curr=0; curr < scan_nr; ++curr) {
-    ++it;
-    SFXC_ASSERT(it != vex.get_root_node()["SCHED"]->end());
-  }
-  return it.key();
-}
-
-std::string
 Control_parameters::scan_source(const std::string &scan) const {
   return vex.get_root_node()["SCHED"][scan]["source"]->to_string();
 }
@@ -851,21 +859,12 @@ int Control_parameters::scan(const Time &time) const {
   Vex::Date date(time.date_string());
 
   int scannr = 0;
-  Vex::Node::const_iterator it = vex.get_root_node()["SCHED"]->begin();
-  while (it != vex.get_root_node()["SCHED"]->end()) {
-    if ((vex.start_of_scan(it.key()) <= date) &&
-        (date < vex.stop_of_scan(it.key()))) {
+  while (scannr < number_scans()) {
+    if (date < vex.stop_of_scan(scan(scannr)))
       return scannr;
-    }
     scannr++;
-    it++;
   }
   return -1;
-}
-
-size_t
-Control_parameters::number_scans() const {
-  return vex.get_root_node()["SCHED"]->size();
 }
 
 bool
