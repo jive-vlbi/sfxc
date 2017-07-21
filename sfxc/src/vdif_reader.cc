@@ -208,15 +208,16 @@ void VDIF_reader::set_parameters(const Input_node_parameters &param) {
   // If n_tracks > 0 then the data contains a single VDIF thread,
   // the thread_id of this thread comes from the actual data
   thread_map.clear();
+  frame_size = param.frame_size;
   if (param.n_tracks == 0) {
     for (size_t i = 0; i < param.channels.size(); i++)
       thread_map[param.channels[i].tracks[0]] = i;
-    time_between_headers_ = Time(param.frame_size * 8.e6 / (sample_rate * param.bits_per_sample()));
+    time_between_headers_ = Time(frame_size * 8.e6 / (sample_rate * param.bits_per_sample()));
     bits_per_complete_sample = param.bits_per_sample();
     vdif_frames_per_block = 1;
   } else {
-    vdif_frames_per_block = std::max(1, VDIF_FRAME_BUFFER_SIZE / param.frame_size);
-    time_between_headers_ = Time(vdif_frames_per_block * param.frame_size * 8.e6 / (sample_rate * param.n_tracks));
+    vdif_frames_per_block = std::max(1, VDIF_FRAME_BUFFER_SIZE / frame_size);
+    time_between_headers_ = Time(vdif_frames_per_block * frame_size * 8.e6 / (sample_rate * param.n_tracks));
     bits_per_complete_sample = param.n_tracks;
   }
   SFXC_ASSERT(time_between_headers_.get_time_usec() > 0);
