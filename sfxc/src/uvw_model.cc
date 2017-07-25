@@ -30,9 +30,10 @@
 #include <fstream>
 #include <string>
 
-#define READ_SCAN_HEADER  0
-#define FIND_TSTART  1
-#define READ_NEW_SCAN 2
+#define READ_SCAN_HEADER  	0
+#define SKIP_SCAN		1
+#define FIND_TSTART		2
+#define READ_NEW_SCAN		3
 
 //*****************************************************************************
 //function definitions
@@ -72,10 +73,10 @@ bool Uvw_model::operator==(const Uvw_model &other) const {
 //calculate coefficients for parabolic interpolation
 int Uvw_model::open(const char *delayTableName) {
   const Time start, stop = Time::max_time();
-  return open(delayTableName, start, stop);
+  return open(delayTableName, start, stop, "");
 }
 
-int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
+int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop, const std::string &source) {
   std::ifstream in(delayTableName);
   if(!in.is_open())
     sfxc_abort((std::string("Could not open delay table ")+std::string(delayTableName)).c_str());
@@ -108,12 +109,25 @@ int Uvw_model::open(const char *delayTableName, Time tstart, Time tstop) {
             break;
           }
         }
-        if(start_time_scan < tstart){
+	if (source != std::string() && source != current_source) {
+	  state = SKIP_SCAN;
+	} else if (start_time_scan < tstart) {
           state = FIND_TSTART;
-        } else if (start_time_scan >= tstop){
+        } else if (start_time_scan >= tstop) {
           done_reading = true;
-        }else {
+        } else {
           state = READ_NEW_SCAN;
+        }
+      }
+      break;
+    }
+    case SKIP_SCAN:{
+      while (in.read(reinterpret_cast < char * > (line), 7*sizeof(double))) {
+        Time time(current_mjd, line[0]);
+
+        if(line[0] == 0 && line[4] == 0){
+          state = READ_SCAN_HEADER;
+          break;
         }
       }
       break;
