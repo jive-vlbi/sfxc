@@ -87,8 +87,10 @@ if len(sys.argv) > 1:
 input_data = open(input_file).read()
 
 exec input_data # isn't that tricky :)
-tmpfile =tempfile.NamedTemporaryFile(mode="r+t").name+".cc"
-
+tmpname = tempfile.NamedTemporaryFile(mode="r+t").name
+tmpccfile = tmpname + ".cc"
+tmpname = tempfile.NamedTemporaryFile(mode="r+t", dir=".").name
+tmpsofile = tmpname + ".so"
 
 size_input_word = size_of_one_input_word
 samples_per_byte = 8/fan_out
@@ -248,7 +250,7 @@ tmp1 = reg1.sub(header, cfile)
 totalfile = reg2.sub(mainloop, tmp1)
 
 ## We save the content into a temporary file file
-fpt = open(tmpfile, "w")
+fpt = open(tmpccfile, "w")
 fpt.write(totalfile)
 fpt.close()
 if do_compile:
@@ -265,10 +267,11 @@ if do_compile:
   else:
     include_dir = ""
   # Perform actual compilation
-  cmd = "g++ -fPIC -O3 -DNDEBUG "+tmpfile+include_dir+" -shared -Wl,-soname,"+outputname+" -o "+outputname
+  cmd = "g++ -fPIC -O3 -DNDEBUG " + tmpccfile + include_dir + " -shared -Wl,-soname," + outputname + " -o " + tmpsofile
   print "Performing precalculation....: "+cmd
   os.system(cmd);
-  #os.unlink(tmpfile)
+  #os.unlink(tmpccfile)
+  os.rename(tmpsofile, outputname)
   print "[OK]"
 
 sys.exit(0);
