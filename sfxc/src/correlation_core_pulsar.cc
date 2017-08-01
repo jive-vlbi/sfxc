@@ -38,11 +38,8 @@ Correlation_core_pulsar::set_parameters(const Correlation_parameters &parameters
   if (input_elements.size() != number_input_streams()) {
     input_elements.resize(number_input_streams());
   }
-
   if (input_conj_buffers.size() != number_input_streams()) {
     input_conj_buffers.resize(number_input_streams());
-    for(int i = 0; i < number_input_streams(); i++)
-      input_conj_buffers[i].resize(fft_size() + 1);
   }
   n_flagged.resize(baselines.size());
 
@@ -116,6 +113,8 @@ void Correlation_core_pulsar::do_task() {
   for (size_t i = 0; i < number_input_streams(); i++) {
     int stream = station_stream(i);
     input_elements[i] = &input_buffers[stream]->front()->data[0];
+    if (input_buffers[stream]->front()->data.size() > input_conj_buffers[i].size())
+      input_conj_buffers[i].resize(input_buffers[stream]->front()->data.size());
   }
   const int first_stream = station_stream(0);
   const int stride = input_buffers[first_stream]->front()->stride;
@@ -141,6 +140,7 @@ void Correlation_core_pulsar::do_task() {
       integration_normalize(accumulation_buffers[bin]);
       integration_write(accumulation_buffers[bin], 0, bin);
     }
+    tsys_write();
     current_integration++;
   }
 }
