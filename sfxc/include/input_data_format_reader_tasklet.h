@@ -47,8 +47,7 @@ public:
   void fetch_next_time_interval();
 
   /// set a time interval to process (after which the tasklet is blocking)
-  /// The start and stop time are given in micro-seconds.
-  void add_time_interval(Time &us_start_time, Time &us_stop_time);
+  void add_time_interval(Time &start_time, Time &stop_time, Time &leave_time);
 
   /// For Tasklet
   void do_task();

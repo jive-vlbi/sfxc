@@ -43,13 +43,14 @@ Input_node_controller::process_event(MPI_Status &status) {
     }
 
   case MPI_TAG_INPUT_NODE_SET_TIME: {
-      int64_t times[2]; // start and stop time
-      MPI_Recv(&times[0], 2, MPI_INT64, status.MPI_SOURCE,
+      int64_t times[3]; // start, stop and leave time
+      MPI_Recv(&times[0], 3, MPI_INT64, status.MPI_SOURCE,
                status.MPI_TAG, MPI_COMM_WORLD, &status2);
-      Time start_time, stop_time;
+      Time start_time, stop_time, leave_time;
       start_time.set_clock_ticks(times[0]);
       stop_time.set_clock_ticks(times[1]);
-      node.add_time_interval(start_time, stop_time);
+      leave_time.set_clock_ticks(times[2]);
+      node.add_time_interval(start_time, stop_time, leave_time);
       return PROCESS_EVENT_STATUS_SUCCEEDED;
     }
   case MPI_TAG_INPUT_NODE_ADD_TIME_SLICE: {

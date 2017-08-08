@@ -50,7 +50,7 @@ public:
   /// It is not possible to go back in time, as the data might be
   /// streamed in to the input node and not be buffered anymore.
   /// Time is in milliseconds
-  void add_time_interval(Time &start_time, Time &stop_time);
+  void add_time_interval(Time &start_time, Time &stop_time, Time &leave_time);
 
   // Inherited from Input_node_tasklet
   void set_delay_table(Delay_table &delay);

@@ -100,7 +100,7 @@ Input_node_tasklet(Input_reader_ptr_ reader_ptr, Data_memory_pool_ptr memory_poo
 
 void
 Input_node_tasklet::
-add_time_interval(Time &start_time, Time &stop_time) {
+add_time_interval(Time &start_time, Time &stop_time, Time &leave_time) {
   akima_delays = delay_table.create_akima_spline(start_time, stop_time - start_time);
   /// Create a list of integer delay changes for the data writers
   Delay_memory_pool_element delay_list = delay_pool.allocate();
@@ -123,7 +123,8 @@ add_time_interval(Time &start_time, Time &stop_time) {
   int32_t stop_frames = (int32_t) std::ceil(delay_stop/tbh);
   Time start_time_reader = start_time + tbh * start_frames;
   Time stop_time_reader = stop_time + tbh * stop_frames;
-  reader_.add_time_interval(start_time_reader, stop_time_reader);
+  Time leave_time_reader = leave_time + tbh * stop_frames;
+  reader_.add_time_interval(start_time_reader, stop_time_reader, leave_time_reader);
 }
 
 void Input_node_tasklet::initialise(int num_tracks)

@@ -878,6 +878,20 @@ station_in_scan(const std::string &scan, const std::string &station) const {
   return false;
 }
 
+Time
+Control_parameters::
+stop_time(const std::string &scan_name, const std::string &station) const {
+  Vex::Node::const_iterator scan =
+    vex.get_root_node()["SCHED"][scan_name];
+  Time start_time = vex.start_of_scan(scan_name).to_string();
+  for (Vex::Node::const_iterator it = scan->begin("station");
+       it != scan->end("station"); it++) {
+    if (it[0]->to_string() == station)
+      return start_time + it[2]->to_double_amount("usec");
+  }
+  return start_time;
+}
+
 size_t
 Control_parameters::number_stations_in_scan(const std::string& scan) const {
   size_t n_stations=0;

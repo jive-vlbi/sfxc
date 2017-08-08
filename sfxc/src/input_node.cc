@@ -122,9 +122,10 @@ void Input_node::hook_added_data_reader(size_t stream_nr) {
 
 void Input_node::hook_added_data_writer(size_t writer) {}
 
-void Input_node::add_time_interval(Time start_time, Time stop_time) {
+void Input_node::add_time_interval(Time start_time, Time stop_time,
+				   Time leave_time) {
   SFXC_ASSERT(input_node_tasklet != NULL);
-  input_node_tasklet->add_time_interval(start_time, stop_time);
+  input_node_tasklet->add_time_interval(start_time, stop_time, leave_time);
 }
 
 void Input_node::add_time_slice_to_stream(int channel, int stream, Time starttime_slice,

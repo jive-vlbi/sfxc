@@ -324,12 +324,14 @@ input_node_get_current_time(const std::string &station) {
 void
 Abstract_manager_node::
 input_node_set_time(const std::string &station,
-                    Time start_time, Time stop_time) {
+                    Time start_time, Time stop_time, Time leave_time) {
   SFXC_ASSERT(start_time < stop_time);
-  int64_t time[2];
+  SFXC_ASSERT(start_time < leave_time);
+  int64_t time[3];
   time[0] = start_time.get_clock_ticks();
   time[1] = stop_time.get_clock_ticks();
-  MPI_Send(&time[0], 2, MPI_INT64,
+  time[2] = leave_time.get_clock_ticks();
+  MPI_Send(&time[0], 3, MPI_INT64,
            input_rank(station), MPI_TAG_INPUT_NODE_SET_TIME, MPI_COMM_WORLD);
 }
 

@@ -180,12 +180,20 @@ void Manager_node::start() {
           status = STOP_CORRELATING;
           break;
         }
+
         for (size_t station=0; station < control_parameters.number_stations();
              station++) {
-          if(station_in_scan[station])
-            input_node_set_time(control_parameters.station(station),
+          if (station_in_scan[station]) {
+	    const std::string& scan_name =
+	      control_parameters.scan(current_scan);
+	    const std::string& station_name =
+	      control_parameters.station(station);
+	    Time stop_time_station =
+	      control_parameters.stop_time(scan_name, station_name);
+            input_node_set_time(station_name,
                                 start_time + integration_time()*integration_slice_nr,
-                                stop_time_scan);
+                                stop_time_scan, stop_time_station);
+	  }
         }
         status = START_CORRELATION_TIME_SLICE;
         break;

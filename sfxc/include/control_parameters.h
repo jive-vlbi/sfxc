@@ -266,6 +266,8 @@ public:
   bool station_in_scan(const std::string& scan, const std::string &station) const;
   size_t number_stations_in_scan(const std::string& scan) const;
 
+  Time stop_time(const std::string& scan, const std::string &station) const;
+
   // Takes cross polarisation into account
   int number_correlation_cores_per_timeslice(const std::string &mode) const;
 

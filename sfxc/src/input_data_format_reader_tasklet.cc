@@ -28,7 +28,7 @@ Input_data_format_reader_tasklet::~Input_data_format_reader_tasklet(){
 void Input_data_format_reader_tasklet::stop() {
   // An empty interval signals we're done
   Time dummy;
-  add_time_interval(dummy, dummy);
+  add_time_interval(dummy, dummy, dummy);
 }
 
 void Input_data_format_reader_tasklet::do_execute() {
@@ -106,6 +106,12 @@ do_task() {
 
   int channel = input_element_.channel;
   SFXC_ASSERT(channel >= 0 && channel < current_time.size());
+
+  if (current_time[channel] >= current_interval_.leave_time_) {
+    int nframes = std::min(NSKIP, nframes_left[0]);
+    push_random_blocks(nframes, channel);
+    return;
+  }
 
   Time start_next_frame = current_time[channel];
   if (input_element_.start_time != start_next_frame) {
@@ -227,9 +233,9 @@ Input_data_format_reader_tasklet::push_random_blocks(int nblocks, int channel)
 
 void
 Input_data_format_reader_tasklet::
-add_time_interval(Time &start_time, Time &stop_time) {
+add_time_interval(Time &start_time, Time &stop_time, Time &leave_time) {
   ///DEBUG_MSG("Time interval added: " << us_start_time << ":"<< us_stop_time );
-  intervals_.push( Time_interval(start_time, stop_time ) );
+  intervals_.push(Time_interval(start_time, stop_time, leave_time));
 }
 
 

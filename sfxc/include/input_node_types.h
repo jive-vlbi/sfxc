@@ -32,11 +32,19 @@ class Time_interval {
     Time_interval(Time &start_time, Time &stop_time){
       start_time_ = start_time;
       stop_time_ = stop_time;
+      leave_time_ = stop_time;
+    }
+
+    Time_interval(Time &start_time, Time &stop_time, Time &leave_time){
+      start_time_ = start_time;
+      stop_time_ = stop_time;
+      leave_time_ = leave_time;
     }
 
     bool empty(){ return stop_time_ <= start_time_; }
 
     Time start_time_;
+    Time leave_time_;
     Time stop_time_;
 };
 
