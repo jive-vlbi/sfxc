@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = subdir-objects
+
 AM_CXXFLAGS=-I../testunit/src -I./src $(SFXC_CXXFLAGS) 
 
 noinst_LIBRARIES = libcommon.a

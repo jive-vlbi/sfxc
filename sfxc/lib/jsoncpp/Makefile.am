@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = subdir-objects
+
 AM_CXXFLAGS=-Iinclude
 
 noinst_LIBRARIES = libjsoncpp.a

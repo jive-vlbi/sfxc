@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = subdir-objects
+
 AM_CXXFLAGS=-I../common/src  -I../testunit/src $(SFXC_CXXFLAGS) 
 
 noinst_LIBRARIES = libnetlib.a
