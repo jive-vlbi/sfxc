@@ -332,9 +332,17 @@ Control_parameters::check(std::ostream &writer) const {
 
   { // Check stations and reference station
     if (ctrl["stations"] != Json::Value()) {
+      std::set<std::string> stations_set;
       for (size_t station_nr = 0;
            station_nr < ctrl["stations"].size(); ++station_nr) {
         std::string station_name = ctrl["stations"][station_nr].asString();
+        if (stations_set.find(station_name) != stations_set.end()) {
+          ok = false;
+          writer << "Ctrl-file: Station " << station_name 
+                 << " appears multiple times in the stations list\n";
+        } else {
+          stations_set.insert(station_name);
+        }
         if (ctrl["data_sources"][station_name] == Json::Value()) {
           ok = false;
           writer << "Ctrl-file: No data source defined for "
