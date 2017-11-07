@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = subdir-objects
-
 AM_CXXFLAGS=-I../common/src
 
 noinst_LIBRARIES = libtestunit.a
