@@ -1,6 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(Vex parser, 0.0.3)
-AM_INIT_AUTOMAKE(vex_parser, 0.0.3)
+AC_CONFIG_MACRO_DIR(m4)
+AM_INIT_AUTOMAKE()
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -25,11 +26,11 @@ AM_CONDITIONAL(BUILD_PYTHONLIB, test "x$enable_pythonlib" = "xyes")
 if test "x$enable_pythonlib" = "xyes"; then
   echo ================ ENABLE PYTHONLIB
   dnl Check for python
-  AM_PATH_PYTHON(2.6)
+  AM_PATH_PYTHON(2.7)
   dnl Check for boost.python
-  AC_CHECK_LIB(python2.6, main)
-  AC_CHECK_LIB(boost_python, main)
-  AC_CHECK_LIB(boost_python-mt, main)
+  AC_CHECK_LIB(python2.7, main)
+  AC_CHECK_LIB(boost_python-py27, main)
+  dnl AC_CHECK_LIB(boost_python-mt, main)
   echo ================ /ENABLE PYTHONLIB
 fi
 

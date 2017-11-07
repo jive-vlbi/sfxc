@@ -1,1 +1,1 @@
-aclocal -I m4 && autoheader && autoconf && automake --add-missing
+aclocal -I m4 && autoheader && autoconf && automake --add-missing -W no-unsupported

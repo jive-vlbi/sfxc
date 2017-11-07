@@ -1,5 +1,3 @@
-AUTOMAKE_OPTIONS = subdir-objects
-
 AM_CXXFLAGS=-I../testunit/src -I../common/src  $(SFXC_CXXFLAGS) 
 
 noinst_LIBRARIES = libcontainers.a
