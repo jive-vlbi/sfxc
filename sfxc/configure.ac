@@ -1,9 +1,9 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(JIVE software correlator, 0.0.6)
+AC_INIT(JIVE software correlator, 3.5.0)
 AC_CONFIG_AUX_DIR(config)
 AM_CONFIG_HEADER(config.h)
 AC_CONFIG_MACRO_DIR(m4)
-AM_INIT_AUTOMAKE(sfxc, 0.0.6)
+AM_INIT_AUTOMAKE()
 
 dnl backup of generic flags
 CXXFLAGS_IN=$CXXFLAGS
