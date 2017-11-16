@@ -780,8 +780,12 @@ Correlation_core::create_window() {
   case SFXC_WINDOW_NONE:
   case SFXC_WINDOW_RECT:
     // rectangular window (including zero padding)
-    f = rect; 
-    break;
+    window[0] = 1.;
+    for (int i = 1; i < n / 2; i++) {
+      window[i] = window[n - i] = (1. - 2.*i / n) / (1. - 2.*i / m);
+    }
+    window[n/2] =  0.;
+    return;
   case SFXC_WINDOW_COS:
     // Cosine window
     f = cos;
@@ -801,7 +805,7 @@ Correlation_core::create_window() {
   for (int i = 1; i < n / 2; i++)
     window[i] = window[n - i] =
       (m / n) * convolve(f, n, n / 2 + i) / convolve(f, m, m / 2 + i);
-  window[n / 2] = convolve(f, n, n) / convolve(f, m, m);
+  window[n / 2] = (m / n) * convolve(f, n, n) / convolve(f, m, (n + m) / 2);
 }
 
 void
